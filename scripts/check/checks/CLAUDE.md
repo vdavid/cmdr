@@ -38,6 +38,7 @@ CheckDefinition{
     CIOnly:            false, // true = run only in --ci mode (or when named explicitly)
     FreestyleIncompat: true,  // can NOT run on freestyle.sh VMs (Rust, Docker)
     CpuWeight:         2,      // avg cores busy; 0/unset = 1. Governs concurrent admission.
+    Inputs:            svelteInputs, // path globs this check reads (for the input-fingerprint cache)
     DependsOn:         []string{"desktop-svelte-prettier"},
     Run:               RunDesktopESLint,
 }
@@ -71,12 +72,23 @@ CheckDefinition{
   workflow nor carrying a reason fails the suite, and a check that has a reason but IS invoked also fails (stale
   excuse). Empty (the default) = the check must appear in a workflow. See `docs/tooling/ci.md` § "The registry ↔ CI
   contract".
+- **`Inputs`** is the list of path globs (relative to repo root) this check reads, for the input-fingerprint cache
+  (`pnpm check` skips a check when its inputs are unchanged since its last pass). **Every check MUST declare Inputs**
+  (`TestEveryCheckDeclaresInputs` fails the suite otherwise): an empty list fingerprints on the global inputs alone, so
+  the check would be cache-skipped even when its own files change — a correctness hole. Reuse a shared set from
+  `inputs.go` (`rustInputs`, `svelteInputs`, `websiteInputs`, `apiServerInputs`, `goScriptsInputs`, `workflowsInputs`,
+  `desktopAppInputs()`), or `wholeRepoInputs` (`**`) for a whole-tree scanner. **Be conservative: when unsure whether
+  the check reads a path, include it.** A too-wide list only costs cache speed; a too-narrow one costs correctness. The
+  global inputs (`.mise.toml`, `scripts/check/**`) are added automatically — don't list them. `ci-coverage` rule 4 fails
+  if any static path prefix in your Inputs doesn't exist on disk.
 
 ## Adding a new check
 
 1. Create `{app}-{name}.go` with a `func RunSomething(ctx *CheckContext) (CheckResult, error)`. Use `website-build.go`
    or `website-docker.go` as templates; they're the simplest.
-2. Register it in `AllChecks` in `registry.go` (ID, App, Tech, DependsOn, Run, plus any flag fields).
+2. Register it in `AllChecks` in `registry.go` (ID, App, Tech, DependsOn, Run, plus any flag fields). **Declare
+   `Inputs`** (the paths it reads) — reuse a shared set from `inputs.go`; the suite fails if you forget. See the
+   `Inputs` field semantics above.
 3. Return `Success("message")` on pass, `fmt.Errorf(...)` on fail, `Skipped("reason")` to skip.
 4. Add a test file if the check has non-trivial logic (`{app}-{name}_test.go`).
 5. If the check grows an allowlist or an opt-out comment, wire staleness detection from day one (see § Allowlist

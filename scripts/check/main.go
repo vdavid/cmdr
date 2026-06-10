@@ -48,6 +48,7 @@ type cliFlags struct {
 	fast            bool
 	failFast        bool
 	noLog           bool
+	fresh           bool // bypass the input-fingerprint cache: run everything selected, then refresh its entries
 	onlyFreestyle   bool
 	preferFreestyle bool
 	freestyleRemote bool   // set on the VM side to filter freestyle-compatible checks
@@ -123,35 +124,61 @@ func main() {
 		return
 	}
 
-	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
-	checksToRun = checks.FilterCIOnlyChecks(checksToRun, flags.ciMode, flags.checkNames)
-	checksToRun = checks.FilterFastChecks(checksToRun, flags.fast, flags.checkNames)
+	checksToRun = applyLaneFilters(checksToRun, flags)
 
-	if flags.freestyleRemote {
-		checksToRun = checks.FilterFreestyleCompat(checksToRun)
-	}
+	// Plan the input-fingerprint cache BEFORE pnpm install and SMB bring-up, so a
+	// run whose SMB/node checks are all cache hits never starts containers or runs
+	// `pnpm install`. plan.toRun holds the cache misses; plan.cached the hits.
+	plan := planSelectedChecks(ctx, flags, checksToRun)
+	checksToRun = plan.toRun
 
-	checksToRun = filterOnlySlow(checksToRun, flags.onlySlow)
-
-	if len(checksToRun) == 0 {
-		fmt.Println("No checks to run.")
-		os.Exit(0)
-	}
-
-	// Ensure pnpm dependencies are installed before running checks
-	if needsPnpmInstall(checksToRun) {
-		if err := ensurePnpmDependencies(ctx); err != nil {
-			printError("Error: %v", err)
-			os.Exit(1)
-		}
-	}
+	ensurePnpmIfNeeded(ctx, checksToRun)
 
 	smb = setupSmbOrchestratorIfNeeded(rootDir, checksToRun)
 	if smb != nil {
 		defer smb.Stop()
 	}
 
-	runChecks(ctx, checksToRun, flags.failFast, flags.noLog)
+	runChecks(ctx, checksToRun, plan, flags.failFast, flags.noLog)
+}
+
+// planSelectedChecks runs cache planning over the lane-filtered set and exits
+// early with "No checks to run." when nothing remains (neither to run nor
+// cached). Extracted from main() to keep it under the gocyclo threshold.
+func planSelectedChecks(ctx *checks.CheckContext, flags *cliFlags, checksToRun []checks.CheckDefinition) *cachePlan {
+	if len(checksToRun) == 0 {
+		fmt.Println("No checks to run.")
+		os.Exit(0)
+	}
+	plan := planCache(ctx, flags, checksToRun)
+	if len(plan.toRun) == 0 && len(plan.cached) == 0 {
+		fmt.Println("No checks to run.")
+		os.Exit(0)
+	}
+	return plan
+}
+
+// ensurePnpmIfNeeded installs pnpm deps when any selected check needs them.
+func ensurePnpmIfNeeded(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition) {
+	if needsPnpmInstall(checksToRun) {
+		if err := ensurePnpmDependencies(ctx); err != nil {
+			printError("Error: %v", err)
+			os.Exit(1)
+		}
+	}
+}
+
+// applyLaneFilters narrows the selected checks by the slow/CI-only/fast/freestyle
+// lane flags, in the established order. Extracted from main() to keep it under
+// the gocyclo threshold.
+func applyLaneFilters(checksToRun []checks.CheckDefinition, flags *cliFlags) []checks.CheckDefinition {
+	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
+	checksToRun = checks.FilterCIOnlyChecks(checksToRun, flags.ciMode, flags.checkNames)
+	checksToRun = checks.FilterFastChecks(checksToRun, flags.fast, flags.checkNames)
+	if flags.freestyleRemote {
+		checksToRun = checks.FilterFreestyleCompat(checksToRun)
+	}
+	return filterOnlySlow(checksToRun, flags.onlySlow)
 }
 
 // handleGraphFlag renders the dependency graph and reports whether it handled
@@ -258,6 +285,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		fast            = fs.Bool("fast", false, "Run only the curated fast pre-commit check set")
 		failFast        = fs.Bool("fail-fast", false, "Stop on first failure")
 		noLog           = fs.Bool("no-log", false, "Disable CSV stats logging")
+		fresh           = fs.Bool("fresh", false, "Bypass the input-fingerprint cache: run everything selected, then refresh the cache")
 		onlyFreestyle   = fs.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
 		preferFreestyle = fs.Bool("prefer-freestyle", false, "Run freestyle-compatible checks on VM + the rest locally in parallel")
 		freestyleRemote = fs.Bool("freestyle-remote", false, "Filter to freestyle-compatible checks only (used internally on the VM)")
@@ -292,6 +320,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		fast:            *fast,
 		failFast:        *failFast,
 		noLog:           *noLog || *ciMode,
+		fresh:           *fresh,
 		onlyFreestyle:   *onlyFreestyle,
 		preferFreestyle: *preferFreestyle,
 		freestyleRemote: *freestyleRemote,
@@ -456,13 +485,22 @@ func selectChecksByApp(appName string) ([]checks.CheckDefinition, error) {
 	}
 }
 
-// runChecks executes the checks and prints results.
-func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, failFast, noLog bool) {
-	fmt.Printf("🔍 Running %d %s...\n\n", len(checksToRun), checks.Pluralize(len(checksToRun), "check", "checks"))
+// runChecks executes the cache-miss checks, replays cache hits, records this
+// run's passes into the cache, and prints the summary.
+func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, plan *cachePlan, failFast, noLog bool) {
+	total := len(checksToRun) + len(plan.cached)
+	if len(plan.cached) > 0 {
+		fmt.Printf("🔍 Running %d %s (%d cached)...\n\n", total, checks.Pluralize(total, "check", "checks"), len(plan.cached))
+	} else {
+		fmt.Printf("🔍 Running %d %s...\n\n", total, checks.Pluralize(total, "check", "checks"))
+	}
 
 	startTime := time.Now()
-	runner := NewRunner(ctx, checksToRun, failFast, noLog)
+	runner := NewRunner(ctx, checksToRun, plan.cached, failFast, noLog)
 	failed, failedChecks := runner.Run()
+
+	// Record this run's passing fingerprints (no-op when caching is disabled).
+	plan.recordRun(ctx.RootDir, runner.RunStates())
 
 	totalDuration := time.Since(startTime)
 	fmt.Println()
@@ -473,7 +511,12 @@ func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, f
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s✅ All checks passed!%s\n", colorGreen, colorReset)
+	if runner.CachedCount() > 0 {
+		fmt.Printf("%s✅ All checks passed!%s %s(%d ran, %d cached)%s\n",
+			colorGreen, colorReset, colorDim, runner.RanCount(), runner.CachedCount(), colorReset)
+	} else {
+		fmt.Printf("%s✅ All checks passed!%s\n", colorGreen, colorReset)
+	}
 }
 
 // printFailure prints the failure message with rerun instructions.
@@ -546,6 +589,7 @@ func showUsage() {
 	fmt.Println("    --fast                   Run only the curated fast pre-commit check set")
 	fmt.Println("    --only-freestyle         Run freestyle-compatible checks on a VM (skip the rest)")
 	fmt.Println("    --prefer-freestyle       Run compat checks on VM + the rest locally in parallel")
+	fmt.Println("    --fresh                  Bypass the input-fingerprint cache: run everything selected, then refresh it")
 	fmt.Println("    --fail-fast              Stop on first failure")
 	fmt.Println("    --no-log                 Disable CSV stats logging (~/cmdr-check-log.csv)")
 	fmt.Println("    --graph                  Render the check dependency graph (weights + lanes) and exit")

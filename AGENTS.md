@@ -116,13 +116,17 @@ script and keeps output concise and focused: no `2>&1`, `head`, or `tail` needed
 
 ### When to run what
 
-Three cadences. Pick the one that matches where you are in the work, not the one closest to "done."
+Three cadences. Pick the one that matches where you are in the work, not the one closest to "done." All three are
+**cache-aware**: `pnpm check` re-runs a check only when that check's inputs changed since it last passed, so a run with
+scoped changes is near-instant and a fully-unchanged tree runs nothing. The cadences below describe what each lane
+_covers_; the cache decides what actually _runs_. `--fresh` (or `CMDR_CHECK_NO_CACHE=1`) forces a full fresh run; `--ci`
+always runs fresh. See the input-fingerprint cache section in `scripts/check/CLAUDE.md`.
 
-- **`pnpm check --fast` — every few file edits, on a self-imposed rhythm (~7 s).** Don't wait for "before commit";
-  that's too late, by then a regression is buried under follow-up edits. Run after a small natural unit of work: a
-  function rewritten, a test added, a config touched. Catches roughly half the things the full suite catches, for ~5% of
-  the wall time, so use it liberally. The lane is editorially curated, not derived from timings; mutually exclusive with
-  `--include-slow` / `--only-slow`. Covers:
+- **`pnpm check --fast` — every few file edits, on a self-imposed rhythm (~7 s cold, ~0 s when nothing it covers
+  changed).** Don't wait for "before commit"; that's too late, by then a regression is buried under follow-up edits. Run
+  after a small natural unit of work: a function rewritten, a test added, a config touched. Catches roughly half the
+  things the full suite catches, for ~5% of the wall time, so use it liberally. The lane is editorially curated, not
+  derived from timings; mutually exclusive with `--include-slow` / `--only-slow`. Covers:
   - All formatters (`oxfmt`, `rustfmt`, `gofmt`) and most non-compiling static linters (`cfg-gate`, `log-error-macro`,
     `error-string-match`, `lock-poison`, `ipc-enum-camelcase`, `cargo-machete`, `knip`, `import-cycles`, `type-drift`,
     `stylelint`, `css-unused`, `a11y-contrast`, `btn-restyle`, `a11y-coverage`, `bare-poll`, `e2e-linux-typecheck`,
@@ -135,10 +139,12 @@ Three cadences. Pick the one that matches where you are in the work, not the one
     `svelte-check` / Svelte tests, website ESLint / typecheck / build / e2e, `docker-build`, or any E2E suite.
 - **`pnpm check` — before every commit.** The full default suite (everything not marked `IsSlow`). Catches what `--fast`
   skips: `clippy`, Rust tests, audit/deny, svelte-check, website build, etc. This is the contract that what you're
-  committing won't break CI.
+  committing won't break CI. Now cheap when your changes are scoped: only the checks whose inputs you touched re-run, so
+  there's no reason to skip it for "just a small change."
 - **`pnpm check --include-slow` — before wrapping a milestone, declaring a feature done, or pushing a branch you've been
   sitting on.** Adds the slow lane on top of the default suite: `desktop-e2e-linux`, `desktop-e2e-playwright`,
-  `rust-tests-linux`. Allow ~20 min; this is the gate before "I'm done."
+  `rust-tests-linux`. Cache-aware too, so this means "affected slow checks as well" — a slow suite whose inputs are
+  unchanged is a cache hit. Allow ~20 min when they do run; this is the gate before "I'm done."
 - **`oxfmt` must always run before you call a task done.** It's monorepo-wide (markdown, YAML, JSON, JS/TS across every
   app) and takes ~1 second, so there's no reason to skip it. It's registered under `AppOther`, which means `--rust` and
   `--svelte` do NOT include it. If you only ran those, CI will catch unformatted markdown / JSON / etc. that you missed.

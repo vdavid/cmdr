@@ -25,6 +25,10 @@ import (
 //     entries as files/dirs, glob entries via their static directory prefix.
 //     (The svelte filter watched `vite.config.ts` long after the file was
 //     renamed to `vite.config.js`, so Vite config changes triggered nothing.)
+//  4. Every static path prefix in a registry check's Inputs (and in
+//     GlobalInputs) must exist. A dead Inputs glob would silently cache-skip a
+//     check whose real sources moved. Same robust file-existence shape as rule
+//     3; it deliberately does NOT reconcile Inputs against the filter sets.
 //
 // Scope notes: rule 1 only scans lines that invoke the check tool (the line
 // must mention `scripts/check`), so prose in workflow comments doesn't count
@@ -64,6 +68,7 @@ func RunCICoverage(ctx *CheckContext) (CheckResult, error) {
 	violations = append(violations, validateReferencedNamesResolve(referenced)...)
 	violations = append(violations, validateRegistryIsCovered(referenced)...)
 	violations = append(violations, validateFilterPathsExist(ctx.RootDir, filepath.Join(wfDir, "ci.yml"))...)
+	violations = append(violations, validateCheckInputsExist(ctx.RootDir)...)
 
 	if len(violations) > 0 {
 		return CheckResult{}, fmt.Errorf("registry/CI contract violations:\n  %s", strings.Join(violations, "\n  "))
@@ -156,6 +161,44 @@ func validateFilterPathsExist(rootDir, ciPath string) []string {
 			violations = append(violations, fmt.Sprintf(
 				"ci.yml change filter references '%s' but '%s' doesn't exist (renamed or removed?)", p, probe))
 		}
+	}
+	return violations
+}
+
+// validateCheckInputsExist is rule 4: every static path prefix in a registry
+// check's Inputs (and in GlobalInputs) must exist on disk. A dead Inputs glob is
+// a silent correctness hole for the input-fingerprint cache: a check whose
+// `apps/desktop/src-old/**` glob matches nothing would be cache-skipped even when
+// its real (renamed) sources change. Mirrors rule 3 for the ci.yml filters, and
+// is the same shape of robust file-existence guard — it deliberately does NOT
+// try to reconcile Inputs against the ci.yml filter sets (a fiddly, drift-prone
+// invariant given the filter↔app↔check mapping isn't 1:1); CI running fresh is
+// the real backstop against a wrong Inputs list. `**` (wholeRepoInputs) has an
+// empty static prefix and is skipped, like a leading-glob filter path.
+func validateCheckInputsExist(rootDir string) []string {
+	seen := map[string]bool{}
+	var violations []string
+	check := func(patterns []string, owner string) {
+		for _, p := range patterns {
+			probe := staticPathPrefix(p)
+			if probe == "" {
+				continue
+			}
+			key := owner + "\x00" + probe
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			if _, err := os.Stat(filepath.Join(rootDir, probe)); err != nil {
+				violations = append(violations, fmt.Sprintf(
+					"%s references input '%s' but '%s' doesn't exist (renamed or removed? update checks/inputs.go)", owner, p, probe))
+			}
+		}
+	}
+	check(GlobalInputs, "GlobalInputs")
+	for i := range ciCoverageRegistry {
+		c := &ciCoverageRegistry[i]
+		check(c.Inputs, "check `"+c.ID+"`")
 	}
 	return violations
 }

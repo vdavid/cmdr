@@ -11,6 +11,18 @@ func TestValidateCheckNames_NoCollisions(t *testing.T) {
 	}
 }
 
+// TestEveryCheckDeclaresInputs guards the input-fingerprint cache contract: a
+// check with no Inputs is fingerprinted on the global inputs alone, so it would
+// be cache-skipped on any change to its own files — a correctness hole. Every
+// check must declare what it reads (use wholeRepoInputs for whole-tree scanners).
+func TestEveryCheckDeclaresInputs(t *testing.T) {
+	for _, c := range AllChecks {
+		if len(c.Inputs) == 0 {
+			t.Errorf("check %q declares no Inputs; the cache can't tell what it reads (see checks/inputs.go)", c.ID)
+		}
+	}
+}
+
 func TestValidateCheckNames_DetectsNicknameIDCollision(t *testing.T) {
 	// Save original and restore after test
 	original := AllChecks

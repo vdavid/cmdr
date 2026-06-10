@@ -114,9 +114,35 @@ type CheckDefinition struct {
 	// fails the suite (someone added a check and forgot to wire it into CI),
 	// and a check that has a reason AND a workflow reference also fails (the
 	// reason went stale — remove it). Empty = must be referenced in a workflow.
-	NotInCI   string
+	NotInCI string
+	// Inputs lists path globs (relative to repo root) describing what this check
+	// reads. The input-fingerprint cache (see scripts/check/checks/fingerprint.go)
+	// hashes the union of these plus the global inputs (GlobalInputs) and skips
+	// the check when nothing in its input set changed since it last passed. Be
+	// conservative: when unsure whether a check reads a path, include it. A
+	// too-wide list only costs speed; a too-narrow one costs correctness (a real
+	// change goes unchecked). CI is the authoritative backstop (--ci runs fresh),
+	// so a wrong list here can't ship a regression, only mask one locally until
+	// the next CI run. Globs use git pathspec semantics (`dir/**` matches
+	// everything under dir). An empty Inputs list means the check is fingerprinted
+	// on the global inputs alone, so it re-runs on any toolchain/runner change but
+	// nothing else — only correct for checks that genuinely read no repo files.
+	Inputs    []string
 	DependsOn []string
 	Run       CheckFunc
+}
+
+// GlobalInputs are paths that affect every check's fingerprint regardless of its
+// own Inputs: a toolchain bump (.mise.toml), an edit to the runner's own source
+// (scripts/check/**, which includes the registry where Inputs lists live), or a
+// change to the root lockfiles every check's tooling resolves against. Mirrors
+// the ".mise.toml + ci.yml in every filter" rule in ci.yml's change-detection
+// block. Conservative by design: scripts/check/** alone means any edit to a
+// check invalidates the whole cache, which is correct (the runner's behavior
+// just changed) and cheap (the next run re-establishes it).
+var GlobalInputs = []string{
+	".mise.toml",
+	"scripts/check/**",
 }
 
 // EffectiveCpuWeight returns the scheduling weight clamped to [1, capacity], so

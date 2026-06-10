@@ -60,6 +60,7 @@ nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main
 | `--include-slow`            | Include slow checks (excluded by default)                                       |
 | `--only-slow`               | Run only slow checks                                                            |
 | `--fast`                    | Run only the curated fast pre-commit check set                                  |
+| `--fresh`                   | Bypass the input-fingerprint cache: run everything selected, then refresh it    |
 | `--only-freestyle`          | Run freestyle-compatible checks on a VM (skip the rest)                         |
 | `--prefer-freestyle`        | Run compat checks on VM + the rest locally in parallel                          |
 | `--fail-fast`               | Stop on first failure                                                           |
@@ -92,35 +93,45 @@ pnpm check [flags]
         --only-freestyle:            # VM only, skip incompat
           freestyleRun()
     -> selectChecks()                # filter AllChecks by flags
-    -> FilterSlowChecks()            # drop IsSlow=true unless --include-slow or a check was named
-    -> FilterCIOnlyChecks()          # drop CIOnly=true unless --ci or a check was named
-    -> FilterFastChecks()            # if --fast: keep IsFast=true (or named checks)
-    -> ensurePnpmDependencies()      # pnpm install once at root (skipped for Rust-only runs)
+    -> applyLaneFilters()            # FilterSlow/CIOnly/Fast/Freestyle/onlySlow, in order
+    -> planCache() (plan.go)         # input-fingerprint cache, BEFORE pnpm+SMB:
+        CollectRepoFingerprintData() #   one repo-wide `git ls-files`+`git status` pass
+        per check: FingerprintFor()  #   hash its Inputs ∪ GlobalInputs from that pass
+        split selected -> toRun / cached  # cache hit = entry fingerprint matches
+    -> ensurePnpmDependencies()      # pnpm install once at root (skipped if all node checks cached)
+    -> setupSmbOrchestratorIfNeeded()# Docker/SMB up only if a NON-cached check NeedsSmb
     -> Runner.Run():
+        reportCached()               # print + log the cache hits as "OK (cached)" first
         goroutine pool (NumCPU semaphore)
         for each pending check: canStart() checks DependsOn deps
           -> dep pending/running: wait
           -> dep failed/blocked: mark StatusBlocked, print BLOCKED
           -> all deps done: launch goroutine -> runCheck() -> completedCh
+          (a cached dep is absent from toRun, so canStart treats it as satisfied)
         status line goroutine (200ms tick, TTY only): "Waiting for: foo, bar..."
-    -> print summary, exit 0/1
+    -> plan.recordRun()              # cache this run's passing fingerprints (skipped under --ci)
+    -> print summary ("N ran, M cached"), exit 0/1
 ```
 
 ## Key files
 
-| File                  | Purpose                                                                                                                            |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `main.go`             | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation                                     |
-| `runner.go`           | Parallel executor: CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line                                  |
-| `graph.go`            | `--graph` renderer: dependency forest with CPU weights, size lanes, and median wall-time from the stats CSV (tree / mermaid / dot) |
-| `stats.go`            | CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`                                           |
-| `colors.go`           | ANSI color constants                                                                                                               |
-| `utils.go`            | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                                                      |
-| `smb_orchestrator.go` | Runner-level SMB Docker lifecycle: acquires a machine-wide lease (via `smblease`) at init, releases at exit                        |
-| `smblease/`           | Library: the machine-wide flock + holder-id refcount that makes the shared `smb-consumer` stack safe across worktrees              |
-| `smb-lease/`          | Thin `package main` CLI onto `smblease` (`acquire`/`release`/`reconcile`/`status`) that the bash scripts shell out to              |
-| `freestyle.go`        | All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`                                                         |
-| `checks/`             | One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)                               |
+| File                    | Purpose                                                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `main.go`               | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation                                     |
+| `runner.go`             | Parallel executor: CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line                                  |
+| `graph.go`              | `--graph` renderer: dependency forest with CPU weights, size lanes, and median wall-time from the stats CSV (tree / mermaid / dot) |
+| `stats.go`              | CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`                                           |
+| `plan.go`               | Input-fingerprint cache planning: splits selected checks into cache hits and misses BEFORE pnpm/SMB; records passes after the run  |
+| `checks/fingerprint.go` | Git-aware content fingerprint per check (one repo-wide `git ls-files`+`git status` pass, filtered per check's Inputs)              |
+| `checks/cache.go`       | Per-worktree cache file load/save (`node_modules/.cache/cmdr-check-cache.json`), atomic write, corrupt-tolerant                    |
+| `checks/inputs.go`      | Shared `Inputs` building blocks (mined from ci.yml filters) + `inputs()` concatenator                                              |
+| `colors.go`             | ANSI color constants                                                                                                               |
+| `utils.go`              | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                                                      |
+| `smb_orchestrator.go`   | Runner-level SMB Docker lifecycle: acquires a machine-wide lease (via `smblease`) at init, releases at exit                        |
+| `smblease/`             | Library: the machine-wide flock + holder-id refcount that makes the shared `smb-consumer` stack safe across worktrees              |
+| `smb-lease/`            | Thin `package main` CLI onto `smblease` (`acquire`/`release`/`reconcile`/`status`) that the bash scripts shell out to              |
+| `freestyle.go`          | All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`                                                         |
+| `checks/`               | One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)                               |
 
 ## Runner-level patterns
 
@@ -177,8 +188,55 @@ a per-platform allowlist. See `checks/CLAUDE.md` § "E2E test duration flagger".
 **TTY detection:** `golang.org/x/term.IsTerminal` gates the live status line; CI logs stay clean.
 
 **CSV stats logging:** Each check run appends a row to `~/cmdr-check-log.csv` with timestamp, app, check name, duration,
-result (pass/fail/skip/blocked), and optional counts (total, issues, changes). `CheckResult` has `Total`, `Issues`,
-`Changes` fields (`-1` = N/A, rendered as `N/A` in CSV). Disabled by `--no-log` or `--ci`. Implementation in `stats.go`.
+result (pass/fail/skip/blocked/cached), and optional counts (total, issues, changes). `CheckResult` has `Total`,
+`Issues`, `Changes` fields (`-1` = N/A, rendered as `N/A` in CSV). Disabled by `--no-log` or `--ci`. Implementation in
+`stats.go`. A cache hit logs as `cached` (not `pass`) so `--graph`'s median, which counts only `pass` rows, isn't
+dragged down by ~0s hits.
+
+## Input fingerprint cache
+
+`pnpm check` re-runs a check IFF that check's inputs changed since it last passed. This unifies affected-only selection
+and result caching in one baseline-free mechanism: agents can run `pnpm check` constantly and only pay for what they
+touched.
+
+**Mechanism (`plan.go` + `checks/fingerprint.go` + `checks/cache.go`):**
+
+- Each check declares `Inputs` (path globs it reads) in `registry.go`; the shared sets live in `checks/inputs.go`, mined
+  from ci.yml's `dorny/paths-filter` rules. Every check also carries the implicit `GlobalInputs` (`.mise.toml`,
+  `scripts/check/**`): a toolchain bump or an edit to the runner's own source invalidates everything.
+- Fingerprinting is git-aware and runs ONE repo-wide pass (`git ls-files -s` for index blob SHAs,
+  `git status --porcelain -z` for the few dirty/untracked/deleted files, which are hashed from disk), then filters per
+  check in-process. It never walks `node_modules/` or `target/`; the whole pass is well under a second.
+- The fingerprint of a passing run is stored per check in `node_modules/.cache/cmdr-check-cache.json` (shares
+  node_modules' fate, like the pnpm-install marker; atomic temp+rename write). A later run with the same fingerprint is
+  a cache hit: reported as `OK (cached)` at ~0s, the pass's own message replayed for context.
+
+**Invalidation:** any content change, add, or removal within a check's input set changes its fingerprint (the sorted
+path list is hashed too, so adds/removes shift it). A formatter's auto-fix changes file contents, which changes OTHER
+checks' fingerprints — correct and free, since fingerprinting is per-check at planning time.
+
+**What's cached:** only `StatusOK` (not warn) results. Failures, warns, and skips always re-run AND drop any stale cache
+entry. Warns aren't cached because warn-only checks are cheap and their messages are the product, not a verdict.
+
+**Flags / escape hatches:**
+
+- `pnpm check` is cache-aware by default (all lanes: `--fast`, `--include-slow`, `--only-slow`). `--include-slow` thus
+  means "affected slow checks too".
+- `--fresh` (or `CMDR_CHECK_NO_CACHE=1`) bypasses the cache: runs everything selected, then refreshes the entries.
+- `--ci` always runs fresh and never writes the cache. **CI is the authoritative backstop against a wrong `Inputs`
+  list** — a too-narrow `Inputs` can only mask a regression locally until the next CI run, never ship one.
+- Explicitly NAMED checks (positional or `--check`) always run fresh, matching the existing "named ⇒ actually run"
+  escape hatch. Group/app selectors stay cache-aware.
+
+**Ordering (load-bearing):** planning happens BEFORE pnpm install and SMB/Docker bring-up, so a run whose node/SMB
+checks are all cache hits never installs deps or starts a container. A cached dependency is absent from the run set, so
+`canStart` treats it as satisfied (it passed on identical inputs). A corrupt or missing cache, or a non-git tree,
+degrades to "run everything" — never an error.
+
+**ci-coverage rule 4:** every static path prefix in a check's `Inputs` (and in `GlobalInputs`) must exist on disk, so a
+renamed dir can't silently leave a check fingerprinting nothing (and thus cache-skipping real changes). It does NOT try
+to reconcile `Inputs` against the ci.yml filter sets — that mapping isn't 1:1 and a strict reconciliation would be
+flaky; CI-runs-fresh is the real correctness backstop.
 
 ## Output format
 

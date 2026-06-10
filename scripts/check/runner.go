@@ -24,6 +24,7 @@ const (
 	StatusFailed
 	StatusSkipped
 	StatusBlocked // Blocked due to dependency failure
+	StatusCached  // Skipped: inputs unchanged since the last passing run
 )
 
 // CheckState holds the runtime state of a check.
@@ -40,6 +41,7 @@ type CheckState struct {
 type Runner struct {
 	ctx         *checks.CheckContext
 	checks      []*CheckState
+	cached      []*CheckState // cache hits: pre-resolved, never run, reported up front
 	checkMap    map[string]*CheckState
 	failFast    bool
 	noLog       bool
@@ -54,8 +56,10 @@ type Runner struct {
 	prefixWidth int  // max width of "App: Tech / Name" prefix for alignment
 }
 
-// NewRunner creates a new check runner.
-func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, failFast, noLog bool) *Runner {
+// NewRunner creates a new check runner. cached are checks resolved from the
+// input-fingerprint cache (inputs unchanged since their last pass); they're
+// reported up front and never run, but are logged and counted like real passes.
+func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, cached []cachedHit, failFast, noLog bool) *Runner {
 	r := &Runner{
 		ctx:         ctx,
 		checks:      make([]*CheckState, 0, len(defs)),
@@ -77,8 +81,17 @@ func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, failFast
 		r.checkMap[defs[i].ID] = state
 	}
 
-	// Calculate max prefix width for alignment
-	for _, state := range r.checks {
+	for i := range cached {
+		state := &CheckState{
+			Definition: &cached[i].def,
+			Status:     StatusCached,
+			Result:     checks.Success(cached[i].message),
+		}
+		r.cached = append(r.cached, state)
+	}
+
+	// Calculate max prefix width for alignment (across run + cached checks).
+	for _, state := range append(append([]*CheckState{}, r.checks...), r.cached...) {
 		def := state.Definition
 		prefix := fmt.Sprintf("%s: %s / %s", checks.AppDisplayName(def.App), def.Tech, def.CLIName())
 		width := utf8.RuneCountInString(prefix)
@@ -90,8 +103,12 @@ func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, failFast
 	return r
 }
 
-// Run executes all checks in parallel respecting dependencies.
+// Run executes all checks in parallel respecting dependencies. Cache hits are
+// reported and logged first (so their "(cached)" lines lead the output), then
+// the real checks run.
 func (r *Runner) Run() (failed bool, failedChecks []string) {
+	r.reportCached()
+
 	if len(r.checks) == 0 {
 		return false, nil
 	}
@@ -149,6 +166,32 @@ func (r *Runner) Run() (failed bool, failedChecks []string) {
 	}
 
 	return failed, failedChecks
+}
+
+// reportCached prints and logs the cache-hit checks before the real run starts.
+func (r *Runner) reportCached() {
+	for _, state := range r.cached {
+		r.printResult(state)
+		if !r.noLog {
+			logCheckStats(state)
+		}
+	}
+}
+
+// CachedCount returns how many checks were served from the cache this run.
+func (r *Runner) CachedCount() int {
+	return len(r.cached)
+}
+
+// RanCount returns how many checks actually executed this run (cache misses).
+func (r *Runner) RanCount() int {
+	return len(r.checks)
+}
+
+// RunStates returns the runtime state of every check that actually ran, for the
+// cache writer to record this run's passing fingerprints.
+func (r *Runner) RunStates() []*CheckState {
+	return r.checks
 }
 
 // tryStartPending evaluates one check and starts it if it's ready. The caller
@@ -290,6 +333,12 @@ func (r *Runner) printResult(state *CheckState) {
 		} else {
 			fmt.Printf("• %s... %s%s%s (%s) - %s%s%s\n", paddedPrefix, statusColor, statusText, colorReset, formatDuration(state.Duration), msgColor, msg, colorReset)
 		}
+
+	case StatusCached:
+		// Inputs unchanged since the last passing run: ~0s, replay the pass's
+		// own summary so the line keeps real context, with a clear (cached) tag.
+		fmt.Printf("• %s... %sOK%s %s(cached)%s - %s%s%s\n",
+			paddedPrefix, colorGreen, colorReset, colorDim, colorReset, colorDim, state.Result.Message, colorReset)
 
 	case StatusSkipped:
 		fmt.Printf("• %s... %sSKIPPED%s (%s) - %s\n", paddedPrefix, colorYellow, colorReset, formatDuration(state.Duration), state.Result.Message)

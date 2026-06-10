@@ -104,7 +104,9 @@ func preferFreestyleRun(rootDir string, args []string, flags *cliFlags) int {
 
 		if !localFailed {
 			startTime := time.Now()
-			runner := NewRunner(ctx, localChecks, flags.failFast, flags.noLog)
+			// Freestyle's parallel "run everything" mode is intentionally
+			// cache-unaware: no cached hits passed.
+			runner := NewRunner(ctx, localChecks, nil, flags.failFast, flags.noLog)
 			failed, failedChecks := runner.Run()
 
 			totalDuration := time.Since(startTime)

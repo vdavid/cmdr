@@ -62,6 +62,10 @@ func logCheckStats(state *CheckState) {
 	case StatusBlocked:
 		result = "blocked"
 		message = "dependency failed"
+	case StatusCached:
+		// Distinct from "pass" so --graph's median (which counts only "pass"
+		// rows) stays honest: a ~0s cache hit must not drag the median down.
+		result = "cached"
 	}
 
 	// First line only; error messages include verbose output after a newline

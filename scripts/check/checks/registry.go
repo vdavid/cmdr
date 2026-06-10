@@ -14,6 +14,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            wholeRepoInputs, // formats markdown, JSON, YAML, JS/TS across every app
 		Run:               RunOxfmt,
 	},
 
@@ -27,6 +28,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            rustInputs,
 		Run:               RunRustfmt,
 	},
 	{
@@ -38,6 +40,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         []string{"desktop-rust-rustfmt"},
+		Inputs:            rustInputs,
 		Run:               RunClippy,
 	},
 	{
@@ -49,6 +52,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
+		Inputs:            rustInputs,
 		Run:               RunCargoAudit,
 	},
 	{
@@ -60,6 +64,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
+		Inputs:            rustInputs,
 		Run:               RunCargoDeny,
 	},
 	{
@@ -71,6 +76,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            rustInputs,
 		Run:               RunCargoMachete,
 	},
 	{
@@ -83,6 +89,7 @@ var AllChecks = []CheckDefinition{
 		CIOnly:            true,
 		FreestyleIncompat: true,
 		DependsOn:         nil,
+		Inputs:            rustInputs,
 		Run:               RunCargoUdeps,
 	},
 	{
@@ -94,6 +101,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
+		Inputs:            rustInputs,
 		Run:               RunJscpdRust,
 	},
 	{
@@ -105,6 +113,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            rustInputs,
 		Run:               RunCfgGate,
 	},
 	{
@@ -116,6 +125,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            rustInputs,
 		Run:               RunLogErrorMacro,
 	},
 	{
@@ -127,6 +137,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            rustInputs,
 		Run:               RunErrorStringMatch,
 	},
 	{
@@ -138,6 +149,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            rustInputs,
 		Run:               RunLockPoison,
 	},
 	{
@@ -149,6 +161,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            inputs([]string{"apps/desktop/src/**", "apps/desktop/src-tauri/**", "tools/**"}),
 		Run:               RunPluralizeNoun,
 	},
 	{
@@ -168,6 +181,7 @@ var AllChecks = []CheckDefinition{
 		// fundamentally can't validate macOS bindings.
 		NotInCI:   "regen is platform-specific; the committed bindings.ts is the macOS surface, which a Linux CI runner can't reproduce",
 		DependsOn: nil,
+		Inputs:    rustInputs,
 		Run:       RunDesktopBindingsFresh,
 	},
 	{
@@ -179,6 +193,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            rustInputs,
 		Run:               RunIpcEnumCamelCase,
 	},
 	{
@@ -190,6 +205,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         []string{"desktop-rust-clippy"},
+		Inputs:            rustInputs,
 		Run:               RunRustTests,
 	},
 	{
@@ -202,6 +218,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true, // Needs Docker, which isn't available on freestyle.sh VMs
 		NeedsSmb:          SmbModeCore,
 		DependsOn:         []string{"desktop-rust-clippy"},
+		Inputs:            rustInputs,
 		Run:               RunRustIntegrationTests,
 	},
 	{
@@ -215,6 +232,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		NotInCI:           "CI's desktop-rust job already runs the same tests natively on a Linux runner; this check exists to run them from a Mac",
 		DependsOn:         []string{"desktop-rust-clippy"},
+		Inputs:            rustInputs,
 		Run:               RunRustTestsLinux,
 	},
 
@@ -226,6 +244,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"oxfmt"},
+		Inputs:      svelteInputs,
 		Run:         RunDesktopESLint,
 	},
 	// Generates `.svelte-kit/tsconfig.json` (which `tsconfig.json` extends).
@@ -240,6 +259,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		NotInCI:     "CI jobs run `pnpm exec svelte-kit sync` directly as a setup step",
 		DependsOn:   []string{"oxfmt"},
+		Inputs:      svelteInputs,
 		Run:         RunDesktopSvelteKitSync,
 	},
 	// Type-aware ESLint is split into a Svelte pass and a TypeScript (non-Svelte)
@@ -255,6 +275,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-kit-sync"},
+		Inputs:      svelteInputs,
 		Run:         RunDesktopESLintTypecheckSvelte,
 	},
 	{
@@ -265,6 +286,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-kit-sync"},
+		Inputs:      svelteInputs,
 		Run:         RunDesktopESLintTypecheckTypescript,
 	},
 	{
@@ -275,6 +297,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"oxfmt"},
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunStylelint,
 	},
 	{
@@ -285,6 +308,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-stylelint"},
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunCSSUnused,
 	},
 	{
@@ -295,6 +319,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-stylelint"},
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunA11yContrast,
 	},
 	{
@@ -305,6 +330,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-stylelint"},
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunBtnRestyle,
 	},
 	{
@@ -314,6 +340,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunA11yCoverage,
 	},
 	{
@@ -323,6 +350,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunBarePoll,
 	},
 	{
@@ -333,6 +361,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-kit-sync"},
+		Inputs:      svelteInputs,
 		Run:         RunSvelteCheck,
 	},
 	{
@@ -343,6 +372,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunImportCycles,
 	},
 	{
@@ -353,6 +383,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunKnip,
 	},
 	{
@@ -363,6 +394,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunTypeDrift,
 	},
 	{
@@ -373,6 +405,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-check"},
+		Inputs:      svelteInputs,
 		Run:         RunSvelteTests,
 	},
 	{
@@ -383,6 +416,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      svelteInputs,
 		Run:         RunDesktopE2ELinuxTypecheck,
 	},
 	{
@@ -397,6 +431,7 @@ var AllChecks = []CheckDefinition{
 		NeedsSmb:          SmbModeE2E,
 		NotInCI:           "the desktop-e2e-linux CI job runs this suite via apps/desktop/scripts/e2e-linux.sh, not through the check tool",
 		DependsOn:         []string{"desktop-svelte-e2e-linux-typecheck"},
+		Inputs:            desktopAppInputs(),
 		Run:               RunDesktopE2ELinux,
 	},
 	{
@@ -409,6 +444,7 @@ var AllChecks = []CheckDefinition{
 		IsSlow:            true,
 		FreestyleIncompat: true,
 		NotInCI:           "needs a macOS machine with a window server; run locally via --include-slow before milestones",
+		Inputs:            desktopAppInputs(),
 		Run:               RunDesktopE2EPlaywright,
 	},
 
@@ -420,6 +456,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
 		DependsOn:   []string{"oxfmt"},
+		Inputs:      websiteInputs,
 		Run:         RunWebsiteESLint,
 	},
 	{
@@ -429,6 +466,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
 		DependsOn:   []string{"website-eslint"},
+		Inputs:      websiteInputs,
 		Run:         RunWebsiteTypecheck,
 	},
 	{
@@ -440,6 +478,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🐳 Docker",
 		FreestyleIncompat: true, // Needs Docker, which isn't available on freestyle.sh VMs
 		DependsOn:         nil,
+		Inputs:            websiteInputs,
 		Run:               RunWebsiteDockerBuild,
 	},
 	{
@@ -449,6 +488,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
 		DependsOn:   []string{"website-typecheck"},
+		Inputs:      websiteInputs,
 		Run:         RunWebsiteBuild,
 	},
 	{
@@ -459,6 +499,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🚀 Astro",
 		DependsOn:   []string{"website-build"},
 		IsFast:      true,
+		Inputs:      websiteInputs,
 		Run:         RunWebsiteHTMLValidate,
 	},
 	{
@@ -470,6 +511,7 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   []string{"website-build"},
 		IsFast:      true, // cheap dist/ walk; self-skips when dist/ is absent (like html-validate)
 		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
+		Inputs:      websiteInputs,
 		Run:         RunWebsiteBundleSize,
 	},
 	{
@@ -479,6 +521,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
 		DependsOn:   []string{"website-build"},
+		Inputs:      websiteInputs,
 		Run:         RunWebsiteE2E,
 	},
 
@@ -490,6 +533,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppApiServer,
 		Tech:        "⸆⸉ TS",
 		DependsOn:   []string{"oxfmt"},
+		Inputs:      apiServerInputs,
 		Run:         RunApiServerESLint,
 	},
 	{
@@ -499,6 +543,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "⸆⸉ TS",
 		DependsOn:   []string{"api-server-eslint"},
 		IsFast:      true,
+		Inputs:      apiServerInputs,
 		Run:         RunApiServerTypecheck,
 	},
 	{
@@ -508,6 +553,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "⸆⸉ TS",
 		DependsOn:   []string{"api-server-typecheck"},
 		IsFast:      true,
+		Inputs:      apiServerInputs,
 		Run:         RunApiServerTests,
 	},
 
@@ -521,6 +567,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		IsFast:            true,
+		Inputs:            goScriptsInputs,
 		Run:               RunGoFmt,
 	},
 	{
@@ -531,6 +578,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
 		IsFast:      true,
+		Inputs:      goScriptsInputs,
 		Run:         RunGoVet,
 	},
 	{
@@ -541,6 +589,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
 		IsFast:      true,
+		Inputs:      goScriptsInputs,
 		Run:         RunStaticcheck,
 	},
 	{
@@ -551,6 +600,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
 		IsFast:      true,
+		Inputs:      goScriptsInputs,
 		Run:         RunIneffassign,
 	},
 	{
@@ -561,6 +611,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      goScriptsInputs,
 		Run:         RunMisspell,
 	},
 	{
@@ -571,6 +622,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
 		IsFast:      true,
+		Inputs:      goScriptsInputs,
 		Run:         RunGocyclo,
 	},
 	{
@@ -581,6 +633,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-vet"},
+		Inputs:      goScriptsInputs,
 		Run:         RunNilaway,
 	},
 	{
@@ -591,6 +644,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-vet"},
+		Inputs:      goScriptsInputs,
 		Run:         RunDeadcode,
 	},
 	{
@@ -601,6 +655,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-vet"},
 		IsFast:      true,
+		Inputs:      goScriptsInputs,
 		Run:         RunGoTests,
 	},
 	{
@@ -611,6 +666,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   nil,
+		Inputs:      goScriptsInputs,
 		Run:         RunGovulncheck,
 	},
 
@@ -623,6 +679,7 @@ var AllChecks = []CheckDefinition{
 		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      wholeRepoInputs,
 		Run:         RunFileLength,
 	},
 	{
@@ -633,6 +690,7 @@ var AllChecks = []CheckDefinition{
 		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      wholeRepoInputs,
 		Run:         RunClaudeMdReminder,
 	},
 	{
@@ -643,6 +701,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🔗 Links",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      inputs([]string{"CHANGELOG.md"}),
 		Run:         RunChangelogCommitLinks,
 	},
 	{
@@ -653,6 +712,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🔒 Security",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      workflowsInputs,
 		Run:         RunWorkflowsHardening,
 	},
 	{
@@ -663,6 +723,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "📏 Metrics",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      workflowsInputs,
 		Run:         RunWorkflowsRustup,
 	},
 	// Two-way contract between this registry and .github/workflows/: every
@@ -676,6 +737,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "📏 Metrics",
 		DependsOn:   nil,
 		IsFast:      true,
+		Inputs:      workflowsInputs,
 		Run:         RunCICoverage,
 	},
 }
