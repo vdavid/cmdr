@@ -39,11 +39,12 @@ type reminderMiss struct {
 
 // RunClaudeMdReminder warns when source files were changed (in the working tree
 // or on the current branch vs the base branch) under a directory that has a
-// colocated CLAUDE.md, but the CLAUDE.md itself was not also touched. Always
-// succeeds (emits warnings, never fails).
+// colocated CLAUDE.md, but neither that CLAUDE.md nor its sibling DETAILS.md
+// (the pull-tier doc) was also touched. Always succeeds (emits warnings, never
+// fails).
 //
 // The intent is a low-friction nudge to the agent that just made the change:
-// "you touched code under X/, did you mean to update X/CLAUDE.md too?"
+// "you touched code under X/, did you mean to update its colocated docs too?"
 func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 	claudeFiles, err := findClaudeMdFiles(ctx.RootDir)
 	if err != nil {
@@ -69,11 +70,11 @@ func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 			len(claudeFiles), Pluralize(len(claudeFiles), "file", "files"))), nil
 	}
 
-	changedClaude := make(map[string]bool)
-	bucket := make(map[string]int) // CLAUDE.md dir → count of changed source files under it
+	changedDocDirs := make(map[string]bool) // dirs whose CLAUDE.md or DETAILS.md was touched
+	bucket := make(map[string]int)          // CLAUDE.md dir → count of changed source files under it
 	for _, f := range changed {
-		if filepath.Base(f) == "CLAUDE.md" {
-			changedClaude[f] = true
+		if base := filepath.Base(f); base == "CLAUDE.md" || base == "DETAILS.md" {
+			changedDocDirs[filepath.Dir(f)] = true
 			continue
 		}
 		if !reminderSourceExts[filepath.Ext(f)] {
@@ -86,14 +87,14 @@ func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 
 	var misses []reminderMiss
 	for dir, count := range bucket {
-		if changedClaude[claudeDirs[dir]] {
+		if changedDocDirs[dir] {
 			continue
 		}
 		misses = append(misses, reminderMiss{dir, count})
 	}
 
 	if len(misses) == 0 {
-		return Success(fmt.Sprintf("All touched directories had matching CLAUDE.md updates (%d %s checked)",
+		return Success(fmt.Sprintf("All touched directories had matching CLAUDE.md or DETAILS.md updates (%d %s checked)",
 			len(claudeFiles), Pluralize(len(claudeFiles), "doc", "docs"))), nil
 	}
 
@@ -104,8 +105,8 @@ func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 		sb.WriteString(fmt.Sprintf("  - %s/ (%d %s)\n", m.dir, m.count, Pluralize(m.count, "file", "files")))
 	}
 
-	msg := fmt.Sprintf("%d %s with source changes but no CLAUDE.md update:\n%s"+
-		"Just a friendly reminder: if your changes affect the documented architecture, decisions, or gotchas, consider updating these.",
+	msg := fmt.Sprintf("%d %s with source changes but no CLAUDE.md or DETAILS.md update:\n%s"+
+		"Just a friendly reminder: if your changes affect the documented architecture, decisions, or gotchas, consider updating these (must-knows → CLAUDE.md, depth → DETAILS.md).",
 		len(misses),
 		Pluralize(len(misses), "directory", "directories"),
 		sb.String(),

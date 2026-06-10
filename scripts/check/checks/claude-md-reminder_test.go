@@ -92,6 +92,22 @@ func TestReminder_SourceChangeWithDocUpdate_Passes(t *testing.T) {
 	}
 }
 
+func TestReminder_SourceChangeWithDetailsUpdate_Passes(t *testing.T) {
+	// Pre-fix this warned: only a CLAUDE.md touch counted as a doc update, so
+	// documenting a change in the pull-tier DETAILS.md still triggered the nag.
+	dir := initReminderRepo(t)
+	if err := os.WriteFile(filepath.Join(dir, "apps/desktop/src/lib.rs"), []byte("fn changed() {}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "apps/desktop/DETAILS.md"), []byte("# Desktop details\n\nUpdated.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	res := runReminder(t, dir)
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected success when DETAILS.md was updated alongside source, got %v: %s", res.Code, res.Message)
+	}
+}
+
 func TestReminder_NonSourceFileChange_Ignored(t *testing.T) {
 	dir := initReminderRepo(t)
 	// Markdown / json changes shouldn't trigger the reminder.
