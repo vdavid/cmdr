@@ -26,9 +26,10 @@ pub fn classify_error(err: &smb2::Error) -> ShareListError {
             std::io::ErrorKind::ConnectionRefused
                 | std::io::ErrorKind::HostUnreachable
                 | std::io::ErrorKind::NetworkUnreachable
-        ) {
-            return ShareListError::HostUnreachable { message };
-        }
+        )
+    {
+        return ShareListError::HostUnreachable { message };
+    }
     match err.kind() {
         ErrorKind::AuthRequired => ShareListError::AuthRequired { message },
         ErrorKind::AccessDenied => ShareListError::AuthFailed { message },

@@ -16,13 +16,13 @@ const label = statusToBadgeLabelMap[status]
 const tooltip = getStatusTooltip(status)
 const classes = [
     'rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap',
-    // Light-mode contrast: accent text passes 4.5:1 on accent/10 but not /20, and tertiary
-    // text fails on the elevated surface, so alpha gets a border (not a darker bg) for
-    // emphasis and stable/planned both use secondary text.
-    status === 'alpha' && 'border border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10 text-[var(--color-accent-text)]',
-    status === 'beta' && 'bg-[var(--color-accent)]/10 text-[var(--color-accent-text)]',
+    // Cyan = stability signal (the yellow accent stays for brand/category). Alpha is the
+    // solid, loudest pill; beta is the tinted sibling; stable is quiet; planned is an
+    // outline (not filled yet). Light-mode token values keep all four at >= 4.5:1.
+    status === 'alpha' && 'bg-[var(--color-accent2)] text-[var(--color-accent2-contrast)]',
+    status === 'beta' && 'bg-[var(--color-accent2)]/15 text-[var(--color-accent2-text)]',
     status === 'stable' && 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)]',
-    status === 'planned' && 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)]',
+    status === 'planned' && 'border border-[var(--color-border)] text-[var(--color-text-secondary)]',
 ]
 ---
 

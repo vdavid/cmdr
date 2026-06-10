@@ -8,116 +8,79 @@ import StatusPill from '../components/StatusPill.astro'
 import { features, type Feature } from '../lib/feature-status'
 
 /**
- * Presentation map over the repo-root `feature-status.json`: one continuous list,
- * grouped by capability theme (never by status; the pills carry the state). Flagship
- * cards span the full row and carry a trimmed blurb; the rest render the JSON's honest
+ * Presentation map over the repo-root `feature-status.json`: one flat bento grid, no
+ * sections. Each card carries a yellow category chip and a cyan status pill; flagship
+ * cards span two columns with a trimmed blurb, the rest render the JSON's honest
  * one-line note. The completeness check below fails the build when the JSON and this
  * map drift, so a new feature can't silently miss the page.
  */
 interface CardSpec {
     id: string
+    category: 'Find stuff' | 'AI' | 'Core' | 'Keyboard' | 'Connect' | 'Extras'
+    icon: string
     flagship?: boolean
-    icon?: string
     /** Marketing title override; defaults to the JSON name. */
     title?: string
     /** Flagship-only: 2-3 sentence blurb. Non-flagship cards render the JSON note. */
     blurb?: string
 }
 
-const themes: { name: string; cards: CardSpec[] }[] = [
+const cards: CardSpec[] = [
+    // Three highlights up top (the only flagship-width cards), each paired with a related
+    // small card that fills the third column.
     {
-        name: 'Find anything',
-        cards: [
-            {
-                id: 'full-disk-index',
-                flagship: true,
-                icon: '/icons/database.svg',
-                title: 'Live full-disk index',
-                blurb: 'Indexes your whole drive in about 4 minutes, then stays current through real-time file system events. Folder sizes show right in the listing, and a background verifier quietly fixes any drift.',
-            },
-            {
-                id: 'search',
-                flagship: true,
-                icon: '/icons/search.svg',
-                title: 'Smart search',
-                blurb: 'Find files by describing them: "that PDF contract from last month." AI turns your words into structured filters, and Rust runs the actual search across millions of indexed entries in well under a second.',
-            },
-            { id: 'go-to-path' },
-        ],
+        id: 'full-disk-index',
+        category: 'Find stuff',
+        icon: '/icons/database.svg',
+        flagship: true,
+        title: 'Live full-disk index',
+        blurb: 'Indexes your whole drive in about 4 minutes, then stays current through real-time file system events. Folder sizes show right in the listing, and a background verifier quietly fixes any drift.',
     },
+    { id: 'go-to-path', category: 'Find stuff', icon: '/icons/navigation.svg' },
     {
-        name: 'AI that stays yours',
-        cards: [
-            {
-                id: 'local-ai',
-                flagship: true,
-                icon: '/icons/sparkles.svg',
-                title: 'Private LLM included',
-                blurb: 'Cmdr ships with a 3B language model that runs entirely on your Mac (Apple Silicon), so nothing leaves your machine. Want more power? Connect OpenAI, Anthropic, Google, Groq, or any OpenAI-compatible endpoint.',
-            },
-            { id: 'ai-rename', icon: '/icons/brain.svg' },
-            { id: 'ai-batch', icon: '/icons/zap.svg' },
-            { id: 'ai-tell-me' },
-        ],
+        id: 'search',
+        category: 'Find stuff',
+        icon: '/icons/search.svg',
+        flagship: true,
+        title: 'Smart search',
+        blurb: 'Find files by describing them: "that PDF contract from last month." AI turns your words into structured filters, and Rust runs the actual search across millions of indexed entries in well under a second.',
     },
+    { id: 'select-files', category: 'Core', icon: '/icons/list-checks.svg' },
     {
-        name: 'Core file management',
-        cards: [
-            {
-                id: 'file-explorer',
-                flagship: true,
-                icon: '/icons/folder.svg',
-                title: 'Dual-pane explorer',
-                blurb: 'Two panes, tabs, and virtual scrolling that opens a 100,000-file folder in about 4 seconds with icons, sizes, and dates. Big folders stream in progressively while the UI stays responsive throughout.',
-            },
-            { id: 'file-operations' },
-            { id: 'file-viewer' },
-            { id: 'tabs' },
-            { id: 'drag-and-drop' },
-            { id: 'select-files' },
-            { id: 'archives' },
-        ],
+        id: 'local-ai',
+        category: 'AI',
+        icon: '/icons/sparkles.svg',
+        flagship: true,
+        title: 'Private LLM included',
+        blurb: 'Cmdr ships with a 3B language model that runs entirely on your Mac (Apple Silicon), so nothing leaves your machine. Want more power? Connect OpenAI, Anthropic, Google, Groq, or any OpenAI-compatible endpoint.',
     },
-    {
-        name: 'Keyboard-first',
-        cards: [
-            {
-                id: 'keyboard-shortcuts',
-                flagship: true,
-                icon: '/icons/keyboard.svg',
-                title: 'Keyboard-first everything',
-                blurb: 'Navigate, select, copy, move, and rename without touching the mouse. Every shortcut is customizable, scope-aware, and conflict-checked, and menu accelerators follow your changes.',
-            },
-            { id: 'command-palette' },
-        ],
-    },
-    {
-        name: 'Beyond your Mac',
-        cards: [
-            {
-                id: 'network-drives',
-                flagship: true,
-                icon: '/icons/server.svg',
-                blurb: 'Browse NAS shares and connect with fast direct SMB transfers. Passwords go in the macOS Keychain, not in config files.',
-            },
-            { id: 'android-devices' },
-            { id: 'more-file-systems' },
-            { id: 'windows-linux' },
-        ],
-    },
-    {
-        name: 'Power tools',
-        cards: [
-            { id: 'git-browser' },
-            { id: 'download-notifications' },
-            { id: 'plugins' },
-            { id: 'disk-space-visualizer' },
-        ],
-    },
+    { id: 'ai-rename', category: 'AI', icon: '/icons/brain.svg' },
+    // Core
+    { id: 'file-explorer', category: 'Core', icon: '/icons/folder.svg' },
+    { id: 'file-operations', category: 'Core', icon: '/icons/copy.svg' },
+    { id: 'file-viewer', category: 'Core', icon: '/icons/eye.svg' },
+    { id: 'tabs', category: 'Core', icon: '/icons/app-window.svg' },
+    { id: 'drag-and-drop', category: 'Core', icon: '/icons/pointer.svg' },
+    { id: 'archives', category: 'Core', icon: '/icons/file-archive.svg' },
+    // Details: keyboard + connectivity
+    { id: 'keyboard-shortcuts', category: 'Keyboard', icon: '/icons/keyboard.svg' },
+    { id: 'command-palette', category: 'Keyboard', icon: '/icons/square-chevron-right.svg' },
+    { id: 'network-drives', category: 'Connect', icon: '/icons/server.svg' },
+    { id: 'android-devices', category: 'Connect', icon: '/icons/smartphone.svg' },
+    { id: 'more-file-systems', category: 'Connect', icon: '/icons/cloud.svg' },
+    { id: 'windows-linux', category: 'Connect', icon: '/icons/monitor.svg' },
+    // AI, the rest
+    { id: 'ai-batch', category: 'AI', icon: '/icons/zap.svg' },
+    { id: 'ai-tell-me', category: 'AI', icon: '/icons/message-circle-question-mark.svg' },
+    // Extras
+    { id: 'git-browser', category: 'Extras', icon: '/icons/git-branch.svg' },
+    { id: 'download-notifications', category: 'Extras', icon: '/icons/bell.svg' },
+    { id: 'disk-space-visualizer', category: 'Extras', icon: '/icons/chart-pie.svg' },
+    { id: 'plugins', category: 'Extras', icon: '/icons/puzzle.svg' },
 ]
 
 // Completeness check: the page must place every JSON feature exactly once.
-const placedIds = themes.flatMap((theme) => theme.cards.map((card) => card.id))
+const placedIds = cards.map((card) => card.id)
 const jsonIds = features.map((feature) => feature.id)
 const missing = jsonIds.filter((id) => !placedIds.includes(id))
 const unknown = placedIds.filter((id) => !jsonIds.includes(id))
@@ -129,10 +92,10 @@ if (missing.length || unknown.length || dupes.length) {
 }
 
 const idToFeatureMap = new Map<string, Feature>(features.map((feature) => [feature.id, feature]))
-const resolve = (card: CardSpec) => {
+const resolved = cards.map((card) => {
     const feature = idToFeatureMap.get(card.id)!
     return { ...card, feature, title: card.title ?? feature.name }
-}
+})
 ---
 
 <Layout
@@ -140,68 +103,56 @@ const resolve = (card: CardSpec) => {
     description="Everything Cmdr does and how solid each feature is, in one honest list. Full-disk indexing, on-device AI, keyboard-first navigation, and more."
 >
     <Header />
-    <main class="mx-auto max-w-5xl px-6 pt-32 pb-24">
+    <main class="mx-auto max-w-6xl px-6 pt-32 pb-24">
         <!-- Hero -->
-        <header class="mb-16 text-center">
+        <header class="mb-14 text-center">
             <h1 class="mb-4 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl lg:text-5xl">
                 What Cmdr can do
             </h1>
             <p class="mx-auto max-w-2xl text-lg text-[var(--color-text-secondary)]">
-                Built in Rust, designed around your keyboard. Cmdr is in open beta: every feature below carries an
-                honest status pill, and hovering a pill explains what the status means.
+                Built in Rust, designed around your keyboard. Cmdr is in open beta: every feature carries an honest
+                status pill, and hovering a pill explains what the status means.
             </p>
         </header>
 
-        <!-- Feature list, grouped by capability -->
-        <div class="space-y-16">
+        <!-- One bento: every feature, one card each -->
+        <div class="grid grid-cols-1 gap-4 [grid-auto-flow:dense] md:grid-cols-2 lg:grid-cols-3">
             {
-                themes.map((theme) => (
-                    <section>
-                        <h2 class="mb-5 text-2xl font-semibold text-[var(--color-text-primary)]">{theme.name}</h2>
-                        <div class="grid gap-4 md:grid-cols-2">
-                            {theme.cards.map(resolve).map((card) => (
-                                <section
-                                    id={card.id}
-                                    class:list={[
-                                        'scroll-mt-24 rounded-2xl border bg-[var(--color-surface)]',
-                                        card.flagship ? 'p-8 md:col-span-2' : 'p-5',
-                                        card.feature.status === 'planned'
-                                            ? 'border-dashed border-[var(--color-border)]'
-                                            : 'border-[var(--color-border)]',
-                                    ]}
+                resolved.map((card) => (
+                    <section
+                        id={card.id}
+                        class:list={[
+                            'flex scroll-mt-24 flex-col gap-2 rounded-2xl border bg-[var(--color-surface)] p-5',
+                            card.flagship && 'md:col-span-2',
+                            card.feature.status === 'planned'
+                                ? 'border-dashed border-[var(--color-border)]'
+                                : 'border-[var(--color-border)]',
+                        ]}
+                    >
+                        <div class="flex items-center gap-2.5">
+                            <img src={card.icon} alt="" class="size-6" />
+                            <h2 class="text-base font-semibold text-[var(--color-text-primary)]">{card.title}</h2>
+                        </div>
+                        <p class="flex-1 text-sm text-[var(--color-text-secondary)]">
+                            {card.flagship ? card.blurb : card.feature.note}
+                        </p>
+                        <div class="mt-1 flex flex-wrap items-center gap-2">
+                            <span
+                                class="rounded-full bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-[var(--color-accent-text)]"
+                            >
+                                {card.category}
+                            </span>
+                            <StatusPill status={card.feature.status} link={false} />
+                            {card.feature.issueUrl && (
+                                <a
+                                    href={card.feature.issueUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="text-xs text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
                                 >
-                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                        {card.icon && <img src={card.icon} alt="" class="size-7" />}
-                                        <h3
-                                            class:list={[
-                                                'font-semibold text-[var(--color-text-primary)]',
-                                                card.flagship ? 'text-xl' : 'text-base',
-                                            ]}
-                                        >
-                                            {card.title}
-                                        </h3>
-                                        <StatusPill status={card.feature.status} link={false} />
-                                        {card.feature.issueUrl && (
-                                            <a
-                                                href={card.feature.issueUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                class="text-xs text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                                            >
-                                                Track on GitHub
-                                            </a>
-                                        )}
-                                    </div>
-                                    <p
-                                        class:list={[
-                                            'text-[var(--color-text-secondary)]',
-                                            card.flagship ? 'mt-3' : 'mt-2 text-sm',
-                                        ]}
-                                    >
-                                        {card.flagship ? card.blurb : card.feature.note}
-                                    </p>
-                                </section>
-                            ))}
+                                    Track on GitHub
+                                </a>
+                            )}
                         </div>
                     </section>
                 ))
