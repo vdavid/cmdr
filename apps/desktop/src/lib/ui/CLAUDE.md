@@ -286,9 +286,20 @@ don't pick `warn` when an op actually failed (that's `error`); don't pick `error
 reached" (that's `warn`).
 
 Toast action buttons use `Button` mini primitives in a right-aligned `.actions` row (`justify-content: flex-end`,
-`gap: var(--spacing-sm)`, `margin-top: var(--spacing-md)`), with the primary/default action at the far right (macOS
-default-button-bottom-right convention) and secondary/dismiss actions to its left. Don't hand-roll bespoke `<button>`s
-in toast content components. `DownloadToastContent` is the reference.
+`gap: var(--spacing-sm)`, `margin-top: var(--spacing-md)`), with the default action at the far right (macOS
+default-button-bottom-right convention) and the alternative to its left. Don't hand-roll bespoke `<button>`s in toast
+content components. `DownloadToastContent` is the reference.
+
+Pick the variant by what you want the user to do, not by button position:
+
+- **`variant="primary"`** (filled accent) is reserved for a genuinely affirmative action the user likely wants and that
+  moves them forward: "Jump to file", "Keep it on", "Open System Settings", "Restart". At most one per toast, at the far
+  right.
+- **`variant="secondary"`** (bordered) for everything else: the dismiss/cancel alternative ("Turn it off", "Later",
+  "Stop showing these"), AND a lone soft opt-out even when it's the only button ("Disable these notifications", "Don't
+  show again"). A muted opt-out rendered as a filled accent button reads as a loud "do this!" on a warn or educational
+  toast, which is the opposite of the intent, so keep those secondary. Reserve the filled accent for actions worth
+  nudging toward.
 
 Dismissal: `transient` (4s timeout + nav-dismiss, default) or `persistent`.
 
