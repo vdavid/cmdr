@@ -69,6 +69,14 @@ export interface ToastOptions {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Svelte component prop maps are heterogenous
   props?: Record<string, any>
+  /**
+   * Optional per-toast max width in px, overriding the default 360. Use for a
+   * toast whose content needs more room (for example one carrying a wide
+   * illustration). Other toasts keep the 360 default; the container hugs the
+   * right edge, so a wider toast just extends leftward. Capped by the
+   * container's own max-width.
+   */
+  widthPx?: number
 }
 
 export interface Toast {
@@ -84,6 +92,7 @@ export interface Toast {
   maxInGroup?: number
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see ToastOptions.props
   props?: Record<string, any>
+  widthPx?: number
 }
 
 const maxVisibleToasts = 5
@@ -201,6 +210,7 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
     toastGroup,
     maxInGroup,
     props: options?.props,
+    widthPx: options?.widthPx,
   })
   return id
 }

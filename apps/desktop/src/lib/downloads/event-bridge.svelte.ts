@@ -42,8 +42,12 @@ import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 const log = getAppLogger('downloads')
 
 const GO_TO_LATEST_COMMAND_ID = 'downloads.goToLatest'
-const TOAST_TIMEOUT_MS = 10_000
 const TOAST_GROUP = 'downloads'
+/**
+ * The downloads toast is wider than the default (360) to give the keyboard
+ * animation room to read. Capped by the toast container's own max-width.
+ */
+const TOAST_WIDTH_PX = 432
 
 /**
  * Mount the listener. Returns an unsubscribe function — call it from the
@@ -115,8 +119,12 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
 
   addToast(DownloadToastContent, {
     level: 'info',
-    timeoutMs: TOAST_TIMEOUT_MS,
+    // Sticky: the toast teaches a shortcut, so it waits for the user instead of
+    // vanishing on a timer. The user dismisses it via the X, Jump, or Stop.
+    dismissal: 'persistent',
+    closeTooltip: 'Dismiss',
     toastGroup: TOAST_GROUP,
+    widthPx: TOAST_WIDTH_PX,
     props: {
       explorer,
       event: payload,

@@ -19,6 +19,8 @@
          */
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mirrors ToastOptions.props
         contentProps?: Record<string, any>
+        /** Optional per-toast max-width override in px (default 360). */
+        widthPx?: number
         /** Called when the auto-dismiss timer fires for transient toasts. */
         onTimeout: (id: string) => void
         /** Called when the user clicks the X button or the inline action. */
@@ -33,6 +35,7 @@
         timeoutMs,
         closeTooltip,
         contentProps,
+        widthPx,
         onTimeout,
         onUserDismiss,
     }: Props = $props()
@@ -147,6 +150,7 @@
     class:success={level === 'success'}
     class:warn={level === 'warn'}
     class:error={level === 'error'}
+    style={widthPx ? `max-width: ${String(widthPx)}px` : undefined}
     role={level === 'default' || level === 'info' || level === 'success' ? 'status' : 'alert'}
     onpointerenter={handlePointerEnter}
     onpointerleave={handlePointerLeave}

@@ -77,10 +77,11 @@ describe('DownloadToastContent', () => {
     mount(DownloadToastContent, { target, props: makeProps() })
     await tick()
 
-    // In-app chip and the global from-any-app chip both render.
+    // The intro lead-in plus both chips render.
+    expect(target.textContent.toLowerCase()).toContain('something cool to learn')
     expect(target.textContent).toContain('⌘J')
     expect(target.textContent).toContain('⌃⌥⌘J')
-    expect(target.textContent.toLowerCase()).toContain('from any app')
+    expect(target.textContent.toLowerCase()).toContain('in any app (global shortcut)')
     // The default global binding gets the keyboard animation.
     expect(target.querySelector('.shortcut-animation svg')).not.toBeNull()
   })
@@ -93,7 +94,7 @@ describe('DownloadToastContent', () => {
 
     // In-app chip still shows; nothing about "any app" and no animation.
     expect(target.textContent).toContain('⌘J')
-    expect(target.textContent.toLowerCase()).not.toContain('from any app')
+    expect(target.textContent.toLowerCase()).not.toContain('any app')
     expect(target.querySelector('.shortcut-animation')).toBeNull()
   })
 

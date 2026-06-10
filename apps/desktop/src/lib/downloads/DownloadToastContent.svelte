@@ -14,6 +14,7 @@
      */
     import Size from '$lib/ui/Size.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { dismissToast } from '$lib/ui/toast'
     import { goToDownload } from './go-to-latest'
     import {
@@ -136,24 +137,25 @@
     {#if subdirLabel}
         <span class="subdir">in {subdirLabel}</span>
     {/if}
-    {#if shortcutHint}
-        <span class="hint">Press <ShortcutChip key={shortcutHint} /> to jump here</span>
-    {/if}
-    {#if globalBinding}
-        <span class="hint">From any app, press <ShortcutChip key={globalBinding} /></span>
-        {#if showShortcutAnimation}
-            <div class="shortcut-animation">
-                <GlobalShortcutAnimation />
-            </div>
-        {/if}
+    {#if shortcutHint || globalBinding}
+        <div class="learn">
+            <strong class="learn-intro">Something cool to learn about jumping to downloads:</strong>
+            {#if shortcutHint}
+                <span class="hint">In-app: Press <ShortcutChip key={shortcutHint} /> to jump here</span>
+            {/if}
+            {#if globalBinding}
+                <span class="hint">In <em>any</em> app (global shortcut), press <ShortcutChip key={globalBinding} /></span>
+                {#if showShortcutAnimation}
+                    <div class="shortcut-animation">
+                        <GlobalShortcutAnimation />
+                    </div>
+                {/if}
+            {/if}
+        </div>
     {/if}
     <div class="actions">
-        <button type="button" class="jump-button" onclick={handleJumpButton}>
-            Jump to file
-        </button>
-        <button type="button" class="link-button" onclick={handleStopShowing}>
-            Stop showing these
-        </button>
+        <Button size="mini" variant="secondary" onclick={handleStopShowing}>Stop showing these</Button>
+        <Button size="mini" variant="primary" onclick={handleJumpButton}>Jump to file</Button>
     </div>
 </div>
 
@@ -188,6 +190,22 @@
         font-size: var(--font-size-xs);
     }
 
+    /* The teaching block: a relaxed vertical rhythm between the intro line, the
+       two shortcut hints, and the animation so it reads as a calm little lesson
+       rather than cramped microcopy. */
+    .learn {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-xs);
+    }
+
+    .learn-intro {
+        color: var(--color-text-primary);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+    }
+
     .hint {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
@@ -196,47 +214,23 @@
         gap: var(--spacing-xxs);
     }
 
-    /* The keyboard SVG is wide (≈3:1); cap it well under the toast width so it
-       reads as a compact hint, not a banner, and nudge it in from the hint
-       text above it. */
-    .shortcut-animation {
-        max-width: 200px;
-        margin-top: var(--spacing-xxs);
+    .hint em {
+        font-style: italic;
+        color: var(--color-text-secondary);
     }
 
+    /* The wider toast (set via `widthPx` at dispatch) gives the keyboard SVG
+       room to read clearly. It's still capped so it doesn't span edge-to-edge. */
+    .shortcut-animation {
+        max-width: 320px;
+    }
+
+    /* Right-aligned button row, primary at the far right per the macOS
+       default-button-bottom-right convention. */
     .actions {
         display: flex;
-        gap: var(--spacing-md);
-        margin-top: var(--spacing-xs);
-    }
-
-    /* Primary action uses `--color-text-primary` for the contrast win on
-       both light and dark toast backgrounds; the visual emphasis comes from
-       `font-weight: 500` vs the tertiary "Stop showing these" sibling. The
-       Button-primary accent-fg token doesn't meet 4.5:1 contrast here
-       because the toast bg is already a near-black panel. */
-    .jump-button {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-primary);
-        font-weight: 500;
-    }
-
-    .jump-button:hover {
-        color: var(--color-text-secondary);
-    }
-
-    .link-button {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-    }
-
-    .link-button:hover {
-        color: var(--color-text-secondary);
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

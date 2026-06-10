@@ -302,6 +302,11 @@ Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
   hit. Persistent toasts in the group block group-level eviction the same way they block global eviction.
 - `maxInGroup?: number`: per-group cap. Defaults to 5 when `toastGroup` is set, ignored otherwise. A higher value than
   the global cap (5) is silently clamped by the global cap kicking in second.
+- `widthPx?: number`: per-toast max-width override (default 360). For a toast whose content needs more room (the
+  downloads toast carries a keyboard illustration, so it opts into 432). The container is right-aligned
+  (`align-items: flex-end`) and its own `max-width` (440) caps the widest opt-in, so a wider toast just extends leftward
+  while default-width toasts keep hugging the screen edge. Plumbed `ToastOptions` → `Toast` → `ToastContainer` →
+  `ToastItem` (inline `max-width`).
 
 ### Hover behavior
 

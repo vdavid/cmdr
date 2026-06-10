@@ -155,7 +155,10 @@ describe('startDownloadsEventBridge', () => {
     expect(options).toMatchObject({
       toastGroup: 'downloads',
       level: 'info',
-      timeoutMs: 10_000,
+      // Sticky: persistent (no auto-dismiss timer), and wider than the default
+      // to fit the keyboard animation.
+      dismissal: 'persistent',
+      widthPx: 432,
     })
     expect(sendNotificationMock).not.toHaveBeenCalled()
   })
