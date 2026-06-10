@@ -9,8 +9,10 @@
 //! ## Signals
 //!
 //! - `GenerationAdvanced`: the `PaneStateStore` generation counter strictly advanced past a
-//!   captured value. Use this for actions that mutate pane state (navigation, refresh, selection,
-//!   view mode, sort, tabs, cursor moves, auto-confirmed copy/move/delete).
+//!   captured value. Use this for actions that mutate pane state (parent/back/forward
+//!   navigation, view mode, sort, tabs, auto-confirmed copy/move/delete). Tools that need a
+//!   per-request answer (`refresh`, `select`, `move_cursor`, `nav_to_path`) use
+//!   `mcp_round_trip` instead — see the caveat below.
 //! - `SoftDialogAppeared`: a soft (overlay) dialog with the given ID appeared in the
 //!   `SoftDialogTracker`. Use this for confirmation dialogs (transfer, delete, mkdir, mkfile) when
 //!   `autoConfirm: false`.
@@ -36,9 +38,10 @@
 //! and the dispatch can satisfy the signal without the FE having processed our event.
 //! In practice this is a much weaker false-positive class than the original "always OK"
 //! bug (the FE was almost certainly running, since something pushed state), so the
-//! contract is acceptable. Stronger guarantees would require either a request-id-based
-//! `mcp-response` round-trip (see `mcp_round_trip`) or per-tool FE acks. TODO(mcp-ack):
-//! revisit if real-world false positives surface.
+//! contract is acceptable. The stronger guarantee is the request-id-based `mcp-response`
+//! round-trip (see `mcp_round_trip` and its pure core `parse_mcp_response`) — `refresh`,
+//! `select`, `move_cursor`, and `nav_to_path` already use it. If a real-world false
+//! positive surfaces for a `GenerationAdvanced` tool, switch that tool to the round-trip.
 //!
 //! ## Timeout
 //!

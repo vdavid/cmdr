@@ -136,6 +136,32 @@ async fn mcp_round_trip<R: Runtime>(
     mcp_round_trip_with_timeout(app, event, payload, success_msg, 5).await
 }
 
+/// Parse an `mcp-response` event payload against the request ID we're waiting for.
+///
+/// This correlation is what makes a round-trip ack **per-request**: it's independent of
+/// pane-state pushes (and their byte-identical dedupe), and a reply belonging to some
+/// other in-flight request can never satisfy ours.
+///
+/// Returns `None` when the payload is malformed or carries a different `requestId`,
+/// `Some(Ok(()))` on `ok: true`, and `Some(Err(message))` otherwise. A missing `ok`
+/// field counts as failure — a malformed reply must never become a false-positive OK.
+fn parse_mcp_response(payload: &str, expected_id: &str) -> Option<Result<(), String>> {
+    let resp = serde_json::from_str::<Value>(payload).ok()?;
+    if resp.get("requestId").and_then(|v| v.as_str()) != Some(expected_id) {
+        return None;
+    }
+    Some(if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+        Ok(())
+    } else {
+        let err = resp
+            .get("error")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Unknown error")
+            .to_string();
+        Err(err)
+    })
+}
+
 /// Like `mcp_round_trip` but with a configurable timeout.
 async fn mcp_round_trip_with_timeout<R: Runtime>(
     app: &AppHandle<R>,
@@ -153,20 +179,9 @@ async fn mcp_round_trip_with_timeout<R: Runtime>(
     // Use a Mutex to allow the closure to consume tx exactly once
     let tx = Mutex::new(Some(tx));
     let listener_id = app.listen("mcp-response", move |event| {
-        if let Ok(resp) = serde_json::from_str::<Value>(event.payload())
-            && resp.get("requestId").and_then(|v| v.as_str()) == Some(&expected_id)
+        if let Some(result) = parse_mcp_response(event.payload(), &expected_id)
             && let Some(tx) = tx.lock_ignore_poison().take()
         {
-            let result = if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
-                Ok(())
-            } else {
-                let err = resp
-                    .get("error")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("Unknown error")
-                    .to_string();
-                Err(err)
-            };
             let _ = tx.send(result);
         }
     });

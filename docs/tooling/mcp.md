@@ -86,9 +86,11 @@ after the action resolves, 5 s timeout) because Enter on a non-directory file de
 produces neither a state push nor a viewer window — the FE is the only source of truth for "this finished." If the FE is
 stalled, the tool returns a typed error naming the missing signal — no more false-positive `OK`s.
 
-`refresh` is the one tool that stays fire-and-forget for now: the FE skips state pushes when the re-listing is
-byte-identical to the cached state, so there's no reliable ack signal. Search the Rust codebase for `TODO(mcp-ack):` to
-follow this.
+`refresh` and `select` are full round-trips: the FE replies to the specific request (`mcp-response` carrying the
+request's ID) only after the work settles, so the ack is independent of pane-state pushes and their byte-identical
+dedupe. `refresh`'s `OK` means the backend actually re-read the directory (5 s budget; local volumes re-read from disk,
+watcher-backed MTP/SMB listings short-circuit) — it acks reliably even when the re-listing matches the cached state and
+no state push fires.
 
 What this means for automation:
 

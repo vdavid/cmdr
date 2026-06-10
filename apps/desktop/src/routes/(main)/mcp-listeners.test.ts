@@ -1,14 +1,17 @@
 /**
- * Unit coverage for the MCP adapter's validating parsers.
+ * Unit coverage for the MCP adapter's validating parsers, plus the `mcp-refresh`
+ * round-trip listener.
  *
  * The adapter never `as`-casts a raw event payload into a typed `CommandArgs`: it
  * whitelist-parses every discriminant string, and a malformed value collapses to
  * `undefined` so the listener skips the dispatch (a malformed payload must not
  * reach a handler). These pure parsers carry that contract; the listener wiring
  * itself (a routes module) has no coverage gate, so this pins the load-bearing
- * part — the parsers.
+ * parts — the parsers, and the refresh round-trip's reply discipline (ack only
+ * after the dispatch settles; failures forwarded; no reply without a requestId).
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { emit } from '@tauri-apps/api/event'
 import {
   parsePane,
   parseSortColumn,
@@ -19,6 +22,8 @@ import {
   parseConfirmDialogType,
   parseSelectCount,
   parseCursorTarget,
+  setupMcpListeners,
+  type CommandDispatch,
 } from './mcp-listeners'
 
 describe('parsePane', () => {
@@ -134,5 +139,95 @@ describe('parseCursorTarget', () => {
     for (const bad of [null, undefined, {}, true]) {
       expect(parseCursorTarget(bad)).toBeUndefined()
     }
+  })
+})
+
+// === mcp-refresh round-trip ===
+// The MCP `refresh` tool's ack is an explicit per-request reply (`mcp-response`
+// with the request's id), NOT a pane-state push — so it works even when the
+// re-listing is byte-identical to the cached state and the state-push dedupe
+// swallows the push. These tests pin the reply discipline.
+
+type TauriEventHandler = (event: { payload: unknown }) => void
+
+async function setupWithHandlers(dispatch: CommandDispatch): Promise<Map<string, TauriEventHandler>> {
+  const handlers = new Map<string, TauriEventHandler>()
+  await setupMcpListeners({
+    getExplorer: () => undefined,
+    dispatch,
+    listenTauri: (event, handler) => {
+      handlers.set(event, handler)
+      return Promise.resolve()
+    },
+    isAiEnabled: () => false,
+  })
+  return handlers
+}
+
+function getHandler(handlers: Map<string, TauriEventHandler>, name: string): TauriEventHandler {
+  const handler = handlers.get(name)
+  if (!handler) throw new Error(`No listener registered for ${name}`)
+  return handler
+}
+
+/** Let the listener's async IIFE (dynamic import + dispatch + emit) settle. */
+async function flushAsyncWork(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+describe('mcp-refresh listener (round-trip)', () => {
+  beforeEach(() => {
+    vi.mocked(emit).mockClear()
+  })
+
+  it('replies ok on the request id only after the pane.refresh dispatch resolves', async () => {
+    let resolveDispatch!: () => void
+    const dispatch = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveDispatch = resolve
+        }),
+    ) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-refresh')({ payload: { requestId: 'req-7' } })
+    await flushAsyncWork()
+
+    // The dispatch is still in flight: no reply yet. The ack must mean "the
+    // re-listing settled", not "the event arrived".
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('pane.refresh')
+    expect(emit).not.toHaveBeenCalled()
+
+    resolveDispatch()
+    await flushAsyncWork()
+    expect(emit).toHaveBeenCalledExactlyOnceWith('mcp-response', { requestId: 'req-7', ok: true })
+  })
+
+  it('forwards a dispatch failure as the mcp-response error', async () => {
+    const dispatch = vi.fn(() =>
+      Promise.reject(new Error('Refresh timed out — the volume may be unresponsive')),
+    ) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-refresh')({ payload: { requestId: 'req-8' } })
+    await flushAsyncWork()
+
+    expect(emit).toHaveBeenCalledExactlyOnceWith('mcp-response', {
+      requestId: 'req-8',
+      ok: false,
+      error: 'Refresh timed out — the volume may be unresponsive',
+    })
+  })
+
+  it('skips silently without a requestId (the backend round-trip owns the timeout)', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-refresh')({ payload: {} })
+    await flushAsyncWork()
+
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(emit).not.toHaveBeenCalled()
   })
 })

@@ -276,3 +276,58 @@ fn test_format_search_results_directory_trailing_slash() {
     let formatted = format_search_results(&result, 30);
     assert!(formatted.contains("Projects/"));
 }
+
+// === parse_mcp_response: the per-request completion signal ===
+//
+// Round-trip tools (`refresh`, `select`, `move_cursor`, `nav_to_path`, …) wait for
+// an `mcp-response` event whose `requestId` matches the one they generated. This
+// correlation is what makes the ack per-request: a state push (or its dedupe) is
+// irrelevant, and a reply to some OTHER request must never satisfy ours.
+
+#[test]
+fn parse_mcp_response_accepts_matching_ok() {
+    let payload = r#"{"requestId":"r-1","ok":true}"#;
+    assert_eq!(parse_mcp_response(payload, "r-1"), Some(Ok(())));
+}
+
+#[test]
+fn parse_mcp_response_maps_failure_to_error_message() {
+    let payload = r#"{"requestId":"r-1","ok":false,"error":"Refresh timed out — the volume may be unresponsive"}"#;
+    assert_eq!(
+        parse_mcp_response(payload, "r-1"),
+        Some(Err("Refresh timed out — the volume may be unresponsive".to_string()))
+    );
+}
+
+#[test]
+fn parse_mcp_response_failure_without_message_is_unknown_error() {
+    let payload = r#"{"requestId":"r-1","ok":false}"#;
+    assert_eq!(
+        parse_mcp_response(payload, "r-1"),
+        Some(Err("Unknown error".to_string()))
+    );
+}
+
+#[test]
+fn parse_mcp_response_missing_ok_field_is_a_failure_not_a_success() {
+    // `ok` defaults to false: a malformed reply must never turn into a false-positive OK.
+    let payload = r#"{"requestId":"r-1"}"#;
+    assert_eq!(
+        parse_mcp_response(payload, "r-1"),
+        Some(Err("Unknown error".to_string()))
+    );
+}
+
+#[test]
+fn parse_mcp_response_ignores_other_requests() {
+    // The heart of the per-request contract: someone else's reply is not ours.
+    let payload = r#"{"requestId":"r-2","ok":true}"#;
+    assert_eq!(parse_mcp_response(payload, "r-1"), None);
+}
+
+#[test]
+fn parse_mcp_response_ignores_malformed_payloads() {
+    assert_eq!(parse_mcp_response("not json", "r-1"), None);
+    assert_eq!(parse_mcp_response(r#"{"requestId":42,"ok":true}"#, "r-1"), None);
+    assert_eq!(parse_mcp_response(r#"{"ok":true}"#, "r-1"), None);
+}
