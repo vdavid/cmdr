@@ -224,8 +224,7 @@ agents should read (and add/edit when needed) the relevant files in `.claude/rul
 
 Two project facts worth stating here directly: tool versions are mise-managed (Go, Node, etc., pinned in `.mise.toml`;
 shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shims` is on `$PATH`). Icons come from
-`unplugin-icons` + `@iconify-json/lucide` (inline SVGs from `~icons/lucide/{icon-name}`); see `docs/style-guide.md` §
-Icons.
+`unplugin-icons` + `@iconify-json/lucide` (inline SVGs from `~icons/lucide/{icon-name}`); see `docs/guides/icons.md`.
 
 ## Worktrees
 
