@@ -8,7 +8,7 @@ images.
 For low-friction drafting, run the website dev server and use the dev-only editor:
 
 ```bash
-pnpm blog:editor
+pnpm dev:website
 # Open http://localhost:4829/dev/blog
 ```
 

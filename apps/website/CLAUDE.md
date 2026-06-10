@@ -47,7 +47,7 @@ Vite dev middleware, not by an Astro page, so it is unavailable in production bu
 Start it with:
 
 ```bash
-pnpm blog:editor
+pnpm dev:website
 # Open http://localhost:4829/dev/blog
 ```
 

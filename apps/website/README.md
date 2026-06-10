@@ -33,7 +33,7 @@ The dev server runs at `http://localhost:4829`.
 The local-only blog editor is available while the dev server is running:
 
 ```bash
-pnpm blog:editor
+open http://localhost:4829/dev/blog
 ```
 
 It autosaves drafts to the gitignored `apps/website/.blog-drafts/` directory, supports pasted/dropped/file-picked
