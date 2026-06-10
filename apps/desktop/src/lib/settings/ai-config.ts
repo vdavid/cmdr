@@ -23,8 +23,8 @@
  * settings UI all reach for. `sections/` is reserved for UI subcomponents.
  */
 
-import { getSetting, setSetting, resolveCloudConfig } from '$lib/settings'
-import { configureAi, getAiApiKey, saveAiApiKey } from '$lib/tauri-commands'
+import { getSetting, setSetting, resolveCloudConfig, getRawStoreValue, deleteRawStoreKeys } from '$lib/settings'
+import { configureAi, getAiApiKey, saveAiApiKey, hasAiApiKey } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { addToast } from '$lib/ui/toast'
 import { describeSecretError } from './sections/ai-secret-error'
@@ -36,8 +36,9 @@ const secretErrorToastId = 'ai-secret-store-error'
 
 /**
  * One-time migration: move `apiKey` fields out of `ai.cloudProviderConfigs` (settings.json) into
- * the OS secret store. Runs idempotently at startup; once the JSON blob no longer contains any
- * `apiKey` field, this is a near-zero-cost no-op.
+ * the OS secret store, then (via `migrateLegacyOpenAiKeys`) lift + drop the even older flat
+ * `ai.openaiApiKey` / `ai.openaiBaseUrl` / `ai.openaiModel` keys. Runs idempotently at startup;
+ * once the JSON blob and the flat keys are gone, this is a near-zero-cost no-op.
  *
  * Per-provider semantics: if saving to the secret store fails for one provider, that provider's
  * `apiKey` stays in settings.json so the user can retry later. Other providers still migrate.
@@ -47,6 +48,14 @@ const secretErrorToastId = 'ai-secret-store-error'
  * step temporarily handles plaintext keys).
  */
 export async function migrateApiKeysFromSettings(): Promise<void> {
+  // Two independent steps. The flat-key cleanup runs even when the cloud-config blob is
+  // missing or malformed (a returning user might have ONLY the pre-refactor flat keys).
+  await migrateCloudProviderConfigKeys()
+  await migrateLegacyOpenAiKeys()
+}
+
+/** Lifts `apiKey` fields out of the `ai.cloudProviderConfigs` JSON blob into the secret store. */
+async function migrateCloudProviderConfigKeys(): Promise<void> {
   const raw = getSetting('ai.cloudProviderConfigs')
   let parsed: Record<string, Record<string, unknown> | undefined>
   try {
@@ -83,6 +92,37 @@ export async function migrateApiKeysFromSettings(): Promise<void> {
   if (mutated) {
     setSetting('ai.cloudProviderConfigs', JSON.stringify(parsed))
   }
+}
+
+/**
+ * The pre-`ai.cloudProvider` schema stored OpenAI config as three flat keys:
+ * `ai.openaiApiKey` (a PLAINTEXT key), `ai.openaiBaseUrl`, `ai.openaiModel`. The current code
+ * reads none of them (the key lives in the OS secret store; model/baseUrl in
+ * `ai.cloudProviderConfigs`), and the registry-driven save loop only manages registered ids, so
+ * they'd otherwise linger in `settings.json` forever — a plaintext key sitting in Time Machine
+ * and cloud backups, exactly what the secret-store move was meant to prevent.
+ *
+ * This lifts the flat key into the secret store under `openai` IF that's its only copy (so a
+ * tester who set it pre-refactor and never re-entered it doesn't lose it AND gets working AI
+ * back), then drops all three dead keys. Idempotent: once the keys are gone it's a no-op.
+ */
+const LEGACY_OPENAI_KEYS = ['ai.openaiApiKey', 'ai.openaiBaseUrl', 'ai.openaiModel'] as const
+
+async function migrateLegacyOpenAiKeys(): Promise<void> {
+  const legacyKey = (await getRawStoreValue<string>('ai.openaiApiKey')) ?? ''
+  if (legacyKey.length > 0 && !(await hasAiApiKey('openai'))) {
+    try {
+      await saveAiApiKey('openai', legacyKey)
+      logger.info('Lifted a legacy flat OpenAI API key into the secret store')
+    } catch (e) {
+      // Don't delete the only copy if we couldn't preserve it; retry next launch.
+      logger.warn("Couldn't move the legacy OpenAI key to the secret store; leaving settings.json untouched: {error}", {
+        error: e,
+      })
+      return
+    }
+  }
+  await deleteRawStoreKeys(LEGACY_OPENAI_KEYS)
 }
 
 /**

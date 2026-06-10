@@ -516,8 +516,6 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::ai::manager::start_ai_download,
         crate::ai::manager::cancel_ai_download,
         crate::ai::manager::uninstall_ai,
-        crate::ai::manager::opt_in_ai,
-        crate::ai::manager::is_ai_opted_out,
         crate::ai::api_keys::save_ai_api_key,
         crate::ai::api_keys::get_ai_api_key,
         crate::ai::api_keys::delete_ai_api_key,

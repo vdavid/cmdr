@@ -308,16 +308,6 @@ export async function uninstallAi(): Promise<void> {
   await commands.uninstallAi()
 }
 
-/** Re-enables AI features after opting out. */
-export async function optInAi(): Promise<void> {
-  await commands.optInAi()
-}
-
-/** Returns whether the user has opted out of AI features. */
-export async function isAiOptedOut(): Promise<boolean> {
-  return commands.isAiOptedOut()
-}
-
 /** Returns the full runtime status of the AI subsystem. */
 export async function getAiRuntimeStatus(): Promise<AiRuntimeStatus> {
   return commands.getAiRuntimeStatus()

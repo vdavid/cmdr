@@ -437,8 +437,6 @@ export {
   startAiDownload,
   cancelAiDownload,
   uninstallAi,
-  optInAi,
-  isAiOptedOut,
   getFolderSuggestions,
   streamFolderSuggestions,
   getAiRuntimeStatus,

@@ -81,6 +81,34 @@ async function getStore(): Promise<Store> {
 }
 
 /**
+ * Reads a value straight from the persisted store, bypassing the registry and the in-memory
+ * cache. Only for one-time migrations of keys that are no longer in the registry (so
+ * `getSetting` can't see them) — e.g. lifting a pre-refactor plaintext key out of
+ * `settings.json`. Don't use it for live settings; those go through `getSetting`.
+ */
+export async function getRawStoreValue<T>(key: string): Promise<T | undefined> {
+  const store = await getStore()
+  return (await store.get<T>(key)) ?? undefined
+}
+
+/**
+ * Deletes raw keys from the persisted store and saves if anything changed. The
+ * registry-driven `saveToStore` only manages registered ids, so orphaned/legacy keys
+ * otherwise linger forever; this is how a migration drops them. No-op for absent keys.
+ */
+export async function deleteRawStoreKeys(keys: readonly string[]): Promise<void> {
+  const store = await getStore()
+  let changed = false
+  for (const key of keys) {
+    if (await store.has(key)) {
+      await store.delete(key)
+      changed = true
+    }
+  }
+  if (changed) await store.save()
+}
+
+/**
  * Initialize the settings store. Must be called before using getSetting/setSetting.
  *
  * Pass `restrictedWindow: true` from windows whose capability file deliberately

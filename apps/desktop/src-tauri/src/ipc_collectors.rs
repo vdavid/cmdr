@@ -155,8 +155,6 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::system_strings::get_localized_system_strings,
         crate::ai::manager::cancel_ai_download,
         crate::ai::manager::uninstall_ai,
-        crate::ai::manager::opt_in_ai,
-        crate::ai::manager::is_ai_opted_out,
         crate::ai::api_keys::save_ai_api_key,
         crate::ai::api_keys::get_ai_api_key,
         crate::ai::api_keys::delete_ai_api_key,

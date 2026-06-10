@@ -1165,10 +1165,6 @@ export const commands = {
    *  Async because file deletion may block briefly.
    */
   uninstallAi: () => __TAURI_INVOKE<void>('uninstall_ai'),
-  // Re-enables AI features after opting out.
-  optInAi: () => __TAURI_INVOKE<void>('opt_in_ai'),
-  // Returns whether the user has opted out of AI features.
-  isAiOptedOut: () => __TAURI_INVOKE<boolean>('is_ai_opted_out'),
   saveAiApiKey: (providerId: string, apiKey: string) =>
     typedError<null, AiApiKeyError>(__TAURI_INVOKE('save_ai_api_key', { providerId, apiKey })),
   /**

@@ -33,9 +33,11 @@ Intel Macs with an explanatory tooltip (controlled by `AiRuntimeStatus.localAiSu
 
 ### AI settings in registry
 
-Settings `ai.provider`, `ai.openaiApiKey`, `ai.openaiBaseUrl`, `ai.openaiModel`, `ai.localContextSize` are defined in
-`settings-registry.ts`. The main layout calls `configureAi(...)` after `initSettingsApplier()` to push config to
-backend.
+Settings `ai.provider`, `ai.cloudProvider`, `ai.cloudProviderConfigs`, `ai.localContextSize` are defined in
+`settings-registry.ts`. The main layout calls `configureAi(...)` after `initSettingsApplier()` to push config to backend
+(the API key is fetched separately from the OS secret store). The pre-refactor flat keys (`ai.openaiApiKey`,
+`ai.openaiBaseUrl`, `ai.openaiModel`) are gone from the registry; `ai-config.ts::migrateLegacyOpenAiKeys` lifts any
+stranded plaintext `ai.openaiApiKey` into the secret store and deletes all three on startup.
 
 ### The wizard owns AI consent
 

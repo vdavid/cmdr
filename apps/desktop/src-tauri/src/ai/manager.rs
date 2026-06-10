@@ -350,25 +350,6 @@ fn uninstall_ai_sync() {
     }
 }
 
-/// Re-enables AI features after opting out.
-#[tauri::command]
-#[specta::specta]
-pub fn opt_in_ai() {
-    let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager {
-        m.state.opted_out = false;
-        save_state(&m.ai_dir, &m.state);
-    }
-}
-
-/// Returns whether the user has opted out of AI features.
-#[tauri::command]
-#[specta::specta]
-pub fn is_ai_opted_out() -> bool {
-    let manager = MANAGER.lock_ignore_poison();
-    manager.as_ref().is_some_and(|m| m.state.opted_out)
-}
-
 /// Model info returned to frontend.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -1195,7 +1176,6 @@ mod tests {
         assert_eq!(state.pid, None);
         assert_eq!(state.installed_model_id, "ministral-3b-instruct-q4km");
         assert_eq!(state.dismissed_until, None);
-        assert!(!state.opted_out);
     }
 
     #[test]
@@ -1206,7 +1186,6 @@ mod tests {
             pid: Some(12345),
             installed_model_id: String::from("ministral-3b-instruct-q4km"),
             dismissed_until: None,
-            opted_out: false,
             model_download_complete: true,
             partial_download_started: None,
         };
@@ -1217,18 +1196,6 @@ mod tests {
         assert_eq!(parsed.port, Some(52847));
         assert_eq!(parsed.pid, Some(12345));
         assert!(parsed.model_download_complete);
-    }
-
-    #[test]
-    fn test_state_with_opted_out() {
-        let state = AiState {
-            opted_out: true,
-            ..Default::default()
-        };
-
-        let json = serde_json::to_string(&state).unwrap();
-        let parsed: AiState = serde_json::from_str(&json).unwrap();
-        assert!(parsed.opted_out);
     }
 
     #[test]

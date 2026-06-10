@@ -172,8 +172,6 @@ pub struct AiState {
     /// Unix timestamp (seconds).
     #[serde(default)]
     pub dismissed_until: Option<u64>,
-    #[serde(default)]
-    pub opted_out: bool,
     /// Verified by file size.
     #[serde(default)]
     pub model_download_complete: bool,
@@ -194,7 +192,6 @@ impl Default for AiState {
             pid: None,
             installed_model_id: default_model_id(),
             dismissed_until: None,
-            opted_out: false,
             model_download_complete: false,
             partial_download_started: None,
         }

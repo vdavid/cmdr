@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const saveAiApiKey = vi.fn<(id: string, key: string) => Promise<null>>(() => Promise.resolve(null))
 const getAiApiKey = vi.fn<(id: string) => Promise<string>>(() => Promise.resolve(''))
+const hasAiApiKey = vi.fn<(id: string) => Promise<boolean>>(() => Promise.resolve(false))
 const configureAi = vi.fn<
   (provider: string, contextSize: number, apiKey: string, baseUrl: string, model: string) => Promise<null>
 >(() => Promise.resolve(null))
@@ -22,11 +23,15 @@ const configureAi = vi.fn<
 vi.mock('$lib/tauri-commands', () => ({
   saveAiApiKey: (id: string, key: string) => saveAiApiKey(id, key),
   getAiApiKey: (id: string) => getAiApiKey(id),
+  hasAiApiKey: (id: string) => hasAiApiKey(id),
   configureAi: (provider: string, contextSize: number, apiKey: string, baseUrl: string, model: string) =>
     configureAi(provider, contextSize, apiKey, baseUrl, model),
 }))
 
 const settingsMap: Record<string, string> = {}
+// Backs the raw-store helpers (`getRawStoreValue`/`deleteRawStoreKeys`) the legacy-key migration
+// uses for non-registry keys; in a real app these hit the Tauri store plugin.
+const rawStoreMap: Record<string, string> = {}
 vi.mock('$lib/settings', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
   return {
@@ -34,6 +39,14 @@ vi.mock('$lib/settings', async (importOriginal) => {
     getSetting: (id: string) => settingsMap[id] ?? '',
     setSetting: (id: string, value: string) => {
       settingsMap[id] = value
+    },
+    getRawStoreValue: (key: string) => Promise.resolve(rawStoreMap[key]),
+    deleteRawStoreKeys: (keys: readonly string[]) => {
+      for (const k of keys) {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test fixture
+        delete rawStoreMap[k]
+      }
+      return Promise.resolve()
     },
   }
 })
@@ -71,10 +84,16 @@ function resetState(): void {
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test fixture reset
     delete settingsMap[k]
   }
+  for (const k of Object.keys(rawStoreMap)) {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test fixture reset
+    delete rawStoreMap[k]
+  }
   saveAiApiKey.mockReset()
   saveAiApiKey.mockResolvedValue(null)
   getAiApiKey.mockReset()
   getAiApiKey.mockResolvedValue('')
+  hasAiApiKey.mockReset()
+  hasAiApiKey.mockResolvedValue(false)
   configureAi.mockReset()
   configureAi.mockResolvedValue(null)
   addToast.mockReset()
@@ -179,6 +198,40 @@ describe('migrateApiKeysFromSettings', () => {
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: null })
     await migrateApiKeysFromSettings()
     expect(saveAiApiKey).not.toHaveBeenCalled()
+  })
+
+  it('lifts a stranded legacy ai.openaiApiKey into the secret store, then drops the flat keys', async () => {
+    rawStoreMap['ai.openaiApiKey'] = 'sk-legacy-123'
+    rawStoreMap['ai.openaiBaseUrl'] = 'https://api.openai.com/v1'
+    rawStoreMap['ai.openaiModel'] = 'gpt-4o-mini'
+    hasAiApiKey.mockResolvedValue(false) // not yet in the secret store
+
+    await migrateApiKeysFromSettings()
+
+    expect(saveAiApiKey).toHaveBeenCalledWith('openai', 'sk-legacy-123')
+    expect(rawStoreMap['ai.openaiApiKey']).toBeUndefined()
+    expect(rawStoreMap['ai.openaiBaseUrl']).toBeUndefined()
+    expect(rawStoreMap['ai.openaiModel']).toBeUndefined()
+  })
+
+  it('drops the flat keys without re-saving when the secret store already has the key', async () => {
+    rawStoreMap['ai.openaiApiKey'] = 'sk-legacy-123'
+    hasAiApiKey.mockResolvedValue(true) // already migrated
+
+    await migrateApiKeysFromSettings()
+
+    expect(saveAiApiKey).not.toHaveBeenCalled()
+    expect(rawStoreMap['ai.openaiApiKey']).toBeUndefined()
+  })
+
+  it('keeps the legacy key if the secret-store save fails (never loses the only copy)', async () => {
+    rawStoreMap['ai.openaiApiKey'] = 'sk-legacy-123'
+    hasAiApiKey.mockResolvedValue(false)
+    saveAiApiKey.mockRejectedValueOnce(new Error('keychain locked'))
+
+    await migrateApiKeysFromSettings()
+
+    expect(rawStoreMap['ai.openaiApiKey']).toBe('sk-legacy-123')
   })
 })
 

@@ -32,7 +32,7 @@ Three provider modes:
 
 Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `check_ai_connection`, `start_ai_download`, `cancel_ai_download`, `get_folder_suggestions`, `stream_folder_suggestions`, `cancel_folder_suggestions`. Note: `get_system_memory_info` moved to top-level `system_memory.rs`.
 API keys: `save_ai_api_key`, `get_ai_api_key`, `delete_ai_api_key`, `has_ai_api_key` (in `api_keys.rs`).
-Orphan (no frontend callers after the onboarding revamp; flagged for follow-up cleanup): `uninstall_ai`, `opt_in_ai`, `is_ai_opted_out`. The post-FDA AI offer toast is gone, so `dismiss_ai_offer` and `opt_out_ai` were deleted with it.
+Also: `uninstall_ai` (the Uninstall button in `AiLocalSection.svelte`). The dead opt-out machinery (`opt_in_ai`, `is_ai_opted_out`, `dismiss_ai_offer`, `opt_out_ai`, and the `AiState.opted_out` field) was removed with the onboarding revamp — `ai.provider` is the single source of truth for whether AI is on.
 
 ## Startup flow
 
@@ -83,7 +83,6 @@ The frontend (`AiSection.svelte`) tracks `installStep` state and displays "Step 
 - Binary re-extraction is possible if model exists but binary is missing.
 - Download guard: `download_in_progress` flag prevents concurrent downloads.
 - Server logs written to `llama-server.log` in the AI dir for debugging.
-- `opted_out` field in `AiState` is legacy. `ai.provider` in frontend settings store is the source of truth.
 - OpenAI config (api_key, base_url, model) stored in `ManagerState` so suggestions.rs can read without settings files. The api_key originates from the OS secret store (`api_keys.rs`), pushed in via `configure_ai`.
 - `configure_ai` is idempotent -- frontend calls it on startup and whenever any AI setting changes.
 - `ModelInfo` includes `kv_bytes_per_token` and `base_overhead_bytes` for frontend memory estimation.
