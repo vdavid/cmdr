@@ -20,6 +20,7 @@ Reusable UI components used across the entire desktop app.
 | `ToggleGroup.svelte`  | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
 | `DateLabel.svelte`    | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
 | `ShortcutChip.svelte` | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode  |
+| `StatusBadge.svelte`  | Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by `feature-status.json` |
 | `toast/`              | Centralized toast notification system: store, container, item                                  |
 
 ## Not part of this module: soft sheets
@@ -437,6 +438,22 @@ command, never clickable); the chip only unifies their appearance.
 
 The litmus test for a future Class B site: migrate when the chip reads same-or-better than the current treatment; keep
 the current treatment (and note it here) when the boxed pill genuinely reads worse in a dense or label-fused context.
+
+## StatusBadge
+
+`StatusBadge.svelte`: the small uppercase stability pill (ALPHA / BETA) rendered next to a feature's title. One prop:
+`status: 'alpha' | 'beta'` (the `BadgeStatus` type from `$lib/feature-status`). Don't hardcode the status at call sites:
+derive it via `getBadgeStatus(featureId)` from `$lib/feature-status`, which reads the repo-root `feature-status.json`
+(single source of truth shared with the website; see `docs/feature-status.md`). Stable features return no badge from
+that helper, so a graduated feature loses its pill with a one-line JSON edit.
+
+Visual: same token recipe as `ToggleGroup.svelte`'s `.tg-badge` (the "AI" chip): `--font-size-xs` mono, weight 600,
+`--color-accent-subtle` background, `--radius-xs`, uppercase via CSS. The class is `feature-status-badge` (NOT
+`status-badge`: the Debug window has a `:global(.status-badge)` for the drive-index panel that would leak onto it). A
+built-in tooltip explains what the status means.
+
+Consumers: `QueryDialog`'s title strip (via `QueryDialogConfig.badge`, set by the Search + Selection wrappers) and the
+command palette's result rows (via the optional `Command.status` field).
 
 ## SectionCard
 

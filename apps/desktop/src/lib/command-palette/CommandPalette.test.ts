@@ -13,6 +13,15 @@ const ALL_COMMANDS = [
   { id: 'app.about', name: 'About Cmdr', scope: 'App', shortcuts: [], showInPalette: true },
   { id: 'file.copyPath', name: 'Copy path to clipboard', scope: 'Main window', shortcuts: [], showInPalette: true },
   { id: 'view.showHidden', name: 'Toggle hidden files', scope: 'Main window', shortcuts: ['⌘⇧.'], showInPalette: true },
+  // Carries a stability badge so the palette's StatusBadge wiring is exercised.
+  {
+    id: 'search.open',
+    name: 'Search files',
+    scope: 'Main window',
+    shortcuts: [],
+    showInPalette: true,
+    status: 'alpha',
+  },
 ]
 
 // Mock the app-status-store to avoid Tauri dependency in tests
@@ -298,6 +307,22 @@ describe('CommandPalette', () => {
     // Check that shortcuts are displayed
     const shortcutElements = target.querySelectorAll('[class*="shortcut"]')
     expect(shortcutElements.length).toBeGreaterThan(0)
+  })
+
+  it('renders a status badge on rows whose command carries one, and only on those', async () => {
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+
+    await tick()
+
+    const alphaRow = target.querySelector('[id="palette-option-search.open"]')
+    expect(alphaRow?.querySelector('.feature-status-badge')?.textContent).toBe('alpha')
+
+    const plainRow = target.querySelector('[id="palette-option-app.quit"]')
+    expect(plainRow?.querySelector('.feature-status-badge')).toBeNull()
   })
 
   it('restores focus to the previously focused element on destroy', async () => {

@@ -9,6 +9,7 @@
 !pnpm-workspace.yaml
 !pnpm-lock.yaml
 !CHANGELOG.md
+!feature-status.json
 
 # Allow website app
 !apps/website/

@@ -9,6 +9,7 @@
  */
 
 import type { Command } from './types'
+import { getBadgeStatus } from '$lib/feature-status'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 
 /**
@@ -123,6 +124,7 @@ export const commands: Command[] = [
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘F', '⌥F7'],
+    status: getBadgeStatus('search'),
   },
 
   // ============================================================================
@@ -586,6 +588,7 @@ export const commands: Command[] = [
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['+'],
+    status: getBadgeStatus('select-files'),
     description: 'Opens the Select files dialog to add matching files to the selection',
   },
   {
@@ -594,6 +597,7 @@ export const commands: Command[] = [
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['-'],
+    status: getBadgeStatus('select-files'),
     description: 'Opens the Deselect files dialog to remove matching files from the selection',
   },
 

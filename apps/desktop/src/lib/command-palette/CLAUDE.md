@@ -74,6 +74,10 @@ reopen. Chips are non-clickable because the whole row already owns the click (de
 `docs/specs/shortcut-display-unification-plan.md`). On the accent-subtle cursor row, the chip background is lifted to
 `--color-bg-secondary` so it stays legible against the tint (both themes).
 
+**Stability badge**: rows whose command carries `status: 'alpha' | 'beta'` render a `StatusBadge` pill between the name
+and the shortcut chips. The registry derives the field from `getBadgeStatus()` in `$lib/feature-status` (repo-root
+`feature-status.json` is the single source of truth), so graduating a feature removes the badge with a JSON edit.
+
 **jsdom limitation**: `scrollIntoView` is not implemented in jsdom; tests mock it via
 `Element.prototype.scrollIntoView = vi.fn()`.
 

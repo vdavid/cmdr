@@ -22,11 +22,13 @@ prompt strip, the results table, the recent-items footer + popover, the empty st
 Consumers wire everything Search-or-Selection-specific through a single [`QueryDialogConfig`](query-dialog-config.ts)
 prop.
 
-The config carries the title + max width, the cross-consumer state instance (the factory output), an `aiEnabled` flag,
-the per-chip visibility set, a `showPathColumn` flag, the run-hint copy, the history store + adapter + key, the
-empty-state hints, the filter-chips extras, the index lifecycle flags, an optional `noticeBanner`, the async
-`runQuery` + optional `translateAi` callbacks, primary + secondary action descriptors, callbacks for path-pill / example
-/ row-menu / recent-activate / recent-remove / close events, optional `onMount` / `onDestroy` / `onClearState` hooks.
+The config carries the title + max width (+ an optional stability `badge` rendered as a `StatusBadge` next to the title;
+both consumers derive it from `getBadgeStatus()` in `$lib/feature-status`), the cross-consumer state instance (the
+factory output), an `aiEnabled` flag, the per-chip visibility set, a `showPathColumn` flag, the run-hint copy, the
+history store + adapter + key, the empty-state hints, the filter-chips extras, the index lifecycle flags, an optional
+`noticeBanner`, the async `runQuery` + optional `translateAi` callbacks, primary + secondary action descriptors,
+callbacks for path-pill / example / row-menu / recent-activate / recent-remove / close events, optional `onMount` /
+`onDestroy` / `onClearState` hooks.
 
 ### Ownership contracts
 

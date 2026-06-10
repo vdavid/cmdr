@@ -52,6 +52,7 @@ interface MountedDialog {
 }
 
 interface MountOptions {
+  badge?: 'alpha' | 'beta'
   runQueryResult?: { entries: SearchResultEntry[]; totalCount: number }
   translateAi?: (prompt: string) => Promise<AiTranslateResult | null>
   initialQuery?: string
@@ -80,6 +81,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
 
   const config: QueryDialogConfig<HistoryEntry> = {
     title: 'Test dialog',
+    badge: opts.badge,
     dialogType: 'test',
     maxWidth: 'min(800px, 80vw)',
     state,
@@ -216,6 +218,21 @@ describe('QueryDialog title bar', () => {
     await tick()
     const title = overlay.querySelector('#query-dialog-title')
     expect(title?.textContent).toContain('Test dialog')
+    cleanup()
+  })
+
+  it('renders a status badge next to the title when config.badge is set', async () => {
+    const { overlay, cleanup } = mountQueryDialog({ badge: 'alpha' })
+    await tick()
+    const badge = overlay.querySelector('#query-dialog-title .feature-status-badge')
+    expect(badge?.textContent).toBe('alpha')
+    cleanup()
+  })
+
+  it('renders no status badge when config.badge is unset', async () => {
+    const { overlay, cleanup } = mountQueryDialog()
+    await tick()
+    expect(overlay.querySelector('#query-dialog-title .feature-status-badge')).toBeNull()
     cleanup()
   })
 })

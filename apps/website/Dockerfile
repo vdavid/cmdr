@@ -18,8 +18,9 @@ RUN pnpm install --frozen-lockfile --filter "./apps/website"
 # Copy website source
 COPY apps/website/ ./apps/website/
 
-# Changelog is in repo root, needed by the changelog page at build time
-COPY CHANGELOG.md ./
+# Changelog and feature status are in repo root, needed at build time by the
+# changelog page and the feature-status page / badge labels respectively
+COPY CHANGELOG.md feature-status.json ./
 
 # Build static site
 WORKDIR /app/apps/website

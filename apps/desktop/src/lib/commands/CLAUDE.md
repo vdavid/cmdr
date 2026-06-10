@@ -29,6 +29,7 @@ interface Command {
   shortcuts: string[] // e.g. ['⌘Q'], ['Backspace', '⌘↑']
   nativeShortcut?: true // macOS owns behavior AND accelerator (PredefinedMenuItem); read-only in the editor
   fixedKey?: true // key hardcoded in the owning component, never reads the store; read-only in the editor
+  status?: 'alpha' | 'beta' // stability badge in the palette row; derive via getBadgeStatus() from $lib/feature-status
   description?: string
 }
 

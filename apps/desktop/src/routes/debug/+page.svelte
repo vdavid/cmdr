@@ -31,6 +31,7 @@
         | 'components-loading'
         | 'components-tooltips'
         | 'components-size-badges'
+        | 'components-status-badge'
         | 'components-date-label'
         | 'components-shortcut-chip'
         | 'components-commandbox'
@@ -65,6 +66,7 @@
                 { id: 'components-loading', label: 'Loading' },
                 { id: 'components-tooltips', label: 'Tooltips' },
                 { id: 'components-size-badges', label: 'Size badges' },
+                { id: 'components-status-badge', label: 'Status badge' },
                 { id: 'components-date-label', label: 'Date label' },
                 { id: 'components-shortcut-chip', label: 'Shortcut chip' },
                 { id: 'components-commandbox', label: 'CommandBox' },

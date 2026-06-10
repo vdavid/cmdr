@@ -1,0 +1,149 @@
+{
+  "$comment": "Single source of truth for per-feature stability. Schema and consumers: docs/feature-status.md. Statuses: alpha (works, rough edges, expect bugs), beta (solid for common cases, edge cases may surprise), stable (no badge anywhere, we stand behind it), planned (not built yet). All notes are reviewed by David; keep them honest and one line.",
+  "features": [
+    {
+      "id": "search",
+      "name": "Search",
+      "status": "alpha",
+      "note": "Finds files fast, but the AI query translation still misreads some prompts and a few filters are rough. We're tuning accuracy."
+    },
+    {
+      "id": "select-files",
+      "name": "Select files dialog",
+      "status": "alpha",
+      "note": "Wildcard and regex matching work well; AI selection is cloud-only and still misses edge cases."
+    },
+    {
+      "id": "network-drives",
+      "name": "Network drives (SMB)",
+      "status": "beta",
+      "note": "Browsing and fast direct transfers work on common NAS setups; unusual server configs can still surprise us."
+    },
+    {
+      "id": "android-devices",
+      "name": "Android devices (MTP)",
+      "status": "beta",
+      "note": "Fast transfers on most devices, but macOS sometimes claims the device first and some phones need a reconnect."
+    },
+    {
+      "id": "git-browser",
+      "name": "Git browser",
+      "status": "beta",
+      "note": "Browse history, branches, tags, and stashes like folders. Very large repos can take a moment to load."
+    },
+    {
+      "id": "local-ai",
+      "name": "Local AI",
+      "status": "beta",
+      "note": "The on-device model runs fully private on Apple Silicon; being a small model, it sometimes gives odd suggestions."
+    },
+    {
+      "id": "download-notifications",
+      "name": "Download notifications",
+      "status": "beta",
+      "note": "Catches downloads and jumps to the latest with one key; some browsers' temp-file renames can still slip through."
+    },
+    {
+      "id": "go-to-path",
+      "name": "Go to path",
+      "status": "beta",
+      "note": "Paste or type any path and jump there; it's new, so recents and edge-case path handling are still settling."
+    },
+    {
+      "id": "file-explorer",
+      "name": "Dual-pane file explorer",
+      "status": "stable",
+      "note": "Two panes, virtual scrolling through 100k+ files, live file watching, and Quick Look. The heart of the app."
+    },
+    {
+      "id": "file-operations",
+      "name": "File operations",
+      "status": "stable",
+      "note": "Copy, move, delete, rename, and new folders with progress, conflict handling, and rollback. Our most-tested code."
+    },
+    {
+      "id": "file-viewer",
+      "name": "File viewer",
+      "status": "stable",
+      "note": "Opens even 10+ GB files instantly, with search and word wrap."
+    },
+    {
+      "id": "tabs",
+      "name": "Tabs",
+      "status": "stable",
+      "note": "Per-pane tabs with pinning, history, and reopen closed tab."
+    },
+    {
+      "id": "command-palette",
+      "name": "Command palette",
+      "status": "stable",
+      "note": "Fuzzy-find every action with ⌘⇧P."
+    },
+    {
+      "id": "keyboard-shortcuts",
+      "name": "Keyboard shortcuts",
+      "status": "stable",
+      "note": "Customize any shortcut, with conflict detection and scope awareness."
+    },
+    {
+      "id": "full-disk-index",
+      "name": "Full-disk index",
+      "status": "stable",
+      "note": "Indexes your whole drive once, then stays current through file system events. Powers search and folder sizes."
+    },
+    {
+      "id": "drag-and-drop",
+      "name": "Drag and drop",
+      "status": "stable",
+      "note": "Drag files in, out, and between panes, including to and from Finder and other apps."
+    },
+    {
+      "id": "ai-rename",
+      "name": "AI rename",
+      "status": "planned",
+      "note": "Rename files by describing what you want, with a full preview before anything changes."
+    },
+    {
+      "id": "ai-batch",
+      "name": "AI file organization",
+      "status": "planned",
+      "note": "Say \"clean up my Downloads folder\" and approve or reject each suggested move."
+    },
+    {
+      "id": "archives",
+      "name": "Archives",
+      "status": "planned",
+      "note": "Compress, extract, and browse zips like folders."
+    },
+    {
+      "id": "more-file-systems",
+      "name": "More file systems",
+      "status": "planned",
+      "note": "S3 buckets, FTP(S), SFTP, WebDAV, NFS, and more."
+    },
+    {
+      "id": "ai-tell-me",
+      "name": "Tell me about this",
+      "status": "planned",
+      "note": "Right-click any file for a quick AI explanation of what it is."
+    },
+    {
+      "id": "plugins",
+      "name": "Plugins",
+      "status": "planned",
+      "note": "Extend Cmdr with your own scripts and tools."
+    },
+    {
+      "id": "disk-space-visualizer",
+      "name": "Disk space visualizer",
+      "status": "planned",
+      "note": "A built-in treemap to see what's eating your disk."
+    },
+    {
+      "id": "windows-linux",
+      "name": "Windows and Linux support",
+      "status": "planned",
+      "note": "Bring Cmdr to more platforms."
+    }
+  ]
+}

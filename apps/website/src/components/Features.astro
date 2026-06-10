@@ -1,4 +1,6 @@
 ---
+import { getBadgeLabel } from '../lib/feature-status'
+
 const shipped = [
     {
         slug: 'full-disk-index',
@@ -36,14 +38,14 @@ const upcoming = [
         icon: '/icons/search.svg',
         title: 'Smart search',
         description: 'Find files by saying: "that PDF contract from last month" or "all my node_modules folders"',
-        badge: 'Works but early stage',
+        badge: getBadgeLabel('search'),
     },
     {
         slug: 'ai-rename',
         icon: '/icons/brain.svg',
         title: 'Natural language rename',
         description: 'Commands like "make these files lowercase and add date prefix". No regex, no scripts.',
-        badge: 'Coming soon',
+        badge: getBadgeLabel('ai-rename'),
     },
     {
         slug: 'ai-batch',
@@ -51,7 +53,7 @@ const upcoming = [
         title: 'AI file organization',
         description:
             'Say "Clean up my Downloads folder" to get a list of move/delete suggestions you can approve/reject.',
-        badge: 'Coming soon',
+        badge: getBadgeLabel('ai-batch'),
     },
 ]
 ---

@@ -44,6 +44,7 @@
     import type { QueryDialogConfig } from './query-dialog-config'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { trapFocus } from '$lib/ui/focus-trap'
+    import StatusBadge from '$lib/ui/StatusBadge.svelte'
 
     interface Props {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments -- E is the Svelte component generic; the explicit <E> binds the inference for callers like SearchDialog/SelectionDialog
@@ -698,6 +699,9 @@
         -->
         <h2 class="query-dialog__title" id="query-dialog-title">
             <span>{config.title}</span>
+            {#if config.badge}
+                <StatusBadge status={config.badge} />
+            {/if}
         </h2>
 
         <QueryBar
@@ -892,6 +896,7 @@
     .query-dialog__title {
         margin: 0;
         height: 32px;
+        gap: var(--spacing-xs);
         padding: 0 var(--spacing-lg);
         border-bottom: 1px solid var(--color-border-subtle);
         font-size: var(--font-size-md);

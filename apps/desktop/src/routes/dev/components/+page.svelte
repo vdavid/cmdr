@@ -11,6 +11,7 @@
     import Loading from './sections/Loading.svelte'
     import Tooltips from './sections/Tooltips.svelte'
     import SizeBadges from './sections/SizeBadges.svelte'
+    import StatusBadgeSection from './sections/StatusBadgeSection.svelte'
     import DateLabelSection from './sections/DateLabelSection.svelte'
     import ShortcutChipSection from './sections/ShortcutChip.svelte'
     import CommandBoxSection from './sections/CommandBoxSection.svelte'
@@ -41,6 +42,7 @@
         'loading',
         'tooltips',
         'size-badges',
+        'status-badge',
         'date-label',
         'shortcut-chip',
         'commandbox',
@@ -153,6 +155,7 @@
         <Loading />
         <Tooltips />
         <SizeBadges />
+        <StatusBadgeSection />
         <DateLabelSection />
         <ShortcutChipSection />
         <CommandBoxSection />

@@ -3,6 +3,7 @@
  */
 
 import type { ViewMode } from '$lib/app-status-store'
+import type { BadgeStatus } from '$lib/feature-status'
 import type { CommandId } from './command-ids'
 
 export type { CommandId } from './command-ids'
@@ -133,6 +134,13 @@ export interface Command {
   showInPalette: boolean
   /** Keyboard shortcuts (like ['⌘⇧P', 'F1']) */
   shortcuts: string[]
+  /**
+   * Stability badge shown in the palette row (uppercase ALPHA / BETA pill).
+   * Derive it from `getBadgeStatus(id)` in `$lib/feature-status` so the
+   * repo-root `feature-status.json` stays the single source of truth.
+   * Omitted (stable features) renders no badge.
+   */
+  status?: BadgeStatus
   /**
    * macOS owns this command's behavior AND its accelerator via a
    * `PredefinedMenuItem` (`terminate:`, `hide:`, `hideOtherApplications:`,

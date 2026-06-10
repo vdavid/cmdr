@@ -34,6 +34,7 @@
  *      `state.lastDialogEvent`. QueryDialog handles all of those.
  */
 
+import type { BadgeStatus } from '$lib/feature-status'
 import type { SearchResultEntry } from '$lib/tauri-commands'
 import type { QueryFilterState, SearchMode } from './query-filter-state.svelte'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items/recent-items-types'
@@ -156,6 +157,12 @@ export interface QueryDialogRecentItems<E> {
 export interface QueryDialogConfig<E = unknown> {
   /** Dialog title shown in the title bar. */
   title: string
+  /**
+   * Optional stability badge rendered next to the title (uppercase ALPHA / BETA
+   * pill). Derive it from `getBadgeStatus(id)` in `$lib/feature-status` so the
+   * repo-root `feature-status.json` stays the single source of truth.
+   */
+  badge?: BadgeStatus
   /** Dialog-type string passed to `notifyDialogOpened` / `notifyDialogClosed`. */
   dialogType: string
   /** Dialog max-width, e.g. `'min(1080px, 80vw)'`. */

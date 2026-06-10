@@ -74,6 +74,7 @@
         setIsIndexAvailable,
     } from './search-state.svelte'
     import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
+    import { getBadgeStatus } from '$lib/feature-status'
     import type {
         QueryDialogConfig,
         QueryDialogFilterChipsExtras,
@@ -457,6 +458,7 @@
 
     const config: QueryDialogConfig<HistoryEntry> = $derived({
         title: 'Search',
+        badge: getBadgeStatus('search'),
         dialogType: 'search',
         maxWidth: 'min(1080px, 80vw)',
 

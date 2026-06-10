@@ -4,6 +4,11 @@ import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import DownloadButton from '../components/DownloadButton.astro'
 import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
+import { getBadgeLabel } from '../lib/feature-status'
+
+const searchBadge = getBadgeLabel('search')
+const aiRenameBadge = getBadgeLabel('ai-rename')
+const aiBatchBadge = getBadgeLabel('ai-batch')
 ---
 
 <Layout
@@ -145,12 +150,16 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                         <img src="/icons/search.svg" alt="" class="size-8" />
                         <h2 class="text-xl font-semibold text-[var(--color-text-primary)]">Smart search</h2>
                     </div>
-                    <a
-                        href="/roadmap"
-                        class="rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/30"
-                    >
-                        Works but early stage
-                    </a>
+                    {
+                        searchBadge && (
+                            <a
+                                href="/feature-status"
+                                class="rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/30"
+                            >
+                                {searchBadge}
+                            </a>
+                        )
+                    }
                 </div>
                 <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
                     <p>
@@ -181,12 +190,16 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                         <img src="/icons/brain.svg" alt="" class="size-8" />
                         <h2 class="text-xl font-semibold text-[var(--color-text-primary)]">Natural language rename</h2>
                     </div>
-                    <a
-                        href="/roadmap"
-                        class="rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/30"
-                    >
-                        Coming soon
-                    </a>
+                    {
+                        aiRenameBadge && (
+                            <a
+                                href="/feature-status"
+                                class="rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/30"
+                            >
+                                {aiRenameBadge}
+                            </a>
+                        )
+                    }
                 </div>
                 <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
                     <p>
@@ -210,12 +223,16 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                         <img src="/icons/zap.svg" alt="" class="size-8" />
                         <h2 class="text-xl font-semibold text-[var(--color-text-primary)]">AI batch operations</h2>
                     </div>
-                    <a
-                        href="/roadmap"
-                        class="rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/30"
-                    >
-                        Coming soon
-                    </a>
+                    {
+                        aiBatchBadge && (
+                            <a
+                                href="/feature-status"
+                                class="rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/30"
+                            >
+                                {aiBatchBadge}
+                            </a>
+                        )
+                    }
                 </div>
                 <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
                     <p>

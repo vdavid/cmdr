@@ -34,6 +34,7 @@
     } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
+    import { getBadgeStatus } from '$lib/feature-status'
     import type {
         QueryDialogConfig,
         QueryDialogFilterChipsExtras,
@@ -493,6 +494,7 @@
 
     const config: QueryDialogConfig<SelectionHistoryEntry> = $derived({
         title,
+        badge: getBadgeStatus('select-files'),
         dialogType: mode === 'add' ? 'selection-add' : 'selection-remove',
         maxWidth: 'min(720px, 60vw)',
 

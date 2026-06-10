@@ -13,6 +13,7 @@
     import { pruneRecentCommands, pushRecentCommand } from '$lib/app-status-store'
     import { getEffectiveShortcutsReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
 
     /** How many shortcut chips a palette row shows (power users discover alternates). */
@@ -258,6 +259,11 @@
                                 {/if}
                             {/each}
                         </span>
+                        {#if match.command.status}
+                            <span class="command-status">
+                                <StatusBadge status={match.command.status} />
+                            </span>
+                        {/if}
                         {#if shortcuts.length > 0}
                             <span class="shortcuts">
                                 <!-- Key by index, not the combo string: a user can bind the same
@@ -394,6 +400,12 @@
     /* When item is under cursor, make the match highlight even more visible */
     .result-item.is-under-cursor .match-highlight {
         text-decoration-color: var(--color-text-primary);
+    }
+
+    .command-status {
+        display: inline-flex;
+        margin-left: var(--spacing-sm);
+        flex-shrink: 0;
     }
 
     .shortcuts {
