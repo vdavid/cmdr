@@ -261,3 +261,55 @@ jobs:
               -H "Content-Type: application/json" \
               -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
               -d "$PAYLOAD"
+
+  bump-tap:
+    name: Bump Homebrew tap
+    needs: [publish]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Bump the cask in vdavid/homebrew-tap
+        env:
+          # Fine-grained PAT with contents read+write on vdavid/homebrew-tap only.
+          # When absent (e.g. a fork or before the secret is created), skip cleanly:
+          # the tap is a fallback channel, not part of the release contract.
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${HOMEBREW_TAP_TOKEN:-}" ]; then
+            echo "HOMEBREW_TAP_TOKEN absent; skipping tap bump (tap is a fallback channel)."
+            exit 0
+          fi
+
+          VERSION="${TAG#v}"
+
+          # Compute the universal DMG's sha256 from the published release asset itself,
+          # not from any pre-existing checksum file (the pipeline ships none).
+          DMG="Cmdr_${VERSION}_universal.dmg"
+          # -R is required: this job has no checkout, so gh has no repo context to infer.
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p "$DMG" -D /tmp/tap-dmg
+          SHA256=$(shasum -a 256 "/tmp/tap-dmg/$DMG" | cut -d' ' -f1)
+          echo "Universal DMG sha256: $SHA256"
+
+          # Clone the tap with the token and rewrite ONLY the version + sha256 lines.
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/vdavid/homebrew-tap.git" /tmp/homebrew-tap
+          CASK="/tmp/homebrew-tap/Casks/cmdr.rb"
+
+          sed -i -E "s|^(  version \").*(\")|\1${VERSION}\2|" "$CASK"
+          sed -i -E "s|^(  sha256 \").*(\")|\1${SHA256}\2|" "$CASK"
+
+          cd /tmp/homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "Cask already at version ${VERSION} with this sha256; nothing to bump."
+            exit 0
+          fi
+
+          git add Casks/cmdr.rb
+          git commit -m "cmdr ${VERSION}"
+          git push origin HEAD
