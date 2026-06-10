@@ -129,7 +129,7 @@ Three cadences. Pick the one that matches where you are in the work, not the one
     `ci-coverage`).
   - Go: `go-vet`, `staticcheck`, `ineffassign`, `misspell`, `gocyclo`, `go-tests`.
   - API server: `typecheck`, `tests`.
-  - Website: `html-validate` (self-skips when `dist/` is absent).
+  - Website: `html-validate`, `bundle-size` (both self-skip when `dist/` is absent).
   - Warn-only metrics: `file-length`, `claude-md-reminder`, `changelog-links`.
   - **Does NOT cover**: `clippy`, Rust tests, `cargo-audit`, `cargo-deny`, `jscpd`, `bindings-fresh`, desktop ESLint /
     `svelte-check` / Svelte tests, website ESLint / typecheck / build / e2e, `docker-build`, or any E2E suite.

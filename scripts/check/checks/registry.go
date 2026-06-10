@@ -462,6 +462,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunWebsiteHTMLValidate,
 	},
 	{
+		ID:          "website-bundle-size",
+		Nickname:    "bundle-size",
+		DisplayName: "bundle size",
+		App:         AppWebsite,
+		Tech:        "🚀 Astro",
+		DependsOn:   []string{"website-build"},
+		IsFast:      true, // cheap dist/ walk; self-skips when dist/ is absent (like html-validate)
+		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
+		Run:         RunWebsiteBundleSize,
+	},
+	{
 		ID:          "website-e2e",
 		CpuWeight:   6,
 		DisplayName: "e2e",

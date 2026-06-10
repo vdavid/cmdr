@@ -18,6 +18,8 @@ CLI flags, freestyle.sh remote execution), see [`../CLAUDE.md`](../CLAUDE.md).
 | `file-length-allowlist.json`                         | Allowlist for file-length check: `{ "exempt": { "path": reason }, "files": { "path": lineCount } }`. See § File-length allowlist.                                                                                     |
 | `e2e-durations.go`                                   | E2E test duration flagger (warn-only): parses the Playwright JSON reports after each E2E run and flags tests over the 2 s budget. Embedded in both E2E checks, not a registry check. See § E2E test duration flagger. |
 | `e2e-duration-allowlist.json`                        | Per-platform (`macos` / `linux`) allowlist for the duration flagger: `{ "<spec>::<describe chain>::<title>": reason }`. Entries need a reason; new entries need David's OK.                                           |
+| `website-bundle-size.go`                             | Warn-only website `dist/` size budget: warns when the total grows >10% over the committed baseline. Self-skips without `dist/`. See § Website bundle-size baseline.                                                   |
+| `website-bundle-size-baseline.json`                  | Committed baseline for `website-bundle-size`: total bytes + hash-normalized top assets. Ratchets down automatically; raising it is manual (delete + regenerate) with David's OK.                                      |
 | `allowlist.go`                                       | Shared allowlist shrink-wrap plumbing: `writeJSONAllowlist` (stable JSON rewrite), `reformatWithOxfmt`, `fileExists`. Verdict logic stays per-check.                                                                  |
 | `directives.go`                                      | `directiveTracker`: records `allowed-*` opt-out comment sites per file and which excused a violation; unused ones are reported as orphans (the "unused eslint-disable" equivalent).                                   |
 | `changelog-commit-links.go`                          | Validates every `https://github.com/vdavid/cmdr/commit/<sha>` URL in `CHANGELOG.md` resolves, via a single `git cat-file --batch-check` process.                                                                      |
@@ -182,6 +184,16 @@ means zero new CI-contract surface (both E2E checks already carry `NotInCI` reas
   below the threshold minus a 25% margin (1.5 s). Wider than file-length's 10% because wall-clock durations oscillate
   run to run; a test hovering at 1.9 s must not cause remove/re-add churn.
 
+## Website bundle-size baseline
+
+`website-bundle-size` (warn-only, `IsFast`, self-skips without `dist/` like `html-validate`) compares the built
+website's `dist/` total against `website-bundle-size-baseline.json` and warns when it grows more than 10%, listing the
+largest assets with their baseline sizes. Asset names are content-hash-normalized (`About.DvK3R9p1.css` → `About.*.css`)
+so rebuilds compare stably. The baseline follows the file-length ratchet discipline: local runs rewrite it downward when
+`dist/` shrinks past the 10% band; raising it is always deliberate — delete the baseline file and run
+`pnpm check bundle-size` against a fresh build (needs David's OK). A missing baseline is created on the spot locally and
+reported as a warning in CI.
+
 ## Allowlist shrink-wrap
 
 Checks that own an allowlist verify their own entries are still needed; the helpers live in `allowlist.go` and
@@ -199,7 +211,8 @@ Policy by staleness class:
 - **Satisfied entries with a reason** (coverage now ≥ threshold+5% margin; exempt component that has a valid a11y test;
   allowlisted E2E test now under 1.5 s): reported for an agent to judge — the reason may say "tested elsewhere", and the
   margin band stays silently allowlisted to avoid removal/re-add churn.
-- **Numeric slack** (file-length): auto-ratcheted; the entries carry no reason text, so the rewrite loses nothing.
+- **Numeric slack** (file-length, the website bundle-size baseline): auto-ratcheted; the entries carry no reason text,
+  so the rewrite loses nothing.
 - **Orphaned opt-out comments** (`allowed-bare-poll` / `allowed-lock-poison` / `allowed-error-string-match` /
   `allowed-btn-restyle` / `allowed-rustup-add`): the scanners track which directives excused a violation and fail on the
   unused rest. Prose that merely mentions a directive (a comment line not starting with it) is not a site. Source-code
@@ -216,7 +229,7 @@ RUSTSEC ignores — that's a quarterly task in `docs/maintenance.md`.
 | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Desktop    | Rust     | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, lock-poison, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)                                    |
 | Desktop    | Svelte   | prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript, stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
-| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                                                                                                    |
+| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e                                                                                                                                                                                           |
 | Website    | Docker   | docker-build                                                                                                                                                                                                                                                              |
 | API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                                                                           |
 | Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                                                                      |
