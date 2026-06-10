@@ -188,6 +188,9 @@
         queryInputElement?.focus()
     }
 
+    /** Element that had focus when the dialog opened (the pane container). Restored on close. */
+    let previousActiveElement: HTMLElement | null = null
+
     function openRecentPopover(): void {
         recentPopoverOpen = true
     }
@@ -197,6 +200,8 @@
     }
 
     onMount(async () => {
+        // Capture synchronously, before the awaits below and before focusInput() moves focus.
+        previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
         notifyDialogOpened(config.dialogType).catch(() => {})
         window.addEventListener('keydown', handleEscapeCapture, true)
         // D8: mark the dialog as freshly opened so ⏎ owns "run-search" by default
@@ -244,6 +249,13 @@
         unlistenAutoApply?.()
         window.removeEventListener('keydown', handleEscapeCapture, true)
         if (debounceTimer) clearTimeout(debounceTimer)
+        // Restore focus to whatever had it before we opened (the pane container), if it's
+        // still in the DOM. Without this, focus falls to <body> after close: arrow keys stop
+        // moving the pane cursor and natively scroll the pane instead, until the user clicks
+        // back in. Same pattern as CommandPalette and ModalDialog.
+        if (previousActiveElement?.isConnected) {
+            previousActiveElement.focus()
+        }
         // State is intentionally NOT cleared. Close + reopen preserves the user's
         // query/filters/results/cursor. The only reset path is ⌘N inside the dialog.
     })

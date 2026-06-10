@@ -413,3 +413,22 @@ describe('QueryDialog lastDialogEvent ownership', () => {
     cleanup()
   })
 })
+
+describe('QueryDialog focus restore', () => {
+  it('returns focus to the previously focused element on unmount', async () => {
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    const { cleanup } = mountQueryDialog()
+    // Let the async onMount settle and move focus into the dialog's input.
+    await tick()
+    await Promise.resolve()
+    await tick()
+    expect(document.activeElement).not.toBe(outside)
+    cleanup()
+    await tick()
+    // Pre-fix this landed on <body>, leaving pane keyboard nav dead after Escape.
+    expect(document.activeElement).toBe(outside)
+    outside.remove()
+  })
+})
