@@ -206,10 +206,15 @@ impl IndexWriter {
     /// events during `ComputeAllAggregates`.
     pub fn spawn(db_path: &Path, app_handle: Option<AppHandle>) -> Result<Self, IndexStoreError> {
         let conn = IndexStore::open_write_connection(db_path)?;
-        // Phase 1 instrumentation: install a SQLite busy retry logger.
-        // Single-writer + WAL should never trigger this; if it does, that's a finding.
+        // SQLite busy retry logger. Brief contention is routine (WAL checkpoints, long-lived
+        // readers), so per-attempt logging stays at debug; sustained contention (>=20 attempts
+        // = >100ms lock wait) is a genuine stall signal and logs at warn.
         conn.busy_handler(Some(|attempt: i32| {
-            log::warn!(target: "stall_probe::sqlite_busy", "writer busy_handler attempt={attempt}");
+            if attempt >= 20 {
+                log::warn!(target: "stall_probe::sqlite_busy", "writer busy_handler attempt={attempt}");
+            } else {
+                log::debug!(target: "stall_probe::sqlite_busy", "writer busy_handler attempt={attempt}");
+            }
             // Same back-off behaviour as default busy timeout (sleep up to ~100ms).
             if attempt > 50 {
                 false
@@ -1267,7 +1272,35 @@ fn handle_move_entry_v2(
         return;
     }
 
+    // A different entry can already occupy the destination (parent_id, name_folded): the move
+    // overwrote an existing file, or a concurrent upsert raced ahead of this message. On disk
+    // the moved entry owns that name now, so delete the conflicting row first (subtree-aware,
+    // with delta propagation); without this the UPDATE below fails the UNIQUE constraint and
+    // the moved entry stays stuck at its old location until verification heals it.
     let new_name_folded = normalize_for_comparison(&new_name);
+    match IndexStore::resolve_component(conn, new_parent_id, &new_name) {
+        Ok(Some(conflicting_id)) if conflicting_id != entry_id => {
+            log::debug!(
+                target: "indexing::writer",
+                "MoveEntryV2: id={conflicting_id} already at destination (parent_id={new_parent_id}, name={new_name}), replacing it with id={entry_id}",
+            );
+            let conflicting_is_dir = IndexStore::get_entry_by_id(conn, conflicting_id)
+                .ok()
+                .flatten()
+                .map(|e| e.is_directory)
+                .unwrap_or(false);
+            if conflicting_is_dir {
+                handle_delete_subtree_by_id(conn, conflicting_id, mutation_counter);
+            } else {
+                handle_delete_entry_by_id(conn, conflicting_id, mutation_counter);
+            }
+        }
+        Ok(_) => {}
+        Err(e) => {
+            log::warn!("Index writer: MoveEntryV2 destination lookup failed for id={entry_id}: {e}");
+            return;
+        }
+    }
     if let Err(e) = conn.execute(
         "UPDATE entries SET parent_id = ?1, name = ?2, name_folded = ?3 WHERE id = ?4",
         rusqlite::params![new_parent_id, new_name, new_name_folded, entry_id],
@@ -3627,6 +3660,192 @@ mod tests {
         );
         assert_eq!(parent_stats.recursive_file_count, 7);
         assert_eq!(parent_stats.recursive_dir_count, 1);
+
+        writer.shutdown();
+    }
+
+    /// Helper: insert a plain file row.
+    fn insert_file(writer: &IndexWriter, id: i64, parent_id: i64, name: &str, size: u64) {
+        writer
+            .send(WriteMessage::InsertEntriesV2(vec![EntryRow {
+                id,
+                parent_id,
+                name: name.into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(size),
+                physical_size: Some(size),
+                modified_at: None,
+                inode: None,
+            }]))
+            .unwrap();
+        writer.flush_blocking().unwrap();
+    }
+
+    #[test]
+    fn move_entry_v2_destination_collision_replaces_conflicting_file() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // One dir with two files. Moving "draft.txt" onto "final.txt"'s name
+        // (a rename-with-overwrite, or a concurrent upsert racing ahead of the
+        // move) used to fail the UNIQUE (parent_id, name_folded) constraint and
+        // leave the moved entry stuck at its old name.
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            10,
+            ROOT_ID,
+            "docs",
+            DirStatsById {
+                entry_id: 10,
+                recursive_logical_size: 150,
+                recursive_physical_size: 150,
+                recursive_file_count: 2,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+        insert_file(&writer, 20, 10, "draft.txt", 100);
+        insert_file(&writer, 21, 10, "final.txt", 50);
+
+        writer
+            .send(WriteMessage::MoveEntryV2 {
+                entry_id: 20,
+                new_parent_id: 10,
+                new_name: "final.txt".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let moved = IndexStore::get_entry_by_id(&conn, 20).unwrap().unwrap();
+        assert_eq!(moved.name, "final.txt", "moved entry owns the destination name");
+        assert_eq!(moved.parent_id, 10);
+        assert!(
+            IndexStore::get_entry_by_id(&conn, 21).unwrap().is_none(),
+            "conflicting entry is deleted"
+        );
+
+        // The conflicting file's contribution is subtracted from the parent.
+        let parent_stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(parent_stats.recursive_logical_size, 100);
+        assert_eq!(parent_stats.recursive_file_count, 1);
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn move_entry_v2_destination_collision_replaces_conflicting_dir_subtree() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // A/proj (id 20, rich dir_stats) moves to B/proj, but B already has a
+        // stale dir row "proj" (id 21) with a child file. The stale subtree must
+        // go and the moved dir must keep its id and dir_stats.
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            10,
+            ROOT_ID,
+            "A",
+            DirStatsById {
+                entry_id: 10,
+                recursive_logical_size: 1000,
+                recursive_physical_size: 1000,
+                recursive_file_count: 3,
+                recursive_dir_count: 1,
+                recursive_has_symlinks: false,
+            },
+        );
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            11,
+            ROOT_ID,
+            "B",
+            DirStatsById {
+                entry_id: 11,
+                recursive_logical_size: 500,
+                recursive_physical_size: 500,
+                recursive_file_count: 1,
+                recursive_dir_count: 1,
+                recursive_has_symlinks: false,
+            },
+        );
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            20,
+            10,
+            "proj",
+            DirStatsById {
+                entry_id: 20,
+                recursive_logical_size: 1000,
+                recursive_physical_size: 1000,
+                recursive_file_count: 3,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            21,
+            11,
+            "proj",
+            DirStatsById {
+                entry_id: 21,
+                recursive_logical_size: 500,
+                recursive_physical_size: 500,
+                recursive_file_count: 1,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+        insert_file(&writer, 22, 21, "old.txt", 500);
+
+        writer
+            .send(WriteMessage::MoveEntryV2 {
+                entry_id: 20,
+                new_parent_id: 11,
+                new_name: "proj".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let moved = IndexStore::get_entry_by_id(&conn, 20).unwrap().unwrap();
+        assert_eq!(moved.parent_id, 11, "moved dir landed under B");
+        assert_eq!(moved.name, "proj");
+        assert!(
+            IndexStore::get_entry_by_id(&conn, 21).unwrap().is_none(),
+            "conflicting dir is deleted"
+        );
+        assert!(
+            IndexStore::get_entry_by_id(&conn, 22).unwrap().is_none(),
+            "conflicting dir's children are deleted"
+        );
+
+        let moved_stats = IndexStore::get_dir_stats_by_id(&conn, 20).unwrap().unwrap();
+        assert_eq!(
+            moved_stats.recursive_logical_size, 1000,
+            "moved dir keeps its own stats"
+        );
+        assert_eq!(moved_stats.recursive_file_count, 3);
+
+        // A lost the moved dir's contribution entirely.
+        let a_stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(a_stats.recursive_logical_size, 0);
+        assert_eq!(a_stats.recursive_file_count, 0);
+        assert_eq!(a_stats.recursive_dir_count, 0);
+
+        // B lost the stale subtree (-500, -1 file, -1 dir) and gained the moved
+        // dir (+1000, +3 files, +1 dir).
+        let b_stats = IndexStore::get_dir_stats_by_id(&conn, 11).unwrap().unwrap();
+        assert_eq!(b_stats.recursive_logical_size, 1000);
+        assert_eq!(b_stats.recursive_file_count, 3);
+        assert_eq!(b_stats.recursive_dir_count, 1);
 
         writer.shutdown();
     }
