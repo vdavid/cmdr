@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -91,6 +92,44 @@ func TestFingerprintDirtyWorkingTree(t *testing.T) {
 	after := fingerprint(t, dir, []string{"a.txt"})
 	if before == after {
 		t.Fatal("an uncommitted edit to an input must change the fingerprint")
+	}
+}
+
+func TestFingerprintDirtyReportedIdenticalContentMatchesClean(t *testing.T) {
+	dir := initFpGitRepo(t, map[string]string{"a.txt": "v1"})
+	clean := fingerprint(t, dir, []string{"a.txt"})
+
+	// Force the racily-clean shape: identical content, but stat info that makes git
+	// re-examine (and potentially report) the file. Touching mtime is the
+	// deterministic stand-in; the dirty-content code path is what we pin here.
+	writeFiles(t, dir, map[string]string{"a.txt": "v1"})
+	dirtyReported := fingerprint(t, dir, []string{"a.txt"})
+	if clean != dirtyReported {
+		t.Fatal("identical content must fingerprint identically whether it comes from the index blob SHA or the dirty-file hash; a mismatch causes spurious lane-wide re-runs after merges")
+	}
+}
+
+func TestHashFileContentMatchesGitHashObject(t *testing.T) {
+	// The dirty-file hash MUST be git's blob object id, so a dirty-reported but
+	// unchanged file contributes the same value as its index entry. Pre-fix
+	// (generic SHA-256) this test would have failed.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "f.txt")
+	content := "hello fingerprint\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := hashFileContent(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := exec.Command("git", "hash-object", path).Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := strings.TrimSpace(string(out))
+	if got != want {
+		t.Fatalf("hashFileContent = %s, want git hash-object's %s", got, want)
 	}
 }
 

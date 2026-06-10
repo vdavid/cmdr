@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -138,14 +139,25 @@ func parseStatusAndHashDirty(rootDir, out string, data *RepoFingerprintData) err
 	return nil
 }
 
-// hashFileContent returns a hex SHA-256 of a file's bytes.
+// hashFileContent returns the file's git blob object id (SHA-1 of
+// "blob <len>\x00<content>", exactly like `git hash-object`). Using git's own
+// algorithm — not a generic content hash — matters: a clean tracked file
+// contributes its index blob SHA to the fingerprint, so a dirty-REPORTED file
+// with identical content must hash to the same value. Git can transiently report
+// unchanged files right after a merge/checkout (stale stat cache, "racily clean"
+// entries); a mismatched hash algorithm flips the fingerprint and triggers a
+// spurious lane-wide re-run that self-heals only on the next pass. SHA-1 is fine
+// here: this is content identity for caching, not a security boundary, and it
+// must mirror what the git index stores.
 func hashFileContent(absPath string) (string, error) {
 	b, err := os.ReadFile(absPath)
 	if err != nil {
 		return "", err
 	}
-	sum := sha256.Sum256(b)
-	return hex.EncodeToString(sum[:]), nil
+	hasher := sha1.New()
+	fmt.Fprintf(hasher, "blob %d\x00", len(b))
+	hasher.Write(b)
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 // FingerprintFor computes the fingerprint of a single check's input set against
