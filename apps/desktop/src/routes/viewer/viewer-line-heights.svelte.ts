@@ -147,11 +147,15 @@ export function createLineHeightMap() {
     if (!currentLayoutFn) return
     const n = preparedTexts.length
     const sums = new Float64Array(n + 1)
+    const minHeight = getLineHeight()
     let acc = 0
     for (let i = 0; i < n; i++) {
       sums[i] = acc
-      const result = currentLayoutFn(preparedTexts[i], maxWidth, getLineHeight())
-      acc += result.height
+      const result = currentLayoutFn(preparedTexts[i], maxWidth, minHeight)
+      // Pretext reports height 0 for empty lines, but the DOM renders every
+      // `.line` row at least one line tall (the gutter number keeps the row
+      // open). Clamp so the prefix sum matches what's actually on screen.
+      acc += Math.max(result.height, minHeight)
     }
     sums[n] = acc
     cumHeight = sums

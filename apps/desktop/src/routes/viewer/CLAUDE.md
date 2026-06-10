@@ -14,7 +14,7 @@ FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CL
 | `viewer-scroll.svelte.ts`       | Virtual scroll composable: line cache, fetch debounce, scroll compression, effects                                                                                                                                                     |
 | `viewer-search.svelte.ts`       | Search composable: start/poll/cancel/navigate, match highlighting, debounce, `useRegex` and `caseSensitive` toggles, regex-error projection                                                                                            |
 | `viewer-line-heights.svelte.ts` | Height map for accurate word-wrap scrolling via pretext (FullLoad files only)                                                                                                                                                          |
-| `viewer-text-width.svelte.ts`   | `ResizeObserver`-driven tracker for the rendered `.line-text` width                                                                                                                                                                    |
+| `viewer-text-width.svelte.ts`   | `ResizeObserver`-driven tracker for the width available to line text (scroll container minus gutter and `.line` padding)                                                                                                               |
 | `viewer-indexing-poll.ts`       | Periodic `viewer_get_status` poll while the backend builds a line index                                                                                                                                                                |
 | `viewer-keyboard.ts`            | Pure key helpers (`handleNavigationKey` / `handleToggleKey` / `handleSearchToggleKey` / `handleTailToggleKey`) plus `createViewerKeyboard`, the page's full keydown router (modifier shortcuts, Escape ladder, ⌘A, bare-key dispatch)  |
 | `selection.svelte.ts`           | Selection model: state + pure helpers (normalise, in-range, segment bounds, byte estimator)                                                                                                                                            |
@@ -180,6 +180,16 @@ either duplicate work or risk a different result.
 - `runHeightMapInitEffect` guards with `if (heightMap.ready) return` to avoid re-preparing when only `textWidth`
   changes. Width-only changes are handled by `runHeightMapReflowEffect` via `reflow()` (instant) instead of re-running
   the async `prepareLines` pipeline. Without this guard, both effects would race on width changes.
+- **The height map's wrap width comes from the row geometry, never from a `.line-text` span.**
+  `viewer-text-width.svelte.ts` computes it as the scroll container's `clientWidth` minus the `.line` padding and the
+  gutter (`.line-number` width + margin). `.line-text` is a flex item with no `flex-grow`, so it shrink-wraps to its own
+  content: measuring it on a file whose first line is short ("# Cmdr", ~44px) once fed a 44px wrap width to pretext,
+  inflating the height map ~7x (blank space below ~line 60, end of the file unreachable). The `.line` row is no better:
+  in no-wrap mode the `.lines-container` is `max-content`, so the row is as wide as the widest line. Pinned by
+  `viewer-text-width.svelte.test.ts` and `viewer-wordwrap-scroll.spec.ts` (E2E).
+- **Pretext reports height 0 for empty lines; `buildPrefixSum` clamps each line to `getLineHeight()`.** The DOM renders
+  every `.line` row at least one line tall (the gutter number keeps the row open), so without the clamp the height map
+  under-counts by one row per empty line and the scroll mapping drifts on files with many blank lines.
 - `closeWindow()`'s `setTimeout(() => …, 0)` before `currentWindow.close()` is load-bearing — not decoration. Calling
   `close()` synchronously from inside a webview event handler runs webkit2gtk's destruction on the same GTK main-loop
   tick, stalling other webviews' IPC for an undefined duration. The settings page (`routes/settings/+page.svelte`'s
