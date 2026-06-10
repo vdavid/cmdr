@@ -251,6 +251,10 @@ shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shi
   `.claude/rules/git-conventions.md` is only for the rare case David explicitly asks for one. No `gh pr create`.
 - **Don't `git push` without explicit approval, and don't push routinely** (solo work, limited CI). See the
   `push-cadence` and `no-external-actions` user rules.
+- **The delivery pipeline is fully wired; don't re-audit it.** Releases are agent-automated end to end (tag → CI
+  build/sign/notarize → publish `latest.json` → website deploy → silent in-app update via the FDA-preserving updater),
+  and user-feedback loops are live (crash reports → email cron, error reports → instant Discord webhook, anonymous
+  analytics → PostHog + analdash). See [docs/guides/releasing.md](docs/guides/releasing.md).
 
 Happy coding! 🦀✨
 
