@@ -37,6 +37,10 @@ pub enum SendFeedbackResult {
     Invalid,
     /// Something went wrong reaching or talking to the server. The UI shows a gentle
     /// try-again; the user's text stays in the dialog.
+    /// E2E builds compile out the network path in `send` (the only constructor of this
+    /// variant), so `deny(unused)` needs the cfg-gated allow. The variant must stay even
+    /// then: the frontend's generated union type covers all three kinds.
+    #[cfg_attr(feature = "playwright-e2e", allow(dead_code))]
     SoftFailure,
 }
 
@@ -80,6 +84,8 @@ pub fn build_payload(feedback: String, email: Option<String>) -> FeedbackPayload
 }
 
 /// Network timeout for the send request. Mirrors the beta-signup and crash/error reporters.
+/// E2E builds compile out the network path in `send` (its only user), hence the cfg-gated allow.
+#[cfg_attr(feature = "playwright-e2e", allow(dead_code))]
 const SEND_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// POST the payload to the api-server. Skips the network in CI (env var) and in E2E builds

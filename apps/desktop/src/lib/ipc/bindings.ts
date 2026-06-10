@@ -4623,6 +4623,9 @@ export type SendFeedbackResult =
   /**
    *  Something went wrong reaching or talking to the server. The UI shows a gentle
    *  try-again; the user's text stays in the dialog.
+   *  E2E builds compile out the network path in `send` (the only constructor of this
+   *  variant), so `deny(unused)` needs the cfg-gated allow. The variant must stay even
+   *  then: the frontend's generated union type covers all three kinds.
    */
   | { kind: 'softFailure' }
 
