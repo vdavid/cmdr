@@ -240,6 +240,13 @@ export const menuCommands = [
   'app.commandPalette',
   'app.settings',
   'app.checkForUpdates',
+  'cmdr.openOnboarding',
+  // Edit menu (custom MenuItems; the focus-routed dispatch exception in
+  // handle_menu_event doesn't change that their accelerators sync generically)
+  'edit.cut',
+  'edit.copy',
+  'edit.paste',
+  'edit.pasteAsMove',
   // File operations
   'file.view',
   'file.edit',

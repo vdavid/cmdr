@@ -260,6 +260,12 @@ side, `MenuState.items` is a `HashMap<String, MenuItemEntry>` that tracks regula
 `update_menu_item_accelerator()` handles the remove/recreate/reinsert cycle. View mode CheckMenuItems still use the
 separate `update_view_mode_accelerator()` path to preserve checked state.
 
+The list can't silently drift from the Rust side anymore: the `menuCommands ↔ command_id_to_menu_id` set-equality test
+in `commands/rust-command-id-drift.test.ts` parses `menu/mod.rs` and fails when a menu item is missing from
+`menuCommands` (stale accelerator after rebinding) or excused without a documented reason. Five reverse-map items are
+deliberately excused there because they're not registered in `MenuState.items` (an accelerator update would error);
+register the item first, then move it from the exception list into `menuCommands`.
+
 ### Conflict warnings are not errors
 
 Users can keep conflicting shortcuts. The UI shows a warning and offers to resolve, but "Keep both" is a valid choice.
