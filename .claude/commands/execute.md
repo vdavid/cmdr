@@ -39,7 +39,7 @@ MCP when that's a good use of a fresh context.
 ## Testing and checks
 
 - Cover new features with tests, using real red→green TDD wherever reasonable (see `tdd-red-green.md`).
-- Run `./scripts/check.sh` after each milestone. Run the slow suite (`--include-slow`) only at the very end.
+- Run `pnpm check` (at repo root) after each milestone. Run the slow suite (`--include-slow`) only at the very end.
 - When running E2E, run only the set specific to the feature you're working on. Our E2E tests are designed to run well
   under a second each; a focused run is fast.
 
@@ -59,7 +59,7 @@ not with a doc-sync chore at the end.
 ## Final review
 
 - Ask +1 Opus agent to thoroughly review the execution and flag anything skipped, broken, or incomplete.
-- Have +1 Opus agent run `./scripts/check.sh` and confirm it's green (even if unrelated checks fail, surface those).
+- Have +1 Opus agent run `pnpm check` and confirm it's green (even if unrelated checks fail, surface those).
 - Strip milestone tags from the touched code and docs. Plan-specific names like "M1", "M2a", "Milestone 3", "Phase 2"
   leak into inline comments, dead-code `reason` strings, test helper prefixes, doc strings, and `CLAUDE.md` text during
   execution. Grep the touched files (`rg -n '\b(M[0-9][a-z]?|Milestone\s*[0-9]|Phase\s*[0-9])\b' <paths>`) and replace

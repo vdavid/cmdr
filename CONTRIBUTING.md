@@ -114,7 +114,7 @@ pnpm check                # to run all checks before committing - USE THIS BY DE
 pnpm check --rust         # to run Rust checks
 pnpm check --svelte       # to run Svelte checks
 pnpm check --check clippy # to run specific checks
-pnpm check --help`        # for more options.
+pnpm check --help        # for more options.
 # Alternatively, some specific checks (run from apps/desktop/), but these are rarely needed:
 cd apps/desktop/src-tauri
 cargo fmt                         # to format Rust code
