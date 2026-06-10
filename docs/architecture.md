@@ -41,6 +41,8 @@ All under `apps/desktop/src/lib/`.
 - `licensing/`: License validation, commercial reminders, expiration modals
 - `logging/`: Unified logging: LogTape config, batching bridge to Rust, verbose toggle
 - `error-reporter/`: Error report dialog (Flow A), auto-send toast (Flow B), shared `error-report-flow`
+- `feedback/`: Open-beta "Send feedback" dialog (free text + optional reply-to email → api-server). Shared links in
+  `lib/beta-links.ts`
 - `crash-reporter/`: Frontend half of the crash pipeline: detects the persisted crash file and offers to send it
 - `ai/`: Local LLM features (folder suggestions), download flow. Runtime states only; first-launch consent owned by
   `onboarding/`
@@ -128,6 +130,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `drag_image_detection.rs`: macOS method swizzle for drag image size detection
 - `drag_image_swap.rs`: Rich/transparent drag image swap for self-drags
 - `crash_reporter/`: Crash capture (panic hook + signal handler), next-launch detection, report sending
+- `feedback.rs`: Open-beta feedback: text validation + payload assembly + send to `POST /feedback`. IPC in
+  `commands/feedback.rs`
 - `error_reporter/`: Error reports: bundle build (manifest + redacted log tail), short-ID + R2 upload, debounced
   auto-dispatcher
 - `updater/`: macOS custom updater: syncs files into the running `.app` in place so FDA survives updates. Other

@@ -25,6 +25,19 @@ export interface ErrorReportNotification {
   userNote?: string
 }
 
+export interface FeedbackNotification {
+  /**
+   * `[DEV]`/`[PROD]` prefix logic mirrors error reports: dev-build feedback (mostly
+   * the maintainer testing) stays visually separate from real beta-tester traffic.
+   */
+  buildMode: 'release' | 'debug'
+  appVersion: string
+  osVersion: string
+  /** Reply-to email the sender chose to attach; absent means they want to stay anonymous. */
+  email?: string
+  feedback: string
+}
+
 export interface EvictionInfo {
   evictedCount: number
   freedBytes: number
@@ -33,6 +46,12 @@ export interface EvictionInfo {
 
 const ERROR_REPORT_EMBED_COLOR = 0xff6b6b
 const USER_NOTE_EMBED_CAP = 500
+const FEEDBACK_EMBED_COLOR = 0x5bc0de
+/**
+ * Discord caps embed descriptions at 4096 chars. The full text always lives in the
+ * D1 `feedback` table, so a truncated embed never loses data.
+ */
+const FEEDBACK_EMBED_CAP = 3500
 
 /** "1.23 GB", "456 MB", "789 KB", "12 B". */
 export function formatBytes(bytes: number): string {
@@ -73,6 +92,34 @@ export function buildErrorReportPayload(n: ErrorReportNotification): unknown {
       {
         title: `${titlePrefix}Error report ${n.id}`,
         color: ERROR_REPORT_EMBED_COLOR,
+        fields,
+      },
+    ],
+  }
+}
+
+/** Build the Discord webhook JSON body for a new in-app feedback message. */
+export function buildFeedbackPayload(n: FeedbackNotification): unknown {
+  const truncated =
+    n.feedback.length > FEEDBACK_EMBED_CAP
+      ? n.feedback.slice(0, FEEDBACK_EMBED_CAP) + '… (full text in the feedback table)'
+      : n.feedback
+
+  const fields: { name: string; value: string; inline?: boolean }[] = [
+    { name: 'App version', value: n.appVersion, inline: true },
+    { name: 'OS', value: n.osVersion, inline: true },
+  ]
+  if (n.email) {
+    fields.push({ name: 'Reply to', value: n.email, inline: true })
+  }
+
+  const titlePrefix = n.buildMode === 'debug' ? '[DEV] ' : '[PROD] '
+  return {
+    embeds: [
+      {
+        title: `${titlePrefix}Feedback`,
+        description: truncated,
+        color: FEEDBACK_EMBED_COLOR,
         fields,
       },
     ],
@@ -126,4 +173,8 @@ export async function postErrorReportNotification(
 
 export async function postEvictionNotification(webhookUrl: string, info: EvictionInfo): Promise<void> {
   await postWithRetry(webhookUrl, buildEvictionPayload(info), 'eviction')
+}
+
+export async function postFeedbackNotification(webhookUrl: string, notification: FeedbackNotification): Promise<void> {
+  await postWithRetry(webhookUrl, buildFeedbackPayload(notification), 'feedback')
 }

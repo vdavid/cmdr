@@ -2,10 +2,12 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import {
   buildErrorReportPayload,
   buildEvictionPayload,
+  buildFeedbackPayload,
   formatBytes,
   postErrorReportNotification,
   postEvictionNotification,
   type ErrorReportNotification,
+  type FeedbackNotification,
 } from './discord'
 
 const baseNotification: ErrorReportNotification = {
@@ -109,6 +111,42 @@ describe('buildErrorReportPayload', () => {
   it('prefixes the title with [PROD] when buildMode is release', () => {
     const payload = buildErrorReportPayload(baseNotification) as { embeds: { title: string }[] }
     expect(payload.embeds[0].title).toBe('[PROD] Error report ERR-A2345')
+  })
+})
+
+describe('buildFeedbackPayload', () => {
+  const baseFeedback: FeedbackNotification = {
+    buildMode: 'release',
+    appVersion: '0.14.0',
+    osVersion: 'macOS 26.0',
+    feedback: 'Love the app! The Brief mode columns are perfect.',
+  }
+
+  it('puts the feedback text in the embed description with a [PROD] title prefix', () => {
+    const payload = buildFeedbackPayload(baseFeedback) as {
+      embeds: { title: string; description: string; fields: { name: string; value: string }[] }[]
+    }
+    expect(payload.embeds[0].title).toBe('[PROD] Feedback')
+    expect(payload.embeds[0].description).toBe(baseFeedback.feedback)
+    expect(payload.embeds[0].fields.map((f) => f.name)).toEqual(['App version', 'OS'])
+  })
+
+  it('prefixes [DEV] for debug builds and adds a reply-to field when an email is attached', () => {
+    const payload = buildFeedbackPayload({
+      ...baseFeedback,
+      buildMode: 'debug',
+      email: 'tester@example.com',
+    }) as { embeds: { title: string; fields: { name: string; value: string }[] }[] }
+    expect(payload.embeds[0].title).toBe('[DEV] Feedback')
+    expect(payload.embeds[0].fields).toContainEqual({ name: 'Reply to', value: 'tester@example.com', inline: true })
+  })
+
+  it('truncates very long feedback below the Discord description cap', () => {
+    const payload = buildFeedbackPayload({ ...baseFeedback, feedback: 'x'.repeat(10_000) }) as {
+      embeds: { description: string }[]
+    }
+    expect(payload.embeds[0].description.length).toBeLessThanOrEqual(4096)
+    expect(payload.embeds[0].description).toContain('full text in the feedback table')
   })
 })
 

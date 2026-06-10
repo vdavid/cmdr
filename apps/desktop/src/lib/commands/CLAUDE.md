@@ -109,7 +109,7 @@ keyboard routing is handled by each UI component.
 
 ## Command registry
 
-`command-registry.ts` holds 109 commands grouped by scope (about 77 palette-visible; the rest are `showInPalette: false`
+`command-registry.ts` holds 110 commands grouped by scope (about 78 palette-visible; the rest are `showInPalette: false`
 — low-level navigation and the MCP-only per-pane commands). Key rules:
 
 - `showInPalette: false` for low-level navigation (↑/↓, ←/→, volume/palette modal internals).
@@ -230,7 +230,7 @@ sync to avoid double-toggling.
 
 ## Gotchas
 
-**Gotcha**: `commands` is a plain array, not a `Map` or indexed structure. **Why**: The array is ~109 items.
+**Gotcha**: `commands` is a plain array, not a `Map` or indexed structure. **Why**: The array is ~110 items.
 `getPaletteCommands()` filters it on each call, and uFuzzy needs an array of strings anyway. Indexing by ID would help
 lookup but add complexity for no measurable gain at this scale.
 

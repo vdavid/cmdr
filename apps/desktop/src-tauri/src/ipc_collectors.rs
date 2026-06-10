@@ -132,6 +132,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         // which specta can't represent. Excluded; stays in generate_handler![].
         // record_breadcrumb takes Option<serde_json::Value>: excluded; stays in generate_handler![].
         crate::commands::error_reporter::record_settings_defaults,
+        crate::commands::feedback::send_feedback,
         crate::commands::licensing::get_license_status,
         crate::commands::licensing::get_window_title,
         crate::commands::licensing::activate_license,

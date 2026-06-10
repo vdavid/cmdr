@@ -264,6 +264,8 @@ export { trackEvent } from './analytics'
 // Beta-tester signup (subscribes the contact email; sends NO install id)
 export { betaSignup } from './beta-signup'
 export type { BetaSignupResult } from './beta-signup'
+export { sendFeedback } from './feedback'
+export type { SendFeedbackResult } from './feedback'
 
 // Crash reporter
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'

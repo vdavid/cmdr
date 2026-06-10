@@ -71,6 +71,17 @@ namespace_id = "1002"
 limit = 5
 period = 60
 
+# Rate limit for POST /feedback, keyed by the caller IP (transient, never stored). Real
+# feedback is rare (a few per user per day at most), so 5/min/IP stops a spam loop without
+# touching real users. `period` must be 10 or 60. `namespace_id` is a per-account integer id.
+[[ratelimits]]
+name = "FEEDBACK_LIMITER"
+namespace_id = "1003"
+
+[ratelimits.simple]
+limit = 5
+period = 60
+
 [triggers]
 crons = ["0 */12 * * *"]
 
@@ -101,6 +112,8 @@ LISTMONK_BETA_LIST_ID = 4
 # - ADMIN_API_TOKEN                (dedicated token for /admin/stats)
 # - CRASH_NOTIFICATION_EMAIL      (recipient for crash alert emails)
 # - DISCORD_WEBHOOK_URL            (Discord webhook for #error-reports)
+# - DISCORD_FEEDBACK_WEBHOOK_URL   (optional: dedicated webhook for in-app feedback;
+#                                   POST /feedback falls back to DISCORD_WEBHOOK_URL when unset)
 # - R2_ACCOUNT_ID                  (for minting presigned R2 GET URLs)
 # - R2_ACCESS_KEY_ID               (R2 S3-compatible access key; read-only suffices)
 # - R2_SECRET_ACCESS_KEY           (paired secret for R2_ACCESS_KEY_ID)

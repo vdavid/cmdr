@@ -199,6 +199,9 @@ pub const SETTINGS_ID: &str = "settings";
 /// Menu item ID for "Send error report…" (under the Help menu).
 pub const HELP_SEND_ERROR_REPORT_ID: &str = "help_send_error_report";
 
+/// Menu item ID for "Send feedback…" (under the Help menu).
+pub const HELP_SEND_FEEDBACK_ID: &str = "help_send_feedback";
+
 /// Menu item ID for "Check for updates…" (under the Cmdr / Help menu).
 pub const CHECK_FOR_UPDATES_ID: &str = "check_for_updates";
 
@@ -241,6 +244,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         COMMAND_PALETTE_ID => Some(("app.commandPalette", CommandScope::FileScoped)),
         SEARCH_FILES_ID => Some(("search.open", CommandScope::FileScoped)),
         HELP_SEND_ERROR_REPORT_ID => Some(("help.sendErrorReport", CommandScope::App)),
+        HELP_SEND_FEEDBACK_ID => Some(("feedback.send", CommandScope::App)),
         CHECK_FOR_UPDATES_ID => Some(("app.checkForUpdates", CommandScope::App)),
         OPEN_ONBOARDING_ID => Some(("cmdr.openOnboarding", CommandScope::App)),
 
@@ -336,6 +340,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "app.commandPalette" => Some(COMMAND_PALETTE_ID),
         "search.open" => Some(SEARCH_FILES_ID),
         "help.sendErrorReport" => Some(HELP_SEND_ERROR_REPORT_ID),
+        "feedback.send" => Some(HELP_SEND_FEEDBACK_ID),
         "app.checkForUpdates" => Some(CHECK_FOR_UPDATES_ID),
         "cmdr.openOnboarding" => Some(OPEN_ONBOARDING_ID),
         "pane.switch" => Some(SWITCH_PANE_ID),
@@ -663,6 +668,7 @@ mod tests {
             "selection.selectFiles",
             "selection.deselectFiles",
             "help.sendErrorReport",
+            "feedback.send",
             "app.checkForUpdates",
             "cmdr.openOnboarding",
             "cloud.makeOffline",

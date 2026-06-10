@@ -40,6 +40,7 @@ export const COMMAND_IDS = [
   'app.checkForUpdates',
   'cmdr.openOnboarding',
   'help.sendErrorReport',
+  'feedback.send',
 
   // Search
   'search.open',

@@ -90,6 +90,7 @@ mod drag_image_detection;
 mod drag_image_swap;
 mod error_reporter;
 mod fda_gate;
+mod feedback;
 mod file_system;
 pub mod file_viewer;
 mod font_metrics;

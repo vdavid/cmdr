@@ -6,6 +6,7 @@ import { telemetry } from './telemetry'
 import { likes } from './likes'
 import { errorReport } from './error-report'
 import { betaSignup } from './beta-signup'
+import { feedback } from './feedback'
 import {
   handleCrashNotifications,
   handleDailyAggregation,
@@ -27,6 +28,7 @@ app.route('/', telemetry)
 app.route('/', likes)
 app.route('/', errorReport)
 app.route('/', betaSignup)
+app.route('/', feedback)
 
 export { app }
 

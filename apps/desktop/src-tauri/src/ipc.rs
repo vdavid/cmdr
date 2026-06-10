@@ -491,6 +491,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::error_reporter::record_settings_defaults,
         #[cfg(debug_assertions)]
         crate::commands::error_reporter::save_error_report_to_disk,
+        crate::commands::feedback::send_feedback,
         crate::commands::licensing::get_license_status,
         crate::commands::licensing::get_window_title,
         crate::commands::licensing::activate_license,

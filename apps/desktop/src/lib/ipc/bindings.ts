@@ -1072,6 +1072,15 @@ export const commands = {
    */
   recordSettingsDefaults: (defaults: { [key in string]: SettingValue }) =>
     __TAURI_INVOKE<void>('record_settings_defaults', { defaults }),
+  /**
+   *  Sends a beta tester's feedback text (plus an optional reply-to email they chose to attach)
+   *  to the api-server. Returns a typed result the UI branches on.
+   *
+   *  Network-touching but NOT filesystem-touching, so no `blocking_with_timeout` is needed (that's
+   *  for syscalls that hang on dead mounts). The `reqwest` client carries its own 10 s timeout.
+   */
+  sendFeedback: (feedbackText: string, email: string | null) =>
+    __TAURI_INVOKE<SendFeedbackResult>('send_feedback', { feedbackText, email }),
   // Get the current app status (personal, commercial, or expired).
   getLicenseStatus: () => __TAURI_INVOKE<AppStatus>('get_license_status'),
   // Get the window title based on current license status.
@@ -4597,6 +4606,25 @@ export type SelectionTranslateResult = {
   // Short label (≤40 chars) for breadcrumb / history UX.
   label: string | null
 }
+
+/**
+ *  The send outcome, returned across IPC so the frontend reacts on a typed `kind`
+ *  discriminant rather than parsing a message. Serializes as `{"kind":"sent"}` /
+ *  `{"kind":"invalid"}` / `{"kind":"softFailure"}`.
+ */
+export type SendFeedbackResult =
+  // The feedback landed on the server.
+  | { kind: 'sent' }
+  /**
+   *  The text didn't pass validation (empty after trimming, or over the length cap).
+   *  The dialog already blocks both, so this is a backstop for bypassed input.
+   */
+  | { kind: 'invalid' }
+  /**
+   *  Something went wrong reaching or talking to the server. The UI shows a gentle
+   *  try-again; the user's text stays in the dialog.
+   */
+  | { kind: 'softFailure' }
 
 export type SendResult = {
   id: string

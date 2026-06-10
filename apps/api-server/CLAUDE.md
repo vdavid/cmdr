@@ -17,6 +17,7 @@ app versions).
 | `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                         |
 | `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                        |
 | `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                     |
+| `src/feedback.ts`                           | Route: `POST /feedback` (in-app feedback → D1 + Discord notify)                                             |
 | `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                |
 | `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                               |
 | `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                |
@@ -32,6 +33,7 @@ app versions).
 | `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                     |
 | `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                     |
 | `src/beta-signup.test.ts`                   | Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure, rate limit)            |
+| `src/feedback.test.ts`                      | Tests for `POST /feedback` (validation, caps, D1 row, Discord ping, rate limit)                             |
 | `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                         |
 | `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                   |
 | `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                             |
@@ -56,6 +58,7 @@ app versions).
 | POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                |
 | POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                  |
 | POST   | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id) |
+| POST   | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                        |
 | GET    | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                 |
 
 ## Environments
@@ -98,6 +101,7 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | `ERROR_REPORT_META`    | KV namespace | `total_bytes` counter + `eviction_in_progress` lock for the eviction logic           |
 | `HEARTBEAT_LIMITER`    | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)        |
 | `BETA_SIGNUP_LIMITER`  | Rate limit   | Gates `POST /beta-signup` at 5 req/min/IP (signups are rare; tighter than heartbeat) |
+| `FEEDBACK_LIMITER`     | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)    |
 
 **Paddle dashboards**: [sandbox](https://sandbox-vendors.paddle.com) | [live](https://vendors.paddle.com)
 
@@ -193,6 +197,8 @@ Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over)
 
 Beta signup: POST /beta-signup → rate-limit by IP (BETA_SIGNUP_LIMITER, 429 if over) → read ONLY the email (no install id) → validate shape → Listmonk POST /api/subscribers (list = LISTMONK_BETA_LIST_ID, status "unconfirmed", NO preconfirm = double opt-in) → 204 on 2xx or 409 (existing; no enumeration), soft 502 on Listmonk error
 
+Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) → validate shape (required feedback text ≤ 100k code points + appVersion/osVersion, optional email/buildMode) → AWAITED D1 write to `feedback` (failure → soft 502 so the app offers a retry) → Discord ping in waitUntil (DISCORD_FEEDBACK_WEBHOOK_URL, falls back to DISCORD_WEBHOOK_URL) → 204
+
 Update check proxy: GET /update-check/:version → hash IP with daily salt → INSERT OR IGNORE into D1 (fire-and-forget) → 302 to latest.json
 
 Cron (every 12h): scheduled handler runs three jobs:
@@ -249,12 +255,12 @@ Read by `/admin/stats`. The counter starts from zero when deployed; initialize v
 needed.
 
 **D1 for telemetry:** Crash reports, downloads, update checks, and heartbeats are stored in D1 (binding: `TELEMETRY_DB`,
-database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0006_crash_diag_email.sql`, which adds the
-nullable `diag_id` + `email` columns to `crash_reports`; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with
-`wrangler d1 migrations apply cmdr-telemetry` before deploying changes that add new tables or columns. The only
-remaining Analytics Engine dataset is `DEVICE_COUNTS` for fair-use monitoring. All other state (license codes,
-activation counter, device sets) lives in Cloudflare KV. Short codes never expire (perpetual licenses last forever);
-subscription validity is checked live via Paddle API.
+database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0007_feedback.sql`, which adds the `feedback`
+table for in-app feedback; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email` columns to `crash_reports`;
+`0005_heartbeat.sql` adds the `heartbeat` table). Apply with `wrangler d1 migrations apply cmdr-telemetry` before
+deploying changes that add new tables or columns. The only remaining Analytics Engine dataset is `DEVICE_COUNTS` for
+fair-use monitoring. All other state (license codes, activation counter, device sets) lives in Cloudflare KV. Short
+codes never expire (perpetual licenses last forever); subscription validity is checked live via Paddle API.
 
 **Validation error granularity:** `/validate` distinguishes "Paddle says invalid" (HTTP 200 + `status: "invalid"`) from
 "Paddle is unreachable" (HTTP 502 + `{ error: "upstream_error" }`). `paddle-api.ts` throws `PaddleApiError` on
@@ -312,6 +318,15 @@ already-subscribed addresses (a 409 from Listmonk maps to the identical empty 20
 the address existed: no enumeration). On a Listmonk network/5xx failure it returns a soft 502 the desktop app surfaces
 as a gentle "try again" (NOT fire-and-forget: we want the user to know it didn't land). Missing Listmonk config
 returns 500. The list id is set as a wrangler secret at deploy time; see `docs/tooling/listmonk.md`.
+
+**In-app feedback:** `POST /feedback` is the open-beta "Send feedback" channel. JSON body: required `feedback` text
+(trimmed, 1–100 000 Unicode code points; the cap matches the desktop dialog and the Rust validator) plus `appVersion` /
+`osVersion`, optional reply-to `email` (loose shape check) and `buildMode`. Body capped at 512 KB. The D1 `feedback`
+table is the durable sink, so unlike the other telemetry writes this one is AWAITED: a D1 failure returns a soft 502 the
+desktop app surfaces as a gentle retry. The Discord ping (truncated preview, `[DEV]`/`[PROD]` title prefix from
+`buildMode`) rides `waitUntil` after the 204; it prefers `DISCORD_FEEDBACK_WEBHOOK_URL` and falls back to
+`DISCORD_WEBHOOK_URL` so feedback works with no new secret. No install id of any kind is read or stored, so feedback
+can't be joined to the analytics stream. Rate-limited at 5/min/IP via `FEEDBACK_LIMITER` (IP never stored).
 
 **Device tracking (fair use):** On each `/validate` call with a `deviceId`, the server tracks the device in KV
 (`devices:{seatTransactionId}`) and logs to Analytics Engine (binding: `DEVICE_COUNTS`, dataset: `cmdr_device_counts`).

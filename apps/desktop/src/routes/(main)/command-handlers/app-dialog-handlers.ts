@@ -9,6 +9,7 @@
 import { openExternalUrl, trackEvent } from '$lib/tauri-commands'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
+import { openFeedbackDialog } from '$lib/feedback/feedback-flow.svelte'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import type { CommandHandlerRecord } from './types'
 
@@ -41,6 +42,10 @@ export const appDialogHandlers = {
 
   'help.sendErrorReport': () => {
     openErrorReportDialog()
+  },
+
+  'feedback.send': () => {
+    openFeedbackDialog()
   },
 
   'app.checkForUpdates': () => {

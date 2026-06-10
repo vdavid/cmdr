@@ -23,6 +23,7 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'extension-change', description: 'Shown when a rename changes the file extension' },
   { id: 'crash-report', description: 'Post-crash dialog offering to send a crash report' },
   { id: 'error-report', description: 'Preview-and-send dialog for user-initiated error reports' },
+  { id: 'feedback', description: 'Open-beta "Send feedback" dialog' },
   { id: 'delete-confirmation', description: 'Opened by the delete tool, not directly' },
   { id: 'delete-ai-model', description: 'Confirmation before deleting the local AI model' },
   { id: 'search', description: 'Whole-drive file search' },

@@ -114,6 +114,14 @@ export const commands: Command[] = [
     shortcuts: [],
     description: 'Send Cmdr logs to the team to help fix something that went wrong',
   },
+  {
+    id: 'feedback.send',
+    name: 'Send feedback',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    description: 'Tell the maker of Cmdr what you think: ideas, wishes, anything',
+  },
 
   // ============================================================================
   // Main window - Search

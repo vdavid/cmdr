@@ -48,6 +48,8 @@
     import CrashReportToastContent from '$lib/crash-reporter/CrashReportToastContent.svelte'
     import ErrorReportDialog from '$lib/error-reporter/ErrorReportDialog.svelte'
     import { errorReportFlow } from '$lib/error-reporter/error-report-flow.svelte'
+    import FeedbackDialog from '$lib/feedback/FeedbackDialog.svelte'
+    import { feedbackFlow } from '$lib/feedback/feedback-flow.svelte'
     import {
         initAutoSendToastListener,
         cleanupAutoSendToastListener,
@@ -305,6 +307,9 @@
 {/if}
 {#if errorReportFlow.open}
     <ErrorReportDialog />
+{/if}
+{#if feedbackFlow.open}
+    <FeedbackDialog />
 {/if}
 {#if showPtpcameradDialog}
     <PtpcameradDialog

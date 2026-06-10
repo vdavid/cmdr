@@ -13,6 +13,9 @@ export type Bindings = {
   // Workers rate-limit binding gating POST /beta-signup, keyed by the caller IP (never stored).
   // Tighter than the heartbeat (signups are rare). Optional; the route skips the gate when absent.
   BETA_SIGNUP_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST /feedback, keyed by the caller IP (never stored).
+  // Optional; the route skips the gate when absent.
+  FEEDBACK_LIMITER?: RateLimit
   // Paddle webhook secrets (both optional to support gradual rollout)
   PADDLE_WEBHOOK_SECRET_LIVE?: string
   PADDLE_WEBHOOK_SECRET_SANDBOX?: string
@@ -41,6 +44,9 @@ export type Bindings = {
   ERROR_REPORT_META: KVNamespace
   // Discord webhook URL for #error-reports channel notifications
   DISCORD_WEBHOOK_URL?: string
+  // Optional dedicated Discord webhook for in-app feedback notifications. When unset,
+  // POST /feedback falls back to DISCORD_WEBHOOK_URL so feedback works with no new secret.
+  DISCORD_FEEDBACK_WEBHOOK_URL?: string
   // R2 S3-compatible credentials, used to mint long-TTL presigned download URLs
   // for the Discord embed. Bindings can't presign on their own, but the S3 API can.
   R2_ACCOUNT_ID?: string

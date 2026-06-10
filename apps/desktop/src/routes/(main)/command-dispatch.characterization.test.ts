@@ -37,6 +37,7 @@ const m = vi.hoisted(() => ({
   getEffectiveShortcuts: vi.fn<(id: string) => string[]>(() => []),
   openSettingsWindow: vi.fn(() => Promise.resolve()),
   openErrorReportDialog: vi.fn<() => void>(),
+  openFeedbackDialog: vi.fn<() => void>(),
   runMenuTriggeredCheck: vi.fn(() => Promise.resolve()),
   goToLatestDownload: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   openExternalUrl: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
@@ -66,6 +67,7 @@ const {
   getEffectiveShortcuts,
   openSettingsWindow,
   openErrorReportDialog,
+  openFeedbackDialog,
   runMenuTriggeredCheck,
   goToLatestDownload,
   openExternalUrl,
@@ -131,6 +133,12 @@ vi.mock('$lib/error-reporter/error-report-flow.svelte', () => ({
   },
 }))
 
+vi.mock('$lib/feedback/feedback-flow.svelte', () => ({
+  openFeedbackDialog: () => {
+    m.openFeedbackDialog()
+  },
+}))
+
 vi.mock('$lib/updates/updater.svelte', () => ({
   runMenuTriggeredCheck: () => m.runMenuTriggeredCheck(),
 }))
@@ -192,8 +200,8 @@ describe('characterization — id partition self-check', () => {
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 
-  it('dispatchable set is exactly 89 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(90)
+  it('dispatchable set is exactly 91 ids', () => {
+    expect(DISPATCHABLE_IDS).toHaveLength(91)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {
@@ -215,6 +223,11 @@ describe('characterization — module-delegate arms', () => {
   it('help.sendErrorReport → openErrorReportDialog()', async () => {
     await handleCommandExecute('help.sendErrorReport', makeCtx({}))
     expect(openErrorReportDialog).toHaveBeenCalledOnce()
+  })
+
+  it('feedback.send → openFeedbackDialog()', async () => {
+    await handleCommandExecute('feedback.send', makeCtx({}))
+    expect(openFeedbackDialog).toHaveBeenCalledOnce()
   })
 
   it('app.checkForUpdates → runMenuTriggeredCheck()', async () => {
