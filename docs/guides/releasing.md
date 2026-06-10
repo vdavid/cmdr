@@ -1,6 +1,8 @@
 # Releasing
 
-How to release a new version of Cmdr. Use the `/release` command to start.
+How to release a new version of Cmdr. An agent runs the whole flow via the `/release` command: it arms `caffeinate`,
+monitors the build, verifies the public surface afterwards, and handles failure recovery. The human's role is to review
+the CHANGELOG draft, confirm the version, and click any macOS permission prompts.
 
 ## Prerequisites
 
@@ -42,7 +44,7 @@ drops the runner connection and every in-flight matrix job fails with
 exactly 11m1s each.
 
 Before pushing the tag, make sure `caffeinate` is holding the Mac awake. The release script does NOT do this
-automatically; the agent (or the human running the release) is responsible for it.
+automatically; the agent running the release is responsible for it.
 
 **Check first, then arm only if needed.** A `caffeinate -dimsu` may already be running (a previous release, or the user
 started one). Don't stack a second one, and don't kill one you didn't start.
