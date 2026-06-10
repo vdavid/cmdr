@@ -297,4 +297,10 @@ describe('ErrorReportDialog', () => {
     await tick()
     expect(errorReportFlow.open).toBe(false)
   })
+
+  it('focuses the note textarea on open (keyboard-first)', async () => {
+    const target = await mountSettled()
+    await tick()
+    expect(document.activeElement).toBe(target.querySelector('#error-report-note'))
+  })
 })

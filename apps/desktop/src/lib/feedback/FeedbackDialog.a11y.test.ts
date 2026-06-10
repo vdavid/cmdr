@@ -202,3 +202,12 @@ describe('FeedbackDialog', () => {
     expect(feedbackFlow.open).toBe(false)
   })
 })
+
+describe('FeedbackDialog initial focus', () => {
+  it('focuses the feedback textarea on open (keyboard-first)', async () => {
+    feedbackFlow.open = true
+    const target = await mountDialog()
+    await tick()
+    expect(document.activeElement).toBe(target.querySelector('#feedback-text'))
+  })
+})

@@ -6,6 +6,7 @@
      * store, mirroring `ErrorReportDialog`. Ships the text via the `send_feedback`
      * IPC command; no log bundle rides along (that's the error reporter's job).
      */
+    import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
@@ -23,6 +24,7 @@
     const SOFT_WARN_AT = 50_000
 
     let feedbackText = $state('')
+    let textareaRef: HTMLTextAreaElement | undefined
     // Beta contact email (if set) and the sticky attach-email choice. The checkbox shows
     // only when an email is on file; never pre-ticked on first use (default false). Shares
     // `updates.attachEmailToReports` with the error and crash report dialogs, so the
@@ -77,6 +79,13 @@
         closeFeedbackDialog()
     }
 
+    onMount(async () => {
+        // Focus the textarea so the user can type immediately (keyboard-first). After a tick
+        // so it wins over ModalDialog's overlay focus, which runs in the child's onMount.
+        await tick()
+        textareaRef?.focus()
+    })
+
     function handleKeydown(event: KeyboardEvent) {
         // Cmd/Ctrl+Enter sends. Plain Enter is consumed by the textarea.
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -114,6 +123,7 @@
         </label>
         <textarea
             id="feedback-text"
+            bind:this={textareaRef}
             bind:value={feedbackText}
             class="feedback-textarea"
             class:invalid={overLimit}

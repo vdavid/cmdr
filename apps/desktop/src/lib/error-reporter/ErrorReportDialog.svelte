@@ -7,6 +7,7 @@
      * to ship the bundle. In dev, an extra "Save bundle to disk (debug)" button writes
      * the zip to the app data dir for inspection.
      */
+    import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Size from '$lib/ui/Size.svelte'
@@ -26,6 +27,15 @@
     import { pluralize } from '$lib/utils/pluralize'
 
     const log = getAppLogger('errorReportDialog')
+
+    let noteTextareaRef: HTMLTextAreaElement | undefined
+
+    onMount(async () => {
+        // Focus the note textarea so the user can type immediately (keyboard-first). After a
+        // tick so it wins over ModalDialog's overlay focus, which runs in the child's onMount.
+        await tick()
+        noteTextareaRef?.focus()
+    })
 
     const MAX_NOTE_CHARS = 100_000
     const SOFT_WARN_AT = 50_000
@@ -196,6 +206,7 @@
         </label>
         <textarea
             id="error-report-note"
+            bind:this={noteTextareaRef}
             bind:value={userNote}
             class="note-textarea"
             class:invalid={noteOverLimit}
