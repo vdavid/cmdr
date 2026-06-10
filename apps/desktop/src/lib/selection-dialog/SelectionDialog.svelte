@@ -162,12 +162,9 @@
      */
     async function translateAi(prompt: string): Promise<AiTranslateResult | null> {
         const sample = sampleFolderNames(folderNamesSnapshot, cursorIndex)
-        let result: Awaited<ReturnType<typeof translateSelectionQuery>>
-        try {
-            result = await translateSelectionQuery(prompt, sample)
-        } catch {
-            return null
-        }
+        // Let the typed IPC error throw: QueryDialog catches it and shows a specific toast
+        // (cloud-only gate, quota, key rejected, timeout, …) instead of failing silently.
+        const result = await translateSelectionQuery(prompt, sample)
         const changed = new SvelteSet<string>()
         if (result.pattern != null && result.pattern.trim()) {
             const kind: 'glob' | 'regex' = result.kind === 'regex' ? 'regex' : 'glob'

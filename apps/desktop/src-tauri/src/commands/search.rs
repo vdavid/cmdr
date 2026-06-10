@@ -11,6 +11,7 @@ use genai::chat::ChatOptions;
 
 use crate::ai::client::AiBackend;
 use crate::ai::manager::BackendResolution;
+use crate::ai::{AiTranslateError, AiTranslateErrorKind};
 use crate::indexing::get_read_pool;
 use crate::search::{
     self, DIALOG_OPEN, ParsedScope, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, drop_search_index,
@@ -337,13 +338,21 @@ pub struct TranslateDisplay {
 
 /// Resolves the AI backend from the current provider configuration.
 ///
-/// Search needs a hard error (not graceful empty) so the toast tells the user how to fix it.
-fn resolve_ai_backend() -> Result<AiBackend, String> {
+/// Search needs a typed error (not graceful empty) so the dialog can toast a specific reason
+/// and tell the user how to fix it. The `kind` is what the frontend branches on.
+fn resolve_ai_backend() -> Result<AiBackend, AiTranslateError> {
+    use AiTranslateErrorKind as K;
     match crate::ai::manager::resolve_backend() {
         BackendResolution::Ready(b) => Ok(b),
-        BackendResolution::Off => Err("AI is not configured. Enable an AI provider in settings.".to_string()),
-        BackendResolution::NotConfigured(reason) => Err(reason.to_string()),
-        BackendResolution::UnknownProvider(p) => Err(format!("Unknown AI provider: {p}")),
+        BackendResolution::Off => Err(AiTranslateError::new(
+            K::Off,
+            "AI is not configured. Enable an AI provider in settings.",
+        )),
+        BackendResolution::NotConfigured(reason) => Err(AiTranslateError::new(K::NotConfigured, reason)),
+        BackendResolution::UnknownProvider(p) => Err(AiTranslateError::new(
+            K::UnknownProvider,
+            format!("Unknown AI provider: {p}"),
+        )),
     }
 }
 
@@ -353,7 +362,7 @@ fn resolve_ai_backend() -> Result<AiBackend, String> {
 /// build deterministic SearchQuery via `ai_query_builder`.
 #[tauri::command]
 #[specta::specta]
-pub async fn translate_search_query(natural_query: String) -> Result<TranslateResult, String> {
+pub async fn translate_search_query(natural_query: String) -> Result<TranslateResult, AiTranslateError> {
     let backend = resolve_ai_backend()?;
     let system_prompt = ai::build_classification_prompt();
 
@@ -362,9 +371,12 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
         system_prompt.len()
     );
 
+    // 300 tokens (not 200): reasoning models spend the budget thinking before any visible
+    // answer, so a tight cap returns an empty response. See ai/CLAUDE.md § reasoning-model
+    // token budget.
     let options = ChatOptions::default()
         .with_temperature(0.3)
-        .with_max_tokens(200)
+        .with_max_tokens(300)
         .with_top_p(0.9);
 
     let t0 = std::time::Instant::now();
@@ -375,7 +387,7 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
                 "AI search: chat_completion failed after {:.1}s for query={natural_query:?}: {e}",
                 t0.elapsed().as_secs_f64()
             );
-            format!("{e}")
+            AiTranslateError::from(e)
         })?;
 
     log::info!(

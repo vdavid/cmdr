@@ -24,6 +24,8 @@
      * popover, and the empty state.
      */
     import { onMount, onDestroy } from 'svelte'
+    import { SvelteSet } from 'svelte/reactivity'
+    import { bytesToSize } from '$lib/query-ui/query-filter-state.svelte'
     import {
         prepareSearchIndex,
         searchFiles,
@@ -65,7 +67,16 @@
         getLastAiPattern,
         getLastAiPatternKind,
         getSizeFilter,
+        setSizeFilter,
+        setSizeValue,
+        setSizeUnit,
+        setSizeValueMax,
+        setSizeUnitMax,
         getDateFilter,
+        setDateFilter,
+        setDateValue,
+        setDateValueMax,
+        recordAiTranslation,
         getIsIndexReady,
         setIsIndexReady,
         getIndexEntryCount,
@@ -169,24 +180,105 @@
     })
     const searchRecentKey: RecentItemKey<HistoryEntry> = (entry) => entry.id
 
+    /** Recovers the structured pattern kind ('glob' | 'regex' | null) from the AI display string. */
+    function patternKindFromDisplay(patternType: string | null | undefined): 'glob' | 'regex' | null {
+        if (patternType === 'regex') return 'regex'
+        if (patternType === 'glob') return 'glob'
+        return null
+    }
+
+    /** Applies AI-returned size filters to the Search state. Returns true if any were applied. */
+    function applySizeFromAi(minSize: number | null, maxSize: number | null): boolean {
+        if (minSize == null && maxSize == null) return false
+        if (minSize != null && maxSize != null) {
+            setSizeFilter('between')
+            const lo = bytesToSize(minSize)
+            const hi = bytesToSize(maxSize)
+            setSizeValue(lo.value)
+            setSizeUnit(lo.unit)
+            setSizeValueMax(hi.value)
+            setSizeUnitMax(hi.unit)
+        } else if (minSize != null) {
+            setSizeFilter('gte')
+            const lo = bytesToSize(minSize)
+            setSizeValue(lo.value)
+            setSizeUnit(lo.unit)
+        } else if (maxSize != null) {
+            setSizeFilter('lte')
+            const hi = bytesToSize(maxSize)
+            setSizeValue(hi.value)
+            setSizeUnit(hi.unit)
+        }
+        return true
+    }
+
+    /** Applies AI-returned date filters to the Search state. Returns true if any were applied. */
+    function applyDateFromAi(after: string | null, before: string | null): boolean {
+        if (after == null && before == null) return false
+        if (after != null && before != null) {
+            setDateFilter('between')
+            setDateValue(after)
+            setDateValueMax(before)
+        } else if (after != null) {
+            setDateFilter('after')
+            setDateValue(after)
+        } else if (before != null) {
+            setDateFilter('before')
+            setDateValue(before)
+        }
+        return true
+    }
+
+    /** Folds the AI's `includePaths` + `excludeDirNames` into one scope expression. Returns true if set. */
+    function applyScopeFromAi(includePaths: string[] | null, excludeDirNames: string[] | null): boolean {
+        if (!includePaths?.length && !excludeDirNames?.length) return false
+        const parts: string[] = []
+        if (includePaths) parts.push(...includePaths)
+        if (excludeDirNames) parts.push(...excludeDirNames.map((d) => `!${d}`))
+        setScope(parts.join(', '))
+        return true
+    }
+
     /**
-     * Translates a natural-language prompt and applies the AI's filter writes. Returns
-     * the caveat + highlighted-field list for QueryDialog to surface in the AI strip
-     * and flash effect. Per QueryDialog's ownership contract, this does NOT write to
-     * `state.lastAiPrompt` / `state.lastAiCaveat` — QueryDialog handles both.
+     * Translates a natural-language prompt and applies the AI's filter writes: the Pattern
+     * chip + label, size, date, scope, case sensitivity, and "hide boring folders". Returns
+     * the caveat + highlighted-field list for QueryDialog to surface in the AI strip and
+     * flash effect. Per QueryDialog's ownership contract, this does NOT write
+     * `state.lastAiPrompt` / `state.lastAiCaveat` — QueryDialog owns both.
      *
-     * Current behavior: invokes the translator (so the AI call fires) but discards
-     * the result and returns `null`. The full filter-write path lives in the wider
-     * Search refactor; this stub keeps the QueryDialog config wiring intact until
-     * that lands.
+     * Lets the typed IPC error throw: QueryDialog catches it and shows a specific toast
+     * (quota, key rejected, timeout, empty answer, …) instead of failing silently.
      */
     async function translateAi(prompt: string): Promise<AiTranslateResult | null> {
-        try {
-            await translateSearchQuery(prompt)
-        } catch {
-            return null
+        const result = await translateSearchQuery(prompt)
+        const { display, query } = result
+        const changed = new SvelteSet<string>()
+
+        // Record the produced pattern in its own slot (the Pattern chip). The bar keeps the prompt.
+        recordAiTranslation({
+            pattern: display.namePattern ?? null,
+            kind: patternKindFromDisplay(display.patternType),
+            label: result.label ?? null,
+        })
+        if (display.namePattern != null) changed.add('pattern')
+
+        if (query.caseSensitive != null) {
+            setCaseSensitive(query.caseSensitive)
+            changed.add('caseSensitive')
         }
-        return null
+        // The AI only ever turns OFF the default "hide boring folders" exclusion.
+        if (query.excludeSystemDirs === false) {
+            setExcludeSystemDirs(false)
+            changed.add('excludeSystemDirs')
+        }
+        if (applySizeFromAi(display.minSize ?? null, display.maxSize ?? null)) changed.add('size')
+        if (applyDateFromAi(display.modifiedAfter ?? null, display.modifiedBefore ?? null)) changed.add('date')
+        if (applyScopeFromAi(query.includePaths ?? null, query.excludeDirNames ?? null)) changed.add('scope')
+
+        return {
+            caveat: result.caveat,
+            highlightedFields: Array.from(changed),
+        }
     }
 
     /**

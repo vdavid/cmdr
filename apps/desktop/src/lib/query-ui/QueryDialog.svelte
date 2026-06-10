@@ -45,6 +45,8 @@
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { trapFocus } from '$lib/ui/focus-trap'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
+    import { addToast } from '$lib/ui/toast/toast-store.svelte'
+    import { showAiTranslateErrorToast } from '$lib/ai/translate-error-toast'
 
     interface Props {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments -- E is the Svelte component generic; the explicit <E> binds the inference for callers like SearchDialog/SelectionDialog
@@ -341,8 +343,15 @@
         let result: Awaited<ReturnType<NonNullable<typeof config.translateAi>>>
         try {
             result = await config.translateAi(trimmed)
-        } catch {
-            // Translation failed; bail out silently (matches Search's existing behavior).
+        } catch (err) {
+            // Surface WHY the translation failed (quota, key, timeout, empty answer, …) as a
+            // specific toast instead of a silent no-op. Both Search and Selection route here,
+            // so the error UX lives in one place. The consumer's `translateAi` lets the typed
+            // error throw; we map its `kind` to copy. A non-translation error (shouldn't happen)
+            // falls through to a generic toast.
+            if (!showAiTranslateErrorToast(err)) {
+                addToast("Couldn't run the AI search just now. Try again?", { level: 'warn', dismissal: 'transient' })
+            }
             return
         }
         if (!result) return

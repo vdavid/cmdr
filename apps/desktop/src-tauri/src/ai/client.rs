@@ -67,7 +67,14 @@ pub enum AiError {
     Unavailable,
     /// Request timed out (server too slow, or local server unhealthy).
     Timeout,
-    /// Server returned an HTTP error or otherwise misbehaved.
+    /// The provider rejected the API key (HTTP 401 / 403).
+    AuthFailed(String),
+    /// The provider is rate-limiting requests or the account is out of quota (HTTP 429).
+    RateLimited(String),
+    /// The call succeeded but the model produced no visible text. Common on reasoning models
+    /// when `max_tokens` is fully consumed by reasoning before any answer is emitted.
+    EmptyResponse,
+    /// Server returned some other HTTP error or otherwise misbehaved.
     ServerError(String),
     /// Couldn't parse the response body.
     ParseError(String),
@@ -78,6 +85,9 @@ impl std::fmt::Display for AiError {
         match self {
             Self::Unavailable => write!(f, "AI server unavailable"),
             Self::Timeout => write!(f, "AI request timed out"),
+            Self::AuthFailed(msg) => write!(f, "AI provider rejected the API key: {msg}"),
+            Self::RateLimited(msg) => write!(f, "AI provider is rate-limiting or out of quota: {msg}"),
+            Self::EmptyResponse => write!(f, "AI returned no text"),
             Self::ServerError(msg) => write!(f, "AI server error: {msg}"),
             Self::ParseError(msg) => write!(f, "AI response parse error: {msg}"),
         }
@@ -122,14 +132,11 @@ pub async fn chat_completion(
 
     let text = res
         .first_text()
-        .ok_or_else(|| {
-            // Common on reasoning models (`gpt-5*`, `o3*`, `*-pro`) when `max_tokens`
-            // gets fully consumed by reasoning before any `output_text` is emitted.
-            // The HTTP call succeeded; there's just no visible answer to return.
-            AiError::ParseError(String::from(
-                "AI returned no text. Likely max_tokens fully consumed by reasoning. Increase max_tokens.",
-            ))
-        })?
+        // Common on reasoning models (`gpt-5*`, `o3*`, `*-pro`) when `max_tokens` gets
+        // fully consumed by reasoning before any `output_text` is emitted. The HTTP call
+        // succeeded; there's just no visible answer to return. Typed so callers can tell
+        // the user to pick a simpler model or raise the token budget.
+        .ok_or(AiError::EmptyResponse)?
         .to_owned();
 
     log::trace!("AI chat_completion: extracted content: {text}");
@@ -254,6 +261,18 @@ fn make_resolver(endpoint: String, auth: AuthData, force_adapter: ForceAdapter) 
     })
 }
 
+/// Classifies a provider HTTP error status into the right [`AiError`] so the frontend can
+/// show a specific toast (key rejected vs. out of quota vs. generic server error). Branches
+/// on the numeric status, never the message body. 429 covers both rate-limiting and
+/// OpenAI's `insufficient_quota`; 401/403 is a rejected key.
+fn ai_error_for_status(status: u16, detail: String) -> AiError {
+    match status {
+        401 | 403 => AiError::AuthFailed(detail),
+        429 => AiError::RateLimited(detail),
+        _ => AiError::ServerError(detail),
+    }
+}
+
 /// Maps `genai`'s rich error tree to our flat [`AiError`]. Pattern-matches on the
 /// known transport variants instead of grepping the `Display` output.
 fn map_genai_error(e: genai::Error) -> AiError {
@@ -271,7 +290,7 @@ fn map_genai_error(e: genai::Error) -> AiError {
             W::Reqwest(req) if req.is_connect() => return AiError::Unavailable,
             W::Reqwest(req) => return AiError::ServerError(format!("network error: {req}")),
             W::ResponseFailedStatus { status, body, .. } => {
-                return AiError::ServerError(format!("HTTP {status}: {body}"));
+                return ai_error_for_status(status.as_u16(), format!("HTTP {status}: {body}"));
             }
             W::ResponseFailedNotJson { content_type, body } => {
                 return AiError::ParseError(format!(
@@ -329,6 +348,7 @@ mod tests {
     fn test_ai_error_display() {
         assert_eq!(AiError::Unavailable.to_string(), "AI server unavailable");
         assert_eq!(AiError::Timeout.to_string(), "AI request timed out");
+        assert_eq!(AiError::EmptyResponse.to_string(), "AI returned no text");
         assert_eq!(
             AiError::ServerError(String::from("bad")).to_string(),
             "AI server error: bad"
@@ -337,6 +357,16 @@ mod tests {
             AiError::ParseError(String::from("oops")).to_string(),
             "AI response parse error: oops"
         );
+    }
+
+    #[test]
+    fn ai_error_for_status_classifies_by_code() {
+        assert!(matches!(ai_error_for_status(401, "x".into()), AiError::AuthFailed(_)));
+        assert!(matches!(ai_error_for_status(403, "x".into()), AiError::AuthFailed(_)));
+        // 429 is both rate-limiting and OpenAI's `insufficient_quota`.
+        assert!(matches!(ai_error_for_status(429, "x".into()), AiError::RateLimited(_)));
+        assert!(matches!(ai_error_for_status(500, "x".into()), AiError::ServerError(_)));
+        assert!(matches!(ai_error_for_status(404, "x".into()), AiError::ServerError(_)));
     }
 
     #[test]

@@ -1458,7 +1458,7 @@ export const commands = {
    *  build deterministic SearchQuery via `ai_query_builder`.
    */
   translateSearchQuery: (naturalQuery: string) =>
-    typedError<TranslateResult, string>(__TAURI_INVOKE('translate_search_query', { naturalQuery })),
+    typedError<TranslateResult, AiTranslateError>(__TAURI_INVOKE('translate_search_query', { naturalQuery })),
   // Parse a scope string into structured include/exclude data.
   parseSearchScope: (scope: string) => __TAURI_INVOKE<ParsedScope>('parse_search_scope', { scope }),
   /**
@@ -1510,7 +1510,9 @@ export const commands = {
    *  sampling strategy). It grounds the prompt in what's actually in the folder.
    */
   translateSelectionQuery: (prompt: string, sampleNames: string[]) =>
-    typedError<SelectionTranslateResult, string>(__TAURI_INVOKE('translate_selection_query', { prompt, sampleNames })),
+    typedError<SelectionTranslateResult, AiTranslateError>(
+      __TAURI_INVOKE('translate_selection_query', { prompt, sampleNames }),
+    ),
   /**
    *  Returns the persisted recent-selections entries (newest first). `limit = None`
    *  returns all.
@@ -2489,6 +2491,45 @@ export type AiStatus =
   // chmod, starting server.
   | 'installing'
   | 'available'
+
+/**
+ *  Typed error returned by `translate_search_query` / `translate_selection_query`.
+ *
+ *  `message` is a human-readable detail string for logs and the toast's secondary line; the
+ *  frontend chooses the headline + tone from `kind`, never by parsing `message`.
+ */
+export type AiTranslateError = {
+  kind: AiTranslateErrorKind
+  message: string
+}
+
+/**
+ *  Coarse, frontend-branchable classification of an AI translation failure.
+ *
+ *  Keep in lockstep with the `AiErrorKind` switch in
+ *  `apps/desktop/src/lib/ai/translate-error-toast.ts`.
+ */
+export type AiTranslateErrorKind =
+  // AI is turned off (`provider = "off"`).
+  | 'off'
+  // Provider is selected but not usable yet (no key, local server down, wrong provider).
+  | 'notConfigured'
+  // The provider rejected the API key (HTTP 401 / 403).
+  | 'authFailed'
+  // The provider is rate-limiting requests or the account is out of quota (HTTP 429).
+  | 'rateLimited'
+  // The request timed out.
+  | 'timeout'
+  // Couldn't reach the provider (DNS / connection refused).
+  | 'unavailable'
+  // The model returned no usable text (often a reasoning model burning the token budget).
+  | 'emptyResponse'
+  // The provider returned some other HTTP error or otherwise misbehaved.
+  | 'serverError'
+  // Couldn't parse the provider's response.
+  | 'parseError'
+  // The configured provider value isn't recognized.
+  | 'unknownProvider'
 
 export type AiVerifying = null
 

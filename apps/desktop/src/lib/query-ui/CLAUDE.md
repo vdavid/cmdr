@@ -46,6 +46,15 @@ Three pieces of state are QueryDialog's alone; the consumer's callbacks MUST NOT
 The split keeps the `⏎` ownership swap deterministic and lets the orchestrator drive the AI strip lifecycle (clear on
 the next non-AI run, etc.) without each consumer re-implementing the rule.
 
+### AI translation errors surface here, once, for both consumers
+
+`runAiSearch` invokes `config.translateAi` inside a `try/catch`. The consumer's `translateAi` does NOT swallow the IPC
+error — it lets the typed `AiTranslateError` throw. QueryDialog catches it and calls `showAiTranslateErrorToast(err)`
+(`$lib/ai/translate-error-toast`), which maps the error's `kind` to a specific, friendly toast (out of quota, key
+rejected, timed out, empty answer, …). Both Search and Selection get the same error UX from this one place; don't re-add
+a per-consumer `catch` that returns `null` silently. A consumer's `translateAi` returning `null` still means a benign
+empty translation (nothing to apply, no toast) — distinct from a throw.
+
 ### Title bar
 
 The top of the dialog renders the consumer's `config.title` in a 32 px strip with no close button (Escape is the only

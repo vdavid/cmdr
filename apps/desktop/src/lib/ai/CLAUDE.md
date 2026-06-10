@@ -8,6 +8,12 @@ llama-server process, inference client with provider routing).
 - **State**: `ai-state.svelte.ts`: Reactive AI status, download progress, Tauri event listeners
 - **Toast wiring**: `ai-toast-sync.svelte.ts`: Reactively syncs state to toast via `$effect`
 - **Toast content**: `AiToastContent.svelte`: Install flow UI (offer → downloading → installing → ready)
+- **Translate-error toast**: `translate-error-toast.ts`: maps a typed AI-translation failure to friendly, actionable
+  toast copy. Pure `aiTranslateErrorToast(kind)` + `isAiTranslateError` guard + `showAiTranslateErrorToast(err)` (the
+  one impure wrapper). Both Search and Selection translate through the backend; when the call throws, `QueryDialog`'s
+  shared catch calls `showAiTranslateErrorToast` so the user learns WHY (quota, key rejected, timeout, empty answer, …)
+  instead of a silent no-op. Branches on `kind`, never the message (the `no-error-string-match` rule). Keep its switch
+  in lockstep with the Rust `AiTranslateErrorKind` (`src-tauri/src/ai/translate_error.rs`).
 - **Backend**: See `src-tauri/src/ai/` for model download, llama-server lifecycle, inference client
 
 `ai-state.svelte.ts` manages state and exports handlers. `ai-toast-sync.svelte.ts` uses a `$effect` to reactively watch

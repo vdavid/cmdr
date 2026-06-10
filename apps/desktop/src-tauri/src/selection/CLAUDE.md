@@ -93,7 +93,7 @@ All commands live in `crate::commands::selection`:
 
 | Command | Purpose |
 |---|---|
-| `translate_selection_query(prompt, sample_names)` | AI translation; cloud-only. Returns `SelectionTranslateResult` or an error string. |
+| `translate_selection_query(prompt, sample_names)` | AI translation; cloud-only. Returns `SelectionTranslateResult` or a typed `AiTranslateError { kind, message }` (shared with Search; see `crate::ai::translate_error`) so the dialog toasts a specific reason. The cloud-only gate maps to `kind = notConfigured`. |
 | `get_recent_selections(limit)` | Returns persisted entries (newest first). |
 | `add_recent_selection(entry, max_count)` | Adds + dedupes + caps. |
 | `remove_recent_selection(id)` | Removes by id; no-op when missing. |

@@ -11,6 +11,7 @@ use genai::chat::ChatOptions;
 
 use crate::ai::client::AiBackend;
 use crate::ai::manager::BackendResolution;
+use crate::ai::{AiTranslateError, AiTranslateErrorKind};
 
 use crate::selection::ai::{self, SelectionTranslateResult, query_builder};
 use crate::selection::history::{self, SelectionHistoryEntry};
@@ -21,16 +22,26 @@ use crate::selection::history::{self, SelectionHistoryEntry};
 /// frontend hides the AI chip when `ai.provider !== 'cloud'`; this gate is the
 /// belt-and-braces check so a misconfigured frontend (or an MCP caller in the
 /// future) can't drive the local model with a prompt it can't handle.
-fn resolve_cloud_ai_backend() -> Result<AiBackend, String> {
+fn resolve_cloud_ai_backend() -> Result<AiBackend, AiTranslateError> {
+    use AiTranslateErrorKind as K;
     let provider = crate::ai::manager::get_provider();
     if provider != "cloud" {
-        return Err("AI selection needs a cloud provider. Set one in Settings > AI.".to_string());
+        return Err(AiTranslateError::new(
+            K::NotConfigured,
+            "AI selection needs a cloud provider. Set one in Settings > AI.",
+        ));
     }
     match crate::ai::manager::resolve_backend() {
         BackendResolution::Ready(b) => Ok(b),
-        BackendResolution::Off => Err("AI is not configured. Enable a cloud provider in settings.".to_string()),
-        BackendResolution::NotConfigured(reason) => Err(reason.to_string()),
-        BackendResolution::UnknownProvider(p) => Err(format!("Unknown AI provider: {p}")),
+        BackendResolution::Off => Err(AiTranslateError::new(
+            K::Off,
+            "AI is not configured. Enable a cloud provider in settings.",
+        )),
+        BackendResolution::NotConfigured(reason) => Err(AiTranslateError::new(K::NotConfigured, reason)),
+        BackendResolution::UnknownProvider(p) => Err(AiTranslateError::new(
+            K::UnknownProvider,
+            format!("Unknown AI provider: {p}"),
+        )),
     }
 }
 
@@ -45,7 +56,7 @@ fn resolve_cloud_ai_backend() -> Result<AiBackend, String> {
 pub async fn translate_selection_query(
     prompt: String,
     sample_names: Vec<String>,
-) -> Result<SelectionTranslateResult, String> {
+) -> Result<SelectionTranslateResult, AiTranslateError> {
     let backend = resolve_cloud_ai_backend()?;
     let system_prompt = ai::build_classification_prompt(&sample_names);
 
@@ -70,7 +81,7 @@ pub async fn translate_selection_query(
                 "chat_completion failed after {:.1}s for prompt={prompt:?}: {e}",
                 t0.elapsed().as_secs_f64()
             );
-            format!("{e}")
+            AiTranslateError::from(e)
         })?;
 
     log::info!(

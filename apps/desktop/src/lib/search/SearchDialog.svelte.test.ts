@@ -26,6 +26,10 @@ import {
   setCursorIndex,
   getLastAiPrompt,
   getLastAiCaveat,
+  getLastAiPattern,
+  getLastAiPatternKind,
+  getLastAiLabel,
+  getSizeFilter,
 } from './search-state.svelte'
 
 let aiProvider: 'off' | 'local' | 'cloud' = 'off'
@@ -360,19 +364,7 @@ describe('SearchDialog AI transparency strip', () => {
     await tick()
   }
 
-  // TODO: SearchDialog's `translateAi` is currently a stub that invokes the
-  // translator but discards the result and returns `null`, per the inline
-  // comment in `SearchDialog.svelte`. That bails `QueryDialog.runAiSearch` at
-  // its `if (!result) return` guard, so `setLastAiCaveat(result.caveat)` is
-  // never reached and the caveat side of this test fails. The full filter +
-  // caveat write path lands with the wider Search refactor that the stub is
-  // holding the QueryDialog config wiring open for. Re-enable then.
-  //
-  // QueryDialog-level coverage of the same caveat flow (via a real mock
-  // `translateAi` returning a non-null result) belongs in
-  // `query-ui/QueryDialog.svelte.test.ts` and is the right surface for this
-  // assertion anyway. Add there when the refactor lands.
-  it.skip('appears after an AI run and shows the prompt + caveat', async () => {
+  it('appears after an AI run and shows the prompt + caveat', async () => {
     translateSearchQueryMock.mockResolvedValueOnce({
       display: { namePattern: '*.png', patternType: 'glob' },
       query: {},
@@ -391,6 +383,35 @@ describe('SearchDialog AI transparency strip', () => {
     expect(strip).not.toBeNull()
     expect(strip?.querySelector('.ai-prompt')?.textContent).toBe('big screenshots')
     expect(strip?.querySelector('.ai-caveat')?.textContent).toBe("I treated 'big' as larger than 10 MB.")
+
+    cleanup()
+  })
+
+  // Regression: the previous `translateAi` was a stub that fired the IPC and threw the
+  // result away. Tests only asserted the IPC was CALLED, so the stub passed. This asserts
+  // the translated pattern, label, and size filter actually land in Search state.
+  it('applies the AI-translated pattern, label, and size filter (not just calls the IPC)', async () => {
+    translateSearchQueryMock.mockResolvedValueOnce({
+      display: {
+        namePattern: '*.png',
+        patternType: 'glob',
+        minSize: 10 * 1024 * 1024,
+        maxSize: null,
+      },
+      query: { caseSensitive: null, excludeSystemDirs: null },
+      caveat: null,
+      label: 'Big screenshots',
+    } as unknown as TranslateResult)
+    const { overlay, cleanup } = await mountDialog()
+    setQuery('big screenshots')
+    setMode('ai')
+    dispatchKey(overlay, 'Enter')
+    await flushAi()
+
+    expect(getLastAiPattern()).toBe('*.png')
+    expect(getLastAiPatternKind()).toBe('glob')
+    expect(getLastAiLabel()).toBe('Big screenshots')
+    expect(getSizeFilter()).toBe('gte')
 
     cleanup()
   })
