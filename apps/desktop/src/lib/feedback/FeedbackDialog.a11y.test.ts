@@ -11,6 +11,7 @@ import { mount, tick } from 'svelte'
 import FeedbackDialog from './FeedbackDialog.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { closeFeedbackDialog, feedbackFlow } from './feedback-flow.svelte'
+import { GITHUB_ISSUES_URL, BOOK_A_CALL_URL } from '$lib/beta-links'
 
 const sendFeedbackMock = vi.fn<(text: string, email?: string) => Promise<{ kind: string }>>()
 const openExternalUrlMock = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
@@ -189,8 +190,8 @@ describe('FeedbackDialog', () => {
     }
     await tick()
 
-    expect(openExternalUrlMock).toHaveBeenCalledWith('https://github.com/vdavid/cmdr/issues')
-    expect(openExternalUrlMock).toHaveBeenCalledWith('https://cal.com/PLACEHOLDER-david')
+    expect(openExternalUrlMock).toHaveBeenCalledWith(GITHUB_ISSUES_URL)
+    expect(openExternalUrlMock).toHaveBeenCalledWith(BOOK_A_CALL_URL)
   })
 
   it('Cancel button closes the dialog via the flow store', async () => {
