@@ -20,9 +20,14 @@ is in the `deploy-cmdr` group and has write access.
 cat /opt/cmdr/apps/website/.env
 nano /opt/cmdr/apps/website/.env
 
-# Manual website deploy (normally happens automatically via GitHub Actions webhook)
+# Manual website deploy (normally happens automatically via GitHub Actions webhook).
+# Build BEFORE down: the old container keeps serving during the build, avoiding ~15s downtime.
+# Note: git operations in /opt/cmdr need the deploy-cmdr user (some dirs aren't group-writable;
+# a reset as `david` fails halfway). Prefer triggering the webhook, which runs as deploy-cmdr:
+# the HMAC secret is in /etc/systemd/system/deploy-webhook.service, sign the payload and POST
+# to http://localhost:9000/hooks/deploy-website with the X-Hub-Signature-256 header.
 cd /opt/cmdr/apps/website
-docker compose down && docker compose build --no-cache && docker compose up -d
+docker compose build --no-cache && docker compose down && docker compose up -d
 
 # Check container status
 docker ps
