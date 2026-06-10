@@ -32,8 +32,14 @@ Core features:
 
 ## Installation
 
-Download it from [getcmdr.com](https://getcmdr.com). (`brew install --cask cmdr` is on its way: the cask is ready and
-heading to Homebrew for review.)
+Download it from [getcmdr.com](https://getcmdr.com), or install with Homebrew:
+
+```bash
+brew tap vdavid/tap && brew install --cask cmdr
+```
+
+A star, watch, or fork on [the repo](https://github.com/vdavid/cmdr) helps Cmdr reach Homebrew's notability bar (225
+stars), which unlocks a tap-free `brew install --cask cmdr`.
 
 Windows and Linux users: sorry, you'll need to wait. The Rust+Tauri stack allows for cross-platform deployment, but the
 app uses OS-specific features by nature, so I've only had time to write and test it on macOS for now.
