@@ -149,17 +149,26 @@ nano .env
 
 Set the following (get values from the relevant dashboards):
 
-| Variable                     | Where to get it                                                                                                            |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `PUBLIC_PADDLE_CLIENT_TOKEN` | [Paddle dashboard](https://vendors.paddle.com)                                                                             |
-| `PUBLIC_PADDLE_PRICE_ID_*`   | Paddle > Catalog > Prices                                                                                                  |
-| `PUBLIC_PADDLE_ENVIRONMENT`  | `sandbox` or `live`                                                                                                        |
-| `PUBLIC_LISTMONK_LIST_UUID`  | Listmonk admin > Lists > your list > Settings                                                                              |
-| `PUBLIC_UMAMI_HOST`          | `/u` (proxied through Caddy to avoid adblockers)                                                                           |
-| `PUBLIC_UMAMI_WEBSITE_ID`    | Umami > Settings > Websites > getcmdr.com > ID                                                                             |
-| `PUBLIC_DOWNLOAD_BASE_URL`   | `https://api.getcmdr.com` (routes downloads through the API server for analytics). Leave empty to link directly to GitHub. |
-| `PUBLIC_POSTHOG_KEY`         | PostHog project API key (starts with `phc_`). Leave empty to disable.                                                      |
-| `PUBLIC_POSTHOG_HOST`        | `/ph` (proxied through Caddy to avoid adblockers)                                                                          |
+| Variable                     | Where to get it                                                                                                                                            |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_PADDLE_CLIENT_TOKEN` | Paddle > Developer tools > Authentication > Client-side tokens (a `live_…` token, NOT the API key). Live: [vendors.paddle.com](https://vendors.paddle.com) |
+| `PUBLIC_PADDLE_PRICE_ID_*`   | Paddle > Catalog > Prices (live IDs, distinct from sandbox)                                                                                                |
+| `PUBLIC_PADDLE_ENVIRONMENT`  | `live` in production (`sandbox` only for a staging build)                                                                                                  |
+| `PUBLIC_LISTMONK_LIST_UUID`  | Listmonk admin > Lists > your list > Settings                                                                                                              |
+| `PUBLIC_UMAMI_HOST`          | `/u` (proxied through Caddy to avoid adblockers)                                                                                                           |
+| `PUBLIC_UMAMI_WEBSITE_ID`    | Umami > Settings > Websites > getcmdr.com > ID                                                                                                             |
+| `PUBLIC_DOWNLOAD_BASE_URL`   | `https://api.getcmdr.com` (routes downloads through the API server for analytics). Leave empty to link directly to GitHub.                                 |
+| `PUBLIC_POSTHOG_KEY`         | PostHog project API key (starts with `phc_`). Leave empty to disable.                                                                                      |
+| `PUBLIC_POSTHOG_HOST`        | `/ph` (proxied through Caddy to avoid adblockers)                                                                                                          |
+
+**Paddle live-mode guardrail.** The production build _throws_ if `PUBLIC_PADDLE_ENVIRONMENT` is `sandbox` while a token
+is set, so the live site can never silently ship the test-mode checkout (sandbox only accepts Paddle's test cards: real
+customers can't pay, with no error anywhere). The token must also match the environment (`live_` ↔ `live`, `test_` ↔
+`sandbox`). Because the deploy script builds the new image before stopping the old container, a misconfigured `.env`
+fails the deploy safely (the old site keeps serving) rather than going live broken. Never set
+`PUBLIC_PADDLE_ALLOW_SANDBOX=true` on the server: that flag exists only so local `pnpm check` / e2e can build sandbox
+checkout against dev creds. Beyond the env vars, live checkout also needs the domain approved and seller verification
+(KYC) completed in the live Paddle dashboard; both are dashboard-only (no API).
 
 ### 9. Set up Docker network and do initial deploy
 

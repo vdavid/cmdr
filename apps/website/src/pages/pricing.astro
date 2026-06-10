@@ -5,9 +5,35 @@ import Footer from '../components/Footer.astro'
 import DownloadButton from '../components/DownloadButton.astro'
 
 // Paddle config - passed to client-side script
+const paddleToken = import.meta.env.PUBLIC_PADDLE_CLIENT_TOKEN ?? ''
+const paddleEnvironment = (import.meta.env.PUBLIC_PADDLE_ENVIRONMENT ?? 'sandbox') as 'sandbox' | 'live'
+const allowSandboxInProd = import.meta.env.PUBLIC_PADDLE_ALLOW_SANDBOX === 'true'
+
+// Guardrails: a production build must never silently ship the sandbox (test-mode) checkout.
+// Astro bakes these PUBLIC_ vars into the static JS at build time, so a sandbox token in the
+// deploy environment ships a live site that only accepts Paddle's test cards: real customers
+// can't pay, with no error anywhere. The deploy script builds before swapping containers, so a
+// throw here fails the deploy safely (the old site stays up) instead of going live broken.
+// Escape hatch: PUBLIC_PADDLE_ALLOW_SANDBOX=true to intentionally build sandbox checkout (local
+// `pnpm check` website build / e2e against the sandbox creds in a dev `.env`).
+if (paddleToken) {
+    if (import.meta.env.PROD && paddleEnvironment !== 'live' && !allowSandboxInProd) {
+        throw new Error(
+            'Paddle is in sandbox mode for a production build. Set PUBLIC_PADDLE_ENVIRONMENT=live with a ' +
+                'live_ client token, or set PUBLIC_PADDLE_ALLOW_SANDBOX=true to build sandbox checkout on purpose.',
+        )
+    }
+    if (paddleEnvironment === 'live' && !paddleToken.startsWith('live_')) {
+        throw new Error('PUBLIC_PADDLE_ENVIRONMENT=live but PUBLIC_PADDLE_CLIENT_TOKEN is not a live_ token.')
+    }
+    if (paddleEnvironment === 'sandbox' && !paddleToken.startsWith('test_')) {
+        throw new Error('PUBLIC_PADDLE_ENVIRONMENT=sandbox but PUBLIC_PADDLE_CLIENT_TOKEN is not a test_ token.')
+    }
+}
+
 const paddleConfig = {
-    clientToken: import.meta.env.PUBLIC_PADDLE_CLIENT_TOKEN ?? '',
-    environment: (import.meta.env.PUBLIC_PADDLE_ENVIRONMENT ?? 'sandbox') as 'sandbox' | 'live',
+    clientToken: paddleToken,
+    environment: paddleEnvironment,
     priceIds: {
         commercialSubscription: import.meta.env.PUBLIC_PADDLE_PRICE_ID_COMMERCIAL_SUBSCRIPTION ?? '',
         commercialPerpetual: import.meta.env.PUBLIC_PADDLE_PRICE_ID_COMMERCIAL_PERPETUAL ?? '',
