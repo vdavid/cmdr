@@ -38,6 +38,23 @@ export interface FeedbackNotification {
   feedback: string
 }
 
+export interface BetaSignupNotification {
+  /** The signup email, shown in full (same precedent as the feedback route's reply-to field). */
+  email: string
+  /** When the signup landed, rendered as a Discord relative timestamp (`<t:…:R>`). */
+  signupUnixSeconds: number
+  /** Deep link to the Listmonk admin filtered to the beta list. */
+  listAdminUrl: string
+  /**
+   * Which path established the subscription, so the embed states the honest consent status:
+   * - `'new'`: a fresh `POST /api/subscribers`. Listmonk sends its own double-opt-in mail.
+   * - `'added-existing'`: an existing subscriber (for example already on the newsletter) added to the
+   *   beta list, then explicitly nudged with `POST /api/subscribers/{id}/optin` to send the same mail
+   *   (the list-add endpoint alone does NOT send it).
+   */
+  status: 'new' | 'added-existing'
+}
+
 export interface EvictionInfo {
   evictedCount: number
   freedBytes: number
@@ -47,6 +64,8 @@ export interface EvictionInfo {
 const ERROR_REPORT_EMBED_COLOR = 0xff6b6b
 const USER_NOTE_EMBED_CAP = 500
 const FEEDBACK_EMBED_COLOR = 0x5bc0de
+/** Discord's green. Distinct from the error-report red and the feedback blue at a glance. */
+const BETA_SIGNUP_EMBED_COLOR = 0x57f287
 /**
  * Discord caps embed descriptions at 4096 chars. The full text always lives in the
  * D1 `feedback` table, so a truncated embed never loses data.
@@ -126,6 +145,29 @@ export function buildFeedbackPayload(n: FeedbackNotification): unknown {
   }
 }
 
+/** Build the Discord webhook JSON body for a newly-established beta-tester signup. */
+export function buildBetaSignupPayload(n: BetaSignupNotification): unknown {
+  const description =
+    n.status === 'new'
+      ? 'Status: unconfirmed — Listmonk sent them the confirmation email.'
+      : 'Existing subscriber, added to the beta list — Listmonk sent them the confirmation email.'
+
+  return {
+    embeds: [
+      {
+        title: 'New beta-tester signup',
+        description,
+        color: BETA_SIGNUP_EMBED_COLOR,
+        fields: [
+          { name: 'Email', value: n.email, inline: true },
+          { name: 'When', value: `<t:${n.signupUnixSeconds.toString()}:R>`, inline: true },
+          { name: 'Listmonk', value: `[Beta list subscribers](${n.listAdminUrl})` },
+        ],
+      },
+    ],
+  }
+}
+
 /** Build the Discord webhook JSON body for an eviction summary. */
 export function buildEvictionPayload(info: EvictionInfo): unknown {
   return {
@@ -177,4 +219,11 @@ export async function postEvictionNotification(webhookUrl: string, info: Evictio
 
 export async function postFeedbackNotification(webhookUrl: string, notification: FeedbackNotification): Promise<void> {
   await postWithRetry(webhookUrl, buildFeedbackPayload(notification), 'feedback')
+}
+
+export async function postBetaSignupNotification(
+  webhookUrl: string,
+  notification: BetaSignupNotification,
+): Promise<void> {
+  await postWithRetry(webhookUrl, buildBetaSignupPayload(notification), 'beta-signup')
 }

@@ -47,6 +47,10 @@ export type Bindings = {
   // Optional dedicated Discord webhook for in-app feedback notifications. When unset,
   // POST /feedback falls back to DISCORD_WEBHOOK_URL so feedback works with no new secret.
   DISCORD_FEEDBACK_WEBHOOK_URL?: string
+  // Optional dedicated Discord webhook for beta-tester signup notifications. When unset,
+  // POST /beta-signup falls back to DISCORD_WEBHOOK_URL (so pings land in #error-reports until
+  // the #beta-signups channel and its webhook exist).
+  DISCORD_BETA_SIGNUP_WEBHOOK_URL?: string
   // R2 S3-compatible credentials, used to mint long-TTL presigned download URLs
   // for the Discord embed. Bindings can't presign on their own, but the S3 API can.
   R2_ACCOUNT_ID?: string

@@ -85,6 +85,7 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | `RESEND_API_KEY`                   | Resend key                       | Same Resend key                   |
 | `CRASH_NOTIFICATION_EMAIL`         | `veszelovszki@gmail.com`         | Recipient email for crash alerts  |
 | `DISCORD_WEBHOOK_URL`              | Same webhook URL                 | Discord webhook for error reports |
+| `DISCORD_BETA_SIGNUP_WEBHOOK_URL`  | Optional (falls back)            | Optional `#beta-signups` webhook  |
 | `R2_ACCOUNT_ID`                    | Same account ID                  | For minting presigned R2 URLs     |
 | `R2_ACCESS_KEY_ID`                 | Same access key                  | R2 S3-compat access key (read OK) |
 | `R2_SECRET_ACCESS_KEY`             | Same secret                      | Paired secret for R2 access key   |
@@ -127,6 +128,23 @@ secret (anyone holding it can post to that channel), so it lives only as a wrang
 
 Rate limit: 30 messages/min per webhook. The Worker should retry once on `Retry-After`, then drop with a `console.error`
 We don't run our own queue infra for an internal channel.
+
+**Optional dedicated webhooks (`#beta-signups`, `#feedback`):** `POST /beta-signup` posts to
+`DISCORD_BETA_SIGNUP_WEBHOOK_URL` and `POST /feedback` to `DISCORD_FEEDBACK_WEBHOOK_URL`. Both fall back to
+`DISCORD_WEBHOOK_URL` when unset, so the feature works before the dedicated channel exists (pings just land in
+`#error-reports`). To split beta-signup pings into their own channel:
+
+1. Create the channel `#beta-signups` in the Cmdr Discord server.
+2. Right-click `#beta-signups` → **Edit Channel** → **Integrations** → **Webhooks** → **New Webhook**. Name it "Cmdr
+   beta signups". **Copy Webhook URL** (shape `https://discord.com/api/webhooks/<id>/<token>`).
+3. Store it as a wrangler secret:
+   ```sh
+   pnpm --filter @cmdr/api-server exec wrangler secret put DISCORD_BETA_SIGNUP_WEBHOOK_URL
+   ```
+4. Smoke-test it landed:
+   ```sh
+   curl -H "Content-Type: application/json" -d '{"content":"beta-signups webhook test"}' "<webhook-url>"
+   ```
 
 ### R2 presigned URLs (for error-report download links)
 
@@ -195,7 +213,7 @@ Crash report: POST /crash-report → validate payload (size + required fields + 
 
 Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → validate payload (size + required fields + analId/version shape + config-size cap) → write to D1 heartbeat (fire-and-forget via waitUntil), no IP stored → 204
 
-Beta signup: POST /beta-signup → rate-limit by IP (BETA_SIGNUP_LIMITER, 429 if over) → read ONLY the email (no install id) → validate shape → Listmonk POST /api/subscribers (list = LISTMONK_BETA_LIST_ID, status "unconfirmed", NO preconfirm = double opt-in) → 204 on 2xx or 409 (existing; no enumeration), soft 502 on Listmonk error
+Beta signup: POST /beta-signup → rate-limit by IP (BETA_SIGNUP_LIMITER, 429 if over) → read ONLY the email (no install id) → validate shape → Listmonk POST /api/subscribers (list = LISTMONK_BETA_LIST_ID, subscriber status "enabled", NO preconfirm = double opt-in) → on 2xx: Discord ping (waitUntil, DISCORD_BETA_SIGNUP_WEBHOOK_URL, falls back to DISCORD_WEBHOOK_URL) → on 409 (existing): GET /api/subscribers lookup; if NOT on the beta list, PUT /api/subscribers/lists (action add, status unconfirmed) + POST /api/subscribers/{id}/optin to send the confirmation mail, then ping; if already on the beta list, silent 204, no ping → always an empty 204 (new, added, and already-subscribed are indistinguishable; no enumeration), soft 502 on Listmonk error
 
 Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) → validate shape (required feedback text ≤ 100k code points + appVersion/osVersion, optional email/buildMode) → AWAITED D1 write to `feedback` (failure → soft 502 so the app offers a retry) → Discord ping in waitUntil (DISCORD_FEEDBACK_WEBHOOK_URL, falls back to DISCORD_WEBHOOK_URL) → 204
 
@@ -310,14 +328,32 @@ tests and incomplete envs can omit it (the gate is then a no-op).
 **Beta signup (decoupled, contact-only):** `POST /beta-signup` is the contact channel for early testers. It reads ONLY
 the `email` from the body and subscribes it to the double-opt-in Listmonk list `LISTMONK_BETA_LIST_ID`
 (`POST https://mail.getcmdr.com/api/subscribers`, `Authorization: token <LISTMONK_API_USER>:<LISTMONK_API_TOKEN>`,
-`status: "unconfirmed"`, and deliberately NO `preconfirm_subscriptions` so Listmonk sends its own confirmation email,
-which blocks prank signups for someone else's address). The privacy invariant is the whole point: the request carries NO
-install id of any kind (no `anal_`, no `diag_`), so the email and the analytics ids never co-occur on our servers and
-the analytics stream stays unjoinable to any identity (guarded by `beta-signup.test.ts`). Returns 204 for both new and
-already-subscribed addresses (a 409 from Listmonk maps to the identical empty 204, so the response never reveals whether
-the address existed: no enumeration). On a Listmonk network/5xx failure it returns a soft 502 the desktop app surfaces
-as a gentle "try again" (NOT fire-and-forget: we want the user to know it didn't land). Missing Listmonk config
-returns 500. The list id is set as a wrangler secret at deploy time; see `docs/tooling/listmonk.md`.
+subscriber `status: "enabled"` — the subscriber-status enum only accepts enabled/disabled/blocklisted, while
+`"unconfirmed"` is the per-LIST subscription status — and deliberately NO `preconfirm_subscriptions` so Listmonk sends
+its own confirmation email, which blocks prank signups for someone else's address). The privacy invariant is the whole
+point: the request carries NO install id of any kind (no `anal_`, no `diag_`), so the email and the analytics ids never
+co-occur on our servers and the analytics stream stays unjoinable to any identity (guarded by `beta-signup.test.ts`,
+including the outbound Discord payload).
+
+On a Listmonk network/5xx failure it returns a soft 502 the desktop app surfaces as a gentle "try again" (NOT
+fire-and-forget: we want the user to know it didn't land). Missing Listmonk config returns 500. The list id is a
+wrangler `[var]` (not a secret); see `docs/tooling/listmonk.md`.
+
+**409 add-to-list recovery:** a 409 ("subscriber already exists" — for example they're on the newsletter list) used to
+map straight to 204, which left that person OFF the beta list. Now a 409 triggers a lookup
+(`GET /api/subscribers?query=subscribers.email='<addr>'`); if they're not yet on the beta list, the route adds it
+(`PUT /api/subscribers/lists`, `action: "add"`, `status: "unconfirmed"`) and then explicitly sends the opt-in mail
+(`POST /api/subscribers/{id}/optin`). The optin call is REQUIRED: the list-add endpoint does NOT send the confirmation
+email on its own (verified against Listmonk's `ManageSubscriberLists` handler), so without it consent would be silently
+implied. A subscriber already on the beta list is a quiet re-signup: no list change, no mail, no ping. Every outcome
+returns the identical empty 204, so the response never reveals whether the address existed (no enumeration).
+
+**Discord ping:** a successful signup pings Discord (`DISCORD_BETA_SIGNUP_WEBHOOK_URL`, falling back to
+`DISCORD_WEBHOOK_URL` so it works before the `#beta-signups` channel exists) in `waitUntil` after the 204 ships,
+drop-on-failure (the 204 never waits on Discord). The ping fires ONLY when a beta subscription was newly established (a
+fresh 2xx, or the 409 add-to-list path), NEVER on a Listmonk failure and NEVER on a plain already-on-list 409. The embed
+carries the email (full, same precedent as the feedback reply-to) and the signup time, and states the honest consent
+status ("unconfirmed — Listmonk sent the confirmation email" for both paths). It carries no install id, by construction.
 
 **In-app feedback:** `POST /feedback` is the open-beta "Send feedback" channel. JSON body: required `feedback` text
 (trimmed, 1–100 000 Unicode code points; the cap matches the desktop dialog and the Rust validator) plus `appVersion` /

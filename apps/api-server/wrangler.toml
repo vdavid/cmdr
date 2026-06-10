@@ -114,6 +114,9 @@ LISTMONK_BETA_LIST_ID = 4
 # - DISCORD_WEBHOOK_URL            (Discord webhook for #error-reports)
 # - DISCORD_FEEDBACK_WEBHOOK_URL   (optional: dedicated webhook for in-app feedback;
 #                                   POST /feedback falls back to DISCORD_WEBHOOK_URL when unset)
+# - DISCORD_BETA_SIGNUP_WEBHOOK_URL (optional: dedicated webhook for #beta-signups; POST /beta-signup
+#                                   falls back to DISCORD_WEBHOOK_URL, so pings land in #error-reports
+#                                   until the channel + webhook exist)
 # - R2_ACCOUNT_ID                  (for minting presigned R2 GET URLs)
 # - R2_ACCESS_KEY_ID               (R2 S3-compatible access key; read-only suffices)
 # - R2_SECRET_ACCESS_KEY           (paired secret for R2_ACCESS_KEY_ID)

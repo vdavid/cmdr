@@ -1,11 +1,14 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import {
+  buildBetaSignupPayload,
   buildErrorReportPayload,
   buildEvictionPayload,
   buildFeedbackPayload,
   formatBytes,
+  postBetaSignupNotification,
   postErrorReportNotification,
   postEvictionNotification,
+  type BetaSignupNotification,
   type ErrorReportNotification,
   type FeedbackNotification,
 } from './discord'
@@ -147,6 +150,83 @@ describe('buildFeedbackPayload', () => {
     }
     expect(payload.embeds[0].description.length).toBeLessThanOrEqual(4096)
     expect(payload.embeds[0].description).toContain('full text in the feedback table')
+  })
+})
+
+describe('buildBetaSignupPayload', () => {
+  const baseSignup: BetaSignupNotification = {
+    email: 'tester@example.com',
+    signupUnixSeconds: 1_745_000_000,
+    listAdminUrl: 'https://mail.getcmdr.com/admin/subscribers?lists=4',
+    status: 'new',
+  }
+
+  it('produces a stable embed shape for a fresh signup', () => {
+    expect(buildBetaSignupPayload(baseSignup)).toMatchInlineSnapshot(`
+      {
+        "embeds": [
+          {
+            "color": 5763719,
+            "description": "Status: unconfirmed — Listmonk sent them the confirmation email.",
+            "fields": [
+              {
+                "inline": true,
+                "name": "Email",
+                "value": "tester@example.com",
+              },
+              {
+                "inline": true,
+                "name": "When",
+                "value": "<t:1745000000:R>",
+              },
+              {
+                "name": "Listmonk",
+                "value": "[Beta list subscribers](https://mail.getcmdr.com/admin/subscribers?lists=4)",
+              },
+            ],
+            "title": "New beta-tester signup",
+          },
+        ],
+      }
+    `)
+  })
+
+  it('describes the existing-subscriber path honestly', () => {
+    const payload = buildBetaSignupPayload({ ...baseSignup, status: 'added-existing' }) as {
+      embeds: { description: string }[]
+    }
+    expect(payload.embeds[0].description).toBe(
+      'Existing subscriber, added to the beta list — Listmonk sent them the confirmation email.',
+    )
+  })
+})
+
+describe('postBetaSignupNotification', () => {
+  let originalFetch: typeof fetch
+  beforeEach(() => {
+    originalFetch = globalThis.fetch
+  })
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+    vi.restoreAllMocks()
+  })
+
+  it('POSTs the beta-signup embed to the webhook', async () => {
+    const mock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })))
+    globalThis.fetch = mock
+
+    await postBetaSignupNotification('https://discord/webhook', {
+      email: 'tester@example.com',
+      signupUnixSeconds: 1_745_000_000,
+      listAdminUrl: 'https://mail.getcmdr.com/admin/subscribers?lists=4',
+      status: 'new',
+    })
+
+    expect(mock).toHaveBeenCalledOnce()
+    const [url, init] = mock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('https://discord/webhook')
+    const body = JSON.parse(init.body as string) as { embeds: { title: string }[] }
+    expect(body.embeds[0].title).toBe('New beta-tester signup')
   })
 })
 

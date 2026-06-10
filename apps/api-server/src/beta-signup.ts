@@ -1,5 +1,6 @@
 import { Hono, type Context } from 'hono'
 import { type Bindings, isValidEmail, redactEmail } from './types'
+import { postBetaSignupNotification, type BetaSignupNotification } from './discord'
 
 const betaSignup = new Hono<{ Bindings: Bindings }>()
 
@@ -35,6 +36,144 @@ function resolveListmonkConfig(env: Bindings): ListmonkConfig | null {
   } = env
   if (!url || !user || !token || typeof listId !== 'number') return null
   return { url, user, token, listId }
+}
+
+/** What `subscribe` resolved to, so the caller knows whether (and how) to ping Discord. */
+type SubscribeOutcome =
+  | { kind: 'new' } // Fresh subscriber created; Listmonk sent its own opt-in mail.
+  | { kind: 'added-existing' } // Existing subscriber; we added the beta list + triggered the opt-in mail.
+  | { kind: 'already-on-list' } // Existing subscriber already on the beta list; stay quiet (re-signup).
+  | { kind: 'error' } // Listmonk unreachable or errored; surface a soft 502.
+
+function listmonkHeaders(c: ListmonkConfig): Record<string, string> {
+  return { 'Content-Type': 'application/json', Authorization: `token ${c.user}:${c.token}` }
+}
+
+/**
+ * Subscribe `email` to the double-opt-in beta list and report what actually happened.
+ *
+ * The fresh `POST /api/subscribers` path makes Listmonk send its own confirmation email (we omit
+ * `preconfirm_subscriptions` on purpose). A 409 means the address already exists (for example it's on
+ * the newsletter list), and a plain 409→204 would leave that person OFF the beta list. So on 409 we
+ * look the subscriber up, and if they're not yet on the beta list we add it and explicitly trigger the
+ * opt-in email (`POST /api/subscribers/{id}/optin` — the list-add endpoint alone does NOT send it).
+ * A subscriber already on the beta list is a silent re-signup: no list change, no email, no ping.
+ */
+async function subscribe(email: string, listmonk: ListmonkConfig): Promise<SubscribeOutcome> {
+  let res: Response
+  try {
+    res = await fetch(`${listmonk.url}/api/subscribers`, {
+      method: 'POST',
+      headers: listmonkHeaders(listmonk),
+      // Subscriber `status: "enabled"` (the subscriber-status enum only accepts enabled/disabled/
+      // blocklisted; "unconfirmed" is the per-LIST subscription status, which Postgres rejects as a
+      // subscriber status). Omitting `preconfirm_subscriptions` keeps the list subscription unconfirmed
+      // and makes Listmonk send its own confirmation mail, blocking prank signups for someone else.
+      body: JSON.stringify({ email, lists: [listmonk.listId], status: 'enabled' }),
+    })
+  } catch (e) {
+    console.error('Beta signup: Listmonk fetch failed:', e)
+    return { kind: 'error' }
+  }
+
+  if (res.ok) return { kind: 'new' }
+  if (res.status === 409) return recoverExistingSubscriber(email, listmonk)
+
+  console.error(`Beta signup: Listmonk returned ${String(res.status)} for ${redactEmail(email)}`)
+  return { kind: 'error' }
+}
+
+/** Minimal shape of the bits of `GET /api/subscribers` we read. */
+interface SubscriberLookup {
+  id: number
+  lists: { id: number }[]
+}
+
+/**
+ * Handle the 409 "already exists" path: find the subscriber and, if they're not yet on the beta list,
+ * add it and send the opt-in confirmation email. Any error here returns a soft `error` outcome so the
+ * app surfaces a gentle retry rather than a false success.
+ */
+async function recoverExistingSubscriber(email: string, listmonk: ListmonkConfig): Promise<SubscribeOutcome> {
+  let subscriber: SubscriberLookup | null
+  try {
+    subscriber = await lookupSubscriber(email, listmonk)
+  } catch (e) {
+    console.error('Beta signup: Listmonk lookup failed:', e)
+    return { kind: 'error' }
+  }
+  // A 409 with no findable subscriber shouldn't happen; treat it as already-handled and stay quiet
+  // rather than risk an enumeration oracle or a misleading ping.
+  if (!subscriber) return { kind: 'already-on-list' }
+
+  if (subscriber.lists.some((l) => l.id === listmonk.listId)) {
+    return { kind: 'already-on-list' }
+  }
+
+  try {
+    await addToBetaListAndConfirm(subscriber.id, listmonk)
+  } catch (e) {
+    console.error('Beta signup: adding existing subscriber to the beta list failed:', e)
+    return { kind: 'error' }
+  }
+  return { kind: 'added-existing' }
+}
+
+/** Look the subscriber up by exact email. Returns the first match or `null`. Throws on a non-2xx. */
+async function lookupSubscriber(email: string, listmonk: ListmonkConfig): Promise<SubscriberLookup | null> {
+  // Listmonk's only lookup is a SQL expression in the `query` param. The email is already validated
+  // (`isValidEmail`), and we double the single quote so an apostrophe can't break out of the literal.
+  const query = `subscribers.email = '${email.replace(/'/g, "''")}'`
+  const url = `${listmonk.url}/api/subscribers?query=${encodeURIComponent(query)}&per_page=1`
+  const res = await fetch(url, { method: 'GET', headers: listmonkHeaders(listmonk) })
+  if (!res.ok) throw new Error(`Listmonk lookup HTTP ${String(res.status)}`)
+  const body: { data?: { results?: SubscriberLookup[] } } = await res.json()
+  return body.data?.results?.[0] ?? null
+}
+
+/**
+ * Add an existing subscriber to the beta list (`PUT /api/subscribers/lists`, `action: "add"`,
+ * `status: "unconfirmed"`) then trigger the double-opt-in confirmation email
+ * (`POST /api/subscribers/{id}/optin`). The list-add endpoint does NOT send the email by itself, so
+ * the explicit optin call is what keeps the consent story honest for this path. Throws on any non-2xx.
+ */
+async function addToBetaListAndConfirm(subscriberId: number, listmonk: ListmonkConfig): Promise<void> {
+  const addRes = await fetch(`${listmonk.url}/api/subscribers/lists`, {
+    method: 'PUT',
+    headers: listmonkHeaders(listmonk),
+    body: JSON.stringify({
+      ids: [subscriberId],
+      action: 'add',
+      target_list_ids: [listmonk.listId],
+      status: 'unconfirmed',
+    }),
+  })
+  if (!addRes.ok) throw new Error(`Listmonk list-add HTTP ${String(addRes.status)}`)
+
+  const optinRes = await fetch(`${listmonk.url}/api/subscribers/${String(subscriberId)}/optin`, {
+    method: 'POST',
+    headers: listmonkHeaders(listmonk),
+  })
+  if (!optinRes.ok) throw new Error(`Listmonk optin HTTP ${String(optinRes.status)}`)
+}
+
+/**
+ * Fire the Discord ping in the background after the response ships, mirroring the feedback route:
+ * `waitUntil` when the execution context is available, await inline as a test/standalone fallback.
+ * Drop-on-failure lives in `postBetaSignupNotification`, so the 204 is never held hostage to Discord.
+ */
+async function pingDiscord(
+  c: Context<{ Bindings: Bindings }>,
+  webhookUrl: string,
+  notification: BetaSignupNotification,
+): Promise<void> {
+  const notify = postBetaSignupNotification(webhookUrl, notification)
+  try {
+    c.executionCtx.waitUntil(notify)
+  } catch {
+    // executionCtx unavailable (for example, in tests); await inline as fallback.
+    await notify
+  }
 }
 
 /** Read the request body, enforcing the size cap, and extract ONLY the email. Returns the validated
@@ -94,34 +233,32 @@ betaSignup.post('/beta-signup', async (c) => {
     return c.json({ error: 'Beta signup is not configured' }, 500)
   }
 
-  // Subscribe with subscriber `status: "enabled"` (Listmonk's subscriber-status enum only accepts
-  // enabled/disabled/blocklisted; "unconfirmed" is the per-LIST subscription status, not a subscriber
-  // status, and Postgres rejects it). On a double-opt-in list, omitting `preconfirm_subscriptions`
-  // leaves the per-list subscription `unconfirmed` and makes Listmonk send its own confirmation email,
-  // which is what blocks prank signups for someone else's address.
-  let listmonkResponse: Response
-  try {
-    listmonkResponse = await fetch(`${listmonk.url}/api/subscribers`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `token ${listmonk.user}:${listmonk.token}`,
-      },
-      body: JSON.stringify({ email, lists: [listmonk.listId], status: 'enabled' }),
-    })
-  } catch (e) {
-    console.error('Beta signup: Listmonk fetch failed:', e)
-    return c.json({ error: 'Could not reach the signup service' }, 502)
+  const outcome = await subscribe(email, listmonk)
+  if (outcome.kind === 'error') {
+    return c.json({ error: 'Could not sign up right now' }, 502)
   }
 
-  // A 409 means "subscriber already exists." We treat it as success and return the identical empty
-  // 204, so the response never reveals whether the address was already on the list (no enumeration).
-  if (listmonkResponse.ok || listmonkResponse.status === 409) {
-    return c.body(null, 204)
+  // Ping Discord ONLY when a beta subscription was actually newly established: a fresh subscribe, or an
+  // existing subscriber we just added to the beta list. A silent re-signup (already on the list) stays
+  // quiet, which also keeps the no-enumeration guarantee intact. The ping never blocks the 204, and any
+  // Discord failure is dropped (see `postBetaSignupNotification`).
+  if (outcome.kind === 'new' || outcome.kind === 'added-existing') {
+    const webhookUrl = c.env.DISCORD_BETA_SIGNUP_WEBHOOK_URL ?? c.env.DISCORD_WEBHOOK_URL
+    if (webhookUrl) {
+      // The email is the ONLY identity in the notification: no install id ever reaches this route, so
+      // the analytics/diagnostics streams stay unjoinable to the email (the route's whole point).
+      await pingDiscord(c, webhookUrl, {
+        email,
+        signupUnixSeconds: Math.floor(Date.now() / 1000),
+        listAdminUrl: `${listmonk.url}/admin/subscribers?lists=${String(listmonk.listId)}`,
+        status: outcome.kind,
+      })
+    }
   }
 
-  console.error(`Beta signup: Listmonk returned ${String(listmonkResponse.status)} for ${redactEmail(email)}`)
-  return c.json({ error: 'Could not sign up right now' }, 502)
+  // Always an empty 204 toward the app: new, already-subscribed, and added-to-list outcomes are
+  // indistinguishable in the response, so it never reveals whether the address already existed.
+  return c.body(null, 204)
 })
 
 export { betaSignup }

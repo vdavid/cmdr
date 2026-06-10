@@ -19,14 +19,31 @@ Listmonk:
 ```
 POST https://mail.getcmdr.com/api/subscribers
 Authorization: token <LISTMONK_API_USER>:<LISTMONK_API_TOKEN>
-{ "email": "<addr>", "lists": [<LISTMONK_BETA_LIST_ID>], "status": "unconfirmed" }
+{ "email": "<addr>", "lists": [<LISTMONK_BETA_LIST_ID>], "status": "enabled" }
 ```
 
-- **`status: "unconfirmed"` with NO `preconfirm_subscriptions`** makes it double opt-in: Listmonk sends its own
-  confirmation email, so a prankster can't subscribe someone else's address. (Contrast the obsidian doc's newsletter
-  recipe, which passes `preconfirm_subscriptions: true` for a confirmed add. The beta flow deliberately does not.)
-- **No enumeration**: the Worker maps a Listmonk 409 ("already exists") to the same empty 204 as a fresh subscribe, so
-  the response never reveals whether the address was already on the list.
+- **Subscriber `status: "enabled"` with NO `preconfirm_subscriptions`** makes it double opt-in: Listmonk sends its own
+  confirmation email, so a prankster can't subscribe someone else's address. (`"enabled"` is the subscriber-status enum,
+  which only accepts enabled/disabled/blocklisted; `"unconfirmed"` is the per-LIST subscription status, set implicitly
+  by omitting `preconfirm_subscriptions`. Contrast the obsidian doc's newsletter recipe, which passes
+  `preconfirm_subscriptions: true` for a confirmed add. The beta flow deliberately does not.)
+- **No enumeration**: the Worker returns the same empty 204 for a fresh subscribe, an already-subscribed address, and
+  the 409 add-to-list path below, so the response never reveals whether the address was already on the list.
+
+## 409 add-to-list recovery and the signup notification
+
+A Listmonk 409 ("subscriber already exists" — for example the address is already on the public newsletter list) used to
+map straight to 204, which left that person OFF the beta list. The Worker now recovers: on 409 it looks the subscriber
+up (`GET /api/subscribers?query=subscribers.email='<addr>'`), and if they're not yet on the beta list it adds it
+(`PUT /api/subscribers/lists` with `action: "add"`, `status: "unconfirmed"`, `target_list_ids: [<beta list>]`) and then
+explicitly sends the opt-in confirmation email (`POST /api/subscribers/{id}/optin`). That optin call is required: the
+list-add endpoint does NOT send the confirmation email on its own, so without it consent would be silently implied. A
+subscriber already on the beta list is a quiet re-signup: no list change and no email.
+
+Each newly-established subscription (a fresh signup, or the 409 add-to-list path) pings a Discord channel so the
+maintainer sees signups in real time (`DISCORD_BETA_SIGNUP_WEBHOOK_URL`, falling back to `DISCORD_WEBHOOK_URL`). The
+ping carries the email and the signup time only, never an install id. A Listmonk failure and a plain already-on-list 409
+do not ping.
 
 ## Worker secrets (api-server)
 
