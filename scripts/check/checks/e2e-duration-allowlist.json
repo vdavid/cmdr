@@ -1,0 +1,34 @@
+{
+  "$comment": "Allowlist for the E2E test duration flagger (e2e-durations.go, threshold 2s, warn-only). Key format: `<spec file>::<describe chain joined with ' › '>::<test title>`. Per-platform sections because Linux Docker and macOS speeds differ. Every entry needs a reason; adding an entry or keeping a newly-slow test needs David's OK. Dead entries (test gone) are auto-removed on local E2E runs; entries whose test drops well under the budget are reported for review.",
+  "macos": {
+    "accessibility.spec.ts::dark mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.5s at flagger introduction)",
+    "accessibility.spec.ts::light mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.5s at flagger introduction)",
+    "brief-cursor-visibility.spec.ts::Brief view cursor visibility::cursor stays in view under arrow nav, Home/End, PageUp/PageDown, and resize": "one test drives many nav + window-resize cycles (2.3s at flagger introduction)",
+    "mtp-conflicts.spec.ts::MTP cross-volume copy conflicts::MTP-to-local copy with apply-to-all Skip credits byte progress": "virtual MTP per-operation protocol overhead (2.2s at flagger introduction)",
+    "mtp-conflicts.spec.ts::MTP cross-volume move conflicts::MTP-to-local move with overwrite replaces dest and removes source": "virtual MTP per-operation protocol overhead (2.3s at flagger introduction)",
+    "mtp-conflicts.spec.ts::MTP cross-volume move conflicts::MTP-to-local move with skip preserves both files": "virtual MTP per-operation protocol overhead (2.8s at flagger introduction)",
+    "mtp-conflicts.spec.ts::MTP same-volume move conflicts::same-volume MTP move with overwrite replaces dest": "virtual MTP per-operation protocol overhead (2.5s at flagger introduction)",
+    "mtp-conflicts.spec.ts::MTP same-volume move conflicts::same-volume MTP move with skip preserves both files": "virtual MTP per-operation protocol overhead (2.8s at flagger introduction)",
+    "mtp-copy-preflight-uses-cache.spec.ts::MTP copy pre-flight reuses watcher-backed listing::F5 pre-flight scan completes from cache and reports the right file count": "virtual MTP per-operation protocol overhead (2.3s at flagger introduction)",
+    "mtp-delete-no-double-scan.spec.ts::MTP delete reuses scan preview (no double scan)::F8 progresses Scanning -> Deleting exactly once and counts never go backwards": "virtual MTP per-operation protocol overhead (2.3s at flagger introduction)",
+    "mtp-same-volume-move-merge.spec.ts::::same-volume MTP folder move auto-merges; file clash inside prompts; dest-only survives": "virtual MTP per-operation protocol overhead plus three-way merge assertions (2.3s at flagger introduction)",
+    "mtp.spec.ts::MTP cross-storage move::moves file from MTP to local": "virtual MTP per-operation protocol overhead (2.2s at flagger introduction)",
+    "mtp.spec.ts::MTP file operations::deletes multiple selected files on MTP": "virtual MTP per-operation protocol overhead (2.0s at flagger introduction)",
+    "mtp.spec.ts::MTP file operations::moves file between MTP directories": "virtual MTP per-operation protocol overhead (2.9s at flagger introduction)",
+    "mtp.spec.ts::MTP file watching::detects externally added file in MTP backing dir": "waits for the real MTP watcher to pick up an external FS change (2.3s at flagger introduction)",
+    "mtp.spec.ts::MTP large file transfer::copies 50 MB file from MTP to local": "50 MB payload through the virtual MTP protocol (2.3s at flagger introduction)",
+    "search-open-in-pane.spec.ts::Search dialog: Open in pane::⌘[ leaves the snapshot view, ⌘] returns to it": "navigates out of and back into the search snapshot volume, two full pane loads (3.2s at flagger introduction)",
+    "viewer-wordwrap-persistence.spec.ts::Viewer word-wrap persistence::word wrap toggled in one viewer session is on in the next": "opens the viewer window twice to assert persistence across sessions (2.3s at flagger introduction)"
+  },
+  "linux": {
+    "accessibility.spec.ts::dark mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.5s at flagger introduction)",
+    "accessibility.spec.ts::light mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.8s at flagger introduction)",
+    "mtp-conflicts.spec.ts::MTP cross-volume copy conflicts::MTP-to-local copy with apply-to-all Skip credits byte progress": "virtual MTP per-operation protocol overhead (2.2s at flagger introduction)",
+    "mtp-conflicts.spec.ts::MTP same-volume move conflicts::same-volume MTP move with overwrite replaces dest": "virtual MTP per-operation protocol overhead (2.4s at flagger introduction)",
+    "mtp.spec.ts::MTP file operations::deletes file on MTP with \"Delete permanently\" dialog": "virtual MTP per-operation protocol overhead (2.1s at flagger introduction)",
+    "mtp.spec.ts::MTP file operations::moves file between MTP directories": "virtual MTP per-operation protocol overhead (2.8s at flagger introduction)",
+    "mtp.spec.ts::MTP file watching::detects externally added file in MTP backing dir": "waits for the real MTP watcher to pick up an external FS change (2.1s at flagger introduction)",
+    "search-open-in-pane.spec.ts::Search dialog: Open in pane::⌘[ leaves the snapshot view, ⌘] returns to it": "navigates out of and back into the search snapshot volume, two full pane loads (3.3s at flagger introduction)",
+    "viewer-wordwrap-persistence.spec.ts::Viewer word-wrap persistence::word wrap toggled in one viewer session is on in the next": "opens the viewer window twice to assert persistence across sessions (2.3s at flagger introduction)"
+  }
+}

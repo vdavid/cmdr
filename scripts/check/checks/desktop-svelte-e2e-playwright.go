@@ -107,7 +107,18 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	results := runShardsInParallel(desktopDir, shards)
-	return aggregateShardResults(results, len(shards))
+	result, err := aggregateShardResults(results, len(shards))
+	if err != nil {
+		return CheckResult{}, err
+	}
+
+	// Warn-only duration flagging: the union of the shards' JSON reports
+	// covers the whole suite (MTP shard + the non-MTP shard split).
+	reportPaths := make([]string, len(shards))
+	for i, s := range shards {
+		reportPaths[i] = s.jsonReport
+	}
+	return applyE2EDurationWarnings(ctx, result, reportPaths, "macos"), nil
 }
 
 // buildTauriBinary compiles the Tauri binary with the playwright-e2e feature

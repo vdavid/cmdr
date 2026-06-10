@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+// linuxE2EReportPath is where the Linux Docker run's Playwright JSON report
+// lands on the host: `apps/desktop/scripts/e2e-linux.sh` sets
+// CMDR_E2E_JSON_REPORT inside the container and bind-mounts the file through
+// to this path. Keep the two in sync.
+const linuxE2EReportPath = "/tmp/cmdr-e2e-report-linux.json"
+
 // RunDesktopE2ELinux runs Playwright E2E tests against the real Tauri app in Docker.
 func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 	// Check if Docker is available
@@ -46,11 +52,13 @@ func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 	// Extract test count from Playwright output (like "48 passed")
 	re := regexp.MustCompile(`(\d+) passed`)
 	matches := re.FindStringSubmatch(output)
+	result := Success("All Linux E2E tests passed")
 	if len(matches) > 1 {
 		count, _ := strconv.Atoi(matches[1])
-		return Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))), nil
+		result = Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests")))
 	}
-	return Success("All Linux E2E tests passed"), nil
+	// Warn-only duration flagging from the JSON report the run just wrote.
+	return applyE2EDurationWarnings(ctx, result, []string{linuxE2EReportPath}, "linux"), nil
 }
 
 // unmountOrbStackNFS unmounts OrbStack's reverse NFS mount (~/OrbStack) if present.

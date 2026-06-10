@@ -6,19 +6,21 @@ CLI flags, freestyle.sh remote execution), see [`../CLAUDE.md`](../CLAUDE.md).
 
 ## Key files
 
-| File                                                 | Purpose                                                                                                                                                                                                          |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `common.go`                                          | Core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`), shared utils (`RunCommand`, `EnsureGoTool`, `CommandExists`, `runPrettierCheck`, `runESLintCheck`, `indentOutput`, `trimBuildNoise`) |
-| `registry.go`                                        | `AllChecks`: canonical ordered list of all check definitions. Lookup and validation functions (`FilterSlowChecks`, `FilterCIOnlyChecks`, `FilterFastChecks`, `ValidateCheckNames`).                              |
-| `registry_test.go`                                   | Collision detection, `CLIName()` tests                                                                                                                                                                           |
-| `desktop-rust-*.go`                                  | One file per Rust check                                                                                                                                                                                          |
-| `desktop-svelte-*.go`                                | One file per Svelte/TS check                                                                                                                                                                                     |
-| `website-*.go`, `api-server-*.go`, `scripts-go-*.go` | One file per check                                                                                                                                                                                               |
-| `file-length.go`                                     | Informational file-length scanner (warn-only, never fails). Supports an allowlist and shrink-wraps it on local runs.                                                                                             |
-| `file-length-allowlist.json`                         | Allowlist for file-length check: `{ "exempt": { "path": reason }, "files": { "path": lineCount } }`. See § File-length allowlist.                                                                                |
-| `allowlist.go`                                       | Shared allowlist shrink-wrap plumbing: `writeJSONAllowlist` (stable JSON rewrite), `reformatWithOxfmt`, `fileExists`. Verdict logic stays per-check.                                                             |
-| `directives.go`                                      | `directiveTracker`: records `allowed-*` opt-out comment sites per file and which excused a violation; unused ones are reported as orphans (the "unused eslint-disable" equivalent).                              |
-| `changelog-commit-links.go`                          | Validates every `https://github.com/vdavid/cmdr/commit/<sha>` URL in `CHANGELOG.md` resolves, via a single `git cat-file --batch-check` process.                                                                 |
+| File                                                 | Purpose                                                                                                                                                                                                               |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `common.go`                                          | Core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`), shared utils (`RunCommand`, `EnsureGoTool`, `CommandExists`, `runPrettierCheck`, `runESLintCheck`, `indentOutput`, `trimBuildNoise`)      |
+| `registry.go`                                        | `AllChecks`: canonical ordered list of all check definitions. Lookup and validation functions (`FilterSlowChecks`, `FilterCIOnlyChecks`, `FilterFastChecks`, `ValidateCheckNames`).                                   |
+| `registry_test.go`                                   | Collision detection, `CLIName()` tests                                                                                                                                                                                |
+| `desktop-rust-*.go`                                  | One file per Rust check                                                                                                                                                                                               |
+| `desktop-svelte-*.go`                                | One file per Svelte/TS check                                                                                                                                                                                          |
+| `website-*.go`, `api-server-*.go`, `scripts-go-*.go` | One file per check                                                                                                                                                                                                    |
+| `file-length.go`                                     | Informational file-length scanner (warn-only, never fails). Supports an allowlist and shrink-wraps it on local runs.                                                                                                  |
+| `file-length-allowlist.json`                         | Allowlist for file-length check: `{ "exempt": { "path": reason }, "files": { "path": lineCount } }`. See § File-length allowlist.                                                                                     |
+| `e2e-durations.go`                                   | E2E test duration flagger (warn-only): parses the Playwright JSON reports after each E2E run and flags tests over the 2 s budget. Embedded in both E2E checks, not a registry check. See § E2E test duration flagger. |
+| `e2e-duration-allowlist.json`                        | Per-platform (`macos` / `linux`) allowlist for the duration flagger: `{ "<spec>::<describe chain>::<title>": reason }`. Entries need a reason; new entries need David's OK.                                           |
+| `allowlist.go`                                       | Shared allowlist shrink-wrap plumbing: `writeJSONAllowlist` (stable JSON rewrite), `reformatWithOxfmt`, `fileExists`. Verdict logic stays per-check.                                                                  |
+| `directives.go`                                      | `directiveTracker`: records `allowed-*` opt-out comment sites per file and which excused a violation; unused ones are reported as orphans (the "unused eslint-disable" equivalent).                                   |
+| `changelog-commit-links.go`                          | Validates every `https://github.com/vdavid/cmdr/commit/<sha>` URL in `CHANGELOG.md` resolves, via a single `git cat-file --batch-check` process.                                                                      |
 
 ## Check definition shape
 
@@ -153,6 +155,33 @@ mirrors the growth buffer so routine small edits don't churn the JSON.
 See `.claude/rules/file-length-allowlist.md` (repo-level) for when an entry may be raised vs lowered without user
 consent.
 
+## E2E test duration flagger
+
+The E2E suites were hard-won down to under 2 s per test; `e2e-durations.go` defends that. After a successful E2E run,
+both E2E checks (`desktop-e2e-playwright`, `desktop-e2e-linux`) call `applyE2EDurationWarnings`, which parses the run's
+Playwright JSON reports (`/tmp/cmdr-e2e-report-{mtp,nonmtp1,nonmtp2}.json` for the macOS shards,
+`/tmp/cmdr-e2e-report-linux.json` for Docker — the same files `scripts/e2e-test-timings` reads) and flags every test
+whose worst single attempt exceeded `e2eSlowTestThresholdMs` (2000). **Warn-only by contract**: a slow test converts the
+check's green `OK` into a yellow `warn` line but never fails the suite, and a failed E2E run skips the analysis entirely
+(the failure output stays focused).
+
+**Decision**: the analysis is embedded in the two E2E checks, not registered as a separate check with `DependsOn`.
+**Why**: the JSON reports are per-run `/tmp` artifacts. Dependencies outside the selected run set count as satisfied, so
+a standalone check would run in default (non-slow) suites too and warn about a stale previous run's data. Embedding also
+means zero new CI-contract surface (both E2E checks already carry `NotInCI` reasons).
+
+`e2e-duration-allowlist.json` policy (same consent rules as file-length: agents add/raise nothing without David's OK):
+
+- Sections are per platform (`macos` / `linux`) because the same test can be slow only on Docker; each check judges only
+  its own section, so a macOS run never flags a Linux-only entry as stale.
+- Key format: `<spec file>::<describe chain joined with " › ">::<title>`; duplicate titles collapse to the slowest.
+- **Dead entries** (key absent from the run — the report enumerates the full suite, skipped tests included):
+  auto-removed locally, report-only in CI. Skipped when any report failed to parse, so a missing shard report can't
+  mass-remove entries.
+- **Satisfied entries** are only _reported_ for an agent to judge, never auto-removed, and only once the test drops
+  below the threshold minus a 25% margin (1.5 s). Wider than file-length's 10% because wall-clock durations oscillate
+  run to run; a test hovering at 1.9 s must not cause remove/re-add churn.
+
 ## Allowlist shrink-wrap
 
 Checks that own an allowlist verify their own entries are still needed; the helpers live in `allowlist.go` and
@@ -164,12 +193,12 @@ or read stale artifacts.
 
 Policy by staleness class:
 
-- **Dead entries** (file gone): auto-removed locally, report-only in CI (same dual-mode convention as the formatters).
-  Done by `file-length` and `svelte-tests`; `a11y-coverage` and `log-error-macro` fail instead (their lists are
-  small/hardcoded).
-- **Satisfied entries with a reason** (coverage now ≥ threshold+5% margin; exempt component that has a valid a11y test):
-  reported for an agent to judge — the reason may say "tested elsewhere", and the margin band (70–75%) stays silently
-  allowlisted to avoid removal/re-add churn.
+- **Dead entries** (file gone, or E2E test gone from the run): auto-removed locally, report-only in CI (same dual-mode
+  convention as the formatters). Done by `file-length`, `svelte-tests`, and the E2E duration flagger; `a11y-coverage`
+  and `log-error-macro` fail instead (their lists are small/hardcoded).
+- **Satisfied entries with a reason** (coverage now ≥ threshold+5% margin; exempt component that has a valid a11y test;
+  allowlisted E2E test now under 1.5 s): reported for an agent to judge — the reason may say "tested elsewhere", and the
+  margin band stays silently allowlisted to avoid removal/re-add churn.
 - **Numeric slack** (file-length): auto-ratcheted; the entries carry no reason text, so the rewrite loses nothing.
 - **Orphaned opt-out comments** (`allowed-bare-poll` / `allowed-lock-poison` / `allowed-error-string-match` /
   `allowed-btn-restyle` / `allowed-rustup-add`): the scanners track which directives excused a violation and fail on the

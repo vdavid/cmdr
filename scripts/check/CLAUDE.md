@@ -171,6 +171,9 @@ RUST_LOG=cmdr_lib::file_system::volume::mtp=trace pnpm check desktop-e2e-playwri
 The chosen `RUST_LOG` value is echoed at the top of the timestamped log so it's obvious from a glance which level was
 captured. When unset, the log starts with `=== RUST_LOG unset (default warn level) ===`.
 
+After a successful run, both E2E checks flag (warn-only) any individual test that took more than 2 s wall-clock, against
+a per-platform allowlist. See `checks/CLAUDE.md` § "E2E test duration flagger".
+
 **TTY detection:** `golang.org/x/term.IsTerminal` gates the live status line; CI logs stay clean.
 
 **CSV stats logging:** Each check run appends a row to `~/cmdr-check-log.csv` with timestamp, app, check name, duration,

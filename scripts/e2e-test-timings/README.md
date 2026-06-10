@@ -6,6 +6,9 @@ during normal `--include-slow` runs and emits a sortable table showing macOS vs 
 Built to answer: "Which E2E tests are disproportionately slow on Linux Docker?" — the answer points at where polling
 timeouts, magic sleeps, or Docker-friendly rewrites would pay off most.
 
+The same reports feed the automated per-test duration flagger in the check runner (warn-only, 2 s budget); see
+`scripts/check/checks/CLAUDE.md` § "E2E test duration flagger". This script stays the manual deep-dive tool.
+
 ## Prerequisites
 
 Run the E2E suites at least once so the JSON reports exist on disk:

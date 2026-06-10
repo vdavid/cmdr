@@ -69,6 +69,11 @@ The `cmdr/no-arbitrary-sleep-in-e2e` ESLint rule flags `await sleep(N)`. Opt out
 `// eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- <reason>` only when there's a genuine fixed-duration wait
 (e.g., watcher debounce settling), and even then, prefer a poll if any state changes.
 
+The per-test wall-clock budget is 2 s, defended automatically: after every E2E run (`desktop-e2e-playwright` and
+`desktop-e2e-linux`), the check runner flags any test over it (warn-only, per platform) against
+`scripts/check/checks/e2e-duration-allowlist.json`. If your new test trips it, speed the test up; an allowlist entry
+needs a reason and David's OK. See `scripts/check/checks/CLAUDE.md` § "E2E test duration flagger".
+
 ### ❌ Bare `await pollUntil(...)` in E2E specs
 
 The legacy `pollUntil` helper (and its wrappers `pollFs`, `pollUntilValue`, `pollActiveMode`, `pollOverlayGone`,
