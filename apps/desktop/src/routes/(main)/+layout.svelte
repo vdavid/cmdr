@@ -26,16 +26,14 @@
         onMtpDeviceConnected,
         connectMtpDevice,
         cancelAllWriteOperations,
-        configureAi,
-        getAiApiKey,
         checkPendingCrashReport,
         sendCrashReport,
         type MtpExclusiveAccessErrorEvent,
         type MtpPermissionErrorEvent,
         type CrashReport,
     } from '$lib/tauri-commands'
-    import { getSetting, resolveCloudConfig } from '$lib/settings'
-    import { migrateApiKeysFromSettings } from '$lib/settings/ai-config'
+    import { getSetting } from '$lib/settings'
+    import { migrateApiKeysFromSettings, pushConfigToBackend } from '$lib/settings/ai-config'
     import { initAiState } from '$lib/ai/ai-state.svelte'
     import { initAiToastSync } from '$lib/ai/ai-toast-sync.svelte'
     import { addToast } from '$lib/ui/toast'
@@ -198,21 +196,15 @@
 
             // One-time migration of pre-launch testers' plaintext API keys from settings.json to
             // the OS secret store. TODO: remove this call after 2026-09-01 (see function comment).
-            // Awaited so the first `getAiApiKey` below sees the freshly-migrated value.
+            // Awaited so the config push below reads the freshly-migrated key from the secret store.
             await migrateApiKeysFromSettings()
 
-            // Push AI config to backend (triggers server start if provider is local + model installed).
-            // API key lives in the OS secret store now, not settings.json: fetch it separately.
-            const cloudProviderId = getSetting('ai.cloudProvider')
-            const resolvedConfig = resolveCloudConfig(cloudProviderId, getSetting('ai.cloudProviderConfigs'))
-            const cloudApiKey = await getAiApiKey(cloudProviderId).catch(() => '')
-            void configureAi(
-                getSetting('ai.provider'),
-                Number(getSetting('ai.localContextSize')),
-                cloudApiKey,
-                resolvedConfig.baseUrl,
-                resolvedConfig.model,
-            )
+            // Push AI config to the backend (triggers server start if provider is local + model
+            // installed). Goes through the single canonical `pushConfigToBackend()` — the same
+            // read-fresh pusher the settings-applier and onboarding use — so there's ONE place that
+            // reads `ai.provider` for the backend. Settings are already loaded by this point
+            // (initReactiveSettings → initializeSettings above), so the read returns real values.
+            void pushConfigToBackend()
 
             // Read system accent color from macOS and listen for changes
             await initAccentColor()

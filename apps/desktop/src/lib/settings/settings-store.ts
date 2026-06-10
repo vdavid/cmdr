@@ -310,13 +310,24 @@ async function migrateSettings(store: Store, fromVersion: number): Promise<void>
 // Core API
 // ============================================================================
 
+/** Ids already warned about for a pre-init read, so a tight pre-init read loop can't spam the log. */
+const warnedUninitializedReads = new Set<string>()
+
 /**
  * Get a setting value. Returns the default if not set.
  * Must call initializeSettings() first.
  */
 export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
   if (!initialized) {
-    log.debug('Settings not initialized, returning default for {id}', { id })
+    // Reading before initializeSettings() completes silently returns the REGISTRY DEFAULT,
+    // which can push a wrong value to the backend as if the user chose it (this is how a
+    // pre-init read of `ai.provider` could quietly configure AI as "off"). Warn — once per id —
+    // so an accidental pre-init read surfaces in the logs instead of masquerading as a real
+    // value. We warn rather than throw: a stray early read must not crash the UI.
+    if (!warnedUninitializedReads.has(id)) {
+      warnedUninitializedReads.add(id)
+      log.warn('getSetting({id}) called before settings were initialized; returning the registry default', { id })
+    }
     return getDefaultValue(id)
   }
 
