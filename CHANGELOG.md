@@ -134,14 +134,11 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Folders always merge on copy and move. A folder landing on a same-named folder now blends into it instead of asking
-  you to overwrite, skip, or rename the whole folder. Your conflict choice (skip, overwrite, or rename) applies to the
-  clashing files inside, so dest-only files always survive the merge
-  ([89cd978c](https://github.com/vdavid/cmdr/commit/89cd978c),
+- Folders always merge on copy and move: your conflict choice (skip, overwrite, or rename) applies to the clashing files
+  inside, and dest-only files survive ([89cd978c](https://github.com/vdavid/cmdr/commit/89cd978c),
   [6e305a47](https://github.com/vdavid/cmdr/commit/6e305a47))
-- Same-volume moves are instant. Moving a folder within one drive, NAS share, or phone is a rename, so Cmdr skips the
-  pre-move scan that used to make a big NAS folder sit on "Verifying before move…" for 30–40 seconds
-  ([a9743ecc](https://github.com/vdavid/cmdr/commit/a9743ecc),
+- Same-volume moves are instant: moving within one drive, share, or phone is a rename, no more 30–40 s "Verifying before
+  move…" on a big NAS folder ([a9743ecc](https://github.com/vdavid/cmdr/commit/a9743ecc),
   [114e5d2d](https://github.com/vdavid/cmdr/commit/114e5d2d))
 - Completion toasts now report what you selected, split by type: "Moved 1 file and 3 folders"
   ([ae629609](https://github.com/vdavid/cmdr/commit/ae629609),
@@ -153,9 +150,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Resolve conflicts file by file inside a folder merge on network and phone drives (SMB, MTP, and cross-volume). A newer
-  file deep in the tree no longer loses to an older one behind a single folder-level OK; each clashing file follows your
-  conflict choice ([6e305a47](https://github.com/vdavid/cmdr/commit/6e305a47))
+- Resolve conflicts file by file inside folder merges on network and phone drives; a newer file deep in the tree no
+  longer loses behind a single folder-level OK ([6e305a47](https://github.com/vdavid/cmdr/commit/6e305a47))
 - Fix dropping files from the Desktop, Documents, or Downloads failing with "Source volume not found"
   ([c3021243](https://github.com/vdavid/cmdr/commit/c3021243))
 - Fix drags from phone and network panes reading 0 bytes / 0 files in the transfer dialog
@@ -310,7 +306,7 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 - Stop clippy forcing full crate rebuild every run: ~32s to ~1–2s warm, also sped up other Rust checks
   ([3318f29c](https://github.com/vdavid/cmdr/commit/3318f29c))
 - Switch Svelte tests to happy-dom (22% faster) ([ca6b13d9](https://github.com/vdavid/cmdr/commit/ca6b13d9))
-- Add per-instance isolation (`CMDR_INSTANCE_ID`). Pparallel dev sessions now get own ports, data dir, and Keychain
+- Add per-instance isolation (`CMDR_INSTANCE_ID`). Parallel dev sessions now get own ports, data dir, and Keychain
   ([3bcd2ed4](https://github.com/vdavid/cmdr/commit/3bcd2ed4))
 - Add a `lock-poison` static check and pnpm install-side supply-chain guardrails (14-day cooldown, trust no-downgrade)
   ([038c5ec2](https://github.com/vdavid/cmdr/commit/038c5ec2),
@@ -340,8 +336,8 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
   [3ea1b45e](https://github.com/vdavid/cmdr/commit/3ea1b45e),
   [5c35d9ea](https://github.com/vdavid/cmdr/commit/5c35d9ea),
   [9b8f9dd7](https://github.com/vdavid/cmdr/commit/9b8f9dd7))
-- Select and copy in the file viewer. Works with files until 100 MB. Goes around our virtual scrolling.
-  Double/triple-click for word/line, right-click menu ([6f717829](https://github.com/vdavid/cmdr/commit/6f717829),
+- Select and copy text in the file viewer (files up to 100 MB): double/triple-click for word/line, right-click menu
+  ([6f717829](https://github.com/vdavid/cmdr/commit/6f717829),
   [1e061820](https://github.com/vdavid/cmdr/commit/1e061820),
   [8d6f85c0](https://github.com/vdavid/cmdr/commit/8d6f85c0),
   [46f278bb](https://github.com/vdavid/cmdr/commit/46f278bb),
@@ -368,7 +364,7 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 
 ### Fixed
 
-- Fix SMB share mis-loading local paths after a volume switch (stale `onPathChange` poisoned the new volume)
+- Fix SMB share mis-loading local paths after a volume switch
   ([3e613ca6](https://github.com/vdavid/cmdr/commit/3e613ca6))
 - Fix volume copy dialog wedging open after SMB/MTP cancel ([0fbafebb](https://github.com/vdavid/cmdr/commit/0fbafebb))
 - Process selected files in pane sort order, not Cmd+click order
@@ -376,9 +372,8 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 - Cursor lands on the new folder, not the row below ([38ebdc87](https://github.com/vdavid/cmdr/commit/38ebdc87))
 - Fix Full view ".." row hiding behind the header after PageDown/PageUp
   ([6ddb4273](https://github.com/vdavid/cmdr/commit/6ddb4273))
-- Fix viewer ⌘A in ByteSeek-no-index mode freezing on a 9e15-iter loop
-  ([e29312bd](https://github.com/vdavid/cmdr/commit/e29312bd))
-- Land `range_read` cancellation within ~64 KB, not 16 MB ([0e758b46](https://github.com/vdavid/cmdr/commit/0e758b46))
+- Fix viewer ⌘A freezing on huge unindexed files ([e29312bd](https://github.com/vdavid/cmdr/commit/e29312bd))
+- Cancel viewer reads within ~64 KB instead of 16 MB ([0e758b46](https://github.com/vdavid/cmdr/commit/0e758b46))
 - Fix Escape on viewer context menu closing the whole window
   ([4464f766](https://github.com/vdavid/cmdr/commit/4464f766))
 - Honor `prefers-reduced-motion` in viewer drag autoscroll ([aec327b8](https://github.com/vdavid/cmdr/commit/aec327b8))
@@ -448,7 +443,7 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
   [14a36dd8](https://github.com/vdavid/cmdr/commit/14a36dd8))
 - Tint each pane's background by volume type (local/SMB/MTP)
   ([3f5629d3](https://github.com/vdavid/cmdr/commit/3f5629d3))
-- Improve MCP: replace fire-and-forgets with wound-trips ([48a9701c](https://github.com/vdavid/cmdr/commit/48a9701c),
+- Improve MCP: replace fire-and-forgets with round-trips ([48a9701c](https://github.com/vdavid/cmdr/commit/48a9701c),
   [3c1b0dc9](https://github.com/vdavid/cmdr/commit/3c1b0dc9),
   [e12285d1](https://github.com/vdavid/cmdr/commit/e12285d1),
   [df11caef](https://github.com/vdavid/cmdr/commit/df11caef))
@@ -476,7 +471,7 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
   ([432d13ff](https://github.com/vdavid/cmdr/commit/432d13ff))
 - Localize macOS pane names in onboarding and error dialogs (points at what System Settings actually shows)
   ([bad5d926](https://github.com/vdavid/cmdr/commit/bad5d926))
-- Coalesce `directory-diff` events with soft-refresh in the FE. No more empty-pane flicker on bulk ops!
+- No more empty-pane flicker on bulk ops (coalesced refresh events)
   ([54674854](https://github.com/vdavid/cmdr/commit/54674854),
   [13b486a8](https://github.com/vdavid/cmdr/commit/13b486a8))
 - Honest transfer-complete toasts: report copied vs skipped separately
@@ -712,9 +707,8 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 
 ### Added
 
-- Suppress the 5–10 native macOS TCC popups that stacked behind the FDA onboarding prompt, deep-link to the Full Disk
-  Access pane, version-aware copy, Tahoe `+`-button tip, and a multi-trigger probe that catches kernel short-circuits
-  ([3c708d35](https://github.com/vdavid/cmdr/commit/3c708d35),
+- Suppress the 5–10 macOS permission popups that stacked behind the Full Disk Access prompt, and deep-link straight to
+  the right System Settings pane ([3c708d35](https://github.com/vdavid/cmdr/commit/3c708d35),
   [16918218](https://github.com/vdavid/cmdr/commit/16918218),
   [f32dfc55](https://github.com/vdavid/cmdr/commit/f32dfc55),
   [791edff0](https://github.com/vdavid/cmdr/commit/791edff0))
@@ -748,22 +742,19 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
   request" ([e5be1467](https://github.com/vdavid/cmdr/commit/e5be1467))
 - Per-row crash email with build mode and short ID, schema migrations, newest-first sort
   ([e89a63a3](https://github.com/vdavid/cmdr/commit/e89a63a3))
-- Stable client-side ID for error reports across dialog, toast, and Discord; env-prefixed R2 keys; `[DEV]`/`[PROD]`
-  Discord prefix ([77260827](https://github.com/vdavid/cmdr/commit/77260827),
+- One stable short ID per error report, shown the same in the dialog, the toast, and on David's side
+  ([77260827](https://github.com/vdavid/cmdr/commit/77260827),
   [e1810361](https://github.com/vdavid/cmdr/commit/e1810361))
 - Guard read-only volumes up front for F7/F8/F2 so MTP read-only SD cards warn before you type anything
   ([d9212b83](https://github.com/vdavid/cmdr/commit/d9212b83))
-- Provider-enriched friendly errors on the write path: MacDroid folders get "Managed by **MacDroid**…" on move failures;
-  dialog renders markdown + category icon, retry shown only when meaningful
+- Friendlier write errors that name the provider (like "Managed by **MacDroid**…") and offer Retry only when it helps
   ([e9452032](https://github.com/vdavid/cmdr/commit/e9452032),
   [51dff4c1](https://github.com/vdavid/cmdr/commit/51dff4c1),
   [5bcacfef](https://github.com/vdavid/cmdr/commit/5bcacfef))
-- Route every dir-into-dir cross-volume conflict through the resolver so Stop/Skip/Overwrite/Rename works for folders
-  too; pin Overwrite-means-merge as an architectural guarantee
+- Make Stop/Skip/Overwrite/Rename work for folder conflicts on cross-volume copies too
   ([7ecf9d37](https://github.com/vdavid/cmdr/commit/7ecf9d37),
   [2f4e377d](https://github.com/vdavid/cmdr/commit/2f4e377d))
-- Bump smb2 to 0.8.0 with typed `STATUS_OBJECT_NAME_COLLISION` and `FILE_IS_A_DIRECTORY` so merging into an existing SMB
-  directory works after a partial copy; fast-path WARNs demoted to debug
+- Fix merging into an existing SMB folder after a partial copy (smb2 0.8.0)
   ([7dd9cfc8](https://github.com/vdavid/cmdr/commit/7dd9cfc8),
   [623f8c17](https://github.com/vdavid/cmdr/commit/623f8c17))
 - Move MCP defaults to ports 19224 (prod) and 19225 (dev) so a dev build no longer collides with the installed app
@@ -773,12 +764,10 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 
 ### Fixed
 
-- Fix F8 (and other dialogs) dying after a volume switch: Option fields started serializing as JSON `null` instead of
-  being omitted after the typed-IPC migration; swept `=== undefined` checks across 11 sites
-  ([f2019aff](https://github.com/vdavid/cmdr/commit/f2019aff),
+- Fix F8 and other dialogs dying after a volume switch ([f2019aff](https://github.com/vdavid/cmdr/commit/f2019aff),
   [46bd6d0e](https://github.com/vdavid/cmdr/commit/46bd6d0e),
   [eef042d3](https://github.com/vdavid/cmdr/commit/eef042d3))
-- Fix one or two rows ellipsizing the Modified column under non-100% text size (sub-pixel glyph-advance drift)
+- Fix the Modified column ellipsizing on some rows under non-100% text size
   ([a7a7915e](https://github.com/vdavid/cmdr/commit/a7a7915e))
 - Fix light/dark theme briefly flipping at startup when the persisted choice differed from the system preference
   ([f689da01](https://github.com/vdavid/cmdr/commit/f689da01))
@@ -788,8 +777,7 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
   ([0b51a331](https://github.com/vdavid/cmdr/commit/0b51a331))
 - Accept `null` for optional crash-report fields so reports written by older app versions still upload after upgrade
   ([3c12ff2f](https://github.com/vdavid/cmdr/commit/3c12ff2f))
-- Stop re-anchoring focus inside `selectVolumeByIndex`/`navigateToPath`, which dropped keystrokes mid-sequence in fast
-  multi-select ([6074cd21](https://github.com/vdavid/cmdr/commit/6074cd21))
+- Fix dropped keystrokes during fast multi-select sequences ([6074cd21](https://github.com/vdavid/cmdr/commit/6074cd21))
 
 ### Non-app
 
