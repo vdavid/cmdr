@@ -16,7 +16,8 @@ see [`../CLAUDE.md`](../CLAUDE.md).
   `scripts-go-*`).
 - `inputs.go`: shared `Inputs` building blocks. `allowlist.go` / `directives.go`: allowlist shrink-wrap + opt-out
   tracking plumbing.
-- Warn-only scanners with their JSON allowlists: `file-length.go`, `e2e-durations.go`, `website-bundle-size.go`.
+- Warn-only scanners with their JSON allowlists: `file-length.go`, `claude-md-length.go`, `e2e-durations.go`,
+  `website-bundle-size.go`.
 
 ## Must-knows
 

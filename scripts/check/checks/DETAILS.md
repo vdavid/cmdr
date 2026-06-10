@@ -16,6 +16,8 @@ freestyle.sh remote execution), see [`../CLAUDE.md`](../CLAUDE.md).
 | `website-*.go`, `api-server-*.go`, `scripts-go-*.go` | One file per check                                                                                                                                                                                                    |
 | `file-length.go`                                     | Informational file-length scanner (warn-only, never fails). Supports an allowlist and shrink-wraps it on local runs.                                                                                                  |
 | `file-length-allowlist.json`                         | Allowlist for file-length check: `{ "exempt": { "path": reason }, "files": { "path": lineCount } }`. See § File-length allowlist.                                                                                     |
+| `claude-md-length.go`                                | Warn-only push-tier scanner: warns when a `CLAUDE.md` exceeds 600 words (`DETAILS.md` is the unlimited pull tier, not scanned). Allowlist with the same shrink-wrap semantics as file-length. See § CLAUDE.md length. |
+| `claude-md-length-allowlist.json`                    | Allowlist for claude-md-length: `{ "files": { "path": wordCount } }`. Same ratchet/consent rules as file-length.                                                                                                      |
 | `e2e-durations.go`                                   | E2E test duration flagger (warn-only): parses the Playwright JSON reports after each E2E run and flags tests over the 2 s budget. Embedded in both E2E checks, not a registry check. See § E2E test duration flagger. |
 | `e2e-duration-allowlist.json`                        | Per-platform (`macos` / `linux`) allowlist for the duration flagger: `{ "<spec>::<describe chain>::<title>": reason }`. Entries need a reason; new entries need David's OK.                                           |
 | `website-bundle-size.go`                             | Warn-only website `dist/` size budget: warns when the total grows >10% over the committed baseline. Self-skips without `dist/`. See § Website bundle-size baseline.                                                   |
@@ -169,6 +171,20 @@ mirrors the growth buffer so routine small edits don't churn the JSON.
 See `.claude/rules/file-length-allowlist.md` (repo-level) for when an entry may be raised vs lowered without user
 consent.
 
+## CLAUDE.md length
+
+`claude-md-length` (warn-only, `IsFast`) keeps the push tier lean: it warns when any `CLAUDE.md` exceeds 600 words. Each
+`CLAUDE.md` is auto-injected into every agent session that touches its directory, so words there cost tokens repeatedly;
+depth belongs in the colocated `DETAILS.md` (the pull tier), which is deliberately unlimited and NOT scanned. The check
+reuses `findClaudeMdFiles` (same walk as `claude-md-reminder`, so only files named `CLAUDE.md` count) and
+`strings.Fields` for the word count (matches `wc -w`, so seeded counts and the check agree).
+
+`claude-md-length-allowlist.json` has one `files` section mapping path → accepted word count, with the exact same
+shrink-wrap and consent discipline as file-length: a file is suppressed up to its recorded count plus a 10% buffer;
+local runs drop dead/under-threshold entries and ratchet >10%-slack entries down; CI reports what a local run would
+change. Adding or raising an entry needs David's OK (`.claude/rules/file-length-allowlist.md`); the fix for an oversized
+`CLAUDE.md` is to move depth into `DETAILS.md`, not bump the number.
+
 ## E2E test duration flagger
 
 The E2E suites were hard-won down to under 2 s per test; `e2e-durations.go` defends that. After a successful E2E run,
@@ -245,7 +261,7 @@ RUSTSEC ignores — that's a quarterly task in `docs/maintenance.md`.
 | Website    | Docker   | docker-build                                                                                                                                                                                                                                                              |
 | API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                                                                           |
 | Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                                                                      |
-| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract)                                                                      |
+| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), claude-md-length (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract)                                        |
 | Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                                                                 |
 
 ## Key decisions

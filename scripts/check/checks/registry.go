@@ -712,6 +712,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunClaudeMdReminder,
 	},
 	{
+		ID:          "claude-md-length",
+		DisplayName: "CLAUDE.md length",
+		App:         AppOther,
+		Tech:        "📏 Metrics",
+		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs,
+		Run:         RunClaudeMdLength,
+	},
+	{
 		ID:          "changelog-commit-links",
 		Nickname:    "changelog-links",
 		DisplayName: "CHANGELOG commit links",

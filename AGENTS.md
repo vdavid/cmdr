@@ -100,10 +100,11 @@ Core structure:
   directory are read, so every word costs tokens in every session that touches the area. `DETAILS.md` is the pull tier:
   the area's real docs, read on demand. The litmus: could an agent editing a random file here silently break something
   without this line? Then it's `CLAUDE.md`. Everything else is `DETAILS.md`. So `CLAUDE.md` = invariants, gotchas,
-  don't-do-X-because-Y, a 2–3 line module map, and a pointer; target ~400–600 words. `DETAILS.md` = architecture
-  narrative, data flows, decision rationale with depth, edge-case catalogs. Read it in whole before structural changes
-  in an area. Never `@`-import `DETAILS.md` from a `CLAUDE.md` (that would rebuild the auto-load cost the split exists
-  to remove). See `docs/architecture.md` for the full map.
+  don't-do-X-because-Y, a 2–3 line module map, and a pointer; target ~400–600 words, watched by the warn-only
+  `claude-md-length` check (its allowlist tracks files already over 600 words). `DETAILS.md` = architecture narrative,
+  data flows, decision rationale with depth, edge-case catalogs. Read it in whole before structural changes in an area.
+  Never `@`-import `DETAILS.md` from a `CLAUDE.md` (that would rebuild the auto-load cost the split exists to remove).
+  See `docs/architecture.md` for the full map.
 
 ## Testing and checking
 
@@ -141,7 +142,7 @@ always runs fresh. See the input-fingerprint cache section in `scripts/check/CLA
   - Go: `go-vet`, `staticcheck`, `ineffassign`, `misspell`, `gocyclo`, `go-tests`.
   - API server: `typecheck`, `tests`.
   - Website: `html-validate`, `bundle-size` (both self-skip when `dist/` is absent).
-  - Warn-only metrics: `file-length`, `claude-md-reminder`, `changelog-links`.
+  - Warn-only metrics: `file-length`, `claude-md-reminder`, `claude-md-length`, `changelog-links`.
   - **Does NOT cover**: `clippy`, Rust tests, `cargo-audit`, `cargo-deny`, `jscpd`, `bindings-fresh`, desktop ESLint /
     `svelte-check` / Svelte tests, website ESLint / typecheck / build / e2e, `docker-build`, or any E2E suite.
 - **`pnpm check` — before every commit.** The full default suite (everything not marked `IsSlow`). Catches what `--fast`

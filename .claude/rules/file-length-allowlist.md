@@ -14,3 +14,9 @@ The `exempt` section is for generated files whose length is not actionable (for 
 reason and the same consent rule applies to adding one.
 
 The file-length check is warn-only — it doesn't fail the suite — so leaving the warning is always safe.
+
+The same contract applies to `scripts/check/checks/claude-md-length-allowlist.json` (the `claude-md-length` check, which
+caps push-tier CLAUDE.md word counts): the check shrink-wraps stale `files` entries on local runs (remove gone /
+under-threshold, ratchet >10% slack down), and adding or raising an entry needs explicit user consent. If a CLAUDE.md
+you're touching exceeds its allowlisted word count, move depth into the colocated `DETAILS.md` rather than bumping the
+number; leaving the warn is safe (it's warn-only too).

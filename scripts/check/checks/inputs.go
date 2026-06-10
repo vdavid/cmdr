@@ -88,7 +88,8 @@ var workflowsInputs = []string{
 }
 
 // wholeRepoInputs is for checks that walk the entire tree (file-length,
-// claude-md-reminder). `**` matches every path, so these re-run on any change.
+// claude-md-reminder, claude-md-length). `**` matches every path, so these
+// re-run on any change.
 // That's correct: their domain is the whole repo. They're warn-only and cheap,
 // so always-running costs little.
 var wholeRepoInputs = []string{"**"}
