@@ -72,7 +72,7 @@ sync with `tauri.conf.json` → `identifier`).
 ```
 
 `developer.mcpPort = 0` means "let the kernel pick an ephemeral port" (the post-instance-isolation default). Any
-non-zero value pins. See [`apps/desktop/src-tauri/src/mcp/CLAUDE.md`](../mcp/CLAUDE.md) § Server lifecycle and
+non-zero value pins. See [`apps/desktop/src-tauri/src/mcp/DETAILS.md`](../mcp/DETAILS.md) § Server lifecycle and
 [`docs/tooling/instance-isolation.md`](../../../../../docs/tooling/instance-isolation.md).
 
 These are top-level keys; the dot is part of the key name, not a nesting separator. `parse_settings` reads them manually (serde can't express dot-notation field names as struct fields).

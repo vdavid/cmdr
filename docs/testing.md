@@ -72,7 +72,7 @@ The `cmdr/no-arbitrary-sleep-in-e2e` ESLint rule flags `await sleep(N)`. Opt out
 The per-test wall-clock budget is 2 s, defended automatically: after every E2E run (`desktop-e2e-playwright` and
 `desktop-e2e-linux`), the check runner flags any test over it (warn-only, per platform) against
 `scripts/check/checks/e2e-duration-allowlist.json`. If your new test trips it, speed the test up; an allowlist entry
-needs a reason and David's OK. See `scripts/check/checks/CLAUDE.md` § "E2E test duration flagger".
+needs a reason and David's OK. See `scripts/check/checks/DETAILS.md` § "E2E test duration flagger".
 
 ### ❌ Bare `await pollUntil(...)` in E2E specs
 
@@ -102,7 +102,7 @@ if (!(await pollUntil(tauriPage, async () => isReady(tauriPage), 3000))) {
 Enforced by the `bare-poll` Go check (fast lane, ~9 ms warm; scans `apps/desktop/test/`). Opt out for genuine
 best-effort cleanups (dismissing an overlay that might or might not be there) with `// allowed-bare-poll: <reason>` on
 the line above or as a trailing comment on the same line. The full design rationale is in
-`apps/desktop/test/e2e-playwright/CLAUDE.md` § "Polling helpers" and `scripts/check/CLAUDE.md` § `bare-poll`.
+`apps/desktop/test/e2e-playwright/DETAILS.md` § "Polling helpers" and `scripts/check/checks/DETAILS.md` § `bare-poll`.
 
 ### ❌ Synthesized F-key dispatches for tests that care about the resulting dialog
 
@@ -183,7 +183,7 @@ shifts run to run, Linux (Xvfb, no occlusion) stays green, and reruns "fix" it.
 **Recurrences (why this entry exists):**
 
 1. Settings window deferred close — two nested rAFs pushed the close past the E2E budget
-   (`routes/settings/+page.svelte`, see `lib/settings/CLAUDE.md` § Escape-close gotcha).
+   (`routes/settings/+page.svelte`, see `lib/settings/DETAILS.md` § Escape-close gotcha).
 2. Viewer window deferred close — same shape (`routes/viewer/+page.svelte::closeWindow`).
 3. Viewer `windowReady` / `data-window-ready` marker — an rAF kept the attribute on `"loading"` in unfocused E2E
    windows, timing out every viewer spec whenever the developer was at the keyboard. Cost a full evening of "load flake"

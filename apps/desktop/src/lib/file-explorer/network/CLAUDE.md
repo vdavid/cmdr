@@ -179,7 +179,7 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
 
 1. **Backend** (`SmbVolume::handle_smb_result` in `volume/smb.rs`) detects `ConnectionLost` / `SessionExpired`, flips
    state to `Disconnected`, and emits `smb-connection-changed { volumeId, state: "disconnected" }`. (See
-   `volume/CLAUDE.md` § SMB live-reconnect lifecycle for the BE detail.)
+   `volume/backends/DETAILS.md` § SMB live-reconnect lifecycle for the BE detail.)
 2. **`stores/volume-store.svelte.ts`** listens for that event and patches the matching volume's `smbConnectionState`
    field, which keeps the picker dot, the breadcrumb, and `currentVolumeInfo` reactive without waiting for the next
    `volumes-changed`.
@@ -230,7 +230,7 @@ Don't gate on `network.enabled` at the call site: the helper is the single choke
 permission prompt fires the moment we start mDNS browsing. Doing that at app launch forces the prompt on fresh installs
 before the user has any context. We defer to `triggerNetworkDiscovery()` calls from user actions (Network click, Connect
 to server…, smb2 upgrade) and persist `network.firstTriggerDone` so returning users still get the warm-cache benefit.
-See `src-tauri/src/network/CLAUDE.md` § "Lazy mDNS startup" for the backend side. The old behavior (start at launch) is
+See `src-tauri/src/network/DETAILS.md` § "Lazy mDNS startup" for the backend side. The old behavior (start at launch) is
 preserved for `smb-e2e` feature builds so tests don't have to wait for discovery.
 
 **Decision**: Resolution and share prefetch are fire-and-forget (non-blocking, errors silently discarded) **Why**:

@@ -694,7 +694,7 @@ helper now throws with a snapshot of `activeElement` and any visible overlays, s
 
 No app-source change is needed: the contract that the explorer should hold focus at the start of every test is owned by
 the test helper, and the recovery loop is the canonical pattern for "external state may briefly violate this invariant."
-Documented in `apps/desktop/test/e2e-playwright/CLAUDE.md` § "ensureAppReady focus contract".
+Documented in `apps/desktop/test/e2e-playwright/DETAILS.md` § "ensureAppReady focus contract".
 
 ### Wall-clock
 

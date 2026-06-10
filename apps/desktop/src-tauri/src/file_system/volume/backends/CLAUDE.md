@@ -4,7 +4,7 @@ Per-backend `Volume` implementations (`LocalPosixVolume`, `MtpVolume`, `SmbVolum
 The trait shape, capability matrix, streaming patterns, and "Building a new volume" checklist live in the parent
 [`volume/CLAUDE.md`](../CLAUDE.md) and [`volume/DETAILS.md`](../DETAILS.md).
 
-## Key files
+## Module map
 
 - `local_posix.rs`: `LocalPosixVolume`, real filesystem; delegates listing/indexing/watching to `file_system::listing`
   and `indexing`, copy scanning via `walkdir`, space info via `libc::statvfs` FFI.

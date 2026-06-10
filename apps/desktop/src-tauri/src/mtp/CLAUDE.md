@@ -138,7 +138,7 @@ Some Android devices may still leave the session in a degraded state after a
 flurry of operations, even when cancel is clean on our side (Pixel 6/7 era
 firmware has been observed mis-handling rapid op-cancel-op sequences). This is
 hardware-side and unfixable in software; the settled-state gate (see
-`file_system/write_operations/CLAUDE.md` § "Settle contract") ensures the user
+`file_system/write_operations/DETAILS.md` § "Settle contract") ensures the user
 doesn't issue the next op until our side is fully quiet, which avoids
 provoking the device-side bug in practice.
 

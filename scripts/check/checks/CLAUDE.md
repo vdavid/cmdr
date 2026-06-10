@@ -5,7 +5,7 @@ authoring walkthrough (`CheckDefinition` field semantics, helpers, allowlist mec
 [DETAILS.md](DETAILS.md). For the runner architecture (parallel executor, dependency graph, CLI flags, freestyle.sh),
 see [`../CLAUDE.md`](../CLAUDE.md).
 
-## Key files
+## Module map
 
 - `common.go`: core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`) and shared utils
   (`RunCommand`, `EnsureGoTool`, `CommandExists`, `runPrettierCheck`, `runESLintCheck`, `indentOutput`,

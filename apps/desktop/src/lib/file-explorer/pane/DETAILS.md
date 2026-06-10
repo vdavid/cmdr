@@ -327,7 +327,7 @@ other. See parent § "Live disk space".
 
 **MCP surface.** `FilePane` mirrors `{ buffer, indicatorVisible, indicatorStale, lastMatchedName }` into the synced
 `PaneState.typeToJump` whenever the buffer or indicator is live, so MCP-driven E2E can assert without DOM poking. See
-`src-tauri/src/mcp/CLAUDE.md` § State stores.
+`src-tauri/src/mcp/DETAILS.md` § State stores.
 
 **The `navigate()` transaction (`navigate.ts`).** Every coordinator-level pane navigation goes through one
 `navigate(intent, deps)` entry. `DualPaneExplorer` builds the `NavigateDeps` (store getters/mutators + the FilePane
@@ -419,7 +419,7 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
 - **The focus guard must exempt dialog content.** `DualPaneExplorer.handleFocusGuard` refocuses the container on any
   non-input focusin inside the explorer, and the rename dialogs (`RenameConflictDialog`, `ExtensionChangeDialog`) mount
   INSIDE FilePane. Without the `[role="dialog"], [role="alertdialog"]` exemption, the guard yanks focus off the dialog
-  overlay while `use:trapFocus` (see `lib/ui/CLAUDE.md` § "Focus trapping") pulls it back — an endless focus ping-pong
+  overlay while `use:trapFocus` (see `lib/ui/DETAILS.md` § "Focus trapping") pulls it back — an endless focus ping-pong
   of microtasks that starves the event loop and freezes the webview. Pinned by the "rename to existing name is rejected
   on MTP" E2E. Focus containment inside a dialog is the trap's job; the guard only corrals pane chrome.
 - **Parent offset.** When `hasParent`, frontend cursor index = backend index + 1. `toFrontendIndices` applies this; the

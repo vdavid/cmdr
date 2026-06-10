@@ -169,7 +169,7 @@ must stay byte-identical between the `MenuItem` title and the map. On Linux the 
 `Go to &latest download` (B/F/P are claimed by Back/Forward/Parent).
 
 **Double-dispatch (⌘G / ⌘J).** A key combo matching a menu accelerator fires BOTH the native menu (`execute-command`)
-AND the JS keydown dispatch on macOS (see `shortcuts/CLAUDE.md` § "Modifier-key accelerators may fire twice"). This is
+AND the JS keydown dispatch on macOS (see `shortcuts/DETAILS.md` § "Modifier-key accelerators may fire twice"). This is
 safe here without any suppression hack: ⌘G's dialog-open is idempotency-guarded in `+page.svelte`, and ⌘J's re-reveal is
 naturally idempotent. Expect two `FE:user-action downloads.goToLatest` log lines on one ⌘J press — harmless.
 

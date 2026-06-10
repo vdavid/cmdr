@@ -174,7 +174,7 @@ string or a RegExp, or omitted. For selections that drag in the `bulk/` tree, co
 
 `data-scan-state` reads `skipped` only when no deep scan runs — a same-non-default-volume move's server-side rename
 (zero bytes), so the tallies legitimately stay at 0. The marker is derived from existing dialog state, no new wire
-event; see `file-operations/transfer/CLAUDE.md` § "`data-scan-state` marker".
+event; see `file-operations/transfer/DETAILS.md` § "`data-scan-state` marker".
 
 **`triggerFileDrop(tauriPage, paths, targetPane, { targetFolderPath?, operation?, recordedIdentity? })`** (helpers.ts)
 drives the native drag-and-drop ENTRY path programmatically — real OS drag can't be synthesized in Playwright. It emits
@@ -263,8 +263,8 @@ intentional. Tier 3 is proving itself.
 
 **`pollUntil` is silent on timeout — wrap it.** `pollUntil` returns `false` on deadline instead of throwing, so
 `await pollUntil(...)` as a bare expression statement silently swallows failures: the test passes green even when the
-condition never holds. A repo-wide audit (see `scripts/check/CLAUDE.md` § `bare-poll`) turned up 187 sites of this
-pattern; several specs had tests with zero `expect()` calls whose only assertion was a bare poll, meaning the test
+condition never holds. A repo-wide audit (see `scripts/check/checks/DETAILS.md` § `bare-poll`) turned up 187 sites of
+this pattern; several specs had tests with zero `expect()` calls whose only assertion was a bare poll, meaning the test
 literally couldn't fail. **The right shape**:
 
 - Preferred: `await expect.poll(() => condition(), { timeout: 3000 }).toBeTruthy()` — Playwright's built-in. The wait IS

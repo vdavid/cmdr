@@ -116,7 +116,7 @@ re-inserting at `originalIndex` restores the exact pre-close arrangement.
 
 The bookkeeping is concentrated in `tab-state-manager.svelte.ts`'s
 `transferSnapshotRefs(closedTab, 'transfer' | 'release')` helper, called once at each transition. See
-`lib/search/CLAUDE.md` § "Snapshot store" for the broader picture.
+`lib/search/DETAILS.md` § "Snapshot store" for the broader picture.
 
 The Tab menu's "Reopen closed tab" item enables/disables based on the focused pane's stack via the
 `set_reopen_closed_tab_enabled` Tauri command (mirrors the `update_pin_tab_menu` pattern). Frontend pushes the state

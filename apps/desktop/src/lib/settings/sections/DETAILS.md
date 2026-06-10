@@ -100,7 +100,7 @@ via `getTypeToJumpResetDelay()` on every keystroke) both live here.
 
 Cloud API keys live in the OS secret store via `saveAiApiKey` / `getAiApiKey`, not in `settings.json`.
 `AiCloudSection.svelte` uses `SettingPasswordInput` in **controlled** mode (passes `value` + `onchange`) so the store
-isn't touched. Error mapping flows through `ai-secret-error.ts`. See parent CLAUDE.md § "Why store cloud AI API keys in
+isn't touched. Error mapping flows through `ai-secret-error.ts`. See parent DETAILS.md § "Why store cloud AI API keys in
 the OS secret store".
 
 ### Hot-apply for AI provider/key/model is wired in the applier, not here
@@ -153,9 +153,9 @@ plain `.shortcut-pill.static` spans (no click-to-edit), with no `+` add, no `×`
 add slot. Each native row also carries a small "macOS" badge (`.readonly-badge`) with a tooltip: "macOS handles this
 shortcut. Cmdr can't change it." (`Show all` has no default binding, so it renders its `(none)` unframed plus the
 badge.) The branch is keyed off `isNativeShortcutCommand(command.id)` from `$lib/shortcuts`. This is honest: AppKit owns
-both the behavior and the accelerator (see `lib/shortcuts/CLAUDE.md` § "macOS-native commands are not customizable"), so
-an editable control here would be a double illusion. The store also refuses these writes as defense in depth, so the UI
-and the store agree.
+both the behavior and the accelerator (see `lib/shortcuts/DETAILS.md` § "macOS-native commands are not customizable"),
+so an editable control here would be a double illusion. The store also refuses these writes as defense in depth, so the
+UI and the store agree.
 
 The `FIXED_KEY_COMMAND_IDS` rows (nav arrows, palette navigation, modal Enter/Escape — `isFixedKeyCommand(command.id)`)
 get the same read-only treatment with a "Fixed" badge ("This key is built into Cmdr and can't be changed.") and share

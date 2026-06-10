@@ -120,7 +120,7 @@ Settings > Keyboard shortcuts via `openShortcutCustomization(commandId)`. That h
 `shortcut-<commandId>` lives as the paired `shortcutAnchorId` / `commandIdFromShortcutAnchor` functions in
 `settings-window.ts` so the writer (the helper) and the readers (the section's row id, the settings page's arrival
 handler) can't drift. The settings side scrolls the row into its nested list and flashes it — see
-[`../settings/sections/CLAUDE.md`](../settings/sections/CLAUDE.md) § "Deep-link arrival".
+[`../settings/sections/DETAILS.md`](../settings/sections/DETAILS.md) § "Deep-link arrival".
 
 ### Scope hierarchy (`scope-hierarchy.ts`)
 
@@ -307,7 +307,7 @@ In `shortcuts.json`:
 These are semantically different.
 
 An empty string is never a real shortcut. `initializeShortcuts` heals leaked `''` entries on load (an earlier settings
-add flow could persist them; see `lib/settings/sections/CLAUDE.md` § "The add slot is UI-only"). The healing matrix,
+add flow could persist them; see `lib/settings/sections/DETAILS.md` § "The add slot is UI-only"). The healing matrix,
 applied per command key:
 
 - `[]` (length 0) → kept as-is: a genuine "removed all" state.

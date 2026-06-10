@@ -66,7 +66,7 @@ above the chip if there's not enough room below. The flip decision runs once per
 
 **Focus trap**: the shared `use:trapFocus` action (`$lib/ui/focus-trap`) cycles Tab and Shift+Tab within the popover;
 focus returns to the chip on close. The popover's trap mounts above the host dialog's in the trap stack, so enforcement
-is scoped to the popover while it's open (see `lib/ui/CLAUDE.md` § "Focus trapping").
+is scoped to the popover while it's open (see `lib/ui/DETAILS.md` § "Focus trapping").
 
 ## Chip-popover focus contract
 

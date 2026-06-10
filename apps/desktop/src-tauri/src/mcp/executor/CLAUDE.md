@@ -68,7 +68,7 @@ Agents routinely send `~/Downloads`; the frontend and the existence checks only 
 
 - Pick the right category file; if it doesn't exist yet, create one and register it in `mod.rs::execute_tool()`.
 - If the tool takes a filesystem path param, extract it via `user_path_param` (see above), and validate existence (when appropriate) via `validate_path_exists` — never bare `Path::exists()`, which blocks forever on a hung mount.
-- Param names are camelCase on the wire (`tabId`, `timeoutSeconds`); see `../CLAUDE.md` § Tools.
+- Param names are camelCase on the wire (`tabId`, `timeoutSeconds`); see `../DETAILS.md` § Tools.
 - If the tool mutates pane state, prefer `AckSignal::GenerationAdvanced` and route the mutation through `PaneStateStore` (or `update_pane_tabs` for tab work — the single place that bumps generation for tabs).
 - If the tool needs an explicit outcome from the FE, use `mcp_round_trip`. Don't replicate FE knowledge in Rust.
 

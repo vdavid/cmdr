@@ -237,4 +237,4 @@ of the per-resource derivation paths. Future regressions are caught by re-runnin
 - [`apps/desktop/src-tauri/src/clipboard/CLAUDE.md`](../../apps/desktop/src-tauri/src/clipboard/CLAUDE.md): mock
   backend.
 - [`apps/desktop/test/CLAUDE.md`](../../apps/desktop/test/CLAUDE.md): fixture cache, per-instance root.
-- [`scripts/check/CLAUDE.md`](../../scripts/check/CLAUDE.md) § Self-contained E2E checks: per-shard env composition.
+- [`scripts/check/DETAILS.md`](../../scripts/check/DETAILS.md) § Self-contained E2E checks: per-shard env composition.

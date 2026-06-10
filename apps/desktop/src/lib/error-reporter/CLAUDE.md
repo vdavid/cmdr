@@ -56,7 +56,7 @@ Both `ErrorReportDialog.svelte` (Flow A) and `crash-reporter/CrashReportDialog.s
 choice is sticky. When checked, the email is threaded into the send payload (error: `sendErrorReport(note, email)` and
 the preview/save calls; crash: `report.email` on the `CrashReport` passed to `sendCrashReport`). The same default also
 has a manual toggle in **Settings > Advanced** (`updates.attachEmailToReports`). The email rides ONLY these
-user-initiated sends; the auto-send path (Flow B) never attaches it (see `error_reporter/CLAUDE.md` §
+user-initiated sends; the auto-send path (Flow B) never attaches it (see `error_reporter/DETAILS.md` §
 Flow-B-never-email).
 
 ## User note caps

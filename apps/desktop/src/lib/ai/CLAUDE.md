@@ -54,7 +54,7 @@ this means the wizard's step 2 doesn't need to know about backend wiring beyond 
 The onboarding wizard's step 2 (`lib/onboarding/StepAi.svelte` + `CloudProviderSetup.svelte`) reuses the
 `checkAiConnection` / `saveAiApiKey` / `getAiApiKey` pipeline from `lib/settings/sections/AiCloudSection.svelte`
 verbatim (1 s debounce, /models fetch, in-place model combobox). The pipeline itself is documented in
-`lib/settings/CLAUDE.md` § "AiSection". Step 2 also calls `pushConfigToBackend()` explicitly on the "Start using Cmdr!"
+`lib/settings/DETAILS.md` § "AiSection". Step 2 also calls `pushConfigToBackend()` explicitly on the "Start using Cmdr!"
 / "One more optional setup step" handlers to order the backend reconfigure ahead of the wizard's `onComplete()`.
 
 ### Model registry is extensible

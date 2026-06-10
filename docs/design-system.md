@@ -141,7 +141,7 @@ deterministic (no browser, no axe-core), so it doesn't flake on color-mix render
 
 Tiers 2 and 3 intentionally overlap for the structural rules. Tier 3 is the fast feedback loop during development; tier
 2 still catches things jsdom can't model (focus trap across siblings, Escape returning focus to the trigger). See
-`apps/desktop/src/lib/ui/CLAUDE.md` § "Adding a component-level a11y test" for the tier-3 quickstart.
+`apps/desktop/src/lib/ui/DETAILS.md` § "Adding a component-level a11y test" for the tier-3 quickstart.
 
 ### Search highlight colors
 

@@ -201,8 +201,8 @@ Second virtual-volume namespace alongside `network`. `volumeId === 'search-resul
 `VolumeCapabilities`: `FilePane`'s `paneViewKind` derived (`caps.kind === 'search-results'`) picks `SearchResultsView`
 in the `{#if/elseif}` chain, and the "is there a real directory" per-feature gates (git lookups, listing watcher,
 dir-exists poll, MCP file sync) read `!caps.hasBackendListing` — the same gate that skips a `network` pane. See
-[`pane/CLAUDE.md`](pane/CLAUDE.md) § "Volume capabilities" for the per-site breakdown (invariant A6 — capabilities, not
-a `volumeId === 'search-results'` string compare).
+[`pane/DETAILS.md`](pane/DETAILS.md) § "Volume capabilities" for the per-site breakdown (invariant A6 — capabilities,
+not a `volumeId === 'search-results'` string compare).
 
 `SearchResultsView` reads the snapshot from `$lib/search/snapshot-store.svelte` and feeds its entries into `FullList`
 via `staticEntries`. No backend listing exists, no IPC traffic. Each adapted entry's `name` field is the friendly full
@@ -303,7 +303,7 @@ file-list Size column shows `<no perms>` for these rows instead of the misleadin
 denied scan. `pickSizeDisplay(entry, isRestricted)` in `views/full-list-utils.ts` is the single source of truth for that
 override; `measure-column-widths.ts::computeFullListColumnWidths` accepts an optional `isRestricted` fn so the Size
 column tracks the `<no perms>` text width during pre-DOM measurement. The state lives in
-`$lib/stores/restricted-paths-store.svelte` (`isRestricted(path)`); see `navigation/CLAUDE.md` § "Restricted-folder
+`$lib/stores/restricted-paths-store.svelte` (`isRestricted(path)`); see `navigation/DETAILS.md` § "Restricted-folder
 indicator (TCC)" and `apps/desktop/src-tauri/src/restricted_paths/` for the backend.
 
 ## Rename (`rename/`)
@@ -357,7 +357,7 @@ top-5 principle 3 ("the user is always in control").
 
 **MCP surface**: when the buffer or indicator is live, `FilePane` mirrors
 `{ buffer, indicatorVisible, indicatorStale, lastMatchedName }` into the synced `PaneState.typeToJump`, so MCP-driven
-E2E tests can assert the feature without poking at the DOM. See `src-tauri/src/mcp/CLAUDE.md` § State stores.
+E2E tests can assert the feature without poking at the DOM. See `src-tauri/src/mcp/DETAILS.md` § State stores.
 
 ### Live disk space
 
@@ -472,7 +472,7 @@ state uncorruptible, both inside `pane/navigate.ts`:
   rather than looking stale — the foreign-path policy, not the token, is what drops a genuinely stale listing.
 
 If you introduce another virtual-volume namespace with its own non-filesystem prefix (something `isPathOnVolume` can't
-match against), extend the explicit prefix branch in `commitPathFromListing`. See `pane/CLAUDE.md` § "The `navigate()`
+match against), extend the explicit prefix branch in `commitPathFromListing`. See `pane/DETAILS.md` § "The `navigate()`
 transaction" for the full intent-arm + persistence-split contract.
 
 ## Views (`views/`)

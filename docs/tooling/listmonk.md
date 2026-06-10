@@ -47,7 +47,7 @@ do not ping.
 
 ## Worker secrets (api-server)
 
-Set these as wrangler secrets on `cmdr-license-server` (see `apps/api-server/CLAUDE.md` § Configuration):
+Set these as wrangler secrets on `cmdr-license-server` (see `apps/api-server/DETAILS.md` § Configuration):
 
 - `LISTMONK_API_URL` (for example `https://mail.getcmdr.com`)
 - `LISTMONK_API_USER` and `LISTMONK_API_TOKEN` (sent as `token <user>:<token>`). At deploy a dedicated least-privilege

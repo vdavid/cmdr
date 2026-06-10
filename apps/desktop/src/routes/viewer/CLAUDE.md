@@ -115,7 +115,7 @@ session. The viewer window has no `store:default` capability by security design 
 file content), so it can't write a per-path store. Viewer settings that DO persist (`viewer.wordWrap`,
 `fileViewer.suppressBinaryWarning`) route through the typed restricted-window commands (`get_restricted_window_settings`
 / `persist_restricted_window_setting`) — never re-grant store access to the window; extend that allowlist instead. See
-`src-tauri/capabilities/CLAUDE.md` § viewer and `lib/settings/CLAUDE.md` § "Restricted-window mode".
+`src-tauri/capabilities/CLAUDE.md` § viewer and `lib/settings/DETAILS.md` § "Restricted-window mode".
 
 ## Search modes
 

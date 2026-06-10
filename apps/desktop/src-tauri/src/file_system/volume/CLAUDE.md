@@ -4,7 +4,7 @@ The `Volume` trait (the core abstraction for all storage backends) plus the `Vol
 operation (listing, copy, rename, delete, indexing, watching) goes through a `Volume`, with **paths relative to the
 volume root**.
 
-## Key files
+## Module map
 
 - `mod.rs`: `Volume` trait (most methods async, returning `Pin<Box<dyn Future>>`; sync ones: `name`, `root`,
   `supports_*`, `local_path`, `space_poll_interval`), the `VolumeScanner` / `VolumeWatcher` / `VolumeReadStream`

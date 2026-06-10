@@ -295,5 +295,5 @@ The hook order is fixed: `resolve()` first (normalizes the path), then `try_rout
 - `manager.rs` inline tests: concurrent registration/read/write-mix scenarios
 - `mtp_scan_oracle_tests.rs`, `smb_scan_oracle_tests.rs`: oracle-aware batch-scan integration tests for MTP and SMB
 
-Per-backend tests live colocated with their backend in `backends/`. See [`backends/CLAUDE.md`](backends/CLAUDE.md) §
+Per-backend tests live colocated with their backend in `backends/`. See [`backends/DETAILS.md`](backends/DETAILS.md) §
 "Testing".

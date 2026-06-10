@@ -56,8 +56,8 @@ server).
 
 1. Every `--check <name>` in any workflow resolves to a registry ID or nickname.
 2. Every registry check is referenced by some workflow, or carries a `NotInCI` reason on its `CheckDefinition` (see
-   [`scripts/check/checks/CLAUDE.md`](../../scripts/check/CLAUDE.md) § Field semantics). A reason on a check that IS
-   referenced fails too, so excuses can't go stale.
+   [`scripts/check/checks/DETAILS.md`](../../scripts/check/checks/DETAILS.md) § Field semantics). A reason on a check
+   that IS referenced fails too, so excuses can't go stale.
 3. Every concrete path in `ci.yml`'s filter block exists (glob entries are checked via their static directory prefix).
 4. Every static path prefix in a registry check's `Inputs` (and in `GlobalInputs`) exists. A dead `Inputs` glob would
    silently make the input-fingerprint cache skip a check whose real (renamed) sources changed. Same robust

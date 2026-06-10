@@ -35,7 +35,7 @@ the file list from scrolling or handling shortcuts behind the modal.
 combobox, so DOM focus belongs on the input the whole time — without the swallow, two Tab presses walked focus through
 the roving-tabindex option row into the blurred background, where the suppressed global dispatch left Esc / ⌘⇧P / Tab
 all dead (a full keyboard lockout, mouse-only recovery). (2) The overlay carries `use:trapFocus={{ onEscape: onClose }}`
-(`$lib/ui/focus-trap`, see `lib/ui/CLAUDE.md` § "Focus trapping"), which pulls back programmatic focus leaks and keeps
+(`$lib/ui/focus-trap`, see `lib/ui/DETAILS.md` § "Focus trapping"), which pulls back programmatic focus leaks and keeps
 Escape working even if focus somehow escapes anyway. Tier-2 regression coverage:
 `test/e2e-playwright/focus-trap.spec.ts`.
 

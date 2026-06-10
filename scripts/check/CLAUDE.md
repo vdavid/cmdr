@@ -7,7 +7,7 @@ For check authoring (how to add a check, `CheckDefinition` shape, naming rules, 
 [`checks/CLAUDE.md`](checks/CLAUDE.md). For the full flow diagram, CLI options, freestyle.sh execution, and decisions,
 see [DETAILS.md](DETAILS.md).
 
-## Key files
+## Module map
 
 - `main.go`: entry point (flag parsing, root dir discovery, check selection, pnpm gating, runner delegation).
 - `runner.go`: parallel executor (CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line).

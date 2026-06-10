@@ -41,7 +41,7 @@ have no path column and shouldn't dominate the viewport). `max-height: 80vh`.
 
 The matcher runs against an `accessors.getNameFor(i)` callback. The wrapper passes `entry.name` for both regular panes
 and `search-results://` snapshot panes (on snapshot panes, `entry.name` IS the friendly full path — see
-[`lib/file-explorer/CLAUDE.md`](../file-explorer/CLAUDE.md) § "Search-results virtual volume"). The matcher itself
+[`lib/file-explorer/DETAILS.md`](../file-explorer/DETAILS.md) § "Search-results virtual volume"). The matcher itself
 doesn't care which kind it's running against.
 
 Glob translation matches the Rust side: `*` → `.*`, `?` → `.`, regex metacharacters escaped, anchored with `^…$`. The JS

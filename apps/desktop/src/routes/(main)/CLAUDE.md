@@ -107,7 +107,7 @@ not a command, so it never rides the bus (invariant P2).
 which delegates to the drag controller's `handleFileDrop` — the SAME seam the live `onDragDropEvent` 'drop' branch runs.
 Real OS drag can't be synthesized in Playwright, so the E2E harness emits this event to exercise our drop handling
 (shared destination guard, source-volume resolution, transfer dialog) end to end. It's a test hook, not a user command:
-no registry entry, no palette, no shortcut. See `test/e2e-playwright/CLAUDE.md` § "Transfer-dialog counters +
+no registry entry, no palette, no shortcut. See `test/e2e-playwright/DETAILS.md` § "Transfer-dialog counters +
 programmatic drop entry".
 
 **Debug-error listeners stay off the bus (intentional, not unfinished).** The three `debug-inject-error` /
@@ -115,7 +115,7 @@ programmatic drop entry".
 `explorerRef.injectError` / `resetError` / `triggerTransferError` directly. They inject test state from the debug
 window's error-pane preview; they are NOT user commands (no registry entry, no palette, no shortcut), so routing them
 through the bus would pollute the `CommandId` union with dev-only ids for zero gain. Leave them as direct calls — don't
-"finish the migration." See `lib/file-explorer/CLAUDE.md` § "Debug preview" for the cross-window flow.
+"finish the migration." See `lib/file-explorer/DETAILS.md` § "Debug preview" for the cross-window flow.
 
 ## Gotchas
 

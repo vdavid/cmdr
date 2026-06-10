@@ -113,7 +113,7 @@ The state is split into two factories so Search and Selection can each own an in
   `core.buildBaseSearchQuery()`.
 - **`recordAiTranslation` is split**: the core writes ONLY to `handTyped[mode]`; the extras' `recordAiPatternAndLabel`
   writes the Pattern chip + label slots. The Search façade calls both in sequence. See
-  [`lib/query-ui/CLAUDE.md`](../query-ui/CLAUDE.md) § "`recordAiTranslation` is split".
+  [`lib/query-ui/DETAILS.md`](../query-ui/DETAILS.md) § "`recordAiTranslation` is split".
 
 `lib/search/search-state.svelte.ts` is a transparent façade re-exporting the legacy named functions that the Search
 dialog imports. It also exports `searchQueryState` (the core instance) so prop-driven components like `FilterChips` can
@@ -312,7 +312,7 @@ The `search-results` row of the per-kind `VolumeCapabilities` table (`lib/file-e
 (the A6 conversion is complete): the F-bar + keyboard dispatch (destination-op guards), clipboard (snapshot-clip
 `pathScheme`, MTP refusal `kind === 'mtp'`), transfer/delete (`!hasBackendListing` source routing + the
 `search-results`-kind-scoped dest block), `pane-commands` (`isSnapshotPane` off `!hasBackendListing`), MCP sync
-(`!syncsToMcp`), and `has-parent` (`hasParentRow`). See `lib/file-explorer/pane/CLAUDE.md` § "Volume capabilities" for
+(`!syncsToMcp`), and `has-parent` (`hasParentRow`). See `lib/file-explorer/pane/DETAILS.md` § "Volume capabilities" for
 the per-site breakdown. Consumers:
 
 - **F-key bar** (`lib/file-explorer/pane/FunctionKeyBar.svelte` mounted in `routes/(main)/+page.svelte`): derives its

@@ -104,7 +104,7 @@ What this means for automation:
 - Very slow remote shares can still exceed even the 5 s nav budget. If a nav tool times out but the navigation actually
   succeeds in the background, follow up with `await` (`path` / `path_contains`) to confirm the destination landed.
 
-Architecture details: `apps/desktop/src-tauri/src/mcp/CLAUDE.md` § "Action-tool ack contract".
+Architecture details: `apps/desktop/src-tauri/src/mcp/executor/CLAUDE.md` § "Action-tool ack contract".
 
 ## Connection resilience
 
