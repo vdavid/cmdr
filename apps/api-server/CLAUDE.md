@@ -201,7 +201,7 @@ Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) �
 
 Update check proxy: GET /update-check/:version → hash IP with daily salt → INSERT OR IGNORE into D1 (fire-and-forget) → 302 to latest.json
 
-Cron (every 12h): scheduled handler runs three jobs:
+Cron (every 3h): scheduled handler runs three jobs:
   1. Crash notifications: query un-notified crash_reports → group by top_function → mark notified → email summary
   2. Daily aggregation (00:00 UTC only): aggregate update_checks → daily_active_users, prune raw data older than 7 days
   3. DB size check (00:00 UTC only): query pragma_page_count/pragma_page_size → email alert if over 100 MB
@@ -209,7 +209,7 @@ Cron (every 12h): scheduled handler runs three jobs:
 
 ## Cron handler
 
-A single `scheduled` handler runs every 12 hours (`0 */12 * * *`). It runs three independent jobs, each in its own
+A single `scheduled` handler runs every 3 hours (`0 */3 * * *`). It runs three independent jobs, each in its own
 try-catch so one failure doesn't block the others:
 
 1. **Crash notifications** (every invocation): queries `crash_reports WHERE notified_at IS NULL`, sorted newest-first,
@@ -435,7 +435,7 @@ npx wrangler deploy
 
 Deployed to `api.getcmdr.com` via Cloudflare custom domain (declared in `wrangler.toml` `[[routes]]`).
 `license.getcmdr.com` is a permanent alias for existing app versions. Fallback URL:
-`cmdr-license-server.veszelovszki.workers.dev`. The cron trigger (`0 */12 * * *`) is declared in `wrangler.toml` under
+`cmdr-license-server.veszelovszki.workers.dev`. The cron trigger (`0 */3 * * *`) is declared in `wrangler.toml` under
 `[triggers]` and is deployed automatically with `wrangler deploy`.
 
 ### Troubleshooting deployment

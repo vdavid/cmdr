@@ -83,7 +83,7 @@ limit = 5
 period = 60
 
 [triggers]
-crons = ["0 */12 * * *"]
+crons = ["0 */3 * * *"]
 
 [vars]
 # Non-secret config
