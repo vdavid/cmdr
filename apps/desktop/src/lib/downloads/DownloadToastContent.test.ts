@@ -9,11 +9,13 @@ const {
   setDownloadsNotificationsModeMock,
   openSettingsToDownloadsNotificationsMock,
   dismissToastMock,
+  setDownloadsToastCollapsedMock,
 } = vi.hoisted(() => ({
   goToDownloadMock: vi.fn(() => Promise.resolve()),
   setDownloadsNotificationsModeMock: vi.fn(),
   openSettingsToDownloadsNotificationsMock: vi.fn(() => Promise.resolve()),
   dismissToastMock: vi.fn(),
+  setDownloadsToastCollapsedMock: vi.fn(),
 }))
 
 vi.mock('./go-to-latest', () => ({
@@ -27,6 +29,10 @@ vi.mock('./notifications-mode', () => ({
 
 vi.mock('$lib/ui/toast', () => ({
   dismissToast: dismissToastMock,
+}))
+
+vi.mock('./downloads-toast-collapsed', () => ({
+  setDownloadsToastCollapsed: setDownloadsToastCollapsedMock,
 }))
 
 import DownloadToastContent from './DownloadToastContent.svelte'
@@ -46,6 +52,7 @@ function makeProps(overrides: Partial<DownloadToastProps> = {}): DownloadToastPr
     },
     shortcutHint: '⌘J',
     globalBinding: '⌃⌥⌘J',
+    initialCollapsed: false,
     ...overrides,
   }
 }
@@ -56,6 +63,7 @@ describe('DownloadToastContent', () => {
     setDownloadsNotificationsModeMock.mockReset()
     openSettingsToDownloadsNotificationsMock.mockReset().mockResolvedValue(undefined)
     dismissToastMock.mockReset()
+    setDownloadsToastCollapsedMock.mockReset()
   })
 
   it('renders the filename in monospace and the shortcut hint snapshotted at creation', async () => {
@@ -204,5 +212,92 @@ describe('DownloadToastContent', () => {
     // the keyboard-activation path independently.
     expect(root.hasAttribute('tabindex')).toBe(false)
     expect(root.getAttribute('role')).not.toBe('button')
+  })
+
+  it('renders expanded by default (initialCollapsed false): intro, animation, and the collapse chevron', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ initialCollapsed: false }) })
+    await tick()
+
+    expect(target.textContent.toLowerCase()).toContain('something cool to learn')
+    expect(target.querySelector('.shortcut-animation svg')).not.toBeNull()
+    // The collapse affordance carries its aria-label (axe + the test both rely on it).
+    expect(target.querySelector('[aria-label="Make this notification more compact"]')).not.toBeNull()
+  })
+
+  it('renders the compact summary when initialCollapsed is true, with no intro or animation', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ initialCollapsed: true }) })
+    await tick()
+
+    // Compact summary line with both chips, no teaching intro, no animation.
+    expect(target.textContent.toLowerCase()).toContain('jump with')
+    expect(target.textContent).toContain('⌘J')
+    expect(target.textContent).toContain('⌃⌥⌘J')
+    expect(target.textContent.toLowerCase()).not.toContain('something cool to learn')
+    expect(target.querySelector('.shortcut-animation')).toBeNull()
+    // The expand affordance is present instead.
+    expect(target.querySelector('[aria-label="Show the shortcut tip"]')).not.toBeNull()
+  })
+
+  it('clicking the collapse chevron hides the expanded content and persists the collapsed state', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ initialCollapsed: false }) })
+    await tick()
+
+    const collapseButton = target.querySelector<HTMLButtonElement>('[aria-label="Make this notification more compact"]')
+    if (!collapseButton) throw new Error('Collapse button not found')
+    collapseButton.click()
+    await tick()
+
+    // It persisted `true` for the next toast...
+    expect(setDownloadsToastCollapsedMock).toHaveBeenCalledWith(true)
+    // ...and the expanded teaching content is gone, replaced by the compact summary.
+    expect(target.textContent.toLowerCase()).not.toContain('something cool to learn')
+    expect(target.textContent.toLowerCase()).toContain('jump with')
+    // The body-click jump must NOT have fired (stopPropagation).
+    expect(goToDownloadMock).not.toHaveBeenCalled()
+  })
+
+  it('clicking the expand chevron persists the expanded state', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ initialCollapsed: true }) })
+    await tick()
+
+    const expandButton = target.querySelector<HTMLButtonElement>('[aria-label="Show the shortcut tip"]')
+    if (!expandButton) throw new Error('Expand button not found')
+    expandButton.click()
+    await tick()
+
+    expect(setDownloadsToastCollapsedMock).toHaveBeenCalledWith(false)
+    // The expanded teaching content is back.
+    expect(target.textContent.toLowerCase()).toContain('something cool to learn')
+    expect(goToDownloadMock).not.toHaveBeenCalled()
+  })
+
+  it('collapsed summary teaches only the in-app shortcut when the global is unset', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ initialCollapsed: true, globalBinding: '' }) })
+    await tick()
+
+    expect(target.textContent.toLowerCase()).toContain('in-app')
+    expect(target.textContent).toContain('⌘J')
+    expect(target.textContent.toLowerCase()).not.toContain('globally')
+  })
+
+  it('collapsed summary teaches only the global shortcut when the in-app one is unset', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ initialCollapsed: true, shortcutHint: '' }) })
+    await tick()
+
+    expect(target.textContent.toLowerCase()).toContain('globally')
+    expect(target.textContent).toContain('⌃⌥⌘J')
+    expect(target.textContent.toLowerCase()).not.toContain('in-app')
   })
 })

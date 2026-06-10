@@ -27,6 +27,7 @@ const {
   getEffectiveShortcutsMock,
   getGlobalGoToLatestEnabledMock,
   getGlobalGoToLatestBindingMock,
+  getDownloadsToastCollapsedMock,
   downloadsWatcherStatusMock,
 } = vi.hoisted(() => ({
   listenMock: vi.fn(),
@@ -38,6 +39,7 @@ const {
   getEffectiveShortcutsMock: vi.fn<(id: string) => string[]>(),
   getGlobalGoToLatestEnabledMock: vi.fn<() => boolean>(),
   getGlobalGoToLatestBindingMock: vi.fn<() => string>(),
+  getDownloadsToastCollapsedMock: vi.fn<() => boolean>(),
   downloadsWatcherStatusMock: vi.fn(),
 }))
 
@@ -68,6 +70,10 @@ vi.mock('$lib/shortcuts', () => ({
 vi.mock('./global-shortcut-setting', () => ({
   getGlobalGoToLatestEnabled: getGlobalGoToLatestEnabledMock,
   getGlobalGoToLatestBinding: getGlobalGoToLatestBindingMock,
+}))
+
+vi.mock('./downloads-toast-collapsed', () => ({
+  getDownloadsToastCollapsed: getDownloadsToastCollapsedMock,
 }))
 
 vi.mock('$lib/ipc/bindings', () => ({
@@ -137,6 +143,7 @@ describe('startDownloadsEventBridge', () => {
     getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘J'])
     getGlobalGoToLatestEnabledMock.mockReset().mockReturnValue(true)
     getGlobalGoToLatestBindingMock.mockReset().mockReturnValue('⌃⌥⌘J')
+    getDownloadsToastCollapsedMock.mockReset().mockReturnValue(false)
     downloadsWatcherStatusMock.mockReset().mockResolvedValue({
       status: 'ok',
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
@@ -151,15 +158,22 @@ describe('startDownloadsEventBridge', () => {
     await flushAsync()
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
-    const [, options] = addToastMock.mock.calls[0] as unknown as [unknown, Record<string, unknown>]
+    const [, options] = addToastMock.mock.calls[0] as unknown as [
+      unknown,
+      Record<string, unknown> & { props: { initialCollapsed: boolean } },
+    ]
     expect(options).toMatchObject({
       toastGroup: 'downloads',
       level: 'info',
-      // Sticky: persistent (no auto-dismiss timer), and wider than the default
-      // to fit the keyboard animation.
-      dismissal: 'persistent',
+      // Transient: auto-hides on a 10s timer, and wider than the default to fit
+      // the keyboard animation.
+      timeoutMs: 10_000,
       widthPx: 432,
     })
+    // No persistent dismissal: it's a normal auto-hiding toast now.
+    expect(options.dismissal).toBeUndefined()
+    // The persisted collapse state seeds the toast.
+    expect(options.props.initialCollapsed).toBe(false)
     expect(sendNotificationMock).not.toHaveBeenCalled()
   })
 
@@ -307,6 +321,7 @@ describe('startDownloadsEventBridge — permission flow', () => {
     getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘J'])
     getGlobalGoToLatestEnabledMock.mockReset().mockReturnValue(true)
     getGlobalGoToLatestBindingMock.mockReset().mockReturnValue('⌃⌥⌘J')
+    getDownloadsToastCollapsedMock.mockReset().mockReturnValue(false)
     downloadsWatcherStatusMock.mockReset().mockResolvedValue({
       status: 'ok',
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },

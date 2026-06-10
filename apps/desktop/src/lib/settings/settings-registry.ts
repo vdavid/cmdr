@@ -436,6 +436,20 @@ export const settingsRegistry: SettingDefinition[] = [
     hidden: true,
   },
   {
+    // Internal: hidden from the Settings UI. Remembers whether the user last
+    // collapsed the "new download" toast, so a new toast opens in the same
+    // state. Driven entirely by the toast's collapse/expand button.
+    id: 'behavior.fileSystemWatching.downloadsToastCollapsed',
+    section: ['Behavior', 'File system watching'],
+    label: 'Downloads toast collapsed',
+    description: 'Internal. Remembers whether the downloads toast was last collapsed.',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
     id: 'behavior.fileSystemWatching.lowDiskSpaceNotifications',
     section: ['Behavior', 'File system watching'],
     label: 'Low disk space warning',

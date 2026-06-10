@@ -36,6 +36,7 @@ import { getAppLogger } from '$lib/logging/logger'
 import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
 import { getDownloadsNotificationsMode, type DownloadsNotificationsMode } from './notifications-mode'
 import { getGlobalGoToLatestEnabled, getGlobalGoToLatestBinding } from './global-shortcut-setting'
+import { getDownloadsToastCollapsed } from './downloads-toast-collapsed'
 import DownloadToastContent from './DownloadToastContent.svelte'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
@@ -48,6 +49,13 @@ const TOAST_GROUP = 'downloads'
  * animation room to read. Capped by the toast container's own max-width.
  */
 const TOAST_WIDTH_PX = 432
+/**
+ * Auto-hide window for the downloads toast. It teaches a shortcut but doesn't
+ * demand a decision, so it dismisses on a timer like other transient toasts
+ * (and pauses while hovered, per the toast store's hover behavior). The user
+ * can also collapse it to a compact form that the next toast remembers.
+ */
+const TOAST_TIMEOUT_MS = 10_000
 
 /**
  * Mount the listener. Returns an unsubscribe function — call it from the
@@ -119,10 +127,11 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
 
   addToast(DownloadToastContent, {
     level: 'info',
-    // Sticky: the toast teaches a shortcut, so it waits for the user instead of
-    // vanishing on a timer. The user dismisses it via the X, Jump, or Stop.
-    dismissal: 'persistent',
-    closeTooltip: 'Dismiss',
+    // Transient: the toast teaches a shortcut but doesn't need a decision, so it
+    // auto-hides after 10s (pausing while hovered). Max 5 visible at once via the
+    // toast store's global cap. Wider than the default so the keyboard animation
+    // reads (`widthPx`).
+    timeoutMs: TOAST_TIMEOUT_MS,
     toastGroup: TOAST_GROUP,
     widthPx: TOAST_WIDTH_PX,
     props: {
@@ -130,6 +139,8 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
       event: payload,
       shortcutHint,
       globalBinding,
+      // New toasts open in the last-used collapsed/expanded state.
+      initialCollapsed: getDownloadsToastCollapsed(),
     },
   })
 }

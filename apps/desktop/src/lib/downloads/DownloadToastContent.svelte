@@ -2,10 +2,12 @@
     /**
      * Toast that shows up when the watcher detects a new file in ~/Downloads.
      *
-     * Pure-prop-driven: every input is captured at toast-creation time and
-     * never re-read. The shortcut hint in particular is snapshotted (not
-     * subscribed live) so a remap that happens between the toast appearing
-     * and the user clicking doesn't mutate the displayed hint mid-flight.
+     * The shortcut inputs are snapshotted at toast-creation time and never
+     * re-read (not subscribed live), so a remap that happens between the toast
+     * appearing and the user clicking doesn't mutate the displayed hint
+     * mid-flight. The one piece of live state is `collapsed` (the user can
+     * toggle compact/expanded on this very toast); it's seeded from the
+     * persisted setting and written back for the next toast.
      *
      * Whole body is mouse-clickable for "Jump to file"; the two explicit
      * buttons own keyboard activation. The clickable body has no `tabindex`
@@ -16,12 +18,17 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { dismissToast } from '$lib/ui/toast'
+    import { tooltip } from '$lib/tooltip/tooltip'
+    import IconChevronUp from '~icons/lucide/chevron-up'
+    import IconChevronDown from '~icons/lucide/chevron-down'
     import { goToDownload } from './go-to-latest'
     import {
         setDownloadsNotificationsMode,
         openSettingsToDownloadsNotifications,
     } from './notifications-mode'
     import { DEFAULT_GLOBAL_GO_TO_LATEST_BINDING } from './global-shortcut-binding'
+    import { setDownloadsToastCollapsed } from './downloads-toast-collapsed'
+    import { buildShortcutSummary } from './download-toast-shortcuts'
     import GlobalShortcutAnimation from './GlobalShortcutAnimation.svelte'
     import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
@@ -66,9 +73,30 @@
          * animation (its keys would no longer match).
          */
         globalBinding: string
+        /**
+         * Whether this toast starts collapsed. The bridge passes the persisted
+         * last-used state so a new toast opens the way the user left the previous
+         * one. After mount, the user toggles it locally via the chevron button,
+         * and that choice is persisted back for the NEXT toast.
+         */
+        initialCollapsed: boolean
     }
 
-    const { toastId, explorer, event, shortcutHint, globalBinding }: Props = $props()
+    const { toastId, explorer, event, shortcutHint, globalBinding, initialCollapsed }: Props = $props()
+
+    /**
+     * Local collapse state. Seeded from `initialCollapsed` but deliberately NOT
+     * prop-driven afterward: the user toggles it on this very toast, so it carries
+     * its own `$state`. The persisted setting only seeds the NEXT toast.
+     */
+    let collapsed = $state(initialCollapsed)
+
+    function toggleCollapsed(e: MouseEvent) {
+        // The toast body is whole-body click-to-jump; the toggle must not also navigate.
+        e.stopPropagation()
+        collapsed = !collapsed
+        setDownloadsToastCollapsed(collapsed)
+    }
 
     /**
      * Only show the keyboard animation for the default combo. The SVG lights up
@@ -76,6 +104,9 @@
      * we keep the text chip (it tracks the snapshot) but drop the animation.
      */
     const showShortcutAnimation = $derived(globalBinding === DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
+
+    /** Nullable in-app / global keys for the collapsed summary line. */
+    const summary = $derived(buildShortcutSummary(shortcutHint, globalBinding))
 
     /**
      * Relative-subdir label rendered when the file is below the Downloads
@@ -134,25 +165,58 @@
             <span class="size"><Size bytes={event.sizeBytes} /></span>
         {/if}
     </span>
-    {#if subdirLabel}
-        <span class="subdir">in {subdirLabel}</span>
-    {/if}
-    {#if shortcutHint || globalBinding}
-        <div class="learn">
-            <strong class="learn-intro">Something cool to learn about jumping to downloads:</strong>
-            {#if shortcutHint}
-                <span class="hint">In-app: Press <ShortcutChip key={shortcutHint} /> to jump here</span>
+
+    {#if collapsed}
+        <span class="hint summary">
+            Jump with
+            {#if summary.inApp && summary.global}
+                <ShortcutChip key={summary.inApp} /> in-app, <ShortcutChip key={summary.global} /> globally.
+            {:else if summary.inApp}
+                <ShortcutChip key={summary.inApp} /> in-app.
+            {:else if summary.global}
+                <ShortcutChip key={summary.global} /> globally.
             {/if}
-            {#if globalBinding}
-                <span class="hint">In <em>any</em> app (global shortcut), press <ShortcutChip key={globalBinding} /></span>
-                {#if showShortcutAnimation}
-                    <div class="shortcut-animation">
-                        <GlobalShortcutAnimation />
-                    </div>
+            <button
+                type="button"
+                class="collapse-toggle inline"
+                aria-label="Show the shortcut tip"
+                use:tooltip={'Show the shortcut tip'}
+                onclick={toggleCollapsed}
+            >
+                <IconChevronDown width="14" height="14" />
+            </button>
+        </span>
+    {:else}
+        {#if subdirLabel}
+            <span class="subdir">in {subdirLabel}</span>
+        {/if}
+        {#if shortcutHint || globalBinding}
+            <div class="learn">
+                <strong class="learn-intro">Something cool to learn about jumping to downloads</strong>
+                {#if shortcutHint}
+                    <span class="hint">In-app: Press <ShortcutChip key={shortcutHint} /> to jump here</span>
                 {/if}
-            {/if}
-        </div>
+                {#if globalBinding}
+                    <span class="hint">In <em>any</em> app (global shortcut), press <ShortcutChip key={globalBinding} /></span>
+                    {#if showShortcutAnimation}
+                        <div class="shortcut-animation">
+                            <GlobalShortcutAnimation />
+                        </div>
+                    {/if}
+                {/if}
+                <button
+                    type="button"
+                    class="collapse-toggle"
+                    aria-label="Make this notification more compact"
+                    use:tooltip={'Make this notification more compact'}
+                    onclick={toggleCollapsed}
+                >
+                    <IconChevronUp width="14" height="14" />
+                </button>
+            </div>
+        {/if}
     {/if}
+
     <div class="actions">
         <Button size="mini" variant="secondary" onclick={handleStopShowing}>Stop showing these</Button>
         <Button size="mini" variant="primary" onclick={handleJumpButton}>Jump to file</Button>
@@ -217,6 +281,41 @@
     .hint em {
         font-style: italic;
         color: var(--color-text-secondary);
+    }
+
+    /* Collapsed-state one-liner: the shortcut chips wrap inline, with the expand
+       chevron tucked at the end of the same flow. */
+    .hint.summary {
+        flex-wrap: wrap;
+        margin-top: var(--spacing-xxs);
+    }
+
+    /* The collapse/expand chevron: subtle, tertiary, icon-only. Reset the button
+       chrome so only the chevron glyph shows. */
+    .collapse-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: var(--spacing-xxs);
+        background: none;
+        border: none;
+        color: var(--color-text-tertiary);
+    }
+
+    .collapse-toggle:hover {
+        color: var(--color-text-secondary);
+    }
+
+    .collapse-toggle:focus-visible {
+        outline: none;
+        box-shadow: var(--shadow-focus);
+        border-radius: var(--radius-xs);
+    }
+
+    /* Expanded view places the collapse chevron centered under the animation. */
+    .collapse-toggle:not(.inline) {
+        align-self: center;
     }
 
     /* The wider toast (set via `widthPx` at dispatch) gives the keyboard SVG
