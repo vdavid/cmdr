@@ -5,7 +5,7 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.25.0] - 2026-06-11
 
 Cmdr is now an open beta: stability badges, a Send feedback channel, and anonymous usage stats you can opt out of. SMB
 sign-in got smoother, and keyboard shortcut customization got a deep round of fixes.
@@ -120,6 +120,9 @@ sign-in got smoother, and keyboard shortcut customization got a deep round of fi
   git, and AI ([f2d3febf](https://github.com/vdavid/cmdr/commit/f2d3febf),
   [57e9c87d](https://github.com/vdavid/cmdr/commit/57e9c87d),
   [5f510bd2](https://github.com/vdavid/cmdr/commit/5f510bd2))
+- Split colocated docs into `CLAUDE.md` and `DETAILS.md`) across ~30 areas, add `claude-md-length` check
+  ([9bf1a653](https://github.com/vdavid/cmdr/commit/9bf1a653),
+  [bb26f2df](https://github.com/vdavid/cmdr/commit/bb26f2df))
 
 ## [0.24.0] - 2026-06-06
 
