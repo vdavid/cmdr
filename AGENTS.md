@@ -95,8 +95,15 @@ Core structure:
   - `style-guide.md` - Writing, code, and design style rules
   - `security.md` - Security policies
   - `maintenance.md` - Recurring maintenance tasks (dep bumps, allowlist trims, doc sweeps) and a log of past runs
-- Feature-level docs live in **colocated `CLAUDE.md` files** next to the code (for example,
-  `src/lib/settings/CLAUDE.md`). Claude Code auto-discovers these. See `docs/architecture.md` for the full map.
+- Feature-level docs live in **colocated `CLAUDE.md` + `DETAILS.md` files** next to the code (for example,
+  `src/lib/settings/CLAUDE.md`). `CLAUDE.md` is the push tier: Claude Code auto-injects it whenever files in that
+  directory are read, so every word costs tokens in every session that touches the area. `DETAILS.md` is the pull tier:
+  the area's real docs, read on demand. The litmus: could an agent editing a random file here silently break something
+  without this line? Then it's `CLAUDE.md`. Everything else is `DETAILS.md`. So `CLAUDE.md` = invariants, gotchas,
+  don't-do-X-because-Y, a 2–3 line module map, and a pointer; target ~400–600 words. `DETAILS.md` = architecture
+  narrative, data flows, decision rationale with depth, edge-case catalogs. Read it in whole before structural changes
+  in an area. Never `@`-import `DETAILS.md` from a `CLAUDE.md` (that would rebuild the auto-load cost the split exists
+  to remove). See `docs/architecture.md` for the full map.
 
 ## Testing and checking
 

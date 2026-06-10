@@ -1,8 +1,10 @@
 # Architecture
 
-The orientation map: what each subsystem is and where it lives. Per-subsystem detail (invariants, gotchas, decisions)
-lives in each directory's colocated `CLAUDE.md`. Cross-cutting platform constraints that belong to no single subsystem
-are in the [Cross-cutting patterns](#cross-cutting-patterns) section below.
+The orientation map: what each subsystem is and where it lives. Per-subsystem must-knows (invariants, gotchas,
+guardrails) live in each directory's colocated `CLAUDE.md`; each area's full docs (architecture narrative, flows,
+decision detail) live in its colocated `DETAILS.md` (see `AGENTS.md` § File structure for the split contract).
+Cross-cutting platform constraints that belong to no single subsystem are in the
+[Cross-cutting patterns](#cross-cutting-patterns) section below.
 
 ## Frontend (Svelte 5 + TypeScript)
 
