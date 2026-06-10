@@ -101,7 +101,7 @@
             <div class="version-info">
                 <span class="version">Version {version} (open beta)</span>
                 <p class="beta-note">
-                    Found something rough? Tell me on
+                    Found something bad? Tell me on
                     <LinkButton
                         href={GITHUB_ISSUES_URL}
                         target="_blank"

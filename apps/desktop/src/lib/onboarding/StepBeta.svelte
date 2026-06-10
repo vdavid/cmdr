@@ -7,7 +7,7 @@
     import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { onSpecificSettingChange } from '$lib/settings/settings-store'
     import { betaSignup, openExternalUrl } from '$lib/tauri-commands'
-    import { GITHUB_ISSUES_URL, BOOK_A_CALL_URL } from '$lib/beta-links'
+    import { GITHUB_ISSUES_URL, BOOK_A_CALL_URL, ABOUT_DAVID_URL } from '$lib/beta-links'
     import { getAppLogger } from '$lib/logging/logger'
 
     /**
@@ -129,22 +129,27 @@
 </script>
 
 <OnboardingStepShell>
-    <h2 class="step-title">Help shape the open beta</h2>
+    <h2 class="step-title">Help improve Cmdr!</h2>
     <p class="lede">
-        Hi, I'm David! I'm building Cmdr solo, and you're one of the very first people using it. It's in open beta:
-        most of the app is solid, but some parts are still rough (Search and Select especially). Your feedback decides
-        what I build next:
+        Hi, I'm <LinkButton
+            href={ABOUT_DAVID_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onclick={openLink(ABOUT_DAVID_URL)}>David</LinkButton
+        >! I'm building Cmdr, and you're one of the very first people using it. Thanks for your trust! ❤️ Cmdr is in open beta:
+        most of the app is solid, but some parts are still rough (especially Search and Select now). Your feedback helps me spot bugs and prioritize
+        what to build next.
     </p>
     <ul class="feedback-list">
         <li>Found a bug or have an idea? <strong>Help &gt; Send feedback…</strong> sends it straight to me.</li>
         <li>
-            Want to shape the roadmap? Vote on features on
+            Want to affect the roadmap? Vote on features on
             <LinkButton
                 href={GITHUB_ISSUES_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 onclick={openLink(GITHUB_ISSUES_URL)}>GitHub</LinkButton
-            >.
+            >. I'm happy if you take two minutes to add your ideas, we need items to get GitHub Issues kicked off.
         </li>
         <li>
             Up for a chat?
@@ -152,13 +157,13 @@
                 href={BOOK_A_CALL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                onclick={openLink(BOOK_A_CALL_URL)}>Book a call</LinkButton
-            >. I'd honestly love to hear how you use Cmdr.
+                onclick={openLink(BOOK_A_CALL_URL)}>Schedule a call with me</LinkButton
+            >. I'd love to chat about all the nasty stuff you do with your files! And/or hear how you use Cmdr. (I obviously won't be doing this for very long, but while Cmdr is an Open beta, I don't expect many people booking calls.)
         </li>
     </ul>
 
     <p class="lede analytics-lede">
-        To learn what's working and what isn't, Cmdr sends anonymous usage stats during the open beta: which features
+        To learn what's working and what isn't, during the open beta Cmdr sends anonymous usage stats: which features
         get used and how often, never anything from your files. It's on now, and you can turn it off anytime.
     </p>
 
@@ -170,7 +175,7 @@
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="analytics.enabled" />
-                <p class="toggle-caption">On by default. You can change this any time in Settings.</p>
+                <p class="toggle-caption">Note that it's ON by default to encourage people to send me data during the Beta. You can change this any time in Settings.</p>
             </div>
         </header>
     </section>
@@ -196,8 +201,8 @@
             <p class="signup-feedback failure" role="status">Sorry, we couldn't sign you up right now. Try again?</p>
         {/if}
         <p class="email-note">
-            Drop your email and I'll reach out with the occasional question or update. It's stored only on your Mac and
-            is never connected to your usage stats.
+            Drop your email and I'll reach out with the occasional question or update. The email address you enter here is stored only on your Mac and
+            it's never connected to your usage stats, the two are intentionally two separate subsystems.
         </p>
     </section>
 </OnboardingStepShell>

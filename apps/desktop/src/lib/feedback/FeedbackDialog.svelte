@@ -132,7 +132,7 @@
         ></textarea>
         {#if overLimit}
             <p class="helper-text">
-                Feedback is too long. Maximum is {MAX_FEEDBACK_CHARS.toLocaleString('en-US')} characters.
+                Sorry, that's too long. Maximum is {MAX_FEEDBACK_CHARS.toLocaleString('en-US')} characters.
             </p>
         {/if}
 
@@ -156,7 +156,7 @@
                     e.preventDefault()
                     void handleOpenLink(BOOK_A_CALL_URL)
                 }}>book a call</LinkButton
-            > with the maker.
+            > with David.
         </p>
 
         {#if sendFailedMessage}
