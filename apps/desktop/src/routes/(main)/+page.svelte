@@ -21,7 +21,7 @@
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
     import { markDispatchSource } from './dispatch-dedup'
-    import { formatKeyCombo, isMacOS } from '$lib/shortcuts/key-capture'
+    import { formatKeyCombo, isMacOS, isTypingKeyCombo } from '$lib/shortcuts/key-capture'
     import {
         showMainWindow,
         checkFullDiskAccess,
@@ -506,6 +506,14 @@
             // instead of triggering "Copy path between panes" from inside a rename
             // editor, the palette search, the search dialog, settings inputs, etc.
             if ((shortcutString === '⌘←' || shortcutString === '⌘→') && isTextInputFocused()) {
+                return
+            }
+            // Typing wins in text inputs: a bare-key (or shift-only) Tier 1 binding —
+            // Tab → switch pane being the built-in case — must not fire mid-typing.
+            // Individual inputs used to shield themselves with stopPropagation
+            // (NetworkLoginForm still does); this guard protects every current and
+            // future text input centrally. ⌘/⌃/⌥ combos and F-keys stay live.
+            if (isTextInputFocused() && isTypingKeyCombo(shortcutString)) {
                 return
             }
             const commandId = lookupCommand(shortcutString)

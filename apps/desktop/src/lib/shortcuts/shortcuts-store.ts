@@ -514,7 +514,19 @@ export async function resetAllShortcuts(): Promise<void> {
 // Persistence
 // ============================================================================
 
-async function saveToStore(): Promise<void> {
+// Saves are fire-and-forget from every mutator (`void saveToStore()`), so two
+// rapid mutations used to run their reconcile-delete-set-save loops interleaved
+// over the same store. Chaining serializes them: each save starts only after the
+// previous one finished, and each reads the live `customShortcuts` at its own
+// start, so the last save always reflects the final state.
+let saveChain: Promise<void> = Promise.resolve()
+
+function saveToStore(): Promise<void> {
+  saveChain = saveChain.then(performSave)
+  return saveChain
+}
+
+async function performSave(): Promise<void> {
   try {
     const store = await getStore()
     log.debug('Saving shortcuts: {shortcuts}', { shortcuts: JSON.stringify(Object.fromEntries(customShortcuts)) })

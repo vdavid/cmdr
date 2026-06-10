@@ -28,6 +28,8 @@ shortcuts:
 - Delta-only storage: only customizations, not defaults
 - Empty array means "all shortcuts removed"
 - Missing command means "use defaults from registry"
+- Saves are serialized: every mutator fires `void saveToStore()`, and the save chains onto the previous one
+  (`saveChain`) so two rapid mutations can't interleave their reconcile/delete/set/save loops over the shared store.
 - `saveToStore` reconciles disk against the in-memory map on every write: it deletes any `shortcut:*` key whose command
   no longer has a map entry, then writes the current entries. So when `resetShortcut` / `cleanupIfMatchesDefaults` drops
   an entry (e.g. a custom that's been edited back to defaults, or `app.showAll`'s `[]` default after removing an added
@@ -175,6 +177,11 @@ command palette and MCP events. Rebuilds automatically when custom shortcuts cha
 
 Tier 2 commands (arrows, Space, Enter, Backspace, etc.) are not in the dispatch map. Unmatched keypresses propagate
 normally to component-level handlers in DualPaneExplorer and FilePane.
+
+Typing wins in text inputs: before the lookup, `handleGlobalKeyDown` bails when focus is in a text-editing element and
+the combo `isTypingKeyCombo` (no ⌘/⌃/⌥, not an F-key or Escape — shift-only counts as typing). Without this, a bare-key
+Tier 1 binding (Tab → switch pane) fires mid-typing in any in-pane text input that forgets to `stopPropagation`. The
+guard is central so new inputs are protected by default; `NetworkLoginForm`'s own Tab shielding remains as before.
 
 ## Key decisions
 

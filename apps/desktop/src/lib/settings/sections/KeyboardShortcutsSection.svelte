@@ -28,7 +28,14 @@
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
     import { groupCommandsByScope } from './keyboard-shortcuts-grouping'
-    import { classifyConflict, fixedKeyMessage, reservedByMacOsMessage, type ConflictKind } from './keyboard-shortcuts-banner'
+    import {
+        classifyConflict,
+        classifySystemShortcut,
+        fixedKeyMessage,
+        reservedByMacOsMessage,
+        systemShortcutMessage,
+        type ConflictKind,
+    } from './keyboard-shortcuts-banner'
     import { shortcutAnchorId } from '$lib/settings/settings-window'
     import {
         getPendingShortcutHighlight,
@@ -194,7 +201,9 @@
         const command = commands.find((c) => c.id === currentEditCommandId)
         if (command) {
             const conflicts = findConflictsForShortcut(combo, command.scope, command.id)
-            const conflict = classifyConflict(conflicts)
+            // In-app conflicts take priority; with none, still warn when macOS
+            // itself usually owns the combo (Spotlight, Mission Control, …).
+            const conflict = classifyConflict(conflicts) ?? classifySystemShortcut(combo)
             if (conflict) {
                 conflictWarning = { shortcut: combo, conflict }
                 return // Don't auto-save, wait for user decision
@@ -492,30 +501,42 @@
     </div>
 
     {#if conflictWarning}
+        <!-- `{@const}` snapshot so the kind checks narrow the union (a re-read of the
+             `$state` field doesn't narrow, and `SystemConflict` has no `command`). -->
+        {@const conflict = conflictWarning.conflict}
         <div class="conflict-warning">
             <span class="warning-icon">⚠️</span>
-            {#if conflictWarning.conflict.kind === 'native'}
+            {#if conflict.kind === 'native'}
                 <!-- macOS owns this combo: it can never reach Cmdr, so we don't offer
                      "Remove from other" or "Keep both" (both would be a lie). -->
                 <span class="warning-text">
-                    {reservedByMacOsMessage(conflictWarning.shortcut, conflictWarning.conflict.command)}
+                    {reservedByMacOsMessage(conflictWarning.shortcut, conflict.command)}
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
                 </div>
-            {:else if conflictWarning.conflict.kind === 'fixed'}
+            {:else if conflict.kind === 'system'}
+                <!-- macOS usually intercepts this combo before Cmdr sees it, but the user
+                     may have disabled the system shortcut — warn and let them decide. -->
+                <span class="warning-text">
+                    {systemShortcutMessage(conflictWarning.shortcut, conflict.label)}
+                </span>
+                <div class="warning-actions">
+                    <Button variant="secondary" size="mini" onclick={handleKeepBoth}>Use anyway</Button>
+                    <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
+                </div>
+            {:else if conflict.kind === 'fixed'}
                 <!-- The combo is hardcoded in a component: it can't be removed there and
                      would keep firing, so we don't offer "Remove from other" or "Keep both". -->
                 <span class="warning-text">
-                    {fixedKeyMessage(conflictWarning.shortcut, conflictWarning.conflict.command)}
+                    {fixedKeyMessage(conflictWarning.shortcut, conflict.command)}
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
                 </div>
-            {:else}
+            {:else if conflict.kind === 'normal'}
                 <span class="warning-text">
-                    <strong>{conflictWarning.shortcut}</strong> is already bound to "{conflictWarning.conflict.command
-                        .name}"
+                    <strong>{conflictWarning.shortcut}</strong> is already bound to "{conflict.command.name}"
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={handleRemoveFromOther}>Remove from other</Button>

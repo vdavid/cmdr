@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import type { Command } from '$lib/commands/types'
-import { classifyConflict, fixedKeyMessage, reservedByMacOsMessage } from './keyboard-shortcuts-banner'
+import {
+  classifyConflict,
+  classifySystemShortcut,
+  fixedKeyMessage,
+  reservedByMacOsMessage,
+  systemShortcutMessage,
+} from './keyboard-shortcuts-banner'
 
 function cmd(partial: { id: string; name?: string; nativeShortcut?: true; fixedKey?: true }): Command {
   const command: Command = {
@@ -22,14 +28,12 @@ describe('classifyConflict', () => {
 
   it('classifies a purely non-native conflict as normal (first command)', () => {
     const result = classifyConflict([cmd({ id: 'file.copy' }), cmd({ id: 'file.move' })])
-    expect(result?.kind).toBe('normal')
-    expect(result?.command.id).toBe('file.copy')
+    expect(result).toMatchObject({ kind: 'normal', command: { id: 'file.copy' } })
   })
 
   it('classifies a native conflict as native', () => {
     const result = classifyConflict([cmd({ id: 'app.hide', name: 'Hide Cmdr', nativeShortcut: true })])
-    expect(result?.kind).toBe('native')
-    expect(result?.command.id).toBe('app.hide')
+    expect(result).toMatchObject({ kind: 'native', command: { id: 'app.hide' } })
   })
 
   it('lets the native command win a mixed set (native + normal)', () => {
@@ -39,8 +43,7 @@ describe('classifyConflict', () => {
       cmd({ id: 'file.copy' }),
       cmd({ id: 'app.hide', name: 'Hide Cmdr', nativeShortcut: true }),
     ])
-    expect(result?.kind).toBe('native')
-    expect(result?.command.id).toBe('app.hide')
+    expect(result).toMatchObject({ kind: 'native', command: { id: 'app.hide' } })
   })
 })
 
@@ -54,8 +57,7 @@ describe('reservedByMacOsMessage', () => {
 describe('classifyConflict (fixed-key)', () => {
   it('classifies a fixed-key conflict as fixed', () => {
     const result = classifyConflict([cmd({ id: 'nav.up', name: 'Select previous file', fixedKey: true })])
-    expect(result?.kind).toBe('fixed')
-    expect(result?.command.id).toBe('nav.up')
+    expect(result).toMatchObject({ kind: 'fixed', command: { id: 'nav.up' } })
   })
 
   it('lets the fixed command win a mixed set (fixed + normal)', () => {
@@ -65,8 +67,7 @@ describe('classifyConflict (fixed-key)', () => {
       cmd({ id: 'file.copy' }),
       cmd({ id: 'nav.up', name: 'Select previous file', fixedKey: true }),
     ])
-    expect(result?.kind).toBe('fixed')
-    expect(result?.command.id).toBe('nav.up')
+    expect(result).toMatchObject({ kind: 'fixed', command: { id: 'nav.up' } })
   })
 
   it('lets a native conflict outrank a fixed one (both in the set)', () => {
@@ -84,5 +85,28 @@ describe('fixedKeyMessage', () => {
     expect(message).toBe(
       "↑ is a fixed key in Cmdr (Select previous file) and can't be reassigned. Pick a different combo.",
     )
+  })
+})
+
+describe('classifySystemShortcut', () => {
+  it('flags well-known macOS system combos with their feature label', () => {
+    expect(classifySystemShortcut('⌘Space')).toEqual({ kind: 'system', label: 'Spotlight' })
+    expect(classifySystemShortcut('⌃↑')).toEqual({ kind: 'system', label: 'Mission Control' })
+    expect(classifySystemShortcut('⌘⇧4')).toEqual({ kind: 'system', label: 'screenshots' })
+  })
+
+  it('returns null for ordinary combos', () => {
+    expect(classifySystemShortcut('⌘⇧P')).toBeNull()
+    expect(classifySystemShortcut('F5')).toBeNull()
+    expect(classifySystemShortcut('Ctrl+Space')).toBeNull() // non-mac display form never matches
+  })
+})
+
+describe('systemShortcutMessage', () => {
+  it('names the combo and the owning feature and points at System Settings', () => {
+    const message = systemShortcutMessage('⌘Space', 'Spotlight')
+    expect(message).toContain('⌘Space')
+    expect(message).toContain('Spotlight')
+    expect(message).toContain('System Settings')
   })
 })

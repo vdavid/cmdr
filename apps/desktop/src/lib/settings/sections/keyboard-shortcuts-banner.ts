@@ -37,7 +37,7 @@ export interface NormalConflict {
   command: Command
 }
 
-export type ConflictKind = NativeConflict | FixedConflict | NormalConflict
+export type ConflictKind = NativeConflict | FixedConflict | SystemConflict | NormalConflict
 
 /**
  * Classify a non-empty conflict set. A native command anywhere in the set makes
@@ -71,4 +71,54 @@ export function reservedByMacOsMessage(combo: string, nativeCommand: Command): s
  */
 export function fixedKeyMessage(combo: string, fixedCommand: Command): string {
   return `${combo} is a fixed key in Cmdr (${fixedCommand.name}) and can't be reassigned. Pick a different combo.`
+}
+
+/** A system conflict: macOS itself usually owns the combo (Spotlight, Mission Control, …). */
+export interface SystemConflict {
+  kind: 'system'
+  /** The macOS feature that owns the combo (drives the banner copy). */
+  label: string
+}
+
+/**
+ * Default macOS system-wide shortcuts (display form, as `formatKeyCombo`
+ * produces them on macOS). Best-effort: users can disable or remap these in
+ * System Settings, so the banner warns and offers "Use anyway" instead of
+ * refusing. Keys only ever match on macOS — other platforms capture
+ * `Ctrl+…`-style strings.
+ */
+const macSystemShortcutToFeatureMap: Record<string, string> = {
+  '⌘Space': 'Spotlight',
+  '⌥⌘Space': 'Finder search window',
+  '⌃⌘Space': 'Character Viewer',
+  '⌃Space': 'input source switching',
+  '⌘Tab': 'the app switcher',
+  '⌃↑': 'Mission Control',
+  '⌃↓': 'App windows',
+  '⌃←': 'Spaces',
+  '⌃→': 'Spaces',
+  '⌘⇧3': 'screenshots',
+  '⌘⇧4': 'screenshots',
+  '⌘⇧5': 'screen recording',
+  '⌘⇧Q': 'logging out',
+  '⌃⌘Q': 'locking the screen',
+  '⌥⌘⎋': 'Force Quit',
+}
+
+/**
+ * Classify a combo against the macOS system-shortcut list. Checked only when
+ * there's no in-app conflict (those banners take priority); a match produces a
+ * soft warning, not a refusal.
+ */
+export function classifySystemShortcut(combo: string): SystemConflict | null {
+  const label = macSystemShortcutToFeatureMap[combo]
+  return label ? { kind: 'system', label } : null
+}
+
+/**
+ * The banner copy for a system-owned combo, like
+ * `⌘Space is usually taken by macOS (Spotlight), so it may never reach Cmdr.`
+ */
+export function systemShortcutMessage(combo: string, label: string): string {
+  return `${combo} is usually taken by macOS (${label}), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.`
 }

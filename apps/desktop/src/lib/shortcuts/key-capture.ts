@@ -197,3 +197,22 @@ export function matchesShortcut(event: KeyboardEvent, shortcut: string): boolean
 export function isCompleteCombo(event: KeyboardEvent): boolean {
   return !isModifierKey(event.key)
 }
+
+/** Modifier tokens that signal command intent (Shift alone doesn't — it types capitals and reverse-tabs). */
+const commandModifierTokens = ['⌘', '⌃', '⌥', 'Ctrl', 'Alt', 'Super']
+
+/**
+ * True when the combo is something a user types in a text field rather than a
+ * command: no command modifier (⌘/⌃/⌥ or Ctrl/Alt/Super — Shift alone still
+ * counts as typing), and not an F-key or Escape (which never produce text).
+ * The centralized dispatch uses this to let typing win in focused text inputs:
+ * a bare-key Tier 1 binding (Tab → switch pane) must not fire mid-typing.
+ */
+export function isTypingKeyCombo(shortcut: string): boolean {
+  if (commandModifierTokens.some((token) => shortcut.includes(token))) return false
+  // Strip the shift prefix (both display forms) to inspect the base key.
+  const base = shortcut.replace(/^⇧/, '').replace(/^Shift\+/, '')
+  if (/^F\d+$/.test(base)) return false
+  if (base === '⎋' || base === 'Esc' || base === 'Escape') return false
+  return true
+}

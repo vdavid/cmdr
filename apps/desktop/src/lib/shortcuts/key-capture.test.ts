@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { formatKeyCombo, toPlatformShortcut } from './key-capture'
+import { formatKeyCombo, toPlatformShortcut, isTypingKeyCombo } from './key-capture'
 
 // Mock navigator to control isMacOS() behavior
 const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
@@ -141,5 +141,37 @@ describe('formatKeyCombo', () => {
     setMacOS(true)
     const result = formatKeyCombo(makeKeyEvent({ metaKey: true, altKey: true, key: 'Dead', code: 'KeyE' }))
     expect(result).toBe('⌘⌥E')
+  })
+})
+
+describe('isTypingKeyCombo', () => {
+  it('treats bare keys as typing (Tab, letters, Space, Enter)', () => {
+    expect(isTypingKeyCombo('Tab')).toBe(true)
+    expect(isTypingKeyCombo('A')).toBe(true)
+    expect(isTypingKeyCombo('Space')).toBe(true)
+    expect(isTypingKeyCombo('↩')).toBe(true)
+  })
+
+  it('treats shift-only combos as typing (⇧Tab reverse-tab, ⇧A capital letter)', () => {
+    expect(isTypingKeyCombo('⇧Tab')).toBe(true)
+    expect(isTypingKeyCombo('⇧A')).toBe(true)
+    expect(isTypingKeyCombo('Shift+Tab')).toBe(true)
+  })
+
+  it('keeps command-modifier combos live (⌘, ⌃, ⌥, Ctrl, Alt, Super)', () => {
+    expect(isTypingKeyCombo('⌘C')).toBe(false)
+    expect(isTypingKeyCombo('⌃X')).toBe(false)
+    expect(isTypingKeyCombo('⌥↓')).toBe(false)
+    expect(isTypingKeyCombo('Ctrl+C')).toBe(false)
+    expect(isTypingKeyCombo('Alt+Tab')).toBe(false)
+    expect(isTypingKeyCombo('Super+Space')).toBe(false)
+  })
+
+  it('keeps F-keys and Escape live (never typing)', () => {
+    expect(isTypingKeyCombo('F5')).toBe(false)
+    expect(isTypingKeyCombo('F12')).toBe(false)
+    expect(isTypingKeyCombo('⇧F6')).toBe(false)
+    expect(isTypingKeyCombo('⎋')).toBe(false)
+    expect(isTypingKeyCombo('Esc')).toBe(false)
   })
 })

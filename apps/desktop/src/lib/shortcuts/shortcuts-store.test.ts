@@ -541,3 +541,21 @@ describe('shortcuts-store refuses to customize fixed-key commands', () => {
     expect(changedEmits()).toHaveLength(0)
   })
 })
+
+describe('shortcuts-store save serialization', () => {
+  it('rapid back-to-back mutations persist the final state of every touched command', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    // Three mutations in the same tick: their fire-and-forget saves chain
+    // instead of interleaving reconcile/set/save loops over the shared store.
+    store.addShortcut('app.about', 'F9')
+    store.setShortcut('app.about', 0, 'F10')
+    store.addShortcut('file.copy', '⌘5')
+    await flushSave()
+    await flushSave()
+
+    expect(disk.get('shortcut:app.about')).toEqual(['F10'])
+    expect(store.getEffectiveShortcuts('file.copy')).toContain('⌘5')
+  })
+})
