@@ -1,13 +1,37 @@
 # Homebrew cask
 
-How to get `brew install --cask cmdr` live, and how it stays current afterward.
+How Cmdr ships through Homebrew, and how the cask stays current.
 
-The cask file lives at [`apps/desktop/packaging/homebrew/cmdr.rb`](../../apps/desktop/packaging/homebrew/cmdr.rb). It's
-a submission template: once merged into [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) (as
-`Casks/c/cmdr.rb`), that repo becomes the canonical home and their `BrewTestBot` auto-bumps the version on every Cmdr
-release via the `livecheck` block. Our copy then goes stale by design; it only matters again if we ever resubmit.
+Users install with `brew tap vdavid/tap && brew install --cask cmdr`. The live cask lives in the personal tap repo
+[`vdavid/homebrew-tap`](https://github.com/vdavid/homebrew-tap) (as `Casks/cmdr.rb`).
+
+The cask file in this repo, [`apps/desktop/packaging/homebrew/cmdr.rb`](../../apps/desktop/packaging/homebrew/cmdr.rb),
+is the source of truth for the cask's **shape**: the `url`, `livecheck`, `depends_on`, `app`, and `zap` blocks. The tap
+copy carries that exact shape; release CI rewrites only its `version` and `sha256` lines on each release. So edit
+structural changes here, and let CI propagate version bumps to the tap.
+
+## Release automation: the tap bump
+
+The `bump-tap` job in [`release.yml`](../../.github/workflows/release.yml) runs after the release is published. It
+downloads the universal DMG release asset, computes its sha256, clones the tap, rewrites only the `version` + `sha256`
+lines in `Casks/cmdr.rb`, and pushes a `cmdr <version>` commit. Releases need zero extra work for brew.
+
+### `HOMEBREW_TAP_TOKEN` setup
+
+The bump job authenticates to the tap with the `HOMEBREW_TAP_TOKEN` Actions secret (stored in `vdavid/cmdr`). It skips
+cleanly when the secret is absent, so a missing token never fails a release. To create it:
+
+1. GitHub > Settings > Developer settings > Fine-grained personal access tokens > Generate new token.
+2. Resource owner: `vdavid`. Repository access: **Only select repositories** > `vdavid/homebrew-tap`.
+3. Permissions: **Contents** > **Read and write** (nothing else).
+4. Copy the token, then add it as an Actions secret named `HOMEBREW_TAP_TOKEN` in `vdavid/cmdr` (Settings > Secrets and
+   variables > Actions).
+
+Scope the token to `vdavid/homebrew-tap` only: the bump job needs no other repo.
 
 ## Why the cask looks the way it does
+
+This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so keep it intact.
 
 - **`url` points at `license.getcmdr.com/download/#{version}/universal`, not GitHub.** The 302 to GitHub Releases behind
   it is fine: `brew audit` regex-matches only the _declared_ `url`/`homepage` strings, and never follows redirects. A
@@ -15,7 +39,7 @@ release via the `livecheck` block. Our copy then goes stale by design; it only m
   `github.com` out of the cask file. Bonus: the endpoint logs downloads to D1, so brew installs show up in our
   telemetry.
 - **`livecheck` reads `https://getcmdr.com/latest.json`**, the same Tauri updater manifest the app polls. The release
-  flow already publishes it, so releases need zero extra work for brew.
+  flow already publishes it.
 - **`auto_updates true`**: Cmdr ships its own updater, so `brew upgrade` skips it unless `--greedy`.
 - **`depends_on macos: :monterey`** means "Monterey or later" (current Homebrew semantics) and matches
   `minimumSystemVersion` in `tauri.conf.json`. Floor rationale:
@@ -23,16 +47,17 @@ release via the `livecheck` block. Our copy then goes stale by design; it only m
 - **`zap` paths** were verified on a prod machine. `~/Library/HTTPStorages/` is deliberately absent (Cmdr doesn't create
   it).
 
-## Refresh and test before submitting
+## Refresh and test locally
 
-If a newer version shipped since the cask file was last touched, update `version` and `sha256`:
+If you change the cask's shape, test it in a throwaway local tap (audit requires a tap; it won't take a bare file path).
+To refresh `version` and `sha256` by hand for a test (CI does this automatically on release):
 
 ```bash
 VERSION=$(curl -s https://getcmdr.com/latest.json | jq -r .version)
 curl -sL "https://license.getcmdr.com/download/$VERSION/universal" | shasum -a 256
 ```
 
-Then test in a throwaway local tap (audit requires a tap; it won't take a bare file path):
+Then test in the throwaway tap:
 
 ```bash
 TAP_DIR="$(brew --repository)/Library/Taps/vdavid/homebrew-localtest"
@@ -50,25 +75,27 @@ brew untap vdavid/localtest          # cleanup
 Don't `brew install` the cask on a machine that already has Cmdr in `/Applications`; it'll conflict with the real
 install. Full install testing needs a clean machine or a VM.
 
-## Submitting
+## Resubmitting to Homebrew/homebrew-cask
 
-The PR to `Homebrew/homebrew-cask` is opened by a human, never an agent (`no-external-actions`). Steps for the human:
+The tap is the live channel until `vdavid/cmdr` clears Homebrew's notability bar. Then the goal is a tap-free
+`brew install --cask cmdr` straight from `Homebrew/homebrew-cask`.
 
-1. Fork `Homebrew/homebrew-cask`, add the cask as `Casks/c/cmdr.rb`, one commit named `cmdr 0.24.0 (new cask)` (their
+The self-submission bar is 90 forks / 90 watchers / 225 stars. PR
+[#268854](https://github.com/Homebrew/homebrew-cask/pull/268854) was rejected at ~15 stars under that bar. The cask
+points at a domain-served download URL rather than a `github.com` one, which avoids only the **automated** notability
+check, not the maintainer's human "is this repo notable?" judgment. So a domain URL alone doesn't clear the bar.
+
+Resubmit when the repo clears ~225 stars. The cask file needs no changes for that: its shape already passes `brew audit`
+and `brew style`. The submission PR is opened by a human, never an agent (`no-external-actions`). Steps for the human:
+
+1. Fork `Homebrew/homebrew-cask`, add the cask as `Casks/c/cmdr.rb`, one commit named `cmdr <version> (new cask)` (their
    convention: `token version (new cask)`).
 2. Open the PR with their template. Be upfront about affiliation with Cmdr; reviewers ask, and honesty reads far better
    than a discovered connection.
-3. The one real acceptance risk is the human "app is too obscure" judgment (the star thresholds only apply to
-   repo-hosted casks, which we deliberately aren't). Counter it in the PR description: link press coverage, download
-   numbers, and the website.
 
 If a reviewer asks to swap the `url` for the final GitHub asset URL (a common simplification request), don't: that
-resurfaces the star check. Instead offer the fallback we've already scoped: serve the DMG bytes directly (200) from the
-API Worker backed by an R2 bucket (upload step in `release.yml` + a streaming route, keeping the D1 logging), and point
-the cask at that.
+resurfaces the automated star check. Instead offer the fallback: serve the DMG bytes directly (200) from the API Worker
+backed by an R2 bucket, keeping the D1 logging, and point the cask at that.
 
-## After it's merged
-
-- Update the README's Installation section to announce `brew install --cask cmdr`.
-- Nothing else recurring: `BrewTestBot` bumps the cask from `latest.json` on each release. If we ever rename the
-  endpoint, move `latest.json`, or change the DMG layout, the cask in `Homebrew/homebrew-cask` must be updated too.
+Once accepted, `Homebrew/homebrew-cask` becomes the canonical home, `BrewTestBot` auto-bumps the cask from `latest.json`
+via the `livecheck` block, and the `bump-tap` CI job + the tap repo can retire.
