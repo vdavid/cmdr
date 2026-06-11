@@ -1,6 +1,6 @@
 import type { ActionReturn } from 'svelte/action'
 
-type TooltipParam =
+export type TooltipParam =
   | string
   | { text?: string; html?: string; shortcut?: string; overflowOnly?: boolean; contentEl?: HTMLElement }
   | null

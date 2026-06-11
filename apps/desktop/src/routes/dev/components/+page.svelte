@@ -5,6 +5,9 @@
     import Links from './sections/Links.svelte'
     import Groups from './sections/Groups.svelte'
     import ToggleGroupSection from './sections/ToggleGroupSection.svelte'
+    import DropdownSection from './sections/DropdownSection.svelte'
+    import FilterDropdownSection from './sections/FilterDropdownSection.svelte'
+    import ChipSection from './sections/ChipSection.svelte'
     import Dialogs from './sections/Dialogs.svelte'
     import Toasts from './sections/Toasts.svelte'
     import Progress from './sections/Progress.svelte'
@@ -36,6 +39,9 @@
         'links',
         'groups',
         'toggle-group',
+        'dropdown',
+        'filter-dropdown',
+        'chip',
         'dialogs',
         'toasts',
         'progress',
@@ -149,6 +155,9 @@
         <Links />
         <Groups />
         <ToggleGroupSection />
+        <DropdownSection />
+        <FilterDropdownSection />
+        <ChipSection />
         <Dialogs />
         <Toasts />
         <Progress />

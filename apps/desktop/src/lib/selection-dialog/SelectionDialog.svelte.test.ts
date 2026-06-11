@@ -166,7 +166,7 @@ describe('SelectionDialog', () => {
     clearSelectionState()
     // Filter-chip popovers are fixed-position siblings of the per-test target, so
     // an unmount doesn't remove them. Clear any leftover popover from a prior test.
-    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+    document.querySelectorAll('.ui-dropdown').forEach((el) => {
       el.remove()
     })
     // jsdom doesn't implement `Element.scrollIntoView`; QueryDialog calls it via
@@ -566,7 +566,7 @@ describe('SelectionDialog', () => {
     // Configure a `≥ 1 MB` size filter via the popover: click the Size chip to open
     // it, then pick the `≥` comparator and the `1` preset (default unit is MB). The
     // popover is a fixed-position sibling in `document`, not a child of the overlay.
-    const sizeChip = Array.from(first.overlay.querySelectorAll<HTMLButtonElement>('.filter-chip')).find((c) =>
+    const sizeChip = Array.from(first.overlay.querySelectorAll<HTMLButtonElement>('.chip-filter')).find((c) =>
       c.textContent.trim().startsWith('Size'),
     )
     if (!sizeChip) throw new Error('size chip not found')
@@ -584,7 +584,7 @@ describe('SelectionDialog', () => {
     await tick()
 
     // Confirm the chip is configured before we close.
-    const sizeChipBefore = Array.from(first.overlay.querySelectorAll('.filter-chip')).find((c) =>
+    const sizeChipBefore = Array.from(first.overlay.querySelectorAll('.chip-filter')).find((c) =>
       /Size:/.test(c.textContent),
     )
     expect(sizeChipBefore, 'size chip should be configured before close').toBeTruthy()
@@ -597,7 +597,7 @@ describe('SelectionDialog', () => {
     // The typed term must survive the reopen.
     expect(secondInput.value).toBe('*.png')
     // The configured size chip must survive the reopen.
-    const sizeChipAfter = Array.from(second.overlay.querySelectorAll('.filter-chip')).find((c) =>
+    const sizeChipAfter = Array.from(second.overlay.querySelectorAll('.chip-filter')).find((c) =>
       /Size:/.test(c.textContent),
     )
     expect(sizeChipAfter, 'size chip should still be configured after reopen').toBeTruthy()
@@ -669,7 +669,7 @@ describe('SelectionDialog', () => {
     })
 
     // Leave the bar empty. Configure a `≥ 1 MB` size filter via the popover.
-    const sizeChip = Array.from(overlay.querySelectorAll<HTMLButtonElement>('.filter-chip')).find((c) =>
+    const sizeChip = Array.from(overlay.querySelectorAll<HTMLButtonElement>('.chip-filter')).find((c) =>
       c.textContent.trim().startsWith('Size'),
     )
     if (!sizeChip) throw new Error('size chip not found')

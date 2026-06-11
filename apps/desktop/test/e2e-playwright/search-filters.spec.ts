@@ -18,10 +18,10 @@ import { dismissOverlay, ensureAppReady, pollUntil } from './helpers.js'
 import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
 import { SEARCH_OVERLAY, closeSearchDialog, openSearchDialog } from './search-helpers.js'
 
-const SIZE_CHIP_DEFAULT = '.search-overlay .filter-chip[aria-label="Size"]'
-const SIZE_CHIP_CONFIGURED = '.search-overlay .filter-chip.is-configured'
-const SIZE_CHIP_CLEAR = '.search-overlay .filter-chip.is-configured .chip-clear'
-const FILTER_POPOVER = '.search-overlay .filter-chip-popover'
+const SIZE_CHIP_DEFAULT = '.search-overlay .chip-filter[aria-label="Size"]'
+const SIZE_CHIP_CONFIGURED = '.search-overlay .chip-filter.is-configured'
+const SIZE_CHIP_CLEAR = '.search-overlay .chip-filter.is-configured .chip-clear'
+const FILTER_POPOVER = '.search-overlay .ui-dropdown'
 // The Size popover renders as a list-style grid: each comparator / preset / unit is a
 // `role="radio"` button inside a labeled `role="radiogroup"` column. The "≥" cell sits
 // in the Comparator column; the "100" cell sits in the "Minimum size value" column.
@@ -54,7 +54,7 @@ test.describe('Search dialog: filter chips', () => {
 
     // Esc closes ONLY the popover (`SearchFilterChips.svelte` capture-phase
     // guard, see lib/search/CLAUDE.md); the dialog must stay open.
-    // `dismissOverlay` dispatches a synthetic Escape on the `.filter-chip-popover`
+    // `dismissOverlay` dispatches a synthetic Escape on the `.ui-dropdown`
     // element itself (first in the overlay priority list) and asserts it closed.
     // Using it instead of `pressKey('Escape')` — which targets
     // `document.activeElement` — removes a focus-position dependency that flaked

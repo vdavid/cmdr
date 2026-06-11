@@ -18,6 +18,8 @@
      */
     import { onDestroy, tick } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import Button from '$lib/ui/Button.svelte'
+    import Chip from '$lib/ui/Chip.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { computeRecentChipsLayout } from '$lib/query-ui/recent-chips-layout'
     import { modeBadge } from './recent-items-utils'
@@ -113,9 +115,9 @@
 
     /**
      * Re-measure widths from the rendered DOM. The chip widths come from the
-     * `.recent-chip` siblings; the leading label and trailing button widths
-     * come from their own slots. Triggered on mount and whenever the
-     * candidate list changes.
+     * `.chip-recent` pills (rendered by `Chip variant="recent"`); the leading
+     * label and trailing button widths come from their own slots. Triggered on
+     * mount and whenever the candidate list changes.
      */
     async function remeasure(): Promise<void> {
         const el = stripEl
@@ -126,8 +128,8 @@
         // measure them. Once the measurements land, the derived visibleCount
         // re-computes and the strip drops overflow.
         const leadingLabel = el.querySelector<HTMLElement>('.recent-label')
-        const trailingButton = el.querySelector<HTMLElement>('.all-searches')
-        const chipEls = el.querySelectorAll<HTMLElement>('.recent-chip')
+        const trailingButton = el.querySelector<HTMLElement>('.all-recent')
+        const chipEls = el.querySelectorAll<HTMLElement>('.chip-recent')
         if (!leadingLabel || !trailingButton || chipEls.length === 0) {
             measurements = null
             return
@@ -182,37 +184,41 @@
         <span class="chip-row">
             {#each visible as entry (keyFn(entry))}
                 {@const view = adapter(entry)}
-                <!-- R3 U2: the chip's text is truncated via CSS (`text-overflow: ellipsis`
-                     on `.chip-query`). The tooltip stacks the full label + the adapter-built
-                     multi-line tooltip so the truncated chip stays readable on hover. -->
-                <button
-                    type="button"
-                    class="recent-chip"
+                <!-- R3 U2: the chip's text is truncated via CSS (`text-overflow: ellipsis`).
+                     The tooltip stacks the full label + the adapter-built multi-line tooltip so
+                     the truncated chip stays readable on hover. The mode badge rides the chip's
+                     leading slot. -->
+                <Chip
+                    variant="recent"
+                    label={view.label}
                     {disabled}
-                    onclick={() => {
+                    onActivate={() => {
                         onPick(entry)
                     }}
-                    oncontextmenu={(e) => {
+                    onContextMenu={(e: MouseEvent) => {
                         handleContextMenu(e, entry)
                     }}
-                    use:tooltip={`${view.label}\n${view.tooltip}`}
-                    aria-label={view.ariaLabel}
+                    tooltipContent={`${view.label}\n${view.tooltip}`}
+                    ariaLabel={view.ariaLabel}
                 >
-                    <span class="chip-badge">{modeBadge(view.mode)}</span>
-                    <span class="chip-query">{view.label}</span>
-                </button>
+                    {#snippet leading()}
+                        <span class="chip-badge">{modeBadge(view.mode)}</span>
+                    {/snippet}
+                </Chip>
             {/each}
         </span>
-        <button
-            type="button"
-            class="all-searches"
-            {disabled}
-            onclick={onOpenAll}
-            use:tooltip={{ text: trailingTooltipText, shortcut: trailingShortcut }}
-            aria-label={ariaAllButtonLabel}
-        >
-            {trailingLabel}<ShortcutChip key={trailingShortcut} size="sm" />
-        </button>
+        <span class="all-recent">
+            <Button
+                variant="secondary"
+                {disabled}
+                onclick={onOpenAll}
+                aria-label={ariaAllButtonLabel}
+            >
+                <span class="all-recent-label" use:tooltip={{ text: trailingTooltipText, shortcut: trailingShortcut }}>
+                    {trailingLabel}<ShortcutChip key={trailingShortcut} size="sm" />
+                </span>
+            </Button>
+        </span>
     </div>
 {/if}
 
@@ -256,41 +262,22 @@
         flex-shrink: 0;
     }
 
-    .recent-chip,
-    .all-searches {
+    /* The recent pills are `Chip variant="recent"` and the trailing "All …" control is a standard
+       secondary `Button`; both bring their own styling. This wrapper keeps the trailing button a
+       fixed, measurable block (the layout helper reads its width) and stops it from shrinking. */
+    .all-recent {
+        display: inline-flex;
+        flex-shrink: 0;
+    }
+
+    .all-recent-label {
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xs);
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        line-height: 1;
-        color: var(--color-text-secondary);
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        white-space: nowrap;
-        max-width: 240px;
-        flex-shrink: 0;
-        transition:
-            background var(--transition-base),
-            border-color var(--transition-base),
-            color var(--transition-base);
     }
 
-    .recent-chip:not(:disabled):hover,
-    .all-searches:not(:disabled):hover {
-        background: var(--color-accent-subtle);
-        border-color: var(--color-accent);
-        color: var(--color-text-primary);
-    }
-
-    .recent-chip:disabled,
-    .all-searches:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
+    /* The mode badge rides the chip's leading slot; slotted content isn't style-scoped to the
+       child, so the badge styling lives here next to the pill that owns it. */
     .chip-badge {
         font-size: var(--font-size-xs);
         font-family: var(--font-mono);
@@ -301,17 +288,5 @@
         color: var(--color-text-primary);
         border-radius: var(--radius-xs);
         line-height: 1;
-    }
-
-    .chip-query {
-        line-height: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 180px;
-    }
-
-    .all-searches {
-        font-style: italic;
-        color: var(--color-text-tertiary);
     }
 </style>

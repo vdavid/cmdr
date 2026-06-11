@@ -5,24 +5,27 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 
 ## Key files
 
-| File                  | Purpose                                                                                        |
-| --------------------- | ---------------------------------------------------------------------------------------------- |
-| `ModalDialog.svelte`  | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
-| `focus-trap.ts`       | `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack            |
-| `dialog-registry.ts`  | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                        |
-| `Button.svelte`       | Styled button with variant and size props                                                      |
-| `LinkButton.svelte`   | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
-| `CommandBox.svelte`   | Copyable terminal command (monospace + Copy button)                                            |
-| `LoadingIcon.svelte`  | Animated spinner with progressive status text                                                  |
-| `AlertDialog.svelte`  | Single-action confirmation dialog built on `ModalDialog`                                       |
-| `ProgressBar.svelte`  | Reusable progress bar (just the bar, no labels or layout)                                      |
-| `Size.svelte`         | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
-| `SectionCard.svelte`  | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
-| `ToggleGroup.svelte`  | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
-| `DateLabel.svelte`    | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
-| `ShortcutChip.svelte` | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode  |
-| `StatusBadge.svelte`  | Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by `feature-status.json` |
-| `toast/`              | Centralized toast notification system: store, container, item                                  |
+| File                    | Purpose                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `ModalDialog.svelte`    | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
+| `focus-trap.ts`         | `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack            |
+| `dialog-registry.ts`    | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                        |
+| `Button.svelte`         | Styled button with variant and size props                                                      |
+| `Dropdown.svelte`       | Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close             |
+| `FilterDropdown.svelte` | `Dropdown` + a labelled section header; the query dialogs' Size / Modified / Search-in surface |
+| `Chip.svelte`           | Small pill button: filter chip (popover trigger + × clear) or recent pill (badge + truncate)   |
+| `LinkButton.svelte`     | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
+| `CommandBox.svelte`     | Copyable terminal command (monospace + Copy button)                                            |
+| `LoadingIcon.svelte`    | Animated spinner with progressive status text                                                  |
+| `AlertDialog.svelte`    | Single-action confirmation dialog built on `ModalDialog`                                       |
+| `ProgressBar.svelte`    | Reusable progress bar (just the bar, no labels or layout)                                      |
+| `Size.svelte`           | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
+| `SectionCard.svelte`    | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
+| `ToggleGroup.svelte`    | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
+| `DateLabel.svelte`      | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
+| `ShortcutChip.svelte`   | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode  |
+| `StatusBadge.svelte`    | Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by `feature-status.json` |
+| `toast/`                | Centralized toast notification system: store, container, item                                  |
 
 ## Not part of this module: soft sheets
 
@@ -195,6 +198,58 @@ by `lib/accent-color.ts`:
 The contrast checker (`scripts/check-a11y-contrast`) mirrors all of this in its accent matrix and runs against the 9
 runtime variants. **Don't restyle `.btn-*` colors from a scoped feature component** — `scripts/check-btn-restyle` will
 flag it. If you genuinely need a one-off variant, add the rationale via a `/* allowed-btn-restyle: <reason> */` comment.
+
+## Dropdown
+
+Generic positioned floater anchored to a trigger element. Frosted-glass material (the tooltip's), small radius, hairline
+border, soft shadow. Positions itself below the anchor and auto-flips above when there isn't room; clamps horizontally
+to the viewport; re-runs on resize. Owns a focus trap (Tab cycles inside, focus returns to the anchor on close) and an
+Esc-scoped close that `stopPropagation`s so a host dialog's capture-phase Escape doesn't also fire. Click-outside closes
+(on `mousedown`, so a drag that starts inside and ends outside doesn't). Controlled: the parent owns `open`.
+
+Props:
+
+- `anchor: HTMLElement` (required): trigger element for positioning + focus return.
+- `open: boolean` (required): controlled visibility.
+- `onClose: () => void` (required): fired on Esc / click-outside.
+- `ariaLabel?: string`: region label (default "Options").
+- `children: Snippet`: the floating content.
+
+The rendered element carries the `.ui-dropdown` class. Host dialogs that must defer Escape to an open dropdown detect it
+by that class (the query dialog's capture-phase guard checks `dialogElement.querySelector('.ui-dropdown')`); the E2E
+overlay-dismissal helper and `search-filters.spec.ts` use it as a stable selector too. Don't rename it without updating
+those.
+
+## FilterDropdown
+
+A thin composition of `Dropdown` plus a labelled section header, for the query dialogs' Size / Modified / Search-in
+filter popovers. It's a separate component (not a `variant` prop on `Dropdown`) so the generic `Dropdown` stays free of
+filter-specific markup. The header is a `<span>` heading over a radio grid by default, or a real `<label for=…>` when
+`labelFor` is set (the Scope textarea). The `.popover-section` / `.popover-label` / grid classes live in
+`query-ui/filter-chips/filter-popover.css` (a shared global stylesheet, because the grid classes also style the popover
+children, which a component-scoped `<style>` can't reach).
+
+Props: `anchor`, `open`, `onClose` (like `Dropdown`), plus `label: string` (header text), `ariaLabel: string`,
+`labelFor?: string` (renders `<label for>`), `sectionClass?: 'size-grid-section' | 'scope-popover'` (widens the
+section), `children: Snippet`.
+
+## Chip
+
+A small pill button with two variants:
+
+- `filter` (default): a popover trigger. Default state shows just the label ("Size"); configured state shows "Size: >
+  100 MB" plus a decorative `×` clear marker. Carries `aria-haspopup="dialog"` + `aria-expanded`. Activates on click /
+  Enter / Space; Backspace on a focused configured chip clears it (the `×` is mouse-only, by design — a nested
+  `<button>` would trip axe's `nested-interactive`).
+- `recent`: a denser history pill with a leading mode badge (via the `leading` snippet) and a middle-truncated label.
+  Activates on click; `onContextMenu` handles right-click "remove from history". No popover ARIA, no clear.
+
+Props: `variant?`, `label` (required), `value?`, `configured?`, `isOpen?`, `disabled?`, `highlighted?`, `onActivate`
+(required), `onClear?`, `onContextMenu?`, `ariaLabel?`, `tooltipContent?` (a `TooltipParam`), `leading?` (Snippet),
+`chipElement?` (bindable button ref). The two variants render through `class:chip-filter` / `class:chip-recent`
+directives (not a `chip--{variant}` interpolation, which the `css-unused` checker can't resolve, and the `--` form trips
+its var-definition regex against `:not(...)`). `chip-recent` is also the layout-measurement hook in
+`RecentItemsFooter.svelte`.
 
 ## LinkButton
 

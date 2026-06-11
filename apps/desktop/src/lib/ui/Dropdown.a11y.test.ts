@@ -1,24 +1,24 @@
 /**
- * Tier-3 a11y tests for `FilterChipPopover.svelte`.
+ * Tier-3 a11y tests for `Dropdown.svelte`.
  *
  * Covers the closed state (renders nothing) and the open state (renders a `role="dialog"` with
- * the slot content focusable). The anchor is provided as a real button in the test DOM so the
- * popover has something to position against.
+ * the slot content focusable). The anchor is a real button in the test DOM so the popover has
+ * something to position against.
  */
 
 import { describe, it } from 'vitest'
 import { mount, tick, createRawSnippet } from 'svelte'
-import FilterChipPopover from './FilterChipPopover.svelte'
+import Dropdown from './Dropdown.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-describe('FilterChipPopover a11y', () => {
+describe('Dropdown a11y', () => {
   it('closed (open=false) renders nothing and has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     const anchor = document.createElement('button')
     anchor.textContent = 'Anchor'
     target.appendChild(anchor)
-    mount(FilterChipPopover, {
+    mount(Dropdown, {
       target,
       props: {
         anchor,
@@ -40,7 +40,7 @@ describe('FilterChipPopover a11y', () => {
     const anchor = document.createElement('button')
     anchor.textContent = 'Anchor'
     target.appendChild(anchor)
-    mount(FilterChipPopover, {
+    mount(Dropdown, {
       target,
       props: {
         anchor,
@@ -55,7 +55,7 @@ describe('FilterChipPopover a11y', () => {
     await tick()
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+    document.querySelectorAll('.ui-dropdown').forEach((el) => {
       el.remove()
     })
   })

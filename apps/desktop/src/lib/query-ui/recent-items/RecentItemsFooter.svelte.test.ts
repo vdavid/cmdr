@@ -84,10 +84,10 @@ describe('RecentSearchesFooter', () => {
     await tick()
     expect(target.querySelector('.recent-label')).not.toBeNull()
     expect(target.querySelector('.recent-label')?.textContent).toContain('Recent searches:')
-    expect(target.querySelector('.all-searches')).not.toBeNull()
+    expect(target.querySelector('.all-recent button')).not.toBeNull()
     // The strip is rendered (entries.length > 0), and capped at the
     // CANDIDATE_MAX (12) ceiling even before layout measurements come in.
-    const chips = target.querySelectorAll('.recent-chip')
+    const chips = target.querySelectorAll('.chip-recent')
     expect(chips.length).toBeLessThanOrEqual(12)
     expect(chips.length).toBeGreaterThan(0)
     target.remove()
@@ -111,7 +111,7 @@ describe('RecentSearchesFooter', () => {
       },
     })
     await tick()
-    const chip = target.querySelector('.recent-chip') as HTMLButtonElement
+    const chip = target.querySelector('.chip-recent') as HTMLButtonElement
     chip.click()
     expect(onPick).toHaveBeenCalledWith(entry)
     target.remove()
@@ -135,7 +135,7 @@ describe('RecentSearchesFooter', () => {
       },
     })
     await tick()
-    const chip = target.querySelector('.recent-chip') as HTMLButtonElement
+    const chip = target.querySelector('.chip-recent') as HTMLButtonElement
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
     chip.dispatchEvent(event)
     expect(onRemove).toHaveBeenCalledWith(entry)
@@ -164,7 +164,7 @@ describe('RecentSearchesFooter', () => {
       },
     })
     await tick()
-    const chip = target.querySelector('.recent-chip') as HTMLElement
+    const chip = target.querySelector('.chip-recent') as HTMLElement
     // The tooltip primitive stores the configured text on the host element;
     // we look at the `data-tooltip-text` attribute the tooltip directive
     // commonly sets (fallback to checking the rendered tooltip body
@@ -196,7 +196,7 @@ describe('RecentSearchesFooter', () => {
       },
     })
     await tick()
-    const allBtn = target.querySelector('.all-searches') as HTMLButtonElement
+    const allBtn = target.querySelector('.all-recent button') as HTMLButtonElement
     allBtn.click()
     expect(onOpenAll).toHaveBeenCalledTimes(1)
     target.remove()
@@ -218,8 +218,8 @@ describe('RecentSearchesFooter', () => {
       },
     })
     await tick()
-    const chip = target.querySelector('.recent-chip') as HTMLButtonElement
-    const all = target.querySelector('.all-searches') as HTMLButtonElement
+    const chip = target.querySelector('.chip-recent') as HTMLButtonElement
+    const all = target.querySelector('.all-recent button') as HTMLButtonElement
     expect(chip.disabled).toBe(true)
     expect(all.disabled).toBe(true)
     target.remove()
@@ -296,7 +296,7 @@ describe('RecentSearchesFooter', () => {
     })
     await tick()
     expect(target.querySelector('.recent-label')?.textContent).toContain('Recent selections:')
-    const chips = target.querySelectorAll<HTMLButtonElement>('.recent-chip')
+    const chips = target.querySelectorAll<HTMLButtonElement>('.chip-recent')
     expect(chips.length).toBe(2)
     expect(chips[0].textContent).toContain('*.png')
     expect(chips[1].textContent).toContain('all image files')

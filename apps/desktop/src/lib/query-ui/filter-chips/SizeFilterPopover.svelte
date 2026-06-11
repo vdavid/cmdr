@@ -8,10 +8,10 @@
      *
      * Extracted from `FilterChips.svelte`. The parent owns the chip strip, the `openChip` state,
      * and the ⌥S opener; this component owns the popover surface and its local custom-input flags.
-     * The `FilterChipPopover` shell (positioning, focus trap, Esc-scoped close) is wrapped here so
-     * the parent only threads `anchor` / `open` / `onClose`.
+     * The `FilterDropdown` shell (positioning, focus trap, Esc-scoped close, labelled header) is
+     * wrapped here so the parent only threads `anchor` / `open` / `onClose`.
      */
-    import FilterChipPopover from './FilterChipPopover.svelte'
+    import FilterDropdown from '$lib/ui/FilterDropdown.svelte'
     import type { SizeFilter, SizeUnit } from '../query-filter-state.svelte'
     import { SIZE_PRESETS, byteUnitLabel, kiloByteLabel, isSizeRangeDisabled, showsUpperBound } from './filter-popover-helpers'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
@@ -132,9 +132,7 @@
      `Custom...`). Col 3 = unit (`bytes` / `KB` / `MB` / `GB`). When col 1 =
      `between`, cols 4 + 5 mirror cols 2 + 3 for the upper bound. Cols 2-5 render
      disabled when col 1 = `any` (no range to apply). -->
-<FilterChipPopover {anchor} {open} {onClose} ariaLabel="Size filter options">
-    <div class="popover-section size-grid-section">
-        <span class="popover-label">Size</span>
+<FilterDropdown {anchor} {open} {onClose} label="Size" ariaLabel="Size filter options" sectionClass="size-grid-section">
         <div
             class="list-grid"
             class:has-upper={showsUpperBound(sizeFilter)}
@@ -369,8 +367,7 @@
                 </div>
             {/if}
         </div>
-    </div>
-</FilterChipPopover>
+</FilterDropdown>
 
 <style>
     .size-input {

@@ -46,6 +46,9 @@
     import type { QueryDialogConfig } from './query-dialog-config'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { trapFocus } from '$lib/ui/focus-trap'
+    import Button from '$lib/ui/Button.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
     import { showAiTranslateErrorToast } from '$lib/ai/translate-error-toast'
@@ -244,7 +247,7 @@
      */
     function handleEscapeCapture(e: KeyboardEvent): void {
         if (e.key !== 'Escape') return
-        if (dialogElement?.querySelector('.filter-chip-popover')) {
+        if (dialogElement?.querySelector('.ui-dropdown')) {
             return
         }
         e.preventDefault()
@@ -928,34 +931,34 @@
                 {#if config.secondaryAction || config.primaryAction}
                     <div class="query-dialog__actions" role="group" aria-label="Dialog actions">
                         {#if config.secondaryAction}
-                            <button
-                                type="button"
-                                class="btn btn-secondary btn-mini"
+                            <Button
+                                variant="secondary"
                                 disabled={config.inputsDisabled || results.length === 0}
                                 onclick={activateSecondary}
                                 aria-label={config.secondaryAction.ariaLabel ?? config.secondaryAction.label}
-                                title={config.secondaryAction.tooltip ?? ''}
                             >
-                                {config.secondaryAction.label}{#if enterAction === 'go-to-file'}<span
-                                        class="shortcut-hint"
-                                        aria-hidden="true">{config.secondaryAction.shortcutHint}</span
-                                    >{/if}
-                            </button>
+                                <span class="action-label" use:tooltip={config.secondaryAction.tooltip ?? ''}>
+                                    {config.secondaryAction.label}{#if enterAction === 'go-to-file'}<ShortcutChip
+                                            key={config.secondaryAction.shortcutHint}
+                                            size="sm"
+                                        />{/if}
+                                </span>
+                            </Button>
                         {/if}
                         {#if config.primaryAction}
-                            <button
-                                type="button"
-                                class="btn btn-primary btn-mini"
+                            <Button
+                                variant="primary"
                                 disabled={config.inputsDisabled || results.length === 0}
                                 onclick={activatePrimary}
                                 aria-label={config.primaryAction.ariaLabel ?? config.primaryAction.label}
-                                title={config.primaryAction.tooltip ?? ''}
                             >
-                                {config.primaryAction.label}<span
-                                    class="shortcut-hint shortcut-on-primary"
-                                    aria-hidden="true">{config.primaryAction.shortcutHint}</span
-                                >
-                            </button>
+                                <span class="action-label" use:tooltip={config.primaryAction.tooltip ?? ''}>
+                                    {config.primaryAction.label}<ShortcutChip
+                                        key={config.primaryAction.shortcutHint}
+                                        size="sm"
+                                    />
+                                </span>
+                            </Button>
                         {/if}
                     </div>
                 {/if}
@@ -1068,19 +1071,10 @@
         padding: var(--spacing-sm) var(--spacing-lg);
     }
 
-    /* No `opacity` dimming on the shortcut hints: at `opacity: 0.8` the composited
-       tertiary gray (and the accent-fg on the primary button) dropped below WCAG AA on
-       the lighter accents. `--color-text-tertiary` already reads quieter than the button
-       label, and `--color-accent-fg` is auto-picked for max contrast on its accent.
-       The contrast checker models both pairs (`scripts/check-a11y-contrast/query_dialog_states.go`). */
-    .shortcut-hint {
-        margin-left: var(--spacing-xs);
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-    }
-
-    .shortcut-hint.shortcut-on-primary {
-        color: var(--color-accent-fg);
+    /* The action verb leads; the shortcut hint rides a standard `ShortcutChip` to its right. */
+    .action-label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
     }
 </style>

@@ -55,25 +55,9 @@ var queryDialogScenarios = []ancestorBgScenario{
 		// accent-dependent color, so the matrix sweep applies).
 		BgExpr: "color-mix(in srgb, var(--color-accent) 15%, var(--color-bg-secondary))",
 	},
-	{
-		// Footer shortcut hint (`.shortcut-hint`, for example the `⏎` next to
-		// "Go to file"): tertiary mono text on the footer's `--color-bg-primary`.
-		// Carries no `opacity` crutch (it dropped below AA at 0.8). Mirror any
-		// re-added opacity with a transparent-mix FgExpr.
-		Selector: ".shortcut-hint on footer --color-bg-primary",
-		FgVar:    "color-text-tertiary",
-		BgVar:    "color-bg-primary",
-	},
-	{
-		// Footer shortcut hint ON the primary button (`.shortcut-on-primary`,
-		// the `⏎` baked into the filled "Select these files" button):
-		// `--color-accent-fg` on the `--color-accent` button bg. accent-fg is
-		// auto-picked (black/white) for max contrast on the active accent, so
-		// the matrix sweep confirms every accent clears AA.
-		Selector: ".shortcut-hint.shortcut-on-primary on --color-accent",
-		FgVar:    "color-accent-fg",
-		BgVar:    "color-accent",
-	},
+	// The footer action buttons' shortcut hints render through the standard `ShortcutChip`
+	// (a neutral pill, contrast-audited by the chip's own catalog a11y test), not bespoke
+	// `.shortcut-hint` spans, so no query-dialog-specific contrast entry is needed for them.
 }
 
 // AnalyzeQueryDialogStates evaluates each query-dialog scenario against the

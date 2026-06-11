@@ -24,7 +24,7 @@
      * popover's footer also exposes them as buttons so mouse users have first-class access.
      */
     import { SvelteSet } from 'svelte/reactivity'
-    import FilterChip from './FilterChip.svelte'
+    import Chip from '$lib/ui/Chip.svelte'
     import SizeFilterPopover from './SizeFilterPopover.svelte'
     import DateFilterPopover from './DateFilterPopover.svelte'
     import ScopeFilterPopover from './ScopeFilterPopover.svelte'
@@ -323,7 +323,7 @@
         />
     </span>
     {#if patternChipVisible}
-        <FilterChip
+        <Chip
             bind:chipElement={patternChipEl}
             label="Pattern"
             value={patternState.summary}
@@ -339,7 +339,7 @@
     {/if}
     {#each visibleChips as key (key)}
         {#if key === 'size'}
-            <FilterChip
+            <Chip
                 bind:chipElement={sizeChipEl}
                 label="Size"
                 value={sizeState.summary}
@@ -353,7 +353,7 @@
                 onClear={clearSize}
             />
         {:else if key === 'date'}
-            <FilterChip
+            <Chip
                 bind:chipElement={dateChipEl}
                 label="Modified"
                 value={dateState.summary}
@@ -367,7 +367,7 @@
                 onClear={clearDate}
             />
         {:else if key === 'scope'}
-            <FilterChip
+            <Chip
                 bind:chipElement={scopeChipEl}
                 label="Search in"
                 value={scopeState.summary}

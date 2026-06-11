@@ -10,7 +10,7 @@
      * and the ⌥M opener; this component owns the popover surface, the dynamic preset list, and its
      * local custom-input flags.
      */
-    import FilterChipPopover from './FilterChipPopover.svelte'
+    import FilterDropdown from '$lib/ui/FilterDropdown.svelte'
     import type { DateFilter } from '../query-filter-state.svelte'
     import { isDateRangeDisabled, showsDateUpperBound, buildDatePresets, type DynamicDatePreset } from './filter-popover-helpers'
     import './filter-popover.css'
@@ -133,9 +133,7 @@
      comparator (`any` / `after` / `before` / `between`). Col 2 = preset dates
      (`today`, `yesterday`, `this week`, ..., `Custom…`). Cols 3 + 4 appear when
      col 1 = `between` for the upper bound. No unit column. -->
-<FilterChipPopover {anchor} {open} {onClose} ariaLabel="Modified filter options">
-    <div class="popover-section size-grid-section">
-        <span class="popover-label">Modified</span>
+<FilterDropdown {anchor} {open} {onClose} label="Modified" ariaLabel="Modified filter options" sectionClass="size-grid-section">
         <div
             class="list-grid date-grid"
             class:has-upper={showsDateUpperBound(dateFilter)}
@@ -267,8 +265,7 @@
                 </div>
             {/if}
         </div>
-    </div>
-</FilterChipPopover>
+</FilterDropdown>
 
 <style>
     .date-input {

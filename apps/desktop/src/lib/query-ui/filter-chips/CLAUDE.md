@@ -9,17 +9,17 @@ cross-consumer state factory.
 
 ## Files
 
-| File                        | Purpose                                                                                                                                                                                                                                                                                  |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FilterChips.svelte`        | Filter chip strip: leading `Both/Files/Folders` type `ToggleGroup` (drives core `typeFilter`), then Pattern + Size + Modified + Search in chips. Owns the open-chip state and the three keyboard routers. Visibility flags: `scopeChipVisible`, `patternChipVisible`                     |
-| `SizeFilterPopover.svelte`  | Size popover body: the comparator + value + unit list grid, the lower/upper custom-input flags, and the `pickSize*` auto-promote handlers                                                                                                                                                |
-| `DateFilterPopover.svelte`  | Modified popover body: the comparator + dynamic-preset grid, the `buildDatePresets`-derived list + first-match selection keys, custom-input flags, `pickDate*` handlers                                                                                                                  |
-| `ScopeFilterPopover.svelte` | Search-in popover body: scope textarea, "Hide boring folders" / "Case-sensitive" toggles, and the ⌥C / ⌥V footer buttons                                                                                                                                                                 |
-| `filter-popover.css`        | Shared global styles for the popover bodies: `.popover-section`, `.popover-label`, the `.list-grid` / `.list-cell` / `.list-col` grid, and `.popover-input`. Imported by all three popover components (Svelte `<style>` is component-scoped, so shared classes need a global stylesheet) |
-| `FilterChip.svelte`         | Single chip: default/configured states, `×` clear, Backspace clear, aria-expanded                                                                                                                                                                                                        |
-| `FilterChipPopover.svelte`  | Generic popover shell: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog. Wrapped by each `*FilterPopover` body                                                                                                                                                 |
-| `filter-chip-state.ts`      | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip`, `derivePatternChip` (testable in isolation)                                                                                                                                                                         |
-| `filter-popover-helpers.ts` | Pure: `SIZE_PRESETS`, `byteUnitLabel`, `kiloByteLabel`, `isSizeRangeDisabled`, `showsUpperBound`, `isDateRangeDisabled`, `showsDateUpperBound`, `buildDatePresets`                                                                                                                       |
+| File                        | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `FilterChips.svelte`        | Filter chip strip: leading `Both/Files/Folders` type `ToggleGroup` (drives core `typeFilter`), then Pattern + Size + Modified + Search in chips. Owns the open-chip state and the three keyboard routers. Visibility flags: `scopeChipVisible`, `patternChipVisible`                                                                                                                                                     |
+| `SizeFilterPopover.svelte`  | Size popover body: the comparator + value + unit list grid, the lower/upper custom-input flags, and the `pickSize*` auto-promote handlers                                                                                                                                                                                                                                                                                |
+| `DateFilterPopover.svelte`  | Modified popover body: the comparator + dynamic-preset grid, the `buildDatePresets`-derived list + first-match selection keys, custom-input flags, `pickDate*` handlers                                                                                                                                                                                                                                                  |
+| `ScopeFilterPopover.svelte` | Search-in popover body: scope textarea, "Hide boring folders" / "Case-sensitive" toggles, and the ⌥C / ⌥V footer buttons                                                                                                                                                                                                                                                                                                 |
+| `filter-popover.css`        | Shared global styles for the popover bodies: `.popover-section`, `.popover-label`, the `.list-grid` / `.list-cell` / `.list-col` grid, `.popover-input`, plus the `.size-grid-section` / `.scope-popover` section widths (`FilterDropdown` renders those wrapper elements). Imported by all three popover bodies and `FilterDropdown` (Svelte `<style>` is component-scoped, so shared classes need a global stylesheet) |
+| _the chips themselves_      | `$lib/ui/Chip.svelte` (`variant="filter"`). `FilterChips.svelte` mounts it directly; there's no local chip component                                                                                                                                                                                                                                                                                                     |
+| _the popover shell_         | `$lib/ui/FilterDropdown.svelte` (a `$lib/ui/Dropdown` + labelled header). Each `*FilterPopover` body wraps it, threading `anchor` / `open` / `onClose` / `label`                                                                                                                                                                                                                                                         |
+| `filter-chip-state.ts`      | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip`, `derivePatternChip` (testable in isolation)                                                                                                                                                                                                                                                                                                         |
+| `filter-popover-helpers.ts` | Pure: `SIZE_PRESETS`, `byteUnitLabel`, `kiloByteLabel`, `isSizeRangeDisabled`, `showsUpperBound`, `isDateRangeDisabled`, `showsDateUpperBound`, `buildDatePresets`                                                                                                                                                                                                                                                       |
 
 Companion tests (colocated):
 
@@ -27,9 +27,6 @@ Companion tests (colocated):
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `FilterChips.svelte.test.ts`       | Type toggle render + selection, chip rendering, `×` and Backspace clear, popover open/close, scope behavior, ⌥S/⌥M/⌥I openers, ⌥C/⌥V scope shortcuts |
 | `FilterChips.a11y.test.ts`         | Tier-3 axe-core audit across populated chip states                                                                                                   |
-| `FilterChip.a11y.test.ts`          | Tier-3 axe-core audit across default, configured, disabled, and open states                                                                          |
-| `FilterChipPopover.svelte.test.ts` | Mount / unmount via `open` prop, Esc → onClose with stopPropagation                                                                                  |
-| `FilterChipPopover.a11y.test.ts`   | Tier-3 axe-core audit for the popover surface                                                                                                        |
 | `SizeFilterPopover.a11y.test.ts`   | Tier-3 axe-core audit: closed + open in `between` mode (all columns)                                                                                 |
 | `DateFilterPopover.svelte.test.ts` | Preset click auto-promote, Custom… cell flow, comparator click, upper-bound column gating                                                            |
 | `DateFilterPopover.a11y.test.ts`   | Tier-3 axe-core audit: closed, preset mode, and custom-bounds mode (`nested-interactive` disabled there — input inside Custom cell)                  |
@@ -50,9 +47,10 @@ configured) from the derived state. Keeping the rules pure (no `$state` reads in
 
 ## Popover anatomy
 
-The popover is a frosted-glass surface anchored to the chip. `FilterChipPopover.svelte` owns positioning, the focus
-trap, and the close-on-Escape contract. It's also reused by `RecentItemsPopover.svelte` (see
-[`../recent-items/`](../recent-items/)) for the same auto-flip + focus-trap + Esc-scoped close.
+The popover is a frosted-glass surface anchored to the chip. `$lib/ui/Dropdown.svelte` (wrapped by `FilterDropdown`)
+owns positioning, the focus trap, and the close-on-Escape contract. The same `Dropdown` backs
+`RecentItemsPopover.svelte` (see [`../recent-items/`](../recent-items/)) for the auto-flip + focus-trap + Esc-scoped
+close.
 
 **Anatomy** (top to bottom):
 
@@ -62,8 +60,8 @@ trap, and the close-on-Escape contract. It's also reused by `RecentItemsPopover.
 3. Optional inline custom input when the user selects `Custom…`.
 4. Footer affordances for the Search-in popover (`⌥F` / `⌥D` buttons).
 
-**Positioning**: `FilterChipPopover.svelte` measures its anchor (the chip) and the popover element, then auto-flips
-above the chip if there's not enough room below. The flip decision runs once per open and on `ResizeObserver` ticks.
+**Positioning**: `Dropdown` measures its anchor (the chip) and the popover element, then auto-flips above the chip if
+there's not enough room below. The flip decision runs once per open and on window resize.
 
 **Focus trap**: the shared `use:trapFocus` action (`$lib/ui/focus-trap`) cycles Tab and Shift+Tab within the popover;
 focus returns to the chip on close. The popover's trap mounts above the host dialog's in the trap stack, so enforcement
@@ -73,10 +71,10 @@ is scoped to the popover while it's open (see `lib/ui/DETAILS.md` § "Focus trap
 
 **Esc inside an open filter-chip popover closes only the popover.** The dialog's Escape handler runs in capture phase on
 `window`, which would otherwise fire before the popover's bubble handler. The dialog checks
-`dialogElement.querySelector('.filter-chip-popover')` and, when a popover is present, returns without closing the
-dialog. The popover's own keydown handler then runs on the bubble, closes itself, and calls `stopPropagation` so nothing
-else fires. Without this guard, Escape inside a popover would close the whole dialog and lose the user's place. Pinned
-in `FilterChips.svelte.test.ts`.
+`dialogElement.querySelector('.ui-dropdown')` (the class `Dropdown` renders) and, when a popover is present, returns
+without closing the dialog. The popover's own keydown handler then runs on the bubble, closes itself, and calls
+`stopPropagation` so nothing else fires. Without this guard, Escape inside a popover would close the whole dialog and
+lose the user's place. Pinned in `FilterChips.svelte.test.ts`.
 
 ## Grid-style popovers
 

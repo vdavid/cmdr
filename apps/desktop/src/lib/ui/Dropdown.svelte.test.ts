@@ -1,14 +1,15 @@
 /**
- * Behavior tests for `FilterChipPopover.svelte`.
+ * Behavior tests for `Dropdown.svelte`.
  *
- * Most of the popover's behavior is exercised end-to-end via `SearchFilterChips.svelte.test.ts`
- * (it instantiates the popover with real content). This file covers the parts that are awkward
- * to reach from there: click-outside, anchor-click-doesn't-close, and the focus return on Esc.
+ * The dropdown's behavior is also exercised end-to-end via the query dialogs' filter-chip and
+ * recent-items tests (they instantiate it with real content). This file covers the parts that
+ * are awkward to reach from there: click-outside, anchor-click-doesn't-close, and the focus
+ * return on Esc.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick, unmount, createRawSnippet } from 'svelte'
-import FilterChipPopover from './FilterChipPopover.svelte'
+import Dropdown from './Dropdown.svelte'
 
 function makeAnchor(): HTMLButtonElement {
   const btn = document.createElement('button')
@@ -22,22 +23,22 @@ const emptyChildren = createRawSnippet(() => ({ render: () => '<span>content</sp
 
 beforeEach(() => {
   document.body.innerHTML = ''
-  document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+  document.querySelectorAll('.ui-dropdown').forEach((el) => {
     el.remove()
   })
 })
 
-describe('FilterChipPopover behavior', () => {
+describe('Dropdown behavior', () => {
   it('renders nothing when open is false', async () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: { anchor, open: false, onClose: () => {}, children: emptyChildren },
     })
     await tick()
-    expect(document.querySelector('.filter-chip-popover')).toBeNull()
+    expect(document.querySelector('.ui-dropdown')).toBeNull()
     void unmount(component)
   })
 
@@ -45,12 +46,12 @@ describe('FilterChipPopover behavior', () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: { anchor, open: true, onClose: () => {}, ariaLabel: 'Test popover', children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.filter-chip-popover')
+    const popover = document.querySelector('.ui-dropdown')
     expect(popover).not.toBeNull()
     expect(popover?.getAttribute('role')).toBe('dialog')
     expect(popover?.getAttribute('aria-label')).toBe('Test popover')
@@ -62,12 +63,12 @@ describe('FilterChipPopover behavior', () => {
     const onClose = vi.fn()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: { anchor, open: true, onClose, children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.filter-chip-popover') as HTMLElement
+    const popover = document.querySelector('.ui-dropdown') as HTMLElement
     expect(popover).not.toBeNull()
 
     const docHandler = vi.fn()
@@ -85,12 +86,12 @@ describe('FilterChipPopover behavior', () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: { anchor, open: true, onClose: () => {}, children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.filter-chip-popover') as HTMLElement
+    const popover = document.querySelector('.ui-dropdown') as HTMLElement
     const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
     popover.dispatchEvent(tab)
     expect(tab.defaultPrevented).toBe(true)
@@ -104,7 +105,7 @@ describe('FilterChipPopover behavior', () => {
     document.body.appendChild(target)
     const outside = document.createElement('div')
     document.body.appendChild(outside)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: { anchor, open: true, onClose, children: emptyChildren },
     })
@@ -119,12 +120,12 @@ describe('FilterChipPopover behavior', () => {
     const onClose = vi.fn()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: { anchor, open: true, onClose, children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.filter-chip-popover') as HTMLElement
+    const popover = document.querySelector('.ui-dropdown') as HTMLElement
     popover.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     expect(onClose).not.toHaveBeenCalled()
     void unmount(component)
@@ -135,7 +136,7 @@ describe('FilterChipPopover behavior', () => {
     const onClose = vi.fn()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: { anchor, open: true, onClose, children: emptyChildren },
     })
@@ -150,7 +151,7 @@ describe('FilterChipPopover behavior', () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     let open = $state(false)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: {
         anchor,
@@ -162,10 +163,10 @@ describe('FilterChipPopover behavior', () => {
       },
     })
     await tick()
-    expect(document.querySelector('.filter-chip-popover')).toBeNull()
+    expect(document.querySelector('.ui-dropdown')).toBeNull()
     open = true
     await tick()
-    expect(document.querySelector('.filter-chip-popover')).not.toBeNull()
+    expect(document.querySelector('.ui-dropdown')).not.toBeNull()
     void unmount(component)
   })
 
@@ -173,12 +174,12 @@ describe('FilterChipPopover behavior', () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: { anchor, open: true, onClose: () => {}, children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.filter-chip-popover') as HTMLElement
+    const popover = document.querySelector('.ui-dropdown') as HTMLElement
     const ev = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true })
     popover.dispatchEvent(ev)
     expect(ev.defaultPrevented).toBe(false)
@@ -189,7 +190,7 @@ describe('FilterChipPopover behavior', () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(FilterChipPopover, {
+    const component = mount(Dropdown, {
       target,
       props: { anchor, open: true, onClose: () => {}, children: emptyChildren },
     })

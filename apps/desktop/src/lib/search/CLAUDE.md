@@ -11,7 +11,9 @@ second. Backend: `src-tauri/src/search/` + `src-tauri/src/commands/search.rs`.
   Owns index lifecycle, AI translation filter writes, snapshot promotion, recent-search add/remove. Zero orchestration.
 - `search-state.svelte.ts` (façade over core `query-filter-state` + `search-extras-state.svelte.ts`),
   `build-search-query.ts`, `searchable-folder.ts`, `snapshot-store.svelte.ts`, `snapshot-label.ts`,
-  `SearchFooterActions.svelte`, `SearchResultsView.svelte`, `recent-searches-state.svelte.ts`, `capabilities.ts`.
+  `SearchResultsView.svelte`, `recent-searches-state.svelte.ts`, `capabilities.ts`. (Footer buttons are rendered by the
+  shared `QueryDialog` from `config.primaryAction` / `config.secondaryAction`; there's no Search-local footer
+  component.)
 
 ## Must-knows
 

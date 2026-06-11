@@ -1,20 +1,23 @@
 <script lang="ts">
     /**
-     * Generic popover that floats below (or above, on flip) an anchor element.
+     * Dropdown: a generic popover that floats below (or above, on flip) an anchor element.
      *
-     * Used by the filter-chip strip in `SearchFilterChips.svelte`. The look mirrors macOS
-     * popovers: small radius, frosted-glass material (matching the tooltip primitive), hairline
-     * border, soft drop shadow. The popover positions itself relative to the anchor's viewport
-     * rect on open and re-runs on resize, auto-flipping above when there isn't room below.
+     * The look mirrors macOS popovers: small radius, frosted-glass material (matching the
+     * tooltip primitive), hairline border, soft drop shadow. The popover positions itself
+     * relative to the anchor's viewport rect on open and re-runs on resize, auto-flipping
+     * above when there isn't room below.
+     *
+     * The query dialogs' filter chips (`query-ui/filter-chips/`) and the recent-items popover
+     * (`query-ui/recent-items/`) both float their surfaces through this. `FilterDropdown.svelte`
+     * composes it for the labelled-grid filter surface.
      *
      * Focus contract:
      *   - On open, focus moves to the first focusable element inside the popover (slot content).
      *   - Tab cycles within the popover; Shift+Tab wraps in reverse. Focus never escapes while open.
      *   - Esc closes the popover and returns focus to the anchor. The keydown handler is on the
-     *     popover itself and calls `stopPropagation`, so the dialog's capture-phase Escape doesn't
-     *     also fire and close the whole dialog.
-     *   - Enter inside the popover fires `onConfirm` (which the parent typically wires to "close").
-     *     Native form controls (input, select, button) consume Enter themselves before this fires.
+     *     popover itself and calls `stopPropagation`, so a host dialog's capture-phase Escape doesn't
+     *     also fire and close the whole dialog. Host dialogs detect an open dropdown by the
+     *     `.ui-dropdown` class and defer Escape to it (see `query-ui/QueryDialog.svelte`).
      *
      * Click-outside closes too. The check looks at the mousedown target rather than click, so a
      * mousedown inside followed by mouseup outside (a drag) doesn't accidentally close.
@@ -29,12 +32,12 @@
         open: boolean
         /** Fired when the popover wants to close (Esc, click outside, or Enter via `onConfirm`). */
         onClose: () => void
-        /** Optional: aria-label for the popover region (defaults to "Filter options"). */
+        /** Optional: aria-label for the popover region (defaults to "Options"). */
         ariaLabel?: string
         children: Snippet
     }
 
-    const { anchor, open, onClose, ariaLabel = 'Filter options', children }: Props = $props()
+    const { anchor, open, onClose, ariaLabel = 'Options', children }: Props = $props()
 
     let popoverEl: HTMLDivElement | undefined = $state()
     let position = $state<{ left: number; top: number; flipped: boolean }>({ left: 0, top: 0, flipped: false })
@@ -90,8 +93,8 @@
     function handleKeyDown(e: KeyboardEvent): void {
         if (e.key === 'Escape') {
             e.preventDefault()
-            // Stop propagation so the dialog's capture-phase Escape handler doesn't also fire and
-            // close the whole dialog. This is the contract documented in the search dialog's
+            // Stop propagation so a host dialog's capture-phase Escape handler doesn't also fire
+            // and close the whole dialog. This is the contract documented in the query dialog's
             // CLAUDE.md.
             e.stopPropagation()
             closeAndReturnFocus()
@@ -102,7 +105,7 @@
 
     function closeAndReturnFocus(): void {
         onClose()
-        // Focus returns to the anchor so the user keeps their place in the chip row.
+        // Focus returns to the anchor so the user keeps their place.
         anchor.focus()
     }
 
@@ -142,7 +145,7 @@
 {#if open}
     <div
         bind:this={popoverEl}
-        class="filter-chip-popover"
+        class="ui-dropdown"
         role="dialog"
         aria-label={ariaLabel}
         data-flipped={position.flipped}
@@ -157,7 +160,7 @@
 {/if}
 
 <style>
-    .filter-chip-popover {
+    .ui-dropdown {
         position: fixed;
         z-index: var(--z-dropdown);
 

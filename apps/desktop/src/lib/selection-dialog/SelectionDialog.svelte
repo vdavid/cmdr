@@ -515,7 +515,7 @@
             adapter: recentAdapter,
             keyFn: recentKey,
             leadingLabel: 'Recent selections:',
-            trailingLabel: 'All selections… ⌘H',
+            trailingLabel: 'All selections…',
             trailingTooltipText: 'Open the recent-selections popover',
             trailingShortcut: '⌘H',
             ariaRegionLabel: 'Recent selections',

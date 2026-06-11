@@ -154,8 +154,9 @@ companion test catalog (mirrors the file table above):
 | `recent-chips-layout.test.ts`            | Greedy-fit packing against mocked widths                                                                                         |
 | `recent-items-utils.test.ts`             | `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip` rules                                                       |
 
-Filter-chips tests (`FilterChips`, `FilterChip`, `FilterChipPopover`, `filter-chip-state`, `filter-popover-helpers`) are
-catalogued in [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md).
+Filter-chips tests (`FilterChips`, the `*FilterPopover` bodies, `filter-chip-state`, `filter-popover-helpers`) are
+catalogued in [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md). The chip and popover primitives themselves are
+`$lib/ui/Chip` and `$lib/ui/Dropdown` (tested in `lib/ui/`).
 
 ## State shape contract
 
@@ -232,8 +233,10 @@ Small contracts that apply to every consumer of the query UI:
 - `QueryBar.svelte`'s run button has the `⏎` shortcut at the suffix slot at `--spacing-xs` from the "Search" label so
   the rhythm matches "Go to file ⏎" and "All searches… ⌘H" elsewhere.
 - `RecentItemsFooter.svelte` + `recent-chips-layout.ts` use a greedy-fit layout: leading label ("Recent searches:" or
-  "Recent selections:") and trailing button ("All searches… ⌘H" or equivalent) are always rendered; the middle slot
-  packs as many chips as fit, dropping the rest silently. No horizontal scrolling, no ellipsis chip.
+  "Recent selections:") and trailing button ("All searches…" + a `⌘H` `ShortcutChip`, or equivalent) are always
+  rendered; the middle slot packs as many chips as fit, dropping the rest silently. No horizontal scrolling, no ellipsis
+  chip. The pills are `$lib/ui/Chip` (`variant="recent"`, mode badge in its `leading` slot), and the trailing control is
+  a standard `$lib/ui/Button` (`variant="secondary"`); the layout helper measures `.chip-recent` and `.all-recent`.
 - Each chip's tooltip leads with the full text so a CSS-ellipsis-truncated chip stays readable on hover.
 - Path column font is `--font-size-sm` (matching the filename column) with `--spacing-xxs` row vertical padding so the
   row height stays compact.
@@ -301,8 +304,11 @@ The bar's run button reads `Search ⏎` only when `enterAction === 'run-search'`
 ### Footer buttons always visible
 
 The policy: footer actions render unconditionally; when there are no results (or the index isn't ready) they render
-disabled instead of hidden, so the layout stays still while the user types. The specific Search footer buttons ("Show
-all in main window", "Go to file") live in `lib/search/SearchFooterActions.svelte`.
+disabled instead of hidden, so the layout stays still while the user types. `QueryDialog.svelte` renders the
+primary/secondary footer actions itself, from `config.primaryAction` / `config.secondaryAction`, as standard
+`$lib/ui/Button`s (`variant="primary" | "secondary"`, `size="regular"`) with the shortcut hint on a `ShortcutChip`.
+Search wires "Show all in main window" (primary, ⌥⏎) + "Go to file" (secondary, ⏎) through that config; Selection wires
+"Select these files" (primary, ⏎). There's no separate per-consumer footer component.
 
 The Content chip is visible-disabled with a "Coming soon" tooltip. It has **no** shortcut. Wiring a shortcut to a
 disabled control is hostile UX; reserving `⌘4` is the better contract. When Content ships, it claims `⌘3` and Regex
@@ -404,10 +410,11 @@ entries so callers (the tab-state manager) can release per-entry resources in on
 trigger. The same applies to recent-search AI entries (footer chip click + popover Enter both run). Anything the user
 deliberately picks from the dialog is the same kind of "yes, please" as pressing Enter.
 
-**Decision**: `RecentItemsPopover` reuses `FilterChipPopover` for positioning + focus trap + Esc-scoped close. **Why**:
+**Decision**: `RecentItemsPopover` reuses `$lib/ui/Dropdown` for positioning + focus trap + Esc-scoped close. **Why**:
 The plan calls for a sub-overlay-of-an-overlay with the same auto-flip, focus-trap, and "Esc closes only the popover"
 semantics as the filter chips. Reimplementing those risks drift; reusing the primitive guarantees the contract covers
-both popover kinds via the single `.filter-chip-popover` DOM selector.
+both popover kinds via the single `.ui-dropdown` DOM selector (the same selector the filter popovers render through
+`FilterDropdown`).
 
 **Decision**: Path pills inside result rows are mouse-only and not in the keyboard Tab order. **Why**: Making the pills
 tabbable inside virtualized rows would break the row's arrow-down keyboard flow: pressing Down at the end of a row would

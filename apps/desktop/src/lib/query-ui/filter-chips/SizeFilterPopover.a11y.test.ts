@@ -62,7 +62,7 @@ describe('SizeFilterPopover a11y', () => {
     await tick()
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+    document.querySelectorAll('.ui-dropdown').forEach((el) => {
       el.remove()
     })
   })

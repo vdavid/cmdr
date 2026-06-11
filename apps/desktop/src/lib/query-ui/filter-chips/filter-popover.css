@@ -34,6 +34,13 @@
   min-width: 320px;
 }
 
+/* The Scope ("Search in") popover section. Same min-width as the grid popovers so the
+   textarea + toggles + footer have room. Lives here (not in `ScopeFilterPopover.svelte`)
+   because `FilterDropdown` renders the wrapper element this targets. */
+.scope-popover {
+  min-width: 320px;
+}
+
 /* Auto-sized columns so each `Custom…` text width drives the col width and
    the upper bound (rendered conditionally) inherits the same widths via
    the parent grid. Gap pulls the columns visually apart so the eye reads

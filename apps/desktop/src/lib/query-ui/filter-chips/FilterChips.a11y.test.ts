@@ -111,7 +111,7 @@ describe('SearchFilterChips a11y', () => {
     document.body.appendChild(target)
     mount(SearchFilterChips, { target, props: baseProps({ sizeFilter: 'gte', sizeValue: '100' }) })
     await tick()
-    const sizeChip = Array.from(target.querySelectorAll<HTMLButtonElement>('.filter-chip')).find((c) =>
+    const sizeChip = Array.from(target.querySelectorAll<HTMLButtonElement>('.chip-filter')).find((c) =>
       c.textContent.trim().startsWith('Size'),
     )
     sizeChip?.click()
@@ -119,7 +119,7 @@ describe('SearchFilterChips a11y', () => {
     // The popover renders alongside the chip strip; pass the document body to cover both subtrees.
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+    document.querySelectorAll('.ui-dropdown').forEach((el) => {
       el.remove()
     })
   })
@@ -129,14 +129,14 @@ describe('SearchFilterChips a11y', () => {
     document.body.appendChild(target)
     mount(SearchFilterChips, { target, props: baseProps() })
     await tick()
-    const scopeChip = Array.from(target.querySelectorAll<HTMLButtonElement>('.filter-chip')).find((c) =>
+    const scopeChip = Array.from(target.querySelectorAll<HTMLButtonElement>('.chip-filter')).find((c) =>
       c.textContent.trim().startsWith('Search in'),
     )
     scopeChip?.click()
     await tick()
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+    document.querySelectorAll('.ui-dropdown').forEach((el) => {
       el.remove()
     })
   })

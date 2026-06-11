@@ -2,7 +2,7 @@
     /**
      * RecentItemsPopover: fuzzy-searchable list over the full recent-items history.
      *
-     * Opens via `⌘H` or the "All …" footer chip. Reuses `FilterChipPopover` for positioning,
+     * Opens via `⌘H` or the "All …" footer button. Reuses the generic `Dropdown` for positioning,
      * focus trap, and Esc-only-closes-the-popover behavior — same contract as the filter
      * chips (so the dialog's capture-phase Escape never closes the whole dialog while this
      * is open).
@@ -18,7 +18,7 @@
      * Keyboard: ↑/↓ moves the cursor, Enter activates, Esc closes (via the popover wrapper).
      */
     import uFuzzy from '@leeoniya/ufuzzy'
-    import FilterChipPopover from '../filter-chips/FilterChipPopover.svelte'
+    import Dropdown from '$lib/ui/Dropdown.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { modeBadge } from './recent-items-utils'
     import type { RecentItemAdapter, RecentItemKey, RecentItemView } from './recent-items-types'
@@ -148,7 +148,7 @@
     }
 </script>
 
-<FilterChipPopover {anchor} {open} {onClose} {ariaLabel}>
+<Dropdown {anchor} {open} {onClose} {ariaLabel}>
     <div class="recent-popover" onkeydown={handleKeydown} role="search">
         <input
             bind:this={inputEl}
@@ -201,7 +201,7 @@
             remove
         </div>
     </div>
-</FilterChipPopover>
+</Dropdown>
 
 <style>
     .recent-popover {

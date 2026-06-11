@@ -55,7 +55,7 @@ function mountPopover(overrides: Record<string, unknown> = {}): Mounted & {
 function cleanup(mounted: Mounted): void {
   void unmount(mounted.component)
   mounted.target.remove()
-  document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+  document.querySelectorAll('.ui-dropdown').forEach((el) => {
     el.remove()
   })
 }

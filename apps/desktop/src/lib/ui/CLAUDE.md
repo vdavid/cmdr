@@ -9,7 +9,8 @@ the toast-level guide, and decisions are in [DETAILS.md](DETAILS.md).
 - `ModalDialog.svelte` (overlay + drag + Escape + focus + MCP tracking), `focus-trap.ts` (`use:trapFocus`),
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
 - Primitives: `Button`, `LinkButton`, `CommandBox`, `LoadingIcon`, `ProgressBar`, `Size`, `DateLabel`, `ShortcutChip`,
-  `StatusBadge`, `SectionCard`, `ToggleGroup`, plus the `toast/` system. Tooltip lives in `../tooltip/tooltip.ts`.
+  `StatusBadge`, `SectionCard`, `ToggleGroup`, `Dropdown`, `FilterDropdown`, `Chip`, plus the `toast/` system. Tooltip
+  lives in `../tooltip/tooltip.ts`.
 - Ark UI (`@ark-ui/svelte`) is the headless library for complex interactive components; simple ones are our own thin
   wrappers.
 

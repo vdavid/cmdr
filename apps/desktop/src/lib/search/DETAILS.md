@@ -21,7 +21,6 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 | File                               | Purpose                                                                                                                                                                                                                                                                |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SearchDialog.svelte`              | Thin Search-specific wrapper: builds a `QueryDialogConfig` and mounts `lib/query-ui/QueryDialog.svelte`. Owns index lifecycle, AI translation filter writes, snapshot promotion, recent-search add/remove, and the system-dir exclude tooltip. Zero orchestration code |
-| `SearchFooterActions.svelte`       | Right-edge footer buttons: "Show all in main window" (⌥⏎) and "Go to file" (⏎). Search-specific verbs                                                                                                                                                                  |
 | `SearchResultsView.svelte`         | Pane view for `search-results://` snapshot panes (lives in `lib/file-explorer/pane/`, but conceptually a Search consumer)                                                                                                                                              |
 | `recent-searches-state.svelte.ts`  | Thin instantiation of the `lib/query-ui/recent-items/recent-items-state` factory wired to `getRecentSearches`. Exposes the legacy named API the rest of Search expects                                                                                                 |
 | `search-state.svelte.ts`           | Façade composing `lib/query-ui/query-filter-state` (core) + `search-extras-state` (Search-only). Exposes the legacy named API for `SearchDialog.svelte`                                                                                                                |
@@ -39,9 +38,10 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 | `capabilities.test.ts`             | Pins the toast string                                                                                                                                                                                                                                                  |
 
 Shared components, helpers, and tests live in [`lib/query-ui/`](../query-ui/CLAUDE.md) — Search and Selection both
-import the unified components (`QueryBar`, `ModeChips`, `AiPromptStrip`, `FilterChips`, `FilterChip`,
-`FilterChipPopover`, `PathPills`, `SearchRowMenu`, `QueryResults`, `EmptyState`, the `recent-items/` family, and the
-`filter-chip-state` / `filter-popover-helpers` / `path-pills-layout` helpers).
+import the unified components (`QueryBar`, `ModeChips`, `AiPromptStrip`, `FilterChips`, `PathPills`, `SearchRowMenu`,
+`QueryResults`, `EmptyState`, the `recent-items/` family, and the `filter-chip-state` / `filter-popover-helpers` /
+`path-pills-layout` helpers). The chip + popover primitives are the app-wide `$lib/ui/Chip` / `$lib/ui/Dropdown` /
+`$lib/ui/FilterDropdown`.
 
 ## Search wrapper
 
@@ -238,9 +238,10 @@ event: it sanitizes the payload, defaults `mode` to `'ai'` when AI is enabled (e
 writes can't re-trigger the effect. AI mode honors the explicit-trigger contract because the MCP caller's
 `autoRun: true` counts as the explicit trigger.
 
-**Footer right-edge actions** (post-fixup items 9–10): `SearchFooterActions.svelte` sits at the right of the dialog
-footer, opposite the recent-searches strip. It renders two buttons whenever `results.length > 0`, each with its keyboard
-shortcut surfaced inline as a tertiary-color hint:
+**Footer right-edge actions**: the shared `QueryDialog` renders the two footer buttons at the right of the dialog
+footer, opposite the recent-searches strip, from Search's `config.secondaryAction` / `config.primaryAction`. They're
+standard `$lib/ui/Button`s (`size="regular"`) with the keyboard shortcut on a `ShortcutChip`, disabled (not hidden) when
+there are no results:
 
 - **"Go to file"** (⏎): closes the dialog and navigates the active pane to the cursor row's parent folder, focusing the
   file. Routes through the dialog's existing `onNavigate(path)` callback.
