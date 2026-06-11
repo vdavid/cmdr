@@ -54,18 +54,21 @@ document.querySelector('.title-text').textContent = 'Cmdr'
 
 Using the Cmdr MCP tools. This is the state that reads well as a product shot and fits the hero crop:
 
-- Set the accent to Cmdr gold: `set_setting id: "appearance.appColor", value: "cmdr-gold"`
-- Close all but one tab on both sides (`tab close` extra tabs, or `tab close_others`).
-- Left pane: navigate to `src-tauri/src`, full mode, tab lock off, cursor on `mcp`.
-- Right pane: navigate to `src/lib`, brief mode, tab lock on (pinned), cursor on `indexing`.
+- Set the accent to Cmdr gold: `set_setting id: "appearance.appColor", value: "cmdr-gold"`.
+- Show file sizes as raw bytes: `set_setting id: "appearance.fileSizeFormat", value: "bytes"`.
+- Left pane: a single tab at `apps/desktop/src/lib`, full mode, cursor on `file-explorer`.
+- Right pane: two tabs — a pinned `lib` tab (at `apps/desktop/src/lib`) plus the active tab at
+  `apps/desktop/src-tauri/src`, full mode, cursor on `indexing`. The pinned tab's lock glyph adds a bit of visual
+  interest.
 - Hidden files visible (toggle if needed).
 - Focus the left pane (`switch_pane` if needed).
 
-The pane contents are aesthetic, not load-bearing: pick folders that look good. The window size is what matters for the
-hero crop. After the shots, revert the accent: `set_setting id: "appearance.appColor", value: "system"`.
+The pane contents are aesthetic, not load-bearing: this set reads well and the file lists fill both cutouts. The window
+size is what matters for the hero crop. After the shots, revert the cosmetics: `appearance.appColor` → `system` and
+`appearance.fileSizeFormat` → `binary`.
 
-Order matters for the pinned tab: navigate first, **pin last**. Navigating a pinned tab forks a new tab (the pinned one
-stays put), so pinning before you finish moving leaves you with two tabs to clean up.
+To build the right pane's two-tab look: pin the `lib` tab, then open a new tab and navigate it to `src-tauri/src`.
+(Navigating a pinned tab also forks a fresh tab, which is how this arrangement first arose.)
 
 If the panes sit in a git repo, the breadcrumb shows a git chip (for example `main · +5 / dirty`). For a clean
 screenshot, get it to a bare `main` with reversible git state, then re-navigate each pane (parent and back) so the chip
