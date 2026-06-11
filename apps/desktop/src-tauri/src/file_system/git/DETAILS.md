@@ -328,6 +328,15 @@ expensive call in the chip pipeline
 **Why**: On 50k files it dominates the ~60 ms total. Don't add more work
 on the chip refresh path without re-benchmarking.
 
+**Gotcha**: `repo_info` reads `.git/config` from the cached repo, but refs from disk, so config changes don't reflect
+live while ref changes do
+**Why**: The process-global `RepoCache` hands out a long-lived `Arc<ThreadSafeRepository>` that loaded `.git/config`
+once at open. Config-derived fields (the upstream, hence `ahead`/`behind`) keep using that snapshot until the cache is
+dropped (app restart) — a live `git branch --unset-upstream` won't change the chip. But `repo_info` resolves the
+upstream *ref* via `find_reference` on every call, so moving `refs/remotes/origin/main` (for example
+`git update-ref refs/remotes/origin/main main` to zero the ahead count) IS picked up on the next chip refresh. This is
+the lever the screenshot guide uses to force a clean `main` chip; see [`docs/guides/screenshots.md`](../../../../../../docs/guides/screenshots.md).
+
 **Gotcha**: Listings on virtual portal paths must skip `start_watching`
 **Why**: `listing/streaming.rs` starts a `notify` watcher on the listing's
 directory. For virtual paths (`.git/branches/...` etc.) the on-disk path

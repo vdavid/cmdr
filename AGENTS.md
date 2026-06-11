@@ -87,6 +87,7 @@ Core structure:
   - `api-server/` - Cloudflare Worker (Hono). Licensing, telemetry, crash reports, downloads, and admin endpoints.
   - `website/` - Marketing website (getcmdr.com)
 - `/scripts/check/` - Go-based unified check runner
+- `/brand/` - Tracked brand/press-kit assets (logos, master screenshots, marketing copy). See its `CLAUDE.md`
 - `/docs/` - Dev docs
   - `guides/` - How-to guides
   - `notes/` - Temporary reference notes (benchmarks, analysis) linked from CLAUDE.md files

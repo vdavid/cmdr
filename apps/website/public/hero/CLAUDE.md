@@ -24,66 +24,20 @@ fetch both theme variants on every visit. Background images only load for render
 
 ## How to reshoot
 
-### Prerequisites
+The capture itself (sizing the window, setting up a nice app state, and the CleanShot steps) is shared with the README
+and AlternativeTo, so it lives in one place: [`docs/guides/screenshots.md`](../../../../docs/guides/screenshots.md).
+Shoot the masters per that guide, which saves them to `brand/screenshots/app-main-{dark,light}.png`. Then come back here
+and run the compositing below to regenerate the hero layers.
 
-- CleanShot X for macOS screenshot with shadow
-- ImageMagick (`magick` CLI)
-- The app running via `pnpm dev`
+### Regenerate the layers
 
-### 1. Resize the window
+Generates the 6 master PNGs and 12 shipped WebPs from the `brand/screenshots/` masters.
 
-Using the Tauri MCP:
-
-```
-manage_window action: "resize", width: 1142, height: 705, logical: true
-```
-
-This produces a 2284 x 1410 retina window, which matches the hero frame proportions.
-
-### 2. Disable dev mode indicators
-
-Via Tauri MCP `webview_execute_js` on the main window:
-
-```js
-document.querySelector('.title-bar').classList.remove('dev-mode')
-document.querySelector('.title-text').textContent = 'Cmdr'
-```
-
-### 3. Set up the app state
-
-Using the Cmdr MCP tools:
-
-- Set color to Cmdr gold: `set_setting id: "appearance.appColor", value: "cmdr-gold"`
-- Close all but one tab on both sides (`tab close` extra tabs, or `tab close_others`)
-- Left side: navigate to `src-tauri/src`, full mode, tab lock off, cursor on "mcp"
-- Right side: navigate to `src/lib`, brief mode, tab lock on (pinned), cursor on "indexing"
-- Hidden files visible (toggle if needed)
-- Focus on the left pane (`switch_pane` if needed)
-
-After the screenshots, revert the color: `set_setting id: "appearance.appColor", value: "system"`
-
-### 4. Take screenshots (by a human)
-
-Subprocess (read this first but dont execute): How to take a screenshot:
-
-- Make sure [CleanShot](https://cleanshot.com/) is running.
-- Open CleanShot's top menu, and click Capture Window. Important not to use the ⌘⇧4 shortcut because Cmdr bottom bar
-  looks different with Shift held.
-- Once taken, click Edit → switch background to None. Then Save.
-
-So, the process:
-
-- Make sure you're in dark mode
-- Dark mode: take screenshot with CleanShot, save as `~/Downloads/cmdr-scrshot-dark.png`
-- Press ⌘D, switch to light mode
-- Light mode: take screenshot, save as `~/Downloads/cmdr-scrshot-light.png`
-
-### 5. Generate the 6 master PNGs and 12 shipped WebPs
-
-From the repo root:
+Prerequisite: ImageMagick (`magick` CLI). From the repo root:
 
 ```bash
 cd apps/website/public/hero
+root=../../../..  # repo root, where brand/ lives
 
 # Create pane mask (white = keep, black = make transparent)
 magick -size 2508x1634 xc:white \
@@ -92,7 +46,7 @@ magick -size 2508x1634 xc:white \
   /tmp/hero-mask.png
 
 for variant in dark light; do
-  src=~/Downloads/cmdr-scrshot-${variant}.png
+  src=$root/brand/screenshots/app-main-${variant}.png
 
   # Left pane cutout (paste onto transparent canvas)
   magick -size 2508x1634 xc:none \
@@ -125,7 +79,7 @@ done
 rm -f /tmp/hero-mask.png /tmp/src-alpha.png /tmp/new-alpha.png
 ```
 
-### 6. Verify
+### Verify
 
 Check that the six master PNGs are 2508 x 1634, the 1x WebPs are 1254 x 817, and the 2x WebP file sizes are roughly: ~85
 KB frame, ~50 KB left pane, ~20 KB right pane. To verify the frame transparency, composite on a red background:

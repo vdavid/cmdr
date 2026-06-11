@@ -141,6 +141,22 @@ Do NOT retry in a tight loop. One retry after 15 seconds is enough before escala
 
 ## Tauri MCP pitfalls
 
+### Connect first: start a `driver_session` on the per-instance port
+
+Every `mcp__tauri__*` tool (`manage_window`, `webview_execute_js`, `webview_screenshot`, the `ipc_*` tools) needs an
+active driver session, or it fails with "No active session. Call driver_session with action 'start' first". The bridge's
+default port (9223) is **not** the running app's port, so a bare `driver_session action: "start"` connects to nothing.
+
+Read the actual port from `<CMDR_DATA_DIR>/tauri-mcp.port` and pass it explicitly:
+
+```
+# dev instance: cat "~/Library/Application Support/com.veszelovszki.cmdr-dev/tauri-mcp.port"
+driver_session action: "start", port: <that number>
+```
+
+(Per-worktree dev sessions live at `…/com.veszelovszki.cmdr-dev-<slug>/tauri-mcp.port`; prod at the non-`-dev` data
+dir.) Use `driver_session action: "status"` to check, `"stop"` to disconnect.
+
 ### Window management: use `manage_window`, not JS APIs
 
 The Tauri webview's `window.__TAURI__` JS APIs (e.g. `getCurrentWindow().setSize()`) are gated by per-window capability

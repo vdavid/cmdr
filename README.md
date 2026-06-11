@@ -10,7 +10,10 @@ Commander, but on macOS.
 
 Give it a try: [Download for macOS](https://getcmdr.com) on the website.
 
-![cmdr](https://github.com/user-attachments/assets/7827b88d-e0a9-447e-b195-af7216c0fa35)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/screenshots/app-main-dark.png" />
+  <img alt="Cmdr showing two folders side by side in its two-pane layout on macOS" src="brand/screenshots/app-main-light.png" />
+</picture>
 
 ## Overview
 

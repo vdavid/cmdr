@@ -4,12 +4,16 @@ Cmdr's visual identity across the website, the desktop app, and marketing materi
 
 We don't have a formal design system yet. This doc captures what we've settled on so far.
 
+The reusable exported artifacts (logos, product screenshots, marketing copy blobs) live in [`brand/`](../../brand/) at
+the repo root. This doc is the reference prose; `brand/` is the grab-here files.
+
 ## Logo
 
 A golden/mustard folder icon with AI-inspired sparkle/glow effects behind it. White horizontal bars on the folder
 suggest a file list. The overall feel is "familiar file manager meets futuristic AI."
 
 - Source icon: `_ignored/app-icon-no-background.png` (transparent bg, used for regeneration) - NOT IN THE REPO!
+- Exported logo set (grab-here, tracked): `brand/logos/cmdr-{512,128,32}.png`
 - Desktop app icons: `apps/desktop/src-tauri/icons/` (all sizes, generated via `pnpm tauri icon`)
 - Website: `apps/website/public/logo-512.png` (512x512), `logo-32.png` (32x32)
 - Favicons: `apps/website/public/favicon.png`, `favicon.ico`, `apple-touch-icon.png`
