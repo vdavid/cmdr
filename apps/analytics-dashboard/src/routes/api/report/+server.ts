@@ -193,7 +193,14 @@ function formatReport(data: DashboardData): string {
     if (data.cloudflare.ok) {
       const cf = data.cloudflare.data
       const totalDl = cf.downloads.reduce((s, r) => s + r.downloads, 0)
-      line(`- Downloads (Analytics Engine): ${num(totalDl)}`)
+      const totalNew = cf.downloads.reduce((s, r) => s + r.uniqueDownloads, 0)
+      // Methodology, stated up front so the numbers below aren't a black box.
+      line(
+        '(New installs = DMG downloads via getcmdr.com, deduplicated to distinct people per day by daily-hashed IP, ' +
+          'bot/link-preview hits dropped by user agent, in-app auto-updates excluded. Raw = every download request.)',
+      )
+      line(`- New installs (deduped): ${num(totalNew)}`)
+      line(`- Download requests (raw): ${num(totalDl)}`)
 
       if (data.github.ok) {
         line(`- Downloads (GitHub, all-time): ${num(data.github.data.totalDownloads)}`)
@@ -203,6 +210,27 @@ function formatReport(data: DashboardData): string {
         const byVersion = aggregateBy(cf.downloads, 'version').sort((a, b) => compareSemverDesc(a.key, b.key))
         const byArch = aggregateBy(cf.downloads, 'arch')
         const byCountry = aggregateBy(cf.downloads, 'country')
+
+        // New installs by source (deduped). Keep order website, homebrew, other.
+        const sourceOrder = ['website', 'homebrew', 'other']
+        const newBySource = new Map<string, number>()
+        for (const row of cf.downloads)
+          newBySource.set(row.source, (newBySource.get(row.source) ?? 0) + row.uniqueDownloads)
+        blank()
+        line('New installs by source (deduped):')
+        for (const key of sourceOrder) {
+          if (newBySource.has(key))
+            line(`  ${key}: ${num(newBySource.get(key) ?? 0)} (${pct(newBySource.get(key) ?? 0, totalNew)})`)
+        }
+
+        // Daily new installs (deduped), newest first.
+        blank()
+        line('Daily new installs (deduped):')
+        const newByDay = new Map<string, number>()
+        for (const row of cf.downloads) newByDay.set(row.day, (newByDay.get(row.day) ?? 0) + row.uniqueDownloads)
+        for (const [day, count] of [...newByDay.entries()].sort(([a], [b]) => b.localeCompare(a))) {
+          line(`  ${day}: ${num(count)}`)
+        }
 
         blank()
         line('By version:')
@@ -306,6 +334,20 @@ function formatReport(data: DashboardData): string {
       line('Daily active installs (by day):')
       for (const row of [...dau].sort((a, b) => b.date.localeCompare(a.date))) {
         line(`  ${row.date}: ${num(row.dau)} active, ${num(row.beats)} beats`)
+      }
+
+      // Update activity: distinct update-enabled installs that checked per day, stacked by version.
+      const ua = cf.updateActivity
+      if (ua.length > 0) {
+        blank()
+        line('Got the latest release per day (update-enabled installs that checked, deduped, by version):')
+        const updateDays = [...new Set(ua.map((r) => r.day))].sort((a, b) => b.localeCompare(a))
+        for (const day of updateDays) {
+          const dayRows = ua.filter((r) => r.day === day).sort((a, b) => compareSemverDesc(a.version, b.version))
+          const total = dayRows.reduce((s, r) => s + r.updaters, 0)
+          const parts = dayRows.map((r) => `v${r.version}: ${num(r.updaters)}`).join(', ')
+          line(`  ${day}: ${num(total)} total (${parts})`)
+        }
       }
     } else {
       line('- Daily active installs: none yet (heartbeat fills as beta testers update and run the new build)')

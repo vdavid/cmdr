@@ -111,12 +111,64 @@ admin.get('/admin/downloads', async (c) => {
   const interval = rangeToSqliteInterval[range]
   const whereClause = interval ? `WHERE created_at >= datetime('now', '${interval}')` : ''
 
+  // `count` is the raw request count; `uniqueCount` deduplicates same-day downloaders via the
+  // daily-salted `hashed_ip` (rows written before migration 0008 have NULL, which COUNT DISTINCT
+  // skips). `source` is NULL for those old rows too, surfaced as 'other'.
   const { results } = await c.env.TELEMETRY_DB.prepare(
-    `SELECT date(created_at) AS date, app_version AS version, arch, country, COUNT(*) AS count
+    `SELECT date(created_at) AS date, app_version AS version, arch, country,
+                COALESCE(source, 'other') AS source,
+                COUNT(*) AS count, COUNT(DISTINCT hashed_ip) AS uniqueCount
          FROM downloads ${whereClause}
-         GROUP BY date, version, arch, country
+         GROUP BY date, version, arch, country, source
          ORDER BY date ASC`,
-  ).all<{ date: string; version: string; arch: string; country: string; count: number }>()
+  ).all<{
+    date: string
+    version: string
+    arch: string
+    country: string
+    source: string
+    count: number
+    uniqueCount: number
+  }>()
+
+  return c.json(results)
+})
+
+// Admin update activity: distinct update-enabled installs that checked for updates per day, stacked by
+// the version each was running when it checked (visualizes the fleet rolling onto a new release).
+//
+// The raw `update_checks` table is pruned to the last 7 days by the cron, while `daily_active_users`
+// keeps the per-day aggregate forever but excludes today (the cron aggregates yesterday at 00:00 UTC).
+// So we union the two with no overlap: the retained aggregate for past days, plus a live
+// `COUNT(DISTINCT hashed_ip)` from the raw table for today. That makes the series both retention-proof
+// (30d range stays complete) and fresh (today shows without waiting for the cron).
+admin.get('/admin/update-activity', async (c) => {
+  const authError = verifyAdminAuth(c)
+  if (authError) return authError
+
+  const range = c.req.query('range') ?? '7d'
+  if (!validDownloadRanges.has(range)) {
+    return c.json({ error: 'Invalid range. Use 24h, 7d, 30d, or all' }, 400)
+  }
+
+  const interval = rangeToSqliteInterval[range]
+  // Past days from the retained aggregate (everything before today, optionally floored by the range).
+  const aggLowerBound = interval ? `date >= date('now', '${interval}') AND ` : ''
+
+  const { results } = await c.env.TELEMETRY_DB.prepare(
+    `SELECT date, version, SUM(cnt) AS count FROM (
+           SELECT date, app_version AS version, unique_users AS cnt
+               FROM daily_active_users
+               WHERE ${aggLowerBound}date < date('now')
+           UNION ALL
+           SELECT date, app_version AS version, COUNT(DISTINCT hashed_ip) AS cnt
+               FROM update_checks
+               WHERE date = date('now')
+               GROUP BY date, app_version
+         )
+         GROUP BY date, version
+         ORDER BY date ASC`,
+  ).all<{ date: string; version: string; count: number }>()
 
   return c.json(results)
 })

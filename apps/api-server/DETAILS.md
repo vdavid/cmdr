@@ -5,37 +5,37 @@ live in [CLAUDE.md](CLAUDE.md).
 
 ## Key files
 
-| File                                        | Purpose                                                                                                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                                                                                       |
-| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                                                                                   |
-| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`                                                                                 |
-| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports` |
-| `src/telemetry.ts`                          | Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`                                                            |
-| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                                                                    |
-| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                                                                   |
-| `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                                                                |
-| `src/feedback.ts`                           | Route: `POST /feedback` (in-app feedback → D1 + Discord notify)                                                                                        |
-| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                                                           |
-| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                                                                          |
-| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                                                           |
-| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                                                                                                |
-| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                                                                                                  |
-| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                                                                                            |
-| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                                                                                          |
-| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                                                                                               |
-| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                                                                                           |
-| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                                                                                      |
-| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                                                                                               |
-| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`               |
-| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                                                                |
-| `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                                                                |
-| `src/beta-signup.test.ts`                   | Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure, rate limit)                                                       |
-| `src/feedback.test.ts`                      | Tests for `POST /feedback` (validation, caps, D1 row, Discord ping, rate limit)                                                                        |
-| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                                                                    |
-| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                                                              |
-| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                                                                        |
-| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                                                                                   |
+| File                                        | Purpose                                                                                                                                                                          |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                                                                                                                 |
+| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                                                                                                             |
+| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`                                                                                                           |
+| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports` |
+| `src/telemetry.ts`                          | Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`                                                                                      |
+| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                                                                                              |
+| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                                                                                             |
+| `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                                                                                          |
+| `src/feedback.ts`                           | Route: `POST /feedback` (in-app feedback → D1 + Discord notify)                                                                                                                  |
+| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                                                                                     |
+| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                                                                                                    |
+| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                                                                                     |
+| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                                                                                                                          |
+| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                                                                                                                            |
+| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                                                                                                                      |
+| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                                                                                                                    |
+| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                                                                                                                         |
+| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                                                                                                                     |
+| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                                                                                                                |
+| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                                                                                                                         |
+| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`               |
+| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                                                                                          |
+| `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                                                                                          |
+| `src/beta-signup.test.ts`                   | Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure, rate limit)                                                                                 |
+| `src/feedback.test.ts`                      | Tests for `POST /feedback` (validation, caps, D1 row, Discord ping, rate limit)                                                                                                  |
+| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                                                                                              |
+| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                                                                                        |
+| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                                                                                                  |
+| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                                                                                                             |
 
 ## Routes
 
@@ -47,13 +47,14 @@ live in [CLAUDE.md](CLAUDE.md).
 | POST   | `/validate`                | none          | Check subscription status via Paddle API                                                          |
 | POST   | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                                                |
 | GET    | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)                                         |
-| GET    | `/admin/downloads`         | Bearer token  | Aggregated download data by day/version/arch/country                                              |
+| GET    | `/admin/downloads`         | Bearer token  | Aggregated downloads by day/version/arch/country/source, with raw `count` + deduped `uniqueCount` |
 | GET    | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                                                     |
+| GET    | `/admin/update-activity`   | Bearer token  | Per-day distinct update-enabled installs by version (retained aggregate ∪ today's raw)            |
 | GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                                                    |
 | GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                         |
 | GET    | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                           |
 | GET    | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first |
-| GET    | `/download/:version/:arch` | none          | Log download to D1, 302 → GitHub                                                                  |
+| GET    | `/download/:version/:arch` | none          | Log download to D1 (bot UAs skipped, source tagged, IP daily-hashed), 302 → GitHub                |
 | POST   | `/crash-report`            | none          | Ingest crash report to D1                                                                         |
 | POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                              |
 | POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                |
@@ -291,7 +292,18 @@ network/5xx errors and returns `null` on 404 (transaction not found). This lets 
 status on transient Paddle outages instead of overwriting a valid "active" cache with "invalid."
 
 **Download tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `downloads`). One row per download event with
-app_version, arch, country, and continent. D1 write is fire-and-forget via `waitUntil` + `.catch(() => {})`.
+`app_version`, `arch`, `country`, `continent`, `hashed_ip`, and `source`. D1 write is fire-and-forget via `waitUntil` +
+`.catch(() => {})`. Three things make the count meaningful as an install signal (migration `0008`):
+
+- **Bot/unfurler hits are dropped:** link-preview bots (Discord, Slack, etc.) and crawlers fetch the URL and would
+  inflate the count, so a User-Agent denylist skips the D1 write (the 302 is still served). A missing UA is treated as a
+  bot too. Homebrew downloads via curl, which would match the `curl` rule, so Homebrew is explicitly exempted.
+- **`hashed_ip` enables same-day dedup:** SHA-256(IP + daily salt), the same per-day-pseudonymous scheme as
+  `update_checks`. We keep one row per request (raw count is `COUNT(*)`); the dashboard derives distinct same-day
+  downloaders with `COUNT(DISTINCT hashed_ip)`. The salt rotates daily, so it's not linkable across days.
+- **`source` tags origin:** `homebrew` (Homebrew cask, by User-Agent), `website` (getcmdr.com button, which sends
+  `?src=website`), or `other` (links shared elsewhere). In-app auto-updates never appear here: they fetch the tarball
+  straight from GitHub, not this endpoint.
 
 **Update check tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `update_checks`). Counts active users (free +
 licensed) by proxying update checks through `GET /update-check/:version`. Each unique (date, hashed_ip, app_version,

@@ -10,6 +10,8 @@ export interface FeedbackAndErrorsData {
 
 interface FeedbackAndErrorsEnv {
   LICENSE_SERVER_ADMIN_TOKEN: string
+  /** Optional override for the api-server base URL (local QA). Defaults to production. */
+  WORKER_BASE_URL?: string
 }
 
 /**
@@ -33,10 +35,15 @@ export async function fetchFeedbackAndErrorsData(
   try {
     const workerRange = rangeMap[range]
     const [feedback, errorReports] = await Promise.all([
-      fetchWorkerEndpoint<FeedbackRow[]>(env.LICENSE_SERVER_ADMIN_TOKEN, `/admin/feedback?range=${workerRange}`),
+      fetchWorkerEndpoint<FeedbackRow[]>(
+        env.LICENSE_SERVER_ADMIN_TOKEN,
+        `/admin/feedback?range=${workerRange}`,
+        env.WORKER_BASE_URL,
+      ),
       fetchWorkerEndpoint<ErrorReportRow[]>(
         env.LICENSE_SERVER_ADMIN_TOKEN,
         `/admin/error-reports?range=${workerRange}`,
+        env.WORKER_BASE_URL,
       ),
     ])
 

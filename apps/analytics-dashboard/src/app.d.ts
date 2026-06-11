@@ -14,6 +14,8 @@ declare global {
         POSTHOG_API_URL: string
         GITHUB_TOKEN?: string
         LICENSE_SERVER_ADMIN_TOKEN: string
+        /** Optional local-QA override for the api-server base URL (defaults to production). */
+        WORKER_BASE_URL?: string
       }
     }
   }

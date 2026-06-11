@@ -33,6 +33,10 @@ The full route table, env-var/binding tables, data flows, runbooks, and decision
   `value !== undefined && value !== null && <shape check>`. A `!== undefined`-only check drops upgrade-window reports.
 - **`/feedback` D1 write is AWAITED** (soft 502 on failure so the app retries); the other telemetry writes
   (`crash-report`, `heartbeat`, `download`, `update-check`) are fire-and-forget via `waitUntil`. Don't flip either.
+- **`/download` is conditional and tagged:** it skips the D1 write for bot/unfurler User-Agents (still serves the 302),
+  stores a daily-hashed IP for same-day dedup, and tags `source` (homebrew/website/other). Keep Homebrew exempt from the
+  bot filter (it downloads via curl) and keep the `?src=website` param on the website button, or those installs
+  misclassify. The dashboard's deduped count and source breakdown depend on this. See DETAILS.md § Download tracking.
 - **Apply D1 migrations before deploying** schema changes: `wrangler d1 migrations apply cmdr-telemetry`. The
   `heartbeat` `config_json` column is one verbatim JSON blob on purpose (new settings absorb without a migration); don't
   split it into per-field columns.

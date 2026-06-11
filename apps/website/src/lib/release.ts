@@ -9,7 +9,10 @@ const downloadBase = import.meta.env.PUBLIC_DOWNLOAD_BASE_URL
 const githubBase = `https://github.com/vdavid/cmdr/releases/download/v${version}`
 
 function dmgUrl(arch: string): string {
-  if (downloadBase) return `${downloadBase}/download/${version}/${arch}`
+  // `?src=website` lets the download endpoint tag these as website-button downloads, distinct from
+  // Homebrew (detected by User-Agent) and direct links shared elsewhere. The GitHub fallback (used
+  // when no download base is configured) carries no telemetry, so the param is irrelevant there.
+  if (downloadBase) return `${downloadBase}/download/${version}/${arch}?src=website`
   return `${githubBase}/Cmdr_${version}_${arch}.dmg`
 }
 

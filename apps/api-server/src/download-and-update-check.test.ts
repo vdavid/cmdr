@@ -31,10 +31,17 @@ function createBindings(overrides: Record<string, unknown> = {}) {
   }
 }
 
+// A real browser User-Agent. The download handler skips the D1 insert for bot/unfurler UAs (and for
+// requests with no UA at all), so insert-path tests must send a browser-like one.
+const browserUa = {
+  'user-agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Safari/605.1.15',
+}
+
 describe('GET /download/:version/:arch', () => {
   it('redirects aarch64 to the matching DMG', async () => {
     const bindings = createBindings()
-    const res = await app.request('/download/1.2.3/aarch64', {}, bindings)
+    const res = await app.request('/download/1.2.3/aarch64', { headers: browserUa }, bindings)
 
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toBe(
@@ -44,7 +51,7 @@ describe('GET /download/:version/:arch', () => {
 
   it('redirects x86_64 to the x64-named DMG (tauri-action filename quirk)', async () => {
     const bindings = createBindings()
-    const res = await app.request('/download/1.2.3/x86_64', {}, bindings)
+    const res = await app.request('/download/1.2.3/x86_64', { headers: browserUa }, bindings)
 
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toBe(
@@ -54,7 +61,7 @@ describe('GET /download/:version/:arch', () => {
 
   it('redirects universal to the matching DMG', async () => {
     const bindings = createBindings()
-    const res = await app.request('/download/1.2.3/universal', {}, bindings)
+    const res = await app.request('/download/1.2.3/universal', { headers: browserUa }, bindings)
 
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toBe(
@@ -66,9 +73,9 @@ describe('GET /download/:version/:arch', () => {
     const { db, bindMock } = createMockD1()
     const bindings = createBindings({ TELEMETRY_DB: db })
 
-    await app.request('/download/1.2.3/x86_64', {}, bindings)
+    await app.request('/download/1.2.3/x86_64', { headers: browserUa }, bindings)
 
-    // bindArgs: [app_version, arch, country, continent]
+    // bindArgs: [app_version, arch, country, continent, hashed_ip, source]
     expect(bindMock.mock.calls[0][1]).toBe('x86_64')
   })
 
@@ -76,37 +83,85 @@ describe('GET /download/:version/:arch', () => {
     const { db, prepareMock, bindMock } = createMockD1()
     const bindings = createBindings({ TELEMETRY_DB: db })
 
-    await app.request('/download/1.2.3/aarch64', {}, bindings)
+    await app.request('/download/1.2.3/aarch64', { headers: browserUa }, bindings)
 
     expect(prepareMock).toHaveBeenCalledOnce()
     const sql = prepareMock.mock.calls[0][0] as string
     expect(sql).toContain('INSERT INTO downloads')
 
     const bindArgs = bindMock.mock.calls[0]
-    // bindArgs: [app_version, arch, country, continent]
+    // bindArgs: [app_version, arch, country, continent, hashed_ip, source]
     expect(bindArgs[0]).toBe('1.2.3')
     expect(bindArgs[1]).toBe('aarch64')
     expect(bindArgs[2]).toBe('unknown') // no cf object in test
     expect(bindArgs[3]).toBe('unknown')
+    expect(bindArgs[4]).toMatch(/^[0-9a-f]{64}$/) // hashed_ip: SHA-256 hex
+    expect(bindArgs[5]).toBe('other') // no Homebrew UA, no ?src param
+  })
+
+  it('tags Homebrew downloads via the User-Agent', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request(
+      '/download/1.2.3/universal',
+      { headers: { 'user-agent': 'Homebrew/4.4.0 (Macintosh; arm64) curl/8.7.1' } },
+      bindings,
+    )
+
+    expect(bindMock.mock.calls[0][5]).toBe('homebrew')
+  })
+
+  it('tags website-button downloads via ?src=website', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/1.2.3/aarch64?src=website', { headers: browserUa }, bindings)
+
+    expect(bindMock.mock.calls[0][5]).toBe('website')
+  })
+
+  it('skips the D1 insert for bot/unfurler User-Agents but still serves the file', async () => {
+    const { db, prepareMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await app.request(
+      '/download/1.2.3/aarch64',
+      { headers: { 'user-agent': 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)' } },
+      bindings,
+    )
+
+    expect(res.status).toBe(302)
+    expect(prepareMock).not.toHaveBeenCalled()
+  })
+
+  it('skips the D1 insert when no User-Agent is sent', async () => {
+    const { db, prepareMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await app.request('/download/1.2.3/aarch64', {}, bindings)
+
+    expect(res.status).toBe(302)
+    expect(prepareMock).not.toHaveBeenCalled()
   })
 
   it('returns 302 even when D1 write fails', async () => {
     const { db } = createMockD1(() => Promise.reject(new Error('D1 unavailable')))
     const bindings = createBindings({ TELEMETRY_DB: db })
 
-    const res = await app.request('/download/1.2.3/aarch64', {}, bindings)
+    const res = await app.request('/download/1.2.3/aarch64', { headers: browserUa }, bindings)
     expect(res.status).toBe(302)
   })
 
   it('returns 400 for invalid version', async () => {
     const bindings = createBindings()
-    const res = await app.request('/download/not-a-version/aarch64', {}, bindings)
+    const res = await app.request('/download/not-a-version/aarch64', { headers: browserUa }, bindings)
     expect(res.status).toBe(400)
   })
 
   it('returns 400 for invalid architecture', async () => {
     const bindings = createBindings()
-    const res = await app.request('/download/1.2.3/windows', {}, bindings)
+    const res = await app.request('/download/1.2.3/windows', { headers: browserUa }, bindings)
     expect(res.status).toBe(400)
   })
 })

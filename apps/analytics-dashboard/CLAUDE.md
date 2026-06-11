@@ -12,20 +12,21 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 
 ## Key files
 
-| File                               | Purpose                                                            |
-| ---------------------------------- | ------------------------------------------------------------------ |
-| `src/app.css`                      | Tailwind v4 theme (dark palette matching getcmdr.com)              |
-| `src/app.d.ts`                     | Platform env type declarations for CF Pages                        |
-| `src/routes/+page.svelte`          | Single-page dashboard: 6 acquisition stages plus feedback & errors |
-| `src/routes/+page.server.ts`       | Server load: reads `?range=` param, delegates to `fetch-all.ts`    |
-| `src/routes/api/report/+server.ts` | Agent-readable plain-text report with all breakdowns               |
-| `src/lib/server/fetch-all.ts`      | Shared data-fetching logic used by both the page and report API    |
-| `src/lib/components/Chart.svelte`  | Reusable uPlot chart with ResizeObserver and dark theme            |
-| `src/lib/server/types.ts`          | Shared types: `TimeRange`, `SourceResult`, time window helpers     |
-| `src/lib/server/cache.ts`          | CF Cache API wrapper with in-memory Map fallback for local dev     |
-| `src/lib/server/sources/`          | Data source modules (one per external API)                         |
-| `svelte.config.js`                 | Adapter-cloudflare config                                          |
-| `vitest.config.ts`                 | Vitest config for unit tests                                       |
+| File                                        | Purpose                                                                                                                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/app.css`                               | Tailwind v4 theme (dark palette matching getcmdr.com)                                                                                                                          |
+| `src/app.d.ts`                              | Platform env type declarations for CF Pages                                                                                                                                    |
+| `src/routes/+page.svelte`                   | Single-page dashboard: 6 acquisition stages plus feedback & errors                                                                                                             |
+| `src/routes/+page.server.ts`                | Server load: reads `?range=` param, delegates to `fetch-all.ts`                                                                                                                |
+| `src/routes/api/report/+server.ts`          | Agent-readable plain-text report with all breakdowns                                                                                                                           |
+| `src/lib/server/fetch-all.ts`               | Shared data-fetching logic used by both the page and report API                                                                                                                |
+| `src/lib/components/Chart.svelte`           | Reusable uPlot chart with ResizeObserver and dark theme                                                                                                                        |
+| `src/lib/components/StackedBarChart.svelte` | Discrete per-day stacked bars (plain elements, not uPlot) with an exact-numbers hover/focus tooltip. Used for the by-source new-installs chart and the by-version update chart |
+| `src/lib/server/types.ts`                   | Shared types: `TimeRange`, `SourceResult`, time window helpers                                                                                                                 |
+| `src/lib/server/cache.ts`                   | CF Cache API wrapper with in-memory Map fallback for local dev                                                                                                                 |
+| `src/lib/server/sources/`                   | Data source modules (one per external API)                                                                                                                                     |
+| `svelte.config.js`                          | Adapter-cloudflare config                                                                                                                                                      |
+| `vitest.config.ts`                          | Vitest config for unit tests                                                                                                                                                   |
 
 ## Running locally
 
@@ -34,20 +35,40 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 2. `pnpm install` from the repo root, then `pnpm dev:dashboard`.
 3. Open `http://localhost:4830`.
 
+### Local QA against a local worker
+
+The download/update-activity/feedback/error charts come from the api-server worker, which defaults to
+`https://api.getcmdr.com`. To QA them against seeded data with zero production impact, run the worker locally and point
+the dashboard at it via `WORKER_BASE_URL`:
+
+1. Start the worker on a local D1 with seeded rows (from `apps/api-server/`):
+   ```bash
+   pnpm exec wrangler d1 migrations apply cmdr-telemetry --local
+   pnpm exec wrangler d1 execute cmdr-telemetry --local --file=scripts/seed-local-telemetry.sql
+   pnpm exec wrangler dev --port 18900 --var ADMIN_API_TOKEN:local-qa-token
+   ```
+   The seed (`scripts/seed-local-telemetry.sql`) uses dates relative to `now`, includes a same-day duplicate IP (to show
+   dedup), a pre-migration NULL-source row, and a 0.24→0.25 update rollout.
+2. In `apps/analytics-dashboard/.env`, set `WORKER_BASE_URL=http://127.0.0.1:18900` and
+   `LICENSE_SERVER_ADMIN_TOKEN=local-qa-token`, then `pnpm dev:dashboard`.
+
+`WORKER_BASE_URL` is unset in production, so the worker sources fall back to `api.getcmdr.com`. Sources without local
+creds (Umami, Paddle, PostHog) just show "Couldn't load" and don't block the worker-backed charts.
+
 ## Data sources
 
 Each source gets its own module under `src/lib/server/sources/`:
 
-| Module                   | Auth                                            | Data                                                                                                                                                                                                                                        |
-| ------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `umami.ts`               | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                                                                                                                              |
-| `cloudflare.ts`          | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts (by version/arch/country) and true per-day DAU + beats from the heartbeat, fetched from worker endpoints (`/admin/downloads`, `/admin/heartbeat-dau`)                                                                       |
-| `paddle.ts`              | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                                                                                                                             |
-| `github.ts`              | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination                                                                                                                 |
-| `posthog.ts`             | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                                                                                                                                |
-| `license.ts`             | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                                                                                                                                       |
-| `feedback-and-errors.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | In-app feedback messages and error-report bundle metadata from worker endpoints (`/admin/feedback`, `/admin/error-reports`). Pure aggregation helpers + row types live in `$lib/feedback-and-errors.ts` (client-safe, shared with the page) |
-| `worker-endpoint.ts`     | (shared helper)                                 | `fetchWorkerEndpoint(token, path)`: GETs a worker admin endpoint with the bearer token, used by `cloudflare.ts` and `feedback-and-errors.ts`                                                                                                |
+| Module                   | Auth                                            | Data                                                                                                                                                                                                                                                                    |
+| ------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `umami.ts`               | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                                                                                                                                                          |
+| `cloudflare.ts`          | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Downloads (by version/arch/country/source, with raw + same-day-deduped counts), true per-day DAU + beats from the heartbeat, and per-day update-check activity by version, from worker endpoints (`/admin/downloads`, `/admin/heartbeat-dau`, `/admin/update-activity`) |
+| `paddle.ts`              | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                                                                                                                                                         |
+| `github.ts`              | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination                                                                                                                                             |
+| `posthog.ts`             | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                                                                                                                                                            |
+| `license.ts`             | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                                                                                                                                                                   |
+| `feedback-and-errors.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | In-app feedback messages and error-report bundle metadata from worker endpoints (`/admin/feedback`, `/admin/error-reports`). Pure aggregation helpers + row types live in `$lib/feedback-and-errors.ts` (client-safe, shared with the page)                             |
+| `worker-endpoint.ts`     | (shared helper)                                 | `fetchWorkerEndpoint(token, path)`: GETs a worker admin endpoint with the bearer token, used by `cloudflare.ts` and `feedback-and-errors.ts`                                                                                                                            |
 
 Each module exports a typed fetch function returning `SourceResult<T>` (ok + data, or error string). Results are cached
 via `cache.ts` (5 min TTL for 24h/7d, 1 hour for 30d). The page server calls all sources in parallel, each capped at 20s
@@ -130,6 +151,14 @@ metric summed per-day active counts across the whole window, multiplying a ~10/d
 (~217). The heartbeat gives a true per-day distinct-install count, charted gold over the range, with `beats/day` as an
 engagement signal. The `/admin/active-users` endpoint and its cron still run (other tooling may use them); the dashboard
 just no longer displays the inflated number. The chart starts empty at release and fills as beta testers update.
+
+**Decision**: "New installs" (Download section) and "Got the latest release" (Active use) are two distinct charts off
+two distinct tables, never merged. **Why**: a DMG download (`downloads` table) is a fresh acquisition; an update check
+(`update_checks` table) is an existing install updating in place. In-app auto-updates fetch the tarball straight from
+GitHub and never hit the download endpoint, so the two populations don't overlap and stacking them in one bar would
+mislead. New-installs bars stack by source (website/Homebrew/other) using the **deduped** same-day-distinct count
+(`uniqueDownloads`); update bars stack by the version each install was on when it checked. Both charts carry a visible
+"how this is measured" note (the `methodology` snippet) because opaque analytics numbers are worse than none.
 
 **Decision**: PostHog uses the HogQL query API (`/api/projects/{id}/query/`), not the legacy Trends API
 (`/insights/trend/`). **Why**: The Trends API returns "Legacy insight endpoints are not available" for newer accounts.

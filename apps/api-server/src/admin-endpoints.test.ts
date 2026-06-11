@@ -108,6 +108,47 @@ describe('GET /admin/downloads', () => {
   })
 })
 
+describe('GET /admin/update-activity', () => {
+  it('returns 401 without auth', async () => {
+    const res = await app.request('/admin/update-activity', {}, baseBindings)
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 for invalid range', async () => {
+    const res = await app.request('/admin/update-activity?range=99d', { headers: authHeaders }, baseBindings)
+    expect(res.status).toBe(400)
+  })
+
+  it('returns empty array when no data', async () => {
+    const res = await app.request('/admin/update-activity?range=7d', { headers: authHeaders }, baseBindings)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual([])
+  })
+
+  it('returns grouped update activity (unions retained aggregate with today)', async () => {
+    const mockData = [
+      { date: '2025-03-20', version: '0.9.0', count: 30 },
+      { date: '2025-03-21', version: '0.9.1', count: 35 },
+    ]
+    const bindings = {
+      ...baseBindings,
+      // Both source tables appear in the union SQL; the mock matches the first key it finds.
+      TELEMETRY_DB: createMockD1({ daily_active_users: mockData }),
+    }
+
+    const res = await app.request('/admin/update-activity?range=30d', { headers: authHeaders }, bindings)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual(mockData)
+  })
+
+  it('accepts all valid ranges', async () => {
+    for (const range of ['24h', '7d', '30d', 'all']) {
+      const res = await app.request(`/admin/update-activity?range=${range}`, { headers: authHeaders }, baseBindings)
+      expect(res.status).toBe(200)
+    }
+  })
+})
+
 describe('GET /admin/active-users', () => {
   it('returns 401 without auth', async () => {
     const res = await app.request('/admin/active-users', {}, baseBindings)

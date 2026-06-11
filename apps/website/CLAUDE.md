@@ -135,8 +135,9 @@ of file names, paths, queries, and prompts by allowlist. See `apps/desktop/src-t
   `persistence: 'memory'` (no cookies, no localStorage) and `person_profiles: 'identified_only'` (no anonymous person
   profiles). This keeps PostHog fully cookieless. The same EU project also receives the desktop app's
   `source: "desktop"` feature events.
-- **D1** (API server): Download redirect endpoint logs version, arch, and country. The `heartbeat` table holds the
-  desktop DAU beats.
+- **D1** (API server): Download redirect endpoint logs version, arch, country, source, and a daily-hashed IP (bot hits
+  dropped). The download button carries `?src=website` so the endpoint can tag it as a website download (vs Homebrew or
+  direct links). The `heartbeat` table holds the desktop DAU beats.
 
 **Decision/Why**: We avoid cookies to not need a cookie consent banner. All three analytics tools are configured to work
 without cookies. If you add or change analytics tooling, preserve this property: no cookies unless absolutely

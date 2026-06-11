@@ -343,8 +343,35 @@ telemetry.get('/update-check/:version', async (c) => {
   return c.redirect('https://getcmdr.com/latest.json', 302)
 })
 
-// Download redirect: tracks version, arch, and country, then redirects to GitHub Releases
+// Download redirect: tracks version, arch, country, and source, then redirects to GitHub Releases.
 const validArchitectures = new Set(['aarch64', 'x86_64', 'universal'])
+
+// Link-unfurl bots and crawlers fetch the download URL to build a preview (Discord, Slack, etc.) or
+// to index it, which inflates the count with hits that aren't real installs. We still serve them the
+// 302 (no point breaking a preview), but we skip the D1 row so they never reach the dashboard. The
+// match is on the User-Agent, so it's a heuristic lower bound, not a guarantee; a spoofed UA slips
+// through, but the common unfurlers below all send these identifiable strings.
+const botUserAgentPattern =
+  /bot|crawl|spider|slurp|preview|unfurl|facebookexternalhit|embedly|whatsapp|telegram|discord|slack|twitter|linkedin|pinterest|curl|wget|python-requests|go-http-client|headlesschrome|monitor|uptime|pingdom/i
+
+function isBotUserAgent(userAgent: string | undefined): boolean {
+  if (!userAgent) return true // No UA at all is bot-like; real browsers and Homebrew always send one.
+  // Homebrew downloads via curl, so it'd match the `curl` rule below, but it's a real install path.
+  if (/homebrew/i.test(userAgent)) return false
+  return botUserAgentPattern.test(userAgent)
+}
+
+/**
+ * Where a download came from, for the dashboard's "new installs by source" breakdown.
+ * - `homebrew`: the Homebrew cask, which fetches via curl with a `Homebrew/x.y.z` User-Agent.
+ * - `website`: the getcmdr.com download button, which appends `?src=website`.
+ * - `other`: everything else (direct links shared in chats, the README, etc.).
+ */
+function classifyDownloadSource(userAgent: string | undefined, srcParam: string | undefined): string {
+  if (userAgent && /homebrew/i.test(userAgent)) return 'homebrew'
+  if (srcParam === 'website') return 'website'
+  return 'other'
+}
 
 telemetry.get('/download/:version/:arch', async (c) => {
   const { version, arch } = c.req.param()
@@ -353,15 +380,35 @@ telemetry.get('/download/:version/:arch', async (c) => {
     return c.json({ error: 'Invalid version or architecture' }, 400)
   }
 
+  // tauri-action names the Intel DMG `_x64.dmg`, not `_x86_64.dmg`. Map at the boundary;
+  // we keep `x86_64` everywhere else (uname, Rust target triple, D1, telemetry, website).
+  const fileArch = arch === 'x86_64' ? 'x64' : arch
+  const redirectUrl = `https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${fileArch}.dmg`
+
+  // Drop bot/unfurler hits before they reach D1, but still serve the file.
+  const userAgent = c.req.header('user-agent')
+  if (isBotUserAgent(userAgent)) {
+    return c.redirect(redirectUrl, 302)
+  }
+
   const cf = c.req.raw.cf as { country?: string; continent?: string } | undefined
   const country = cf?.country ?? 'unknown'
   const continent = cf?.continent ?? 'unknown'
+  const source = classifyDownloadSource(userAgent, c.req.query('src'))
 
-  // Write to D1 (fire-and-forget)
+  // Hash IP with a daily-rotating salt: lets the dashboard count distinct same-day downloaders
+  // (`COUNT(DISTINCT hashed_ip)`) without storing an IP or anything linkable across days. Same
+  // scheme as `/update-check` above.
+  const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown'
+  const dailySalt = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip + dailySalt))
+  const hashedIp = [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
+
+  // Write to D1 (fire-and-forget). One row per request: the raw count stays `COUNT(*)`.
   const dbWrite = c.env.TELEMETRY_DB.prepare(
-    `INSERT INTO downloads (app_version, arch, country, continent) VALUES (?, ?, ?, ?)`,
+    `INSERT INTO downloads (app_version, arch, country, continent, hashed_ip, source) VALUES (?, ?, ?, ?, ?, ?)`,
   )
-    .bind(version, arch, country, continent)
+    .bind(version, arch, country, continent, hashedIp, source)
     .run()
     .catch(() => {})
 
@@ -372,10 +419,7 @@ telemetry.get('/download/:version/:arch', async (c) => {
     await dbWrite
   }
 
-  // tauri-action names the Intel DMG `_x64.dmg`, not `_x86_64.dmg`. Map at the boundary;
-  // we keep `x86_64` everywhere else (uname, Rust target triple, D1, telemetry, website).
-  const fileArch = arch === 'x86_64' ? 'x64' : arch
-  return c.redirect(`https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${fileArch}.dmg`, 302)
+  return c.redirect(redirectUrl, 302)
 })
 
 export { telemetry }

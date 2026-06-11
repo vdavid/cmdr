@@ -73,3 +73,6 @@ docs/specs/file-viewer-selection-progress.md
 
 # CodeGraph
 .codegraph/
+
+# Wrangler local state (local D1/KV/R2 for `wrangler dev --local`), regenerable
+.wrangler/

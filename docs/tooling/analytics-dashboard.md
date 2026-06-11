@@ -21,9 +21,11 @@ The report includes:
 
 - **Awareness**: page views, visitors, referrers (with percentages and deltas vs prior period)
 - **Interest**: product page views, bounce rate, download button clicks, top pages, visitors by country
-- **Download**: totals by version, architecture, and country; daily breakdown; cross-breakdowns (country × architecture,
-  country × version, daily × version)
-- **Active use**: update check counts by version, license activations, active devices
+- **Download**: new installs (deduped same-day-distinct, bots dropped, auto-updates excluded) and raw request totals;
+  new installs by source (website/Homebrew/other) and per day; totals by version, architecture, and country; daily
+  breakdown; cross-breakdowns (country × architecture, country × version, daily × version)
+- **Active use**: daily active installs (heartbeat); got-the-latest-release per day by version (distinct update-enabled
+  installs that checked); license activations, active devices
 - **Payment**: revenue, transactions, active subscriptions
 - **Retention**: churn rate, subscriptions by status
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchCloudflareData, parseDownloadRows, parseHeartbeatDauRows } from './cloudflare.js'
+import { fetchCloudflareData, parseDownloadRows, parseHeartbeatDauRows, parseUpdateActivityRows } from './cloudflare.js'
 import { clearMemoryCache } from '../cache.js'
 
 const mockEnv = {
@@ -7,9 +7,25 @@ const mockEnv = {
 }
 
 const sampleDownloadsResponse = [
-  { date: '2025-03-20', version: '1.2.0', arch: 'aarch64', country: 'US', count: 150 },
-  { date: '2025-03-20', version: '1.2.0', arch: 'x86_64', country: 'DE', count: 80 },
-  { date: '2025-03-21', version: '1.1.0', arch: 'aarch64', country: 'GB', count: 45 },
+  {
+    date: '2025-03-20',
+    version: '1.2.0',
+    arch: 'aarch64',
+    country: 'US',
+    source: 'website',
+    count: 150,
+    uniqueCount: 120,
+  },
+  {
+    date: '2025-03-20',
+    version: '1.2.0',
+    arch: 'x86_64',
+    country: 'DE',
+    source: 'homebrew',
+    count: 80,
+    uniqueCount: 75,
+  },
+  { date: '2025-03-21', version: '1.1.0', arch: 'aarch64', country: 'GB', source: 'other', count: 45, uniqueCount: 40 },
 ]
 
 const sampleHeartbeatDauResponse = [
@@ -17,16 +33,50 @@ const sampleHeartbeatDauResponse = [
   { date: '2025-03-21', dau: 10, beats: 57 },
 ]
 
+const sampleUpdateActivityResponse = [
+  { date: '2025-03-20', version: '1.1.0', count: 30 },
+  { date: '2025-03-20', version: '1.2.0', count: 12 },
+  { date: '2025-03-21', version: '1.2.0', count: 35 },
+]
+
 describe('parseDownloadRows', () => {
   it('maps worker response to DownloadRow format', () => {
     const rows = parseDownloadRows(sampleDownloadsResponse)
     expect(rows).toHaveLength(3)
-    expect(rows[0]).toEqual({ version: '1.2.0', arch: 'aarch64', country: 'US', day: '2025-03-20', downloads: 150 })
-    expect(rows[2]).toEqual({ version: '1.1.0', arch: 'aarch64', country: 'GB', day: '2025-03-21', downloads: 45 })
+    expect(rows[0]).toEqual({
+      version: '1.2.0',
+      arch: 'aarch64',
+      country: 'US',
+      source: 'website',
+      day: '2025-03-20',
+      downloads: 150,
+      uniqueDownloads: 120,
+    })
+    expect(rows[2]).toEqual({
+      version: '1.1.0',
+      arch: 'aarch64',
+      country: 'GB',
+      source: 'other',
+      day: '2025-03-21',
+      downloads: 45,
+      uniqueDownloads: 40,
+    })
   })
 
   it('handles empty data', () => {
     expect(parseDownloadRows([])).toEqual([])
+  })
+})
+
+describe('parseUpdateActivityRows', () => {
+  it('maps worker response to UpdateActivityRow format', () => {
+    const rows = parseUpdateActivityRows(sampleUpdateActivityResponse)
+    expect(rows).toHaveLength(3)
+    expect(rows[0]).toEqual({ day: '2025-03-20', version: '1.1.0', updaters: 30 })
+  })
+
+  it('handles empty data', () => {
+    expect(parseUpdateActivityRows([])).toEqual([])
   })
 })
 
@@ -68,6 +118,9 @@ describe('fetchCloudflareData', () => {
   it('returns parsed data on success', async () => {
     const fetchMock = vi.fn()
     fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/admin/update-activity')) {
+        return Promise.resolve({ ok: true, json: async () => sampleUpdateActivityResponse })
+      }
       if (String(url).includes('/admin/downloads')) {
         return Promise.resolve({ ok: true, json: async () => sampleDownloadsResponse })
       }
@@ -84,6 +137,7 @@ describe('fetchCloudflareData', () => {
 
     expect(result.data.downloads).toHaveLength(3)
     expect(result.data.heartbeatDau).toEqual(sampleHeartbeatDauResponse)
+    expect(result.data.updateActivity).toHaveLength(3)
 
     // Verify auth header is sent
     expect(fetchMock.mock.calls[0][1]?.headers).toEqual({

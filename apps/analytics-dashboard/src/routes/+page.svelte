@@ -1,5 +1,94 @@
 <script lang="ts" module>
-    import type { DownloadRow } from '$lib/server/sources/cloudflare.js'
+    import type { DownloadRow, UpdateActivityRow } from '$lib/server/sources/cloudflare.js'
+
+    interface StackSeries {
+        key: string
+        label: string
+        color: string
+        values: number[]
+    }
+
+    // Download source colors: website is the product gold, Homebrew an amber, everything else grey.
+    const SOURCE_STACK = [
+        { key: 'website', label: 'Website', color: '#ffc206' },
+        { key: 'homebrew', label: 'Homebrew', color: '#f0883e' },
+        { key: 'other', label: 'Direct / other', color: '#71717a' },
+    ]
+    // Newest release gets the brightest color; the rest cycle, with anything older bucketed as grey.
+    const VERSION_PALETTE = ['#ffc206', '#a78bfa', '#22d3ee', '#8faa3b', '#f0883e', '#f472b6']
+    const COLOR_OLDER = '#71717a'
+
+    /** Sorted unique day strings (YYYY-MM-DD, ascending) from a list of rows carrying a `day` field. */
+    function uniqueDays(rows: Array<{ day: string }>): string[] {
+        return [...new Set(rows.map((r) => r.day))].sort()
+    }
+
+    /** Aligns rows into a per-key map of per-day value arrays (one slot per entry in `days`). */
+    function stackByDay<T>(
+        rows: T[],
+        days: string[],
+        getDay: (r: T) => string,
+        getKey: (r: T) => string,
+        getValue: (r: T) => number
+    ): Map<string, number[]> {
+        const dayIndex = new Map(days.map((d, i) => [d, i]))
+        const byKey = new Map<string, number[]>()
+        for (const row of rows) {
+            const di = dayIndex.get(getDay(row))
+            if (di === undefined) continue
+            const key = getKey(row)
+            let arr = byKey.get(key)
+            if (!arr) {
+                arr = new Array(days.length).fill(0)
+                byKey.set(key, arr)
+            }
+            arr[di] += getValue(row)
+        }
+        return byKey
+    }
+
+    /** Downloads stacked by source, using the deduped same-day-distinct count. */
+    function downloadSourceSeries(rows: DownloadRow[], days: string[]): StackSeries[] {
+        const byKey = stackByDay(
+            rows,
+            days,
+            (r) => r.day,
+            (r) => r.source,
+            (r) => r.uniqueDownloads
+        )
+        return SOURCE_STACK.map((s) => ({ ...s, values: byKey.get(s.key) ?? new Array(days.length).fill(0) })).filter(
+            (s) => s.values.some((v) => v > 0)
+        )
+    }
+
+    /** Update activity stacked by the version each install was running when it checked. */
+    function updateVersionSeries(rows: UpdateActivityRow[], days: string[]): StackSeries[] {
+        const byKey = stackByDay(
+            rows,
+            days,
+            (r) => r.day,
+            (r) => r.version,
+            (r) => r.updaters
+        )
+        const versions = [...byKey.keys()].sort(compareSemverDesc)
+        const top = versions.slice(0, VERSION_PALETTE.length)
+        const rest = versions.slice(VERSION_PALETTE.length)
+        const series: StackSeries[] = top.map((v, i) => ({
+            key: v,
+            label: `v${v}`,
+            color: VERSION_PALETTE[i],
+            values: byKey.get(v) ?? new Array(days.length).fill(0),
+        }))
+        if (rest.length > 0) {
+            const olderValues = new Array(days.length).fill(0)
+            for (const v of rest) {
+                const arr = byKey.get(v) ?? []
+                for (let i = 0; i < days.length; i++) olderValues[i] += arr[i] ?? 0
+            }
+            series.push({ key: 'older', label: 'Older', color: COLOR_OLDER, values: olderValues })
+        }
+        return series
+    }
 
     /** Aggregates rows by a string field, summing a numeric field. */
     function aggregateBy(
@@ -75,6 +164,7 @@
     import Chart from '$lib/components/Chart.svelte'
     import MiniTimeline from '$lib/components/MiniTimeline.svelte'
     import PieChart from '$lib/components/PieChart.svelte'
+    import StackedBarChart from '$lib/components/StackedBarChart.svelte'
     import {
         countFeedbackWithReplyTo,
         tallyErrorReportsByField,
@@ -348,16 +438,33 @@
                     {#if data.cloudflare.ok}
                         {@const cf = data.cloudflare.data}
                         {@const totalDownloads = cf.downloads.reduce((sum, r) => sum + r.downloads, 0)}
+                        {@const totalNewInstalls = cf.downloads.reduce((sum, r) => sum + r.uniqueDownloads, 0)}
                         {@const { days: allDays, timestamps: allTimestamps } = getDayAxis(cf.downloads)}
+                        {@const sourceSeries = downloadSourceSeries(cf.downloads, allDays)}
                         {@const versions = aggregateBy(cf.downloads, 'version', 'downloads').sort((a, b) => compareSemverDesc(a.x, b.x)).slice(0, 8)}
                         {@const versionMaxY = maxDailyAcrossGroups(cf.downloads, 'version', versions.map((v) => v.x), allDays)}
 
                         {@render metricRow([
-                            { label: 'Downloads (Analytics Engine)', value: formatNumber(totalDownloads) },
+                            { label: 'New installs (deduped)', value: formatNumber(totalNewInstalls), color: COLOR_GOLD },
+                            { label: 'Download requests (raw)', value: formatNumber(totalDownloads) },
                             ...(data.github.ok
                                 ? [{ label: 'Downloads (GitHub, all-time)', value: formatNumber(data.github.data.totalDownloads) }]
                                 : []),
                         ])}
+
+                        {#if cf.downloads.length > 0}
+                            <div class="mt-5">
+                                <h3 class="mb-2 text-sm font-medium text-text-secondary">New installs per day, by source</h3>
+                                <StackedBarChart days={allDays} series={sourceSeries} unitLabel="new installs" />
+                                {@render methodology(
+                                    'Counts downloads of the macOS DMG through getcmdr.com (download endpoint), deduplicated to distinct ' +
+                                    'people per day via a daily-rotating hashed IP, with bot and link-preview hits dropped by user agent. ' +
+                                    'Website = the getcmdr.com download button, Homebrew = `brew install --cask cmdr`, Direct / other = links ' +
+                                    'shared elsewhere. In-app auto-updates never count here (they fetch from GitHub, not this endpoint). ' +
+                                    'Hover a bar for exact numbers.'
+                                )}
+                            </div>
+                        {/if}
 
                         {#if cf.downloads.length > 0 && allDays.length > 1}
                             <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -513,6 +620,23 @@
                     </div>
                 {:else}
                     {@render betaEmptyState()}
+                {/if}
+
+                {@const updateActivity = cf.updateActivity}
+                {@const updateDays = uniqueDays(updateActivity)}
+                {@const updateSeries = updateVersionSeries(updateActivity, updateDays)}
+                {#if updateActivity.length > 0}
+                    <div class="mt-6 border-t border-border-subtle pt-5">
+                        <h3 class="mb-2 text-sm font-medium text-text-secondary">Got the latest release per day, by version</h3>
+                        <StackedBarChart days={updateDays} series={updateSeries} unitLabel="installs" height={140} />
+                        {@render methodology(
+                            "Counts running installs with auto-update on that checked for updates each day (the app's update " +
+                            'check hits our server, then redirects to the latest release), deduplicated to distinct installs per ' +
+                            'day via a daily-rotating hashed IP. Stacked by the version each install was on when it checked, so you ' +
+                            'see the fleet roll onto a new release. Separate from new installs above: these are existing users updating ' +
+                            'in place, not fresh downloads. Hover a bar for exact numbers.'
+                        )}
+                    </div>
                 {/if}
 
                 {#if data.license.ok}
@@ -756,6 +880,11 @@
     <div class="rounded-lg border border-border-subtle bg-surface-elevated px-4 py-6 text-center">
         <p class="text-sm text-text-secondary">No data yet for this period</p>
     </div>
+{/snippet}
+
+<!-- A small "how this is measured" note under a chart, so no number on the dashboard is a black box. -->
+{#snippet methodology(text: string)}
+    <p class="mt-2 text-xs leading-relaxed text-text-tertiary">{text}</p>
 {/snippet}
 
 {#snippet betaEmptyState()}

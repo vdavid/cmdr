@@ -75,6 +75,7 @@ async function resolveEnv(platform: App.Platform | undefined): Promise<NonNullab
     POSTHOG_API_URL: env.POSTHOG_API_URL ?? '',
     GITHUB_TOKEN: env.GITHUB_TOKEN || undefined,
     LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN ?? '',
+    WORKER_BASE_URL: env.WORKER_BASE_URL || undefined,
   }
 }
 
@@ -103,7 +104,10 @@ export async function fetchDashboardData(
       ),
     ),
     guardedFetch(env?.LICENSE_SERVER_ADMIN_TOKEN, 'Cloudflare', () =>
-      fetchCloudflareData({ LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN }, range),
+      fetchCloudflareData(
+        { LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN, WORKER_BASE_URL: env.WORKER_BASE_URL },
+        range,
+      ),
     ),
     guardedFetch(env?.PADDLE_API_KEY_LIVE, 'Paddle', () =>
       fetchPaddleData({ PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE }, range),
@@ -124,7 +128,10 @@ export async function fetchDashboardData(
       fetchLicenseData({ LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN }),
     ),
     guardedFetch(env?.LICENSE_SERVER_ADMIN_TOKEN, 'Feedback & errors', () =>
-      fetchFeedbackAndErrorsData({ LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN }, range),
+      fetchFeedbackAndErrorsData(
+        { LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN, WORKER_BASE_URL: env.WORKER_BASE_URL },
+        range,
+      ),
     ),
   ])
 
