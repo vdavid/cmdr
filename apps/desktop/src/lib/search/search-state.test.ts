@@ -26,6 +26,7 @@ import {
   getDateFilter,
   getDateValue,
   getCaseSensitive,
+  searchQueryState,
 } from './search-state.svelte'
 import type { HistoryEntry } from '$lib/tauri-commands'
 
@@ -181,6 +182,21 @@ describe('buildSearchQuery', () => {
     expect(query.modifiedAfter).toBeTypeOf('number')
     expect(query.modifiedBefore).toBeTypeOf('number')
   })
+
+  it('maps typeFilter to isDirectory (both → null, file → false, folder → true)', () => {
+    clearSearchState()
+    // Default 'both' leaves isDirectory unconstrained.
+    expect(buildSearchQuery().isDirectory).toBeNull()
+
+    searchQueryState.setTypeFilter('file')
+    expect(buildSearchQuery().isDirectory).toBe(false)
+
+    searchQueryState.setTypeFilter('folder')
+    expect(buildSearchQuery().isDirectory).toBe(true)
+
+    searchQueryState.setTypeFilter('both')
+    expect(buildSearchQuery().isDirectory).toBeNull()
+  })
 })
 
 describe('clearSearchState', () => {
@@ -259,6 +275,17 @@ describe('buildHistoryFilters', () => {
     setDateValue('2026-01-01')
     expect(buildHistoryFilters()).toEqual({ modifiedAfter: '2026-01-01' })
   })
+
+  it('includes isDirectory only when the type filter is not "both"', () => {
+    clearSearchState()
+    expect(buildHistoryFilters()).toEqual({})
+    searchQueryState.setTypeFilter('folder')
+    expect(buildHistoryFilters()).toEqual({ isDirectory: true })
+    searchQueryState.setTypeFilter('file')
+    expect(buildHistoryFilters()).toEqual({ isDirectory: false })
+    searchQueryState.setTypeFilter('both')
+    expect(buildHistoryFilters()).toEqual({})
+  })
 })
 
 describe('applyHistoryEntry', () => {
@@ -326,6 +353,30 @@ describe('applyHistoryEntry', () => {
     setSizeUnit('GB')
     applyHistoryEntry({ ...baseEntry, filters: {} })
     expect(getSizeFilter()).toBe('any')
+  })
+
+  it('restores the type filter from isDirectory (and resets to both when absent)', () => {
+    clearSearchState()
+    applyHistoryEntry({ ...baseEntry, filters: { isDirectory: true } })
+    expect(searchQueryState.getTypeFilter()).toBe('folder')
+
+    applyHistoryEntry({ ...baseEntry, filters: { isDirectory: false } })
+    expect(searchQueryState.getTypeFilter()).toBe('file')
+
+    // An entry without isDirectory resets to 'both'.
+    applyHistoryEntry({ ...baseEntry, filters: {} })
+    expect(searchQueryState.getTypeFilter()).toBe('both')
+  })
+
+  it('round-trips the type filter through buildHistoryFilters (no schema bump)', () => {
+    clearSearchState()
+    searchQueryState.setTypeFilter('folder')
+    const filters = buildHistoryFilters()
+    expect(filters).toEqual({ isDirectory: true })
+
+    clearSearchState()
+    applyHistoryEntry({ ...baseEntry, filters })
+    expect(buildHistoryFilters()).toEqual({ isDirectory: true })
   })
 
   it('round-trips through buildHistoryFilters', () => {

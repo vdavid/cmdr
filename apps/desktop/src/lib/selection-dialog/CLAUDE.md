@@ -51,9 +51,18 @@ a few hundred entries). Bad regex (`SyntaxError`) → `[]`.
 
 **Empty pattern WITH an active filter → match-all on the name; empty pattern AND no filters → `[]`.** Filter-only
 queries are valid: `buildMatchQuery` substitutes a match-all glob `*` when the bar is empty but `hasActiveFilter()` is
-true, so `≥ 1 MB` with no glob selects every file ≥ 1 MB. Gotcha: don't reintroduce an empty-pattern early-return in
-`buildMatchQuery` that ignores the filters, or the size/date chips go decorative. The matcher's `compilePattern` still
-returns `null` on an empty pattern, so the wrapper, not the matcher, owns the substitution.
+true, so `≥ 1 MB` with no glob selects every file ≥ 1 MB. `hasActiveFilter()` counts size ≠ any, date ≠ any, OR
+`typeFilter` ≠ both. Gotcha: don't reintroduce an empty-pattern early-return in `buildMatchQuery` that ignores the
+filters, or the size/date/type controls go decorative. The matcher's `compilePattern` still returns `null` on an empty
+pattern, so the wrapper, not the matcher, owns the substitution.
+
+**Type filter + folder sizes.** The `Both | Files | Folders` toggle drives the core `typeFilter`; the matcher filters on
+`getIsDirFor` when it's not `both`. `getSizeFor` returns `entry.size` for files and `entry.recursiveSize` for
+directories (index-derived; present in the live `getFileRange` snapshot because listing entries are enriched at
+cache-write time). Gotcha: a folder's `recursiveSize` is `undefined` until the index computes it, so an un-indexed
+folder can't match a size filter (honest, not a bug). Both accessor sites (`runQuery` preview AND `commitMatches`) build
+through the single `buildAccessors()` helper, so preview and commit can't disagree on size/type semantics. Don't
+re-inline a second accessor literal.
 
 ## Folder sampling
 

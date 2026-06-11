@@ -2,14 +2,14 @@
  * Behavior tests for `FilterChips.svelte`.
  *
  * Pins:
- *   - Three chips render by default (Size, Modified, Search in) plus the trailing Add filter chip.
+ *   - The leading type toggle (Both / Files / Folders) renders and drives `setTypeFilter`.
+ *   - Three chips render by default (Size, Modified, Search in); all filters are always visible.
  *   - Each chip shows its default label, not a value, when the filter is in "any" state.
  *   - A configured chip shows its summary plus an `×` clear control.
  *   - Clicking × clears the underlying filter (and the chip goes back to default).
  *   - Backspace on a focused configured chip clears it too.
  *   - Clicking a chip opens its popover; the popover shows the controls; Esc closes the popover
  *     and returns focus to the chip; clicking outside closes too.
- *   - The Add filter chip disappears when all three filters are configured.
  *   - The scope popover supports paste of paths, `!`-prefix exclusions, ⌥F/⌥D footer buttons.
  */
 
@@ -52,6 +52,7 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     dateFilter: 'any',
     dateValue: '',
     dateValueMax: '',
+    typeFilter: 'both',
     systemDirExcludeTooltip: 'System dirs',
     highlightedFields: new SvelteSet<string>(),
     disabled: false,
@@ -112,13 +113,15 @@ beforeEach(() => {
 })
 
 describe('SearchFilterChips: default rendering', () => {
-  it('renders the three filter chips and an Add filter chip', async () => {
+  it('renders the type toggle and the three filter chips, with no Add filter chip', async () => {
     const { target, cleanup } = mountChips(baseProps())
     await tick()
+    expect(target.querySelector('[aria-label="Filter by type"]')).not.toBeNull()
     expect(findChip(target, 'Size')).not.toBeNull()
     expect(findChip(target, 'Modified')).not.toBeNull()
     expect(findChip(target, 'Search in')).not.toBeNull()
-    expect(target.querySelector('.add-filter-chip')).not.toBeNull()
+    // The "+ Add filter" affordance is gone; all filters are always visible.
+    expect(target.querySelector('.add-filter-chip')).toBeNull()
     cleanup()
   })
 
@@ -268,51 +271,38 @@ describe('SearchFilterChips: popover keyboard handling', () => {
   })
 })
 
-describe('SearchFilterChips: Add filter chip', () => {
-  it('is shown when at least one filter is in default state', async () => {
+describe('SearchFilterChips: type toggle', () => {
+  function typeOption(target: Element, label: string): HTMLElement | null {
+    const group = target.querySelector('[aria-label="Filter by type"]')
+    const items = Array.from(group?.querySelectorAll<HTMLElement>('.tg-item') ?? [])
+    return items.find((el) => el.textContent.trim() === label) ?? null
+  }
+
+  it('renders Both / Files / Folders options', async () => {
     const { target, cleanup } = mountChips(baseProps())
     await tick()
-    expect(target.querySelector('.add-filter-chip')).not.toBeNull()
+    expect(typeOption(target, 'Both')).not.toBeNull()
+    expect(typeOption(target, 'Files')).not.toBeNull()
+    expect(typeOption(target, 'Folders')).not.toBeNull()
     cleanup()
   })
 
-  it('is hidden when all three filters are configured', async () => {
-    const { target, cleanup } = mountChips(
-      baseProps({
-        sizeFilter: 'gte',
-        sizeValue: '100',
-        dateFilter: 'after',
-        dateValue: '2026-04-01',
-        scope: '~/Documents',
-      }),
-    )
+  it('marks the active option as pressed (data-state="on")', async () => {
+    const { target, cleanup } = mountChips(baseProps({ typeFilter: 'folder' }))
     await tick()
-    expect(target.querySelector('.add-filter-chip')).toBeNull()
+    expect(typeOption(target, 'Folders')?.getAttribute('data-state')).toBe('on')
+    expect(typeOption(target, 'Both')?.getAttribute('data-state')).not.toBe('on')
     cleanup()
   })
 
-  it('opening Add filter lists only available filters', async () => {
-    const { target, cleanup } = mountChips(
-      baseProps({
-        sizeFilter: 'gte',
-        sizeValue: '100',
-      }),
-    )
+  it('clicking Folders sets the type filter on the wired state', async () => {
+    const { target, cleanup } = mountChips(baseProps())
     await tick()
-    const addChip = target.querySelector<HTMLButtonElement>('.add-filter-chip')
-    addChip?.click()
+    expect(testState.getTypeFilter()).toBe('both')
+    typeOption(target, 'Folders')?.click()
     await tick()
-    const menu = document.querySelector('.add-filter-menu')
-    const items = menu?.querySelectorAll('.add-filter-item')
-    expect(items?.length).toBe(2)
-    const labels = Array.from(items ?? []).map((el) => el.textContent.trim())
-    expect(labels).toContain('Modified')
-    expect(labels).toContain('Search in')
-    expect(labels).not.toContain('Size')
+    expect(testState.getTypeFilter()).toBe('folder')
     cleanup()
-    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
-      el.remove()
-    })
   })
 })
 

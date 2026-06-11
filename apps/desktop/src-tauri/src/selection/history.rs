@@ -126,6 +126,9 @@ fn canonical_key(entry: &SelectionHistoryEntry) -> String {
     if let Some(ref v) = entry.filters.modified_before {
         filter_kv.insert("modifiedBefore", v.clone());
     }
+    if let Some(v) = entry.filters.is_directory {
+        filter_kv.insert("isDirectory", v.to_string());
+    }
     let filter_str = filter_kv
         .iter()
         .map(|(k, v)| format!("{k}={v}"))

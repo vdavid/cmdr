@@ -166,6 +166,63 @@ describe('matchEntries: size predicate', () => {
   })
 })
 
+describe('matchEntries: type predicate', () => {
+  const names = ['notes.txt', 'photo.jpg', 'projects', 'archive']
+  const isDir = [false, false, true, true]
+  const sizes: (number | null | undefined)[] = [1000, 2000, 4_000_000, undefined]
+  const accessors: MatchAccessors = {
+    getNameFor: (i) => names[i],
+    getSizeFor: (i) => sizes[i],
+    getIsDirFor: (i) => isDir[i],
+  }
+
+  it("'folder' keeps only directories", () => {
+    const q: SelectionMatchQuery = {
+      pattern: '*',
+      kind: 'glob',
+      caseSensitive: false,
+      type: 'folder',
+    }
+    expect(matchEntries(accessors, names.length, q)).toEqual([2, 3])
+  })
+
+  it("'file' keeps only files", () => {
+    const q: SelectionMatchQuery = {
+      pattern: '*',
+      kind: 'glob',
+      caseSensitive: false,
+      type: 'file',
+    }
+    expect(matchEntries(accessors, names.length, q)).toEqual([0, 1])
+  })
+
+  it("'both' (or no type) keeps everything", () => {
+    const q: SelectionMatchQuery = { pattern: '*', kind: 'glob', caseSensitive: false, type: 'both' }
+    expect(matchEntries(accessors, names.length, q)).toEqual([0, 1, 2, 3])
+    const noType: SelectionMatchQuery = { pattern: '*', kind: 'glob', caseSensitive: false }
+    expect(matchEntries(accessors, names.length, noType)).toEqual([0, 1, 2, 3])
+  })
+
+  it("composes with the size filter: folder + size uses the dir's recursiveSize via getSizeFor", () => {
+    // `getSizeFor` returns the dir's recursive size; the folder at index 2 has 4 MB,
+    // index 3 has `undefined` (index hasn't computed it) so it can't match a size bound.
+    const q: SelectionMatchQuery = {
+      pattern: '*',
+      kind: 'glob',
+      caseSensitive: false,
+      type: 'folder',
+      size: { kind: 'gte', min: 1_048_576 },
+    }
+    expect(matchEntries(accessors, names.length, q)).toEqual([2])
+  })
+
+  it('a missing getIsDirFor accessor makes the type filter a no-op (ignored, like size/date)', () => {
+    const acc: MatchAccessors = { getNameFor: (i) => names[i] }
+    const q: SelectionMatchQuery = { pattern: '*', kind: 'glob', caseSensitive: false, type: 'folder' }
+    expect(matchEntries(acc, names.length, q)).toEqual([0, 1, 2, 3])
+  })
+})
+
 describe('matchEntries: date predicate', () => {
   const list = ['old.txt', 'new.txt']
   const mtimes = [1_000_000, 2_000_000]

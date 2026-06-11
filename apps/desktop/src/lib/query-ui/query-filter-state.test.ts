@@ -77,6 +77,7 @@ describe('createQueryFilterState: defaults', () => {
     expect(s.getQuery()).toBe('')
     expect(s.getSizeFilter()).toBe('any')
     expect(s.getDateFilter()).toBe('any')
+    expect(s.getTypeFilter()).toBe('both')
     expect(s.getCaseSensitive()).toBe(false)
     expect(s.getResults()).toEqual([])
     expect(s.getCursorIndex()).toBe(0)
@@ -130,6 +131,15 @@ describe('createQueryFilterState: buildBaseSearchQuery', () => {
     const q = s.buildBaseSearchQuery()
     expect(q.minSize).toBe(10 * 1024 * 1024)
     expect(q.modifiedAfter).toBeTypeOf('number')
+  })
+
+  it('maps typeFilter to isDirectory (both → null, file → false, folder → true)', () => {
+    const s = createQueryFilterState()
+    expect(s.buildBaseSearchQuery().isDirectory).toBeNull()
+    s.setTypeFilter('file')
+    expect(s.buildBaseSearchQuery().isDirectory).toBe(false)
+    s.setTypeFilter('folder')
+    expect(s.buildBaseSearchQuery().isDirectory).toBe(true)
   })
 })
 
@@ -231,6 +241,24 @@ describe('createQueryFilterState: history filters round-trip', () => {
     expect(s.getSizeValue()).toBe('')
   })
 
+  it('round-trips the type filter via isDirectory and resets to both when absent', () => {
+    const s = createQueryFilterState()
+    s.setTypeFilter('folder')
+    const filters = s.readHistoryFilters()
+    expect(filters).toEqual({ isDirectory: true })
+
+    const fresh = createQueryFilterState()
+    fresh.applyHistoryFilters(filters)
+    expect(fresh.getTypeFilter()).toBe('folder')
+
+    fresh.applyHistoryFilters({ isDirectory: false })
+    expect(fresh.getTypeFilter()).toBe('file')
+
+    // No isDirectory key → reset to both.
+    fresh.applyHistoryFilters({})
+    expect(fresh.getTypeFilter()).toBe('both')
+  })
+
   // `eq` persists as `size_min == size_max` (no Rust comparator field) and, by deliberate
   // decision, ALWAYS rehydrates as `eq` (not `between`): the two are semantically identical
   // and `= x` is the friendlier label.
@@ -287,6 +315,7 @@ describe('createQueryFilterState: clearCore', () => {
     s.setMode('regex')
     s.setSizeFilter('gte')
     s.setDateFilter('after')
+    s.setTypeFilter('folder')
     s.setCaseSensitive(true)
     s.setLastAiPrompt('prompt')
     s.setLastAiCaveat('caveat')
@@ -301,6 +330,7 @@ describe('createQueryFilterState: clearCore', () => {
     expect(s.getMode()).toBe('filename')
     expect(s.getSizeFilter()).toBe('any')
     expect(s.getDateFilter()).toBe('any')
+    expect(s.getTypeFilter()).toBe('both')
     expect(s.getCaseSensitive()).toBe(false)
     expect(s.getLastAiPrompt()).toBeNull()
     expect(s.getLastAiCaveat()).toBeNull()

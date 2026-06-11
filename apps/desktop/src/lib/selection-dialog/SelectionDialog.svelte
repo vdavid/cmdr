@@ -160,7 +160,11 @@
      * run?".
      */
     function hasActiveFilter(): boolean {
-        return selectionQueryState.getSizeFilter() !== 'any' || selectionQueryState.getDateFilter() !== 'any'
+        return (
+            selectionQueryState.getSizeFilter() !== 'any' ||
+            selectionQueryState.getDateFilter() !== 'any' ||
+            selectionQueryState.getTypeFilter() !== 'both'
+        )
     }
 
     /**
@@ -212,6 +216,7 @@
 
         const size = readSizePredicate()
         const date = readDatePredicate()
+        const type = selectionQueryState.getTypeFilter()
         const q: SelectionMatchQuery = {
             pattern,
             kind,
@@ -219,7 +224,28 @@
         }
         if (size) q.size = size
         if (date) q.date = date
+        if (type !== 'both') q.type = type
         return q
+    }
+
+    /**
+     * Builds the `MatchAccessors` over the dialog-time `entries` snapshot. Single source
+     * for both the preview (`runQuery`) and the commit (`commitMatches`) paths so the two
+     * can't drift — they must apply the same size / type semantics or preview and commit
+     * disagree.
+     *
+     * Folder sizes: `getSizeFor` returns `entry.size` for files and `entry.recursiveSize`
+     * for directories (index-derived, present in the live snapshot when the index has
+     * computed it). When a dir's `recursiveSize` is `undefined`, it can't match a size
+     * filter — honest, not a bug.
+     */
+    function buildAccessors(): MatchAccessors {
+        return {
+            getNameFor: (i) => entries[i].name,
+            getSizeFor: (i) => (entries[i].isDirectory ? entries[i].recursiveSize : entries[i].size),
+            getMtimeFor: (i) => entries[i].modifiedAt,
+            getIsDirFor: (i) => entries[i].isDirectory,
+        }
     }
 
     function readSizePredicate(): SizePredicate | undefined {
@@ -294,12 +320,7 @@
             lastMatchedIndices = []
             return Promise.resolve({ entries: [], totalCount: 0 })
         }
-        const accessors: MatchAccessors = {
-            getNameFor: (i) => entries[i].name,
-            getSizeFor: (i) => entries[i].size,
-            getMtimeFor: (i) => entries[i].modifiedAt,
-        }
-        const idxs = dropParentIndex(matchEntries(accessors, entries.length, q))
+        const idxs = dropParentIndex(matchEntries(buildAccessors(), entries.length, q))
         lastMatchedIndices = idxs
         const adapted = idxs.map((i) => entryToResult(entries[i]))
         return Promise.resolve({ entries: adapted, totalCount: adapted.length })
@@ -316,12 +337,7 @@
         const q = buildMatchQuery()
         let indices = lastMatchedIndices
         if (q) {
-            const accessors: MatchAccessors = {
-                getNameFor: (i) => entries[i].name,
-                getSizeFor: (i) => entries[i].size,
-                getMtimeFor: (i) => entries[i].modifiedAt,
-            }
-            indices = dropParentIndex(matchEntries(accessors, entries.length, q))
+            indices = dropParentIndex(matchEntries(buildAccessors(), entries.length, q))
         }
         // Persist to recent selections. Selection's "add" gate is the commit, mirroring
         // Search's "Open in pane" gate (recents are signal-rich, not keystroke-noisy).

@@ -763,6 +763,7 @@
             dateFilter={config.state.getDateFilter()}
             dateValue={config.state.getDateValue()}
             dateValueMax={config.state.getDateValueMax()}
+            typeFilter={config.state.getTypeFilter()}
             systemDirExcludeTooltip={config.filterChipsExtras.systemDirExcludeTooltip}
             {highlightedFields}
             disabled={config.inputsDisabled}

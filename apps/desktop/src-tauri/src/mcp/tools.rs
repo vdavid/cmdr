@@ -403,6 +403,10 @@ fn get_dialog_tools() -> Vec<Tool> {
                         "type": "string",
                         "description": "ISO date string"
                     },
+                    "isDirectory": {
+                        "type": "boolean",
+                        "description": "Type filter: true = folders only, false = files only, omit for both"
+                    },
                     "scope": {
                         "type": "string",
                         "description": "Scope string, same syntax as the scope chip: comma-separated paths, ! prefix for excludes"
@@ -802,6 +806,7 @@ mod tests {
             "sizeMax",
             "modifiedAfter",
             "modifiedBefore",
+            "isDirectory",
             "scope",
             "caseSensitive",
             "excludeSystemDirs",

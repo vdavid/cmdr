@@ -38,6 +38,7 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     dateFilter: 'any',
     dateValue: '',
     dateValueMax: '',
+    typeFilter: 'both',
     systemDirExcludeTooltip: 'Excluded: <code>node_modules</code>, <code>.git</code>',
     highlightedFields: new SvelteSet<string>(),
     disabled: false,
@@ -82,6 +83,15 @@ describe('SearchFilterChips a11y', () => {
         scope: '~/Documents, !node_modules',
       }),
     })
+    await tick()
+    await expectNoA11yViolations(target)
+    target.remove()
+  })
+
+  it('type toggle set to Folders has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SearchFilterChips, { target, props: baseProps({ typeFilter: 'folder' }) })
     await tick()
     await expectNoA11yViolations(target)
     target.remove()

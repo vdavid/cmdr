@@ -29,6 +29,10 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals live 
 - **`createQueryFilterState()` owns ONLY cross-consumer fields.** When adding a field, ask "would Selection care?" Yes →
   core factory. No → the consumer's extras module (`createSearchExtrasState()` etc.). Don't share via the core when
   semantics diverge (`lastAiLabel` is the textbook "no").
+- **`typeFilter: 'both' | 'file' | 'folder'`** (core, default `'both'`) maps to the existing IPC
+  `SearchQuery.isDirectory: Option<bool>` in `buildBaseSearchQuery` (`both → null`, `file → false`, `folder → true`): no
+  new IPC field, no engine change. Selection's matcher reads it via `getIsDirFor`; it round-trips as
+  `HistoryFilters.isDirectory` (additive `#[serde(default)]`, no schema bump).
 - **`recordAiTranslation` (core) writes ONLY `handTyped[mode]`.** The Search-only label/pattern slots live in the extras
   and are written separately. Don't fold them into the core method.
 - **`stopPropagation()` on every dialog `keydown`** (shields the file explorer behind it; without it, keys trigger

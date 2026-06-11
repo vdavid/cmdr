@@ -167,6 +167,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
       sizeMax: typeof raw.sizeMax === 'number' ? raw.sizeMax : undefined,
       modifiedAfter: typeof raw.modifiedAfter === 'string' ? raw.modifiedAfter : undefined,
       modifiedBefore: typeof raw.modifiedBefore === 'string' ? raw.modifiedBefore : undefined,
+      isDirectory: typeof raw.isDirectory === 'boolean' ? raw.isDirectory : undefined,
       scope: typeof raw.scope === 'string' ? raw.scope : undefined,
       caseSensitive: typeof raw.caseSensitive === 'boolean' ? raw.caseSensitive : undefined,
       excludeSystemDirs: typeof raw.excludeSystemDirs === 'boolean' ? raw.excludeSystemDirs : undefined,

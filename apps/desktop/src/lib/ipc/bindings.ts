@@ -3273,6 +3273,13 @@ export type HistoryFilters = {
   sizeMax?: number | null
   modifiedAfter?: string | null
   modifiedBefore?: string | null
+  /**
+   *  Type filter, round-tripping the frontend `typeFilter` toggle:
+   *  `Some(true) = folder`, `Some(false) = file`, `None = both`. Additive with
+   *  `#[serde(default)]`, so older history files (no `isDirectory` key) load as `None`
+   *  without a schema bump.
+   */
+  isDirectory?: boolean | null
 }
 
 // Search modes recorded in history. Mirrors the frontend `SearchMode` union.

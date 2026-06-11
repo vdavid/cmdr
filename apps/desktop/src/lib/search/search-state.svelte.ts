@@ -34,6 +34,7 @@ export type {
   SizeFilter,
   SizeUnit,
   DateFilter,
+  TypeFilter,
   PatternType,
   LastDialogEvent,
   EnterAction,
@@ -236,6 +237,8 @@ export interface SearchPrefill {
   sizeMax?: number
   modifiedAfter?: string
   modifiedBefore?: string
+  /** Type filter: `true` = folders only, `false` = files only, `null`/omitted = both. */
+  isDirectory?: boolean | null
   scope?: string
   caseSensitive?: boolean
   excludeSystemDirs?: boolean
@@ -253,15 +256,17 @@ export function applySearchPrefill(prefill: SearchPrefill): void {
   if (prefill.caseSensitive !== undefined) core.setCaseSensitive(prefill.caseSensitive)
   if (prefill.excludeSystemDirs !== undefined) extras.setExcludeSystemDirs(prefill.excludeSystemDirs)
 
-  // `applyHistoryFilters` resets both size and date, so we batch them into one call.
+  // `applyHistoryFilters` resets size, date, and type, so we batch them into one call.
   const touchesSize = prefill.sizeMin !== undefined || prefill.sizeMax !== undefined
   const touchesDate = prefill.modifiedAfter !== undefined || prefill.modifiedBefore !== undefined
-  if (touchesSize || touchesDate) {
+  const touchesType = prefill.isDirectory !== undefined
+  if (touchesSize || touchesDate || touchesType) {
     const combined: HistoryFilters = {
       sizeMin: prefill.sizeMin,
       sizeMax: prefill.sizeMax,
       modifiedAfter: prefill.modifiedAfter,
       modifiedBefore: prefill.modifiedBefore,
+      isDirectory: prefill.isDirectory ?? null,
     }
     core.applyHistoryFilters(combined)
   }

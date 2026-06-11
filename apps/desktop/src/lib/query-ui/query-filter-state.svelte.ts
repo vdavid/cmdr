@@ -30,6 +30,15 @@ export type { PatternType }
  */
 export type SizeFilter = 'any' | 'gte' | 'lte' | 'eq' | 'between'
 export type DateFilter = 'any' | 'after' | 'before' | 'between'
+
+/**
+ * Three-way type filter, named after the UI's `Both | Files | Folders` toggle. Maps to the
+ * existing IPC `SearchQuery.isDirectory: Option<bool>` in `buildBaseSearchQuery`
+ * (`both → null`, `file → false`, `folder → true`); there is no separate IPC field. The
+ * Selection matcher reads it directly via `getIsDirFor`. Cross-consumer, so it lives in the
+ * core factory (both dialogs show the toggle).
+ */
+export type TypeFilter = 'both' | 'file' | 'folder'
 /**
  * Size unit. `B` (bytes) was added in round 2 (D10) so the list-style popover can let the
  * user pick a byte-level filter without leaving the popover. The byte unit's label varies
@@ -147,6 +156,10 @@ export interface QueryFilterState {
   getDateValueMax(): string
   setDateValueMax(value: string): void
 
+  // Type filter (file / folder / both)
+  getTypeFilter(): TypeFilter
+  setTypeFilter(value: TypeFilter): void
+
   // Case sensitivity
   getCaseSensitive(): boolean
   setCaseSensitive(value: boolean): void
@@ -237,6 +250,8 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
   let dateValue = $state('')
   let dateValueMax = $state('')
 
+  let typeFilter = $state<TypeFilter>('both')
+
   let caseSensitive = $state(false)
 
   let lastAiPrompt = $state<string | null>(null)
@@ -307,6 +322,16 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
     }
   }
 
+  /**
+   * Maps the UI-named `typeFilter` to the existing IPC `isDirectory: Option<bool>`:
+   * `both → null` (no constraint), `file → false`, `folder → true`. No separate IPC field.
+   */
+  function typeFilterToIsDirectory(): boolean | null {
+    if (typeFilter === 'file') return false
+    if (typeFilter === 'folder') return true
+    return null
+  }
+
   function buildBaseSearchQuery(): SearchQuery {
     const patternType: PatternType = mode === 'regex' ? 'regex' : 'glob'
     const q: SearchQuery = {
@@ -316,7 +341,7 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
       maxSize: null,
       modifiedAfter: null,
       modifiedBefore: null,
-      isDirectory: null,
+      isDirectory: typeFilterToIsDirectory(),
       limit: 30,
     }
 
@@ -339,8 +364,14 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
     dateFilter = 'any'
     dateValue = ''
     dateValueMax = ''
+    typeFilter = 'both'
 
     if (!filters) return
+
+    // `isDirectory` round-trips the type filter: `true → folder`, `false → file`,
+    // `null`/absent → both (the reset above).
+    if (filters.isDirectory === true) typeFilter = 'folder'
+    else if (filters.isDirectory === false) typeFilter = 'file'
 
     if (filters.sizeMin != null && filters.sizeMax != null && filters.sizeMin === filters.sizeMax) {
       // `between x x` and `eq x` match exactly the same set; rehydrate the friendlier `= x`
@@ -409,8 +440,14 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
     return {}
   }
 
+  function readTypeFilter(): { isDirectory?: boolean } {
+    if (typeFilter === 'folder') return { isDirectory: true }
+    if (typeFilter === 'file') return { isDirectory: false }
+    return {}
+  }
+
   function readHistoryFilters(): HistoryFilters {
-    return { ...readSizeFilters(), ...readDateFilters() }
+    return { ...readSizeFilters(), ...readDateFilters(), ...readTypeFilter() }
   }
 
   return {
@@ -460,6 +497,11 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
     getDateValueMax: () => dateValueMax,
     setDateValueMax: (v) => {
       dateValueMax = v
+    },
+
+    getTypeFilter: () => typeFilter,
+    setTypeFilter: (v) => {
+      typeFilter = v
     },
 
     getCaseSensitive: () => caseSensitive,
@@ -555,6 +597,7 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
       dateFilter = 'any'
       dateValue = ''
       dateValueMax = ''
+      typeFilter = 'both'
       results = []
       totalCount = 0
       cursorIndex = 0

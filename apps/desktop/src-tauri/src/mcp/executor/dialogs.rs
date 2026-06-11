@@ -347,6 +347,7 @@ pub async fn execute_open_search_dialog<R: Runtime>(app: &AppHandle<R>, params: 
         "sizeMax",
         "modifiedAfter",
         "modifiedBefore",
+        "isDirectory",
         "scope",
         "caseSensitive",
         "excludeSystemDirs",

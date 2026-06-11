@@ -1,40 +1,41 @@
 # Filter chips (size, modified, scope, pattern)
 
-The chip strip that lives below the mode-chip row inside the shared `QueryDialog`. Each chip surfaces one filter
-dimension (Size, Modified, Search in, Pattern) and opens a popover with the dense controls. Owned by the shared query
-UI; consumed by both Search and Selection through the same `QueryDialog` orchestrator. See
-[`../CLAUDE.md`](../CLAUDE.md) for the orchestrator, the unified bar, the results table, and the cross-consumer state
-factory.
+The chip strip that lives below the mode-chip row inside the shared `QueryDialog`. It leads with a one-click
+`Both | Files | Folders` type toggle, then surfaces each remaining filter dimension (Pattern, Size, Modified, Search in)
+as a chip that opens a popover with the dense controls. All filters are always visible (there's no "+ Add filter"
+affordance). Owned by the shared query UI; consumed by both Search and Selection through the same `QueryDialog`
+orchestrator. See [`../CLAUDE.md`](../CLAUDE.md) for the orchestrator, the unified bar, the results table, and the
+cross-consumer state factory.
 
 ## Files
 
 | File                        | Purpose                                                                                                                                                                                                                                                                                  |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FilterChips.svelte`        | Filter chip strip (Pattern + Size + Modified + Search in) plus Add filter dropdown. Owns the open-chip state and the three keyboard routers. Visibility flags: `scopeChipVisible`, `patternChipVisible`                                                                                  |
+| `FilterChips.svelte`        | Filter chip strip: leading `Both/Files/Folders` type `ToggleGroup` (drives core `typeFilter`), then Pattern + Size + Modified + Search in chips. Owns the open-chip state and the three keyboard routers. Visibility flags: `scopeChipVisible`, `patternChipVisible`                     |
 | `SizeFilterPopover.svelte`  | Size popover body: the comparator + value + unit list grid, the lower/upper custom-input flags, and the `pickSize*` auto-promote handlers                                                                                                                                                |
 | `DateFilterPopover.svelte`  | Modified popover body: the comparator + dynamic-preset grid, the `buildDatePresets`-derived list + first-match selection keys, custom-input flags, `pickDate*` handlers                                                                                                                  |
 | `ScopeFilterPopover.svelte` | Search-in popover body: scope textarea, "Hide boring folders" / "Case-sensitive" toggles, and the ⌥C / ⌥V footer buttons                                                                                                                                                                 |
 | `filter-popover.css`        | Shared global styles for the popover bodies: `.popover-section`, `.popover-label`, the `.list-grid` / `.list-cell` / `.list-col` grid, and `.popover-input`. Imported by all three popover components (Svelte `<style>` is component-scoped, so shared classes need a global stylesheet) |
 | `FilterChip.svelte`         | Single chip: default/configured states, `×` clear, Backspace clear, aria-expanded                                                                                                                                                                                                        |
-| `FilterChipPopover.svelte`  | Generic popover shell: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog. Wrapped by each `*FilterPopover` body and used directly for the Add filter menu                                                                                                       |
+| `FilterChipPopover.svelte`  | Generic popover shell: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog. Wrapped by each `*FilterPopover` body                                                                                                                                                 |
 | `filter-chip-state.ts`      | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip`, `derivePatternChip` (testable in isolation)                                                                                                                                                                         |
 | `filter-popover-helpers.ts` | Pure: `SIZE_PRESETS`, `byteUnitLabel`, `kiloByteLabel`, `isSizeRangeDisabled`, `showsUpperBound`, `isDateRangeDisabled`, `showsDateUpperBound`, `buildDatePresets`                                                                                                                       |
 
 Companion tests (colocated):
 
-| Test                               | Coverage                                                                                                                              |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `FilterChips.svelte.test.ts`       | Chip rendering, `×` and Backspace clear, popover open/close, Add filter list, scope behavior, ⌥S/⌥M/⌥I openers, ⌥C/⌥V scope shortcuts |
-| `FilterChips.a11y.test.ts`         | Tier-3 axe-core audit across populated chip states                                                                                    |
-| `FilterChip.a11y.test.ts`          | Tier-3 axe-core audit across default, configured, disabled, and open states                                                           |
-| `FilterChipPopover.svelte.test.ts` | Mount / unmount via `open` prop, Esc → onClose with stopPropagation                                                                   |
-| `FilterChipPopover.a11y.test.ts`   | Tier-3 axe-core audit for the popover surface                                                                                         |
-| `SizeFilterPopover.a11y.test.ts`   | Tier-3 axe-core audit: closed + open in `between` mode (all columns)                                                                  |
-| `DateFilterPopover.svelte.test.ts` | Preset click auto-promote, Custom… cell flow, comparator click, upper-bound column gating                                             |
-| `DateFilterPopover.a11y.test.ts`   | Tier-3 axe-core audit: closed, preset mode, and custom-bounds mode (`nested-interactive` disabled there — input inside Custom cell)   |
-| `ScopeFilterPopover.a11y.test.ts`  | Tier-3 axe-core audit: closed + open with scope text and toggles                                                                      |
-| `filter-chip-state.test.ts`        | Default → configured → cleared rules for each chip's display summary                                                                  |
-| `filter-popover-helpers.test.ts`   | Size + date preset rules, comparator gating, dynamic Modified preset labels                                                           |
+| Test                               | Coverage                                                                                                                                             |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FilterChips.svelte.test.ts`       | Type toggle render + selection, chip rendering, `×` and Backspace clear, popover open/close, scope behavior, ⌥S/⌥M/⌥I openers, ⌥C/⌥V scope shortcuts |
+| `FilterChips.a11y.test.ts`         | Tier-3 axe-core audit across populated chip states                                                                                                   |
+| `FilterChip.a11y.test.ts`          | Tier-3 axe-core audit across default, configured, disabled, and open states                                                                          |
+| `FilterChipPopover.svelte.test.ts` | Mount / unmount via `open` prop, Esc → onClose with stopPropagation                                                                                  |
+| `FilterChipPopover.a11y.test.ts`   | Tier-3 axe-core audit for the popover surface                                                                                                        |
+| `SizeFilterPopover.a11y.test.ts`   | Tier-3 axe-core audit: closed + open in `between` mode (all columns)                                                                                 |
+| `DateFilterPopover.svelte.test.ts` | Preset click auto-promote, Custom… cell flow, comparator click, upper-bound column gating                                                            |
+| `DateFilterPopover.a11y.test.ts`   | Tier-3 axe-core audit: closed, preset mode, and custom-bounds mode (`nested-interactive` disabled there — input inside Custom cell)                  |
+| `ScopeFilterPopover.a11y.test.ts`  | Tier-3 axe-core audit: closed + open with scope text and toggles                                                                                     |
+| `filter-chip-state.test.ts`        | Default → configured → cleared rules for each chip's display summary                                                                                 |
+| `filter-popover-helpers.test.ts`   | Size + date preset rules, comparator gating, dynamic Modified preset labels                                                                          |
 
 ## Chip state shape
 
@@ -138,10 +139,15 @@ lives in `SearchDialog.svelte::matchKey` for the mode-chip ⌥A / ⌥F / ⌥R sh
 
 **Decision**: Filter chips with popovers instead of inline labelled controls. **Why**: An earlier form-shaped filter row
 (label + select + value) competed with the search bar and the results. Chips are calmer (default = name only, configured
-= "Size > 100 MB ×"), extensible (the trailing "+ Add filter" chip is the affordance for new filters), and
-keyboard-first (Tab cycles chips; Enter opens the popover; Esc closes only the popover via the capture-phase guard
-documented above). The popover surface is the right place for the dense single-filter UI that doesn't deserve permanent
-screen real estate.
+= "Size > 100 MB ×") and keyboard-first (Tab cycles chips; Enter opens the popover; Esc closes only the popover via the
+capture-phase guard documented above). The popover surface is the right place for the dense single-filter UI that
+doesn't deserve permanent screen real estate. All filters are always visible (so few); there's no "+ Add filter" gate.
+
+**Decision**: The type filter is a `ToggleGroup` (`Both | Files | Folders`), not a chip+popover. **Why**: size/date are
+ranges that deserve a popover, but type is a 3-way mutually-exclusive choice where a popover is friction. One-click
+matches the keyboard-first, low-friction principle, and it leads the strip ("show [files] where size > …"). It binds the
+core `typeFilter` state directly (cross-consumer, so both dialogs show it), mapped to the existing IPC `isDirectory`. On
+change it calls `scheduleSearch()` like the chip clears (so it never auto-runs in AI mode, matching them).
 
 **Decision**: Pattern chip always rendered. **Why**: After moving the AI bar to keep the natural-language prompt
 visible, the AI's produced pattern needed a visible home in the dialog. The same chip primitive serves all three modes

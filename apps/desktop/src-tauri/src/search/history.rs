@@ -63,6 +63,12 @@ pub struct HistoryFilters {
     pub modified_after: Option<String>,
     #[serde(default)]
     pub modified_before: Option<String>,
+    /// Type filter, round-tripping the frontend `typeFilter` toggle:
+    /// `Some(true) = folder`, `Some(false) = file`, `None = both`. Additive with
+    /// `#[serde(default)]`, so older history files (no `isDirectory` key) load as `None`
+    /// without a schema bump.
+    #[serde(default)]
+    pub is_directory: Option<bool>,
 }
 
 /// A single recent-search entry, persisted verbatim.
@@ -147,6 +153,9 @@ fn canonical_key(entry: &HistoryEntry) -> String {
     }
     if let Some(ref v) = entry.filters.modified_before {
         filter_kv.insert("modifiedBefore", v.clone());
+    }
+    if let Some(v) = entry.filters.is_directory {
+        filter_kv.insert("isDirectory", v.to_string());
     }
     let filter_str = filter_kv
         .iter()
@@ -649,6 +658,38 @@ mod tests {
 
         let back: HistoryEntry = serde_json::from_str(&json).unwrap();
         assert_eq!(back, e);
+    }
+
+    #[test]
+    fn is_directory_filter_round_trips_without_schema_bump() {
+        // The type filter is an additive `#[serde(default)]` field: a new value serializes
+        // and deserializes cleanly, AND an old file missing the key still loads (as `None`),
+        // all on schema v1. This pins "no schema bump needed".
+        assert_eq!(CURRENT_SCHEMA_VERSION, 1, "M4's type filter must NOT bump the schema");
+
+        let mut e = entry(HistoryMode::Filename, "*.png");
+        e.filters.is_directory = Some(true);
+        let json = serde_json::to_string(&e).unwrap();
+        assert!(json.contains("\"isDirectory\":true"));
+        let back: HistoryEntry = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.filters.is_directory, Some(true));
+
+        // An old entry (filters object with no `isDirectory` key) loads as `None`.
+        let legacy = r#"{"id":"x","timestamp":1,"mode":"filename","query":"*.png","filters":{"sizeMin":1024},"scope":"","caseSensitive":false,"excludeSystemDirs":true,"resultCount":0}"#;
+        let parsed: HistoryEntry = serde_json::from_str(legacy).unwrap();
+        assert_eq!(parsed.filters.is_directory, None);
+        assert_eq!(parsed.filters.size_min, Some(1024));
+    }
+
+    #[test]
+    fn canonical_key_distinguishes_type_filter() {
+        let mut folder = entry(HistoryMode::Filename, "*.png");
+        folder.filters.is_directory = Some(true);
+        let mut file = entry(HistoryMode::Filename, "*.png");
+        file.filters.is_directory = Some(false);
+        let both = entry(HistoryMode::Filename, "*.png");
+        assert_ne!(canonical_key(&folder), canonical_key(&file));
+        assert_ne!(canonical_key(&folder), canonical_key(&both));
     }
 
     #[test]

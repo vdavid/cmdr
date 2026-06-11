@@ -33,21 +33,36 @@ export interface DatePredicate {
   before?: number
 }
 
+/**
+ * Type filter, mirroring the UI's `Both | Files | Folders` toggle. `'both'` (the default)
+ * matches everything, so the matcher only filters when it's `'file'` or `'folder'` AND a
+ * `getIsDirFor` accessor is present.
+ */
+export type TypePredicate = 'both' | 'file' | 'folder'
+
 export interface SelectionMatchQuery {
   pattern: string
   kind: 'glob' | 'regex'
   caseSensitive: boolean
   size?: SizePredicate
   date?: DatePredicate
+  /** Type filter. Omitted or `'both'` matches files and folders alike. */
+  type?: TypePredicate
 }
 
 export interface MatchAccessors {
   /** Returns the name the matcher should test (basename for regular panes, full friendly path for snapshot panes). */
   getNameFor: (index: number) => string
-  /** Optional: size in bytes, or `null`/`undefined` when the entry has no size (directories). */
+  /**
+   * Optional: size in bytes for the size filter. Files report `entry.size`; directories
+   * report `entry.recursiveSize` (index-derived, `undefined` until the index computes it).
+   * `null`/`undefined` means the entry can't satisfy a size bound.
+   */
   getSizeFor?: (index: number) => number | null | undefined
   /** Optional: modified-at timestamp in unix seconds. */
   getMtimeFor?: (index: number) => number | null | undefined
+  /** Optional: whether the entry is a directory. Drives the type filter. */
+  getIsDirFor?: (index: number) => boolean
 }
 
 /**
@@ -101,6 +116,16 @@ function sizePredicateMatches(value: number | null | undefined, pred: SizePredic
   return true
 }
 
+/**
+ * Whether an entry passes the type filter. `'both'` (or a missing `getIsDirFor`) matches
+ * everything; `'file'`/`'folder'` constrain on the entry's directory flag.
+ */
+function typePredicateMatches(isDir: boolean, type: TypePredicate): boolean {
+  if (type === 'folder') return isDir
+  if (type === 'file') return !isDir
+  return true
+}
+
 function datePredicateMatches(value: number | null | undefined, pred: DatePredicate): boolean {
   if (value == null) return false
   if (pred.kind === 'after') return pred.after != null && value >= pred.after
@@ -125,6 +150,9 @@ export function matchEntries(accessors: MatchAccessors, total: number, query: Se
   for (let i = 0; i < total; i++) {
     const name = accessors.getNameFor(i)
     if (!re.test(name)) continue
+    if (query.type && accessors.getIsDirFor) {
+      if (!typePredicateMatches(accessors.getIsDirFor(i), query.type)) continue
+    }
     if (query.size && accessors.getSizeFor) {
       if (!sizePredicateMatches(accessors.getSizeFor(i), query.size)) continue
     }

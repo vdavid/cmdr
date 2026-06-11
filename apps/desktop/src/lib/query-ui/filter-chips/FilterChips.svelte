@@ -2,10 +2,11 @@
     /**
      * SearchFilterChips: the chip strip that replaces the old filter row + scope row.
      *
-     * Each filter (Size, Modified, Search in) renders as a single chip. Clicking the chip opens
-     * a popover with the controls. A trailing "+ Add filter" chip surfaces filters that are
-     * currently in their default state; when all three are configured, the Add filter chip
-     * disappears. See `lib/query-ui/CLAUDE.md` § "Filter chips with popovers" for the rationale.
+     * Leads with a one-click `Both | Files | Folders` type toggle (a `ToggleGroup`, not a
+     * popover — type is a 3-way mutually-exclusive choice where a popover would be friction).
+     * Then the Pattern chip, then Size / Modified / Search in chips: clicking a chip opens a
+     * popover with the controls. All filters are always visible (so few). See
+     * `lib/query-ui/CLAUDE.md` for the rationale.
      *
      * Chip behavior:
      *   - Default state: shows just the label ("Size", "Modified", "Search in").
@@ -24,12 +25,12 @@
      */
     import { SvelteSet } from 'svelte/reactivity'
     import FilterChip from './FilterChip.svelte'
-    import FilterChipPopover from './FilterChipPopover.svelte'
     import SizeFilterPopover from './SizeFilterPopover.svelte'
     import DateFilterPopover from './DateFilterPopover.svelte'
     import ScopeFilterPopover from './ScopeFilterPopover.svelte'
+    import ToggleGroup, { type ToggleGroupOption } from '$lib/ui/ToggleGroup.svelte'
     import { deriveSizeChip, deriveDateChip, deriveScopeChip, derivePatternChip } from './filter-chip-state'
-    import type { QueryFilterState, SizeFilter, SizeUnit, DateFilter } from '../query-filter-state.svelte'
+    import type { QueryFilterState, SizeFilter, SizeUnit, DateFilter, TypeFilter } from '../query-filter-state.svelte'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
 
     type FilterKey = 'size' | 'date' | 'scope'
@@ -68,6 +69,8 @@
         dateFilter: DateFilter
         dateValue: string
         dateValueMax: string
+        /** Current `Both | Files | Folders` type filter (core state, both dialogs show it). */
+        typeFilter: TypeFilter
         systemDirExcludeTooltip: string
         highlightedFields: SvelteSet<string>
         disabled: boolean
@@ -122,6 +125,7 @@
         dateFilter,
         dateValue,
         dateValueMax,
+        typeFilter,
         systemDirExcludeTooltip,
         highlightedFields,
         disabled,
@@ -153,7 +157,19 @@
     const setDateValueMax: typeof filterState.setDateValueMax = (v) => { filterState.setDateValueMax(v); }
     const setQueryFromUserInput: typeof filterState.setQueryFromUserInput = (v) => { filterState.setQueryFromUserInput(v); }
 
-    let openChip = $state<FilterKey | 'add' | null>(null)
+    // Type toggle: one-click `Both | Files | Folders`. Lives in the core state (both
+    // dialogs show it), leading the chip strip so it reads "show [files] where size > …".
+    const TYPE_FILTER_OPTIONS: ToggleGroupOption[] = [
+        { value: 'both', label: 'Both' },
+        { value: 'file', label: 'Files' },
+        { value: 'folder', label: 'Folders' },
+    ]
+    function onTypeFilterChange(value: string): void {
+        filterState.setTypeFilter(value as TypeFilter)
+        scheduleSearch()
+    }
+
+    let openChip = $state<FilterKey | null>(null)
 
     /**
      * Match a plain `Alt+<letter>` key (lowercased), with no other modifiers. Centralized to
@@ -224,7 +240,6 @@
     let sizeChipEl: HTMLButtonElement | undefined = $state()
     let dateChipEl: HTMLButtonElement | undefined = $state()
     let scopeChipEl: HTMLButtonElement | undefined = $state()
-    let addChipEl: HTMLButtonElement | undefined = $state()
 
     // Pipe the user's file-size format through so the chip's KB/kB label matches
     // the popover (`kB` for SI, `KB` for binary).
@@ -250,31 +265,15 @@
         scheduleSearch()
     }
 
-    /** Which filters should appear in the "Add filter" dropdown. Configured filters are absent. */
-    const availableToAdd = $derived.by<FilterKey[]>(() => {
-        const list: FilterKey[] = []
-        if (!sizeState.configured) list.push('size')
-        if (!dateState.configured) list.push('date')
-        if (scopeChipVisible && !scopeState.configured) list.push('scope')
-        return list
-    })
-
-    /** Whether to render the trailing Add filter chip. Hidden when nothing's left to add. */
-    const showAddFilter = $derived(availableToAdd.length > 0)
-
-    /** Chips that should be visible in the strip (always-on for configured filters). */
+    /** Chips that should be visible in the strip. All filters are always visible (so few). */
     const visibleChips = $derived.by<FilterKey[]>(() => {
-        // Default behavior: show all three filters always, since they're so few. The Add filter
-        // chip is the discoverability hint, not a gate. This matches §3.2's intent ("the affordance
-        // the user reads as 'I can add filters'") while keeping the existing filters one click away.
-        // Selection (and any consumer with `scopeChipVisible: false`) drops the scope chip from
-        // the always-on set.
+        // Selection (and any consumer with `scopeChipVisible: false`) drops the scope chip.
         const list: FilterKey[] = ['size', 'date']
         if (scopeChipVisible) list.push('scope')
         return list
     })
 
-    function openPopover(key: FilterKey | 'add'): void {
+    function openPopover(key: FilterKey): void {
         if (disabled) return
         openChip = key
     }
@@ -302,26 +301,22 @@
         if (!excludeSystemDirs) onToggleExcludeSystemDirs()
         scheduleSearch()
     }
-
-    /** Adds a default filter by opening its popover and seeding a sensible comparator. */
-    function addFilter(key: FilterKey): void {
-        if (key === 'size') setSizeFilter('gte')
-        else if (key === 'date') setDateFilter('after')
-        openChip = key
-    }
-
-    function addFilterLabel(key: FilterKey): string {
-        if (key === 'size') return 'Size'
-        if (key === 'date') return 'Modified'
-        return 'Search in'
-    }
 </script>
 
-<!-- Filter chip strip. The Pattern chip is ALWAYS rendered ahead of Size / Modified /
-     Search in. Its value comes from the bar in filename / regex mode and from the
-     AI-produced pattern in AI mode, so the user sees the actual pattern being applied
-     across every mode. See `lib/query-ui/CLAUDE.md` for the rationale. -->
+<!-- Filter chip strip. The Type toggle leads the strip (one-click `Both | Files | Folders`),
+     then the Pattern chip, then Size / Modified / Search in. The Pattern chip's value comes
+     from the bar in filename / regex mode and from the AI-produced pattern in AI mode, so the
+     user sees the actual pattern being applied across every mode. See `lib/query-ui/CLAUDE.md`
+     for the rationale. -->
 <div class="filter-chip-strip" role="toolbar" aria-label="Search filters">
+    <ToggleGroup
+        semantics="toggles"
+        value={typeFilter}
+        options={TYPE_FILTER_OPTIONS}
+        onChange={onTypeFilterChange}
+        ariaLabel="Filter by type"
+        {disabled}
+    />
     {#if patternChipVisible}
         <FilterChip
             bind:chipElement={patternChipEl}
@@ -382,25 +377,6 @@
             />
         {/if}
     {/each}
-
-    {#if showAddFilter}
-        <button
-            bind:this={addChipEl}
-            type="button"
-            class="add-filter-chip"
-            class:is-open={openChip === 'add'}
-            aria-haspopup="menu"
-            aria-expanded={openChip === 'add'}
-            aria-label="Add filter"
-            {disabled}
-            onclick={() => {
-                openPopover('add')
-            }}
-        >
-            <span class="add-glyph" aria-hidden="true">+</span>
-            <span>Add filter</span>
-        </button>
-    {/if}
 </div>
 
 {#if sizeChipEl}
@@ -475,31 +451,6 @@
     />
 {/if}
 
-<!-- Add filter dropdown -->
-{#if addChipEl}
-    <FilterChipPopover
-        anchor={addChipEl}
-        open={openChip === 'add'}
-        onClose={closePopover}
-        ariaLabel="Add a filter"
-    >
-        <div class="add-filter-menu" role="menu" aria-label="Add a filter">
-            {#each availableToAdd as key (key)}
-                <button
-                    type="button"
-                    class="add-filter-item"
-                    role="menuitem"
-                    onclick={() => {
-                        addFilter(key)
-                    }}
-                >
-                    {addFilterLabel(key)}
-                </button>
-            {/each}
-        </div>
-    </FilterChipPopover>
-{/if}
-
 <style>
     .filter-chip-strip {
         display: flex;
@@ -510,71 +461,5 @@
         border-top: 1px solid var(--color-border-subtle);
         border-bottom: 1px solid var(--color-border-subtle);
         flex-wrap: wrap;
-    }
-
-    /* Add filter chip: visually distinct from a configured chip (dashed border, glyph-led label),
-       so the eye reads it as a control surface rather than a filled value. */
-    .add-filter-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        line-height: 1;
-        color: var(--color-text-tertiary);
-        background: transparent;
-        border: 1px dashed var(--color-border);
-        border-radius: var(--radius-sm);
-        white-space: nowrap;
-        transition:
-            background var(--transition-base),
-            border-color var(--transition-base),
-            color var(--transition-base);
-    }
-
-    .add-filter-chip:not(:disabled):hover,
-    .add-filter-chip.is-open {
-        background: var(--color-bg-tertiary);
-        border-color: var(--color-border-strong);
-        color: var(--color-text-primary);
-    }
-
-    .add-filter-chip:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .add-glyph {
-        font-size: var(--font-size-md);
-        line-height: 1;
-    }
-
-    /* ===== Add filter menu ===== */
-
-    .add-filter-menu {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xxs);
-        min-width: 160px;
-    }
-
-    .add-filter-item {
-        display: block;
-        text-align: left;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        padding: 6px 10px;
-        font-size: var(--font-size-sm);
-        background: transparent;
-        border: none;
-        border-radius: var(--radius-sm);
-        color: var(--color-text-primary);
-        line-height: 1.2;
-    }
-
-    .add-filter-item:hover,
-    .add-filter-item:focus-visible {
-        background: var(--color-accent-subtle);
-        outline: none;
     }
 </style>
