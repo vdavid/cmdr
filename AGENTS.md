@@ -256,6 +256,13 @@ shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shi
   the dir from the main clone at `~/projects-git/vdavid/cmdr/` when its `.version` matches, and falls back to
   downloading otherwise. So raw `cargo check` Just Works in fresh worktrees. Don't paper over a missing `resources/ai/`
   with a placeholder file.
+- **Skip the full dep rebuild on a fresh worktree by cloning `target/`.** Right after creating the worktree and before
+  the first build, run `cp -c ~/projects-git/vdavid/cmdr/target <worktree>/target` (APFS copy-on-write: instant, zero
+  extra disk until files diverge). Dependency artifacts are fingerprinted on version + features + rustc + profile, not
+  on the build path, so cargo reuses every crates.io dep (including `mtp-rs` and `smb2`); only the workspace members
+  (`cmdr_lib`, the `Cmdr` bin, `fsevent-stream`, `index-query`) rebuild. Clone the whole `target/` (or at least all of
+  `target/debug`) in one shot: a partial subset risks fingerprint mismatches that trigger the full rebuild anyway. This
+  mirrors the `.codegraph/` clone in `~/.claude/docs/codegraph-worktree.md`.
 - When using worktrees, always branch off from _local_ `main` (not `origin/main`) and rebase and FF _local_ main.
 - To run two dev sessions in parallel from different worktrees, pass `--worktree <slug>` to `pnpm dev` in each. The
   wrapper picks per-instance ports (Vite, MCP, Tauri MCP bridge), a per-instance data dir
