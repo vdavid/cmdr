@@ -25,8 +25,10 @@ second. Backend: `src-tauri/src/search/` + `src-tauri/src/commands/search.rs`.
   `lastAiPatternKind`) live in `createSearchExtrasState()`. `recordAiTranslation` is split: the core writes
   `handTyped[mode]`, the extras write the Pattern chip + label. The façade calls both in sequence. Selection carries
   none of the extras.
-- **Recent-search entries are added only on "Open in pane"** (`SearchDialog.svelte::openInPane`), the ONE call site.
-  Enter / auto-apply runs don't pollute history. For AI mode the entry carries the original prompt, not the pattern.
+- **Recent-search entries are persisted when the user ACTS on a result, not on every run.** Both "Show all in main
+  window" (`showAllInMainWindow`) and opening a single result ("Go to file", `goToCursorFile`) call
+  `persistRecentSearch()`. Plain Enter / auto-apply runs don't pollute history (keystroke noise). For AI mode the entry
+  carries the original prompt, not the translated pattern.
 - **"Open in pane" promotes to the `search-results://` virtual volume**, not a special FilePane mode. Snapshots live in
   `snapshot-store.svelte.ts`; refcount is the ONLY authority for lifetime (no hard cap), driven by pane-history refs +
   the `setLastAttemptId` slot. `navigation-history.ts` stays pure (no snapshot-store import).

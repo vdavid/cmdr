@@ -112,6 +112,7 @@ function dispatchKey(target: Element, key: string, meta = false, shift = false):
 interface MountDialogOptions {
   onClose?: () => void
   onShowAllInMainWindow?: (snapshotId: string) => void
+  onNavigate?: (path: string) => void
 }
 
 /**
@@ -143,7 +144,7 @@ async function mountDialog(opts: MountDialogOptions = {}): Promise<{ overlay: El
   const component = mount(SearchDialog, {
     target,
     props: {
-      onNavigate: () => {},
+      onNavigate: opts.onNavigate ?? (() => {}),
       onClose: opts.onClose ?? (() => {}),
       searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       onShowAllInMainWindow: opts.onShowAllInMainWindow,
@@ -1064,6 +1065,38 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     expect(entry.mode).toBe('filename')
     expect(entry.query).toBe('*.pdf')
     expect(entry.resultCount).toBe(1)
+
+    cleanup()
+  })
+
+  it('persists to recent searches when the user opens a single result ("Go to file")', async () => {
+    let navigatedTo: string | null = null
+    const { cleanup } = await mountDialog({
+      onNavigate: (path: string) => {
+        navigatedTo = path
+      },
+    })
+    setQuery('*.pdf')
+    setMode('filename')
+    await seedResults()
+    await tick()
+
+    // "Go to file" (the secondary footer action) opens the cursor result in the active pane.
+    // The host's `onNavigate` is what closes the dialog, so we don't assert close here.
+    const btn = document.body.querySelector('button[aria-label="Go to file"]') as HTMLButtonElement
+    expect(btn).not.toBeNull()
+    btn.click()
+    await tick()
+    await Promise.resolve()
+
+    // Opening a result is a signal-rich act, so the search is remembered (mirrors "Open in pane").
+    expect(addRecentSearchMock).toHaveBeenCalledTimes(1)
+    const firstCall = addRecentSearchMock.mock.calls[0] as unknown[] | undefined
+    const entry = firstCall?.[0] as { mode: string; query: string; resultCount: number }
+    expect(entry.mode).toBe('filename')
+    expect(entry.query).toBe('*.pdf')
+    expect(entry.resultCount).toBe(1)
+    expect(navigatedTo).toBe('/Users/test/docs/doc.pdf')
 
     cleanup()
   })

@@ -350,7 +350,21 @@
         createSnapshot(id, snapshot)
         setLastAttemptId(id)
 
-        // Persist to recent searches (the only call site that does this).
+        persistRecentSearch()
+
+        onShowAllInMainWindow?.(id)
+        onClose()
+    }
+
+    /**
+     * Persists the current search to recent searches. Called whenever the user acts on a
+     * result, treating it as a signal-rich event worth remembering: "Show all in main
+     * window" AND opening a single result ("Go to file"). Plain Enter / auto-apply runs
+     * don't persist (they'd be keystroke noise). For AI mode the entry carries the
+     * original natural-language prompt, not the translated pattern. Best-effort: a
+     * persistence failure never blocks the open.
+     */
+    function persistRecentSearch(): void {
         const historyEntry: HistoryEntry = {
             id: crypto.randomUUID(),
             timestamp: Date.now(),
@@ -363,19 +377,18 @@
             resultCount: getTotalCount(),
         }
         void addRecentSearchIpc(historyEntry).catch(() => {
-            // Silent on history persistence failure: the snapshot still opens.
+            // Silent on history persistence failure: the open still proceeds.
         })
-
-        onShowAllInMainWindow?.(id)
-        onClose()
     }
 
     /**
-     * "Go to file" (⏎ when results are present): close the dialog and route the active
-     * pane to the cursor row. The host's `onNavigate(path)` handles closing the dialog,
-     * navigating to the parent folder, and focusing the file (pushing a history entry).
+     * "Go to file" (⏎ / click / button when results are present): persist the search,
+     * then close the dialog and route the active pane to the cursor row. The host's
+     * `onNavigate(path)` handles closing the dialog, navigating to the parent folder, and
+     * focusing the file (pushing a history entry).
      */
     function goToCursorFile(entry: SearchResultEntry): void {
+        persistRecentSearch()
         onNavigate(entry.path)
     }
 
