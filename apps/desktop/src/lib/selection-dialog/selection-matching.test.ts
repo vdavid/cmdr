@@ -100,6 +100,26 @@ describe('matchEntries: size predicate', () => {
     expect(matchEntries(accessors, list.length, q)).toEqual([0, 1])
   })
 
+  it('match-all `*` + size predicate selects only files over the bound (filter-only contract)', () => {
+    // The contract M2's filter-only fix relies on: an empty name bar becomes a
+    // match-all glob `*`, and the size predicate alone picks the matching files.
+    // A folder snapshot of a 2 MB file + small files + a dir (null size) returns
+    // exactly the 2 MB file's index.
+    const names = ['notes.txt', 'photo.bin', 'subdir']
+    const fileSizes: (number | null)[] = [1000, 2_000_000, null] // last is a dir
+    const acc: MatchAccessors = {
+      getNameFor: (i) => names[i],
+      getSizeFor: (i) => fileSizes[i],
+    }
+    const q: SelectionMatchQuery = {
+      pattern: '*',
+      kind: 'glob',
+      caseSensitive: false,
+      size: { kind: 'gte', min: 1_048_576 },
+    }
+    expect(matchEntries(acc, names.length, q)).toEqual([1])
+  })
+
   it('drops entries with no size when a size predicate is set', () => {
     const q: SelectionMatchQuery = {
       pattern: '*',

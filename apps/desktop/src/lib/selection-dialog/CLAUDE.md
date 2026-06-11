@@ -47,7 +47,13 @@ doesn't care which kind it's running against.
 
 Glob translation matches the Rust side: `*` → `.*`, `?` → `.`, regex metacharacters escaped, anchored with `^…$`. The JS
 regex engine is what does the matching (Selection has no Rust IPC for the match itself — it's microseconds in JS against
-a few hundred entries). Bad regex (`SyntaxError`) → `[]`. Empty pattern → `[]`.
+a few hundred entries). Bad regex (`SyntaxError`) → `[]`.
+
+**Empty pattern WITH an active filter → match-all on the name; empty pattern AND no filters → `[]`.** Filter-only
+queries are valid: `buildMatchQuery` substitutes a match-all glob `*` when the bar is empty but `hasActiveFilter()` is
+true, so `≥ 1 MB` with no glob selects every file ≥ 1 MB. Gotcha: don't reintroduce an empty-pattern early-return in
+`buildMatchQuery` that ignores the filters, or the size/date chips go decorative. The matcher's `compilePattern` still
+returns `null` on an empty pattern, so the wrapper, not the matcher, owns the substitution.
 
 ## Folder sampling
 

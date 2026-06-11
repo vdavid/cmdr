@@ -153,10 +153,27 @@
     }
 
     /**
+     * Whether any non-pattern filter is active. When it is, a filter-only query
+     * (empty name bar) is still meaningful and runs as match-all on the name. Extend
+     * this predicate as new filters land (the M4 type filter slots in here) so
+     * `buildMatchQuery` stays the single source of truth for "is there anything to
+     * run?".
+     */
+    function hasActiveFilter(): boolean {
+        return selectionQueryState.getSizeFilter() !== 'any' || selectionQueryState.getDateFilter() !== 'any'
+    }
+
+    /**
      * Builds a `SelectionMatchQuery` from current state. AI mode hands the pattern
      * via the hand-typed buffer for the kind the AI produced (filename buffer for
      * glob, regex buffer for regex). Filename mode reads from the bar; regex mode
      * reads from the bar.
+     *
+     * Filter-only queries are valid: an empty name pattern WITH an active size/date
+     * filter runs as match-all (glob `*`, which the matcher anchors to `.*`), so
+     * `≥ 1 MB` with no glob selects every file ≥ 1 MB. Only an empty pattern AND no
+     * filters yields `null` (genuinely nothing to do). Don't reintroduce an
+     * empty-pattern early-return that ignores the filters.
      */
     function buildMatchQuery(): SelectionMatchQuery | null {
         const m = selectionQueryState.getMode()
@@ -181,10 +198,17 @@
                 pattern = aiGlob
                 kind = 'glob'
             } else {
-                return null
+                pattern = ''
+                kind = 'glob'
             }
         }
-        if (!pattern.trim()) return null
+        if (!pattern.trim()) {
+            if (!hasActiveFilter()) return null
+            // Filter-only query: match every name, then let the size/date predicates
+            // narrow the set. A glob `*` translates to `.*` in the matcher.
+            pattern = '*'
+            kind = 'glob'
+        }
 
         const size = readSizePredicate()
         const date = readDatePredicate()

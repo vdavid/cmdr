@@ -525,6 +525,53 @@ describe('SelectionDialog', () => {
     second.cleanup()
   })
 
+  it('matches on a size filter alone when the name bar is empty', async () => {
+    // The headline M2 fix: a `≥ 1 MB` size filter with an EMPTY name pattern must
+    // select every file ≥ 1 MB. Before the fix, `buildMatchQuery` returned null on
+    // an empty pattern and the matcher short-circuited to [], so filter-only queries
+    // silently selected nothing.
+    const matched: number[][] = []
+    const { overlay, cleanup } = await mountDialog({
+      entries: [
+        buildEntry('small.txt', { size: 1000 }),
+        buildEntry('big.bin', { size: 2_000_000 }),
+        buildEntry('tiny.log', { size: 50 }),
+      ],
+      onCommit: (idxs) => matched.push(idxs),
+    })
+
+    // Leave the bar empty. Configure a `≥ 1 MB` size filter via the popover.
+    const sizeChip = Array.from(overlay.querySelectorAll<HTMLButtonElement>('.filter-chip')).find((c) =>
+      c.textContent.trim().startsWith('Size'),
+    )
+    if (!sizeChip) throw new Error('size chip not found')
+    sizeChip.click()
+    await tick()
+    const sizePopover = document.querySelector('[aria-label="Size filter options"]')
+    if (!sizePopover) throw new Error('size popover did not open')
+    const radios = Array.from(sizePopover.querySelectorAll('button[role="radio"]'))
+    const gteCell = radios.find((b) => b.textContent.trim() === '≥')
+    const onePreset = radios.find((b) => b.textContent.trim() === '1')
+    if (!gteCell || !onePreset) throw new Error('size popover cells not found')
+    ;(gteCell as HTMLButtonElement).click()
+    await tick()
+    ;(onePreset as HTMLButtonElement).click()
+    await tick()
+    // The size pick schedules an auto-apply run; wait for the debounce to fire.
+    await new Promise((r) => setTimeout(r, 1100))
+    await tick()
+
+    // Commit selects exactly the 2 MB file's index. The committed set is the
+    // authoritative proof the filter-only run matched (virtual-scroll row rendering
+    // is unreliable under jsdom, so we assert on the matched indices, not the DOM).
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    expect(matched).toHaveLength(1)
+    expect(matched[0]).toEqual([1])
+
+    cleanup()
+  })
+
   it('toggles caseSensitive via the FilterChips extras callback', async () => {
     // Mount and let the dialog's onMount complete, then toggle via the chip button.
     const { overlay, cleanup } = await mountDialog()

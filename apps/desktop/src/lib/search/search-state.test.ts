@@ -98,6 +98,20 @@ describe('buildSearchQuery', () => {
     expect(query.modifiedBefore).toBeNull()
   })
 
+  it('builds a match-all query from a size filter alone (empty pattern is not blocked)', () => {
+    // Regression for the filter-only fix: an empty name bar + a size filter must
+    // produce a match-all query (`namePattern: null`) carrying the size bound. The
+    // backend match-alls on a null pattern, so no frontend gate may drop this case.
+    clearSearchState()
+    setSizeFilter('gte')
+    setSizeValue('1')
+    setSizeUnit('MB')
+    const query = buildSearchQuery()
+    expect(query.namePattern).toBeNull()
+    expect(query.minSize).toBe(1024 * 1024)
+    expect(query.maxSize).toBeNull()
+  })
+
   it('includes the query text as namePattern when set', () => {
     clearSearchState()
     setQuery('*.pdf')
