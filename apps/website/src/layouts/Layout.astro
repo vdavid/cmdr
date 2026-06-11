@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from 'astro:transitions'
+import DiscordInvitePopup from '../components/DiscordInvitePopup.astro'
 
 interface Props {
     title: string
@@ -121,6 +122,8 @@ const {
     </head>
     <body class="min-h-screen">
         <slot />
+
+        <DiscordInvitePopup />
 
         {
             /* PostHog: session replay, heatmaps, click tracking.

@@ -1,0 +1,321 @@
+---
+// One-time, post-download invite to the community Discord. Shows the first time a visitor
+// starts a download (any architecture, any download button), then never again (localStorage flag).
+// Mounted globally in Layout.astro; it listens for clicks on any [data-umami-event="download"] anchor.
+const DISCORD_INVITE_URL = 'https://discord.gg/4BVafBneKJ'
+---
+
+<div class="discord-invite" data-discord-invite hidden>
+    <div class="discord-invite__backdrop" data-discord-invite-backdrop></div>
+    <div
+        class="discord-invite__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="discord-invite-title"
+        aria-describedby="discord-invite-body"
+    >
+        <button type="button" class="discord-invite__close" aria-label="Close" data-discord-invite-close>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path>
+            </svg>
+        </button>
+
+        <svg class="discord-invite__logo" viewBox="0 0 127.14 96.36" aria-hidden="true">
+            <path
+                fill="var(--color-accent)"
+                d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"
+            ></path>
+        </svg>
+
+        <h2 id="discord-invite-title" class="discord-invite__title">Download started</h2>
+        <div id="discord-invite-body" class="discord-invite__body">
+            <p>Thanks for your interest in Cmdr!</p>
+            <p>
+                If you are someone who joins Discord servers, please consider joining ours, which is a convenient place
+                to drop your feedback on the app and talk to others who also use Cmdr.
+            </p>
+        </div>
+
+        <div class="discord-invite__actions">
+            <a
+                class="discord-invite__join"
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-discord-invite-join
+            >
+                Join our Discord
+            </a>
+            <button type="button" class="discord-invite__later" data-discord-invite-close> Maybe later </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .discord-invite[hidden] {
+        display: none;
+    }
+
+    .discord-invite {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+    }
+
+    .discord-invite__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        animation: discord-invite-fade 200ms ease-out;
+    }
+
+    .discord-invite__dialog {
+        position: relative;
+        width: 100%;
+        max-width: 26rem;
+        padding: 2.25rem 1.75rem 1.75rem;
+        text-align: center;
+        background: var(--color-surface-elevated);
+        border: 1px solid var(--color-border);
+        border-radius: 1rem;
+        box-shadow:
+            0 24px 60px rgba(0, 0, 0, 0.45),
+            0 0 60px var(--color-accent-glow);
+        animation: discord-invite-pop 200ms ease-out;
+    }
+
+    .discord-invite__close {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        color: var(--color-text-tertiary);
+        background: transparent;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition:
+            color 150ms,
+            background-color 150ms;
+    }
+
+    .discord-invite__close svg {
+        width: 1.125rem;
+        height: 1.125rem;
+    }
+
+    .discord-invite__close:hover {
+        color: var(--color-text-primary);
+        background: var(--color-surface);
+    }
+
+    .discord-invite__close:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    .discord-invite__logo {
+        width: 4rem;
+        height: auto;
+        margin: 0 auto 1rem;
+    }
+
+    .discord-invite__title {
+        margin: 0 0 0.75rem;
+        font-size: 1.375rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .discord-invite__body {
+        margin: 0 0 1.5rem;
+        color: var(--color-text-secondary);
+        font-size: 0.9375rem;
+        line-height: 1.55;
+    }
+
+    .discord-invite__body p {
+        margin: 0;
+    }
+
+    .discord-invite__body p + p {
+        margin-top: 0.75rem;
+    }
+
+    .discord-invite__actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .discord-invite__join {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--color-accent-contrast);
+        background: var(--color-accent);
+        border-radius: 0.625rem;
+        transition: background-color var(--duration-normal);
+    }
+
+    .discord-invite__join:hover {
+        background: var(--color-accent-hover);
+    }
+
+    .discord-invite__join:focus-visible {
+        outline: 2px solid var(--color-text-primary);
+        outline-offset: 2px;
+    }
+
+    .discord-invite__later {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        background: transparent;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: color 150ms;
+    }
+
+    .discord-invite__later:hover {
+        color: var(--color-text-primary);
+    }
+
+    .discord-invite__later:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    @keyframes discord-invite-fade {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes discord-invite-pop {
+        from {
+            opacity: 0;
+            transform: translateY(8px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .discord-invite__backdrop,
+        .discord-invite__dialog {
+            animation: none;
+        }
+    }
+</style>
+
+<script>
+    const STORAGE_KEY = 'cmdr-discord-invite-shown'
+
+    // Module-scoped: the bundled script runs once; `astro:page-load` re-points these at the
+    // current page's freshly-swapped overlay, while the document listeners bind only once.
+    let documentBound = false
+    let currentOpen: (() => void) | null = null
+    let currentKeydown: ((e: KeyboardEvent) => void) | null = null
+
+    const hasShown = () => {
+        try {
+            return localStorage.getItem(STORAGE_KEY) === 'true'
+        } catch {
+            return false
+        }
+    }
+
+    const markShown = () => {
+        try {
+            localStorage.setItem(STORAGE_KEY, 'true')
+        } catch {
+            /* localStorage unavailable: it reappears next visit, acceptable */
+        }
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        const overlay = document.querySelector<HTMLElement>('[data-discord-invite]')
+        if (!overlay) return
+
+        const dialog = overlay.querySelector<HTMLElement>('.discord-invite__dialog')
+        const closers = overlay.querySelectorAll<HTMLElement>('[data-discord-invite-close]')
+        const backdrop = overlay.querySelector<HTMLElement>('[data-discord-invite-backdrop]')
+
+        let lastFocused: HTMLElement | null = null
+
+        const open = () => {
+            lastFocused = document.activeElement as HTMLElement
+            overlay.hidden = false
+            overlay.querySelector<HTMLElement>('.discord-invite__close')?.focus()
+        }
+
+        const close = () => {
+            overlay.hidden = true
+            lastFocused?.focus()
+        }
+
+        // Trap Tab focus within the dialog while open, close on Escape.
+        const onKeydown = (e: KeyboardEvent) => {
+            if (overlay.hidden) return
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                close()
+                return
+            }
+            if (e.key !== 'Tab' || !dialog) return
+            const focusables = dialog.querySelectorAll<HTMLElement>(
+                'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            )
+            if (focusables.length === 0) return
+            const first = focusables[0]
+            const last = focusables[focusables.length - 1]
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault()
+                last.focus()
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault()
+                first.focus()
+            }
+        }
+
+        currentOpen = open
+        currentKeydown = onKeydown
+
+        closers.forEach((el) => el.addEventListener('click', close))
+        backdrop?.addEventListener('click', close)
+
+        if (!documentBound) {
+            documentBound = true
+
+            document.addEventListener('click', (e) => {
+                const trigger = (e.target as HTMLElement)?.closest('[data-umami-event="download"]')
+                if (!trigger || hasShown()) return
+                markShown()
+                // Defer so the browser's own download starts first, unimpeded.
+                setTimeout(() => currentOpen?.(), 0)
+            })
+
+            document.addEventListener('keydown', (e) => currentKeydown?.(e))
+        }
+    })
+</script>
