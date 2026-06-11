@@ -50,6 +50,7 @@ Don't delete either shield. If a new always-edited non-build file type shows up 
 
 - `src/`: Svelte frontend (SvelteKit static adapter, TypeScript strict, custom CSS with design tokens)
 - `src-tauri/`: Rust backend (Tauri 2, serde, notify, tokio)
+- `scripts/`: dev/build scripts (the `scripts/tauri-wrapper.js` wrapper, instance-isolation); see its `CLAUDE.md`
 - `scripts/tauri-wrapper.js`: dev/build wrapper (env vars, dev config injection)
 - `test/`: Vitest unit tests
 - `test/e2e-linux/`: WebDriverIO + tauri-driver E2E tests (Docker)

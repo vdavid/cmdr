@@ -180,10 +180,14 @@ func buildDocEdges(allDocs []string, contents map[string]string) map[string][]do
 var (
 	// mdFileRefRe matches any path token ending in .md (Markdown link target,
 	// @import, backtick path, or bare). Stops at .md so trailing #anchors drop.
+	// Parens are deliberately excluded: they'd swallow the `(` of a `](path)`
+	// Markdown link. A paren group dir (`routes/(main)/`) is reached via its
+	// directory reference instead (backtickDirRe, which captures inside backticks).
 	mdFileRefRe = regexp.MustCompile(`[@A-Za-z0-9._/-]*\.md`)
 	// backtickDirRe matches a backtick-wrapped directory path (trailing slash),
 	// the form architecture.md uses to list subsystems: `` `file-explorer/` ``.
-	backtickDirRe = regexp.MustCompile("`([@A-Za-z0-9._/-]+/)`")
+	// Parens included so SvelteKit group dirs resolve (`` `routes/(main)/` ``).
+	backtickDirRe = regexp.MustCompile("`([@A-Za-z0-9._/()-]+/)`")
 	// mdLinkTargetRe matches a Markdown link target; a slash-terminated one is a
 	// directory reference (e.g. `[rules](.claude/rules/)`).
 	mdLinkTargetRe = regexp.MustCompile(`\]\(([^)\s]+)\)`)

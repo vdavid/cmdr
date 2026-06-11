@@ -3,6 +3,8 @@
 Exposes Cmdr to AI agents via the Model Context Protocol. Security model is parity: agents can only do what users can
 do, no filesystem access. Streamable HTTP transport, `127.0.0.1` only, ephemeral port by default.
 
+For adding or changing tools, see `docs/guides/mcp-development.md`.
+
 ## Module map
 
 - `server.rs`: HTTP server, bind/lifecycle, auth gate (`tool_call_requires_token`, `validate_token`, `validate_origin`).

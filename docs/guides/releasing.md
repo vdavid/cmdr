@@ -4,6 +4,9 @@ How to release a new version of Cmdr. An agent runs the whole flow via the `/rel
 monitors the build, verifies the public surface afterwards, and handles failure recovery. The human's role is to review
 the CHANGELOG draft, confirm the version, and click any macOS permission prompts.
 
+Related guides for the signing and distribution steps:
+[apple-signing-and-notarization.md](apple-signing-and-notarization.md) and [homebrew-cask.md](homebrew-cask.md).
+
 ## Prerequisites
 
 - `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in GitHub secrets

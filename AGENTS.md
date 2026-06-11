@@ -107,7 +107,8 @@ Core structure:
 - `/brand/` - Tracked brand/press-kit assets (logos, master screenshots, marketing copy). See its `CLAUDE.md`
 - `/docs/` - Dev docs
   - `guides/` - How-to guides
-  - `notes/` - Temporary reference notes (benchmarks, analysis) linked from CLAUDE.md files
+  - `notes/` - Temporary reference notes (benchmarks, analysis) linked from CLAUDE.md files; see
+    [notes/README.md](docs/notes/README.md)
   - `specs/` - Per-development specs and task lists (temporary, periodically wiped); see
     [specs/index.md](docs/specs/index.md)
   - `tooling/` - Internal tooling docs
@@ -296,6 +297,7 @@ shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shi
 - **Don't `git push` without explicit approval, and don't push routinely** (solo work, limited CI). See the
   `push-cadence` and `no-external-actions` user rules.
 - Step back and reflect per milestone. Is what you did solid AND elegant? Are you confident AND proud?
+- For large parallel-agent efforts, see [multi-agent refactors](docs/guides/multi-agent-refactors.md).
 - **The delivery pipeline is fully wired; don't re-audit it.** Releases are agent-automated end to end (tag → CI
   build/sign/notarize → publish `latest.json` → website deploy → silent in-app update via the FDA-preserving updater),
   and user-feedback loops are live (crash reports → email cron, error reports → instant Discord webhook, anonymous

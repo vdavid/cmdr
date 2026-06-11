@@ -33,7 +33,8 @@ func buildFixtureGraph(t *testing.T) *DocGraph {
 	t.Helper()
 	root := t.TempDir()
 	writeDocFile(t, root, "CLAUDE.md", "@AGENTS.md")
-	writeDocFile(t, root, "AGENTS.md", "See [the guide](docs/guide.md) and the `sub/` subsystem.")
+	writeDocFile(t, root, "AGENTS.md", "See [the guide](docs/guide.md), the `sub/` subsystem, and the `(main)/` route.")
+	writeDocFile(t, root, "routes/(main)/CLAUDE.md", "A SvelteKit group dir, reached via the `(main)/` dir reference.")
 	writeDocFile(t, root, "docs/guide.md", "A reachable guide. See [a note](notes/note.md).")
 	writeDocFile(t, root, "docs/orphan.md", "Nobody links here.")
 	writeDocFile(t, root, "docs/notes/note.md", "A note, now enforced like any docs/ file.")
@@ -76,6 +77,10 @@ func TestBuildDocGraphReachesViaFileAndDirRefs(t *testing.T) {
 	}
 	if !claude.ViaDir {
 		t.Error("sub/CLAUDE.md reached via a directory reference, ViaDir should be true")
+	}
+
+	if _, ok := g.Reached["routes/(main)/CLAUDE.md"]; !ok {
+		t.Error("a paren group dir like routes/(main)/ should resolve from a `(main)/` dir reference")
 	}
 
 	details, ok := g.Reached["sub/DETAILS.md"]

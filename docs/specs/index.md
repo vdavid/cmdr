@@ -6,6 +6,7 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 
 ## Specs
 
+- [x] 2026-04-03 connect-to-server-plan.md - Manual "Connect to server" for non-mDNS SMB shares (shipped v0.11.0)
 - [x] 2026-05-25 component-catalog-plan.md - In-app dev-only catalog of every UI primitive
 - [x] 2026-05-28 downloads-watcher-plan.md - Hotkey and toast to jump to the latest download
 - [x] 2026-05-28 viewer-tail-encoding-regex-plan.md - Viewer regex search, encoding picker, and tail mode
@@ -40,7 +41,6 @@ Deferred future work. Unchecked by default; the folder name is the status.
 - [ ] 2026-03-10 later/linux-builds-plan.md - Add Linux release build target plus website download detection
 - [ ] 2026-03-10 later/viewer-menu-swap-plan.md - Per-window menu bar for the viewer on macOS
 - [ ] 2026-04-01 later/rust-word-wrap-heights-plan.md - Move viewer word-wrap height calculation from JS to Rust
-- [ ] 2026-04-03 later/connect-to-server-plan.md - Manual "Connect to server" for non-mDNS SMB shares
 - [ ] 2026-06-04 later/agent-spec.md - Persistent in-app agent proposing file operations
 - [ ] 2026-06-04 later/data-dir-rename-spec-draft.md - Rename data directories from bundle-id to plain names
 - [ ] 2026-06-10 later/codegraph-tauri-resolver.md - Teach CodeGraph to trace Cmdr's Tauri IPC boundary

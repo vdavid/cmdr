@@ -5,6 +5,8 @@ Discover, browse, and mount SMB network shares on macOS and Linux. Discovery via
 
 Frontend counterpart: [`apps/desktop/src/lib/file-explorer/network/CLAUDE.md`](../../../src/lib/file-explorer/network/CLAUDE.md).
 
+Background on the auth flow design: `docs/notes/smb-auth-flow-redesign.md`.
+
 ## Module map
 
 - Discovery + servers: `mdns_discovery.rs`, `manual_servers.rs`, `virtual_smb_hosts.rs` (E2E, `smb-e2e` feature only).

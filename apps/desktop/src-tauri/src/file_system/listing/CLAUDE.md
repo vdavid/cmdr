@@ -2,6 +2,8 @@
 
 Backend directory reading, caching, sorting, and streaming for the file explorer. Handles 100k+ file directories with non-blocking I/O and progress events.
 
+For profiling listing performance, see `docs/guides/benchmarking-file-loading.md`.
+
 ## Architecture
 
 ### Module structure

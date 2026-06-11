@@ -4,7 +4,7 @@ Inventory of testing tools available in Cmdr. One paragraph per tool: what it is
 to reach for it.
 
 Decision rules for which tool to use are in [docs/testing.md](../testing.md). This file answers "is there a tool for
-X?".
+X?". To create large fixture trees, see [generating-test-files.md](../guides/generating-test-files.md).
 
 ## Rust unit + integration
 

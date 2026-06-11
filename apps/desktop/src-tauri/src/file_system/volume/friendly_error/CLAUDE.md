@@ -8,6 +8,8 @@ we show a friendly title, a plain-language explanation, and provider-specific ad
 Parent: [`volume/CLAUDE.md`](../CLAUDE.md). The trait + manager + capability matrix live there; this file is just the
 error-mapping subsystem.
 
+For the broader error-handling conventions across the app, see `docs/guides/error-handling.md`.
+
 ## Philosophy
 
 **The user should never feel alone with a broken state.** Every error message should feel like the app is putting its

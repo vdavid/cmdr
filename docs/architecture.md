@@ -64,6 +64,7 @@ All under `apps/desktop/src/lib/`.
 - `onboarding/`: Soft-sheet onboarding wizard: Full Disk Access, AI provider, open-beta analytics disclosure, optional
   settings
 - `ui/`: Shared UI primitives: ModalDialog, Button, AlertDialog, Notification, dialog registry, `SectionCard`
+- `routes/(main)/`: The main route: app orchestrator mounting the dual-pane explorer plus top-level dialogs
 - `routes/dev/components/`: Dev-only catalog of every `lib/ui/` primitive (Storybook replacement), in the Debug window
 - `tooltip/`: Lightweight tooltip primitive
 - `stores/`: App-wide reactive Svelte stores: volume list, restricted-paths state
@@ -153,6 +154,7 @@ All under `apps/desktop/src-tauri/src/`.
 - `apps/website/`: getcmdr.com marketing site (Astro + Tailwind v4), including the dev-only `/dev/blog` Markdown editor
   for drafting posts
 - `apps/website/public/hero/`: Hero illustration assets (frame + pane cutouts, dark/light)
+- `apps/desktop/packaging/homebrew/`: Homebrew cask shape source-of-truth and tap-bump flow
 - `scripts/check/`: Go unified check runner (~40 checks, parallel with dependency graph)
 
 ## Search
@@ -265,7 +267,9 @@ The check runner and E2E testing docs live colocated with their code:
 
 [Renovate](https://docs.renovatebot.com/) (`renovate.json` in repo root) auto-updates all dependencies (npm, Cargo, Go).
 Weekly grouped PRs for non-major updates (auto-merge), monthly for major (manual review). Security vulnerability patches
-get immediate auto-merging PRs regardless of schedule.
+get immediate auto-merging PRs regardless of schedule. For adding deps by hand, see
+[add an npm dependency](guides/add-npm-dependency.md), [add a Rust crate](guides/add-rust-dependency.md), and
+[update dependencies](guides/update-dependencies.md).
 
 ### External services
 

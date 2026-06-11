@@ -3,6 +3,8 @@
 Customizable keyboard shortcuts for all Cmdr commands (edit/add/remove/reset via Settings or MCP). Defaults live in the
 sibling `../commands/command-registry.ts`; only customizations persist to `shortcuts.json`.
 
+Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-research.md`.
+
 ## Module map
 
 - `shortcuts-store.ts` (delta-only persistence, cross-window emit, the native/fixed boundary),
