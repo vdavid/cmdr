@@ -21,23 +21,25 @@ func writeDocFile(t *testing.T, rootDir, relPath, content string) {
 
 // buildFixtureGraph lays out a small doc tree and returns its analyzed graph.
 //
+//	CLAUDE.md            the root: @imports AGENTS.md (mirrors the real entry point)
 //	AGENTS.md            mentions docs/guide.md (file ref) and `sub/` (dir ref)
-//	docs/guide.md        reachable via file ref from the root
+//	docs/guide.md        reachable via file ref, and links docs/notes/note.md
 //	docs/orphan.md       mentioned nowhere -> orphan
+//	docs/notes/note.md   under docs/, now enforced: reachable here (linked from guide)
 //	sub/CLAUDE.md        reachable via the `sub/` directory reference
 //	sub/DETAILS.md       linked from sub/CLAUDE.md, and links back (cycle)
 //	lonely/CLAUDE.md     its dir is never mentioned -> orphan
-//	docs/notes/scratch.md ephemeral, excluded from candidates entirely
 func buildFixtureGraph(t *testing.T) *DocGraph {
 	t.Helper()
 	root := t.TempDir()
+	writeDocFile(t, root, "CLAUDE.md", "@AGENTS.md")
 	writeDocFile(t, root, "AGENTS.md", "See [the guide](docs/guide.md) and the `sub/` subsystem.")
-	writeDocFile(t, root, "docs/guide.md", "A reachable guide. No further links.")
+	writeDocFile(t, root, "docs/guide.md", "A reachable guide. See [a note](notes/note.md).")
 	writeDocFile(t, root, "docs/orphan.md", "Nobody links here.")
+	writeDocFile(t, root, "docs/notes/note.md", "A note, now enforced like any docs/ file.")
 	writeDocFile(t, root, "sub/CLAUDE.md", "Subsystem must-knows. Detail: [DETAILS.md](DETAILS.md).")
 	writeDocFile(t, root, "sub/DETAILS.md", "Back to [CLAUDE.md](CLAUDE.md) (cycle guard).")
 	writeDocFile(t, root, "lonely/CLAUDE.md", "Nobody mentions my directory.")
-	writeDocFile(t, root, "docs/notes/scratch.md", "Ephemeral scratch, not enforced.")
 
 	g, err := BuildDocGraph(root)
 	if err != nil {
@@ -85,14 +87,23 @@ func TestBuildDocGraphReachesViaFileAndDirRefs(t *testing.T) {
 	}
 }
 
-func TestBuildDocGraphExcludesEphemeralDirs(t *testing.T) {
+func TestBuildDocGraphEnforcesNotesUnderDocs(t *testing.T) {
 	g := buildFixtureGraph(t)
-	if _, ok := g.Reached["docs/notes/scratch.md"]; ok {
-		t.Error("docs/notes/ is ephemeral and must not be a graph node")
+	if _, ok := g.Reached["docs/notes/note.md"]; !ok {
+		t.Error("docs/notes/ is under docs/ and now enforced; a linked note should be reachable")
 	}
-	for _, o := range g.Orphans {
-		if o == "docs/notes/scratch.md" {
-			t.Error("docs/notes/ must be excluded from orphan candidates")
-		}
+}
+
+func TestBuildDocGraphRootsAtRootClaudeMd(t *testing.T) {
+	g := buildFixtureGraph(t)
+	if g.Root != "CLAUDE.md" {
+		t.Errorf("root = %q, want CLAUDE.md", g.Root)
+	}
+	agents, ok := g.Reached["AGENTS.md"]
+	if !ok {
+		t.Fatal("AGENTS.md should be reached via the root CLAUDE.md @import")
+	}
+	if agents.Parent != "CLAUDE.md" {
+		t.Errorf("AGENTS.md parent = %q, want CLAUDE.md", agents.Parent)
 	}
 }

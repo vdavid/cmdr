@@ -18,8 +18,8 @@ freestyle.sh remote execution), see [`../CLAUDE.md`](../CLAUDE.md).
 | `file-length-allowlist.json`                         | Allowlist for file-length check: `{ "exempt": { "path": reason }, "files": { "path": lineCount } }`. See § File-length allowlist.                                                                                     |
 | `claude-md-length.go`                                | Warn-only push-tier scanner: warns when a `CLAUDE.md` exceeds 600 words (`DETAILS.md` is the unlimited pull tier, not scanned). Allowlist with the same shrink-wrap semantics as file-length. See § CLAUDE.md length. |
 | `claude-md-length-allowlist.json`                    | Allowlist for claude-md-length: `{ "files": { "path": wordCount } }`. Same ratchet/consent rules as file-length.                                                                                                      |
-| `docs_graph.go`                                      | Shared doc-discoverability graph: reachability from `AGENTS.md` over references between docs. Powers both the `docs-reachable` check and the `--docs-graph` renderer. See § Docs reachable.                           |
-| `docs-reachable.go`                                  | Errors (not warn-only) when any `CLAUDE.md` / `DETAILS.md` / `docs/` file can't be reached from `AGENTS.md`. Allowlist with the same shrink-wrap/consent semantics as file-length. See § Docs reachable.              |
+| `docs_graph.go`                                      | Shared doc-discoverability graph: reachability from the repo-root `CLAUDE.md` over references between docs. Powers both the `docs-reachable` check and the `--docs-graph` renderer. See § Docs reachable.             |
+| `docs-reachable.go`                                  | Errors (not warn-only) when any `CLAUDE.md` / `DETAILS.md` / `docs/` file can't be reached from the root `CLAUDE.md`. Allowlist with the same shrink-wrap/consent semantics as file-length. See § Docs reachable.     |
 | `docs-reachable-allowlist.json`                      | Allowlist for docs-reachable: `{ "files": { "path": reason } }` of docs intentionally unreachable. Goal is empty. Shrink-wraps gone/now-reachable entries; adding one needs David's OK.                               |
 | `e2e-durations.go`                                   | E2E test duration flagger (warn-only): parses the Playwright JSON reports after each E2E run and flags tests over the 2 s budget. Embedded in both E2E checks, not a registry check. See § E2E test duration flagger. |
 | `e2e-duration-allowlist.json`                        | Per-platform (`macos` / `linux`) allowlist for the duration flagger: `{ "<spec>::<describe chain>::<title>": reason }`. Entries need a reason; new entries need David's OK.                                           |
@@ -191,14 +191,16 @@ change. Adding or raising an entry needs David's OK (`.claude/rules/file-length-
 ## Docs reachable
 
 `docs-reachable` (`IsFast`, an **error** not a warn: the doc tree must stay connected) enforces that every `CLAUDE.md`,
-`DETAILS.md`, and `docs/` file is discoverable from the single root `AGENTS.md` by link-walking, so a reader entering
-there can find every doc. `docs_graph.go` builds the graph (shared with the `--docs-graph` renderer in
+`DETAILS.md`, and `docs/` file is discoverable from the repo-root `CLAUDE.md` by link-walking, so a reader entering at
+the real entry point can find every doc. `docs_graph.go` builds the graph (shared with the `--docs-graph` renderer in
 `../docs_graph_render.go`); `docs-reachable.go` is the check shell + allowlist.
 
 How reachability is decided (`BuildDocGraph`):
 
-- **One root, `AGENTS.md`.** A doc is reached when a doc already reached from the root references it. BFS, so each doc
-  is placed under its closest-to-root reference (a cycle just hits an already-reached node and stops).
+- **One root, the repo-root `CLAUDE.md`.** It's the true entry point: Claude Code loads it first, and it `@import`s
+  `AGENTS.md` + the core docs. A doc is reached when a doc already reached from the root references it. BFS, so each doc
+  is placed under its closest-to-root reference (a cycle just hits an already-reached node and stops). The root itself
+  is never an orphan.
 - **A reference is any mention, syntax-agnostic:** Markdown link, `@import`, backtick path, or bare path token are all
   equal. We watch intent, not form. Matching is generous (relative-to-source, repo-root-relative, and ≥2-segment path
   suffix), because over-connecting only hides a would-be orphan, while a false orphan would be a noisy CI failure.
@@ -206,9 +208,9 @@ How reachability is decided (`BuildDocGraph`):
   when a reachable doc mentions its _directory_ (`architecture.md` lists most subsystems as `` `some/dir/` ``, and
   Claude Code auto-injects a `CLAUDE.md` from its directory regardless). Such edges are tagged `ViaDir`; the renderer
   shows "(dir reference)".
-- **Ephemeral dirs are excluded** from the enforced candidate set: `docs/specs` and `docs/notes` self-declare in their
-  READMEs as temporary scratch "wiped periodically", so requiring each to be linked fights their purpose
-  (`ephemeralDocDirs`). The repo-root `CLAUDE.md` (the loader shim that only `@import`s the entry docs) is excluded too.
+- **Everything under `docs/` is enforced, including `docs/specs` and `docs/notes`.** Those dirs are periodically-wiped
+  scratch, but they must still be discoverable while they exist: specs hang off `docs/specs/index.md`, and a note is
+  expected to be linked from the colocated `CLAUDE.md` / `DETAILS.md` whose work it informs.
 
 `docs-reachable-allowlist.json` maps a doc path → the reason it's intentionally unreachable. The goal is an empty list:
 connect docs rather than exempt them. Shrink-wrap drops entries whose file is gone or which became reachable; adding or
@@ -283,16 +285,16 @@ RUSTSEC ignores — that's a quarterly task in `docs/maintenance.md`.
 
 ## Apps and check counts
 
-| App        | Tech     | Checks                                                                                                                                                                                                                                                                                                                           |
-| ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop    | Rust     | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, lock-poison, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)                                                                                           |
-| Desktop    | Svelte   | prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript, stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)                                                        |
-| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e                                                                                                                                                                                                                                                  |
-| Website    | Docker   | docker-build                                                                                                                                                                                                                                                                                                                     |
-| API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                                                                                                                                  |
-| Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                                                                                                                             |
-| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), claude-md-length (warn-only), docs-reachable (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from AGENTS.md), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract) |
-| Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                                                                                                                        |
+| App        | Tech     | Checks                                                                                                                                                                                                                                                                                                                                    |
+| ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop    | Rust     | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, lock-poison, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)                                                                                                    |
+| Desktop    | Svelte   | prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript, stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)                                                                 |
+| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e                                                                                                                                                                                                                                                           |
+| Website    | Docker   | docker-build                                                                                                                                                                                                                                                                                                                              |
+| API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                                                                                                                                           |
+| Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                                                                                                                                      |
+| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), claude-md-length (warn-only), docs-reachable (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from the root CLAUDE.md), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract) |
+| Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                                                                                                                                 |
 
 ## Key decisions
 

@@ -10,7 +10,7 @@ import (
 
 // docsReachableAllowlist is the on-disk shape of docs-reachable-allowlist.json.
 // `Files` maps a repo-relative doc path to the reason it's intentionally NOT
-// reachable from AGENTS.md. The goal is an empty allowlist: every doc connected.
+// reachable from the root. The goal is an empty allowlist: every doc connected.
 type docsReachableAllowlist struct {
 	Comment string            `json:"$comment,omitempty"`
 	Files   map[string]string `json:"files"`
@@ -49,19 +49,19 @@ func shrinkwrapDocsReachableAllowlist(rootDir string, list *docsReachableAllowli
 			changes = append(changes, fmt.Sprintf("removed %s (file no longer exists)", docPath))
 		case !orphanSet[docPath]:
 			delete(list.Files, docPath)
-			changes = append(changes, fmt.Sprintf("removed %s (now reachable from AGENTS.md)", docPath))
+			changes = append(changes, fmt.Sprintf("removed %s (now reachable)", docPath))
 		}
 	}
 	return changes
 }
 
-// RunDocsReachable fails when any enforced doc (CLAUDE.md, DETAILS.md, or a
-// docs/ file outside the ephemeral scratch dirs) can't be reached from AGENTS.md
-// by walking references between docs. A CLAUDE.md counts as reached when a
-// reachable doc mentions its directory; everything else must be named. Allowlist
-// entries (intentionally-unreachable docs) are suppressed; stale ones shrink-wrap
-// away outside CI. Unlike the length scanners this is an error, not a warning:
-// the doc tree must stay connected.
+// RunDocsReachable fails when any enforced doc (every CLAUDE.md, DETAILS.md, or
+// docs/ file) can't be reached from the repo-root CLAUDE.md by walking references
+// between docs. A CLAUDE.md counts as reached when a reachable doc mentions its
+// directory; everything else must be named. Allowlist entries (intentionally-
+// unreachable docs) are suppressed; stale ones shrink-wrap away outside CI.
+// Unlike the length scanners this is an error, not a warning: the doc tree must
+// stay connected.
 func RunDocsReachable(ctx *CheckContext) (CheckResult, error) {
 	g, err := BuildDocGraph(ctx.RootDir)
 	if err != nil {
@@ -91,7 +91,7 @@ func RunDocsReachable(ctx *CheckContext) (CheckResult, error) {
 
 	staleMsg := formatDocsStaleMsg(ctx.CI, staleChanges)
 	if len(reported) == 0 {
-		okMsg := fmt.Sprintf("All docs reachable from AGENTS.md (%d in graph)", len(g.Reached))
+		okMsg := fmt.Sprintf("All docs reachable from the root CLAUDE.md (%d in graph)", len(g.Reached))
 		if len(allowlist.Files) > 0 {
 			okMsg = fmt.Sprintf("%s (%d allowlisted)", okMsg, len(allowlist.Files))
 		}
@@ -136,7 +136,7 @@ func formatOrphans(orphans []string, allowlisted int) string {
 		sb.WriteString("\n")
 	}
 	return fmt.Sprintf(
-		"%d %s unreachable from AGENTS.md%s. Link each from a doc that's already reachable (a CLAUDE.md also counts as reached when a reachable doc mentions its directory):\n%s",
+		"%d %s unreachable from the root CLAUDE.md%s. Link each from a doc that's already reachable (a CLAUDE.md also counts as reached when a reachable doc mentions its directory):\n%s",
 		len(orphans), Pluralize(len(orphans), "doc", "docs"), suffix,
 		strings.TrimRight(sb.String(), "\n"))
 }

@@ -6,15 +6,15 @@ import (
 	"cmdr/scripts/check/checks"
 )
 
-// renderDocsGraph draws the doc-discoverability tree rooted at AGENTS.md: every
-// CLAUDE.md, DETAILS.md, and docs/ file reachable by walking references between
-// docs, in the same box-drawing style as the check dependency graph (--graph).
-// A node reached through a directory reference (CLAUDE.md only) is tagged
-// "(dir reference)". Orphans (enforced docs not reachable) are listed in red at
-// the bottom: the same set the docs-reachable check fails on.
+// renderDocsGraph draws the doc-discoverability tree rooted at the repo-root
+// CLAUDE.md: every CLAUDE.md, DETAILS.md, and docs/ file reachable by walking
+// references between docs, in the same box-drawing style as the check dependency
+// graph (--graph). A node reached through a directory reference (CLAUDE.md only)
+// is tagged "(dir reference)". Orphans (enforced docs not reachable) are listed
+// in red at the bottom: the same set the docs-reachable check fails on.
 //
 // Closest-to-root wins: each doc appears once, under the shortest reference path
-// from AGENTS.md (BFS), so the tree shows the most direct way to discover it.
+// from the root (BFS), so the tree shows the most direct way to discover it.
 func renderDocsGraph(rootDir string, useColor bool) error {
 	g, err := checks.BuildDocGraph(rootDir)
 	if err != nil {

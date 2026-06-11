@@ -11,9 +11,10 @@ import (
 
 // This file builds the doc-discoverability graph the `docs-reachable` check
 // enforces and the `--docs-graph` renderer draws. The contract: starting from
-// the single root AGENTS.md, every CLAUDE.md, DETAILS.md, and docs/ file must be
-// reachable by following references between docs, so a reader (human or agent)
-// entering at AGENTS.md can find every doc by link-walking.
+// the single root CLAUDE.md (the repo-root loader, the real entry point: Claude
+// Code reads it first and it `@import`s AGENTS.md), every CLAUDE.md, DETAILS.md,
+// and docs/ file must be reachable by following references between docs, so a
+// reader (human or agent) entering there can find every doc by link-walking.
 //
 // A "reference" is any mention, treated equally whether it's a Markdown link, an
 // `@import`, a backtick path, or a bare path token: we watch intent, not syntax.
@@ -23,8 +24,9 @@ import (
 // its directory anyway). Such an edge is tagged ViaDir so the graph view can show
 // "(dir reference)".
 
-// docGraphRoot is the single entry point. Everything must trace back to here.
-const docGraphRoot = "AGENTS.md"
+// docGraphRoot is the single entry point: the repo-root CLAUDE.md, which Claude
+// Code loads first and which `@import`s AGENTS.md. Everything must trace back here.
+const docGraphRoot = "CLAUDE.md"
 
 // docSkipDirs are never walked: vendored, generated, and build-output trees hold
 // no first-party docs. Mirrors reminderSkipDirs plus the per-worktree dirs.
@@ -35,15 +37,6 @@ var docSkipDirs = map[string]bool{
 	"target":        true,
 	"build":         true,
 	"dist":          true,
-}
-
-// ephemeralDocDirs are walked for link sources but their files are NOT enforced
-// as reachable: docs/specs and docs/notes self-declare (in their READMEs) as
-// temporary scratch that "gets wiped periodically", so requiring each to be
-// linked from AGENTS.md fights their purpose. Paths are repo-relative, slashed.
-var ephemeralDocDirs = []string{
-	"docs/specs",
-	"docs/notes",
 }
 
 // DocReach records how a doc was reached from the root.
@@ -276,31 +269,18 @@ func resolveDirRef(srcDir, ref string, claudeDirs []string) []string {
 }
 
 // isEnforcedCandidate reports whether a doc must be reachable: every CLAUDE.md
-// (except the repo-root loader shim, which only @imports the entry docs) and
-// DETAILS.md, plus everything under docs/ that isn't ephemeral scratch.
+// and DETAILS.md, plus everything under docs/. The repo-root CLAUDE.md is the
+// graph root, never an orphan, so it's filtered out before this is consulted.
 func isEnforcedCandidate(rel string) bool {
 	base := path.Base(rel)
-	if base == "CLAUDE.md" {
-		return rel != "CLAUDE.md" // root CLAUDE.md is the Claude Code loader, not a subsystem doc
-	}
-	if base == "DETAILS.md" {
+	if base == "CLAUDE.md" || base == "DETAILS.md" {
 		return true
 	}
-	return strings.HasPrefix(rel, "docs/") && !inEphemeralDocDir(rel)
-}
-
-func inEphemeralDocDir(rel string) bool {
-	for _, dir := range ephemeralDocDirs {
-		if rel == dir || strings.HasPrefix(rel, dir+"/") {
-			return true
-		}
-	}
-	return false
+	return strings.HasPrefix(rel, "docs/")
 }
 
 // findMarkdownDocs walks rootDir and returns every .md file as a repo-relative,
-// forward-slashed path, skipping vendored/generated/hidden dirs and the ephemeral
-// doc dirs (the latter contribute neither sources nor candidates).
+// forward-slashed path, skipping vendored/generated/hidden dirs.
 func findMarkdownDocs(rootDir string) ([]string, error) {
 	var docs []string
 	err := filepath.WalkDir(rootDir, func(p string, d os.DirEntry, err error) error {
@@ -314,7 +294,7 @@ func findMarkdownDocs(rootDir string) ([]string, error) {
 		rel = filepath.ToSlash(rel)
 		if d.IsDir() {
 			name := d.Name()
-			if rel != "." && (strings.HasPrefix(name, ".") || docSkipDirs[name] || inEphemeralDocDir(rel)) {
+			if rel != "." && (strings.HasPrefix(name, ".") || docSkipDirs[name]) {
 				return filepath.SkipDir
 			}
 			return nil

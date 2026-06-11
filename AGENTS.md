@@ -108,6 +108,8 @@ Core structure:
 - `/docs/` - Dev docs
   - `guides/` - How-to guides
   - `notes/` - Temporary reference notes (benchmarks, analysis) linked from CLAUDE.md files
+  - `specs/` - Per-development specs and task lists (temporary, periodically wiped); see
+    [specs/index.md](docs/specs/index.md)
   - `tooling/` - Internal tooling docs
   - `architecture.md` - Map of all subsystems with links to their `CLAUDE.md` files
   - `style-guide.md` - Writing, code, and design style rules
