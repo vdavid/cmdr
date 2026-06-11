@@ -15,8 +15,12 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
 
 - **The Open beta page (step 3) is non-skippable, and the AI step has no skip-to-finish.** Every first-launch user must
   see the anonymous-analytics disclosure once (the opt-out default only reads as fair consent if it was shown). So the
-  AI step's only forward button ("Go to open beta") always lands on Beta, and only the final Optional step finishes
-  onboarding. Don't re-add a skip-to-finish on the AI step (it bypasses the disclosure).
+  AI step's only forward button ("Next") always lands on Beta. The Beta page itself offers a "Start using Cmdr!" finish
+  (which skips the optional step) and a "One more optional setup step" continue, so the user can't reach the app without
+  passing through Beta. Don't re-add a skip-to-finish on the AI step (it bypasses the disclosure).
+- **The step-2 "Full disk access granted" banner shows ONLY on a fresh first-run grant** (`hasFda && !isOnboarded`).
+  Once onboarded, menu / palette re-entry with FDA on shows no banner (`stepTwoBanner === 'none'`). Gated in both
+  `stepTwoBannerFor()` and `StepAi`'s on-mount probe.
 - **Allow (FDA) requires a restart before advancing past step 1.** After Allow, the footer flips to "Restart Cmdr"
   (`relaunch()`), it does NOT advance in-session. The FDA gate (`fda_gate::FDA_PENDING`) is set once at boot; clearing
   it at runtime races the TCC popups the gate suppresses (we hit 5-10 stacked popups once). The resume rule lands the

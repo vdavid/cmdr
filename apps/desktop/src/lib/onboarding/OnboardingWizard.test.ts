@@ -6,8 +6,9 @@
  * - The step-1 footer button reflects state: hidden in `decide` mode, `Restart Cmdr` in
  *   `restart` mode, `Next` for the `already-granted` variant.
  * - Forward navigation walks step 1 → 2 (AI) → 3 (Beta) → 4 (Optional) → Finish fires
- *   `onComplete`. The AI step's "Go to open beta" routes to the non-skippable Beta page,
- *   never straight to completion.
+ *   `onComplete`. The AI step's "Next" routes to the non-skippable Beta page, never
+ *   straight to completion. The Beta page offers "Start using Cmdr!" (finish here) and
+ *   "One more optional setup step" (continue to Optional).
  * - Back from step 2 returns to step 1 and resets the footer to `decide` mode.
  * - The hand-rolled focus trap wraps Tab and Shift+Tab through the panel's focusables.
  *
@@ -103,6 +104,14 @@ function primaryFooterButton(target: HTMLElement): HTMLButtonElement | null {
   return slot.querySelector<HTMLButtonElement>('button')
 }
 
+function footerButtonByLabel(target: HTMLElement, label: string): HTMLButtonElement | null {
+  const slot = target.querySelector<HTMLElement>('.primary-slot')
+  if (!slot) return null
+  return (
+    Array.from(slot.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent.trim() === label) ?? null
+  )
+}
+
 function backButton(target: HTMLElement): HTMLButtonElement | null {
   return target.querySelector<HTMLButtonElement>('.back-button')
 }
@@ -171,17 +180,17 @@ describe('OnboardingWizard', () => {
     primaryFooterButton(mounted.target)?.click()
     flushSync()
     await tick()
-    // Step 2 (AI) owns a single "Go to open beta" forward button. Click it to land on
-    // the Beta page (step 3). Allow microtasks for the persist + nextStep() chain to settle.
-    expect(primaryFooterButton(mounted.target)?.textContent.trim()).toBe('Go to open beta')
+    // Step 2 (AI) owns a single "Next" forward button. Click it to land on the Beta page
+    // (step 3). Allow microtasks for the persist + nextStep() chain to settle.
+    expect(primaryFooterButton(mounted.target)?.textContent.trim()).toBe('Next')
     primaryFooterButton(mounted.target)?.click()
     for (let i = 0; i < 10; i++) await Promise.resolve()
     flushSync()
     await tick()
     expect(getOnboardingState().currentStep).toBe(3)
-    // Step 3 (Beta) owns a single "Next" forward button. Click it to land on Optional (step 4).
-    expect(primaryFooterButton(mounted.target)?.textContent.trim()).toBe('Next')
-    primaryFooterButton(mounted.target)?.click()
+    // Step 3 (Beta) owns two buttons. "One more optional setup step" continues to Optional (step 4).
+    expect(footerButtonByLabel(mounted.target, 'One more optional setup step')).not.toBeNull()
+    footerButtonByLabel(mounted.target, 'One more optional setup step')?.click()
     flushSync()
     await tick()
     expect(getOnboardingState().currentStep).toBe(4)
@@ -193,7 +202,7 @@ describe('OnboardingWizard', () => {
     expect(onComplete).toHaveBeenCalledOnce()
   })
 
-  it('the AI step\'s "Go to open beta" routes to the non-skippable Beta page (step 3), never straight to completion', async () => {
+  it('the AI step\'s "Next" routes to the non-skippable Beta page (step 3), never straight to completion', async () => {
     const onComplete = vi.fn()
     openWizard('menu')
     setStep1Variant('already-granted')
@@ -210,6 +219,29 @@ describe('OnboardingWizard', () => {
     // Lands on Beta (step 3); onComplete must NOT have fired.
     expect(getOnboardingState().currentStep).toBe(3)
     expect(onComplete).not.toHaveBeenCalled()
+  })
+
+  it('the Beta step\'s "Start using Cmdr!" finishes onboarding, skipping the Optional step', async () => {
+    const onComplete = vi.fn()
+    openWizard('menu')
+    setStep1Variant('already-granted')
+    mounted = mountWizard(onComplete)
+    await tick()
+    // Step 1 → 2 (AI).
+    primaryFooterButton(mounted.target)?.click()
+    flushSync()
+    await tick()
+    // Step 2 → 3 (Beta) via "Next".
+    primaryFooterButton(mounted.target)?.click()
+    for (let i = 0; i < 10; i++) await Promise.resolve()
+    flushSync()
+    await tick()
+    expect(getOnboardingState().currentStep).toBe(3)
+    // "Start using Cmdr!" finishes here without advancing to step 4.
+    footerButtonByLabel(mounted.target, 'Start using Cmdr!')?.click()
+    flushSync()
+    expect(onComplete).toHaveBeenCalledOnce()
+    expect(getOnboardingState().currentStep).toBe(3)
   })
 
   it('Back from step 2 resets the footer mode to `decide` (Allow/Deny live again)', async () => {
@@ -254,7 +286,7 @@ describe('OnboardingWizard', () => {
     primaryFooterButton(target)?.click()
     flushSync()
     await tick()
-    // Step 2 → step 3 (Beta) via the single "Go to open beta" forward button.
+    // Step 2 → step 3 (Beta) via the single "Next" forward button.
     primaryFooterButton(target)?.click()
     for (let i = 0; i < 10; i++) await Promise.resolve()
     flushSync()

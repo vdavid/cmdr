@@ -327,8 +327,8 @@
     const providerLinksById: Record<string, { signup: string; apiKeys: string }> = {
         openai: { signup: 'https://platform.openai.com/signup', apiKeys: 'https://platform.openai.com/api-keys' },
         anthropic: {
-            signup: 'https://console.anthropic.com/login',
-            apiKeys: 'https://console.anthropic.com/settings/keys',
+            signup: 'https://platform.claude.com/login',
+            apiKeys: 'https://platform.claude.com/settings/keys',
         },
         'google-gemini': {
             signup: 'https://aistudio.google.com/',
@@ -340,8 +340,8 @@
             apiKeys: 'https://api.together.xyz/settings/api-keys',
         },
         'fireworks-ai': {
-            signup: 'https://fireworks.ai/login',
-            apiKeys: 'https://fireworks.ai/account/api-keys',
+            signup: 'https://app.fireworks.ai/login',
+            apiKeys: 'https://app.fireworks.ai/settings/users/api-keys',
         },
         mistral: { signup: 'https://console.mistral.ai/', apiKeys: 'https://console.mistral.ai/api-keys/' },
         openrouter: { signup: 'https://openrouter.ai/', apiKeys: 'https://openrouter.ai/keys' },

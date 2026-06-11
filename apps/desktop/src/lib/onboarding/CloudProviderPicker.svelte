@@ -5,18 +5,21 @@
     /**
      * Scrollable provider picker for the onboarding wizard's step 2.
      *
-     * Renders all 15 cloud-provider presets as a single `<ul role="listbox">`. The
-     * active option carries `tabindex=0` (roving), the rest `tabindex=-1`. Keyboard:
+     * Renders all 15 cloud-provider presets as a single `<ul role="listbox">`. The list
+     * is ONE tab stop (`tabindex=0` on the `<ul>`); the options themselves are never
+     * focused. The visually-active option is tracked with `aria-activedescendant`, the
+     * standard managed-focus listbox pattern. This keeps Tab clean: Tab moves into the
+     * list, Tab again moves straight out to the setup column. Keyboard inside:
      *
-     * - ArrowDown / ArrowUp / Home / End: move within the list.
+     * - ArrowDown / ArrowUp / Home / End: move the active option (and the selection).
      * - Type-to-jump: typing a prefix selects the first matching option name. The
-     *   prefix buffer resets after 700 ms of inactivity. See `lib/onboarding/CLAUDE.md` §
-     *   "Step 2": the file-explorer's `type-to-jump-state.svelte.ts` factory is
-     *   pane-coupled (cursor / snapshot deps), so an inline matcher is the right
-     *   tradeoff here. 15 names, single comparator, no factory needed.
+     *   prefix buffer resets after 700 ms of inactivity. The file-explorer's
+     *   `type-to-jump-state.svelte.ts` factory is pane-coupled (cursor / snapshot deps),
+     *   so an inline matcher is the right tradeoff here: 15 names, single comparator.
      *
-     * The wizard owns the panel-level focus trap; we just expose this listbox as one
-     * focusable on the Tab cycle.
+     * Earlier this list used a roving `tabindex` and moved real focus onto each option,
+     * which made Tab feel like it was "captured" inside the list and coupled selection to
+     * focus. The activedescendant pattern fixes both.
      */
 
     interface Props {
@@ -28,9 +31,16 @@
 
     const TYPE_TO_JUMP_RESET_MS = 700
 
+    /** Stable per-option DOM id, referenced by `aria-activedescendant`. */
+    function optionId(providerId: string): string {
+        return `onboarding-provider-${providerId}`
+    }
+
     let listEl: HTMLUListElement | undefined = $state()
     let typeBuffer = $state('')
     let typeBufferTimer: ReturnType<typeof setTimeout> | null = null
+
+    const activeOptionId = $derived(optionId(value))
 
     function clearTypeBuffer(): void {
         typeBuffer = ''
@@ -55,10 +65,10 @@
         if (index < 0 || index >= cloudProviderPresets.length) return
         const preset = cloudProviderPresets[index]
         if (preset.id !== value) onChange(preset.id)
-        // Focus the new option after the parent's reactive update lands.
+        // Keep the (still-focused) list scrolled to the active option. No `.focus()`:
+        // focus stays on the `<ul>`; the active option is conveyed via aria-activedescendant.
         await tick()
-        const opt = listEl?.querySelectorAll<HTMLLIElement>('li[role="option"]')[index]
-        opt?.focus()
+        const opt = listEl?.querySelector<HTMLLIElement>(`#${CSS.escape(optionId(preset.id))}`)
         opt?.scrollIntoView({ block: 'nearest' })
     }
 
@@ -119,24 +129,21 @@
     class="provider-list"
     role="listbox"
     aria-label="Cloud AI providers"
-    tabindex="-1"
+    tabindex="0"
+    aria-activedescendant={activeOptionId}
     onkeydown={handleKeydown}
 >
-    {#each cloudProviderPresets as preset, i (preset.id)}
+    {#each cloudProviderPresets as preset (preset.id)}
         <li
+            id={optionId(preset.id)}
             class="provider-option"
             class:active={preset.id === value}
             role="option"
             aria-selected={preset.id === value}
-            tabindex={preset.id === value ? 0 : -1}
             data-provider-id={preset.id}
             onclick={() => {
                 handleClick(preset.id)
             }}
-            onfocus={() => {
-                if (preset.id !== value) onChange(preset.id)
-            }}
-            data-index={i}
         >
             <span class="provider-name">{preset.name}</span>
         </li>
@@ -147,26 +154,28 @@
     .provider-list {
         list-style: none;
         margin: 0;
-        padding: var(--spacing-xs);
+        padding: var(--spacing-xxs);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         background: var(--color-bg-primary);
         overflow-y: auto;
-        height: 100%;
+        /* Fills the remaining height of the picker column (title sits above it). */
+        flex: 1;
         min-height: 0;
     }
 
-    .provider-list:focus-within {
+    .provider-list:focus-visible {
+        outline: none;
         border-color: var(--color-accent);
         box-shadow: var(--shadow-focus);
     }
 
     .provider-option {
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-xxs) var(--spacing-sm);
         border-radius: var(--radius-sm);
         color: var(--color-text-primary);
-        font-size: var(--font-size-md);
-        line-height: 1.3;
+        font-size: var(--font-size-sm);
+        line-height: 1.5;
         transition: background var(--transition-base), color var(--transition-base);
     }
 
@@ -180,7 +189,9 @@
         font-weight: 500;
     }
 
-    .provider-option:focus-visible {
+    /* The list is the focus owner, so the active option shows the focus ring while the
+       `<ul>` has focus (mirrors a native listbox's highlighted row). */
+    .provider-list:focus-visible .provider-option.active {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;
     }

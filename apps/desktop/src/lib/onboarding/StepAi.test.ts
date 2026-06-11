@@ -12,9 +12,9 @@
  * - Intel-Mac gate: when `getAiRuntimeStatus().localAiSupported === false`, the local
  *   radio is disabled, doesn't fire `startAiDownload`, and `setSetting('ai.provider',
  *   'local')` does not run.
- * - The single forward footer button ("Go to open beta") registers via
- *   `setFooterOverride`. Clicking it persists + calls `pushConfigToBackend` + advances to
- *   the Beta page (step 3). It never completes onboarding: the Beta page is non-skippable.
+ * - The single forward footer button ("Next") registers via `setFooterOverride`. Clicking
+ *   it persists + calls `pushConfigToBackend` + advances to the Beta page (step 3). It
+ *   never completes onboarding: the Beta page is non-skippable.
  * - No-API-key-blocks-advance rule: cloud + empty key still advances; `pushConfigToBackend`
  *   still fires.
  *
@@ -298,16 +298,16 @@ describe('StepAi', () => {
     expect(settingsMap['ai.provider']).toBe('off')
   })
 
-  it('registers a single "Go to open beta" forward button via setFooterOverride', async () => {
+  it('registers a single "Next" forward button via setFooterOverride', async () => {
     mounted = mountStep()
     await waitForAsync()
     const buttons = getOnboardingState().footerOverride
     expect(buttons).not.toBeNull()
-    expect(buttons?.map((b) => b.label)).toEqual(['Go to open beta'])
+    expect(buttons?.map((b) => b.label)).toEqual(['Next'])
     expect(buttons?.[0].variant).toBe('primary')
   })
 
-  it('Go to open beta persists the choice, pushes config to backend, and advances to the Beta page (step 3) without finishing', async () => {
+  it('Next persists the choice, pushes config to backend, and advances to the Beta page (step 3) without finishing', async () => {
     mounted = mountStep()
     await waitForAsync()
     radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))

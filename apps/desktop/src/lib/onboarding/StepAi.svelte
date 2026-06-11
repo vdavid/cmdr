@@ -6,6 +6,7 @@
     import IconShieldCheck from '~icons/lucide/shield-check'
     import IconShieldOff from '~icons/lucide/shield-off'
     import IconTriangleAlert from '~icons/lucide/triangle-alert'
+    import IconSparkles from '~icons/lucide/sparkles'
     import { getOnboardingState, setFooterOverride, setStepTwoBanner, nextStep } from './onboarding-state.svelte'
     import {
         checkFullDiskAccess,
@@ -36,10 +37,9 @@
      *     ○ Yes, local (Apple Silicon only; tooltip when disabled)
      *     ○ Thanks but no thanks
      *
-     * Footer: a single forward button ("Go to open beta") registered via
-     * `setFooterOverride` so the wizard renders it in its right slot. The Beta page
-     * (step 3) is non-skippable, so this step never completes onboarding; it always
-     * advances to Beta.
+     * Footer: a single forward button ("Next") registered via `setFooterOverride` so the
+     * wizard renders it in its right slot. The Beta page (step 3) is non-skippable, so this
+     * step never completes onboarding; it always advances to Beta.
      *
      * Persistence on the footer button:
      *   - `ai.provider` (always)
@@ -121,7 +121,11 @@
         try {
             const [hasFda, settings] = await Promise.all([checkFullDiskAccess(), loadSettings()])
             if (hasFda) {
-                setStepTwoBanner('granted')
+                // Celebrate the grant ONLY when the user just came through the FDA step this
+                // launch (fresh first-run, not yet onboarded). On menu / palette re-entry after
+                // onboarding finished, FDA being on is the steady state, not news, so show no
+                // banner.
+                setStepTwoBanner(settings.isOnboarded ? 'none' : 'granted')
             } else if (settings.fullDiskAccessChoice === 'deny') {
                 setStepTwoBanner('denied')
             } else {
@@ -191,7 +195,7 @@
         void advanceBusy
         setFooterOverride([
             {
-                label: 'Go to open beta',
+                label: 'Next',
                 variant: 'primary' as const,
                 disabled: advanceBusy,
                 onclick: () => void handleGoToBeta(),
@@ -286,24 +290,30 @@
         <thead>
             <tr>
                 <th scope="col">Feature</th>
-                <th scope="col">With AI</th>
                 <th scope="col">Without AI</th>
+                <th scope="col" class="with-ai">
+                    <span class="with-ai-head">
+                        <IconSparkles width="14" height="14" />
+                        With AI
+                    </span>
+                </th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <th scope="row">Search</th>
-                <td>You say "my recent fish-related presentations", agent sets your filters.</td>
                 <td>You type something like <code>*fish*.ppt</code>, and select the "after 1st of this month" filter.</td>
+                <td class="with-ai">You say "my recent fish-related presentations", agent sets your filters.</td>
             </tr>
             <tr>
                 <th scope="row">Mass-rename</th>
-                <td>You say "add ISO date prefix", agent sets your rename pattern, you review and apply at will.</td>
                 <td>You use the batch rename UI to manually set the rename pattern, review and apply.</td>
+                <td class="with-ai">
+                    You say "add ISO date prefix", agent sets your rename pattern, you review and apply at will.
+                </td>
             </tr>
             <tr>
                 <th scope="row">Select</th>
-                <td>You say "select all image files", agent suggests a selection, you review and apply at will.</td>
                 <td>
                     <!-- The chip reads the real `selection.selectFiles` binding (bare `+`),
                          not a hardcoded combo. Non-clickable: this is onboarding prose, and
@@ -319,6 +329,7 @@
                         <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.
                     {/if}
                 </td>
+                <td class="with-ai">You say "select all image files", agent suggests a selection, you review and apply at will.</td>
             </tr>
         </tbody>
     </table>
@@ -352,6 +363,7 @@
         {#if choice === 'cloud'}
             <div class="cloud-grid">
                 <div class="cloud-grid-picker">
+                    <h3 class="picker-title">Select a provider</h3>
                     <CloudProviderPicker
                         value={cloudProviderId}
                         onChange={(id: string) => {
@@ -537,6 +549,23 @@
         color: var(--color-text-primary);
     }
 
+    /* "With AI" is the column we want to draw the eye to: tint it with the accent, give the
+       header an accent color and a sparkle. The code chips inside still read on the tint. */
+    .comparison th.with-ai,
+    .comparison td.with-ai {
+        background: var(--color-accent-subtle);
+    }
+
+    .comparison thead th.with-ai {
+        color: var(--color-accent-text);
+    }
+
+    .with-ai-head {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
+    }
+
     .resume-cue {
         margin: 0 0 var(--spacing-md);
         padding: var(--spacing-sm) var(--spacing-md);
@@ -616,13 +645,28 @@
         gap: var(--spacing-lg);
         margin: 0;
         padding: var(--spacing-md) 0 var(--spacing-sm);
-        max-height: 340px;
+        /* A DEFINITE height (not max-height) so the flex heights inside resolve and each
+           column scrolls internally. With only max-height, the picker list grew to its
+           content height and spilled over the radio options below it (the overlap bug). */
+        height: 22rem;
+        flex: none;
         min-height: 0;
     }
 
     .cloud-grid-picker {
         min-height: 0;
         display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    /* Lines up horizontally with `CloudProviderSetup`'s "Set up {provider}" title: same
+       font size / weight, both sit at the top of their grid column. */
+    .picker-title {
+        margin: 0;
+        font-size: var(--font-size-md);
+        font-weight: 600;
+        color: var(--color-text-primary);
     }
 
     .cloud-grid-setup {

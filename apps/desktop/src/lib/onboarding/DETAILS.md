@@ -13,17 +13,17 @@ finishes onboarding.
 
 ## Key files
 
-| File                         | Purpose                                                                                                                                                                                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OnboardingWizard.svelte`    | Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer button, Escape-swallow. Tab containment via the shared `use:trapFocus` (no `onEscape` — dismissal requires committing to a step).                                              |
-| `OnboardingStepShell.svelte` | Per-step inner frame (padding, scroll container). Steps render their body inside.                                                                                                                                                                                 |
-| `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.                                                                                                                                                                       |
-| `StepAi.svelte`              | Step 2: AI provider picker. Three FDA-outcome banners, three radio choices, single "Go to open beta" forward button.                                                                                                                                              |
-| `CloudProviderPicker.svelte` | Step 2 left column: scrollable listbox of all 15 cloud providers. Arrow / Home / End / type-to-jump keyboard nav.                                                                                                                                                 |
-| `CloudProviderSetup.svelte`  | Step 2 right column: per-provider numbered tutorial with API-key persist + auto-check + model combobox.                                                                                                                                                           |
-| `StepBeta.svelte`            | Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels) + anonymous-analytics disclosure + `analytics.enabled` opt-out switch + optional `analytics.email` contact field. Reuses the Settings `UpdatesSection` email/`betaSignup` wiring. |
-| `StepOptional.svelte`        | Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry settings.                                                                                                                                                                |
-| `onboarding-state.svelte.ts` | Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner mode, `openWizard()` / `resumeStepFor()` etc.                                                                                                                                |
+| File                         | Purpose                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OnboardingWizard.svelte`    | Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer button, Escape-swallow. Tab containment via the shared `use:trapFocus` (no `onEscape` — dismissal requires committing to a step).                                                                                                                                                                            |
+| `OnboardingStepShell.svelte` | Per-step inner frame (padding, scroll container). Steps render their body inside.                                                                                                                                                                                                                                                                                                               |
+| `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.                                                                                                                                                                                                                                                                                                     |
+| `StepAi.svelte`              | Step 2: AI provider picker. FDA-outcome banner (or none), comparison table (Without AI / With AI), three radio choices, single "Next" forward button.                                                                                                                                                                                                                                           |
+| `CloudProviderPicker.svelte` | Step 2 left column: scrollable listbox of all 15 cloud providers. Single tab stop via `aria-activedescendant` (no roving focus); Arrow / Home / End / type-to-jump move the active option.                                                                                                                                                                                                      |
+| `CloudProviderSetup.svelte`  | Step 2 right column: per-provider numbered tutorial with API-key persist + auto-check + model combobox.                                                                                                                                                                                                                                                                                         |
+| `StepBeta.svelte`            | Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub, Discord, book-a-call) + anonymous-analytics disclosure + `analytics.enabled` opt-out switch + optional `analytics.email` contact field. Footer = "Start using Cmdr!" (finish here) + "One more optional setup step" (continue). Reuses the Settings `UpdatesSection` email/`betaSignup` wiring. |
+| `StepOptional.svelte`        | Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry settings.                                                                                                                                                                                                                                                                                              |
+| `onboarding-state.svelte.ts` | Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner mode, `openWizard()` / `resumeStepFor()` etc.                                                                                                                                                                                                                                                              |
 
 ## Status
 
@@ -122,23 +122,26 @@ advances normally).
 Three pieces stacked top to bottom:
 
 1. **FDA-outcome banner**: on step-2 entry, `StepAi.svelte` fires a fresh `checkFullDiskAccess()` + reads
-   `fullDiskAccessChoice` and writes one of three modes via `setStepTwoBanner()`:
-   - `granted` ("Thanks for granting full disk access!")
+   `fullDiskAccessChoice` + `isOnboarded` and writes one of these modes via `setStepTwoBanner()`:
+   - `granted` ("Thanks for granting full disk access!") only on a FRESH first-run grant (`hasFda && !isOnboarded`).
+   - `none` (no banner) when FDA is on but the user already finished onboarding (menu / palette re-entry): FDA being on
+     is the steady state, not news, so we don't re-celebrate it.
    - `denied` ("You chose not to enable full disk access.")
    - `stuck` ("Cmdr doesn't seem to have full disk access yet"; surfaces a deep link to System Settings) Linux
      short-circuits with `linux` (no banner; the step opens with the Welcome line instead).
-2. **Comparison table**: verbatim from David's spec, "with AI vs without" for Search, Mass-rename, Select.
+2. **Comparison table**: "without AI vs with AI" for Search, Mass-rename, Select. The "With AI" column is the rightmost
+   and carries the accent flair (tint + sparkle) to draw the eye.
 3. **Three radio choices**: cloud / local / no AI. Pre-selected from the persisted `ai.provider` so a crash-then-resume
    user lands on their previous pick. Picking cloud reveals `CloudProviderPicker.svelte` (left) and
    `CloudProviderSetup.svelte` (right). Picking local kicks off `startAiDownload()` in the background; switching away
    cancels (HTTP-Range resume picks up on switch-back). Intel Macs see the local radio disabled with a tooltip ("Local
    LLM requires Apple Silicon. Cloud works on Intel.") driven by `getAiRuntimeStatus().localAiSupported`.
 
-### Forward footer (single "Go to open beta" button)
+### Forward footer (single "Next" button)
 
-Step 2 owns its own footer via `setFooterOverride([...])` with a single primary **Go to open beta** button: it persists
-the AI choice + `pushConfigToBackend()`, then `nextStep()` to the Beta page (step 3). The AI step never completes
-onboarding, because the Beta page is non-skippable (see the Decision below): every path through AI lands on Beta.
+Step 2 owns its own footer via `setFooterOverride([...])` with a single primary **Next** button: it persists the AI
+choice + `pushConfigToBackend()`, then `nextStep()` to the Beta page (step 3). The AI step never completes onboarding,
+because the Beta page is non-skippable (see the Decision below): every path through AI lands on Beta.
 
 The button stays enabled regardless of API-key validity per the **no-key-blocks-advance** rule: the auto-check status in
 the right column is feedback enough; forcing valid key entry as a precondition would fight users who want to grab the
@@ -165,9 +168,10 @@ the backend reconfigure before the user lands in the app deterministically.
 `StepBeta.svelte`: David's personal open-beta intro, the analytics disclosure, and an optional contact channel. Three
 blocks:
 
-1. **Personal intro**: first-person welcome (solo dev, rough parts, feedback shapes the roadmap) plus the feedback
-   channels: the `Help > Send feedback…` menu item, GitHub issues, a book-a-call link, and a star/watch/fork CTA (helps
-   Cmdr reach Homebrew's notability bar for a tap-free `brew install`). The URLs come from the shared
+1. **Personal intro**: first-person welcome (solo dev, rough parts marked with an inline `StatusBadge status="alpha"`,
+   feedback shapes the roadmap) plus the feedback channels as a numbered list: the `Help > Send feedback…` menu item
+   (with the `app.commandPalette` `ShortcutChip`), GitHub issues, Discord, a book-a-call link, and a star/watch/fork CTA
+   (helps Cmdr reach Homebrew's notability bar for a tap-free `brew install`). The URLs come from the shared
    `$lib/beta-links.ts` constants (also used by `AboutWindow.svelte`); the links render as `LinkButton`s routed through
    `openExternalUrl`.
 2. **Anonymous-analytics opt-out**: the registry-backed `<SettingSwitch id="analytics.enabled">` (default on). Flipping
@@ -180,8 +184,10 @@ The analytics and email blocks reuse `settings/sections/UpdatesSection.svelte`'s
 call, the same email-pattern + `lastSubmittedEmail` resend guard, the same success/failure copy), so the onboarding page
 and Settings behave identically.
 
-The footer is a single primary **Next** button that `nextStep()`s to the Optional step. There is no skip-to-finish here:
-the page is non-skippable so every first-launch user sees the analytics disclosure once.
+The footer has two buttons: a secondary **Start using Cmdr!** that finishes onboarding right here (skipping the optional
+step, via `requestWizardComplete()`) and a primary **One more optional setup step** that `nextStep()`s to the Optional
+step. There is no skip-to-finish that bypasses this page: every first-launch user sees the analytics disclosure once,
+because the AI step always lands here and both buttons start from this page.
 
 ## Step 4 (optional setup)
 
@@ -286,10 +292,10 @@ it at runtime races background threads that resolve icons / scan paths into the 
 
 **Decision**: The Open beta page (step 3) is non-skippable; the AI step has no skip-to-finish. **Why**: Every
 first-launch user must see the anonymous-analytics disclosure once (the opt-out default only reads as fair consent if it
-was actually shown). So the AI step's only forward button ("Go to open beta") always `nextStep()`s to Beta, and only the
-final Optional step finishes onboarding. Don't re-add a skip-to-finish button on the AI step (it would bypass the
-disclosure). The Beta page itself advances with a normal Next; the user can still opt out and skip the email on it, they
-just can't skip seeing it.
+was actually shown). So the AI step's only forward button ("Next") always `nextStep()`s to Beta. The Beta page itself
+offers "Start using Cmdr!" (finish) and "One more optional setup step" (continue), so both forward paths start from Beta
+and the user can't reach the app without seeing it. Don't re-add a skip-to-finish button on the AI step (it would bypass
+the disclosure). The user can still opt out and skip the email on the Beta page, they just can't skip seeing it.
 
 **Decision**: Step 1 footer button hidden in `decide` mode (body owns Allow / Deny). **Why**: The Allow / Deny choice is
 the meat of step 1; placing the buttons inside the body groups them with the explanatory copy they belong to. The

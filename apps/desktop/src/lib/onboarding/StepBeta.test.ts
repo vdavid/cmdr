@@ -7,8 +7,9 @@
  *   reusing the exact Settings wiring.
  * - Committing a valid email calls the typed `betaSignup` wrapper and renders the gentle
  *   success copy. An invalid address does not call `betaSignup`.
- * - The footer override registers a single primary "Next" button (the page is
- *   non-skippable: Next advances to the final Optional step), and clears on destroy.
+ * - The footer override registers two buttons: a secondary "Start using Cmdr!" that
+ *   finishes onboarding here (skipping the Optional step) and a primary "One more optional
+ *   setup step" that advances to the final Optional step. The override clears on destroy.
  *
  * Axe coverage lives in `StepBeta.a11y.test.ts`.
  */
@@ -105,25 +106,39 @@ describe('StepBeta', () => {
     resetForTesting()
   })
 
-  it('registers a single primary "Next" footer button (the Beta page is non-skippable)', async () => {
+  it('registers two footer buttons: secondary "Start using Cmdr!" and primary "One more optional setup step"', async () => {
     mounted = mountStep()
     await waitForAsync()
     const state = getOnboardingState()
     expect(state.footerOverride).not.toBeNull()
-    expect(state.footerOverride).toHaveLength(1)
-    expect(state.footerOverride?.[0].label).toBe('Next')
-    expect(state.footerOverride?.[0].variant).toBe('primary')
+    expect(state.footerOverride).toHaveLength(2)
+    expect(state.footerOverride?.[0].label).toBe('Start using Cmdr!')
+    expect(state.footerOverride?.[0].variant).toBe('secondary')
+    expect(state.footerOverride?.[1].label).toBe('One more optional setup step')
+    expect(state.footerOverride?.[1].variant).toBe('primary')
   })
 
-  it('"Next" advances to the final Optional step (step 4), it does not finish', async () => {
+  it('"One more optional setup step" advances to the Optional step (step 4), it does not finish', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    const state = getOnboardingState()
+    const tickBefore = state.finishRequestTick
+    state.footerOverride?.[1].onclick()
+    await waitForAsync()
+    expect(getOnboardingState().currentStep).toBe(4)
+    expect(getOnboardingState().finishRequestTick).toBe(tickBefore)
+  })
+
+  it('"Start using Cmdr!" requests wizard completion, skipping the Optional step', async () => {
     mounted = mountStep()
     await waitForAsync()
     const state = getOnboardingState()
     const tickBefore = state.finishRequestTick
     state.footerOverride?.[0].onclick()
     await waitForAsync()
-    expect(getOnboardingState().currentStep).toBe(4)
-    expect(getOnboardingState().finishRequestTick).toBe(tickBefore)
+    // Stays on Beta (step 3); the wizard shell observes the bumped finish tick and closes.
+    expect(getOnboardingState().currentStep).toBe(3)
+    expect(getOnboardingState().finishRequestTick).toBe(tickBefore + 1)
   })
 
   it('clears the footer override on destroy', async () => {
@@ -170,7 +185,9 @@ describe('StepBeta', () => {
     await waitForAsync()
     const link = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/vdavid/cmdr"]')
     expect(link).not.toBeNull()
-    expect(link?.textContent).toContain('star, watch, and fork the repo')
+    expect(link?.textContent).toContain('here on GitHub')
+    // The CTA sentence names the star/watch/fork ask around the link.
+    expect(mounted.target.textContent).toContain('star, watch, and fork the repo')
   })
 
   it('does not call betaSignup for an invalid email', async () => {

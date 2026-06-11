@@ -60,13 +60,16 @@ export type Step1FooterMode = 'decide' | 'restart'
 /**
  * Which step-2 banner copy to render. Set on step transition, read by step 2.
  *
- * - `'granted'`: FDA is now granted (`hasFda === true`). "Thanks for granting…"
+ * - `'granted'`: FDA was JUST granted this launch (`hasFda === true` && `!isOnboarded`).
+ *   "Thanks for granting…" Only the fresh-grant case; steady-state re-entry uses `'none'`.
  * - `'denied'`: user clicked Deny on step 1. "You chose not to enable…"
  * - `'stuck'`: user clicked Allow but FDA still isn't granted in-session. "You said
  *   you wanted to enable Full Disk Access, but Cmdr doesn't seem to have gotten it…"
- *   Also covers Linux (no FDA, no banner needed; the step renders a Welcome).
+ * - `'none'`: no banner. FDA is on but it's the steady state, not news (menu / palette
+ *   re-entry after onboarding finished). The step renders its plain title.
+ * - `'linux'`: no FDA on Linux; the step renders a Welcome instead of a banner.
  */
-export type StepTwoFdaBanner = 'granted' | 'denied' | 'stuck' | 'linux'
+export type StepTwoFdaBanner = 'granted' | 'denied' | 'stuck' | 'none' | 'linux'
 
 /**
  * A button to render in the wizard's footer (right slot). Steps register an array of
@@ -183,7 +186,9 @@ export function step1VariantFor(ctx: ResumeContext, source: OnboardingSource): S
 export function stepTwoBannerFor(ctx: ResumeContext): StepTwoFdaBanner {
   const isMac = ctx.isMac ?? isMacOS()
   if (!isMac) return 'linux'
-  if (ctx.hasFda) return 'granted'
+  // Show the celebratory "granted" banner only on a fresh first-run grant. Once the user
+  // has finished onboarding, FDA being on is the steady state, so re-entry shows no banner.
+  if (ctx.hasFda) return ctx.isOnboarded ? 'none' : 'granted'
   if (ctx.fullDiskAccessChoice === 'deny') return 'denied'
   return 'stuck'
 }

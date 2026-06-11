@@ -97,8 +97,14 @@ describe('step1VariantFor', () => {
 })
 
 describe('stepTwoBannerFor', () => {
-  it('macOS hasFda → granted', () => {
-    expect(stepTwoBannerFor(ctxMac({ hasFda: true }))).toBe('granted')
+  it('macOS hasFda + !isOnboarded (fresh grant) → granted', () => {
+    expect(stepTwoBannerFor(ctxMac({ hasFda: true, isOnboarded: false }))).toBe('granted')
+  })
+
+  it('macOS hasFda + isOnboarded (steady-state re-entry) → none', () => {
+    // The "granted" celebration only fires on a fresh first-run grant. Once onboarded,
+    // FDA being on is the steady state, so the banner is suppressed.
+    expect(stepTwoBannerFor(ctxMac({ hasFda: true, isOnboarded: true }))).toBe('none')
   })
 
   it('macOS deny → denied', () => {

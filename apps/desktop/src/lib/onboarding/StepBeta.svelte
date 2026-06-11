@@ -1,13 +1,22 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte'
+    import { onDestroy } from 'svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
     import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
-    import { setFooterOverride, nextStep } from './onboarding-state.svelte'
+    import StatusBadge from '$lib/ui/StatusBadge.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import { setFooterOverride, nextStep, requestWizardComplete } from './onboarding-state.svelte'
     import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { onSpecificSettingChange } from '$lib/settings/settings-store'
     import { betaSignup, openExternalUrl } from '$lib/tauri-commands'
-    import { GITHUB_REPO_URL, GITHUB_ISSUES_URL, BOOK_A_CALL_URL, ABOUT_DAVID_URL } from '$lib/beta-links'
+    import {
+        GITHUB_REPO_URL,
+        GITHUB_ISSUES_URL,
+        BOOK_A_CALL_URL,
+        ABOUT_DAVID_URL,
+        DISCORD_INVITE_URL,
+    } from '$lib/beta-links'
+    import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { getAppLogger } from '$lib/logging/logger'
 
     /**
@@ -30,14 +39,20 @@
      *     ONLY the email (never an install id) and returns a typed result we map to a gentle
      *     inline note.
      *
-     * This page is non-skippable: the AI step's forward button lands the user here, and the
-     * footer here is a normal "Next" that advances to the final Optional step. See
+     * This page is non-skippable: the AI step's forward button lands the user here. The
+     * footer offers two ways forward: a secondary "Start using Cmdr!" that finishes
+     * onboarding right here (skipping the optional setup), and a primary "One more optional
+     * setup step" that advances to the final Optional step. See
      * `lib/onboarding/CLAUDE.md` § "Step 3 (Open beta)".
      */
 
     const log = getAppLogger('onboarding-beta')
 
     const analyticsDef = getSettingDefinition('analytics.enabled') ?? { label: '', description: '' }
+
+    // Drives the command-palette mention: when `app.commandPalette` is unbound the chip
+    // renders nothing, so we drop the "with <chip>" tail rather than leave a gap.
+    const commandPaletteShortcut = $derived(getFirstShortcutReactive('app.commandPalette'))
 
     /** Click handler factory for the feedback links: intercepts the decorative href and routes
      * through `openExternalUrl` (Tauri blocks raw `<a>` navigation), logging on failure. */
@@ -50,15 +65,41 @@
         }
     }
 
-    onMount(() => {
-        // The "Next" button has no reactive deps (its handler closes over a module-level
-        // function), so register once on mount rather than re-running an `$effect`.
+    // Guards a double-trigger while the step tears down. Both handlers are synchronous, so
+    // this only matters for a rapid double-click on the same button.
+    let advanceBusy = $state(false)
+
+    function handleStart(): void {
+        if (advanceBusy) return
+        advanceBusy = true
+        // Finish onboarding right here, skipping the optional setup step.
+        requestWizardComplete()
+    }
+
+    function handleContinue(): void {
+        if (advanceBusy) return
+        advanceBusy = true
+        nextStep()
+    }
+
+    // Re-register on `advanceBusy` change so the disabled state stays fresh.
+    $effect(() => {
+        void advanceBusy
         setFooterOverride([
             {
-                label: 'Next',
-                variant: 'primary',
+                label: 'Start using Cmdr!',
+                variant: 'secondary',
+                disabled: advanceBusy,
                 onclick: () => {
-                    nextStep()
+                    handleStart()
+                },
+            },
+            {
+                label: 'One more optional setup step',
+                variant: 'primary',
+                disabled: advanceBusy,
+                onclick: () => {
+                    handleContinue()
                 },
             },
         ])
@@ -136,40 +177,54 @@
             target="_blank"
             rel="noopener noreferrer"
             onclick={openLink(ABOUT_DAVID_URL)}>David</LinkButton
-        >! I'm building Cmdr, and you're one of the very first people using it. Thanks for your trust! ❤️ Cmdr is in open beta:
-        most of the app is solid, but some parts are still rough (especially Search and Select now). Your feedback helps me spot bugs and prioritize
-        what to build next.
+        >! I build Cmdr, and you're one of the very first people using it. Thanks for your trust! ❤️
     </p>
-    <ul class="feedback-list">
-        <li>Found a bug or have an idea? <strong>Help &gt; Send feedback…</strong> sends it straight to me.</li>
+    <p class="lede">
+        Cmdr is in open beta, which means it's overall solid and usable, but some parts are still rough. See any
+        <StatusBadge status="alpha" /> badges marking the most work-in-progress areas.
+    </p>
+    <p class="lede">Your feedback helps me spot bugs and prioritize features. Here is how you can engage:</p>
+    <ol class="feedback-list">
         <li>
-            Want to affect the roadmap? Vote on features on
+            <strong>In-app:</strong> See <strong>Help &gt; Send feedback…</strong> in the menu{#if commandPaletteShortcut}, or
+            find it in the command palette with <ShortcutChip commandId="app.commandPalette" clickable={false} />{:else}, or
+            find it in the command palette{/if}.
+        </li>
+        <li>
             <LinkButton
                 href={GITHUB_ISSUES_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 onclick={openLink(GITHUB_ISSUES_URL)}>GitHub</LinkButton
-            >. I'm happy if you take two minutes to add your ideas, we need items to get GitHub Issues kicked off.
+            >: Add issues, vote on issues.
         </li>
         <li>
-            Up for a chat?
+            <LinkButton
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick={openLink(DISCORD_INVITE_URL)}>Discord</LinkButton
+            >: Click the link, hop on to the server, meet me and others.
+        </li>
+        <li>
             <LinkButton
                 href={BOOK_A_CALL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 onclick={openLink(BOOK_A_CALL_URL)}>Schedule a call with me</LinkButton
-            >. I'd love to chat about all the nasty stuff you do with your files! And/or hear how you use Cmdr. (I obviously won't be doing this for very long, but while Cmdr is an Open beta, I don't expect many people booking calls.)
+            >: I won't be doing this for very long, but while Cmdr is an open beta, I'd love to talk to you about your
+            files!
         </li>
-        <li>
-            Want <code>brew install cmdr</code> to work without a tap? Homebrew needs 225 stars first. Three clicks help:
-            <LinkButton
-                href={GITHUB_REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onclick={openLink(GITHUB_REPO_URL)}>star, watch, and fork the repo</LinkButton
-            >.
-        </li>
-    </ul>
+    </ol>
+    <p class="lede">
+        And one more very important way you can help in one minute: star, watch, and fork the repo
+        <LinkButton
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onclick={openLink(GITHUB_REPO_URL)}>here on GitHub</LinkButton
+        >. Homebrew wants me to present 225 stars, 50 forks, and 50 watches to enable <code>brew install cmdr</code>.
+    </p>
 
     <p class="lede analytics-lede">
         To learn what's working and what isn't, during the open beta Cmdr sends anonymous usage stats: which features
@@ -232,6 +287,11 @@
         color: var(--color-text-primary);
     }
 
+    /* Keep the inline ALPHA badge centered on the text baseline run rather than riding high. */
+    .lede :global(.feature-status-badge) {
+        vertical-align: middle;
+    }
+
     .analytics-lede {
         margin-bottom: var(--spacing-lg);
     }
@@ -251,7 +311,7 @@
         margin-bottom: 0;
     }
 
-    .feedback-list code {
+    .lede code {
         font-family: var(--font-mono);
         font-size: var(--font-size-xs);
         background: var(--color-bg-tertiary);

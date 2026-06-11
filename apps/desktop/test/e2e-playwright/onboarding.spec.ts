@@ -56,11 +56,12 @@ async function clickForwardButton(tauriPage: PageLike): Promise<void> {
 
 /**
  * Closes the wizard if it's open. The wizard swallows Escape (round-3 #9), so we walk
- * the 4-step flow forward to the end and let the final step finish it. Each step exposes
- * a single forward primary button in the footer: step 1 (already-granted) "Next", step 2
- * "Go to open beta", step 3 "Next", step 4 "Start using Cmdr". Clicking the last primary
- * button advances one step until the Optional step's button completes onboarding and the
- * wizard unmounts. Linux opens at step 2, so the macOS-only step 1 hop is skipped.
+ * the 4-step flow forward to the end and let the final step finish it. The last button in
+ * each footer is the forward action: step 1 (already-granted) "Next", step 2 "Next", step 3
+ * "One more optional setup step" (the Beta page's primary; its secondary "Start using Cmdr!"
+ * would finish early), step 4 "Start using Cmdr". Clicking the last primary button advances
+ * one step until the Optional step's button completes onboarding and the wizard unmounts.
+ * Linux opens at step 2, so the macOS-only step 1 hop is skipped.
  */
 async function closeWizardIfOpen(tauriPage: PageLike): Promise<void> {
   if (!(await wizardIsOpen(tauriPage))) return
@@ -167,8 +168,8 @@ test.describe('Onboarding wizard re-entry', () => {
   // here so a future agent doesn't bolt dismissOverlay() onto the wizard.
   test.skip('dismissOverlay is intentionally NOT wired for the wizard', () => {
     // Documentation-only assertion. The wizard owns the close gesture: only Allow
-    // / Deny / Restart Cmdr / Next / "Go to open beta" / "Start using Cmdr" close it
-    // (the last only from the final Optional step).
+    // / Deny / Restart Cmdr / Next / "One more optional setup step" / "Start using Cmdr"
+    // close it (a finish only from the Beta or final Optional step).
   })
 })
 
