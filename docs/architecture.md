@@ -280,5 +280,7 @@ get immediate auto-merging PRs regardless of schedule.
   `/beta-signup` wiring
 - [discord.md](tooling/discord.md): Community Discord: read-only bot access (tested cURLs) for summarizing channel
   activity
+- [feedback-and-error-digest.md](tooling/feedback-and-error-digest.md): Read in-app feedback (D1) and error-report
+  bundles (R2) straight from the source, behind the `/feedback-and-error-digest-from-app` command
 
 ONLY do read-only operations with these services unless specifically asked to make changes.
