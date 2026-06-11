@@ -154,8 +154,10 @@ pub fn same_byte_layout(a: FileEncoding, b: FileEncoding) -> bool {
 /// 2. **Valid UTF-8 in the first 64 KB** → `Utf8`.
 /// 3. **UTF-16 parity heuristic** on the first 64 KB: ASCII text encoded as
 ///    UTF-16 LE has its `0x00` high byte at every **odd** offset; BE puts the
-///    `0x00` at every **even** offset. ≥30% of pairs matching either pattern is
-///    enough confidence.
+///    `0x00` at every **even** offset. ≥30% of pairs matching either pattern,
+///    AND the decoded code units being mostly text (not NUL / control), is
+///    enough confidence. The text-quality gate keeps binaries (which also park
+///    30%+ of bytes in one parity slot) out of UTF-16.
 /// 4. **Fallback** → `Windows1252` (the right default for high-bit Latin-1
 ///    bytes; ISO-8859-1 is a strict subset).
 ///
@@ -204,15 +206,18 @@ pub fn detect_from_head(head: &[u8]) -> FileEncoding {
 ///
 /// ASCII text under UTF-16 LE: `00 XX 00 XX …`. The low byte `XX` lives at the
 /// **even** offset of each pair, the high byte `0x00` lives at the **odd**
-/// offset. So `odd_zeros / total_pairs > 0.30` → LE.
+/// offset. So `odd_zeros / total_pairs > 0.30` → LE candidate.
 ///
 /// ASCII text under UTF-16 BE: `XX 00 XX 00 …`. Low at odd, high at even. So
-/// `even_zeros / total_pairs > 0.30` → BE.
+/// `even_zeros / total_pairs > 0.30` → BE candidate.
 ///
-/// Returns `None` when neither side clears the 30% threshold. The 30% number is
-/// the same one Chromium's chardet implementation uses for ASCII-dominant
-/// UTF-16 streams; in practice ASCII text in UTF-16 has ~100% zero-byte parity
-/// and pathologically mixed text drops below 5%.
+/// The 30% zero-parity threshold is the same one Chromium's chardet uses for
+/// ASCII-dominant UTF-16. **But zero-parity alone is not enough**: a binary like
+/// a Mach-O fat executable parks 30%+ of its bytes in one parity slot too, and
+/// the raw ratio would misread it as UTF-16. So a candidate must also pass
+/// [`utf16_looks_like_text`]: decoding it as UTF-16 has to yield mostly text, not
+/// a sea of NUL / control code units. Returns `None` when neither side clears the
+/// parity threshold, or when the winning candidate fails the text-quality gate.
 fn detect_utf16_parity(buf: &[u8]) -> Option<FileEncoding> {
     let total_pairs = buf.len() / 2;
     if total_pairs == 0 {
@@ -232,13 +237,60 @@ fn detect_utf16_parity(buf: &[u8]) -> Option<FileEncoding> {
     let threshold = 0.30;
     let le_score = odd_zeros as f64 / total;
     let be_score = even_zeros as f64 / total;
-    if le_score >= be_score && le_score > threshold {
-        Some(FileEncoding::Utf16Le)
+    let candidate = if le_score >= be_score && le_score > threshold {
+        FileEncoding::Utf16Le
     } else if be_score > threshold {
-        Some(FileEncoding::Utf16Be)
+        FileEncoding::Utf16Be
+    } else {
+        return None;
+    };
+    if utf16_looks_like_text(buf, candidate) {
+        Some(candidate)
     } else {
         None
     }
+}
+
+/// Maximum fraction of decoded UTF-16 code units that may be NUL / control before
+/// a parity candidate is rejected as not-really-text.
+///
+/// Real UTF-16 text sits near 0% (newline / tab / CR are NOT counted as control);
+/// a binary misread as UTF-16 runs 30%+ (NUL padding plus random C0/C1 bytes), so
+/// 5% cleanly separates the two with a wide margin.
+const UTF16_MAX_CONTROL_RATIO: f64 = 0.05;
+
+/// True when decoding `buf` as `encoding` (a UTF-16 candidate) yields mostly text.
+///
+/// Counts code units that are NUL, a C0 control other than `\t` / `\n` / `\r`,
+/// DEL, or a C1 control, and rejects when their share exceeds
+/// [`UTF16_MAX_CONTROL_RATIO`]. Surrogates and everything printable count as text.
+/// No full surrogate-pair reconstruction is needed: the ratio only cares whether a
+/// unit is a control, and surrogate halves never fall in the control ranges.
+fn utf16_looks_like_text(buf: &[u8], encoding: FileEncoding) -> bool {
+    let le = matches!(encoding, FileEncoding::Utf16Le);
+    let total_pairs = buf.len() / 2;
+    if total_pairs == 0 {
+        return false;
+    }
+    let mut control = 0usize;
+    for k in 0..total_pairs {
+        let (a, b) = (buf[2 * k], buf[2 * k + 1]);
+        let unit = if le {
+            u16::from_le_bytes([a, b])
+        } else {
+            u16::from_be_bytes([a, b])
+        };
+        let is_control = match unit {
+            0x09 | 0x0A | 0x0D => false, // tab, newline, carriage return are text
+            0x0000..=0x001F => true,     // NUL + remaining C0 controls
+            0x007F..=0x009F => true,     // DEL + C1 controls
+            _ => false,
+        };
+        if is_control {
+            control += 1;
+        }
+    }
+    (control as f64 / total_pairs as f64) <= UTF16_MAX_CONTROL_RATIO
 }
 
 /// Stateless convenience for finding newline byte offsets in a single buffer.

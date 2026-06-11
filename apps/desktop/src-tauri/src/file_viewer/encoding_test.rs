@@ -116,6 +116,44 @@ fn detect_empty_file_is_utf8() {
     assert_eq!(detect_from_head(&[]), FileEncoding::Utf8);
 }
 
+#[test]
+fn detect_binary_with_null_parity_is_not_utf16() {
+    // A real binary (e.g. a Mach-O fat binary) can have 30%+ zero bytes parked in
+    // one parity slot, which the raw zero-parity ratio alone reads as UTF-16. But
+    // decoding such bytes as UTF-16 yields mostly NUL / C0 control code units, not
+    // text, so detection must reject UTF-16. Here every high byte is 0x00 (100%
+    // odd-parity zeros, well over the parity threshold) yet every decoded code unit
+    // is a C0 control. Pre-fix this returned Utf16Le.
+    let mut buf = Vec::new();
+    for i in 0..4096u32 {
+        buf.push((1 + (i % 7)) as u8); // 0x01-0x07: pure C0 controls, never \t\n\r
+        buf.push(0x00);
+    }
+    let detected = detect_from_head(&buf);
+    assert_ne!(
+        detected,
+        FileEncoding::Utf16Le,
+        "binary control bytes must not detect as UTF-16 LE"
+    );
+    assert_ne!(
+        detected,
+        FileEncoding::Utf16Be,
+        "binary control bytes must not detect as UTF-16 BE"
+    );
+}
+
+#[test]
+fn detect_utf16_le_with_latin1_accents_still_detected() {
+    // Guard the other side: real UTF-16 text with non-ASCII Latin-1 accented
+    // characters (whose high byte is still 0x00) must keep detecting as UTF-16, so
+    // the text-quality gate added for the binary case doesn't over-reject.
+    let mut buf = Vec::new();
+    for ch in "Héllo wörld, café au lait. Þetta er íslenska.".repeat(8).encode_utf16() {
+        buf.extend_from_slice(&ch.to_le_bytes());
+    }
+    assert_eq!(detect_from_head(&buf), FileEncoding::Utf16Le);
+}
+
 // -- detect property test ------------------------------------------------------------
 
 use proptest::prelude::*;

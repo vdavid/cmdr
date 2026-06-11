@@ -217,7 +217,12 @@ code), small enough to colocate with `decode_line` rather than add a new depende
 **Why**: ASCII text encoded as UTF-16 (interleaved with `0x00` bytes) is technically valid UTF-8 — every `0x00` is a
 legal U+0000 codepoint — so `std::str::from_utf8(buf).is_ok()` would misclassify it as UTF-8 and decode to a stream of
 ASCII chars with NUL gaps. The 30% zero-byte parity threshold is restrictive enough that real UTF-8 text never trips
-it, while ASCII-dominant UTF-16 streams hit nearly 100% in the matching slot.
+it, while ASCII-dominant UTF-16 streams hit nearly 100% in the matching slot. The parity ratio alone isn't enough,
+though: a binary (a Mach-O fat executable, `0xCAFEBABE`) parks 30%+ of its bytes in one parity slot too. So a parity
+candidate must also pass `utf16_looks_like_text` — decoding it as UTF-16 has to yield under 5% NUL / control code
+units. Without that gate the binary decodes to a stream of CJK / control codepoints (≈37% controls), which is both
+wrong and pathologically slow to render in the viewer (font fallback + text measurement on exotic glyphs), even though
+the backend decode itself stays in the single-digit milliseconds.
 
 **Decision**: UTF-16 LE ↔ BE swap is NOT instant; both go through a background rebuild.
 **Why**: `same_byte_layout(a, b)` requires both encodings to be ASCII-newline-compatible, which UTF-16 isn't. Even when
