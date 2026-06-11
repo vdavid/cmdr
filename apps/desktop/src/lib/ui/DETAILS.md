@@ -386,8 +386,8 @@ Props:
 | `class`      | `string?`                     | Optional class on the outer `<span>` wrapper, in case the parent needs to scope spacing |
 
 Use this anywhere you'd otherwise reach for `formatDateTime` or hand-roll a date string. The one consumer that opts out
-is `FullList.svelte`: its column-alignment story needs the two halves rendered into specific elements (`.date-left` /
-`.date-right`), so it uses the same `formattedDate(...)` data directly. Keep it that way.
+is `FullList.svelte`: it renders the segments straight into its own virtual-scroll grid cell, but it uses the same
+`formattedDate(...)` data directly. Keep it that way.
 
 The wrapper sets `font-variant-numeric: tabular-nums` and `white-space: nowrap` so dates align vertically in lists.
 

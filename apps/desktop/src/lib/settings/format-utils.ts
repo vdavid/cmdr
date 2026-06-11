@@ -96,13 +96,13 @@ export function formatDateForDisplay(
       case 'system':
         return systemLocaleParts(date, tiers)
       case 'iso':
-        return tokenParts(date, 'YYYY-MM-DD | HH:mm', tiers)
+        return tokenParts(date, 'YYYY-MM-DD HH:mm', tiers)
       case 'short':
-        return tokenParts(date, 'MM/DD | HH:mm', tiers)
+        return tokenParts(date, 'MM/DD HH:mm', tiers)
       case 'custom':
         return tokenParts(date, customFormat, tiers)
       default:
-        return tokenParts(date, 'YYYY-MM-DD | HH:mm', tiers)
+        return tokenParts(date, 'YYYY-MM-DD HH:mm', tiers)
     }
   })()
 
@@ -120,19 +120,9 @@ interface ComponentTiers {
   time: AgeTierClass | null
 }
 
-/** Split a token format around an optional `|`, then run each side through `applyTokens`. */
+/** Render a token format into a single segment list. */
 function tokenParts(date: Date, format: string, tiers: ComponentTiers): FormattedDate['parts'] {
-  const pipeIdx = format.indexOf('|')
-  if (pipeIdx < 0) {
-    return { left: applyTokens(date, format, tiers), right: null }
-  }
-  const leftFmt = format.slice(0, pipeIdx).trimEnd()
-  const rightFmt = format.slice(pipeIdx + 1).trimStart()
-  const left = applyTokens(date, leftFmt, tiers)
-  const right = applyTokens(date, rightFmt, tiers)
-  // Treat empty right (e.g. `YYYY-MM-DD |`) as no split.
-  if (right.length === 0) return { left, right: null }
-  return { left, right }
+  return { left: applyTokens(date, format, tiers), right: null }
 }
 
 /**
@@ -238,12 +228,25 @@ function ageClassForIntlPart(type: Intl.DateTimeFormatPartTypes, tiers: Componen
  * stable for the life of the page, so one formatter serves every call.
  * Constructing one per call is ~10× the cost of `formatToParts` itself, which
  * adds up across virtualized file-list re-renders.
+ *
+ * We request fixed-width components (`2-digit` month/day/hour/minute, numeric
+ * year) rather than `dateStyle: 'short'`, which in many locales drops the
+ * zero-padding (en-US `2/3/25`). Fixed widths let the file-list date column
+ * line up across rows under `font-variant-numeric: tabular-nums`. The locale
+ * still owns field order, separators, and the 12-/24-hour choice, so this stays
+ * the native format, just padded. The hour-cycle is left to the locale.
  */
 let systemLocaleFormatter: Intl.DateTimeFormat | null = null
 
 function getSystemLocaleFormatter(): Intl.DateTimeFormat {
   if (systemLocaleFormatter === null) {
-    systemLocaleFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'medium' })
+    systemLocaleFormatter = new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
   return systemLocaleFormatter
 }

@@ -165,15 +165,14 @@ when that row is actually on screen. Otherwise the size column would stay oversi
 `SelectionInfo` keeps using `measureDateColumnWidth` (worst-case sampling) because it renders a single-entry snapshot
 with no "visible set" to measure from.
 
-**Decision**: Date column may split into two aligned sub-columns via a `|` in the format string **Why**: Time digits
-across rows zigzag horizontally when date widths vary (e.g., locale formats, custom strings). The split makes the right
-halves line up. The contract: `formatDateForDisplay` (in `lib/settings/format-utils.ts`) returns a `FormattedDate` whose
-`parts: { left: DateSegment[], right: DateSegment[] | null }` carries both halves as ordered segment lists;
-`computeFullListColumnWidths` measures each half separately (via `joinSegments`) and exposes a `dateLeft` width;
-`FullList` walks each half's segments (wrapping any with a non-null `ageClass` in an age-tier span and emitting the rest
-as plain text) into `.date-left` (inline-block, fixed width, right-aligned) followed by `.date-right`
-(`margin-left: var(--spacing-xs)`). Tooltips/MCP/status bar still see joined strings via `FormattedDate.text` (exposed
-as the `formatDateTime` shortcut).
+**Decision**: The date column renders as one segment list with tabular figures, no split. **Why**: Earlier the column
+split into a fixed-width date half plus a time half so the times lined up across rows despite proportional digits. With
+`font-variant-numeric: tabular-nums` on `.col-date` every digit takes the same advance, and every token format (`YYYY`=4
+digits, the rest zero-padded to 2) emits a fixed character count, so all dates are the same width and align on their
+own. The contract: `formatDateForDisplay` (in `lib/settings/format-utils.ts`) returns a `FormattedDate` whose
+`parts.left` carries the ordered segment list (`parts.right` stays `null`); `computeFullListColumnWidths` measures the
+joined string once per row (tabular-aware, see the digit gotcha below); `FullList` walks the segments, wrapping any with
+a non-null `ageClass` in an age-tier span. Tooltips/MCP/status bar see the joined string via `FormattedDate.text`.
 
 **Decision**: Column-width measurers (canvas in `full-list-utils.ts`, pretext in `measure-column-widths.ts`) cache their
 measurer/context per text scale and rebuild on the **debounced** "settled" scale event from
@@ -210,10 +209,11 @@ layout recalc. `transform` uses GPU compositor for 60fps.
 200], don't re-fetch. If scrolled to [250, 300], expand fetch to [0, 550] to include buffer. `shouldResetCache()`
 handles this.
 
-**Gotcha**: `DATE_PARTS_GAP` (4px) in `measure-column-widths.ts` mirrors the `margin-left: var(--spacing-xs)` on
-`.date-right` in `FullList.svelte`. **Why**: The measurer adds it to the total date column width when any visible row
-splits via `|`. If you change either value, change both: split-date columns will be one or two pixels off from what the
-renderer actually draws otherwise.
+**Gotcha**: The Size and Modified columns render with `font-variant-numeric: tabular-nums`, but canvas/pretext can't
+measure that OpenType feature (the canvas `font` shorthand has no slot for it). **Why**: `measure-column-widths.ts`
+models it by substituting every digit with the font's widest digit (`tabularize`) before measuring, so the
+shrink-wrapped column matches what the DOM draws. Without it, a row of narrow digits (`11/11/1111`) renders wider than
+measured and ellipsizes. If you drop tabular figures from a numeric column, drop its `tabularize` call too.
 
 **Gotcha**: `HEADER_CHROME_ACTIVE/INACTIVE` in `measure-column-widths.ts` are tied to `SortableHeader`'s flex gap +
 caret glyph (4px gap + 8px caret = 12px active, 0px inactive). The button keeps 4px horizontal padding for hover-state

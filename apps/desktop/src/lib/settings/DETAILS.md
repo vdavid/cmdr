@@ -103,10 +103,10 @@ Every site that shows a modified date in the UI flows through one entry point:
   is the canonical entry point for the rest of the app.
 - **`<DateLabel modifiedAt={ts} />`** in `$lib/ui/DateLabel.svelte`: the render-side equivalent. Use it anywhere a
   modified date appears in the UI and you don't have special layout needs (status bar, dialogs, search results, etc.).
-  It walks `parts.left` / `parts.right` and wraps each segment with a non-null `ageClass` in `<span class={ageClass}>`.
-- `FullList.svelte` is the one consumer that opts out of `<DateLabel>` because its column-alignment story needs the two
-  halves rendered into specific elements (`.date-left` / `.date-right`). It uses the same `formattedDate(...)` data; do
-  the same if you add another consumer with bespoke layout.
+  It walks `parts.left` and wraps each segment with a non-null `ageClass` in `<span class={ageClass}>`.
+- `FullList.svelte` is the one consumer that opts out of `<DateLabel>` because it renders the segments straight into its
+  own virtual-scroll grid cell. It uses the same `formattedDate(...)` data; do the same if you add another consumer with
+  bespoke layout.
 - `buildDateTooltip` in `selection-info-utils.ts` mirrors the renderer for HTML tooltips: it walks segments and wraps
   the colored ones into `<span class="age-…">` directly.
 - The plain-string shortcut `formatDateTime(ts)` is `formattedDate(ts).text`. Use it for tooltips, MCP responses,
@@ -195,10 +195,11 @@ file map, the 50-50 split-layout rule, and the `SettingPasswordInput` store-driv
   (not a direct DOM class) because the rows re-key on `shortcutChangeCounter` — an imperative class would vanish on
   re-render. Both ends must import the module or knip flags the exports as unused.
 - **format-utils.ts**: Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time is
-  covered in detail under § "Date display" above. `formatDateForDisplay` is the canonical entry point. Built-in `iso`
-  and `short` formats include a `|` internally so the file-list renderer can split the date and time halves into two
-  aligned columns; custom format default is `YYYY-MM-DD | HH:mm`. The `'system'` formatter is memoized at module scope
-  (constructing `Intl.DateTimeFormat` per call shows up in virtualized scroll profiles).
+  covered in detail under § "Date display" above. `formatDateForDisplay` is the canonical entry point. Every token
+  format emits a fixed character count (`YYYY`=4, the rest zero-padded to 2), so the file-list date column lines up
+  across rows under tabular figures with no split-cell trick; custom format default is `YYYY-MM-DD HH:mm`. The
+  `'system'` formatter requests fixed-width components (2-digit month/day/hour/minute) so locale formats align too, and
+  is memoized at module scope (constructing `Intl.DateTimeFormat` per call shows up in virtualized scroll profiles).
 - **mcp-main-bridge.ts**: MCP bridge for settings; handles `mcp-get-all-settings` and `mcp-set-setting` round-trip
   events in the main window (always alive), enabling AI agents to query and modify settings without the settings window
   open

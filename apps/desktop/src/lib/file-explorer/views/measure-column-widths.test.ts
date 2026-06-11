@@ -30,15 +30,15 @@ function entry(overrides: Partial<FileEntry>): FileEntry {
 
 /**
  * Build a stub `FormattedDate` for tests that don't care about per-component
- * coloring. Each half is a single literal segment so `joinSegments`
- * reproduces it as the full string.
+ * coloring. The whole string is one literal segment so `joinSegments`
+ * reproduces it.
  */
-function stubDate(left: string, right: string | null = null) {
+function stubDate(text: string) {
   return {
-    text: right === null ? left : `${left} ${right}`,
+    text,
     parts: {
-      left: [{ text: left, ageClass: null }],
-      right: right === null ? null : [{ text: right, ageClass: null }],
+      left: [{ text, ageClass: null }],
+      right: null,
     },
   }
 }
@@ -135,47 +135,33 @@ describe('computeFullListColumnWidths', () => {
     expect(long.date).toBeGreaterThan(short.date)
   })
 
-  it('reports dateLeft and total width when rows have split dates', () => {
-    _setMeasureForTests(fakeMeasure)
-    const w = computeFullListColumnWidths({
-      ...baseArgs,
-      formattedDate: () => stubDate('2026-12-31', '23:59'),
-      entries: [entry({ name: 'a', modifiedAt: 1 })],
-    })
-    // left "2026-12-31" = 10 × 7 = 70; right "23:59" = 5 × 7 = 35; gap = 4.
-    // splitTotal = 70 + 2 (left pad) + 4 + 35 = 111. Final date adds another
-    // 2 px pad for the right half: 111 + 2 = 113. Still beats MIN_DATE_WIDTH (70).
-    // dateLeft = 70 + 2 (pad) = 72.
-    expect(w.dateLeft).toBe(72)
-    expect(w.date).toBe(113)
-  })
-
-  it('uses the widest left half across all rows when splits are uneven', () => {
-    _setMeasureForTests(fakeMeasure)
-    let i = 0
-    const formattedDate = () => {
-      const lefts = ['short', '2026-01-30']
-      const left = lefts[i % 2]
-      i++
-      return stubDate(left, '14:30')
-    }
-    const w = computeFullListColumnWidths({
-      ...baseArgs,
-      formattedDate,
-      entries: [entry({ name: 'a', modifiedAt: 1 }), entry({ name: 'b', modifiedAt: 2 })],
-    })
-    // dateLeft = max("short" = 35, "2026-01-30" = 70) = 70, then + 2 px pad = 72.
-    expect(w.dateLeft).toBe(72)
-  })
-
-  it('keeps dateLeft at zero when no row produces a split', () => {
+  it('widens the date column to fit the full formatted date', () => {
     _setMeasureForTests(fakeMeasure)
     const w = computeFullListColumnWidths({
       ...baseArgs,
       formattedDate: () => stubDate('2026-12-31 23:59'),
       entries: [entry({ name: 'a', modifiedAt: 1 })],
     })
-    expect(w.dateLeft).toBe(0)
+    // "2026-12-31 23:59" = 16 chars × 7 = 112 + 2 px pad = 114. Beats MIN_DATE_WIDTH (70).
+    expect(w.date).toBe(16 * 7 + 2)
+  })
+
+  it('uses the widest date across all rows', () => {
+    _setMeasureForTests(fakeMeasure)
+    let i = 0
+    const formattedDate = () => {
+      const texts = ['1/1 0:00', '2026-12-31 23:59']
+      const text = texts[i % 2]
+      i++
+      return stubDate(text)
+    }
+    const w = computeFullListColumnWidths({
+      ...baseArgs,
+      formattedDate,
+      entries: [entry({ name: 'a', modifiedAt: 1 }), entry({ name: 'b', modifiedAt: 2 })],
+    })
+    // Widest is "2026-12-31 23:59" = 16 × 7 = 112 + 2 px pad = 114.
+    expect(w.date).toBe(16 * 7 + 2)
   })
 
   it('reserves icon width when a directory has a stale size during indexing', () => {

@@ -22,14 +22,7 @@ import { getDirSizeDisplayState, getDisplayExtension, getDisplaySize, hasSizeMis
 export interface ColumnWidths {
   ext: number
   size: number
-  /** Total date column width (including the inter-half gap when split). */
   date: number
-  /**
-   * Pixel width of the left half of split date cells. Used as the inline-block
-   * width of `.date-left` so the right halves (typically the time) line up
-   * across rows. Zero when no visible row produces a `|` split.
-   */
-  dateLeft: number
 }
 
 /** Base font size of the file-list columns at scale 1, in CSS pixels. */
@@ -74,7 +67,7 @@ const HEADER_CHROME_INACTIVE = 0
  * combinations (a `00:NN` time renders ~1 px wider than pretext measures),
  * causing the Modified column to ellipsize for one or two rows while every
  * other entry in the same listing fits perfectly. 2 px covers the worst case
- * we've seen with the iso `YYYY-MM-DD | HH:mm` format and is small enough
+ * we've seen with the iso `YYYY-MM-DD HH:mm` format and is small enough
  * to be invisible in the overall layout.
  */
 const MEASUREMENT_SAFETY_PAD = 2
@@ -86,14 +79,6 @@ const SIZE_ICON_WIDTH = 14
 const MIN_EXT_WIDTH = 28
 const MIN_SIZE_WIDTH = 40
 const MIN_DATE_WIDTH = 70
-
-/**
- * Visual gap between the date and time halves of a split date cell.
- * `var(--spacing-xs)` (4px), set as `margin-left` on `.date-right` in
- * `FullList.svelte`. Mirror this value if the CSS changes, or split-date
- * columns will be one or two pixels off.
- */
-const DATE_PARTS_GAP = 4
 
 /**
  * Cap-width sample for the Ext column. A pathological extension like
@@ -109,6 +94,35 @@ const EXT_CAP_SAMPLE = 'extensionxx'
 let measureWidthCached: ((text: string) => number) | null = null
 let measureUnavailable = false
 let cachedScale = 0
+
+/**
+ * The font's widest decimal digit at the current scale. The Size and Modified
+ * columns render with `font-variant-numeric: tabular-nums`, so every digit
+ * takes the same advance, but canvas/pretext can't measure that feature (the
+ * canvas `font` shorthand has no tabular-nums slot). We model it by measuring
+ * each numeric string as if all its digits were this one, which matches the
+ * tabular advance (slightly over-estimating, so the column never clips).
+ * Recomputed whenever the measurer rebuilds (scale change).
+ */
+let widestDigit = '0'
+
+function computeWidestDigit(measure: (text: string) => number): string {
+  let best = '0'
+  let bestWidth = -1
+  for (const digit of '0123456789') {
+    const w = measure(digit)
+    if (w > bestWidth) {
+      bestWidth = w
+      best = digit
+    }
+  }
+  return best
+}
+
+/** Substitute every digit with the widest one to model tabular-figure rendering. */
+function tabularize(text: string): string {
+  return text.replace(/[0-9]/g, widestDigit)
+}
 
 /**
  * Subscribe once to "settled" scale changes and invalidate the pretext
@@ -139,6 +153,7 @@ function getMeasure(): ((text: string) => number) | null {
     const candidate = createPretextMeasure(buildFont(scale), pretext)
     candidate('probe')
     measureWidthCached = candidate
+    widestDigit = computeWidestDigit(candidate)
     cachedScale = scale
     measureUnavailable = false
     return measureWidthCached
@@ -153,6 +168,7 @@ function getMeasure(): ((text: string) => number) | null {
 export function _setMeasureForTests(fn: ((text: string) => number) | null): void {
   measureWidthCached = fn
   measureUnavailable = false
+  widestDigit = fn ? computeWidestDigit(fn) : '0'
 }
 
 export interface SizeFormatOpts {
@@ -197,33 +213,6 @@ function sizeTextForEntry(
   }
   const s = getDisplaySize(entry.size, entry.physicalSize, sizeDisplayMode)
   return s !== undefined ? sizeCellText(s, sizeFormatOpts) : ''
-}
-
-/**
- * Running maxima for the date column. `total` is the row width when the date
- * is not split; `splitLeft` and `splitRight` accumulate when at least one row
- * has a `|` split. Pulled into its own helper to keep
- * `computeFullListColumnWidths` under the lint complexity cap.
- */
-interface DateMaxima {
-  total: number
-  splitLeft: number
-  splitRight: number
-}
-
-function foldDate(current: DateMaxima, formatted: FormattedDate, measure: (text: string) => number): DateMaxima {
-  const { left, right } = formatted.parts
-  if (right === null) {
-    const w = measure(joinSegments(left))
-    return w > current.total ? { ...current, total: w } : current
-  }
-  const lw = measure(joinSegments(left))
-  const rw = measure(joinSegments(right))
-  return {
-    total: current.total,
-    splitLeft: lw > current.splitLeft ? lw : current.splitLeft,
-    splitRight: rw > current.splitRight ? rw : current.splitRight,
-  }
 }
 
 /** Pixel width of the size-column icons that follow the text for this row. */
@@ -288,9 +277,13 @@ export function computeFullListColumnWidths(args: {
       ext: MIN_EXT_WIDTH,
       size: MIN_SIZE_WIDTH,
       date: MIN_DATE_WIDTH,
-      dateLeft: 0,
     }
   }
+
+  // Size and date render with tabular figures (`font-variant-numeric: tabular-nums`),
+  // so measure their digits at the widest-digit advance to match. Ext and the
+  // headers render proportionally, so they use the plain `measure`.
+  const measureNum = (text: string): number => measure(tabularize(text))
 
   const chromeFor = (column: SortColumn): number => (sortBy === column ? HEADER_CHROME_ACTIVE : HEADER_CHROME_INACTIVE)
 
@@ -309,18 +302,14 @@ export function computeFullListColumnWidths(args: {
   // widest icon suffix we've seen so we can add it to the data width.
   let sizeIconSuffixMax = 0
 
-  // Track the two halves of split date cells separately so the renderer can
-  // line up the right halves across rows. `splitLeft`/`splitRight` stay at 0
-  // unless at least one row has a `|` split.
-  let date: DateMaxima = { total: dateMax, splitLeft: 0, splitRight: 0 }
-
   const rowResult = foldEntries(entries, {
     measure,
+    measureNum,
     extMax,
     extCap,
     sizeMax,
     sizeIconSuffixMax,
-    date,
+    dateMax,
     sizeDisplayMode,
     indexing,
     showSizeMismatchWarning,
@@ -331,42 +320,39 @@ export function computeFullListColumnWidths(args: {
   extMax = rowResult.extMax
   sizeMax = rowResult.sizeMax
   sizeIconSuffixMax = rowResult.sizeIconSuffixMax
-  date = rowResult.date
-  dateMax = date.total
+  dateMax = rowResult.dateMax
 
   // The ".." row borrows the current folder's recursive size, often the largest
   // number in the listing, so fold it in or the column snaps wider the moment it loads.
   if (parentDirStats) {
     const s = getDisplaySize(parentDirStats.recursiveSize, parentDirStats.recursivePhysicalSize, sizeDisplayMode)
     if (s !== undefined) {
-      const w = measure(sizeCellText(s, sizeFormatOpts)) + sizeIconSuffixMax
+      const w = measureNum(sizeCellText(s, sizeFormatOpts)) + sizeIconSuffixMax
       if (w > sizeMax) sizeMax = w
     }
   }
 
-  const dateOut = finalizeDate(date, dateMax)
-
   return {
     ext: Math.max(MIN_EXT_WIDTH, Math.ceil(extMax + MEASUREMENT_SAFETY_PAD)),
     size: Math.max(MIN_SIZE_WIDTH, Math.ceil(sizeMax + MEASUREMENT_SAFETY_PAD)),
-    date: dateOut.date,
-    dateLeft: dateOut.dateLeft,
+    date: Math.max(MIN_DATE_WIDTH, Math.ceil(dateMax + MEASUREMENT_SAFETY_PAD)),
   }
 }
 
 /**
  * Per-entry fold: walks the visible entries and accumulates the max ext width,
- * max size-cell width (text + icon suffix), and the date-cell maxima. Extracted
+ * max size-cell width (text + icon suffix), and the max date-cell width. Extracted
  * from `computeFullListColumnWidths` to keep the latter under the cyclomatic
  * complexity cap; the math itself is unchanged.
  */
 interface FoldEntriesContext {
   measure: (text: string) => number
+  measureNum: (text: string) => number
   extMax: number
   extCap: number
   sizeMax: number
   sizeIconSuffixMax: number
-  date: DateMaxima
+  dateMax: number
   sizeDisplayMode: 'smart' | 'logical' | 'physical'
   indexing: boolean
   showSizeMismatchWarning: boolean
@@ -378,8 +364,8 @@ interface FoldEntriesContext {
 function foldEntries(
   entries: FileEntry[],
   ctx: FoldEntriesContext,
-): { extMax: number; sizeMax: number; sizeIconSuffixMax: number; date: DateMaxima } {
-  let { extMax, sizeMax, sizeIconSuffixMax, date } = ctx
+): { extMax: number; sizeMax: number; sizeIconSuffixMax: number; dateMax: number } {
+  let { extMax, sizeMax, sizeIconSuffixMax, dateMax } = ctx
   for (const entry of entries) {
     const ext = getDisplayExtension(entry.name, entry.isDirectory)
     if (ext) {
@@ -394,7 +380,7 @@ function foldEntries(
       ctx.isRestricted?.(entry.path) ?? false,
     )
     const iconSuffix = sizeIconSuffixForEntry(entry, ctx.sizeDisplayMode, ctx.indexing, ctx.showSizeMismatchWarning)
-    const rowSize = (sizeText ? ctx.measure(sizeText) : 0) + iconSuffix
+    const rowSize = (sizeText ? ctx.measureNum(sizeText) : 0) + iconSuffix
     if (rowSize > sizeMax) sizeMax = rowSize
     if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix
 
@@ -403,32 +389,9 @@ function foldEntries(
     // upstream call sites used to throw on this case; keep the guard to match
     // the historical safety net (this was the F8-after-volume-switch killer).
     if (entry.modifiedAt != null) {
-      date = foldDate(date, ctx.formattedDate(entry.modifiedAt), ctx.measure)
+      const w = ctx.measureNum(joinSegments(ctx.formattedDate(entry.modifiedAt).parts.left))
+      if (w > dateMax) dateMax = w
     }
   }
-  return { extMax, sizeMax, sizeIconSuffixMax, date }
-}
-
-/**
- * Picks the final `date` track width and the inline-block `.date-left` width.
- *
- * The left half gets `MEASUREMENT_SAFETY_PAD` baked into the splitTotal so the
- * inline-block `.date-left` has room to absorb canvas-vs-DOM drift before its
- * own `text-overflow: ellipsis` triggers. The right half's pad falls out of
- * the final `+ MEASUREMENT_SAFETY_PAD` on `date` (so the natural width of
- * `.date-right` doesn't overflow `.col-date`'s `overflow: hidden`).
- *
- * `dateLeft` stays at 0 when no row produced a split: that's the renderer's
- * signal to skip the split path.
- */
-function finalizeDate(date: DateMaxima, dateMax: number): { date: number; dateLeft: number } {
-  let total = dateMax
-  if (date.splitLeft > 0 || date.splitRight > 0) {
-    const splitTotal = date.splitLeft + MEASUREMENT_SAFETY_PAD + DATE_PARTS_GAP + date.splitRight
-    if (splitTotal > total) total = splitTotal
-  }
-  return {
-    date: Math.max(MIN_DATE_WIDTH, Math.ceil(total + MEASUREMENT_SAFETY_PAD)),
-    dateLeft: date.splitLeft > 0 ? Math.ceil(date.splitLeft + MEASUREMENT_SAFETY_PAD) : 0,
-  }
+  return { extMax, sizeMax, sizeIconSuffixMax, dateMax }
 }

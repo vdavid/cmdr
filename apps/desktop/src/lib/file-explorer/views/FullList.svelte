@@ -213,7 +213,7 @@
     const indexing = $derived(isScanning() || isAggregating())
 
     // Column widths are declared after the virtual window, which gates parent-row inclusion.
-    let columnWidths = $state({ ext: 60, size: 115, date: 80, dateLeft: 0 })
+    let columnWidths = $state({ ext: 60, size: 115, date: 80 })
     let skipTransition = $state(false)
 
     /** Icon column width in the grid template, tracks density × text scale. */
@@ -1013,21 +1013,9 @@
                             {/if}
                         </span>
                         <span class="col-date">
-                            {#if date.parts.right !== null && columnWidths.dateLeft > 0}
-                                <span class="date-left" style="width: {columnWidths.dateLeft}px"
-                                    >{#each date.parts.left as seg, i (i)}{#if seg.ageClass}<span
-                                                class={seg.ageClass}>{seg.text}</span
-                                            >{:else}{seg.text}{/if}{/each}</span
-                                ><span class="date-right"
-                                    >{#each date.parts.right as seg, i (i)}{#if seg.ageClass}<span
-                                                class={seg.ageClass}>{seg.text}</span
-                                            >{:else}{seg.text}{/if}{/each}</span
-                                >
-                            {:else}
-                                {#each date.parts.left as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}
-                                            >{seg.text}</span
-                                        >{:else}{seg.text}{/if}{/each}
-                            {/if}
+                            {#each date.parts.left as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}
+                                        >{seg.text}</span
+                                    >{:else}{seg.text}{/if}{/each}
                         </span>
                     </div>
                 {/each}
@@ -1323,6 +1311,10 @@
         align-items: center;
         gap: var(--spacing-xxs);
         font-size: var(--font-size-sm);
+        /* Equal-width digits so right-aligned sizes line up into columns even in
+           our proportional system font. The measurer mirrors this by sizing the
+           column to the widest digit (see `measure-column-widths.ts`). */
+        font-variant-numeric: tabular-nums;
     }
 
     /* Groups the number triads into one flex item so the right-edge alignment is
@@ -1358,6 +1350,11 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         white-space: nowrap;
+        /* Equal-width digits so every row's date lines up into vertical columns
+           (the slashes/colons stack) without a monospace font. Each token format
+           emits a fixed character count, so with tabular figures every date is
+           the same width and the times align with no split-cell trick. */
+        font-variant-numeric: tabular-nums;
     }
 
     /* The age class lives on child spans. On selected or cursor-active rows,
@@ -1383,23 +1380,6 @@
     .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-date :global(.age-aging),
     .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-date :global(.age-old) {
         color: var(--color-selection-fg);
-    }
-
-    /* Split date cells: `.date-left` is fixed-width (set inline from the
-       column-widths measurer) so the right halves align across rows. The 4px
-       margin on `.date-right` is mirrored as `DATE_PARTS_GAP` in
-       `measure-column-widths.ts`; keep them in sync. */
-    .date-left {
-        display: inline-block;
-        text-align: right;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        vertical-align: bottom;
-    }
-
-    .date-right {
-        margin-left: var(--spacing-xs);
     }
 
     .file-entry.is-selected .col-name {

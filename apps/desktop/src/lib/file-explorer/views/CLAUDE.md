@@ -28,9 +28,13 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
 - **`getDirSizeDisplayState()` (in `full-list-utils.ts`) is the single source of truth for a directory's size-column
   state.** Both `FullList.svelte`'s size cell and `measure-column-widths.ts` consume it; don't re-inline the
   dir/scanning/stale decision in either, or the rendered text and pre-measured width drift.
-- **Two paired-constant gotchas in `measure-column-widths.ts`**: `DATE_PARTS_GAP` (4px) mirrors `.date-right`'s
-  `margin-left: var(--spacing-xs)`, and `HEADER_CHROME_ACTIVE/INACTIVE` mirror `SortableHeader`'s gap + caret (12px
-  active / 0 inactive). Change the CSS and you must change the constant, or split-date / header column widths drift
+- **The Size and Modified columns render with `font-variant-numeric: tabular-nums`** (equal-width digits, so dates and
+  right-aligned sizes line up into columns without a monospace font). Canvas/pretext can't measure that feature, so
+  `measure-column-widths.ts` models it by substituting every digit with the widest one (`tabularize`) before measuring.
+  Keep the CSS and the measurer in sync: if you drop tabular figures from a numeric column, drop the `tabularize` call
+  for it too, or the column over-reserves width.
+- **Paired-constant gotcha in `measure-column-widths.ts`**: `HEADER_CHROME_ACTIVE/INACTIVE` mirror `SortableHeader`'s
+  gap + caret (12px active / 0 inactive). Change the CSS and you must change the constant, or header column widths drift
   (pretext measures without a reference element, so nothing is derived from the live DOM).
 - **Index-size refresh (`refresh_listing_index_sizes`) refetches column widths through the existing `cacheGeneration`
   reset path, not a separate trigger.** Adding one double-fetches.

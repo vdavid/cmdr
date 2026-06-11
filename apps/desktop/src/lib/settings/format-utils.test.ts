@@ -62,39 +62,35 @@ describe('formatDateForDisplay: text', () => {
 })
 
 describe('formatDateForDisplay: segments (iso)', () => {
-  it('splits ISO into year/month/day on the left, hour/minute on the right with literals between', () => {
+  it('emits year/month/day/time as one segment list with literals between', () => {
     const d = formatDateForDisplay(timestamp, 'iso', '', NOW_MS)
-    expect(d.parts.left.map((s) => s.text)).toEqual(['2024', '-', '03', '-', '15'])
-    expect(d.parts.right?.map((s) => s.text)).toEqual(['14', ':', '30'])
+    expect(d.parts.left.map((s) => s.text)).toEqual(['2024', '-', '03', '-', '15', ' ', '14', ':', '30'])
+    expect(d.parts.right).toBeNull()
     // Literals never carry an age class.
-    for (const lit of ['-', ':']) {
+    for (const lit of ['-', ':', ' ']) {
       for (const seg of d.parts.left.filter((s) => s.text === lit)) expect(seg.ageClass).toBeNull()
     }
   })
 
   it('joins back to the plain string via joinSegments', () => {
     const d = formatDateForDisplay(timestamp, 'iso', '', NOW_MS)
-    const joined =
-      d.parts.right === null
-        ? joinSegments(d.parts.left)
-        : `${joinSegments(d.parts.left)} ${joinSegments(d.parts.right)}`
-    expect(joined).toBe(d.text)
+    expect(joinSegments(d.parts.left)).toBe(d.text)
   })
 })
 
 describe('formatDateForDisplay: segments (short)', () => {
-  it('omits year and includes day + time segments', () => {
+  it('omits year and includes day + time segments in one list', () => {
     const d = formatDateForDisplay(timestamp, 'short', '', NOW_MS)
-    expect(d.parts.left.map((s) => s.text)).toEqual(['03', '/', '15'])
-    expect(d.parts.right?.map((s) => s.text)).toEqual(['14', ':', '30'])
+    expect(d.parts.left.map((s) => s.text)).toEqual(['03', '/', '15', ' ', '14', ':', '30'])
+    expect(d.parts.right).toBeNull()
   })
 })
 
 describe('formatDateForDisplay: segments (custom)', () => {
   it('finds tokens in any order in custom formats', () => {
-    const d = formatDateForDisplay(timestamp, 'custom', 'DD/MM/YYYY | HH:mm', NOW_MS)
-    expect(d.parts.left.map((s) => s.text)).toEqual(['15', '/', '03', '/', '2024'])
-    expect(d.parts.right?.map((s) => s.text)).toEqual(['14', ':', '30'])
+    const d = formatDateForDisplay(timestamp, 'custom', 'DD/MM/YYYY HH:mm', NOW_MS)
+    expect(d.parts.left.map((s) => s.text)).toEqual(['15', '/', '03', '/', '2024', ' ', '14', ':', '30'])
+    expect(d.parts.right).toBeNull()
   })
 
   it('handles repeated tokens: each occurrence becomes its own segment', () => {
@@ -104,15 +100,9 @@ describe('formatDateForDisplay: segments (custom)', () => {
     expect(d.parts.left[0].ageClass).toBe(d.parts.left[2].ageClass)
   })
 
-  it('handles a custom format with `|` and trimmed whitespace', () => {
-    const d = formatDateForDisplay(timestamp, 'custom', 'YYYY/MM/DD | HH:mm:ss', NOW_MS)
-    expect(joinSegments(d.parts.left)).toBe('2024/03/15')
-    expect(d.parts.right && joinSegments(d.parts.right)).toBe('14:30:45')
-  })
-
-  it('treats a degenerate `format |` (empty right) as no split', () => {
-    const d = formatDateForDisplay(timestamp, 'custom', 'YYYY-MM-DD |', NOW_MS)
-    expect(joinSegments(d.parts.left)).toBe('2024-03-15')
+  it('renders the full custom format as one segment list', () => {
+    const d = formatDateForDisplay(timestamp, 'custom', 'YYYY/MM/DD HH:mm:ss', NOW_MS)
+    expect(joinSegments(d.parts.left)).toBe('2024/03/15 14:30:45')
     expect(d.parts.right).toBeNull()
   })
 })
@@ -139,8 +129,8 @@ describe('formatDateForDisplay: per-component ageClass', () => {
     expect(find(d.parts.left, '03')?.ageClass).toBe('age-fresh')
     expect(find(d.parts.left, '15')?.ageClass).toBe('age-recent')
     // Day differs → time gets null (only colored when same date as now).
-    expect(find(d.parts.right ?? [], '14')?.ageClass).toBeNull()
-    expect(find(d.parts.right ?? [], '30')?.ageClass).toBeNull()
+    expect(find(d.parts.left, '14')?.ageClass).toBeNull()
+    expect(find(d.parts.left, '30')?.ageClass).toBeNull()
   })
 
   it('drops month/day/time coloring when the year differs from now', () => {
@@ -149,7 +139,7 @@ describe('formatDateForDisplay: per-component ageClass', () => {
     expect(find(d.parts.left, '2024')?.ageClass).toBe('age-old')
     expect(find(d.parts.left, '03')?.ageClass).toBeNull()
     expect(find(d.parts.left, '15')?.ageClass).toBeNull()
-    expect(find(d.parts.right ?? [], '14')?.ageClass).toBeNull()
+    expect(find(d.parts.left, '14')?.ageClass).toBeNull()
   })
 
   it('colors time when timestamp is the same date as now', () => {
@@ -158,7 +148,7 @@ describe('formatDateForDisplay: per-component ageClass', () => {
     // HH/mm/ss segments.
     const sameDayNowMs = new Date(2024, 2, 15, 16, 15, 0).getTime()
     const d = formatDateForDisplay(timestamp, 'iso', '', sameDayNowMs)
-    expect(find(d.parts.right ?? [], '14')?.ageClass).toBe('age-recent')
+    expect(find(d.parts.left, '14')?.ageClass).toBe('age-recent')
   })
 
   it('returns no segments for null/zero timestamps', () => {

@@ -104,13 +104,13 @@ export const settingsRegistry: SettingDefinition[] = [
     description: 'How to display dates and times in the file list.',
     keywords: ['date', 'time', 'format', 'iso', 'custom', 'timestamp'],
     type: 'enum',
-    default: 'system',
+    default: 'iso',
     component: 'radio',
     constraints: {
       options: [
         { value: 'system', label: 'System default' },
         { value: 'iso', label: 'ISO 8601', description: 'e.g., 2025-01-25 14:30' },
-        { value: 'short', label: 'Short', description: 'e.g., Jan 25, 2:30 PM' },
+        { value: 'short', label: 'Short', description: 'e.g., 01/25 14:30' },
         { value: 'custom', label: 'Custom...' },
       ],
       allowCustom: true,
@@ -120,11 +120,10 @@ export const settingsRegistry: SettingDefinition[] = [
     id: 'appearance.customDateTimeFormat',
     section: ['Appearance', 'Colors and formats'],
     label: 'Custom date/time format',
-    description:
-      'Format string for custom date/time display. Use placeholders like YYYY, MM, DD, HH, mm, ss. Add a single `|` to split the date and time into two aligned columns (e.g. `YYYY-MM-DD | HH:mm`).',
+    description: 'Format string for custom date/time display. Use placeholders like YYYY, MM, DD, HH, mm, ss.',
     keywords: ['custom', 'format', 'date', 'time', 'placeholder'],
     type: 'string',
-    default: 'YYYY-MM-DD | HH:mm',
+    default: 'YYYY-MM-DD HH:mm',
     component: 'text-input',
   },
   {
