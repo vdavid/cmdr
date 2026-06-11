@@ -100,7 +100,7 @@
     .ai-prompt {
         margin: 0;
         color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         line-height: 1.3;
         overflow: hidden;
         white-space: nowrap;
@@ -111,7 +111,7 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-xxs);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         line-height: 1.3;
     }
 
@@ -160,7 +160,7 @@
     .ai-caveat {
         margin: 0;
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         font-style: italic;
         line-height: 1.3;
         overflow: hidden;
@@ -171,7 +171,7 @@
     .refine-button {
         flex-shrink: 0;
         padding: var(--spacing-xxs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         font-weight: 500;
         line-height: 1;
         color: var(--color-text-secondary);

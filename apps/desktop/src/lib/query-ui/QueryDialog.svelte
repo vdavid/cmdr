@@ -1037,7 +1037,7 @@
         background: var(--color-bg-primary);
         border-bottom: 1px solid var(--color-border-subtle);
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         flex-shrink: 0;
     }
 
@@ -1068,16 +1068,19 @@
         padding: var(--spacing-sm) var(--spacing-lg);
     }
 
+    /* No `opacity` dimming on the shortcut hints: at `opacity: 0.8` the composited
+       tertiary gray (and the accent-fg on the primary button) dropped below WCAG AA on
+       the lighter accents. `--color-text-tertiary` already reads quieter than the button
+       label, and `--color-accent-fg` is auto-picked for max contrast on its accent.
+       The contrast checker models both pairs (`scripts/check-a11y-contrast/query_dialog_states.go`). */
     .shortcut-hint {
         margin-left: var(--spacing-xs);
         font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
-        opacity: 0.8;
     }
 
     .shortcut-hint.shortcut-on-primary {
         color: var(--color-accent-fg);
-        opacity: 0.8;
     }
 </style>

@@ -212,3 +212,43 @@ describe('SearchResults round 2 states', () => {
     expect(status?.textContent ?? '').toBe('')
   })
 })
+
+describe('SearchResults row rendering (font-bump sizing)', () => {
+  function makeResults(n: number): SearchResultEntry[] {
+    return Array.from({ length: n }, (_, i) => ({
+      path: `/dir/file-${String(i)}.txt`,
+      name: `file-${String(i)}.txt`,
+      parentPath: '/dir',
+      isDirectory: false,
+      size: i,
+      modifiedAt: 0,
+      iconId: 'ext:txt',
+    }))
+  }
+
+  // The results list is plain DOM (no virtualization: Search caps at 30 rows, Selection
+  // lists a single folder), so the dialog's one-step-larger font can't desync from a
+  // fixed row-height constant — there is none. This pins the invariant the font bump
+  // relies on: every result renders its own `.result-row`, so the rendered count tracks
+  // the data exactly at any font size. If someone ever virtualizes this list, they'll
+  // have to re-derive the row height for the bumped font, and this count check guards it.
+  it('renders one row per result (no windowing, no clipped rows)', async () => {
+    const results = makeResults(30)
+    const target = mountWith({ results, hasSearched: true, query: '*.txt', totalCount: 30 })
+    await tick()
+    expect(target.querySelectorAll('.result-row').length).toBe(30)
+  })
+
+  // The under-cursor row routes the muted columns (path / size / modified) to
+  // `--color-text-primary` for AA contrast on the accent-tinted cursor bg. That CSS
+  // hangs off the `is-under-cursor` class, so pin that exactly one row carries it and
+  // it's the cursor row.
+  it('marks exactly the cursor row with is-under-cursor (drives the AA color override)', async () => {
+    const results = makeResults(5)
+    const target = mountWith({ results, hasSearched: true, query: '*.txt', totalCount: 5, cursorIndex: 2 })
+    await tick()
+    const cursorRows = target.querySelectorAll('.result-row.is-under-cursor')
+    expect(cursorRows.length).toBe(1)
+    expect(cursorRows[0].textContent).toContain('file-2.txt')
+  })
+})

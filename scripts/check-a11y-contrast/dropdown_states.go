@@ -36,6 +36,12 @@ type ancestorBgScenario struct {
 	// color (without `--`). The synthesizer reads this from the table after
 	// applying any accent-variant override.
 	BgVar string
+	// BgExpr is an arbitrary CSS expression (e.g. a `color-mix(...)` chain)
+	// that resolves to the ancestor's bg color. Takes priority over BgVar
+	// when non-empty. Use it when the rendered bg is a composite the table
+	// doesn't carry as a single token (for example an accent tint over a
+	// secondary surface).
+	BgExpr string
 }
 
 // dropdownScenarios are the known "secondary text inside an accent-bg
@@ -95,7 +101,7 @@ func evalDropdownSample(baseVars *VarTable, mode Mode, accent AccentVariant, sc 
 	if !accent.IsDefault {
 		vars = withAccentOverride(baseVars, accent)
 	}
-	bg, ok := resolveVar(vars, mode, sc.BgVar)
+	bg, ok := resolveDropdownBg(vars, mode, sc)
 	if !ok {
 		return Finding{}, false
 	}
@@ -121,7 +127,7 @@ func evalDropdownSample(baseVars *VarTable, mode Mode, accent AccentVariant, sc 
 	return Finding{
 		File:          syntheticDropdownPath(),
 		Line:          0,
-		Selector:      fmt.Sprintf("%s (fg=%s, bg=%s)", sc.Selector, fgLabel(sc), sc.BgVar),
+		Selector:      fmt.Sprintf("%s (fg=%s, bg=%s)", sc.Selector, fgLabel(sc), bgLabel(sc)),
 		Mode:          mode,
 		FG:            fg,
 		BG:            bg,
@@ -130,6 +136,28 @@ func evalDropdownSample(baseVars *VarTable, mode Mode, accent AccentVariant, sc 
 		IsPassing:     ratio >= 4.5,
 		AccentVariant: accentTag,
 	}, true
+}
+
+// resolveDropdownBg picks between the BgExpr (arbitrary CSS expression) and
+// BgVar (named var) paths declared on the scenario.
+func resolveDropdownBg(vars *VarTable, mode Mode, sc ancestorBgScenario) (RGBA, bool) {
+	if sc.BgExpr != "" {
+		r := NewResolver(vars, mode)
+		c, err := r.Resolve(sc.BgExpr)
+		if err != nil {
+			return RGBA{}, false
+		}
+		return c, true
+	}
+	return resolveVar(vars, mode, sc.BgVar)
+}
+
+// bgLabel returns a short human-readable label for the report.
+func bgLabel(sc ancestorBgScenario) string {
+	if sc.BgExpr != "" {
+		return sc.BgExpr
+	}
+	return sc.BgVar
 }
 
 // resolveDropdownFg picks between the FgExpr (arbitrary CSS expression) and

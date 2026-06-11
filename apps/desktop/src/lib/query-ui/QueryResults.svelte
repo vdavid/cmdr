@@ -159,6 +159,13 @@
         return out
     }
 
+    // True only when the `{:else}` branch below actually renders option rows. `role="listbox"`
+    // requires `option` children, so it must NOT be set during the searching / loading / empty
+    // states (which replace the rows with a spinner or message) even when `results` still holds a
+    // stale set. Gating on `results.length > 0` alone tripped axe's `aria-required-children` when
+    // a reopened dialog re-ran (spinner showing, persisted results still in `results`).
+    const showingRows = $derived(isIndexAvailable && isIndexReady && !isSearching && results.length > 0)
+
     /** Scrolls the cursor row into view. Called by the parent after cursor changes. */
     export function scrollCursorIntoView(): void {
         void tick().then(() => {
@@ -185,8 +192,8 @@
 <div
     class="results-container"
     bind:this={resultsContainer}
-    role={results.length > 0 ? 'listbox' : undefined}
-    aria-label={results.length > 0 ? 'Search results' : undefined}
+    role={showingRows ? 'listbox' : undefined}
+    aria-label={showingRows ? 'Search results' : undefined}
 >
     {#if !isIndexAvailable}
         <div class="index-unavailable">
@@ -343,7 +350,7 @@
     }
 
     .col-label {
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         color: var(--color-text-tertiary);
         overflow: hidden;
         text-overflow: ellipsis;
@@ -410,7 +417,7 @@
         margin: 0;
         padding: 0 0 0 1.25em;
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         text-align: left;
     }
 
@@ -420,11 +427,13 @@
 
     .result-row {
         /* Vertical padding sits at --spacing-xxs (~4 px) instead of --spacing-xs
-           (~8 px) so the Path column can use --font-size-sm without growing the row.
+           (~8 px) to keep the row compact at the dialog's --font-size-md type.
            All cells vertically center via the grid's `align-items: center` rule above,
-           so the look stays clean with the tighter padding. */
+           so the look stays clean with the tighter padding. Rows aren't virtualized
+           (search caps at 30, Selection lists one folder), so the height is content-
+           driven: no row-height constant to keep in sync with the font. */
         padding: var(--spacing-xxs) var(--spacing-lg);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         color: var(--color-text-primary);
     }
 
@@ -434,6 +443,17 @@
        input the user reaches for (volume-switcher pattern). */
     .result-row.is-under-cursor {
         background: var(--color-accent-subtle);
+    }
+
+    /* Under the cursor the muted columns (path / size / modified) read at full
+       `--color-text-primary`: the tertiary / secondary tokens drop below WCAG AA
+       on the lightest accent tints of the cursor bg (verified by the contrast
+       checker, `scripts/check-a11y-contrast/query_dialog_states.go`). Full-contrast
+       text on the active row is also the expected "this row is focused" read. */
+    .result-row.is-under-cursor .result-path,
+    .result-row.is-under-cursor .result-size,
+    .result-row.is-under-cursor .result-modified {
+        color: var(--color-text-primary);
     }
 
     .result-icon {
@@ -499,7 +519,7 @@
         padding: var(--spacing-xs) var(--spacing-lg);
         background: var(--color-bg-secondary);
         border-top: 1px solid var(--color-border-subtle);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         color: var(--color-text-tertiary);
         flex-shrink: 0;
     }
@@ -522,7 +542,7 @@
 
     .unavailable-progress {
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         margin: var(--spacing-xs) 0 0;
     }
 </style>

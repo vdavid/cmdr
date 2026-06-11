@@ -75,6 +75,14 @@
         onChange(next)
     }
 
+    // Ark's `ToggleGroup.Root` is controlled off this array. Memoize it so the reference only
+    // changes when `value` actually changes, rather than handing zag a fresh `[value]` literal on
+    // every parent re-render (which happens, for example, when the query dialog re-renders after a
+    // query runs). A stable reference avoids any chance of zag re-processing the controlled value
+    // and momentarily blipping the item `aria-checked` state. Single-select toggles surface their
+    // selected state via `aria-checked`, so keeping it steady matters for AT users.
+    const toggleValue = $derived([value])
+
     // === Tabs-specific keyboard motion ===
     // Ported verbatim from `SearchModeChips.svelte`. The bespoke `<button role="tab">` shape doesn't
     // get keyboard handling for free, so we mirror the existing algorithm: ArrowLeft / ArrowRight
@@ -148,7 +156,7 @@
 {:else}
     <ArkToggleGroup.Root
         class="tg-root"
-        value={[value]}
+        value={toggleValue}
         onValueChange={handleToggleValueChange}
         {disabled}
         aria-label={ariaLabel}
@@ -276,13 +284,15 @@
     }
 
     /* Mono tertiary hint (for example `⌥A`). Visible only in the resting state so it doesn't
-       compete with the accent-filled active cell. */
+       compete with the accent-filled active cell. No `opacity` dimming: `--color-text-tertiary`
+       already reads quieter than the primary label, and at `opacity: 0.7` the composited gray
+       dropped to ~3:1 against the cell bg (below WCAG AA). The contrast checker models this pair
+       (`scripts/check-a11y-contrast/query_dialog_states.go`); mirror any opacity change there. */
     :global(.tg-root .tg-hint) {
         margin-left: var(--spacing-xxs);
         font-family: var(--font-mono);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
         line-height: 1;
-        opacity: 0.7;
     }
 </style>

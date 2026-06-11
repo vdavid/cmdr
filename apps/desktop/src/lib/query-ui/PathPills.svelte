@@ -271,9 +271,11 @@
 
     .sep {
         color: var(--color-text-tertiary);
-        /* Path text reads at --font-size-sm (matching Name) instead of --font-size-xs.
-           The eye reads the path as quickly as the filename, not as a footnote. */
-        font-size: var(--font-size-sm);
+        /* Path text reads at --font-size-md (matching Name in the dialog's one-step-larger
+           type). The eye reads the path as quickly as the filename, not as a footnote.
+           Widths are measured from the rendered font (`readFont` → pretext), so the collapse
+           layout self-adjusts to this size; no constant to keep in sync. */
+        font-size: var(--font-size-md);
         user-select: none;
     }
 
@@ -284,7 +286,7 @@
            vertical padding stays at 0 since the row padding handles vertical rhythm. */
         padding: 0 var(--spacing-xxs);
         border-radius: var(--radius-sm);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         font-family: inherit;
         color: var(--color-text-tertiary);
         line-height: 1.2;

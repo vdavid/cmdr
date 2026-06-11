@@ -87,4 +87,17 @@
         background: var(--color-bg-primary);
         flex-wrap: wrap;
     }
+
+    /* The query dialogs run one font-size step larger than Settings (the dialog is the
+       focal surface, not a settings row), so bump the shared `ToggleGroup` cells here only.
+       Scoped to `.mode-chips-wrap` so Settings' segmented controls keep their own sizing.
+       `:global` because `ToggleGroup` prints `.tg-*` via `:global` (see ToggleGroup.svelte). */
+    .mode-chips-wrap :global(.tg-root .tg-item) {
+        font-size: var(--font-size-md);
+    }
+
+    .mode-chips-wrap :global(.tg-root .tg-badge),
+    .mode-chips-wrap :global(.tg-root .tg-hint) {
+        font-size: var(--font-size-sm);
+    }
 </style>

@@ -130,7 +130,7 @@
         align-items: center;
         gap: var(--spacing-xs);
         padding: var(--spacing-xxs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         font-weight: 500;
         line-height: 1;
         color: var(--color-text-secondary);
@@ -191,7 +191,7 @@
         height: 14px;
         border-radius: var(--radius-full);
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
         line-height: 1;
     }
 

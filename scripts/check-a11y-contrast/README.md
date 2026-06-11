@@ -57,7 +57,13 @@ different selectors — cases the walker can't pair on its own:
   → cursor → fallback) so the synthesizer's verdict matches what the runtime actually paints.
 - **Dropdown ancestor-bg matrix** (`dropdown_states.go`): hand-listed `(descendant-text-var, ancestor-bg-var)` tuples
   for cases where bg comes from an ancestor selector and `[data-highlighted]` (the dropdown options today; designed for
-  easy extension). Runs every entry against the accent matrix + both modes.
+  easy extension). Runs every entry against the accent matrix + both modes. Each tuple supports a `FgExpr` / `BgExpr`
+  escape hatch (an arbitrary CSS expression instead of a single var) so a pair can model an `opacity` composite (via a
+  `color-mix(..., transparent N%)` term) or a tint-over-surface bg.
+- **Query dialog states** (`query_dialog_states.go`): the Search / Select dialogs' fg-on-bg pairs that span selectors or
+  fold through `opacity` and the rule walker can't see: the `ToggleGroup` "AI" badge + shortcut hint, the under-cursor
+  result row's muted columns on the accent-tinted cursor bg, and the footer shortcut hints (on the dialog surface and on
+  the primary button). Reuses the `dropdown_states.go` scenario type and accent-matrix sweep.
 
 The parser also normalizes `app.css` before extracting vars: every `@supports not (color: color-mix(...))` block is
 stripped (those carry old-WebKit hex fallbacks that would otherwise overwrite the modern `color-mix` formulas), and
@@ -120,7 +126,11 @@ row_state_matrix.go  Selected-row text × (pane tint × stripe × cursor state �
                      accent variant) bg composition. Models the three-tier
                      `--color-selection-fg` cascade.
 dropdown_states.go   Hand-listed (descendant-text-var, ancestor-bg-var) tuples
-                     for "secondary text on accent-bg" cases.
+                     for "secondary text on accent-bg" cases. Supports FgExpr /
+                     BgExpr for opacity composites and tint-over-surface bgs.
+query_dialog_states.go  Search / Select dialog pairs the walker can't pair:
+                     ToggleGroup badge + hint, under-cursor result row, footer
+                     shortcut hints. Reuses the dropdown_states scenario type.
 ```
 
 Tests:
@@ -168,7 +178,11 @@ walker doesn't traverse), reach for one of the synthesizers:
 - For file-list selected-row text colors, add a new entry to `rowSelectedTextRoles` in `row_state_matrix.go`.
 - For "secondary text on accent-bg" cases like dropdown options, append a new entry to `dropdownScenarios` in
   `dropdown_states.go`.
-- For a one-off pair (specific descendant + specific ancestor bg) that's not in either bucket, mirror the
+- For a Search / Select dialog pair, append a new entry to `queryDialogScenarios` in `query_dialog_states.go`.
+- To model an `opacity: N` on the text, set `FgExpr` to `color-mix(in srgb, var(--token), transparent (1-N)%)`; to model
+  a bg that's a tint composited over a surface, set `BgExpr` to the equivalent opaque `color-mix(...)`. The synthesizer
+  composites translucent fg/bg the same way the rule walker does.
+- For a one-off pair (specific descendant + specific ancestor bg) that's not in any bucket, mirror the
   `dropdown_states.go` pattern in a new `<thing>_states.go` and wire it into `main.go` alongside the other
   `Analyzer.AnalyzeXxx` calls.
 

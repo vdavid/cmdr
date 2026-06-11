@@ -479,4 +479,11 @@
         background: var(--color-accent-subtle);
         transition: background 1.5s ease-out;
     }
+
+    /* Match the dialog's one-step-larger font: bump the `Both | Files | Folders` toggle cells
+       here only (the shared `ToggleGroup` stays `--font-size-sm` in Settings). `:global` because
+       `ToggleGroup` renders its `.tg-*` nodes via `:global` (see ToggleGroup.svelte). */
+    .type-toggle-flash :global(.tg-root .tg-item) {
+        font-size: var(--font-size-md);
+    }
 </style>

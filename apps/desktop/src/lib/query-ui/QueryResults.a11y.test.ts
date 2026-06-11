@@ -138,6 +138,41 @@ describe('SearchResults a11y', () => {
     await expectNoA11yViolations(target)
   })
 
+  // Regression: a reopened dialog re-runs (spinner showing) while `results` still holds the
+  // persisted prior set. The spinner replaces the rows, so `role="listbox"` must NOT be set
+  // (no `option` children = axe `aria-required-children` critical). Pre-fix the role gated on
+  // `results.length > 0` alone and tripped here; now it gates on actually-rendered rows.
+  it('searching with stale results still present has no a11y violations (no orphan listbox)', async () => {
+    const stale: SearchResultEntry[] = [
+      {
+        name: 'photo1.jpg',
+        path: '/Users/test/pictures/photo1.jpg',
+        parentPath: '/Users/test/pictures',
+        isDirectory: false,
+        size: 1_500_000,
+        modifiedAt: 1_710_000_000,
+        iconId: 'ext:jpg',
+      },
+    ]
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SearchResults, {
+      target,
+      props: {
+        ...defaultProps,
+        isSearching: true,
+        hasSearched: true,
+        query: '*.jpg',
+        results: stale,
+        totalCount: 1,
+      },
+    })
+    await tick()
+    // The container must not claim to be a listbox while it shows the spinner.
+    expect(target.querySelector('[role="listbox"]')).toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
   // Populated rows are `role="option"` AND contain interactive children
   // (path-pill `<button>`s and the `…` row-menu `<button>`). The inner buttons
   // are mouse-only and intentionally outside the keyboard Tab order

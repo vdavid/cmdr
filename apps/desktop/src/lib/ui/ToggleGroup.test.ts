@@ -243,4 +243,20 @@ describe('ToggleGroup (toggles semantics)', () => {
     expect(items[1].querySelector('.tg-badge')).toBeNull()
     expect(items[1].querySelector('.tg-hint')).toBeNull()
   })
+
+  // Single-select toggles expose `aria-checked` (zag sets it for single-value groups), and that
+  // is the attribute the query dialog's type filter relies on for AT users. A reference-churning
+  // `value` array used to flicker it to all-false on re-render; the wrapper now memoizes the
+  // value array (`$derived([value])`), and the active item stays `aria-checked="true"` with the
+  // rest false. Pin the attribute so a regression in the value wiring is caught here.
+  it('exposes aria-checked: true on the active item, false on the rest', async () => {
+    const { target } = setupToggles(opts, 'comfortable')
+    await tick()
+    const items = Array.from(
+      target.querySelectorAll<HTMLButtonElement>('[data-scope="toggle-group"][data-part="item"]'),
+    )
+    expect(items[0].getAttribute('aria-checked')).toBe('false')
+    expect(items[1].getAttribute('aria-checked')).toBe('true')
+    expect(items[2].getAttribute('aria-checked')).toBe('false')
+  })
 })

@@ -31,10 +31,12 @@ import {
 
 test.describe('Search dialog: mode shortcuts', () => {
   // Per-mode hand-typed buffers (`handTyped.ai` / `handTyped.filename` / `handTyped.regex`):
-  // switching modes SWAPS the bar to the target mode's buffer, not a shared string. This
-  // pins the per-mode behavior plus the round-trip ("buffer for mode X survives a detour
-  // through modes Y and Z").
-  test("⌘1/⌘2/⌘3 switch modes and preserve each mode's own typed query", async ({ tauriPage }) => {
+  // switching modes restores the target mode's buffer. Two rules combine (M5): a NON-empty
+  // target buffer is preserved (it's the user's own prior text for that mode), and an EMPTY
+  // target buffer is seeded with the outgoing term so the user's words follow them across the
+  // switch instead of vanishing. This pins both, plus the round-trip ("buffer for mode X
+  // survives a detour through modes Y and Z").
+  test('⌘1/⌘2/⌘3 switch modes: carry the term into an empty mode, preserve a non-empty one', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     await openSearchDialog(tauriPage)
@@ -70,26 +72,29 @@ test.describe('Search dialog: mode shortcuts', () => {
       await setSearchInputValue(tauriPage, 'ai-prompt-marker')
       expect(await getSearchInputValue(tauriPage)).toBe('ai-prompt-marker')
 
-      // ⌘2 → filename. Buffer is empty (never typed in filename mode here).
+      // ⌘2 → filename. The filename buffer is empty, so the outgoing term carries
+      // over (M5: switching to an empty mode seeds it with the current text rather
+      // than losing the user's words).
       await pressMetaDigit(tauriPage, 2)
       expect(await pollActiveMode(tauriPage, 'filename')).toBe(true)
-      expect(await getSearchInputValue(tauriPage)).toBe('')
+      expect(await getSearchInputValue(tauriPage)).toBe('ai-prompt-marker')
 
-      // Seed a filename buffer.
+      // Replace it with a real filename buffer.
       await setSearchInputValue(tauriPage, 'filename-marker')
       expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
 
-      // ⌘3 → regex. Empty again.
+      // ⌘3 → regex. Empty regex buffer, so `filename-marker` carries over.
       await pressMetaDigit(tauriPage, 3)
       expect(await pollActiveMode(tauriPage, 'regex')).toBe(true)
-      expect(await getSearchInputValue(tauriPage)).toBe('')
+      expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
 
-      // ⌘1 → AI. The original AI prompt is back.
+      // ⌘1 → AI. The AI buffer is non-empty (`ai-prompt-marker`), so it's preserved,
+      // NOT overwritten by the carried-over text.
       await pressMetaDigit(tauriPage, 1)
       expect(await pollActiveMode(tauriPage, 'ai')).toBe(true)
       expect(await getSearchInputValue(tauriPage)).toBe('ai-prompt-marker')
 
-      // ⌘2 → filename again. The filename buffer survived the detour.
+      // ⌘2 → filename again. The filename buffer (`filename-marker`) survived the detour.
       await pressMetaDigit(tauriPage, 2)
       expect(await pollActiveMode(tauriPage, 'filename')).toBe(true)
       expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
@@ -100,15 +105,17 @@ test.describe('Search dialog: mode shortcuts', () => {
       await setSearchInputValue(tauriPage, 'filename-marker')
       expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
 
-      // ⌘2 → regex. Empty buffer.
+      // ⌘2 → regex. Empty regex buffer, so `filename-marker` carries over (M5).
       await pressMetaDigit(tauriPage, 2)
       expect(await pollActiveMode(tauriPage, 'regex')).toBe(true)
-      expect(await getSearchInputValue(tauriPage)).toBe('')
+      expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
 
+      // Replace it with a real regex buffer.
       await setSearchInputValue(tauriPage, 'regex-marker')
       expect(await getSearchInputValue(tauriPage)).toBe('regex-marker')
 
-      // ⌘1 → filename. The filename buffer survived the detour.
+      // ⌘1 → filename. The filename buffer (`filename-marker`) survived the detour
+      // (non-empty target buffers are never overwritten by carry-over).
       await pressMetaDigit(tauriPage, 1)
       expect(await pollActiveMode(tauriPage, 'filename')).toBe(true)
       expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')

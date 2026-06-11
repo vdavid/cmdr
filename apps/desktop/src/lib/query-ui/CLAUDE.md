@@ -58,6 +58,11 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals live 
   populated-results a11y test with a comment pointing at the rationale; don't "fix" it by retabbing.
 - **Status bar stays empty whenever the content area shows a state message** (Searching / No files match / Loading).
   When you add a content-area state in `QueryResults`, make `getStatusText()` return `''` for it, or it reads as broken.
+- **`.results-container` carries `role="listbox"` ONLY when option rows actually render** (the `showingRows` derived:
+  `isIndexAvailable && isIndexReady && !isSearching && results.length > 0`). Don't gate it on `results.length > 0`
+  alone: on reopen the dialog re-runs with the persisted `results` still set while the spinner shows, so a length-only
+  gate puts `role="listbox"` on a container with no `option` children = axe `aria-required-children` (critical). Pinned
+  by the "searching with stale results" test in `QueryResults.a11y.test.ts`.
 - **Content chip is visible-disabled with NO shortcut** (`⌘4` reserved): wiring a shortcut to a disabled control is
   hostile UX. When Content ships it claims `⌘3` and Regex moves to `⌘4`.
 - **AI mode never auto-applies** (cost); filename/regex auto-apply behind `search.autoApply` (default on, 1,000 ms

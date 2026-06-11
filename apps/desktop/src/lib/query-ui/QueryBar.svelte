@@ -143,7 +143,7 @@
 
     .query-input {
         flex: 1;
-        font-size: var(--font-size-lg);
+        font-size: var(--font-size-xl);
         border: 1px solid transparent;
         background: transparent;
         color: var(--color-text-primary);
@@ -170,7 +170,7 @@
     .run-hint {
         flex-shrink: 0;
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         white-space: nowrap;
     }
 
@@ -189,7 +189,7 @@
         color: var(--color-text-secondary);
         cursor: default;
         line-height: 1;
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-md);
     }
 
     .run-label {

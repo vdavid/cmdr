@@ -94,6 +94,12 @@ func main() {
 	// option's description, today). See `dropdown_states.go` for the list.
 	allFindings = append(allFindings, analyzer.AnalyzeDropdownStates()...)
 
+	// Search / Select dialog (`lib/query-ui/`) fg-on-bg pairs that span
+	// selectors or fold through `opacity`: the ToggleGroup "AI" badge + hint,
+	// and the under-cursor result row's muted columns on the accent-tinted
+	// cursor bg. See `query_dialog_states.go`.
+	allFindings = append(allFindings, analyzer.AnalyzeQueryDialogStates()...)
+
 	violations := FilterViolations(allFindings)
 	warnings := append([]string{}, analyzer.Warnings...)
 	for _, f := range allFindings {
