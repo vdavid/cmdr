@@ -48,19 +48,22 @@ export function deriveSizeChip(
 
   // A configured filter requires at least the first value (or both, for "between"). The chip
   // stays unconfigured if the user changed the comparator to "gte" but hasn't typed a number yet.
+  // `0` is a real bound (find empty files), so we accept `>= 0`; an empty input is `NaN` and
+  // stays unconfigured.
   const minNumeric = parseFloat(sizeValue)
-  const minOk = !isNaN(minNumeric) && minNumeric > 0
-  if (sizeFilter === 'gte') {
+  const minOk = !isNaN(minNumeric) && minNumeric >= 0
+
+  // The three single-bound comparators differ only by their prefix glyph.
+  const singleBoundPrefix: Partial<Record<SizeFilter, string>> = { gte: '>', lte: '<', eq: '=' }
+  const prefix = singleBoundPrefix[sizeFilter]
+  if (prefix !== undefined) {
     if (!minOk) return { configured: false, summary: '' }
-    return { configured: true, summary: `> ${sizeValue.trim()} ${unitLabel}` }
+    return { configured: true, summary: `${prefix} ${sizeValue.trim()} ${unitLabel}` }
   }
-  if (sizeFilter === 'lte') {
-    if (!minOk) return { configured: false, summary: '' }
-    return { configured: true, summary: `< ${sizeValue.trim()} ${unitLabel}` }
-  }
+
   // between
   const maxNumeric = parseFloat(sizeValueMax)
-  const maxOk = !isNaN(maxNumeric) && maxNumeric > 0
+  const maxOk = !isNaN(maxNumeric) && maxNumeric >= 0
   if (!minOk && !maxOk) return { configured: false, summary: '' }
   if (minOk && !maxOk) return { configured: true, summary: `> ${sizeValue.trim()} ${unitLabel}` }
   if (!minOk && maxOk) return { configured: true, summary: `< ${sizeValueMax.trim()} ${unitMaxLabel}` }

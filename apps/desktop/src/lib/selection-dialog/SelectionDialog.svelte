@@ -228,7 +228,9 @@
         const hf = selectionQueryState.readHistoryFilters()
         if (f === 'gte') return hf.sizeMin != null ? { kind: 'gte', min: hf.sizeMin } : undefined
         if (f === 'lte') return hf.sizeMax != null ? { kind: 'lte', max: hf.sizeMax } : undefined
-        // between
+        // `between` and `eq` both land here: `eq` reads back as `sizeMin == sizeMax`, and the
+        // matcher's `between` matches exactly one value when the bounds coincide. There's no
+        // separate `eq` predicate kind by design (see `SizeFilter`).
         return { kind: 'between', min: hf.sizeMin ?? undefined, max: hf.sizeMax ?? undefined }
     }
 

@@ -21,8 +21,20 @@ describe('deriveSizeChip', () => {
     expect(deriveSizeChip('gte', '', 'MB', '', 'MB')).toEqual({ configured: false, summary: '' })
   })
 
-  it('returns default when value is zero (treated as "no value yet")', () => {
-    expect(deriveSizeChip('gte', '0', 'MB', '', 'MB')).toEqual({ configured: false, summary: '' })
+  it('treats a zero bound as a real value, not "off" (gte 0)', () => {
+    // `0` is a valid bound (find empty files). Only an empty input (NaN) stays unconfigured.
+    expect(deriveSizeChip('gte', '0', 'B', '', 'B')).toEqual({ configured: true, summary: '> 0 B' })
+  })
+
+  it('treats a zero bound as a real value (lte 0)', () => {
+    expect(deriveSizeChip('lte', '0', 'B', '', 'B')).toEqual({ configured: true, summary: '< 0 B' })
+  })
+
+  it('treats a zero bound as a real value in a between range', () => {
+    expect(deriveSizeChip('between', '0', 'B', '5', 'MB')).toEqual({
+      configured: true,
+      summary: '0 B – 5 MB',
+    })
   })
 
   it('formats a gte filter as "> N UNIT"', () => {
@@ -76,6 +88,28 @@ describe('deriveSizeChip', () => {
 
   it('format defaults to binary when omitted (back-compat)', () => {
     expect(deriveSizeChip('gte', '100', 'KB', '', 'KB').summary).toBe('> 100 KB')
+  })
+
+  it('formats an eq filter as "= N UNIT"', () => {
+    expect(deriveSizeChip('eq', '5', 'MB', '', 'MB')).toEqual({
+      configured: true,
+      summary: '= 5 MB',
+    })
+  })
+
+  it('formats "= 0 B" (find empty files, the headline eq use case)', () => {
+    expect(deriveSizeChip('eq', '0', 'B', '', 'B')).toEqual({
+      configured: true,
+      summary: '= 0 B',
+    })
+  })
+
+  it('eq stays unconfigured until the user types a value', () => {
+    expect(deriveSizeChip('eq', '', 'MB', '', 'MB')).toEqual({ configured: false, summary: '' })
+  })
+
+  it('eq respects the SI / binary kB label', () => {
+    expect(deriveSizeChip('eq', '100', 'KB', '', 'KB', 'si').summary).toBe('= 100 kB')
   })
 })
 

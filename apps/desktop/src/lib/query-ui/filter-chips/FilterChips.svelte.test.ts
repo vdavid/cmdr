@@ -396,9 +396,9 @@ describe('SearchFilterChips: scope popover behavior', () => {
     expect(grid).not.toBeNull()
     const cols = grid?.querySelectorAll('.list-col')
     expect(cols?.length).toBe(3) // comparator, lower value, lower unit
-    // Comparator col exposes all 4 options.
+    // Comparator col exposes all 5 options (any / ≥ / ≤ / = / between).
     const compCells = cols?.[0].querySelectorAll('.list-cell')
-    expect(compCells?.length).toBe(4)
+    expect(compCells?.length).toBe(5)
     // Selected comparator is `>=`.
     const selected = grid?.querySelectorAll('.list-cell.is-selected')
     expect(selected?.length).toBeGreaterThanOrEqual(2) // gte + value '5' + unit 'MB'
@@ -465,6 +465,32 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const { getSizeFilter, getSizeValue } = await import('$lib/search/search-state.svelte')
     expect(getSizeFilter()).toBe('gte')
     expect(getSizeValue()).toBe('100')
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('Size popover: the `=` (eq) comparator renders, selects, and is single-bound', async () => {
+    clearSearchState()
+    // Render with `eq` already chosen (the prop drives the popover's render).
+    const { target, cleanup } = mountChips(baseProps({ sizeFilter: 'eq', sizeValue: '0', sizeUnit: 'B' }))
+    await tick()
+    findChip(target, 'Size')?.click()
+    await tick()
+    // The `=` comparator cell exists and reads as selected (the prop drives `is-selected`).
+    const compCells = document.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(1) .list-cell')
+    const eqCell = [...compCells].find((b) => b.textContent.trim() === '=')
+    expect(eqCell).not.toBeUndefined()
+    expect(eqCell?.getAttribute('aria-checked')).toBe('true')
+    // `eq` is single-bound: only comparator + lower value + lower unit columns, no upper bound.
+    const cols = document.querySelectorAll('.list-grid .list-col')
+    expect(cols.length).toBe(3)
+    // Clicking the `=` cell writes `eq` to the shared state.
+    eqCell?.click()
+    await tick()
+    const { getSizeFilter } = await import('$lib/search/search-state.svelte')
+    expect(getSizeFilter()).toBe('eq')
     cleanup()
     document.querySelectorAll('.filter-chip-popover').forEach((el) => {
       el.remove()

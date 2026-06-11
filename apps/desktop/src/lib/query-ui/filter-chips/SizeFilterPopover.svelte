@@ -64,6 +64,7 @@
         { value: 'any', label: 'any' },
         { value: 'gte', label: '≥' },
         { value: 'lte', label: '≤' },
+        { value: 'eq', label: '=' },
         { value: 'between', label: 'between' },
     ]
 

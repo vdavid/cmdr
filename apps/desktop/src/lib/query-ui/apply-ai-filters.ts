@@ -17,7 +17,14 @@ import { bytesToSize, type QueryFilterState } from './query-filter-state.svelte'
  */
 export function applySizeFromAi(state: QueryFilterState, min: number | null, max: number | null): boolean {
   if (min == null && max == null) return false
-  if (min != null && max != null) {
+  if (min != null && max != null && min === max) {
+    // Exact size (for example "size = 0" → find empty files): set `eq` so the chip reads
+    // "= N" instead of "between N and N". `eq` is a UI label only (see `SizeFilter`).
+    state.setSizeFilter('eq')
+    const exact = bytesToSize(min)
+    state.setSizeValue(exact.value)
+    state.setSizeUnit(exact.unit)
+  } else if (min != null && max != null) {
     state.setSizeFilter('between')
     const lo = bytesToSize(min)
     const hi = bytesToSize(max)

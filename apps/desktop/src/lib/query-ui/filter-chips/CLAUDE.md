@@ -86,7 +86,8 @@ popover children).
 
 **Size popover** (`SizeFilterPopover.svelte`):
 
-- Col 1: `any`, `≥`, `≤`, `between` (one selected at a time).
+- Col 1: `any`, `≥`, `≤`, `=`, `between` (one selected at a time). `=` is single-bound (like `≥` / `≤`): it shows only
+  cols 2 + 3, never the upper-bound cols.
 - Col 2: `0`, `1`, `5`, `10`, `20`, `50`, `100`, `200`, `500`, `Custom…`. Disabled when col 1 = `any`. Selecting
   `Custom…` reveals an inline `<input type="number">`.
 - Col 3: unit. The "byte(s)" cell label flips based on the selected value. The "kB/KB" cell follows
@@ -150,7 +151,16 @@ Clicking × clears the pattern only; the AI transparency strip stays put.
 ## Gotchas
 
 **Gotcha**: `parseSizeToBytes('0', unit)` is `0`, not `undefined`. The list-style grid lets the user explicitly pick 0
-as a lower or upper bound, so the helper honors it.
+as a lower or upper bound, so the helper honors it. `deriveSizeChip` likewise treats a `0` bound as configured (the
+guard is `>= 0`, not `> 0`); an empty input stays unconfigured because `parseFloat('')` is `NaN`. So "= 0 B" / "≥ 0 B"
+render as real filters.
+
+**Gotcha**: `=` (the `eq` comparator) is a UI/chip-summary concern ONLY, never reaching the matcher's `SizePredicate` or
+any Rust type. Below the chip it's `between` with `sizeMin == sizeMax`: `applySizeQuery` pins both bounds,
+`readSizeFilters` emits `{ sizeMin: x, sizeMax: x }`, and `applyHistoryFilters` rehydrates a stored
+`size_min == size_max` as `eq` (not `between`) by deliberate decision (the two are identical; `= x` is the friendlier
+label, so a stored `between 5–5` returns as `= 5`). `applySizeFromAi` sets `eq` when the AI returns `min == max`. Don't
+add an `eq` kind to `SizePredicate` / `HistoryFilters`.
 
 **Gotcha**: Size unit is `'B' | 'KB' | 'MB' | 'GB'`. The "byte(s)" cell is selectable from the unit column manually; the
 AI translator's `bytesToDisplaySize` still produces `KB | MB | GB`.

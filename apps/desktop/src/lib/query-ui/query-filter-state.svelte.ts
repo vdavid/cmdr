@@ -22,7 +22,13 @@
 import type { SearchResultEntry, PatternType, SearchQuery, HistoryFilters } from '$lib/tauri-commands'
 export type { PatternType }
 
-export type SizeFilter = 'any' | 'gte' | 'lte' | 'between'
+/**
+ * `eq` is a UI/chip-summary concern only: it round-trips through the matcher and history as
+ * `between` with `sizeMin == sizeMax` (the matcher's `between` already matches exactly one
+ * value). No `SizePredicate` or Rust `HistoryFilters` change carries it. See `applySizeQuery`,
+ * `readSizeFilters`, and `applyHistoryFilters` (which rehydrates `size_min == size_max` as `eq`).
+ */
+export type SizeFilter = 'any' | 'gte' | 'lte' | 'eq' | 'between'
 export type DateFilter = 'any' | 'after' | 'before' | 'between'
 /**
  * Size unit. `B` (bytes) was added in round 2 (D10) so the list-style popover can let the
@@ -100,6 +106,10 @@ export function bytesToSize(bytes: number): { value: string; unit: SizeUnit } {
   }
   if (bytes >= 1024 * 1024) {
     return { value: String(Math.round((bytes / (1024 * 1024)) * 100) / 100), unit: 'MB' }
+  }
+  // Sub-kilobyte bounds read as raw bytes ("= 0 B", "512 B") rather than a fractional "0.5 KB".
+  if (bytes < 1024) {
+    return { value: String(bytes), unit: 'B' }
   }
   return { value: String(Math.round((bytes / 1024) * 100) / 100), unit: 'KB' }
 }
@@ -272,6 +282,10 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
       q.minSize = minBytes
     } else if (sizeFilter === 'lte' && minBytes !== undefined) {
       q.maxSize = minBytes
+    } else if (sizeFilter === 'eq' && minBytes !== undefined) {
+      // Exact match: pin both bounds to the same value (the engine's min..max range collapses).
+      q.minSize = minBytes
+      q.maxSize = minBytes
     } else if (sizeFilter === 'between') {
       if (minBytes !== undefined) q.minSize = minBytes
       const maxBytes = parseSizeToBytes(sizeValueMax, sizeUnitMax)
@@ -328,7 +342,14 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
 
     if (!filters) return
 
-    if (filters.sizeMin != null && filters.sizeMax != null) {
+    if (filters.sizeMin != null && filters.sizeMax != null && filters.sizeMin === filters.sizeMax) {
+      // `between x x` and `eq x` match exactly the same set; rehydrate the friendlier `= x`
+      // label (deliberate: there's no stored comparator kind, so we always collapse to eq).
+      sizeFilter = 'eq'
+      const exact = bytesToSize(filters.sizeMin)
+      sizeValue = exact.value
+      sizeUnit = exact.unit
+    } else if (filters.sizeMin != null && filters.sizeMax != null) {
       sizeFilter = 'between'
       const min = bytesToSize(filters.sizeMin)
       const max = bytesToSize(filters.sizeMax)
@@ -366,6 +387,9 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
     const minBytes = parseSizeToBytes(sizeValue, sizeUnit)
     if (sizeFilter === 'gte') return minBytes !== undefined ? { sizeMin: minBytes } : {}
     if (sizeFilter === 'lte') return minBytes !== undefined ? { sizeMax: minBytes } : {}
+    // `eq` persists as `size_min == size_max`; it rehydrates as `eq` (not `between`) in
+    // `applyHistoryFilters` by deliberate decision.
+    if (sizeFilter === 'eq') return minBytes !== undefined ? { sizeMin: minBytes, sizeMax: minBytes } : {}
     const maxBytes = parseSizeToBytes(sizeValueMax, sizeUnitMax)
     const out: { sizeMin?: number; sizeMax?: number } = {}
     if (minBytes !== undefined) out.sizeMin = minBytes

@@ -129,6 +129,41 @@ describe('matchEntries: size predicate', () => {
     }
     expect(matchEntries(accessors, list.length, q)).toEqual([0, 1])
   })
+
+  // `eq` is a UI-only comparator: at the matcher layer it's `between` with min == max
+  // (the existing `between` already matches exactly one value when the bounds coincide).
+  it('matches exactly zero-byte files (eq 0 == between 0..0)', () => {
+    const names = ['empty.txt', 'small.txt', 'big.bin', 'dir']
+    const fileSizes: (number | null)[] = [0, 1000, 2_000_000, null]
+    const acc: MatchAccessors = {
+      getNameFor: (i) => names[i],
+      getSizeFor: (i) => fileSizes[i],
+    }
+    const q: SelectionMatchQuery = {
+      pattern: '*',
+      kind: 'glob',
+      caseSensitive: false,
+      size: { kind: 'between', min: 0, max: 0 },
+    }
+    expect(matchEntries(acc, names.length, q)).toEqual([0])
+  })
+
+  it('matches exactly 5 MB files (eq 5 MB == between 5MB..5MB)', () => {
+    const fiveMb = 5 * 1024 * 1024
+    const names = ['a.bin', 'b.bin', 'c.bin']
+    const fileSizes: (number | null)[] = [fiveMb - 1, fiveMb, fiveMb + 1]
+    const acc: MatchAccessors = {
+      getNameFor: (i) => names[i],
+      getSizeFor: (i) => fileSizes[i],
+    }
+    const q: SelectionMatchQuery = {
+      pattern: '*',
+      kind: 'glob',
+      caseSensitive: false,
+      size: { kind: 'between', min: fiveMb, max: fiveMb },
+    }
+    expect(matchEntries(acc, names.length, q)).toEqual([1])
+  })
 })
 
 describe('matchEntries: date predicate', () => {

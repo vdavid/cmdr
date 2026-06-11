@@ -230,6 +230,40 @@ describe('createQueryFilterState: history filters round-trip', () => {
     expect(s.getSizeFilter()).toBe('any')
     expect(s.getSizeValue()).toBe('')
   })
+
+  // `eq` persists as `size_min == size_max` (no Rust comparator field) and, by deliberate
+  // decision, ALWAYS rehydrates as `eq` (not `between`): the two are semantically identical
+  // and `= x` is the friendlier label.
+  it('round-trips an eq filter (persists as min==max, restores as eq)', () => {
+    const s = createQueryFilterState()
+    s.setSizeFilter('eq')
+    s.setSizeValue('5')
+    s.setSizeUnit('MB')
+    const filters = s.readHistoryFilters()
+    expect(filters).toEqual({ sizeMin: 5 * 1024 * 1024, sizeMax: 5 * 1024 * 1024 })
+
+    const fresh = createQueryFilterState()
+    fresh.applyHistoryFilters(filters)
+    expect(fresh.getSizeFilter()).toBe('eq')
+    expect(fresh.getSizeValue()).toBe('5')
+    expect(fresh.getSizeUnit()).toBe('MB')
+    expect(fresh.getSizeValueMax()).toBe('')
+  })
+
+  it('round-trips eq 0 B (find empty files)', () => {
+    const s = createQueryFilterState()
+    s.setSizeFilter('eq')
+    s.setSizeValue('0')
+    s.setSizeUnit('B')
+    const filters = s.readHistoryFilters()
+    expect(filters).toEqual({ sizeMin: 0, sizeMax: 0 })
+
+    const fresh = createQueryFilterState()
+    fresh.applyHistoryFilters(filters)
+    expect(fresh.getSizeFilter()).toBe('eq')
+    expect(fresh.getSizeValue()).toBe('0')
+    expect(fresh.getSizeUnit()).toBe('B')
+  })
 })
 
 describe('createQueryFilterState: factory isolation', () => {

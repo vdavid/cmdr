@@ -34,6 +34,24 @@ describe('applySizeFromAi', () => {
     expect(state.getSizeValueMax()).toBe('1')
     expect(state.getSizeUnitMax()).toBe('GB')
   })
+
+  // When the AI returns min == max, that's an exact-size match: set the `eq` comparator so
+  // the chip reads "= N" rather than "between N and N".
+  it('sets an eq filter when min == max (so "size = 5 MB" reads as = not between)', () => {
+    const state = createQueryFilterState({ defaultMode: 'filename' })
+    expect(applySizeFromAi(state, 5 * 1024 * 1024, 5 * 1024 * 1024)).toBe(true)
+    expect(state.getSizeFilter()).toBe('eq')
+    expect(state.getSizeValue()).toBe('5')
+    expect(state.getSizeUnit()).toBe('MB')
+  })
+
+  it('sets an eq 0 B filter when the AI returns min == max == 0 (find empty files)', () => {
+    const state = createQueryFilterState({ defaultMode: 'filename' })
+    expect(applySizeFromAi(state, 0, 0)).toBe(true)
+    expect(state.getSizeFilter()).toBe('eq')
+    expect(state.getSizeValue()).toBe('0')
+    expect(state.getSizeUnit()).toBe('B')
+  })
 })
 
 describe('applyDateFromAi', () => {
