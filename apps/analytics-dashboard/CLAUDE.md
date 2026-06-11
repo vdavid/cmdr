@@ -48,7 +48,9 @@ Each source gets its own module under `src/lib/server/sources/`:
 | `license.ts`    | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                                                                 |
 
 Each module exports a typed fetch function returning `SourceResult<T>` (ok + data, or error string). Results are cached
-via `cache.ts` (5 min TTL for 24h/7d, 1 hour for 30d). The page server calls all sources in parallel.
+via `cache.ts` (5 min TTL for 24h/7d, 1 hour for 30d). The page server calls all sources in parallel, each capped at 20s
+by `withTimeout` in `fetch-all.ts`: Workers `fetch` has no built-in timeout, so without the cap one hung upstream stalls
+the whole `Promise.all` until Cloudflare's proxy returns a 524 at 100s. Keep new sources behind the same wrapper.
 
 ## Deployment
 

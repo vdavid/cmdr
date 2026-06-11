@@ -24,13 +24,35 @@ export interface DashboardData {
   license: SourceResult<LicenseData>
 }
 
-/** Runs `fn` if `envKey` is set, otherwise returns a "not configured" error. */
+const sourceTimeoutMs = 20_000
+
+/**
+ * Resolves to an error result if the source doesn't settle within 20s. Workers `fetch` has no
+ * built-in timeout, and the sources run under `Promise.all`, so without this cap a single hung
+ * upstream stalls the whole response until Cloudflare's proxy cuts it at 100s with a 524. With it,
+ * the hung source degrades to its "Couldn't load" section and everything else still renders.
+ */
+export function withTimeout<T>(name: string, promise: Promise<SourceResult<T>>): Promise<SourceResult<T>> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      resolve({ ok: false, error: `${name}: timed out after ${sourceTimeoutMs / 1000}s` })
+    }, sourceTimeoutMs)
+    promise
+      .then((result) => resolve(result))
+      .catch((e) => resolve({ ok: false, error: `${name}: ${e instanceof Error ? e.message : String(e)}` }))
+      .finally(() => clearTimeout(timer))
+  })
+}
+
+/** Runs `fn` (capped at the source timeout) if `envKey` is set, otherwise returns a "not configured" error. */
 function guardedFetch<T>(
   envKey: string | undefined,
   name: string,
   fn: () => Promise<SourceResult<T>>,
 ): Promise<SourceResult<T>> {
-  return envKey ? fn() : Promise.resolve({ ok: false, error: `${name}: not configured (missing env vars)` })
+  return envKey
+    ? withTimeout(name, fn())
+    : Promise.resolve({ ok: false, error: `${name}: not configured (missing env vars)` })
 }
 
 /** Returns the env object from CF Pages platform, falling back to $env/dynamic/private for local dev. */
@@ -83,8 +105,8 @@ export async function fetchDashboardData(
     guardedFetch(env?.PADDLE_API_KEY_LIVE, 'Paddle', () =>
       fetchPaddleData({ PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE }, range),
     ),
-    fetchGitHubData({ GITHUB_TOKEN: env?.GITHUB_TOKEN }),
-    fetchGitHubStarsData({ GITHUB_TOKEN: env?.GITHUB_TOKEN }),
+    withTimeout('GitHub', fetchGitHubData({ GITHUB_TOKEN: env?.GITHUB_TOKEN })),
+    withTimeout('GitHub stars', fetchGitHubStarsData({ GITHUB_TOKEN: env?.GITHUB_TOKEN })),
     guardedFetch(env?.POSTHOG_API_KEY, 'PostHog', () =>
       fetchPostHogData(
         {
