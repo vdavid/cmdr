@@ -2,10 +2,14 @@
  * Pure layout helper for `PathPills.svelte`. Decides which segments to render directly
  * versus hide behind the `…` collapse pill, given the available container width.
  *
- * Pulled out as a separate module so we can pin the algorithm with mocked widths
- * (round 2 R2: David reported the strip collapses even when there's plenty of free
- * space, because the per-pill chrome margin was too aggressive). Tests in
- * `path-pills-layout.test.ts`.
+ * Pulled out as a separate module so we can pin the algorithm with mocked widths.
+ * Tests in `path-pills-layout.test.ts`.
+ *
+ * This helper is correct only when given a real available width. The strip's
+ * container (`.path-pills`) must fill its grid cell (`display: flex; width: 100%`),
+ * NOT shrink-wrap (`inline-flex`): a shrink-wrapping container reports its content
+ * width as the available width, which makes collapse self-reinforcing and abbreviates
+ * paths with the column half-empty. See the `.path-pills` rule in `PathPills.svelte`.
  */
 
 export interface Segment {

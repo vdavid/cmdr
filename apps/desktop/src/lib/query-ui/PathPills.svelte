@@ -260,12 +260,20 @@
 
 <style>
     .path-pills {
-        display: inline-flex;
+        /* `flex` + `width: 100%` (NOT `inline-flex`): the collapse layout reads
+           `container.clientWidth` as the available width. An `inline-flex` box
+           shrink-wraps to its content, so that read would return the current
+           content width, never the free space in the column. That made the
+           collapse self-reinforcing: any pixel of measurement overshoot dropped a
+           segment, which shrank the box, which locked in more collapses, so paths
+           abbreviated with the column half-empty. Filling the cell makes the
+           measured width the stable column width, independent of pill count. */
+        display: flex;
         flex-wrap: nowrap;
         align-items: center;
         gap: var(--spacing-xxs);
         min-width: 0;
-        max-width: 100%;
+        width: 100%;
         overflow: hidden;
     }
 
