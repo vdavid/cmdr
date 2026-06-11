@@ -605,6 +605,54 @@ describe('SelectionDialog', () => {
     second.cleanup()
   })
 
+  it('reopen re-derives results against the CURRENT folder (not stale rows from the first folder)', async () => {
+    // Live-smoke fix: reopening a restored session must show the same query's results
+    // immediately, re-derived against the folder open NOW. We prove the re-run happened by
+    // reopening on a DIFFERENT folder and asserting Enter commits indices computed against
+    // the new folder. Pre-fix, nothing re-ran on mount: the content sat idle until an edit.
+    const matched: number[][] = []
+
+    // First folder: two PNGs at indices 0 and 2.
+    const first = await mountDialog({
+      entries: [buildEntry('a.png'), buildEntry('b.txt'), buildEntry('c.png')],
+      onCommit: (idxs) => matched.push(idxs),
+    })
+    const firstInput = first.overlay.querySelector('input[type="text"], input:not([type])') as HTMLInputElement
+    firstInput.value = '*.png'
+    firstInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+    await new Promise((r) => setTimeout(r, 1100)) // auto-apply debounce → a run lands
+    await tick()
+    first.cleanup()
+
+    // Second folder, DIFFERENT shape: a single PNG, now at index 1.
+    const second = await mountDialog({
+      entries: [buildEntry('x.txt'), buildEntry('y.png'), buildEntry('z.txt')],
+      onCommit: (idxs) => matched.push(idxs),
+    })
+    // Let the reopen re-run settle (no typing).
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+    // Enter commits immediately — the result set is already re-derived against the new folder.
+    dispatchKey(second.overlay, 'Enter')
+    await tick()
+    expect(matched).toHaveLength(1)
+    expect(matched[0]).toEqual([1]) // y.png in the SECOND folder, not [0, 2] from the first
+    second.cleanup()
+  })
+
+  it('first-ever open shows the empty state and does not auto-run', async () => {
+    // A clean session (after ⌘N / first launch) must rest on the empty state with examples,
+    // never an auto-run. `clearSelectionState()` in beforeEach gives us the clean slate.
+    const { overlay, cleanup } = await mountDialog()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+    expect(overlay.querySelector('.empty-state')).toBeTruthy()
+    cleanup()
+  })
+
   it('matches on a size filter alone when the name bar is empty', async () => {
     // The headline M2 fix: a `≥ 1 MB` size filter with an EMPTY name pattern must
     // select every file ≥ 1 MB. Before the fix, `buildMatchQuery` returned null on

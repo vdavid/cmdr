@@ -81,8 +81,18 @@ thin centered bar; it's NOT a `<header>` landmark, which would collide with the 
 The orchestrator's `$effect` block on `state.getRunOnMount()` consumes the one-shot prefill flag. It clears the flag
 BEFORE dispatching so downstream state writes can't re-trigger the effect. Cold-open (dialog mounts with the flag
 pre-set, e.g. MCP `open_search_dialog`) and hot-prefill (the flag flips while the dialog is already open, e.g. a
-recent-search activation) flow through the same path. AI mode honors the explicit-trigger contract because the prefill
-caller's `autoRun: true` IS the explicit trigger.
+recent-search activation) flow through the same path. The effect dispatches when there's anything runnable, via the
+shared `hasRestorableQuery()` predicate (non-empty query OR size/date/type filter active). AI mode honors the
+explicit-trigger contract because the prefill caller's `autoRun: true` IS the explicit trigger.
+
+A third producer of `runOnMount` is the reopen path. `onMount` sets the flag when the surviving state holds a restorable
+NON-AI session (`getLastRunQuery() !== null` AND `hasRestorableQuery()` AND `mode !== 'ai'`), so the dialog re-derives
+results on reopen instead of resting on the empty state: Select re-runs the matcher against the freshly-snapshotted
+current folder (more correct than rendering rows from the old folder), Search re-hits the index. AI restored sessions
+are excluded from this gate (cloud cost); they render the persisted results because `hasSearched` is seeded from
+`getLastRunQuery() !== null` at component init. For Search the index may not be ready when `onMount` fires; the effect's
+`config.isIndexReady` guard skips the run, and Search's own `search-index-ready` listener re-sets `runOnMount` once the
+index loads, so the re-run still lands.
 
 ### Test coverage
 
@@ -344,7 +354,10 @@ still typing their query.
 
 **State preservation across close + reopen**: The factory's `$state` survives dialog unmount. Closing the dialog (Escape
 or overlay click) does NOT wipe query, mode, filters, scope, results, or cursor. The only reset path is `⌘N` inside the
-dialog, which calls the consumer's clear hook.
+dialog, which calls the consumer's clear hook. On reopen the dialog shows those results immediately rather than the
+empty state: `hasSearched` is seeded from `getLastRunQuery() !== null`, and a restored non-AI session re-runs on mount
+(see the `runOnMount` consumer section) so the rows reflect the folder open now. AI sessions render the persisted
+results without re-calling the cloud.
 
 **`⌘N` shortcut**: Hard-coded in the dialog's `handleModifierShortcuts`. Captured before the dialog's global
 `stopPropagation` would let it reach the route-level `⌘N` (new tab) handler. The choice of `⌘N` matches the macOS "new

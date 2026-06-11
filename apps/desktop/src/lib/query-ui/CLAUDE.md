@@ -42,6 +42,14 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals live 
 - **Don't wipe state from `onDestroy` / any lifecycle hook.** The dialog mounts on open and unmounts on close; state
   survives unmount by design. The ONLY sanctioned reset is `⌘N` (the consumer's clear hook). Wiping on unmount turns
   every close+reopen into lost work.
+- **Reopen re-derives results so they show immediately, not the empty state.** `hasSearched` is component-local (resets
+  to `false` each mount), so it's seeded from `getLastRunQuery() !== null` (the precise "a prior run exists" flag,
+  nulled by `⌘N`/`clearCore`) so persisted results render on mount. For a restored NON-AI session (a prior run + a
+  non-empty query or active filter, via `hasRestorableQuery()`), `onMount` sets `runOnMount` so the query re-runs:
+  Select re-derives against the freshly-snapshotted current folder (more correct than showing rows from the old folder),
+  Search re-hits the index. AI restored sessions must NOT re-run (cloud cost): the `onMount` gate excludes
+  `mode === 'ai'`, so the seeded `hasSearched` renders the persisted results without re-calling translate. A first-ever
+  open (no prior run) still rests on the empty state.
 - **⌘⏎ and ⇧⏎ are explicit no-ops** (swallowed with `preventDefault`); bare Enter is the only key that runs a search or
   opens the cursor row, dispatched via `enterAction`. `⌘N` is captured before the dialog's `stopPropagation` so it
   doesn't reach the route-level new-tab handler.

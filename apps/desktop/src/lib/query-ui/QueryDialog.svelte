@@ -72,7 +72,16 @@
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
     let unlistenAutoApply: (() => void) | undefined
     let highlightedFields: SvelteSet<string> = new SvelteSet<string>()
-    let hasSearched = $state(false)
+    /**
+     * Whether a run's results are the current content. Seeded from the surviving state so a
+     * close + reopen shows the SAME results immediately, not the empty state. `lastRunQuery`
+     * is non-null exactly when a run has landed and hasn't been cleared by `⌘N` (`clearCore`
+     * nulls it), so it's the precise "a prior run exists" signal. On a first-ever open it's
+     * null, so we still start on the empty state. For non-AI restored sessions we additionally
+     * re-run on mount (see `onMount`) so Select re-derives against the current folder; AI
+     * restored sessions render these persisted results WITHOUT re-calling the cloud.
+     */
+    let hasSearched = $state(config.state.getLastRunQuery() !== null)
     /**
      * IME composition flag. While true, `scheduleSearch` is a no-op so we don't fire
      * mid-character on Chinese/Japanese/Korean input. On `compositionend` the bar
@@ -186,6 +195,21 @@
     })
 
     /**
+     * Whether the current state has anything runnable: a non-empty query OR an active filter
+     * (size ≠ any, date ≠ any, or type ≠ both). The single source of truth for "is there a
+     * session worth running?", shared by the `runOnMount` effect and the reopen re-run gate in
+     * `onMount`. Type counts: a "Folders"-only Selection run is a valid filter-only query.
+     */
+    function hasRestorableQuery(): boolean {
+        return (
+            config.state.getQuery().trim() !== '' ||
+            config.state.getSizeFilter() !== 'any' ||
+            config.state.getDateFilter() !== 'any' ||
+            config.state.getTypeFilter() !== 'both'
+        )
+    }
+
+    /**
      * Single consumer for the `runOnMount` one-shot flag. Fires both on cold-open
      * (dialog mounts with the flag pre-set, e.g. MCP `open_search_dialog`) and on
      * hot-prefill (dialog already open when MCP lands new prefill). Clears the flag
@@ -203,11 +227,9 @@
         // the prefilled query runs.
         hasSearched = false
         const trimmed = config.state.getQuery().trim()
-        const hasFilters =
-            config.state.getSizeFilter() !== 'any' || config.state.getDateFilter() !== 'any'
         if (trimmed && config.state.getMode() === 'ai' && config.aiEnabled) {
             void runAiSearch(trimmed)
-        } else if (config.isIndexReady && (trimmed || hasFilters)) {
+        } else if (config.isIndexReady && hasRestorableQuery()) {
             void executeQuery()
         }
         // Otherwise: prefill arrived but nothing to run. The dialog rests on the empty
@@ -253,6 +275,21 @@
         // D8: mark the dialog as freshly opened so ⏎ owns "run-search" by default
         // until the user edits the query/filters or results arrive.
         config.state.setLastDialogEvent('opened')
+
+        // Reopen-with-results: when the surviving state holds a restorable session (a prior
+        // run, plus a non-empty query or an active filter) re-derive it on mount so the user
+        // sees the same results immediately, not the empty state. For non-AI modes we re-run
+        // the query (cheap: Select re-derives against the freshly-snapshotted current folder,
+        // which is MORE correct than showing rows from the old folder; Search re-hits the
+        // index). AI mode never auto-runs (cloud cost): `hasSearched` was already seeded from
+        // the prior run, so its persisted results render as-is without re-calling translate.
+        if (
+            config.state.getLastRunQuery() !== null &&
+            config.state.getMode() !== 'ai' &&
+            hasRestorableQuery()
+        ) {
+            config.state.setRunOnMount(true)
+        }
 
         // Live-mirror `search.autoApply`. Shared key across consumers (no separate
         // `selection.autoApply` setting; the auto-apply contract is the same one).
