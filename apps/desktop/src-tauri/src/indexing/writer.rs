@@ -550,6 +550,10 @@ struct AccumulatorMaps {
     child_dirs: HashMap<i64, Vec<i64>>,
     /// Running count of entries inserted so far (for flushing progress).
     entries_inserted: u64,
+    /// Running count of rows the scan skipped on a UNIQUE `(parent_id,
+    /// name_folded)` conflict (`INSERT OR IGNORE`). Summarized once per scan at
+    /// `ComputeAllAggregates`; see `classify_skip_severity`.
+    entries_skipped: u64,
 }
 
 impl AccumulatorMaps {
@@ -558,6 +562,7 @@ impl AccumulatorMaps {
             direct_stats: HashMap::new(),
             child_dirs: HashMap::new(),
             entries_inserted: 0,
+            entries_skipped: 0,
         }
     }
 
@@ -586,6 +591,42 @@ impl AccumulatorMaps {
         self.direct_stats.clear();
         self.child_dirs.clear();
         self.entries_inserted = 0;
+        self.entries_skipped = 0;
+    }
+}
+
+/// Log severity for the count of rows a full scan skipped on a UNIQUE
+/// `(parent_id, name_folded)` conflict (the `INSERT OR IGNORE` path).
+#[derive(Debug, PartialEq, Eq)]
+enum SkipSeverity {
+    /// Nothing skipped: log nothing.
+    None,
+    /// Sparse skips, expected dedup (one dir reachable by two walk paths via a
+    /// firmlink/symlink, or case/NFD sibling pairs on case-sensitive or
+    /// cross-OS-synced trees). Not actionable: log at DEBUG.
+    Benign,
+    /// A large fraction of the scan skipped: the signature of two writer threads
+    /// racing on one DB (the constraint's reason for being, a 1.83 TB ghost size
+    /// was traced to exactly that). Actionable: log at WARN.
+    Suspicious,
+}
+
+/// Classify a full scan's accumulated UNIQUE-conflict skips. The absolute floor
+/// keeps a tiny tree with a couple genuine sibling collisions from tripping the
+/// warning; the ratio separates a handful of dedup hits in a multi-million-row
+/// scan from a racing writer (whose loser duplicates a large fraction of rows).
+fn classify_skip_severity(inserted: u64, skipped: u64) -> SkipSeverity {
+    const MIN_SUSPICIOUS_SKIPS: u64 = 50;
+    const SUSPICIOUS_SKIP_RATIO: f64 = 0.01;
+    if skipped == 0 {
+        return SkipSeverity::None;
+    }
+    let total = inserted + skipped;
+    let ratio = skipped as f64 / total as f64;
+    if skipped >= MIN_SUSPICIOUS_SKIPS && ratio > SUSPICIOUS_SKIP_RATIO {
+        SkipSeverity::Suspicious
+    } else {
+        SkipSeverity::Benign
     }
 }
 
@@ -945,12 +986,19 @@ fn handle_insert_entries_v2(
     // inflates `dir_stats` with phantom bytes (the constraint comment that
     // called out "1.83 TB ghost size on a 994 GB volume" is exactly this
     // failure mode).
+    //
+    // A per-batch skip is logged at DEBUG only (with a sample for diagnosis): a
+    // few skips per scan is expected dedup and not actionable. The accumulated
+    // count is summarized once per scan at `ComputeAllAggregates`, which escalates
+    // to WARN only when the skip ratio looks like a racing writer. See
+    // `classify_skip_severity`.
     match IndexStore::insert_entries_v2_batch(conn, &entries) {
         Ok(inserted) => {
             let skipped_count = inserted.iter().filter(|landed| !**landed).count();
             if skipped_count == 0 {
                 accumulator.accumulate(&entries);
             } else {
+                accumulator.entries_skipped += skipped_count as u64;
                 accumulator.accumulate(
                     entries
                         .iter()
@@ -969,7 +1017,7 @@ fn handle_insert_entries_v2(
                     })
                     .take(3)
                     .collect();
-                log::warn!(
+                log::debug!(
                     "Index writer: {skipped_count} of {batch_size} skipped due to UNIQUE conflict on (parent_id, name_folded); sample: {samples:?}",
                     batch_size = pluralize_with(count as u64, "entry", "entries")
                 );
@@ -1602,6 +1650,23 @@ fn handle_compute_all_aggregates(
             &mut on_progress,
         )
     };
+    // Summarize the scan's UNIQUE-conflict skips once, here, instead of WARNing
+    // per offending batch. Sparse skips are expected dedup; only a racing-writer
+    // ratio is worth a WARN. Read before `clear()`.
+    let inserted = accumulator.entries_inserted;
+    let skipped = accumulator.entries_skipped;
+    match classify_skip_severity(inserted, skipped) {
+        SkipSeverity::None => {}
+        SkipSeverity::Benign => log::debug!(
+            "Index scan: {skipped} of {total} entries skipped on UNIQUE conflict (expected dedup: firmlinks, case/NFD siblings)",
+            total = inserted + skipped,
+        ),
+        SkipSeverity::Suspicious => log::warn!(
+            "Index scan: {skipped} of {total} entries skipped on UNIQUE conflict ({pct:.1}%); a high ratio can mean two writers raced on one DB",
+            total = inserted + skipped,
+            pct = skipped as f64 / (inserted + skipped) as f64 * 100.0,
+        ),
+    }
     // Maps are consumed; clear to free memory.
     // Reset expected_total so subtree-scan inserts don't emit
     // spurious saving_entries progress events after the full scan.
@@ -1925,6 +1990,42 @@ mod tests {
     /// Open a read connection to the DB for assertions.
     fn open_read(db_path: &Path) -> IndexStore {
         IndexStore::open(db_path).expect("failed to open read store")
+    }
+
+    // ── Skip-severity classification ─────────────────────────────────
+
+    #[test]
+    fn skip_severity_none_when_nothing_skipped() {
+        assert_eq!(classify_skip_severity(5_000_000, 0), SkipSeverity::None);
+    }
+
+    #[test]
+    fn skip_severity_benign_for_sparse_dedup() {
+        // A handful of firmlink double-visits / case-NFD siblings in a big scan: expected, not actionable.
+        assert_eq!(classify_skip_severity(5_000_000, 3), SkipSeverity::Benign);
+        assert_eq!(classify_skip_severity(5_000_000, 49), SkipSeverity::Benign);
+    }
+
+    #[test]
+    fn skip_severity_benign_when_below_absolute_floor_even_at_high_ratio() {
+        // Tiny tree with a couple genuine sibling collisions: high ratio but few skips, stay quiet.
+        assert_eq!(classify_skip_severity(20, 10), SkipSeverity::Benign);
+    }
+
+    #[test]
+    fn skip_severity_suspicious_for_racing_writer_signature() {
+        // Two writers racing on one DB: the loser's inserts all conflict, so a large fraction skips.
+        assert_eq!(classify_skip_severity(5_000_000, 5_000_000), SkipSeverity::Suspicious);
+        // Just over both gates: 100 skips and >1% of the scan (100 / 9100 ≈ 1.1%).
+        assert_eq!(classify_skip_severity(9_000, 100), SkipSeverity::Suspicious);
+        // Exactly 1% does not trip it (the ratio gate is strict `>`): 100 / 10000.
+        assert_eq!(classify_skip_severity(9_900, 100), SkipSeverity::Benign);
+    }
+
+    #[test]
+    fn skip_severity_benign_when_over_floor_but_under_ratio() {
+        // 50 skips clears the floor but is a vanishing fraction of a 5M scan: still benign.
+        assert_eq!(classify_skip_severity(5_000_000, 50), SkipSeverity::Benign);
     }
 
     // ── Basic lifecycle tests ────────────────────────────────────────
