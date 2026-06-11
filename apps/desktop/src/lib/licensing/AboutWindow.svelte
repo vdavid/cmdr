@@ -129,6 +129,10 @@
                 <a href="https://github.com/vdavid/cmdr" onclick={handleLinkClick('https://github.com/vdavid/cmdr')}
                     >GitHub</a
                 >
+                <span class="separator">•</span>
+                <a href="https://discord.gg/4BVafBneKJ" onclick={handleLinkClick('https://discord.gg/4BVafBneKJ')}
+                    >Discord</a
+                >
             </div>
 
             <p class="copyright">© 2024-2026 David Veszelovszki</p>
