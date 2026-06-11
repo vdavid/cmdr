@@ -389,7 +389,7 @@ function foldEntries(
     // upstream call sites used to throw on this case; keep the guard to match
     // the historical safety net (this was the F8-after-volume-switch killer).
     if (entry.modifiedAt != null) {
-      const w = ctx.measureNum(joinSegments(ctx.formattedDate(entry.modifiedAt).parts.left))
+      const w = ctx.measureNum(joinSegments(ctx.formattedDate(entry.modifiedAt).segments))
       if (w > dateMax) dateMax = w
     }
   }

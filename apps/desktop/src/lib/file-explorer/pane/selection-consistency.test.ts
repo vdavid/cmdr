@@ -118,20 +118,17 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatDateTime: vi.fn().mockReturnValue('2025-01-01 00:00'),
   formattedDate: vi.fn().mockReturnValue({
     text: '2025-01-01 00:00',
-    parts: {
-      left: [
-        { text: '2025', ageClass: 'age-fresh' as const },
-        { text: '-', ageClass: null },
-        { text: '01', ageClass: null },
-        { text: '-', ageClass: null },
-        { text: '01', ageClass: null },
-      ],
-      right: [
-        { text: '00', ageClass: null },
-        { text: ':', ageClass: null },
-        { text: '00', ageClass: null },
-      ],
-    },
+    segments: [
+      { text: '2025', ageClass: 'age-fresh' as const },
+      { text: '-', ageClass: null },
+      { text: '01', ageClass: null },
+      { text: '-', ageClass: null },
+      { text: '01', ageClass: null },
+      { text: ' ', ageClass: null },
+      { text: '00', ageClass: null },
+      { text: ':', ageClass: null },
+      { text: '00', ageClass: null },
+    ],
   }),
   formatFileSize: vi.fn().mockReturnValue('1.0 KB'),
   getFileSizeFormat: vi.fn().mockReturnValue('binary'),

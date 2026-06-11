@@ -28,23 +28,23 @@ export interface DateSegment {
  * hand-rolled formatters; that's how locale, format, and age-coloring drift
  * across components.
  *
- * `parts.left` and `parts.right` each carry an ordered list of segments.
- * Concatenating their `text` reproduces the plain string in `text`. Each
- * segment knows whether it should be wrapped in an age-tier span via its
- * `ageClass`, so the renderer doesn't have to call any tier helper itself.
+ * `segments` is the ordered list of fragments; concatenating their `text`
+ * reproduces the plain string in `text`. Each segment knows whether it should
+ * be wrapped in an age-tier span via its `ageClass`, so the renderer doesn't
+ * have to call any tier helper itself.
  */
 export interface FormattedDate {
-  /** Joined `"left right"` (or just `left` when there's no split). Use for
-   *  tooltips, MCP responses, clipboard copies, and other plain-text needs. */
+  /** The joined plain string. Use for tooltips, MCP responses, clipboard
+   *  copies, and other plain-text needs. */
   text: string
-  /** Structured halves, each an ordered list of colored segments. */
-  parts: { left: DateSegment[]; right: DateSegment[] | null }
+  /** Ordered list of colored segments. */
+  segments: DateSegment[]
 }
 
 /** Empty result used for `null` / `0` timestamps. */
 const EMPTY_DATE: FormattedDate = {
   text: '',
-  parts: { left: [], right: null },
+  segments: [],
 }
 
 /**
@@ -91,25 +91,22 @@ export function formatDateForDisplay(
     time: tierForTime(timestamp, nowMs),
   }
 
-  const parts = (() => {
+  const segments = (() => {
     switch (format) {
       case 'system':
-        return systemLocaleParts(date, tiers)
+        return systemLocaleSegments(date, tiers)
       case 'iso':
-        return tokenParts(date, 'YYYY-MM-DD HH:mm', tiers)
+        return applyTokens(date, 'YYYY-MM-DD HH:mm', tiers)
       case 'short':
-        return tokenParts(date, 'MM/DD HH:mm', tiers)
+        return applyTokens(date, 'MM/DD HH:mm', tiers)
       case 'custom':
-        return tokenParts(date, customFormat, tiers)
+        return applyTokens(date, customFormat, tiers)
       default:
-        return tokenParts(date, 'YYYY-MM-DD HH:mm', tiers)
+        return applyTokens(date, 'YYYY-MM-DD HH:mm', tiers)
     }
   })()
 
-  const text =
-    parts.right === null ? joinSegments(parts.left) : `${joinSegments(parts.left)} ${joinSegments(parts.right)}`
-
-  return { text, parts }
+  return { text: joinSegments(segments), segments }
 }
 
 /** Per-component tier classes for a single timestamp + "now" pair. */
@@ -118,11 +115,6 @@ interface ComponentTiers {
   month: AgeTierClass | null
   day: AgeTierClass | null
   time: AgeTierClass | null
-}
-
-/** Render a token format into a single segment list. */
-function tokenParts(date: Date, format: string, tiers: ComponentTiers): FormattedDate['parts'] {
-  return { left: applyTokens(date, format, tiers), right: null }
 }
 
 /**
@@ -251,13 +243,13 @@ function getSystemLocaleFormatter(): Intl.DateTimeFormat {
   return systemLocaleFormatter
 }
 
-function systemLocaleParts(date: Date, tiers: ComponentTiers): FormattedDate['parts'] {
+function systemLocaleSegments(date: Date, tiers: ComponentTiers): DateSegment[] {
   const parts = getSystemLocaleFormatter().formatToParts(date)
   const segments: DateSegment[] = []
   for (const p of parts) {
     segments.push({ text: p.value, ageClass: ageClassForIntlPart(p.type, tiers) })
   }
-  return { left: segments, right: null }
+  return segments
 }
 
 // ============================================================================

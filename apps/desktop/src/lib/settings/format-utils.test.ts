@@ -31,8 +31,7 @@ describe('formatDateForDisplay: text', () => {
     for (const t of [undefined, null, 0]) {
       const d = formatDateForDisplay(t, 'iso', '', NOW_MS)
       expect(d.text).toBe('')
-      expect(d.parts.left).toEqual([])
-      expect(d.parts.right).toBeNull()
+      expect(d.segments).toEqual([])
     }
   })
 
@@ -64,46 +63,41 @@ describe('formatDateForDisplay: text', () => {
 describe('formatDateForDisplay: segments (iso)', () => {
   it('emits year/month/day/time as one segment list with literals between', () => {
     const d = formatDateForDisplay(timestamp, 'iso', '', NOW_MS)
-    expect(d.parts.left.map((s) => s.text)).toEqual(['2024', '-', '03', '-', '15', ' ', '14', ':', '30'])
-    expect(d.parts.right).toBeNull()
-    // Literals never carry an age class.
+    expect(d.segments.map((s) => s.text)).toEqual(['2024', '-', '03', '-', '15', ' ', '14', ':', '30']) // Literals never carry an age class.
     for (const lit of ['-', ':', ' ']) {
-      for (const seg of d.parts.left.filter((s) => s.text === lit)) expect(seg.ageClass).toBeNull()
+      for (const seg of d.segments.filter((s) => s.text === lit)) expect(seg.ageClass).toBeNull()
     }
   })
 
   it('joins back to the plain string via joinSegments', () => {
     const d = formatDateForDisplay(timestamp, 'iso', '', NOW_MS)
-    expect(joinSegments(d.parts.left)).toBe(d.text)
+    expect(joinSegments(d.segments)).toBe(d.text)
   })
 })
 
 describe('formatDateForDisplay: segments (short)', () => {
   it('omits year and includes day + time segments in one list', () => {
     const d = formatDateForDisplay(timestamp, 'short', '', NOW_MS)
-    expect(d.parts.left.map((s) => s.text)).toEqual(['03', '/', '15', ' ', '14', ':', '30'])
-    expect(d.parts.right).toBeNull()
+    expect(d.segments.map((s) => s.text)).toEqual(['03', '/', '15', ' ', '14', ':', '30'])
   })
 })
 
 describe('formatDateForDisplay: segments (custom)', () => {
   it('finds tokens in any order in custom formats', () => {
     const d = formatDateForDisplay(timestamp, 'custom', 'DD/MM/YYYY HH:mm', NOW_MS)
-    expect(d.parts.left.map((s) => s.text)).toEqual(['15', '/', '03', '/', '2024', ' ', '14', ':', '30'])
-    expect(d.parts.right).toBeNull()
+    expect(d.segments.map((s) => s.text)).toEqual(['15', '/', '03', '/', '2024', ' ', '14', ':', '30'])
   })
 
   it('handles repeated tokens: each occurrence becomes its own segment', () => {
     const d = formatDateForDisplay(timestamp, 'custom', 'YYYY YYYY', NOW_MS)
-    expect(d.parts.left.map((s) => s.text)).toEqual(['2024', ' ', '2024'])
+    expect(d.segments.map((s) => s.text)).toEqual(['2024', ' ', '2024'])
     // Both year segments share the same tier (whatever year tier the timestamp produces).
-    expect(d.parts.left[0].ageClass).toBe(d.parts.left[2].ageClass)
+    expect(d.segments[0].ageClass).toBe(d.segments[2].ageClass)
   })
 
   it('renders the full custom format as one segment list', () => {
     const d = formatDateForDisplay(timestamp, 'custom', 'YYYY/MM/DD HH:mm:ss', NOW_MS)
-    expect(joinSegments(d.parts.left)).toBe('2024/03/15 14:30:45')
-    expect(d.parts.right).toBeNull()
+    expect(joinSegments(d.segments)).toBe('2024/03/15 14:30:45')
   })
 })
 
@@ -114,8 +108,8 @@ describe('formatDateForDisplay: segments (system)', () => {
     // what matters is that the year segment carries the year tier (fresh under
     // our anchor) and the joined text round-trips. We locate the year part by
     // matching the year value the formatter actually emitted.
-    expect(joinSegments(d.parts.left)).toBe(d.text)
-    const yearSeg = d.parts.left.find((s) => s.ageClass === 'age-fresh' && /\d{2,4}/.test(s.text))
+    expect(joinSegments(d.segments)).toBe(d.text)
+    const yearSeg = d.segments.find((s) => s.ageClass === 'age-fresh' && /\d{2,4}/.test(s.text))
     expect(yearSeg).toBeDefined()
   })
 })
@@ -125,21 +119,21 @@ describe('formatDateForDisplay: per-component ageClass', () => {
     // The timestamp is 2024-03-15 14:30:45 local; NOW_MS is 2024-03-16 14:30:45.
     // Year matches (fresh), month matches (fresh), day differs by one (recent).
     const d = formatDateForDisplay(timestamp, 'iso', '', NOW_MS)
-    expect(find(d.parts.left, '2024')?.ageClass).toBe('age-fresh')
-    expect(find(d.parts.left, '03')?.ageClass).toBe('age-fresh')
-    expect(find(d.parts.left, '15')?.ageClass).toBe('age-recent')
+    expect(find(d.segments, '2024')?.ageClass).toBe('age-fresh')
+    expect(find(d.segments, '03')?.ageClass).toBe('age-fresh')
+    expect(find(d.segments, '15')?.ageClass).toBe('age-recent')
     // Day differs → time gets null (only colored when same date as now).
-    expect(find(d.parts.left, '14')?.ageClass).toBeNull()
-    expect(find(d.parts.left, '30')?.ageClass).toBeNull()
+    expect(find(d.segments, '14')?.ageClass).toBeNull()
+    expect(find(d.segments, '30')?.ageClass).toBeNull()
   })
 
   it('drops month/day/time coloring when the year differs from now', () => {
     const d = formatDateForDisplay(timestamp, 'iso', '', FAR_NOW_MS)
     // 2024 vs 2030 → 6 years back → age-old for year, null for month/day/time.
-    expect(find(d.parts.left, '2024')?.ageClass).toBe('age-old')
-    expect(find(d.parts.left, '03')?.ageClass).toBeNull()
-    expect(find(d.parts.left, '15')?.ageClass).toBeNull()
-    expect(find(d.parts.left, '14')?.ageClass).toBeNull()
+    expect(find(d.segments, '2024')?.ageClass).toBe('age-old')
+    expect(find(d.segments, '03')?.ageClass).toBeNull()
+    expect(find(d.segments, '15')?.ageClass).toBeNull()
+    expect(find(d.segments, '14')?.ageClass).toBeNull()
   })
 
   it('colors time when timestamp is the same date as now', () => {
@@ -148,13 +142,12 @@ describe('formatDateForDisplay: per-component ageClass', () => {
     // HH/mm/ss segments.
     const sameDayNowMs = new Date(2024, 2, 15, 16, 15, 0).getTime()
     const d = formatDateForDisplay(timestamp, 'iso', '', sameDayNowMs)
-    expect(find(d.parts.left, '14')?.ageClass).toBe('age-recent')
+    expect(find(d.segments, '14')?.ageClass).toBe('age-recent')
   })
 
   it('returns no segments for null/zero timestamps', () => {
     const d = formatDateForDisplay(null, 'iso', '', NOW_MS)
-    expect(d.parts.left).toEqual([])
-    expect(d.parts.right).toBeNull()
+    expect(d.segments).toEqual([])
   })
 })
 

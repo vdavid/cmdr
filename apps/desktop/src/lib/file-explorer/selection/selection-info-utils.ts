@@ -149,8 +149,7 @@ export function buildDateTooltip(
   const lines: string[] = []
   const line = (label: string, ts: number) => {
     const d = formatter(ts)
-    const right = d.parts.right === null ? '' : ` ${renderSegments(d.parts.right)}`
-    lines.push(`${label}: ${renderSegments(d.parts.left)}${right}`)
+    lines.push(`${label}: ${renderSegments(d.segments)}`)
   }
   // `!= null` because IPC payloads serialize `Option::None` as JSON `null`.
   if (e.createdAt != null) line('Created', e.createdAt)

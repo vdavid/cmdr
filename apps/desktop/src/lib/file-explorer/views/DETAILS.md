@@ -169,10 +169,10 @@ with no "visible set" to measure from.
 split into a fixed-width date half plus a time half so the times lined up across rows despite proportional digits. With
 `font-variant-numeric: tabular-nums` on `.col-date` every digit takes the same advance, and every token format (`YYYY`=4
 digits, the rest zero-padded to 2) emits a fixed character count, so all dates are the same width and align on their
-own. The contract: `formatDateForDisplay` (in `lib/settings/format-utils.ts`) returns a `FormattedDate` whose
-`parts.left` carries the ordered segment list (`parts.right` stays `null`); `computeFullListColumnWidths` measures the
-joined string once per row (tabular-aware, see the digit gotcha below); `FullList` walks the segments, wrapping any with
-a non-null `ageClass` in an age-tier span. Tooltips/MCP/status bar see the joined string via `FormattedDate.text`.
+own. The contract: `formatDateForDisplay` (in `lib/settings/format-utils.ts`) returns a `FormattedDate` whose `segments`
+is the ordered segment list; `computeFullListColumnWidths` measures the joined string once per row (tabular-aware, see
+the digit gotcha below); `FullList` walks the segments, wrapping any with a non-null `ageClass` in an age-tier span.
+Tooltips/MCP/status bar see the joined string via `FormattedDate.text`.
 
 **Decision**: Column-width measurers (canvas in `full-list-utils.ts`, pretext in `measure-column-widths.ts`) cache their
 measurer/context per text scale and rebuild on the **debounced** "settled" scale event from

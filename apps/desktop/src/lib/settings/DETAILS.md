@@ -89,9 +89,9 @@ typography; `applyDensity()` in `settings-applier.ts` multiplies row-height/icon
 Every site that shows a modified date in the UI flows through one entry point:
 
 - **`formatDateForDisplay(ts, format, customFormat, nowMs?)`** in `format-utils.ts`: pure. Returns a `FormattedDate`
-  with the joined `text` and structured `parts` (an ordered list of `DateSegment`s per half). Each segment carries a
-  `text` and an optional `ageClass` covering one of four per-component tiers (year, month, day, time). Handles all four
-  format modes: token-based (`iso`, `short`, `custom`, default) via `applyTokens`, and `system` via
+  with the joined `text` and an ordered `segments` list of `DateSegment`s. Each segment carries a `text` and an optional
+  `ageClass` covering one of four per-component tiers (year, month, day, time). Handles all four format modes:
+  token-based (`iso`, `short`, `custom`, default) via `applyTokens`, and `system` via
   `Intl.DateTimeFormat#formatToParts` (component type comes from `part.type`, not from string-parsing locale output).
 - Per-component coloring rules live in `age-tier-utils.ts`: `tierForYear` colors every year (current → `age-fresh`, last
   → `age-recent`, two back → `age-aging`, three or more back → `age-old`). `tierForMonth` only colors when the year
@@ -103,7 +103,7 @@ Every site that shows a modified date in the UI flows through one entry point:
   is the canonical entry point for the rest of the app.
 - **`<DateLabel modifiedAt={ts} />`** in `$lib/ui/DateLabel.svelte`: the render-side equivalent. Use it anywhere a
   modified date appears in the UI and you don't have special layout needs (status bar, dialogs, search results, etc.).
-  It walks `parts.left` and wraps each segment with a non-null `ageClass` in `<span class={ageClass}>`.
+  It walks `segments` and wraps each one with a non-null `ageClass` in `<span class={ageClass}>`.
 - `FullList.svelte` is the one consumer that opts out of `<DateLabel>` because it renders the segments straight into its
   own virtual-scroll grid cell. It uses the same `formattedDate(...)` data; do the same if you add another consumer with
   bespoke layout.

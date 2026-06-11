@@ -24,8 +24,8 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatDateTime: (t: number | undefined) => (t ? '2025-03-14 10:30' : ''),
   formattedDate: (t: number | undefined) =>
     t
-      ? { text: '2025-03-14 10:30', parts: { left: [{ text: '2025', ageClass: 'age-fresh' as const }], right: null } }
-      : { text: '', parts: { left: [], right: null } },
+      ? { text: '2025-03-14 10:30', segments: [{ text: '2025', ageClass: 'age-fresh' as const }] }
+      : { text: '', segments: [] },
   getSizeDisplayMode: () => 'smart',
   getFileSizeUnit: () => 'bytes',
   getFileSizeFormat: () => 'binary',

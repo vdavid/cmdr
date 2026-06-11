@@ -31,11 +31,8 @@
     {#if d.text === ''}
         <!-- Empty state: render nothing (matches the previous formatDateTime behavior). -->
     {:else}
-        {#each d.parts.left as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}>{seg.text}</span
-                >{:else}{seg.text}{/if}{/each}{#if d.parts.right !== null}
-            {#each d.parts.right as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}>{seg.text}</span
+        {#each d.segments as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}>{seg.text}</span
                 >{:else}{seg.text}{/if}{/each}
-        {/if}
     {/if}
 </span>
 

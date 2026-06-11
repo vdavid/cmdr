@@ -8,15 +8,13 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
     t
       ? {
           text: '2025-03-14 10:30',
-          parts: {
-            left: [
-              { text: '2025', ageClass: 'age-fresh' as const },
-              { text: '-03-14', ageClass: null },
-            ],
-            right: [{ text: '10:30', ageClass: null }],
-          },
+          segments: [
+            { text: '2025', ageClass: 'age-fresh' as const },
+            { text: '-03-14 ', ageClass: null },
+            { text: '10:30', ageClass: null },
+          ],
         }
-      : { text: '', parts: { left: [], right: null } },
+      : { text: '', segments: [] },
 }))
 
 describe('DateLabel a11y', () => {

@@ -36,10 +36,7 @@ function entry(overrides: Partial<FileEntry>): FileEntry {
 function stubDate(text: string) {
   return {
     text,
-    parts: {
-      left: [{ text, ageClass: null }],
-      right: null,
-    },
+    segments: [{ text, ageClass: null }],
   }
 }
 

@@ -1013,7 +1013,7 @@
                             {/if}
                         </span>
                         <span class="col-date">
-                            {#each date.parts.left as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}
+                            {#each date.segments as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}
                                         >{seg.text}</span
                                     >{:else}{seg.text}{/if}{/each}
                         </span>

@@ -268,8 +268,8 @@ export function getTypeToJumpResetDelay(): number {
 
 /**
  * The single reactive entry point for everything the UI shows about a date.
- * Returns the joined `text`, structured `parts` (with the year extracted for
- * coloring), and the `ageClass`. New date-touching components should call
+ * Returns the joined `text` plus the ordered `segments` (each carrying its own
+ * age-tier `ageClass` for coloring). New date-touching components should call
  * this rather than reaching for `Date#toLocaleString` or building their own
  * formatters. Keep date display consistent across the app.
  *
@@ -284,8 +284,8 @@ export function formattedDate(timestamp: number | null | undefined): FormattedDa
 /**
  * Shortcut for `formattedDate(ts).text`, the joined plain string. Use for
  * tooltips, MCP responses, clipboard copies, and anywhere a one-line label is
- * wanted. UI rendering should prefer the `<DateLabel>` component or destructure
- * `formattedDate(ts).parts` directly.
+ * wanted. UI rendering should prefer the `<DateLabel>` component or iterate
+ * `formattedDate(ts).segments` directly.
  */
 export function formatDateTime(timestamp: number | null | undefined): string {
   return formattedDate(timestamp).text
