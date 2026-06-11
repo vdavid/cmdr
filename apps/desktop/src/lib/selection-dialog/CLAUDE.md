@@ -2,119 +2,30 @@
 
 The "Select files…" / "Deselect files…" dialog. Lets the user select files in the focused pane by a wildcard, regex, or
 natural-language prompt (AI mode, cloud only). Second consumer of the shared `QueryDialog` primitive in
-[`lib/query-ui/`](../query-ui/CLAUDE.md) — Search is the first; Selection mirrors its shape.
+[`lib/query-ui/`](../query-ui/CLAUDE.md): Search is the first; Selection mirrors its shape. Backend (history store + AI
+translation) lives in [`src-tauri/src/selection/`](../../../src-tauri/src/selection/CLAUDE.md).
 
-Backend lives in [`src-tauri/src/selection/`](../../../src-tauri/src/selection/CLAUDE.md) (history store + AI
-translation). The shared dialog primitives live in [`lib/query-ui/`](../query-ui/CLAUDE.md).
+## Module map
 
-Dialog dimensions: `max-width: min(720px, 60vw)` (narrower than Search's `min(1080px, 80vw)` because Selection lists
-have no path column and shouldn't dominate the viewport). `max-height: 80vh`.
+- `SelectionDialog.svelte`: thin wrapper that builds the `QueryDialogConfig` and mounts `QueryDialog`. Owns the AI
+  translation IPC, the matcher invocation, the commit-on-Enter path, and the recent-selections write-back.
+- `selection-state.svelte.ts`: Selection's module-level `QueryFilterState` singleton + `clearSelectionState()` (the `⌘N`
+  reset). `selection-matching.ts`: pure `matchEntries` (glob/regex + size/date predicates). `folder-sampler.ts`: pure
+  AI-context sampler. `selection-history-state.svelte.ts`: recent-items factory + apply round-trip.
 
-## Files
+## Invariants and guardrails
 
-| File                                | Purpose                                                                                                                                                                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SelectionDialog.svelte`            | Thin Selection-specific wrapper. Builds the `QueryDialogConfig` and mounts `QueryDialog`. Owns the AI translation IPC, the matcher invocation, the commit-on-Enter path, and the recent-selections IPC write-back.              |
-| `selection-state.svelte.ts`         | Selection's module-level `QueryFilterState` singleton + `clearSelectionState()` (the `⌘N` reset). Mirrors `lib/search/search-state.svelte.ts` but thinner (no extras façade: Selection has no scope / index / Pattern chip).    |
-| `folder-sampler.ts`                 | Pure: `sampleFolderNames(names, cursorIndex, max=240)`. Returns first 200 + 20 around the cursor + last 20, deduped and capped. Used as AI context.                                                                             |
-| `folder-sampler.test.ts`            | Pins the bucket math, the cursor-band clamp at both ends, dedup, empty folder, and the custom cap.                                                                                                                              |
-| `selection-matching.ts`             | Pure: `matchEntries(accessors, total, query) → number[]`. Compiles the glob to a JS RegExp (anchored, mirrors the Rust `glob_to_regex` in `src-tauri/src/search/query.rs`), composes pattern + size + date predicates with AND. |
-| `selection-matching.test.ts`        | Glob / regex / case-sensitive / size / date / snapshot-pane accessor / empty pattern / bad regex / stress invariants (sorted, no dups, in-range).                                                                               |
-| `selection-history-state.svelte.ts` | Instantiates the recent-items factory for Selection (uses `getRecentSelections` and friends). Exports `applySelectionHistoryEntry` for restoring a recent entry into the dialog state.                                          |
-| `selection-history-state.test.ts`   | Pins the apply round-trip: mode, query, caseSensitive, size filter, date-filter clear, hand-typed buffer carry-through, AI-prompt-as-query persistence.                                                                         |
-| `SelectionDialog.svelte.test.ts`    | Title-per-mode, commit-on-Enter, R7 banner visibility, mid-dialog AI-provider fallback, state survival across close + reopen.                                                                                                   |
-| `SelectionDialog.a11y.test.ts`      | Tier-3 axe-core audit across Select / Deselect / AI-on / snapshot-pane variants.                                                                                                                                                |
-
-## Wiring
-
-```
-+page.svelte
-  ├─ showSelectionDialog: 'add' | 'remove' | null
-  ├─ selectionDialogSnapshot: { entries, cursorIndex, isSnapshotPane }
-  └─ <SelectionDialog mode entries cursorIndex isSnapshotPane onCommit onClose />
-        ├─ imports the module singleton `selectionQueryState` (its own instance, never Search's)
-        ├─ matchEntries(accessors, total, query) at runQuery time
-        ├─ translate_selection_query IPC (AI mode, cloud only)
-        └─ on commit: explorerRef.applyIndicesToFocusedPane(indices, mode)
-```
-
-## Match semantics
-
-The matcher runs against an `accessors.getNameFor(i)` callback. The wrapper passes `entry.name` for both regular panes
-and `search-results://` snapshot panes (on snapshot panes, `entry.name` IS the friendly full path — see
-[`lib/file-explorer/DETAILS.md`](../file-explorer/DETAILS.md) § "Search-results virtual volume"). The matcher itself
-doesn't care which kind it's running against.
-
-Glob translation matches the Rust side: `*` → `.*`, `?` → `.`, regex metacharacters escaped, anchored with `^…$`. The JS
-regex engine is what does the matching (Selection has no Rust IPC for the match itself — it's microseconds in JS against
-a few hundred entries). Bad regex (`SyntaxError`) → `[]`.
-
-**Empty pattern WITH an active filter → match-all on the name; empty pattern AND no filters → `[]`.** Filter-only
-queries are valid: `buildMatchQuery` substitutes a match-all glob `*` when the bar is empty but `hasActiveFilter()` is
-true, so `≥ 1 MB` with no glob selects every file ≥ 1 MB. `hasActiveFilter()` counts size ≠ any, date ≠ any, OR
-`typeFilter` ≠ both. Gotcha: don't reintroduce an empty-pattern early-return in `buildMatchQuery` that ignores the
-filters, or the size/date/type controls go decorative. The matcher's `compilePattern` still returns `null` on an empty
-pattern, so the wrapper, not the matcher, owns the substitution.
-
-**Type filter + folder sizes.** The `Both | Files | Folders` toggle drives the core `typeFilter`; the matcher filters on
-`getIsDirFor` when it's not `both`. `getSizeFor` returns `entry.size` for files and `entry.recursiveSize` for
-directories (index-derived; present in the live `getFileRange` snapshot because listing entries are enriched at
-cache-write time). Gotcha: a folder's `recursiveSize` is `undefined` until the index computes it, so an un-indexed
-folder can't match a size filter (honest, not a bug). Both accessor sites (`runQuery` preview AND `commitMatches`) build
-through the single `buildAccessors()` helper, so preview and commit can't disagree on size/type semantics. Don't
-re-inline a second accessor literal.
-
-## Folder sampling
-
-The AI translator needs a representative folder sample. We send up to 240 names per call:
-
-- 0–200 entries: all of them.
-- 201+ entries: first 200, plus 20 around the cursor (cursor − 10 .. cursor + 9, clamped), plus the last 20.
-
-Deduped, deterministic (no `Math.random`). The sample is snapshotted at dialog open and NOT refreshed on mid-dialog
-focused-pane change (per plan G15).
-
-## Apply-on-commit
-
-The matcher runs at COMMIT time (Enter / button click), not at preview time. The preview list above the footer shows the
-matching rows live as the user types; pressing Enter re-runs the matcher one more time against the open-time snapshot
-and hands the matched indices to `applyIndicesToFocusedPane(indices, mode)`. We do NOT mutate the focused pane's
-selection while the user previews — matches Total Commander's "+" / "-" behaviour.
-
-## Mid-dialog AI-provider fallback
-
-Selection's AI is cloud-only (per the plan: small local models can't reliably handle a 200+-name sample plus the
-structured prompt). When the user has the dialog open in AI mode and flips the provider off in another window, the
-wrapper's `$effect`:
-
-1. Reads the current AI prompt from the bar.
-2. Writes it to `handTyped.filename`.
-3. Calls `switchMode('filename')`, which swaps the bar's value into the filename buffer's restored value (the prompt we
-   just put there).
-
-The user keeps their words and can refine or delete them. QueryDialog's own fallback effect
-(`!config.aiEnabled && mode === 'ai'`) fires too but is a no-op by then — mode is already `'filename'`.
-
-## Keyboard contract
-
-The Selection dialog inherits the shared QueryDialog keyboard contract (⌘N reset, ⌘H popover, ⌘1/⌘2/⌘3 mode switch,
-⌥A/F/R mode chip shortcuts, ⌥⏎ primary action, bare Enter ownership swap, IME guard, etc.).
-
-The bare `+` / `-` keys that open the dialog from a file pane are NOT a QueryDialog concern — they live on the focused
-pane via `FilePane.handleSelectionDialogKey`, which delegates to the pure classifier in
-[`pane/selection-dialog-keys.ts`](../file-explorer/pane/selection-dialog-keys.ts). The filter is
-`!metaKey && !altKey && !ctrlKey` (shiftKey is intentionally NOT filtered — on US QWERTY, Shift+= IS how the user
-produces `event.key === '+'`).
-
-## Snapshot panes
-
-For `search-results://` panes, the matcher runs against `entry.name`, which on snapshot panes IS the displayed friendly
-path (home folder shown as `~`, mid-truncated for display), NOT the raw `entry.path`. The dialog renders a small banner
-above the chip strip ("Matching what is shown in the list (the full path).") so the user knows what the matcher sees.
-The R7 banner is driven by `config.noticeBanner` (the same prop Search uses for its own banners).
-
-`applyIndices` on a snapshot pane operates on indices into the snapshot's `entries[]` exactly as for regular panes — no
-special-casing at the pane API layer.
+- **Empty pattern with an active filter → match-all on the name; empty pattern and no filters → `[]`.** Filter-only
+  queries are valid: `buildMatchQuery` substitutes a match-all glob `*` when the bar is empty but `hasActiveFilter()` is
+  true (size ≠ any, date ≠ any, OR `typeFilter` ≠ both), so `≥ 1 MB` with no glob selects every file ≥ 1 MB.
+- **Don't reintroduce an empty-pattern early-return in `buildMatchQuery` that ignores the filters,** or the size / date
+  / type controls go decorative. The matcher's `compilePattern` still returns `null` on an empty pattern, so the
+  wrapper, not the matcher, owns the substitution.
+- **Type-filter and folder-size accessors build through the single `buildAccessors()` helper.** Both accessor sites
+  (`runQuery` preview AND `commitMatches`) use it, so preview and commit can't disagree on size/type semantics. Don't
+  re-inline a second accessor literal. (`getSizeFor` returns `entry.size` for files and `entry.recursiveSize` for
+  directories; a folder's `recursiveSize` is `undefined` until the index computes it, so an un-indexed folder can't
+  match a size filter, honest, not a bug.)
 
 ## Gotchas
 
@@ -128,34 +39,7 @@ special-casing at the pane API layer.
 - **The synthetic `..` parent entry at snapshot index 0 is dropped from matches.** On regular panes,
   `FilePane.getEntriesSnapshot` prepends a synthetic entry named `..` so indices align with the pane's selection state.
   A pattern like `*` matches it, but the result count and the rows shown must drop it (the commit path's
-  `applyIndices(hasParent=true)` already skips index 0 — the dialog's preview has to match). The wrapper's
+  `applyIndices(hasParent=true)` already skips index 0, the dialog's preview has to match). The wrapper's
   `dropParentIndex` helper handles this. Pinned by the "drops the synthetic `..` parent" test.
 
-## Decisions
-
-- **State is a module singleton; persistence is GLOBAL, not per-folder.** `selectionQueryState`
-  (`selection-state.svelte.ts`) survives unmount, so close + reopen restores mode, term, and filters, re-running them
-  against the new folder's snapshot (matches Search). `⌘N` (→ `clearSelectionState`) is the only reset. Don't move it
-  back to a per-mount `const` or wipe it on unmount: that's the bug the singleton fixes.
-- **Selection runs the matcher in JS, not via a Rust IPC.** The matcher iterates hundreds of entries, not millions; the
-  JS regex engine is already there; an IPC would add network-round-trip latency for zero benefit.
-- **AI is cloud-only.** Small local models (4K–8K context) can't reliably fit a 200+-name sample plus the structured
-  prompt and a parseable response. When `ai.provider !== 'cloud'`, the AI chip is hidden.
-- **Apply on commit, not live during preview.** Live-apply would mutate the focused pane's selection as the user typed;
-  undoing on Esc would be its own engineering problem. Apply on commit is simple, predictable, and matches Total
-  Commander's behaviour.
-- **Recent-selection entries are added on commit, not on auto-apply.** Same gate as Search's "Open in pane" rule:
-  history stays signal-rich (results worth acting on) instead of keystroke-noisy.
-
-## Dependencies
-
-- `$lib/query-ui/QueryDialog.svelte` — the shared orchestrator the wrapper mounts.
-- `$lib/query-ui/query-filter-state.svelte` — the cross-consumer state factory. Selection's instance is the module
-  singleton in `selection-state.svelte.ts`, not a per-mount `const`.
-- `$lib/query-ui/apply-ai-filters` — the shared `applySizeFromAi` / `applyDateFromAi` filter-write helpers (Search uses
-  the same ones).
-- `$lib/query-ui/recent-items/recent-items-state.svelte` — the recent-items factory.
-- `$lib/tauri-commands` — `translateSelectionQuery`, `getRecentSelections`, `addRecentSelection`,
-  `removeRecentSelection`.
-- `$lib/file-explorer/types` — `FileEntry`, the pane snapshot shape.
-- `$lib/settings` — `getSetting('ai.provider')`, `onSpecificSettingChange`.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

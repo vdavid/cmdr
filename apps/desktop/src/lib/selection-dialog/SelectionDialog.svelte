@@ -149,7 +149,7 @@
         if (applySizeFromAi(selectionQueryState, result.sizeMin, result.sizeMax)) changed.add('size')
         if (applyDateFromAi(selectionQueryState, result.modifiedAfter, result.modifiedBefore))
             changed.add('date')
-        // Type is the deliberate exception (M6): we passed the current type in as context, so we
+        // Type is the deliberate exception: we passed the current type in as context, so we
         // DON'T reset it first. The AI either returns a type (apply it) or stays silent
         // (`isDirectory == null`), in which case the user's current Both/Files/Folders choice
         // stands. See `applyTypeFromAi` and `apply-ai-filters.ts` for the why.
@@ -163,7 +163,7 @@
     /**
      * Whether any non-pattern filter is active. When it is, a filter-only query
      * (empty name bar) is still meaningful and runs as match-all on the name. Extend
-     * this predicate as new filters land (the M4 type filter slots in here) so
+     * this predicate as new filters land (the type filter slots in here) so
      * `buildMatchQuery` stays the single source of truth for "is there anything to
      * run?".
      */

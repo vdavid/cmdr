@@ -423,7 +423,7 @@ describe('per-mode buffer', () => {
     clearSearchState()
     setMode('filename')
     setQueryFromUserInput('*.pdf')
-    // Target (regex) buffer is empty → the outgoing term carries across (M5 carry-over).
+    // Target (regex) buffer is empty → the outgoing term carries across.
     switchMode('regex')
     expect(getMode()).toBe('regex')
     expect(getQuery()).toBe('*.pdf')
@@ -448,7 +448,7 @@ describe('per-mode buffer', () => {
     expect(getQuery()).toBe('*.pdf') // Glob → filename input.
 
     // Regex's buffer is empty and the AI pattern is a glob (no regex probe), so the outgoing
-    // filename term carries across rather than vanishing (M5 carry-over).
+    // filename term carries across rather than vanishing.
     switchMode('regex')
     expect(getQuery()).toBe('*.pdf')
   })

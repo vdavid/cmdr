@@ -665,7 +665,7 @@ mod tests {
         // The type filter is an additive `#[serde(default)]` field: a new value serializes
         // and deserializes cleanly, AND an old file missing the key still loads (as `None`),
         // all on schema v1. This pins "no schema bump needed".
-        assert_eq!(CURRENT_SCHEMA_VERSION, 1, "M4's type filter must NOT bump the schema");
+        assert_eq!(CURRENT_SCHEMA_VERSION, 1, "the type filter must NOT bump the schema");
 
         let mut e = entry(HistoryMode::Filename, "*.png");
         e.filters.is_directory = Some(true);

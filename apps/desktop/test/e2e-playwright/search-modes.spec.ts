@@ -31,7 +31,7 @@ import {
 
 test.describe('Search dialog: mode shortcuts', () => {
   // Per-mode hand-typed buffers (`handTyped.ai` / `handTyped.filename` / `handTyped.regex`):
-  // switching modes restores the target mode's buffer. Two rules combine (M5): a NON-empty
+  // switching modes restores the target mode's buffer. Two rules combine: a NON-empty
   // target buffer is preserved (it's the user's own prior text for that mode), and an EMPTY
   // target buffer is seeded with the outgoing term so the user's words follow them across the
   // switch instead of vanishing. This pins both, plus the round-trip ("buffer for mode X
@@ -73,7 +73,7 @@ test.describe('Search dialog: mode shortcuts', () => {
       expect(await getSearchInputValue(tauriPage)).toBe('ai-prompt-marker')
 
       // ⌘2 → filename. The filename buffer is empty, so the outgoing term carries
-      // over (M5: switching to an empty mode seeds it with the current text rather
+      // over (switching to an empty mode seeds it with the current text rather
       // than losing the user's words).
       await pressMetaDigit(tauriPage, 2)
       expect(await pollActiveMode(tauriPage, 'filename')).toBe(true)
@@ -105,7 +105,7 @@ test.describe('Search dialog: mode shortcuts', () => {
       await setSearchInputValue(tauriPage, 'filename-marker')
       expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
 
-      // ⌘2 → regex. Empty regex buffer, so `filename-marker` carries over (M5).
+      // ⌘2 → regex. Empty regex buffer, so `filename-marker` carries over.
       await pressMetaDigit(tauriPage, 2)
       expect(await pollActiveMode(tauriPage, 'regex')).toBe(true)
       expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')

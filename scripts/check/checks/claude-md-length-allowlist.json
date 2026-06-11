@@ -52,8 +52,6 @@
     "apps/desktop/src/lib/indexing/CLAUDE.md": 1535,
     "apps/desktop/src/lib/licensing/CLAUDE.md": 1063,
     "apps/desktop/src/lib/logging/CLAUDE.md": 707,
-    "apps/desktop/src/lib/query-ui/filter-chips/CLAUDE.md": 1586,
-    "apps/desktop/src/lib/selection-dialog/CLAUDE.md": 1306,
     "apps/desktop/src/lib/settings/components/CLAUDE.md": 1103,
     "apps/desktop/src/lib/tauri-commands/CLAUDE.md": 889,
     "apps/desktop/src/lib/ui/CLAUDE.md": 654,

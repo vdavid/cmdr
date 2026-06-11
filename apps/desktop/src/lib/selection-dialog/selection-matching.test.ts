@@ -101,7 +101,7 @@ describe('matchEntries: size predicate', () => {
   })
 
   it('match-all `*` + size predicate selects only files over the bound (filter-only contract)', () => {
-    // The contract M2's filter-only fix relies on: an empty name bar becomes a
+    // The filter-only contract: an empty name bar becomes a
     // match-all glob `*`, and the size predicate alone picks the matching files.
     // A folder snapshot of a 2 MB file + small files + a dir (null size) returns
     // exactly the 2 MB file's index.

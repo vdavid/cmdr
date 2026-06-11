@@ -218,7 +218,7 @@ losing the user's words is worse than handing them text they may need to tweak.
 **Precedence on an empty target buffer** (reconciling the carry-over with the AI-pattern probe):
 
 1. `aiPatternProbe(target)` first. It returns the AI's structured, kind-correct pattern (filename gets the glob, regex
-   gets the regex) and is the post-AI editing handoff (M6's "tweak what the agent did" loop depends on it). The raw
+   gets the regex) and is the post-AI editing handoff (the "tweak what the agent did" loop depends on it). The raw
    carry-over must NOT clobber it.
 2. The outgoing term second, as the fallback when there's no probed pattern.
 

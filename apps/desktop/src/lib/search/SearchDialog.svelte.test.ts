@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import { writable } from 'svelte/store'
 import SearchDialog from './SearchDialog.svelte'
-import type { TranslateResult } from '$lib/ipc/bindings'
+import type { SearchResultEntry, TranslateResult } from '$lib/ipc/bindings'
 import {
   clearSearchState,
   getQuery,
@@ -30,6 +30,7 @@ import {
   getLastAiPatternKind,
   getLastAiLabel,
   getSizeFilter,
+  searchQueryState,
 } from './search-state.svelte'
 
 let aiProvider: 'off' | 'local' | 'cloud' = 'off'
@@ -39,7 +40,10 @@ const autoApplyListeners = new Set<(id: string, value: boolean) => void>()
 // vi.mock is hoisted above all top-level `const`s; use vi.hoisted for shared mock instances.
 const { translateSearchQueryMock, searchFilesMock, addRecentSearchMock } = vi.hoisted(() => ({
   translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
-  searchFilesMock: vi.fn(() => Promise.resolve({ entries: [], totalCount: 0 })),
+  searchFilesMock: vi.fn(
+    (): Promise<{ entries: SearchResultEntry[]; totalCount: number }> =>
+      Promise.resolve({ entries: [], totalCount: 0 }),
+  ),
   addRecentSearchMock: vi.fn(() => Promise.resolve()),
 }))
 
@@ -278,6 +282,68 @@ describe('SearchDialog reopen re-runs so results show', () => {
     second.cleanup()
   })
 
+  it('reopening in AI mode renders the persisted results without re-calling the cloud translate', async () => {
+    // N2 no-recall guard: pins QueryDialog's `getMode() !== 'ai'` reopen gate. A restored
+    // AI-mode session (prior run present, mode 'ai') must render its persisted result rows on a
+    // fresh mount WITHOUT a second cloud translate. This is cheap insurance against a future
+    // loosening of that gate (translate is a paid round-trip; auto-recalling it on every reopen
+    // would burn the user's quota silently).
+    aiProvider = 'cloud'
+    translateSearchQueryMock.mockResolvedValueOnce({
+      display: { namePattern: '*.png', patternType: 'glob' },
+      query: {},
+      caveat: null,
+    } as unknown as TranslateResult)
+    searchFilesMock.mockResolvedValueOnce({
+      entries: [
+        {
+          name: 'a.png',
+          path: '/Users/test/a.png',
+          parentPath: '/Users/test',
+          isDirectory: false,
+          size: 10,
+          modifiedAt: 0,
+          iconId: 'file',
+        },
+        {
+          name: 'b.png',
+          path: '/Users/test/b.png',
+          parentPath: '/Users/test',
+          isDirectory: false,
+          size: 20,
+          modifiedAt: 0,
+          iconId: 'file',
+        },
+      ] satisfies SearchResultEntry[],
+      totalCount: 2,
+    })
+
+    // First open: run an AI search that yields two persisted result rows.
+    const first = await mountDialog()
+    setMode('ai')
+    setQuery('all screenshots')
+    dispatchKey(first.overlay, 'Enter')
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+    expect(translateSearchQueryMock).toHaveBeenCalledTimes(1)
+    expect(first.overlay.querySelectorAll('.result-row').length).toBe(2)
+
+    // Reopen. The gate must NOT re-call translate; persisted rows render from surviving state.
+    first.cleanup()
+    translateSearchQueryMock.mockClear()
+    searchFilesMock.mockClear()
+    const second = await mountDialog()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+    expect(getMode()).toBe('ai')
+    expect(translateSearchQueryMock).not.toHaveBeenCalled()
+    expect(second.overlay.querySelectorAll('.result-row').length).toBe(2)
+    second.cleanup()
+  })
+
   it('a first-ever open (no prior run) shows the empty state and does not auto-run', async () => {
     const { overlay, cleanup } = await mountDialog()
     await tick()
@@ -353,7 +419,7 @@ describe('SearchDialog mode shortcuts (AI on)', () => {
   it("switching mode swaps the bar to the target mode's hand-typed buffer (carrying into an empty target)", async () => {
     // Each mode owns its own input buffer. Switching from AI to filename restores filename's
     // last hand-typed value; when that buffer is empty, the outgoing term carries across so
-    // the user's words don't vanish (M5 carry-over). The AI prompt stays available via
+    // the user's words don't vanish (term carry-over). The AI prompt stays available via
     // `getLastAiPrompt()` for the transparency strip regardless.
     const { overlay, cleanup } = await mountDialog()
     setMode('ai')
@@ -514,6 +580,54 @@ describe('SearchDialog AI transparency strip', () => {
     expect(getLastAiPatternKind()).toBe('glob')
     expect(getLastAiLabel()).toBe('Big screenshots')
     expect(getSizeFilter()).toBe('gte')
+
+    cleanup()
+  })
+
+  it('a second AI run does not let a leftover size filter survive, but keeps a type the first run set', async () => {
+    // Regression: `applyAiSharedFilters` must reset size + date to `any` before applying the
+    // AI's bounds, the way Selection does. `applySizeFromAi` / `applyDateFromAi` no-op when the
+    // AI returns no bound, so without the reset a first run's size filter (≥ 5 MB) would silently
+    // survive a second run that returns no size. Type is the deliberate asymmetry: when the AI
+    // omits type, the user's current choice (set here by run #1) must NOT be reset.
+    // First run: ≥ 5 MB size + folders-only type.
+    translateSearchQueryMock.mockResolvedValueOnce({
+      display: {
+        namePattern: '*.pdf',
+        patternType: 'glob',
+        minSize: 5 * 1024 * 1024,
+        maxSize: null,
+        isDirectory: true,
+      },
+      query: {},
+      caveat: null,
+    } as unknown as TranslateResult)
+    // Second run: a different pattern, NO size, NO type (the AI stayed silent on both).
+    translateSearchQueryMock.mockResolvedValueOnce({
+      display: { namePattern: '*.txt', patternType: 'glob', minSize: null, maxSize: null, isDirectory: null },
+      query: {},
+      caveat: null,
+    } as unknown as TranslateResult)
+
+    const { overlay, cleanup } = await mountDialog()
+    setMode('ai')
+
+    // First AI run.
+    setQuery('big pdf folders')
+    dispatchKey(overlay, 'Enter')
+    await flushAi()
+    expect(getSizeFilter()).toBe('gte')
+    expect(searchQueryState.getTypeFilter()).toBe('folder')
+
+    // Second AI run: omits size and type.
+    setQuery('text files')
+    dispatchKey(overlay, 'Enter')
+    await flushAi()
+
+    // Size must be back to `any` (the first run's ≥ 5 MB must NOT leak through).
+    expect(getSizeFilter()).toBe('any')
+    // Type must be untouched: the AI omitting type keeps the user's (run #1's) folder choice.
+    expect(searchQueryState.getTypeFilter()).toBe('folder')
 
     cleanup()
   })
@@ -750,7 +864,7 @@ describe('SearchDialog auto-apply', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    // Second arg is the current type filter as context (both → null at the start). (M6)
+    // Second arg is the current type filter as context (both → null at the start).
     expect(translateSearchQueryMock).toHaveBeenCalledWith('large screenshots', null)
     cleanup()
   })
@@ -829,7 +943,7 @@ describe('SearchDialog path-pill navigation shortcuts', () => {
         },
       ],
       totalCount: 1,
-    } as Awaited<ReturnType<typeof searchFilesMock>>)
+    })
 
     const navigated: string[] = []
     const target = document.createElement('div')

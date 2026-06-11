@@ -274,7 +274,7 @@ describe('SelectionDialog', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }))
     await tick()
     // Switch to regex (⌘3 with AI on: filename=2, regex=3). The regex buffer is empty, so the
-    // outgoing term carries across rather than vanishing (M5 term carry-over).
+    // outgoing term carries across rather than vanishing (term carry-over).
     dispatchKey(overlay, '3', true)
     await tick()
     expect(input.value).toBe('*.svelte')
@@ -654,7 +654,7 @@ describe('SelectionDialog', () => {
   })
 
   it('matches on a size filter alone when the name bar is empty', async () => {
-    // The headline M2 fix: a `≥ 1 MB` size filter with an EMPTY name pattern must
+    // The headline filter-only fix: a `≥ 1 MB` size filter with an EMPTY name pattern must
     // select every file ≥ 1 MB. Before the fix, `buildMatchQuery` returned null on
     // an empty pattern and the matcher short-circuited to [], so filter-only queries
     // silently selected nothing.

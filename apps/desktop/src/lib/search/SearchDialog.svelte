@@ -202,7 +202,7 @@
      * (quota, key rejected, timeout, empty answer, …) instead of failing silently.
      */
     async function translateAi(prompt: string): Promise<AiTranslateResult | null> {
-        // Hand the AI the user's current type as context so it can keep or change it (M6).
+        // Hand the AI the user's current type as context so it can keep or change it.
         const currentType = typeFilterToIsDirectory(searchQueryState.getTypeFilter())
         const result = await translateSearchQuery(prompt, currentType)
         return {
@@ -248,11 +248,19 @@
 
     /** Writes the shared Size / Modified / Type filters via the cross-consumer helpers. */
     function applyAiSharedFilters(display: TranslateResult['display'], changed: SvelteSet<string>): void {
+        // Reset size + date to `any` before applying the AI's bounds. `applySizeFromAi` /
+        // `applyDateFromAi` no-op when the AI returns no bound, so without this a previous run's
+        // size/date filter would silently leak into a run that didn't return one. Selection does
+        // the same; the contract lives in `apply-ai-filters.ts`. The user's own manual filter edit
+        // between runs is wiped too, which is the right call (running AI again means "give me the
+        // AI's filter set", not a merge with a stale manual tweak).
+        searchQueryState.setSizeFilter('any')
+        searchQueryState.setDateFilter('any')
         if (applySizeFromAi(searchQueryState, display.minSize ?? null, display.maxSize ?? null))
             changed.add('size')
         if (applyDateFromAi(searchQueryState, display.modifiedAfter ?? null, display.modifiedBefore ?? null))
             changed.add('date')
-        // Type (M6): leave-alone-if-null. The AI got the current type as context in `translateAi`;
+        // Type: leave-alone-if-null. The AI got the current type as context in `translateAi`;
         // it returns `isDirectory` only when it wants to change it, so a null leaves the user's
         // choice intact. Deliberately NOT reset-first like size/date (see `apply-ai-filters.ts`).
         if (applyTypeFromAi(searchQueryState, display.isDirectory ?? null)) changed.add('type')

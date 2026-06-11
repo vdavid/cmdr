@@ -310,7 +310,7 @@
      for the rationale. -->
 <div class="filter-chip-strip" role="toolbar" aria-label="Search filters">
     <!-- The flash wrapper mirrors the chips' `is-highlighted` treatment for the AI handoff:
-         the AI may set the type (M6), so we briefly tint the toggle when it does. ToggleGroup
+         the AI may set the type, so we briefly tint the toggle when it does. ToggleGroup
          has no `highlighted` prop, so the wrapper carries the flash. -->
     <span class="type-toggle-flash" class:is-highlighted={highlightedFields.has('type')}>
         <ToggleGroup
