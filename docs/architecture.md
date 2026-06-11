@@ -278,5 +278,7 @@ get immediate auto-merging PRs regardless of schedule.
 - [remark42.md](tooling/remark42.md): Self-hosted comments engine for the website (Docker on the Hetzner VPS)
 - [listmonk.md](tooling/listmonk.md): Mailing-list manager: the Cmdr beta-tester double-opt-in list and the
   `/beta-signup` wiring
+- [discord.md](tooling/discord.md): Community Discord: read-only bot access (tested cURLs) for summarizing channel
+  activity
 
 ONLY do read-only operations with these services unless specifically asked to make changes.
