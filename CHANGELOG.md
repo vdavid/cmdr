@@ -5,6 +5,71 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-06-11
+
+This release sharpens the Search and Select dialogs: a Files or Folders filter, folders matched by size, an AI strip
+that shows what the agent did, and your last query waiting for you on reopen. File-list dates and sizes now line up into
+clean columns, and you can install Cmdr from Homebrew.
+
+### Added
+
+- Add a Files or Folders filter to Search and Select, matching folders by their recursive size
+  ([600b23ca](https://github.com/vdavid/cmdr/commit/600b23ca))
+- Add an AI strip to Search and Select that shows the pattern and filters the agent set, with a spinner while it
+  translates ([2328f469](https://github.com/vdavid/cmdr/commit/2328f469))
+- Install and upgrade Cmdr from Homebrew with `brew tap vdavid/tap && brew install --cask cmdr`
+  ([65729ee8](https://github.com/vdavid/cmdr/commit/65729ee8),
+  [6490cb16](https://github.com/vdavid/cmdr/commit/6490cb16))
+- Add a Discord community link to the About window and website footer
+  ([f65050b5](https://github.com/vdavid/cmdr/commit/f65050b5))
+
+### Changed
+
+- Search and Select now remember your mode, text, and filters, and show your last results the moment you reopen
+  ([a5c60359](https://github.com/vdavid/cmdr/commit/a5c60359),
+  [df819509](https://github.com/vdavid/cmdr/commit/df819509))
+- Keep your typed text when switching filename, regex, and AI modes, and land the cursor on the first file after a
+  Select ([8c90428e](https://github.com/vdavid/cmdr/commit/8c90428e))
+- Line up the Modified and Size columns with tabular figures, and default to ISO 8601 dates
+  ([b84d6877](https://github.com/vdavid/cmdr/commit/b84d6877))
+- Enlarge the Search and Select dialog text a step and clear it to AA contrast
+  ([9effb0e5](https://github.com/vdavid/cmdr/commit/9effb0e5))
+
+### Fixed
+
+- Fix Select doing nothing when you set only a size or date filter and leave the name empty
+  ([89204c28](https://github.com/vdavid/cmdr/commit/89204c28))
+- Fix the size filter ignoring a `0` bound, and add a one-click `=` comparator
+  ([0071a009](https://github.com/vdavid/cmdr/commit/0071a009))
+- Fix an AI search keeping a stale size or date filter from the previous run
+  ([69ca52e5](https://github.com/vdavid/cmdr/commit/69ca52e5))
+- Fix the onboarding AI step's provider list overflowing the options below it, and two stale provider links
+  ([44c905c1](https://github.com/vdavid/cmdr/commit/44c905c1))
+- Fix commercial purchases not issuing a license ([5e053ee6](https://github.com/vdavid/cmdr/commit/5e053ee6))
+
+### Non-app
+
+- Dashboard download count now means new installs, with a new-vs-update chart
+  ([7ff2b6f3](https://github.com/vdavid/cmdr/commit/7ff2b6f3))
+- Add a feedback and error-report section to the private dashboard
+  ([e449b007](https://github.com/vdavid/cmdr/commit/e449b007))
+- Add a `/feedback-and-error-digest-from-app` command for agents
+  ([77b49d09](https://github.com/vdavid/cmdr/commit/77b49d09))
+- Cap each dashboard data source at 20s so one hung upstream can't 524 the page
+  ([8b2909a0](https://github.com/vdavid/cmdr/commit/8b2909a0))
+- Capture real app screenshots and add a tracked `brand/` asset home
+  ([1b38da54](https://github.com/vdavid/cmdr/commit/1b38da54),
+  [8fa73633](https://github.com/vdavid/cmdr/commit/8fa73633))
+- Promote the Search and Select chip and popover primitives to `lib/ui`
+  ([14abab0d](https://github.com/vdavid/cmdr/commit/14abab0d))
+- Quiet noisy dev-run logs ([812e0bb5](https://github.com/vdavid/cmdr/commit/812e0bb5))
+- Fail the website build if a sandbox Paddle token would ship to production
+  ([7d227942](https://github.com/vdavid/cmdr/commit/7d227942))
+- Show a Discord invite modal after a website download ([46829c22](https://github.com/vdavid/cmdr/commit/46829c22))
+- Use david@getcmdr.com as the public contact address ([a667f7ce](https://github.com/vdavid/cmdr/commit/a667f7ce))
+- Clone `target/` to skip the full Rust rebuild on a fresh worktree
+  ([a2cbfce2](https://github.com/vdavid/cmdr/commit/a2cbfce2))
+
 ## [0.25.0] - 2026-06-11
 
 Cmdr is now an open beta: stability badges, a Send feedback channel, and anonymous usage stats you can opt out of. SMB
