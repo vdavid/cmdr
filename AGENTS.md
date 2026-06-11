@@ -248,15 +248,16 @@ shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shi
 
 ## Worktrees
 
-- Use worktrees by default. Don't work on `main`.
+- Use worktrees by default. Don't work on `main`. Started editing on `main` by mistake? Move the changes to a worktree
+  (`~/.claude/docs/worktree-move-changes.md`) rather than continuing.
 - When working with parallel subagents, create a hub worktree for yourself, and let them work on their own
-  branches+subtrees, then reconcile them.
+  branches+worktrees, then reconcile them.
 - Create them at `.claude/worktrees/`.
 - Always branch off from _local_ `main` and rebase and FF _local_ main.
 - Stuff needed in a new worktree:
   - Do `cp -c ~/projects-git/vdavid/cmdr/target <worktree>/target`. Instant+free on APFS. Deps are fingerprinted on
     version + features + rustc + profile, so only the workspace members rebuild. Win.
-  - CodeGraph: Do this, takes about two secs:
+  - CodeGraph: Do this (from `~/.claude/docs/codegraph-worktree.md`), takes about two secs:
 
     ```bash
     WORKTREE=.claude/worktrees/<slug>
@@ -275,7 +276,6 @@ shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shi
 
 - Use `pnpm dev --worktree <slug>` on worktrees. Such sessions never collide. See
   [docs/tooling/instance-isolation.md](docs/tooling/instance-isolation.md) for the full breakdown.
-  - This mirrors the `.codegraph/` clone in `~/.claude/docs/codegraph-worktree.md`.
 - When FF-ing main, always delete the worktree+branch.
 
 ## Workflow
