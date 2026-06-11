@@ -90,8 +90,9 @@ crons = ["0 */3 * * *"]
 PRODUCT_NAME = "Cmdr"
 SUPPORT_EMAIL = "veszelovszki@gmail.com"
 # "sandbox" or "live": controls which Paddle API + key to use for /validate and webhooks.
-# Override with `wrangler secret put PADDLE_ENVIRONMENT` → "live" when going live.
-PADDLE_ENVIRONMENT = "sandbox"
+# This var is the switch; keep it here (version-controlled) rather than as a same-named secret,
+# which a later `wrangler deploy` would silently clobber back to this value.
+PADDLE_ENVIRONMENT = "live"
 
 # Listmonk beta-tester signup (POST /beta-signup). Non-secret config; only the API token is a
 # secret (set via `wrangler secret put LISTMONK_API_TOKEN`). The list id MUST be a TOML integer:
