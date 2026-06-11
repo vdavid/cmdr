@@ -119,6 +119,11 @@ through the bus would pollute the `CommandId` union with dev-only ids for zero g
 
 ## Gotchas
 
+- **`+layout.svelte` gates the children render on `settingsReady`.** The page subtree mounts only after
+  `initReactiveSettings()` + `initSettingsApplier()` resolve in `onMount`. File-explorer components read `getSetting()`
+  synchronously at mount; without the gate they mount before the store loads and get registry defaults (a logged
+  pre-init read, and a default that can be pushed back to the backend as if chosen — see `settings-store.ts` §
+  `getSetting`). Don't remove the `{#if settingsReady}` wrapper, and don't move setting-reading work ahead of the flag.
 - **`+page.svelte` is >900 lines, flagged by `file-length`.** Don't pile new state into the page — extract another
   `setupXxxListeners(ctx)` module like `mcp-listeners.ts`. The dispatch core (`command-dispatch.ts`) is small (~170
   lines): new commands get a handler in the relevant `command-handlers/` family module, NOT a branch in the core. If a

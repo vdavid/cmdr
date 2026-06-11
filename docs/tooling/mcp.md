@@ -75,6 +75,25 @@ connects independently and works regardless of the session's MCP state.
 ./scripts/mcp-call.sh --list-tools
 ```
 
+## Authentication (token-gated tools)
+
+Most tools (resource reads, nav, search, dialog-prompting ops) need no auth. A bearer token is required ONLY for the
+calls that bypass the user's confirmation dialog: `set_setting`, `delete` / `move` / `copy` with `autoConfirm: true`,
+and `dialog` with `action: "confirm"`. Calling one of these without the token logs
+`MCP: rejected request with missing/invalid bearer token` and returns a JSON-RPC error pointing at the token file. To
+get it right on the first try:
+
+- **`./scripts/mcp-call.sh` handles the token for you.** It reads `<data_dir>/mcp.token` (or `CMDR_MCP_TOKEN`) and sends
+  `Authorization: Bearer <token>` on every request. Prefer it for any gated call: `./scripts/mcp-call.sh set_setting …`
+  just works.
+- **The wired-up `mcp__cmdr-*__*` tools can't add headers**, so gated ops through them fail unless you start Cmdr with
+  `CMDR_MCP_TOKEN` exported and add `"headers": { "Authorization": "Bearer ${CMDR_MCP_TOKEN}" }` to the server entry in
+  `.mcp.json`. Without that setup, route gated ops through `mcp-call.sh` instead. Read-only / nav / search tools work
+  through the wired-up tools regardless.
+
+Full token model (why a per-launch CSPRNG token, the `CMDR_MCP_TOKEN` override, why rejection is HTTP 200 not 401):
+`apps/desktop/src-tauri/src/mcp/DETAILS.md` § Authentication.
+
 ## Action-tool ack contract
 
 Action tools (`copy`, `move`, `delete`, `mkdir`, `mkfile`, `select`, `toggle_hidden`, `set_view_mode`, `sort`, `tab`,

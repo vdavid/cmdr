@@ -63,6 +63,15 @@
 
     const { children }: Props = $props()
 
+    // Gates the children render until settings are loaded and applied. File-explorer
+    // components (FilePane, BriefList, ...) read getSetting() synchronously at mount; if
+    // they mount before the store finishes loading they get the registry default, which
+    // logs a pre-init-read warning and, worse, can push a default back to the backend as
+    // if the user chose it (this is how a pre-init read of `ai.provider` could quietly set
+    // AI to "off"). Mounting the page only once settings are ready closes that race for the
+    // whole subtree. See settings-store.ts § getSetting and (main)/CLAUDE.md § Gotchas.
+    let settingsReady = $state(false)
+
     // State for crash report dialog
     let showCrashReportDialog = $state(false)
     let pendingCrashReport = $state<CrashReport | null>(null)
@@ -178,14 +187,24 @@
 
         // Initialize all async setup
         void (async () => {
-            // Initialize reactive settings for UI components
-            await initReactiveSettings()
+            try {
+                // Initialize reactive settings for UI components
+                await initReactiveSettings()
 
-            // Initialize settings and apply them to CSS variables
-            await initSettingsApplier()
+                // Initialize settings and apply them to CSS variables
+                await initSettingsApplier()
 
-            // Subscribe to volume-tint settings so FilePane bg updates live
-            initVolumeTints()
+                // Subscribe to volume-tint settings so FilePane bg updates live
+                initVolumeTints()
+            } finally {
+                // Settings are now loaded, applied to CSS, and volume tints are wired, so the
+                // file-explorer subtree can mount without any pre-init getSetting() reads (and
+                // without a flash of default git chip / volume tint). In `finally` so a settings
+                // load failure (which logs its own error in initializeSettings) still mounts the
+                // page on registry defaults rather than leaving a blank window. Everything below
+                // is independent of the children mounting, so it keeps running in the background.
+                settingsReady = true
+            }
 
             // Log once whether this WebKit supports the modern CSS we lean on
             // (`color-mix()`). Old Safari versions on macOS 12 Monterey fall
@@ -314,7 +333,9 @@
     <MtpPermissionDialog onClose={closePermissionDialog} onRetry={retryPermissionConnection} />
 {/if}
 <div class="page-wrapper">
-    {@render children?.()}
+    {#if settingsReady}
+        {@render children?.()}
+    {/if}
 </div>
 
 <style>

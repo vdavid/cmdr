@@ -604,7 +604,13 @@ pub fn validate_token(headers: &HeaderMap) -> Result<(), ()> {
         .unwrap_or("");
 
     if presented.is_empty() || !constant_time_eq(presented.as_bytes(), expected.as_bytes()) {
-        log::warn!(target: "mcp::server", "MCP: rejected request with missing/invalid bearer token");
+        // INFO, not WARN: a token-gated call arriving without the token is expected protocol
+        // flow, not an anomaly. Agents reach a gated tool (`set_setting`, auto-confirm
+        // delete/move/copy, `dialog confirm`) before reading `<data_dir>/mcp.token`, get the
+        // friendly `auto_confirm_token_required_response` telling them where the token lives,
+        // and retry. We still log it (not `debug`) so the security-relevant case — a local
+        // non-Cmdr process probing the gate — stays visible in terminal and error bundles.
+        log::info!(target: "mcp::server", "MCP: rejected request with missing/invalid bearer token");
         return Err(());
     }
 
