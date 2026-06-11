@@ -1,0 +1,4 @@
+{
+  "$comment": "Docs intentionally NOT reachable from AGENTS.md, each mapped to its reason. The goal is an empty list: connect docs instead of exempting them. The docs-reachable check shrink-wraps stale entries (file gone or now reachable) on local runs; adding or keeping an entry needs David's explicit consent (see .claude/rules/file-length-allowlist.md).",
+  "files": {}
+}

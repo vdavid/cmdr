@@ -577,6 +577,9 @@ jobs:
       - name: Check CHANGELOG commit links
         run: ./scripts/check/check --check changelog-commit-links --ci
 
+      - name: Check docs reachable from AGENTS.md
+        run: ./scripts/check/check --check docs-reachable --ci
+
       - name: Check workflow hardening
         run: ./scripts/check/check --check workflows-hardening --ci
 

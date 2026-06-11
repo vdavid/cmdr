@@ -15,7 +15,8 @@ see [DETAILS.md](DETAILS.md).
   and misses before pnpm/SMB; record passes after the run).
 - `checks/inputs.go`: shared `Inputs` building blocks (mined from ci.yml filters).
 - `smb_orchestrator.go` + `smblease/` + `smb-lease/`: runner-level SMB Docker lifecycle behind a machine-wide lease.
-- `freestyle.go`: all freestyle.sh remote-VM execution. `graph.go`: `--graph` renderer. `stats.go`: CSV stats logging.
+- `freestyle.go`: all freestyle.sh remote-VM execution. `graph.go`: `--graph` (check dependency tree) renderer.
+  `docs_graph_render.go`: `--docs-graph` (doc-discoverability tree) renderer. `stats.go`: CSV stats logging.
 
 ## Must-knows
 

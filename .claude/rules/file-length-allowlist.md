@@ -15,6 +15,12 @@ reason and the same consent rule applies to adding one.
 
 The file-length check is warn-only — it doesn't fail the suite — so leaving the warning is always safe.
 
+The same contract also applies to `scripts/check/checks/docs-reachable-allowlist.json` (the `docs-reachable` check): the
+check shrink-wraps entries that are gone or now reachable, and adding/keeping an entry needs explicit consent. Prefer
+connecting the doc from a reachable one (a `CLAUDE.md` counts as reached when a reachable doc names its directory) over
+exempting it. Unlike the length checks, `docs-reachable` is an **error**, so a real orphan fails the suite until it's
+linked or (with consent) allowlisted.
+
 The same contract applies to `scripts/check/checks/claude-md-length-allowlist.json` (the `claude-md-length` check, which
 caps push-tier CLAUDE.md word counts): the check shrink-wraps stale `files` entries on local runs (remove gone /
 under-threshold, ratchet >10% slack down), and adding or raising an entry needs explicit user consent. If a CLAUDE.md

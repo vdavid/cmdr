@@ -17,7 +17,8 @@ see [`../CLAUDE.md`](../CLAUDE.md).
 - `inputs.go`: shared `Inputs` building blocks. `allowlist.go` / `directives.go`: allowlist shrink-wrap + opt-out
   tracking plumbing.
 - Warn-only scanners with their JSON allowlists: `file-length.go`, `claude-md-length.go`, `e2e-durations.go`,
-  `website-bundle-size.go`.
+  `website-bundle-size.go`. Error-level allowlist scanner: `docs-reachable.go` (+ shared `docs_graph.go`), which fails
+  when a `CLAUDE.md` / `DETAILS.md` / `docs` file isn't reachable from `AGENTS.md`.
 
 ## Must-knows
 

@@ -723,6 +723,16 @@ var AllChecks = []CheckDefinition{
 		Run:         RunClaudeMdLength,
 	},
 	{
+		ID:          "docs-reachable",
+		DisplayName: "docs reachable from AGENTS.md",
+		App:         AppOther,
+		Tech:        "🔗 Links",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs, // walks every CLAUDE.md / DETAILS.md / docs file + AGENTS.md
+		Run:         RunDocsReachable,
+	},
+	{
 		ID:          "changelog-commit-links",
 		Nickname:    "changelog-links",
 		DisplayName: "CHANGELOG commit links",
