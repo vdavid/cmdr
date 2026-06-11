@@ -14,8 +14,8 @@
      *
      * Load-bearing rules:
      *   - Pills are NOT in the keyboard Tab order (`tabindex="-1"`) — would break the row's
-     *     arrow-down keyboard flow inside virtualized rows. ⌥← / ⌥→ are the keyboard
-     *     equivalents. See `lib/query-ui/CLAUDE.md` § "Path pills with overflow collapse".
+     *     arrow-down keyboard flow inside virtualized rows. Mouse-only, no keyboard equivalent:
+     *     ⌥← / ⌥→ stay native move-by-word in the query input. See `lib/query-ui/CLAUDE.md`.
      *   - macOS and Linux only: split strictly on `/`. No `\` handling.
      *   - Pill chrome: `--radius-sm`, `--spacing-xxs / --spacing-xs` padding,
      *     `--font-size-xs`, hover background = `--color-bg-tertiary`.

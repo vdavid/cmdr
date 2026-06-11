@@ -276,8 +276,6 @@ Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below
 | `⌥A`      | Mode chip: AI (global inside the dialog; only when AI is enabled)                                      |
 | `⌥F`      | Mode chip: Filename (global)                                                                           |
 | `⌥R`      | Mode chip: Regex (global)                                                                              |
-| `⌥←`      | Navigate the active pane to the cursor row's parent folder                                             |
-| `⌥→`      | Navigate the active pane to the cursor row's path (descend back)                                       |
 | `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)                                          |
 | `←` / `→` | When focus is on a mode chip: move between chips (skip Content)                                        |
 | `Tab`     | Trapped within the dialog (shared `use:trapFocus` on the overlay); cycles through interactive elements |
@@ -377,8 +375,9 @@ clears the flag first.
 **Path pills with overflow collapse**: Each result row's path column renders as a strip of clickable ancestor pills
 produced by `PathPills.svelte`. Clicking a pill calls the dialog's `onNavigate(ancestorPath)` callback, which closes the
 dialog and navigates the active pane to that ancestor. Pills are **not** in the keyboard Tab order (`tabindex="-1"`):
-tabbing through them would break the row's arrow-down keyboard flow inside the virtualized list. The keyboard
-equivalents are `⌥←` and `⌥→`. Paths are split strictly on `/`; macOS and Linux only, no `\` handling.
+tabbing through them would break the row's arrow-down keyboard flow inside the virtualized list. They're mouse-only,
+with no keyboard equivalent (`⌥←` / `⌥→` stay native move-by-word in the query input). Paths are split strictly on `/`;
+macOS and Linux only, no `\` handling.
 
 When the path doesn't fit its column, the middle pills collapse into a single `…` pill. Width is measured with
 `@chenglou/pretext` (the same canvas-based measurer the rest of the app uses); the first and last segments stay visible.
@@ -416,12 +415,15 @@ semantics as the filter chips. Reimplementing those risks drift; reusing the pri
 both popover kinds via the single `.ui-dropdown` DOM selector (the same selector the filter popovers render through
 `FilterDropdown`).
 
-**Decision**: Path pills inside result rows are mouse-only and not in the keyboard Tab order. **Why**: Making the pills
-tabbable inside virtualized rows would break the row's arrow-down keyboard flow: pressing Down at the end of a row would
-land on the next row's first pill instead of the next row's primary cell. Keyboard users navigate the list with arrow
-keys (cursor row is the keyboard target) and reach the same operations via `⌥←` / `⌥→`. Axe's `nested-interactive` rule
-still flags the structural nesting on the populated-results audit; we disable that one rule explicitly with a comment
-pointing here.
+**Decision**: Path pills inside result rows are mouse-only and not in the keyboard Tab order, with no keyboard
+equivalent. **Why**: Making the pills tabbable inside virtualized rows would break the row's arrow-down keyboard flow:
+pressing Down at the end of a row would land on the next row's first pill instead of the next row's primary cell.
+Keyboard users navigate the list with arrow keys (cursor row is the keyboard target). The pills carried `⌥←` / `⌥→` as a
+keyboard equivalent, but those steal macOS's universal move-by-word from the focused query input (where focus almost
+always sits), so the binding was dropped: `⌥←` / `⌥→` now stay native move-by-word and the pill nav is mouse-only. Don't
+re-add an `⌥`+arrow folder-nav here; if a keyboard affordance is wanted later, pick a combo with no text-editing meaning
+(for example `⌘↑` / `⌘↓`, Finder's enclosing/open keys). Axe's `nested-interactive` rule still flags the structural
+nesting on the populated-results audit; we disable that one rule explicitly with a comment pointing here.
 
 **Decision**: AI mode never auto-applies; only Enter / `⌘Enter` / the ⏎ button / chip clicks fire it. **Why**: AI calls
 cost money (cloud) or RAM + latency (local). Even a fast model has a per-call cost the user should opt into. Filename

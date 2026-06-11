@@ -594,46 +594,6 @@
         return false
     }
 
-    function jumpToCursorParent(): void {
-        const idx = config.state.getCursorIndex()
-        const r = config.state.getResults()
-        if (idx < 0 || idx >= r.length) return
-        const target = parentOf(r[idx].path) ?? parentOf(r[idx].parentPath)
-        if (!target) return
-        config.onPickPath(target)
-    }
-
-    function descendFromCursor(): void {
-        const idx = config.state.getCursorIndex()
-        const r = config.state.getResults()
-        if (idx < 0 || idx >= r.length) return
-        config.onPickPath(r[idx].path)
-    }
-
-    /** Returns the parent directory of a POSIX path, or null for root/empty. */
-    function parentOf(path: string): string | null {
-        if (!path || path === '/') return null
-        const normalized = path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path
-        const lastSlash = normalized.lastIndexOf('/')
-        if (lastSlash < 0) return null
-        if (lastSlash === 0) return '/'
-        return normalized.slice(0, lastSlash)
-    }
-
-    function handleAltArrowShortcut(e: KeyboardEvent): boolean {
-        if (matchKey(e, 'ArrowLeft', 'alt')) {
-            e.preventDefault()
-            jumpToCursorParent()
-            return true
-        }
-        if (matchKey(e, 'ArrowRight', 'alt')) {
-            e.preventDefault()
-            descendFromCursor()
-            return true
-        }
-        return false
-    }
-
     /**
      * Routes Enter combinations: ⌥⏎ fires the primary action; ⌘⏎ and ⇧⏎ are
      * explicit no-ops per R4 (bare Enter is the only key that does anything).
@@ -656,7 +616,11 @@
     }
 
     /**
-     * Handles ⌘N, ⌘H, ⌘1-9, ⌥A/F/R, ⌥←/⌥→, ⌥⏎ (primary action), ⌘⏎/⇧⏎ no-op.
+     * Handles ⌘N, ⌘H, ⌘1-9, ⌥A/F/R, ⌥⏎ (primary action), ⌘⏎/⇧⏎ no-op.
+     *
+     * ⌥← / ⌥→ are deliberately NOT handled: they're macOS's native move-by-word in
+     * the focused query input, so the dialog leaves them alone (path pills are
+     * mouse-only). See DETAILS.md § Path pills.
      */
     function handleModifierShortcuts(e: KeyboardEvent): boolean {
         if (matchKey(e, 'n', 'meta')) {
@@ -665,7 +629,6 @@
             return true
         }
         if (handleModeChipShortcut(e)) return true
-        if (handleAltArrowShortcut(e)) return true
         if (handleEnterCombinations(e)) return true
         if (matchKey(e, 'h', 'meta')) {
             e.preventDefault()

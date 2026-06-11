@@ -3,9 +3,9 @@
  *
  * The load-bearing rule: pills are **not** in the keyboard Tab order. Putting
  * them in Tab order would break the row's arrow-down keyboard flow inside
- * virtualized rows. The dialog wires `⌥←` / `⌥→` on the cursor row's path as
- * the keyboard equivalent. See `lib/query-ui/CLAUDE.md` § "Path pills with
- * overflow collapse" for the rationale.
+ * virtualized rows. Pills are mouse-only with no keyboard equivalent (`⌥←` /
+ * `⌥→` stay native move-by-word in the query input). See `lib/query-ui/CLAUDE.md`
+ * § "Path pills with overflow collapse" for the rationale.
  *
  * This test pins the contract: every pill carries `tabindex="-1"`, so Tab
  * focus traversal walks past them.

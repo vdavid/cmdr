@@ -50,9 +50,10 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals live 
 - **⌘⏎ and ⇧⏎ are explicit no-ops** (`preventDefault`); bare Enter is the only key that runs a search or opens the
   cursor row, via `enterAction`. `⌘N` is captured before the dialog's `stopPropagation` so it doesn't reach the
   route-level new-tab handler.
-- **Path pills are mouse-only, `tabindex="-1"`** (keyboard equivalents `⌥←` / `⌥→`); making them tabbable breaks the
-  row's arrow-down flow. The `nested-interactive` axe rule is deliberately disabled on the populated-results a11y test;
-  don't "fix" it by retabbing.
+- **Path pills are mouse-only, `tabindex="-1"`, with no keyboard equivalent**; making them tabbable breaks the row's
+  arrow-down flow. `⌥←` / `⌥→` are deliberately left native (move-by-word in the focused query input), NOT bound to pill
+  nav: don't re-add an `⌥`+arrow folder-nav (DETAILS.md § Path pills). The `nested-interactive` axe rule is deliberately
+  disabled on the populated-results a11y test; don't "fix" it by retabbing.
 - **Status bar stays empty whenever the content area shows a state message** (Searching / No files match / Loading):
   make `getStatusText()` return `''` for any new content-area state, or it reads as broken.
 - **`.results-container` carries `role="listbox"` ONLY when option rows actually render** (the `showingRows` derived,

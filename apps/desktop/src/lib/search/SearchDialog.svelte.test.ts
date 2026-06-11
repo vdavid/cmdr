@@ -906,7 +906,7 @@ describe('SearchDialog auto-apply', () => {
   })
 })
 
-describe('SearchDialog path-pill navigation shortcuts', () => {
+describe('SearchDialog ⌥← / ⌥→ pass through to the text field', () => {
   beforeEach(() => {
     clearSearchState()
     aiProvider = 'off'
@@ -981,46 +981,25 @@ describe('SearchDialog path-pill navigation shortcuts', () => {
     }
   }
 
-  it("⌥← navigates to the cursor row file's parent folder", async () => {
+  // ⌥← / ⌥→ are macOS's native move-by-word in a text field. The dialog must not
+  // steal them: it leaves them unhandled so the focused query input gets them. Path
+  // pills stay mouse-only (see query-ui/DETAILS.md § Path pills).
+  it("⌥← doesn't navigate, so the focused text field keeps move-by-word", async () => {
     const { overlay, navigated, cleanup } = await seedResultsAndMount()
-    dispatchAltKey(overlay, 'ArrowLeft')
-    await tick()
-    expect(navigated).toEqual(['/Users/test/pictures'])
-    cleanup()
-  })
-
-  it("⌥→ navigates to the cursor row's own path (descend back)", async () => {
-    const { overlay, navigated, cleanup } = await seedResultsAndMount()
-    dispatchAltKey(overlay, 'ArrowRight')
-    await tick()
-    expect(navigated).toEqual(['/Users/test/pictures/photo.jpg'])
-    cleanup()
-  })
-
-  it('⌥← and ⌥→ are no-ops when there are no results', async () => {
-    const navigated: string[] = []
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    const component = mount(SearchDialog, {
-      target,
-      props: {
-        onNavigate: (p: string) => {
-          navigated.push(p)
-        },
-        onClose: () => {},
-        searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
-      },
-    })
-    await tick()
-    await new Promise((r) => setTimeout(r, 0))
-    await tick()
-    const overlay = target.querySelector('.search-overlay') as Element
-    dispatchAltKey(overlay, 'ArrowLeft')
-    dispatchAltKey(overlay, 'ArrowRight')
+    const event = dispatchAltKey(overlay, 'ArrowLeft')
     await tick()
     expect(navigated).toEqual([])
-    void unmount(component)
-    target.remove()
+    expect(event.defaultPrevented).toBe(false)
+    cleanup()
+  })
+
+  it("⌥→ doesn't navigate, so the focused text field keeps move-by-word", async () => {
+    const { overlay, navigated, cleanup } = await seedResultsAndMount()
+    const event = dispatchAltKey(overlay, 'ArrowRight')
+    await tick()
+    expect(navigated).toEqual([])
+    expect(event.defaultPrevented).toBe(false)
+    cleanup()
   })
 })
 
