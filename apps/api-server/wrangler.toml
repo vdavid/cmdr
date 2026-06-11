@@ -88,7 +88,7 @@ crons = ["0 */3 * * *"]
 [vars]
 # Non-secret config
 PRODUCT_NAME = "Cmdr"
-SUPPORT_EMAIL = "veszelovszki@gmail.com"
+SUPPORT_EMAIL = "david@getcmdr.com"
 # "sandbox" or "live": controls which Paddle API + key to use for /validate and webhooks.
 # This var is the switch; keep it here (version-controlled) rather than as a same-named secret,
 # which a later `wrangler deploy` would silently clobber back to this value.

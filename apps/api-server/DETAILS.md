@@ -81,7 +81,7 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | `PRICE_ID_COMMERCIAL_PERPETUAL`    | Sandbox price ID                 | Live price ID                     |
 | `ED25519_PRIVATE_KEY`              | Private key hex                  | Same private key hex              |
 | `RESEND_API_KEY`                   | Resend key                       | Same Resend key                   |
-| `CRASH_NOTIFICATION_EMAIL`         | `veszelovszki@gmail.com`         | Recipient email for crash alerts  |
+| `CRASH_NOTIFICATION_EMAIL`         | `david@getcmdr.com`              | Recipient email for crash alerts  |
 | `DISCORD_WEBHOOK_URL`              | Same webhook URL                 | Discord webhook for error reports |
 | `DISCORD_BETA_SIGNUP_WEBHOOK_URL`  | Optional (falls back)            | Optional `#beta-signups` webhook  |
 | `R2_ACCOUNT_ID`                    | Same account ID                  | For minting presigned R2 URLs     |
