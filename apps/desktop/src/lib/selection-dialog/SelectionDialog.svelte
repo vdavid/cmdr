@@ -40,11 +40,7 @@
         QueryDialogFilterChipsExtras,
         AiTranslateResult,
     } from '$lib/query-ui/query-dialog-config'
-    import {
-        createQueryFilterState,
-        type QueryFilterState,
-        bytesToSize,
-    } from '$lib/query-ui/query-filter-state.svelte'
+    import { applySizeFromAi, applyDateFromAi } from '$lib/query-ui/apply-ai-filters'
     import {
         chipTooltip,
         modeName,
@@ -69,6 +65,7 @@
         setRecentSelectionsList,
         applySelectionHistoryEntry,
     } from './selection-history-state.svelte'
+    import { selectionQueryState, clearSelectionState } from './selection-state.svelte'
 
     interface Props {
         /** `'add'` for "Select files…", `'remove'` for "Deselect files…". */
@@ -91,9 +88,10 @@
 
     const { mode, entries, cursorIndex, isSnapshotPane, onCommit, onClose }: Props = $props()
 
-    // Selection has its OWN core state — separate factory instance from Search's. Two
-    // dialogs can never leak into each other.
-    const selectionQueryState: QueryFilterState = createQueryFilterState({ defaultMode: 'filename' })
+    // Selection's core state is a module-level singleton (`selection-state.svelte.ts`),
+    // mirroring Search. It survives the dialog's unmount so a close + reopen restores the
+    // user's mode, term, and filters. It's a SEPARATE instance from Search's, so the two
+    // dialogs never leak into each other. `⌘N` is the only reset (`clearSelectionState`).
 
     // Live AI-provider mirror. Selection's AI is cloud-only (small local models can't
     // reliably handle a 200+-name folder sample). Hide the AI chip unless cloud is set.
@@ -109,51 +107,6 @@
     const noticeBanner = isSnapshotPane
         ? 'Matching what is shown in the list (the full path).'
         : undefined
-
-    /**
-     * Pre-translate (and re-export) the AI translation result into the matcher's
-     * predicate shape. Mirrors Search's `applySizeFilters` / `applyDateFilters` but
-     * writes to Selection's own state instance.
-     */
-    function applySizeFromAi(min: number | null, max: number | null): boolean {
-        if (min == null && max == null) return false
-        if (min != null && max != null) {
-            selectionQueryState.setSizeFilter('between')
-            const lo = bytesToSize(min)
-            const hi = bytesToSize(max)
-            selectionQueryState.setSizeValue(lo.value)
-            selectionQueryState.setSizeUnit(lo.unit)
-            selectionQueryState.setSizeValueMax(hi.value)
-            selectionQueryState.setSizeUnitMax(hi.unit)
-        } else if (min != null) {
-            selectionQueryState.setSizeFilter('gte')
-            const lo = bytesToSize(min)
-            selectionQueryState.setSizeValue(lo.value)
-            selectionQueryState.setSizeUnit(lo.unit)
-        } else if (max != null) {
-            selectionQueryState.setSizeFilter('lte')
-            const hi = bytesToSize(max)
-            selectionQueryState.setSizeValue(hi.value)
-            selectionQueryState.setSizeUnit(hi.unit)
-        }
-        return true
-    }
-
-    function applyDateFromAi(after: string | null, before: string | null): boolean {
-        if (after == null && before == null) return false
-        if (after != null && before != null) {
-            selectionQueryState.setDateFilter('between')
-            selectionQueryState.setDateValue(after)
-            selectionQueryState.setDateValueMax(before)
-        } else if (after != null) {
-            selectionQueryState.setDateFilter('after')
-            selectionQueryState.setDateValue(after)
-        } else if (before != null) {
-            selectionQueryState.setDateFilter('before')
-            selectionQueryState.setDateValue(before)
-        }
-        return true
-    }
 
     /**
      * AI translation: hands the prompt plus a sampled folder listing to the Rust
@@ -190,8 +143,9 @@
         // merge with their last manual tweak.
         selectionQueryState.setSizeFilter('any')
         selectionQueryState.setDateFilter('any')
-        if (applySizeFromAi(result.sizeMin, result.sizeMax)) changed.add('size')
-        if (applyDateFromAi(result.modifiedAfter, result.modifiedBefore)) changed.add('date')
+        if (applySizeFromAi(selectionQueryState, result.sizeMin, result.sizeMax)) changed.add('size')
+        if (applyDateFromAi(selectionQueryState, result.modifiedAfter, result.modifiedBefore))
+            changed.add('date')
         return {
             caveat: result.caveat,
             highlightedFields: Array.from(changed),
@@ -578,6 +532,9 @@
         onRemoveRecent: removeHistoryEntry,
 
         onClose,
+        // ⌘N reset. Selection's state is a module singleton, so the reset is an
+        // explicit clear (not a fresh instance on next open).
+        onClearState: clearSelectionState,
 
         // Selection has no per-dialog backend lifecycle (no index prepare/release).
     })

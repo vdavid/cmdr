@@ -2,14 +2,16 @@
  * Behavior tests for `SelectionDialog.svelte`.
  *
  * Pins the wrapper's contract: title-per-mode, commit-on-Enter, ⌘N reset,
- * mode-switch buffer preservation, recent-selections wiring, and the mid-dialog
- * AI-provider fallback (AI → filename when the provider flips off).
+ * mode-switch buffer preservation, recent-selections wiring, the mid-dialog
+ * AI-provider fallback (AI → filename when the provider flips off), and
+ * state survival across a close + reopen (the module-singleton contract).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import { writable } from 'svelte/store'
 import SelectionDialog from './SelectionDialog.svelte'
+import { clearSelectionState } from './selection-state.svelte'
 import type { FileEntry } from '$lib/file-explorer/types'
 import type { SelectionHistoryEntry, SelectionTranslateResult } from '$lib/ipc/bindings'
 
@@ -158,6 +160,14 @@ describe('SelectionDialog', () => {
     translateSelectionMock.mockClear()
     addRecentMock.mockClear()
     getRecentMock.mockClear()
+    // The Selection state is now a module singleton, so it carries over between
+    // tests. Reset it to defaults (the same thing ⌘N does) so each test starts clean.
+    clearSelectionState()
+    // Filter-chip popovers are fixed-position siblings of the per-test target, so
+    // an unmount doesn't remove them. Clear any leftover popover from a prior test.
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
     // jsdom doesn't implement `Element.scrollIntoView`; QueryDialog calls it via
     // `focusFirstResult` after AI runs. Stub on the prototype so every result
     // row's call is a no-op rather than an unhandled rejection.
@@ -458,6 +468,61 @@ describe('SelectionDialog', () => {
     // Only the two real entries (indices 1 and 2), NOT index 0 (`..`).
     expect(matched[0]).toEqual([1, 2])
     cleanup()
+  })
+
+  it('keeps mode, term, and the size filter across a close + reopen', async () => {
+    // Selection's QueryFilterState is a module-level singleton (mirroring Search),
+    // so closing and reopening the dialog must restore the exact mode, typed term,
+    // and configured filters. Before the hoist this failed: the component made a
+    // fresh `createQueryFilterState()` per mount, so every reopen lost the work.
+    const first = await mountDialog()
+    const firstInput = first.overlay.querySelector('input[type="text"], input:not([type])') as HTMLInputElement
+
+    // Type a glob term in filename mode (the default).
+    firstInput.value = '*.png'
+    firstInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+
+    // Configure a `≥ 1 MB` size filter via the popover: click the Size chip to open
+    // it, then pick the `≥` comparator and the `1` preset (default unit is MB). The
+    // popover is a fixed-position sibling in `document`, not a child of the overlay.
+    const sizeChip = Array.from(first.overlay.querySelectorAll<HTMLButtonElement>('.filter-chip')).find((c) =>
+      c.textContent.trim().startsWith('Size'),
+    )
+    if (!sizeChip) throw new Error('size chip not found')
+    sizeChip.click()
+    await tick()
+    const sizePopover = document.querySelector('[aria-label="Size filter options"]')
+    if (!sizePopover) throw new Error('size popover did not open')
+    const radios = Array.from(sizePopover.querySelectorAll('button[role="radio"]'))
+    const gteCell = radios.find((b) => b.textContent.trim() === '≥')
+    const onePreset = radios.find((b) => b.textContent.trim() === '1')
+    if (!gteCell || !onePreset) throw new Error('size popover cells not found')
+    ;(gteCell as HTMLButtonElement).click()
+    await tick()
+    ;(onePreset as HTMLButtonElement).click()
+    await tick()
+
+    // Confirm the chip is configured before we close.
+    const sizeChipBefore = Array.from(first.overlay.querySelectorAll('.filter-chip')).find((c) =>
+      /Size:/.test(c.textContent),
+    )
+    expect(sizeChipBefore, 'size chip should be configured before close').toBeTruthy()
+
+    // Close (unmount the component) and reopen (mount a fresh one).
+    first.cleanup()
+    const second = await mountDialog()
+    const secondInput = second.overlay.querySelector('input[type="text"], input:not([type])') as HTMLInputElement
+
+    // The typed term must survive the reopen.
+    expect(secondInput.value).toBe('*.png')
+    // The configured size chip must survive the reopen.
+    const sizeChipAfter = Array.from(second.overlay.querySelectorAll('.filter-chip')).find((c) =>
+      /Size:/.test(c.textContent),
+    )
+    expect(sizeChipAfter, 'size chip should still be configured after reopen').toBeTruthy()
+
+    second.cleanup()
   })
 
   it('toggles caseSensitive via the FilterChips extras callback', async () => {

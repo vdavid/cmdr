@@ -25,7 +25,7 @@
      */
     import { onMount, onDestroy } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
-    import { bytesToSize } from '$lib/query-ui/query-filter-state.svelte'
+    import { applySizeFromAi, applyDateFromAi } from '$lib/query-ui/apply-ai-filters'
     import {
         prepareSearchIndex,
         searchFiles,
@@ -67,15 +67,7 @@
         getLastAiPattern,
         getLastAiPatternKind,
         getSizeFilter,
-        setSizeFilter,
-        setSizeValue,
-        setSizeUnit,
-        setSizeValueMax,
-        setSizeUnitMax,
         getDateFilter,
-        setDateFilter,
-        setDateValue,
-        setDateValueMax,
         recordAiTranslation,
         getIsIndexReady,
         setIsIndexReady,
@@ -187,48 +179,6 @@
         return null
     }
 
-    /** Applies AI-returned size filters to the Search state. Returns true if any were applied. */
-    function applySizeFromAi(minSize: number | null, maxSize: number | null): boolean {
-        if (minSize == null && maxSize == null) return false
-        if (minSize != null && maxSize != null) {
-            setSizeFilter('between')
-            const lo = bytesToSize(minSize)
-            const hi = bytesToSize(maxSize)
-            setSizeValue(lo.value)
-            setSizeUnit(lo.unit)
-            setSizeValueMax(hi.value)
-            setSizeUnitMax(hi.unit)
-        } else if (minSize != null) {
-            setSizeFilter('gte')
-            const lo = bytesToSize(minSize)
-            setSizeValue(lo.value)
-            setSizeUnit(lo.unit)
-        } else if (maxSize != null) {
-            setSizeFilter('lte')
-            const hi = bytesToSize(maxSize)
-            setSizeValue(hi.value)
-            setSizeUnit(hi.unit)
-        }
-        return true
-    }
-
-    /** Applies AI-returned date filters to the Search state. Returns true if any were applied. */
-    function applyDateFromAi(after: string | null, before: string | null): boolean {
-        if (after == null && before == null) return false
-        if (after != null && before != null) {
-            setDateFilter('between')
-            setDateValue(after)
-            setDateValueMax(before)
-        } else if (after != null) {
-            setDateFilter('after')
-            setDateValue(after)
-        } else if (before != null) {
-            setDateFilter('before')
-            setDateValue(before)
-        }
-        return true
-    }
-
     /** Folds the AI's `includePaths` + `excludeDirNames` into one scope expression. Returns true if set. */
     function applyScopeFromAi(includePaths: string[] | null, excludeDirNames: string[] | null): boolean {
         if (!includePaths?.length && !excludeDirNames?.length) return false
@@ -271,8 +221,10 @@
             setExcludeSystemDirs(false)
             changed.add('excludeSystemDirs')
         }
-        if (applySizeFromAi(display.minSize ?? null, display.maxSize ?? null)) changed.add('size')
-        if (applyDateFromAi(display.modifiedAfter ?? null, display.modifiedBefore ?? null)) changed.add('date')
+        if (applySizeFromAi(searchQueryState, display.minSize ?? null, display.maxSize ?? null))
+            changed.add('size')
+        if (applyDateFromAi(searchQueryState, display.modifiedAfter ?? null, display.modifiedBefore ?? null))
+            changed.add('date')
         if (applyScopeFromAi(query.includePaths ?? null, query.excludeDirNames ?? null)) changed.add('scope')
 
         return {

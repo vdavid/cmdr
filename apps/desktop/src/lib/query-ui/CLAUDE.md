@@ -13,6 +13,8 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals live 
 - `QueryBar`, `ModeChips`, `AiPromptStrip`, `QueryResults`, `EmptyState`, `PathPills`, `SearchRowMenu`,
   `recent-items/*`: UI pieces. Pure helpers: `enter-action.ts`, `path-pills-layout.ts`, `recent-chips-layout.ts`.
 - `query-filter-state.svelte.ts`: factory owning the cross-consumer state. `filter-chips/`: chip subsystem.
+- `apply-ai-filters.ts`: shared `applySizeFromAi` / `applyDateFromAi` over a `QueryFilterState`; both wrappers call
+  them, so the AI-result-to-chip mapping is in one place.
 
 ## Must-knows
 
