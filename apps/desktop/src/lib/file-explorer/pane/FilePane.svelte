@@ -100,6 +100,7 @@
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { computeSearchPaneKeyAction } from './search-results-keys'
     import { computeHasParent } from './has-parent'
+    import { firstSelectedIndex } from './first-selected-index'
     import { capabilitiesFor } from './volume-capabilities'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { openInEditor } from '$lib/tauri-commands'
@@ -876,9 +877,21 @@
      * Bulk-apply indices to the selection (add or remove). Used by the Selection
      * dialog at commit time. Skips `..` per `hasParent`. Range anchor/end state
      * is untouched so the user's prior keyboard/mouse anchor survives.
+     *
+     * On a SELECT (`mode === 'add'`), the cursor jumps to the first newly-selected
+     * file and scrolls into view, so the user lands looking at their selection
+     * instead of wherever the cursor happened to sit. We derive the target through
+     * the SAME `hasParent` skip `selection.applyIndices` uses (`firstSelectedIndex`),
+     * so the cursor can never land on the synthetic `..` row. On a DESELECT
+     * (`mode === 'remove'`) we leave the cursor put: there's nothing freshly
+     * selected to reveal, and yanking the cursor onto a just-deselected row is odd.
      */
     export function applyIndices(idxs: number[], mode: 'add' | 'remove'): void {
         selection.applyIndices(idxs, mode, hasParent)
+        if (mode === 'add') {
+            const target = firstSelectedIndex(idxs, hasParent)
+            if (target !== null) void setCursorIndex(target)
+        }
     }
 
     /**

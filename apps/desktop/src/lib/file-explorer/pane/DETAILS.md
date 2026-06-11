@@ -67,6 +67,7 @@ list).
 | `navigate.ts`                 | `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry              |
 | `snapshot-pane-navigation.ts` | `isCrossVolumeNavigation` — snapshot-volume → real-path triggers volume switch                 |
 | `has-parent.ts`               | `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`                  |
+| `first-selected-index.ts`     | `firstSelectedIndex(idxs, hasParent)` — post-select cursor-jump target, skips the `..` row     |
 | `volume-capabilities.ts`      | `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` / `capabilitiesFor` |
 | `search-results-keys.ts`      | Pure key→action dispatch for the flat snapshot pane                                            |
 | `selection-dialog-keys.ts`    | Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)                 |

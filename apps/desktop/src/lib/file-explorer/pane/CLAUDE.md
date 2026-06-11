@@ -33,6 +33,10 @@ Full file table, conventions, and decision rationale: [DETAILS.md](DETAILS.md).
 - **`capabilitiesFor` / `volumeKindOf` must stay TOTAL** (never return `undefined`): unknown real ids fall to the
   `local` default; the two virtual ids short-circuit first. The tint classifier `volumeKindFor` keeps its own body and
   output so tint stays byte-stable; never feed the `local` default back into tinting.
+- **`FilePane.applyIndices` jumps the cursor on SELECT only.** A committed select moves the cursor to the first
+  newly-selected row and scrolls it into view (via `setCursorIndex`); a deselect (`'remove'`) leaves the cursor put. The
+  target is `firstSelectedIndex(idxs, hasParent)`, which applies the SAME `hasParent && i === 0` skip
+  `selection.applyIndices` uses, so it never lands on `..`. Don't reach for raw `idxs[0]`; it can be the `..` row.
 - **Snapshot pane (`volumeId === 'search-results'`) couples two integration points**: `computeHasParent` returns `false`
   (no `..` row) AND `isCrossVolumeNavigation` routes any real-path nav through the volume-change machinery. Skipping
   either breaks selection (off-by-one) or poisons the pane with a `search-results` volumeId + a real path.

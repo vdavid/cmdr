@@ -193,6 +193,28 @@ ONLY to the Search-only fields. Search's wrapper calls this right after the core
 The Search façade in `lib/search/search-state.svelte.ts` keeps a `recordAiTranslation({pattern, kind, label})`
 convenience that calls both methods in sequence.
 
+### `switchMode` carries the term into an empty target buffer
+
+Each mode (`ai` / `filename` / `regex`) owns its own `handTyped` buffer. `switchMode(target)` saves the bar's current
+text under the outgoing mode's slot, then restores the target's buffer. When the target buffer is **empty**, it seeds
+the bar with the **outgoing term** so the user's words follow them across the switch instead of vanishing. A
+**non-empty** target buffer is the user's own prior text for that mode and is never overwritten.
+
+This carries across AI↔non-AI too, raw and unconverted: a glob switched into AI lands as a prompt, a prompt switched
+into filename lands as a glob. That's a deliberate semantic oddity (the text isn't re-interpreted), accepted because
+losing the user's words is worse than handing them text they may need to tweak.
+
+**Precedence on an empty target buffer** (reconciling the carry-over with the AI-pattern probe):
+
+1. `aiPatternProbe(target)` first. It returns the AI's structured, kind-correct pattern (filename gets the glob, regex
+   gets the regex) and is the post-AI editing handoff (M6's "tweak what the agent did" loop depends on it). The raw
+   carry-over must NOT clobber it.
+2. The outgoing term second, as the fallback when there's no probed pattern.
+
+Selection wires `aiPatternProbe` to `null` (no Pattern chip), so for Selection the carry-over is the only seeder; Search
+wires it to its extras module. Pinned by `query-filter-state.test.ts` § "switchMode term carry-over" (both directions,
+the non-overwrite guard, and the probe-wins precedence).
+
 ## Shared UI behavior
 
 Small contracts that apply to every consumer of the query UI:

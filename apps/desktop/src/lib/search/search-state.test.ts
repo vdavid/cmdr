@@ -423,14 +423,15 @@ describe('per-mode buffer', () => {
     clearSearchState()
     setMode('filename')
     setQueryFromUserInput('*.pdf')
+    // Target (regex) buffer is empty → the outgoing term carries across (M5 carry-over).
     switchMode('regex')
     expect(getMode()).toBe('regex')
-    expect(getQuery()).toBe('')
+    expect(getQuery()).toBe('*.pdf')
 
     setQueryFromUserInput('foo.*bar')
     switchMode('filename')
     expect(getMode()).toBe('filename')
-    expect(getQuery()).toBe('*.pdf')
+    expect(getQuery()).toBe('*.pdf') // filename's own non-empty buffer survives.
     switchMode('regex')
     expect(getQuery()).toBe('foo.*bar')
   })
@@ -446,8 +447,10 @@ describe('per-mode buffer', () => {
     expect(getMode()).toBe('filename')
     expect(getQuery()).toBe('*.pdf') // Glob → filename input.
 
+    // Regex's buffer is empty and the AI pattern is a glob (no regex probe), so the outgoing
+    // filename term carries across rather than vanishing (M5 carry-over).
     switchMode('regex')
-    expect(getQuery()).toBe('') // Regex's hand-typed buffer is still empty.
+    expect(getQuery()).toBe('*.pdf')
   })
 
   it('switching to AI restores the original prompt the user typed', async () => {

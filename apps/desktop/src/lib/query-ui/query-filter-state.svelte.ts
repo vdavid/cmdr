@@ -278,14 +278,25 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
   function switchMode(targetMode: SearchMode): void {
     if (mode === targetMode) return
     // Preserve the user's current typing under the previous mode's slot before swapping.
-    handTyped[mode] = query
+    const outgoingTerm = query
+    handTyped[mode] = outgoingTerm
     mode = targetMode
-    // Restore the target mode's hand-typed value, or fall back to the AI pattern when it
-    // matches the kind. The "other" mode's buffer stays whatever the user last typed.
+    // Restore the target mode's hand-typed value. When that buffer is empty, seed it so the
+    // user's text follows them across the switch instead of vanishing. Precedence on an empty
+    // target buffer:
+    //   1. The AI's structured pattern (`aiPatternProbe`) — a deliberate, kind-correct seed
+    //      (filename gets a glob, regex gets a regex). This is the post-AI handoff, so it must
+    //      NOT be clobbered by the raw carry-over below.
+    //   2. The outgoing term — the bar's current text, carried verbatim (a glob into AI as a
+    //      prompt, a prompt into filename as a glob; raw text, semantic oddity accepted).
+    // A non-empty target buffer is the user's own prior text for that mode; never overwrite it.
     let next = handTyped[targetMode]
-    if (!next && targetMode !== 'ai') {
-      const probed = aiPatternProbe(targetMode)
-      if (probed) next = probed
+    if (!next) {
+      if (targetMode !== 'ai') {
+        const probed = aiPatternProbe(targetMode)
+        if (probed) next = probed
+      }
+      if (!next) next = outgoingTerm
     }
     query = next
   }

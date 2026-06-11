@@ -144,14 +144,17 @@ describe('createQueryFilterState: buildBaseSearchQuery', () => {
 })
 
 describe('createQueryFilterState: switchMode + per-mode buffers', () => {
-  it('swaps the bar between mode buffers via switchMode', () => {
+  it('swaps the bar between mode buffers via switchMode, carrying the term into an empty target', () => {
     const s = createQueryFilterState()
     s.setMode('filename')
     s.setQueryFromUserInput('*.pdf')
+    // Target (regex) buffer is empty → the outgoing term follows the user across the switch.
     s.switchMode('regex')
     expect(s.getMode()).toBe('regex')
-    expect(s.getQuery()).toBe('')
+    expect(s.getQuery()).toBe('*.pdf')
 
+    // Now regex's buffer holds the carried '*.pdf'. Overwrite it, then switch back: filename's
+    // own buffer ('*.pdf') is non-empty, so it's restored verbatim (no overwrite from regex).
     s.setQueryFromUserInput('foo.*bar')
     s.switchMode('filename')
     expect(s.getQuery()).toBe('*.pdf')
@@ -204,6 +207,59 @@ describe('createQueryFilterState: switchMode + per-mode buffers', () => {
     s.setQueryFromUserInput('AI prompt')
     s.switchMode('filename')
     expect(s.getQuery()).toBe('*.injected')
+  })
+})
+
+describe('createQueryFilterState: switchMode term carry-over', () => {
+  it('carries the outgoing term into an EMPTY target buffer (filename → regex)', () => {
+    const s = createQueryFilterState()
+    s.setMode('filename')
+    s.setQueryFromUserInput('report*')
+    s.switchMode('regex')
+    expect(s.getQuery()).toBe('report*')
+  })
+
+  it('carries the outgoing term across AI → filename when the target is empty', () => {
+    const s = createQueryFilterState()
+    s.setMode('ai')
+    s.setQueryFromUserInput('all my invoices')
+    // No recorded AI translation, no probe: the raw prompt carries into filename verbatim
+    // (the accepted semantic oddity — a prompt landing in the filename bar as a glob).
+    s.switchMode('filename')
+    expect(s.getQuery()).toBe('all my invoices')
+  })
+
+  it('carries the outgoing term across filename → AI when the AI buffer is empty', () => {
+    const s = createQueryFilterState()
+    s.setMode('filename')
+    s.setQueryFromUserInput('*.png')
+    s.switchMode('ai')
+    expect(s.getQuery()).toBe('*.png')
+  })
+
+  it('does NOT overwrite a NON-empty target buffer (both directions)', () => {
+    const s = createQueryFilterState()
+    // Seed both buffers with distinct hand-typed text. `switchMode` between them so `query`
+    // stays coherent with the active mode (raw `setMode` would leave `query` stale).
+    s.setMode('filename')
+    s.setQueryFromUserInput('*.filename')
+    s.switchMode('regex')
+    s.setQueryFromUserInput('regex.*')
+    // regex → filename: filename buffer is non-empty ('*.filename'), so it survives.
+    s.switchMode('filename')
+    expect(s.getQuery()).toBe('*.filename')
+    // filename → regex: regex buffer is non-empty ('regex.*'), so it survives.
+    s.switchMode('regex')
+    expect(s.getQuery()).toBe('regex.*')
+  })
+
+  it('lets the aiPatternProbe win over the raw carry-over on an empty target', () => {
+    const s = createQueryFilterState()
+    s.setAiPatternProbe((forMode) => (forMode === 'filename' ? '*.probed' : null))
+    s.setMode('ai')
+    s.setQueryFromUserInput('find pngs') // would carry over, but the probe is preferred
+    s.switchMode('filename')
+    expect(s.getQuery()).toBe('*.probed')
   })
 })
 

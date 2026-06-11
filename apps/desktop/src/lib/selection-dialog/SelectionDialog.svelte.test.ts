@@ -272,16 +272,17 @@ describe('SelectionDialog', () => {
     input.value = '*.svelte'
     input.dispatchEvent(new Event('input', { bubbles: true }))
     await tick()
-    // Switch to regex (⌘3 with AI on: filename=2, regex=3).
+    // Switch to regex (⌘3 with AI on: filename=2, regex=3). The regex buffer is empty, so the
+    // outgoing term carries across rather than vanishing (M5 term carry-over).
     dispatchKey(overlay, '3', true)
     await tick()
-    // Regex buffer is empty.
-    expect(input.value).toBe('')
-    // Type in regex.
+    expect(input.value).toBe('*.svelte')
+    // Overwrite the regex buffer with real regex.
     input.value = '\\.txt$'
     input.dispatchEvent(new Event('input', { bubbles: true }))
     await tick()
-    // Switch back to filename.
+    // Switch back to filename: its own buffer ('*.svelte') is non-empty, so it's restored
+    // verbatim (a non-empty target is never overwritten by carry-over).
     dispatchKey(overlay, '2', true)
     await tick()
     expect(input.value).toBe('*.svelte')

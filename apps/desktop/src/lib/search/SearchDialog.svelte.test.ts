@@ -248,19 +248,19 @@ describe('SearchDialog mode shortcuts (AI on)', () => {
     cleanup()
   })
 
-  it("switching mode swaps the bar to the target mode's hand-typed buffer", async () => {
-    // Each mode owns its own input buffer: switching from AI to filename
-    // restores filename's last hand-typed
-    // value (empty here), not the AI-mode contents. The AI bar's prompt stays
-    // available via `getLastAiPrompt()` for the transparency strip.
+  it("switching mode swaps the bar to the target mode's hand-typed buffer (carrying into an empty target)", async () => {
+    // Each mode owns its own input buffer. Switching from AI to filename restores filename's
+    // last hand-typed value; when that buffer is empty, the outgoing term carries across so
+    // the user's words don't vanish (M5 carry-over). The AI prompt stays available via
+    // `getLastAiPrompt()` for the transparency strip regardless.
     const { overlay, cleanup } = await mountDialog()
     setMode('ai')
     setQuery('big files')
     dispatchKey(overlay, '2', true)
     await tick()
     expect(getMode()).toBe('filename')
-    // Filename's hand-typed buffer was empty, so the bar is empty after switch.
-    expect(getQuery()).toBe('')
+    // Filename's buffer was empty, so the outgoing 'big files' carries into the bar.
+    expect(getQuery()).toBe('big files')
     cleanup()
   })
 
