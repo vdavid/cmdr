@@ -72,10 +72,11 @@ All under `apps/desktop/src/lib/`.
 - `path/`: Path manipulation helpers (normalize, segment, join/split, platform-aware comparators)
 - `font-metrics/`: Character width measurement for accurate Brief mode column sizing
 
-**Frontend text measurement uses `@chenglou/pretext`.** For string pixel widths (column shrink-wrapping,
-middle-truncation, viewer line heights), call `createPretextMeasure(font, pretext)` from `lib/utils/shorten-middle.ts`
-rather than a Canvas `measureText` or DOM-reflow path. The `font-metrics/` module above is separate: it ships
-per-character widths to Rust for backend column sizing.
+**Frontend text measurement uses `@chenglou/pretext`.** Whenever you need to measure text on the frontend, reach for
+pretext (its full API reference is at `apps/desktop/node_modules/@chenglou/pretext/README.md`) rather than a Canvas
+`measureText` or DOM-reflow path. For string pixel widths (column shrink-wrapping, middle-truncation, viewer line
+heights), call `createPretextMeasure(font, pretext)` from `lib/utils/shorten-middle.ts`. The `font-metrics/` module
+above is separate: it ships per-character widths to Rust for backend column sizing.
 
 ## Backend (Rust + Tauri 2)
 
