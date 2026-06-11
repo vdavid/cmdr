@@ -38,6 +38,8 @@
     import FilterChips from './filter-chips/FilterChips.svelte'
     import QueryResults from './QueryResults.svelte'
     import AiPromptStrip from './AiPromptStrip.svelte'
+    import { buildAiSummary } from './ai-summary'
+    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
     import RecentItemsFooter from './recent-items/RecentItemsFooter.svelte'
     import RecentItemsPopover from './recent-items/RecentItemsPopover.svelte'
     import { deriveEnterAction, SEARCH_AUTO_APPLY_DEBOUNCE_MS, type SearchMode } from './query-filter-state.svelte'
@@ -97,6 +99,48 @@
     const lastAiCaveat = $derived(config.state.getLastAiCaveat())
     const sizeFilter = $derived(config.state.getSizeFilter())
     const dateFilter = $derived(config.state.getDateFilter())
+
+    /**
+     * The AI-produced pattern for the transparency strip, with its kind. Search exposes the
+     * precise pattern + kind via `filterChipsExtras.aiPattern` / `aiPatternKind` (its dedicated
+     * Pattern-chip slot). Selection has no Pattern chip and passes `null` there, but its
+     * `translateAi` clears the other-kind `handTyped` buffer, so reading those buffers (regex
+     * first, matching the matcher's precedence) is kind-correct as the fallback. The strip is the
+     * human-readable mirror; the live chips stay the editable source of truth.
+     */
+    const aiPattern = $derived.by((): { pattern: string | null; kind: 'glob' | 'regex' | null } => {
+        const extrasPattern = config.filterChipsExtras.aiPattern
+        if (extrasPattern && extrasPattern.trim()) {
+            return { pattern: extrasPattern, kind: config.filterChipsExtras.aiPatternKind }
+        }
+        const regexBuf = config.state.getHandTypedBuffer('regex')
+        if (regexBuf && regexBuf.trim()) return { pattern: regexBuf, kind: 'regex' }
+        const globBuf = config.state.getHandTypedBuffer('filename')
+        if (globBuf && globBuf.trim()) return { pattern: globBuf, kind: 'glob' }
+        return { pattern: null, kind: null }
+    })
+
+    /**
+     * Structured, human-readable mirror of what the agent set: the produced pattern plus the
+     * Size / Modified / Type filters. Rendered by `AiPromptStrip`; the live chips remain the
+     * editable truth. Pure, so the rules are pinned in `ai-summary.test.ts`.
+     */
+    const aiSummary = $derived(
+        buildAiSummary({
+            pattern: aiPattern.pattern,
+            patternKind: aiPattern.kind,
+            sizeFilter: config.state.getSizeFilter(),
+            sizeValue: config.state.getSizeValue(),
+            sizeUnit: config.state.getSizeUnit(),
+            sizeValueMax: config.state.getSizeValueMax(),
+            sizeUnitMax: config.state.getSizeUnitMax(),
+            dateFilter: config.state.getDateFilter(),
+            dateValue: config.state.getDateValue(),
+            dateValueMax: config.state.getDateValueMax(),
+            typeFilter: config.state.getTypeFilter(),
+            fileSizeFormat: getFileSizeFormat(),
+        }),
+    )
 
     /**
      * D8: which action `⏎` currently owns. The footer's secondary button reads
@@ -298,7 +342,12 @@
     async function executeQuery(fromAiTranslation = false): Promise<void> {
         if (debounceTimer) clearTimeout(debounceTimer)
         hasSearched = true
-        if (!config.isIndexReady) return
+        if (!config.isIndexReady) {
+            // Bail before running, but clear any spinner `runAiSearch` turned on for the translate
+            // round-trip (it sets `isSearching` before calling us). Without this the spinner sticks.
+            config.state.setIsSearching(false)
+            return
+        }
 
         config.state.setIsSearching(true)
         try {
@@ -328,6 +377,11 @@
      * `translateAi` owns applying every AI-returned filter (size / date / scope /
      * AI pattern + label / etc); QueryDialog captures the prompt, flashes any
      * highlighted fields, sets the caveat, and runs the query.
+     *
+     * The spinner covers the WHOLE round-trip: we flip `isSearching` on before the
+     * cloud translate (the slow part: seconds) and leave it on through `executeQuery`,
+     * which clears it in its own `finally`. The early-return paths (empty prompt,
+     * translate error, empty result) reset it themselves so it can't stick on.
      */
     async function runAiSearch(prompt: string): Promise<void> {
         const trimmed = prompt.trim()
@@ -339,6 +393,9 @@
         // contents (the pattern lives separately via the consumer's extras).
         config.state.setLastAiPrompt(trimmed)
         config.state.setLastAiCaveat(null)
+        // Show the spinner for the slow cloud translate, not just the post-translate query.
+        hasSearched = true
+        config.state.setIsSearching(true)
 
         let result: Awaited<ReturnType<NonNullable<typeof config.translateAi>>>
         try {
@@ -349,12 +406,16 @@
             // so the error UX lives in one place. The consumer's `translateAi` lets the typed
             // error throw; we map its `kind` to copy. A non-translation error (shouldn't happen)
             // falls through to a generic toast.
+            config.state.setIsSearching(false)
             if (!showAiTranslateErrorToast(err)) {
                 addToast("Couldn't run the AI search just now. Try again?", { level: 'warn', dismissal: 'transient' })
             }
             return
         }
-        if (!result) return
+        if (!result) {
+            config.state.setIsSearching(false)
+            return
+        }
 
         // Flash the changed fields for ~1.5 s so the user sees what the AI touched.
         if (result.highlightedFields && result.highlightedFields.length > 0) {
@@ -366,6 +427,7 @@
         }
         config.state.setLastAiCaveat(result.caveat)
 
+        // `executeQuery` sets `isSearching` true again (idempotent) and clears it in `finally`.
         await executeQuery(true)
         await focusFirstResult()
     }
@@ -742,7 +804,7 @@
         <ModeChips {mode} aiEnabled={config.aiEnabled} disabled={config.inputsDisabled} onSelect={handleModeChange} />
 
         {#if lastAiPrompt}
-            <AiPromptStrip aiPrompt={lastAiPrompt} caveat={lastAiCaveat ?? ''} />
+            <AiPromptStrip aiPrompt={lastAiPrompt} caveat={lastAiCaveat ?? ''} summary={aiSummary} />
         {/if}
 
         {#if config.noticeBanner}

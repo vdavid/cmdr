@@ -57,13 +57,16 @@ mechanical.
 
 ## AI translation
 
-`translate_selection_query(prompt, sample_names)` orchestrates:
+`translate_selection_query(prompt, sample_names, current_type)` orchestrates:
 
 1. Verifies the AI provider is `cloud`. Hard-errors otherwise; the frontend
    hides the AI chip in that case, but this gate is the belt-and-braces check
    for an MCP caller or a misconfigured frontend.
-2. Calls `ai::build_classification_prompt(&sample_names)` to assemble the
-   system prompt with today's date and the folder sample.
+2. Calls `ai::build_classification_prompt(&sample_names, current_type)` to
+   assemble the system prompt with today's date, the folder sample, and the
+   user's current `Both | Files | Folders` type as context (`current_type`:
+   `Some(true)` folders / `Some(false)` files / `None` both). The model may set
+   `type` or omit it; an omitted `type` keeps the user's choice (leave-alone).
 3. Runs `chat_completion` via `crate::ai::client` with `temperature: 0.2`,
    `max_tokens: 300`, `top_p: 0.9`.
 4. Parses via `ai::parse_selection_response` into `ParsedSelectionLlmResponse`.
@@ -85,7 +88,9 @@ for any non-cloud caller.
 
 The matcher runs on the frontend in JS. There's no benefit to round-tripping
 a typed glob through Rust; the parsed string IS the contract. The kind is
-`glob` (full-name match, `*` and `?` only) or `regex` (JS RegExp).
+`glob` (full-name match, `*` and `?` only) or `regex` (JS RegExp). The result
+also carries optional `is_directory` (the file-vs-folder dimension), `size_*`,
+and `modified_*`, which the frontend paints onto the chips.
 
 ## IPC surface
 
@@ -93,7 +98,7 @@ All commands live in `crate::commands::selection`:
 
 | Command | Purpose |
 |---|---|
-| `translate_selection_query(prompt, sample_names)` | AI translation; cloud-only. Returns `SelectionTranslateResult` or a typed `AiTranslateError { kind, message }` (shared with Search; see `crate::ai::translate_error`) so the dialog toasts a specific reason. The cloud-only gate maps to `kind = notConfigured`. |
+| `translate_selection_query(prompt, sample_names, current_type)` | AI translation; cloud-only. `current_type` (the dialog's type toggle as `Option<bool>`) is passed as prompt context. Returns `SelectionTranslateResult` (now carrying optional `is_directory`) or a typed `AiTranslateError { kind, message }` (shared with Search; see `crate::ai::translate_error`) so the dialog toasts a specific reason. The cloud-only gate maps to `kind = notConfigured`. |
 | `get_recent_selections(limit)` | Returns persisted entries (newest first). |
 | `add_recent_selection(entry, max_count)` | Adds + dedupes + caps. |
 | `remove_recent_selection(id)` | Removes by id; no-op when missing. |

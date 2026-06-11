@@ -11,9 +11,9 @@ prompt. Parent: [`../CLAUDE.md`](../CLAUDE.md). Sibling pattern: see
 | File | Purpose |
 |------|---------|
 | `mod.rs` | Re-exports `build_classification_prompt`, `parse_selection_response`, `build_selection_translate_result`, and the `ParsedSelectionLlmResponse` / `SelectionTranslateResult` types. |
-| `prompt.rs` | `build_classification_prompt(sample_names)` + `format_sample_block`. Pure. Substitutes `{TODAY}`, `{WEEK_AGO}`, `{SAMPLE}` into a static template; de-dupes the sample preserving order; truncates at `MAX_SAMPLE = 240` names with a `... (sample truncated)` sentinel. |
-| `parser.rs` | `parse_selection_response(text)` → `ParsedSelectionLlmResponse`. One `key: value` per line, split on the first `:` only (regex patterns contain `:`). Unknown keys, blank values, and malformed `kind` / `size_*` / `modified_*` drop silently to `None`. |
-| `query_builder.rs` | `build_selection_translate_result(parsed)` plus `generate_caveat` and `build_label` helpers. Assembles the camelCase IPC result. Defaults `kind` to `"glob"` when `pattern` is present and `kind` is missing; clears `kind` to `None` when `pattern` drops. |
+| `prompt.rs` | `build_classification_prompt(sample_names, current_type)` + `format_sample_block`. Pure. Substitutes `{TODAY}`, `{WEEK_AGO}`, `{CURRENT_TYPE}`, `{SAMPLE}`; de-dupes the sample preserving order; truncates at `MAX_SAMPLE = 240`. `current_type` (`Some(true)` folders / `Some(false)` files / `None` both) renders a context line so the model knows the optional `type` field and the user's current choice. |
+| `parser.rs` | `parse_selection_response(text)` → `ParsedSelectionLlmResponse`. One `key: value` per line, split on the first `:` only (regex patterns contain `:`). Unknown keys, blank values, and malformed `kind` / `type` / `size_*` / `modified_*` drop to `None`. `type` accepts only `file` / `folder`; `both`/unknown → `None`. |
+| `query_builder.rs` | `build_selection_translate_result(parsed)` plus `generate_caveat` / `build_label`. Assembles the camelCase IPC result. Defaults `kind` to `"glob"` when `pattern` is present and `kind` missing; clears `kind` when `pattern` drops. Maps `item_type` → `is_directory` (`folder → true`, `file → false`, absent → `None`). |
 | `real_llm_eval_test.rs` | Six `#[ignore]`-gated integration tests hitting the live OpenAI API. Pinned to `gpt-4o-mini` for repeatability; rerun against David's configured model by editing `MODEL`. |
 
 The IPC entry point (`translate_selection_query`) lives in
@@ -88,6 +88,13 @@ running app instead.
   block — the model hallucinates a folder layout and the eval starts
   emitting wild patterns. `format_sample_block` returns the sentinel for
   empty and all-blank inputs alike.
+- **`type` is optional and leave-alone, NOT a third "both" value.** The prompt
+  omits `type` unless the intent is clearly only files or only folders; the
+  current type rides in as context. `type: both`/unknown maps to `None` (= keep
+  the user's choice, the frontend's job). Don't add a `both` wire variant.
+- **Exact size is prompt-wording only.** `size_min == size_max` already says
+  "exactly N"; the prompt teaches the model to set them equal (empty files →
+  both `0`). The frontend's `applySizeFromAi` maps `min == max` to the `eq` chip.
 - **Debug-print rule applies here too.** Use `log::debug!(target:
   "selection::ai", ...)`; `eprintln!` / `println!` / `dbg!` are denied at the
   crate root. `--no-capture` test runs work fine with `log::info!`.

@@ -20,6 +20,10 @@ pub struct ParsedSelectionLlmResponse {
     pub pattern: Option<String>,
     /// `"glob"` or `"regex"`. Any other value is dropped to `None`.
     pub kind: Option<String>,
+    /// `"file"` or `"folder"`. The file-vs-folder dimension, distinct from glob/regex `kind`.
+    /// `None` (line omitted or invalid) means "no opinion": the frontend keeps the user's
+    /// current Both/Files/Folders choice. Any other value drops to `None`.
+    pub item_type: Option<String>,
     /// Minimum size in bytes.
     pub size_min: Option<u64>,
     /// Maximum size in bytes.
@@ -39,6 +43,7 @@ impl ParsedSelectionLlmResponse {
     pub fn is_empty(&self) -> bool {
         self.pattern.is_none()
             && self.kind.is_none()
+            && self.item_type.is_none()
             && self.size_min.is_none()
             && self.size_max.is_none()
             && self.modified_after.is_none()
@@ -67,6 +72,7 @@ pub fn parse_selection_response(response: &str) -> ParsedSelectionLlmResponse {
             match key.as_str() {
                 "pattern" => parsed.pattern = Some(value),
                 "kind" => parsed.kind = validate_kind(&value),
+                "type" => parsed.item_type = validate_item_type(&value),
                 "size_min" | "sizemin" => parsed.size_min = parse_u64(&value),
                 "size_max" | "sizemax" => parsed.size_max = parse_u64(&value),
                 "modified_after" | "modifiedafter" => parsed.modified_after = validate_iso_date(&value),
@@ -84,6 +90,17 @@ fn validate_kind(value: &str) -> Option<String> {
     let v = value.trim().to_lowercase();
     match v.as_str() {
         "glob" | "regex" => Some(v),
+        _ => None,
+    }
+}
+
+/// Accept only `file` / `folder` for the type dimension. `both`, `any`, and anything else drop
+/// to `None` so the frontend keeps the user's current Both/Files/Folders choice (leave-alone).
+/// The model is told to OMIT the line for "both", but `both` is mapped to `None` defensively.
+fn validate_item_type(value: &str) -> Option<String> {
+    let v = value.trim().to_lowercase();
+    match v.as_str() {
+        "file" | "folder" => Some(v),
         _ => None,
     }
 }
@@ -119,6 +136,7 @@ mod tests {
         let response = "\
 pattern: *.log
 kind: glob
+type: file
 size_min: 1024
 size_max: 1048576
 modified_after: 2026-01-01
@@ -128,6 +146,7 @@ label: Recent log files";
         let parsed = parse_selection_response(response);
         assert_eq!(parsed.pattern.as_deref(), Some("*.log"));
         assert_eq!(parsed.kind.as_deref(), Some("glob"));
+        assert_eq!(parsed.item_type.as_deref(), Some("file"));
         assert_eq!(parsed.size_min, Some(1024));
         assert_eq!(parsed.size_max, Some(1_048_576));
         assert_eq!(parsed.modified_after.as_deref(), Some("2026-01-01"));
@@ -169,6 +188,23 @@ label: Recent log files";
         let parsed = parse_selection_response("pattern: x\nkind: fuzzy");
         assert_eq!(parsed.pattern.as_deref(), Some("x"));
         assert!(parsed.kind.is_none());
+    }
+
+    #[test]
+    fn parse_item_type_file_and_folder() {
+        let parsed = parse_selection_response("type: file");
+        assert_eq!(parsed.item_type.as_deref(), Some("file"));
+        let parsed = parse_selection_response("type: FOLDER");
+        assert_eq!(parsed.item_type.as_deref(), Some("folder"));
+    }
+
+    #[test]
+    fn parse_item_type_both_and_unknown_drop_to_none() {
+        // "both" means "no opinion" — the frontend keeps the user's current type, so we map it
+        // to None rather than carrying a third value across the wire.
+        assert!(parse_selection_response("type: both").item_type.is_none());
+        assert!(parse_selection_response("type: any").item_type.is_none());
+        assert!(parse_selection_response("type: banana").item_type.is_none());
     }
 
     #[test]

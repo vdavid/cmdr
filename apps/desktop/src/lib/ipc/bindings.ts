@@ -1452,9 +1452,15 @@ export const commands = {
    *
    *  Single-pass flow: call LLM with classification prompt → parse key-value response →
    *  build deterministic SearchQuery via `ai_query_builder`.
+   *  `current_type` is the dialog's `Both | Files | Folders` toggle as context (`Some(true)` =
+   *  folders, `Some(false)` = files, `None` = both). The model maps it to the `folders: yes|no`
+   *  field, or omits the field to keep the user's current choice. First step toward the
+   *  "agent sees app state" model; structured to grow into the full filter set later.
    */
-  translateSearchQuery: (naturalQuery: string) =>
-    typedError<TranslateResult, AiTranslateError>(__TAURI_INVOKE('translate_search_query', { naturalQuery })),
+  translateSearchQuery: (naturalQuery: string, currentType: boolean | null) =>
+    typedError<TranslateResult, AiTranslateError>(
+      __TAURI_INVOKE('translate_search_query', { naturalQuery, currentType }),
+    ),
   // Parse a scope string into structured include/exclude data.
   parseSearchScope: (scope: string) => __TAURI_INVOKE<ParsedScope>('parse_search_scope', { scope }),
   /**
@@ -1504,10 +1510,16 @@ export const commands = {
    *  The `sample_names` argument is the focused folder's filename listing (already
    *  sampled on the frontend; see `lib/selection-dialog/folder-sampler.ts` for the
    *  sampling strategy). It grounds the prompt in what's actually in the folder.
+   *
+   *  `current_type` is the dialog's current `Both | Files | Folders` toggle as context
+   *  (`Some(true)` = folders, `Some(false)` = files, `None` = both). The model may change
+   *  it or leave it; when it returns no `type`, the frontend keeps the user's choice. This
+   *  is the first step toward the "agent sees app state" model: structured to grow into the
+   *  broader current filter set later without another IPC reshape.
    */
-  translateSelectionQuery: (prompt: string, sampleNames: string[]) =>
+  translateSelectionQuery: (prompt: string, sampleNames: string[], currentType: boolean | null) =>
     typedError<SelectionTranslateResult, AiTranslateError>(
-      __TAURI_INVOKE('translate_selection_query', { prompt, sampleNames }),
+      __TAURI_INVOKE('translate_selection_query', { prompt, sampleNames, currentType }),
     ),
   /**
    *  Returns the persisted recent-selections entries (newest first). `limit = None`
@@ -4637,6 +4649,12 @@ export type SelectionTranslateResult = {
   pattern: string | null
   // `"glob"` or `"regex"`. `None` when `pattern` is `None`.
   kind: string | null
+  /**
+   *  File-vs-folder decision: `Some(true)` → folders only, `Some(false)` → files only,
+   *  `None` → no opinion (the frontend keeps the user's current Both/Files/Folders choice).
+   *  Named to match Search's `is_directory`; the frontend maps both to its `typeFilter`.
+   */
+  isDirectory: boolean | null
   // Minimum size in bytes (inclusive). `None` means no lower bound.
   sizeMin: number | null
   // Maximum size in bytes (inclusive). `None` means no upper bound.

@@ -16,6 +16,7 @@ function baseProps(overrides: Partial<Props> = {}): Props {
   return {
     aiPrompt: 'screenshots from this week',
     caveat: '',
+    summary: { pattern: null, patternKind: null, filters: [] },
     ...overrides,
   }
 }
@@ -30,12 +31,22 @@ describe('AiTransparencyStrip a11y', () => {
     target.remove()
   })
 
-  it('has no a11y violations with a caveat', async () => {
+  it('has no a11y violations with a full summary, filters, and a caveat', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(AiTransparencyStrip, {
       target,
-      props: baseProps({ caveat: "I treated 'big' as larger than 10 MB." }),
+      props: baseProps({
+        caveat: "I treated 'big' as larger than 10 MB.",
+        summary: {
+          pattern: '*.{jpg,png,heic}',
+          patternKind: 'glob',
+          filters: [
+            { label: 'Size', value: '> 10 MB' },
+            { label: 'Type', value: 'Files only' },
+          ],
+        },
+      }),
     })
     await tick()
     await expectNoA11yViolations(target)

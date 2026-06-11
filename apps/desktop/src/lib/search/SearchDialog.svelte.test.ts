@@ -648,7 +648,8 @@ describe('SearchDialog auto-apply', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(translateSearchQueryMock).toHaveBeenCalledWith('large screenshots')
+    // Second arg is the current type filter as context (both → null at the start). (M6)
+    expect(translateSearchQueryMock).toHaveBeenCalledWith('large screenshots', null)
     cleanup()
   })
 

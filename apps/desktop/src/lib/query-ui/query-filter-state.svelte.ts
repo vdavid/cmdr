@@ -39,6 +39,17 @@ export type DateFilter = 'any' | 'after' | 'before' | 'between'
  * core factory (both dialogs show the toggle).
  */
 export type TypeFilter = 'both' | 'file' | 'folder'
+
+/**
+ * Maps a `TypeFilter` to the wire `isDirectory` the AI translate IPC takes as context:
+ * `folder → true`, `file → false`, `both → null`. The inverse of `applyTypeFromAi`'s read.
+ * Lives here so both dialogs send the same shape when handing the AI the current type.
+ */
+export function typeFilterToIsDirectory(typeFilter: TypeFilter): boolean | null {
+  if (typeFilter === 'folder') return true
+  if (typeFilter === 'file') return false
+  return null
+}
 /**
  * Size unit. `B` (bytes) was added in round 2 (D10) so the list-style popover can let the
  * user pick a byte-level filter without leaving the popover. The byte unit's label varies
@@ -333,16 +344,6 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
     }
   }
 
-  /**
-   * Maps the UI-named `typeFilter` to the existing IPC `isDirectory: Option<bool>`:
-   * `both → null` (no constraint), `file → false`, `folder → true`. No separate IPC field.
-   */
-  function typeFilterToIsDirectory(): boolean | null {
-    if (typeFilter === 'file') return false
-    if (typeFilter === 'folder') return true
-    return null
-  }
-
   function buildBaseSearchQuery(): SearchQuery {
     const patternType: PatternType = mode === 'regex' ? 'regex' : 'glob'
     const q: SearchQuery = {
@@ -352,7 +353,7 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
       maxSize: null,
       modifiedAfter: null,
       modifiedBefore: null,
-      isDirectory: typeFilterToIsDirectory(),
+      isDirectory: typeFilterToIsDirectory(typeFilter),
       limit: 30,
     }
 

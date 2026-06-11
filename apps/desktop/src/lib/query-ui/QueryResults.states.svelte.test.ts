@@ -108,6 +108,34 @@ describe('SearchResults round 2 states', () => {
     expect(status?.textContent ?? '').toBe('')
   })
 
+  it('clears the spinner and restores the status text once isSearching flips off', async () => {
+    // The spinner shows for any in-flight fetch — the AI translate round-trip drives the same
+    // `isSearching` flag in QueryDialog, so this renderer contract covers both paths.
+    const found: SearchResultEntry[] = [
+      {
+        path: '/a.jpg',
+        name: 'a.jpg',
+        parentPath: '/',
+        isDirectory: false,
+        size: 1,
+        modifiedAt: 0,
+        iconId: 'ext:jpg',
+      },
+    ]
+    const target = mountWith({
+      isSearching: false,
+      hasSearched: true,
+      query: '*.jpg',
+      results: found,
+      totalCount: 1,
+    })
+    await tick()
+    // Not searching → no spinner, rows render, status bar reports the result count.
+    expect(target.querySelector('.spinner')).toBeFalsy()
+    expect(target.querySelector('.result-row')).toBeTruthy()
+    expect(target.querySelector('.status-bar .status-text')?.textContent ?? '').toContain('1 of 1')
+  })
+
   it('D4: no-results state renders the bulleted criteria heading', async () => {
     const target = mountWith({
       isSearching: false,

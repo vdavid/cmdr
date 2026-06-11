@@ -20,6 +20,7 @@ vi.mock('$lib/tauri-commands', () => ({
     Promise.resolve({
       pattern: null,
       kind: null,
+      isDirectory: null,
       sizeMin: null,
       sizeMax: null,
       modifiedAfter: null,

@@ -22,6 +22,10 @@ pub struct SelectionTranslateResult {
     pub pattern: Option<String>,
     /// `"glob"` or `"regex"`. `None` when `pattern` is `None`.
     pub kind: Option<String>,
+    /// File-vs-folder decision: `Some(true)` → folders only, `Some(false)` → files only,
+    /// `None` → no opinion (the frontend keeps the user's current Both/Files/Folders choice).
+    /// Named to match Search's `is_directory`; the frontend maps both to its `typeFilter`.
+    pub is_directory: Option<bool>,
     /// Minimum size in bytes (inclusive). `None` means no lower bound.
     pub size_min: Option<u64>,
     /// Maximum size in bytes (inclusive). `None` means no upper bound.
@@ -62,9 +66,17 @@ pub fn build_selection_translate_result(parsed: &ParsedSelectionLlmResponse) -> 
         None
     };
 
+    // `file` → false, `folder` → true, omitted/invalid → None (leave the user's type alone).
+    let is_directory = parsed.item_type.as_deref().and_then(|t| match t {
+        "folder" => Some(true),
+        "file" => Some(false),
+        _ => None,
+    });
+
     SelectionTranslateResult {
         pattern,
         kind,
+        is_directory,
         size_min: parsed.size_min,
         size_max: parsed.size_max,
         modified_after: parsed.modified_after.clone(),
@@ -94,7 +106,8 @@ pub fn generate_caveat(parsed: &ParsedSelectionLlmResponse) -> Option<String> {
     let has_pattern = parsed.pattern.as_deref().is_some_and(|p| !p.trim().is_empty());
     let has_size_filter = parsed.size_min.is_some() || parsed.size_max.is_some();
     let has_date_filter = parsed.modified_after.is_some() || parsed.modified_before.is_some();
-    if !has_pattern && !has_size_filter && !has_date_filter {
+    let has_type_filter = parsed.item_type.is_some();
+    if !has_pattern && !has_size_filter && !has_date_filter && !has_type_filter {
         return Some("Couldn't translate the request. Try again or switch to Filename mode.".to_string());
     }
 
@@ -169,6 +182,38 @@ mod tests {
         assert_eq!(r.pattern.as_deref(), Some("*"));
         assert_eq!(r.size_min, Some(5_242_880));
         assert!(r.size_max.is_none());
+    }
+
+    #[test]
+    fn build_maps_item_type_to_is_directory() {
+        let mut p = parsed_with_pattern("*", "glob");
+        p.item_type = Some("folder".to_string());
+        assert_eq!(build_selection_translate_result(&p).is_directory, Some(true));
+
+        let mut p = parsed_with_pattern("*", "glob");
+        p.item_type = Some("file".to_string());
+        assert_eq!(build_selection_translate_result(&p).is_directory, Some(false));
+    }
+
+    #[test]
+    fn build_no_item_type_leaves_is_directory_none() {
+        // The leave-alone contract: an omitted type means the frontend keeps the user's choice.
+        let p = parsed_with_pattern("*.log", "glob");
+        assert!(build_selection_translate_result(&p).is_directory.is_none());
+    }
+
+    #[test]
+    fn build_type_only_response_round_trips() {
+        // A folder-only intent ("just the folders") with no pattern still applies the type and
+        // a match-all pattern; the frontend substitutes `*` when the bar is empty.
+        let p = ParsedSelectionLlmResponse {
+            item_type: Some("folder".to_string()),
+            ..Default::default()
+        };
+        let r = build_selection_translate_result(&p);
+        assert_eq!(r.is_directory, Some(true));
+        // No pattern came back; the caveat must stay silent because type IS a usable signal.
+        assert!(r.caveat.is_none());
     }
 
     #[test]
@@ -362,6 +407,7 @@ mod tests {
         let json = serde_json::to_string(&r).unwrap();
         assert!(json.contains("\"pattern\":\"*.log\""));
         assert!(json.contains("\"kind\":\"glob\""));
+        assert!(json.contains("\"isDirectory\":null"));
         assert!(json.contains("\"sizeMin\":1024"));
         assert!(json.contains("\"modifiedAfter\":\"2026-01-01\""));
         assert!(json.contains("\"label\":\"Log files\""));

@@ -3,6 +3,7 @@
  *
  * Pins:
  *   - The original prompt is rendered.
+ *   - The "Here's what the agent did:" summary renders the pattern + filter lines (incl. type).
  *   - The caveat is rendered when present and hidden when empty.
  *   - The "Refine…" button is disabled and carries the "Coming soon" tooltip.
  */
@@ -10,11 +11,17 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import AiTransparencyStrip from './AiPromptStrip.svelte'
+import type { AiSummary } from './ai-summary'
 
-function setup(props: { aiPrompt: string; caveat: string }): { target: HTMLDivElement; cleanup: () => void } {
+const EMPTY_SUMMARY: AiSummary = { pattern: null, patternKind: null, filters: [] }
+
+function setup(props: { aiPrompt: string; caveat: string; summary?: AiSummary }): {
+  target: HTMLDivElement
+  cleanup: () => void
+} {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(AiTransparencyStrip, { target, props })
+  mount(AiTransparencyStrip, { target, props: { summary: EMPTY_SUMMARY, ...props } })
   return {
     target,
     cleanup: () => {
@@ -29,6 +36,58 @@ describe('AiTransparencyStrip', () => {
     await tick()
     const prompt = target.querySelector('.ai-prompt')
     expect(prompt?.textContent).toBe('screenshots from this week')
+    cleanup()
+  })
+
+  it('renders the agent lead-in', async () => {
+    const { target, cleanup } = setup({ aiPrompt: 'photos', caveat: '' })
+    await tick()
+    expect(target.querySelector('.ai-summary-lead')?.textContent).toMatch(/here's what the agent did/i)
+    cleanup()
+  })
+
+  it('renders the produced pattern with its labelled kind', async () => {
+    const { target, cleanup } = setup({
+      aiPrompt: 'images',
+      caveat: '',
+      summary: { pattern: '*.{jpg,png,heic}', patternKind: 'glob', filters: [] },
+    })
+    await tick()
+    const labels = Array.from(target.querySelectorAll('.ai-summary-label')).map((e) => e.textContent)
+    expect(labels).toContain('Glob:')
+    expect(target.querySelector('.ai-summary-pattern')?.textContent).toBe('*.{jpg,png,heic}')
+    cleanup()
+  })
+
+  it('renders the size, modified, and type filter summary lines', async () => {
+    const { target, cleanup } = setup({
+      aiPrompt: 'big old folders',
+      caveat: '',
+      summary: {
+        pattern: '*',
+        patternKind: 'glob',
+        filters: [
+          { label: 'Size', value: '> 5 MB' },
+          { label: 'Modified', value: 'after 2026-01-01' },
+          { label: 'Type', value: 'Folders only' },
+        ],
+      },
+    })
+    await tick()
+    const text = target.querySelector('.ai-summary')?.textContent ?? ''
+    expect(text).toContain('Size:')
+    expect(text).toContain('> 5 MB')
+    expect(text).toContain('Modified:')
+    expect(text).toContain('Type:')
+    expect(text).toContain('Folders only')
+    cleanup()
+  })
+
+  it('shows a gentle hint when the AI produced no pattern or filters', async () => {
+    const { target, cleanup } = setup({ aiPrompt: 'something vague', caveat: '' })
+    await tick()
+    expect(target.querySelector('.ai-summary-list')).toBeNull()
+    expect(target.querySelector('.ai-summary-empty')).not.toBeNull()
     cleanup()
   })
 

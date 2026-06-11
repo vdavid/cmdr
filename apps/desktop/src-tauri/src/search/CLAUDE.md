@@ -67,7 +67,7 @@ that aren't worth the coupling. Selection's parser lives independently in
 
 ## IPC layer
 
-IPC commands live in `commands/search.rs` -- thin wrappers. `translate_search_query` orchestrates the AI pipeline: calls LLM with classification prompt, parses response via `ai::parse_llm_response`, builds query via `ai::query_builder`. `resolve_ai_backend` stays in `commands/search.rs` since it touches `crate::ai` and `crate::settings` (Tauri-app concerns).
+IPC commands live in `commands/search.rs` -- thin wrappers. `translate_search_query(natural_query, current_type)` orchestrates the AI pipeline: calls LLM with classification prompt (passing the dialog's `Both | Files | Folders` toggle as `current_type` context), parses response via `ai::parse_llm_response`, builds query via `ai::query_builder`. `resolve_ai_backend` stays in `commands/search.rs` since it touches `crate::ai` and `crate::settings` (Tauri-app concerns). The MCP `ai_search` executor calls it with `current_type = None`.
 
 ## Recent-searches history (`history.rs`)
 

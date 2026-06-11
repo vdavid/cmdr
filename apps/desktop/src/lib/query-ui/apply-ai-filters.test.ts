@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applySizeFromAi, applyDateFromAi } from './apply-ai-filters'
+import { applySizeFromAi, applyDateFromAi, applyTypeFromAi } from './apply-ai-filters'
 import { createQueryFilterState } from './query-filter-state.svelte'
 
 describe('applySizeFromAi', () => {
@@ -81,5 +81,38 @@ describe('applyDateFromAi', () => {
     expect(state.getDateFilter()).toBe('between')
     expect(state.getDateValue()).toBe('2026-01-01')
     expect(state.getDateValueMax()).toBe('2026-05-01')
+  })
+})
+
+describe('applyTypeFromAi', () => {
+  // The deliberate asymmetry from size/date: size/date reset to `any` before an AI run paints
+  // them, but type is passed INTO the AI and left untouched when the AI returns nothing. So the
+  // user's current Both/Files/Folders choice survives an AI run that doesn't speak to type.
+
+  it('returns false and LEAVES the current type untouched when the AI returns null (the asymmetry)', () => {
+    const state = createQueryFilterState({ defaultMode: 'filename' })
+    state.setTypeFilter('folder')
+    expect(applyTypeFromAi(state, null)).toBe(false)
+    expect(state.getTypeFilter()).toBe('folder')
+  })
+
+  it('sets file when the AI returns isDirectory === false', () => {
+    const state = createQueryFilterState({ defaultMode: 'filename' })
+    state.setTypeFilter('folder')
+    expect(applyTypeFromAi(state, false)).toBe(true)
+    expect(state.getTypeFilter()).toBe('file')
+  })
+
+  it('sets folder when the AI returns isDirectory === true', () => {
+    const state = createQueryFilterState({ defaultMode: 'filename' })
+    expect(applyTypeFromAi(state, true)).toBe(true)
+    expect(state.getTypeFilter()).toBe('folder')
+  })
+
+  it('leaves a non-default current type alone when null, never resetting to both', () => {
+    const state = createQueryFilterState({ defaultMode: 'filename' })
+    state.setTypeFilter('file')
+    applyTypeFromAi(state, null)
+    expect(state.getTypeFilter()).toBe('file')
   })
 })

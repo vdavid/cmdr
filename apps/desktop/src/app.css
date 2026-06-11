@@ -1133,6 +1133,14 @@ body {
   border-width: 2.5px;
 }
 
+/* Respect reduced-motion: stop the spin and show a static accent-topped ring instead. The
+   accent-colored top border still reads as a "busy" affordance without any rotation. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
 /* =============================================================================
    Tooltip styles (singleton element created by tooltip action)
    ============================================================================= */

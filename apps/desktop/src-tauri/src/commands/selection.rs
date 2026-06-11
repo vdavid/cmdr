@@ -51,14 +51,21 @@ fn resolve_cloud_ai_backend() -> Result<AiBackend, AiTranslateError> {
 /// The `sample_names` argument is the focused folder's filename listing (already
 /// sampled on the frontend; see `lib/selection-dialog/folder-sampler.ts` for the
 /// sampling strategy). It grounds the prompt in what's actually in the folder.
+///
+/// `current_type` is the dialog's current `Both | Files | Folders` toggle as context
+/// (`Some(true)` = folders, `Some(false)` = files, `None` = both). The model may change
+/// it or leave it; when it returns no `type`, the frontend keeps the user's choice. This
+/// is the first step toward the "agent sees app state" model: structured to grow into the
+/// broader current filter set later without another IPC reshape.
 #[tauri::command]
 #[specta::specta]
 pub async fn translate_selection_query(
     prompt: String,
     sample_names: Vec<String>,
+    current_type: Option<bool>,
 ) -> Result<SelectionTranslateResult, AiTranslateError> {
     let backend = resolve_cloud_ai_backend()?;
-    let system_prompt = ai::build_classification_prompt(&sample_names);
+    let system_prompt = ai::build_classification_prompt(&sample_names, current_type);
 
     log::debug!(
         target: "selection::ai",
@@ -156,6 +163,7 @@ mod tests {
         let r = SelectionTranslateResult {
             pattern: Some("*.log".to_string()),
             kind: Some("glob".to_string()),
+            is_directory: Some(false),
             size_min: Some(1024),
             size_max: None,
             modified_after: Some("2026-01-01".to_string()),
@@ -165,6 +173,7 @@ mod tests {
         };
         let json = serde_json::to_string(&r).unwrap();
         assert!(json.contains("\"pattern\":\"*.log\""));
+        assert!(json.contains("\"isDirectory\":false"));
         assert!(json.contains("\"sizeMin\":1024"));
         assert!(json.contains("\"modifiedAfter\":\"2026-01-01\""));
         assert!(json.contains("\"label\":\"Log files\""));

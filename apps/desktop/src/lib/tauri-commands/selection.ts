@@ -6,15 +6,20 @@ import type { SelectionHistoryEntry, SelectionTranslateResult } from '$lib/ipc/b
 
 /**
  * Translates a natural-language selection request into a glob/regex plus optional
- * size and date filters. Cloud-only: the backend rejects the call when the AI
+ * size, date, and type filters. Cloud-only: the backend rejects the call when the AI
  * provider isn't `cloud` (small local models can't reliably handle a 200+-name
  * folder sample plus the structured prompt).
+ *
+ * `currentType` is the dialog's `Both | Files | Folders` toggle as context (`true` = folders,
+ * `false` = files, `null` = both). The AI may set the type or leave it; when it returns nothing,
+ * the caller keeps the user's choice (see `applyTypeFromAi`).
  */
 export async function translateSelectionQuery(
   prompt: string,
   sampleNames: string[],
+  currentType: boolean | null = null,
 ): Promise<SelectionTranslateResult> {
-  const res = await commands.translateSelectionQuery(prompt, sampleNames)
+  const res = await commands.translateSelectionQuery(prompt, sampleNames, currentType)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

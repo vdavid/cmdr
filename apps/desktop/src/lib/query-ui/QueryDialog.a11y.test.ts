@@ -86,6 +86,7 @@ function buildConfig(opts: BuildOpts, state: QueryFilterState): QueryDialogConfi
       searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       systemDirExcludeTooltip: '',
       aiPattern: null,
+      aiPatternKind: null,
       onToggleCaseSensitive: () => {},
       onToggleExcludeSystemDirs: () => {},
       onSetScope: () => {},

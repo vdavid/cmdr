@@ -309,14 +309,19 @@
      user sees the actual pattern being applied across every mode. See `lib/query-ui/CLAUDE.md`
      for the rationale. -->
 <div class="filter-chip-strip" role="toolbar" aria-label="Search filters">
-    <ToggleGroup
-        semantics="toggles"
-        value={typeFilter}
-        options={TYPE_FILTER_OPTIONS}
-        onChange={onTypeFilterChange}
-        ariaLabel="Filter by type"
-        {disabled}
-    />
+    <!-- The flash wrapper mirrors the chips' `is-highlighted` treatment for the AI handoff:
+         the AI may set the type (M6), so we briefly tint the toggle when it does. ToggleGroup
+         has no `highlighted` prop, so the wrapper carries the flash. -->
+    <span class="type-toggle-flash" class:is-highlighted={highlightedFields.has('type')}>
+        <ToggleGroup
+            semantics="toggles"
+            value={typeFilter}
+            options={TYPE_FILTER_OPTIONS}
+            onChange={onTypeFilterChange}
+            ariaLabel="Filter by type"
+            {disabled}
+        />
+    </span>
     {#if patternChipVisible}
         <FilterChip
             bind:chipElement={patternChipEl}
@@ -461,5 +466,17 @@
         border-top: 1px solid var(--color-border-subtle);
         border-bottom: 1px solid var(--color-border-subtle);
         flex-wrap: wrap;
+    }
+
+    /* AI-handoff flash for the type toggle. Mirrors `FilterChip.is-highlighted`: a brief
+       accent tint that fades over 1.5 s, drawing the eye to the type the agent just set. */
+    .type-toggle-flash {
+        display: inline-flex;
+        border-radius: var(--radius-sm);
+    }
+
+    .type-toggle-flash.is-highlighted {
+        background: var(--color-accent-subtle);
+        transition: background 1.5s ease-out;
     }
 </style>

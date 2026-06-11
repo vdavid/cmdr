@@ -30,9 +30,18 @@ export async function releaseSearchIndex(): Promise<void> {
   if (res.status === 'error') throwIpcError(res.error)
 }
 
-/** Translates a natural language query into structured search filters using the configured LLM. */
-export async function translateSearchQuery(naturalQuery: string): Promise<TranslateResult> {
-  const res = await commands.translateSearchQuery(naturalQuery)
+/**
+ * Translates a natural language query into structured search filters using the configured LLM.
+ *
+ * `currentType` is the dialog's `Both | Files | Folders` toggle as context (`true` = folders,
+ * `false` = files, `null` = both). The AI may set the type or leave it; when it returns nothing,
+ * the caller keeps the user's choice (see `applyTypeFromAi`).
+ */
+export async function translateSearchQuery(
+  naturalQuery: string,
+  currentType: boolean | null = null,
+): Promise<TranslateResult> {
+  const res = await commands.translateSearchQuery(naturalQuery, currentType)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

@@ -40,7 +40,8 @@
         QueryDialogFilterChipsExtras,
         AiTranslateResult,
     } from '$lib/query-ui/query-dialog-config'
-    import { applySizeFromAi, applyDateFromAi } from '$lib/query-ui/apply-ai-filters'
+    import { applySizeFromAi, applyDateFromAi, applyTypeFromAi } from '$lib/query-ui/apply-ai-filters'
+    import { typeFilterToIsDirectory } from '$lib/query-ui/query-filter-state.svelte'
     import {
         chipTooltip,
         modeName,
@@ -115,9 +116,11 @@
      */
     async function translateAi(prompt: string): Promise<AiTranslateResult | null> {
         const sample = sampleFolderNames(folderNamesSnapshot, cursorIndex)
+        // Hand the AI the user's current type as context so it can keep or change it.
+        const currentType = typeFilterToIsDirectory(selectionQueryState.getTypeFilter())
         // Let the typed IPC error throw: QueryDialog catches it and shows a specific toast
         // (cloud-only gate, quota, key rejected, timeout, …) instead of failing silently.
-        const result = await translateSelectionQuery(prompt, sample)
+        const result = await translateSelectionQuery(prompt, sample, currentType)
         const changed = new SvelteSet<string>()
         if (result.pattern != null && result.pattern.trim()) {
             const kind: 'glob' | 'regex' = result.kind === 'regex' ? 'regex' : 'glob'
@@ -146,6 +149,11 @@
         if (applySizeFromAi(selectionQueryState, result.sizeMin, result.sizeMax)) changed.add('size')
         if (applyDateFromAi(selectionQueryState, result.modifiedAfter, result.modifiedBefore))
             changed.add('date')
+        // Type is the deliberate exception (M6): we passed the current type in as context, so we
+        // DON'T reset it first. The AI either returns a type (apply it) or stays silent
+        // (`isDirectory == null`), in which case the user's current Both/Files/Folders choice
+        // stands. See `applyTypeFromAi` and `apply-ai-filters.ts` for the why.
+        if (applyTypeFromAi(selectionQueryState, result.isDirectory)) changed.add('type')
         return {
             caveat: result.caveat,
             highlightedFields: Array.from(changed),
@@ -474,6 +482,7 @@
         searchableFolder: { path: null, disabled: true, disabledReason: '' },
         systemDirExcludeTooltip: '',
         aiPattern: null,
+        aiPatternKind: null,
         onToggleCaseSensitive: () => {
             selectionQueryState.setCaseSensitive(!selectionQueryState.getCaseSensitive())
         },

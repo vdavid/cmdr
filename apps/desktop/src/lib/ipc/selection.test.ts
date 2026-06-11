@@ -22,6 +22,7 @@ afterEach(() => {
 const sampleResult: SelectionTranslateResult = {
   pattern: '*.log',
   kind: 'glob',
+  isDirectory: null,
   sizeMin: null,
   sizeMax: null,
   modifiedAfter: null,
@@ -50,12 +51,13 @@ describe('commands.translateSelectionQuery', () => {
     const ipc = installIpcMock()
     ipc.mock('translate_selection_query', () => sampleResult)
 
-    const out = await commands.translateSelectionQuery('all log files', ['a.log', 'b.log', 'c.txt'])
+    const out = await commands.translateSelectionQuery('all log files', ['a.log', 'b.log', 'c.txt'], null)
 
     expect(out).toEqual({ status: 'ok', data: sampleResult })
     expect(ipc.lastCall('translate_selection_query')?.payload).toEqual({
       prompt: 'all log files',
       sampleNames: ['a.log', 'b.log', 'c.txt'],
+      currentType: null,
     })
   })
 
@@ -66,7 +68,7 @@ describe('commands.translateSelectionQuery', () => {
       throw 'AI selection needs a cloud provider. Set one in Settings > AI.'
     })
 
-    const out = await commands.translateSelectionQuery('logs', [])
+    const out = await commands.translateSelectionQuery('logs', [], null)
 
     expect(out.status).toBe('error')
     if (out.status === 'error') {

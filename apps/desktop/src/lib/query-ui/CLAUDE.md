@@ -13,8 +13,10 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals live 
 - `QueryBar`, `ModeChips`, `AiPromptStrip`, `QueryResults`, `EmptyState`, `PathPills`, `SearchRowMenu`,
   `recent-items/*`: UI pieces. Pure helpers: `enter-action.ts`, `path-pills-layout.ts`, `recent-chips-layout.ts`.
 - `query-filter-state.svelte.ts`: factory owning the cross-consumer state. `filter-chips/`: chip subsystem.
-- `apply-ai-filters.ts`: shared `applySizeFromAi` / `applyDateFromAi` over a `QueryFilterState`; both wrappers call
-  them, so the AI-result-to-chip mapping is in one place.
+- `apply-ai-filters.ts`: shared `applySizeFromAi` / `applyDateFromAi` / `applyTypeFromAi` over a `QueryFilterState`;
+  both wrappers call them, so the AI-result-to-chip mapping is in one place.
+- `ai-summary.ts`: pure `buildAiSummary()` → the `AiPromptStrip`'s human-readable mirror of the produced pattern +
+  Size/Modified/Type. The strip is a MIRROR; the live chips stay the editable truth.
 
 ## Must-knows
 
@@ -54,5 +56,19 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals live 
   debounce), gated also by IME composition. The split lives in `scheduleSearch()`'s early-return chain.
 - **The AI translation overwrites `query` + `mode`.** The original prompt lives in `lastAiPrompt`; use
   `getLastAiPrompt()`, don't assume `query` still holds natural-language input after an AI run.
+- **The `AiPromptStrip` is a human-readable MIRROR, never the source of truth.** `buildAiSummary()` (`ai-summary.ts`)
+  turns the current chip state (pattern + Size/Modified/Type) into the strip's "Here's what the agent did:" lines; the
+  live chips stay the editable representation. The first-person agent voice is a SANCTIONED exception to the
+  no-first-person copy rule (David-decided), alongside onboarding / About.
+- **The spinner covers the AI translate round-trip.** `runAiSearch` sets `isSearching` true BEFORE the cloud translate
+  (the slow part) and leaves it on through `executeQuery` (which clears it in `finally`); its early-returns reset it so
+  it can't stick. `QueryResults` shows `.spinner` off `isSearching`, and `getStatusText()` returns `''` for it. The
+  global `.spinner` honors `prefers-reduced-motion` in `app.css`.
+- **Type-in-AI is leave-alone-if-null; size/date are reset-first. Don't "consistency-fix" this.** The AI RECEIVES the
+  current type as context (`translateSearchQuery` / `translateSelectionQuery` take a `currentType` arg, via
+  `typeFilterToIsDirectory`) and may set or stay silent. `applyTypeFromAi` writes only on a non-null `isDirectory`; a
+  `null` keeps the user's choice. Unlike `applySizeFromAi` / `applyDateFromAi` (callers reset to `any` first), callers
+  must NOT pre-reset `typeFilter`. The `'type'` highlight flashes the toggle via a wrapper span (`ToggleGroup` has no
+  `highlighted` prop).
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

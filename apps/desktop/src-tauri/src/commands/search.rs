@@ -360,11 +360,18 @@ fn resolve_ai_backend() -> Result<AiBackend, AiTranslateError> {
 ///
 /// Single-pass flow: call LLM with classification prompt → parse key-value response →
 /// build deterministic SearchQuery via `ai_query_builder`.
+/// `current_type` is the dialog's `Both | Files | Folders` toggle as context (`Some(true)` =
+/// folders, `Some(false)` = files, `None` = both). The model maps it to the `folders: yes|no`
+/// field, or omits the field to keep the user's current choice. First step toward the
+/// "agent sees app state" model; structured to grow into the full filter set later.
 #[tauri::command]
 #[specta::specta]
-pub async fn translate_search_query(natural_query: String) -> Result<TranslateResult, AiTranslateError> {
+pub async fn translate_search_query(
+    natural_query: String,
+    current_type: Option<bool>,
+) -> Result<TranslateResult, AiTranslateError> {
     let backend = resolve_ai_backend()?;
-    let system_prompt = ai::build_classification_prompt();
+    let system_prompt = ai::build_classification_prompt(current_type);
 
     log::debug!(
         "AI search: classification prompt ({} chars), query={natural_query:?}",

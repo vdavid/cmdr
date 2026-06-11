@@ -20,7 +20,7 @@ recent|old|YYYY|YYYY..YYYY
 size:      empty|tiny|small|large|huge|>NUMBERmb|>NUMBERgb|<NUMBERmb
 scope:     downloads|documents|desktop|dotfiles|PATH
 exclude:   dirname1 dirname2
-folders:   yes|no
+folders:   yes|no (OPTIONAL: yes = folders only, no = files only; omit to keep the user's current choice)
 note:      brief limitation caveat if query involves unfilterable concepts
 label:     short human-friendly title for this search, max 40 chars, sentence case, no trailing punctuation
 
@@ -35,6 +35,8 @@ Rules:
 - \"not in X\" / \"but not in X\" / \"excluding X\" / \"except in X\" → ALWAYS use exclude: X
 - \"ssh keys\"/\"env files\"/\"docker compose\"/\"shell scripts\" → type handles this, no keywords needed
 - For content/semantic queries (\"photos of my cat\"), set type + add a note
+- `folders` is OPTIONAL. The user's current choice is shown below. Only set it when the intent is clearly only \
+folders (\"node_modules folders\", \"empty directories\") or only files (\"the pdf files\"). When in doubt, omit it.
 
 Examples:
 \"recent invoices, I mark them rymd\" → keywords: rymd / type: documents / time: recent / label: Recent rymd invoices
@@ -51,13 +53,23 @@ Examples:
 \"shell scripts in my dotfiles\" → type: shell-scripts / scope: dotfiles / label: Shell scripts in dotfiles
 \"HEIC photos I haven't converted\" → keywords: .heic / note: can't determine conversion status / label: HEIC photos
 
+Current type filter: {CURRENT_TYPE}.
 Today: {TODAY}.";
 
-pub fn build_classification_prompt() -> String {
+/// `current_type`: `Some(true)` = folders, `Some(false)` = files, `None` = both. Surfaced as a
+/// context line so the model knows the `folders` field is optional and what the user has now.
+pub fn build_classification_prompt(current_type: Option<bool>) -> String {
     let today = time::OffsetDateTime::now_utc().date();
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let today_str = today.format(&format).expect("date format always succeeds");
-    CLASSIFICATION_PROMPT.replace("{TODAY}", &today_str)
+    let current_type_label = match current_type {
+        Some(true) => "folders only",
+        Some(false) => "files only",
+        None => "both files and folders",
+    };
+    CLASSIFICATION_PROMPT
+        .replace("{CURRENT_TYPE}", current_type_label)
+        .replace("{TODAY}", &today_str)
 }
 
 #[cfg(test)]
@@ -66,23 +78,33 @@ mod tests {
 
     #[test]
     fn test_classification_prompt_contains_date() {
-        let prompt = build_classification_prompt();
+        let prompt = build_classification_prompt(None);
         assert!(prompt.contains("Today:"));
         assert!(prompt.contains("Extract search parameters"));
         // Should contain a date in YYYY-MM-DD format
         assert!(prompt.contains("20")); // Year starts with 20
+        // No placeholders should survive substitution.
+        assert!(!prompt.contains("{CURRENT_TYPE}"));
+        assert!(!prompt.contains("{TODAY}"));
     }
 
     #[test]
     fn test_classification_prompt_contains_type_enums() {
-        let prompt = build_classification_prompt();
+        let prompt = build_classification_prompt(None);
         assert!(prompt.contains("photos|screenshots|videos"));
         assert!(prompt.contains("shell-scripts|ssh-keys|docker-compose|env-files"));
     }
 
     #[test]
     fn test_classification_prompt_contains_time_enums() {
-        let prompt = build_classification_prompt();
+        let prompt = build_classification_prompt(None);
         assert!(prompt.contains("last_3_months|last_6_months"));
+    }
+
+    #[test]
+    fn test_classification_prompt_renders_current_type_context() {
+        assert!(build_classification_prompt(None).contains("Current type filter: both files and folders"));
+        assert!(build_classification_prompt(Some(true)).contains("Current type filter: folders only"));
+        assert!(build_classification_prompt(Some(false)).contains("Current type filter: files only"));
     }
 }

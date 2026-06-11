@@ -50,7 +50,9 @@ async fn translate(prompt: &str, sample: &[&str]) -> SelectionTranslateResult {
     let backend = AiBackend::remote(api_key, BASE_URL.to_string(), MODEL.to_string());
 
     let sample: Vec<String> = sample.iter().map(|s| (*s).to_string()).collect();
-    let system_prompt = build_classification_prompt(&sample);
+    // The eval exercises the default "both" type context; type-specific intents are rare and
+    // the live model is allowed to set `type` either way.
+    let system_prompt = build_classification_prompt(&sample, None);
 
     let raw = chat_completion(&backend, &system_prompt, prompt, &opts())
         .await

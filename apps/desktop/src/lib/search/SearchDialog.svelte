@@ -25,7 +25,8 @@
      */
     import { onMount, onDestroy } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
-    import { applySizeFromAi, applyDateFromAi } from '$lib/query-ui/apply-ai-filters'
+    import { applySizeFromAi, applyDateFromAi, applyTypeFromAi } from '$lib/query-ui/apply-ai-filters'
+    import { typeFilterToIsDirectory } from '$lib/query-ui/query-filter-state.svelte'
     import {
         prepareSearchIndex,
         searchFiles,
@@ -41,6 +42,7 @@
         addRecentSearch as addRecentSearchIpc,
         type HistoryEntry,
         type SearchResultEntry,
+        type TranslateResult,
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -200,10 +202,31 @@
      * (quota, key rejected, timeout, empty answer, …) instead of failing silently.
      */
     async function translateAi(prompt: string): Promise<AiTranslateResult | null> {
-        const result = await translateSearchQuery(prompt)
-        const { display, query } = result
-        const changed = new SvelteSet<string>()
+        // Hand the AI the user's current type as context so it can keep or change it (M6).
+        const currentType = typeFilterToIsDirectory(searchQueryState.getTypeFilter())
+        const result = await translateSearchQuery(prompt, currentType)
+        return {
+            caveat: result.caveat,
+            highlightedFields: applyAiTranslationToState(result),
+        }
+    }
 
+    /**
+     * Paints a translate result onto the Search state and returns the names of the chips that
+     * changed (for the QueryDialog highlight flash). Split out of `translateAi`, and further
+     * split into pattern-write vs filter-write halves, to keep each under the cognitive-complexity
+     * ceiling.
+     */
+    function applyAiTranslationToState(result: TranslateResult): string[] {
+        const changed = new SvelteSet<string>()
+        applyAiPatternAndToggles(result, changed)
+        applyAiSharedFilters(result.display, changed)
+        return Array.from(changed)
+    }
+
+    /** Writes the produced pattern (+ label), case sensitivity, and the system-dir toggle. */
+    function applyAiPatternAndToggles(result: TranslateResult, changed: SvelteSet<string>): void {
+        const { display, query } = result
         // Record the produced pattern in its own slot (the Pattern chip). The bar keeps the prompt.
         recordAiTranslation({
             pattern: display.namePattern ?? null,
@@ -211,7 +234,6 @@
             label: result.label ?? null,
         })
         if (display.namePattern != null) changed.add('pattern')
-
         if (query.caseSensitive != null) {
             setCaseSensitive(query.caseSensitive)
             changed.add('caseSensitive')
@@ -221,16 +243,19 @@
             setExcludeSystemDirs(false)
             changed.add('excludeSystemDirs')
         }
+        if (applyScopeFromAi(query.includePaths ?? null, query.excludeDirNames ?? null)) changed.add('scope')
+    }
+
+    /** Writes the shared Size / Modified / Type filters via the cross-consumer helpers. */
+    function applyAiSharedFilters(display: TranslateResult['display'], changed: SvelteSet<string>): void {
         if (applySizeFromAi(searchQueryState, display.minSize ?? null, display.maxSize ?? null))
             changed.add('size')
         if (applyDateFromAi(searchQueryState, display.modifiedAfter ?? null, display.modifiedBefore ?? null))
             changed.add('date')
-        if (applyScopeFromAi(query.includePaths ?? null, query.excludeDirNames ?? null)) changed.add('scope')
-
-        return {
-            caveat: result.caveat,
-            highlightedFields: Array.from(changed),
-        }
+        // Type (M6): leave-alone-if-null. The AI got the current type as context in `translateAi`;
+        // it returns `isDirectory` only when it wants to change it, so a null leaves the user's
+        // choice intact. Deliberately NOT reset-first like size/date (see `apply-ai-filters.ts`).
+        if (applyTypeFromAi(searchQueryState, display.isDirectory ?? null)) changed.add('type')
     }
 
     /**
@@ -490,6 +515,7 @@
         searchableFolder,
         systemDirExcludeTooltip,
         aiPattern: lastAiPattern,
+        aiPatternKind: getLastAiPatternKind(),
         onToggleCaseSensitive: () => {
             setCaseSensitive(!getCaseSensitive())
         },

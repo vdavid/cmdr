@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import { writable } from 'svelte/store'
 import SelectionDialog from './SelectionDialog.svelte'
-import { clearSelectionState } from './selection-state.svelte'
+import { clearSelectionState, selectionQueryState } from './selection-state.svelte'
 import type { FileEntry } from '$lib/file-explorer/types'
 import type { SelectionHistoryEntry, SelectionTranslateResult } from '$lib/ipc/bindings'
 
@@ -22,11 +22,12 @@ const aiProviderListeners = new Set<(id: string, value: unknown) => void>()
 
 const { translateSelectionMock, addRecentMock, getRecentMock } = vi.hoisted(() => ({
   // Typed signature so `mock.calls[0]` is a positional tuple rather than `[]`.
-  translateSelectionMock: vi.fn((...args: [string, string[]]): Promise<SelectionTranslateResult> => {
+  translateSelectionMock: vi.fn((...args: [string, string[], (boolean | null)?]): Promise<SelectionTranslateResult> => {
     void args
     return Promise.resolve({
       pattern: '*.png',
       kind: 'glob',
+      isDirectory: null,
       sizeMin: null,
       sizeMax: null,
       modifiedAfter: null,
@@ -294,6 +295,7 @@ describe('SelectionDialog', () => {
     translateSelectionMock.mockResolvedValueOnce({
       pattern: '*.log',
       kind: 'glob',
+      isDirectory: null,
       sizeMin: 1_048_576,
       sizeMax: null,
       modifiedAfter: null,
@@ -344,6 +346,7 @@ describe('SelectionDialog', () => {
     translateSelectionMock.mockResolvedValueOnce({
       pattern: '*.log',
       kind: 'glob',
+      isDirectory: null,
       sizeMin: 1024,
       sizeMax: 1_048_576,
       modifiedAfter: '2026-01-01',
@@ -381,6 +384,7 @@ describe('SelectionDialog', () => {
     translateSelectionMock.mockResolvedValueOnce({
       pattern: '^.*\\.log$',
       kind: 'regex',
+      isDirectory: null,
       sizeMin: 1024,
       sizeMax: null,
       modifiedAfter: null,
@@ -394,6 +398,7 @@ describe('SelectionDialog', () => {
     translateSelectionMock.mockResolvedValueOnce({
       pattern: '*.png',
       kind: 'glob',
+      isDirectory: null,
       sizeMin: null,
       sizeMax: null,
       modifiedAfter: null,
@@ -440,6 +445,80 @@ describe('SelectionDialog', () => {
     expect(matched).toHaveLength(1)
     expect(matched[0]).toEqual([0, 2])
 
+    cleanup()
+  })
+
+  it('type-in-AI: passes the current type as context and applies a returned folder type', async () => {
+    aiProvider = 'cloud'
+    translateSelectionMock.mockResolvedValueOnce({
+      pattern: '*',
+      kind: 'glob',
+      isDirectory: true, // the agent decided: folders only
+      sizeMin: null,
+      sizeMax: null,
+      modifiedAfter: null,
+      modifiedBefore: null,
+      caveat: null,
+      label: null,
+    })
+    const { overlay, cleanup } = await mountDialog()
+    dispatchKey(overlay, '1', true) // ⌘1 → AI
+    await tick()
+    const input = overlay.querySelector('input[type="text"], input:not([type])') as HTMLInputElement
+    input.value = 'the subfolders'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    await new Promise((r) => setTimeout(r, 100))
+    await tick()
+
+    // The IPC received the current type as the third arg (both → null at the start).
+    const call = translateSelectionMock.mock.calls[0]
+    expect(call[2]).toBeNull()
+    // The returned folder type painted the toggle.
+    const folders = Array.from(overlay.querySelectorAll<HTMLElement>('[aria-label="Filter by type"] .tg-item')).find(
+      (el) => el.textContent.trim() === 'Folders',
+    )
+    expect(folders?.getAttribute('data-state')).toBe('on')
+    cleanup()
+  })
+
+  it('type-in-AI: a null type from the agent LEAVES the user-picked type untouched (asymmetry)', async () => {
+    aiProvider = 'cloud'
+    // Pre-set the toggle to Files before the AI run.
+    selectionQueryState.setTypeFilter('file')
+    translateSelectionMock.mockResolvedValueOnce({
+      pattern: '*.log',
+      kind: 'glob',
+      isDirectory: null, // agent stays silent on type
+      sizeMin: null,
+      sizeMax: null,
+      modifiedAfter: null,
+      modifiedBefore: null,
+      caveat: null,
+      label: null,
+    })
+    const { overlay, cleanup } = await mountDialog()
+    dispatchKey(overlay, '1', true) // ⌘1 → AI
+    await tick()
+    const input = overlay.querySelector('input[type="text"], input:not([type])') as HTMLInputElement
+    input.value = 'all log files'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    await new Promise((r) => setTimeout(r, 100))
+    await tick()
+
+    // The IPC received `false` (files) as context.
+    expect(translateSelectionMock.mock.calls[0][2]).toBe(false)
+    // The agent returned null, so the user's Files choice must STILL stand (never reset to both).
+    expect(selectionQueryState.getTypeFilter()).toBe('file')
+    const files = Array.from(overlay.querySelectorAll<HTMLElement>('[aria-label="Filter by type"] .tg-item')).find(
+      (el) => el.textContent.trim() === 'Files',
+    )
+    expect(files?.getAttribute('data-state')).toBe('on')
     cleanup()
   })
 

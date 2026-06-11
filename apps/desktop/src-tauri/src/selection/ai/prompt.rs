@@ -42,6 +42,7 @@ Return one field per line. Omit fields that don't apply. Don't add explanation t
 
 pattern:        smallest glob or regex that selects the user's files; full-name match (no path)
 kind:           glob | regex
+type:           file | folder (OMIT unless the intent is clearly only files or only folders)
 size_min:       minimum size in bytes (integer)
 size_max:       maximum size in bytes (integer)
 modified_after: ISO date YYYY-MM-DD (file modified on or after)
@@ -55,14 +56,19 @@ Rules:
 - Patterns match the filename, not the full path. Don't include `/`.
 - Don't escape glob metacharacters; the matcher anchors the pattern automatically.
 - Prefer the broadest reasonable pattern. Don't list every filename individually.
-- When the intent is purely a size or date filter, set `pattern` to `*` so the matcher selects every name.
+- When the intent is purely a size, date, or type filter, set `pattern` to `*` so the matcher selects every name.
 - When the intent has no time component, omit `modified_after` and `modified_before`. Never default to recent.
 - When the intent has no size component, omit `size_min` and `size_max`.
+- `type` is OPTIONAL. The user's current choice is shown below. OMIT `type` unless they clearly want only files \
+(\"the pdf files\", \"just the documents\") or only folders (\"the subfolders\", \"empty directories\"). \
+A bare \"all images\" is files; \"node_modules folders\" is folder. When in doubt, omit it.
 
 Examples (sample lines elided for brevity):
 \"all log files\" \u{2192} pattern: *.log / kind: glob / label: All log files
 \"png and jpg images\" \u{2192} pattern: *.(png|jpg|jpeg) / kind: regex / label: PNG and JPG images
 \"files bigger than 5 MB\" \u{2192} pattern: * / kind: glob / size_min: 5242880 / label: Files bigger than 5 MB
+\"the subfolders\" \u{2192} pattern: * / kind: glob / type: folder / label: Subfolders
+\"empty files\" \u{2192} pattern: * / kind: glob / type: file / size_min: 0 / size_max: 0 / label: Empty files
 \"backups from last week\" \u{2192} pattern: *backup* / kind: glob / modified_after: {WEEK_AGO} / label: Recent backups
 \"final drafts I haven't shared\" \u{2192} pattern: *final* / kind: glob / note: can't tell shared status / label: Final drafts
 \"every rymd file\" \u{2192} pattern: *rymd* / kind: glob / label: Rymd files
@@ -71,13 +77,18 @@ Examples (sample lines elided for brevity):
 Sample of the folder's filenames:
 {SAMPLE}
 
+Current type filter: {CURRENT_TYPE}.
 Today: {TODAY}.";
 
-/// Builds the full classification prompt with today's date and the supplied folder
-/// sample. The sample is rendered one filename per line, prefixed with `- `, after a
-/// deduplicating pass; passing more than `MAX_SAMPLE` lines is allowed but the prompt
-/// truncates to keep token cost predictable.
-pub fn build_classification_prompt(sample_names: &[String]) -> String {
+/// Builds the full classification prompt with today's date, the supplied folder sample, and
+/// the user's current type filter as context. The sample is rendered one filename per line,
+/// prefixed with `- `, after a deduplicating pass; passing more than `MAX_SAMPLE` lines is
+/// allowed but the prompt truncates to keep token cost predictable.
+///
+/// `current_type`: `Some(true)` = folders, `Some(false)` = files, `None` = both. The model is
+/// told it may keep or change this; an omitted `type` in the response means "keep the user's
+/// choice" downstream.
+pub fn build_classification_prompt(sample_names: &[String], current_type: Option<bool>) -> String {
     let today = time::OffsetDateTime::now_utc().date();
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let today_str = today.format(&format).expect("date format always succeeds");
@@ -90,7 +101,17 @@ pub fn build_classification_prompt(sample_names: &[String]) -> String {
     CLASSIFICATION_PROMPT
         .replace("{TODAY}", &today_str)
         .replace("{WEEK_AGO}", &week_ago_str)
+        .replace("{CURRENT_TYPE}", current_type_label(current_type))
         .replace("{SAMPLE}", &sample)
+}
+
+/// Renders the current type filter for the prompt context line.
+fn current_type_label(current_type: Option<bool>) -> &'static str {
+    match current_type {
+        Some(true) => "folders only",
+        Some(false) => "files only",
+        None => "both files and folders",
+    }
 }
 
 /// Cap on how many filenames we paste into the prompt. The frontend sampler usually
@@ -144,7 +165,7 @@ mod tests {
 
     #[test]
     fn prompt_contains_today_date() {
-        let prompt = build_classification_prompt(&["a.log".into(), "b.txt".into()]);
+        let prompt = build_classification_prompt(&["a.log".into(), "b.txt".into()], None);
         assert!(prompt.contains("Today:"));
         // Year always starts with "20" for the foreseeable future.
         assert!(prompt.contains("20"));
@@ -152,7 +173,7 @@ mod tests {
 
     #[test]
     fn prompt_inlines_sample_block() {
-        let prompt = build_classification_prompt(&["alpha.png".into(), "beta.jpg".into()]);
+        let prompt = build_classification_prompt(&["alpha.png".into(), "beta.jpg".into()], None);
         assert!(prompt.contains("- alpha.png"));
         assert!(prompt.contains("- beta.jpg"));
         assert!(prompt.contains("Sample of the folder's filenames:"));
@@ -160,19 +181,21 @@ mod tests {
 
     #[test]
     fn prompt_substitutes_week_ago_placeholder() {
-        let prompt = build_classification_prompt(&[]);
+        let prompt = build_classification_prompt(&[], None);
         // The {WEEK_AGO} placeholder should be replaced so the example reads as a real date.
         assert!(!prompt.contains("{WEEK_AGO}"));
         assert!(!prompt.contains("{TODAY}"));
         assert!(!prompt.contains("{SAMPLE}"));
+        assert!(!prompt.contains("{CURRENT_TYPE}"));
     }
 
     #[test]
     fn prompt_lists_required_fields() {
-        let prompt = build_classification_prompt(&[]);
+        let prompt = build_classification_prompt(&[], None);
         for field in [
             "pattern:",
             "kind:",
+            "type:",
             "size_min:",
             "size_max:",
             "modified_after:",
@@ -181,6 +204,13 @@ mod tests {
         ] {
             assert!(prompt.contains(field), "prompt missing field {field:?}");
         }
+    }
+
+    #[test]
+    fn prompt_renders_current_type_context() {
+        assert!(build_classification_prompt(&[], None).contains("Current type filter: both files and folders"));
+        assert!(build_classification_prompt(&[], Some(true)).contains("Current type filter: folders only"));
+        assert!(build_classification_prompt(&[], Some(false)).contains("Current type filter: files only"));
     }
 
     #[test]

@@ -109,6 +109,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
       searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       systemDirExcludeTooltip: '',
       aiPattern: null,
+      aiPatternKind: null,
       onToggleCaseSensitive: () => {},
       onToggleExcludeSystemDirs: () => {},
       onSetScope: () => {},

@@ -90,6 +90,13 @@ export interface QueryDialogFilterChipsExtras {
   searchableFolder: { path: string | null; disabled: boolean; disabledReason: string }
   systemDirExcludeTooltip: string
   aiPattern: string | null
+  /**
+   * Kind of the AI-produced pattern (`'glob'` / `'regex'` / null). The transparency strip uses
+   * it to label the pattern row precisely. Search wires its `lastAiPatternKind`; Selection passes
+   * `null` (its `translateAi` clears the other-kind buffer, so the strip's handTyped fallback is
+   * already kind-correct there).
+   */
+  aiPatternKind: 'glob' | 'regex' | null
   onToggleCaseSensitive: () => void
   onToggleExcludeSystemDirs: () => void
   onSetScope: (path: string) => void

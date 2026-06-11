@@ -392,7 +392,9 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
     // ── Translate query ──────────────────────────────────────────────
     log::debug!("MCP ai_search: calling translate_search_query for query={natural_query:?}");
     let t = std::time::Instant::now();
-    let translate_result = match crate::commands::search::translate_search_query(natural_query.to_string()).await {
+    // MCP has no dialog type-toggle context; pass `None` (both files and folders).
+    let translate_result = match crate::commands::search::translate_search_query(natural_query.to_string(), None).await
+    {
         Ok(tr) => {
             log::info!(
                 "MCP ai_search: translate_search_query succeeded in {:.1}s, pattern={:?}",
