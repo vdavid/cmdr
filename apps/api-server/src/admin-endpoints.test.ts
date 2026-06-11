@@ -30,10 +30,36 @@ function createMockD1(queryResults: Record<string, unknown[]> = {}): D1Database 
   } as unknown as D1Database
 }
 
+interface MockR2Object {
+  key: string
+  customMetadata?: Record<string, string>
+  uploaded?: string
+  size?: number
+}
+
+/** A one-page R2 bucket whose `list` returns the given objects (no pagination). */
+function createMockR2(objects: MockR2Object[] = []): R2Bucket {
+  return {
+    list: vi.fn(() =>
+      Promise.resolve({
+        objects: objects.map((o) => ({
+          key: o.key,
+          size: o.size ?? 1000,
+          uploaded: new Date(o.uploaded ?? '2026-01-01T00:00:00.000Z'),
+          customMetadata: o.customMetadata ?? {},
+        })),
+        truncated: false,
+        cursor: undefined,
+      }),
+    ),
+  } as unknown as R2Bucket
+}
+
 const baseBindings = {
   LICENSE_CODES: createMockKv(),
   DEVICE_COUNTS: createMockAnalyticsEngine(),
   TELEMETRY_DB: createMockD1(),
+  ERROR_REPORTS_BUCKET: createMockR2(),
   ED25519_PRIVATE_KEY: 'deadbeef'.repeat(8),
   RESEND_API_KEY: 'test-resend-key',
   PRODUCT_NAME: 'Cmdr',
@@ -243,6 +269,131 @@ describe('GET /admin/heartbeat-dau', () => {
   it('accepts all valid ranges', async () => {
     for (const range of ['7d', '30d', '90d', 'all']) {
       const res = await app.request(`/admin/heartbeat-dau?range=${range}`, { headers: authHeaders }, baseBindings)
+      expect(res.status).toBe(200)
+    }
+  })
+})
+
+describe('GET /admin/feedback', () => {
+  it('returns 401 without auth', async () => {
+    const res = await app.request('/admin/feedback', {}, baseBindings)
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 for invalid range', async () => {
+    const res = await app.request('/admin/feedback?range=24h', { headers: authHeaders }, baseBindings)
+    expect(res.status).toBe(400)
+  })
+
+  it('returns empty array when no data', async () => {
+    const res = await app.request('/admin/feedback?range=7d', { headers: authHeaders }, baseBindings)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual([])
+  })
+
+  it('returns feedback rows with camelCase keys and the reply-to email', async () => {
+    const mockData = [
+      {
+        id: 2,
+        createdAt: '2026-06-10 09:00:00',
+        feedback: 'Love the speed!',
+        email: 'tester@example.com',
+        appVersion: '0.22.0',
+        osVersion: 'macOS 15.5',
+        buildMode: 'release',
+      },
+    ]
+    const bindings = { ...baseBindings, TELEMETRY_DB: createMockD1({ feedback: mockData }) }
+    const res = await app.request('/admin/feedback?range=30d', { headers: authHeaders }, bindings)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual(mockData)
+  })
+
+  it('accepts all valid ranges', async () => {
+    for (const range of ['7d', '30d', '90d', 'all']) {
+      const res = await app.request(`/admin/feedback?range=${range}`, { headers: authHeaders }, baseBindings)
+      expect(res.status).toBe(200)
+    }
+  })
+})
+
+describe('GET /admin/error-reports', () => {
+  it('returns 401 without auth', async () => {
+    const res = await app.request('/admin/error-reports', {}, baseBindings)
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 for invalid range', async () => {
+    const res = await app.request('/admin/error-reports?range=24h', { headers: authHeaders }, baseBindings)
+    expect(res.status).toBe(400)
+  })
+
+  it('returns empty array when the bucket is empty', async () => {
+    const res = await app.request('/admin/error-reports?range=7d', { headers: authHeaders }, baseBindings)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual([])
+  })
+
+  it('maps each bundle from its key date and custom metadata', async () => {
+    const bindings = {
+      ...baseBindings,
+      ERROR_REPORTS_BUCKET: createMockR2([
+        {
+          key: 'error-reports/prod/2026-06-10/ERR-ABCDE-uuid.zip',
+          customMetadata: {
+            id: 'ERR-ABCDE',
+            kind: 'auto',
+            appVersion: '0.22.0',
+            osVersion: 'macOS 15.5',
+            arch: 'aarch64',
+            generatedAt: '2026-06-10T08:00:00.000Z',
+          },
+        },
+      ]),
+    }
+    const res = await app.request('/admin/error-reports?range=all', { headers: authHeaders }, bindings)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual([
+      {
+        id: 'ERR-ABCDE',
+        kind: 'auto',
+        appVersion: '0.22.0',
+        osVersion: 'macOS 15.5',
+        arch: 'aarch64',
+        date: '2026-06-10',
+        generatedAt: '2026-06-10T08:00:00.000Z',
+      },
+    ])
+  })
+
+  it('excludes bundles older than the range window', async () => {
+    const bindings = {
+      ...baseBindings,
+      ERROR_REPORTS_BUCKET: createMockR2([
+        { key: 'error-reports/prod/2020-01-01/ERR-OLD00-uuid.zip', customMetadata: { id: 'ERR-OLD00', kind: 'user' } },
+      ]),
+    }
+    const res = await app.request('/admin/error-reports?range=7d', { headers: authHeaders }, bindings)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual([])
+  })
+
+  it('lists the prod prefix only', async () => {
+    const listSpy = vi.fn().mockResolvedValue({ objects: [], truncated: false, cursor: undefined })
+    const r2 = { list: listSpy } as unknown as R2Bucket
+    await app.request(
+      '/admin/error-reports?range=7d',
+      { headers: authHeaders },
+      { ...baseBindings, ERROR_REPORTS_BUCKET: r2 },
+    )
+    expect(listSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ prefix: 'error-reports/prod/', include: ['customMetadata'] }),
+    )
+  })
+
+  it('accepts all valid ranges', async () => {
+    for (const range of ['7d', '30d', '90d', 'all']) {
+      const res = await app.request(`/admin/error-reports?range=${range}`, { headers: authHeaders }, baseBindings)
       expect(res.status).toBe(200)
     }
   })

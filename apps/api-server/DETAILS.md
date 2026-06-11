@@ -5,59 +5,61 @@ live in [CLAUDE.md](CLAUDE.md).
 
 ## Key files
 
-| File                                        | Purpose                                                                                                     |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                                            |
-| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                                        |
-| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`                                      |
-| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/crashes`, `/admin/heartbeat-dau` |
-| `src/telemetry.ts`                          | Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`                 |
-| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                         |
-| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                        |
-| `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                     |
-| `src/feedback.ts`                           | Route: `POST /feedback` (in-app feedback → D1 + Discord notify)                                             |
-| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                |
-| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                               |
-| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                |
-| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                                                     |
-| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                                                       |
-| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                                                 |
-| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                                               |
-| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                                                    |
-| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                                                |
-| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                                           |
-| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                                                    |
-| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/crashes`                                       |
-| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                     |
-| `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                     |
-| `src/beta-signup.test.ts`                   | Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure, rate limit)            |
-| `src/feedback.test.ts`                      | Tests for `POST /feedback` (validation, caps, D1 row, Discord ping, rate limit)                             |
-| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                         |
-| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                   |
-| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                             |
-| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                                        |
+| File                                        | Purpose                                                                                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                                                                                       |
+| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                                                                                   |
+| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`                                                                                 |
+| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports` |
+| `src/telemetry.ts`                          | Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`                                                            |
+| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                                                                    |
+| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                                                                   |
+| `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                                                                |
+| `src/feedback.ts`                           | Route: `POST /feedback` (in-app feedback → D1 + Discord notify)                                                                                        |
+| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                                                           |
+| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                                                                          |
+| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                                                           |
+| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                                                                                                |
+| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                                                                                                  |
+| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                                                                                            |
+| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                                                                                          |
+| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                                                                                               |
+| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                                                                                           |
+| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                                                                                      |
+| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                                                                                               |
+| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`               |
+| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                                                                |
+| `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                                                                |
+| `src/beta-signup.test.ts`                   | Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure, rate limit)                                                       |
+| `src/feedback.test.ts`                      | Tests for `POST /feedback` (validation, caps, D1 row, Discord ping, rate limit)                                                                        |
+| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                                                                    |
+| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                                                              |
+| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                                                                        |
+| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                                                                                   |
 
 ## Routes
 
-| Method | Path                       | Auth          | Purpose                                                             |
-| ------ | -------------------------- | ------------- | ------------------------------------------------------------------- |
-| GET    | `/`                        | none          | Health check                                                        |
-| POST   | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                        |
-| POST   | `/activate`                | none          | Exchange short code → full cryptographic key                        |
-| POST   | `/validate`                | none          | Check subscription status via Paddle API                            |
-| POST   | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                  |
-| GET    | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)           |
-| GET    | `/admin/downloads`         | Bearer token  | Aggregated download data by day/version/arch/country                |
-| GET    | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                       |
-| GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                      |
-| GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`           |
-| GET    | `/download/:version/:arch` | none          | Log download to D1, 302 → GitHub                                    |
-| POST   | `/crash-report`            | none          | Ingest crash report to D1                                           |
-| POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                |
-| POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                  |
-| POST   | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id) |
-| POST   | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                        |
-| GET    | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                 |
+| Method | Path                       | Auth          | Purpose                                                                                           |
+| ------ | -------------------------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| GET    | `/`                        | none          | Health check                                                                                      |
+| POST   | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                                                      |
+| POST   | `/activate`                | none          | Exchange short code → full cryptographic key                                                      |
+| POST   | `/validate`                | none          | Check subscription status via Paddle API                                                          |
+| POST   | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                                                |
+| GET    | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)                                         |
+| GET    | `/admin/downloads`         | Bearer token  | Aggregated download data by day/version/arch/country                                              |
+| GET    | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                                                     |
+| GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                                                    |
+| GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                         |
+| GET    | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                           |
+| GET    | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first |
+| GET    | `/download/:version/:arch` | none          | Log download to D1, 302 → GitHub                                                                  |
+| POST   | `/crash-report`            | none          | Ingest crash report to D1                                                                         |
+| POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                              |
+| POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                |
+| POST   | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                               |
+| POST   | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                      |
+| GET    | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                               |
 
 ## Environments
 
@@ -265,6 +267,11 @@ compatibility.
 **Security:** Admin bearer token compared with `constantTimeEqual` (XOR-accumulate, timing-safe). All secrets are
 Cloudflare secrets (`wrangler secret put`), never in `wrangler.toml`. `/admin/stats` uses a dedicated `ADMIN_API_TOKEN`
 secret, separate from the Paddle webhook secrets used by `/admin/generate`.
+
+**Workers types entrypoint:** `tsconfig.json` pins `@cloudflare/workers-types/2023-07-01`, not the package root (which
+resolves to the 2021-11-03 snapshot). The root snapshot predates `R2ListOptions.include` and `R2Object.customMetadata`,
+which `/admin/error-reports` needs to read bundle metadata via `bucket.list`. The dated entrypoint matches the runtime
+better anyway (`compatibility_date` is 2025-01-01); don't revert it to the bare package name.
 
 **Activation counter:** `/activate` increments a KV counter at `_meta:activation_count` on each successful activation.
 Read by `/admin/stats`. The counter starts from zero when deployed; initialize via the CF API if historical count is

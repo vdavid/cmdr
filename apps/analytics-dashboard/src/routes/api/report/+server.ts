@@ -2,6 +2,7 @@ import type { RequestHandler } from './$types'
 import type { DashboardData } from '$lib/server/fetch-all.js'
 import type { DownloadRow } from '$lib/server/sources/cloudflare.js'
 import { fetchDashboardData } from '$lib/server/fetch-all.js'
+import { countFeedbackWithReplyTo, tallyErrorReportsByField, errorReportsByDay } from '$lib/feedback-and-errors.js'
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
 
@@ -364,6 +365,48 @@ function formatReport(data: DashboardData): string {
       line('Subscriptions by status:')
       for (const [status, count] of statusEntries) {
         line(`  ${status}: ${num(count)} (${pct(count, totalSubs)})`)
+      }
+    }
+  }
+  blank()
+
+  // 7. Feedback & errors
+  h2('Feedback & errors: what are users telling us?')
+  if (!data.feedbackAndErrors.ok) {
+    line(`Couldn't load: ${data.feedbackAndErrors.error}`)
+  } else {
+    const fe = data.feedbackAndErrors.data
+    line(`- Feedback messages: ${num(fe.feedback.length)}`)
+    line(`- Awaiting reply (have a reply-to email): ${num(countFeedbackWithReplyTo(fe.feedback))}`)
+    line(`- Error reports: ${num(fe.errorReports.length)}`)
+
+    if (fe.errorReports.length > 0) {
+      blank()
+      line('Error reports by kind:')
+      for (const k of tallyErrorReportsByField(fe.errorReports, 'kind')) {
+        line(`  ${k.key}: ${num(k.count)}`)
+      }
+
+      blank()
+      line('Error reports by version:')
+      for (const v of tallyErrorReportsByField(fe.errorReports, 'appVersion')) {
+        line(`  ${v.key}: ${num(v.count)}`)
+      }
+
+      blank()
+      line('Error reports by day:')
+      for (const d of errorReportsByDay(fe.errorReports)) {
+        line(`  ${d.date}: ${num(d.count)}`)
+      }
+    }
+
+    if (fe.feedback.length > 0) {
+      blank()
+      line('Recent feedback:')
+      for (const msg of fe.feedback.slice(0, 30)) {
+        const replyTo = msg.email ? ` [reply-to: ${msg.email}]` : ''
+        const text = msg.feedback.replace(/\s+/g, ' ').slice(0, 280)
+        line(`  ${msg.createdAt.split(' ')[0]} (v${msg.appVersion})${replyTo}: ${text}`)
       }
     }
   }

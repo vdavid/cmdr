@@ -12,20 +12,20 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 
 ## Key files
 
-| File                               | Purpose                                                         |
-| ---------------------------------- | --------------------------------------------------------------- |
-| `src/app.css`                      | Tailwind v4 theme (dark palette matching getcmdr.com)           |
-| `src/app.d.ts`                     | Platform env type declarations for CF Pages                     |
-| `src/routes/+page.svelte`          | Single-page dashboard with 6 acquisition stage sections         |
-| `src/routes/+page.server.ts`       | Server load: reads `?range=` param, delegates to `fetch-all.ts` |
-| `src/routes/api/report/+server.ts` | Agent-readable plain-text report with all breakdowns            |
-| `src/lib/server/fetch-all.ts`      | Shared data-fetching logic used by both the page and report API |
-| `src/lib/components/Chart.svelte`  | Reusable uPlot chart with ResizeObserver and dark theme         |
-| `src/lib/server/types.ts`          | Shared types: `TimeRange`, `SourceResult`, time window helpers  |
-| `src/lib/server/cache.ts`          | CF Cache API wrapper with in-memory Map fallback for local dev  |
-| `src/lib/server/sources/`          | Data source modules (one per external API)                      |
-| `svelte.config.js`                 | Adapter-cloudflare config                                       |
-| `vitest.config.ts`                 | Vitest config for unit tests                                    |
+| File                               | Purpose                                                            |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `src/app.css`                      | Tailwind v4 theme (dark palette matching getcmdr.com)              |
+| `src/app.d.ts`                     | Platform env type declarations for CF Pages                        |
+| `src/routes/+page.svelte`          | Single-page dashboard: 6 acquisition stages plus feedback & errors |
+| `src/routes/+page.server.ts`       | Server load: reads `?range=` param, delegates to `fetch-all.ts`    |
+| `src/routes/api/report/+server.ts` | Agent-readable plain-text report with all breakdowns               |
+| `src/lib/server/fetch-all.ts`      | Shared data-fetching logic used by both the page and report API    |
+| `src/lib/components/Chart.svelte`  | Reusable uPlot chart with ResizeObserver and dark theme            |
+| `src/lib/server/types.ts`          | Shared types: `TimeRange`, `SourceResult`, time window helpers     |
+| `src/lib/server/cache.ts`          | CF Cache API wrapper with in-memory Map fallback for local dev     |
+| `src/lib/server/sources/`          | Data source modules (one per external API)                         |
+| `svelte.config.js`                 | Adapter-cloudflare config                                          |
+| `vitest.config.ts`                 | Vitest config for unit tests                                       |
 
 ## Running locally
 
@@ -38,14 +38,16 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 
 Each source gets its own module under `src/lib/server/sources/`:
 
-| Module          | Auth                                            | Data                                                                                                                                                                  |
-| --------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                                                        |
-| `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts (by version/arch/country) and true per-day DAU + beats from the heartbeat, fetched from worker endpoints (`/admin/downloads`, `/admin/heartbeat-dau`) |
-| `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                                                       |
-| `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination                                           |
-| `posthog.ts`    | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                                                          |
-| `license.ts`    | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                                                                 |
+| Module                   | Auth                                            | Data                                                                                                                                                                                                                                        |
+| ------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `umami.ts`               | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                                                                                                                              |
+| `cloudflare.ts`          | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts (by version/arch/country) and true per-day DAU + beats from the heartbeat, fetched from worker endpoints (`/admin/downloads`, `/admin/heartbeat-dau`)                                                                       |
+| `paddle.ts`              | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                                                                                                                             |
+| `github.ts`              | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination                                                                                                                 |
+| `posthog.ts`             | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                                                                                                                                |
+| `license.ts`             | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                                                                                                                                       |
+| `feedback-and-errors.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | In-app feedback messages and error-report bundle metadata from worker endpoints (`/admin/feedback`, `/admin/error-reports`). Pure aggregation helpers + row types live in `$lib/feedback-and-errors.ts` (client-safe, shared with the page) |
+| `worker-endpoint.ts`     | (shared helper)                                 | `fetchWorkerEndpoint(token, path)`: GETs a worker admin endpoint with the bearer token, used by `cloudflare.ts` and `feedback-and-errors.ts`                                                                                                |
 
 Each module exports a typed fetch function returning `SourceResult<T>` (ok + data, or error string). Results are cached
 via `cache.ts` (5 min TTL for 24h/7d, 1 hour for 30d). The page server calls all sources in parallel, each capped at 20s
@@ -102,7 +104,19 @@ aggregate numbers. A true funnel would require cross-site user identity tracking
 
 These colors are used in metric dots, chart strokes, and chart fills. Keep them consistent when adding new UI.
 
-**Decision**: Single page, not multi-page. **Why**: Only six sections. Scroll is simpler than navigation.
+**Decision**: Single page, not multi-page. **Why**: A handful of sections. Scroll is simpler than navigation.
+
+**Decision**: A "Feedback & errors" section reads the app's own stores via two worker admin endpoints (`/admin/feedback`
+from D1, `/admin/error-reports` from the R2 bucket's `list` with `customMetadata`), not Discord. **Why**: the
+`#feedback` and `#error-reports` Discord channels are private and denied to the community bot, and the worker already
+holds the `TELEMETRY_DB` and `ERROR_REPORTS_BUCKET` bindings, so it can serve this with no extra token or service. The
+agent-facing local digest (`/feedback-and-error-digest-from-app`) reads the same stores directly; see
+`docs/tooling/feedback-and-error-digest.md`.
+
+**Decision**: The feedback/error-report row types and pure aggregation helpers live in `$lib/feedback-and-errors.ts`,
+outside `$lib/server`. **Why**: `+page.svelte` reaches the client bundle, and SvelteKit forbids runtime imports from
+`$lib/server` there. Keeping the helpers client-safe lets the page, the report endpoint, and tests share one copy; the
+server-only fetching stays in `$lib/server/sources/feedback-and-errors.ts`.
 
 **Decision**: uPlot for charts. **Why**: ~45 KB, fast canvas rendering, simple API. No wrapper needed.
 

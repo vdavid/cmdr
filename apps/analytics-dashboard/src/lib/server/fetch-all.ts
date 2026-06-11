@@ -5,12 +5,14 @@ import type { PaddleData } from './sources/paddle.js'
 import type { GitHubData, GitHubStarsData } from './sources/github.js'
 import type { PostHogData } from './sources/posthog.js'
 import type { LicenseData } from './sources/license.js'
+import type { FeedbackAndErrorsData } from './sources/feedback-and-errors.js'
 import { fetchUmamiData } from './sources/umami.js'
 import { fetchCloudflareData } from './sources/cloudflare.js'
 import { fetchPaddleData } from './sources/paddle.js'
 import { fetchGitHubData, fetchGitHubStarsData } from './sources/github.js'
 import { fetchPostHogData } from './sources/posthog.js'
 import { fetchLicenseData } from './sources/license.js'
+import { fetchFeedbackAndErrorsData } from './sources/feedback-and-errors.js'
 
 export interface DashboardData {
   range: TimeRange
@@ -22,6 +24,7 @@ export interface DashboardData {
   githubStars: SourceResult<GitHubStarsData>
   posthog: SourceResult<PostHogData>
   license: SourceResult<LicenseData>
+  feedbackAndErrors: SourceResult<FeedbackAndErrorsData>
 }
 
 const sourceTimeoutMs = 20_000
@@ -85,7 +88,7 @@ export async function fetchDashboardData(
   const range: TimeRange = validRanges.has(rangeParam as TimeRange) ? (rangeParam as TimeRange) : '7d'
   const env = await resolveEnv(platform)
 
-  const [umami, cloudflare, paddle, github, githubStars, posthog, license] = await Promise.all([
+  const [umami, cloudflare, paddle, github, githubStars, posthog, license, feedbackAndErrors] = await Promise.all([
     guardedFetch(env?.UMAMI_API_URL, 'Umami', () =>
       fetchUmamiData(
         {
@@ -120,6 +123,9 @@ export async function fetchDashboardData(
     guardedFetch(env?.LICENSE_SERVER_ADMIN_TOKEN, 'License server', () =>
       fetchLicenseData({ LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN }),
     ),
+    guardedFetch(env?.LICENSE_SERVER_ADMIN_TOKEN, 'Feedback & errors', () =>
+      fetchFeedbackAndErrorsData({ LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN }, range),
+    ),
   ])
 
   return {
@@ -132,5 +138,6 @@ export async function fetchDashboardData(
     githubStars,
     posthog,
     license,
+    feedbackAndErrors,
   }
 }

@@ -1,5 +1,6 @@
 import type { TimeRange, SourceResult } from '../types.js'
 import { cacheGet, cacheSet } from '../cache.js'
+import { fetchWorkerEndpoint } from './worker-endpoint.js'
 
 export interface DownloadRow {
   version: string
@@ -39,19 +40,6 @@ const heartbeatDauRangeMap: Record<TimeRange, string> = {
   '30d': '30d',
 }
 
-const workerBaseUrl = 'https://api.getcmdr.com'
-
-async function fetchWorkerEndpoint<T>(env: CloudflareEnv, path: string): Promise<T> {
-  const response = await fetch(`${workerBaseUrl}${path}`, {
-    headers: { Authorization: `Bearer ${env.LICENSE_SERVER_ADMIN_TOKEN}` },
-  })
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`Worker ${path} returned ${String(response.status)}: ${text}`)
-  }
-  return (await response.json()) as T
-}
-
 interface WorkerDownloadRow {
   date: string
   version: string
@@ -83,8 +71,14 @@ export async function fetchCloudflareData(env: CloudflareEnv, range: TimeRange):
 
   try {
     const [downloadsRaw, heartbeatDauRaw] = await Promise.all([
-      fetchWorkerEndpoint<WorkerDownloadRow[]>(env, `/admin/downloads?range=${downloadRangeMap[range]}`),
-      fetchWorkerEndpoint<HeartbeatDauRow[]>(env, `/admin/heartbeat-dau?range=${heartbeatDauRangeMap[range]}`),
+      fetchWorkerEndpoint<WorkerDownloadRow[]>(
+        env.LICENSE_SERVER_ADMIN_TOKEN,
+        `/admin/downloads?range=${downloadRangeMap[range]}`,
+      ),
+      fetchWorkerEndpoint<HeartbeatDauRow[]>(
+        env.LICENSE_SERVER_ADMIN_TOKEN,
+        `/admin/heartbeat-dau?range=${heartbeatDauRangeMap[range]}`,
+      ),
     ])
 
     const data: CloudflareData = {
