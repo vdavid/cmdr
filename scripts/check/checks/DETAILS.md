@@ -211,6 +211,11 @@ How reachability is decided (`BuildDocGraph`):
 - **Everything under `docs/` is enforced, including `docs/specs` and `docs/notes`.** Those dirs are periodically-wiped
   scratch, but they must still be discoverable while they exist: specs hang off `docs/specs/index.md`, and a note is
   expected to be linked from the colocated `CLAUDE.md` / `DETAILS.md` whose work it informs.
+- **Candidates come from git, not a raw walk.** `findMarkdownDocs` lists
+  `git ls-files --cached --others --exclude-standard` (tracked plus untracked-but-not-ignored), so a `.gitignore`d
+  scratch dir (`_ignored/`) or a vendored tree can't fail the check on a local working tree even though it never reaches
+  CI's clean checkout. A brand-new uncommitted doc still counts. Outside a git work tree it falls back to a filesystem
+  walk.
 
 `docs-reachable-allowlist.json` maps a doc path → the reason it's intentionally unreachable. The goal is an empty list:
 connect docs rather than exempt them. Shrink-wrap drops entries whose file is gone or which became reachable; adding or
