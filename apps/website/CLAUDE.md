@@ -151,9 +151,22 @@ of file names, paths, queries, and prompts by allowlist. See `apps/desktop/src-t
   aggregate channel attribution. If you add a new download link, give it `data-download-link` (main) or
   `data-arch` inside `[data-download-dropdown]` (option) so the ref script finds it.
 
-**Decision/Why**: We avoid cookies to not need a cookie consent banner. All three analytics tools are configured to work
-without cookies. If you add or change analytics tooling, preserve this property: no cookies unless absolutely
-inevitable. See `docs/tooling/umami.md` and `docs/tooling/posthog.md` for API access and config details.
+**Decision/Why — client-side storage policy (no consent banner, ever)**: The site must never need a cookie consent
+banner. The legal line (ePrivacy Article 5(3)) covers all device storage, not only cookies, but with an exemption for
+storage that's strictly necessary / UI customization. So the rule here is preference vs tracking:
+
+- **Preference flags are fine, no banner needed**: the theme choice, download-arch choice, and the newsletter form's
+  dismissed/subscribed flags live in localStorage. They fall under the ePrivacy "UI customization" exemption (WP29
+  Opinion 04/2012): no identifier, never sent anywhere, exist for the user's benefit. They're not personal data, so
+  GDPR isn't triggered either. Don't flag these as a compliance problem; David has settled this.
+- **Tracking storage is never okay**: anything that identifies, follows, or attributes a visitor (analytics IDs,
+  attribution state, session cookies) must NOT use cookies, localStorage, or sessionStorage — that's consent-requiring
+  storage and would force a banner. Track anonymously in aggregate instead, like the existing setup does: cookieless
+  Umami, memory-persistence PostHog, URL-state `ref` attribution, daily-hashed IPs server-side. Anonymous aggregate
+  insight is a win; individual tracking at the cost of a banner is not.
+
+If you add analytics tooling or any feature that wants client-side persistence, preserve this split. See
+`docs/tooling/umami.md` and `docs/tooling/posthog.md` for API access and config details.
 
 ## Gotchas
 
