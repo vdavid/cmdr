@@ -43,6 +43,9 @@ struct ManagerState {
     download_in_progress: bool,
     /// True while the server is starting up (health check polling)
     server_starting: bool,
+    /// Cancels the in-flight startup health-check when the server is intentionally stopped
+    /// or superseded, so a deliberate stop isn't reported as a startup failure.
+    start_cancel: Option<CancellationToken>,
     /// AI provider mode: "off", "cloud", or "local"
     provider: String,
     /// Context size for local llama-server
@@ -75,6 +78,7 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
         cancel_requested: false,
         download_in_progress: false,
         server_starting: false,
+        start_cancel: None,
         provider: String::from("local"),
         context_size: 4096,
         cloud_api_key: String::new(),
@@ -109,10 +113,13 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
 /// Fire-and-forget SIGKILL; the app is exiting so no need to reap the zombie.
 pub fn shutdown() {
     let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager
-        && let Some(pid) = m.child_pid.take()
-    {
-        kill_process(pid);
+    if let Some(ref mut m) = *manager {
+        if let Some(token) = m.start_cancel.take() {
+            token.cancel();
+        }
+        if let Some(pid) = m.child_pid.take() {
+            kill_process(pid);
+        }
     }
 }
 
@@ -467,15 +474,20 @@ pub fn configure_ai<R: Runtime>(
         let mut manager = MANAGER.lock_ignore_poison();
         let Some(ref mut m) = *manager else { return Ok(()) };
 
-        // Stop server if switching away from local while one is running
-        if provider != "local"
-            && let Some(pid) = m.child_pid.take()
-        {
-            log::info!("AI configure: provider changed away from local, stopping server");
-            kill_and_reap_in_background(pid);
-            m.state.port = None;
-            m.state.pid = None;
-            save_state(&m.ai_dir, &m.state);
+        // Switching away from local: cancel any in-flight startup (so its waiter exits
+        // quietly instead of reporting the deliberate stop as a failure) and stop a
+        // running server.
+        if provider != "local" {
+            if let Some(token) = m.start_cancel.take() {
+                token.cancel();
+            }
+            if let Some(pid) = m.child_pid.take() {
+                log::info!("AI configure: provider changed away from local, stopping server");
+                kill_and_reap_in_background(pid);
+                m.state.port = None;
+                m.state.pid = None;
+                save_state(&m.ai_dir, &m.state);
+            }
         }
 
         m.provider = provider.clone();
@@ -489,9 +501,9 @@ pub fn configure_ai<R: Runtime>(
         spawn_result =
             if provider == "local" && is_local_ai_supported() && is_fully_installed(m) && m.child_pid.is_none() {
                 match spawn_and_track_server(m) {
-                    Ok((pid, port)) => {
+                    Ok((pid, port, cancel)) => {
                         m.server_starting = true;
-                        Some((pid, port))
+                        Some((pid, port, cancel))
                     }
                     Err(e) => {
                         crate::log_error!("AI configure: couldn't spawn server: {e}");
@@ -504,21 +516,11 @@ pub fn configure_ai<R: Runtime>(
     }
 
     // Health check asynchronously (the slow part, up to 60s)
-    if let Some((pid, port)) = spawn_result {
+    if let Some((pid, port, cancel)) = spawn_result {
         let _ = AiStarting.emit(&app);
         let ai_dir = get_ai_dir(&app);
         tauri::async_runtime::spawn(async move {
-            match wait_for_server_health(&ai_dir, pid, port).await {
-                Ok(()) => {
-                    log::info!("AI: server ready");
-                    let _ = AiServerReady.emit(&app);
-                }
-                Err(e) => crate::log_error!("AI manager: server didn't start: {e}"),
-            }
-            let mut manager = MANAGER.lock_ignore_poison();
-            if let Some(ref mut m) = *manager {
-                m.server_starting = false;
-            }
+            handle_startup_outcome(wait_for_server_health(&ai_dir, pid, port, cancel).await, pid, &app);
         });
     }
 
@@ -530,14 +532,19 @@ pub fn configure_ai<R: Runtime>(
 #[specta::specta]
 pub fn stop_ai_server() {
     let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager
-        && let Some(pid) = m.child_pid.take()
-    {
-        log::info!("AI: stopping server (PID {pid})");
-        kill_and_reap_in_background(pid);
-        m.state.port = None;
-        m.state.pid = None;
-        save_state(&m.ai_dir, &m.state);
+    if let Some(ref mut m) = *manager {
+        // Cancel an in-flight startup first, so its waiter sees an intentional stop
+        // rather than a crash.
+        if let Some(token) = m.start_cancel.take() {
+            token.cancel();
+        }
+        if let Some(pid) = m.child_pid.take() {
+            log::info!("AI: stopping server (PID {pid})");
+            kill_and_reap_in_background(pid);
+            m.state.port = None;
+            m.state.pid = None;
+            save_state(&m.ai_dir, &m.state);
+        }
     }
 }
 
@@ -568,9 +575,9 @@ pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(
 
         spawn_result = if is_fully_installed(m) && m.child_pid.is_none() {
             match spawn_and_track_server(m) {
-                Ok((pid, port)) => {
+                Ok((pid, port, cancel)) => {
                     m.server_starting = true;
-                    Some((pid, port))
+                    Some((pid, port, cancel))
                 }
                 Err(e) => return Err(e),
             }
@@ -579,24 +586,38 @@ pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(
         };
     }
 
-    if let Some((pid, port)) = spawn_result {
+    if let Some((pid, port, cancel)) = spawn_result {
         let _ = AiStarting.emit(&app);
         tauri::async_runtime::spawn(async move {
-            match wait_for_server_health(&ai_dir, pid, port).await {
-                Ok(()) => {
-                    log::info!("AI: server ready");
-                    let _ = AiServerReady.emit(&app);
-                }
-                Err(e) => crate::log_error!("AI manager: server didn't start: {e}"),
-            }
-            let mut manager = MANAGER.lock_ignore_poison();
-            if let Some(ref mut m) = *manager {
-                m.server_starting = false;
-            }
+            handle_startup_outcome(wait_for_server_health(&ai_dir, pid, port, cancel).await, pid, &app);
         });
     }
 
     Ok(())
+}
+
+/// Logs a startup outcome at the right severity, emits `AiServerReady` only on success, and
+/// clears `server_starting` unless a newer startup has taken over the slot. A `Cancelled`
+/// outcome (provider switched away, server stopped, or superseded) is deliberately quiet:
+/// no ERROR, no event. That's the normal case when someone toggles local AI on and off.
+fn handle_startup_outcome<R: Runtime>(outcome: StartupOutcome, pid: u32, app: &AppHandle<R>) {
+    match outcome {
+        StartupOutcome::Ready => {
+            log::info!("AI: server ready");
+            let _ = AiServerReady.emit(app);
+        }
+        StartupOutcome::Cancelled => {
+            log::debug!("AI server: startup cancelled (provider switched or server stopped)");
+        }
+        StartupOutcome::Failed(e) => crate::log_error!("AI manager: server didn't start: {e}"),
+    }
+
+    let mut manager = MANAGER.lock_ignore_poison();
+    if let Some(ref mut m) = *manager
+        && startup_task_owns_slot(m.child_pid, pid)
+    {
+        m.server_starting = false;
+    }
 }
 
 /// Result of checking connectivity to an AI API endpoint.
@@ -981,14 +1002,20 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 
     // Start the server FIRST, then emit install complete.
     // Spawn synchronously so PID is tracked immediately, then health-check async.
-    let (pid, port) = {
+    let (pid, port, cancel) = {
         let mut manager = MANAGER.lock_ignore_poison();
         let Some(ref mut m) = *manager else {
             return Err(String::from("AI manager not initialized"));
         };
         spawn_and_track_server(m)?
     };
-    wait_for_server_health(&ai_dir, pid, port).await?;
+    match wait_for_server_health(&ai_dir, pid, port, cancel).await {
+        StartupOutcome::Ready => {}
+        // The user switched away mid-install. The model is installed and state saved;
+        // the server start was deliberately abandoned, so this isn't an install failure.
+        StartupOutcome::Cancelled => return Ok(()),
+        StartupOutcome::Failed(e) => return Err(e),
+    }
 
     // Emit install complete only after server is healthy
     let _ = AiInstallComplete.emit(app);
@@ -1004,7 +1031,7 @@ fn is_cancel_requested() -> bool {
 /// Spawns llama-server and immediately tracks its PID in manager state.
 /// Must be called while holding the MANAGER lock.
 /// Returns (pid, port) for the caller to health-check asynchronously.
-fn spawn_and_track_server(m: &mut ManagerState) -> Result<(u32, u16), String> {
+fn spawn_and_track_server(m: &mut ManagerState) -> Result<(u32, u16, CancellationToken), String> {
     let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
     let port = find_available_port().ok_or("No available port")?;
 
@@ -1013,47 +1040,87 @@ fn spawn_and_track_server(m: &mut ManagerState) -> Result<(u32, u16), String> {
         m.context_size
     );
 
+    // Supersede any previous in-flight startup: its health-check waiter should exit
+    // quietly rather than report the now-orphaned PID's death as a failure.
+    if let Some(token) = m.start_cancel.take() {
+        token.cancel();
+    }
+
     // Belt-and-suspenders: stop any stale llama-servers before spawning a new one
     kill_stale_llama_servers(&m.ai_dir);
 
     let pid = spawn_llama_server(&m.ai_dir, model.filename, port, m.context_size)?;
 
     // Track PID immediately (no race window where a process exists untracked)
+    let cancel = CancellationToken::new();
+    m.start_cancel = Some(cancel.clone());
     m.child_pid = Some(pid);
     m.state.port = Some(port);
     m.state.pid = Some(pid);
     save_state(&m.ai_dir, &m.state);
 
-    Ok((pid, port))
+    Ok((pid, port, cancel))
 }
 
-/// Waits for the server to become healthy (polls every 500ms, up to 60s).
-/// On failure, kills the process and clears state.
-async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16) -> Result<(), String> {
-    // Brief pause to let the process initialize
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+/// Outcome of waiting for a freshly-spawned llama-server to become healthy.
+enum StartupOutcome {
+    /// The server passed its health check and is ready.
+    Ready,
+    /// Startup was intentionally cancelled: the provider was switched away, the server was
+    /// stopped, or a newer spawn superseded this one. Not a failure: the caller logs it
+    /// quietly and emits no "ready" event.
+    Cancelled,
+    /// The server genuinely failed to start (crashed, or never became healthy in time).
+    Failed(String),
+}
+
+/// A finished startup task should clear `server_starting` only if it still owns the slot:
+/// either it's the current child, or no child is tracked (the server was stopped or the
+/// process failed and was cleaned up). If a newer startup has taken over (`child_pid` now
+/// points at a different process), that task owns the flag and this one must leave it alone.
+fn startup_task_owns_slot(current_child: Option<u32>, my_pid: u32) -> bool {
+    current_child.is_none_or(|current| current == my_pid)
+}
+
+/// Waits for the server to become healthy (polls every 500ms, up to 60s). Returns early and
+/// quietly if `cancel` fires (an intentional stop or supersede). On genuine failure or
+/// timeout, kills the process and clears state.
+async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16, cancel: CancellationToken) -> StartupOutcome {
+    // Brief pause to let the process initialize. A `biased` select checks cancellation first,
+    // so an intentional stop during this window never gets misread as a crash below.
+    tokio::select! {
+        biased;
+        () = cancel.cancelled() => return StartupOutcome::Cancelled,
+        () = tokio::time::sleep(std::time::Duration::from_millis(100)) => {}
+    }
     if !is_process_alive(pid) {
         cleanup_failed_server(pid);
         let last_lines = read_log_tail(ai_dir, 20);
         crate::log_error!("AI server: process died immediately. Last log lines:\n{last_lines}");
         let log_path = ai_dir.join(SERVER_LOG_FILENAME);
-        return Err(format!("llama-server crashed on startup. Check log at: {log_path:?}"));
+        return StartupOutcome::Failed(format!("llama-server crashed on startup. Check log at: {log_path:?}"));
     }
 
     log::debug!("AI server: waiting for health check on port {port}...");
     for i in 0..120 {
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tokio::select! {
+            biased;
+            () = cancel.cancelled() => return StartupOutcome::Cancelled,
+            () = tokio::time::sleep(std::time::Duration::from_millis(500)) => {}
+        }
 
         if !is_process_alive(pid) {
+            // A genuine death: an intentional stop would have cancelled the token, and the
+            // biased select above would have returned `Cancelled` before reaching here.
             cleanup_failed_server(pid);
             let last_lines = read_log_tail(ai_dir, 20);
             crate::log_error!("AI server: process died during startup. Last log lines:\n{last_lines}");
-            return Err(format!("llama-server process (PID {pid}) died during startup"));
+            return StartupOutcome::Failed(format!("llama-server process (PID {pid}) died during startup"));
         }
 
         if super::client::health_check(port).await {
             log::debug!("AI server: healthy on port {port} after {}s", (i + 1) / 2);
-            return Ok(());
+            return StartupOutcome::Ready;
         }
 
         if i % 10 == 9 {
@@ -1071,7 +1138,7 @@ async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16) -> Result<()
     cleanup_failed_server(pid);
     let last_lines = read_log_tail(ai_dir, 20);
     crate::log_error!("AI server: health check timed out. Last log lines:\n{last_lines}");
-    Err(String::from("llama-server failed to become healthy within 60s"))
+    StartupOutcome::Failed(String::from("llama-server failed to become healthy within 60s"))
 }
 
 /// Kills a server process and clears its tracking state.
@@ -1260,5 +1327,51 @@ mod tests {
     fn compute_ai_status_expired_dismissal_offers_again() {
         let s = compute_ai_status("local", false, false, Some(NOW - 60), true, NOW);
         assert_eq!(s, AiStatus::Offer);
+    }
+
+    // --- startup health-check: cancellation vs genuine failure ---
+
+    /// A PID above macOS's default `PID_MAX` (99999), so it's never a live process. Positive
+    /// as an `i32`, so `kill(pid, 0)` reports "no such process" rather than the `-1` broadcast.
+    const DEAD_PID: u32 = 999_999;
+    const UNUSED_DIR: &str = "/nonexistent-cmdr-startup-test-dir";
+
+    #[tokio::test]
+    async fn wait_for_server_health_reports_cancelled_not_failed_when_token_fired() {
+        // The race this guards: switching the AI provider off mid-startup kills the server
+        // process, so the waiter sees a dead PID. Because the startup was cancelled it must
+        // report `Cancelled` (silent), NOT `Failed` (which logs an ERROR and auto-sends a
+        // report). DEAD_PID is already gone, so without the cancel check the death branch
+        // would fire and return `Failed`.
+        let cancel = CancellationToken::new();
+        cancel.cancel();
+        let outcome = wait_for_server_health(Path::new(UNUSED_DIR), DEAD_PID, 1, cancel).await;
+        assert!(
+            matches!(outcome, StartupOutcome::Cancelled),
+            "an intentional stop must be reported quietly, not as a failure"
+        );
+    }
+
+    #[tokio::test]
+    async fn wait_for_server_health_reports_failed_on_genuine_death() {
+        // A real crash (process gone, startup NOT cancelled) must still surface as `Failed`,
+        // so the cancel fix doesn't suppress genuine startup failures.
+        let cancel = CancellationToken::new(); // never cancelled
+        let outcome = wait_for_server_health(Path::new(UNUSED_DIR), DEAD_PID, 1, cancel).await;
+        assert!(
+            matches!(outcome, StartupOutcome::Failed(_)),
+            "a genuine death must still be reported as a failure"
+        );
+    }
+
+    #[test]
+    fn startup_task_owns_slot_only_when_current_or_unset() {
+        // No child tracked (server stopped, or failed and cleaned up): the finishing task
+        // owns the slot and may clear `server_starting`.
+        assert!(startup_task_owns_slot(None, 42));
+        // Still the current child: we own it.
+        assert!(startup_task_owns_slot(Some(42), 42));
+        // A newer startup took over (different PID): that task owns the flag, not us.
+        assert!(!startup_task_owns_slot(Some(43), 42));
     }
 }

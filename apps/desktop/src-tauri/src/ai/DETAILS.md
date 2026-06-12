@@ -59,6 +59,24 @@ Frontend loads
             -> emit 'ai-server-ready' when healthy
 ```
 
+### Startup cancellation (quiet stop vs real failure)
+
+`wait_for_server_health` runs detached while the user keeps interacting, so it must tell an
+*intentional* stop apart from a *crash*. Each spawn mints a `CancellationToken` stored in
+`ManagerState.start_cancel`; every intentional stop fires it before killing the process:
+switching the provider away from local (`configure_ai`), `stop_ai_server`, `shutdown`, and a
+superseding spawn (`spawn_and_track_server` cancels the prior token). The waiter's poll loop
+`select!`s on the token with `biased` (cancel wins a same-tick tie with the death check) and
+returns a three-way `StartupOutcome`: `Ready` (emit `ai-server-ready`), `Cancelled` (log at
+debug, emit nothing), or `Failed` (log ERROR — which auto-reports). So toggling local AI on
+and off, even rapidly, is silent; only a genuine startup failure surfaces an error.
+
+Guardrail: don't collapse `StartupOutcome` back to a `Result` or drop the token wiring — a
+deliberate stop mid-startup would then be logged as `process died during startup` and
+auto-send an error report (the exact false alarm this replaced). `handle_startup_outcome`
+clears `server_starting` only via `startup_task_owns_slot`, so a superseded task can't reset a
+newer startup's flag.
+
 ## Provider routing
 
 Centralized in `manager::resolve_backend() -> BackendResolution`:
