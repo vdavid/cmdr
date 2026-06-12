@@ -148,8 +148,8 @@ of file names, paths, queries, and prompts by allowlist. See `apps/desktop/src-t
   survives internal navigation, and appends it as `?ref=` to the download endpoint URLs plus a `data-umami-event-ref`
   prop. The server (`api-server` `/download` handler) re-sanitizes `ref` before storing — never trust the client value.
   Trade-off: a return visit in a later session has no URL ref and shows as direct/NULL; that's fine for anonymous
-  aggregate channel attribution. If you add a new download link, give it `data-download-link` (main) or
-  `data-arch` inside `[data-download-dropdown]` (option) so the ref script finds it.
+  aggregate channel attribution. If you add a new download link, give it `data-download-link` (main) or `data-arch`
+  inside `[data-download-dropdown]` (option) so the ref script finds it.
 
 **Decision/Why — client-side storage policy**: The site must never need a cookie consent banner.
 

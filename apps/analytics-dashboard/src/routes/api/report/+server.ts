@@ -3,6 +3,7 @@ import type { DashboardData } from '$lib/server/fetch-all.js'
 import type { DownloadRow } from '$lib/server/sources/cloudflare.js'
 import { fetchDashboardData } from '$lib/server/fetch-all.js'
 import { countFeedbackWithReplyTo, tallyErrorReportsByField, errorReportsByDay } from '$lib/feedback-and-errors.js'
+import { aggregateChannels } from '$lib/funnel.js'
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
 
@@ -84,6 +85,14 @@ function formatReport(data: DashboardData): string {
         `${r.date} | ${dash(r.visitors)} | ${dash(r.downloadClicks)} | ${dash(r.serverDownloads)} | ` +
           `${dash(r.newInstalls)} | ${pct(r.d7Retention)} | ${dash(r.newsletterSignups)} | ${dash(r.purchases)}`,
       )
+    }
+    // Channels: first-touch ref rolled up over the whole 30-day window. "(none)" = no channel known
+    // (Homebrew, direct links, return visits, cross-device journeys, and pre-2026-06-12 rows).
+    const channels = aggregateChannels(data.funnel.data.rows)
+    if (channels.length > 0) {
+      blank()
+      line('Channels (last 30 days), downloads by first-touch ref:')
+      for (const c of channels) line(`- ${c.ref}: ${num(c.count)}`)
     }
   }
   blank()

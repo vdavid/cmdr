@@ -1,11 +1,13 @@
 -- `ref`: the first-touch acquisition channel for a website download, so the dashboard can attribute
 -- installs to where the visitor originally came from ("HN drove N downloads, Reddit drove M").
 --
--- The website captures it on the visitor's first page view (UTM source/campaign if present, else the
--- referrer hostname, else 'direct'), stores it in localStorage so first touch wins, and forwards it
--- on the download button as `?ref=`. The `/download` handler sanitizes it server-side (lowercase,
--- only `[a-z0-9._:-]`, max 120 chars) before storing; anything that sanitizes to empty becomes NULL.
+-- The website computes it from URL state only, with NO localStorage/cookie (the site stays banner-free):
+-- a `?ref=` already on the URL wins, else UTM source/campaign, else the external referrer hostname. It
+-- copies the value onto same-origin links so it survives internal navigation, then forwards it on the
+-- download button as `?ref=`. The `/download` handler re-sanitizes it server-side (lowercase, only
+-- `[a-z0-9._:-]`, max 120 chars) before storing; anything that sanitizes to empty becomes NULL.
 --
--- Nullable: Homebrew and direct-link downloads (and rows written before this migration) carry no ref
--- and stay NULL. Only website-button downloads from a browser that captured a first touch get a value.
+-- Nullable: Homebrew and direct-link downloads, return visits in a later session (no URL ref), and rows
+-- written before this migration carry no ref and stay NULL. Only website-button downloads whose visit
+-- carried a first-touch channel get a value.
 ALTER TABLE downloads ADD COLUMN ref TEXT;

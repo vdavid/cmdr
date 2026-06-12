@@ -30,6 +30,10 @@
 -- Downloads by source (server-side DMG fetches):
 --   D-2: website 2, homebrew 1   -> 3
 --   D0 : website 1, other 1      -> 2
+--
+-- Downloads by ref (first-touch channel; NULL ref COALESCEs to the "(none)" bucket):
+--   D-2: hn 1, reddit 1, (none) 1   (the two website rows are hn + reddit; the homebrew row has no ref)
+--   D0 : hn 1, (none) 1             (the website row is hn; the "other" row has no ref)
 
 INSERT INTO heartbeat (anal_id, created_at, app_version, os_version, arch) VALUES
  -- D-9 cohort: x retained at D7, y not
@@ -44,9 +48,9 @@ INSERT INTO heartbeat (anal_id, created_at, app_version, os_version, arch) VALUE
  -- D0 cohort: today (too young)
  ('anal_today', datetime('now'), '0.25.0','15.5','aarch64');
 
-INSERT INTO downloads (created_at, app_version, arch, country, continent, hashed_ip, source) VALUES
- (datetime('now','-2 days'),'0.25.0','aarch64','US','NA','a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1','website'),
- (datetime('now','-2 days'),'0.25.0','aarch64','DE','EU','a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2','website'),
- (datetime('now','-2 days'),'0.25.0','universal','GB','EU','a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3','homebrew'),
- (datetime('now'),'0.25.0','aarch64','US','NA','a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4','website'),
- (datetime('now'),'0.25.0','x86_64','BR','SA','a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5','other');
+INSERT INTO downloads (created_at, app_version, arch, country, continent, hashed_ip, source, ref) VALUES
+ (datetime('now','-2 days'),'0.25.0','aarch64','US','NA','a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1','website','hn'),
+ (datetime('now','-2 days'),'0.25.0','aarch64','DE','EU','a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2','website','reddit'),
+ (datetime('now','-2 days'),'0.25.0','universal','GB','EU','a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3','homebrew',NULL),
+ (datetime('now'),'0.25.0','aarch64','US','NA','a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4','website','hn'),
+ (datetime('now'),'0.25.0','x86_64','BR','SA','a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5','other',NULL);

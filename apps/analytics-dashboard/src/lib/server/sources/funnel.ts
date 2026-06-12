@@ -25,6 +25,12 @@ export interface FunnelRow {
   downloadClicks: number | null
   /** Server-side DMG downloads logged that day (api-server). `null` when the worker is unavailable. */
   serverDownloads: number | null
+  /**
+   * That day's server downloads split by first-touch channel (`ref`): a map of ref value -> count,
+   * with no-ref downloads under `"(none)"`. `null` when the worker is unavailable, `{}` for a present
+   * worker source on a day with no downloads.
+   */
+  downloadsByRef: Record<string, number> | null
   /** Installs whose first-ever heartbeat landed that day (api-server). `null` when the worker is unavailable. */
   newInstalls: number | null
   /** D7 retention fraction (0..1) for this cohort, or `null` when too young / worker unavailable. */
@@ -45,11 +51,17 @@ export interface FunnelData {
 interface WorkerFunnelDay {
   date: string
   downloads: number
+  downloadsByRef: Record<string, number>
   newInstalls: number
   d7Retention: number | null
   d7Retained: number | null
   newsletterSignups: number | null
 }
+
+// The ranked-channel helper and its type are client-safe (the page renders them), so they live in
+// `$lib/funnel.ts` outside `$lib/server`. Re-exported here so server-side callers and the existing
+// tests can keep importing from this module.
+export { aggregateChannels, type ChannelCount } from '../../funnel.js'
 
 interface FunnelEnv {
   LICENSE_SERVER_ADMIN_TOKEN: string
@@ -94,6 +106,8 @@ export function assembleFunnelRows(
       // When the worker source is present, a day with no row is a real 0; when it's null, the whole
       // column is unknown.
       serverDownloads: workerByDay ? (worker?.downloads ?? 0) : null,
+      // A present worker source with no row that day means a real empty breakdown (`{}`), not unknown.
+      downloadsByRef: workerByDay ? (worker?.downloadsByRef ?? {}) : null,
       newInstalls: workerByDay ? (worker?.newInstalls ?? 0) : null,
       // D7 and signups can be null even when the worker responded (young cohort / Listmonk down), so
       // read them straight off the worker row and default a missing day to null, not 0.

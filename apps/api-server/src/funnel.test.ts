@@ -107,11 +107,12 @@ describe('assembleFunnel', () => {
 
   it('zero-fills count metrics for days with no rows, but leaves signups null when unconfigured', () => {
     const dates = ['2026-06-11', '2026-06-12']
-    const rows = assembleFunnel(dates, [], [], [], [], null, now)
+    const rows = assembleFunnel(dates, [], [], [], [], [], null, now)
     expect(rows[0]).toMatchObject({
       date: '2026-06-11',
       downloads: 0,
       downloadsBySource: { website: 0, homebrew: 0, other: 0 },
+      downloadsByRef: {},
       newInstalls: 0,
       dau: 0,
       newsletterSignups: null,
@@ -130,6 +131,7 @@ describe('assembleFunnel', () => {
       [],
       [],
       [],
+      [],
       null,
       now,
     )
@@ -137,10 +139,30 @@ describe('assembleFunnel', () => {
     expect(rows[0].downloadsBySource).toEqual({ website: 5, homebrew: 2, other: 1 })
   })
 
+  it('buckets downloads by ref per day, mapping NULL ref to "(none)"', () => {
+    const dates = ['2026-06-11', '2026-06-12']
+    const rows = assembleFunnel(
+      dates,
+      [],
+      [
+        { date: '2026-06-11', ref: 'hn', count: 4 },
+        { date: '2026-06-11', ref: '(none)', count: 2 },
+        { date: '2026-06-12', ref: 'reddit', count: 1 },
+      ],
+      [],
+      [],
+      [],
+      null,
+      now,
+    )
+    expect(rows[0].downloadsByRef).toEqual({ hn: 4, '(none)': 2 })
+    expect(rows[1].downloadsByRef).toEqual({ reddit: 1 })
+  })
+
   it('buckets signups per day from the Listmonk map', () => {
     const dates = ['2026-06-11', '2026-06-12']
     const signups = new Map([['2026-06-11', 3]])
-    const rows = assembleFunnel(dates, [], [], [], [], signups, now)
+    const rows = assembleFunnel(dates, [], [], [], [], [], signups, now)
     expect(rows[0].newsletterSignups).toBe(3)
     expect(rows[1].newsletterSignups).toBe(0) // configured but no signups that day -> 0, not null
   })
@@ -148,7 +170,7 @@ describe('assembleFunnel', () => {
   it('reports D7 as null for cohorts younger than 8 days', () => {
     // 2026-06-12 is "today"; 2026-06-06 is 6 days old (< 8) -> null.
     const dates = ['2026-06-06']
-    const rows = assembleFunnel(dates, [], [{ date: '2026-06-06', newInstalls: 10 }], [], [], null, now)
+    const rows = assembleFunnel(dates, [], [], [{ date: '2026-06-06', newInstalls: 10 }], [], [], null, now)
     expect(rows[0].d7Retention).toBeNull()
     expect(rows[0].d7Retained).toBeNull()
   })
@@ -158,6 +180,7 @@ describe('assembleFunnel', () => {
     const dates = ['2026-06-04']
     const rows = assembleFunnel(
       dates,
+      [],
       [],
       [{ date: '2026-06-04', newInstalls: 4 }],
       [],
@@ -171,14 +194,14 @@ describe('assembleFunnel', () => {
 
   it('reports D7 retention 0 (not null) for an old cohort with installs but no retained beats', () => {
     const dates = ['2026-06-04']
-    const rows = assembleFunnel(dates, [], [{ date: '2026-06-04', newInstalls: 4 }], [], [], null, now)
+    const rows = assembleFunnel(dates, [], [], [{ date: '2026-06-04', newInstalls: 4 }], [], [], null, now)
     expect(rows[0].d7Retained).toBe(0)
     expect(rows[0].d7Retention).toBe(0)
   })
 
   it('reports D7 as null for an old day with NO new installs (no cohort to retain)', () => {
     const dates = ['2026-06-04']
-    const rows = assembleFunnel(dates, [], [], [], [], null, now)
+    const rows = assembleFunnel(dates, [], [], [], [], [], null, now)
     expect(rows[0].newInstalls).toBe(0)
     expect(rows[0].d7Retention).toBeNull()
     expect(rows[0].d7Retained).toBeNull()

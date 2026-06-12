@@ -41,29 +41,29 @@ live in [CLAUDE.md](CLAUDE.md).
 
 ## Routes
 
-| Method | Path                       | Auth          | Purpose                                                                                           |
-| ------ | -------------------------- | ------------- | ------------------------------------------------------------------------------------------------- |
-| GET    | `/`                        | none          | Health check                                                                                      |
-| POST   | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                                                      |
-| POST   | `/activate`                | none          | Exchange short code → full cryptographic key                                                      |
-| POST   | `/validate`                | none          | Check subscription status via Paddle API                                                          |
-| POST   | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                                                |
-| GET    | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)                                         |
-| GET    | `/admin/downloads`         | Bearer token  | Aggregated downloads by day/version/arch/country/source, with raw `count` + deduped `uniqueCount` |
-| GET    | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                                                     |
-| GET    | `/admin/update-activity`   | Bearer token  | Per-day distinct update-enabled installs by version (retained aggregate ∪ today's raw)            |
-| GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                                                    |
-| GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                         |
-| GET    | `/admin/funnel`            | Bearer token  | Per-UTC-day acquisition funnel for the last N days (downloads, installs, DAU, D7, signups)        |
-| GET    | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                           |
-| GET    | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first |
+| Method | Path                       | Auth          | Purpose                                                                                                |
+| ------ | -------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| GET    | `/`                        | none          | Health check                                                                                           |
+| POST   | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                                                           |
+| POST   | `/activate`                | none          | Exchange short code → full cryptographic key                                                           |
+| POST   | `/validate`                | none          | Check subscription status via Paddle API                                                               |
+| POST   | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                                                     |
+| GET    | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)                                              |
+| GET    | `/admin/downloads`         | Bearer token  | Aggregated downloads by day/version/arch/country/source, with raw `count` + deduped `uniqueCount`      |
+| GET    | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                                                          |
+| GET    | `/admin/update-activity`   | Bearer token  | Per-day distinct update-enabled installs by version (retained aggregate ∪ today's raw)                 |
+| GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                                                         |
+| GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                              |
+| GET    | `/admin/funnel`            | Bearer token  | Per-UTC-day acquisition funnel for the last N days (downloads, installs, DAU, D7, signups)             |
+| GET    | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                                |
+| GET    | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first      |
 | GET    | `/download/:version/:arch` | none          | Log download to D1 (bot UAs skipped, source + first-touch `ref` tagged, IP daily-hashed), 302 → GitHub |
-| POST   | `/crash-report`            | none          | Ingest crash report to D1                                                                         |
-| POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                              |
-| POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                |
-| POST   | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                               |
-| POST   | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                      |
-| GET    | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                               |
+| POST   | `/crash-report`            | none          | Ingest crash report to D1                                                                              |
+| POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                                   |
+| POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                     |
+| POST   | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                    |
+| POST   | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                           |
+| GET    | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                                    |
 
 ## Environments
 
@@ -359,6 +359,10 @@ Per-day columns and how each is derived:
 - `downloads` + `downloadsBySource` (`{ website, homebrew, other }`): `COUNT(*)` of `downloads` rows by
   `COALESCE(source, 'other')`. Bots already filtered at write time; rows before migration 0008 have NULL source →
   `other`.
+- `downloadsByRef` (`Record<ref, count>`): the same `downloads` rows grouped by `COALESCE(ref, '(none)')`, so the
+  dashboard can attribute installs to a first-touch channel. NULL ref (Homebrew, direct links, return visits in a later
+  session, and rows before migration 0009) buckets under `"(none)"`. An empty object means no downloads that day. The
+  `ref` is already sanitized at write time, so the grouping is on the stored value as-is.
 - `newInstalls`: count of `anal_id`s whose **first-ever** heartbeat (`MIN(created_at)` over the whole `heartbeat` table,
   no window filter on the inner query) fell on that UTC day. So an install that first beat months ago never counts as
   "new" inside the window.

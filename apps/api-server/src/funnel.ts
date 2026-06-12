@@ -27,6 +27,13 @@ export interface FunnelDay {
   downloads: number
   /** Server downloads split by attribution source. Rows before 2026-06-11 land in `other` (NULL source). */
   downloadsBySource: { website: number; homebrew: number; other: number }
+  /**
+   * Server downloads split by first-touch channel (`ref`): a map of ref value -> count for that day.
+   * Downloads with no ref (Homebrew, direct links, return visits in a later session, and rows before
+   * migration 0009 which predate the column) are keyed under `"(none)"`. An empty object means the day
+   * had no downloads at all.
+   */
+  downloadsByRef: Record<string, number>
   /** Installs whose very first heartbeat ever landed that day (a true new-install count). */
   newInstalls: number
   /** Distinct install ids that beat at all that day (true DAU from the heartbeat). */
@@ -42,6 +49,12 @@ export interface FunnelDay {
 interface DownloadBySourceRow {
   date: string
   source: string
+  count: number
+}
+
+interface DownloadByRefRow {
+  date: string
+  ref: string
   count: number
 }
 
@@ -89,6 +102,26 @@ async function queryDownloadsBySource(db: D1Database, sinceDate: string): Promis
     )
     .bind(sinceDate)
     .all<DownloadBySourceRow>()
+  return results
+}
+
+/**
+ * Per-day server downloads, split by first-touch channel (`ref`). The `ref` column is NULL for
+ * Homebrew, direct links, return visits in a later session, and rows written before migration 0009;
+ * those COALESCE to the `"(none)"` bucket so the dashboard renders them as a single "no ref" channel
+ * (consistent with how it shows other unknowns). The value was already sanitized at write time, so
+ * grouping is on the stored value as-is.
+ */
+async function queryDownloadsByRef(db: D1Database, sinceDate: string): Promise<DownloadByRefRow[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT date(created_at) AS date, COALESCE(ref, '(none)') AS ref, COUNT(*) AS count
+         FROM downloads
+         WHERE date(created_at) >= ?1
+         GROUP BY date, ref`,
+    )
+    .bind(sinceDate)
+    .all<DownloadByRefRow>()
   return results
 }
 
@@ -224,6 +257,7 @@ async function fetchListmonkSignupsByDay(config: ListmonkReadConfig, sinceDate: 
 export function assembleFunnel(
   dates: string[],
   downloadsBySource: DownloadBySourceRow[],
+  downloadsByRef: DownloadByRefRow[],
   newInstalls: InstallDayRow[],
   dau: DauRow[],
   d7Retained: D7Row[],
@@ -237,6 +271,12 @@ export function assembleFunnel(
     else if (row.source === 'homebrew') entry.homebrew += row.count
     else entry.other += row.count
     downloadsMap.set(row.date, entry)
+  }
+  const refMap = new Map<string, Record<string, number>>()
+  for (const row of downloadsByRef) {
+    const entry = refMap.get(row.date) ?? {}
+    entry[row.ref] = (entry[row.ref] ?? 0) + row.count
+    refMap.set(row.date, entry)
   }
   const newInstallsMap = new Map(newInstalls.map((r) => [r.date, r.newInstalls]))
   const dauMap = new Map(dau.map((r) => [r.date, r.dau]))
@@ -262,6 +302,7 @@ export function assembleFunnel(
       date,
       downloads,
       downloadsBySource: bySource,
+      downloadsByRef: refMap.get(date) ?? {},
       newInstalls: installs,
       dau: dauMap.get(date) ?? 0,
       d7Retention,
@@ -293,8 +334,9 @@ funnel.get('/admin/funnel', async (c) => {
   const sinceDate = dates[0]
 
   const db = c.env.TELEMETRY_DB
-  const [downloadsBySource, newInstalls, dau, d7Retained] = await Promise.all([
+  const [downloadsBySource, downloadsByRef, newInstalls, dau, d7Retained] = await Promise.all([
     queryDownloadsBySource(db, sinceDate),
+    queryDownloadsByRef(db, sinceDate),
     queryNewInstalls(db, sinceDate),
     queryDau(db, sinceDate),
     queryD7Retained(db, sinceDate),
@@ -312,7 +354,16 @@ funnel.get('/admin/funnel', async (c) => {
     }
   }
 
-  const funnelDays = assembleFunnel(dates, downloadsBySource, newInstalls, dau, d7Retained, signupsByDay, now)
+  const funnelDays = assembleFunnel(
+    dates,
+    downloadsBySource,
+    downloadsByRef,
+    newInstalls,
+    dau,
+    d7Retained,
+    signupsByDay,
+    now,
+  )
   return c.json(funnelDays)
 })
 

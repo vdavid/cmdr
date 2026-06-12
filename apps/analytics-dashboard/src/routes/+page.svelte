@@ -1,5 +1,6 @@
 <script lang="ts" module>
     import type { DownloadRow, UpdateActivityRow } from '$lib/server/sources/cloudflare.js'
+    import { aggregateChannels } from '$lib/funnel.js'
 
     interface StackSeries {
         key: string
@@ -404,6 +405,29 @@
                     "GitHub-page traffic, and bot user agents are filtered but imperfectly. D7 needs a cohort at least 8 " +
                     "days old, so recent rows show a dash there.",
             )}
+
+            <!-- Channels: server downloads rolled up by first-touch ref over the whole 30-day window. -->
+            {@const channels = aggregateChannels(rows)}
+            <div class="mt-6 border-t border-border-subtle pt-4">
+                <h3 class="mb-1 text-sm font-medium text-text-secondary">Channels (last 30 days)</h3>
+                {@render sectionDescription(
+                    "Use this to see which channels drove downloads: a download's ref is the channel the visitor first " +
+                        "arrived from (a UTM source or campaign, else the referring site).",
+                    "Ref is first-touch per browser visit and comes from the URL only, so return visits and cross-device " +
+                        "journeys (read on the phone, download on the Mac) carry no ref and land in \"(none)\". Homebrew and " +
+                        "direct links have none too, and rows before 2026-06-12 predate the column. So treat \"(none)\" as " +
+                        "\"channel unknown\", not \"direct\". All days UTC.",
+                )}
+                {#if channels.length === 0}
+                    <p class="text-sm text-text-tertiary">No downloads with a channel yet.</p>
+                {:else}
+                    {@render metricTable(
+                        channels.map((c) => ({ x: c.ref === '(none)' ? '(none / unknown)' : c.ref, y: c.count })),
+                        'Channel',
+                        'Downloads',
+                    )}
+                {/if}
+            </div>
         {/if}
     </section>
 
