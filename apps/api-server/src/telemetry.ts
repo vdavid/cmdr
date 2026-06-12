@@ -373,6 +373,22 @@ function classifyDownloadSource(userAgent: string | undefined, srcParam: string 
   return 'other'
 }
 
+const maxRefLength = 120
+const disallowedRefChars = /[^a-z0-9._:-]/g
+
+/**
+ * Sanitize the `?ref` first-touch channel value for storage. The website computes it client-side
+ * (a UTM source/campaign, a referrer hostname, or `direct`) and appends it to the download URL, but
+ * we never trust client input: lowercase, drop anything outside `[a-z0-9._:-]`, and cap at 120 chars.
+ * Returns `null` when absent or when nothing survives sanitizing, so the column stays NULL rather
+ * than holding an empty string. Mirrors the website's normalization so both ends agree.
+ */
+function sanitizeRef(refParam: string | undefined): string | null {
+  if (!refParam) return null
+  const cleaned = refParam.toLowerCase().replace(disallowedRefChars, '').slice(0, maxRefLength)
+  return cleaned.length > 0 ? cleaned : null
+}
+
 telemetry.get('/download/:version/:arch', async (c) => {
   const { version, arch } = c.req.param()
 
@@ -395,6 +411,8 @@ telemetry.get('/download/:version/:arch', async (c) => {
   const country = cf?.country ?? 'unknown'
   const continent = cf?.continent ?? 'unknown'
   const source = classifyDownloadSource(userAgent, c.req.query('src'))
+  // First-touch channel the website captured on the visitor's first page view and forwarded here.
+  const ref = sanitizeRef(c.req.query('ref'))
 
   // Hash IP with a daily-rotating salt: lets the dashboard count distinct same-day downloaders
   // (`COUNT(DISTINCT hashed_ip)`) without storing an IP or anything linkable across days. Same
@@ -406,9 +424,9 @@ telemetry.get('/download/:version/:arch', async (c) => {
 
   // Write to D1 (fire-and-forget). One row per request: the raw count stays `COUNT(*)`.
   const dbWrite = c.env.TELEMETRY_DB.prepare(
-    `INSERT INTO downloads (app_version, arch, country, continent, hashed_ip, source) VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO downloads (app_version, arch, country, continent, hashed_ip, source, ref) VALUES (?, ?, ?, ?, ?, ?, ?)`,
   )
-    .bind(version, arch, country, continent, hashedIp, source)
+    .bind(version, arch, country, continent, hashedIp, source, ref)
     .run()
     .catch(() => {})
 

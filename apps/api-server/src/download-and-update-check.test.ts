@@ -121,6 +121,56 @@ describe('GET /download/:version/:arch', () => {
     expect(bindMock.mock.calls[0][5]).toBe('website')
   })
 
+  it('stores the first-touch channel from ?ref', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/1.2.3/aarch64?src=website&ref=news.ycombinator.com', { headers: browserUa }, bindings)
+
+    // bindArgs: [app_version, arch, country, continent, hashed_ip, source, ref]
+    expect(bindMock.mock.calls[0][6]).toBe('news.ycombinator.com')
+  })
+
+  it('lowercases and strips disallowed characters from ?ref', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/1.2.3/aarch64?ref=Reddit%2Fr%2Frust%20%21%40%23', { headers: browserUa }, bindings)
+
+    // Decoded input "Reddit/r/rust !@#": '/' and the punctuation/space are not in [a-z0-9._:-],
+    // so they're dropped; the rest lowercases to "redditrrust".
+    expect(bindMock.mock.calls[0][6]).toBe('redditrrust')
+  })
+
+  it('truncates ?ref to 120 chars', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const longRef = 'a'.repeat(200)
+    await app.request(`/download/1.2.3/aarch64?ref=${longRef}`, { headers: browserUa }, bindings)
+
+    expect((bindMock.mock.calls[0][6] as string).length).toBe(120)
+  })
+
+  it('stores NULL ref when ?ref is absent', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/1.2.3/aarch64?src=website', { headers: browserUa }, bindings)
+
+    expect(bindMock.mock.calls[0][6]).toBeNull()
+  })
+
+  it('stores NULL ref when ?ref sanitizes to empty', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    // "!!!" has no allowed characters, so it sanitizes to "" → stored as NULL, not "".
+    await app.request('/download/1.2.3/aarch64?ref=%21%21%21', { headers: browserUa }, bindings)
+
+    expect(bindMock.mock.calls[0][6]).toBeNull()
+  })
+
   it('skips the D1 insert for bot/unfurler User-Agents but still serves the file', async () => {
     const { db, prepareMock } = createMockD1()
     const bindings = createBindings({ TELEMETRY_DB: db })

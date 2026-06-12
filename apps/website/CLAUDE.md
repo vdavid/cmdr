@@ -135,9 +135,21 @@ of file names, paths, queries, and prompts by allowlist. See `apps/desktop/src-t
   `persistence: 'memory'` (no cookies, no localStorage) and `person_profiles: 'identified_only'` (no anonymous person
   profiles). This keeps PostHog fully cookieless. The same EU project also receives the desktop app's
   `source: "desktop"` feature events.
-- **D1** (API server): Download redirect endpoint logs version, arch, country, source, and a daily-hashed IP (bot hits
-  dropped). The download button carries `?src=website` so the endpoint can tag it as a website download (vs Homebrew or
-  direct links). The `heartbeat` table holds the desktop DAU beats.
+- **D1** (API server): Download redirect endpoint logs version, arch, country, source, a first-touch `ref` channel, and
+  a daily-hashed IP (bot hits dropped). The download button carries `?src=website` so the endpoint can tag it as a
+  website download (vs Homebrew or direct links). The `heartbeat` table holds the desktop DAU beats.
+
+  **First-touch attribution (`ref`), storage-free.** An inline script in `Layout.astro` attributes downloads to the
+  channel a visitor first arrived from (a UTM source/campaign, or an external referrer hostname). It uses NO
+  localStorage/sessionStorage/cookie on purpose — device storage would count as ePrivacy storage and force a consent
+  banner, which this site avoids everywhere (see the cookieless Umami/PostHog setup above). So attribution is pure URL
+  state: the script computes the channel from the current page (a `?ref=` already on the URL wins, then UTM params, then
+  the external referrer; same-origin and getcmdr.com count as no referrer), copies it onto same-origin links so it
+  survives internal navigation, and appends it as `?ref=` to the download endpoint URLs plus a `data-umami-event-ref`
+  prop. The server (`api-server` `/download` handler) re-sanitizes `ref` before storing — never trust the client value.
+  Trade-off: a return visit in a later session has no URL ref and shows as direct/NULL; that's fine for anonymous
+  aggregate channel attribution. If you add a new download link, give it `data-download-link` (main) or
+  `data-arch` inside `[data-download-dropdown]` (option) so the ref script finds it.
 
 **Decision/Why**: We avoid cookies to not need a cookie consent banner. All three analytics tools are configured to work
 without cookies. If you add or change analytics tooling, preserve this property: no cookies unless absolutely

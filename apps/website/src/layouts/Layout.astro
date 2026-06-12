@@ -141,6 +141,107 @@ const {
             )
         }
 
+        {/* First-touch channel attribution, storage-free.
+
+           We attribute downloads to the channel a visitor first arrived from (HN, Reddit, a UTM
+           campaign, etc.) WITHOUT any localStorage/sessionStorage/cookie: device storage would count
+           as ePrivacy storage and force a consent banner, which the whole site is built to avoid (see
+           the cookieless Umami/PostHog setup). So attribution lives purely in URL state:
+
+           - `computeRef()` derives the channel from the CURRENT page only: a `?ref=` already on the URL
+             (carried from the landing page, highest priority) → UTM source/campaign → external
+             referrer hostname. Same-origin referrers and getcmdr.com itself count as "no referrer".
+           - `propagateRefToLinks()` copies the computed ref onto same-origin `<a>` links so it survives
+             internal navigation (land on /blog/x via HN, click through to the homepage, download there).
+           - `applyRefToDownloadLinks()` appends it to the download endpoint URLs; the server stores it.
+
+           Trade-off: a return visit in a later session has no URL ref and shows as direct/NULL. That's
+           fine — this is anonymous aggregate channel attribution, not user-level tracking. */}
+        <script is:inline>
+            ;(function () {
+                window.__cmdrComputeRef = function computeRef() {
+                    function normalize(value) {
+                        if (!value) return ''
+                        return value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9._:-]/g, '')
+                            .slice(0, 120)
+                    }
+                    try {
+                        var params = new URLSearchParams(window.location.search)
+                        // A ref carried from the landing page wins, so attribution stays stable across
+                        // internal navigation.
+                        var existing = normalize(params.get('ref'))
+                        if (existing) return existing
+
+                        var utmSource = params.get('utm_source')
+                        if (utmSource) {
+                            var utmCampaign = params.get('utm_campaign')
+                            return normalize(utmCampaign ? utmSource + '-' + utmCampaign : utmSource)
+                        }
+
+                        if (document.referrer) {
+                            var refUrl = new URL(document.referrer)
+                            // Treat same-origin (internal) referrers as "no referrer": only the
+                            // external entry point is a channel.
+                            if (refUrl.hostname !== window.location.hostname) {
+                                return normalize(refUrl.hostname.replace(/^www\./, ''))
+                            }
+                        }
+                    } catch { /* malformed URL / referrer */ }
+                    return ''
+                }
+
+                // Carry the ref onto same-origin links so it survives internal navigation. Skips
+                // anchors, non-http(s) schemes, and links that already carry a `ref` (don't clobber).
+                function propagateRefToLinks(ref) {
+                    if (!ref) return
+                    document.querySelectorAll('a[href]').forEach(function (a) {
+                        // Download links get the ref via applyRefToDownloadLinks (they point at the
+                        // API origin, not same-origin), so skip them here.
+                        if (a.hasAttribute('data-download-link') || a.hasAttribute('data-arch')) return
+                        try {
+                            var url = new URL(a.href, window.location.href)
+                            if (url.origin !== window.location.origin) return
+                            if (url.protocol !== 'http:' && url.protocol !== 'https:') return
+                            if (url.hash && url.pathname === window.location.pathname && !url.search) return
+                            if (url.searchParams.has('ref')) return
+                            url.searchParams.set('ref', ref)
+                            a.href = url.href
+                        } catch { /* skip unparseable hrefs */ }
+                    })
+                }
+
+                // Append the ref to download endpoint URLs (which carry `?src=website`). Re-run safe:
+                // it overwrites any prior ref it set rather than stacking params.
+                window.__cmdrApplyRefToDownloadLinks = function applyRefToDownloadLinks(ref) {
+                    if (!ref) return
+                    document
+                        .querySelectorAll('a[data-download-link], [data-download-dropdown] a[data-arch]')
+                        .forEach(function (a) {
+                            try {
+                                var url = new URL(a.href, window.location.href)
+                                url.searchParams.set('ref', ref)
+                                a.href = url.href
+                                // Carry the ref into the Umami "download" click event too.
+                                a.dataset.umamiEventRef = ref
+                            } catch { /* skip unparseable hrefs */ }
+                        })
+                }
+
+                function run() {
+                    var ref = window.__cmdrComputeRef()
+                    if (!ref) return
+                    propagateRefToLinks(ref)
+                    window.__cmdrApplyRefToDownloadLinks(ref)
+                }
+
+                run()
+                // Re-run after Client Router swaps so the new page's links get the ref too.
+                document.addEventListener('astro:page-load', run)
+            })()
+        </script>
+
         <script is:inline>
             ;(function () {
                 function applyArch(arch) {
@@ -160,6 +261,11 @@ const {
                             el.dataset.recommended = 'true'
                         }
                     })
+                    // applyArch overwrites the main download link's href (dropping any ref we appended),
+                    // so re-apply the ref afterward. Safe to call with an empty ref (no-op).
+                    if (window.__cmdrApplyRefToDownloadLinks && window.__cmdrComputeRef) {
+                        window.__cmdrApplyRefToDownloadLinks(window.__cmdrComputeRef())
+                    }
                 }
 
                 // Detect arch synchronously to avoid flash of universal binary on first paint.

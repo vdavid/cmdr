@@ -54,7 +54,7 @@ live in [CLAUDE.md](CLAUDE.md).
 | GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                         |
 | GET    | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                           |
 | GET    | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first |
-| GET    | `/download/:version/:arch` | none          | Log download to D1 (bot UAs skipped, source tagged, IP daily-hashed), 302 → GitHub                |
+| GET    | `/download/:version/:arch` | none          | Log download to D1 (bot UAs skipped, source + first-touch `ref` tagged, IP daily-hashed), 302 → GitHub |
 | POST   | `/crash-report`            | none          | Ingest crash report to D1                                                                         |
 | POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                              |
 | POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                |
@@ -292,8 +292,8 @@ network/5xx errors and returns `null` on 404 (transaction not found). This lets 
 status on transient Paddle outages instead of overwriting a valid "active" cache with "invalid."
 
 **Download tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `downloads`). One row per download event with
-`app_version`, `arch`, `country`, `continent`, `hashed_ip`, and `source`. D1 write is fire-and-forget via `waitUntil` +
-`.catch(() => {})`. Three things make the count meaningful as an install signal (migration `0008`):
+`app_version`, `arch`, `country`, `continent`, `hashed_ip`, `source`, and `ref`. D1 write is fire-and-forget via
+`waitUntil` + `.catch(() => {})`. Three things make the count meaningful as an install signal (migration `0008`):
 
 - **Bot/unfurler hits are dropped:** link-preview bots (Discord, Slack, etc.) and crawlers fetch the URL and would
   inflate the count, so a User-Agent denylist skips the D1 write (the 302 is still served). A missing UA is treated as a
@@ -304,6 +304,14 @@ status on transient Paddle outages instead of overwriting a valid "active" cache
 - **`source` tags origin:** `homebrew` (Homebrew cask, by User-Agent), `website` (getcmdr.com button, which sends
   `?src=website`), or `other` (links shared elsewhere). In-app auto-updates never appear here: they fetch the tarball
   straight from GitHub, not this endpoint.
+
+- **`ref` tags the first-touch channel** (migration `0009`): where a website visitor originally arrived from (a UTM
+  source/campaign, or an external referrer hostname), so the dashboard can attribute installs to a channel ("HN drove N
+  downloads, Reddit drove M"). The website computes it client-side from URL state only (no localStorage/cookie, to stay
+  banner-free) and forwards it as `?ref=`. The handler never trusts that input: `sanitizeRef` lowercases, drops anything
+  outside `[a-z0-9._:-]`, and caps at 120 chars, mirroring the website's normalization. Absent or sanitizes-to-empty →
+  stored NULL (not `''`). Homebrew, direct links, and return visits in a later session carry no ref and stay NULL. The
+  charset rule is the trust boundary — keep client and server in sync if either changes.
 
 **Update check tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `update_checks`). Counts active users (free +
 licensed) by proxying update checks through `GET /update-check/:version`. Each unique (date, hashed_ip, app_version,
