@@ -2,6 +2,7 @@ package checks
 
 import (
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -283,9 +284,56 @@ func isEnforcedCandidate(rel string) bool {
 	return strings.HasPrefix(rel, "docs/")
 }
 
-// findMarkdownDocs walks rootDir and returns every .md file as a repo-relative,
-// forward-slashed path, skipping vendored/generated/hidden dirs.
+// findMarkdownDocs returns every first-party .md file as a repo-relative,
+// forward-slashed path. In a git work tree it lists tracked plus
+// untracked-but-not-ignored files, so .gitignored scratch (`_ignored/`) and
+// vendored/build trees are excluded while a brand-new uncommitted doc still
+// counts. Outside git it falls back to a filesystem walk. Either way, hidden dirs
+// and docSkipDirs are filtered out so the two paths agree on what's in scope.
 func findMarkdownDocs(rootDir string) ([]string, error) {
+	if docs, ok := gitListMarkdownDocs(rootDir); ok {
+		return docs, nil
+	}
+	return walkMarkdownDocs(rootDir)
+}
+
+// gitListMarkdownDocs asks git for the in-scope .md files (`--exclude-standard`
+// honors .gitignore). Returns (nil, false) when rootDir isn't a git work tree, so
+// the caller falls back to a plain walk. Paths are repo-root-relative because the
+// check always roots at the repo root.
+func gitListMarkdownDocs(rootDir string) ([]string, bool) {
+	cmd := exec.Command("git", "-C", rootDir, "ls-files", "--cached", "--others",
+		"--exclude-standard", "-z", "--", "*.md")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, false
+	}
+	var docs []string
+	for _, rel := range strings.Split(string(out), "\x00") {
+		if rel != "" && keepDocPath(rel) {
+			docs = append(docs, rel)
+		}
+	}
+	sort.Strings(docs)
+	return docs, true
+}
+
+// keepDocPath drops a doc whose directory chain contains a hidden (`.`-prefixed)
+// segment or a docSkipDirs entry, mirroring the walk's dir-skip rules (the
+// filename itself is exempt: only the directories matter).
+func keepDocPath(rel string) bool {
+	segs := strings.Split(rel, "/")
+	for _, seg := range segs[:len(segs)-1] {
+		if strings.HasPrefix(seg, ".") || docSkipDirs[seg] {
+			return false
+		}
+	}
+	return true
+}
+
+// walkMarkdownDocs is the non-git fallback: a filesystem walk skipping
+// vendored/generated/hidden dirs.
+func walkMarkdownDocs(rootDir string) ([]string, error) {
 	var docs []string
 	err := filepath.WalkDir(rootDir, func(p string, d os.DirEntry, err error) error {
 		if err != nil {

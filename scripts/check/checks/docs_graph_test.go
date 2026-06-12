@@ -2,8 +2,10 @@ package checks
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -96,6 +98,32 @@ func TestBuildDocGraphEnforcesNotesUnderDocs(t *testing.T) {
 	g := buildFixtureGraph(t)
 	if _, ok := g.Reached["docs/notes/note.md"]; !ok {
 		t.Error("docs/notes/ is under docs/ and now enforced; a linked note should be reachable")
+	}
+}
+
+func TestBuildDocGraphSkipsGitIgnoredDocs(t *testing.T) {
+	root := t.TempDir()
+	for _, args := range [][]string{{"init"}, {"config", "user.email", "t@example.com"}, {"config", "user.name", "t"}} {
+		if err := exec.Command("git", append([]string{"-C", root}, args...)...).Run(); err != nil {
+			t.Skipf("git unavailable: %v", err)
+		}
+	}
+	writeDocFile(t, root, ".gitignore", "_ignored/\n")
+	writeDocFile(t, root, "CLAUDE.md", "@AGENTS.md")
+	writeDocFile(t, root, "AGENTS.md", "Root entry, no further links.")
+	writeDocFile(t, root, "_ignored/scratch/CLAUDE.md", "Gitignored scratch, not part of the repo doc tree.")
+
+	g, err := BuildDocGraph(root)
+	if err != nil {
+		t.Fatalf("BuildDocGraph: %v", err)
+	}
+	if _, ok := g.Reached["_ignored/scratch/CLAUDE.md"]; ok {
+		t.Error("a .gitignored doc must not be a graph node")
+	}
+	for _, o := range g.Orphans {
+		if strings.Contains(o, "_ignored") {
+			t.Errorf("a .gitignored doc must not be enforced as an orphan, got %q", o)
+		}
 	}
 }
 
