@@ -1,5 +1,5 @@
-import type { TimeRange, SourceResult } from '../types.js'
-import { toTimeWindow } from '../types.js'
+import type { DashboardSelection, SourceResult } from '../types.js'
+import { toTimeWindow, selectionCacheKey } from '../types.js'
 import { cacheGet, cacheSet } from '../cache.js'
 
 export interface PaddleTransaction {
@@ -105,18 +105,46 @@ export function countSubscriptionsByStatus(subscriptions: PaddleSubscription[]):
   return counts
 }
 
-export async function fetchPaddleData(env: PaddleEnv, range: TimeRange): Promise<SourceResult<PaddleData>> {
-  const cached = await cacheGet<PaddleData>('paddle', range)
+/**
+ * Buckets completed Paddle transactions created on/after `sinceDate` (a `YYYY-MM-DD`) into per-UTC-day
+ * counts, for the daily funnel's "purchases" column. Paddle is the source of truth for revenue; this
+ * just counts completed transactions by the UTC day of `created_at`. Returns a `Map<YYYY-MM-DD, count>`;
+ * throws on any Paddle error (the funnel source catches and shows that column as dashes).
+ */
+export async function fetchPaddlePurchasesByDay(env: PaddleEnv, sinceDate: string): Promise<Map<string, number>> {
+  const startIso = new Date(`${sinceDate}T00:00:00Z`).toISOString()
+  const raw = await paddleFetchAll<PaddleRawTransaction>(
+    env.PADDLE_API_KEY_LIVE,
+    `/transactions?status=completed&created_at[gte]=${startIso}`,
+  )
+  const byDay = new Map<string, number>()
+  for (const txn of raw) {
+    // `created_at` is ISO8601 with a `Z`, so Date parses it as UTC; slice to the UTC day.
+    const day = new Date(txn.created_at).toISOString().slice(0, 10)
+    byDay.set(day, (byDay.get(day) ?? 0) + 1)
+  }
+  return byDay
+}
+
+export async function fetchPaddleData(
+  env: PaddleEnv,
+  selection: DashboardSelection,
+): Promise<SourceResult<PaddleData>> {
+  const cacheKey = selectionCacheKey(selection)
+  const cached = await cacheGet<PaddleData>('paddle', cacheKey)
   if (cached) return { ok: true, data: cached }
 
   try {
-    const { startAt } = toTimeWindow(range)
+    const { startAt, endAt } = toTimeWindow(selection)
     const startIso = new Date(startAt).toISOString()
+    // A specific single day needs an upper bound too, so transactions after that day don't leak in.
+    // The rolling ranges and `today` end at now, so the gte filter alone already covers them.
+    const upperBound = selection.range === 'day' ? `&created_at[lt]=${new Date(endAt).toISOString()}` : ''
 
     const [rawTransactions, rawSubscriptions] = await Promise.all([
       paddleFetchAll<PaddleRawTransaction>(
         env.PADDLE_API_KEY_LIVE,
-        `/transactions?status=completed&created_at[gte]=${startIso}`,
+        `/transactions?status=completed&created_at[gte]=${startIso}${upperBound}`,
       ),
       paddleFetchAll<PaddleRawSubscription>(env.PADDLE_API_KEY_LIVE, '/subscriptions'),
     ])
@@ -127,7 +155,7 @@ export async function fetchPaddleData(env: PaddleEnv, range: TimeRange): Promise
     const subscriptionsByStatus = countSubscriptionsByStatus(allSubscriptions)
 
     const data: PaddleData = { transactions, activeSubscriptions, subscriptionsByStatus }
-    await cacheSet('paddle', range, data)
+    await cacheSet('paddle', cacheKey, data)
     return { ok: true, data }
   } catch (e) {
     return { ok: false, error: `Paddle: ${e instanceof Error ? e.message : String(e)}` }

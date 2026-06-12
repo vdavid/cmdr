@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Bindings } from './types'
 import { licensing } from './licensing'
 import { admin } from './admin'
+import { funnel } from './funnel'
 import { telemetry } from './telemetry'
 import { likes } from './likes'
 import { errorReport } from './error-report'
@@ -24,6 +25,7 @@ app.get('/', (c) => {
 // Mount route modules
 app.route('/', licensing)
 app.route('/', admin)
+app.route('/', funnel)
 app.route('/', telemetry)
 app.route('/', likes)
 app.route('/', errorReport)

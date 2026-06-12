@@ -1,4 +1,5 @@
-import type { TimeRange, SourceResult } from '../types.js'
+import type { DashboardSelection, SourceResult } from '../types.js'
+import { selectionCacheKey, selectionToWorkerRange } from '../types.js'
 import { cacheGet, cacheSet } from '../cache.js'
 
 export interface PostHogDailyRow {
@@ -23,8 +24,8 @@ interface HogQLResponse {
   error?: string
 }
 
-function toHogQLInterval(range: TimeRange): string {
-  const map: Record<TimeRange, string> = {
+function toHogQLInterval(range: '24h' | '7d' | '30d'): string {
+  const map: Record<'24h' | '7d' | '30d', string> = {
     '24h': '1 day',
     '7d': '7 day',
     '30d': '30 day',
@@ -37,12 +38,15 @@ export function parseHogQLResponse(raw: HogQLResponse): PostHogDailyRow[] {
   return raw.results.map(([day, views]) => ({ day, views }))
 }
 
-export async function fetchPostHogData(env: PostHogEnv, range: TimeRange): Promise<SourceResult<PostHogData>> {
-  const cached = await cacheGet<PostHogData>('posthog', range)
+export async function fetchPostHogData(
+  env: PostHogEnv,
+  selection: DashboardSelection,
+): Promise<SourceResult<PostHogData>> {
+  const cached = await cacheGet<PostHogData>('posthog', selectionCacheKey(selection))
   if (cached) return { ok: true, data: cached }
 
   try {
-    const interval = toHogQLInterval(range)
+    const interval = toHogQLInterval(selectionToWorkerRange(selection))
     const url = `${env.POSTHOG_API_URL}/api/projects/${env.POSTHOG_PROJECT_ID}/query/`
 
     const response = await fetch(url, {
@@ -72,7 +76,7 @@ export async function fetchPostHogData(env: PostHogEnv, range: TimeRange): Promi
     const totalPageviews = dailyPageviews.reduce((sum, row) => sum + row.views, 0)
 
     const data: PostHogData = { totalPageviews, dailyPageviews }
-    await cacheSet('posthog', range, data)
+    await cacheSet('posthog', selectionCacheKey(selection), data)
     return { ok: true, data }
   } catch (e) {
     return { ok: false, error: `PostHog: ${e instanceof Error ? e.message : String(e)}` }

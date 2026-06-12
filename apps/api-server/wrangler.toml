@@ -100,6 +100,10 @@ PADDLE_ENVIRONMENT = "live"
 LISTMONK_API_URL = "https://mail.getcmdr.com"
 LISTMONK_API_USER = "agent"
 LISTMONK_BETA_LIST_ID = 4
+# Newsletter list id, read by GET /admin/funnel for its per-day signups column (it sums this list
+# plus the beta list). Same TOML-integer requirement as the beta list id (the funnel checks
+# `typeof === 'number'`, so a string would drop this list from the count).
+LISTMONK_NEWSLETTER_LIST_ID = 3
 
 # Secrets (set via `wrangler secret put <NAME>`):
 # - PADDLE_WEBHOOK_SECRET_LIVE     (from Paddle live dashboard)

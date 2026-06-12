@@ -123,7 +123,7 @@ describe('fetchFeedbackAndErrorsData', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchFeedbackAndErrorsData(mockEnv, '7d')
+    const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.feedback).toEqual(sampleFeedback)
@@ -135,7 +135,7 @@ describe('fetchFeedbackAndErrorsData', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] })
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchFeedbackAndErrorsData(mockEnv, '24h')
+    await fetchFeedbackAndErrorsData(mockEnv, { range: '24h', day: null })
     const urls = fetchMock.mock.calls.map((c) => String(c[0]))
     expect(urls.some((u) => u.includes('/admin/feedback?range=7d'))).toBe(true)
     expect(urls.some((u) => u.includes('/admin/error-reports?range=7d'))).toBe(true)
@@ -145,14 +145,14 @@ describe('fetchFeedbackAndErrorsData', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] })
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchFeedbackAndErrorsData(mockEnv, '30d')
+    await fetchFeedbackAndErrorsData(mockEnv, { range: '30d', day: null })
     const urls = fetchMock.mock.calls.map((c) => String(c[0]))
     expect(urls.every((u) => u.includes('range=30d'))).toBe(true)
   })
 
   it('returns an error when a worker endpoint fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, text: async () => 'Unauthorized' }))
-    const result = await fetchFeedbackAndErrorsData(mockEnv, '7d')
+    const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Feedback & errors')
@@ -161,7 +161,7 @@ describe('fetchFeedbackAndErrorsData', () => {
 
   it('returns an error on network failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('DNS resolution failed')))
-    const result = await fetchFeedbackAndErrorsData(mockEnv, '7d')
+    const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('DNS resolution failed')

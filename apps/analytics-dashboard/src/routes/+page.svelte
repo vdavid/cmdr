@@ -173,8 +173,47 @@
 
     let { data } = $props()
 
-    const ranges = ['24h', '7d', '30d'] as const
+    const ranges = ['today', '24h', '7d', '30d'] as const
     const downloadSyncKey = 'dl-timelines'
+
+    /** True when a single specific UTC day is selected (vs a relative range). */
+    const isDaySelected = $derived(data.selection.range === 'day')
+    /** The selected specific day, or '' for the date input when a relative range is active. */
+    const selectedDay = $derived(data.selection.day ?? '')
+
+    /** Navigate to a relative range, clearing any specific-day selection. */
+    function selectRange(range: string) {
+        zoomXMin = null
+        zoomXMax = null
+        if (!(data.selection.range === range && !data.selection.day)) {
+            window.location.href = `?range=${range}`
+        }
+    }
+
+    /** Navigate to a single specific UTC day (or back to the default range when cleared). */
+    function selectDay(day: string) {
+        zoomXMin = null
+        zoomXMax = null
+        window.location.href = day ? `?day=${day}` : '?range=7d'
+    }
+
+    /** Today's UTC day as YYYY-MM-DD, the max selectable day (no future days). */
+    const todayIso = new Date().toISOString().slice(0, 10)
+
+    /** A short human label for the current selection, for the funnel-vs-sections note. */
+    const selectionLabel = $derived(
+        data.selection.range === 'day' ? (data.selection.day ?? 'a day') : data.selection.range,
+    )
+
+    /** Format a funnel cell: a real number, or an en dash when the value is unknown (null). */
+    function funnelCell(value: number | null): string {
+        return value === null ? '–' : formatNumber(value)
+    }
+
+    /** Format a D7 retention fraction as a percent, or an en dash when unknown (null / young cohort). */
+    function funnelPercent(fraction: number | null): string {
+        return fraction === null ? '–' : `${Math.round(fraction * 100)}%`
+    }
 
     // Color palette
     const COLOR_GOLD = '#ffc206'
@@ -183,9 +222,9 @@
     const COLOR_CYAN = '#22d3ee' // cyan for getprvw.com
 
     /** Time range in seconds for the selected range. Used as default zoom for star charts. */
-    const rangeSeconds: Record<string, number> = { '24h': 86400, '7d': 7 * 86400, '30d': 30 * 86400 }
+    const rangeSeconds: Record<string, number> = { today: 86400, '24h': 86400, '7d': 7 * 86400, '30d': 30 * 86400 }
     function starChartXMin(): number {
-        return Date.now() / 1000 - (rangeSeconds[data.range] ?? 7 * 86400)
+        return Date.now() / 1000 - (rangeSeconds[data.selection.range] ?? 7 * 86400)
     }
 
     const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
@@ -274,9 +313,9 @@
             <div class="flex rounded-lg border border-border bg-surface p-0.5">
                 {#each ranges as r}
                     <button
-                        onclick={() => { zoomXMin = null; zoomXMax = null; if (r !== data.range) window.location.href = `?range=${r}` }}
+                        onclick={() => selectRange(r)}
                         class="rounded-md px-3 py-1 text-sm font-medium transition-colors
-                            {data.range === r
+                            {!isDaySelected && data.selection.range === r
                             ? 'bg-accent text-accent-contrast'
                             : 'text-text-secondary hover:text-text-primary'}"
                     >
@@ -284,20 +323,103 @@
                     </button>
                 {/each}
             </div>
+            <input
+                type="date"
+                max={todayIso}
+                value={selectedDay}
+                onchange={(e) => selectDay((e.currentTarget as HTMLInputElement).value)}
+                aria-label="View a specific UTC day"
+                class="rounded-lg border px-2 py-1 text-sm transition-colors
+                    {isDaySelected
+                    ? 'border-accent bg-accent/10 text-text-primary'
+                    : 'border-border bg-surface text-text-secondary hover:text-text-primary'}"
+            />
             <span class="text-xs text-text-tertiary">
                 Updated {formatTime(data.updatedAt)}
             </span>
         </div>
     </header>
 
+    <!-- Daily funnel (full width, always the last 30 UTC days, independent of the range picker) -->
+    <section class="mb-6 rounded-xl border border-border bg-surface p-6">
+        <div class="mb-1">
+            <h2 class="text-lg font-semibold text-text-primary">Daily funnel</h2>
+            <p class="text-sm text-text-tertiary">The last 30 days, one row per UTC day, newest first.</p>
+        </div>
+        {@render sectionDescription(
+            "Use this to watch the whole acquisition path day by day: site visitors, download clicks, real server " +
+                "downloads, new installs, week-one retention, signups, and purchases, all lined up so you can spot where " +
+                "a day fell off.",
+            "All days are UTC, and today's row is partial (it's still going). A dash means we couldn't get that cell " +
+                "(not a zero). Click a day to filter the sections below to it.",
+        )}
+        {#if !data.funnel.ok}
+            {@render errorState(data.funnel.error)}
+        {:else}
+            {@const rows = data.funnel.data.rows}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-border text-left text-xs text-text-tertiary">
+                            <th class="py-2 pr-4 font-medium">Day</th>
+                            <th class="py-2 pr-4 text-right font-medium">Visitors</th>
+                            <th class="py-2 pr-4 text-right font-medium">Download clicks</th>
+                            <th class="py-2 pr-4 text-right font-medium">Server downloads</th>
+                            <th class="py-2 pr-4 text-right font-medium">New installs</th>
+                            <th class="py-2 pr-4 text-right font-medium">D7 retained</th>
+                            <th class="py-2 pr-4 text-right font-medium">Signups</th>
+                            <th class="py-2 text-right font-medium">Purchases</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#each [...rows].reverse() as row (row.date)}
+                            {@const isToday = row.date === todayIso}
+                            {@const isActiveDay = isDaySelected && row.date === selectedDay}
+                            <tr
+                                class="cursor-pointer border-b border-border-subtle transition-colors hover:bg-surface-elevated
+                                    {isActiveDay ? 'bg-accent/10' : ''}"
+                                onclick={() => selectDay(row.date)}
+                            >
+                                <td class="py-1.5 pr-4 font-medium text-text-primary">
+                                    {row.date}{#if isToday}<span class="ml-1 text-xs font-normal text-text-tertiary">(today, partial)</span>{/if}
+                                </td>
+                                <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.visitors)}</td>
+                                <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.downloadClicks)}</td>
+                                <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.serverDownloads)}</td>
+                                <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.newInstalls)}</td>
+                                <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">
+                                    {funnelPercent(row.d7Retention)}{#if row.d7Retained !== null}<span class="ml-1 text-xs text-text-tertiary">({row.d7Retained})</span>{/if}
+                                </td>
+                                <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.newsletterSignups)}</td>
+                                <td class="py-1.5 text-right tabular-nums text-text-secondary">{funnelCell(row.purchases)}</td>
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
+            </div>
+            {@render methodology(
+                "Visitors and download clicks come from Umami (cookieless, in-browser). Server downloads, new installs, " +
+                    "DAU, and D7 come from the app's own telemetry (D1); signups from Listmonk; purchases from Paddle. " +
+                    "Clicks and server downloads won't match: server downloads also include Homebrew, direct links, and " +
+                    "GitHub-page traffic, and bot user agents are filtered but imperfectly. D7 needs a cohort at least 8 " +
+                    "days old, so recent rows show a dash there.",
+            )}
+        {/if}
+    </section>
+
     <!-- Sections -->
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         <!-- 1. Awareness -->
         <section class="rounded-xl border border-border bg-surface p-6">
-            <div class="mb-4">
+            <div class="mb-1">
                 <h2 class="text-lg font-semibold text-text-primary">Awareness</h2>
                 <p class="text-sm text-text-tertiary">How many people see Cmdr content?</p>
             </div>
+            {@render sectionDescription(
+                "Use this to gauge top-of-funnel reach across the three sites, and which days or sites are growing.",
+                "Umami is cookieless and proxied, so it dodges most adblockers, but it still undercounts by a few percent, " +
+                    "and one person on two devices counts twice.",
+            )}
 
             {#if !data.umami.ok}
                 {@render errorState(data.umami.error)}
@@ -369,10 +491,15 @@
 
         <!-- 2. Interest -->
         <section class="rounded-xl border border-border bg-surface p-6">
-            <div class="mb-4">
+            <div class="mb-1">
                 <h2 class="text-lg font-semibold text-text-primary">Interest</h2>
                 <p class="text-sm text-text-tertiary">How many engage with the product page?</p>
             </div>
+            {@render sectionDescription(
+                "Use this to see getcmdr.com engagement over time, and to cross-check the two trackers against each other.",
+                "Umami is cookieless and undercounts a bit; PostHog needs its own client-side script to load, so adblockers " +
+                    "trim it more. Treat the two as independent estimates, not one exact number.",
+            )}
 
             {#if !data.umami.ok && !data.posthog.ok}
                 {@render errorState(
@@ -422,10 +549,17 @@
 
         <!-- 3. Download -->
         <section class="rounded-xl border border-border bg-surface p-6">
-            <div class="mb-4">
+            <div class="mb-1">
                 <h2 class="text-lg font-semibold text-text-primary">Download</h2>
                 <p class="text-sm text-text-tertiary">How many actually download?</p>
             </div>
+            {@render sectionDescription(
+                "Use this to see real new installs by source (website, Homebrew, other) and which release and platform " +
+                    "people are grabbing.",
+                "These are server downloads from the app's own endpoint, deduped per day by a daily-rotating hashed IP, " +
+                    "with bot user agents dropped (imperfectly). It won't match the Umami download clicks above, which fire " +
+                    "in-browser. Rows before 2026-06-11 have no source attribution.",
+            )}
 
             {#if !data.cloudflare.ok && !data.github.ok}
                 {@render errorState(
@@ -586,10 +720,16 @@
 
         <!-- 4. Active use -->
         <section class="rounded-xl border border-border bg-surface p-6">
-            <div class="mb-4">
+            <div class="mb-1">
                 <h2 class="text-lg font-semibold text-text-primary">Active use</h2>
                 <p class="text-sm text-text-tertiary">How many run the app?</p>
             </div>
+            {@render sectionDescription(
+                "Use this for true daily active installs and how fast the fleet rolls onto each new release.",
+                "DAU here comes from the hourly heartbeat (distinct install ids per day), the trustworthy active-use number. " +
+                    "The older update-check count is a weaker proxy (it only fires when the updater runs). Debug builds and " +
+                    "anyone who opts out of analytics are excluded.",
+            )}
 
             {#if !data.cloudflare.ok}
                 {@render errorState(data.cloudflare.error)}
@@ -663,10 +803,15 @@
 
         <!-- 5. Payment -->
         <section class="rounded-xl border border-border bg-surface p-6">
-            <div class="mb-4">
+            <div class="mb-1">
                 <h2 class="text-lg font-semibold text-text-primary">Payment</h2>
                 <p class="text-sm text-text-tertiary">How many pay?</p>
             </div>
+            {@render sectionDescription(
+                "Use this for completed purchases and the revenue they brought in over the selected window.",
+                "Paddle is the source of truth for money, so trust these numbers, just expect a little webhook lag near the " +
+                    "present.",
+            )}
 
             {#if !data.paddle.ok}
                 {@render errorState(data.paddle.error)}
@@ -717,10 +862,16 @@
 
         <!-- 6. Retention -->
         <section class="rounded-xl border border-border bg-surface p-6">
-            <div class="mb-4">
+            <div class="mb-1">
                 <h2 class="text-lg font-semibold text-text-primary">Retention</h2>
                 <p class="text-sm text-text-tertiary">Do they stay?</p>
             </div>
+            {@render sectionDescription(
+                "Use this to see whether paying customers stick around: the split of subscriptions by status (active, " +
+                    "canceled, and so on).",
+                "From Paddle, so it's reliable for money. It covers paid subscriptions only, not free-tier engagement (that's " +
+                    "the Active use section and the funnel's D7).",
+            )}
 
             {#if !data.paddle.ok}
                 {@render errorState(data.paddle.error)}
@@ -758,10 +909,16 @@
 
         <!-- 7. Feedback & errors -->
         <section class="rounded-xl border border-border bg-surface p-6">
-            <div class="mb-4">
+            <div class="mb-1">
                 <h2 class="text-lg font-semibold text-text-primary">Feedback &amp; errors</h2>
                 <p class="text-sm text-text-tertiary">What are users telling us?</p>
             </div>
+            {@render sectionDescription(
+                "Use this to read what people sent through in-app feedback and to see error-report bundles roll in, so you " +
+                    "catch pain points fast.",
+                "Feedback carries no install id (it's unjoinable to analytics), and error reports use a separate diagnostics " +
+                    "id. Both are low-volume, so a short window can look empty even when things are fine.",
+            )}
 
             {#if !data.feedbackAndErrors.ok}
                 {@render errorState(data.feedbackAndErrors.error)}
@@ -870,7 +1027,10 @@
     <div class="rounded-lg border border-border-subtle bg-surface-elevated px-4 py-6 text-center">
         <p class="text-sm text-text-secondary">Couldn't load this data</p>
         <p class="mt-1 text-xs text-text-tertiary">{error}</p>
-        <a href="?range={data.range}" class="mt-2 inline-block text-xs text-accent hover:text-accent-hover">
+        <a
+            href={isDaySelected ? `?day=${selectedDay}` : `?range=${data.selection.range}`}
+            class="mt-2 inline-block text-xs text-accent hover:text-accent-hover"
+        >
             Try again
         </a>
     </div>
@@ -885,6 +1045,17 @@
 <!-- A small "how this is measured" note under a chart, so no number on the dashboard is a black box. -->
 {#snippet methodology(text: string)}
     <p class="mt-2 text-xs leading-relaxed text-text-tertiary">{text}</p>
+{/snippet}
+
+<!--
+  A section's "what is this, and how much to trust it" blurb, shown right under the section heading.
+  `insight` is the one-line "use this to..." purpose; `caveat` is the reliability footnote (optional).
+-->
+{#snippet sectionDescription(insight: string, caveat?: string)}
+    <p class="mb-4 text-xs leading-relaxed text-text-secondary">
+        {insight}
+        {#if caveat}<span class="text-text-tertiary">{caveat}</span>{/if}
+    </p>
 {/snippet}
 
 {#snippet betaEmptyState()}

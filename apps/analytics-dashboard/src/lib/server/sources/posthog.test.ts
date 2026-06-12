@@ -49,7 +49,7 @@ describe('fetchPostHogData', () => {
       }),
     )
 
-    const result = await fetchPostHogData(mockEnv, '7d')
+    const result = await fetchPostHogData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(true)
     if (!result.ok) return
 
@@ -64,7 +64,7 @@ describe('fetchPostHogData', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchPostHogData(mockEnv, '30d')
+    await fetchPostHogData(mockEnv, { range: '30d', day: null })
 
     const url = fetchMock.mock.calls[0][0] as string
     expect(url).toBe('https://eu.posthog.com/api/projects/136072/query/')
@@ -88,7 +88,7 @@ describe('fetchPostHogData', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchPostHogData(mockEnv, '24h')
+    await fetchPostHogData(mockEnv, { range: '24h', day: null })
 
     const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string)
     expect(body.query.query).toContain('1 day')
@@ -97,7 +97,7 @@ describe('fetchPostHogData', () => {
   it('returns error when API fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401 }))
 
-    const result = await fetchPostHogData(mockEnv, '7d')
+    const result = await fetchPostHogData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('PostHog')
@@ -107,7 +107,7 @@ describe('fetchPostHogData', () => {
   it('returns error on network failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Connection refused')))
 
-    const result = await fetchPostHogData(mockEnv, '7d')
+    const result = await fetchPostHogData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Connection refused')

@@ -1,4 +1,5 @@
-import type { TimeRange, SourceResult } from '../types.js'
+import type { DashboardSelection, SourceResult } from '../types.js'
+import { selectionCacheKey, selectionToWorkerRange } from '../types.js'
 import { cacheGet, cacheSet } from '../cache.js'
 import { fetchWorkerEndpoint } from './worker-endpoint.js'
 
@@ -41,15 +42,15 @@ interface CloudflareEnv {
   WORKER_BASE_URL?: string
 }
 
-/** Maps dashboard TimeRange to worker endpoint range param. Downloads and update-activity share this. */
-const downloadRangeMap: Record<TimeRange, string> = {
+/** Maps the coarse worker range to the downloads/update-activity range param (they share the same set). */
+const downloadRangeMap: Record<'24h' | '7d' | '30d', string> = {
   '24h': '24h',
   '7d': '7d',
   '30d': '30d',
 }
 
-/** The heartbeat-DAU endpoint takes 7d/30d/90d/all; the dashboard's shortest range (24h) maps up to 7d. */
-const heartbeatDauRangeMap: Record<TimeRange, string> = {
+/** The heartbeat-DAU endpoint takes 7d/30d/90d/all; the shortest coarse range (24h) maps up to 7d. */
+const heartbeatDauRangeMap: Record<'24h' | '7d' | '30d', string> = {
   '24h': '7d',
   '7d': '7d',
   '30d': '30d',
@@ -94,10 +95,14 @@ export function parseUpdateActivityRows(raw: WorkerUpdateActivityRow[]): UpdateA
   return raw.map((row) => ({ day: row.date, version: row.version, updaters: row.count }))
 }
 
-export async function fetchCloudflareData(env: CloudflareEnv, range: TimeRange): Promise<SourceResult<CloudflareData>> {
-  const cached = await cacheGet<CloudflareData>('cloudflare', range)
+export async function fetchCloudflareData(
+  env: CloudflareEnv,
+  selection: DashboardSelection,
+): Promise<SourceResult<CloudflareData>> {
+  const cached = await cacheGet<CloudflareData>('cloudflare', selectionCacheKey(selection))
   if (cached) return { ok: true, data: cached }
 
+  const range = selectionToWorkerRange(selection)
   try {
     const [downloadsRaw, heartbeatDauRaw, updateActivityRaw] = await Promise.all([
       fetchWorkerEndpoint<WorkerDownloadRow[]>(
@@ -122,7 +127,7 @@ export async function fetchCloudflareData(env: CloudflareEnv, range: TimeRange):
       heartbeatDau: parseHeartbeatDauRows(heartbeatDauRaw),
       updateActivity: parseUpdateActivityRows(updateActivityRaw),
     }
-    await cacheSet('cloudflare', range, data)
+    await cacheSet('cloudflare', selectionCacheKey(selection), data)
     return { ok: true, data }
   } catch (e) {
     return { ok: false, error: `Cloudflare: ${e instanceof Error ? e.message : String(e)}` }

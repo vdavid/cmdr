@@ -131,7 +131,7 @@ describe('fetchCloudflareData', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchCloudflareData(mockEnv, '7d')
+    const result = await fetchCloudflareData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(true)
     if (!result.ok) return
 
@@ -149,14 +149,14 @@ describe('fetchCloudflareData', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] })
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchCloudflareData(mockEnv, '24h')
+    await fetchCloudflareData(mockEnv, { range: '24h', day: null })
     const downloadUrl = fetchMock.mock.calls[0][0] as string
     const heartbeatUrl = fetchMock.mock.calls[1][0] as string
     expect(downloadUrl).toContain('range=24h')
     expect(heartbeatUrl).toContain('range=7d') // 24h maps up to 7d for heartbeat DAU
 
     fetchMock.mockClear()
-    await fetchCloudflareData(mockEnv, '30d')
+    await fetchCloudflareData(mockEnv, { range: '30d', day: null })
     const downloadUrl30 = fetchMock.mock.calls[0][0] as string
     const heartbeatUrl30 = fetchMock.mock.calls[1][0] as string
     expect(downloadUrl30).toContain('range=30d')
@@ -166,7 +166,7 @@ describe('fetchCloudflareData', () => {
   it('returns error when API fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => 'Forbidden' }))
 
-    const result = await fetchCloudflareData(mockEnv, '7d')
+    const result = await fetchCloudflareData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Cloudflare')
@@ -176,7 +176,7 @@ describe('fetchCloudflareData', () => {
   it('returns error on network failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('DNS resolution failed')))
 
-    const result = await fetchCloudflareData(mockEnv, '7d')
+    const result = await fetchCloudflareData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('DNS resolution failed')

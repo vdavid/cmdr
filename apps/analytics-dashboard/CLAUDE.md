@@ -16,13 +16,13 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/app.css`                               | Tailwind v4 theme (dark palette matching getcmdr.com)                                                                                                                          |
 | `src/app.d.ts`                              | Platform env type declarations for CF Pages                                                                                                                                    |
-| `src/routes/+page.svelte`                   | Single-page dashboard: 6 acquisition stages plus feedback & errors                                                                                                             |
-| `src/routes/+page.server.ts`                | Server load: reads `?range=` param, delegates to `fetch-all.ts`                                                                                                                |
-| `src/routes/api/report/+server.ts`          | Agent-readable plain-text report with all breakdowns                                                                                                                           |
+| `src/routes/+page.svelte`                   | Single-page dashboard: a top "Daily funnel" table, then 6 acquisition stages plus feedback & errors                                                                            |
+| `src/routes/+page.server.ts`                | Server load: reads `?range=` and `?day=` params, delegates to `fetch-all.ts`                                                                                                   |
+| `src/routes/api/report/+server.ts`          | Agent-readable plain-text report (includes the daily funnel) with all breakdowns                                                                                               |
 | `src/lib/server/fetch-all.ts`               | Shared data-fetching logic used by both the page and report API                                                                                                                |
 | `src/lib/components/Chart.svelte`           | Reusable uPlot chart with ResizeObserver and dark theme                                                                                                                        |
 | `src/lib/components/StackedBarChart.svelte` | Discrete per-day stacked bars (plain elements, not uPlot) with an exact-numbers hover/focus tooltip. Used for the by-source new-installs chart and the by-version update chart |
-| `src/lib/server/types.ts`                   | Shared types: `TimeRange`, `SourceResult`, time window helpers                                                                                                                 |
+| `src/lib/server/types.ts`                   | Shared types: `TimeRange`, `DashboardSelection`, `SourceResult`, time window + selection helpers                                                                               |
 | `src/lib/server/cache.ts`                   | CF Cache API wrapper with in-memory Map fallback for local dev                                                                                                                 |
 | `src/lib/server/sources/`                   | Data source modules (one per external API)                                                                                                                                     |
 | `svelte.config.js`                          | Adapter-cloudflare config                                                                                                                                                      |
@@ -59,16 +59,17 @@ creds (Umami, Paddle, PostHog) just show "Couldn't load" and don't block the wor
 
 Each source gets its own module under `src/lib/server/sources/`:
 
-| Module                   | Auth                                            | Data                                                                                                                                                                                                                                                                    |
-| ------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `umami.ts`               | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                                                                                                                                                          |
-| `cloudflare.ts`          | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Downloads (by version/arch/country/source, with raw + same-day-deduped counts), true per-day DAU + beats from the heartbeat, and per-day update-check activity by version, from worker endpoints (`/admin/downloads`, `/admin/heartbeat-dau`, `/admin/update-activity`) |
-| `paddle.ts`              | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                                                                                                                                                         |
-| `github.ts`              | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination                                                                                                                                             |
-| `posthog.ts`             | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                                                                                                                                                            |
-| `license.ts`             | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                                                                                                                                                                   |
-| `feedback-and-errors.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | In-app feedback messages and error-report bundle metadata from worker endpoints (`/admin/feedback`, `/admin/error-reports`). Pure aggregation helpers + row types live in `$lib/feedback-and-errors.ts` (client-safe, shared with the page)                             |
-| `worker-endpoint.ts`     | (shared helper)                                 | `fetchWorkerEndpoint(token, path)`: GETs a worker admin endpoint with the bearer token, used by `cloudflare.ts` and `feedback-and-errors.ts`                                                                                                                            |
+| Module                   | Auth                                            | Data                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `umami.ts`               | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                                                                                                                                                                                                                                                                                 |
+| `cloudflare.ts`          | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Downloads (by version/arch/country/source, with raw + same-day-deduped counts), true per-day DAU + beats from the heartbeat, and per-day update-check activity by version, from worker endpoints (`/admin/downloads`, `/admin/heartbeat-dau`, `/admin/update-activity`)                                                                                                                        |
+| `paddle.ts`              | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                                                                                                                                                                                                                                                                                |
+| `github.ts`              | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination                                                                                                                                                                                                                                                                    |
+| `posthog.ts`             | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                                                                                                                                                                                                                                                                                   |
+| `license.ts`             | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                                                                                                                                                                                                                                                                                          |
+| `feedback-and-errors.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | In-app feedback messages and error-report bundle metadata from worker endpoints (`/admin/feedback`, `/admin/error-reports`). Pure aggregation helpers + row types live in `$lib/feedback-and-errors.ts` (client-safe, shared with the page)                                                                                                                                                    |
+| `funnel.ts`              | Bearer token + Umami + Paddle                   | Feeds the top "Daily funnel" table: per-UTC-day rows for the last 30 days, joining the api-server `/admin/funnel` (server downloads, new installs, DAU, D7, Listmonk signups) with Umami per-day visitors + `download` clicks and Paddle per-day purchases. Always 30 days, independent of the range picker. Each side is best-effort; a `null` cell renders as a dash (never confused with 0) |
+| `worker-endpoint.ts`     | (shared helper)                                 | `fetchWorkerEndpoint(token, path)`: GETs a worker admin endpoint with the bearer token, used by `cloudflare.ts`, `feedback-and-errors.ts`, and `funnel.ts`                                                                                                                                                                                                                                     |
 
 Each module exports a typed fetch function returning `SourceResult<T>` (ok + data, or error string). Results are cached
 via `cache.ts` (5 min TTL for 24h/7d, 1 hour for 30d). The page server calls all sources in parallel, each capped at 20s
@@ -113,6 +114,37 @@ All set as CF Pages secrets, never in code.
 **Decision**: Metrics are organized by acquisition stage, not as a cohort funnel. **Why**: Tracking is cookieless and
 anonymous, so there's no way to follow an individual from blog visit to download to payment. The stages show independent
 aggregate numbers. A true funnel would require cross-site user identity tracking and a cookie banner.
+
+**Decision**: A top "Daily funnel" table lines the stages up per UTC day (last 30 days, newest first, today partial),
+independent of the range picker. **Why**: the per-stage sections answer "how's stage X over the window", but not "what
+happened on day Y across the whole path". The table joins Umami (visitors, `download` clicks), the api-server
+`/admin/funnel` (server downloads, new installs, D7), Listmonk (signups), and Paddle (purchases) into one row per day.
+It's NOT a true cohort funnel across columns (still no cross-site identity); each column is its own per-day aggregate.
+Every source is best-effort and independent: a `null` cell renders as a dash (`–`), kept distinct from a real 0, because
+"couldn't get this" and "this was zero" mean different things. Clicks won't equal server downloads (clicks are
+in-browser; server downloads also include Homebrew, direct links, and GitHub-page traffic, with bot UAs filtered
+imperfectly). D7 needs a cohort that's at least 8 days old AND had installs, so recent or empty days show a dash there.
+The api-server owns the funnel contract and the exact D7 definition; see `apps/api-server/DETAILS.md` § "Per-day
+funnel".
+
+**Decision**: Time selection is a `DashboardSelection` (`{ range, day }`) carried in the URL as `?range=` / `?day=`, not
+a bare `TimeRange`. **Why**: David needs "today" and any single specific day, not just rolling 24h/7d/30d windows. A
+valid `?day=YYYY-MM-DD` forces `range: 'day'` (so a single-day link is shareable and stable) and is set via the date
+input or by clicking a funnel row. `today` and a specific `day` snap to UTC calendar boundaries; the rolling ranges end
+at now. The worker-backed and PostHog sources can't isolate one day cheaply, so they map `today`/`day` to their nearest
+coarse window (`24h`) via `selectionToWorkerRange`; Umami and Paddle (timestamp-based) honor the exact day. The funnel
+table is the real per-day server view. Cache keys include the day (`day:YYYY-MM-DD`) so two picked days never collide
+(`selectionCacheKey`).
+
+**Decision**: Every section carries a short "what insight + how reliable" blurb (the `sectionDescription` snippet) right
+under its heading, plus the existing per-chart `methodology` notes. **Why**: an opaque analytics number is worse than
+none. The blurbs are written in David's style (friendly, sentence case, active voice, no em dashes) and state the real
+caveats (Umami undercounts and double-counts devices; clicks vs server downloads differ; new installs miss opt-outs and
+debug builds; heartbeat DAU is the trustworthy one; D7 needs old cohorts; Paddle has minor webhook lag; all days UTC).
+
+**Decision**: No new dashboard env vars. **Why**: the funnel reuses the worker admin token, Umami creds, and the Paddle
+key the dashboard already has; the Listmonk signups column is sourced entirely inside the api-server (`/admin/funnel`),
+so no Listmonk secret reaches the dashboard.
 
 **Decision**: Dark mode only. **Why**: Internal tool, always viewed on a laptop. Saves effort.
 

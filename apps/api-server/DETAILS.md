@@ -5,37 +5,39 @@ live in [CLAUDE.md](CLAUDE.md).
 
 ## Key files
 
-| File                                        | Purpose                                                                                                                                                                          |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                                                                                                                 |
-| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                                                                                                             |
-| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`                                                                                                           |
-| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports` |
-| `src/telemetry.ts`                          | Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`                                                                                      |
-| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                                                                                              |
-| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                                                                                             |
-| `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                                                                                          |
-| `src/feedback.ts`                           | Route: `POST /feedback` (in-app feedback → D1 + Discord notify)                                                                                                                  |
-| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                                                                                     |
-| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                                                                                                    |
-| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                                                                                     |
-| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                                                                                                                          |
-| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                                                                                                                            |
-| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                                                                                                                      |
-| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                                                                                                                    |
-| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                                                                                                                         |
-| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                                                                                                                     |
-| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                                                                                                                |
-| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                                                                                                                         |
-| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`               |
-| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                                                                                          |
-| `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                                                                                          |
-| `src/beta-signup.test.ts`                   | Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure, rate limit)                                                                                 |
-| `src/feedback.test.ts`                      | Tests for `POST /feedback` (validation, caps, D1 row, Discord ping, rate limit)                                                                                                  |
-| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                                                                                              |
-| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                                                                                        |
-| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                                                                                                  |
-| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                                                                                                             |
+| File                                        | Purpose                                                                                                                                                                             |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                                                                                                                    |
+| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                                                                                                                |
+| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`                                                                                                              |
+| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`    |
+| `src/funnel.ts`                             | Route `/admin/funnel`: per-UTC-day acquisition funnel (downloads, new installs, DAU, D7 retention, Listmonk signups). Pure `buildDateList`/`assembleFunnel` helpers are unit-tested |
+| `src/telemetry.ts`                          | Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`                                                                                         |
+| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                                                                                                 |
+| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                                                                                                |
+| `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                                                                                             |
+| `src/feedback.ts`                           | Route: `POST /feedback` (in-app feedback → D1 + Discord notify)                                                                                                                     |
+| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                                                                                        |
+| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                                                                                                       |
+| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                                                                                        |
+| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                                                                                                                             |
+| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                                                                                                                               |
+| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                                                                                                                         |
+| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                                                                                                                       |
+| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                                                                                                                            |
+| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                                                                                                                        |
+| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                                                                                                                   |
+| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                                                                                                                            |
+| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`                  |
+| `src/funnel.test.ts`                        | Tests for `/admin/funnel`: route auth/validation, pure `buildDateList`/`assembleFunnel` (date math, zero-fill, D7-knowability)                                                      |
+| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                                                                                             |
+| `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                                                                                             |
+| `src/beta-signup.test.ts`                   | Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure, rate limit)                                                                                    |
+| `src/feedback.test.ts`                      | Tests for `POST /feedback` (validation, caps, D1 row, Discord ping, rate limit)                                                                                                     |
+| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                                                                                                 |
+| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                                                                                           |
+| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                                                                                                     |
+| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                                                                                                                |
 
 ## Routes
 
@@ -52,6 +54,7 @@ live in [CLAUDE.md](CLAUDE.md).
 | GET    | `/admin/update-activity`   | Bearer token  | Per-day distinct update-enabled installs by version (retained aggregate ∪ today's raw)            |
 | GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                                                    |
 | GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                         |
+| GET    | `/admin/funnel`            | Bearer token  | Per-UTC-day acquisition funnel for the last N days (downloads, installs, DAU, D7, signups)        |
 | GET    | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                           |
 | GET    | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first |
 | GET    | `/download/:version/:arch` | none          | Log download to D1 (bot UAs skipped, source + first-touch `ref` tagged, IP daily-hashed), 302 → GitHub |
@@ -343,6 +346,40 @@ config blob. No UNIQUE/dedup constraint: every beat is kept forever (engagement 
 (`COUNT(DISTINCT anal_id)`) is computed at query time by `GET /admin/heartbeat-dau`. The `anal_` id is the analytics
 identity and is **never** attached to a crash or error report (those carry a separate `diag_` id), so the analytics
 stream stays unjoinable to any identity. D1 write is fire-and-forget via `waitUntil` + `.catch(() => {})`.
+
+**Per-day funnel (`GET /admin/funnel`, `src/funnel.ts`):** One admin endpoint the analytics dashboard uses to render its
+top "Daily funnel" table in a single call, instead of stitching per-metric endpoints together. Auth is the shared
+`ADMIN_API_TOKEN` (`verifyAdminAuth`). Param `?days=N` (default 30, clamped to 1..90, else 400). Returns `FunnelDay[]`,
+oldest UTC day first, **including today** (a partial day). Every column is bucketed by UTC day (`date()` in D1 is UTC;
+Listmonk timestamps are normalized to UTC here), so a "day" means the same window across all columns. `null` (not 0)
+means "unknown", which the dashboard renders as a dash.
+
+Per-day columns and how each is derived:
+
+- `downloads` + `downloadsBySource` (`{ website, homebrew, other }`): `COUNT(*)` of `downloads` rows by
+  `COALESCE(source, 'other')`. Bots already filtered at write time; rows before migration 0008 have NULL source →
+  `other`.
+- `newInstalls`: count of `anal_id`s whose **first-ever** heartbeat (`MIN(created_at)` over the whole `heartbeat` table,
+  no window filter on the inner query) fell on that UTC day. So an install that first beat months ago never counts as
+  "new" inside the window.
+- `dau`: `COUNT(DISTINCT anal_id)` beating that day (true DAU, same definition as `/admin/heartbeat-dau`).
+- `d7Retention` (0..1 fraction) + `d7Retained` (raw count): **D7 definition** — for a cohort whose first heartbeat was
+  on day X, an install is "D7 retained" if it has ANY heartbeat in the half-open window `[X+7d, X+8d)` (exactly the 7th
+  day after install). `d7Retained` is the distinct count of such installs; `d7Retention = d7Retained / newInstalls(X)`.
+  Both are `null` for cohorts younger than 8 days (the `[X+7, X+8)` window hasn't fully passed, so it's genuinely
+  unknown, not 0). An old cohort with installs but no retained beats is `0`, not `null`.
+- `newsletterSignups`: Listmonk subscribers (newsletter list `LISTMONK_NEWSLETTER_LIST_ID`, default 3, **plus** beta
+  list `LISTMONK_BETA_LIST_ID`) whose `created_at` falls on that UTC day, via one read-only
+  `GET /api/subscribers?query=...` filtered by `created_at >= sinceDate`, paginated, then bucketed in code. Caveat:
+  `created_at` is the subscriber's creation time, not the per-list join time, so someone who joins a second list later
+  is counted only on their original signup day (fine for a coarse acquisition signal). Best-effort: when Listmonk is
+  unconfigured (URL/user/token missing) OR the query throws, signups are `null` for every day, never 0 — so the
+  dashboard distinguishes "no signups" from "couldn't ask". The list ids MUST be TOML integers in `[vars]` (the resolver
+  checks `typeof === 'number'`); a string drops that list from the count.
+
+`buildDateList` and `assembleFunnel` are pure and exported so the date math, zero-fill, and D7-knowability logic are
+unit-tested without a live D1 (`funnel.test.ts`); the SQL semantics are verified against a real local D1 with
+`scripts/seed-funnel-local.sql` (hand-computed expectations are in that file's header).
 
 **Heartbeat rate limiting:** `POST /heartbeat` is gated by the Workers rate-limit binding `HEARTBEAT_LIMITER`
 (`[[ratelimits]]` in `wrangler.toml`, type `RateLimit`, `.limit({ key })` → `{ success }`), keyed by `cf-connecting-ip`

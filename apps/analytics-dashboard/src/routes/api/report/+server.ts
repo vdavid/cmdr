@@ -65,8 +65,27 @@ function formatReport(data: DashboardData): string {
   const line = (text: string) => lines.push(text)
   const blank = () => lines.push('')
 
-  h1(`Cmdr analytics report (${data.range})`)
+  const selectionLabel = data.selection.range === 'day' ? data.selection.day : data.selection.range
+  h1(`Cmdr analytics report (${selectionLabel ?? data.selection.range})`)
   line(`Generated: ${data.updatedAt}`)
+  blank()
+
+  // 0. Daily funnel (always the last 30 UTC days, independent of the selected range)
+  h2('Daily funnel: the last 30 days, one row per UTC day')
+  if (!data.funnel.ok) {
+    line(`Couldn't load: ${data.funnel.error}`)
+  } else {
+    const dash = (n: number | null) => (n === null ? '-' : num(n))
+    const pct = (f: number | null) => (f === null ? '-' : `${(f * 100).toFixed(0)}%`)
+    line('day | visitors | dl clicks | server dls | installs | D7 | signups | purchases')
+    // Most recent day first, to match the dashboard table.
+    for (const r of [...data.funnel.data.rows].reverse()) {
+      line(
+        `${r.date} | ${dash(r.visitors)} | ${dash(r.downloadClicks)} | ${dash(r.serverDownloads)} | ` +
+          `${dash(r.newInstalls)} | ${pct(r.d7Retention)} | ${dash(r.newsletterSignups)} | ${dash(r.purchases)}`,
+      )
+    }
+  }
   blank()
 
   // 1. Awareness
@@ -458,7 +477,7 @@ function formatReport(data: DashboardData): string {
 
 export const GET: RequestHandler = async ({ url, platform }) => {
   try {
-    const data = await fetchDashboardData(platform, url.searchParams.get('range') ?? '7d')
+    const data = await fetchDashboardData(platform, url.searchParams.get('range'), url.searchParams.get('day'))
     const report = formatReport(data)
 
     return new Response(report, {

@@ -67,6 +67,9 @@ export type Bindings = {
   LISTMONK_API_USER?: string
   LISTMONK_API_TOKEN?: string
   LISTMONK_BETA_LIST_ID?: number
+  // Numeric id of the "Cmdr newsletter" Listmonk list, read by the funnel endpoint's per-day signups
+  // column (it sums this list plus the beta list). Optional; defaults to 3 (the live newsletter list).
+  LISTMONK_NEWSLETTER_LIST_ID?: number
 }
 
 export interface PaddleWebhookPayload {

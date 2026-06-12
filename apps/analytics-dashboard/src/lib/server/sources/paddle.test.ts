@@ -115,7 +115,7 @@ describe('fetchPaddleData', () => {
 
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchPaddleData(mockEnv, '7d')
+    const result = await fetchPaddleData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(true)
     if (!result.ok) return
 
@@ -159,7 +159,7 @@ describe('fetchPaddleData', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchPaddleData(mockEnv, '30d')
+    const result = await fetchPaddleData(mockEnv, { range: '30d', day: null })
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.transactions).toHaveLength(2)
@@ -174,7 +174,7 @@ describe('fetchPaddleData', () => {
   it('returns error when API fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401 }))
 
-    const result = await fetchPaddleData(mockEnv, '7d')
+    const result = await fetchPaddleData(mockEnv, { range: '7d', day: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Paddle')

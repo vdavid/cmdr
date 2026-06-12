@@ -1,5 +1,5 @@
-import type { TimeRange, SourceResult } from '../types.js'
-import { toTimeWindow } from '../types.js'
+import type { DashboardSelection, SourceResult } from '../types.js'
+import { toTimeWindow, selectionCacheKey } from '../types.js'
 import { cacheGet, cacheSet } from '../cache.js'
 
 export interface UmamiSiteStats {
@@ -41,6 +41,11 @@ interface UmamiEnv {
   UMAMI_WEBSITE_ID: string
   UMAMI_BLOG_WEBSITE_ID: string
   UMAMI_PRVW_WEBSITE_ID: string
+}
+
+/** Authenticates with Umami and returns a JWT token. Exported for the funnel source's own per-day calls. */
+export async function authenticateUmami(apiUrl: string, username: string, password: string): Promise<string> {
+  return authenticate(apiUrl, username, password)
 }
 
 /** Authenticates with Umami and returns a JWT token. */
@@ -110,6 +115,78 @@ async function fetchMetrics(
   return (await response.json()) as UmamiMetricItem[]
 }
 
+/** A `{ x: 'YYYY-MM-DD HH:MM:SS', y: count }` point from a daily Umami series. */
+interface UmamiDailyPoint {
+  x: string
+  y: number
+}
+
+/** A `{ x: eventName, t: 'YYYY-MM-DD HH:MM:SS', y: count }` point from the daily event series. */
+interface UmamiEventSeriesPoint {
+  x: string
+  t: string
+  y: number
+}
+
+/** Maps an Umami series timestamp (`YYYY-MM-DD HH:MM:SS`, UTC) to its `YYYY-MM-DD` day. */
+function dayOfUmamiTimestamp(ts: string): string {
+  return ts.slice(0, 10)
+}
+
+/**
+ * Per-day visitor counts (Umami "sessions" series, what Umami's own daily chart labels visitors) for
+ * `websiteId`, as a `Map<YYYY-MM-DD, count>`. Uses `/pageviews?unit=day&timezone=UTC` so the day
+ * buckets line up with the rest of the funnel (all UTC). The endpoint returns `pageviews` and
+ * `sessions` arrays; we take `sessions`.
+ */
+export async function fetchUmamiDailySeries(
+  apiUrl: string,
+  token: string,
+  websiteId: string,
+  startAt: number,
+  endAt: number,
+): Promise<Map<string, number>> {
+  const url = `${apiUrl}/api/websites/${websiteId}/pageviews?startAt=${startAt}&endAt=${endAt}&unit=day&timezone=UTC`
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  if (!response.ok) {
+    throw new Error(`Umami pageviews series returned ${response.status}`)
+  }
+  const body = (await response.json()) as { sessions?: UmamiDailyPoint[] }
+  const byDay = new Map<string, number>()
+  for (const point of body.sessions ?? []) {
+    byDay.set(dayOfUmamiTimestamp(point.x), point.y)
+  }
+  return byDay
+}
+
+/**
+ * Per-day counts of a named custom event (for example `download`) for `websiteId`, as a
+ * `Map<YYYY-MM-DD, count>`. Uses `/events/series?unit=day&timezone=UTC`, which returns one point per
+ * (event name, day); we keep only the rows whose `x` matches `eventName` and bucket by `t`'s day.
+ */
+export async function fetchUmamiDailyEventSeries(
+  apiUrl: string,
+  token: string,
+  websiteId: string,
+  startAt: number,
+  endAt: number,
+  eventName: string,
+): Promise<Map<string, number>> {
+  const url = `${apiUrl}/api/websites/${websiteId}/events/series?startAt=${startAt}&endAt=${endAt}&unit=day&timezone=UTC`
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  if (!response.ok) {
+    throw new Error(`Umami events series returned ${response.status}`)
+  }
+  const points = (await response.json()) as UmamiEventSeriesPoint[]
+  const byDay = new Map<string, number>()
+  for (const point of points) {
+    if (point.x !== eventName) continue
+    const day = dayOfUmamiTimestamp(point.t)
+    byDay.set(day, (byDay.get(day) ?? 0) + point.y)
+  }
+  return byDay
+}
+
 export function parseUmamiStats(raw: unknown): UmamiSiteStats {
   const r = raw as Record<string, { value: number; prev: number }>
   return {
@@ -126,13 +203,14 @@ export function parseUmamiMetrics(raw: unknown): UmamiMetricItem[] {
   return items.map((item) => ({ x: item.x, y: item.y }))
 }
 
-export async function fetchUmamiData(env: UmamiEnv, range: TimeRange): Promise<SourceResult<UmamiData>> {
-  const cached = await cacheGet<UmamiData>('umami-v2', range)
+export async function fetchUmamiData(env: UmamiEnv, selection: DashboardSelection): Promise<SourceResult<UmamiData>> {
+  const cacheKey = selectionCacheKey(selection)
+  const cached = await cacheGet<UmamiData>('umami-v2', cacheKey)
   if (cached) return { ok: true, data: cached }
 
   try {
     const token = await authenticate(env.UMAMI_API_URL, env.UMAMI_USERNAME, env.UMAMI_PASSWORD)
-    const { startAt, endAt } = toTimeWindow(range)
+    const { startAt, endAt } = toTimeWindow(selection)
 
     const [
       personalSite,
@@ -167,7 +245,7 @@ export async function fetchUmamiData(env: UmamiEnv, range: TimeRange): Promise<S
       prvwReferrers,
       prvwPages,
     }
-    await cacheSet('umami-v2', range, data)
+    await cacheSet('umami-v2', cacheKey, data)
     return { ok: true, data }
   } catch (e) {
     return { ok: false, error: `Umami: ${e instanceof Error ? e.message : String(e)}` }
