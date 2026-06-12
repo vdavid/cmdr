@@ -61,8 +61,9 @@ These are the highest level principles for the whole project.
 
 ## Docs
 
-- Feature-level docs live in **colocated `CLAUDE.md` + `DETAILS.md` files** next to the code. For example,
-  `src/lib/settings/CLAUDE.md` and `src/lib/settings/DETAILS.md`.
+- Feature-level docs live in **colocated `DETAILS.md` + `CLAUDE.md` files** next to the code. For example,
+  `src/lib/settings/DETAILS.md` and `src/lib/settings/CLAUDE.md`. Common shorthand: `D.md` and `C.md`, or `D/C.md` — D
+  always comes first because D is the default destination for additions; C is the exception.
 - `CLAUDE.md`: Claude Code auto-injects it when reading files in that dir, so each word costs tokens in all sessions
   that touch the area. We try to keep this at 400–600 words. Contains everything that an agent editing a related file
   could silently break something without that info. Invariants, gotchas, don't-do-X-because-Y, a 2–3 line module map,
@@ -70,8 +71,12 @@ These are the highest level principles for the whole project.
 - `DETAILS.md` is everything else: the area's real docs, read on demand. Architecture narrative, data flows, decision
   rationale with depth, edge-case catalogs. Read it in whole before structural changes in an area.
 - Never `@`-import `DETAILS.md` from a `CLAUDE.md`.
-- When adding info, default to writing/creating `DETAILS.md`. Only write `CLAUDE.md` if your addition meets the
-  importance bar.
+- When adding info, default to writing `D.md`. Only write `C.md` if your addition meets the importance bar (an agent
+  editing nearby code could silently break something without it); even then, the depth goes in `D.md` with a pointer
+  from `C.md`.
+- Many areas (and apps) have a `C.md` but no `D.md` yet. That's not a decision — create the missing `D.md` without
+  hesitation the first time you have details worth writing down. Same at app level (for example
+  `apps/website/DETAILS.md`).
 - See `docs/architecture.md` for the full map.
 
 ## File structure
