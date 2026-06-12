@@ -105,19 +105,6 @@ pub fn normalize_path(path: &str) -> String {
     path.to_string()
 }
 
-/// Check if a path is under `/System/Volumes/Data/` and matches a known firmlink,
-/// meaning it would be a duplicate of the canonical firmlinked path during scanning.
-#[cfg(test)]
-pub fn is_data_volume_firmlink_duplicate(path: &str) -> bool {
-    if !path.starts_with(DATA_VOLUME_PREFIX) {
-        return false;
-    }
-
-    FIRMLINK_MAP
-        .iter()
-        .any(|(data_prefix, _)| path == data_prefix.as_str() || path.starts_with(&format!("{data_prefix}/")))
-}
-
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -158,15 +145,6 @@ mod tests {
             }
         }
         path.to_string()
-    }
-
-    fn is_dup_with(pairs: &[(String, String)], path: &str) -> bool {
-        if !path.starts_with(DATA_VOLUME_PREFIX) {
-            return false;
-        }
-        pairs
-            .iter()
-            .any(|(data_prefix, _)| path == data_prefix.as_str() || path.starts_with(&format!("{data_prefix}/")))
     }
 
     #[test]
@@ -221,25 +199,6 @@ mod tests {
     }
 
     #[test]
-    fn is_duplicate_detects_firmlink_paths() {
-        let pairs = parse_test_lines("/Users\tUsers\n/Library\tLibrary\n");
-
-        assert!(is_dup_with(&pairs, "/System/Volumes/Data/Users"));
-        assert!(is_dup_with(&pairs, "/System/Volumes/Data/Users/foo"));
-        assert!(is_dup_with(&pairs, "/System/Volumes/Data/Library"));
-        assert!(is_dup_with(&pairs, "/System/Volumes/Data/Library/Caches/stuff"));
-    }
-
-    #[test]
-    fn is_duplicate_rejects_non_firmlink_paths() {
-        let pairs = parse_test_lines("/Users\tUsers\n");
-
-        assert!(!is_dup_with(&pairs, "/Users/foo"));
-        assert!(!is_dup_with(&pairs, "/System/Volumes/Data/SomethingElse"));
-        assert!(!is_dup_with(&pairs, "/tmp/file"));
-    }
-
-    #[test]
     fn empty_firmlinks_file() {
         let pairs = parse_test_lines("");
         assert!(pairs.is_empty());
@@ -249,7 +208,6 @@ mod tests {
             normalize_with(&pairs, "/System/Volumes/Data/Users/foo"),
             "/System/Volumes/Data/Users/foo"
         );
-        assert!(!is_dup_with(&pairs, "/System/Volumes/Data/Users/foo"));
     }
 
     #[test]
@@ -304,15 +262,5 @@ mod tests {
         assert_eq!(normalize_path("/tmpdir"), "/tmpdir");
         assert_eq!(normalize_path("/variable"), "/variable");
         assert_eq!(normalize_path("/etcetera"), "/etcetera");
-    }
-
-    #[test]
-    fn is_data_volume_firmlink_duplicate_uses_real_map() {
-        if cfg!(target_os = "macos") {
-            assert!(is_data_volume_firmlink_duplicate("/System/Volumes/Data/Users"));
-            assert!(is_data_volume_firmlink_duplicate("/System/Volumes/Data/Users/test"));
-        }
-        // Always false for non-Data paths
-        assert!(!is_data_volume_firmlink_duplicate("/Users/test"));
     }
 }

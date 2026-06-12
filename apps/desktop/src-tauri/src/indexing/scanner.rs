@@ -366,6 +366,14 @@ fn run_scan(
 
         // Normalize via firmlinks
         let normalized = firmlinks::normalize_path(&path_str);
+
+        // Skip canonicalization aliases (the macOS root symlinks /tmp, /var, /etc, which
+        // normalize to /private/...). The real directory owns the canonical slot; storing the
+        // alias collides on INSERT OR IGNORE and risks a size-losing race. Skipping before the
+        // metadata syscall also avoids a needless stat. See `is_canonicalization_alias`.
+        if is_canonicalization_alias(&path_str, &normalized) {
+            continue;
+        }
         let normalized_path = PathBuf::from(&normalized);
 
         let is_dir = entry.file_type().is_dir();
@@ -571,6 +579,19 @@ pub(super) fn should_exclude(path_str: &str) -> bool {
     false
 }
 
+/// A scanned path is a "canonicalization alias" when its firmlink/symlink-normalized form
+/// (`firmlinks::normalize_path`) differs from the path itself. On macOS the root symlinks
+/// `/tmp`, `/var`, and `/etc` resolve to `/private/tmp`, etc.: two distinct filesystem objects
+/// (the symlink and the real directory) that canonicalize to the same key. The real directory
+/// owns the canonical `(parent_id, name_folded)` slot (it carries the size and children), so the
+/// scanner skips the alias. Storing it would collide on `INSERT OR IGNORE` and risks an
+/// order-dependent race where the symlink wins and the real directory's subtree size is lost.
+///
+/// Takes the already-computed `normalized` so the scan loop doesn't normalize twice per entry.
+fn is_canonicalization_alias(real_path: &str, normalized: &str) -> bool {
+    real_path != normalized
+}
+
 /// Compute parent path from a normalized path. No trailing slashes.
 ///
 /// Examples:
@@ -702,6 +723,32 @@ mod tests {
         assert!(!should_exclude("/Applications"));
         assert!(!should_exclude("/tmp"));
         assert!(!should_exclude("/opt/homebrew"));
+    }
+
+    #[test]
+    fn canonicalization_aliases_are_skipped() {
+        // A real path normalizes to itself, so it's never an alias (every platform).
+        assert!(!is_canonicalization_alias(
+            "/Users/foo",
+            &firmlinks::normalize_path("/Users/foo")
+        ));
+
+        // macOS: the well-known /private root symlinks (/tmp, /var, /etc) normalize to
+        // /private/..., so they're aliases of the real dir and the scanner skips them.
+        #[cfg(target_os = "macos")]
+        {
+            for alias in ["/tmp", "/var", "/etc"] {
+                assert!(
+                    is_canonicalization_alias(alias, &firmlinks::normalize_path(alias)),
+                    "{alias} should be a canonicalization alias"
+                );
+            }
+            // The real target owns the canonical slot, so it is NOT an alias.
+            assert!(!is_canonicalization_alias(
+                "/private/tmp",
+                &firmlinks::normalize_path("/private/tmp")
+            ));
+        }
     }
 
     #[test]
