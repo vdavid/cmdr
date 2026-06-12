@@ -287,5 +287,7 @@ get immediate auto-merging PRs regardless of schedule. For adding deps by hand, 
   activity
 - [feedback-and-error-digest.md](tooling/feedback-and-error-digest.md): Read in-app feedback (D1) and error-report
   bundles (R2) straight from the source, behind the `/feedback-and-error-digest-from-app` command
+- Paddle (payments): [test-purchase-flow.md](guides/test-purchase-flow.md) walks the sandbox buy-and-activate test end
+  to end
 
 ONLY do read-only operations with these services unless specifically asked to make changes.

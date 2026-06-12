@@ -7,6 +7,8 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 
 Frontend counterpart: [`apps/desktop/src/lib/file-explorer/network/CLAUDE.md`](../../../src/lib/file-explorer/network/CLAUDE.md) for the network browser, share picker, login form, and reconnect-manager state.
 
+Reference: [`benchmarks/smb/CLAUDE.md`](../../../../../benchmarks/smb/CLAUDE.md) is a standalone throughput benchmark of the third-party `smb` (smb-rs) crate, the alternative we measured before standardizing on the in-house `smb2`. It has its own `Cargo.toml` and isn't part of the app build.
+
 ## Architecture
 
 - **Discovery**: `mdns_discovery.rs`: Pure Rust mDNS using `mdns-sd` crate. Cross-platform.
