@@ -1355,6 +1355,17 @@
         return paneCommands.getFocusedPane()
     }
 
+    /** Shift keyboard focus to a pane (store-level; no DOM re-anchor, matching `restoreFocus`). */
+    export function setFocusedPane(pane: 'left' | 'right'): void {
+        explorerState.setFocusedPane(pane)
+        // focusedPane persistence fires from the subscriber's focus effect.
+    }
+
+    /** The pane's active-tab location (volume id, volume mount path, current dir). */
+    export function getPaneLocation(pane: 'left' | 'right'): { volumeId: string; volumePath: string; path: string } {
+        return { volumeId: getPaneVolumeId(pane), volumePath: getPaneVolumePath(pane), path: getPanePath(pane) }
+    }
+
     // noinspection JSUnusedGlobalSymbols -- consumed by quick-look-state
     export function routePanelKey(payload: {
         key: string

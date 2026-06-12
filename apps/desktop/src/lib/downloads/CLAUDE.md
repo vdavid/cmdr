@@ -108,6 +108,16 @@ the NEXT toast's `initialCollapsed` reflects it. The `ToastItem` host extends th
 The split matters when a burst of downloads arrives: each toast must take the user to the file IT advertised, not to
 whichever file is most recent at click time.
 
+**Pane reuse.** All jump entry points (`goToLatestDownload`, `goToDownload`, and the empty-toast "Go to Downloads"
+action) reveal the target through the `revealFileInBestPane` / `navigateToDirInBestPane` helpers in
+`file-explorer/navigation/navigate-and-select.ts`, NOT the plain `navigateToFileInPane`. If a pane already shows the
+file's `parentDir`, those helpers move the cursor there (focused pane) or shift focus to the other pane — no
+re-navigation, so an already-open Downloads view isn't duplicated. Only when neither pane shows the dir do they navigate
+the focused pane. The match is the pane's ACTIVE tab only and volume-safe (a real local volume that contains the path;
+an MTP or network pane at a same-looking path never counts). The empty-toast action snapshots the Downloads dir at
+toast-add time but re-evaluates which pane shows it at CLICK time. "Go to path" (⌘G) deliberately keeps the
+always-navigate behavior and does NOT reuse panes.
+
 ## FDA defense-in-depth
 
 The watcher won't emit `download-detected` when the FDA gate is closed — that's the contract enforced in
@@ -171,11 +181,15 @@ or the settings rows. Each step is independent; you can stop after the ones that
 2. Wait for the FDA gate to open (existing onboarding). If FDA is already granted in System Settings, the gate clears
    automatically.
 3. Drop a file via Terminal: `touch ~/Downloads/test1.txt` → expect a Downloads toast in Cmdr.
-4. Click the toast body (anywhere outside the buttons) → the focused pane navigates to `~/Downloads` and selects
-   `test1.txt`.
-5. Press `⌘J` from a Cmdr-focused window → the focused pane goes to the latest download (`test1.txt`).
-6. `Cmd-Tab` to Chrome, press `⌃⌥⌘J` → Cmdr foregrounds and goes to `test1.txt`. The first trigger of this session shows
-   the warn toast ("The ⌃⌥⌘J shortcut jumps to your latest download from anywhere. Keep it on?").
+4. With neither pane on `~/Downloads`, click the toast body (anywhere outside the buttons) → the focused pane navigates
+   to `~/Downloads` and selects `test1.txt`.
+5. Pane reuse: open `~/Downloads` in the LEFT pane, focus the RIGHT pane, then press `⌘J` → focus shifts to the left
+   pane and the cursor lands on `test1.txt`; the right pane is untouched (no duplicate Downloads view). Now with the
+   FOCUSED pane already on `~/Downloads`, press `⌘J` again → just the cursor moves, no re-navigation and no focus
+   change.
+6. `Cmd-Tab` to Chrome, press `⌃⌥⌘J` → Cmdr foregrounds and reveals `test1.txt` (reusing a pane already on
+   `~/Downloads`, else navigating the focused pane). The first trigger of this session shows the warn toast ("The ⌃⌥⌘J
+   shortcut jumps to your latest download from anywhere. Keep it on?").
 7. Click "Keep it on" on the warn toast → `acknowledged` flips to `true`; subsequent triggers don't show the toast.
 8. Copy five files via Cmdr into `~/Downloads` (Cmd+C + Cmd+V or drag) → expect NO downloads toasts (Cmdr-own-write
    suppression).

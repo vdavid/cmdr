@@ -3,16 +3,17 @@
  * palette, and the `go_to_latest_download` MCP tool).
  *
  * Calls the typed backend IPC and branches on the typed `GoToLatestError` enum —
- * no string matching. On success, navigates the focused pane to the file's
- * parent dir and moves the cursor to the file. On any error, surfaces a
- * single INFO toast using a stable dedup id so spamming ⌘J doesn't stack
- * copies.
+ * no string matching. On success, reveals the file in the best pane: if a pane
+ * already shows the file's parent dir, it reuses (and focuses) that pane instead
+ * of duplicating the view; otherwise it navigates the focused pane (see
+ * `revealFileInBestPane`). On any error, surfaces a single INFO toast using a
+ * stable dedup id so spamming ⌘J doesn't stack copies.
  */
 
 import { commands } from '$lib/ipc/bindings'
 import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
-import { navigateToFileInPane } from '$lib/file-explorer/navigation/navigate-and-select'
+import { revealFileInBestPane, navigateToDirInBestPane } from '$lib/file-explorer/navigation/navigate-and-select'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
 import LatestDownloadEmptyToastContent from './LatestDownloadEmptyToastContent.svelte'
@@ -24,10 +25,12 @@ export { LATEST_DOWNLOAD_EMPTY_TOAST_ID, LATEST_DOWNLOAD_FDA_TOAST_ID }
 const log = getAppLogger('downloads')
 
 /**
- * Go to the latest download in the focused pane.
+ * Go to the latest download, reusing a pane that already shows its dir.
  *
  * Contract:
- * - Success: navigate the focused pane to `parentDir`, then select `fileName`.
+ * - Success: reveal `fileName` in `parentDir` via `revealFileInBestPane` (reuse
+ *   an open pane when one already shows the dir; otherwise navigate the focused
+ *   pane), then select `fileName`.
  * - `empty`: INFO toast with a "Go to Downloads" action (resolves the
  *   Downloads dir via `downloadsWatcherStatus` so the action knows where to go).
  * - `watcherUnavailable` / `downloadsDirUnresolved`: INFO toast with an
@@ -44,7 +47,7 @@ export async function goToLatestDownload(explorer: ExplorerAPI | undefined): Pro
 
   const result = await commands.goToLatestDownload()
   if (result.status === 'ok') {
-    await navigateToFileInPane(explorer, explorer.getFocusedPane(), result.data.parentDir, result.data.fileName)
+    await revealFileInBestPane(explorer, result.data.parentDir, result.data.fileName)
     return
   }
 
@@ -62,8 +65,9 @@ export async function goToLatestDownload(explorer: ExplorerAPI | undefined): Pro
 }
 
 /**
- * Go to a SPECIFIC downloaded file (parent dir + file name) in the focused
- * pane, bypassing the latest-in-ring lookup.
+ * Go to a SPECIFIC downloaded file (parent dir + file name), bypassing the
+ * latest-in-ring lookup. Reuses a pane that already shows the dir
+ * (`revealFileInBestPane`) rather than duplicating the view.
  *
  * `goToLatestDownload` consults the watcher's ring + scan fallback. The
  * downloads toast already knows the path it's for; jumping to the
@@ -83,7 +87,7 @@ export async function goToDownload(
     log.debug('goToDownload: no explorer; skipping (HMR or pre-mount)')
     return
   }
-  await navigateToFileInPane(explorer, explorer.getFocusedPane(), parentDir, fileName)
+  await revealFileInBestPane(explorer, parentDir, fileName)
 }
 
 async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
@@ -92,18 +96,15 @@ async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
   // the prop closure logs and bails.
   const status = await commands.downloadsWatcherStatus()
   const downloadsDir = status.status === 'ok' ? status.data.downloadsDir : null
-  // Snapshot the focused pane + Downloads dir at toast-add time so a later
-  // pane focus change doesn't redirect the action somewhere unexpected.
-  const focusedPane = explorer.getFocusedPane()
+  // Snapshot the Downloads dir at toast-add time (it won't change), but pick the
+  // target pane at CLICK time: `navigateToDirInBestPane` re-evaluates which pane
+  // shows the dir then, since pane contents may shift while the toast sits there.
   const onGoToDownloads = () => {
     if (!downloadsDir) {
       log.warn('Go to Downloads pressed but Downloads dir is unresolved; no action')
       return
     }
-    const result = explorer.navigate({ pane: focusedPane, to: { path: downloadsDir }, source: 'user' })
-    if (result.status === 'refused') {
-      log.warn('Go to Downloads: navigate refused: {reason}', { reason: result.reason.message })
-    }
+    void navigateToDirInBestPane(explorer, downloadsDir)
   }
   addToast(LatestDownloadEmptyToastContent, {
     id: LATEST_DOWNLOAD_EMPTY_TOAST_ID,

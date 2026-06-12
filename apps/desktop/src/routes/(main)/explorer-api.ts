@@ -69,6 +69,19 @@ export interface ExplorerAPI {
     pane: 'left' | 'right',
   ) => Promise<void>
   getFocusedPane: () => 'left' | 'right'
+  /**
+   * Shifts keyboard focus to `pane`. Same store update the pane-switch paths use,
+   * without re-anchoring DOM focus. The downloads "jump to file" flow uses it to
+   * focus a pane that already shows the target dir instead of navigating.
+   */
+  setFocusedPane: (pane: 'left' | 'right') => void
+  /**
+   * The pane's ACTIVE-tab location: its volume id, the volume's mount path, and
+   * the current directory. Lets a caller decide whether a pane already shows a
+   * given dir (volume-safe: a local path on a real local volume, not an MTP or
+   * network volume reporting a same-looking string). Background tabs are ignored.
+   */
+  getPaneLocation: (pane: 'left' | 'right') => { volumeId: string; volumePath: string; path: string }
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
   handleSelectionAction: (action: SelectionAction, startIndex?: number, endIndex?: number) => void
   handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => Promise<void>
