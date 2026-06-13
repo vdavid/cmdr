@@ -1,15 +1,15 @@
 <script lang="ts">
     import SectionCard from '$lib/ui/SectionCard.svelte'
-    import FilterDropdown from '$lib/ui/FilterDropdown.svelte'
+    import FilterPopover from '$lib/ui/FilterPopover.svelte'
 
     let anchorEl: HTMLButtonElement | undefined = $state()
     let open = $state(false)
 </script>
 
-<SectionCard id="components-filter-dropdown" label="Filter dropdown">
+<SectionCard id="components-filter-popover" label="Filter popover">
     <div class="cell">
         <p class="caption">
-            The labelled-grid filter surface: a `Dropdown` with an uppercase section header. Used by the query dialogs'
+            The labelled-grid filter surface: a `Popover` with an uppercase section header. Used by the query dialogs'
             Size / Modified / Search-in popovers. Click the anchor to toggle.
         </p>
         <button
@@ -23,7 +23,7 @@
             {open ? 'Close filter' : 'Open filter'}
         </button>
         {#if anchorEl}
-            <FilterDropdown
+            <FilterPopover
                 anchor={anchorEl}
                 {open}
                 onClose={() => {
@@ -37,7 +37,7 @@
                     <button type="button" class="demo-cell is-selected">≥</button>
                     <button type="button" class="demo-cell">≤</button>
                 </div>
-            </FilterDropdown>
+            </FilterPopover>
         {/if}
     </div>
 </SectionCard>

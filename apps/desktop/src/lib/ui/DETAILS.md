@@ -5,29 +5,29 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 
 ## Key files
 
-| File                    | Purpose                                                                                                   |
-| ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| `ModalDialog.svelte`    | Central modal container: overlay, dragging, Escape, focus, MCP tracking                                   |
-| `focus-trap.ts`         | `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack                       |
-| `dialog-registry.ts`    | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                                   |
-| `Button.svelte`         | Styled button with variant and size props                                                                 |
-| `Select.svelte`         | Presentational Ark `Select`: items-driven single-pick, the house dropdown (native-`<select>` replacement) |
-| `Combobox.svelte`       | Presentational Ark `Combobox`: text-field-with-suggestions, async list, free text (model picker)          |
-| `Dropdown.svelte`       | Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close                        |
-| `FilterDropdown.svelte` | `Dropdown` + a labelled section header; the query dialogs' Size / Modified / Search-in surface            |
-| `Chip.svelte`           | Small pill button: filter chip (popover trigger + × clear) or recent pill (badge + truncate)              |
-| `LinkButton.svelte`     | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer`            |
-| `CommandBox.svelte`     | Copyable terminal command (monospace + Copy button)                                                       |
-| `LoadingIcon.svelte`    | Animated spinner with progressive status text                                                             |
-| `AlertDialog.svelte`    | Single-action confirmation dialog built on `ModalDialog`                                                  |
-| `ProgressBar.svelte`    | Reusable progress bar (just the bar, no labels or layout)                                                 |
-| `Size.svelte`           | Canonical inline byte-count renderer: human-friendly + rainbow tier color                                 |
-| `SectionCard.svelte`    | macOS-style grouped card with optional label above; used for Debug/Settings groupings                     |
-| `ToggleGroup.svelte`    | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape                       |
-| `DateLabel.svelte`      | Canonical inline modified-date renderer: format + per-component age-tier coloring                         |
-| `ShortcutChip.svelte`   | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode             |
-| `StatusBadge.svelte`    | Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by `feature-status.json`            |
-| `toast/`                | Centralized toast notification system: store, container, item                                             |
+| File                   | Purpose                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| `ModalDialog.svelte`   | Central modal container: overlay, dragging, Escape, focus, MCP tracking                                   |
+| `focus-trap.ts`        | `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack                       |
+| `dialog-registry.ts`   | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                                   |
+| `Button.svelte`        | Styled button with variant and size props                                                                 |
+| `Select.svelte`        | Presentational Ark `Select`: items-driven single-pick, the house dropdown (native-`<select>` replacement) |
+| `Combobox.svelte`      | Presentational Ark `Combobox`: text-field-with-suggestions, async list, free text (model picker)          |
+| `Popover.svelte`       | Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close                        |
+| `FilterPopover.svelte` | `Popover` + a labelled section header; the query dialogs' Size / Modified / Search-in surface             |
+| `Chip.svelte`          | Small pill button: filter chip (popover trigger + × clear) or recent pill (badge + truncate)              |
+| `LinkButton.svelte`    | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer`            |
+| `CommandBox.svelte`    | Copyable terminal command (monospace + Copy button)                                                       |
+| `LoadingIcon.svelte`   | Animated spinner with progressive status text                                                             |
+| `AlertDialog.svelte`   | Single-action confirmation dialog built on `ModalDialog`                                                  |
+| `ProgressBar.svelte`   | Reusable progress bar (just the bar, no labels or layout)                                                 |
+| `Size.svelte`          | Canonical inline byte-count renderer: human-friendly + rainbow tier color                                 |
+| `SectionCard.svelte`   | macOS-style grouped card with optional label above; used for Debug/Settings groupings                     |
+| `ToggleGroup.svelte`   | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape                       |
+| `DateLabel.svelte`     | Canonical inline modified-date renderer: format + per-component age-tier coloring                         |
+| `ShortcutChip.svelte`  | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode             |
+| `StatusBadge.svelte`   | Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by `feature-status.json`            |
+| `toast/`               | Centralized toast notification system: store, container, item                                             |
 
 ## Not part of this module: soft sheets
 
@@ -259,7 +259,7 @@ chevron `Combobox.Trigger` also toggles it). Same standardized Lucide chevron as
 animation. Covered by `Combobox.svelte.test.ts` (the empty-list / custom-value / list-arrives-after-fetch invariants)
 and `Combobox.a11y.test.ts`.
 
-## Dropdown
+## Popover
 
 Generic positioned floater anchored to a trigger element. Frosted-glass material (the tooltip's), small radius, hairline
 border, soft shadow. Positions itself below the anchor and auto-flips above when there isn't room; clamps horizontally
@@ -275,21 +275,21 @@ Props:
 - `ariaLabel?: string`: region label (default "Options").
 - `children: Snippet`: the floating content.
 
-The rendered element carries the `.ui-dropdown` class. Host dialogs that must defer Escape to an open dropdown detect it
-by that class (the query dialog's capture-phase guard checks `dialogElement.querySelector('.ui-dropdown')`); the E2E
+The rendered element carries the `.ui-popover` class. Host dialogs that must defer Escape to an open popover detect it
+by that class (the query dialog's capture-phase guard checks `dialogElement.querySelector('.ui-popover')`); the E2E
 overlay-dismissal helper and `search-filters.spec.ts` use it as a stable selector too. Don't rename it without updating
 those.
 
-## FilterDropdown
+## FilterPopover
 
-A thin composition of `Dropdown` plus a labelled section header, for the query dialogs' Size / Modified / Search-in
-filter popovers. It's a separate component (not a `variant` prop on `Dropdown`) so the generic `Dropdown` stays free of
+A thin composition of `Popover` plus a labelled section header, for the query dialogs' Size / Modified / Search-in
+filter popovers. It's a separate component (not a `variant` prop on `Popover`) so the generic `Popover` stays free of
 filter-specific markup. The header is a `<span>` heading over a radio grid by default, or a real `<label for=…>` when
 `labelFor` is set (the Scope textarea). The `.popover-section` / `.popover-label` / grid classes live in
 `query-ui/filter-chips/filter-popover.css` (a shared global stylesheet, because the grid classes also style the popover
 children, which a component-scoped `<style>` can't reach).
 
-Props: `anchor`, `open`, `onClose` (like `Dropdown`), plus `label: string` (header text), `ariaLabel: string`,
+Props: `anchor`, `open`, `onClose` (like `Popover`), plus `label: string` (header text), `ariaLabel: string`,
 `labelFor?: string` (renders `<label for>`), `sectionClass?: 'size-grid-section' | 'scope-popover'` (widens the
 section), `children: Snippet`.
 

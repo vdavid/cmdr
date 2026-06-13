@@ -8,7 +8,7 @@
      * footer buttons here expose ⌥C / ⌥V as first-class mouse affordances; the keyboard wiring
      * stays in the parent so the dialog-level keymap lives next to the popovers it targets.
      */
-    import FilterDropdown from '$lib/ui/FilterDropdown.svelte'
+    import FilterPopover from '$lib/ui/FilterPopover.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import './filter-popover.css'
@@ -59,7 +59,7 @@
 </script>
 
 <!-- Scope ("Search in") popover -->
-<FilterDropdown
+<FilterPopover
     {anchor}
     {open}
     {onClose}
@@ -147,12 +147,12 @@
                 <ShortcutChip key="⌥V" size="sm" />
             </button>
         </div>
-</FilterDropdown>
+</FilterPopover>
 
 <style>
     /* ===== Scope popover ===== */
     /* `.scope-popover` (the section min-width) lives in the shared `filter-popover.css` because
-       the wrapper element is rendered by `FilterDropdown`, not by this component's own markup. */
+       the wrapper element is rendered by `FilterPopover`, not by this component's own markup. */
 
     .popover-textarea {
         width: 100%;

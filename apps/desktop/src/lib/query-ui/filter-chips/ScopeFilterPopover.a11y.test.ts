@@ -57,7 +57,7 @@ describe('ScopeFilterPopover a11y', () => {
     await tick()
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })

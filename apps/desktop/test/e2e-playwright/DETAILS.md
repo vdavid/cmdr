@@ -312,7 +312,7 @@ element fires its handler in the target phase AND bubbles to any window-level li
 kinds.
 
 **`dismissOverlay(tauriPage)`** (helpers.ts) does exactly that: finds the topmost open overlay in priority order
-(`.ui-dropdown` > `.palette-overlay` > `.search-overlay` > `.modal-overlay` > `.volume-dropdown`), dispatches synthetic
+(`.ui-popover` > `.palette-overlay` > `.search-overlay` > `.modal-overlay` > `.volume-dropdown`), dispatches synthetic
 Escape on it, then `expect.poll`s that it actually closed. Throws if no overlay is open (catches tests that forgot to
 wait for the dialog to appear, or that mistakenly call dismiss twice).
 

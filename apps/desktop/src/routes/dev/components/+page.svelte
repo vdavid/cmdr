@@ -7,8 +7,8 @@
     import ToggleGroupSection from './sections/ToggleGroupSection.svelte'
     import SelectSection from './sections/SelectSection.svelte'
     import ComboboxSection from './sections/ComboboxSection.svelte'
-    import DropdownSection from './sections/DropdownSection.svelte'
-    import FilterDropdownSection from './sections/FilterDropdownSection.svelte'
+    import PopoverSection from './sections/PopoverSection.svelte'
+    import FilterPopoverSection from './sections/FilterPopoverSection.svelte'
     import ChipSection from './sections/ChipSection.svelte'
     import Dialogs from './sections/Dialogs.svelte'
     import Toasts from './sections/Toasts.svelte'
@@ -43,8 +43,8 @@
         'toggle-group',
         'select',
         'combobox',
-        'dropdown',
-        'filter-dropdown',
+        'popover',
+        'filter-popover',
         'chip',
         'dialogs',
         'toasts',
@@ -161,8 +161,8 @@
         <ToggleGroupSection />
         <SelectSection />
         <ComboboxSection />
-        <DropdownSection />
-        <FilterDropdownSection />
+        <PopoverSection />
+        <FilterPopoverSection />
         <ChipSection />
         <Dialogs />
         <Toasts />

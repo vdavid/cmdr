@@ -10,7 +10,7 @@ Search and Selection. See [`../CLAUDE.md`](../CLAUDE.md) for the orchestrator an
 - `FilterChips.svelte`: the strip. Leading type `ToggleGroup`, then the four chips. Owns open-chip state and the three
   keyboard routers (popover openers, scope shortcuts, clear keys).
 - `SizeFilterPopover.svelte` / `DateFilterPopover.svelte` / `ScopeFilterPopover.svelte`: the popover bodies, each
-  wrapping `$lib/ui/FilterDropdown` (a `$lib/ui/Dropdown` + labelled header). The chips are `$lib/ui/Chip`
+  wrapping `$lib/ui/FilterPopover` (a `$lib/ui/Popover` + labelled header). The chips are `$lib/ui/Chip`
   (`variant="filter"`), mounted directly. Shared popover CSS in `filter-popover.css`.
 - `filter-chip-state.ts` / `filter-popover-helpers.ts`: pure helpers (chip summaries, size/date presets, comparator
   gating, `buildDatePresets`), testable without mounting Svelte.
@@ -19,7 +19,7 @@ Search and Selection. See [`../CLAUDE.md`](../CLAUDE.md) for the orchestrator an
 
 - **Chip-popover focus contract: Esc inside an open filter-chip popover closes only the popover.** The dialog's Escape
   handler runs in capture phase on `window`, so it would otherwise fire before the popover's bubble handler. The dialog
-  checks `dialogElement.querySelector('.ui-dropdown')` (the class `Dropdown` renders) and, when a popover is present,
+  checks `dialogElement.querySelector('.ui-popover')` (the class `Popover` renders) and, when a popover is present,
   returns without closing the dialog. The popover's own keydown handler then runs on the bubble, closes itself, and
   calls `stopPropagation` so nothing else fires. Without this guard, Escape inside a popover closes the whole dialog and
   loses the user's place. Pinned in `FilterChips.svelte.test.ts`.

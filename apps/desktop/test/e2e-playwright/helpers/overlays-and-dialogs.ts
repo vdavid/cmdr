@@ -21,7 +21,7 @@ import { type PageLike, TRANSFER_DIALOG } from './core.js'
  * selector here so the safety net catches leaks of it too.
  */
 const OVERLAY_SELECTORS = [
-  '.ui-dropdown',
+  '.ui-popover',
   '.palette-overlay',
   '.search-overlay',
   '.modal-overlay',

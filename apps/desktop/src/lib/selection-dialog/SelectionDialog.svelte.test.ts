@@ -166,7 +166,7 @@ describe('SelectionDialog', () => {
     clearSelectionState()
     // Filter-chip popovers are fixed-position siblings of the per-test target, so
     // an unmount doesn't remove them. Clear any leftover popover from a prior test.
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
     // jsdom doesn't implement `Element.scrollIntoView`; QueryDialog calls it via

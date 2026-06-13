@@ -156,7 +156,7 @@ companion test catalog (mirrors the file table above):
 
 Filter-chips tests (`FilterChips`, the `*FilterPopover` bodies, `filter-chip-state`, `filter-popover-helpers`) are
 catalogued in [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md). The chip and popover primitives themselves are
-`$lib/ui/Chip` and `$lib/ui/Dropdown` (tested in `lib/ui/`).
+`$lib/ui/Chip` and `$lib/ui/Popover` (tested in `lib/ui/`).
 
 ## State shape contract
 
@@ -409,11 +409,11 @@ entries so callers (the tab-state manager) can release per-entry resources in on
 trigger. The same applies to recent-search AI entries (footer chip click + popover Enter both run). Anything the user
 deliberately picks from the dialog is the same kind of "yes, please" as pressing Enter.
 
-**Decision**: `RecentItemsPopover` reuses `$lib/ui/Dropdown` for positioning + focus trap + Esc-scoped close. **Why**:
+**Decision**: `RecentItemsPopover` reuses `$lib/ui/Popover` for positioning + focus trap + Esc-scoped close. **Why**:
 The plan calls for a sub-overlay-of-an-overlay with the same auto-flip, focus-trap, and "Esc closes only the popover"
 semantics as the filter chips. Reimplementing those risks drift; reusing the primitive guarantees the contract covers
-both popover kinds via the single `.ui-dropdown` DOM selector (the same selector the filter popovers render through
-`FilterDropdown`).
+both popover kinds via the single `.ui-popover` DOM selector (the same selector the filter popovers render through
+`FilterPopover`).
 
 **Decision**: Path pills inside result rows are mouse-only and not in the keyboard Tab order, with no keyboard
 equivalent. **Why**: Making the pills tabbable inside virtualized rows would break the row's arrow-down keyboard flow:

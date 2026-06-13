@@ -1,11 +1,11 @@
 <script lang="ts">
     /**
-     * FilterDropdown: the labelled-grid filter surface used by the query dialogs' Size, Modified,
-     * and Search-in popovers. A thin composition of `Dropdown` (positioning, focus trap, Esc-scoped
+     * FilterPopover: the labelled-grid filter surface used by the query dialogs' Size, Modified,
+     * and Search-in popovers. A thin composition of `Popover` (positioning, focus trap, Esc-scoped
      * close) plus the shared section header (an uppercase label above the controls).
      *
-     * It exists as its own component, rather than a `variant` prop on `Dropdown`, so the generic
-     * `Dropdown` stays free of filter-specific markup and the three filter popovers thread only
+     * It exists as its own component, rather than a `variant` prop on `Popover`, so the generic
+     * `Popover` stays free of filter-specific markup and the three filter popovers thread only
      * `anchor` / `open` / `onClose` / `label`. The header layout (`.popover-section` /
      * `.popover-label`) lives in the shared `filter-popover.css` so it can also style the grid
      * children, which Svelte's component-scoped `<style>` can't reach.
@@ -15,11 +15,11 @@
      * above a radio grid.
      */
     import type { Snippet } from 'svelte'
-    import Dropdown from './Dropdown.svelte'
+    import Popover from './Popover.svelte'
     import '$lib/query-ui/filter-chips/filter-popover.css'
 
     interface Props {
-        /** The chip element, used by the dropdown shell for positioning + focus return. */
+        /** The chip element, used by the popover shell for positioning + focus return. */
         anchor: HTMLElement
         /** Whether the popover is shown (owned by the parent's `openChip` state). */
         open: boolean
@@ -27,7 +27,7 @@
         onClose: () => void
         /** The filter name shown in the header ("Size", "Modified", "Search in"). */
         label: string
-        /** aria-label for the dropdown region. */
+        /** aria-label for the popover region. */
         ariaLabel: string
         /** When set, the header is a `<label for={labelFor}>` (single-control surfaces like Scope). */
         labelFor?: string
@@ -39,7 +39,7 @@
     const { anchor, open, onClose, label, ariaLabel, labelFor, sectionClass, children }: Props = $props()
 </script>
 
-<Dropdown {anchor} {open} {onClose} {ariaLabel}>
+<Popover {anchor} {open} {onClose} {ariaLabel}>
     <!-- `class:` directives (not a `{sectionClass}` interpolation) so the css-unused checker
          registers `size-grid-section` / `scope-popover` as live usages. -->
     <div
@@ -54,4 +54,4 @@
         {/if}
         {@render children()}
     </div>
-</Dropdown>
+</Popover>

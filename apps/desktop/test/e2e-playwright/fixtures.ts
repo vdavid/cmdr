@@ -97,7 +97,7 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
   let leaked: string[] | null
   try {
     leaked = await tauriPage.evaluate<string[] | null>(`(function(){
-            var overlays = ['.ui-dropdown', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
+            var overlays = ['.ui-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
             var found = overlays.filter(function(s){ return document.querySelector(s) !== null; });
             // Include each toast's first-100-char text in the leak label so
             // the failure message tells the test writer exactly what to assert
@@ -122,7 +122,7 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
   // window-bound handlers elsewhere). Click each toast's close button.
   try {
     await tauriPage.evaluate(`(function(){
-            var overlays = ['.ui-dropdown', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
+            var overlays = ['.ui-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
             overlays.forEach(function(s){
                 var el = document.querySelector(s);
                 if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));

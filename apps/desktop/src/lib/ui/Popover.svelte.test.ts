@@ -1,5 +1,5 @@
 /**
- * Behavior tests for `Dropdown.svelte`.
+ * Behavior tests for `Popover.svelte`.
  *
  * The dropdown's behavior is also exercised end-to-end via the query dialogs' filter-chip and
  * recent-items tests (they instantiate it with real content). This file covers the parts that
@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick, unmount, createRawSnippet } from 'svelte'
-import Dropdown from './Dropdown.svelte'
+import Popover from './Popover.svelte'
 
 function makeAnchor(): HTMLButtonElement {
   const btn = document.createElement('button')
@@ -23,22 +23,22 @@ const emptyChildren = createRawSnippet(() => ({ render: () => '<span>content</sp
 
 beforeEach(() => {
   document.body.innerHTML = ''
-  document.querySelectorAll('.ui-dropdown').forEach((el) => {
+  document.querySelectorAll('.ui-popover').forEach((el) => {
     el.remove()
   })
 })
 
-describe('Dropdown behavior', () => {
+describe('Popover behavior', () => {
   it('renders nothing when open is false', async () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: { anchor, open: false, onClose: () => {}, children: emptyChildren },
     })
     await tick()
-    expect(document.querySelector('.ui-dropdown')).toBeNull()
+    expect(document.querySelector('.ui-popover')).toBeNull()
     void unmount(component)
   })
 
@@ -46,12 +46,12 @@ describe('Dropdown behavior', () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: { anchor, open: true, onClose: () => {}, ariaLabel: 'Test popover', children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.ui-dropdown')
+    const popover = document.querySelector('.ui-popover')
     expect(popover).not.toBeNull()
     expect(popover?.getAttribute('role')).toBe('dialog')
     expect(popover?.getAttribute('aria-label')).toBe('Test popover')
@@ -63,12 +63,12 @@ describe('Dropdown behavior', () => {
     const onClose = vi.fn()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: { anchor, open: true, onClose, children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.ui-dropdown') as HTMLElement
+    const popover = document.querySelector('.ui-popover') as HTMLElement
     expect(popover).not.toBeNull()
 
     const docHandler = vi.fn()
@@ -86,12 +86,12 @@ describe('Dropdown behavior', () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: { anchor, open: true, onClose: () => {}, children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.ui-dropdown') as HTMLElement
+    const popover = document.querySelector('.ui-popover') as HTMLElement
     const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
     popover.dispatchEvent(tab)
     expect(tab.defaultPrevented).toBe(true)
@@ -105,7 +105,7 @@ describe('Dropdown behavior', () => {
     document.body.appendChild(target)
     const outside = document.createElement('div')
     document.body.appendChild(outside)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: { anchor, open: true, onClose, children: emptyChildren },
     })
@@ -120,12 +120,12 @@ describe('Dropdown behavior', () => {
     const onClose = vi.fn()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: { anchor, open: true, onClose, children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.ui-dropdown') as HTMLElement
+    const popover = document.querySelector('.ui-popover') as HTMLElement
     popover.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     expect(onClose).not.toHaveBeenCalled()
     void unmount(component)
@@ -136,7 +136,7 @@ describe('Dropdown behavior', () => {
     const onClose = vi.fn()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: { anchor, open: true, onClose, children: emptyChildren },
     })
@@ -151,7 +151,7 @@ describe('Dropdown behavior', () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     let open = $state(false)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: {
         anchor,
@@ -163,10 +163,10 @@ describe('Dropdown behavior', () => {
       },
     })
     await tick()
-    expect(document.querySelector('.ui-dropdown')).toBeNull()
+    expect(document.querySelector('.ui-popover')).toBeNull()
     open = true
     await tick()
-    expect(document.querySelector('.ui-dropdown')).not.toBeNull()
+    expect(document.querySelector('.ui-popover')).not.toBeNull()
     void unmount(component)
   })
 
@@ -174,12 +174,12 @@ describe('Dropdown behavior', () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: { anchor, open: true, onClose: () => {}, children: emptyChildren },
     })
     await tick()
-    const popover = document.querySelector('.ui-dropdown') as HTMLElement
+    const popover = document.querySelector('.ui-popover') as HTMLElement
     const ev = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true })
     popover.dispatchEvent(ev)
     expect(ev.defaultPrevented).toBe(false)
@@ -190,7 +190,7 @@ describe('Dropdown behavior', () => {
     const anchor = makeAnchor()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const component = mount(Dropdown, {
+    const component = mount(Popover, {
       target,
       props: { anchor, open: true, onClose: () => {}, children: emptyChildren },
     })

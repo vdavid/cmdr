@@ -53,7 +53,7 @@ describe('DateFilterPopover a11y', () => {
     await tick()
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -90,7 +90,7 @@ describe('DateFilterPopover a11y', () => {
     })
     expect(out.violations).toEqual([])
     target.remove()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })

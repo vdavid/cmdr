@@ -1,5 +1,5 @@
 /**
- * Tier-3 a11y tests for `Dropdown.svelte`.
+ * Tier-3 a11y tests for `Popover.svelte`.
  *
  * Covers the closed state (renders nothing) and the open state (renders a `role="dialog"` with
  * the slot content focusable). The anchor is a real button in the test DOM so the popover has
@@ -8,17 +8,17 @@
 
 import { describe, it } from 'vitest'
 import { mount, tick, createRawSnippet } from 'svelte'
-import Dropdown from './Dropdown.svelte'
+import Popover from './Popover.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-describe('Dropdown a11y', () => {
+describe('Popover a11y', () => {
   it('closed (open=false) renders nothing and has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     const anchor = document.createElement('button')
     anchor.textContent = 'Anchor'
     target.appendChild(anchor)
-    mount(Dropdown, {
+    mount(Popover, {
       target,
       props: {
         anchor,
@@ -40,7 +40,7 @@ describe('Dropdown a11y', () => {
     const anchor = document.createElement('button')
     anchor.textContent = 'Anchor'
     target.appendChild(anchor)
-    mount(Dropdown, {
+    mount(Popover, {
       target,
       props: {
         anchor,
@@ -55,7 +55,7 @@ describe('Dropdown a11y', () => {
     await tick()
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })

@@ -247,7 +247,7 @@
      */
     function handleEscapeCapture(e: KeyboardEvent): void {
         if (e.key !== 'Escape') return
-        if (dialogElement?.querySelector('.ui-dropdown')) {
+        if (dialogElement?.querySelector('.ui-popover')) {
             return
         }
         e.preventDefault()

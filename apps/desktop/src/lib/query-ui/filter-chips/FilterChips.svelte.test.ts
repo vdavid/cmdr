@@ -107,7 +107,7 @@ beforeEach(() => {
   clearSearchState()
   // Clean up any leftover popovers from previous tests (they're fixed-position siblings, not
   // children of the per-test `target`, so they don't get removed by `target.remove()`).
-  document.querySelectorAll('.ui-dropdown').forEach((el) => {
+  document.querySelectorAll('.ui-popover').forEach((el) => {
     el.remove()
   })
 })
@@ -210,11 +210,11 @@ describe('SearchFilterChips: popover keyboard handling', () => {
     const sizeChip = findChip(target, 'Size')
     sizeChip?.click()
     await tick()
-    const popover = document.querySelector('.ui-dropdown')
+    const popover = document.querySelector('.ui-popover')
     expect(popover).not.toBeNull()
     expect(popover?.getAttribute('aria-label')).toBe('Size filter options')
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -226,9 +226,9 @@ describe('SearchFilterChips: popover keyboard handling', () => {
     sizeChip?.focus()
     sizeChip?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     await tick()
-    expect(document.querySelector('.ui-dropdown')).not.toBeNull()
+    expect(document.querySelector('.ui-popover')).not.toBeNull()
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -239,12 +239,12 @@ describe('SearchFilterChips: popover keyboard handling', () => {
     const sizeChip = findChip(target, 'Size')
     sizeChip?.click()
     await tick()
-    const popover = document.querySelector('.ui-dropdown')
+    const popover = document.querySelector('.ui-popover')
     expect(popover).not.toBeNull()
     const escEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
     popover?.dispatchEvent(escEvent)
     await tick()
-    expect(document.querySelector('.ui-dropdown')).toBeNull()
+    expect(document.querySelector('.ui-popover')).toBeNull()
     // The Esc event must have been stopPropagation'd so the dialog's capture handler doesn't fire.
     // We verify by checking that the popover is closed but the chip itself still exists.
     expect(sizeChip?.isConnected).toBe(true)
@@ -257,7 +257,7 @@ describe('SearchFilterChips: popover keyboard handling', () => {
     const sizeChip = findChip(target, 'Size')
     sizeChip?.click()
     await tick()
-    const popover = document.querySelector('.ui-dropdown') as HTMLElement
+    const popover = document.querySelector('.ui-popover') as HTMLElement
     expect(popover).not.toBeNull()
     // Listen at the document level for the bubbling phase. If the popover correctly calls
     // stopPropagation, this handler should NOT fire.
@@ -327,7 +327,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     expect(footerButtons?.[1].textContent).toContain('All folders')
     expect(footerButtons?.[1].textContent).toContain('⌥V')
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -371,7 +371,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     expect(onSetScope).toHaveBeenCalledWith('/Users/test/work')
     expect(onScheduleSearch).toHaveBeenCalled()
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -393,7 +393,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const selected = grid?.querySelectorAll('.list-cell.is-selected')
     expect(selected?.length).toBeGreaterThanOrEqual(2) // gte + value '5' + unit 'MB'
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -409,7 +409,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const cols = grid?.querySelectorAll('.list-col')
     expect(cols?.length).toBe(5)
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -433,7 +433,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     expect([...(valueCells ?? [])].every((b) => b.classList.contains('is-disabled-look'))).toBe(true)
     expect([...(unitCells ?? [])].every((b) => b.classList.contains('is-disabled-look'))).toBe(true)
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -456,7 +456,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     expect(getSizeFilter()).toBe('gte')
     expect(getSizeValue()).toBe('100')
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -482,7 +482,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const { getSizeFilter } = await import('$lib/search/search-state.svelte')
     expect(getSizeFilter()).toBe('eq')
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -504,7 +504,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     // dateValue is now an ISO date matching "today"; we just check non-empty.
     expect(getDateValue()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -530,7 +530,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const customCell = [...cells].find((b) => b.classList.contains('list-cell-custom'))
     expect(customCell?.classList.contains('is-selected')).toBe(false)
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -554,7 +554,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const innerInput = customCell?.querySelector<HTMLInputElement>('input[type="number"]')
     expect(innerInput).not.toBeNull()
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -584,7 +584,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     // The custom cell label (in lowercase, last in the column).
     expect(labels.some((l) => /^custom…$/.test(l))).toBe(true)
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -600,7 +600,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     if (!firstUnitCell) throw new Error('first unit cell not found')
     expect(firstUnitCell.textContent.trim()).toBe('byte')
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -616,7 +616,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     if (!firstUnitCell) throw new Error('first unit cell not found')
     expect(firstUnitCell.textContent.trim()).toBe('bytes')
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -633,7 +633,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     expect(cols?.length).toBe(3) // comparator + lower preset + upper preset
     // No unit column on Modified.
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -660,7 +660,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     // Disabled button doesn't fire onclick in real DOM; ensure we didn't reach the setter.
     expect(onSetScope).not.toHaveBeenCalled()
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -683,7 +683,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     buttons[0].click()
     expect(onSetScope).toHaveBeenCalledWith('/Users/me/projects')
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -699,7 +699,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     buttons[1].click()
     expect(onSetScope).toHaveBeenCalledWith('')
     cleanup()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })

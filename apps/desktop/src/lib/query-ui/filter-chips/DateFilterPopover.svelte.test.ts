@@ -55,7 +55,7 @@ function mountPopover(overrides: Record<string, unknown> = {}): Mounted & {
 function cleanup(mounted: Mounted): void {
   void unmount(mounted.component)
   mounted.target.remove()
-  document.querySelectorAll('.ui-dropdown').forEach((el) => {
+  document.querySelectorAll('.ui-popover').forEach((el) => {
     el.remove()
   })
 }

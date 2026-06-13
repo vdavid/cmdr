@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * Dropdown: a generic popover that floats below (or above, on flip) an anchor element.
+     * Popover: a generic popover that floats below (or above, on flip) an anchor element.
      *
      * The look mirrors macOS popovers: small radius, frosted-glass material (matching the
      * tooltip primitive), hairline border, soft drop shadow. The popover positions itself
@@ -8,7 +8,7 @@
      * above when there isn't room below.
      *
      * The query dialogs' filter chips (`query-ui/filter-chips/`) and the recent-items popover
-     * (`query-ui/recent-items/`) both float their surfaces through this. `FilterDropdown.svelte`
+     * (`query-ui/recent-items/`) both float their surfaces through this. `FilterPopover.svelte`
      * composes it for the labelled-grid filter surface.
      *
      * Focus contract:
@@ -16,8 +16,8 @@
      *   - Tab cycles within the popover; Shift+Tab wraps in reverse. Focus never escapes while open.
      *   - Esc closes the popover and returns focus to the anchor. The keydown handler is on the
      *     popover itself and calls `stopPropagation`, so a host dialog's capture-phase Escape doesn't
-     *     also fire and close the whole dialog. Host dialogs detect an open dropdown by the
-     *     `.ui-dropdown` class and defer Escape to it (see `query-ui/QueryDialog.svelte`).
+     *     also fire and close the whole dialog. Host dialogs detect an open popover by the
+     *     `.ui-popover` class and defer Escape to it (see `query-ui/QueryDialog.svelte`).
      *
      * Click-outside closes too. The check looks at the mousedown target rather than click, so a
      * mousedown inside followed by mouseup outside (a drag) doesn't accidentally close.
@@ -43,7 +43,7 @@
     let position = $state<{ left: number; top: number; flipped: boolean }>({ left: 0, top: 0, flipped: false })
 
     const VIEWPORT_MARGIN = 8
-    const OFFSET = 6
+    const OFFSET = 2
 
     /** Repositions the popover relative to its anchor. Auto-flips above when needed. */
     function reposition(): void {
@@ -145,7 +145,7 @@
 {#if open}
     <div
         bind:this={popoverEl}
-        class="ui-dropdown"
+        class="ui-popover"
         role="dialog"
         aria-label={ariaLabel}
         data-flipped={position.flipped}
@@ -160,7 +160,7 @@
 {/if}
 
 <style>
-    .ui-dropdown {
+    .ui-popover {
         position: fixed;
         z-index: var(--z-dropdown);
 

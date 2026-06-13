@@ -27,8 +27,8 @@
         | 'components-toggle-group'
         | 'components-select'
         | 'components-combobox'
-        | 'components-dropdown'
-        | 'components-filter-dropdown'
+        | 'components-popover'
+        | 'components-filter-popover'
         | 'components-chip'
         | 'components-dialogs'
         | 'components-toasts'
@@ -67,8 +67,8 @@
                 { id: 'components-toggle-group', label: 'Toggle group' },
                 { id: 'components-select', label: 'Select' },
                 { id: 'components-combobox', label: 'Combobox' },
-                { id: 'components-dropdown', label: 'Dropdown' },
-                { id: 'components-filter-dropdown', label: 'Filter dropdown' },
+                { id: 'components-popover', label: 'Popover' },
+                { id: 'components-filter-popover', label: 'Filter popover' },
                 { id: 'components-chip', label: 'Chip' },
                 { id: 'components-dialogs', label: 'Dialogs' },
                 { id: 'components-toasts', label: 'Toasts' },

@@ -319,7 +319,7 @@ describe('QueryDialog ⌘N and ⌘H', () => {
     // The popover mounts via FilterChipPopover; either marker class would work,
     // but the wrapper exposes the `[data-recent-items-popover]` hook below.
     const popoverAfterOpen = document.body.querySelector(
-      '[data-recent-items-popover], .recent-searches-popover, .ui-dropdown',
+      '[data-recent-items-popover], .recent-searches-popover, .ui-popover',
     )
     expect(popoverAfterOpen).not.toBeNull()
 

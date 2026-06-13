@@ -119,7 +119,7 @@ describe('SearchFilterChips a11y', () => {
     // The popover renders alongside the chip strip; pass the document body to cover both subtrees.
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -136,7 +136,7 @@ describe('SearchFilterChips a11y', () => {
     await tick()
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })

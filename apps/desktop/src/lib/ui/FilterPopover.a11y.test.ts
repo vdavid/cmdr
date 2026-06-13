@@ -1,7 +1,7 @@
 /**
- * Tier-3 a11y tests for `FilterDropdown.svelte`.
+ * Tier-3 a11y tests for `FilterPopover.svelte`.
  *
- * `FilterDropdown` composes `Dropdown` (positioning, focus trap, Esc-scoped close) with a
+ * `FilterPopover` composes `Popover` (positioning, focus trap, Esc-scoped close) with a
  * section header above the filter controls. Two header shapes need covering: a plain `<span>`
  * heading above a radio grid (the default), and a real `<label for=…>` association when the
  * header labels a single control (`labelFor`). Closed state renders nothing.
@@ -11,7 +11,7 @@
 
 import { describe, it } from 'vitest'
 import { mount, tick, createRawSnippet } from 'svelte'
-import FilterDropdown from './FilterDropdown.svelte'
+import FilterPopover from './FilterPopover.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 function makeAnchor(target: HTMLElement): HTMLButtonElement {
@@ -21,12 +21,12 @@ function makeAnchor(target: HTMLElement): HTMLButtonElement {
   return anchor
 }
 
-describe('FilterDropdown a11y', () => {
+describe('FilterPopover a11y', () => {
   it('closed (open=false) renders nothing and has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     const anchor = makeAnchor(target)
-    mount(FilterDropdown, {
+    mount(FilterPopover, {
       target,
       props: {
         anchor,
@@ -48,7 +48,7 @@ describe('FilterDropdown a11y', () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     const anchor = makeAnchor(target)
-    mount(FilterDropdown, {
+    mount(FilterPopover, {
       target,
       props: {
         anchor,
@@ -67,7 +67,7 @@ describe('FilterDropdown a11y', () => {
     await tick()
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })
@@ -76,7 +76,7 @@ describe('FilterDropdown a11y', () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     const anchor = makeAnchor(target)
-    mount(FilterDropdown, {
+    mount(FilterPopover, {
       target,
       props: {
         anchor,
@@ -94,7 +94,7 @@ describe('FilterDropdown a11y', () => {
     await tick()
     await expectNoA11yViolations(document.body)
     target.remove()
-    document.querySelectorAll('.ui-dropdown').forEach((el) => {
+    document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
     })
   })

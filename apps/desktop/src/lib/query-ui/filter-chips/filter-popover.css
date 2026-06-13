@@ -36,7 +36,7 @@
 
 /* The Scope ("Search in") popover section. Same min-width as the grid popovers so the
    textarea + toggles + footer have room. Lives here (not in `ScopeFilterPopover.svelte`)
-   because `FilterDropdown` renders the wrapper element this targets. */
+   because `FilterPopover` renders the wrapper element this targets. */
 .scope-popover {
   min-width: 320px;
 }

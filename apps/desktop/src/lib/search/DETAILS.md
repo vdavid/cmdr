@@ -40,8 +40,8 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 Shared components, helpers, and tests live in [`lib/query-ui/`](../query-ui/CLAUDE.md) — Search and Selection both
 import the unified components (`QueryBar`, `ModeChips`, `AiPromptStrip`, `FilterChips`, `PathPills`, `SearchRowMenu`,
 `QueryResults`, `EmptyState`, the `recent-items/` family, and the `filter-chip-state` / `filter-popover-helpers` /
-`path-pills-layout` helpers). The chip + popover primitives are the app-wide `$lib/ui/Chip` / `$lib/ui/Dropdown` /
-`$lib/ui/FilterDropdown`.
+`path-pills-layout` helpers). The chip + popover primitives are the app-wide `$lib/ui/Chip` / `$lib/ui/Popover` /
+`$lib/ui/FilterPopover`.
 
 ## Search wrapper
 

@@ -1,12 +1,12 @@
 <script lang="ts">
     import SectionCard from '$lib/ui/SectionCard.svelte'
-    import Dropdown from '$lib/ui/Dropdown.svelte'
+    import Popover from '$lib/ui/Popover.svelte'
 
     let anchorEl: HTMLButtonElement | undefined = $state()
     let open = $state(false)
 </script>
 
-<SectionCard id="components-dropdown" label="Dropdown">
+<SectionCard id="components-popover" label="Popover">
     <div class="cell">
         <p class="caption">
             Generic positioned floater: frosted glass, auto-flip, focus trap, Esc closes. Click the anchor to toggle.
@@ -19,22 +19,22 @@
                 open = !open
             }}
         >
-            {open ? 'Close dropdown' : 'Open dropdown'}
+            {open ? 'Close popover' : 'Open popover'}
         </button>
         {#if anchorEl}
-            <Dropdown
+            <Popover
                 anchor={anchorEl}
                 {open}
                 onClose={() => {
                     open = false
                 }}
-                ariaLabel="Demo dropdown"
+                ariaLabel="Demo popover"
             >
                 <div class="demo-content">
                     <p>Any content goes here.</p>
                     <input type="text" aria-label="Demo field" placeholder="Type here" />
                 </div>
-            </Dropdown>
+            </Popover>
         {/if}
     </div>
 </SectionCard>
