@@ -333,13 +333,12 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 - **Deep-link host changed in Ventura.** macOS 13+ uses `com.apple.settings.PrivacySecurity.extension`; older macOS uses
   `com.apple.preference.security`. `openPrivacySettings()` picks via `get_macos_major_version`. The same version informs
   the modal copy: macOS 12 and older append new FDA entries at the end of the list (instead of alphabetical).
-- **macOS 13+ (Tahoe) lists the app on a directory `open()`, not a file `read()`.** On macOS 12 a denied file `read()`
-  of a TCC-protected path registered a notarized bundle in the FDA list. On macOS 13+ (Tahoe especially) that read is
-  refused without listing the app; the access that still registers is a raw `open()` on a protected _directory_ (traced
-  from Path Finder, which polls `open(~/Library/Mail)` and lands in the list the instant it does). So
-  `check_full_disk_access` in `permissions.rs` fires directory opens (`fda_probe_dirs`: `~/Library/Mail`, the TCC dir,
-  etc.) alongside the legacy file `mmap` / `NSData` / `read_dir` triggers. The "+" button fallback (step 1's `step-tip`)
-  stays as a backstop for any machine that still doesn't list Cmdr. References:
+- **Getting Cmdr into the FDA list is a separate concern from detecting FDA, and it's macOS-version-dependent.** The
+  mechanism (detect via a file `read()`; register via a directory `open()` on macOS 13+, file reads on macOS 12) lives
+  in one place: the module doc of `src-tauri/src/permissions.rs`. Don't restate it here. Onboarding-relevant parts only:
+  registration rides the heavy `check_full_disk_access` (fired at boot, on step-1 mount, and right before opening System
+  Settings), and the "+" button fallback (step 1's `step-tip`) stays as the backstop for any machine that still doesn't
+  list Cmdr (notably until the directory-open path is confirmed on a notarized release). References:
   [Apple Developer Forums #809549](https://developer.apple.com/forums/thread/809549),
   [Apple Developer Forums #757768](https://developer.apple.com/forums/thread/757768).
 - **The wizard renders the app behind it.** First launch lands on `~`, so what peeks through the backdrop is friendly.

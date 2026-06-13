@@ -1,4 +1,39 @@
-//! macOS permission checking and system settings helpers.
+//! macOS permission checking and System Settings helpers.
+//!
+//! # Full Disk Access: detect vs. register (single source of truth)
+//!
+//! This module doc is the canonical place for how FDA works in Cmdr.
+//! `onboarding/DETAILS.md` and `docs/architecture.md` point here; they must not
+//! re-describe the mechanism (it drifts when copied). Two separate jobs, often
+//! conflated:
+//!
+//! 1. **Detect** whether we have FDA: read 1 byte from a TCC-protected *file*
+//!    (`fda_probe_files`). `Ok` = granted, `PermissionDenied` = not. Works on
+//!    every macOS version; it's what `check_full_disk_access` and the quiet
+//!    poller return.
+//! 2. **Register** the app in System Settings → Privacy & Security → Full Disk
+//!    Access (the greyed, toggleable row) so the user need not use the `+`
+//!    button. This is the macOS-version-dependent part:
+//!    - macOS <= 12: a denied file `read()` registers the bundle.
+//!    - macOS 13+ (Ventura/Sonoma/Tahoe): a denied file `read()` is refused
+//!      *without* listing a notarized app. The access that still registers is a
+//!      raw `open()` on a TCC-protected *directory* (`fda_probe_dirs`), NOT
+//!      `opendir`/`read_dir`.
+//!
+//! So on a denial `check_full_disk_access` fires *both* register paths: the
+//! legacy file `mmap` / `NSData` / parent `read_dir` (old macOS) and a directory
+//! `open()` on each protected dir (macOS 13+). The quiet poller
+//! (`check_full_disk_access_quiet`) is detection-only, no register side effects.
+//!
+//! ## What's verified, and what isn't
+//!
+//! KNOWN (traced with `fs_usage` on macOS 26.5.1, 2026-06): Path Finder's whole
+//! FDA probe is `open(~/Library/Mail)`, and it appears in the list the instant
+//! it runs; a notarized app's denied file `read()` does NOT list it on 13+.
+//! UNVERIFIED: that our mirrored directory `open()` actually lists *Cmdr*. It
+//! only manifests on a real notarized build, so confirm on the next release
+//! (`tccutil reset SystemPolicyAllFiles com.veszelovszki.cmdr`, launch, check
+//! the list). Until then the onboarding `+` step-tip stays as the backstop.
 
 use std::ffi::CString;
 use std::fs::File;
@@ -6,20 +41,10 @@ use std::io::{ErrorKind, Read};
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
-/// Specific TCC-protected files we probe to determine FDA status, and (on
-/// older macOS) to register the bundle in the Full Disk Access list.
-///
-/// We `open()` + `read()` actual *files*: a denied `read()` is what added the
-/// bundle to System Settings → Privacy & Security → Full Disk Access on macOS
-/// 12 and earlier. On macOS 13+ (Tahoe especially) that stopped working for
-/// notarized apps: the denied file `read()` is refused without listing the
-/// app, and the access that DOES register is now a raw `open()` on a protected
-/// *directory* (see `fda_probe_dirs`). We keep both: file reads for old macOS,
-/// directory opens for current macOS.
-///
-/// Order matters: we walk until we hit a file that exists on this account,
-/// because `NotFound` doesn't reach TCC. Once we hit one, the read either
-/// succeeds (FDA granted) or returns `PermissionDenied` (not granted).
+/// Files we read 1 byte from to detect FDA (`Ok` = granted, `PermissionDenied`
+/// = not). Walk-until-exists, because `NotFound` doesn't reach TCC. On macOS <=
+/// 12 a denied read here also registers the bundle. See the module doc for the
+/// detect-vs-register split.
 fn fda_probe_files() -> Vec<PathBuf> {
     let Some(home) = dirs::home_dir() else {
         return Vec::new();
@@ -34,15 +59,11 @@ fn fda_probe_files() -> Vec<PathBuf> {
     ]
 }
 
-/// Protected TCC *directories* we `open()` (read-only, no read) to register the
-/// bundle in the Full Disk Access list on macOS 13+ (Ventura/Sonoma/Tahoe).
-///
-/// On Tahoe a denied file `read()` no longer lists a notarized bundle, but a
-/// raw `open()` on a TCC-protected directory still does (verified against Path
-/// Finder, which polls `open(~/Library/Mail)` and lands in the list the instant
-/// it does). Use a raw `open()`, NOT `opendir`/`read_dir`: the latter doesn't
-/// register. The TCC dir always exists; the rest cover the common case where
-/// the user has Mail/Safari/Messages set up.
+/// Protected directories we raw-`open()` (read-only, no read) to register the
+/// bundle in the FDA list on macOS 13+. Raw `open()`, NOT `opendir`/`read_dir`.
+/// The TCC dir always exists; the rest cover Mail/Safari/Messages users. See the
+/// module doc for why a directory open (not a file read) is what registers on
+/// 13+.
 fn fda_probe_dirs() -> Vec<PathBuf> {
     let Some(home) = dirs::home_dir() else {
         return Vec::new();
@@ -207,20 +228,11 @@ pub fn check_full_disk_access_quiet() -> bool {
     probe_fda_quiet()
 }
 
-/// Checks if the app has full disk access by probing TCC-protected files.
-///
-/// Probing is also how the bundle gets registered with TCC, which is what
-/// makes Cmdr show up in the Full Disk Access list in System Settings. On
-/// macOS 13+ (Tahoe especially) a denied file `read()` no longer lists a
-/// notarized bundle: the access that registers is a raw `open()` on a
-/// protected *directory* (what Path Finder uses). So on a denial we fire every
-/// trigger we know: the legacy file `mmap` / `NSData` / parent `read_dir` (old
-/// macOS), plus a directory `open()` on each protected dir (macOS 13+; see
-/// `fda_probe_dirs`).
-///
-/// For repeated, side-effect-free polling (e.g. the onboarding grant
-/// detector), use `check_full_disk_access_quiet` instead, which skips these
-/// extra triggers and the logging.
+/// Detects FDA by probing TCC-protected files, and on a denial fires every
+/// known list-registration trigger so Cmdr shows up in System Settings. Returns
+/// `true` if granted. See the module doc for the detect-vs-register mechanism
+/// and the macOS-version split. For repeated, side-effect-free polling, use
+/// `check_full_disk_access_quiet`.
 #[tauri::command]
 #[specta::specta]
 pub fn check_full_disk_access() -> bool {

@@ -2210,20 +2210,11 @@ export const commands = {
   // Tauri command: returns the current system text-size multiplier.
   getSystemTextSizeMultiplier: () => __TAURI_INVOKE<number>('get_system_text_size_multiplier'),
   /**
-   *  Checks if the app has full disk access by probing TCC-protected files.
-   *
-   *  Probing is also how the bundle gets registered with TCC, which is what
-   *  makes Cmdr show up in the Full Disk Access list in System Settings. On
-   *  macOS 13+ (Tahoe especially) a denied file `read()` no longer lists a
-   *  notarized bundle: the access that registers is a raw `open()` on a
-   *  protected *directory* (what Path Finder uses). So on a denial we fire every
-   *  trigger we know: the legacy file `mmap` / `NSData` / parent `read_dir` (old
-   *  macOS), plus a directory `open()` on each protected dir (macOS 13+; see
-   *  `fda_probe_dirs`).
-   *
-   *  For repeated, side-effect-free polling (e.g. the onboarding grant
-   *  detector), use `check_full_disk_access_quiet` instead, which skips these
-   *  extra triggers and the logging.
+   *  Detects FDA by probing TCC-protected files, and on a denial fires every
+   *  known list-registration trigger so Cmdr shows up in System Settings. Returns
+   *  `true` if granted. See the module doc for the detect-vs-register mechanism
+   *  and the macOS-version split. For repeated, side-effect-free polling, use
+   *  `check_full_disk_access_quiet`.
    */
   checkFullDiskAccess: () => __TAURI_INVOKE<boolean>('check_full_disk_access'),
   /**

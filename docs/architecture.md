@@ -200,12 +200,9 @@ Rules that cut across many modules. All existing commands follow these; apply th
 
 ### macOS specifics
 
-- **Full Disk Access**: checked by trying to read 1 byte from a list of TCC-protected files
-  (`~/Library/Safari/History.db`, `~/Library/Mail/V10/MailData/Envelope Index`, etc.) until one returns either `Ok` (FDA
-  granted) or `PermissionDenied` (denied). Listing the app in System Settings is a separate concern: on macOS 12 the
-  denied file `read()` registered it, but on macOS 13+ (Tahoe) only a raw `open()` on a protected _directory_
-  (`~/Library/Mail`, the TCC dir, etc.) registers a notarized app, so on denial we fire that plus the legacy `mmap` /
-  `NSData` / `read_dir` triggers. Prompt on first launch. See `permissions.rs` and
+- **Full Disk Access**: probed to detect grant state and to register Cmdr in the System Settings list (the two are
+  separate jobs, and registration is macOS-version-dependent). The full mechanism lives in one place: the module doc of
+  `src-tauri/src/permissions.rs`. Prompt on first launch. See `permissions.rs` and
   `apps/desktop/src/lib/onboarding/CLAUDE.md`.
 - **Keychain**: stores network credentials and trial state. Uses `security-framework` crate.
 - **copyfile(3)**: preserves xattrs, ACLs, resource forks. `COPYFILE_CLONE` for instant APFS clones.
