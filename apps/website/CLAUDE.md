@@ -169,8 +169,11 @@ of file names, paths, queries, and prompts by allowlist. See `apps/desktop/src-t
   **Inline-script gotcha (don't wrap the body in `{\`...\`}`).** The Umami and PostHog injectors are
   `<script is:inline define:vars={...}>` blocks. Inside an `is:inline` script, the body is raw JS — Astro does NOT
   evaluate `{...}` expressions there. Writing the JS as a
-  `{\`...\`}`template-literal child ships the literal backtick wrapper into the page, so the injector becomes dead text and analytics silently never loads (no error, no script tag). Author the body as plain JS, leading with`;`(matching the`\__cmdrRReady`and theme blocks).`define:vars`supplies the consts at the top; reference them directly. There's no e2e guard for this (the check-runner dist builds without the`PUBLIC_\*`
-  env, so the blocks aren't even rendered), so verify analytics fires in a real browser after any edit here.
+  `{\`...\`}`template-literal child ships the literal backtick wrapper into the page, so the injector becomes dead text and analytics silently never loads (no error, no script tag). Author the body as plain JS, leading with`;`(matching the`\__cmdrRReady`and theme blocks).`define:vars`supplies the consts at the top; reference them directly. The `website-analytics-injection` check (`pnpm
+  check
+  analytics-injection`) guards this class: it builds the site WITH the `PUBLIC_\*`analytics env (the default`website-build`deliberately omits it, so its dist never renders these branches) into a separate`dist-analytics/`dir, then asserts the built HTML has a real`createElement('script')`Umami injector with`data-website-id`, a `/scripts/posthog-init.js`PostHog injector,`\_\_cmdrRReady`gating, AND no`{`-then-backtick
+  inert-wrapper signature. Still worth a real-browser check for behavior the built HTML can't show, but the inert-text
+  regression now fails CI.
 
 **Decision/Why — client-side storage policy**: The site must never need a cookie consent banner.
 

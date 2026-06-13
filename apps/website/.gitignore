@@ -3,6 +3,8 @@ node_modules/
 
 # Build output
 dist/
+# Env-injecting analytics-injection check build (website-analytics-injection)
+dist-analytics/
 
 # Environment files
 .env

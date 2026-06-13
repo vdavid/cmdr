@@ -542,6 +542,21 @@ var AllChecks = []CheckDefinition{
 		Inputs:      websiteInputs,
 		Run:         RunWebsiteE2E,
 	},
+	{
+		ID:          "website-analytics-injection",
+		Nickname:    "analytics-injection",
+		CpuWeight:   2,
+		DisplayName: "analytics injection",
+		App:         AppWebsite,
+		Tech:        "🚀 Astro",
+		// Its own env-injecting build (separate dist-analytics/ outDir), so it
+		// runs standalone — the default website-build deliberately omits the
+		// PUBLIC_* env and must keep doing so (fast no-env build), so this can't
+		// depend on it.
+		DependsOn: nil,
+		Inputs:    websiteInputs,
+		Run:       RunWebsiteAnalyticsInjection,
+	},
 
 	// API server checks
 	{
