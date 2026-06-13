@@ -8,6 +8,7 @@
  */
 import { openExternalUrl, trackEvent } from '$lib/tauri-commands'
 import { openSettingsWindow } from '$lib/settings/settings-window'
+import { openShortcutsWindow } from '$lib/shortcuts/shortcuts-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import { openFeedbackDialog } from '$lib/feedback/feedback-flow.svelte'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
@@ -38,6 +39,10 @@ export const appDialogHandlers = {
 
   'app.licenseKey': ({ ctx }) => {
     ctx.dialogs.showLicenseKeyDialog(true)
+  },
+
+  'help.openShortcuts': () => {
+    void openShortcutsWindow()
   },
 
   'help.sendErrorReport': () => {

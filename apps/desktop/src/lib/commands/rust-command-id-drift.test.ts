@@ -116,6 +116,7 @@ describe('menuCommands ↔ command_id_to_menu_id drift', () => {
   const UNREGISTERED_MENU_ITEMS: Record<string, string> = {
     'app.about': 'cmdr app-menu item, never registered in MenuState.items; no default shortcut to sync',
     'app.licenseKey': 'cmdr app-menu item, never registered in MenuState.items; no default shortcut to sync',
+    'help.openShortcuts': 'Help-menu item; no default keyboard shortcut to sync',
     'help.sendErrorReport': 'Help-menu item, never registered in MenuState.items; no default shortcut to sync',
     'feedback.send': 'Help-menu item, never registered in MenuState.items; no default shortcut to sync',
     'tab.togglePin':

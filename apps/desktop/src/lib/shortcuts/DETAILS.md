@@ -186,6 +186,34 @@ the combo `isTypingKeyCombo` (no ⌘/⌃/⌥, not an F-key or Escape — shift-o
 Tier 1 binding (Tab → switch pane) fires mid-typing in any in-pane text input that forgets to `stopPropagation`. The
 guard is central so new inputs are protected by default; `NetworkLoginForm`'s own Tab shielding remains as before.
 
+### Keyboard shortcuts help window (read-only)
+
+A separate window (Help > Keyboard shortcuts, command `help.openShortcuts`) lists every command's shortcuts as a
+read-only reference. Editing stays in Settings; this window only links there ("Edit shortcuts").
+
+The "Edit shortcuts" links do NOT call `openSettingsWindow` directly. Tauri capabilities are checked against the calling
+window, and `openSettingsWindow` needs `get-all-windows` + `create-webview-window` + `available-monitors` +
+`set-effects`. Granting all that to a read-only help window is the privilege creep the per-window capability split
+exists to prevent. Instead the links emit the shared `open-settings` event (`requestOpenSettings('Keyboard shortcuts')`)
+that the main window already handles via `onOpenSettings` (the same channel the MCP `dialog open settings` path uses).
+The main window owns the window-creation perms; the help window needs only `core:event:default`.
+
+- **Opener** (`shortcuts-window.ts`): a singleton `WebviewWindow` on the `/shortcuts` route (focuses if already open,
+  via the `focus-self` event like Settings). Narrow and tall (~1:3), both dimensions scaled by the effective text size,
+  the height capped to the target monitor so a tall window never spawns off-screen. Resizable; the list scrolls.
+- **Route** (`routes/shortcuts/+page.svelte`): the window shell. Inits settings + shortcuts stores, accent color, and
+  text size (so it tracks the app-wide font size). Escape closes (deferred past the event tick, like Settings/Viewer).
+  Holds the "Hide features with no shortcut" checkbox state (off by default; hides commands whose effective list is
+  empty).
+- **List** (`ShortcutsList.svelte`): one `SectionCard` per `CommandScope`, reusing the Settings editor's
+  `groupCommandsByScope` (same grouping + order). It lists ALL registry commands, including the non-customizable
+  native/fixed ones (they just render plain chips). Live-syncs via `onShortcutChange` (cross-window Settings edits ride
+  `shortcuts:changed`): a counter bump re-derives the groups and re-keys the rows so each row's diff recomputes.
+- **Diff** (`shortcut-diff.ts`, pure + unit-tested): `diffShortcuts(defaults, effective)` returns one chip per key,
+  status `active` (in both), `added` (effective-only: user-added/replaced, rendered bold green with an "Added" tooltip),
+  or `disabled` (default-only: turned off, rendered dimmed + struck with a "Disabled" tooltip). One set-diff covers
+  extra / replaced / removed. The "added" green is the themed `--color-allow` token (AA in both modes).
+
 ## Key decisions
 
 ### Why platform-specific storage?

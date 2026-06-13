@@ -34,7 +34,9 @@ All under `apps/desktop/src/lib/`.
 - `file-operations/mkfile/`: Shift+F4 new-file dialog
 - `file-viewer/`: Read-only file viewer (separate window, virtual scrolling)
 - `settings/`: Settings UI + registry-based architecture, reactive state
-- `shortcuts/`: Keyboard shortcut customization, scope hierarchy, conflict detection
+- `shortcuts/`: Keyboard shortcut customization, scope hierarchy, conflict detection, plus the read-only Help > Keyboard
+  shortcuts window (`shortcuts-window.ts` + `ShortcutsList.svelte` + pure `shortcut-diff.ts`, route at
+  `routes/shortcuts/`)
 - `ipc/`: Auto-generated `tauri-specta` bindings (`bindings.ts`). Don't edit by hand; call through `tauri-commands/`
 - `tauri-commands/`: Typed TypeScript wrappers around `ipc/bindings.ts`. Canonical import path for backend IPC
 - `command-palette/`: Fuzzy command search (~77 palette-visible commands)

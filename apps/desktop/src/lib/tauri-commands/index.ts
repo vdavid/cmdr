@@ -323,6 +323,7 @@ export {
   onExecuteCommand,
   emitExecuteCommand,
   onOpenSettings,
+  requestOpenSettings,
   onOpenFileViewer,
   onFocusSettings,
   onFocusFileViewer,

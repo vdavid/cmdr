@@ -109,7 +109,7 @@ keyboard routing is handled by each UI component.
 
 ## Command registry
 
-`command-registry.ts` holds 110 commands grouped by scope (about 78 palette-visible; the rest are `showInPalette: false`
+`command-registry.ts` holds 111 commands grouped by scope (about 79 palette-visible; the rest are `showInPalette: false`
 — low-level navigation and the MCP-only per-pane commands). Key rules:
 
 - `showInPalette: false` for low-level navigation (↑/↓, ←/→, volume/palette modal internals).

@@ -36,6 +36,7 @@ const m = vi.hoisted(() => ({
   setSetting: vi.fn<(...a: unknown[]) => void>(),
   getEffectiveShortcuts: vi.fn<(id: string) => string[]>(() => []),
   openSettingsWindow: vi.fn(() => Promise.resolve()),
+  openShortcutsWindow: vi.fn(() => Promise.resolve()),
   openErrorReportDialog: vi.fn<() => void>(),
   openFeedbackDialog: vi.fn<() => void>(),
   runMenuTriggeredCheck: vi.fn(() => Promise.resolve()),
@@ -66,6 +67,7 @@ const {
   setSetting,
   getEffectiveShortcuts,
   openSettingsWindow,
+  openShortcutsWindow,
   openErrorReportDialog,
   openFeedbackDialog,
   runMenuTriggeredCheck,
@@ -125,6 +127,10 @@ vi.mock('$lib/shortcuts', () => ({
 
 vi.mock('$lib/settings/settings-window', () => ({
   openSettingsWindow: () => m.openSettingsWindow(),
+}))
+
+vi.mock('$lib/shortcuts/shortcuts-window', () => ({
+  openShortcutsWindow: () => m.openShortcutsWindow(),
 }))
 
 vi.mock('$lib/error-reporter/error-report-flow.svelte', () => ({
@@ -200,8 +206,8 @@ describe('characterization — id partition self-check', () => {
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 
-  it('dispatchable set is exactly 92 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(92)
+  it('dispatchable set is exactly 93 ids', () => {
+    expect(DISPATCHABLE_IDS).toHaveLength(93)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {
@@ -218,6 +224,11 @@ describe('characterization — module-delegate arms', () => {
   it('app.settings → openSettingsWindow()', async () => {
     await handleCommandExecute('app.settings', makeCtx({}))
     expect(openSettingsWindow).toHaveBeenCalledOnce()
+  })
+
+  it('help.openShortcuts → openShortcutsWindow()', async () => {
+    await handleCommandExecute('help.openShortcuts', makeCtx({}))
+    expect(openShortcutsWindow).toHaveBeenCalledOnce()
   })
 
   it('help.sendErrorReport → openErrorReportDialog()', async () => {

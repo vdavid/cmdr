@@ -36,6 +36,7 @@ const m = vi.hoisted(() => ({
   setSetting: vi.fn<(...a: unknown[]) => void>(),
   getEffectiveShortcuts: vi.fn<(id: string) => string[]>(() => []),
   openSettingsWindow: vi.fn(() => Promise.resolve()),
+  openShortcutsWindow: vi.fn(() => Promise.resolve()),
   openErrorReportDialog: vi.fn<() => void>(),
   runMenuTriggeredCheck: vi.fn(() => Promise.resolve()),
   goToLatestDownload: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
@@ -104,6 +105,10 @@ vi.mock('$lib/shortcuts', () => ({
 
 vi.mock('$lib/settings/settings-window', () => ({
   openSettingsWindow: () => m.openSettingsWindow(),
+}))
+
+vi.mock('$lib/shortcuts/shortcuts-window', () => ({
+  openShortcutsWindow: () => m.openShortcutsWindow(),
 }))
 
 vi.mock('$lib/error-reporter/error-report-flow.svelte', () => ({

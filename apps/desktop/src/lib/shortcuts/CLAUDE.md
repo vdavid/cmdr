@@ -10,6 +10,9 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
 - `shortcuts-store.ts` (delta-only persistence, cross-window emit, the native/fixed boundary),
   `reactive-shortcuts.svelte.ts` (reactive reads), `scope-hierarchy.ts` + `conflict-detector.ts` (overlap → conflict),
   `key-capture.ts`, `shortcut-dispatch.ts` (Tier 1 reverse lookup), `mcp-shortcuts-listener.ts`.
+- Read-only help window (Help > Keyboard shortcuts): `shortcuts-window.ts` (opener), `ShortcutsList.svelte` (grouped
+  list), `shortcut-diff.ts` (pure default-vs-effective diff). Route at `routes/shortcuts/`. See DETAILS.md § "Keyboard
+  shortcuts help window".
 
 ## Must-knows
 

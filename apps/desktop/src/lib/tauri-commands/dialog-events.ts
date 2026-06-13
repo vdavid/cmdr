@@ -52,6 +52,17 @@ export function emitExecuteCommand(commandId: string): Promise<void> {
  * `null` payload, which the typed `OpenSettings` (`{ section: string }`) doesn't
  * model, so the handler receives an optional section and the caller defaults it.
  */
+/**
+ * Ask the main window to open Settings deep-linked to `section`. For windows that
+ * lack window-creation capability (the read-only Keyboard shortcuts help window):
+ * the main window owns `openSettingsWindow` and reacts via `onOpenSettings`, so the
+ * help window stays minimally privileged (it can't spawn windows itself). Reuses
+ * the same `open-settings` channel the MCP `dialog open settings` path uses.
+ */
+export function requestOpenSettings(section: string): Promise<void> {
+  return events.openSettings.emit({ section })
+}
+
 export function onOpenSettings(handler: (payload: Partial<OpenSettings>) => void): Promise<UnlistenFn> {
   return events.openSettings.listen((event) => {
     // The generated type says `event.payload` is always `OpenSettings`, but a bare

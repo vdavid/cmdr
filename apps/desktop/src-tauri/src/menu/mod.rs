@@ -215,6 +215,9 @@ pub const HELP_SEND_ERROR_REPORT_ID: &str = "help_send_error_report";
 /// Menu item ID for "Send feedback…" (under the Help menu).
 pub const HELP_SEND_FEEDBACK_ID: &str = "help_send_feedback";
 
+/// Menu item ID for "Keyboard shortcuts" (opens the read-only shortcuts help window, under the Help menu).
+pub const HELP_SHORTCUTS_ID: &str = "help_shortcuts";
+
 /// Menu item ID for "Check for updates…" (under the Cmdr / Help menu).
 pub const CHECK_FOR_UPDATES_ID: &str = "check_for_updates";
 
@@ -256,6 +259,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         SETTINGS_ID => Some(("app.settings", CommandScope::App)),
         COMMAND_PALETTE_ID => Some(("app.commandPalette", CommandScope::FileScoped)),
         SEARCH_FILES_ID => Some(("search.open", CommandScope::FileScoped)),
+        HELP_SHORTCUTS_ID => Some(("help.openShortcuts", CommandScope::App)),
         HELP_SEND_ERROR_REPORT_ID => Some(("help.sendErrorReport", CommandScope::App)),
         HELP_SEND_FEEDBACK_ID => Some(("feedback.send", CommandScope::App)),
         CHECK_FOR_UPDATES_ID => Some(("app.checkForUpdates", CommandScope::App)),
@@ -353,6 +357,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "app.settings" => Some(SETTINGS_ID),
         "app.commandPalette" => Some(COMMAND_PALETTE_ID),
         "search.open" => Some(SEARCH_FILES_ID),
+        "help.openShortcuts" => Some(HELP_SHORTCUTS_ID),
         "help.sendErrorReport" => Some(HELP_SEND_ERROR_REPORT_ID),
         "feedback.send" => Some(HELP_SEND_FEEDBACK_ID),
         "app.checkForUpdates" => Some(CHECK_FOR_UPDATES_ID),
@@ -683,6 +688,7 @@ mod tests {
             "selection.deselectAll",
             "selection.selectFiles",
             "selection.deselectFiles",
+            "help.openShortcuts",
             "help.sendErrorReport",
             "feedback.send",
             "app.checkForUpdates",

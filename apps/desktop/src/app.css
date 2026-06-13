@@ -134,6 +134,10 @@
   /* Same reasoning as `--color-error-text`: the brand `--color-warning` at `#e65100`
      clocks ~3.3:1 on the warning tint; this darker variant meets AA. */
   --color-warning-text: #9a3412;
+  /* Positive/"added" green for text on tinted chip backgrounds. Darker than
+     `--color-allow` (#2e7d32 only reaches ~4:1 on a light chip); this meets AA
+     on the Keyboard-shortcuts help window's subtle green chip. */
+  --color-shortcut-added: #1b5e20;
 
   /* Disk usage bar: solid colors mixed against the track for clean layering.
      * Uses color-mix against the border color (not transparent) to avoid
@@ -598,6 +602,9 @@
     /* Opaque sibling for full-surface uses; see light-mode comment. */
     --color-warning-bg-solid: color-mix(in srgb, var(--color-warning) 15%, var(--color-bg-secondary));
     --color-warning-text: #fdba74;
+    /* Light-on-dark "added" green (see light-mode comment); bright enough for AA
+       on the dark green-tinted chip. */
+    --color-shortcut-added: #66bb6a;
 
     /* Disk usage bar: solid colors, same mixing strategy as light mode */
     --color-disk-ok: color-mix(in srgb, var(--color-allow) 60%, var(--color-border));

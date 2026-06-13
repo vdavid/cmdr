@@ -1,0 +1,20 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "shortcuts",
+    "description": "Capability for the read-only Keyboard shortcuts help window",
+    "windows": [
+        "shortcuts"
+    ],
+    "permissions": [
+        "core:window:allow-close",
+        "core:window:allow-set-focus",
+        "core:window:allow-start-dragging",
+        "core:window:allow-outer-position",
+        "core:window:allow-outer-size",
+        "core:window:allow-scale-factor",
+        "core:event:default",
+        "core:app:allow-set-app-theme",
+        "core:webview:allow-internal-toggle-devtools",
+        "store:default"
+    ]
+}

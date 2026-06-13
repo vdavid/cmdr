@@ -107,6 +107,14 @@ export const commands: Command[] = [
     description: 'Reopen the onboarding wizard to review or change first-launch setup options',
   },
   {
+    id: 'help.openShortcuts',
+    name: 'Keyboard shortcuts',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    description: 'Open a read-only window listing every keyboard shortcut, live-synced with your customizations',
+  },
+  {
     id: 'help.sendErrorReport',
     name: 'Send error report…',
     scope: 'App',
