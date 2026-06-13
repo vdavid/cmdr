@@ -296,7 +296,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let go_to_path_item = MenuItem::with_id(app, GO_TO_PATH_ID, "Go to path\u{2026}", true, Some("Cmd+G"))?;
     let go_latest_download_item =
         MenuItem::with_id(app, GO_LATEST_DOWNLOAD_ID, "Go to latest download", true, Some("Cmd+J"))?;
-    let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, "Add to favorites", true, Some("Cmd+Shift+D"))?;
+    // No default accelerator: `favorites.add` ships without a default shortcut. The
+    // accelerator-sync pass picks up whatever the user later binds in Settings > Keyboard shortcuts.
+    let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, "Add to favorites", true, None::<&str>)?;
 
     let go_menu = Submenu::with_items(
         app,

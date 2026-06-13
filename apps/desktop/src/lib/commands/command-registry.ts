@@ -156,7 +156,9 @@ export const commands: Command[] = [
     name: 'Add to favorites',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘⇧D'],
+    // No default shortcut: adding a favorite is infrequent, so it doesn't earn a global key by
+    // default. Stays in the command palette and is assignable in Settings > Keyboard shortcuts.
+    shortcuts: [],
     description: "Add the focused pane's current folder to the switcher's Favorites.",
     keywords: ['bookmark', 'favorite', 'pin', 'shortcut'],
   },

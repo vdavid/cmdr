@@ -273,7 +273,9 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         Some("Cmd+J"),
     )?;
-    let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, "&Add to favorites", true, Some("Cmd+Shift+D"))?;
+    // No default accelerator: `favorites.add` ships without a default shortcut (synced from any
+    // user-assigned shortcut later).
+    let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, "&Add to favorites", true, None::<&str>)?;
 
     let go_menu = Submenu::with_items(
         app,
