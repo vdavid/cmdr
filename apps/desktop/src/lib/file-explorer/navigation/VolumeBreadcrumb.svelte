@@ -9,13 +9,6 @@
         upgradeToSmbVolumeUsingSavedPassword,
         type UpgradeResult,
     } from '$lib/tauri-commands'
-    import {
-        removeFavorite,
-        renameFavorite,
-        reorderFavorites,
-        stripFavoritePrefix,
-    } from '$lib/tauri-commands'
-    import { moveItem, clampedReorderTarget, pointerReorderTarget, pointerInsertionSlot } from './favorites-reorder'
     import { ask } from '@tauri-apps/plugin-dialog'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
@@ -61,6 +54,7 @@
     const EJECT_BUSY_TOOLTIP = "Can't eject while operations are in progress on this device"
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
+    import { createFavoritesController } from './favorites-controller.svelte'
     import {
         createBreadcrumbPopupController,
         createKeyboardModeTracker,
@@ -115,6 +109,19 @@
         spaceAutoRetryingSet,
     } = spaceManager
 
+    // Favorites interaction layer (rename, pointer-drag + keyboard reorder, remove, optimistic order).
+    // Instantiated at top level so its reconciliation `$effect` registers during component init.
+    // `effectiveVolumes` / `favorites` below read `fav.optimisticFavoriteIds`, so they re-derive on a
+    // local-first reorder before the backend round-trip lands.
+    let renameInputRef: HTMLInputElement | undefined = $state()
+    const fav = createFavoritesController({
+        getFavorites: () => favorites,
+        getVolumes: () => volumes,
+        getDropdownRef: () => dropdownRef,
+        getRenameInputRef: () => renameInputRef,
+        navigate: (volume) => { void handleVolumeSelect(volume) },
+    })
+
     // Current volume info derived from volumes list (the actual containing volume)
     // Special case: 'network' is a virtual volume, not from the backend
     // For MTP volumes, look up by volumeId directly; for filesystem volumes, use containingVolumeId
@@ -158,18 +165,12 @@
         return getCachedIcon('dir')
     })
 
-    // Optimistic favorite order for instant, local-first reorder. A keyboard (Alt+↑/↓) or pointer
-    // reorder sets this to the new order of favorite ids SYNCHRONOUSLY, so the switcher re-renders
-    // immediately and a rapid next press computes against fresh state; the backend persist runs in the
-    // background. Reconciled to `null` once `volumes-changed` brings the store to the same order (or
-    // the favorite set changes elsewhere). `null` = no override, render the store order.
-    let optimisticFavoriteIds = $state<string[] | null>(null)
-
     // `volumes` with favorites reordered per the optimistic override (each favorite SLOT keeps its
     // position; only which favorite fills it changes). Everything below derives from this, so an
-    // optimistic reorder shows without waiting for the backend round-trip.
+    // optimistic reorder shows without waiting for the backend round-trip. The override itself lives
+    // in `fav` (the favorites controller); a local-first reorder there re-derives this synchronously.
     const effectiveVolumes = $derived.by(() => {
-        const order = optimisticFavoriteIds
+        const order = fav.optimisticFavoriteIds
         if (!order) return volumes
         const rank = new Map(order.map((id, i) => [id, i]))
         const orderedFavs = volumes
@@ -304,7 +305,7 @@
         // the dropdown's list navigation doesn't steal them from the textbox. Enter
         // / Escape never reach here (the input's own handler stops propagation), so
         // commit / cancel still work.
-        if (renamingFavoriteId !== null) return false
+        if (fav.renamingFavoriteId !== null) return false
 
         // Keyboard reorder of the highlighted favorite (Alt+Up / Alt+Down). The rows
         // aren't DOM-focused (the dropdown navigates by a virtual `highlightedIndex`),
@@ -317,13 +318,13 @@
             if (highlighted && highlighted.category === 'favorite') {
                 e.preventDefault()
                 const delta = e.key === 'ArrowUp' ? -1 : 1
-                // Synchronous + local-first: `persistFavoriteOrder` sets the optimistic order, so
+                // Synchronous + local-first: `fav.reorderHighlighted` sets the optimistic order, so
                 // `favorites` / `allVolumes` re-derive immediately and a rapid next press computes
                 // against the fresh order (no stale-state race). Favorites lead `allVolumes` in order,
                 // so the favorite's new index IS its new list index; set the highlight to it directly
                 // so repeated Alt+Down keeps walking the same item. The open-effect's `untrack` keeps
                 // the later refresh from resetting it.
-                const newFavIndex = moveHighlightedFavorite(highlighted, delta)
+                const newFavIndex = fav.reorderHighlighted(highlighted, delta)
                 if (newFavIndex !== null) {
                     highlightedIndex = newFavIndex
                     enterKeyboardMode()
@@ -439,9 +440,7 @@
 
     onDestroy(() => {
         spaceManager.destroy()
-        // Tear down any in-flight pointer-drag listeners if the component unmounts mid-drag.
-        window.removeEventListener('mousemove', handleFavoriteMouseMove)
-        window.removeEventListener('mouseup', handleFavoriteMouseUp)
+        fav.destroy()
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('click', handleBreadcrumbPopupClickOutside)
         document.removeEventListener('click', handleRowMenuClickOutside)
@@ -554,181 +553,6 @@
     // The mutate commands take the bare id (strip the `fav-` prefix). Each mutation re-emits
     // `volumes-changed`, so the list below re-derives with no manual refresh.
     const favorites = $derived(effectiveVolumes.filter((v) => v.category === 'favorite'))
-
-    // Drop the optimistic order once the store catches up to it (the persisted `volumes-changed`
-    // landed), or if the favorite set changed elsewhere (add / remove) so the override is stale.
-    $effect(() => {
-        const order = optimisticFavoriteIds
-        if (!order) return
-        const storeFavIds = volumes.filter((v) => v.category === 'favorite').map((v) => v.id)
-        const sameSet = storeFavIds.length === order.length && storeFavIds.every((id) => order.includes(id))
-        const sameOrder = sameSet && storeFavIds.every((id, i) => id === order[i])
-        if (sameOrder || !sameSet) optimisticFavoriteIds = null
-    })
-
-    /** Inline-rename state for a favorite (its `fav-…` id and the editable draft label). */
-    let renamingFavoriteId: string | null = $state(null)
-    let renameDraft = $state('')
-    let renameInputRef: HTMLInputElement | undefined = $state()
-
-    async function handleFavoriteRemove(volume: VolumeInfo) {
-        closeRowMenu()
-        try {
-            await removeFavorite(stripFavoritePrefix(volume.id))
-        } catch {
-            addToast("Couldn't remove that favorite. Try again?", { level: 'error' })
-        }
-    }
-
-    function startFavoriteRename(volume: VolumeInfo) {
-        closeRowMenu()
-        renamingFavoriteId = volume.id
-        renameDraft = volume.name
-        void tick().then(() => {
-            renameInputRef?.focus()
-            renameInputRef?.select()
-        })
-    }
-
-    function cancelFavoriteRename() {
-        renamingFavoriteId = null
-        renameDraft = ''
-    }
-
-    async function commitFavoriteRename(volume: VolumeInfo) {
-        const trimmed = renameDraft.trim()
-        const id = renamingFavoriteId
-        cancelFavoriteRename()
-        if (!id || !trimmed || trimmed === volume.name) return
-        try {
-            await renameFavorite(stripFavoritePrefix(id), trimmed)
-        } catch {
-            addToast("Couldn't rename that favorite. Try again?", { level: 'error' })
-        }
-    }
-
-    function handleRenameKeyDown(e: KeyboardEvent, volume: VolumeInfo) {
-        // The focused rename `<input>` owns every keystroke. Stop ALL keys from
-        // bubbling to the pane's DOM listeners (Space-selection, type-to-jump,
-        // etc.); the dispatch-level guards don't cover the raw DOM Space handler,
-        // so without this a Space typed into the box also selects the file under
-        // the cursor. Enter commits, Escape cancels, everything else edits the text.
-        e.stopPropagation()
-        if (e.key === 'Enter') {
-            e.preventDefault()
-            void commitFavoriteRename(volume)
-        } else if (e.key === 'Escape') {
-            e.preventDefault()
-            cancelFavoriteRename()
-        }
-    }
-
-    // ── Pointer-drag reorder within the Favorites section ───────────────
-    // HTML5 drag-and-drop does NOT fire under Tauri's `dragDropEnabled` (the OS
-    // intercepts drag gestures before the webview sees `dragstart`/`drop`), so
-    // we roll our own with pointer events, mirroring the native file-list drag.
-    // `mousedown` on a favorite row records the grabbed id + start Y and arms
-    // window-level move/up listeners; an actual reorder begins only once the
-    // pointer crosses a small threshold, so a plain click still navigates.
-    // `dragOverIndex` is the live insertion slot driving the drop-line cue.
-    const DRAG_THRESHOLD_PX = 4
-    let draggingFavoriteId: string | null = $state(null)
-    let dragOverIndex: number | null = $state(null)
-    // Set once the threshold is crossed; before that a mouseup is a plain click.
-    let dragActive = false
-    let dragStartY = 0
-    let pendingDragFavorite: VolumeInfo | null = null
-
-    /** Midpoints of each favorite row in list order, for `pointerReorderTarget`. */
-    function favoriteRowMidpoints(): number[] {
-        const root = dropdownRef
-        if (!root) return []
-        return favorites.map((f) => {
-            const el = root.querySelector(`.favorite-item[data-fav-id="${CSS.escape(f.id)}"]`)
-            if (!el) return Number.POSITIVE_INFINITY
-            const rect = el.getBoundingClientRect()
-            return rect.top + rect.height / 2
-        })
-    }
-
-    function handleFavoriteMouseDown(volume: VolumeInfo, e: MouseEvent) {
-        // Left button only; never start a drag from the inline rename input.
-        if (e.button !== 0 || renamingFavoriteId === volume.id) return
-        pendingDragFavorite = volume
-        dragStartY = e.clientY
-        dragActive = false
-        window.addEventListener('mousemove', handleFavoriteMouseMove)
-        window.addEventListener('mouseup', handleFavoriteMouseUp)
-    }
-
-    function handleFavoriteMouseMove(e: MouseEvent) {
-        const grabbed = pendingDragFavorite
-        if (!grabbed) return
-        if (!dragActive) {
-            if (Math.abs(e.clientY - dragStartY) < DRAG_THRESHOLD_PX) return
-            // Threshold crossed: begin the reorder.
-            dragActive = true
-            draggingFavoriteId = grabbed.id
-        }
-        const from = favorites.findIndex((f) => f.id === grabbed.id)
-        if (from < 0) return
-        // Drive the cue off the RAW insertion slot (the visual gap), not the move-target: dropping at
-        // slot `from` or `from + 1` leaves the item in place, so hide the cue then (matches when the
-        // drop's `pointerReorderTarget` returns null). Using the move-target here put the line one row
-        // too high on downward drags.
-        const slot = pointerInsertionSlot(favoriteRowMidpoints(), e.clientY)
-        dragOverIndex = slot === from || slot === from + 1 ? null : slot
-    }
-
-    function handleFavoriteMouseUp(e: MouseEvent) {
-        window.removeEventListener('mousemove', handleFavoriteMouseMove)
-        window.removeEventListener('mouseup', handleFavoriteMouseUp)
-        const grabbed = pendingDragFavorite
-        const wasDragging = dragActive
-        endFavoriteDrag()
-        if (!grabbed) return
-        if (!wasDragging) {
-            // Never crossed the threshold: treat as a plain click → navigate.
-            if (renamingFavoriteId !== grabbed.id) void handleVolumeSelect(grabbed)
-            return
-        }
-        const ids = favorites.map((f) => f.id)
-        const from = ids.indexOf(grabbed.id)
-        if (from < 0) return
-        const to = pointerReorderTarget(favoriteRowMidpoints(), e.clientY, from)
-        if (to === null) return
-        persistFavoriteOrder(moveItem(ids, from, to))
-    }
-
-    function endFavoriteDrag() {
-        draggingFavoriteId = null
-        dragOverIndex = null
-        dragActive = false
-        dragStartY = 0
-        pendingDragFavorite = null
-    }
-
-    /** Keyboard reorder of the highlighted favorite by ±1. Called from `handleKeyDown`
-     *  (Alt+Up / Alt+Down) so it works without the rows being DOM-focused. Returns the
-     *  favorite's new index so the caller can follow the moved item with the highlight. */
-    function moveHighlightedFavorite(volume: VolumeInfo, delta: -1 | 1): number | null {
-        const ids = favorites.map((f) => f.id)
-        const from = ids.indexOf(volume.id)
-        const to = clampedReorderTarget(from, delta, ids.length)
-        if (to === null) return null
-        persistFavoriteOrder(moveItem(ids, from, to))
-        return to
-    }
-
-    /** Local-first reorder: show the new order instantly via the optimistic override, then persist in
-     *  the background. On failure, drop the override so the UI reverts to the store truth. */
-    function persistFavoriteOrder(orderedLocationIds: string[]) {
-        optimisticFavoriteIds = orderedLocationIds
-        void reorderFavorites(orderedLocationIds.map(stripFavoritePrefix)).catch(() => {
-            addToast("Couldn't reorder favorites. Try again?", { level: 'error' })
-            optimisticFavoriteIds = null
-        })
-    }
 
     async function handleEjectClick(volume: VolumeInfo, event?: MouseEvent) {
         event?.stopPropagation()
@@ -895,11 +719,11 @@
                     <div
                         class="volume-item"
                         class:favorite-item={isFavorite}
-                        class:is-dragging={isFavorite && draggingFavoriteId === volume.id}
-                        class:is-drag-over={isFavorite && dragOverIndex === favIndex && draggingFavoriteId !== volume.id}
+                        class:is-dragging={isFavorite && fav.draggingFavoriteId === volume.id}
+                        class:is-drag-over={isFavorite && fav.dragOverIndex === favIndex && fav.draggingFavoriteId !== volume.id}
                         class:is-drag-over-end={isFavorite &&
-                            draggingFavoriteId !== volume.id &&
-                            dragOverIndex === favorites.length &&
+                            fav.draggingFavoriteId !== volume.id &&
+                            fav.dragOverIndex === favorites.length &&
                             favIndex === favorites.length - 1}
                         class:is-under-cursor={shouldShowCheckmark(volume, containingVolumeId)}
                         class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenu.volumeId}
@@ -914,11 +738,11 @@
                         onclick={() => {
                             // Favorites navigate from the pointer mouseup handler (it decides
                             // click-vs-drag), so skip the click path for them to avoid a double-fire.
-                            if (isFavorite || renamingFavoriteId === volume.id) return
+                            if (isFavorite || fav.renamingFavoriteId === volume.id) return
                             void handleVolumeSelect(volume)
                         }}
                         oncontextmenu={(e: MouseEvent) => { openRowMenu(volume, e); }}
-                        onmousedown={isFavorite ? (e: MouseEvent) => { handleFavoriteMouseDown(volume, e) } : undefined}
+                        onmousedown={isFavorite ? (e: MouseEvent) => { fav.handleMouseDown(volume, e) } : undefined}
                         onmouseover={(e: MouseEvent) => {
                             handleVolumeHover(volume)
                             if (volume.smbConnectionState === 'os_mount') {
@@ -950,14 +774,14 @@
                         {:else}
                             <span class="volume-icon-placeholder">📁</span>
                         {/if}
-                        {#if renamingFavoriteId === volume.id}
+                        {#if fav.renamingFavoriteId === volume.id}
                             <input
                                 class="favorite-rename-input"
                                 bind:this={renameInputRef}
-                                bind:value={renameDraft}
+                                bind:value={fav.renameDraft}
                                 onclick={(e: MouseEvent) => { e.stopPropagation() }}
-                                onkeydown={(e: KeyboardEvent) => { handleRenameKeyDown(e, volume) }}
-                                onblur={() => { void commitFavoriteRename(volume) }}
+                                onkeydown={(e: KeyboardEvent) => { fav.handleRenameKeyDown(e, volume) }}
+                                onblur={() => { void fav.commitRename(volume) }}
                                 aria-label="Rename favorite"
                             />
                         {:else}
@@ -1135,14 +959,14 @@
                     <!-- svelte-ignore a11y_click_events_have_key_events -->
                     <div
                         class="row-menu-item"
-                        onclick={(e: MouseEvent) => { e.stopPropagation(); startFavoriteRename(rowMenuVolume) }}
+                        onclick={(e: MouseEvent) => { e.stopPropagation(); const v = rowMenuVolume; closeRowMenu(); fav.startRename(v) }}
                     >
                         Rename
                     </div>
                     <!-- svelte-ignore a11y_click_events_have_key_events -->
                     <div
                         class="row-menu-item"
-                        onclick={(e: MouseEvent) => { e.stopPropagation(); void handleFavoriteRemove(rowMenuVolume) }}
+                        onclick={(e: MouseEvent) => { e.stopPropagation(); const v = rowMenuVolume; closeRowMenu(); void fav.remove(v) }}
                     >
                         Remove
                     </div>

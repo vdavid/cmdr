@@ -8,7 +8,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 - `path-navigation.ts` / `path-resolution.ts`: pick the initial path on volume switch; walk-up `resolveValidPath`.
 - `keyboard-shortcuts.ts`: Home/End/PageUp/PageDown for file lists.
 - `VolumeBreadcrumb.svelte` + `volume-grouping.ts` / `volume-space-manager.svelte.ts` /
-  `volume-breadcrumb-handlers.svelte.ts` / `eject-predicate.ts`: the volume selector and its disk-space state machine.
+  `volume-breadcrumb-handlers.svelte.ts` / `favorites-controller.svelte.ts` / `eject-predicate.ts`: the volume selector,
+  its disk-space state machine, and the favorites interaction layer (rename, reorder, remove). The favorites interaction
+  logic lives in `favorites-controller.svelte.ts` (`createFavoritesController`), not inline in the component.
 
 ## Must-knows
 
@@ -40,11 +42,16 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `volume-grouping.ts` always renders (even empty, for the placeholder) — don't "tidy" it back into the hide-when-empty
   branch. Context-menu "Add to favorites" is handled in Rust (`FAVORITES_ADD_CONTEXT_ID`), not the `favorites.add`
   command. Full flow in [DETAILS.md](DETAILS.md) § Editable favorites.
+- **The favorites interaction layer lives in `favorites-controller.svelte.ts`** (`createFavoritesController(deps)`,
+  instantiated as `fav` in `VolumeBreadcrumb.svelte`): rename, pointer-drag + keyboard reorder, remove, and the
+  local-first `optimisticFavoriteIds` override + its reconciliation `$effect`. The component keeps the template, the
+  shared `highlightedIndex`, and the `effectiveVolumes` / `favorites` deriveds (which read `fav.optimisticFavoriteIds`).
+  Controller state is exposed via getters, so template reads MUST go through `fav.*` (a snapshot won't stay reactive).
 - **The favorite-rename `<input>` must not leak keystrokes to the panes.** Four guards work together; don't remove any:
-  `VolumeBreadcrumb.handleRenameKeyDown` calls `e.stopPropagation()` for EVERY key (the focused input owns its
-  keystrokes; the pane's Space-selection DOM listener isn't covered by the dispatch-level guard, so without this a Space
-  typed into the box also selects the file under the cursor); `VolumeBreadcrumb.handleKeyDown` bails while
-  `renamingFavoriteId !== null`; `DualPaneExplorer.routeToVolumeChooser` swallows keys from the pane behind ANY open
+  `fav.handleRenameKeyDown` calls `e.stopPropagation()` for EVERY key (the focused input owns its keystrokes; the pane's
+  Space-selection DOM listener isn't covered by the dispatch-level guard, so without this a Space typed into the box
+  also selects the file under the cursor); `VolumeBreadcrumb.handleKeyDown` bails while
+  `fav.renamingFavoriteId !== null`; `DualPaneExplorer.routeToVolumeChooser` swallows keys from the pane behind ANY open
   switcher dropdown (returns true even when the dropdown ignores the key); and `+page.svelte`'s `isModalDialogOpen()`
   reads `explorerRef.isVolumeChooserOpen()` to suppress centralized dispatch.
 - **Favorite reorder is POINTER-based, not HTML5 drag.** HTML5 `draggable`/`ondragstart`/`ondrop` never fire under
@@ -53,9 +60,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   click → navigate). Don't reintroduce HTML5 drag here. Keyboard reorder (Alt+↑ / Alt+↓) lives in the exported
   `handleKeyDown` and acts on the virtual `highlightedIndex` (the rows aren't DOM-focused), so it must run before
   `handleDropdownKey` consumes the bare arrows. Both paths persist the FULL order via `reorderFavorites(bareIds)` using
-  the pure `favorites-reorder.ts` helpers. Reorders are LOCAL-FIRST: `persistFavoriteOrder` sets an in-component
-  `optimisticFavoriteIds` override (which `effectiveVolumes` / `favorites` derive from) synchronously, so the list
-  re-renders instantly and rapid Alt+↑/↓ presses compute against fresh state instead of racing the backend
+  the pure `favorites-reorder.ts` helpers. Reorders are LOCAL-FIRST: the controller sets its `optimisticFavoriteIds`
+  override (which `effectiveVolumes` / `favorites` derive from via `fav.optimisticFavoriteIds`) synchronously, so the
+  list re-renders instantly and rapid Alt+↑/↓ presses compute against fresh state instead of racing the backend
   `volumes-changed` round-trip; a reconciliation `$effect` clears the override once the store catches up (or the
   favorite set changes). Don't make the reorder await the IPC before updating the UI, or fast repeats move the wrong
   item.
