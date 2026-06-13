@@ -616,8 +616,10 @@ mod tests {
         write_store_to_path(&path, &seeded).expect("write");
 
         let loaded = read_store_from_path(&path).expect("present");
-        assert_eq!(loaded.favorites.len(), 4);
-        assert_eq!(loaded.favorites[0].path, "/Applications");
+        // Assert against the seed itself, not a hardcoded macOS path: `default_favorites()` is
+        // platform-specific (macOS leads with `/Applications`, Linux with the home dir, which is
+        // `/root` under the root-user CI container), so a literal would fail the Linux test lane.
+        assert_eq!(loaded.favorites, seeded.favorites, "round-trip must preserve the seeded favorites verbatim");
     }
 
     #[test]
