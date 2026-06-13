@@ -162,6 +162,11 @@ test.describe('Copy multi-item merge (Layout B)', () => {
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // Dismiss the success toast before the file assertions, like every sibling
+    // test. Nested skips (golf.txt) aren't surfaced in the count, so it reads the
+    // same as Overwrite. Without this the toast lingers and the teardown leak-check
+    // races its auto-dismiss timer (passes only if the timer fires first).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 4 folders.')
 
     // Conflicting file preserved
     expect(readFile(fixtureRoot, 'right/bravo/foxtrot/golf.txt')).toBe('dest-golf')
