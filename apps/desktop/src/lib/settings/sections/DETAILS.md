@@ -124,10 +124,10 @@ Two things keep the field honest, both load-bearing:
 - **`triggerConnectionCheck()` must NOT zero `availableModels` at the start of a refetch.** The field text is
   `inputValue`-driven (the saved/typed model), but flashing an empty suggestion list mid-check is the regression we
   forbid. A genuine config change (provider switch) still drops the list via `resetConnectionState()`.
-- **The mount-trigger is gated to prod (`getAppMode() === 'prod'`).** For no-key providers (`custom`/`ollama`/
-  `lm-studio`) `hasCheckableConfig` is true with just the preset base URL, so without the gate the mount-trigger would
-  fire a real request against a live endpoint in dev/E2E (today nothing fires on mount). Warm cache hits still work in
-  dev/E2E (no network). The mount-trigger also bails when a check is already scheduled or in flight, so it can't
+- **The mount-trigger fires in dev and prod, suppressed only in automated E2E (`getAppMode() === 'e2e'`).** E2E has no
+  real provider, and for no-key providers (`custom`/`ollama`/`lm-studio`) `hasCheckableConfig` is true with just the
+  preset base URL, so an unguarded trigger would add network flakiness there. Warm cache hits still work everywhere,
+  including E2E (no network). The mount-trigger also bails when a check is already scheduled or in flight, so it can't
   double-fire with `handleCloudProviderChange`'s `setTimeout(0)` check.
 
 `CloudProviderSetup` (onboarding) uses the same `ui/Combobox` but gets **no** mount-trigger: it already loads on open
