@@ -91,13 +91,16 @@ export async function updateMenuContext(path: string, filename: string): Promise
 }
 
 /**
- * Enables or disables file-scoped menu items based on the current context.
- * Call with "explorer" when the main file explorer has focus, "other" when
- * Settings or a file viewer window has focus.
+ * Activates the menu for the window that just gained focus. On macOS this swaps
+ * the app-level menu bar (main ↔ viewer) and enables/disables file-scoped items;
+ * on Linux it only toggles the item enabled state (per-window menus already exist).
+ *
+ * Call with "main" when the main file explorer has focus, "viewer" when a file
+ * viewer window has focus, and "other" when Settings or another window has focus.
  */
-export async function setMenuContext(context: 'explorer' | 'other'): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
-  await invoke('set_menu_context', { context })
+export async function activateWindowMenu(kind: 'main' | 'viewer' | 'other'): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic over Runtime; not in typed bindings
+  await invoke('activate_window_menu', { kind })
 }
 
 /**

@@ -2,7 +2,7 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-    import { onMcpSettingsClose } from '$lib/tauri-commands'
+    import { onMcpSettingsClose, activateWindowMenu } from '$lib/tauri-commands'
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
     import { initializeSettings, forceSave as forceSettingsSave } from '$lib/settings'
@@ -55,6 +55,7 @@
     let unlistenFocusSelf: UnlistenFn | undefined
     let unlistenNavigate: UnlistenFn | undefined
     let unlistenMcpClose: UnlistenFn | undefined
+    let unlistenWindowFocus: UnlistenFn | undefined
     let unlistenRectTracking: (() => void) | undefined
 
     function safeParseSectionParam(raw: string): string[] | null {
@@ -366,6 +367,16 @@
                 }, 0)
             })
 
+            // On macOS the app-level menu bar is shared, so this window swaps in the
+            // main menu with file-scoped items disabled whenever it gains focus.
+            unlistenWindowFocus = await getCurrentWindow().onFocusChanged(
+                ({ payload: focused }: { payload: boolean }) => {
+                    if (focused) {
+                        void activateWindowMenu('other')
+                    }
+                },
+            )
+
             // Persist position/size while this window is open so reopening
             // within the session lands in the same spot. The cache is in-memory
             // on the Rust side and reset on app start.
@@ -386,6 +397,7 @@
         unlistenFocusSelf?.()
         unlistenNavigate?.()
         unlistenMcpClose?.()
+        unlistenWindowFocus?.()
         unlistenRectTracking?.()
         cleanupAccentColor()
         cleanupTextSize()

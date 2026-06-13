@@ -118,7 +118,7 @@ export {
   notifyDialogClosed,
   registerKnownDialogs,
   updateMenuContext,
-  setMenuContext,
+  activateWindowMenu,
   toggleHiddenFiles,
   syncMenuShowHidden,
   updateViewModeMenu,

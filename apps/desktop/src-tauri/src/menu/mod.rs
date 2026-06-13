@@ -38,7 +38,7 @@ use tauri::{
 
 // Re-export the public API consumed from outside the menu module.
 #[cfg(target_os = "macos")]
-pub use menu_handlers::{cleanup_macos_menus, set_macos_menu_icons};
+pub use menu_handlers::{cleanup_macos_menus, cleanup_macos_menus_from_command, set_macos_menu_icons};
 pub use menu_handlers::{
     frontend_shortcut_to_accelerator, handle_menu_event, rebuild_view_mode_items, sync_view_mode_check_states,
     update_menu_item_accelerator,
@@ -244,6 +244,30 @@ pub enum ViewMode {
     Full,
     #[default]
     Brief,
+}
+
+/// Which app-level menu is currently installed on macOS.
+///
+/// macOS has a single app-level menu bar (no per-window menus, see tauri-apps/tauri#5768), so we
+/// swap the whole bar via `app.set_menu()` when windows gain focus. This tracker lets
+/// `activate_window_menu` skip redundant swaps (main→main, viewer→viewer). Settings / Debug reuse
+/// the main menu (with items disabled), so they map to `Main` too.
+#[cfg(target_os = "macos")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ActiveMenuKind {
+    #[default]
+    Main,
+    Viewer,
+}
+
+/// The viewer menu plus the `Word wrap` CheckMenuItem ref captured at build time.
+///
+/// On macOS the viewer menu is built once at startup and shared across all viewer windows. Holding
+/// the `word_wrap` ref lets `viewer_set_word_wrap` update the checkbox in O(1) instead of walking
+/// the menu tree.
+pub struct ViewerMenuItems<R: Runtime> {
+    pub menu: Menu<R>,
+    pub word_wrap: CheckMenuItem<R>,
 }
 
 /// Maps a menu item ID to its command registry ID and scope.
@@ -500,6 +524,24 @@ pub struct MenuState<R: Runtime> {
     /// Context for the most recent breadcrumb / volume context menu's eject item.
     /// Cleared (volume_id empty) when the menu was built without an ejectable target.
     pub volume_eject_context: Mutex<VolumeEjectMenuContext>,
+    /// The main app menu, cloned at startup before `app.set_menu()`. `app.set_menu()` swaps the
+    /// app-level menu bar back to this when the main / Settings / Debug window gains focus. The
+    /// clone shares the same underlying items (Tauri's `Menu` is a reference-counted handle), so
+    /// the stored item refs in the fields above keep mutating the live menu.
+    #[cfg(target_os = "macos")]
+    pub main_menu: Mutex<Option<Menu<R>>>,
+    /// The shared viewer menu, built once at startup. Installed via `app.set_menu()` on viewer
+    /// focus-gain.
+    #[cfg(target_os = "macos")]
+    pub viewer_menu: Mutex<Option<Menu<R>>>,
+    /// Which app-level menu is installed right now. Lets `activate_window_menu` skip redundant
+    /// swaps.
+    #[cfg(target_os = "macos")]
+    pub active_menu_kind: Mutex<ActiveMenuKind>,
+    /// The viewer menu's `Word wrap` CheckMenuItem, captured at build time so `viewer_set_word_wrap`
+    /// updates it in O(1) without a tree walk.
+    #[cfg(target_os = "macos")]
+    pub viewer_word_wrap: Mutex<Option<CheckMenuItem<R>>>,
 }
 
 impl<R: Runtime> Default for MenuState<R> {
@@ -524,6 +566,14 @@ impl<R: Runtime> Default for MenuState<R> {
             sort_submenu: Mutex::new(None),
             network_host_context: Mutex::new(NetworkHostMenuContext::default()),
             volume_eject_context: Mutex::new(VolumeEjectMenuContext::default()),
+            #[cfg(target_os = "macos")]
+            main_menu: Mutex::new(None),
+            #[cfg(target_os = "macos")]
+            viewer_menu: Mutex::new(None),
+            #[cfg(target_os = "macos")]
+            active_menu_kind: Mutex::new(ActiveMenuKind::default()),
+            #[cfg(target_os = "macos")]
+            viewer_word_wrap: Mutex::new(None),
         }
     }
 }

@@ -38,6 +38,20 @@ pub fn cleanup_macos_menus() {
     super::macos::cleanup_macos_menus();
 }
 
+/// Runs [`cleanup_macos_menus`] on the main thread, for callers running on a Tauri command thread.
+///
+/// `cleanup_macos_menus` (and `set_macos_menu_icons`) touch AppKit and must run on the main thread.
+/// At startup `lib.rs` already runs in the `setup` hook on the main thread, so it calls them
+/// directly; Tauri command handlers run on a worker thread, so they hop via `run_on_main_thread`.
+/// Fire-and-forget: the cleanup is a UI tidy-up, so a failed hop only leaves the OS-injected Edit
+/// items in place, never a broken state.
+#[cfg(target_os = "macos")]
+pub fn cleanup_macos_menus_from_command<R: Runtime>(app: &AppHandle<R>) {
+    if let Err(e) = app.run_on_main_thread(cleanup_macos_menus) {
+        log::warn!(target: "menu", "Failed to dispatch macOS menu cleanup to the main thread: {e}");
+    }
+}
+
 /// Sets SF Symbol icons on menu items post-construction via native AppKit API.
 ///
 /// Tauri's menu API doesn't support SF Symbols, so we walk the NSMenu hierarchy after

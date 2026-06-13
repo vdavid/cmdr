@@ -770,9 +770,22 @@ export const commands = {
     typedError<null, ViewerError>(
       __TAURI_INVOKE('viewer_write_range_to_file', { sessionId, readId, anchor, focus, destPath }),
     ),
-  // Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
+  /**
+   *  Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
+   *
+   *  macOS has no per-window menus (one app-level menu bar, tauri-apps/tauri#5768): `window.set_menu`
+   *  is a no-op there. Instead the viewer menu is built once at startup and swapped app-level via
+   *  `activate_window_menu("viewer")` on the viewer's focus-gain, so this command is a no-op on macOS.
+   *  Linux keeps its working per-window menu.
+   */
   viewerSetupMenu: (label: string) => typedError<null, string>(__TAURI_INVOKE('viewer_setup_menu', { label })),
-  // Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard).
+  /**
+   *  Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard).
+   *
+   *  On macOS the viewer menu is shared app-level (one menu bar), so we flip the single stored
+   *  `CheckMenuItem` ref in `MenuState` directly (O(1), no tree walk). On Linux the menu is per-window,
+   *  so we walk that window's menu to find the item.
+   */
   viewerSetWordWrap: (label: string, checked: boolean) =>
     typedError<null, string>(__TAURI_INVOKE('viewer_set_word_wrap', { label, checked })),
   /**

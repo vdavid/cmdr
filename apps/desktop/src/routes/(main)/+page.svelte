@@ -29,7 +29,7 @@
         checkFullDiskAccess,
         listen,
         type UnlistenFn,
-        setMenuContext,
+        activateWindowMenu,
         getWindowTitle,
         registerKnownDialogs,
         onViewModeChanged,
@@ -859,7 +859,7 @@
         try {
             const { getCurrentWindow } = await import('@tauri-apps/api/window')
             unlistenWindowFocus = await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-                void setMenuContext(focused ? 'explorer' : 'other')
+                void activateWindowMenu(focused ? 'main' : 'other')
             })
         } catch {
             // Not in Tauri environment

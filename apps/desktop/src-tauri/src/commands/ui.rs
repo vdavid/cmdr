@@ -670,13 +670,116 @@ pub fn set_reopen_closed_tab_enabled<R: Runtime>(app: AppHandle<R>, enabled: boo
     item.set_enabled(enabled).map_err(|e| e.to_string())
 }
 
+/// Activates the right app menu for the window that just gained focus.
+///
+/// `kind` is one of:
+/// - `"main"`: the main file explorer gained focus. On macOS, swap the app-level menu bar back to
+///   the main menu (if a different menu is installed), then enable all explorer items.
+/// - `"viewer"`: a viewer window gained focus. On macOS, swap to the shared viewer menu. No-op on
+///   Linux (viewer windows carry their own per-window menu).
+/// - `"other"`: Settings or Debug gained focus. On macOS, swap to the main menu, then disable
+///   explorer items (Settings / Debug reuse the main menu with items greyed out).
+///
+/// On macOS the menu bar is app-level (one bar, tauri-apps/tauri#5768), so we swap it via
+/// `app.set_menu()` on focus-gain. `active_menu_kind` tracks the installed menu so we skip redundant
+/// swaps. After every swap we re-run `cleanup_macos_menus` (macOS re-injects Edit items) and, when
+/// swapping back to the main menu, re-apply SF Symbol icons (they don't reliably survive a swap).
+#[tauri::command]
+#[specta::specta]
+pub fn activate_window_menu<R: Runtime>(app: AppHandle<R>, kind: String) -> Result<(), String> {
+    match kind.as_str() {
+        "main" => {
+            #[cfg(target_os = "macos")]
+            swap_to_main_menu(&app);
+            set_menu_context(app, "explorer".to_string())
+        }
+        "viewer" => {
+            #[cfg(target_os = "macos")]
+            swap_to_viewer_menu(&app);
+            #[cfg(not(target_os = "macos"))]
+            let _ = &app;
+            Ok(())
+        }
+        "other" => {
+            #[cfg(target_os = "macos")]
+            swap_to_main_menu(&app);
+            set_menu_context(app, "other".to_string())
+        }
+        other => Err(format!("Unknown window menu kind: {other}")),
+    }
+}
+
+/// Swaps the app-level menu bar to the main menu, if a different menu is installed.
+///
+/// After the swap, re-runs the macOS Edit-item cleanup and re-applies SF Symbol icons (neither
+/// reliably survives `app.set_menu()`). Skips all of this when the main menu is already active.
+#[cfg(target_os = "macos")]
+fn swap_to_main_menu<R: Runtime>(app: &AppHandle<R>) {
+    use crate::menu::ActiveMenuKind;
+    let menu_state = app.state::<MenuState<R>>();
+
+    {
+        let mut active = menu_state.active_menu_kind.lock_ignore_poison();
+        if *active == ActiveMenuKind::Main {
+            return;
+        }
+        let main_menu = menu_state.main_menu.lock_ignore_poison();
+        let Some(main_menu) = main_menu.as_ref() else {
+            log::warn!(target: "menu", "main menu not stored; cannot swap app menu back to main");
+            return;
+        };
+        if let Err(e) = app.set_menu(main_menu.clone()) {
+            log::warn!(target: "menu", "Failed to swap app menu to main: {e}");
+            return;
+        }
+        *active = ActiveMenuKind::Main;
+    }
+
+    // macOS re-injects Edit items on every `set_menu`, and SF Symbol icons don't survive the swap,
+    // so re-run both on the main thread (mirrors the startup ordering in `lib.rs`).
+    crate::menu::cleanup_macos_menus_from_command(app);
+    if let Err(e) = app.run_on_main_thread(crate::menu::set_macos_menu_icons) {
+        log::warn!(target: "menu", "Failed to re-apply macOS menu icons after swap: {e}");
+    }
+}
+
+/// Swaps the app-level menu bar to the shared viewer menu, if a different menu is installed.
+///
+/// After the swap, re-runs the macOS Edit-item cleanup. Skips all of this when the viewer menu is
+/// already active.
+#[cfg(target_os = "macos")]
+fn swap_to_viewer_menu<R: Runtime>(app: &AppHandle<R>) {
+    use crate::menu::ActiveMenuKind;
+    let menu_state = app.state::<MenuState<R>>();
+
+    {
+        let mut active = menu_state.active_menu_kind.lock_ignore_poison();
+        if *active == ActiveMenuKind::Viewer {
+            return;
+        }
+        let viewer_menu = menu_state.viewer_menu.lock_ignore_poison();
+        let Some(viewer_menu) = viewer_menu.as_ref() else {
+            log::warn!(target: "menu", "viewer menu not stored; cannot swap app menu to viewer");
+            return;
+        };
+        if let Err(e) = app.set_menu(viewer_menu.clone()) {
+            log::warn!(target: "menu", "Failed to swap app menu to viewer: {e}");
+            return;
+        }
+        *active = ActiveMenuKind::Viewer;
+    }
+
+    crate::menu::cleanup_macos_menus_from_command(app);
+}
+
 /// Enables or disables explorer-scoped menu items based on the current context.
 /// - `"explorer"`: all menu items enabled (main file explorer has focus)
 /// - `"other"`: all non-App items disabled except Close tab (⌘W), which doubles as "close the
 ///   focused window" (standard macOS behavior)
-#[tauri::command]
-#[specta::specta]
-pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<(), String> {
+///
+/// Private helper behind `activate_window_menu`: the focus-gain command owns the menu swap (macOS)
+/// and then calls this to set the per-item enabled state.
+fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<(), String> {
     let enabled = context == "explorer";
     let menu_state = app.state::<MenuState<R>>();
 

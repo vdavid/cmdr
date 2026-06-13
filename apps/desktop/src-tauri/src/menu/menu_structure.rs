@@ -31,7 +31,7 @@ use super::{
     FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, MenuItems,
     NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
     SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID,
-    ViewMode,
+    ViewMode, ViewerMenuItems,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -287,7 +287,11 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(
 }
 
 /// Builds a menu for viewer windows (built from scratch on all platforms).
-pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
+///
+/// Returns the menu plus the `Word wrap` CheckMenuItem ref so the caller can flip its checked state
+/// in O(1) (see `ViewerMenuItems`). On macOS the menu is installed app-level via `app.set_menu()`;
+/// on Linux it's a per-window menu (`window.set_menu()`).
+pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<ViewerMenuItems<R>> {
     let menu = Menu::new(app)?;
 
     #[cfg(target_os = "macos")]
@@ -330,8 +334,10 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
     menu.append(&edit_menu)?;
 
     // --- View menu ---
-    let word_wrap_item = CheckMenuItem::with_id(app, VIEWER_WORD_WRAP_ID, "Word wrap", true, false, None::<&str>)?;
-    let view_submenu = Submenu::with_items(app, "View", true, &[&word_wrap_item])?;
+    // `word_wrap` is returned so the caller (and `viewer_set_word_wrap`) can flip its checked state
+    // directly without a tree walk.
+    let word_wrap = CheckMenuItem::with_id(app, VIEWER_WORD_WRAP_ID, "Word wrap", true, false, None::<&str>)?;
+    let view_submenu = Submenu::with_items(app, "View", true, &[&word_wrap])?;
     menu.append(&view_submenu)?;
 
     #[cfg(target_os = "macos")]
@@ -353,7 +359,7 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
         menu.append(&help_menu)?;
     }
 
-    Ok(menu)
+    Ok(ViewerMenuItems { menu, word_wrap })
 }
 
 /// Builds a context menu for a tab.

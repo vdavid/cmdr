@@ -13,6 +13,7 @@
         viewerSetWordWrap,
         isIpcError,
         onViewerWordWrapToggled,
+        activateWindowMenu,
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
@@ -194,6 +195,7 @@
     let unlistenMcpClose: UnlistenFn | undefined
     let unlistenMcpFocus: UnlistenFn | undefined
     let unlistenWordWrap: UnlistenFn | undefined
+    let unlistenWindowFocus: UnlistenFn | undefined
 
     const textWidthTracker = createTextWidthTracker({
         getContentRef: () => scroll.contentRef,
@@ -579,6 +581,22 @@
             toggleWordWrap(true)
         })
 
+        // On macOS the app-level menu bar is shared across windows, so each window swaps in its
+        // own menu when it gains focus. A freshly-opened viewer window is already focused, so
+        // `onFocusChanged` won't fire for this initial focus — activate the viewer menu explicitly
+        // here, then sync the shared word-wrap checkbox to this viewer's own state.
+        void activateWindowMenu('viewer')
+        viewerSetWordWrap(windowLabel, scroll.wordWrap).catch(() => {})
+
+        // The listener covers subsequent focus regains (clicking back to this viewer), re-syncing
+        // the shared checkbox since multiple viewers can have different word-wrap states.
+        unlistenWindowFocus = await getCurrentWindow().onFocusChanged(({ payload: focused }: { payload: boolean }) => {
+            if (focused) {
+                void activateWindowMenu('viewer')
+                viewerSetWordWrap(windowLabel, scroll.wordWrap).catch(() => {})
+            }
+        })
+
         error = ''
         errorIsTimeout = false
     }
@@ -610,6 +628,7 @@
         unlistenMcpClose?.()
         unlistenMcpFocus?.()
         unlistenWordWrap?.()
+        unlistenWindowFocus?.()
     }
 
     onMount(async () => {

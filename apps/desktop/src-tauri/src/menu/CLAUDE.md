@@ -26,9 +26,16 @@ labels with user-customized shortcuts, and enables/disables items based on windo
   directly. Sort items emit `"menu-sort"`; close-tab and "Open with" have their own paths. The four sort columns and the
   `…` selection items are still registered in `menu_id_to_command` / `MenuState.items` only so user accelerators flow
   through the generic update path.
-- **File-scoped commands are dual-guarded**: `set_menu_context("other")` greys them out (visual hint only); the real
+- **File-scoped commands are dual-guarded**: `activate_window_menu("other")` greys them out (visual hint only); the real
   guard is `main_window.is_focused()` in `on_menu_event` before emitting. Both are needed: accelerators fire even when
   items look disabled on some platforms.
+- **macOS swaps the app menu bar on focus-gain (`activate_window_menu`); Linux uses per-window menus.** macOS has one
+  app-level menu bar (tauri-apps/tauri#5768), so each window's focus handler swaps `app.set_menu()` between the main
+  menu and the viewer menu (stored in `MenuState`); `active_menu_kind` skips redundant swaps. After every
+  swap re-run `cleanup_macos_menus` (Edit items get re-injected); swapping back to main also re-applies
+  `set_macos_menu_icons` (SF Symbols don't survive `app.set_menu()`). `window.set_menu()` is a macOS no-op, so
+  `viewer_setup_menu` early-returns there and `viewer_set_word_wrap` flips the stored `viewer_word_wrap` CheckMenuItem
+  (O(1)). See [DETAILS.md](DETAILS.md).
 - **Custom (not Predefined) MenuItems for Cut/Copy/Paste/Move here/Select all**: in non-main windows these forward the
   native `copy:`/`cut:`/`paste:`/`selectAll:` selector via `send_native_edit_action()`; without it ⌘A and clipboard are
   dead in settings/viewer text fields. ⌘A on the main window routes through `execute-command` (frontend checks

@@ -107,11 +107,44 @@ while the left pane is active emits `view-mode-changed` with `pane: "right"`, an
 updates the right pane's mode without touching focus. The frontend then pushes
 `update_view_mode_menu` so the check states stay consistent.
 
-### Context-aware enable/disable
+### Per-window menu activation (`activate_window_menu`)
 
-`set_menu_context("explorer" | "other")` enables/disables file-scoped menu items. Called by the
-frontend when Settings or file viewer gains/loses focus. Iterates the `items` HashMap and sets
-`enabled` on each. This is a visual hint reinforcing the focus guard in `on_menu_event`.
+Each window's frontend focus handler calls `activate_window_menu(kind)` on focus-gain, with `kind`
+one of `"main"` (main explorer), `"viewer"` (a file viewer), or `"other"` (Settings / Debug). The
+command does two things: pick the right app menu (macOS), then set per-item enabled state.
+
+On macOS there's a single app-level menu bar (no per-window menus, tauri-apps/tauri#5768), so the
+menu is swapped wholesale via `app.set_menu()`:
+
+- The **main menu** is cloned at startup (before `app.set_menu()`) and stored in `MenuState.main_menu`.
+  The clone shares the same underlying items (Tauri's `Menu` is a reference-counted handle), so the
+  item refs stored in `MenuState` keep mutating the live menu after a swap-back.
+- The **viewer menu** is built once at startup (`build_viewer_menu`) and stored in
+  `MenuState.viewer_menu`, with its `Word wrap` CheckMenuItem ref in `MenuState.viewer_word_wrap`.
+- `MenuState.active_menu_kind` tracks which menu is installed, so a same-kind focus event (viewer →
+  viewer, main → main) skips the swap entirely.
+- `"main"` and `"other"` install the main menu; `"viewer"` installs the viewer menu. After any swap
+  we re-run `cleanup_macos_menus` (macOS re-injects Edit items on every `set_menu`), and on a
+  swap-back to the main menu we also re-apply `set_macos_menu_icons` (SF Symbols don't survive
+  `app.set_menu()`). Both run on the main thread via `run_on_main_thread`, queued FIFO after Tauri's
+  own main-thread menu install, so ordering is install → cleanup → icons.
+
+On Linux `activate_window_menu` skips the swap (viewer windows carry their own per-window menu set by
+`viewer_setup_menu` / `window.set_menu()`) and only does the enable/disable step.
+
+The enable/disable step is the private `set_menu_context("explorer" | "other")` helper: it iterates
+the `items` HashMap and sets `enabled` on each file-scoped item (`"main"` → explorer/enabled,
+`"other"` → disabled). This is a visual hint reinforcing the focus guard in `on_menu_event`.
+
+**Gotcha: `onFocusChanged` doesn't fire for a window's initial focus.** A window opens already
+focused, so its frontend focus listener (registered in `onMount`) misses the first focus and only
+sees later regains. The main window is fine (its menu is installed at startup) and Settings is fine
+(opening it blurs main, whose `"other"` handler already greys the shared menu into the state Settings
+wants). But the viewer needs its own menu swapped in, which no other window's handler does, so
+`routes/viewer/+page.svelte` calls `activateWindowMenu("viewer")` explicitly on open in addition to
+the focus listener. The ordering is race-free: a viewer's `onMount` only runs after its webview
+loads, always after the main window's instant blur, so `"viewer"` wins; and macOS fires `resignKey`
+before `becomeKey`, so the gaining window's handler runs last on a window-to-window switch too.
 
 ### macOS cleanup (objc2)
 
@@ -188,7 +221,8 @@ shortcut dispatch path covers Linux.
 macOS adds: cmdr (app menu), Window. See the menu item ID constants in `mod.rs` for the full item list.
 
 Viewer windows get a minimal menu: File (Close), Edit (clipboard), View (Word wrap), and on macOS
-also Window and Help.
+also Window and Help. On Linux it's a per-window menu; on macOS it's installed app-level on viewer
+focus-gain (see "Per-window menu activation" above).
 
 ## Mapping functions
 

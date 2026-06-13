@@ -628,6 +628,13 @@ pub fn run() {
                 ViewMode::Brief,
                 has_existing_license,
             )?;
+            // On macOS, keep a clone of the main menu so `activate_window_menu` can swap the
+            // app-level menu bar back to it on main / Settings / Debug focus-gain. The clone shares
+            // the same underlying items (Tauri's `Menu` is reference-counted), so the item refs
+            // stored below keep mutating the live menu. macOS has a single app-level menu bar
+            // (tauri-apps/tauri#5768), so there's no per-window menu to set here.
+            #[cfg(target_os = "macos")]
+            let main_menu_clone = menu_items.menu.clone();
             app.set_menu(menu_items.menu)?;
 
             // Remove macOS system-injected Edit menu items and register Help menu for search
@@ -656,6 +663,18 @@ pub fn run() {
             *menu_state.reopen_closed_tab.lock_ignore_poison() = Some(menu_items.reopen_closed_tab);
             *menu_state.items.lock_ignore_poison() = menu_items.items;
             *menu_state.sort_submenu.lock_ignore_poison() = Some(menu_items.sort_submenu);
+
+            // On macOS, build the shared viewer menu once and store it (plus the main-menu clone and
+            // the viewer word-wrap ref). `activate_window_menu` swaps the app-level menu bar between
+            // these on window focus-gain; `viewer_set_word_wrap` flips the stored CheckMenuItem.
+            #[cfg(target_os = "macos")]
+            {
+                *menu_state.main_menu.lock_ignore_poison() = Some(main_menu_clone);
+                let viewer_menu_items = menu::build_viewer_menu(app.handle())?;
+                *menu_state.viewer_word_wrap.lock_ignore_poison() = Some(viewer_menu_items.word_wrap);
+                *menu_state.viewer_menu.lock_ignore_poison() = Some(viewer_menu_items.menu);
+            }
+
             app.manage(menu_state);
 
             // Set window title based on license status

@@ -9,6 +9,7 @@ use crate::file_viewer::{
 };
 use log::debug;
 use tauri::Manager;
+#[cfg(not(target_os = "macos"))]
 use tauri::menu::MenuItemKind;
 
 const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
@@ -253,40 +254,73 @@ pub async fn viewer_reload(session_id: String) -> Result<(), String> {
 }
 
 /// Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
+///
+/// macOS has no per-window menus (one app-level menu bar, tauri-apps/tauri#5768): `window.set_menu`
+/// is a no-op there. Instead the viewer menu is built once at startup and swapped app-level via
+/// `activate_window_menu("viewer")` on the viewer's focus-gain, so this command is a no-op on macOS.
+/// Linux keeps its working per-window menu.
 #[tauri::command]
 #[specta::specta]
 pub fn viewer_setup_menu(app_handle: tauri::AppHandle, label: String) -> Result<(), String> {
-    let window = app_handle
-        .get_webview_window(&label)
-        .ok_or_else(|| format!("Window '{}' not found", label))?;
-    let menu = crate::menu::build_viewer_menu(&app_handle).map_err(|e| e.to_string())?;
-    window.set_menu(menu).map_err(|e| e.to_string())?;
-    Ok(())
+    #[cfg(target_os = "macos")]
+    {
+        let _ = (&app_handle, &label);
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let window = app_handle
+            .get_webview_window(&label)
+            .ok_or_else(|| format!("Window '{}' not found", label))?;
+        let viewer_menu = crate::menu::build_viewer_menu(&app_handle).map_err(|e| e.to_string())?;
+        window.set_menu(viewer_menu.menu).map_err(|e| e.to_string())?;
+        Ok(())
+    }
 }
 
 /// Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard).
+///
+/// On macOS the viewer menu is shared app-level (one menu bar), so we flip the single stored
+/// `CheckMenuItem` ref in `MenuState` directly (O(1), no tree walk). On Linux the menu is per-window,
+/// so we walk that window's menu to find the item.
 #[tauri::command]
 #[specta::specta]
 pub fn viewer_set_word_wrap(app_handle: tauri::AppHandle, label: String, checked: bool) -> Result<(), String> {
-    let window = app_handle
-        .get_webview_window(&label)
-        .ok_or_else(|| format!("Window '{}' not found", label))?;
-    let Some(menu) = window.menu() else {
-        return Ok(());
-    };
-    for item in menu.items().map_err(|e| e.to_string())? {
-        if let MenuItemKind::Submenu(submenu) = item
-            && submenu.text().map_err(|e| e.to_string())? == "View"
-        {
-            for sub_item in submenu.items().map_err(|e| e.to_string())? {
-                if let MenuItemKind::Check(check) = sub_item
-                    && check.id().as_ref() == crate::menu::VIEWER_WORD_WRAP_ID
-                {
-                    check.set_checked(checked).map_err(|e| e.to_string())?;
-                    return Ok(());
+    #[cfg(target_os = "macos")]
+    {
+        use crate::ignore_poison::IgnorePoison;
+        let _ = &label;
+        let menu_state = app_handle.state::<crate::menu::MenuState<tauri::Wry>>();
+        let guard = menu_state.viewer_word_wrap.lock_ignore_poison();
+        if let Some(check) = guard.as_ref() {
+            check.set_checked(checked).map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let window = app_handle
+            .get_webview_window(&label)
+            .ok_or_else(|| format!("Window '{}' not found", label))?;
+        let Some(menu) = window.menu() else {
+            return Ok(());
+        };
+        for item in menu.items().map_err(|e| e.to_string())? {
+            if let MenuItemKind::Submenu(submenu) = item
+                && submenu.text().map_err(|e| e.to_string())? == "View"
+            {
+                for sub_item in submenu.items().map_err(|e| e.to_string())? {
+                    if let MenuItemKind::Check(check) = sub_item
+                        && check.id().as_ref() == crate::menu::VIEWER_WORD_WRAP_ID
+                    {
+                        check.set_checked(checked).map_err(|e| e.to_string())?;
+                        return Ok(());
+                    }
                 }
             }
         }
+        Ok(())
     }
-    Ok(())
 }
