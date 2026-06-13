@@ -4,10 +4,8 @@ Linux volume and location discovery, plus live mount/unmount watching via inotif
 
 ## Key files
 
-| File | Purpose |
-|---|---|
-| `mod.rs` | `LocationInfo`, `LocationCategory`, `VolumeSpaceInfo` types (mirrors macOS `volumes/mod.rs` JSON shape). `list_locations()`, `get_volume_space()`, `get_mounted_volumes()`, cloud drive detection, GVFS SMB share detection. Uses `linux_mounts::parse_proc_mounts()` for mount enumeration. |
-| `watcher.rs` | Two inotify watchers: `/proc/mounts` for standard mounts, `/run/user/<uid>/gvfs/` for GVFS SMB shares. Detects mount/unmount by diffing against known state. Registers/unregisters with `VolumeManager`. Emits `volume-mounted` / `volume-unmounted` Tauri events. |
+- **`mod.rs`**: `LocationInfo`, `LocationCategory`, `VolumeSpaceInfo` types (mirrors macOS `volumes/mod.rs` JSON shape). `list_locations()`, `get_volume_space()`, `get_mounted_volumes()`, cloud drive detection, GVFS SMB share detection. Uses `linux_mounts::parse_proc_mounts()` for mount enumeration.
+- **`watcher.rs`**: Two inotify watchers: `/proc/mounts` for standard mounts, `/run/user/<uid>/gvfs/` for GVFS SMB shares. Detects mount/unmount by diffing against known state. Registers/unregisters with `VolumeManager`. Emits `volume-mounted` / `volume-unmounted` Tauri events.
 
 ## Location categories
 

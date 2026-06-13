@@ -12,13 +12,14 @@ this up. Holes are marked explicitly. Treat this as a starting point and an agen
 
 Rename the user-visible data directories from bundle-id names to plain names:
 
-| Today                                                                                       | Target                                |
-| ------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `~/Library/Application Support/com.veszelovszki.cmdr/`                                      | `~/Library/Application Support/cmdr/` |
-| `~/Library/Application Support/com.veszelovszki.cmdr-dev/`                                  | `.../cmdr-dev/`                       |
-| `~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>/` (per-worktree)            | `.../cmdr-dev-<slug>/`                |
-| `~/Library/Logs/com.veszelovszki.cmdr/`                                                     | `~/Library/Logs/cmdr/`                |
-| `~/Library/Caches/com.veszelovszki.cmdr/` (once the drive index moves there per agent-spec) | `~/Library/Caches/cmdr/`              |
+Each maps a current path to its target:
+
+- **`~/Library/Application Support/com.veszelovszki.cmdr/`**: `~/Library/Application Support/cmdr/`
+- **`~/Library/Application Support/com.veszelovszki.cmdr-dev/`**: `.../cmdr-dev/`
+- **`~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>/` (per-worktree)**: `.../cmdr-dev-<slug>/`
+- **`~/Library/Logs/com.veszelovszki.cmdr/`**: `~/Library/Logs/cmdr/`
+- **`~/Library/Caches/com.veszelovszki.cmdr/` (once the drive index moves there per agent-spec)**:
+  `~/Library/Caches/cmdr/`
 
 Motivation: the `com.veszelovszki` prefix adds no value to the user or the developer; plain `cmdr` is friendlier. This
 is an aesthetic and ergonomics change.

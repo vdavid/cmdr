@@ -10,10 +10,8 @@ Thin read-only settings loader used during Rust startup. The frontend owns all s
 
 ## Key files
 
-| File | Purpose |
-|---|---|
-| `mod.rs` | Re-exports `load_settings` from `loader` |
-| `loader.rs` | `Settings` struct + `load_settings`: reads `settings.json`, falls back to defaults |
+- **`mod.rs`**: Re-exports `load_settings` from `loader`
+- **`loader.rs`**: `Settings` struct + `load_settings`: reads `settings.json`, falls back to defaults
 
 ## Settings struct
 

@@ -4,13 +4,11 @@ Natural-language → `SearchQuery` translation pipeline: a classification prompt
 
 ## File map
 
-| File | Purpose |
-|------|---------|
-| `mod.rs` | Re-exports the public surface (`build_classification_prompt`, `parse_llm_response`, `build_search_query`, `build_translate_display`, `build_translated_query`, `generate_caveat`, `iso_date_to_timestamp`, `fallback_keywords`, `ParsedLlmResponse`) |
-| `prompt.rs` | `CLASSIFICATION_PROMPT` const + `build_classification_prompt(current_type)`. Substitutes `{TODAY}` + `{CURRENT_TYPE}` at runtime. Instructs the LLM to emit `keywords / type / time / size / scope / exclude / folders / note / label` one-per-line. `folders` is the file-vs-folder dimension and is OPTIONAL: `current_type` (`Some(true)` folders / `Some(false)` files / `None` both) is surfaced as a context line so the model knows the user's current choice and that omitting `folders` keeps it |
-| `parser.rs` | `ParsedLlmResponse` + `parse_llm_response()`. First-colon split, enum validation (`validate_type` / `_time` / `_size` / `_folders`), unknown keys silently skipped. `fallback_keywords()` for total LLM failure: top-3 longest tokens > 2 chars |
-| `query_builder.rs` | Assembles `SearchQuery` from a `ParsedLlmResponse` by invoking `mappings/`. Also `generate_caveat`, `build_translate_display`, `build_translated_query`, `build_label`, and `iso_date_to_timestamp` (also called from `crate::mcp::executor`) |
-| `mappings/` | Pure LLM-enum → value conversions split by domain (`type_mapping`, `time_mapping`, `size_scope_mapping`, `keyword_mapping`) plus shared `KB/MB/GB` and `KNOWN_EXTENSIONS`. Single re-export hub via `mappings/mod.rs` |
+- **`mod.rs`**: Re-exports the public surface (`build_classification_prompt`, `parse_llm_response`, `build_search_query`, `build_translate_display`, `build_translated_query`, `generate_caveat`, `iso_date_to_timestamp`, `fallback_keywords`, `ParsedLlmResponse`)
+- **`prompt.rs`**: `CLASSIFICATION_PROMPT` const + `build_classification_prompt(current_type)`. Substitutes `{TODAY}` + `{CURRENT_TYPE}` at runtime. Instructs the LLM to emit `keywords / type / time / size / scope / exclude / folders / note / label` one-per-line. `folders` is the file-vs-folder dimension and is OPTIONAL: `current_type` (`Some(true)` folders / `Some(false)` files / `None` both) is surfaced as a context line so the model knows the user's current choice and that omitting `folders` keeps it
+- **`parser.rs`**: `ParsedLlmResponse` + `parse_llm_response()`. First-colon split, enum validation (`validate_type` / `_time` / `_size` / `_folders`), unknown keys silently skipped. `fallback_keywords()` for total LLM failure: top-3 longest tokens > 2 chars
+- **`query_builder.rs`**: Assembles `SearchQuery` from a `ParsedLlmResponse` by invoking `mappings/`. Also `generate_caveat`, `build_translate_display`, `build_translated_query`, `build_label`, and `iso_date_to_timestamp` (also called from `crate::mcp::executor`)
+- **`mappings/`**: Pure LLM-enum → value conversions split by domain (`type_mapping`, `time_mapping`, `size_scope_mapping`, `keyword_mapping`) plus shared `KB/MB/GB` and `KNOWN_EXTENSIONS`. Single re-export hub via `mappings/mod.rs`
 
 ## Conventions
 

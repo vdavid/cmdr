@@ -356,12 +356,11 @@ dynamic + customizable-on-click) all live in M1–M4.
 
 ## Testing summary
 
-| Layer            | What                                                                                                                                          |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit (TS)        | ShortcutChip modes/reactivity/unbound; reactive plural helper; palette three-cap + effective source; F-key bar command map; anchor-id builder |
-| a11y (tier 3)    | ShortcutChip clickable + static; re-run affected sections' existing a11y tests                                                                |
-| E2E (Playwright) | One deep-link spec (open → section → row visible); existing settings + palette specs stay green                                               |
-| Visual           | Component catalog section; MCP-driven screenshots of palette, F-key bar, toasts, Settings flash                                               |
+- **Unit (TS)**: ShortcutChip modes/reactivity/unbound; reactive plural helper; palette three-cap + effective source;
+  F-key bar command map; anchor-id builder
+- **a11y (tier 3)**: ShortcutChip clickable + static; re-run affected sections' existing a11y tests
+- **E2E (Playwright)**: One deep-link spec (open → section → row visible); existing settings + palette specs stay green
+- **Visual**: Component catalog section; MCP-driven screenshots of palette, F-key bar, toasts, Settings flash
 
 ## Risks / gotchas for the implementer
 

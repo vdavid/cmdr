@@ -7,14 +7,12 @@ state.
 
 ## The problem (benchmark data, 50k files)
 
-| Step                   | Time     |
-| ---------------------- | -------- |
-| Rust list_directory    | 308ms    |
-| JSON serialize (Rust)  | 18ms     |
-| IPC transfer (17.4 MB) | ~4,100ms |
-| JSON.parse (JS)        | 67ms     |
-| Svelte reactivity      | **9.5s** |
-| **Total**              | **~14s** |
+- **Rust list_directory**: 308ms
+- **JSON serialize (Rust)**: 18ms
+- **IPC transfer (17.4 MB)**: ~4,100ms
+- **JSON.parse (JS)**: 67ms
+- **Svelte reactivity**: **9.5s**
+- **Total**: **~14s**
 
 Even though we use virtual scrolling (only ~50-100 DOM elements), the `$derived(files)` computation still runs a filter
 over the entire array, and Svelte's reactivity system still processes the full array assignment internally.

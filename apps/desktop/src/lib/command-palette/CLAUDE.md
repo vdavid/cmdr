@@ -4,10 +4,8 @@ VS Code/Spotlight-style modal for searching and executing app commands via fuzzy
 
 ## Files
 
-| File                     | Purpose                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------- |
-| `CommandPalette.svelte`  | Modal UI: keyboard nav, mouse hover, fuzzy-highlighted results, recents on empty |
-| `CommandPalette.test.ts` | Vitest tests with mocked `$lib/commands` and `$lib/app-status-store`             |
+- **`CommandPalette.svelte`**: Modal UI: keyboard nav, mouse hover, fuzzy-highlighted results, recents on empty
+- **`CommandPalette.test.ts`**: Vitest tests with mocked `$lib/commands` and `$lib/app-status-store`
 
 ## Data flow
 

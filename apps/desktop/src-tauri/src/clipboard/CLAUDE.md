@@ -4,13 +4,11 @@ File clipboard operations: Cmd+C/X/V for files, with macOS system clipboard inte
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `mod.rs` | Re-exports; `#[cfg]`-driven switch between prod NSPasteboard and the E2E mock; exposes `snapshot_mock_clipboard` and `clear_mock_clipboard` under the E2E feature |
-| `pasteboard.rs` | macOS NSPasteboard FFI via `objc2`. Compiled when `target_os = "macos"` AND `playwright-e2e` is OFF. Honors `CMDR_CLIPBOARD_BACKEND=mock` at startup to delegate to the shared store without recompiling. |
-| `mock.rs` | In-process mock backend. Compiled when `target_os = "macos"` AND `playwright-e2e` is ON. Same fn signatures as `pasteboard.rs`. |
-| `store.rs` | `LazyLock<Mutex<Option<ClipboardEntry>>>` shared by both the mock module and the prod module's env-driven override. |
-| `state.rs` | Cut state management (`LazyLock<RwLock<Option<CutState>>>`) |
+- **`mod.rs`**: Re-exports; `#[cfg]`-driven switch between prod NSPasteboard and the E2E mock; exposes `snapshot_mock_clipboard` and `clear_mock_clipboard` under the E2E feature
+- **`pasteboard.rs`**: macOS NSPasteboard FFI via `objc2`. Compiled when `target_os = "macos"` AND `playwright-e2e` is OFF. Honors `CMDR_CLIPBOARD_BACKEND=mock` at startup to delegate to the shared store without recompiling.
+- **`mock.rs`**: In-process mock backend. Compiled when `target_os = "macos"` AND `playwright-e2e` is ON. Same fn signatures as `pasteboard.rs`.
+- **`store.rs`**: `LazyLock<Mutex<Option<ClipboardEntry>>>` shared by both the mock module and the prod module's env-driven override.
+- **`state.rs`**: Cut state management (`LazyLock<RwLock<Option<CutState>>>`)
 
 ## Key decisions
 

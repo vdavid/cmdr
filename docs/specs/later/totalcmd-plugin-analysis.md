@@ -643,12 +643,10 @@ You need to spawn the subprocess inside a sandbox profile derived from its decla
 
 **Honest numbers** (modern Mac/Linux, local pipes, small payloads):
 
-| Operation                                   | Overhead                     |
-| ------------------------------------------- | ---------------------------- |
-| stdio JSON-RPC roundtrip (single small msg) | ~50–200μs                    |
-| Native syscall (`readdir`, `stat`)          | ~1–10μs                      |
-| Function call into WASM                     | ~1μs (just-in-time compiled) |
-| Native function call (in-process)           | ~1ns                         |
+- **stdio JSON-RPC roundtrip (single small msg)**: ~50–200μs
+- **Native syscall (`readdir`, `stat`)**: ~1–10μs
+- **Function call into WASM**: ~1μs (just-in-time compiled)
+- **Native function call (in-process)**: ~1ns
 
 So MCP-over-stdio is **10–100× slower** than a syscall _per call_. In your "in-memory FS that's hit constantly" example:
 if Cmdr calls the plugin 100,000 times sequentially for a directory walk, you eat 5–20 seconds in pure IPC overhead.
@@ -741,13 +739,13 @@ UIs are awful. Lean on `manifest -> human-readable summary` translation; don't d
 
 **Reference points (positive examples):**
 
-| Project                            | How they do it                                                                                                                     |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **LSP** (Language Server Protocol) | JSON-RPC contract published by Microsoft. Clients in TS, Java, Rust, Go. Servers in any language. The protocol is the API.         |
-| **Tauri itself**                   | Rust core + TS frontend, share schema via `tauri-specta` (auto-generates TS types from Rust traits). You already use this for IPC. |
-| **Rspack / Turbopack**             | Rust core, JS plugin API via N-API + WASM. Two-tier perf.                                                                          |
-| **napi-rs / PyO3**                 | Rust libs exposed as Node/Python packages. Unified codebase.                                                                       |
-| **gRPC + protobuf / smithy**       | Define service in `.proto`, generate clients in 10+ languages. Industry standard.                                                  |
+- **LSP (Language Server Protocol)**: JSON-RPC contract published by Microsoft. Clients in TS, Java, Rust, Go. Servers
+  in any language. The protocol is the API.
+- **Tauri itself**: Rust core + TS frontend, share schema via `tauri-specta` (auto-generates TS types from Rust traits).
+  You already use this for IPC.
+- **Rspack / Turbopack**: Rust core, JS plugin API via N-API + WASM. Two-tier perf.
+- **napi-rs / PyO3**: Rust libs exposed as Node/Python packages. Unified codebase.
+- **gRPC + protobuf / smithy**: Define service in `.proto`, generate clients in 10+ languages. Industry standard.
 
 **Concrete shape for Cmdr:**
 
@@ -902,18 +900,16 @@ Key shape decisions:
 
 **Examples:**
 
-| Column                       | Aggregation                                         |
-| ---------------------------- | --------------------------------------------------- |
-| `size`                       | `sum` of descendants                                |
-| `count`                      | `count` of descendants                              |
-| `duration` (MediaTime)       | `sum` of seconds                                    |
-| `modified` newest            | `max`                                               |
-| `created` oldest             | `min`                                               |
-| `git status`                 | "any-modified", "any-conflict" → max severity       |
-| `error count`                | `sum`                                               |
-| `ai.summary`                 | LLM aggregates child summaries (custom)             |
-| `image.megapixels`           | `mean` (avg), or `sum` for "total pixels in folder" |
-| `language` (e.g. cloc-style) | "histogram" → top 1                                 |
+- **`size`**: `sum` of descendants
+- **`count`**: `count` of descendants
+- **`duration` (MediaTime)**: `sum` of seconds
+- **`modified` newest**: `max`
+- **`created` oldest**: `min`
+- **`git status`**: "any-modified", "any-conflict" → max severity
+- **`error count`**: `sum`
+- **`ai.summary`**: LLM aggregates child summaries (custom)
+- **`image.megapixels`**: `mean` (avg), or `sum` for "total pixels in folder"
+- **`language` (e.g. cloc-style)**: "histogram" → top 1
 
 **Shape:**
 

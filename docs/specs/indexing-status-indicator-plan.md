@@ -237,12 +237,11 @@ needed), but M2 depends on M1.
 
 ## Testing summary
 
-| Layer            | What                                                                                                                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Unit (Vitest)    | `tooltip.test.ts` contentEl contract (incl. singleton-steal); `eta.test.ts` pure ETA helpers; `dir-size-display.test.ts` updated copy; `SelectionInfo.dir-size-state.test.ts` updated assertions |
-| A11y (tier 3)    | New `IndexingStatusIndicator.a11y.test.ts`; deletions of the three obsolete a11y tests                                                                                                           |
-| E2E (Playwright) | `indexing.spec.ts` should pass unchanged (asserts numeric sizes); run it explicitly                                                                                                              |
-| Manual (MCP)     | Icon + tooltip during a real scan, both phases (scan, aggregation), reduced-motion spot check                                                                                                    |
+- **Unit (Vitest)**: `tooltip.test.ts` contentEl contract (incl. singleton-steal); `eta.test.ts` pure ETA helpers;
+  `dir-size-display.test.ts` updated copy; `SelectionInfo.dir-size-state.test.ts` updated assertions
+- **A11y (tier 3)**: New `IndexingStatusIndicator.a11y.test.ts`; deletions of the three obsolete a11y tests
+- **E2E (Playwright)**: `indexing.spec.ts` should pass unchanged (asserts numeric sizes); run it explicitly
+- **Manual (MCP)**: Icon + tooltip during a real scan, both phases (scan, aggregation), reduced-motion spot check
 
 ## Copy inventory (all sentence case, active voice)
 

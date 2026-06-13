@@ -5,14 +5,20 @@ Tauri binary launches (fixture creation, port-file reads, MCP client setup) live
 
 ## Files
 
-| File               | Purpose                                                                                                                                                                                                                                                                                   |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fixtures.ts`      | Builds the on-disk fixture tree the app opens at startup. macOS Playwright path: per-instance root at `/tmp/cmdr-e2e-fixtures-<instance>-<ts>/` with bulk `.dat` files hardlinked from a shared cache at `/tmp/cmdr-e2e-fixtures-cache/`. Linux Docker path: shared `/tmp/cmdr-e2e-<ts>/` |
-| `fixtures.test.ts` | Vitest suite for the fixture builder. Covers cache population race, hardlink cross-shard sharing, `EXDEV` fallback, recreate-text-files contract, legacy single-shard path                                                                                                                |
-| `port-file.ts`     | Reads `<data_dir>/mcp.port` and `<data_dir>/tauri-mcp.port` written by the Rust side and the wrapper. Exports `resolveMcpPort(dataDir)` with the canonical precedence: `CMDR_MCP_PORT` env → port file → throw `PortDiscoveryError`. Never falls back to the legacy 19224/19225           |
-| `mcp-client.ts`    | Lightweight MCP client wrapping `fetch` to the Cmdr MCP server. Spec files use this for tool calls and resource reads without re-implementing JSON-RPC                                                                                                                                    |
-| `mtp-fixtures.ts`  | Virtual MTP backing-dir composition for the MTP shard. Backed by `/tmp/cmdr-mtp-e2e-fixtures/` (one shared dir; MTP shard runs serialized for this reason)                                                                                                                                |
-| `smb-fixtures.ts`  | SMB virtual-host fixtures for the SMB E2E feature. Injects into the running Tauri process via the `smb-e2e` Cargo feature                                                                                                                                                                 |
+- **`fixtures.ts`**: Builds the on-disk fixture tree the app opens at startup. macOS Playwright path: per-instance root
+  at `/tmp/cmdr-e2e-fixtures-<instance>-<ts>/` with bulk `.dat` files hardlinked from a shared cache at
+  `/tmp/cmdr-e2e-fixtures-cache/`. Linux Docker path: shared `/tmp/cmdr-e2e-<ts>/`
+- **`fixtures.test.ts`**: Vitest suite for the fixture builder. Covers cache population race, hardlink cross-shard
+  sharing, `EXDEV` fallback, recreate-text-files contract, legacy single-shard path
+- **`port-file.ts`**: Reads `<data_dir>/mcp.port` and `<data_dir>/tauri-mcp.port` written by the Rust side and the
+  wrapper. Exports `resolveMcpPort(dataDir)` with the canonical precedence: `CMDR_MCP_PORT` env → port file → throw
+  `PortDiscoveryError`. Never falls back to the legacy 19224/19225
+- **`mcp-client.ts`**: Lightweight MCP client wrapping `fetch` to the Cmdr MCP server. Spec files use this for tool
+  calls and resource reads without re-implementing JSON-RPC
+- **`mtp-fixtures.ts`**: Virtual MTP backing-dir composition for the MTP shard. Backed by `/tmp/cmdr-mtp-e2e-fixtures/`
+  (one shared dir; MTP shard runs serialized for this reason)
+- **`smb-fixtures.ts`**: SMB virtual-host fixtures for the SMB E2E feature. Injects into the running Tauri process via
+  the `smb-e2e` Cargo feature
 
 ## Fixture builder contract
 

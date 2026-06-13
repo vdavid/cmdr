@@ -266,20 +266,30 @@ already collapsed navigation's string compares into `navigate.ts`; this is the p
 
 ### Namespace/prefix mechanics (KEEP – not capability guards; § Convert vs keep)
 
-| Site                                              | Why it's mechanics, not a guard                                                                                                                                                                                                                                                                                |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `navigate.ts:531`                                 | `currentVolumeId === 'network'` → on-network REFUSAL string. Stays (it's the L12 refusal source, already centralized in `navigate.ts` by Phase 3; could read `!caps.hasBackendListing` but the refusal MESSAGE is the contract – convert the gate only if it removes the literal without touching the string). |
-| `navigate.ts:267` (`validateMtpNavigation`)       | MTP path-scheme parsing + refusal. Path mechanics + L12 string. Keep.                                                                                                                                                                                                                                          |
-| `navigate.ts:645,693-694`                         | history-walk network host restore; drop-foreign-listings PREFIX (`smb://`/`search-results://`). Prefix mechanics – MAY read `caps.pathScheme` to derive the prefix (removes the literal), but the branch is namespace, not permission.                                                                         |
-| `snapshot-pane-navigation.ts:44-45`               | `isCrossVolumeNavigation` – the snapshot→real-path namespace TRIGGER (L5). Pure namespace mechanics; stays.                                                                                                                                                                                                    |
-| `DualPaneExplorer.svelte:456-466`                 | synthetic `smb://` path/name for the `network` virtual volume (not in backend `volumes`). Namespace synthesis. Keep.                                                                                                                                                                                           |
-| `DualPaneExplorer.svelte:624,1480,1530,1531`      | network-restore / mirror branches – `navigate({ to: { volumeId: 'network' } })` plumbing. Volume-id IDENTITY, not capability. Keep.                                                                                                                                                                            |
-| `VolumeBreadcrumb.svelte:108,110,489,212`         | synthetic `currentVolume` object + display label + network-disabled gate. DISPLAY + identity. Keep (see display note).                                                                                                                                                                                         |
-| `volume-grouping.ts:35,41,81` / `volume-tint:102` | `category === 'network'`/`'smbfs'` – kind CLASSIFICATION inputs (feed `volumeKindOf`). Keep as classifier internals.                                                                                                                                                                                           |
-| `app-status-store.ts:103,105,375,389`             | `=== 'network'` → skip path-resolution on persist (virtual paths aren't filesystem). Persistence mechanics. Keep.                                                                                                                                                                                              |
-| `initialization.ts:46`                            | `=== 'network'` → trust stored id (virtual volume, no `resolvePathVolume`). Startup mechanics. Keep.                                                                                                                                                                                                           |
-| `mtp-path-utils.ts`, `navigate.test.ts`, `*.test` | path parsing + test fixtures. Keep.                                                                                                                                                                                                                                                                            |
-| `TransferDialog.svelte:161`, `DebugHistoryPanel`  | `category !== 'network'` volume-list filter (display); debug panel. Keep.                                                                                                                                                                                                                                      |
+- **`navigate.ts:531`**: `currentVolumeId === 'network'` → on-network REFUSAL string. Stays (it's the L12 refusal
+  source, already centralized in `navigate.ts` by Phase 3; could read `!caps.hasBackendListing` but the refusal MESSAGE
+  is the contract – convert the gate only if it removes the literal without touching the string).
+- **`navigate.ts:267` (`validateMtpNavigation`)**: MTP path-scheme parsing + refusal. Path mechanics + L12 string. Keep.
+- **`navigate.ts:645,693-694`**: history-walk network host restore; drop-foreign-listings PREFIX
+  (`smb://`/`search-results://`). Prefix mechanics – MAY read `caps.pathScheme` to derive the prefix (removes the
+  literal), but the branch is namespace, not permission.
+- **`snapshot-pane-navigation.ts:44-45`**: `isCrossVolumeNavigation` – the snapshot→real-path namespace TRIGGER (L5).
+  Pure namespace mechanics; stays.
+- **`DualPaneExplorer.svelte:456-466`**: synthetic `smb://` path/name for the `network` virtual volume (not in backend
+  `volumes`). Namespace synthesis. Keep.
+- **`DualPaneExplorer.svelte:624,1480,1530,1531`**: network-restore / mirror branches –
+  `navigate({ to: { volumeId: 'network' } })` plumbing. Volume-id IDENTITY, not capability. Keep.
+- **`VolumeBreadcrumb.svelte:108,110,489,212`**: synthetic `currentVolume` object + display label + network-disabled
+  gate. DISPLAY + identity. Keep (see display note).
+- **`volume-grouping.ts:35,41,81` / `volume-tint:102`**: `category === 'network'`/`'smbfs'` – kind CLASSIFICATION inputs
+  (feed `volumeKindOf`). Keep as classifier internals.
+- **`app-status-store.ts:103,105,375,389`**: `=== 'network'` → skip path-resolution on persist (virtual paths aren't
+  filesystem). Persistence mechanics. Keep.
+- **`initialization.ts:46`**: `=== 'network'` → trust stored id (virtual volume, no `resolvePathVolume`). Startup
+  mechanics. Keep.
+- **`mtp-path-utils.ts`, `navigate.test.ts`, `*.test`**: path parsing + test fixtures. Keep.
+- **`TransferDialog.svelte:161`, `DebugHistoryPanel`**: `category !== 'network'` volume-list filter (display); debug
+  panel. Keep.
 
 ### Display logic (KEEP – breadcrumb labels, view selection)
 

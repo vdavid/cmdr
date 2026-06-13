@@ -18,24 +18,33 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 
 ## Files
 
-| File                               | Purpose                                                                                                                                                                                                                                                                |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SearchDialog.svelte`              | Thin Search-specific wrapper: builds a `QueryDialogConfig` and mounts `lib/query-ui/QueryDialog.svelte`. Owns index lifecycle, AI translation filter writes, snapshot promotion, recent-search add/remove, and the system-dir exclude tooltip. Zero orchestration code |
-| `SearchResultsView.svelte`         | Pane view for `search-results://` snapshot panes (lives in `lib/file-explorer/pane/`, but conceptually a Search consumer)                                                                                                                                              |
-| `recent-searches-state.svelte.ts`  | Thin instantiation of the `lib/query-ui/recent-items/recent-items-state` factory wired to `getRecentSearches`. Exposes the legacy named API the rest of Search expects                                                                                                 |
-| `search-state.svelte.ts`           | Façade composing `lib/query-ui/query-filter-state` (core) + `search-extras-state` (Search-only). Exposes the legacy named API for `SearchDialog.svelte`                                                                                                                |
-| `search-state.test.ts`             | Vitest tests against the Search façade                                                                                                                                                                                                                                 |
-| `search-extras-state.svelte.ts`    | Factory `createSearchExtrasState()` for Search-only fields (`scope`, `excludeSystemDirs`, AI label/pattern/kind, index flags)                                                                                                                                          |
-| `search-extras-state.test.ts`      | Pins the extras shape and the AI-write split contract                                                                                                                                                                                                                  |
-| `build-search-query.ts`            | Pure helper layering `excludeSystemDirs` onto the core's `buildBaseSearchQuery()` for the `searchFiles` IPC payload                                                                                                                                                    |
-| `searchable-folder.ts`             | Pure helper: walks pane history backward for the most recent real folder when the focused pane is on `search-results://`. Drives D12 "Use current folder" smart fallback                                                                                               |
-| `searchable-folder.test.ts`        | Pins the walk-back rule                                                                                                                                                                                                                                                |
-| `snapshot-store.svelte.ts`         | Frontend-only in-memory map of search-result snapshots, refcounted. Pure module state, no Svelte reactivity. Exports `resolveSnapshotPaths` for source-side ops on the snapshot pane                                                                                   |
-| `snapshot-store.svelte.ts.test.ts` | Create/read/no-overwrite, refcount inc/dec/delete, last-attempt slot swaps, entries-cap truncation, debug stats, `resolveSnapshotPaths`                                                                                                                                |
-| `snapshot-label.ts`                | Pure helper: `buildSnapshotLabel({ mode, query, aiPrompt? })` for breadcrumb + tab title                                                                                                                                                                               |
-| `snapshot-label.test.ts`           | Filename/regex/AI label shapes, AI prompt priority, truncation cap, fallbacks                                                                                                                                                                                          |
-| `capabilities.ts`                  | Owns the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` shortcut toast string. Capabilities themselves come from the per-kind table (`lib/file-explorer/pane/volume-capabilities.ts`); there's no Search-specific shim                                                            |
-| `capabilities.test.ts`             | Pins the toast string                                                                                                                                                                                                                                                  |
+- **`SearchDialog.svelte`**: Thin Search-specific wrapper: builds a `QueryDialogConfig` and mounts
+  `lib/query-ui/QueryDialog.svelte`. Owns index lifecycle, AI translation filter writes, snapshot promotion,
+  recent-search add/remove, and the system-dir exclude tooltip. Zero orchestration code
+- **`SearchResultsView.svelte`**: Pane view for `search-results://` snapshot panes (lives in `lib/file-explorer/pane/`,
+  but conceptually a Search consumer)
+- **`recent-searches-state.svelte.ts`**: Thin instantiation of the `lib/query-ui/recent-items/recent-items-state`
+  factory wired to `getRecentSearches`. Exposes the legacy named API the rest of Search expects
+- **`search-state.svelte.ts`**: Façade composing `lib/query-ui/query-filter-state` (core) + `search-extras-state`
+  (Search-only). Exposes the legacy named API for `SearchDialog.svelte`
+- **`search-state.test.ts`**: Vitest tests against the Search façade
+- **`search-extras-state.svelte.ts`**: Factory `createSearchExtrasState()` for Search-only fields (`scope`,
+  `excludeSystemDirs`, AI label/pattern/kind, index flags)
+- **`search-extras-state.test.ts`**: Pins the extras shape and the AI-write split contract
+- **`build-search-query.ts`**: Pure helper layering `excludeSystemDirs` onto the core's `buildBaseSearchQuery()` for the
+  `searchFiles` IPC payload
+- **`searchable-folder.ts`**: Pure helper: walks pane history backward for the most recent real folder when the focused
+  pane is on `search-results://`. Drives D12 "Use current folder" smart fallback
+- **`searchable-folder.test.ts`**: Pins the walk-back rule
+- **`snapshot-store.svelte.ts`**: Frontend-only in-memory map of search-result snapshots, refcounted. Pure module state,
+  no Svelte reactivity. Exports `resolveSnapshotPaths` for source-side ops on the snapshot pane
+- **`snapshot-store.svelte.ts.test.ts`**: Create/read/no-overwrite, refcount inc/dec/delete, last-attempt slot swaps,
+  entries-cap truncation, debug stats, `resolveSnapshotPaths`
+- **`snapshot-label.ts`**: Pure helper: `buildSnapshotLabel({ mode, query, aiPrompt? })` for breadcrumb + tab title
+- **`snapshot-label.test.ts`**: Filename/regex/AI label shapes, AI prompt priority, truncation cap, fallbacks
+- **`capabilities.ts`**: Owns the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` shortcut toast string. Capabilities themselves
+  come from the per-kind table (`lib/file-explorer/pane/volume-capabilities.ts`); there's no Search-specific shim
+- **`capabilities.test.ts`**: Pins the toast string
 
 Shared components, helpers, and tests live in [`lib/query-ui/`](../query-ui/CLAUDE.md) — Search and Selection both
 import the unified components (`QueryBar`, `ModeChips`, `AiPromptStrip`, `FilterChips`, `PathPills`, `SearchRowMenu`,

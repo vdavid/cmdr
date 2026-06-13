@@ -4,16 +4,14 @@ The MTP session layer: opens devices, owns the per-device tokio task, and expose
 
 ## File map
 
-| File | Purpose |
-|------|---------|
-| `mod.rs` | `MtpConnectionManager` singleton (`LazyLock`), `DeviceEntry` map, `connect()` / `disconnect(MtpDisconnectReason)`, IPC DTOs (`MtpTransferProgress`, `MtpOperationResult`, `MtpObjectInfo`) |
-| `cache.rs` | `PathHandleCache` (path → `ObjectHandle`), `ListingCache` (5 s TTL via `LISTING_CACHE_TTL_SECS`), `EventDebouncer` (per-device 500 ms via `EVENT_DEBOUNCE_MS`) |
-| `errors.rs` | `MtpConnectionError` enum (`DeviceNotFound`, `ExclusiveAccess`, `Disconnected`, `DeviceBusy`, `StoreReadOnly`, `PermissionDenied`, `Cancelled`, …) plus `map_mtp_error()` from `mtp_rs::Error` |
-| `event_loop.rs` | Per-device background task: polls `device.next_event()` (clones `MtpDevice` so the interrupt endpoint poll doesn't hold the bulk mutex), computes diffs, emits `directory-diff` |
-| `directory_ops.rs` | `list_directory()` (lock-contention warnings), `resolve_path_to_handle()` (cache-only — see Gotchas) |
-| `file_ops.rs` | `download_file()`, `upload_file()`, `upload_from_stream()`, `open_download_stream()`: emit `mtp-transfer-progress`; `open_download_stream` returns a `FileDownload` consumed by `MtpReadStream` in `volume/mtp.rs` |
-| `mutation_ops.rs` | `delete()` (recursive, children-first), `create_folder()`, `rename()`, `move_object()`: no copy+delete fallback |
-| `bulk_ops.rs` | `scan_for_copy()`: async recursion via `Box::pin` |
+- **`mod.rs`**: `MtpConnectionManager` singleton (`LazyLock`), `DeviceEntry` map, `connect()` / `disconnect(MtpDisconnectReason)`, IPC DTOs (`MtpTransferProgress`, `MtpOperationResult`, `MtpObjectInfo`)
+- **`cache.rs`**: `PathHandleCache` (path → `ObjectHandle`), `ListingCache` (5 s TTL via `LISTING_CACHE_TTL_SECS`), `EventDebouncer` (per-device 500 ms via `EVENT_DEBOUNCE_MS`)
+- **`errors.rs`**: `MtpConnectionError` enum (`DeviceNotFound`, `ExclusiveAccess`, `Disconnected`, `DeviceBusy`, `StoreReadOnly`, `PermissionDenied`, `Cancelled`, …) plus `map_mtp_error()` from `mtp_rs::Error`
+- **`event_loop.rs`**: Per-device background task: polls `device.next_event()` (clones `MtpDevice` so the interrupt endpoint poll doesn't hold the bulk mutex), computes diffs, emits `directory-diff`
+- **`directory_ops.rs`**: `list_directory()` (lock-contention warnings), `resolve_path_to_handle()` (cache-only — see Gotchas)
+- **`file_ops.rs`**: `download_file()`, `upload_file()`, `upload_from_stream()`, `open_download_stream()`: emit `mtp-transfer-progress`; `open_download_stream` returns a `FileDownload` consumed by `MtpReadStream` in `volume/mtp.rs`
+- **`mutation_ops.rs`**: `delete()` (recursive, children-first), `create_folder()`, `rename()`, `move_object()`: no copy+delete fallback
+- **`bulk_ops.rs`**: `scan_for_copy()`: async recursion via `Box::pin`
 
 ## Conventions
 

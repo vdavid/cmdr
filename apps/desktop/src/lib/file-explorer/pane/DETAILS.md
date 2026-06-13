@@ -16,64 +16,64 @@ list).
 
 ### Components
 
-| File                             | Purpose                                                                                       |
-| -------------------------------- | --------------------------------------------------------------------------------------------- |
-| `DualPaneExplorer.svelte`        | Root: two panes + resizer + dialog manager + key/command dispatch + MCP wiring                |
-| `FilePane.svelte`                | One pane: listing, cursor, selection, view mode, breadcrumb, alt-view switching               |
-| `DialogManager.svelte`           | Renders every modal dialog (transfer, delete, rename, new-folder, alert, error)               |
-| `FunctionKeyBar.svelte`          | F1–F10 bar at the bottom of the window                                                        |
-| `PaneResizer.svelte`             | Drag handle between the two panes                                                             |
-| `ErrorPane.svelte`               | Friendly-error display for listing failures (see parent § "Error display")                    |
-| `VolumeUnreachableBanner.svelte` | Volume resolution timed out OR SMB give-up state; retry + open home / disconnect              |
-| `SmbReconnectingView.svelte`     | Spinner + progress bar while `smb-reconnect-manager` runs its backoff cycle                   |
-| `SmbReauthView.svelte`           | Sign-in prompt when an SMB reconnect gave up on auth (`needs-auth`); wraps `NetworkLoginForm` |
-| `MtpConnectionView.svelte`       | Placeholder pane for MTP connection states                                                    |
-| `NetworkMountView.svelte`        | Network browser host/share list + login form                                                  |
-| `SearchResultsView.svelte`       | Snapshot view for `volumeId === 'search-results'` (see parent § "Search-results")             |
-| `TypeToJumpIndicator.svelte`     | Bottom-right "Jump: …" chip                                                                   |
+- **`DualPaneExplorer.svelte`**: Root: two panes + resizer + dialog manager + key/command dispatch + MCP wiring
+- **`FilePane.svelte`**: One pane: listing, cursor, selection, view mode, breadcrumb, alt-view switching
+- **`DialogManager.svelte`**: Renders every modal dialog (transfer, delete, rename, new-folder, alert, error)
+- **`FunctionKeyBar.svelte`**: F1–F10 bar at the bottom of the window
+- **`PaneResizer.svelte`**: Drag handle between the two panes
+- **`ErrorPane.svelte`**: Friendly-error display for listing failures (see parent § "Error display")
+- **`VolumeUnreachableBanner.svelte`**: Volume resolution timed out OR SMB give-up state; retry + open home / disconnect
+- **`SmbReconnectingView.svelte`**: Spinner + progress bar while `smb-reconnect-manager` runs its backoff cycle
+- **`SmbReauthView.svelte`**: Sign-in prompt when an SMB reconnect gave up on auth (`needs-auth`); wraps
+  `NetworkLoginForm`
+- **`MtpConnectionView.svelte`**: Placeholder pane for MTP connection states
+- **`NetworkMountView.svelte`**: Network browser host/share list + login form
+- **`SearchResultsView.svelte`**: Snapshot view for `volumeId === 'search-results'` (see parent § "Search-results")
+- **`TypeToJumpIndicator.svelte`**: Bottom-right "Jump: …" chip
 
 ### Reactive state (`*.svelte.ts`)
 
-| File                               | Purpose                                                                                   |
-| ---------------------------------- | ----------------------------------------------------------------------------------------- |
-| `explorer-state.svelte.ts`         | Explorer store: `focusedPane`, `showHiddenFiles`, layout split, the two tab-mgr holders   |
-| `dialog-state.svelte.ts`           | Dialog props + handlers (transfer, delete, mkdir, alert, error); factory                  |
-| `selection-state.svelte.ts`        | `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers                |
-| `rename-flow.svelte.ts`            | Rename validation, conflict + extension dialogs, save / cancel                            |
-| `type-to-jump-state.svelte.ts`     | Buffer + indicator + reset/hide timers + generation counter (race protection)             |
-| `volume-tint.svelte.ts`            | `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier              |
-| `pane-mcp-sync.svelte.ts`          | Mirrors pane state into the MCP `PaneState` store; skips network/search panes             |
-| `persistence-subscriber.svelte.ts` | The single nav-state persistence subscriber (A5): reactive `$effect`s → `app-status.json` |
-| `listing-diff-sync.svelte.ts`      | File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core)            |
-| `drag-drop-controller.svelte.ts`   | Native drag band: drop-target state, drag handlers, auto-scroll loop, Tauri listeners     |
+- **`explorer-state.svelte.ts`**: Explorer store: `focusedPane`, `showHiddenFiles`, layout split, the two tab-mgr
+  holders
+- **`dialog-state.svelte.ts`**: Dialog props + handlers (transfer, delete, mkdir, alert, error); factory
+- **`selection-state.svelte.ts`**: `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers
+- **`rename-flow.svelte.ts`**: Rename validation, conflict + extension dialogs, save / cancel
+- **`type-to-jump-state.svelte.ts`**: Buffer + indicator + reset/hide timers + generation counter (race protection)
+- **`volume-tint.svelte.ts`**: `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier
+- **`pane-mcp-sync.svelte.ts`**: Mirrors pane state into the MCP `PaneState` store; skips network/search panes
+- **`persistence-subscriber.svelte.ts`**: The single nav-state persistence subscriber (A5): reactive `$effect`s →
+  `app-status.json`
+- **`listing-diff-sync.svelte.ts`**: File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core)
+- **`drag-drop-controller.svelte.ts`**: Native drag band: drop-target state, drag handlers, auto-scroll loop, Tauri
+  listeners
 
 ### Pure utilities (`*.ts`)
 
-| File                          | Purpose                                                                                        |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- |
-| `types.ts`                    | `FilePaneAPI`, `SwapState`, `ListViewAPI`, `*BrowserAPI`, `NetworkCursorEntry`                 |
-| `pane-access.ts`              | `PaneAccess`: live-reference read API over pane nav + chrome state for factories               |
-| `focused-pane-reads.ts`       | Store-backed focused-pane reads (path / volume id / searchable folder) for externals           |
-| `clipboard-operations.ts`     | System-clipboard copy/cut/paste factory (MTP refusal, snapshot, cut-vs-copy)                   |
-| `file-operation-commands.ts`  | Rename / new-folder / new-file / viewer / transfer / delete openers factory                    |
-| `pane-commands.ts`            | MCP/palette read-only + delegating command bodies (selection, key-route, MTP val)              |
-| `type-to-jump-keys.ts`        | Pure `isTypeToJumpChar` / `isTypeToJumpResetKey` shared by both jump intercepts                |
-| `initialization.ts`           | Load persisted tabs + status + settings; resolve volumes; apply E2E overrides                  |
-| `tab-operations.ts`           | Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`                        |
-| `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot/dropped variants) from a focused pane            |
-| `transfer-entry.ts`           | Shared transfer entry seam: `checkTransferDestinationGuard` + `resolveSourceVolumeId`          |
-| `sorting-handlers.ts`         | `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)                      |
-| `index-events.ts`             | Throttled `index-dir-updated` handler with `/private/` symlink resolution                      |
-| `navigate.ts`                 | `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry              |
-| `snapshot-pane-navigation.ts` | `isCrossVolumeNavigation` — snapshot-volume → real-path triggers volume switch                 |
-| `has-parent.ts`               | `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`                  |
-| `first-selected-index.ts`     | `firstSelectedIndex(idxs, hasParent)` — post-select cursor-jump target, skips the `..` row     |
-| `volume-capabilities.ts`      | `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` / `capabilitiesFor` |
-| `search-results-keys.ts`      | Pure key→action dispatch for the flat snapshot pane                                            |
-| `selection-dialog-keys.ts`    | Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)                 |
-| `function-key-commands.ts`    | `fnKeyToCommand`: the F-key bar's 9 button → command-id map (typed; unit-tested)               |
-| `error-pane-utils.ts`         | Tiny helper for `ErrorPane`'s technical-details rendering                                      |
-| `integration-test-utils.ts`   | Shared test scaffolding for pane integration tests                                             |
+- **`types.ts`**: `FilePaneAPI`, `SwapState`, `ListViewAPI`, `*BrowserAPI`, `NetworkCursorEntry`
+- **`pane-access.ts`**: `PaneAccess`: live-reference read API over pane nav + chrome state for factories
+- **`focused-pane-reads.ts`**: Store-backed focused-pane reads (path / volume id / searchable folder) for externals
+- **`clipboard-operations.ts`**: System-clipboard copy/cut/paste factory (MTP refusal, snapshot, cut-vs-copy)
+- **`file-operation-commands.ts`**: Rename / new-folder / new-file / viewer / transfer / delete openers factory
+- **`pane-commands.ts`**: MCP/palette read-only + delegating command bodies (selection, key-route, MTP val)
+- **`type-to-jump-keys.ts`**: Pure `isTypeToJumpChar` / `isTypeToJumpResetKey` shared by both jump intercepts
+- **`initialization.ts`**: Load persisted tabs + status + settings; resolve volumes; apply E2E overrides
+- **`tab-operations.ts`**: Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`
+- **`transfer-operations.ts`**: Build `TransferDialogPropsData` (and snapshot/dropped variants) from a focused pane
+- **`transfer-entry.ts`**: Shared transfer entry seam: `checkTransferDestinationGuard` + `resolveSourceVolumeId`
+- **`sorting-handlers.ts`**: `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)
+- **`index-events.ts`**: Throttled `index-dir-updated` handler with `/private/` symlink resolution
+- **`navigate.ts`**: `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry
+- **`snapshot-pane-navigation.ts`**: `isCrossVolumeNavigation` (snapshot-volume → real-path triggers volume switch)
+- **`has-parent.ts`**: `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`
+- **`first-selected-index.ts`**: `firstSelectedIndex(idxs, hasParent)` (post-select cursor-jump target, skips the `..`
+  row)
+- **`volume-capabilities.ts`**: `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` /
+  `capabilitiesFor`
+- **`search-results-keys.ts`**: Pure key→action dispatch for the flat snapshot pane
+- **`selection-dialog-keys.ts`**: Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)
+- **`function-key-commands.ts`**: `fnKeyToCommand`: the F-key bar's 9 button → command-id map (typed; unit-tested)
+- **`error-pane-utils.ts`**: Tiny helper for `ErrorPane`'s technical-details rendering
+- **`integration-test-utils.ts`**: Shared test scaffolding for pane integration tests
 
 ### Tests
 
@@ -220,13 +220,11 @@ that touch it.
 
 The **writers** (A2 — exactly one mutator per field, all inside the store module):
 
-| Field                  | Mutator(s)                                |
-| ---------------------- | ----------------------------------------- |
-| `focusedPane`          | `setFocusedPane`                          |
-| `showHiddenFiles`      | `setShowHiddenFiles`, `toggleHiddenFiles` |
-| `leftPaneWidthPercent` | `setLeftPaneWidthPercent`                 |
-| `leftTabMgr`           | `setTabMgr('left', …)`                    |
-| `rightTabMgr`          | `setTabMgr('right', …)`                   |
+- **`focusedPane`**: `setFocusedPane`
+- **`showHiddenFiles`**: `setShowHiddenFiles`, `toggleHiddenFiles`
+- **`leftPaneWidthPercent`**: `setLeftPaneWidthPercent`
+- **`leftTabMgr`**: `setTabMgr('left', …)`
+- **`rightTabMgr`**: `setTabMgr('right', …)`
 
 **Enforced by lint (`cmdr/no-explorer-state-writes`).** Assigning to any property of the store object outside
 `explorer-state.svelte.ts` is a lint error (`explorerState.x = …`, compound assignment, `++`, and monkey-patching a

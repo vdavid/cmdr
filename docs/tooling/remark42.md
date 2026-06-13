@@ -25,13 +25,11 @@ To add a site, append its ID to the `SITE=` env var (comma-separated) and restar
 
 Stored on the server at `apps/website/.env`:
 
-| Variable           | Purpose                                              |
-| ------------------ | ---------------------------------------------------- |
-| `REMARK42_SECRET`  | Signing secret. Generate with `openssl rand -hex 32` |
-| `AUTH_GITHUB_CID`  | GitHub OAuth app client ID                           |
-| `AUTH_GITHUB_CSEC` | GitHub OAuth app client secret                       |
-| `AUTH_GOOGLE_CID`  | Google OAuth app client ID                           |
-| `AUTH_GOOGLE_CSEC` | Google OAuth app client secret                       |
+- **`REMARK42_SECRET`**: Signing secret. Generate with `openssl rand -hex 32`
+- **`AUTH_GITHUB_CID`**: GitHub OAuth app client ID
+- **`AUTH_GITHUB_CSEC`**: GitHub OAuth app client secret
+- **`AUTH_GOOGLE_CID`**: Google OAuth app client ID
+- **`AUTH_GOOGLE_CSEC`**: Google OAuth app client secret
 
 ## OAuth callback URLs
 

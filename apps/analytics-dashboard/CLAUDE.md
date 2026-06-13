@@ -121,20 +121,18 @@ Auto-deploys to Cloudflare Pages on push to `main` when files in `apps/analytics
 
 All set as CF Pages secrets, never in code.
 
-| Variable                     | Notes                                                                        |
-| ---------------------------- | ---------------------------------------------------------------------------- |
-| `UMAMI_API_URL`              | `https://anal.veszelovszki.com`                                              |
-| `UMAMI_USERNAME`             | Existing Umami credentials                                                   |
-| `UMAMI_PASSWORD`             | Existing Umami credentials                                                   |
-| `UMAMI_WEBSITE_ID`           | getcmdr.com website ID                                                       |
-| `UMAMI_BLOG_WEBSITE_ID`      | veszelovszki.com website ID (env var name kept for CF secrets compatibility) |
-| `UMAMI_PRVW_WEBSITE_ID`      | getprvw.com website ID                                                       |
-| `PADDLE_API_KEY_LIVE`        | Live API key (not sandbox)                                                   |
-| `POSTHOG_API_KEY`            | Personal `phx_...` key (not the public `phc_...` project key)                |
-| `POSTHOG_PROJECT_ID`         | `136072`                                                                     |
-| `POSTHOG_API_URL`            | `https://eu.posthog.com` (must be EU)                                        |
-| `GITHUB_TOKEN`               | Optional, avoids rate limits on public repo API                              |
-| `LICENSE_SERVER_ADMIN_TOKEN` | Dedicated admin secret, also set on the API server                           |
+- **`UMAMI_API_URL`**: `https://anal.veszelovszki.com`
+- **`UMAMI_USERNAME`**: Existing Umami credentials
+- **`UMAMI_PASSWORD`**: Existing Umami credentials
+- **`UMAMI_WEBSITE_ID`**: getcmdr.com website ID
+- **`UMAMI_BLOG_WEBSITE_ID`**: veszelovszki.com website ID (env var name kept for CF secrets compatibility)
+- **`UMAMI_PRVW_WEBSITE_ID`**: getprvw.com website ID
+- **`PADDLE_API_KEY_LIVE`**: Live API key (not sandbox)
+- **`POSTHOG_API_KEY`**: Personal `phx_...` key (not the public `phc_...` project key)
+- **`POSTHOG_PROJECT_ID`**: `136072`
+- **`POSTHOG_API_URL`**: `https://eu.posthog.com` (must be EU)
+- **`GITHUB_TOKEN`**: Optional, avoids rate limits on public repo API
+- **`LICENSE_SERVER_ADMIN_TOKEN`**: Dedicated admin secret, also set on the API server
 
 ## Key decisions
 

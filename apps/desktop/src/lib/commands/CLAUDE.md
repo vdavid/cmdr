@@ -4,17 +4,21 @@ Centralized command registry and fuzzy search engine for the command palette.
 
 ## Files
 
-| File                            | Purpose                                                                                                                       |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `command-ids.ts`                | `COMMAND_IDS` (the `as const` id tuple), the derived `CommandId` union, and the `isCommandId()` boundary guard                |
-| `types.ts`                      | `Command`, `CommandMatch`, `CommandScope`, plus `CommandArgs` / `CommandDispatchArgs` (the dispatch arg-tuple shape)          |
-| `command-registry.ts`           | The `commands` array (single source of truth). `getPaletteCommands()` filter. `updateLicenseCommandName()` in-place write.    |
-| `fuzzy-search.ts`               | `searchCommands(query, recentCommandIds?)` (palette set) + `searchAllCommands(query)` (full registry), via `@leeoniya/ufuzzy` |
-| `index.ts`                      | Barrel re-export                                                                                                              |
-| `fuzzy-search.test.ts`          | Vitest tests: empty query, exact/fuzzy matches, ranking, index bounds, palette filtering                                      |
-| `command-registry.test.ts`      | Set-equality guard (tuple ↔ registry), `isCommandId`, `updateLicenseCommandName`, palette-visible-set pin                     |
-| `command-types.test.ts`         | Compile-time `@ts-expect-error` guards for the `CommandId` union and arg-tuple shapes                                         |
-| `rust-command-id-drift.test.ts` | Parses `menu/mod.rs` + `LicenseSection.svelte`; asserts every Rust-emitted command id ∈ `COMMAND_IDS`                         |
+- **`command-ids.ts`**: `COMMAND_IDS` (the `as const` id tuple), the derived `CommandId` union, and the `isCommandId()`
+  boundary guard
+- **`types.ts`**: `Command`, `CommandMatch`, `CommandScope`, plus `CommandArgs` / `CommandDispatchArgs` (the dispatch
+  arg-tuple shape)
+- **`command-registry.ts`**: The `commands` array (single source of truth). `getPaletteCommands()` filter.
+  `updateLicenseCommandName()` in-place write.
+- **`fuzzy-search.ts`**: `searchCommands(query, recentCommandIds?)` (palette set) + `searchAllCommands(query)` (full
+  registry), via `@leeoniya/ufuzzy`
+- **`index.ts`**: Barrel re-export
+- **`fuzzy-search.test.ts`**: Vitest tests: empty query, exact/fuzzy matches, ranking, index bounds, palette filtering
+- **`command-registry.test.ts`**: Set-equality guard (tuple ↔ registry), `isCommandId`, `updateLicenseCommandName`,
+  palette-visible-set pin
+- **`command-types.test.ts`**: Compile-time `@ts-expect-error` guards for the `CommandId` union and arg-tuple shapes
+- **`rust-command-id-drift.test.ts`**: Parses `menu/mod.rs` + `LicenseSection.svelte`; asserts every Rust-emitted
+  command id ∈ `COMMAND_IDS`
 
 ## Types
 

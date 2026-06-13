@@ -91,25 +91,23 @@ fn is_directory_indexed(store: &IndexStore, dir_path: &str) -> bool {
 
 Mapping:
 
-| FileEntry field            | Source                                                             |
-| -------------------------- | ------------------------------------------------------------------ |
-| `name`                     | `ScannedEntry.name`                                                |
-| `path`                     | `ScannedEntry.path`                                                |
-| `is_directory`             | `ScannedEntry.is_directory`                                        |
-| `is_symlink`               | `ScannedEntry.is_symlink`                                          |
-| `size`                     | `ScannedEntry.logical_size` (matches readdir's `metadata.len()`)   |
-| `modified_at`              | `ScannedEntry.modified_at`                                         |
-| `icon_id`                  | Computed: `get_icon_id(is_directory, is_symlink, &name)` (no stat) |
-| `created_at`               | `None` (not displayed; lazy-loadable later if needed)              |
-| `added_at`                 | `None` (not displayed; lazy-loadable later if needed)              |
-| `opened_at`                | `None` (not displayed; lazy-loadable later if needed)              |
-| `permissions`              | `0` (not displayed; lazy-loadable later if needed)                 |
-| `owner`                    | `""` (not displayed; lazy-loadable later if needed)                |
-| `group`                    | `""` (not displayed; lazy-loadable later if needed)                |
-| `extended_metadata_loaded` | `false`                                                            |
-| `recursive_size`           | From `dir_stats` enrichment (existing)                             |
-| `recursive_file_count`     | From `dir_stats` enrichment (existing)                             |
-| `recursive_dir_count`      | From `dir_stats` enrichment (existing)                             |
+- **`name`**: `ScannedEntry.name`
+- **`path`**: `ScannedEntry.path`
+- **`is_directory`**: `ScannedEntry.is_directory`
+- **`is_symlink`**: `ScannedEntry.is_symlink`
+- **`size`**: `ScannedEntry.logical_size` (matches readdir's `metadata.len()`)
+- **`modified_at`**: `ScannedEntry.modified_at`
+- **`icon_id`**: Computed: `get_icon_id(is_directory, is_symlink, &name)` (no stat)
+- **`created_at`**: `None` (not displayed; lazy-loadable later if needed)
+- **`added_at`**: `None` (not displayed; lazy-loadable later if needed)
+- **`opened_at`**: `None` (not displayed; lazy-loadable later if needed)
+- **`permissions`**: `0` (not displayed; lazy-loadable later if needed)
+- **`owner`**: `""` (not displayed; lazy-loadable later if needed)
+- **`group`**: `""` (not displayed; lazy-loadable later if needed)
+- **`extended_metadata_loaded`**: `false`
+- **`recursive_size`**: From `dir_stats` enrichment (existing)
+- **`recursive_file_count`**: From `dir_stats` enrichment (existing)
+- **`recursive_dir_count`**: From `dir_stats` enrichment (existing)
 
 The first paint shows: name, icon, size, modified date, and recursive dir sizes, all without any disk I/O. The currently
 unused fields (permissions, owner, group, dates) get defaults and can be lazy-loaded later if those columns are added.

@@ -10,11 +10,11 @@ Backend counterpart: the low-space section of [`src-tauri/src/space_poller.rs`](
 
 ## Architecture
 
-| File                              | Purpose                                                                                                                              |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `notifications-mode.ts`           | Mode + threshold readers/writers, the Settings deep-link, and `pushLowDiskSpaceConfigToBackend()` (the applier's live-apply helper). |
-| `event-bridge.svelte.ts`          | Listener bridge: one `low-disk-space` subscription, dispatches per the settings enum.                                                |
-| `LowDiskSpaceToastContent.svelte` | Persistent WARN toast: snapshotted free space + percent, "Disable these notifications" action.                                       |
+- **`notifications-mode.ts`**: Mode + threshold readers/writers, the Settings deep-link, and
+  `pushLowDiskSpaceConfigToBackend()` (the applier's live-apply helper).
+- **`event-bridge.svelte.ts`**: Listener bridge: one `low-disk-space` subscription, dispatches per the settings enum.
+- **`LowDiskSpaceToastContent.svelte`**: Persistent WARN toast: snapshotted free space + percent, "Disable these
+  notifications" action.
 
 ## Settings-gated dispatch
 

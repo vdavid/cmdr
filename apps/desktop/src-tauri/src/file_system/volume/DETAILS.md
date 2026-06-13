@@ -15,12 +15,10 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 
 ## Key files
 
-| File | Role |
-|---|---|
-| `mod.rs` | `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`), `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`) |
-| `manager.rs` | `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default volume |
-| `backends/` | Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See [`backends/CLAUDE.md`](backends/CLAUDE.md). |
-| `friendly_error/` | User-facing error messages + provider detection. See [`friendly_error/CLAUDE.md`](friendly_error/CLAUDE.md). |
+- **`mod.rs`**: `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`), `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`)
+- **`manager.rs`**: `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default volume
+- **`backends/`**: Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See [`backends/CLAUDE.md`](backends/CLAUDE.md).
+- **`friendly_error/`**: User-facing error messages + provider detection. See [`friendly_error/CLAUDE.md`](friendly_error/CLAUDE.md).
 
 ## Architecture
 

@@ -5,12 +5,11 @@ app.
 
 ## Key files
 
-| File                             | Purpose                                                                             |
-| -------------------------------- | ----------------------------------------------------------------------------------- |
-| `updater.svelte.ts`              | Module-level `$state` singleton, update check loop, download logic                  |
-| `update-status-text.ts`          | Pure formatter: state → user-facing status string (shared by Settings and toast)    |
-| `UpdateToastContent.svelte`      | Toast body shown when an update is ready to install (`id: 'update'`, persistent)    |
-| `UpdateCheckToastContent.svelte` | Toast body for the menu-triggered phase status (`id: 'update-check'`, 10 s timeout) |
+- **`updater.svelte.ts`**: Module-level `$state` singleton, update check loop, download logic
+- **`update-status-text.ts`**: Pure formatter: state → user-facing status string (shared by Settings and toast)
+- **`UpdateToastContent.svelte`**: Toast body shown when an update is ready to install (`id: 'update'`, persistent)
+- **`UpdateCheckToastContent.svelte`**: Toast body for the menu-triggered phase status (`id: 'update-check'`, 10 s
+  timeout)
 
 ## Architecture
 

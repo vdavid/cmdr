@@ -5,29 +5,33 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 
 ## Key files
 
-| File                   | Purpose                                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------------------------- |
-| `ModalDialog.svelte`   | Central modal container: overlay, dragging, Escape, focus, MCP tracking                                   |
-| `focus-trap.ts`        | `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack                       |
-| `dialog-registry.ts`   | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                                   |
-| `Button.svelte`        | Styled button with variant and size props                                                                 |
-| `Select.svelte`        | Presentational Ark `Select`: items-driven single-pick, the house dropdown (native-`<select>` replacement) |
-| `Combobox.svelte`      | Presentational Ark `Combobox`: text-field-with-suggestions, async list, free text (model picker)          |
-| `Popover.svelte`       | Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close                        |
-| `FilterPopover.svelte` | `Popover` + a labelled section header; the query dialogs' Size / Modified / Search-in surface             |
-| `Chip.svelte`          | Small pill button: filter chip (popover trigger + × clear) or recent pill (badge + truncate)              |
-| `LinkButton.svelte`    | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer`            |
-| `CommandBox.svelte`    | Copyable terminal command (monospace + Copy button)                                                       |
-| `LoadingIcon.svelte`   | Animated spinner with progressive status text                                                             |
-| `AlertDialog.svelte`   | Single-action confirmation dialog built on `ModalDialog`                                                  |
-| `ProgressBar.svelte`   | Reusable progress bar (just the bar, no labels or layout)                                                 |
-| `Size.svelte`          | Canonical inline byte-count renderer: human-friendly + rainbow tier color                                 |
-| `SectionCard.svelte`   | macOS-style grouped card with optional label above; used for Debug/Settings groupings                     |
-| `ToggleGroup.svelte`   | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape                       |
-| `DateLabel.svelte`     | Canonical inline modified-date renderer: format + per-component age-tier coloring                         |
-| `ShortcutChip.svelte`  | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode             |
-| `StatusBadge.svelte`   | Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by `feature-status.json`            |
-| `toast/`               | Centralized toast notification system: store, container, item                                             |
+- **`ModalDialog.svelte`**: Central modal container: overlay, dragging, Escape, focus, MCP tracking
+- **`focus-trap.ts`**: `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack
+- **`dialog-registry.ts`**: `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs
+- **`Button.svelte`**: Styled button with variant and size props
+- **`Select.svelte`**: Presentational Ark `Select`: items-driven single-pick, the house dropdown (native-`<select>`
+  replacement)
+- **`Combobox.svelte`**: Presentational Ark `Combobox`: text-field-with-suggestions, async list, free text (model
+  picker)
+- **`Popover.svelte`**: Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close
+- **`FilterPopover.svelte`**: `Popover` + a labelled section header; the query dialogs' Size / Modified / Search-in
+  surface
+- **`Chip.svelte`**: Small pill button: filter chip (popover trigger + × clear) or recent pill (badge + truncate)
+- **`LinkButton.svelte`**: Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned
+  `cursor: pointer`
+- **`CommandBox.svelte`**: Copyable terminal command (monospace + Copy button)
+- **`LoadingIcon.svelte`**: Animated spinner with progressive status text
+- **`AlertDialog.svelte`**: Single-action confirmation dialog built on `ModalDialog`
+- **`ProgressBar.svelte`**: Reusable progress bar (just the bar, no labels or layout)
+- **`Size.svelte`**: Canonical inline byte-count renderer: human-friendly + rainbow tier color
+- **`SectionCard.svelte`**: macOS-style grouped card with optional label above; used for Debug/Settings groupings
+- **`ToggleGroup.svelte`**: Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape
+- **`DateLabel.svelte`**: Canonical inline modified-date renderer: format + per-component age-tier coloring
+- **`ShortcutChip.svelte`**: Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key`
+  mode
+- **`StatusBadge.svelte`**: Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by
+  `feature-status.json`
+- **`toast/`**: Centralized toast notification system: store, container, item
 
 ## Not part of this module: soft sheets
 

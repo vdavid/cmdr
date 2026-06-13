@@ -62,14 +62,18 @@ These are independent: each can ship without the others, and each can be reviewe
 
 ## Principle alignment
 
-| Principle (from `design-principles.md`) | How this work honours it                                                                                                                                                                                                  |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Elegance over hacks                     | Three small additions on a stable architecture, not a rewrite. The encoding work generalizes the per-line decode step; the line-index scan stays SIMD-fast for ASCII-compatible encodings.                                |
-| Platform-native                         | The toolbar uses macOS `titleBarStyle: "Overlay"` (the main window's tested pattern). All wording is macOS-native ("Reload", "Encoding", not generic web phrases).                                                        |
-| Radical transparency                    | External-change toast surfaces silently-changed files. Encoding picker shows the _detected_ encoding labelled "Detected" so the user knows the heuristic was used. Search shows "Searching… 23%" already.                 |
-| Keyboard-first                          | Tail toggle has a keyboard shortcut (F). Regex toggle is Cmd+Alt+R, case-sensitivity is Cmd+Alt+C. Every shortcut is shown in a tooltip. Encoding picker is reachable via Tab focus from the toolbar; no global shortcut. |
-| Cancellable >1 s operations             | Regex search ships with a 1 s hard-cancel guarantee (watchdog backstop). Encoding switch on 5 GB file stays interactive via ByteSeek fallback during reindex. Tail-mode index extension is cancellable.                   |
-| Accessibility                           | Each milestone ships with tier-3 a11y tests for the new UI. ARIA live regions for status changes. Reduced-motion respected for any new animations.                                                                        |
+- **Elegance over hacks**: Three small additions on a stable architecture, not a rewrite. The encoding work generalizes
+  the per-line decode step; the line-index scan stays SIMD-fast for ASCII-compatible encodings.
+- **Platform-native**: The toolbar uses macOS `titleBarStyle: "Overlay"` (the main window's tested pattern). All wording
+  is macOS-native ("Reload", "Encoding", not generic web phrases).
+- **Radical transparency**: External-change toast surfaces silently-changed files. Encoding picker shows the _detected_
+  encoding labelled "Detected" so the user knows the heuristic was used. Search shows "Searching… 23%" already.
+- **Keyboard-first**: Tail toggle has a keyboard shortcut (F). Regex toggle is Cmd+Alt+R, case-sensitivity is Cmd+Alt+C.
+  Every shortcut is shown in a tooltip. Encoding picker is reachable via Tab focus from the toolbar; no global shortcut.
+- **Cancellable >1 s operations**: Regex search ships with a 1 s hard-cancel guarantee (watchdog backstop). Encoding
+  switch on 5 GB file stays interactive via ByteSeek fallback during reindex. Tail-mode index extension is cancellable.
+- **Accessibility**: Each milestone ships with tier-3 a11y tests for the new UI. ARIA live regions for status changes.
+  Reduced-motion respected for any new animations.
 
 ## Architecture overview
 
@@ -1259,27 +1263,30 @@ Per `.claude/rules/docs-maintenance.md`: describe **current behavior**, not hist
 Per `docs/testing.md`'s pyramid, property tests catch families of bugs example tests miss. Mandatory list across all
 milestones:
 
-| Where                            | Property                                                                                                             |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Step 1.1 (`search_matcher_test`) | Literal-mode `Matcher::find_matches` results equal naive `str::find` loop, for random `(needle, haystack)`.          |
-| Step 1.1 (`search_matcher_test`) | Regex `Matcher` with `regex::escape(needle)` produces the same match positions as literal `Matcher` for same input.  |
-| Step 2.2 (`encoding_test`)       | Random ASCII encoded as UTF-16 LE / BE is detected back as the corresponding `FileEncoding` variant.                 |
-| Step 2.3 (`encoding_test`)       | ASCII-compatible `find_newlines(buf, Utf8)` ≡ `memchr::memchr_iter(b'\n', buf).collect()` for all `[u8]`.            |
-| Step 2.3 (`encoding_test`)       | `NewlineScanner` fed in arbitrary chunk-size partitions produces the same offsets as on the whole buffer.            |
-| Step 2.3 (`encoding_test`)       | BOM round-trip: detect → strip → re-add BOM → identical decoded string.                                              |
-| Step 3.2 (`line_index_test`)     | `extend_to(N)` from a fresh open at size 0 produces the same `LineIndexBackend` state as opening directly at size N. |
+- **Step 1.1 (`search_matcher_test`)**: Literal-mode `Matcher::find_matches` results equal naive `str::find` loop, for
+  random `(needle, haystack)`.
+- **Step 1.1 (`search_matcher_test`)**: Regex `Matcher` with `regex::escape(needle)` produces the same match positions
+  as literal `Matcher` for same input.
+- **Step 2.2 (`encoding_test`)**: Random ASCII encoded as UTF-16 LE / BE is detected back as the corresponding
+  `FileEncoding` variant.
+- **Step 2.3 (`encoding_test`)**: ASCII-compatible `find_newlines(buf, Utf8)` ≡
+  `memchr::memchr_iter(b'\n', buf).collect()` for all `[u8]`.
+- **Step 2.3 (`encoding_test`)**: `NewlineScanner` fed in arbitrary chunk-size partitions produces the same offsets as
+  on the whole buffer.
+- **Step 2.3 (`encoding_test`)**: BOM round-trip: detect → strip → re-add BOM → identical decoded string.
+- **Step 3.2 (`line_index_test`)**: `extend_to(N)` from a fresh open at size 0 produces the same `LineIndexBackend`
+  state as opening directly at size N.
 
 ## Testing decision table (consolidated)
 
-| Change                                                                        | Test layer                                       |
-| ----------------------------------------------------------------------------- | ------------------------------------------------ |
-| `Matcher`, encoding detection, newline scanner, decoder, `extend_to`, watcher | Rust unit (`*_test.rs`)                          |
-| Session-level state transitions (tail-on extends index, encoding swap)        | Rust integration (`session_test.rs` or `tests/`) |
-| Watcher → event → FE flow                                                     | Rust integration (`tests/`)                      |
-| Tauri command shape, FileEncoding enum serde, SearchMode camelCase            | vitest IPC contract                              |
-| Composable state + side effects (search, tail, encoding pickers)              | vitest unit                                      |
-| Toolbar component a11y (toggles, dropdowns)                                   | tier-3 a11y                                      |
-| End-to-end: open, switch encoding, search regex, toggle tail, toast appears   | Playwright E2E (3 specs total)                   |
+- **`Matcher`, encoding detection, newline scanner, decoder, `extend_to`, watcher**: Rust unit (`*_test.rs`)
+- **Session-level state transitions (tail-on extends index, encoding swap)**: Rust integration (`session_test.rs` or
+  `tests/`)
+- **Watcher → event → FE flow**: Rust integration (`tests/`)
+- **Tauri command shape, FileEncoding enum serde, SearchMode camelCase**: vitest IPC contract
+- **Composable state + side effects (search, tail, encoding pickers)**: vitest unit
+- **Toolbar component a11y (toggles, dropdowns)**: tier-3 a11y
+- **End-to-end: open, switch encoding, search regex, toggle tail, toast appears**: Playwright E2E (3 specs total)
 
 ## Final-state acceptance
 

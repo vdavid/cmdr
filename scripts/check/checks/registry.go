@@ -748,6 +748,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDocsReachable,
 	},
 	{
+		ID:          "docs-no-two-col-tables",
+		Nickname:    "no-two-col-tables",
+		DisplayName: "no 2-column tables in agent docs",
+		App:         AppOther,
+		Tech:        "📝 Docs",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs, // scans every CLAUDE.md / DETAILS.md / AGENTS.md / docs / .claude/rules markdown
+		Run:         RunDocsNoTwoColTables,
+	},
+	{
 		ID:          "changelog-commit-links",
 		Nickname:    "changelog-links",
 		DisplayName: "CHANGELOG commit links",

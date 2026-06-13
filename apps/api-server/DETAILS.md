@@ -5,41 +5,46 @@ live in [CLAUDE.md](CLAUDE.md).
 
 ## Key files
 
-| File                                        | Purpose                                                                                                                                                                             |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                                                                                                                    |
-| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                                                                                                                |
-| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`                                                                                                              |
-| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`    |
-| `src/funnel.ts`                             | Route `/admin/funnel`: per-UTC-day acquisition funnel (downloads, new installs, DAU, D7 retention, Listmonk signups). Pure `buildDateList`/`assembleFunnel` helpers are unit-tested |
-| `src/telemetry.ts`                          | Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`                                                                                         |
-| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                                                                                                 |
-| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                                                                                                |
-| `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                                                                                             |
-| `src/feedback.ts`                           | Route: `POST /feedback` (in-app feedback → D1 + Discord notify)                                                                                                                     |
-| `src/link-codes.ts`                         | Routes: `GET /r-codes.json` (public, edge-cached) + `/admin/r-codes` CRUD. `?r=<code>` → UTM map in KV (`LINK_CODES`). Pure `sanitizeUtmValue`/`isValidCode` are unit-tested        |
-| `src/link-codes.test.ts`                    | Tests for `/r-codes.json` (public map, CORS, cache), the admin CRUD (auth, upsert, delete), and the validators                                                                      |
-| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                                                                                        |
-| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                                                                                                       |
-| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                                                                                        |
-| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                                                                                                                             |
-| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                                                                                                                               |
-| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                                                                                                                         |
-| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                                                                                                                       |
-| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                                                                                                                            |
-| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                                                                                                                        |
-| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                                                                                                                   |
-| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                                                                                                                            |
-| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`, `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`                  |
-| `src/funnel.test.ts`                        | Tests for `/admin/funnel`: route auth/validation, pure `buildDateList`/`assembleFunnel` (date math, zero-fill, D7-knowability)                                                      |
-| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                                                                                             |
-| `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                                                                                             |
-| `src/beta-signup.test.ts`                   | Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure, rate limit)                                                                                    |
-| `src/feedback.test.ts`                      | Tests for `POST /feedback` (validation, caps, D1 row, Discord ping, rate limit)                                                                                                     |
-| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                                                                                                 |
-| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                                                                                           |
-| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                                                                                                     |
-| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                                                                                                                |
+- **`src/index.ts`**: Hono app assembly: mounts route modules, wires scheduled handler
+- **`src/types.ts`**: Shared types (`Bindings`), constants, and helpers (auth, validation)
+- **`src/licensing.ts`**: Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`
+- **`src/admin.ts`**: Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`,
+  `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`
+- **`src/funnel.ts`**: Route `/admin/funnel`: per-UTC-day acquisition funnel (downloads, new installs, DAU, D7
+  retention, Listmonk signups). Pure `buildDateList`/`assembleFunnel` helpers are unit-tested
+- **`src/telemetry.ts`**: Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`
+- **`src/likes.ts`**: Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)
+- **`src/error-report.ts`**: Route: `POST /error-report` (multipart upload to R2, Discord notify)
+- **`src/beta-signup.ts`**: Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)
+- **`src/feedback.ts`**: Route: `POST /feedback` (in-app feedback → D1 + Discord notify)
+- **`src/link-codes.ts`**: Routes: `GET /r-codes.json` (public, edge-cached) + `/admin/r-codes` CRUD. `?r=<code>` → UTM
+  map in KV (`LINK_CODES`). Pure `sanitizeUtmValue`/`isValidCode` are unit-tested
+- **`src/link-codes.test.ts`**: Tests for `/r-codes.json` (public map, CORS, cache), the admin CRUD (auth, upsert,
+  delete), and the validators
+- **`src/error-report-eviction.ts`**: Eviction logic: 8/6 GB watermarks, KV lock, recompute helper
+- **`src/discord.ts`**: Discord webhook client (single-retry on 429, drop-on-failure)
+- **`src/scheduled.ts`**: Cron handler functions (crash notifications, aggregation, DB size, eviction)
+- **`src/license.ts`**: Short code + license key generation, `LicenseType` enum
+- **`src/paddle.ts`**: HMAC-SHA256 webhook verification, `constantTimeEqual`
+- **`src/paddle-api.ts`**: Paddle REST client: transaction/subscription/customer fetch
+- **`src/email.ts`**: Resend email delivery (HTML + plain text, multi-seat support)
+- **`src/device-tracking.ts`**: Device set helpers: prune stale devices, alert threshold
+- **`src/license.test.ts`, `src/paddle.test.ts`**: Vitest tests
+- **`src/device-tracking.test.ts`**: Tests for device tracking helpers
+- **`src/admin-stats.test.ts`**: Tests for `/admin/stats` endpoint and activation counter
+- **`src/admin-endpoints.test.ts`**: Tests for `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`,
+  `/admin/crashes`, `/admin/heartbeat-dau`, `/admin/feedback`, `/admin/error-reports`
+- **`src/funnel.test.ts`**: Tests for `/admin/funnel`: route auth/validation, pure `buildDateList`/`assembleFunnel`
+  (date math, zero-fill, D7-knowability)
+- **`src/crash-report.test.ts`**: Tests for `POST /crash-report` endpoint
+- **`src/heartbeat.test.ts`**: Tests for `POST /heartbeat` (validation, config round-trip, rate limit)
+- **`src/beta-signup.test.ts`**: Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure,
+  rate limit)
+- **`src/feedback.test.ts`**: Tests for `POST /feedback` (validation, caps, D1 row, Discord ping, rate limit)
+- **`src/download-and-update-check.test.ts`**: Tests for download redirect and update check routes
+- **`src/scheduled.test.ts`**: Tests for cron handler (crash notifications, aggregation)
+- **`scripts/generate-keys.js`**: Ed25519 key pair generation (run once at setup)
+- **`scripts/setup-cf-infra.sh`**: Cloudflare KV namespace provisioning
 
 ## Routes
 

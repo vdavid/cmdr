@@ -9,13 +9,15 @@ Backend counterpart: [`src-tauri/src/go_to_path/CLAUDE.md`](../../../src-tauri/s
 
 ## Architecture
 
-| File                                  | Purpose                                                                                                                                                                                            |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `go-to-path.ts`                       | `goToPath(explorer, input)` handler: resolve → switch on the typed `kind` → navigate via the shared primitives → record the resolved target into recents. Plus the pure helpers (see below).       |
-| `GoToPathDialog.svelte`               | The modal: auto-focused textbox (clipboard-prefilled when the clipboard resolves to a real path), up to 10 recent rows (digit chip + middle-truncated path + `[x]`), live inline ancestor warning. |
-| `GoToPathAncestorToastContent.svelte` | INFO toast for the nearest-ancestor outcome. Props `requested`, `landed`, `backShortcut` (snapshotted). Code-formats the paths; renders the back-shortcut as a literal `ShortcutChip`.             |
-| `recent-paths-state.svelte.ts`        | `$state` mirror of the backend recents store. `loadRecentPaths` / `addRecentPath` / `removeRecentPath` write the backend via IPC, then re-read the authoritative list so the UI stays in sync.     |
-| `go-to-path-ids.ts`                   | Stable dedup id for the ancestor INFO toast.                                                                                                                                                       |
+- **`go-to-path.ts`**: `goToPath(explorer, input)` handler: resolve → switch on the typed `kind` → navigate via the
+  shared primitives → record the resolved target into recents. Plus the pure helpers (see below).
+- **`GoToPathDialog.svelte`**: The modal: auto-focused textbox (clipboard-prefilled when the clipboard resolves to a
+  real path), up to 10 recent rows (digit chip + middle-truncated path + `[x]`), live inline ancestor warning.
+- **`GoToPathAncestorToastContent.svelte`**: INFO toast for the nearest-ancestor outcome. Props `requested`, `landed`,
+  `backShortcut` (snapshotted). Code-formats the paths; renders the back-shortcut as a literal `ShortcutChip`.
+- **`recent-paths-state.svelte.ts`**: `$state` mirror of the backend recents store. `loadRecentPaths` / `addRecentPath`
+  / `removeRecentPath` write the backend via IPC, then re-read the authoritative list so the UI stays in sync.
+- **`go-to-path-ids.ts`**: Stable dedup id for the ancestor INFO toast.
 
 The navigation primitives live one level up in
 [`lib/file-explorer/navigation/navigate-and-select.ts`](../file-explorer/navigation/navigate-and-select.ts) because

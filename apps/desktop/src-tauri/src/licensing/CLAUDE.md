@@ -6,13 +6,11 @@ License keys are self-contained: `base64(JSON payload).base64(Ed25519 signature)
 
 ## Key files
 
-| File | Purpose |
-|---|---|
-| `mod.rs` | `LicenseData` struct, `redact_email` helper, re-exports from sub-modules |
-| `verification.rs` | Ed25519 crypto. `LicenseActivationError` typed error enum. Validates key format, verifies signature, caches result in `Mutex`. Split into verify/commit: `verify_license_async` (read-only check + short-code exchange), `commit_license` (persist to disk + update caches). Legacy wrappers: `activate_license` (sync verify+commit), `activate_license_async` (async verify+commit). `get_license_info` (lazy, cached). `VerifyResult` struct wraps `LicenseInfo` + `full_key` + `short_code`. |
-| `app_status.rs` | `AppStatus` enum. 7-day server re-validation, 30-day offline grace period. Commercial use reminder timer. Debug: `CMDR_MOCK_LICENSE` env var overrides everything. |
-| `validation_client.rs` | HTTP client: `POST /validate`, `POST /activate`. Debug → `localhost:8787`, release → `api.getcmdr.com`. Mock mode skips network entirely. Returns `ValidationOutcome` enum (Success/UpstreamError/NetworkError). `ValidationRequest` includes an optional `deviceId` for fair-use tracking. |
-| `device_id.rs` | Stable hashed device identifier for fair-use license tracking. Reads `IOPlatformUUID` via IOKit FFI (macOS), salts with `"cmdr:"`, SHA-256 hashes, prefixes with `v1:`. Cached in `OnceLock`. Returns `None` on failure (best-effort, never blocks validation). Linux stub returns `None`. |
+- **`mod.rs`**: `LicenseData` struct, `redact_email` helper, re-exports from sub-modules
+- **`verification.rs`**: Ed25519 crypto. `LicenseActivationError` typed error enum. Validates key format, verifies signature, caches result in `Mutex`. Split into verify/commit: `verify_license_async` (read-only check + short-code exchange), `commit_license` (persist to disk + update caches). Legacy wrappers: `activate_license` (sync verify+commit), `activate_license_async` (async verify+commit). `get_license_info` (lazy, cached). `VerifyResult` struct wraps `LicenseInfo` + `full_key` + `short_code`.
+- **`app_status.rs`**: `AppStatus` enum. 7-day server re-validation, 30-day offline grace period. Commercial use reminder timer. Debug: `CMDR_MOCK_LICENSE` env var overrides everything.
+- **`validation_client.rs`**: HTTP client: `POST /validate`, `POST /activate`. Debug → `localhost:8787`, release → `api.getcmdr.com`. Mock mode skips network entirely. Returns `ValidationOutcome` enum (Success/UpstreamError/NetworkError). `ValidationRequest` includes an optional `deviceId` for fair-use tracking.
+- **`device_id.rs`**: Stable hashed device identifier for fair-use license tracking. Reads `IOPlatformUUID` via IOKit FFI (macOS), salts with `"cmdr:"`, SHA-256 hashes, prefixes with `v1:`. Cached in `OnceLock`. Returns `None` on failure (best-effort, never blocks validation). Linux stub returns `None`.
 
 ## AppStatus variants
 

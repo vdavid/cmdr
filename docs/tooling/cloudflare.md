@@ -5,10 +5,8 @@ troubleshooting, see the [API server README](../../apps/api-server/README.md#dep
 
 ## Zones and Workers
 
-| Zone            | Zone ID                            |
-| --------------- | ---------------------------------- |
-| `getcmdr.com`   | `3b1ddce127d21ce9802588dac5aee4e9` |
-| `gitstrata.com` | `6265d396a0d0bf5c0b22e64a2b7777af` |
+- **`getcmdr.com`**: `3b1ddce127d21ce9802588dac5aee4e9`
+- **`gitstrata.com`**: `6265d396a0d0bf5c0b22e64a2b7777af`
 
 | Worker                | Domain                                                      | Config                          |
 | --------------------- | ----------------------------------------------------------- | ------------------------------- |

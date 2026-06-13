@@ -4,18 +4,16 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 
 ## Files
 
-| File                          | Purpose                                                                    |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| `filename-validation.ts`      | Pure client-side filename validation for instant keystroke feedback        |
-| `filename-validation.test.ts` | Vitest tests covering all validators                                       |
-| `confirm-dialog.ts`           | Wrapper around Tauri's native dialog API                                   |
-| `timing.ts`                   | `withTimeout`, `createDebounce`, and `createThrottle` for timing control   |
-| `timing.test.ts`              | Vitest tests for withTimeout, debounce, and throttle                       |
-| `shorten-middle.ts`           | `shortenMiddle` mid-truncation + `createPretextMeasure` factory            |
-| `shorten-middle.test.ts`      | Vitest tests for shortenMiddle (mock measureWidth, 14 tests)               |
-| `shorten-middle-action.ts`    | Svelte action wrapping `shortenMiddle` with ResizeObserver + async pretext |
-| `srgb-mix.ts`                 | Tiny sRGB color helpers (`mixSrgb`, `withAlpha`, `parseHex`, `toHex`)      |
-| `webkit-compat.ts`            | One-shot `color-mix()` feature detection + boot-time telemetry log         |
+- **`filename-validation.ts`**: Pure client-side filename validation for instant keystroke feedback
+- **`filename-validation.test.ts`**: Vitest tests covering all validators
+- **`confirm-dialog.ts`**: Wrapper around Tauri's native dialog API
+- **`timing.ts`**: `withTimeout`, `createDebounce`, and `createThrottle` for timing control
+- **`timing.test.ts`**: Vitest tests for withTimeout, debounce, and throttle
+- **`shorten-middle.ts`**: `shortenMiddle` mid-truncation + `createPretextMeasure` factory
+- **`shorten-middle.test.ts`**: Vitest tests for shortenMiddle (mock measureWidth, 14 tests)
+- **`shorten-middle-action.ts`**: Svelte action wrapping `shortenMiddle` with ResizeObserver + async pretext
+- **`srgb-mix.ts`**: Tiny sRGB color helpers (`mixSrgb`, `withAlpha`, `parseHex`, `toHex`)
+- **`webkit-compat.ts`**: One-shot `color-mix()` feature detection + boot-time telemetry log
 
 ## srgb-mix.ts / webkit-compat.ts
 

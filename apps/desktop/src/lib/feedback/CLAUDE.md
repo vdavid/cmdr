@@ -6,11 +6,9 @@ log bundle rides along; that's the error reporter's job.
 
 ## Files
 
-| File                          | Purpose                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------ |
-| `feedback-flow.svelte.ts`     | Reactive store + `openFeedbackDialog()` entry point (mirrors `error-report-flow`)    |
-| `FeedbackDialog.svelte`       | The dialog: textarea, attach-email checkbox, GitHub / book-a-call links, send/cancel |
-| `FeedbackDialog.a11y.test.ts` | Tier 3 a11y + behavior tests (send paths, caps, email gating, link routing)          |
+- **`feedback-flow.svelte.ts`**: Reactive store + `openFeedbackDialog()` entry point (mirrors `error-report-flow`)
+- **`FeedbackDialog.svelte`**: The dialog: textarea, attach-email checkbox, GitHub / book-a-call links, send/cancel
+- **`FeedbackDialog.a11y.test.ts`**: Tier 3 a11y + behavior tests (send paths, caps, email gating, link routing)
 
 ## Entry points
 

@@ -23,19 +23,23 @@ work into it that a unit test would cover.
 
 ## Decision table: what tool for what test
 
-| You want to test                                              | Tool / layer                                                                                                                                                                                                                                                      |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pure function with edge cases                                 | `proptest` (Rust unit). State a property, fuzz inputs.                                                                                                                                                                                                            |
-| Pure function with a few specific inputs                      | Plain example tests in `mod tests`                                                                                                                                                                                                                                |
-| Behavior coverage of an existing tested function              | `cargo mutants` survivor triage: every survived mutant is a behavior-level gap                                                                                                                                                                                    |
-| State machine transition                                      | Rust unit test, **drive via the public interface**, not by setting the atomic directly                                                                                                                                                                            |
-| `#[tauri::command]` boundary                                  | vitest IPC contract test using `installIpcMock()` from `apps/desktop/src/lib/ipc/test-helpers.ts`                                                                                                                                                                 |
-| Frontend component logic                                      | vitest + svelte-testing-library in `*.test.ts`                                                                                                                                                                                                                    |
-| Component-level a11y (ARIA, labels, focus order)              | tier-3 a11y test in `*.a11y.test.ts`                                                                                                                                                                                                                              |
-| Keyboard shortcut opens a dialog                              | E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')`. **Never** synthetic F-key press unless the test exists to verify the keyboard pathway                                                                                                                |
-| Wait for UI state to change in E2E                            | `expect.poll(async () => …, { timeout }).toBeTruthy()` (preferred — wait fuses with assertion); `expect(await pollUntil(...)).toBe(true)` for the few non-Playwright contexts. **Never** bare `await pollUntil(...)` (silent timeout) or `await sleep(N)` (flaky) |
-| Cross-component flow (return-focus, dialog stack, navigation) | E2E (Playwright)                                                                                                                                                                                                                                                  |
-| Storage volume operation (MTP, SMB)                           | Integration test against a virtual fixture (virtual-mtp feature, Docker SMB containers)                                                                                                                                                                           |
+- **Pure function with edge cases**: `proptest` (Rust unit). State a property, fuzz inputs.
+- **Pure function with a few specific inputs**: Plain example tests in `mod tests`
+- **Behavior coverage of an existing tested function**: `cargo mutants` survivor triage: every survived mutant is a
+  behavior-level gap
+- **State machine transition**: Rust unit test, **drive via the public interface**, not by setting the atomic directly
+- **`#[tauri::command]` boundary**: vitest IPC contract test using `installIpcMock()` from
+  `apps/desktop/src/lib/ipc/test-helpers.ts`
+- **Frontend component logic**: vitest + svelte-testing-library in `*.test.ts`
+- **Component-level a11y (ARIA, labels, focus order)**: tier-3 a11y test in `*.a11y.test.ts`
+- **Keyboard shortcut opens a dialog**: E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')`. **Never** synthetic
+  F-key press unless the test exists to verify the keyboard pathway
+- **Wait for UI state to change in E2E**: `expect.poll(async () => …, { timeout }).toBeTruthy()` (preferred — wait fuses
+  with assertion); `expect(await pollUntil(...)).toBe(true)` for the few non-Playwright contexts. **Never** bare
+  `await pollUntil(...)` (silent timeout) or `await sleep(N)` (flaky)
+- **Cross-component flow (return-focus, dialog stack, navigation)**: E2E (Playwright)
+- **Storage volume operation (MTP, SMB)**: Integration test against a virtual fixture (virtual-mtp feature, Docker SMB
+  containers)
 
 ## Anti-patterns
 
@@ -196,15 +200,19 @@ those want frames; readiness/lifecycle signals don't.
 
 ## When you add X, also add Y
 
-| New thing                                              | Required tests                                                                                                                                                                   |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New `#[tauri::command]`                                | (a) unit test for the underlying `*_core` / `ops_*` helper; (b) IPC contract test in `lib/ipc/*.test.ts` IF the command is destructive, cross-window, or has > 2 positional args |
-| New state or transition in a state machine             | At least one unit test driving the new transition via the public interface                                                                                                       |
-| New pure parser / transform / collation                | Consider a proptest (round-trip, idempotence, or "output is valid for the consumer")                                                                                             |
-| New keyboard shortcut                                  | Spec it via `dispatchMenuCommand` if menu-bound; synthetic keydown only if the test exists to verify the keyboard pathway itself                                                 |
-| New user-visible flow                                  | One E2E happy-path spec; use `waitForSelector` or `expect.poll(...).toBeTruthy()` for any state wait (never bare `await pollUntil(...)`)                                         |
-| New write-side operation (copy / move / delete / etc.) | Unit tests for the core + at least one E2E covering cancel and a conflict policy                                                                                                 |
-| New volume implementation                              | Integration tests against the virtual fixture for that volume kind                                                                                                               |
+- **New `#[tauri::command]`**: (a) unit test for the underlying `*_core` / `ops_*` helper; (b) IPC contract test in
+  `lib/ipc/*.test.ts` IF the command is destructive, cross-window, or has > 2 positional args
+- **New state or transition in a state machine**: At least one unit test driving the new transition via the public
+  interface
+- **New pure parser / transform / collation**: Consider a proptest (round-trip, idempotence, or "output is valid for the
+  consumer")
+- **New keyboard shortcut**: Spec it via `dispatchMenuCommand` if menu-bound; synthetic keydown only if the test exists
+  to verify the keyboard pathway itself
+- **New user-visible flow**: One E2E happy-path spec; use `waitForSelector` or `expect.poll(...).toBeTruthy()` for any
+  state wait (never bare `await pollUntil(...)`)
+- **New write-side operation (copy / move / delete / etc.)**: Unit tests for the core + at least one E2E covering cancel
+  and a conflict policy
+- **New volume implementation**: Integration tests against the virtual fixture for that volume kind
 
 ## Hot spots: modules with the strictest testing bar
 
@@ -242,26 +250,23 @@ E2E test hooks split along two axes:
 
 **Existing soft hooks** (env vars):
 
-| Variable                            | Purpose                                                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `CMDR_E2E_MODE=1`                   | Canonical "we're under E2E" marker; subsystems can flip behaviors.                                     |
-| `CMDR_E2E_START_PATH`               | Fixture directory; surfaced via `get_e2e_start_path` so FE can pick it up.                             |
-| `CMDR_E2E_SHARD_KIND`               | "mtp" / "non-mtp" / "all": selects spec subset for parallel sharding.                                  |
-| `CMDR_E2E_JSON_REPORT`              | Per-shard Playwright JSON report path.                                                                 |
-| `CMDR_E2E_OUTPUT_DIR`               | Per-shard Playwright artifact dir.                                                                     |
-| `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1` | Non-MTP shards opt out of wiping the shared MTP backing dir.                                           |
-| `CMDR_E2E_SKIP_MTP_FIXTURES=1`      | Non-MTP shards skip `globalSetup`'s MTP fixture reset.                                                 |
-| `CMDR_VIRTUAL_MTP=1` (or `=<dir>`)  | Dev opt-in: `pnpm dev` registers the virtual MTP device. See [virtual-mtp.md](tooling/virtual-mtp.md). |
-| `CMDR_E2E_COPY_THROTTLE_MS`         | Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.                                 |
-| `CMDR_PLAYWRIGHT_SOCKET`            | Override the plugin's Unix socket path (one socket per shard).                                         |
+- **`CMDR_E2E_MODE=1`**: Canonical "we're under E2E" marker; subsystems can flip behaviors.
+- **`CMDR_E2E_START_PATH`**: Fixture directory; surfaced via `get_e2e_start_path` so FE can pick it up.
+- **`CMDR_E2E_SHARD_KIND`**: "mtp" / "non-mtp" / "all": selects spec subset for parallel sharding.
+- **`CMDR_E2E_JSON_REPORT`**: Per-shard Playwright JSON report path.
+- **`CMDR_E2E_OUTPUT_DIR`**: Per-shard Playwright artifact dir.
+- **`CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1`**: Non-MTP shards opt out of wiping the shared MTP backing dir.
+- **`CMDR_E2E_SKIP_MTP_FIXTURES=1`**: Non-MTP shards skip `globalSetup`'s MTP fixture reset.
+- **`CMDR_VIRTUAL_MTP=1` (or `=<dir>`)**: Dev opt-in: `pnpm dev` registers the virtual MTP device. See
+  [virtual-mtp.md](tooling/virtual-mtp.md).
+- **`CMDR_E2E_COPY_THROTTLE_MS`**: Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.
+- **`CMDR_PLAYWRIGHT_SOCKET`**: Override the plugin's Unix socket path (one socket per shard).
 
 **Existing soft hooks** (IPC-driven, feature-gated to `playwright-e2e`):
 
-| Command                  | Purpose                                                                            |
-| ------------------------ | ---------------------------------------------------------------------------------- |
-| `set_test_throttle(ms)`  | Mid-run override of `CMDR_E2E_COPY_THROTTLE_MS`; clears with `null`.               |
-| `flush_file_watcher()`   | Synchronously re-reads every active watch, bypassing debouncer + FSEvents latency. |
-| `inject_listing_error()` | Inject an IoError into a volume's next list_directory for retry coverage.          |
+- **`set_test_throttle(ms)`**: Mid-run override of `CMDR_E2E_COPY_THROTTLE_MS`; clears with `null`.
+- **`flush_file_watcher()`**: Synchronously re-reads every active watch, bypassing debouncer + FSEvents latency.
+- **`inject_listing_error()`**: Inject an IoError into a volume's next list_directory for retry coverage.
 
 ## Process
 

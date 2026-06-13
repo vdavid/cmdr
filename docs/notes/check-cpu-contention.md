@@ -66,16 +66,15 @@ So they make ideal **backbone fillers**: occupy wall-clock cheaply while the sho
 
 `CpuWeight` ≈ the check's working-profile average busy cores, rounded, Docker-VM-aware:
 
-| weight | checks                                                                                                                       |
-| -----: | ---------------------------------------------------------------------------------------------------------------------------- |
-|     11 | svelte-tests                                                                                                                 |
-|      8 | clippy, cargo-udeps, bindings-fresh, integration-tests                                                                       |
-|      7 | nilaway                                                                                                                      |
-|      6 | rust-tests, rust-tests-linux, website-e2e                                                                                    |
-|      4 | deadcode, e2e-linux, e2e-playwright                                                                                          |
-|      3 | govulncheck                                                                                                                  |
-|      2 | jscpd, svelte-eslint, eslint-typecheck-{svelte,typescript}, svelte-check, website-{typecheck,build,docker-build}, api-eslint |
-|      1 | cargo-audit, cargo-deny, website-eslint, everything unset (fast formatters/scanners)                                         |
+- **11**: svelte-tests
+- **8**: clippy, cargo-udeps, bindings-fresh, integration-tests
+- **7**: nilaway
+- **6**: rust-tests, rust-tests-linux, website-e2e
+- **4**: deadcode, e2e-linux, e2e-playwright
+- **3**: govulncheck
+- **2**: jscpd, svelte-eslint, eslint-typecheck-{svelte,typescript}, svelte-check,
+  website-{typecheck,build,docker-build}, api-eslint
+- **1**: cargo-audit, cargo-deny, website-eslint, everything unset (fast formatters/scanners)
 
 The runner admits a check only when `sum(running weights) + weight ≤ NumCPU` (a weight-0/unset check counts as 1; an
 over-budget check runs alone). Net effect: wall-clock stays bounded by the critical path (the Docker E2E checks under

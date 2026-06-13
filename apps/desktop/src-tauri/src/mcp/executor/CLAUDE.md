@@ -6,19 +6,17 @@ Up: [`../CLAUDE.md`](../CLAUDE.md) (mcp).
 
 ## Files
 
-| File             | Responsibility                                                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `mod.rs`         | `execute_tool()` dispatcher, shared types (`ToolResult`, `ToolError`), the `mcp_round_trip` / `resource_round_trip` helpers, and the `user_path_param` / `expand_user_path` tilde-expansion helpers.|
-| `ack.rs`         | The ack contract: `AckSignal` variants, `snapshot_generation`, `wait_for_ack`, default budgets.                                |
-| `app.rs`         | `quit`, `switch_pane`, `swap_panes`, `tab` (unified action verb).                                                              |
-| `view.rs`        | `toggle_hidden`, `set_view_mode`, `sort`.                                                                                      |
-| `nav.rs`         | `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`, `select_volume`, `move_cursor`, `open_under_cursor`.   |
-| `file_ops.rs`    | `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`, `select`.                                                              |
-| `dialogs.rs`     | Unified `dialog` tool: open / focus / close / confirm for settings, file-viewer, about, and confirmation dialogs.              |
-| `async_tools.rs` | `await`, `connect_to_server`, `remove_manual_server`, `upgrade_smb_to_direct`, `set_setting`.                                  |
-| `search.rs`      | `search` (drive index), `ai_search` (LLM-driven), and the lazy-load of the search index via `spawn_blocking`.                  |
-| `downloads.rs`   | `go_to_latest_download`: resolves via `downloads::commands::go_to_latest_download`, then `mcp-nav-to-path` + `mcp-move-cursor`.|
-| `tests.rs`       | Unit tests for the dispatcher and shared helpers; per-category tests live alongside their handlers.                            |
+- **`mod.rs`**: `execute_tool()` dispatcher, shared types (`ToolResult`, `ToolError`), the `mcp_round_trip` / `resource_round_trip` helpers, and the `user_path_param` / `expand_user_path` tilde-expansion helpers.
+- **`ack.rs`**: The ack contract: `AckSignal` variants, `snapshot_generation`, `wait_for_ack`, default budgets.
+- **`app.rs`**: `quit`, `switch_pane`, `swap_panes`, `tab` (unified action verb).
+- **`view.rs`**: `toggle_hidden`, `set_view_mode`, `sort`.
+- **`nav.rs`**: `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`, `select_volume`, `move_cursor`, `open_under_cursor`.
+- **`file_ops.rs`**: `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`, `select`.
+- **`dialogs.rs`**: Unified `dialog` tool: open / focus / close / confirm for settings, file-viewer, about, and confirmation dialogs.
+- **`async_tools.rs`**: `await`, `connect_to_server`, `remove_manual_server`, `upgrade_smb_to_direct`, `set_setting`.
+- **`search.rs`**: `search` (drive index), `ai_search` (LLM-driven), and the lazy-load of the search index via `spawn_blocking`.
+- **`downloads.rs`**: `go_to_latest_download`: resolves via `downloads::commands::go_to_latest_download`, then `mcp-nav-to-path` + `mcp-move-cursor`.
+- **`tests.rs`**: Unit tests for the dispatcher and shared helpers; per-category tests live alongside their handlers.
 
 ## Conventions
 

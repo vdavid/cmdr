@@ -583,6 +583,9 @@ jobs:
       - name: Check docs reachable from AGENTS.md
         run: ./scripts/check/check --check docs-reachable --ci
 
+      - name: Check no 2-column tables in agent docs
+        run: ./scripts/check/check --check docs-no-two-col-tables --ci
+
       - name: Check workflow hardening
         run: ./scripts/check/check --check workflows-hardening --ci
 

@@ -81,39 +81,33 @@ The timeline shows events from both Rust (RUST) and Frontend (FE) with microseco
 
 ## Key metrics to watch
 
-| Event                         | Meaning                             |
-| ----------------------------- | ----------------------------------- |
-| `readdir START/END`           | Time to enumerate directory entries |
-| `stat_loop START/END`         | Time to stat() all files            |
-| `sort START/END`              | Time to sort entries                |
-| `IPC ... CALL/RETURNED`       | Round-trip time for Tauri IPC       |
-| `fileStore.setFiles`          | Time to populate the store          |
-| `loading = false`             | When UI can first render            |
-| `get_extended_metadata_batch` | Time for macOS metadata (Phase 2)   |
+- **`readdir START/END`**: Time to enumerate directory entries
+- **`stat_loop START/END`**: Time to stat() all files
+- **`sort START/END`**: Time to sort entries
+- **`IPC ... CALL/RETURNED`**: Round-trip time for Tauri IPC
+- **`fileStore.setFiles`**: Time to populate the store
+- **`loading = false`**: When UI can first render
+- **`get_extended_metadata_batch`**: Time for macOS metadata (Phase 2)
 
 ## Typical performance breakdown (measured 2024-12-30)
 
 ### 20,000 files (warm filesystem cache)
 
-| Phase                               | Time       |
-| ----------------------------------- | ---------- |
-| readdir                             | ~15ms      |
-| stat loop                           | ~110ms     |
-| sort                                | ~42ms      |
-| IPC serialization + return          | ~200ms     |
-| **Total to first render**           | **~365ms** |
-| Extended metadata (5k batch, async) | ~68ms      |
+- **readdir**: ~15ms
+- **stat loop**: ~110ms
+- **sort**: ~42ms
+- **IPC serialization + return**: ~200ms
+- **Total to first render**: **~365ms**
+- **Extended metadata (5k batch, async)**: ~68ms
 
 ### 50,000 files (warm filesystem cache)
 
-| Phase                               | Time       |
-| ----------------------------------- | ---------- |
-| readdir                             | ~35ms      |
-| stat loop                           | ~285ms     |
-| sort                                | ~115ms     |
-| IPC serialization + return          | ~460ms     |
-| **Total to first render**           | **~900ms** |
-| Extended metadata (5k batch, async) | ~70ms      |
+- **readdir**: ~35ms
+- **stat loop**: ~285ms
+- **sort**: ~115ms
+- **IPC serialization + return**: ~460ms
+- **Total to first render**: **~900ms**
+- **Extended metadata (5k batch, async)**: ~70ms
 
 Note: Cold cache can be 3-4x slower due to disk I/O.
 

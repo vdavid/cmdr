@@ -13,18 +13,29 @@ have no path column and shouldn't dominate the viewport), `max-height: 80vh`.
 
 ## Files
 
-| File                                | Purpose                                                                                                                                                                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SelectionDialog.svelte`            | Thin Selection-specific wrapper. Builds the `QueryDialogConfig` and mounts `QueryDialog`. Owns the AI translation IPC, the matcher invocation, the commit-on-Enter path, and the recent-selections IPC write-back.              |
-| `selection-state.svelte.ts`         | Selection's module-level `QueryFilterState` singleton + `clearSelectionState()` (the `⌘N` reset). Mirrors `lib/search/search-state.svelte.ts` but thinner (no extras façade: Selection has no scope / index / Pattern chip).    |
-| `folder-sampler.ts`                 | Pure: `sampleFolderNames(names, cursorIndex, max=240)`. Returns first 200 + 20 around the cursor + last 20, deduped and capped. Used as AI context.                                                                             |
-| `folder-sampler.test.ts`            | Pins the bucket math, the cursor-band clamp at both ends, dedup, empty folder, and the custom cap.                                                                                                                              |
-| `selection-matching.ts`             | Pure: `matchEntries(accessors, total, query) → number[]`. Compiles the glob to a JS RegExp (anchored, mirrors the Rust `glob_to_regex` in `src-tauri/src/search/query.rs`), composes pattern + size + date predicates with AND. |
-| `selection-matching.test.ts`        | Glob / regex / case-sensitive / size / date / snapshot-pane accessor / empty pattern / bad regex / stress invariants (sorted, no dups, in-range).                                                                               |
-| `selection-history-state.svelte.ts` | Instantiates the recent-items factory for Selection (uses `getRecentSelections` and friends). Exports `applySelectionHistoryEntry` for restoring a recent entry into the dialog state.                                          |
-| `selection-history-state.test.ts`   | Pins the apply round-trip: mode, query, caseSensitive, size filter, date-filter clear, hand-typed buffer carry-through, AI-prompt-as-query persistence.                                                                         |
-| `SelectionDialog.svelte.test.ts`    | Title-per-mode, commit-on-Enter, R7 banner visibility, mid-dialog AI-provider fallback, state survival across close + reopen.                                                                                                   |
-| `SelectionDialog.a11y.test.ts`      | Tier-3 axe-core audit across Select / Deselect / AI-on / snapshot-pane variants.                                                                                                                                                |
+- **`SelectionDialog.svelte`**: Thin Selection-specific wrapper. Builds the `QueryDialogConfig` and mounts
+  `QueryDialog`. Owns the AI translation IPC, the matcher invocation, the commit-on-Enter path, and the
+  recent-selections IPC write-back.
+- **`selection-state.svelte.ts`**: Selection's module-level `QueryFilterState` singleton + `clearSelectionState()` (the
+  `⌘N` reset). Mirrors `lib/search/search-state.svelte.ts` but thinner (no extras façade: Selection has no scope / index
+  / Pattern chip).
+- **`folder-sampler.ts`**: Pure: `sampleFolderNames(names, cursorIndex, max=240)`. Returns first 200 + 20 around the
+  cursor + last 20, deduped and capped. Used as AI context.
+- **`folder-sampler.test.ts`**: Pins the bucket math, the cursor-band clamp at both ends, dedup, empty folder, and the
+  custom cap.
+- **`selection-matching.ts`**: Pure: `matchEntries(accessors, total, query) → number[]`. Compiles the glob to a JS
+  RegExp (anchored, mirrors the Rust `glob_to_regex` in `src-tauri/src/search/query.rs`), composes pattern + size + date
+  predicates with AND.
+- **`selection-matching.test.ts`**: Glob / regex / case-sensitive / size / date / snapshot-pane accessor / empty pattern
+  / bad regex / stress invariants (sorted, no dups, in-range).
+- **`selection-history-state.svelte.ts`**: Instantiates the recent-items factory for Selection (uses
+  `getRecentSelections` and friends). Exports `applySelectionHistoryEntry` for restoring a recent entry into the dialog
+  state.
+- **`selection-history-state.test.ts`**: Pins the apply round-trip: mode, query, caseSensitive, size filter, date-filter
+  clear, hand-typed buffer carry-through, AI-prompt-as-query persistence.
+- **`SelectionDialog.svelte.test.ts`**: Title-per-mode, commit-on-Enter, R7 banner visibility, mid-dialog AI-provider
+  fallback, state survival across close + reopen.
+- **`SelectionDialog.a11y.test.ts`**: Tier-3 axe-core audit across Select / Deselect / AI-on / snapshot-pane variants.
 
 ## Wiring
 

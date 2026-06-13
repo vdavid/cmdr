@@ -6,16 +6,30 @@ onboarding, licensing), and routes commands + MCP events into the explorer via a
 
 ## File map
 
-| File                          | Purpose                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `+layout.svelte`              | Main-window layout: updater, settings applier, AI state init, MCP shortcuts/settings bridges, toast container, crash + MTP + error-report dialogs                                                                                                                                                                                                                                      |
-| `+page.svelte`                | App shell: mounts `DualPaneExplorer`, owns top-level dialog visibility ($state) and the `explorerRef` handle, wires keydown / context-menu / menu-event listeners, runs onboarding gating                                                                                                                                                                                              |
-| `command-dispatch.ts`         | `handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)`: the dispatch CORE. Runs the preamble (text-region intercept → `log.info` → breadcrumb → close palette → capability guard), then looks the id up in the flat `commandHandlers` record and awaits the handler. Arg-carrying ids take a typed payload. Load-bearing: referenced from `$lib/commands` and many tests |
-| `command-dispatch-context.ts` | `CommandDispatchContext` + `CommandDispatchDialogs`: the per-call context (the `getExplorer()` getter, the dialog-visibility callbacks, `dispatch`). A leaf so the handler modules and the core both import it without a cycle. Re-exported from `command-dispatch.ts` for existing importers                                                                                          |
-| `command-handlers/`           | Family-grouped handler modules (`app-dialog`, `view`, `pane`, `tab`, `nav`, `sort`, `file`, `clipboard`, `selection`, `misc`) plus `types.ts` (the seam: `CommandHandler`, `CommandHandlerRecord`, the `DispatchExemptId` union) and `index.ts` (assembles the one `commandHandlers` record). See its [`CLAUDE.md`](command-handlers/CLAUDE.md)                                        |
-| `dispatch-dedup.ts`           | Cross-source double-fire guard: `markDispatchSource('keyboard'                                                                                                                                                                                                                                                                                                                         | 'menu')` tags a dispatch; the core drops the same command arriving from the OTHER source within 300ms (the macOS menu-accelerator + webview-keydown double fire). Same-source repeats and untagged dispatches (palette, MCP) always pass, so the window can't swallow real input. Unit-tested with injectable time |
-| `explorer-api.ts`             | `ExplorerAPI` interface — the contract `DualPaneExplorer` exposes upward. Shared by `+page.svelte`, `command-dispatch.ts`, `mcp-listeners.ts` so none of them import the component directly                                                                                                                                                                                            |
-| `mcp-listeners.ts`            | `setupMcpListeners(ctx)`: thin transport adapter — validate-parses each `mcp-*` Tauri payload into typed `CommandArgs` and `dispatch`es it through the bus. No business logic; the round-trip callers reply via `mcp-response`                                                                                                                                                         |
+- **`+layout.svelte`**: Main-window layout: updater, settings applier, AI state init, MCP shortcuts/settings bridges,
+  toast container, crash + MTP + error-report dialogs
+- **`+page.svelte`**: App shell: mounts `DualPaneExplorer`, owns top-level dialog visibility ($state) and the
+  `explorerRef` handle, wires keydown / context-menu / menu-event listeners, runs onboarding gating
+- **`command-dispatch.ts`**: `handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)`: the dispatch CORE.
+  Runs the preamble (text-region intercept → `log.info` → breadcrumb → close palette → capability guard), then looks the
+  id up in the flat `commandHandlers` record and awaits the handler. Arg-carrying ids take a typed payload.
+  Load-bearing: referenced from `$lib/commands` and many tests
+- **`command-dispatch-context.ts`**: `CommandDispatchContext` + `CommandDispatchDialogs`: the per-call context (the
+  `getExplorer()` getter, the dialog-visibility callbacks, `dispatch`). A leaf so the handler modules and the core both
+  import it without a cycle. Re-exported from `command-dispatch.ts` for existing importers
+- **`command-handlers/`**: Family-grouped handler modules (`app-dialog`, `view`, `pane`, `tab`, `nav`, `sort`, `file`,
+  `clipboard`, `selection`, `misc`) plus `types.ts` (the seam: `CommandHandler`, `CommandHandlerRecord`, the
+  `DispatchExemptId` union) and `index.ts` (assembles the one `commandHandlers` record). See its
+  [`CLAUDE.md`](command-handlers/CLAUDE.md)
+- **`dispatch-dedup.ts`**: Cross-source double-fire guard: `markDispatchSource('keyboard' | 'menu')` tags a dispatch;
+  the core drops the same command arriving from the OTHER source within 300ms (the macOS menu-accelerator +
+  webview-keydown double fire). Same-source repeats and untagged dispatches (palette, MCP) always pass, so the window
+  can't swallow real input. Unit-tested with injectable time
+- **`explorer-api.ts`**: `ExplorerAPI` interface — the contract `DualPaneExplorer` exposes upward. Shared by
+  `+page.svelte`, `command-dispatch.ts`, `mcp-listeners.ts` so none of them import the component directly
+- **`mcp-listeners.ts`**: `setupMcpListeners(ctx)`: thin transport adapter — validate-parses each `mcp-*` Tauri payload
+  into typed `CommandArgs` and `dispatch`es it through the bus. No business logic; the round-trip callers reply via
+  `mcp-response`
 
 ## Conventions
 

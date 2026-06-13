@@ -4,15 +4,15 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 
 ## Key files
 
-| File                              | Purpose                                                                                                                                                                                                                                          |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `lazy-trigger.ts`                 | Single chokepoint for kicking off mDNS discovery on user intent. See "Lazy mDNS trigger" below                                                                                                                                                   |
-| `network-store.svelte.ts`         | Module-level `$state` singleton for all network data                                                                                                                                                                                             |
-| `NetworkBrowser.svelte`           | Host list table, rendered when pane is on the `network` volume                                                                                                                                                                                   |
-| `ShareBrowser.svelte`             | Share list for a specific host, handles auth flow                                                                                                                                                                                                |
-| `NetworkLoginForm.svelte`         | Credential form rendered inside `ShareBrowser`                                                                                                                                                                                                   |
-| `ConnectToServerDialog.svelte`    | Modal dialog for manually connecting to a server by address/IP/smb:// URL                                                                                                                                                                        |
-| `smb-reconnect-manager.svelte.ts` | Per-volume backoff cycle that re-establishes a Disconnected `SmbVolume`. Listens to `smb-connection-changed` from the backend, drives the FE state machine for `SmbReconnectingView`, exposes `subscribe` / `startCycle` / `retryNow` / `cancel` |
+- **`lazy-trigger.ts`**: Single chokepoint for kicking off mDNS discovery on user intent. See "Lazy mDNS trigger" below
+- **`network-store.svelte.ts`**: Module-level `$state` singleton for all network data
+- **`NetworkBrowser.svelte`**: Host list table, rendered when pane is on the `network` volume
+- **`ShareBrowser.svelte`**: Share list for a specific host, handles auth flow
+- **`NetworkLoginForm.svelte`**: Credential form rendered inside `ShareBrowser`
+- **`ConnectToServerDialog.svelte`**: Modal dialog for manually connecting to a server by address/IP/smb:// URL
+- **`smb-reconnect-manager.svelte.ts`**: Per-volume backoff cycle that re-establishes a Disconnected `SmbVolume`.
+  Listens to `smb-connection-changed` from the backend, drives the FE state machine for `SmbReconnectingView`, exposes
+  `subscribe` / `startCycle` / `retryNow` / `cancel`
 
 ## `network-store.svelte.ts`
 
@@ -42,22 +42,20 @@ Resolution → prefetch pipeline (fire-and-forget):
 
 Key exported functions:
 
-| Function                                    | Notes                                               |
-| ------------------------------------------- | --------------------------------------------------- |
-| `getNetworkHosts()`                         | Returns sorted copy                                 |
-| `fetchShares(host)`                         | Explicit fetch, sets `shareStates`, throws on error |
-| `refreshSharesIfStale(host)`                | Background refresh if TTL expired                   |
-| `refreshAllStaleShares()`                   | Call on entering network view                       |
-| `checkCredentialsForHost(serverName)`       | One-time async Keychain probe; idempotent           |
-| `forgetCredentials(serverName)`             | Deletes stored creds, sets status to `no_creds`     |
-| `setCredentialStatus / getCredentialStatus` | In-memory only, not persisted                       |
-| `setShareState / clearShareState`           | Used by `ShareBrowser` after successful auth        |
-| `getDiscoveryState()`                       | Returns current `DiscoveryState`                    |
-| `isHostResolving(hostId)`                   | Whether a host is currently being resolved          |
-| `getShareState(hostId)`                     | Returns `ShareState` for a host                     |
-| `getShareCount(hostId)`                     | Returns number of shares for a host                 |
-| `isListingShares(hostId)`                   | Whether shares are currently being fetched          |
-| `isShareDataStale(hostId)`                  | Whether cached share data has expired               |
+- **`getNetworkHosts()`**: Returns sorted copy
+- **`fetchShares(host)`**: Explicit fetch, sets `shareStates`, throws on error
+- **`refreshSharesIfStale(host)`**: Background refresh if TTL expired
+- **`refreshAllStaleShares()`**: Call on entering network view
+- **`checkCredentialsForHost(serverName)`**: One-time async Keychain probe; idempotent
+- **`forgetCredentials(serverName)`**: Deletes stored creds, sets status to `no_creds`
+- **`setCredentialStatus / getCredentialStatus`**: In-memory only, not persisted
+- **`setShareState / clearShareState`**: Used by `ShareBrowser` after successful auth
+- **`getDiscoveryState()`**: Returns current `DiscoveryState`
+- **`isHostResolving(hostId)`**: Whether a host is currently being resolved
+- **`getShareState(hostId)`**: Returns `ShareState` for a host
+- **`getShareCount(hostId)`**: Returns number of shares for a host
+- **`isListingShares(hostId)`**: Whether shares are currently being fetched
+- **`isShareDataStale(hostId)`**: Whether cached share data has expired
 
 ## `NetworkBrowser.svelte`
 

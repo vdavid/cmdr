@@ -7,10 +7,8 @@ This file is the per-module reference; the architecture and decisions live below
 
 ## Files
 
-| File            | Purpose                                                                 |
-| --------------- | ----------------------------------------------------------------------- |
-| `mod.rs`        | Module root. `QuickLookState = Mutex<QuickLookController>` (`Mutex<()>` on non-macOS), `init_state()`, and the `QuickLookKeyEvent` serde payload. |
-| `controller.rs` | macOS-only. `QuickLookController` (bookkeeping), `QuickLookDelegate` (data source + delegate + close observer), `define_class!` glue, key-event translation, and state-machine unit tests. |
+- **`mod.rs`**: Module root. `QuickLookState = Mutex<QuickLookController>` (`Mutex<()>` on non-macOS), `init_state()`, and the `QuickLookKeyEvent` serde payload.
+- **`controller.rs`**: macOS-only. `QuickLookController` (bookkeeping), `QuickLookDelegate` (data source + delegate + close observer), `define_class!` glue, key-event translation, and state-machine unit tests.
 
 ## Surface
 

@@ -9,15 +9,13 @@ The whole module is `#[cfg(target_os = "macos")]`.
 
 ## Files
 
-| File | Role |
-|------|------|
-| `mod.rs` | `start_drag`: builds the `NSDraggingItem`s + drag image, attaches per-item pasteboard writers, begins the session. Local sessions get plain `NSPasteboardItem`s; virtual sessions get `NSFilePromiseProvider`s. |
-| `type_plan.rs` | Pure, locality-aware pasteboard composition (`plan_pasteboard_items`). Local = file-url + filenames (no path text, matching Finder; see issue #28); virtual = empty (the textClipping fix). Unit-tested policy. |
-| `source.rs` | `CmdrDragSource` (`define_class!`, `MainThreadOnly`): the `NSDraggingSource`. Returns the permissive operation mask and, on `draggingSession:endedAtPoint:operation:`, tells the promise machinery the gesture ended so a virtual session's objects can be freed. |
-| `promises.rs` | The file-promise providers + delegate (`CmdrPromiseDelegate`), the shared serial queue, the session-lifetime storage, and the `NSError` mapping. |
-| `fulfillment.rs` | The plain-Rust fulfillment service: downloads a virtual file to the Finder-chosen destination. NO AppKit; unit-testable. Returns a `FulfillOutcome { is_dir }` so the session summary can split the completion toast by kind. |
-| `session_summary.rs` | Pure per-session outcome accounting (`ItemOutcome`, `SessionSummary`, `summarize`). Folds per-item outcomes into the top-level file/folder/failure counts the completion toast reads. NO AppKit, NO Tauri; unit-tested in isolation. |
-| `uti.rs` | Pure filename-extension → UTI mapping for promise providers (`public.jpeg`, …, fallback `public.data`; folders `public.folder`). |
+- **`mod.rs`**: `start_drag`: builds the `NSDraggingItem`s + drag image, attaches per-item pasteboard writers, begins the session. Local sessions get plain `NSPasteboardItem`s; virtual sessions get `NSFilePromiseProvider`s.
+- **`type_plan.rs`**: Pure, locality-aware pasteboard composition (`plan_pasteboard_items`). Local = file-url + filenames (no path text, matching Finder; see issue #28); virtual = empty (the textClipping fix). Unit-tested policy.
+- **`source.rs`**: `CmdrDragSource` (`define_class!`, `MainThreadOnly`): the `NSDraggingSource`. Returns the permissive operation mask and, on `draggingSession:endedAtPoint:operation:`, tells the promise machinery the gesture ended so a virtual session's objects can be freed.
+- **`promises.rs`**: The file-promise providers + delegate (`CmdrPromiseDelegate`), the shared serial queue, the session-lifetime storage, and the `NSError` mapping.
+- **`fulfillment.rs`**: The plain-Rust fulfillment service: downloads a virtual file to the Finder-chosen destination. NO AppKit; unit-testable. Returns a `FulfillOutcome { is_dir }` so the session summary can split the completion toast by kind.
+- **`session_summary.rs`**: Pure per-session outcome accounting (`ItemOutcome`, `SessionSummary`, `summarize`). Folds per-item outcomes into the top-level file/folder/failure counts the completion toast reads. NO AppKit, NO Tauri; unit-tested in isolation.
+- **`uti.rs`**: Pure filename-extension → UTI mapping for promise providers (`public.jpeg`, …, fallback `public.data`; folders `public.folder`).
 
 ## How drag-out works
 

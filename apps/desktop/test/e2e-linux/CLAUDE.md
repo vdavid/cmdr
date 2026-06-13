@@ -81,11 +81,10 @@ All four volume names are overridable via `CARGO_VOLUME`, `TARGET_VOLUME`, `ROOT
 
 ## Files
 
-| File                     | Purpose                                                                                        |
-| ------------------------ | ---------------------------------------------------------------------------------------------- |
-| `docker/Dockerfile.base` | Ubuntu 26.04 system layer: Tauri prereqs, Xvfb, Rust, Node, Playwright chromium libs, patchelf |
-| `docker/Dockerfile`      | Thin final layer: `FROM cmdr-e2e-base:<hash>` + entrypoint                                     |
-| `docker/entrypoint.sh`   | Xvfb/dbus/GVFS/VNC setup for headless GUI, plus the Playwright host-platform override          |
+- **`docker/Dockerfile.base`**: Ubuntu 26.04 system layer: Tauri prereqs, Xvfb, Rust, Node, Playwright chromium libs,
+  patchelf
+- **`docker/Dockerfile`**: Thin final layer: `FROM cmdr-e2e-base:<hash>` + entrypoint
+- **`docker/entrypoint.sh`**: Xvfb/dbus/GVFS/VNC setup for headless GUI, plus the Playwright host-platform override
 
 ## SMB E2E networking
 

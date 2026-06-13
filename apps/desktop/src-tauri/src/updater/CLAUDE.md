@@ -8,12 +8,10 @@ and the frontend calls the plugin API directly.
 
 ## File map
 
-| File | Purpose |
-|------|---------|
-| `mod.rs` | Three Tauri commands (`check_for_update`, `download_update`, `install_update`) and shared `UpdateState` |
-| `manifest.rs` | Parses `latest.json`, compares versions, resolves platform key |
-| `signature.rs` | Minisign signature verification (base64-wrapped, matching Tauri's format) |
-| `installer.rs` | Extracts tarball, syncs into running bundle, handles privilege escalation |
+- **`mod.rs`**: Three Tauri commands (`check_for_update`, `download_update`, `install_update`) and shared `UpdateState`
+- **`manifest.rs`**: Parses `latest.json`, compares versions, resolves platform key
+- **`signature.rs`**: Minisign signature verification (base64-wrapped, matching Tauri's format)
+- **`installer.rs`**: Extracts tarball, syncs into running bundle, handles privilege escalation
 
 ## Key decisions
 

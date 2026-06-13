@@ -10,12 +10,12 @@ Do `go run scripts/test-data-generator/main.go`.
 
 Creates (or syncs to) four folders under `_ignored/test-data/`:
 
-| Folder                    | Target file count |
-| ------------------------- | ----------------- |
-| `folder with 1000 files`  | 1,000             |
-| `folder with 5000 files`  | 5,000             |
-| `folder with 20000 files` | 20,000            |
-| `folder with 50000 files` | 50,000            |
+Target file count per folder:
+
+- **`folder with 1000 files`**: 1,000
+- **`folder with 5000 files`**: 5,000
+- **`folder with 20000 files`**: 20,000
+- **`folder with 50000 files`**: 50,000
 
 No magic.
 

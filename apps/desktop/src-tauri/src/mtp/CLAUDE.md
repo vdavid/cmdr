@@ -9,15 +9,13 @@ storage picker, and reactive volume state.
 
 ## File map
 
-| File | Purpose |
-|------|---------|
-| `mod.rs` | Re-exports public surface; module-level doc |
-| `types.rs` | `MtpDeviceInfo`, `MtpStorageInfo`: camelCase JSON via `serde(rename_all)`. `MtpDeviceInfo::usb_speed` mirrors `mtp_rs::UsbSpeed` via the shared `crate::usb_speed::UsbSpeed` (also surfaced on `LocationInfo` for MTP volumes so the volume switcher can show a colored dot). |
-| `discovery.rs` | `list_mtp_devices()` via `mtp_rs::MtpDevice::list_devices()`; device IDs formatted as `"mtp-{location_id}"` |
-| `watcher.rs` | `start_mtp_watcher()`: nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones |
-| `macos_workaround.rs` | macOS-only (`#[cfg(target_os = "macos")]`). Auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill`; restores on disconnect/exit; `ensure_ptpcamerad_enabled()` on startup for crash recovery. Falls back to manual `PTPCAMERAD_WORKAROUND_COMMAND` dialog if suppression fails |
-| `connection/` | Per-device session layer: `MtpConnectionManager` singleton, connect / disconnect (with `MtpDisconnectReason` so logs and UI distinguish explicit toggle-off from hotplug-loss), event-loop task, list / read / write / mutate / bulk ops. See [`connection/CLAUDE.md`](connection/CLAUDE.md) for the file-by-file breakdown, lock semantics, caches, and gotchas. |
-| `virtual_device.rs` | Virtual MTP device for E2E testing and dev sessions; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Dev opt-in: `CMDR_VIRTUAL_MTP=1 pnpm dev` (the wrapper adds the feature; `=<dir>` backs it with a custom dir). See [`docs/tooling/virtual-mtp.md`](../../../../../docs/tooling/virtual-mtp.md). |
+- **`mod.rs`**: Re-exports public surface; module-level doc
+- **`types.rs`**: `MtpDeviceInfo`, `MtpStorageInfo`: camelCase JSON via `serde(rename_all)`. `MtpDeviceInfo::usb_speed` mirrors `mtp_rs::UsbSpeed` via the shared `crate::usb_speed::UsbSpeed` (also surfaced on `LocationInfo` for MTP volumes so the volume switcher can show a colored dot).
+- **`discovery.rs`**: `list_mtp_devices()` via `mtp_rs::MtpDevice::list_devices()`; device IDs formatted as `"mtp-{location_id}"`
+- **`watcher.rs`**: `start_mtp_watcher()`: nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones
+- **`macos_workaround.rs`**: macOS-only (`#[cfg(target_os = "macos")]`). Auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill`; restores on disconnect/exit; `ensure_ptpcamerad_enabled()` on startup for crash recovery. Falls back to manual `PTPCAMERAD_WORKAROUND_COMMAND` dialog if suppression fails
+- **`connection/`**: Per-device session layer: `MtpConnectionManager` singleton, connect / disconnect (with `MtpDisconnectReason` so logs and UI distinguish explicit toggle-off from hotplug-loss), event-loop task, list / read / write / mutate / bulk ops. See [`connection/CLAUDE.md`](connection/CLAUDE.md) for the file-by-file breakdown, lock semantics, caches, and gotchas.
+- **`virtual_device.rs`**: Virtual MTP device for E2E testing and dev sessions; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Dev opt-in: `CMDR_VIRTUAL_MTP=1 pnpm dev` (the wrapper adds the feature; `=<dir>` backs it with a custom dir). See [`docs/tooling/virtual-mtp.md`](../../../../../docs/tooling/virtual-mtp.md).
 
 ### Virtual MTP device (dev + E2E activation)
 

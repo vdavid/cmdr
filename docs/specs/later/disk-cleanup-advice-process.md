@@ -28,13 +28,11 @@ is unset.
 
 Before suggesting any of these get wiped, run `pgrep -fl '<app>'`:
 
-| Cache path                                             | Owner to check                                   |
-| ------------------------------------------------------ | ------------------------------------------------ |
-| `~/Library/Caches/JetBrains`                           | `idea`, `webstorm`, `clion`, `pycharm`, `goland` |
-| `~/Library/Application Support/Cursor` + caches        | `cursor`, `Cursor`                               |
-| `~/Library/Caches/com.spotify.client`                  | `spotify`                                        |
-| Chrome caches (`CacheStorage`, `Service Worker`, etc.) | `chrome`, `Google Chrome`                        |
-| Firefox caches                                         | `firefox`                                        |
+- **`~/Library/Caches/JetBrains`**: `idea`, `webstorm`, `clion`, `pycharm`, `goland`
+- **`~/Library/Application Support/Cursor` + caches**: `cursor`, `Cursor`
+- **`~/Library/Caches/com.spotify.client`**: `spotify`
+- **Chrome caches (`CacheStorage`, `Service Worker`, etc.)**: `chrome`, `Google Chrome`
+- **Firefox caches**: `firefox`
 
 If the app is running: don't recommend the wipe. Either skip or downgrade to "quit the app first if you want to reclaim
 this."
@@ -44,11 +42,9 @@ not live state, safe to delete even while IntelliJ runs.
 
 ### Cost/benefit: don't recommend small wins with high refetch cost
 
-| Bad recommendation            | Why                                                                                 |
-| ----------------------------- | ----------------------------------------------------------------------------------- |
-| Chrome `CacheStorage` (~2 GB) | Browser re-downloads pages the user is likely to revisit soon. Net cost > net gain. |
-| `~/.cargo` registry (~2 GB)   | Reclaimed on next `cargo build` of the affected crate. Disruptive for active devs.  |
-| `~/Library/Caches/pnpm`       | Same shape — pnpm refetches on next install.                                        |
+- **Chrome `CacheStorage` (~2 GB)**: Browser re-downloads pages the user is likely to revisit soon. Net cost > net gain.
+- **`~/.cargo` registry (~2 GB)**: Reclaimed on next `cargo build` of the affected crate. Disruptive for active devs.
+- **`~/Library/Caches/pnpm`**: Same shape — pnpm refetches on next install.
 
 Only recommend cache wipes where: size is big AND refetch is unlikely soon (dormant tooling, old AI model downloads,
 abandoned package managers).

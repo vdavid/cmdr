@@ -225,11 +225,9 @@ of the initial design system migration.
 
 **Weight:**
 
-| Usage                 | Weight         |
-| --------------------- | -------------- |
-| Body text, file names | 400 (regular)  |
-| Labels, button text   | 500 (medium)   |
-| Headings, emphasis    | 600 (semibold) |
+- **Body text, file names**: 400 (regular)
+- **Labels, button text**: 500 (medium)
+- **Headings, emphasis**: 600 (semibold)
 
 ### Website
 
@@ -372,12 +370,13 @@ canonical "grouped card" wrapper used there (and intended for Settings refactors
 Every interactive element needs a visible focus indicator. This is a keyboard-driven app, so all focus must be visible
 (use `:focus`, not `:focus-visible`, for inputs).
 
-| Element type                                                          | How focus is handled                                                                                                 |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Buttons                                                               | Global `button:focus-visible` rule in `app.css` (automatic, no per-component work needed)                            |
-| Inputs, selects, textareas                                            | Each component provides its own `:focus` rule: `border-color: var(--color-accent); box-shadow: var(--shadow-focus);` |
-| File list containers (BriefList, FullList)                            | Cursor/selection highlight serves as the focus indicator. `outline: none` is intentional                             |
-| Non-interactive containers (`<div>` without tabindex, or tabindex=-1) | May use `outline: none` freely (no focus indicator needed)                                                           |
+- **Buttons**: Global `button:focus-visible` rule in `app.css` (automatic, no per-component work needed)
+- **Inputs, selects, textareas**: Each component provides its own `:focus` rule:
+  `border-color: var(--color-accent); box-shadow: var(--shadow-focus);`
+- **File list containers (BriefList, FullList)**: Cursor/selection highlight serves as the focus indicator.
+  `outline: none` is intentional
+- **Non-interactive containers (`<div>` without tabindex, or tabindex=-1)**: May use `outline: none` freely (no focus
+  indicator needed)
 
 **Standard pattern for inputs:** Set `outline: none` on the base selector, then pair it with a `:focus` rule that
 applies `border-color: var(--color-accent)` and `box-shadow: var(--shadow-focus)`. If the element has `border: none`,
@@ -509,14 +508,16 @@ sheet is centered, lifted off the canvas with a frosted backdrop, and sized via 
 | `--sheet-backdrop-blur`   | `10px`                       | Frosted-glass amount. GPU-composited; the sheet is the only consumer today.                                                                                                 |
 | `--sheet-backdrop-color`  | `var(--color-overlay-heavy)` | Dim layer behind the sheet. Resolves to `rgba(0,0,0,0.6)` in both themes (heavier than `ModalDialog`'s scrim because sheets sit over the full app, not a centered cluster). |
 
-**When to use a sheet vs `ModalDialog`:**
+**When to use a sheet vs `ModalDialog`:** each line pairs the sheet case with the matching `ModalDialog` case.
 
-| Use a sheet for                                                             | Use `ModalDialog` for                                                |
-| --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Multi-step flows the user must commit to (onboarding, paid licensing later) | Single-decision confirmations (delete, discard, overwrite)           |
-| Content that needs > 480px width (provider picker grids, comparison tables) | Short prose + a two-button choice                                    |
-| Flows where Escape-to-dismiss would lose meaningful state                   | Flows where Escape-to-dismiss is safe (re-openable, idempotent)      |
-| First-launch consent (user must choose, can't cancel)                       | Any everyday dialog (drag, blur, focus trap all come from the prim.) |
+- **Multi-step flows the user must commit to (onboarding, paid licensing later)**: `ModalDialog` for single-decision
+  confirmations (delete, discard, overwrite)
+- **Content that needs > 480px width (provider picker grids, comparison tables)**: `ModalDialog` for short prose + a
+  two-button choice
+- **Flows where Escape-to-dismiss would lose meaningful state**: `ModalDialog` for flows where Escape-to-dismiss is safe
+  (re-openable, idempotent)
+- **First-launch consent (user must choose, can't cancel)**: `ModalDialog` for any everyday dialog (drag, blur, focus
+  trap all come from the prim.)
 
 Sheets are heavier: they own their own backdrop, focus trap, MCP dialog-registry entry (`'onboarding'`), and footer
 chrome. Only use one when the contract genuinely needs it.
@@ -671,26 +672,22 @@ The reset and global styles in `app.css` already establish these. Re-declaring t
 
 **Inherited from `body` (don't repeat on child elements unless overriding):**
 
-| Property      | Global value                                                                            |
-| ------------- | --------------------------------------------------------------------------------------- |
-| `color`       | `var(--color-text-primary)`                                                             |
-| `font-size`   | `16px` (via `html`)                                                                     |
-| `font-family` | Inherited from browser default (system font); set `var(--font-system)` only when needed |
+- **`color`**: `var(--color-text-primary)`
+- **`font-size`**: `16px` (via `html`)
+- **`font-family`**: Inherited from browser default (system font); set `var(--font-system)` only when needed
 
 **CSS defaults you don't need to write:**
 
-| Declaration                          | Why it's redundant                                                       |
-| ------------------------------------ | ------------------------------------------------------------------------ |
-| `display: block` on `<div>`          | That's the default                                                       |
-| `flex-direction: row`                | Default for `display: flex`                                              |
-| `align-items: stretch`               | Default for `display: flex`                                              |
-| `position: static`                   | That's the default                                                       |
-| `opacity: 1`                         | Default (except when transitioning from `opacity: 0`, where it's needed) |
-| `visibility: visible`                | That's the default                                                       |
-| `font-style: normal`                 | Default (unless overriding an italic parent)                             |
-| `text-decoration: none` on non-links | That's the default                                                       |
-| `border: none` on `<div>`            | Divs have no border by default                                           |
-| `background: transparent` on `<div>` | Divs are transparent by default                                          |
+- **`display: block` on `<div>`**: That's the default
+- **`flex-direction: row`**: Default for `display: flex`
+- **`align-items: stretch`**: Default for `display: flex`
+- **`position: static`**: That's the default
+- **`opacity: 1`**: Default (except when transitioning from `opacity: 0`, where it's needed)
+- **`visibility: visible`**: That's the default
+- **`font-style: normal`**: Default (unless overriding an italic parent)
+- **`text-decoration: none` on non-links**: That's the default
+- **`border: none` on `<div>`**: Divs have no border by default
+- **`background: transparent` on `<div>`**: Divs are transparent by default
 
 When in doubt, check whether removing the declaration changes anything. If it doesn't, delete it.
 

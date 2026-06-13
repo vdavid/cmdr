@@ -7,13 +7,12 @@ Rust counterpart: `apps/desktop/src-tauri/src/indexing/`
 
 ## Files
 
-| File                             | Purpose                                                                                                                        |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `index.ts`                       | Public API barrel export                                                                                                       |
-| `index-state.svelte.ts`          | Module-level `$state` for scan progress; listens for scan events                                                               |
-| `index-events.ts`                | Listens for `index-dir-updated`, calls back with updated paths                                                                 |
-| `eta.ts`                         | Pure ETA helpers (formatting thresholds, elapsed + sliding-window estimation) + `computeScanProgress` (two-tier scan fraction) |
-| `IndexingStatusIndicator.svelte` | Top-right hourglass icon; rich tooltip with scan / aggregation / replay state                                                  |
+- **`index.ts`**: Public API barrel export
+- **`index-state.svelte.ts`**: Module-level `$state` for scan progress; listens for scan events
+- **`index-events.ts`**: Listens for `index-dir-updated`, calls back with updated paths
+- **`eta.ts`**: Pure ETA helpers (formatting thresholds, elapsed + sliding-window estimation) + `computeScanProgress`
+  (two-tier scan fraction)
+- **`IndexingStatusIndicator.svelte`**: Top-right hourglass icon; rich tooltip with scan / aggregation / replay state
 
 ## Public API (`index.ts`)
 

@@ -8,12 +8,11 @@ Backend counterpart:
 
 ## File map
 
-| File                          | Responsibility                                                                            |
-| ----------------------------- | ----------------------------------------------------------------------------------------- |
-| `NewFileDialog.svelte`        | Dialog UI, name validation, async conflict check, create + open in editor                 |
-| `new-file-operations.ts`      | `getInitialFileName()`: extracts the full filename (with extension) from the cursor entry |
-| `NewFileDialog.a11y.test.ts`  | A11y assertions                                                                           |
-| `new-file-operations.test.ts` | Pure-utility tests                                                                        |
+- **`NewFileDialog.svelte`**: Dialog UI, name validation, async conflict check, create + open in editor
+- **`new-file-operations.ts`**: `getInitialFileName()`: extracts the full filename (with extension) from the cursor
+  entry
+- **`NewFileDialog.a11y.test.ts`**: A11y assertions
+- **`new-file-operations.test.ts`**: Pure-utility tests
 
 ## How new-file flows
 

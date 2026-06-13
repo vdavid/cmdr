@@ -354,16 +354,22 @@ Not skippable; this is where the constants earn their values. On the dev instanc
 
 ## Risks and mitigations
 
-| Risk                                                                        | Mitigation                                                                                                                                                                                                                                                                                                                          |
-| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Partial pass corrupts final totals (the nightmare)                          | Borrow-only maps + differential test (M1.5) + idempotence test. Verified to have teeth before trusting green.                                                                                                                                                                                                                       |
-| Per-pass cost slows the scan                                                | Full compute is in-memory; writes depth-limited; queue-depth skip; M4 measures real cost with a ≤ +5% scan-duration budget.                                                                                                                                                                                                         |
-| Sender blocks a tokio worker on a full channel                              | `try_send` only — structurally impossible.                                                                                                                                                                                                                                                                                          |
-| Growing numbers read as wrong data                                          | Hourglass already renders for all dir sizes while `indexing` is true; this was David's explicit call ("partial + hourglass beats placeholder").                                                                                                                                                                                     |
-| Concurrent FE change hides partial sizes behind the new `<dir>` placeholder | Explicit rebase-time integration check + pinning Vitest case (M4.1).                                                                                                                                                                                                                                                                |
-| Hot paths point at unscanned/excluded dirs                                  | `resolve_path` miss → skip silently; next pass retries. No error states.                                                                                                                                                                                                                                                            |
-| Emit storm                                                                  | One emit per pass (≥ 5 s apart) + FE 2 s/pane throttle.                                                                                                                                                                                                                                                                             |
-| E2E-restricted scans (`CMDR_E2E_START_PATH`) get no partial rows            | In restricted scans the scan root is still `/` (ROOT_ID), so fixture dirs sit at their true depth from `/` — typically deeper than MAX_DEPTH. Acceptable: fixture scans rarely reach tick 10 anyway, hot paths still punch through, and no E2E test asserts partial rows. Covered by the slow-lane suite run proving no regression. |
+- **Partial pass corrupts final totals (the nightmare)**: Borrow-only maps + differential test (M1.5) + idempotence
+  test. Verified to have teeth before trusting green.
+- **Per-pass cost slows the scan**: Full compute is in-memory; writes depth-limited; queue-depth skip; M4 measures real
+  cost with a ≤ +5% scan-duration budget.
+- **Sender blocks a tokio worker on a full channel**: `try_send` only — structurally impossible.
+- **Growing numbers read as wrong data**: Hourglass already renders for all dir sizes while `indexing` is true; this was
+  David's explicit call ("partial + hourglass beats placeholder").
+- **Concurrent FE change hides partial sizes behind the new `<dir>` placeholder**: Explicit rebase-time integration
+  check + pinning Vitest case (M4.1).
+- **Hot paths point at unscanned/excluded dirs**: `resolve_path` miss → skip silently; next pass retries. No error
+  states.
+- **Emit storm**: One emit per pass (≥ 5 s apart) + FE 2 s/pane throttle.
+- **E2E-restricted scans (`CMDR_E2E_START_PATH`) get no partial rows**: In restricted scans the scan root is still `/`
+  (ROOT_ID), so fixture dirs sit at their true depth from `/` — typically deeper than MAX_DEPTH. Acceptable: fixture
+  scans rarely reach tick 10 anyway, hot paths still punch through, and no E2E test asserts partial rows. Covered by the
+  slow-lane suite run proving no regression.
 
 ## Parallelization
 

@@ -5,14 +5,12 @@ lives in `FilePane.svelte` as a `Set<number>`).
 
 ## Key files
 
-| File                           | Purpose                                              |
-| ------------------------------ | ---------------------------------------------------- |
-| `selection-info-utils.ts`      | Pure utilities, no DOM deps, fully tested            |
-| `SelectionInfo.svelte`         | Status bar below each pane                           |
-| `FileIcon.svelte`              | 16x16 icon with emoji fallback and overlay badges    |
-| `SortableHeader.svelte`        | Clickable column header with sort direction triangle |
-| `selection-info-utils.test.ts` | Unit tests for all util functions                    |
-| `components.test.ts`           | Component render tests                               |
+- **`selection-info-utils.ts`**: Pure utilities, no DOM deps, fully tested
+- **`SelectionInfo.svelte`**: Status bar below each pane
+- **`FileIcon.svelte`**: 16x16 icon with emoji fallback and overlay badges
+- **`SortableHeader.svelte`**: Clickable column header with sort direction triangle
+- **`selection-info-utils.test.ts`**: Unit tests for all util functions
+- **`components.test.ts`**: Component render tests
 
 Per-component age-tier mapping (`tierForYear` / `tierForMonth` / `tierForDay` / `tierForTime`) and the
 `appearance.dateColors` palette live in [`$lib/settings/age-tier-utils.ts`](../../settings/age-tier-utils.ts): they
@@ -52,14 +50,12 @@ exist in the consuming view, not here.
 
 ## `SelectionInfo.svelte`
 
-Status bar rendered below each pane. Four display modes via `$derived displayMode`:
+Status bar rendered below each pane. Four display modes via `$derived displayMode`, each with its condition:
 
-| Mode                | Condition                                               |
-| ------------------- | ------------------------------------------------------- |
-| `empty`             | `stats.totalFiles === 0 && stats.totalDirs === 0`       |
-| `selection-summary` | `selectedCount > 0` (any view mode)                     |
-| `no-selection`      | Full mode, no selection: shows total file/dir counts    |
-| `file-info`         | Brief mode, no selection: shows name, size triads, date |
+- **`empty`**: `stats.totalFiles === 0 && stats.totalDirs === 0`
+- **`selection-summary`**: `selectedCount > 0` (any view mode)
+- **`no-selection`**: Full mode, no selection: shows total file/dir counts
+- **`file-info`**: Brief mode, no selection: shows name, size triads, date
 
 In `selection-summary` mode, directory recursive sizes are included in the size display when available (from the drive
 index). The `hasOnlyDirs` branch shows size triads when `totalSize > 0`; when sizes are unavailable (indexing off), it

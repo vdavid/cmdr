@@ -9,14 +9,14 @@ Backend counterpart:
 
 ## File map
 
-| File                                | Responsibility                                                                                                 |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `NewFolderDialog.svelte`            | Dialog UI, name validation, async conflict check, AI-suggestion streaming, timeout warning, post-create cursor |
-| `new-folder-operations.ts`          | `getInitialFolderName()` from cursor entry; `moveCursorToNewFolder()` (subscribes to `directory-diff` watcher) |
-| `new-folder-utils.ts`               | Pure helpers (`removeExtension()`) for deriving the initial folder name                                        |
-| `NewFolderDialog.a11y.test.ts`      | A11y assertions                                                                                                |
-| `NewFolderDialog.streaming.test.ts` | Tests for AI-suggestion streaming                                                                              |
-| `new-folder-utils.test.ts`          | Pure-utility tests                                                                                             |
+- **`NewFolderDialog.svelte`**: Dialog UI, name validation, async conflict check, AI-suggestion streaming, timeout
+  warning, post-create cursor
+- **`new-folder-operations.ts`**: `getInitialFolderName()` from cursor entry; `moveCursorToNewFolder()` (subscribes to
+  `directory-diff` watcher)
+- **`new-folder-utils.ts`**: Pure helpers (`removeExtension()`) for deriving the initial folder name
+- **`NewFolderDialog.a11y.test.ts`**: A11y assertions
+- **`NewFolderDialog.streaming.test.ts`**: Tests for AI-suggestion streaming
+- **`new-folder-utils.test.ts`**: Pure-utility tests
 
 ## How new-folder flows
 

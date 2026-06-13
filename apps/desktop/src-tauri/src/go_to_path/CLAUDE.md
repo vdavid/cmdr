@@ -5,10 +5,8 @@ all the path reasoning plus the recent-paths store. The IPC layer (`commands/go_
 
 ## Module structure
 
-| File         | Purpose                                                                                                                                                        |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mod.rs`     | Pure `resolve(input, base_dir) -> GoToPathResolution`: `~` expansion, relative-to-`base_dir` join, lexical `.`/`..` normalization, nearest-ancestor walk, dir/file classify. Plus unit tests. |
-| `history.rs` | Recent-paths store (`RecentPathEntry`, `RecentPathsStore`): in-memory `Mutex` + `OnceLock`, atomic temp+rename write, dedupe by resolved path, fixed cap, schema-version quarantine. |
+- **`mod.rs`**: Pure `resolve(input, base_dir) -> GoToPathResolution`: `~` expansion, relative-to-`base_dir` join, lexical `.`/`..` normalization, nearest-ancestor walk, dir/file classify. Plus unit tests.
+- **`history.rs`**: Recent-paths store (`RecentPathEntry`, `RecentPathsStore`): in-memory `Mutex` + `OnceLock`, atomic temp+rename write, dedupe by resolved path, fixed cap, schema-version quarantine.
 
 ## `GoToPathResolution`
 

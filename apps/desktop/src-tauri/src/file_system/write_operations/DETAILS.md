@@ -21,24 +21,22 @@ Pre-flight scans reuse cached listings when the source volume reports an active 
 
 ## Files (top level)
 
-| File | Responsibility |
-|------|----------------|
-| `mod.rs` | Public API: `copy_files_start`, `move_files_start`, `delete_files_start`, `trash_files_start`. Each delegates to `start_write_operation` which handles state creation, spawn lifecycle, cleanup, and error/panic recovery. Validation runs inside the handler closure on the blocking thread pool, never on the async executor. Also re-exports `transfer::*` and `delete::*` public symbols so external callers keep their `crate::file_system::write_operations::<symbol>` import paths. |
-| `types.rs` | All serializable types: events, config, errors, results. `WriteOperationConfig`, `ConflictResolution`, `WriteOperationError`, `DryRunResult`, scan preview events. Also: `OperationEventSink` trait (decouples event emission from `tauri::AppHandle`), `TauriEventSink` (production), `CollectorEventSink` (test-only). |
-| `state.rs` | Two `LazyLock<RwLock<HashMap>>` caches (`WRITE_OPERATION_STATE`, `OPERATION_STATUS_CACHE`). `WriteOperationState`, `CopyTransaction`, `ScanResult`, `FileInfo`. `WriteSettledGuard` RAII shape for the settle contract. |
-| `validation.rs` | Source/destination validation: `validate_sources`, `validate_destination`, `validate_destination_writable` (via `libc::access`), `validate_disk_space` (NSURL API on macOS, `statvfs` on Linux), `validate_not_same_location`, `validate_destination_not_inside_source`, `validate_path_length`. Identity/filesystem checks: `is_same_file` (inode+device), `is_same_filesystem` (device IDs), `path_exists_or_is_symlink` (dangling-symlink-aware), `is_symlink_loop`. |
-| `conflict.rs` | Conflict resolution. The two-bucket `ApplyToAll` latch model (`apply_to_all_effective` / `apply_to_all_record`). `resolve_conflict` (`tokio::sync::oneshot` channel wait for Stop mode), `reduce_conditional_resolution`, `apply_resolution`, `find_unique_name` (O_EXCL reservation). Conflict-event/info builders: `build_conflict_event`, `calculate_dest_path`, `create_conflict_info`, `sample_conflicts`. |
-| `overwrite.rs` | Temp+rename-aside atomicity: `ResolvedDestination`, `safe_overwrite_file`, `safe_overwrite_dir`. |
-| `durability.rs` | `flush_created_destinations` (emits the `Flushing` event, then `fdatasync`s each created destination + parent dir, skipping already-synced paths). `lookup_indexed_size` (drive-index directory size for conflict UI). |
-| `cancellable.rs` | Cancellation-aware execution: `run_cancellable`, `run_cancellable_scoped` (poll the cancel flag while blocking work runs on a separate thread). Detached background cleanup: `remove_file_in_background`, `remove_dir_all_in_background`. |
-| `scan.rs` | `scan_sources` (recursive walk, emits progress), `dry_run_scan`, shared `walk_dir_recursive` walker. The `on_progress` callback receives `(files, dirs, bytes, current_file, current_dir)`; the walker reads `current_dir` from `path.parent()` so the UI can show "in directory: …" alongside the filename. Scan emit sites populate `WriteProgressEvent.current_dir` plus index-derived `expected_files_total` / `expected_bytes_total` (via `WriteProgressEvent::with_scan_meta`) so the frontend renders a real progress bar during the foolproof re-scan. Expected totals come from `crate::indexing::expected_totals::expected_totals_for_sources` (`None` when the index doesn't cover all sources; the FE falls back to a tally-only display). |
-| `scan_preview.rs` | Scan preview subsystem for Copy dialog live stats: `start_scan_preview`, `cancel_scan_preview`, `is_scan_preview_complete`. Background scans (local and volume-based) with result caching. Emits `expected_files_total` / `expected_bytes_total` (sampled once at scan start from the drive index) on every `scan-preview-progress` event, alongside the running tallies and `current_dir`. |
-| `eta.rs` | `EtaEstimator`: time-weighted EWMA per axis (bytes, files), τ ≈ 3 s. Combines via `max(ETA_bytes, ETA_files)`. One per `WriteOperationState`, fed by `state.enrich_progress` at every `write-progress` emit site. See [ETA + throughput](#eta--throughput) below. |
-| `tests.rs` | Cross-cutting unit tests. |
-| `scan_preview_listing_progress_tests.rs` | Regression tests for the `ListingProgress` callback shape. |
-| `scan_preview_oracle_tests.rs` | Integration tests for the fresh-listing oracle inside scan preview. |
-| `settle_event_tests.rs` | Tests for `WriteSettledGuard` invariants (single fire, panic safety, ordering). |
-| `validation_integration_test.rs` | Validation functions, safety checks, path length, disk space tests. |
+- **`mod.rs`**: Public API: `copy_files_start`, `move_files_start`, `delete_files_start`, `trash_files_start`. Each delegates to `start_write_operation` which handles state creation, spawn lifecycle, cleanup, and error/panic recovery. Validation runs inside the handler closure on the blocking thread pool, never on the async executor. Also re-exports `transfer::*` and `delete::*` public symbols so external callers keep their `crate::file_system::write_operations::<symbol>` import paths.
+- **`types.rs`**: All serializable types: events, config, errors, results. `WriteOperationConfig`, `ConflictResolution`, `WriteOperationError`, `DryRunResult`, scan preview events. Also: `OperationEventSink` trait (decouples event emission from `tauri::AppHandle`), `TauriEventSink` (production), `CollectorEventSink` (test-only).
+- **`state.rs`**: Two `LazyLock<RwLock<HashMap>>` caches (`WRITE_OPERATION_STATE`, `OPERATION_STATUS_CACHE`). `WriteOperationState`, `CopyTransaction`, `ScanResult`, `FileInfo`. `WriteSettledGuard` RAII shape for the settle contract.
+- **`validation.rs`**: Source/destination validation: `validate_sources`, `validate_destination`, `validate_destination_writable` (via `libc::access`), `validate_disk_space` (NSURL API on macOS, `statvfs` on Linux), `validate_not_same_location`, `validate_destination_not_inside_source`, `validate_path_length`. Identity/filesystem checks: `is_same_file` (inode+device), `is_same_filesystem` (device IDs), `path_exists_or_is_symlink` (dangling-symlink-aware), `is_symlink_loop`.
+- **`conflict.rs`**: Conflict resolution. The two-bucket `ApplyToAll` latch model (`apply_to_all_effective` / `apply_to_all_record`). `resolve_conflict` (`tokio::sync::oneshot` channel wait for Stop mode), `reduce_conditional_resolution`, `apply_resolution`, `find_unique_name` (O_EXCL reservation). Conflict-event/info builders: `build_conflict_event`, `calculate_dest_path`, `create_conflict_info`, `sample_conflicts`.
+- **`overwrite.rs`**: Temp+rename-aside atomicity: `ResolvedDestination`, `safe_overwrite_file`, `safe_overwrite_dir`.
+- **`durability.rs`**: `flush_created_destinations` (emits the `Flushing` event, then `fdatasync`s each created destination + parent dir, skipping already-synced paths). `lookup_indexed_size` (drive-index directory size for conflict UI).
+- **`cancellable.rs`**: Cancellation-aware execution: `run_cancellable`, `run_cancellable_scoped` (poll the cancel flag while blocking work runs on a separate thread). Detached background cleanup: `remove_file_in_background`, `remove_dir_all_in_background`.
+- **`scan.rs`**: `scan_sources` (recursive walk, emits progress), `dry_run_scan`, shared `walk_dir_recursive` walker. The `on_progress` callback receives `(files, dirs, bytes, current_file, current_dir)`; the walker reads `current_dir` from `path.parent()` so the UI can show "in directory: …" alongside the filename. Scan emit sites populate `WriteProgressEvent.current_dir` plus index-derived `expected_files_total` / `expected_bytes_total` (via `WriteProgressEvent::with_scan_meta`) so the frontend renders a real progress bar during the foolproof re-scan. Expected totals come from `crate::indexing::expected_totals::expected_totals_for_sources` (`None` when the index doesn't cover all sources; the FE falls back to a tally-only display).
+- **`scan_preview.rs`**: Scan preview subsystem for Copy dialog live stats: `start_scan_preview`, `cancel_scan_preview`, `is_scan_preview_complete`. Background scans (local and volume-based) with result caching. Emits `expected_files_total` / `expected_bytes_total` (sampled once at scan start from the drive index) on every `scan-preview-progress` event, alongside the running tallies and `current_dir`.
+- **`eta.rs`**: `EtaEstimator`: time-weighted EWMA per axis (bytes, files), τ ≈ 3 s. Combines via `max(ETA_bytes, ETA_files)`. One per `WriteOperationState`, fed by `state.enrich_progress` at every `write-progress` emit site. See [ETA + throughput](#eta--throughput) below.
+- **`tests.rs`**: Cross-cutting unit tests.
+- **`scan_preview_listing_progress_tests.rs`**: Regression tests for the `ListingProgress` callback shape.
+- **`scan_preview_oracle_tests.rs`**: Integration tests for the fresh-listing oracle inside scan preview.
+- **`settle_event_tests.rs`**: Tests for `WriteSettledGuard` invariants (single fire, panic safety, ordering).
+- **`validation_integration_test.rs`**: Validation functions, safety checks, path length, disk space tests.
 
 ## Architecture / data flow
 
@@ -150,21 +148,19 @@ See also: [`apps/desktop/src-tauri/src/downloads/CLAUDE.md`](../../downloads/CLA
 
 ## Events emitted
 
-| Event | Trigger |
-|-------|---------|
-| `write-progress` | Every ~200 ms during copy/move/delete/trash |
-| `write-conflict` | Stop mode hit a conflicting destination file |
-| `write-complete` | Operation finished successfully |
-| `write-cancelled` | Operation cancelled (includes `rolled_back` flag) |
-| `write-error` | Operation failed. Carries `error: WriteOperationError` (typed) plus `friendly: FriendlyError` (rendered title/explanation/suggestion + category) populated by `WriteErrorEvent::new` via `friendly_from_write_error`. The FE renders the `friendly` payload directly in `TransferErrorDialog` and applies category-based colors. |
-| `write-settled` | Emitted once per op after the spawned background task fully returns. See [Settle contract](#settle-contract). |
-| `volumes-busy-changed` | The set of volume IDs with an in-flight op changed (an op started or finished). Payload is `string[]`. See [Busy-volumes set](#busy-volumes-set). |
-| `write-source-item-done` | All files for a top-level source item processed (for gradual deselection) |
-| `dry-run-complete` | `config.dry_run == true` (returns `DryRunResult`) |
-| `scan-preview-progress` | During `start_scan_preview` |
-| `scan-preview-complete` | Preview scan finished |
-| `scan-preview-error` | Preview scan failed |
-| `scan-preview-cancelled` | Preview scan cancelled |
+- **`write-progress`**: Every ~200 ms during copy/move/delete/trash
+- **`write-conflict`**: Stop mode hit a conflicting destination file
+- **`write-complete`**: Operation finished successfully
+- **`write-cancelled`**: Operation cancelled (includes `rolled_back` flag)
+- **`write-error`**: Operation failed. Carries `error: WriteOperationError` (typed) plus `friendly: FriendlyError` (rendered title/explanation/suggestion + category) populated by `WriteErrorEvent::new` via `friendly_from_write_error`. The FE renders the `friendly` payload directly in `TransferErrorDialog` and applies category-based colors.
+- **`write-settled`**: Emitted once per op after the spawned background task fully returns. See [Settle contract](#settle-contract).
+- **`volumes-busy-changed`**: The set of volume IDs with an in-flight op changed (an op started or finished). Payload is `string[]`. See [Busy-volumes set](#busy-volumes-set).
+- **`write-source-item-done`**: All files for a top-level source item processed (for gradual deselection)
+- **`dry-run-complete`**: `config.dry_run == true` (returns `DryRunResult`)
+- **`scan-preview-progress`**: During `start_scan_preview`
+- **`scan-preview-complete`**: Preview scan finished
+- **`scan-preview-error`**: Preview scan failed
+- **`scan-preview-cancelled`**: Preview scan cancelled
 
 ## Busy-volumes set
 

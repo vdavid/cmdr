@@ -10,28 +10,27 @@ only "macOS (Apple Silicon and Intel)" and "Linux: alpha." So the floors below a
 
 ### macOS
 
-| Constraint                                                              | Minimum                                                        |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Tauri 2 runtime (WKWebView, FFI bindings)                               | macOS 10.15 Catalina (2019-10)                                 |
-| Apple Silicon binary (arm64)                                            | macOS 11.0 Big Sur (2020-11), M1 ships with this               |
-| Intel binary (x86_64)                                                   | macOS 10.15 Catalina (2019-10)                                 |
-| Universal binary (what we ship)                                         | Per-arch: 10.15 Intel, 11.0 Apple Silicon                      |
-| Apple frameworks we touch (`IOKit`, `core-foundation`, `FSEvents`, etc) | Ancient, not a binding constraint                              |
-| Modern CSS we use (`:has()`, container queries, top-level await)        | macOS 12 Monterey (2021-10) for things to render correctly     |
-| llama-server (AI feature only)                                          | Apple Silicon only (no Intel AI build, rest of app works fine) |
+- **Tauri 2 runtime (WKWebView, FFI bindings)**: macOS 10.15 Catalina (2019-10)
+- **Apple Silicon binary (arm64)**: macOS 11.0 Big Sur (2020-11), M1 ships with this
+- **Intel binary (x86_64)**: macOS 10.15 Catalina (2019-10)
+- **Universal binary (what we ship)**: Per-arch: 10.15 Intel, 11.0 Apple Silicon
+- **Apple frameworks we touch (`IOKit`, `core-foundation`, `FSEvents`, etc)**: Ancient, not a binding constraint
+- **Modern CSS we use (`:has()`, container queries, top-level await)**: macOS 12 Monterey (2021-10) for things to render
+  correctly
+- **llama-server (AI feature only)**: Apple Silicon only (no Intel AI build, rest of app works fine)
 
 **Effective practical floor: macOS 12 Monterey (2021-10).** Anyone older may launch the app but see CSS render oddities.
 
 ### Linux
 
-| Constraint                                             | Minimum                                                                                                                                  |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Tauri 2 runtime needs WebKitGTK 4.1                    | Ubuntu 22.04 (2022-04), Fedora 36+ (2022-05), Debian 12 (2023-06). 4.0 doesn't work.                                                     |
-| Our build target's `libwebkit2gtk-4.1-dev`             | Same                                                                                                                                     |
-| `glibc 2.31+`                                          | Ubuntu 20.04+, Debian 11+, Fedora 32+                                                                                                    |
-| Linux SMB / MTP / inotify / FUSE / libudev             | Anything from the last decade                                                                                                            |
-| Secret Service via `zbus-secret-service-keyring-store` | GNOME 3.x with `gnome-keyring-daemon`, or KDE Plasma 5.x with `kwalletmanager`. Headless servers fall back to our cocoon-encrypted file. |
-| Trash via `trash` crate (FreeDesktop spec)             | Any modern DE                                                                                                                            |
+- **Tauri 2 runtime needs WebKitGTK 4.1**: Ubuntu 22.04 (2022-04), Fedora 36+ (2022-05), Debian 12 (2023-06). 4.0
+  doesn't work.
+- **Our build target's `libwebkit2gtk-4.1-dev`**: Same
+- **`glibc 2.31+`**: Ubuntu 20.04+, Debian 11+, Fedora 32+
+- **Linux SMB / MTP / inotify / FUSE / libudev**: Anything from the last decade
+- **Secret Service via `zbus-secret-service-keyring-store`**: GNOME 3.x with `gnome-keyring-daemon`, or KDE Plasma 5.x
+  with `kwalletmanager`. Headless servers fall back to our cocoon-encrypted file.
+- **Trash via `trash` crate (FreeDesktop spec)**: Any modern DE
 
 **Effective practical floor: Ubuntu 22.04 LTS / Fedora 36 / Debian 12 (2022-04 and later).** WebKitGTK 4.1 is the
 tightest constraint.
@@ -52,14 +51,15 @@ future reference when we consider adopting them.
 
 ### What each ES2025 feature would let us simplify
 
-| Feature                  | Where it'd help in Cmdr today                                                                                                                                                                            |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Set.union/intersection` | `FilePane.svelte` `SvelteSet<number>` selection adjustments: replaces hand-rolled union/intersect with native methods.                                                                                   |
-| `using` / `await using`  | Manual `try/finally` for cleanup: closing streams, releasing locks, unlistening Tauri events. `auto-send-toast.svelte.ts`, `network-store.svelte.ts`, file-explorer disposal flows. The biggest QoL win. |
-| `Promise.try`            | Wraps a sync-or-async function in a Promise and catches sync throws, cleaner than `new Promise((resolve) => resolve(maybeThrow()))`.                                                                     |
-| Iterator helpers         | Wherever we do `Array.from(iter).map().filter()`: drops the intermediate array allocation.                                                                                                               |
-| `RegExp.escape`          | Search pattern building: replaces our hand-rolled `\\$&` escape with a one-liner.                                                                                                                        |
-| `Float16Array`           | Not relevant.                                                                                                                                                                                            |
+- **`Set.union/intersection`**: `FilePane.svelte` `SvelteSet<number>` selection adjustments: replaces hand-rolled
+  union/intersect with native methods.
+- **`using` / `await using`**: Manual `try/finally` for cleanup: closing streams, releasing locks, unlistening Tauri
+  events. `auto-send-toast.svelte.ts`, `network-store.svelte.ts`, file-explorer disposal flows. The biggest QoL win.
+- **`Promise.try`**: Wraps a sync-or-async function in a Promise and catches sync throws, cleaner than
+  `new Promise((resolve) => resolve(maybeThrow()))`.
+- **Iterator helpers**: Wherever we do `Array.from(iter).map().filter()`: drops the intermediate array allocation.
+- **`RegExp.escape`**: Search pattern building: replaces our hand-rolled `\\$&` escape with a one-liner.
+- **`Float16Array`**: Not relevant.
 
 ### What's safe to adopt today
 

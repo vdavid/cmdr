@@ -35,15 +35,26 @@ again" loops forever. At no point did Cmdr offer a credential prompt. Complete d
 
 ### Root causes, ranked by user pain
 
-| #   | Cause                                                                                                                                                                                                                                            | Where                                                                            |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| 1   | **Server identity is compared as strings.** The same NAS is known as `Naspolya._smb._tcp.local`, `Naspolya.local`, and `192.168.1.111`; the disambiguation logic treats these as different servers, forcing a doomed second mount + new session. | `mount.rs::disambiguated_mount_path`                                             |
-| 2   | **No already-mounted short-circuit.** The share the user picked was already mounted AND registered as a Cmdr volume. Selecting it should navigate, not mount again.                                                                              | `NetworkMountView.svelte::handleShareSelect`                                     |
-| 3   | **Mount goes out as guest even when we know creds are required.** `authMode: CredsRequired` is in hand; credentials are `null`; we attempt guest anyway instead of prompting first.                                                              | `ShareBrowser.svelte` → `NetworkMountView.svelte`                                |
-| 4   | **System auth UI is not suppressed.** We never set `kNAUIOptionNoUI`, so NetAuthAgent can pop non-Cmdr dialogs on auth failure (and could even pop credential prompts in other code paths).                                                      | `mount.rs::mount_share_sync` (open options)                                      |
-| 5   | **Mount-phase auth failure is a dead end.** The error pane offers Try again (same creds) and Back; nothing routes to the login form. Share-listing auth failures DO route there; mount failures don't.                                           | `NetworkMountView.svelte` error state                                            |
-| 6   | **NetAuth error codes are unmapped.** -6600 (`kNetAuthErrorInternal`), -6602 (`kNetAuthErrorMountFailed`), -6004 (`kNetAuthErrorGuestNotSupported`) all fall into the opaque `ProtocolError` catch-all.                                          | `mount.rs::error_from_code`                                                      |
-| 7   | **Split-brain credential stores.** Share listing can succeed via the system Keychain (`smbutil -N`) while Cmdr's own store is empty, so the UI looks authenticated but Cmdr can't actually authenticate anything itself (smb2, NetFS mount).     | `smb_client.rs::list_shares_smb2` (Keychain fallback) vs `keychain.rs`/`secrets` |
+1. **Server identity is compared as strings.** The same NAS is known as `Naspolya._smb._tcp.local`, `Naspolya.local`,
+   and `192.168.1.111`; the disambiguation logic treats these as different servers, forcing a doomed second mount + new
+   session. Where: `mount.rs::disambiguated_mount_path`
+2. **No already-mounted short-circuit.** The share the user picked was already mounted AND registered as a Cmdr volume.
+   Selecting it should navigate, not mount again. Where: `NetworkMountView.svelte::handleShareSelect`
+3. **Mount goes out as guest even when we know creds are required.** `authMode: CredsRequired` is in hand; credentials
+   are `null`; we attempt guest anyway instead of prompting first. Where: `ShareBrowser.svelte` →
+   `NetworkMountView.svelte`
+4. **System auth UI is not suppressed.** We never set `kNAUIOptionNoUI`, so NetAuthAgent can pop non-Cmdr dialogs on
+   auth failure (and could even pop credential prompts in other code paths). Where: `mount.rs::mount_share_sync` (open
+   options)
+5. **Mount-phase auth failure is a dead end.** The error pane offers Try again (same creds) and Back; nothing routes to
+   the login form. Share-listing auth failures DO route there; mount failures don't. Where: `NetworkMountView.svelte`
+   error state
+6. **NetAuth error codes are unmapped.** -6600 (`kNetAuthErrorInternal`), -6602 (`kNetAuthErrorMountFailed`), -6004
+   (`kNetAuthErrorGuestNotSupported`) all fall into the opaque `ProtocolError` catch-all. Where:
+   `mount.rs::error_from_code`
+7. **Split-brain credential stores.** Share listing can succeed via the system Keychain (`smbutil -N`) while Cmdr's own
+   store is empty, so the UI looks authenticated but Cmdr can't actually authenticate anything itself (smb2, NetFS
+   mount). Where: `smb_client.rs::list_shares_smb2` (Keychain fallback) vs `keychain.rs`/`secrets`
 
 Cause 7 is what makes this hit real users, not just dev: anyone whose NAS creds live in the system Keychain (saved by
 Finder) gets the "shares list fine, mount dead-ends" combination.

@@ -8,11 +8,9 @@ pipeline.
 
 ## Module structure
 
-| File | Purpose |
-|------|---------|
-| `mod.rs` | Re-exports the public surface. |
-| `history.rs` | `SelectionHistoryEntry`, atomic JSON read/write, canonical-key dedupe, cap eviction, schema-version quarantine. Re-exports `HistoryMode` and `HistoryFilters` from `crate::search::history` so the frontend sees the same mode/filter shape for both consumers. |
-| `ai/` | NL → glob/regex translation. Cloud-only. See [`ai/CLAUDE.md`](ai/CLAUDE.md) for the prompt / parser / builder split and the real-LLM eval. |
+- **`mod.rs`**: Re-exports the public surface.
+- **`history.rs`**: `SelectionHistoryEntry`, atomic JSON read/write, canonical-key dedupe, cap eviction, schema-version quarantine. Re-exports `HistoryMode` and `HistoryFilters` from `crate::search::history` so the frontend sees the same mode/filter shape for both consumers.
+- **`ai/`**: NL → glob/regex translation. Cloud-only. See [`ai/CLAUDE.md`](ai/CLAUDE.md) for the prompt / parser / builder split and the real-LLM eval.
 
 The IPC layer is in `crate::commands::selection`.
 
@@ -96,14 +94,12 @@ and `modified_*`, which the frontend paints onto the chips.
 
 All commands live in `crate::commands::selection`:
 
-| Command | Purpose |
-|---|---|
-| `translate_selection_query(prompt, sample_names, current_type)` | AI translation; cloud-only. `current_type` (the dialog's type toggle as `Option<bool>`) is passed as prompt context. Returns `SelectionTranslateResult` (now carrying optional `is_directory`) or a typed `AiTranslateError { kind, message }` (shared with Search; see `crate::ai::translate_error`) so the dialog toasts a specific reason. The cloud-only gate maps to `kind = notConfigured`. |
-| `get_recent_selections(limit)` | Returns persisted entries (newest first). |
-| `add_recent_selection(entry, max_count)` | Adds + dedupes + caps. |
-| `remove_recent_selection(id)` | Removes by id; no-op when missing. |
-| `clear_recent_selections()` | Drops every entry. |
-| `apply_recent_selections_max_count(max_count)` | Live-applies a freshly-tuned cap. |
+- **`translate_selection_query(prompt, sample_names, current_type)`**: AI translation; cloud-only. `current_type` (the dialog's type toggle as `Option<bool>`) is passed as prompt context. Returns `SelectionTranslateResult` (now carrying optional `is_directory`) or a typed `AiTranslateError { kind, message }` (shared with Search; see `crate::ai::translate_error`) so the dialog toasts a specific reason. The cloud-only gate maps to `kind = notConfigured`.
+- **`get_recent_selections(limit)`**: Returns persisted entries (newest first).
+- **`add_recent_selection(entry, max_count)`**: Adds + dedupes + caps.
+- **`remove_recent_selection(id)`**: Removes by id; no-op when missing.
+- **`clear_recent_selections()`**: Drops every entry.
+- **`apply_recent_selections_max_count(max_count)`**: Live-applies a freshly-tuned cap.
 
 All six are registered in `crate::ipc::builder` (runtime dispatch) and
 `crate::ipc_collectors::collect_cross_platform_types` (specta). The bindings

@@ -5,16 +5,14 @@ directories, we must be deliberate about what to fetch eagerly vs. on-demand.
 
 ## Tier 1: Free (from single `stat()` call, already performed)
 
-| Field         | Source                               |
-| ------------- | ------------------------------------ |
-| Name          | `DirEntry::file_name()`              |
-| Size          | `metadata.len()`                     |
-| Is directory  | `metadata.is_dir()`                  |
-| Modified date | `metadata.modified()`                |
-| Created date  | `MetadataExt::st_birthtime()`        |
-| Permissions   | `metadata.permissions().mode()`      |
-| Owner uid/gid | `MetadataExt::st_uid()` / `st_gid()` |
-| Is symlink    | `metadata.is_symlink()`              |
+- **Name**: `DirEntry::file_name()`
+- **Size**: `metadata.len()`
+- **Is directory**: `metadata.is_dir()`
+- **Modified date**: `metadata.modified()`
+- **Created date**: `MetadataExt::st_birthtime()`
+- **Permissions**: `metadata.permissions().mode()`
+- **Owner uid/gid**: `MetadataExt::st_uid()` / `st_gid()`
+- **Is symlink**: `metadata.is_symlink()`
 
 ## Tier 2: Cheap (extra syscall, cacheable)
 

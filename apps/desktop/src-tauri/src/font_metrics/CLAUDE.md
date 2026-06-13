@@ -12,15 +12,13 @@ widest filename is measured here, then the FE adds chrome and clamps.
 
 ### Public API
 
-| Function | Purpose |
-|---|---|
-| `store_metrics(font_id, widths)` | Store a `HashMap<u32 (code point), f32 (px width)>` into the in-memory cache |
-| `has_metrics(font_id)` | Check if metrics for a font ID exist in cache |
-| `calculate_max_width(texts, font_id)` | Find the widest string from a slice; returns `None` if font ID not in cache |
-| `load_from_disk(app, font_id)` | Read `{font_id}.bin` (bincode2) from `~/…/font-metrics/` |
-| `save_to_disk(app, font_id, widths)` | Serialize and write metrics to `{font_id}.bin` |
-| `init_font_metrics(app, font_id)` | Called at app startup: loads a single specific font ID from disk into cache if its file exists |
-| `load_all_metrics_from_disk(app)` | Called at app startup: scans `~/…/font-metrics/` and pre-loads every `*.bin` file. Used so user-customized text sizes are warm on first paint. |
+- **`store_metrics(font_id, widths)`**: Store a `HashMap<u32 (code point), f32 (px width)>` into the in-memory cache
+- **`has_metrics(font_id)`**: Check if metrics for a font ID exist in cache
+- **`calculate_max_width(texts, font_id)`**: Find the widest string from a slice; returns `None` if font ID not in cache
+- **`load_from_disk(app, font_id)`**: Read `{font_id}.bin` (bincode2) from `~/…/font-metrics/`
+- **`save_to_disk(app, font_id, widths)`**: Serialize and write metrics to `{font_id}.bin`
+- **`init_font_metrics(app, font_id)`**: Called at app startup: loads a single specific font ID from disk into cache if its file exists
+- **`load_all_metrics_from_disk(app)`**: Called at app startup: scans `~/…/font-metrics/` and pre-loads every `*.bin` file. Used so user-customized text sizes are warm on first paint.
 
 ### Internal state
 

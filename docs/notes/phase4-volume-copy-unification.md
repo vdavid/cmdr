@@ -208,15 +208,21 @@ Implementation notes:
 
 ## Risks
 
-| Risk                                                                                                                             | Mitigation                                                                                                                                                      |
-| -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P4.1 streaming path is slower per-file than pre-refactor `export_to_local` for small files.                                      | The bench compares. If slower by > 10%, investigate (likely extra chunk-buffer hop). Fix by tuning chunk size in the stream pipe.                               |
-| `LocalPosixVolume::open_read_stream` / `write_from_stream` isn't implemented.                                                    | Check first; if missing, add as part of P4.1 with `spawn_blocking` wrappers around `std::fs::File`.                                                             |
-| `SmbVolume::max_concurrent_ops` needs access to settings during construction, but SmbVolume is constructed before settings load. | Settings accessor reads from a global `OnceLock` or `RwLock` that's populated early; reading during copy (after user interaction) is always post-settings-load. |
-| Progress event storm under 100 concurrent tasks.                                                                                 | 200 ms throttle on the emit side already caps it. Atomic counter + throttle = max 5 events/sec regardless of task count.                                        |
-| Partial-file temp cleanup on drop may race with the next task creating a same-named temp.                                        | Existing `.cmdr-tmp-<uuid>` pattern generates unique names per task. No collision possible.                                                                     |
-| `FuturesUnordered` size grows unbounded if we queue all N before awaiting any.                                                   | The window-management loop (`if in_flight.len() >= concurrency { .next().await }`) bounds it at `concurrency`.                                                  |
-| SMB server-side resource limits (QNAP default 256 credits, but enterprise caps?).                                                | Clamped to `32` by F6. QNAP handles 32 comfortably. If we ever hit `STATUS_INSUFFICIENT_RESOURCES`, we add a semaphore.                                         |
+- **P4.1 streaming path is slower per-file than pre-refactor `export_to_local` for small files.**: The bench compares.
+  If slower by > 10%, investigate (likely extra chunk-buffer hop). Fix by tuning chunk size in the stream pipe.
+- **`LocalPosixVolume::open_read_stream` / `write_from_stream` isn't implemented.**: Check first; if missing, add as
+  part of P4.1 with `spawn_blocking` wrappers around `std::fs::File`.
+- **`SmbVolume::max_concurrent_ops` needs access to settings during construction, but SmbVolume is constructed before
+  settings load.**: Settings accessor reads from a global `OnceLock` or `RwLock` that's populated early; reading during
+  copy (after user interaction) is always post-settings-load.
+- **Progress event storm under 100 concurrent tasks.**: 200 ms throttle on the emit side already caps it. Atomic
+  counter + throttle = max 5 events/sec regardless of task count.
+- **Partial-file temp cleanup on drop may race with the next task creating a same-named temp.**: Existing
+  `.cmdr-tmp-<uuid>` pattern generates unique names per task. No collision possible.
+- **`FuturesUnordered` size grows unbounded if we queue all N before awaiting any.**: The window-management loop
+  (`if in_flight.len() >= concurrency { .next().await }`) bounds it at `concurrency`.
+- **SMB server-side resource limits (QNAP default 256 credits, but enterprise caps?).**: Clamped to `32` by F6. QNAP
+  handles 32 comfortably. If we ever hit `STATUS_INSUFFICIENT_RESOURCES`, we add a semaphore.
 
 ## Out of scope for Phase 4
 

@@ -310,26 +310,22 @@ already-unit-tested files. Both tools worked; neither is wired into CI. Total: 5
 **Rust slice**: `apps/desktop/src-tauri/src/file_system/write_operations/eta.rs` (EWMA-based ETA estimator for write
 operations, already had 10 unit tests).
 
-| Metric   | Count |
-| -------- | ----- |
-| Total    | 58    |
-| Caught   | 34    |
-| Missed   | 19    |
-| Unviable | 5     |
-| Timeout  | 0     |
+- **Total**: 58
+- **Caught**: 34
+- **Missed**: 19
+- **Unviable**: 5
+- **Timeout**: 0
 
 Mutation score: 34 / (34 + 19) ≈ 64 %. Full run took ~9 min (after the 73 s baseline build), ~7–8 s per mutant.
 
 **TypeScript slice**: `apps/desktop/src/lib/file-operations/scan-throughput.ts` (front-end rate calculator for the
 scan-preview UI, 6 unit tests).
 
-| Metric         | Count |
-| -------------- | ----- |
-| Total          | 45    |
-| Killed         | 31    |
-| Survived       | 13    |
-| Timeout        | 1     |
-| Compile errors | 0     |
+- **Total**: 45
+- **Killed**: 31
+- **Survived**: 13
+- **Timeout**: 1
+- **Compile errors**: 0
 
 Mutation score: 31 / 45 ≈ 69 %. Whole run took ~12 s.
 

@@ -4,10 +4,8 @@ Measures character pixel widths via the Canvas API and ships the data to Rust fo
 
 ## Key files
 
-| File         | Purpose                                                                               |
-| ------------ | ------------------------------------------------------------------------------------- |
-| `measure.ts` | Canvas-based measurement over Unicode ranges, returns `Record<codePoint, pixelWidth>` |
-| `index.ts`   | Orchestrates caching check, idle-time scheduling, and IPC to Rust                     |
+- **`measure.ts`**: Canvas-based measurement over Unicode ranges, returns `Record<codePoint, pixelWidth>`
+- **`index.ts`**: Orchestrates caching check, idle-time scheduling, and IPC to Rust
 
 ## Data flow
 

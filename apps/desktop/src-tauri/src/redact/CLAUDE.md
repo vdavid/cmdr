@@ -94,12 +94,10 @@ Three steps:
 
 ## Files
 
-| File                                | Purpose                                                       |
-| ----------------------------------- | ------------------------------------------------------------- |
-| `mod.rs`                            | Public API + composed regex + path rewriters                  |
-| `tests.rs`                          | Per-pattern tests, idempotency, golden corpus, histogram      |
-| `fixtures/log-corpus.txt`           | Synthesized log lines covering every pattern class            |
-| `fixtures/log-corpus.redacted.txt`  | Expected redaction of the corpus (golden snapshot)            |
+- **`mod.rs`**: Public API + composed regex + path rewriters
+- **`tests.rs`**: Per-pattern tests, idempotency, golden corpus, histogram
+- **`fixtures/log-corpus.txt`**: Synthesized log lines covering every pattern class
+- **`fixtures/log-corpus.redacted.txt`**: Expected redaction of the corpus (golden snapshot)
 
 ## Gotchas
 

@@ -4,15 +4,13 @@ In-memory search index and AI-powered query translation for whole-drive file sea
 
 ## Module structure
 
-| File | Purpose |
-|------|---------|
-| `mod.rs` | Re-exports from submodules. Flat API: `use crate::search::{SearchQuery, search, ...}` |
-| `index.rs` | `SearchIndex` (arena-allocated filename storage), `SearchEntry`, global `SEARCH_INDEX` state with idle/backstop timers and load cancellation |
-| `engine.rs` | `search()` pure function (no I/O): compiles glob/regex, parallel-filters entries with rayon, sorts by recency. Scope filtering via `include_path_ids` and `exclude_dir_names` |
-| `history.rs` | Persistent recent-searches store (`HistoryStore`, `HistoryEntry`). Atomic JSON read/write, canonical dedupe key, cap eviction, schema-version quarantine. Used by `commands::search::{get,add,remove,clear}_recent_search` and `apply_recent_searches_max_count`. |
-| `types.rs` | Pure data definitions: `SearchQuery`, `SearchResult`, `SearchResultEntry`, `ParsedScope`, `PatternType`, `default_limit`. No logic |
-| `query.rs` | Operations on the types: `parse_scope()`, `resolve_include_paths()` (DB pre-query), `fill_directory_sizes()` (DB post-query), `format_size()`, `format_timestamp()`, `summarize_query()`, `SYSTEM_DIR_EXCLUDES` |
-| `ai/` | Natural-language → `SearchQuery` translation: classification prompt, key-value parser, deterministic enum mappings, and assembler. See [`ai/CLAUDE.md`](ai/CLAUDE.md). |
+- **`mod.rs`**: Re-exports from submodules. Flat API: `use crate::search::{SearchQuery, search, ...}`
+- **`index.rs`**: `SearchIndex` (arena-allocated filename storage), `SearchEntry`, global `SEARCH_INDEX` state with idle/backstop timers and load cancellation
+- **`engine.rs`**: `search()` pure function (no I/O): compiles glob/regex, parallel-filters entries with rayon, sorts by recency. Scope filtering via `include_path_ids` and `exclude_dir_names`
+- **`history.rs`**: Persistent recent-searches store (`HistoryStore`, `HistoryEntry`). Atomic JSON read/write, canonical dedupe key, cap eviction, schema-version quarantine. Used by `commands::search::{get,add,remove,clear}_recent_search` and `apply_recent_searches_max_count`.
+- **`types.rs`**: Pure data definitions: `SearchQuery`, `SearchResult`, `SearchResultEntry`, `ParsedScope`, `PatternType`, `default_limit`. No logic
+- **`query.rs`**: Operations on the types: `parse_scope()`, `resolve_include_paths()` (DB pre-query), `fill_directory_sizes()` (DB post-query), `format_size()`, `format_timestamp()`, `summarize_query()`, `SYSTEM_DIR_EXCLUDES`
+- **`ai/`**: Natural-language → `SearchQuery` translation: classification prompt, key-value parser, deterministic enum mappings, and assembler. See [`ai/CLAUDE.md`](ai/CLAUDE.md).
 
 ## Data flow
 

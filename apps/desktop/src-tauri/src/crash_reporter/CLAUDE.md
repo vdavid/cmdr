@@ -74,20 +74,16 @@ Both paths write to `crash-report.json` in the app data dir (same dir as `settin
 
 ## Files
 
-| File               | Purpose                                                              |
-| ------------------ | -------------------------------------------------------------------- |
-| `mod.rs`           | Panic hook, signal handler registration, crash file read/write       |
-| `symbolicate.rs`   | Next-launch symbolication of raw addresses from signal handler       |
-| `tests.rs`         | Unit + integration tests for crash file I/O, sanitization, signals   |
+- **`mod.rs`**: Panic hook, signal handler registration, crash file read/write
+- **`symbolicate.rs`**: Next-launch symbolication of raw addresses from signal handler
+- **`tests.rs`**: Unit + integration tests for crash file I/O, sanitization, signals
 
 ### Commands and frontend (milestone 2)
 
-| File                                               | Purpose                                                          |
-| -------------------------------------------------- | ---------------------------------------------------------------- |
-| `commands/crash_reporter.rs`                       | Tauri commands: check, dismiss, send crash reports               |
-| `src/lib/tauri-commands/crash-reporter.ts`         | TypeScript wrappers for the three Tauri commands                 |
-| `src/lib/crash-reporter/CrashReportDialog.svelte`  | Dialog: shows report, expandable details, send/dismiss buttons   |
-| `src/lib/crash-reporter/CrashReportToastContent.svelte` | Toast content for auto-sent crash reports                   |
+- **`commands/crash_reporter.rs`**: Tauri commands: check, dismiss, send crash reports
+- **`src/lib/tauri-commands/crash-reporter.ts`**: TypeScript wrappers for the three Tauri commands
+- **`src/lib/crash-reporter/CrashReportDialog.svelte`**: Dialog: shows report, expandable details, send/dismiss buttons
+- **`src/lib/crash-reporter/CrashReportToastContent.svelte`**: Toast content for auto-sent crash reports
 
 The startup flow in `(main)/+layout.svelte` calls `checkPendingCrashReport` after settings are loaded. If
 `updates.crashReports` is true and it's not a crash loop, it auto-sends and shows a toast. Otherwise, it shows the

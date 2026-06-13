@@ -5,14 +5,24 @@ launch boundary, plus the llama-server fetch + the type-drift check.
 
 ## Files
 
-| File                       | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `tauri-wrapper.js`         | The script `pnpm dev` and `pnpm build` actually call. Resolves `CMDR_INSTANCE_ID`, reserves ephemeral ports (Vite + tauri-MCP bridge), writes the generated `tauri.instance.json` to `$TMPDIR`, exports the right env, then spawns Tauri. Dev-only: when `CMDR_VIRTUAL_MTP` is set, appends `--features virtual-mtp` to the cargo build (see [`docs/tooling/virtual-mtp.md`](../../../docs/tooling/virtual-mtp.md))                                                                                                                                          |
-| `instance-id.js`           | Pure helpers backing the wrapper: slug sanitization, instance resolution, per-OS data-dir computation, bundle-identifier + productName + config-payload composition, ephemeral port reservation, port-file write protocol                                                                                                                                                                                                                                                                                                                                    |
-| `instance-id.test.js`      | Vitest suite for `instance-id.js`. ~45 cases covering every helper                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `download-llama-server.go` | Build-time downloader for the llama-server binary. Invoked from `src-tauri/build.rs`. In linked git worktrees, symlinks from the main clone when the `.version` matches. In CI release builds (`APPLE_SIGNING_IDENTITY` set) it codesigns each extracted binary; when `LLAMA_SIGN_KEYCHAIN` is set it targets that keychain explicitly via `codesign --keychain` (release.yml sets one up, in the search list, because the runner's launchd security session can't use the login keychain's key and `--keychain` alone doesn't work outside the search list) |
-| `check-type-drift.ts`      | Fast-lane check that scans for hand-written types that drift from the auto-generated `bindings.ts`. Runs as part of `pnpm check --fast`                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `e2e-linux.sh`             | Linux Docker E2E launcher. Builds the Tauri binary with `playwright-e2e,virtual-mtp` features, runs the suite. Single-shard; uses the legacy shared fixture path (no per-instance isolation)                                                                                                                                                                                                                                                                                                                                                                 |
+- **`tauri-wrapper.js`**: The script `pnpm dev` and `pnpm build` actually call. Resolves `CMDR_INSTANCE_ID`, reserves
+  ephemeral ports (Vite + tauri-MCP bridge), writes the generated `tauri.instance.json` to `$TMPDIR`, exports the right
+  env, then spawns Tauri. Dev-only: when `CMDR_VIRTUAL_MTP` is set, appends `--features virtual-mtp` to the cargo build
+  (see [`docs/tooling/virtual-mtp.md`](../../../docs/tooling/virtual-mtp.md))
+- **`instance-id.js`**: Pure helpers backing the wrapper: slug sanitization, instance resolution, per-OS data-dir
+  computation, bundle-identifier + productName + config-payload composition, ephemeral port reservation, port-file write
+  protocol
+- **`instance-id.test.js`**: Vitest suite for `instance-id.js`. ~45 cases covering every helper
+- **`download-llama-server.go`**: Build-time downloader for the llama-server binary. Invoked from `src-tauri/build.rs`.
+  In linked git worktrees, symlinks from the main clone when the `.version` matches. In CI release builds
+  (`APPLE_SIGNING_IDENTITY` set) it codesigns each extracted binary; when `LLAMA_SIGN_KEYCHAIN` is set it targets that
+  keychain explicitly via `codesign --keychain` (release.yml sets one up, in the search list, because the runner's
+  launchd security session can't use the login keychain's key and `--keychain` alone doesn't work outside the search
+  list)
+- **`check-type-drift.ts`**: Fast-lane check that scans for hand-written types that drift from the auto-generated
+  `bindings.ts`. Runs as part of `pnpm check --fast`
+- **`e2e-linux.sh`**: Linux Docker E2E launcher. Builds the Tauri binary with `playwright-e2e,virtual-mtp` features,
+  runs the suite. Single-shard; uses the legacy shared fixture path (no per-instance isolation)
 
 ## The wrapper architecture in one paragraph
 

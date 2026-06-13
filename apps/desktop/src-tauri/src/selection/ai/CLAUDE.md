@@ -8,13 +8,11 @@ prompt. Parent: [`../CLAUDE.md`](../CLAUDE.md). Sibling pattern: see
 
 ## File map
 
-| File | Purpose |
-|------|---------|
-| `mod.rs` | Re-exports `build_classification_prompt`, `parse_selection_response`, `build_selection_translate_result`, and the `ParsedSelectionLlmResponse` / `SelectionTranslateResult` types. |
-| `prompt.rs` | `build_classification_prompt(sample_names, current_type)` + `format_sample_block`. Pure. Substitutes `{TODAY}`, `{WEEK_AGO}`, `{CURRENT_TYPE}`, `{SAMPLE}`; de-dupes the sample preserving order; truncates at `MAX_SAMPLE = 240`. `current_type` (`Some(true)` folders / `Some(false)` files / `None` both) renders a context line so the model knows the optional `type` field and the user's current choice. |
-| `parser.rs` | `parse_selection_response(text)` → `ParsedSelectionLlmResponse`. One `key: value` per line, split on the first `:` only (regex patterns contain `:`). Unknown keys, blank values, and malformed `kind` / `type` / `size_*` / `modified_*` drop to `None`. `type` accepts only `file` / `folder`; `both`/unknown → `None`. |
-| `query_builder.rs` | `build_selection_translate_result(parsed)` plus `generate_caveat` / `build_label`. Assembles the camelCase IPC result. Defaults `kind` to `"glob"` when `pattern` is present and `kind` missing; clears `kind` when `pattern` drops. Maps `item_type` → `is_directory` (`folder → true`, `file → false`, absent → `None`). |
-| `real_llm_eval_test.rs` | Six `#[ignore]`-gated integration tests hitting the live OpenAI API. Pinned to `gpt-4o-mini` for repeatability; rerun against David's configured model by editing `MODEL`. |
+- **`mod.rs`**: Re-exports `build_classification_prompt`, `parse_selection_response`, `build_selection_translate_result`, and the `ParsedSelectionLlmResponse` / `SelectionTranslateResult` types.
+- **`prompt.rs`**: `build_classification_prompt(sample_names, current_type)` + `format_sample_block`. Pure. Substitutes `{TODAY}`, `{WEEK_AGO}`, `{CURRENT_TYPE}`, `{SAMPLE}`; de-dupes the sample preserving order; truncates at `MAX_SAMPLE = 240`. `current_type` (`Some(true)` folders / `Some(false)` files / `None` both) renders a context line so the model knows the optional `type` field and the user's current choice.
+- **`parser.rs`**: `parse_selection_response(text)` → `ParsedSelectionLlmResponse`. One `key: value` per line, split on the first `:` only (regex patterns contain `:`). Unknown keys, blank values, and malformed `kind` / `type` / `size_*` / `modified_*` drop to `None`. `type` accepts only `file` / `folder`; `both`/unknown → `None`.
+- **`query_builder.rs`**: `build_selection_translate_result(parsed)` plus `generate_caveat` / `build_label`. Assembles the camelCase IPC result. Defaults `kind` to `"glob"` when `pattern` is present and `kind` missing; clears `kind` when `pattern` drops. Maps `item_type` → `is_directory` (`folder → true`, `file → false`, absent → `None`).
+- **`real_llm_eval_test.rs`**: Six `#[ignore]`-gated integration tests hitting the live OpenAI API. Pinned to `gpt-4o-mini` for repeatability; rerun against David's configured model by editing `MODEL`.
 
 The IPC entry point (`translate_selection_query`) lives in
 `crate::commands::selection`; it gates on `provider == cloud`, calls

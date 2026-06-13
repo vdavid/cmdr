@@ -104,55 +104,71 @@ the Search wrapper.
 
 ## Files
 
-| File                                        | Purpose                                                                                                                                                                                                                                                                                                            |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `QueryDialog.svelte`                        | Shared orchestrator: overlay, title bar, keyboard contract, IME guard, auto-apply gates, `lastDialogEvent` ownership. Consumer-driven via `QueryDialogConfig`                                                                                                                                                      |
-| `query-dialog-config.ts`                    | `QueryDialogConfig<E>` shape every consumer builds + ownership contract comments                                                                                                                                                                                                                                   |
-| `QueryBar.svelte`                           | Unified query input: one `<input>` for AI / filename / regex; placeholder updates per mode; right-gutter run hint + ⏎ button                                                                                                                                                                                       |
-| `ModeChips.svelte`                          | Mode chip row below the bar. Thin wrapper over `lib/ui/ToggleGroup.svelte` with `semantics="tabs"`. AI / Filename / Content (disabled) / Regex. Search renders all four; Selection drops Content.                                                                                                                  |
-| `AiPromptStrip.svelte`                      | Strip below the chip row showing the AI prompt, optional caveat, disabled Refine button                                                                                                                                                                                                                            |
-| `QueryResults.svelte`                       | Column headers + results list + states (loading, empty, populated) + status bar. New `showPathColumn` prop (default `true` for Search; Selection passes `false`)                                                                                                                                                   |
-| `EmptyState.svelte`                         | Pre-search "Try…" block: three example chips, optional index size hint, optional keyboard hint. Examples come from `config.emptyState.examples` (forwarded by `QueryResults`); Search-flavoured defaults render when the consumer omits them. `indexEntryCount === 0` hides the "Index ready · …" line (Selection) |
-| `PathPills.svelte`                          | Clickable path-pill strip rendered inside each row's path column. Overflow collapse into a single `…` pill with hidden-segments tooltip                                                                                                                                                                            |
-| `path-pills-layout.ts`                      | Pure: `computePathPillsLayout`, `scheduleStableWidthMeasure`                                                                                                                                                                                                                                                       |
-| `SearchRowMenu.svelte`                      | Per-row `…` button: always visible on every row. Routes to the parent's native context menu via `onOpen`                                                                                                                                                                                                           |
-| `query-filter-state.svelte.ts`              | Factory `createQueryFilterState()` producing the cross-consumer state instance                                                                                                                                                                                                                                     |
-| `enter-action.ts`                           | Pure: `deriveEnterAction({ lastEvent, resultsCount })` returning `'run-search' \| 'go-to-file'`                                                                                                                                                                                                                    |
-| `recent-chips-layout.ts`                    | Pure: `computeRecentChipsLayout` for the recent-items footer's greedy fit                                                                                                                                                                                                                                          |
-| `filter-chips/`                             | Filter chip strip + single chip + popover + pure helpers. See [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md)                                                                                                                                                                                                   |
-| `recent-items/RecentItemsFooter.svelte`     | Generic `<E>` chip strip for recent entries plus trailing "All …" affordance. Consumer passes adapter + keyFn                                                                                                                                                                                                      |
-| `recent-items/RecentItemsPopover.svelte`    | Generic `<E>` fuzzy-searchable popover over the full recent-entries history (ufuzzy)                                                                                                                                                                                                                               |
-| `recent-items/recent-items-state.svelte.ts` | Factory `createRecentItemsState({ getRecent })` returning the reactive store                                                                                                                                                                                                                                       |
-| `recent-items/recent-items-types.ts`        | `RecentItemAdapter<E>`, `RecentItemKey<E>`, `RecentItemView`                                                                                                                                                                                                                                                       |
-| `recent-items/recent-items-utils.ts`        | Pure helpers `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip`                                                                                                                                                                                                                                  |
+- **`QueryDialog.svelte`**: Shared orchestrator: overlay, title bar, keyboard contract, IME guard, auto-apply gates,
+  `lastDialogEvent` ownership. Consumer-driven via `QueryDialogConfig`
+- **`query-dialog-config.ts`**: `QueryDialogConfig<E>` shape every consumer builds + ownership contract comments
+- **`QueryBar.svelte`**: Unified query input: one `<input>` for AI / filename / regex; placeholder updates per mode;
+  right-gutter run hint + ⏎ button
+- **`ModeChips.svelte`**: Mode chip row below the bar. Thin wrapper over `lib/ui/ToggleGroup.svelte` with
+  `semantics="tabs"`. AI / Filename / Content (disabled) / Regex. Search renders all four; Selection drops Content.
+- **`AiPromptStrip.svelte`**: Strip below the chip row showing the AI prompt, optional caveat, disabled Refine button
+- **`QueryResults.svelte`**: Column headers + results list + states (loading, empty, populated) + status bar. New
+  `showPathColumn` prop (default `true` for Search; Selection passes `false`)
+- **`EmptyState.svelte`**: Pre-search "Try…" block: three example chips, optional index size hint, optional keyboard
+  hint. Examples come from `config.emptyState.examples` (forwarded by `QueryResults`); Search-flavoured defaults render
+  when the consumer omits them. `indexEntryCount === 0` hides the "Index ready · …" line (Selection)
+- **`PathPills.svelte`**: Clickable path-pill strip rendered inside each row's path column. Overflow collapse into a
+  single `…` pill with hidden-segments tooltip
+- **`path-pills-layout.ts`**: Pure: `computePathPillsLayout`, `scheduleStableWidthMeasure`
+- **`SearchRowMenu.svelte`**: Per-row `…` button: always visible on every row. Routes to the parent's native context
+  menu via `onOpen`
+- **`query-filter-state.svelte.ts`**: Factory `createQueryFilterState()` producing the cross-consumer state instance
+- **`enter-action.ts`**: Pure: `deriveEnterAction({ lastEvent, resultsCount })` returning `'run-search' | 'go-to-file'`
+- **`recent-chips-layout.ts`**: Pure: `computeRecentChipsLayout` for the recent-items footer's greedy fit
+- **`filter-chips/`**: Filter chip strip + single chip + popover + pure helpers. See
+  [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md)
+- **`recent-items/RecentItemsFooter.svelte`**: Generic `<E>` chip strip for recent entries plus trailing "All …"
+  affordance. Consumer passes adapter + keyFn
+- **`recent-items/RecentItemsPopover.svelte`**: Generic `<E>` fuzzy-searchable popover over the full recent-entries
+  history (ufuzzy)
+- **`recent-items/recent-items-state.svelte.ts`**: Factory `createRecentItemsState({ getRecent })` returning the
+  reactive store
+- **`recent-items/recent-items-types.ts`**: `RecentItemAdapter<E>`, `RecentItemKey<E>`, `RecentItemView`
+- **`recent-items/recent-items-utils.ts`**: Pure helpers `modeBadge`, `modeName`, `formatAge`, `filterSummary`,
+  `chipTooltip`
 
 Component-level tests (`*.svelte.test.ts`) and tier-3 a11y tests (`*.a11y.test.ts`) colocate with the components. The
 companion test catalog (mirrors the file table above):
 
-| Test                                     | Coverage                                                                                                                         |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `QueryDialog.svelte.test.ts`             | Orchestrator: title bar, primary / secondary action handlers, ⌘N / ⌘H, IME guard, `lastDialogEvent` writes after `runQuery`      |
-| `QueryDialog.a11y.test.ts`               | Tier-3 axe-core audit across loading, index-ready, and AI-on macro-states                                                        |
-| `QueryBar.svelte.test.ts`                | Per-mode placeholder, value mirror, `onInput` callback                                                                           |
-| `ModeChips.svelte.test.ts`               | Chip set, active marker, click + keyboard activation, focus motion (skipping Content), AI-on/off cardinality, ToggleGroup wiring |
-| `AiPromptStrip.svelte.test.ts`           | Renders prompt, renders caveat when set, Refine button is disabled with Coming soon tooltip                                      |
-| `QueryResults.a11y.test.ts`              | Tier-3 axe-core audit across result states                                                                                       |
-| `QueryResults.states.svelte.test.ts`     | Loading / no-results-criteria / populated branches, status-bar emptiness rule                                                    |
-| `PathPills.svelte.test.ts`               | Path-pill split semantics (`/` only), click → onPick wiring, stopPropagation contract                                            |
-| `PathPills.a11y.test.ts`                 | Pins `tabindex="-1"` per pill (not in Tab order); axe-core audit                                                                 |
-| `path-pills-layout.test.ts`              | Deterministic layout against mocked widths (chrome budget, first/last preservation, hidden middle)                               |
-| `SearchRowMenu.svelte.test.ts`           | Button rendering, `is-cursor` marker, onOpen + stopPropagation on click                                                          |
-| `SearchRowMenu.a11y.test.ts`             | Tier-3 axe-core audit for cursor-row and non-cursor variants                                                                     |
-| `EmptyState.svelte.test.ts`              | Chip rendering per `aiEnabled`, click → `onPick`                                                                                 |
-| `RecentItemsFooter.svelte.test.ts`       | Layout cap, click → onPick, contextmenu → onRemove, "All …" → onOpenAll, Search-shaped + Selection-shaped adapters               |
-| `RecentItemsFooter.label.svelte.test.ts` | The leading label renders                                                                                                        |
-| `RecentItemsFooter.a11y.test.ts`         | Zero/one/many/disabled state audits                                                                                              |
-| `RecentItemsPopover.svelte.test.ts`      | Closed/open render, fuzzy filter, empty message, Enter on cursor row, right-click → onRemove, filter resets on reopen            |
-| `RecentItemsPopover.a11y.test.ts`        | Closed + open-with-entries audits                                                                                                |
-| `query-filter-state.test.ts`             | Factory defaults, switchMode + per-mode buffers, history filters, recordAi split                                                 |
-| `enter-action.test.ts`                   | Eight-permutation table for `deriveEnterAction`                                                                                  |
-| `recent-chips-layout.test.ts`            | Greedy-fit packing against mocked widths                                                                                         |
-| `recent-items-utils.test.ts`             | `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip` rules                                                       |
+- **`QueryDialog.svelte.test.ts`**: Orchestrator: title bar, primary / secondary action handlers, ⌘N / ⌘H, IME guard,
+  `lastDialogEvent` writes after `runQuery`
+- **`QueryDialog.a11y.test.ts`**: Tier-3 axe-core audit across loading, index-ready, and AI-on macro-states
+- **`QueryBar.svelte.test.ts`**: Per-mode placeholder, value mirror, `onInput` callback
+- **`ModeChips.svelte.test.ts`**: Chip set, active marker, click + keyboard activation, focus motion (skipping Content),
+  AI-on/off cardinality, ToggleGroup wiring
+- **`AiPromptStrip.svelte.test.ts`**: Renders prompt, renders caveat when set, Refine button is disabled with Coming
+  soon tooltip
+- **`QueryResults.a11y.test.ts`**: Tier-3 axe-core audit across result states
+- **`QueryResults.states.svelte.test.ts`**: Loading / no-results-criteria / populated branches, status-bar emptiness
+  rule
+- **`PathPills.svelte.test.ts`**: Path-pill split semantics (`/` only), click → onPick wiring, stopPropagation contract
+- **`PathPills.a11y.test.ts`**: Pins `tabindex="-1"` per pill (not in Tab order); axe-core audit
+- **`path-pills-layout.test.ts`**: Deterministic layout against mocked widths (chrome budget, first/last preservation,
+  hidden middle)
+- **`SearchRowMenu.svelte.test.ts`**: Button rendering, `is-cursor` marker, onOpen + stopPropagation on click
+- **`SearchRowMenu.a11y.test.ts`**: Tier-3 axe-core audit for cursor-row and non-cursor variants
+- **`EmptyState.svelte.test.ts`**: Chip rendering per `aiEnabled`, click → `onPick`
+- **`RecentItemsFooter.svelte.test.ts`**: Layout cap, click → onPick, contextmenu → onRemove, "All …" → onOpenAll,
+  Search-shaped + Selection-shaped adapters
+- **`RecentItemsFooter.label.svelte.test.ts`**: The leading label renders
+- **`RecentItemsFooter.a11y.test.ts`**: Zero/one/many/disabled state audits
+- **`RecentItemsPopover.svelte.test.ts`**: Closed/open render, fuzzy filter, empty message, Enter on cursor row,
+  right-click → onRemove, filter resets on reopen
+- **`RecentItemsPopover.a11y.test.ts`**: Closed + open-with-entries audits
+- **`query-filter-state.test.ts`**: Factory defaults, switchMode + per-mode buffers, history filters, recordAi split
+- **`enter-action.test.ts`**: Eight-permutation table for `deriveEnterAction`
+- **`recent-chips-layout.test.ts`**: Greedy-fit packing against mocked widths
+- **`recent-items-utils.test.ts`**: `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip` rules
 
 Filter-chips tests (`FilterChips`, the `*FilterPopover` bodies, `filter-chip-state`, `filter-popover-helpers`) are
 catalogued in [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md). The chip and popover primitives themselves are
@@ -261,25 +277,23 @@ provides pixel-accurate text widths.
 
 Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below).
 
-| Shortcut  | Action                                                                                                 |
-| --------- | ------------------------------------------------------------------------------------------------------ |
-| `Enter`   | Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)                                        |
-| `⌥⏎`      | Show all results in the main window (Search) / no-op (Selection); see consumer                         |
-| `⌘Enter`  | No-op. Bare Enter is the only path that runs a search or opens the cursor row.                         |
-| `⇧Enter`  | No-op. Same rule as ⌘Enter.                                                                            |
-| `⌘N`      | Clear all dialog state ("new search" / "new selection")                                                |
-| `⌘H`      | Toggle the recent-items popover (fuzzy over the full history)                                          |
-| `⌘1`      | Switch to AI (AI on) or Filename (AI off)                                                              |
-| `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                                                           |
-| `⌘3`      | Switch to Regex (AI on); no-op when AI is off                                                          |
-| `⌘4`      | Reserved for Content when it ships; not wired now                                                      |
-| `⌥A`      | Mode chip: AI (global inside the dialog; only when AI is enabled)                                      |
-| `⌥F`      | Mode chip: Filename (global)                                                                           |
-| `⌥R`      | Mode chip: Regex (global)                                                                              |
-| `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)                                          |
-| `←` / `→` | When focus is on a mode chip: move between chips (skip Content)                                        |
-| `Tab`     | Trapped within the dialog (shared `use:trapFocus` on the overlay); cycles through interactive elements |
-| `Escape`  | Close the dialog                                                                                       |
+- **`Enter`**: Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)
+- **`⌥⏎`**: Show all results in the main window (Search) / no-op (Selection); see consumer
+- **`⌘Enter`**: No-op. Bare Enter is the only path that runs a search or opens the cursor row.
+- **`⇧Enter`**: No-op. Same rule as ⌘Enter.
+- **`⌘N`**: Clear all dialog state ("new search" / "new selection")
+- **`⌘H`**: Toggle the recent-items popover (fuzzy over the full history)
+- **`⌘1`**: Switch to AI (AI on) or Filename (AI off)
+- **`⌘2`**: Switch to Filename (AI on) or Regex (AI off)
+- **`⌘3`**: Switch to Regex (AI on); no-op when AI is off
+- **`⌘4`**: Reserved for Content when it ships; not wired now
+- **`⌥A`**: Mode chip: AI (global inside the dialog; only when AI is enabled)
+- **`⌥F`**: Mode chip: Filename (global)
+- **`⌥R`**: Mode chip: Regex (global)
+- **`↑` / `↓`**: Move the cursor through the results list (loops top<->bottom)
+- **`←` / `→`**: When focus is on a mode chip: move between chips (skip Content)
+- **`Tab`**: Trapped within the dialog (shared `use:trapFocus` on the overlay); cycles through interactive elements
+- **`Escape`**: Close the dialog
 
 Filter-popover openers (`⌥S`, `⌥M`, `⌥I`) and the macOS Option-glyph remap live in
 [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md). Scope-popover shortcuts (`⌥C`, `⌥V`) are Search-only — see

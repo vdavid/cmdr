@@ -22,16 +22,14 @@ collapsible "Technical details" section, never hidden but never in your face eit
 
 ## Key files
 
-| File | Role |
-|---|---|
-| `mod.rs` | `FriendlyError`, `ErrorCategory`, `ErrorActionKind` data model + public re-exports |
-| `errno.rs` | Raw macOS errno → `FriendlyError` (37 codes), with a non-macOS fallback |
-| `volume_error.rs` | `VolumeError` → `FriendlyError` (dispatches to `errno` for raw `IoError`s) |
-| `write_error.rs` | `WriteOperationError` → `FriendlyError` (mirror of `volume_error` for the post-`map_volume_error` shape) |
-| `empty_root.rs` | TCC-restricted volume root hint (a single special case) |
-| `kinds.rs` | Shared "what kind of failure is this" classification used by both `volume_error` and `write_error` |
-| `markdown.rs` | `Markdown` newtype + `md!` macro: escapes interpolated runtime strings before they hit snarkdown |
-| `provider.rs` | `Provider` enum (19 variants), `detect_provider()`, `provider_suggestion()`, `enrich_with_provider()` |
+- **`mod.rs`**: `FriendlyError`, `ErrorCategory`, `ErrorActionKind` data model + public re-exports
+- **`errno.rs`**: Raw macOS errno → `FriendlyError` (37 codes), with a non-macOS fallback
+- **`volume_error.rs`**: `VolumeError` → `FriendlyError` (dispatches to `errno` for raw `IoError`s)
+- **`write_error.rs`**: `WriteOperationError` → `FriendlyError` (mirror of `volume_error` for the post-`map_volume_error` shape)
+- **`empty_root.rs`**: TCC-restricted volume root hint (a single special case)
+- **`kinds.rs`**: Shared "what kind of failure is this" classification used by both `volume_error` and `write_error`
+- **`markdown.rs`**: `Markdown` newtype + `md!` macro: escapes interpolated runtime strings before they hit snarkdown
+- **`provider.rs`**: `Provider` enum (19 variants), `detect_provider()`, `provider_suggestion()`, `enrich_with_provider()`
 
 ## Architecture
 
@@ -120,14 +118,12 @@ suggestion: "You may want to try simply reconnecting the device."  // permissive
 
 ## Provider detection strategies
 
-| Strategy | Providers covered |
-|---|---|
-| `~/Library/CloudStorage/<Prefix>*` | Dropbox, GoogleDrive, OneDrive, Box, pCloud, Nextcloud, SynologyDrive, Tresorit, ProtonDrive, Sync, Egnyte, MacDroid, plus a generic fallback for unrecognized providers |
-| `~/Library/Mobile Documents/` | iCloud Drive |
-| `/Volumes/pCloudDrive` | pCloud (FUSE virtual drive) |
-| `/Volumes/veracrypt*` | VeraCrypt |
-| `~/.CMVolumes/` | CloudMounter |
-| `statfs` `f_fstypename` (macOS) | macFUSE/SSHFS/Cryptomator/rclone (`macfuse`, `osxfuse`), pCloud (`pcloudfs`) |
+- **`~/Library/CloudStorage/<Prefix>*`**: Dropbox, GoogleDrive, OneDrive, Box, pCloud, Nextcloud, SynologyDrive, Tresorit, ProtonDrive, Sync, Egnyte, MacDroid, plus a generic fallback for unrecognized providers
+- **`~/Library/Mobile Documents/`**: iCloud Drive
+- **`/Volumes/pCloudDrive`**: pCloud (FUSE virtual drive)
+- **`/Volumes/veracrypt*`**: VeraCrypt
+- **`~/.CMVolumes/`**: CloudMounter
+- **`statfs` `f_fstypename` (macOS)**: macFUSE/SSHFS/Cryptomator/rclone (`macfuse`, `osxfuse`), pCloud (`pcloudfs`)
 
 The `statfs` check runs only at error time (not on every listing), so the syscall cost is negligible.
 

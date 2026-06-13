@@ -47,25 +47,23 @@ tech groups (`rust`, `svelte`, `go`), in any mix, space- or comma-separated, wit
 even if slow or CI-only; app/group selectors keep the default lanes. `ValidateCheckNames` rejects any check ID or
 nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main.go`).
 
-| Option                      | Description                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------- |
-| `--app NAME`                | Run checks for specific apps (repeatable or comma-separated)                    |
-| `--rust`, `--rust-only`     | Run only Rust checks (desktop)                                                  |
-| `--svelte`, `--svelte-only` | Run only Svelte checks (desktop)                                                |
-| `--check ID`                | Run specific checks by ID or nickname (same as naming them positionally)        |
-| `--ci`                      | Disable auto-fixing (for CI)                                                    |
-| `--verbose`                 | Show detailed output                                                            |
-| `--include-slow`            | Include slow checks (excluded by default)                                       |
-| `--only-slow`               | Run only slow checks                                                            |
-| `--fast`                    | Run only the curated fast pre-commit check set                                  |
-| `--fresh`                   | Bypass the input-fingerprint cache: run everything selected, then refresh it    |
-| `--only-freestyle`          | Run freestyle-compatible checks on a VM (skip the rest)                         |
-| `--prefer-freestyle`        | Run compat checks on VM + the rest locally in parallel                          |
-| `--fail-fast`               | Stop on first failure                                                           |
-| `--no-log`                  | Disable CSV stats logging                                                       |
-| `--graph`                   | Render the check dependency graph (weights + lanes + median wall-time) and exit |
-| `--graph-format`            | Graph output: `tree` (default, colored terminal), `mermaid`, `dot`              |
-| `-h`, `--help`              | Show help message                                                               |
+- **`--app NAME`**: Run checks for specific apps (repeatable or comma-separated)
+- **`--rust`, `--rust-only`**: Run only Rust checks (desktop)
+- **`--svelte`, `--svelte-only`**: Run only Svelte checks (desktop)
+- **`--check ID`**: Run specific checks by ID or nickname (same as naming them positionally)
+- **`--ci`**: Disable auto-fixing (for CI)
+- **`--verbose`**: Show detailed output
+- **`--include-slow`**: Include slow checks (excluded by default)
+- **`--only-slow`**: Run only slow checks
+- **`--fast`**: Run only the curated fast pre-commit check set
+- **`--fresh`**: Bypass the input-fingerprint cache: run everything selected, then refresh it
+- **`--only-freestyle`**: Run freestyle-compatible checks on a VM (skip the rest)
+- **`--prefer-freestyle`**: Run compat checks on VM + the rest locally in parallel
+- **`--fail-fast`**: Stop on first failure
+- **`--no-log`**: Disable CSV stats logging
+- **`--graph`**: Render the check dependency graph (weights + lanes + median wall-time) and exit
+- **`--graph-format`**: Graph output: `tree` (default, colored terminal), `mermaid`, `dot`
+- **`-h`, `--help`**: Show help message
 
 `--graph` honors the same selectors (positional or flag form), so `pnpm check rust --graph` graphs only the Rust checks.
 It renders before the slow/fast/CI filters, so every lane shows with its size badge. Each node also shows
@@ -113,23 +111,28 @@ pnpm check [flags]
 
 ## Key files
 
-| File                    | Purpose                                                                                                                            |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `main.go`               | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation                                     |
-| `runner.go`             | Parallel executor: CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line                                  |
-| `graph.go`              | `--graph` renderer: dependency forest with CPU weights, size lanes, and median wall-time from the stats CSV (tree / mermaid / dot) |
-| `stats.go`              | CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`                                           |
-| `plan.go`               | Input-fingerprint cache planning: splits selected checks into cache hits and misses BEFORE pnpm/SMB; records passes after the run  |
-| `checks/fingerprint.go` | Git-aware content fingerprint per check (one repo-wide `git ls-files`+`git status` pass, filtered per check's Inputs)              |
-| `checks/cache.go`       | Per-worktree cache file load/save (`node_modules/.cache/cmdr-check-cache.json`), atomic write, corrupt-tolerant                    |
-| `checks/inputs.go`      | Shared `Inputs` building blocks (mined from ci.yml filters) + `inputs()` concatenator                                              |
-| `colors.go`             | ANSI color constants                                                                                                               |
-| `utils.go`              | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                                                      |
-| `smb_orchestrator.go`   | Runner-level SMB Docker lifecycle: acquires a machine-wide lease (via `smblease`) at init, releases at exit                        |
-| `smblease/`             | Library: the machine-wide flock + holder-id refcount that makes the shared `smb-consumer` stack safe across worktrees              |
-| `smb-lease/`            | Thin `package main` CLI onto `smblease` (`acquire`/`release`/`reconcile`/`status`) that the bash scripts shell out to              |
-| `freestyle.go`          | All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`                                                         |
-| `checks/`               | One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)                               |
+- **`main.go`**: Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation
+- **`runner.go`**: Parallel executor: CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line
+- **`graph.go`**: `--graph` renderer: dependency forest with CPU weights, size lanes, and median wall-time from the
+  stats CSV (tree / mermaid / dot)
+- **`stats.go`**: CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`
+- **`plan.go`**: Input-fingerprint cache planning: splits selected checks into cache hits and misses BEFORE pnpm/SMB;
+  records passes after the run
+- **`checks/fingerprint.go`**: Git-aware content fingerprint per check (one repo-wide `git ls-files`+`git status` pass,
+  filtered per check's Inputs)
+- **`checks/cache.go`**: Per-worktree cache file load/save (`node_modules/.cache/cmdr-check-cache.json`), atomic write,
+  corrupt-tolerant
+- **`checks/inputs.go`**: Shared `Inputs` building blocks (mined from ci.yml filters) + `inputs()` concatenator
+- **`colors.go`**: ANSI color constants
+- **`utils.go`**: `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)
+- **`smb_orchestrator.go`**: Runner-level SMB Docker lifecycle: acquires a machine-wide lease (via `smblease`) at init,
+  releases at exit
+- **`smblease/`**: Library: the machine-wide flock + holder-id refcount that makes the shared `smb-consumer` stack safe
+  across worktrees
+- **`smb-lease/`**: Thin `package main` CLI onto `smblease` (`acquire`/`release`/`reconcile`/`status`) that the bash
+  scripts shell out to
+- **`freestyle.go`**: All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`
+- **`checks/`**: One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)
 
 ## Runner-level patterns
 

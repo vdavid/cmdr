@@ -97,14 +97,13 @@ overwrites the `suggestion` field with provider-specific advice.
 
 **Detection strategies:**
 
-| Strategy                           | Providers                                                                                                                                   |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `~/Library/CloudStorage/<Prefix>*` | Dropbox, GoogleDrive, OneDrive, Box, pCloud, Nextcloud, SynologyDrive, Tresorit, ProtonDrive, Sync, Egnyte, MacDroid, plus generic fallback |
-| `~/Library/Mobile Documents/`      | iCloud Drive                                                                                                                                |
-| `/Volumes/pCloudDrive`             | pCloud (FUSE)                                                                                                                               |
-| `/Volumes/veracrypt*`              | VeraCrypt                                                                                                                                   |
-| `~/.CMVolumes/`                    | CloudMounter                                                                                                                                |
-| `statfs` `f_fstypename`            | macFUSE, SSHFS, Cryptomator, rclone (`macfuse`/`osxfuse`), pCloud (`pcloudfs`)                                                              |
+- **`~/Library/CloudStorage/<Prefix>*`**: Dropbox, GoogleDrive, OneDrive, Box, pCloud, Nextcloud, SynologyDrive,
+  Tresorit, ProtonDrive, Sync, Egnyte, MacDroid, plus generic fallback
+- **`~/Library/Mobile Documents/`**: iCloud Drive
+- **`/Volumes/pCloudDrive`**: pCloud (FUSE)
+- **`/Volumes/veracrypt*`**: VeraCrypt
+- **`~/.CMVolumes/`**: CloudMounter
+- **`statfs` `f_fstypename`**: macFUSE, SSHFS, Cryptomator, rclone (`macfuse`/`osxfuse`), pCloud (`pcloudfs`)
 
 The `statfs` check runs only at error time, so the syscall cost is negligible.
 
@@ -194,13 +193,11 @@ suggestion: "You may want to try simply reconnecting the device."  ← permissiv
 
 ## Key files
 
-| File                                                 | Role                                                              |
-| ---------------------------------------------------- | ----------------------------------------------------------------- |
-| `src-tauri/src/file_system/volume/friendly_error.rs` | All error classification, messages, and provider detection        |
-| `src-tauri/src/file_system/volume/mod.rs`            | `VolumeError` enum definition                                     |
-| `src-tauri/src/file_system/listing/streaming.rs`     | Emits `listing-error` events                                      |
-| `src-tauri/src/commands/file_system.rs`              | `inject_listing_error` (E2E) and `preview_friendly_error` (debug) |
-| `src/lib/file-explorer/pane/ErrorPane.svelte`        | Renders the error pane UI                                         |
-| `src/lib/file-explorer/pane/error-pane-utils.ts`     | Markdown rendering helper                                         |
-| `src/lib/file-explorer/types.ts`                     | `FriendlyError` and `ListingErrorEvent` TypeScript types          |
-| `test/e2e-playwright/error-pane.spec.ts`             | E2E tests for error pane                                          |
+- **`src-tauri/src/file_system/volume/friendly_error.rs`**: All error classification, messages, and provider detection
+- **`src-tauri/src/file_system/volume/mod.rs`**: `VolumeError` enum definition
+- **`src-tauri/src/file_system/listing/streaming.rs`**: Emits `listing-error` events
+- **`src-tauri/src/commands/file_system.rs`**: `inject_listing_error` (E2E) and `preview_friendly_error` (debug)
+- **`src/lib/file-explorer/pane/ErrorPane.svelte`**: Renders the error pane UI
+- **`src/lib/file-explorer/pane/error-pane-utils.ts`**: Markdown rendering helper
+- **`src/lib/file-explorer/types.ts`**: `FriendlyError` and `ListingErrorEvent` TypeScript types
+- **`test/e2e-playwright/error-pane.spec.ts`**: E2E tests for error pane

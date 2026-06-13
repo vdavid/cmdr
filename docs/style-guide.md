@@ -127,6 +127,24 @@ We use `unplugin-icons` + `@iconify-json/lucide` (Lucide set, rendered as inline
 or styling an icon, read [guides/icons.md](guides/icons.md): finding icons, template usage, sizing, coloring, and the
 add-an-icon checklist.
 
+### Agent-facing docs
+
+Agent-facing docs (`CLAUDE.md`, `DETAILS.md`, `AGENTS.md`, everything under `docs/`, and `.claude/rules/`) are read by
+AI agents as a linear token stream, not a 2D layout. So:
+
+- **No two-column tables.** Use a bullet list instead, one item per row, formatted `- **Title**: details`: a bold title,
+  then a literal ": " (colon + space) separator, then the rest of the row. Never a dash or em-dash as the separator. The
+  padding in an aligned table wastes tokens and, worse, any edit reflows every row, which causes spurious git merge
+  conflicts. A three-column table whose first column is a pure sequential index counts as two columns: drop the index (a
+  numbered list works if the index is meaningful) and bullet the two real columns. The `docs-no-two-col-tables` check
+  enforces this (error-level, no allowlist: a two-column table is always convertible).
+- **Genuine matrices stay tables.** A table with three or more meaningful columns (a capability grid with ✓/✗ across
+  several columns, a comparison table) is legitimately 2D, so keep it. The check only flags the two-column case.
+
+This is the doc-specific form of the user-level `agent-facing-docs` rule (skip column-alignment padding; prefer simple
+bulleted lists). Human-facing markdown is exempt: `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and everything under
+`apps/website/` and `brand/` stay human-optimized and may use tables freely.
+
 ## Design
 
 See [design-principles.md](design-principles.md) for product design values (UX, accessibility, cancellation, platform

@@ -13,17 +13,25 @@ finishes onboarding.
 
 ## Key files
 
-| File                         | Purpose                                                                                                                                                                                                                                                                                                                                                                                         |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OnboardingWizard.svelte`    | Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer button, Escape-swallow. Tab containment via the shared `use:trapFocus` (no `onEscape` — dismissal requires committing to a step).                                                                                                                                                                            |
-| `OnboardingStepShell.svelte` | Per-step inner frame (padding, scroll container). Steps render their body inside.                                                                                                                                                                                                                                                                                                               |
-| `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.                                                                                                                                                                                                                                                                                                     |
-| `StepAi.svelte`              | Step 2: AI provider picker. FDA-outcome banner (or none), comparison table (Without AI / With AI), three radio choices, single "Next" forward button.                                                                                                                                                                                                                                           |
-| `CloudProviderPicker.svelte` | Step 2 left column: scrollable listbox of all 15 cloud providers. Single tab stop via `aria-activedescendant` (no roving focus); Arrow / Home / End / type-to-jump move the active option.                                                                                                                                                                                                      |
-| `CloudProviderSetup.svelte`  | Step 2 right column: per-provider numbered tutorial with API-key persist + auto-check + model combobox.                                                                                                                                                                                                                                                                                         |
-| `StepBeta.svelte`            | Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub, Discord, book-a-call) + anonymous-analytics disclosure + `analytics.enabled` opt-out switch + optional `analytics.email` contact field. Footer = "Start using Cmdr!" (finish here) + "One more optional setup step" (continue). Reuses the Settings `UpdatesSection` email/`betaSignup` wiring. |
-| `StepOptional.svelte`        | Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry settings.                                                                                                                                                                                                                                                                                              |
-| `onboarding-state.svelte.ts` | Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner mode, `openWizard()` / `resumeStepFor()` etc.                                                                                                                                                                                                                                                              |
+- **`OnboardingWizard.svelte`**: Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer
+  button, Escape-swallow. Tab containment via the shared `use:trapFocus` (no `onEscape` — dismissal requires committing
+  to a step).
+- **`OnboardingStepShell.svelte`**: Per-step inner frame (padding, scroll container). Steps render their body inside.
+- **`StepFda.svelte`**: Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.
+- **`StepAi.svelte`**: Step 2: AI provider picker. FDA-outcome banner (or none), comparison table (Without AI / With
+  AI), three radio choices, single "Next" forward button.
+- **`CloudProviderPicker.svelte`**: Step 2 left column: scrollable listbox of all 15 cloud providers. Single tab stop
+  via `aria-activedescendant` (no roving focus); Arrow / Home / End / type-to-jump move the active option.
+- **`CloudProviderSetup.svelte`**: Step 2 right column: per-provider numbered tutorial with API-key persist +
+  auto-check + model combobox.
+- **`StepBeta.svelte`**: Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub,
+  Discord, book-a-call) + anonymous-analytics disclosure + `analytics.enabled` opt-out switch + optional
+  `analytics.email` contact field. Footer = "Start using Cmdr!" (finish here) + "One more optional setup step"
+  (continue). Reuses the Settings `UpdatesSection` email/`betaSignup` wiring.
+- **`StepOptional.svelte`**: Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry
+  settings.
+- **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
+  mode, `openWizard()` / `resumeStepFor()` etc.
 
 ## Status
 

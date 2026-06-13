@@ -6,11 +6,10 @@ file, with unified timestamps. The Rust side runs a hand-rolled `fern` dispatch 
 
 ## File map
 
-| File                 | Purpose                                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------- |
-| `logger.ts`          | LogTape configuration, `getAppLogger()` entry point, verbose toggle, `debugCategories`             |
-| `log-bridge.ts`      | Batching sink: collects FE logs for 100ms, deduplicates, throttles at 200/s, sends to Rust via IPC |
-| `log-bridge.test.ts` | Vitest tests for bridge (batching, dedup, throttle)                                                |
+- **`logger.ts`**: LogTape configuration, `getAppLogger()` entry point, verbose toggle, `debugCategories`
+- **`log-bridge.ts`**: Batching sink: collects FE logs for 100ms, deduplicates, throttles at 200/s, sends to Rust via
+  IPC
+- **`log-bridge.test.ts`**: Vitest tests for bridge (batching, dedup, throttle)
 
 Rust side lives in `src-tauri/src/commands/logging.rs` (batch IPC receiver + runtime level control).
 

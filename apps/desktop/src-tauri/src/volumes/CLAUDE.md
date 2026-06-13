@@ -4,10 +4,8 @@ macOS volume and location discovery, plus live mount/unmount watching via `NSWor
 
 ## Key files
 
-| File | Purpose |
-|---|---|
-| `mod.rs` | `LocationInfo` type and `VolumeInfo` type alias (`pub use LocationInfo as VolumeInfo` for backwards compatibility), `LocationCategory` enum, `SmbConnectionState` enum. `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, `get_mount_point()` (statfs-based mount resolution with APFS firmlink normalization), `resolve_path_volume_fast()` (builds `VolumeInfo` from statfs without enumerating volumes), and private helpers using `objc2`/`objc2_foundation`. |
-| `watcher.rs` | `NSWorkspace` mount/unmount observer. Subscribes to `NSWorkspaceDidMountNotification` and `NSWorkspaceDidUnmountNotification`, extracts the volume path from `NSWorkspaceVolumeURLKey`, and dispatches to `handle_volume_mounted` / `handle_volume_unmounted`. Those register/unregister with `VolumeManager` (via `register_volume_with_manager` / `unregister_volume_from_manager`, coupling to `file_system::get_volume_manager()`), emit per-volume `volume-mounted` / `volume-unmounted` Tauri events (`DualPaneExplorer` uses `volume-unmounted` with the volume path to redirect panes off ejected volumes), and trigger `volume_broadcast::emit_volumes_changed()`. |
+- **`mod.rs`**: `LocationInfo` type and `VolumeInfo` type alias (`pub use LocationInfo as VolumeInfo` for backwards compatibility), `LocationCategory` enum, `SmbConnectionState` enum. `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, `get_mount_point()` (statfs-based mount resolution with APFS firmlink normalization), `resolve_path_volume_fast()` (builds `VolumeInfo` from statfs without enumerating volumes), and private helpers using `objc2`/`objc2_foundation`.
+- **`watcher.rs`**: `NSWorkspace` mount/unmount observer. Subscribes to `NSWorkspaceDidMountNotification` and `NSWorkspaceDidUnmountNotification`, extracts the volume path from `NSWorkspaceVolumeURLKey`, and dispatches to `handle_volume_mounted` / `handle_volume_unmounted`. Those register/unregister with `VolumeManager` (via `register_volume_with_manager` / `unregister_volume_from_manager`, coupling to `file_system::get_volume_manager()`), emit per-volume `volume-mounted` / `volume-unmounted` Tauri events (`DualPaneExplorer` uses `volume-unmounted` with the volume path to redirect panes off ejected volumes), and trigger `volume_broadcast::emit_volumes_changed()`.
 
 ## Location categories
 
@@ -73,16 +71,14 @@ The local `get_icon_for_path()` wrapper short-circuits to `None` while `crate::f
 
 ## Cloud provider detection
 
-`parse_cloud_provider_name(dir_name)` maps `~/Library/CloudStorage/` directory names to friendly labels:
+`parse_cloud_provider_name(dir_name)` maps `~/Library/CloudStorage/` directory names (the directory prefix) to friendly display names:
 
-| Directory prefix | Display name |
-|---|---|
-| `Dropbox` | Dropbox |
-| `GoogleDrive` | Google Drive |
-| `OneDrive` (+ `Business`) | OneDrive / OneDrive for Business |
-| `Box` | Box |
-| `pCloud` | pCloud |
-| anything else | first `-`-delimited segment |
+- **`Dropbox`**: Dropbox
+- **`GoogleDrive`**: Google Drive
+- **`OneDrive` (+ `Business`)**: OneDrive / OneDrive for Business
+- **`Box`**: Box
+- **`pCloud`**: pCloud
+- **anything else**: first `-`-delimited segment
 
 **Note**: Error enrichment in `file_system/volume/friendly_error.rs` has its own provider detection (`enrich_with_provider`) using the same path-prefix matching strategy but for a different purpose (error suggestions vs display names). Keep the two lists in sync when adding new providers.
 
