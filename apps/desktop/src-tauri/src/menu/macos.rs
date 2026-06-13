@@ -18,10 +18,10 @@ use super::{
     EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COPY_ID, FILE_DELETE_ID,
     FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID,
     GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID,
-    HELP_SHORTCUTS_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, PIN_TAB_MENU_ID, PREV_TAB_ID,
-    QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID,
-    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID,
-    SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
+    HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID,
+    PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID,
+    SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
+    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
     VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
 };
 
@@ -368,6 +368,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // --- Help menu ---
     // macOS auto-adds a search field to any menu named "Help"
     let shortcuts_item = MenuItem::with_id(app, HELP_SHORTCUTS_ID, "Keyboard shortcuts", true, None::<&str>)?;
+    let whats_new_item = MenuItem::with_id(app, HELP_WHATS_NEW_ID, "What's new", true, None::<&str>)?;
     let send_feedback_item =
         MenuItem::with_id(app, HELP_SEND_FEEDBACK_ID, "Send feedback\u{2026}", true, None::<&str>)?;
     let send_error_report_item = MenuItem::with_id(
@@ -384,6 +385,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         &[
             &shortcuts_item,
             &PredefinedMenuItem::separator(app)?,
+            &whats_new_item,
             &send_feedback_item,
             &send_error_report_item,
         ],
@@ -480,15 +482,16 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, PREV_TAB_ID, &prev_tab_item, &tab_menu, 5);
     register_item(&mut items, CLOSE_OTHER_TABS_ID, &close_other_tabs_item, &tab_menu, 8);
 
-    // Help menu positions: shortcuts(0), sep(1), send_feedback(2), send_error_report(3)
+    // Help menu positions: shortcuts(0), sep(1), whats_new(2), send_feedback(3), send_error_report(4)
     register_item(&mut items, HELP_SHORTCUTS_ID, &shortcuts_item, &help_menu, 0);
-    register_item(&mut items, HELP_SEND_FEEDBACK_ID, &send_feedback_item, &help_menu, 2);
+    register_item(&mut items, HELP_WHATS_NEW_ID, &whats_new_item, &help_menu, 2);
+    register_item(&mut items, HELP_SEND_FEEDBACK_ID, &send_feedback_item, &help_menu, 3);
     register_item(
         &mut items,
         HELP_SEND_ERROR_REPORT_ID,
         &send_error_report_item,
         &help_menu,
-        3,
+        4,
     );
 
     // cmdr menu positions: about(0), license(1), check_for_updates(2), open_onboarding(3),
@@ -687,7 +690,10 @@ fn set_macos_menu_icons_inner() {
                 ("Pin tab", "pin"),
                 ("Close other tabs", "xmark.circle"),
             ],
-            "Help" => &[("Send error report\u{2026}", "exclamationmark.bubble")],
+            "Help" => &[
+                ("What's new", "sparkles"),
+                ("Send error report\u{2026}", "exclamationmark.bubble"),
+            ],
             _ => continue,
         };
 

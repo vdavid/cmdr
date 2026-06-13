@@ -48,10 +48,10 @@ function openWith(releases: WhatsNewRelease[], allowEmpty: boolean): void {
 }
 
 /**
- * The M3 seam: opens the dialog manually (Help > What's new / command palette), showing
- * the latest five releases with no lower bound. Never stamps `lastSeenVersion`, works
+ * The manual-reopen seam: opens the dialog manually (Help > What's new / command palette),
+ * showing the latest five releases with no lower bound. Never stamps `lastSeenVersion`, works
  * regardless of the `showOnUpdate` setting, and shows the empty state when nothing is
- * displayable. M3 wires a command handler to call this; M2 leaves it ready.
+ * displayable. The `help.whatsNew` command handler calls this.
  */
 export async function openWhatsNew(): Promise<void> {
   if (whatsNewState.open) return // Idempotent: a menu/palette double-fire opens it once.

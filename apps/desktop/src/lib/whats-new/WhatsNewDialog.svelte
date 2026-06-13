@@ -6,7 +6,7 @@
      * `routes/(main)/+page.svelte` while `whatsNewState.open` is true.
      *
      * The auto-popup never opens empty (the trigger collapses an empty slice to a silent
-     * stamp); the empty state is reachable only via the manual Help reopen (M3).
+     * stamp); the empty state is reachable only via the manual Help reopen.
      */
     import snarkdown from 'snarkdown'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'

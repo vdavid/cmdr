@@ -71,6 +71,8 @@ All under `apps/desktop/src/lib/`.
 - `tooltip/`: Lightweight tooltip primitive
 - `stores/`: App-wide reactive Svelte stores: volume list, restricted-paths state
 - `updates/`: Auto-updater UI
+- `whats-new/`: Post-update "What's new" changelog popup: the pure show/stamp decision, the startup trigger, the soft
+  dialog, and the manual Help reopen. See `whats-new/CLAUDE.md`
 - `utils/`: Filename validation, confirm dialog utilities
 - `path/`: Path manipulation helpers (normalize, segment, join/split, platform-aware comparators)
 - `font-metrics/`: Character width measurement for accurate Brief mode column sizing
@@ -139,7 +141,10 @@ All under `apps/desktop/src-tauri/src/`.
 - `fda_gate.rs`: Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See
   the `tauri-apis` rule in `.claude/rules/`
 - `stubs/`: Linux compilation stubs for macOS-only modules (Docker E2E pipeline)
-- `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable
+- `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable. The Help
+  menu carries the "What's new" item (above "Send feedback…")
+- `whats_new/`: Parses the embedded `CHANGELOG.md` into the typed model behind the `get_whats_new` IPC that the frontend
+  `whats-new/` popup renders. See `whats_new/CLAUDE.md`
 - `quick_look/`: macOS-only `QLPreviewPanel` integration (Shift+Space)
 - `drag_image_detection.rs`: macOS method swizzle for drag image size detection
 - `drag_image_swap.rs`: Rich/transparent drag image swap for self-drags

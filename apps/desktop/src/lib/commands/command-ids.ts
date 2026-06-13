@@ -41,6 +41,7 @@ export const COMMAND_IDS = [
   'cmdr.openOnboarding',
   'help.openShortcuts',
   'help.sendErrorReport',
+  'help.whatsNew',
   'feedback.send',
 
   // Search

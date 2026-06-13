@@ -1,7 +1,8 @@
 /**
  * Handlers for the app-level dialog and window openers: the command palette,
- * search, "Go to path", settings, about, license key, error report, updates,
- * onboarding re-entry, and the about-window website/upgrade/close actions.
+ * search, "Go to path", settings, about, license key, error report, feedback,
+ * "What's new", updates, onboarding re-entry, and the about-window
+ * website/upgrade/close actions.
  *
  * The selection-dialog openers (`selection.selectFiles` / `selection.deselectFiles`)
  * live in `selection-handlers`, not here.
@@ -11,6 +12,7 @@ import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openShortcutsWindow } from '$lib/shortcuts/shortcuts-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import { openFeedbackDialog } from '$lib/feedback/feedback-flow.svelte'
+import { openWhatsNew } from '$lib/whats-new/whats-new-trigger.svelte'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import type { CommandHandlerRecord } from './types'
 
@@ -51,6 +53,10 @@ export const appDialogHandlers = {
 
   'feedback.send': () => {
     openFeedbackDialog()
+  },
+
+  'help.whatsNew': () => {
+    void openWhatsNew()
   },
 
   'app.checkForUpdates': () => {

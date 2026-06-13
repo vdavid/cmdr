@@ -51,7 +51,7 @@
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
-    import { getSetting, setSetting } from '$lib/settings'
+    import { getSetting, seedSettingForE2E, setSetting } from '$lib/settings'
     import { getShowFunctionKeyBar } from '$lib/settings/reactive-settings.svelte'
     import { addToast } from '$lib/ui/toast'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
@@ -460,6 +460,36 @@
             }
             explorerRef?.triggerFileDrop(paths, targetPane, targetFolderPath, operation, recordedIdentity)
         })
+
+        // E2E only: seed settings, then re-run the "What's new" check with `force`.
+        // The boot auto-check is suppressed under E2E mode (see `maybeRunWhatsNew`),
+        // so no popup leaks into other specs. To exercise the real auto-show path,
+        // the whats-new spec emits this event with `isOnboarded: true` and an old
+        // `lastSeenVersion`; the handler seeds them and runs `maybeRunWhatsNew(true)`,
+        // the SAME trigger the boot path uses. Gated on `getAppMode() === 'e2e'`,
+        // never true in prod.
+        //
+        // The whats-new keys are seeded via `seedSettingForE2E` (cache + save, NO
+        // cross-window emit), NOT `setSetting`: the trigger then stamps
+        // `lastSeenVersion` to the current version, and a `setSetting` seed's
+        // self-echo (`settings:changed` loops back to this same window) could land
+        // AFTER the stamp and revert it. The non-emitting seed sidesteps that race,
+        // matching production where the seed comes from disk at boot, never a live
+        // emit.
+        await listenTauri('e2e-rerun-whats-new', (event) => {
+            if (getAppMode() !== 'e2e') return
+            const { isOnboarded, lastSeenVersion, showOnUpdate } = event.payload as {
+                isOnboarded: boolean
+                lastSeenVersion: string
+                showOnUpdate: boolean
+            }
+            void (async () => {
+                await saveSettings({ isOnboarded })
+                seedSettingForE2E('whatsNew.lastSeenVersion', lastSeenVersion)
+                seedSettingForE2E('whatsNew.showOnUpdate', showOnUpdate)
+                await maybeRunWhatsNew(true)
+            })()
+        })
     }
 
 
@@ -644,8 +674,15 @@
      * `whats-new-trigger`. Called once after onboarding resolves and re-attempted when the
      * onboarding wizard closes (mirroring the update-toast re-attempt in `updater.svelte.ts`).
      * The trigger itself no-ops if its dialog is already open, so the re-attempt is safe.
+     *
+     * Suppressed at boot under E2E mode (`force` stays false): E2E grants FDA via the mock,
+     * so the app boots onboarded, which would make the inaugural-showcase popup auto-open and
+     * leak into whichever spec runs first (tripping the overlay leak guard). The dedicated
+     * `whats-new.spec.ts` drives the real auto path explicitly through `e2e-rerun-whats-new`,
+     * which calls this with `force: true`. The decision logic is covered by Vitest.
      */
-    async function maybeRunWhatsNew(): Promise<void> {
+    async function maybeRunWhatsNew(force = false): Promise<void> {
+        if (!force && getAppMode() === 'e2e') return
         const settings = await loadSettings()
         await runWhatsNewStartupTrigger({
             onboarded: settings.isOnboarded,

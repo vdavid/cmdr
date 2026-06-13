@@ -112,6 +112,9 @@ Prepare a release based on docs/guides/releasing.md.
    #### Self-edit pass (mandatory)
 
    After drafting and before presenting the draft, re-read every entry and:
+   - **The changelog now ships inside the app** (the in-app "What's new" popup renders these exact sections), so this
+     pass is also a UI-copy review: hold every entry to the `docs/style-guide.md` writing bar, not just changelog
+     conventions.
    - Cut any entry over ~20 words unless it's a genuine tentpole.
    - Merge or delete any second sentence.
    - Delete any trailing ", so [benefit]" clause.

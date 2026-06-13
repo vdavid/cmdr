@@ -11,7 +11,7 @@ it and renders it.
   (numeric semver compare). No `$state`, no IPC, fully unit-tested in `whats-new.test.ts`.
 - `whats-new-trigger.svelte.ts`: the effectful layer. Owns `whatsNewState` (`$state`), reads/writes settings, fetches
   the slice over IPC, flips the dialog open. Exports `runWhatsNewStartupTrigger(...)` (auto path), `openWhatsNew()` (the
-  manual M3 seam), and `closeWhatsNew()`.
+  manual Help-reopen seam), and `closeWhatsNew()`.
 - `WhatsNewDialog.svelte`: the soft `ModalDialog` (`dialogId: 'whats-new'`). Renders releases via `snarkdown`, the empty
   state, the "See full changelog" link, and the footer (opt-out + Close).
 
@@ -53,12 +53,13 @@ surfaces it via `whatsNewDevOverride()`. When set, the trigger BYPASSES `decideW
 (`getWhatsNew(v, 5)`), force-opens the dialog regardless of the setting / onboarding / modals, and does NOT stamp, so
 every relaunch keeps showing it until the var is unset.
 
-## Manual smoke checklist
+## Menu + palette
 
-1. In the dev `settings.json`, set `whatsNew.lastSeenVersion` to an old version (for example `0.1.0`), relaunch
-   (`pnpm dev --worktree whats-new-popup`): the popup shows the latest five releases.
-2. Click "Not interested in changelogs": the dialog closes, a toast fires, `whatsNew.showOnUpdate` flips to `false`.
-   Relaunch with an old `lastSeenVersion`: no popup (silent stamp).
-3. `CMDR_SIMULATE_UPDATE_FROM=0.20.0 pnpm dev`: the popup shows on every relaunch and never stamps.
+The `help.whatsNew` command (Help > What's new / palette), `App`-scoped, no shortcut; its handler calls `openWhatsNew()`
+(never stamps). Native menu side in `src-tauri/src/menu/` (`HELP_WHATS_NEW_ID`, above "Send feedback…"). It's in
+`menuCommands` (`shortcuts-store.ts`) so a future custom binding syncs.
 
-The M3 manual entry (Help > What's new / palette) calls `openWhatsNew()`; the seam is ready, wired by M3.
+**E2E guardrail (don't break):** the boot auto-check is suppressed under E2E mode (`maybeRunWhatsNew` early-returns
+unless `force`) because E2E boots onboarded (FDA mock); `whats-new.spec.ts` drives the real path explicitly. The
+rationale, the `seedSettingForE2E` race detail, the manual smoke checklist, and the inaugural-vs-fresh split live in
+[DETAILS.md](DETAILS.md).

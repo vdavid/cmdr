@@ -214,6 +214,10 @@ More info on tests:
 - **Index DB queries**: The index SQLite DB uses a custom `platform_case` collation, so the `sqlite3` CLI can't query
   it. Use `cargo run -p index-query -- <db_path> "<sql>"` instead. See
   [docs/tooling/index-query.md](docs/tooling/index-query.md) for examples and DB paths.
+- **Dev mock flags** (read by the backend process, so set them in the shell that runs `pnpm dev`):
+  `CMDR_MOCK_LICENSE=commercial` mocks the license, and `CMDR_SIMULATE_UPDATE_FROM=<version>` (for example `0.20.0`)
+  forces the "What's new" popup to show on every launch as if the app just updated from that version (it never stamps
+  `lastSeenVersion`, so it keeps showing until you unset it). See `src/lib/whats-new/CLAUDE.md`.
 
 ## Testing the running app via MCP
 

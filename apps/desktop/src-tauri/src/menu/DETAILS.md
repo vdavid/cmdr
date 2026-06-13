@@ -173,6 +173,14 @@ AND the JS keydown dispatch on macOS (see `shortcuts/DETAILS.md` § "Modifier-ke
 safe here without any suppression hack: ⌘G's dialog-open is idempotency-guarded in `+page.svelte`, and ⌘J's re-reveal is
 naturally idempotent. Expect two `FE:user-action downloads.goToLatest` log lines on one ⌘J press — harmless.
 
+The **Help** submenu holds, in order: `Keyboard shortcuts`, separator, `What's new`, `Send feedback…`,
+`Send error report…` (Linux prepends `About cmdr` + a separator, since it has no app menu). `What's new`
+(`HELP_WHATS_NEW_ID` (`"help_whats_new"`) → `help.whatsNew`, `App`-scoped) opens the post-update changelog popup (see
+`apps/desktop/src/lib/whats-new/CLAUDE.md`); it has no default shortcut but is registered in `MenuState.items` so a
+future custom binding still flows into the menu. Its macOS SF Symbol is `sparkles` (the symbol map matches by exact
+title, so `What's new` must stay byte-identical); the Linux mnemonic is `&What's new` (`W` is free; `A`/`K`/`f`/`S` are
+claimed by the other Help items).
+
 The **Zoom** submenu (`build_zoom_submenu`) holds the text-size presets (75/100/125/150 %) plus Zoom in (`Cmd+Plus`) /
 Zoom out (`Cmd+Minus`) / 100 % (`Cmd+0`). Items are `App`-scoped so the keyboard accelerators fire in any focused window.
 Linux skips the in/out accelerators because GTK intercepts `Cmd+Plus` / `Cmd+Minus` at the toolkit level; the JS

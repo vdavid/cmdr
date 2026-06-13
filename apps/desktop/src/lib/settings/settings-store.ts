@@ -424,6 +424,22 @@ export function persistSettingFromRestrictedWindow<K extends SettingId>(id: K, v
 }
 
 /**
+ * E2E-only seed: writes the cache and schedules a save WITHOUT emitting the
+ * cross-window `settings:changed` event. The whats-new E2E spec seeds an old
+ * `lastSeenVersion` and then lets the trigger stamp the current version; a
+ * `setSetting` seed's self-echo (the emit loops back to this same window) could
+ * land after the stamp and revert it. Skipping the emit avoids that race and
+ * matches production, where the seed is read from disk at boot, never emitted.
+ * Not for product code: real writes go through `setSetting` so other windows stay
+ * in sync.
+ */
+export function seedSettingForE2E<K extends SettingId>(id: K, value: SettingsValues[K]): void {
+  validateSettingValue(id, value)
+  settingsCache[id] = value
+  scheduleSave()
+}
+
+/**
  * Reset a setting to its default value.
  */
 export function resetSetting(id: SettingId): void {

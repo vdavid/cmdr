@@ -123,6 +123,14 @@ export const commands: Command[] = [
     description: 'Send Cmdr logs to the team to help fix something that went wrong',
   },
   {
+    id: 'help.whatsNew',
+    name: "What's new",
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    description: 'See what changed in the latest releases of Cmdr',
+  },
+  {
     id: 'feedback.send',
     name: 'Send feedback',
     scope: 'App',

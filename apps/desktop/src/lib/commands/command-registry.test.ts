@@ -26,6 +26,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'cmdr.openOnboarding',
   'help.openShortcuts',
   'help.sendErrorReport',
+  'help.whatsNew',
   'feedback.send',
   'search.open',
   'nav.goToPath',

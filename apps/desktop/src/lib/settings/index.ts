@@ -57,6 +57,7 @@ export {
   onSettingChange,
   onSpecificSettingChange,
   resetSetting,
+  seedSettingForE2E,
   setSetting,
 } from './settings-store'
 

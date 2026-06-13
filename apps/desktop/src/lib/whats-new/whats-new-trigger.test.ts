@@ -123,7 +123,7 @@ describe('runWhatsNewStartupTrigger', () => {
   })
 })
 
-describe('openWhatsNew (manual M3 seam)', () => {
+describe('openWhatsNew (manual Help-reopen seam)', () => {
   beforeEach(() => {
     getWhatsNewMock.mockReset()
     getWhatsNewMock.mockResolvedValue([sampleRelease])
