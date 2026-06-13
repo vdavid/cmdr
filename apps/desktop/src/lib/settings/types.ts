@@ -175,6 +175,10 @@ export interface SettingsValues {
   'updates.errorReports': boolean
   /** Sticky default for the report dialogs' attach-email checkbox; also a manual toggle in Advanced. */
   'updates.attachEmailToReports': boolean
+  /** Show the "What's new" popup after Cmdr updates itself. */
+  'whatsNew.showOnUpdate': boolean
+  /** Hidden: the version we last showed the user in the "What's new" popup (`''` = never stamped). */
+  'whatsNew.lastSeenVersion': string
 
   // Analytics (beta usage stats + optional contact email)
   'analytics.enabled': boolean

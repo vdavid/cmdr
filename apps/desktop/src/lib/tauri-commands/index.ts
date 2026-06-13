@@ -272,6 +272,10 @@ export type { BetaSignupResult } from './beta-signup'
 export { sendFeedback } from './feedback'
 export type { SendFeedbackResult } from './feedback'
 
+// What's new popup
+export { getWhatsNew, whatsNewDevOverride } from './whats-new'
+export type { WhatsNewRelease, WhatsNewSection } from './whats-new'
+
 // Crash reporter
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
 export type { CrashReport } from './crash-reporter'

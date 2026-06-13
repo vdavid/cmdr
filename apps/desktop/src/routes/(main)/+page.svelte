@@ -13,6 +13,8 @@
     import SearchDialog from '$lib/search/SearchDialog.svelte'
     import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
+    import WhatsNewDialog from '$lib/whats-new/WhatsNewDialog.svelte'
+    import { whatsNewState, runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
     import { goToPath } from '$lib/go-to-path/go-to-path'
     import { getFocusedPanePath, getFocusedPaneSearchableFolder } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
@@ -500,6 +502,7 @@
             showLicenseKeyDialog ||
             showExpiredModal ||
             showCommercialReminder ||
+            whatsNewState.open ||
             isExplorerOverlayOpen()
         )
     }
@@ -636,6 +639,22 @@
     }
 
     /**
+     * Runs the automatic "What's new" post-update check. Reads `isOnboarded` from settings
+     * and the live startup-modal flags, then hands off to the pure decision in
+     * `whats-new-trigger`. Called once after onboarding resolves and re-attempted when the
+     * onboarding wizard closes (mirroring the update-toast re-attempt in `updater.svelte.ts`).
+     * The trigger itself no-ops if its dialog is already open, so the re-attempt is safe.
+     */
+    async function maybeRunWhatsNew(): Promise<void> {
+        const settings = await loadSettings()
+        await runWhatsNewStartupTrigger({
+            onboarded: settings.isOnboarded,
+            onboardingShowing: showOnboarding,
+            otherStartupModalOpen: showExpiredModal || showCommercialReminder,
+        })
+    }
+
+    /**
      * Opens the onboarding wizard for re-entry from the menu item or the command
      * palette. Always opens at step 1 on macOS (step 2 on Linux) regardless of
      * `isOnboarded` — `openWizard()` itself enforces this when source is 'menu'.
@@ -707,6 +726,11 @@
         await initSystemStrings()
 
         await resolveOnboardingMount()
+
+        // Automatic "What's new" post-update check. Runs after onboarding resolves so it can
+        // see whether the wizard is up; if it is (or another startup modal), the check waits
+        // and re-attempts on `handleWizardComplete`.
+        void maybeRunWhatsNew()
 
         // Show window when ready
         void showMainWindow()
@@ -837,6 +861,9 @@
         showOnboarding = false
         setOnboardingShowing(false)
         void notifyOnboardingComplete()
+        // Re-attempt the "What's new" check now that onboarding is closed: a popup that
+        // `wait`ed on the wizard can show on this pass (matches the update-toast re-attempt).
+        void maybeRunWhatsNew()
     }
 
     function handleExpirationModalClose() {
@@ -1061,6 +1088,10 @@
 
         {#if showCommercialReminder}
             <CommercialReminderModal onClose={handleCommercialReminderClose} />
+        {/if}
+
+        {#if whatsNewState.open}
+            <WhatsNewDialog />
         {/if}
 
         {#if showOnboarding}

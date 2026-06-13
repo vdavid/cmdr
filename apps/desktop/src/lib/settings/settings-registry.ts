@@ -854,6 +854,28 @@ export const settingsRegistry: SettingDefinition[] = [
     component: 'switch',
   },
   {
+    id: 'whatsNew.showOnUpdate',
+    section: ['Updates & privacy'],
+    label: 'Show what’s new after updates',
+    description: 'After Cmdr updates itself, show a quick summary of what changed.',
+    keywords: ['changelog', 'release notes', "what's new", 'update notes'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'whatsNew.lastSeenVersion',
+    section: ['Advanced'],
+    label: 'Last seen changelog version',
+    description:
+      'Internal: the version we last showed in the "What’s new" popup. Advances silently on every launch so re-enabling the popup never replays a months-deep backlog. Hidden from the UI.',
+    keywords: [],
+    type: 'string',
+    default: '',
+    component: 'text-input',
+    hidden: true,
+  },
+  {
     id: 'analytics.enabled',
     section: ['Updates & privacy'],
     label: 'Send anonymous usage stats',
