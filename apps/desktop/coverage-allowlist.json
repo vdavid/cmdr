@@ -292,9 +292,6 @@
     "tauri-commands/indexing.ts": {
       "reason": "Thin typed-event listener wrappers over events.index*.listen; exercised via integration (index-state.svelte.ts, DualPaneExplorer)"
     },
-    "tauri-commands/ipc-types.ts": {
-      "reason": "Shared IPC type declarations and thin helpers (isIpcError, throwIpcError); helpers covered by callers in integration tests"
-    },
     "tauri-commands/licensing.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
