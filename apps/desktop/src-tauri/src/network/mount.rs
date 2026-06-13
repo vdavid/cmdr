@@ -749,8 +749,12 @@ mod tests {
         // release (the magic-timer-wait anti-pattern — see docs/testing.md). We
         // wait for the settled, SMB-shaped id: an early statfs can briefly report
         // the path-shape id (`volumespublic`) before the SMB mount info lands.
+        // The ceiling is generous (20s) because NetFS settle time stretches under
+        // the parallel load of the full slow-check suite (Linux tests + both e2e
+        // lanes running concurrently); the early break keeps the common case fast,
+        // so the budget only ever elapses on a genuine failure.
         let mut volume = None;
-        for _ in 0..50 {
+        for _ in 0..200 {
             if let Some(v) = crate::volumes::resolve_path_volume_fast(&mount_result.mount_path)
                 && v.id.starts_with("smb-")
             {
@@ -766,7 +770,7 @@ mod tests {
             .output();
 
         let volume =
-            volume.expect("resolve_path_volume_fast should return an smb- volume within 5s of a fresh SMB mount");
+            volume.expect("resolve_path_volume_fast should return an smb- volume within 20s of a fresh SMB mount");
 
         // The pre-fix ID was `volumespublic`, which is what `path_to_id` produces
         // for `/Volumes/public`. The new ID encodes server, port, and share.
