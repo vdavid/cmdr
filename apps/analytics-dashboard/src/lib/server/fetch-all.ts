@@ -135,10 +135,7 @@ export function fetchFunnelSource(env: DashboardEnv): Promise<SourceResult<Funne
   )
 }
 
-export function fetchUmamiSource(
-  env: DashboardEnv,
-  selection: DashboardSelection,
-): Promise<SourceResult<UmamiData>> {
+export function fetchUmamiSource(env: DashboardEnv, selection: DashboardSelection): Promise<SourceResult<UmamiData>> {
   return guardedFetch(env.UMAMI_API_URL, 'Umami', () =>
     fetchUmamiData(
       {
@@ -166,10 +163,7 @@ export function fetchCloudflareSource(
   )
 }
 
-export function fetchPaddleSource(
-  env: DashboardEnv,
-  selection: DashboardSelection,
-): Promise<SourceResult<PaddleData>> {
+export function fetchPaddleSource(env: DashboardEnv, selection: DashboardSelection): Promise<SourceResult<PaddleData>> {
   return guardedFetch(env.PADDLE_API_KEY_LIVE, 'Paddle', () =>
     fetchPaddleData({ PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE }, selection),
   )

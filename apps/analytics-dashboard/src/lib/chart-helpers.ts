@@ -61,8 +61,8 @@ export function downloadSourceSeries(rows: DownloadRow[], days: string[]): Stack
     (r) => r.source,
     (r) => r.uniqueDownloads,
   )
-  return SOURCE_STACK.map((s) => ({ ...s, values: byKey.get(s.key) ?? new Array(days.length).fill(0) })).filter(
-    (s) => s.values.some((v) => v > 0),
+  return SOURCE_STACK.map((s) => ({ ...s, values: byKey.get(s.key) ?? new Array(days.length).fill(0) })).filter((s) =>
+    s.values.some((v) => v > 0),
   )
 }
 
@@ -117,11 +117,7 @@ export function getDayAxis(rows: DownloadRow[]): { days: string[]; timestamps: n
 }
 
 /** Builds uPlot [timestamps[], values[]] for a filtered subset, aligned to the full day axis. */
-export function buildTimeline(
-  rows: DownloadRow[],
-  allDays: string[],
-  allTimestamps: number[],
-): [number[], number[]] {
+export function buildTimeline(rows: DownloadRow[], allDays: string[], allTimestamps: number[]): [number[], number[]] {
   const byDay = new Map<string, number>()
   for (const row of rows) {
     byDay.set(row.day, (byDay.get(row.day) ?? 0) + row.downloads)

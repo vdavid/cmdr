@@ -11,7 +11,9 @@ Three routes share `+layout.svelte` (sticky header: brand, nav, and the range/da
 
 - `/` (Acquisition, `routes/+page.svelte`): daily funnel + channels, awareness, interest, download.
 - `/product` (Product, `routes/product/+page.svelte`): active use, payment, retention, feedback & errors.
-- `/links` (Link codes, `routes/links/+page.svelte`): a stub for `?r=` short-link CRUD, filled in later. No data load.
+- `/links` (Link codes, `routes/links/+page.{svelte,server.ts}`): CRUD for the `?r=` short codes. Lists the live KV map
+  and adds/edits/deletes via SvelteKit form actions, which proxy to the api-server admin CRUD (`/admin/r-codes`) with
+  `LICENSE_SERVER_ADMIN_TOKEN`. The token stays server-side; the browser never sees it.
 
 Each section is a component under `src/lib/components/sections/`; shared bits (funnel table, country table, metric
 row/table, state panels, descriptions) are in `src/lib/components/`. Don't import `$lib/server/*` as a runtime value
@@ -33,7 +35,9 @@ svelte-check does NOT catch it, so run `pnpm build` before declaring a client/se
 - `src/routes/+layout.server.ts`: resolves the shared `DashboardSelection` from `?range=` / `?day=` once for the layout.
 - `src/routes/+page.{svelte,server.ts}`: Acquisition page; loads the funnel/Umami/Cloudflare/GitHub/PostHog subset.
 - `src/routes/product/+page.{svelte,server.ts}`: Product page; loads the Cloudflare/Paddle/license/feedback subset.
-- `src/routes/links/+page.svelte`: Link codes stub (no data load).
+- `src/routes/links/+page.{svelte,server.ts}`: Link codes CRUD. The `load` lists the admin map; the `save`/`delete` form
+  actions validate and proxy to the api-server admin CRUD. Uses `$lib/server/sources/link-codes.ts` for the proxy fetch
+  and `$lib/link-codes.ts` for the client-safe validation/row helpers.
 - `src/routes/api/report/+server.ts`: agent-readable plain-text report (all sections, via `fetchDashboardData`).
 - `src/lib/server/fetch-all.ts`: per-source loaders plus the per-page composers (`fetchAcquisitionData`,
   `fetchProductData`) and the all-sources `fetchDashboardData` for the report.
@@ -41,6 +45,8 @@ svelte-check does NOT catch it, so run `pnpm build` before declaring a client/se
 - `src/lib/components/`: shared UI (FunnelTable, CountryTable, MetricRow/MetricTable, ErrorState/EmptyState/
   BetaEmptyState, SectionDescription, Methodology, ExternalLinks, Chart, StackedBarChart, MiniTimeline, PieChart).
 - `src/lib/{format,colors,chart-helpers}.ts`: client-safe formatters, color tokens, and chart data-shaping helpers.
+- `src/lib/link-codes.ts`: client-safe `?r=` code helpers (validation mirroring the api-server, row flattening, example
+  link). Shared by the `/links` page, its server action, and tests. The token-bearing proxy is in `server/sources/`.
 - `StackedBarChart.svelte`: discrete per-day stacked bars (plain elements, not uPlot) with an exact-numbers hover/focus
   tooltip; used for the by-source new-installs chart and the by-version update chart.
 - `src/lib/server/types.ts`: shared types: `TimeRange`, `DashboardSelection`, `SourceResult`, time window + selection

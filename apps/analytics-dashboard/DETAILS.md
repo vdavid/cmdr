@@ -17,8 +17,8 @@ sections and pass their loaded data down.
 - `/product` — Product (`routes/product/+page.svelte`):
   - Active use (`ActiveUseSection.svelte`), Payment (`PaymentSection.svelte`), Retention (`RetentionSection.svelte`),
     Feedback & errors (`FeedbackErrorsSection.svelte`).
-- `/links` — Link codes (`routes/links/+page.svelte`): a stub. The `?r=` short-link CRUD lands here later; for now it's
-  a heading + a "coming soon" note, no data load. The layout hides the range/day picker here.
+- `/links` — Link codes (`routes/links/+page.{svelte,server.ts}`): CRUD for the `?r=` short codes. See § "Link codes
+  CRUD" below. The layout hides the range/day picker here.
 
 ### Shared layout
 
@@ -53,6 +53,27 @@ shows as "Couldn't load this data").
 on `/product`) in one fetch. Both pages call `fetchCloudflareSource`. That's intentional, not duplication: the source is
 cached per selection in `cache.ts`, so the two page loads share one cache entry rather than re-fetching. Don't split the
 worker endpoints apart to "load less" — it would fragment the cache key and the 401/timeout degradation, for no gain.
+
+## Link codes CRUD
+
+The `/links` page manages the `?r=` short codes that the blogs and the website expand into UTM params. It's the admin
+front end for the api-server's `link-codes.ts` (`/admin/r-codes` CRUD over the `LINK_CODES` KV namespace).
+
+- **Token stays server-side.** The page never holds the admin token. `+page.server.ts` resolves it via `resolveEnv` (the
+  same `LICENSE_SERVER_ADMIN_TOKEN` the worker-backed sources use) and is the only code that touches it. The `load`
+  lists the map; the `save` and `delete` form actions proxy writes. The browser bundle gets only the rows and a load
+  error string — `pnpm build` confirms nothing token-bearing leaks past the client/server boundary.
+- **Two modules, by boundary.** `$lib/link-codes.ts` is client-safe: validation (`validateLinkCode`, mirroring the
+  api-server's `isValidCode`/`sanitizeUtmValue` so the form rejects bad input pre-round-trip), `toRows` (flatten +
+  sort), and `exampleLink`. `$lib/server/sources/link-codes.ts` is server-only: `fetchLinkCodes` / `upsertLinkCode` /
+  `deleteLinkCode`, each attaching the bearer token. The server action re-validates before proxying; the api-server is
+  the final source of truth and re-validates again.
+- **No caching here.** Unlike the metric sources, the admin list isn't cached: David edits it interactively, so the view
+  must reflect live KV. The public `/r-codes.json` is the edge-cached path (≈5 min), so the page's description warns
+  that edits take up to ~5 min to reach visitors.
+- **Form UX.** One add/edit form (Edit copies a row's values in and locks the code field, since the code is the KV key);
+  per-row Delete; inline validation/proxy errors via `fail(...)`; a live example-link preview. All `use:enhance` with
+  `reset: false` so a failed save repopulates.
 
 ## Selection state
 
