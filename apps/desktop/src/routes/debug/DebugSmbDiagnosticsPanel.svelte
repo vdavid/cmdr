@@ -2,6 +2,7 @@
     import { onDestroy, onMount } from 'svelte'
     import { commands, type SmbDiagnosticsDto, type SmbVolumeRef } from '$lib/ipc/bindings'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import Select, { type SelectItem } from '$lib/ui/Select.svelte'
 
     type Loadable = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -92,9 +93,23 @@
         }
     }
 
-    async function handleVolumeChange(e: Event) {
-        const target = e.target as HTMLSelectElement
-        selectedVolumeId = target.value || null
+    const volumeItems = $derived<SelectItem[]>(
+        volumes.map((v) => ({
+            value: v.volume_id,
+            label: `${v.name} (${v.server})${v.disconnected ? ' — disconnected' : ''}`,
+        })),
+    )
+
+    const intervalItems: SelectItem[] = [
+        { value: '250', label: '250 ms' },
+        { value: '500', label: '500 ms' },
+        { value: '1000', label: '1 s' },
+        { value: '2000', label: '2 s' },
+        { value: '5000', label: '5 s' },
+    ]
+
+    async function handleVolumeChange(volumeId: string) {
+        selectedVolumeId = volumeId || null
         await poll()
     }
 
@@ -152,13 +167,14 @@
             {#if volumes.length === 0}
                 <span class="smb-empty">No SMB volumes mounted</span>
             {:else}
-                <select class="smb-select" value={selectedVolumeId ?? ''} onchange={handleVolumeChange}>
-                    {#each volumes as v (v.volume_id)}
-                        <option value={v.volume_id}>
-                            {v.name} ({v.server}){v.disconnected ? ' — disconnected' : ''}
-                        </option>
-                    {/each}
-                </select>
+                <div class="smb-select-wrap">
+                    <Select
+                        items={volumeItems}
+                        value={selectedVolumeId ?? ''}
+                        onChange={(v: string) => void handleVolumeChange(v)}
+                        ariaLabel="SMB volume"
+                    />
+                </div>
             {/if}
         </label>
         <label class="smb-control smb-control-inline">
@@ -167,13 +183,15 @@
         </label>
         <label class="smb-control smb-control-inline">
             <span>every</span>
-            <select bind:value={intervalMs} class="smb-select smb-select-narrow" disabled={!autoRefresh}>
-                <option value={250}>250 ms</option>
-                <option value={500}>500 ms</option>
-                <option value={1000}>1 s</option>
-                <option value={2000}>2 s</option>
-                <option value={5000}>5 s</option>
-            </select>
+            <div class="smb-select-wrap smb-select-narrow">
+                <Select
+                    items={intervalItems}
+                    value={String(intervalMs)}
+                    onChange={(v: string) => (intervalMs = Number(v))}
+                    disabled={!autoRefresh}
+                    ariaLabel="Refresh interval"
+                />
+            </div>
         </label>
         <button class="index-button" onclick={() => void refreshVolumes()}>Refresh volumes</button>
         <button class="index-button" onclick={() => void poll()}>Snapshot now</button>
@@ -669,18 +687,13 @@
         color: var(--color-text-tertiary);
     }
 
-    .smb-select {
-        padding: 3px 6px;
-        font-size: var(--font-size-sm);
-        font-family: var(--font-system), sans-serif;
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
+    .smb-select-wrap {
+        display: inline-flex;
+        min-width: 160px;
     }
 
     .smb-select-narrow {
-        min-width: 70px;
+        min-width: 90px;
     }
 
     .smb-empty {

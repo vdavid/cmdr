@@ -1,6 +1,7 @@
 <script lang="ts">
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { FriendlyError } from '$lib/file-explorer/types'
+    import Select, { type SelectItem } from '$lib/ui/Select.svelte'
 
     type ErrorCategory = 'transient' | 'needs_action' | 'serious'
 
@@ -34,6 +35,12 @@
 
     /** Per-row selected provider index, keyed by error name. */
     const providerSelections = $state<Record<string, number>>({})
+
+    const providerItems: SelectItem[] = providerNames.map((name) => ({ value: name, label: name }))
+
+    function setProviderSelection(errorName: string, providerName: string) {
+        providerSelections[errorName] = providerNames.indexOf(providerName as (typeof providerNames)[number])
+    }
 
     const errnoErrors: ErrorState[] = [
         // Transient
@@ -179,18 +186,14 @@
                     {state.name}{#if state.code !== undefined} ({state.code}){/if}
                     <span class="error-title">{state.title}</span>
                 </span>
-                <select
-                    class="error-provider-select"
-                    value={providerNames[providerSelections[state.name] ?? 0]}
-                    onchange={(e) => {
-                        const target = e.currentTarget
-                        providerSelections[state.name] = providerNames.indexOf(target.value as (typeof providerNames)[number])
-                    }}
-                >
-                    {#each providerNames as name (name)}
-                        <option value={name}>{name}</option>
-                    {/each}
-                </select>
+                <div class="error-provider-select">
+                    <Select
+                        items={providerItems}
+                        value={providerNames[providerSelections[state.name] ?? 0]}
+                        onChange={(v: string) => { setProviderSelection(state.name, v); }}
+                        ariaLabel="Cloud provider"
+                    />
+                </div>
                 <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
                 <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
             </div>
@@ -203,18 +206,14 @@
                     {state.name}{#if state.code !== undefined} ({state.code}){/if}
                     <span class="error-title">{state.title}</span>
                 </span>
-                <select
-                    class="error-provider-select"
-                    value={providerNames[providerSelections[state.name] ?? 0]}
-                    onchange={(e) => {
-                        const target = e.currentTarget
-                        providerSelections[state.name] = providerNames.indexOf(target.value as (typeof providerNames)[number])
-                    }}
-                >
-                    {#each providerNames as name (name)}
-                        <option value={name}>{name}</option>
-                    {/each}
-                </select>
+                <div class="error-provider-select">
+                    <Select
+                        items={providerItems}
+                        value={providerNames[providerSelections[state.name] ?? 0]}
+                        onChange={(v: string) => { setProviderSelection(state.name, v); }}
+                        ariaLabel="Cloud provider"
+                    />
+                </div>
                 <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
                 <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
             </div>
@@ -227,18 +226,14 @@
                     {state.name}{#if state.code !== undefined} ({state.code}){/if}
                     <span class="error-title">{state.title}</span>
                 </span>
-                <select
-                    class="error-provider-select"
-                    value={providerNames[providerSelections[state.name] ?? 0]}
-                    onchange={(e) => {
-                        const target = e.currentTarget
-                        providerSelections[state.name] = providerNames.indexOf(target.value as (typeof providerNames)[number])
-                    }}
-                >
-                    {#each providerNames as name (name)}
-                        <option value={name}>{name}</option>
-                    {/each}
-                </select>
+                <div class="error-provider-select">
+                    <Select
+                        items={providerItems}
+                        value={providerNames[providerSelections[state.name] ?? 0]}
+                        onChange={(v: string) => { setProviderSelection(state.name, v); }}
+                        ariaLabel="Cloud provider"
+                    />
+                </div>
                 <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
                 <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
             </div>
@@ -251,18 +246,14 @@
                     {state.name}
                     <span class="error-title">{state.title}</span>
                 </span>
-                <select
-                    class="error-provider-select"
-                    value={providerNames[providerSelections[state.name] ?? 0]}
-                    onchange={(e) => {
-                        const target = e.currentTarget
-                        providerSelections[state.name] = providerNames.indexOf(target.value as (typeof providerNames)[number])
-                    }}
-                >
-                    {#each providerNames as name (name)}
-                        <option value={name}>{name}</option>
-                    {/each}
-                </select>
+                <div class="error-provider-select">
+                    <Select
+                        items={providerItems}
+                        value={providerNames[providerSelections[state.name] ?? 0]}
+                        onChange={(v: string) => { setProviderSelection(state.name, v); }}
+                        ariaLabel="Cloud provider"
+                    />
+                </div>
                 <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
                 <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
             </div>
@@ -292,3 +283,16 @@
         {/each}
     </div>
 </section>
+
+<style>
+    /* The `:global(.error-provider-select)` rule in `+page.svelte` styled the old native
+       `<select>` (border, bg, padding). Now the class wraps a `ui/Select`, which brings its own
+       trigger chrome, so flatten the wrapper to a plain sizing box and let `Select` own the look. */
+    .error-provider-select {
+        display: inline-flex;
+        width: 150px;
+        padding: 0;
+        background: transparent;
+        border: none;
+    }
+</style>
