@@ -158,10 +158,32 @@
         return getCachedIcon('dir')
     })
 
+    // Optimistic favorite order for instant, local-first reorder. A keyboard (Alt+↑/↓) or pointer
+    // reorder sets this to the new order of favorite ids SYNCHRONOUSLY, so the switcher re-renders
+    // immediately and a rapid next press computes against fresh state; the backend persist runs in the
+    // background. Reconciled to `null` once `volumes-changed` brings the store to the same order (or
+    // the favorite set changes elsewhere). `null` = no override, render the store order.
+    let optimisticFavoriteIds = $state<string[] | null>(null)
+
+    // `volumes` with favorites reordered per the optimistic override (each favorite SLOT keeps its
+    // position; only which favorite fills it changes). Everything below derives from this, so an
+    // optimistic reorder shows without waiting for the backend round-trip.
+    const effectiveVolumes = $derived.by(() => {
+        const order = optimisticFavoriteIds
+        if (!order) return volumes
+        const rank = new Map(order.map((id, i) => [id, i]))
+        const orderedFavs = volumes
+            .filter((v) => v.category === 'favorite')
+            .slice()
+            .sort((a, b) => (rank.get(a.id) ?? Number.POSITIVE_INFINITY) - (rank.get(b.id) ?? Number.POSITIVE_INFINITY))
+        let fi = 0
+        return volumes.map((v) => (v.category === 'favorite' ? orderedFavs[fi++] : v))
+    })
+
     // Group volumes by category for display. The grouping helper renames the synthetic
     // "Network" entry to "Network (disabled)" when networking is off; the click handler
     // checks `getNetworkEnabled()` and routes to settings instead of navigating.
-    const groupedVolumes = $derived(groupByCategory(volumes, { networkEnabled: getNetworkEnabled() }))
+    const groupedVolumes = $derived(groupByCategory(effectiveVolumes, { networkEnabled: getNetworkEnabled() }))
 
     // Flat list of all volumes for keyboard navigation
     const allVolumes = $derived(groupedVolumes.flatMap((g) => g.items))
@@ -295,16 +317,17 @@
             if (highlighted && highlighted.category === 'favorite') {
                 e.preventDefault()
                 const delta = e.key === 'ArrowUp' ? -1 : 1
-                void moveHighlightedFavorite(highlighted, delta).then((newFavIndex) => {
-                    if (newFavIndex === null) return
-                    // Favorites occupy the first slots of `allVolumes` in order, so the moved
-                    // favorite's new favorites index IS its new list index. Set it directly (no
-                    // findIndex against a list that may not have refreshed from `volumes-changed`
-                    // yet), so repeated Alt+Down keeps moving the same item instead of jumping to the
-                    // first volume. The open-effect's `untrack` keeps the refresh from resetting it.
+                // Synchronous + local-first: `persistFavoriteOrder` sets the optimistic order, so
+                // `favorites` / `allVolumes` re-derive immediately and a rapid next press computes
+                // against the fresh order (no stale-state race). Favorites lead `allVolumes` in order,
+                // so the favorite's new index IS its new list index; set the highlight to it directly
+                // so repeated Alt+Down keeps walking the same item. The open-effect's `untrack` keeps
+                // the later refresh from resetting it.
+                const newFavIndex = moveHighlightedFavorite(highlighted, delta)
+                if (newFavIndex !== null) {
                     highlightedIndex = newFavIndex
                     enterKeyboardMode()
-                })
+                }
                 return true
             }
         }
@@ -530,7 +553,18 @@
     // Favorites arrive as VolumeInfo with `category: 'favorite'` and `id: 'fav-<favId>'`.
     // The mutate commands take the bare id (strip the `fav-` prefix). Each mutation re-emits
     // `volumes-changed`, so the list below re-derives with no manual refresh.
-    const favorites = $derived(volumes.filter((v) => v.category === 'favorite'))
+    const favorites = $derived(effectiveVolumes.filter((v) => v.category === 'favorite'))
+
+    // Drop the optimistic order once the store catches up to it (the persisted `volumes-changed`
+    // landed), or if the favorite set changed elsewhere (add / remove) so the override is stale.
+    $effect(() => {
+        const order = optimisticFavoriteIds
+        if (!order) return
+        const storeFavIds = volumes.filter((v) => v.category === 'favorite').map((v) => v.id)
+        const sameSet = storeFavIds.length === order.length && storeFavIds.every((id) => order.includes(id))
+        const sameOrder = sameSet && storeFavIds.every((id, i) => id === order[i])
+        if (sameOrder || !sameSet) optimisticFavoriteIds = null
+    })
 
     /** Inline-rename state for a favorite (its `fav-…` id and the editable draft label). */
     let renamingFavoriteId: string | null = $state(null)
@@ -663,7 +697,7 @@
         if (from < 0) return
         const to = pointerReorderTarget(favoriteRowMidpoints(), e.clientY, from)
         if (to === null) return
-        void persistFavoriteOrder(moveItem(ids, from, to))
+        persistFavoriteOrder(moveItem(ids, from, to))
     }
 
     function endFavoriteDrag() {
@@ -677,21 +711,23 @@
     /** Keyboard reorder of the highlighted favorite by ±1. Called from `handleKeyDown`
      *  (Alt+Up / Alt+Down) so it works without the rows being DOM-focused. Returns the
      *  favorite's new index so the caller can follow the moved item with the highlight. */
-    async function moveHighlightedFavorite(volume: VolumeInfo, delta: -1 | 1): Promise<number | null> {
+    function moveHighlightedFavorite(volume: VolumeInfo, delta: -1 | 1): number | null {
         const ids = favorites.map((f) => f.id)
         const from = ids.indexOf(volume.id)
         const to = clampedReorderTarget(from, delta, ids.length)
         if (to === null) return null
-        await persistFavoriteOrder(moveItem(ids, from, to))
+        persistFavoriteOrder(moveItem(ids, from, to))
         return to
     }
 
-    async function persistFavoriteOrder(orderedLocationIds: string[]) {
-        try {
-            await reorderFavorites(orderedLocationIds.map(stripFavoritePrefix))
-        } catch {
+    /** Local-first reorder: show the new order instantly via the optimistic override, then persist in
+     *  the background. On failure, drop the override so the UI reverts to the store truth. */
+    function persistFavoriteOrder(orderedLocationIds: string[]) {
+        optimisticFavoriteIds = orderedLocationIds
+        void reorderFavorites(orderedLocationIds.map(stripFavoritePrefix)).catch(() => {
             addToast("Couldn't reorder favorites. Try again?", { level: 'error' })
-        }
+            optimisticFavoriteIds = null
+        })
     }
 
     async function handleEjectClick(volume: VolumeInfo, event?: MouseEvent) {

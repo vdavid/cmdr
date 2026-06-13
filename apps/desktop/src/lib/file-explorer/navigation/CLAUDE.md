@@ -53,6 +53,10 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   click → navigate). Don't reintroduce HTML5 drag here. Keyboard reorder (Alt+↑ / Alt+↓) lives in the exported
   `handleKeyDown` and acts on the virtual `highlightedIndex` (the rows aren't DOM-focused), so it must run before
   `handleDropdownKey` consumes the bare arrows. Both paths persist the FULL order via `reorderFavorites(bareIds)` using
-  the pure `favorites-reorder.ts` helpers.
+  the pure `favorites-reorder.ts` helpers. Reorders are LOCAL-FIRST: `persistFavoriteOrder` sets an in-component
+  `optimisticFavoriteIds` override (which `effectiveVolumes` / `favorites` derive from) synchronously, so the list
+  re-renders instantly and rapid Alt+↑/↓ presses compute against fresh state instead of racing the backend
+  `volumes-changed` round-trip; a reconciliation `$effect` clears the override once the store catches up (or the
+  favorite set changes). Don't make the reorder await the IPC before updating the UI, or fast repeats move the wrong item.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

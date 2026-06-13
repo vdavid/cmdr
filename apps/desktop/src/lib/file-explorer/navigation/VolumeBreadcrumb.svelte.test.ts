@@ -102,6 +102,32 @@ describe('VolumeBreadcrumb favorite keyboard reorder (Alt+Up / Alt+Down)', () =>
     expect(reorderFavorites).toHaveBeenCalledWith(['2', '1', '3'])
   })
 
+  it('two quick Alt+ArrowDown presses keep moving the SAME favorite (optimistic local order, no stale-state race)', async () => {
+    const { instance } = mountBreadcrumb()
+    instance.open()
+    await tick()
+    flushSync()
+
+    expect(instance.handleKeyDown(new KeyboardEvent('keydown', { key: 'Home' }))).toBe(true)
+    await tick()
+    flushSync()
+
+    // First press: fav-1 (index 0) → index 1, order ['2', '1', '3'].
+    expect(instance.handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true }))).toBe(true)
+    await tick()
+    flushSync()
+
+    // Second press immediately, BEFORE any `volumes-changed` refresh (the mock store never updates).
+    // It must compute against the optimistic order, moving fav-1 from index 1 → 2: ['2', '3', '1'].
+    // Without the local-first override it would re-read the stale store and wrongly emit ['2','1','3'].
+    expect(instance.handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true }))).toBe(true)
+    await tick()
+    flushSync()
+
+    expect(reorderFavorites).toHaveBeenCalledTimes(2)
+    expect(reorderFavorites).toHaveBeenLastCalledWith(['2', '3', '1'])
+  })
+
   it('Alt+ArrowUp at the top favorite is a no-op (no persist)', async () => {
     const { instance } = mountBreadcrumb()
     instance.open()
