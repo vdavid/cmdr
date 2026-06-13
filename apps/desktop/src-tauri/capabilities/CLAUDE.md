@@ -15,6 +15,9 @@ rejected at runtime with a "not allowed" error.
 Check the [Tauri permissions reference](https://tauri.app/security/permissions/)
 for available permission identifiers.
 
+**Adding a whole new window?** See [docs/guides/adding-a-window.md](../../../../docs/guides/adding-a-window.md) for the
+route + opener + capability recipe, and the gotcha that window-creation perms are checked against the *calling* window.
+
 ## Key decisions
 
 **Decision**: One capability file per window type, not one global file.

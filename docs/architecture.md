@@ -75,6 +75,10 @@ All under `apps/desktop/src/lib/`.
 - `path/`: Path manipulation helpers (normalize, segment, join/split, platform-aware comparators)
 - `font-metrics/`: Character width measurement for accurate Brief mode column sizing
 
+**Adding a new top-level window** (route + opener + capability file, plus the perms gotcha that window-creation is
+checked against the calling window): see [guides/adding-a-window.md](guides/adding-a-window.md). Existing windows are
+Settings, the File viewer, and Keyboard shortcuts.
+
 **Frontend text measurement uses `@chenglou/pretext`.** Whenever you need to measure text on the frontend, reach for
 pretext (its full API reference is at `apps/desktop/node_modules/@chenglou/pretext/README.md`) rather than a Canvas
 `measureText` or DOM-reflow path. For string pixel widths (column shrink-wrapping, middle-truncation, viewer line
