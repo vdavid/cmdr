@@ -37,3 +37,4 @@ mod util;
 pub mod volumes;
 #[cfg(target_os = "linux")]
 pub mod volumes_linux;
+pub mod whats_new;

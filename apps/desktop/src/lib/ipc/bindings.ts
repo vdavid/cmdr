@@ -1521,6 +1521,21 @@ export const commands = {
   reorderFavorites: (orderedIds: string[]) =>
     typedError<null, IpcError>(__TAURI_INVOKE('reorder_favorites', { orderedIds })),
   /**
+   *  Returns the displayable releases in `since_version < v <= current`, newest
+   *  first, truncated to `max`. `since_version = None` means no lower bound (the
+   *  latest `max`). "Current" is the running binary's version.
+   */
+  getWhatsNew: (sinceVersion: string | null, max: number) =>
+    __TAURI_INVOKE<WhatsNewRelease[]>('get_whats_new', { sinceVersion, max }),
+  /**
+   *  Surfaces the `CMDR_SIMULATE_UPDATE_FROM` dev flag to the frontend: when set,
+   *  returns the version string to diff from so a dev session can force the startup
+   *  popup without hand-editing `settings.json`. The env var is a backend-process
+   *  value the Vite frontend can't read directly, so it crosses through here.
+   *  Mirrors the `CMDR_MOCK_LICENSE` / `CMDR_MOCK_FDA` dev-flag family.
+   */
+  whatsNewDevOverride: () => __TAURI_INVOKE<string | null>('whats_new_dev_override'),
+  /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
    *
@@ -5301,6 +5316,26 @@ export type WatcherGateError =
    *  `message` carries the underlying error for the log line.
    */
   { kind: 'watcherStartFailed'; message: string }
+
+// One released version's user-facing notes.
+export type WhatsNewRelease = {
+  // Semver string, for example `"0.26.0"`.
+  version: string
+  // Release date as written, for example `"2026-06-11"`. Display-only, never parsed.
+  date: string
+  // The prose lead: paragraphs between the heading and the first `###` section. Markdown.
+  lead: string | null
+  // The displayable sections in changelog order (Added / Changed / Fixed / Security).
+  sections: WhatsNewSection[]
+}
+
+// One titled section of a release (Added / Changed / Fixed / Security).
+export type WhatsNewSection = {
+  // One of `Added`, `Changed`, `Fixed`, `Security`.
+  title: string
+  // Bulleted entries, commit-link groups already stripped, other links flattened to text.
+  entries: string[]
+}
 
 // Cancelled event payload.
 export type WriteCancelledEvent = {

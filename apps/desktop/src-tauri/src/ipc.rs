@@ -586,6 +586,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::favorites::remove_favorite,
         crate::commands::favorites::rename_favorite,
         crate::commands::favorites::reorder_favorites,
+        crate::commands::whats_new::get_whats_new,
+        crate::commands::whats_new::whats_new_dev_override,
         crate::commands::selection::translate_selection_query,
         crate::commands::selection::get_recent_selections,
         crate::commands::selection::add_recent_selection,
