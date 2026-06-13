@@ -25,11 +25,12 @@ const {
   getFocusedPaneMock: vi.fn(() => 'left'),
   // Pane active-tab location getter. Default: both panes elsewhere, on the main
   // local volume, so the pane-reuse check fails and the focused pane navigates.
-  getPaneLocationMock: vi.fn((): { volumeId: string; volumePath: string; path: string } => ({
-    volumeId: 'root',
-    volumePath: '/',
-    path: '/Users/me/elsewhere',
-  })),
+  // Typed with the `pane` param (matching the real `ExplorerAPI.getPaneLocation`)
+  // so the per-pane `mockImplementation((p) => ...)` overrides below typecheck;
+  // the default impl ignores it (both panes elsewhere).
+  getPaneLocationMock: vi.fn<(pane: 'left' | 'right') => { volumeId: string; volumePath: string; path: string }>(
+    () => ({ volumeId: 'root', volumePath: '/', path: '/Users/me/elsewhere' }),
+  ),
   setFocusedPaneMock: vi.fn(),
 }))
 
