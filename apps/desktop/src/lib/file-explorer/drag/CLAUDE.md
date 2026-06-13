@@ -16,9 +16,10 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
 ## Must-knows
 
 - **Pasteboard layout is decided ONCE per drag session by the source volume's locality, never per item.** Local sessions
-  publish the legacy layout (file-url + shell-escaped text + `NSFilenamesPboardType`); virtual sessions (MTP, direct
-  SMB, search-results) advertise NOTHING external apps can materialize except an `NSFilePromiseProvider`. Don't mix
-  per-item; the policy is pure in `native_drag/type_plan.rs::plan_pasteboard_items`.
+  match Finder: file-url + `NSFilenamesPboardType`, NO `public.utf8-plain-text` (the path-text item made some browser
+  upload widgets treat the drop as text, not a file: [issue #28](https://github.com/vdavid/cmdr/issues/28); don't re-add
+  it). Virtual sessions (MTP, direct SMB, search-results) advertise NOTHING external apps can materialize except an
+  `NSFilePromiseProvider`. Don't mix per-item; the policy is pure in `native_drag/type_plan.rs::plan_pasteboard_items`.
 - **In-app drops never trust the pasteboard round-trip.** Virtual-volume paths are volume-relative
   (`/photos/sunset.jpg`) and round-trip through wry looking like local absolute paths, so the resolver mis-resolves to
   local and the dialog reads 0 bytes. `drag-drop.ts::recordSelfDragIdentity` stamps the true

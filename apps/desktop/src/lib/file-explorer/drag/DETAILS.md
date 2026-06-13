@@ -27,17 +27,19 @@ plan. The backend derives locality from `Volume::supports_local_fs_access()`: `s
 listing's volume; `start_drag_paths` takes an optional `sourceVolumeId` (threaded from the FE drag-start path, which has
 it since the recorded-identity work; `null` defaults to local).
 
-- **Local sessions** (real local FS or OS-mounted shares — `file://` URLs are real) keep the legacy layout
-  byte-for-byte, one `NSPasteboardItem` per file:
+- **Local sessions** (real local FS or OS-mounted shares — `file://` URLs are real) match Finder: files only, no path
+  text, one `NSPasteboardItem` per file:
   - Every item: `public.file-url` (the URL's `absoluteString`): Finder, IntelliJ, etc. iterate items reading this.
-  - First item only: `public.utf8-plain-text` with the full shell-escaped path list joined by spaces (terminals like
-    Warp etc.) read this via `pasteboard.string(forType:)` and insert the text at the cursor.
-  - Later items: `public.utf8-plain-text` with their own escaped path (so item-iterating consumers don't see
-    duplicates).
   - First item only: `NSFilenamesPboardType` (legacy `NSArray<NSString>` of all paths). Required for stock wry's
     `collect_paths`, which reads only this type and `unwrap()`s if absent; see
     [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix. Drop this once wry ships a release
     containing the fix and we bump our `tauri-runtime-wry`.
+  - NO `public.utf8-plain-text`. Finder publishes none, and the extra path-text item made some browser upload widgets
+    treat a Cmdr drop as text rather than a file ([issue #28](https://github.com/vdavid/cmdr/issues/28)): a file dragged
+    into a `<input type="file">` was ignored where the same file from Finder worked. Terminals (Warp, etc.) read the
+    file URL / filenames and insert the path themselves, exactly as for a Finder drag, so dropping the text item costs
+    nothing there. Verified with a browser drop probe: Finder/Forklift expose `types: ["Files"]`, Cmdr-with-text exposed
+    `["text/plain", "Files"]`.
 - **Virtual sessions** (MTP, direct SMB, search-results — paths with no local backing) advertise NOTHING external apps
   can materialize: no file-url, no text, no filenames, across EVERY item. A virtual path's `file://` URL is bogus and
   the legacy types are exactly what Finder turned into the `.textClipping` junk file. Promise-only items still fire
@@ -136,9 +138,9 @@ folder-promise verdicts behind the design are recorded in
   promise (no file-url, no text, no filenames), so an app that accepts neither promises nor our remaining types makes a
   clean no-op instead of the old garbage. The old layout published a bogus volume-relative `file://` URL plus a path
   string, and Finder materialized the string into `photos:sunset.jpg.textClipping`.
-- **Terminals get no text from a virtual pane.** A volume-relative path is meaningless outside Cmdr, so virtual sessions
-  intentionally publish no `public.utf8-plain-text` — dropping a phone file into Warp inserts nothing. Local-pane drags
-  keep the terminal-text affordance.
+- **Terminals get no text from a virtual pane.** A virtual session advertises only a promise (no file-url, no
+  filenames), so dropping a phone file into Warp inserts nothing. A local-pane drag inserts the path because the
+  terminal reads the file URL / filenames itself, exactly as for a Finder drag, no path-text item needed.
 - **In-app drops are unaffected** — they use the recorded self-drag identity above, NOT the pasteboard paths, and the
   promise-only layout still fires wry's drop event (empty path vec, no panic). So a virtual self-drag still works. The
   promise is fulfilled only when an EXTERNAL consumer (Finder) asks, so it never touches in-app behavior.
@@ -207,16 +209,24 @@ Key files:
   - **Why**: Self-drags swap images mid-drag via `setDraggingFrame:contents:` (entered → transparent, exited → rich).
     DOM overlay provides feedback inside.
 - **Decision**: Custom `native_drag/` module instead of the upstream `drag` crate
-  - **Why**: The upstream crate writes only `public.file-url` per item and uses a single-op mask (Move OR Copy). That
-    failed three ways: (1) terminals like Warp listen for `public.utf8-plain-text`, not file URLs, so drops were
-    silently dropped; (2) wry's `collect_paths` reads `NSFilenamesPboardType` and panics if the auto-derivation fails;
-    see [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix; (3) terminals only accept
+  - **Why**: The upstream crate uses a single-op mask (Move OR Copy) and doesn't publish `NSFilenamesPboardType`, which
+    fails two ways: (1) wry's `collect_paths` reads `NSFilenamesPboardType` and panics if the auto-derivation fails, see
+    [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix; (2) terminals only accept
     `NSDragOperationCopy`, so a Move-only source mask makes them reject the drop entirely. For a LOCAL session our
-    version advertises file-URL + shell-escaped text + legacy filenames per the layout above, and always publishes a
-    permissive op mask. Finder/IntelliJ behavior is unchanged (they read file URLs); terminals get working text drops;
-    macOS modifier keys arbitrate the operation natively. For a VIRTUAL session each item carries an
+    version advertises file-URL + legacy filenames (matching Finder) and always publishes a permissive op mask.
+    Finder/IntelliJ behavior is unchanged (they read file URLs); terminals read the file URL / filenames and insert the
+    path themselves; macOS modifier keys arbitrate the operation natively. For a VIRTUAL session each item carries an
     `NSFilePromiseProvider` and no legacy types (see the locality-aware layout above), so an external drop downloads the
     real bytes instead of materializing garbage.
+- **Decision**: Local drags publish NO `public.utf8-plain-text` (match Finder exactly)
+  - **Why**: Publishing the file path as `public.utf8-plain-text` (a "drop into terminal" affordance) maps to a
+    `text/plain` item in a browser's `DataTransfer`. Some upload widgets branch on that and treat the drop as text, not
+    a file, so a file dragged from Cmdr into a `<input type="file">` was ignored where the same file from Finder worked
+    ([issue #28](https://github.com/vdavid/cmdr/issues/28)). Finder and Forklift publish files only, and terminals read
+    the file URL / filenames and insert the path themselves (a Finder drag into Warp inserts the path with no text
+    item), so the text representation bought nothing and broke browser uploads.
+  - **Guardrail**: don't re-add `public.utf8-plain-text` to local drags. If a future terminal genuinely needs it, scope
+    it so it never rides alongside a file representation a browser would read.
 - **Decision**: Modifier keys tracked via NSEvent.modifierFlags
   - **Why**: Tauri doesn't expose modifier state in DragDropEvent. Emits `drag-modifiers` event only when state changes.
 - **Decision**: Drop operation follows Finder's volume-aware default plus Alt/Cmd/Shift modifiers

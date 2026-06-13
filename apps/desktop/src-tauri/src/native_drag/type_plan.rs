@@ -1,9 +1,9 @@
 //! Pure, locality-aware pasteboard composition for native drags.
 //!
 //! Pasteboard layout is policy, not incidental code: it's where the wry
-//! constraint, the Finder interplay, and the terminal-affordance removal become
-//! visible and testable. This module owns that policy as a pure function so the
-//! AppKit-touching code in the parent module stays a thin executor of the plan.
+//! constraint and the Finder interplay become visible and testable. This module
+//! owns that policy as a pure function so the AppKit-touching code in the parent
+//! module stays a thin executor of the plan.
 //!
 //! ## Locality is a property of the drag SESSION, not of individual items
 //!
@@ -14,27 +14,30 @@
 //! whole plan on one [`DragSessionLocality`] value makes that impossible by
 //! construction.
 //!
-//! ## Local sessions: byte-identical to the legacy layout
+//! ## Local sessions: match Finder — files only, no path text
 //!
 //! - `public.file-url` on every item (the URL's `absoluteString`).
-//! - `public.utf8-plain-text` on every item: the first item carries all paths
-//!   shell-escaped and space-joined (the "drop into terminal" gesture); later
-//!   items carry just their own escaped path so item-iterating consumers don't
-//!   see duplicates.
 //! - `NSFilenamesPboardType` (legacy `NSArray<NSString>` of all paths) on the
 //!   first item only. Required for stock wry's `collect_paths`.
 //!
+//! No `public.utf8-plain-text`. Finder and Forklift publish files only (verified:
+//! a browser drop from Finder exposes `types: ["Files"]`, from Cmdr-with-text
+//! `["text/plain", "Files"]`). The extra text item made some browser upload
+//! widgets treat the drop as text instead of a file, so a file dragged from Cmdr
+//! into a `<input type="file">` was ignored where the same file from Finder
+//! worked (issue #28). Terminals (Warp, etc.) read the file URL / filenames and
+//! insert the path themselves, exactly as they do for a Finder drag, so dropping
+//! the text item costs nothing there.
+//!
 //! ## Virtual sessions: nothing external apps can materialize as garbage
 //!
-//! NO file-url, NO text, NO filenames — across EVERY item. A virtual path's
-//! `file://` URL is bogus (the file doesn't exist locally), the text was a
-//! meaningless volume-relative string outside Cmdr, and an auto-derived (or
-//! explicit) filenames entry is the textClipping junk Finder materializes.
-//! Promise-only items still fire wry's drop event with an empty path vector (no
-//! panic), so the in-app self-drag path keeps working via recorded identity. A
-//! virtual item's pasteboard payload is empty here; the parent module attaches
-//! the `NSFilePromiseProvider` writer that streams the real bytes on an external
-//! drop.
+//! NO file-url, NO filenames — across EVERY item. A virtual path's `file://` URL
+//! is bogus (the file doesn't exist locally) and an auto-derived (or explicit)
+//! filenames entry is the textClipping junk Finder materializes. Promise-only
+//! items still fire wry's drop event with an empty path vector (no panic), so the
+//! in-app self-drag path keeps working via recorded identity. A virtual item's
+//! pasteboard payload is empty here; the parent module attaches the
+//! `NSFilePromiseProvider` writer that streams the real bytes on an external drop.
 
 /// Whether a drag session's source volume is locally materialized (local FS or
 /// an OS-mounted share, where a `file://` URL is real) or protocol-only /
@@ -43,7 +46,7 @@
 /// Decided once per session at the drag-start boundary, never per item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DragSessionLocality {
-    /// Paths are real local filesystem paths. Keep the full legacy layout.
+    /// Paths are real local filesystem paths. Keep the file-url + filenames layout.
     Local,
     /// Paths are volume-relative virtual paths with no local backing. Publish
     /// no legacy types; the parent module attaches a promise provider per item.
@@ -54,13 +57,11 @@ pub enum DragSessionLocality {
 ///
 /// Each `Option` is `None` when that representation must be omitted. A virtual
 /// session yields every field `None` (an empty item); a local session fills the
-/// fields per the legacy layout.
+/// fields per the layout above.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PasteboardItemPlan {
     /// `public.file-url`: the item's `file://` URL absolute string.
     pub file_url: Option<String>,
-    /// `public.utf8-plain-text`: shell-escaped path text for terminal drops.
-    pub text: Option<String>,
     /// `NSFilenamesPboardType`: the full legacy path array (first item only).
     pub filenames: Option<Vec<String>>,
 }
@@ -70,7 +71,6 @@ impl PasteboardItemPlan {
     fn empty() -> Self {
         Self {
             file_url: None,
-            text: None,
             filenames: None,
         }
     }
@@ -80,7 +80,7 @@ impl PasteboardItemPlan {
     /// parent module just reads the `Option` fields directly.
     #[cfg(test)]
     pub fn is_empty(&self) -> bool {
-        self.file_url.is_none() && self.text.is_none() && self.filenames.is_none()
+        self.file_url.is_none() && self.filenames.is_none()
     }
 }
 
@@ -96,46 +96,18 @@ impl PasteboardItemPlan {
 pub fn plan_pasteboard_items(paths: &[String], locality: DragSessionLocality) -> Vec<PasteboardItemPlan> {
     match locality {
         DragSessionLocality::Virtual => {
-            // No file-url, no text, no filenames — across EVERY item.
+            // No file-url, no filenames — across EVERY item.
             paths.iter().map(|_| PasteboardItemPlan::empty()).collect()
         }
-        DragSessionLocality::Local => {
-            // Byte-identical to the legacy layout.
-            let joined_text = paths.iter().map(|p| shell_escape(p)).collect::<Vec<_>>().join(" ");
-
-            paths
-                .iter()
-                .enumerate()
-                .map(|(i, path)| {
-                    let text = if i == 0 {
-                        joined_text.clone()
-                    } else {
-                        shell_escape(path)
-                    };
-                    PasteboardItemPlan {
-                        file_url: Some(path.clone()),
-                        text: Some(text),
-                        // The full filenames array rides only on the first item.
-                        filenames: if i == 0 { Some(paths.to_vec()) } else { None },
-                    }
-                })
-                .collect()
-        }
-    }
-}
-
-/// Single-quotes a path for paste into a POSIX shell. Returns the input
-/// unchanged if it only contains characters that are universally safe outside
-/// quoting.
-pub fn shell_escape(s: &str) -> String {
-    let safe = !s.is_empty()
-        && s.chars().all(|c| {
-            c.is_ascii_alphanumeric() || matches!(c, '/' | '.' | '_' | '-' | '+' | ',' | ':' | '@' | '%' | '=')
-        });
-    if safe {
-        s.to_string()
-    } else {
-        format!("'{}'", s.replace('\'', "'\\''"))
+        DragSessionLocality::Local => paths
+            .iter()
+            .enumerate()
+            .map(|(i, path)| PasteboardItemPlan {
+                file_url: Some(path.clone()),
+                // The full filenames array rides only on the first item.
+                filenames: if i == 0 { Some(paths.to_vec()) } else { None },
+            })
+            .collect(),
     }
 }
 
@@ -147,14 +119,13 @@ mod tests {
         items.iter().map(|s| s.to_string()).collect()
     }
 
-    // --- Local session: byte-identical to the legacy layout ---
+    // --- Local session: files only (file-url + filenames), no path text ---
 
     #[test]
-    fn local_single_item_carries_url_text_and_filenames() {
+    fn local_single_item_carries_url_and_filenames_but_no_text() {
         let plan = plan_pasteboard_items(&p(&["/Users/me/file.jpg"]), DragSessionLocality::Local);
         assert_eq!(plan.len(), 1);
         assert_eq!(plan[0].file_url.as_deref(), Some("/Users/me/file.jpg"));
-        assert_eq!(plan[0].text.as_deref(), Some("/Users/me/file.jpg"));
         assert_eq!(
             plan[0].filenames.as_deref(),
             Some(["/Users/me/file.jpg".to_string()].as_slice())
@@ -162,33 +133,22 @@ mod tests {
     }
 
     #[test]
-    fn local_first_item_text_is_joined_shell_escaped() {
-        let paths = p(&["/a/one.jpg", "/has space/two.jpg"]);
-        let plan = plan_pasteboard_items(&paths, DragSessionLocality::Local);
-        // First item's text joins all paths, shell-escaped, space-separated.
-        assert_eq!(plan[0].text.as_deref(), Some("/a/one.jpg '/has space/two.jpg'"));
-    }
-
-    #[test]
-    fn local_later_items_carry_only_own_escaped_path_no_filenames() {
+    fn local_every_item_carries_its_own_file_url() {
         let paths = p(&["/a/one.jpg", "/has space/two.jpg", "/a/three.jpg"]);
         let plan = plan_pasteboard_items(&paths, DragSessionLocality::Local);
-        // Every item carries its own file-url.
+        assert_eq!(plan[0].file_url.as_deref(), Some("/a/one.jpg"));
         assert_eq!(plan[1].file_url.as_deref(), Some("/has space/two.jpg"));
         assert_eq!(plan[2].file_url.as_deref(), Some("/a/three.jpg"));
-        // Later items carry just their own escaped path as text.
-        assert_eq!(plan[1].text.as_deref(), Some("'/has space/two.jpg'"));
-        assert_eq!(plan[2].text.as_deref(), Some("/a/three.jpg"));
-        // Filenames ride only on the first item.
-        assert!(plan[1].filenames.is_none());
-        assert!(plan[2].filenames.is_none());
     }
 
     #[test]
-    fn local_filenames_on_first_item_is_the_full_path_list() {
+    fn local_filenames_ride_only_on_the_first_item() {
         let paths = p(&["/a/one.jpg", "/a/two.jpg", "/a/three.jpg"]);
         let plan = plan_pasteboard_items(&paths, DragSessionLocality::Local);
+        // The full path list rides on the first item; later items carry none.
         assert_eq!(plan[0].filenames.as_deref(), Some(paths.as_slice()));
+        assert!(plan[1].filenames.is_none());
+        assert!(plan[2].filenames.is_none());
     }
 
     // --- Virtual session: empty across every item (the textClipping fix) ---
@@ -199,7 +159,6 @@ mod tests {
         assert_eq!(plan.len(), 1);
         assert!(plan[0].is_empty());
         assert!(plan[0].file_url.is_none());
-        assert!(plan[0].text.is_none());
         assert!(plan[0].filenames.is_none());
     }
 
@@ -219,29 +178,5 @@ mod tests {
     fn empty_paths_yield_empty_plan_for_both_localities() {
         assert!(plan_pasteboard_items(&[], DragSessionLocality::Local).is_empty());
         assert!(plan_pasteboard_items(&[], DragSessionLocality::Virtual).is_empty());
-    }
-
-    // --- shell_escape (moved here from the parent module) ---
-
-    #[test]
-    fn shell_escape_safe_passthrough() {
-        assert_eq!(shell_escape("/Users/me/file.jpg"), "/Users/me/file.jpg");
-        assert_eq!(shell_escape("plain"), "plain");
-    }
-
-    #[test]
-    fn shell_escape_quotes_spaces_and_unicode() {
-        assert_eq!(shell_escape("/has space/x.jpg"), "'/has space/x.jpg'");
-        assert_eq!(shell_escape("Anna fotók"), "'Anna fotók'");
-    }
-
-    #[test]
-    fn shell_escape_handles_inner_single_quote() {
-        assert_eq!(shell_escape("it's"), "'it'\\''s'");
-    }
-
-    #[test]
-    fn shell_escape_empty_is_quoted() {
-        assert_eq!(shell_escape(""), "''");
     }
 }

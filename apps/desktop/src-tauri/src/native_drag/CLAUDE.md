@@ -12,7 +12,7 @@ The whole module is `#[cfg(target_os = "macos")]`.
 | File | Role |
 |------|------|
 | `mod.rs` | `start_drag`: builds the `NSDraggingItem`s + drag image, attaches per-item pasteboard writers, begins the session. Local sessions get plain `NSPasteboardItem`s; virtual sessions get `NSFilePromiseProvider`s. |
-| `type_plan.rs` | Pure, locality-aware pasteboard composition (`plan_pasteboard_items`). Local = file-url + text + filenames; virtual = empty (the textClipping fix). Unit-tested policy. |
+| `type_plan.rs` | Pure, locality-aware pasteboard composition (`plan_pasteboard_items`). Local = file-url + filenames (no path text, matching Finder; see issue #28); virtual = empty (the textClipping fix). Unit-tested policy. |
 | `source.rs` | `CmdrDragSource` (`define_class!`, `MainThreadOnly`): the `NSDraggingSource`. Returns the permissive operation mask and, on `draggingSession:endedAtPoint:operation:`, tells the promise machinery the gesture ended so a virtual session's objects can be freed. |
 | `promises.rs` | The file-promise providers + delegate (`CmdrPromiseDelegate`), the shared serial queue, the session-lifetime storage, and the `NSError` mapping. |
 | `fulfillment.rs` | The plain-Rust fulfillment service: downloads a virtual file to the Finder-chosen destination. NO AppKit; unit-testable. Returns a `FulfillOutcome { is_dir }` so the session summary can split the completion toast by kind. |
@@ -25,7 +25,7 @@ The whole module is `#[cfg(target_os = "macos")]`.
    keyed on `Volume::supports_local_fs_access()`) and the source volume id, and calls `start_drag`.
 2. `start_drag` (on the main thread) builds one `NSDraggingItem` per file:
    - **Local session**: writer is an `NSPasteboardItem` filled from the pure type plan (file-url +
-     shell-escaped text + legacy filenames). Source carries `NO_PROMISE_SESSION`.
+     legacy filenames, no path text, matching Finder). Source carries `NO_PROMISE_SESSION`.
    - **Virtual session** (MTP, direct SMB, search-results): writer is an `NSFilePromiseProvider`
      per item, carrying NO legacy types. The providers register their delegates under a fresh
      `session_key`; the source carries that key.

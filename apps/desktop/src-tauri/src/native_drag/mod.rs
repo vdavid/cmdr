@@ -1,9 +1,9 @@
-//! Native multi-type drag for macOS.
+//! Native file drag for macOS.
 //!
-//! Replaces `drag::start_drag` so Cmdr advertises both `public.file-url`
-//! AND `public.utf8-plain-text` on the pasteboard. Apps like Warp read the
-//! text type to insert escaped paths at the cursor; without it they receive
-//! nothing, because they don't subscribe to file URLs.
+//! Replaces `drag::start_drag` so Cmdr advertises `public.file-url` on the
+//! pasteboard exactly the way Finder does. Finder/IntelliJ iterate the dragging
+//! items reading file URLs; terminals (Warp, etc.) read the file URL / filenames
+//! and insert the path themselves, just as they do for a Finder drag.
 //!
 //! ## Layout: locality-aware, decided once per session
 //!
@@ -12,22 +12,21 @@
 //! can never mix local and virtual items (single-pane selections, single-volume
 //! panes), so the plan is computed once for the whole session.
 //!
-//! - **Local sessions** (real local FS or OS-mounted shares) keep the legacy
-//!   layout byte-for-byte:
-//!   - One `NSDraggingItem` per file (Finder/IntelliJ iterate items reading file URLs).
+//! - **Local sessions** (real local FS or OS-mounted shares) match Finder: files
+//!   only, no path text.
+//!   - One `NSDraggingItem` per file.
 //!   - `public.file-url` (the URL's `absoluteString`) on every item.
-//!   - `public.utf8-plain-text` on every item: the first item carries all paths
-//!     shell-escaped and space-joined (the "drop into terminal" gesture); later
-//!     items carry just their own escaped path so item-iterating consumers don't
-//!     see duplicates.
 //!   - `NSFilenamesPboardType` (legacy `NSArray<NSString>` of all paths) on the
 //!     first item only. Required for stock wry's `collect_paths`
 //!     ([drag_drop.rs:18-32](https://github.com/tauri-apps/wry/blob/dev/src/wkwebview/drag_drop.rs#L18-L32)),
 //!     which reads only this type and `unwrap()`s if it's missing. Drop this
 //!     once [wry#1723](https://github.com/tauri-apps/wry/pull/1723) ships.
+//!   - NO `public.utf8-plain-text`. The extra path-text item made some browser
+//!     upload widgets treat the drop as text rather than a file (issue #28);
+//!     Finder publishes none, so we don't either. See [`type_plan`].
 //! - **Virtual sessions** (MTP, direct SMB, search-results — paths with no local
-//!   backing) carry no legacy types: no file-url, no text, no filenames, across
-//!   EVERY item. A virtual path's `file://` URL is bogus and the legacy types are
+//!   backing) carry no legacy types: no file-url, no filenames, across EVERY
+//!   item. A virtual path's `file://` URL is bogus and the legacy types are
 //!   what Finder turned into a `.textClipping` junk file. Promise-only items
 //!   still fire wry's drop event with empty paths (no panic), so in-app
 //!   self-drags keep working via recorded identity. The `NSFilePromiseProvider`
@@ -61,7 +60,6 @@ use objc2_foundation::{NSPoint, NSRect, NSSize, NSString};
 const NS_LEFT_MOUSE_DRAGGED: usize = 7;
 
 const TYPE_FILE_URL: &str = "public.file-url";
-const TYPE_STRING: &str = "public.utf8-plain-text";
 /// Legacy pasteboard type carrying an `NSArray<NSString>` of file paths (no `file://` prefix).
 /// Deprecated since 10.13. Required for stock wry's `collect_paths` (see module docs)
 /// and as a defensive fallback for any old Mac app that reads only this type.
@@ -189,7 +187,6 @@ pub fn start_drag(
             nsurl_cls,
             nsmutarr_cls,
             file_url_type: NSString::from_str(TYPE_FILE_URL),
-            string_type: NSString::from_str(TYPE_STRING),
             filenames_type: NSString::from_str(TYPE_FILENAMES),
         };
 
@@ -198,7 +195,7 @@ pub fn start_drag(
         // differs by locality:
         //
         // - Local: a plain `NSPasteboardItem` carrying the pre-computed plan
-        //   (file-url + text + filenames).
+        //   (file-url + filenames).
         // - Virtual: the item's `NSFilePromiseProvider` (itself an
         //   `NSPasteboardWriting`), so an external drop downloads the real bytes.
         //   No legacy types — the provider is the whole payload.
@@ -279,17 +276,16 @@ struct PasteboardTypes<'a> {
     nsurl_cls: &'a AnyClass,
     nsmutarr_cls: &'a AnyClass,
     file_url_type: Retained<NSString>,
-    string_type: Retained<NSString>,
     filenames_type: Retained<NSString>,
 }
 
 /// Writes the planned representations onto a freshly-allocated `NSPasteboardItem`.
 ///
 /// A virtual-session plan is empty (every field `None`), so this attaches no
-/// representations at all — the item carries no `file://` URL, no text, no
-/// filenames. A local-session plan attaches `public.file-url` (the path's URL
-/// `absoluteString`), `public.utf8-plain-text`, and (first item only)
-/// `NSFilenamesPboardType`. See [`type_plan`] for the policy.
+/// representations at all — the item carries no `file://` URL and no filenames.
+/// A local-session plan attaches `public.file-url` (the path's URL
+/// `absoluteString`) and (first item only) `NSFilenamesPboardType`. See
+/// [`type_plan`] for the policy.
 ///
 /// # Safety
 ///
@@ -322,11 +318,6 @@ unsafe fn apply_item_plan(
                 return Err(format!("URL absoluteString returned nil for {}", path.display()));
             }
             let _: bool = msg_send![item, setString: abs_string, forType: &*types.file_url_type];
-        }
-
-        if let Some(text) = plan.text.as_deref() {
-            let text_ns = NSString::from_str(text);
-            let _: bool = msg_send![item, setString: &*text_ns, forType: &*types.string_type];
         }
 
         if let Some(filenames) = plan.filenames.as_deref() {
