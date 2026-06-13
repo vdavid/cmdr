@@ -95,6 +95,30 @@ The buttons inside the step body (`Open System Settings`, `Deny`) own the Allow 
 button is hidden in `decide` mode and reads `Restart Cmdr` in `restart` mode (set after Allow). The `already-granted`
 variant has no in-body buttons; the wizard's footer renders a single `Next`.
 
+### Live grant detection
+
+While the Allow / Deny variants are open and FDA isn't granted yet, a 500 ms `$effect` poller in `StepFda.svelte`
+watches the OS. The moment the user toggles Cmdr on in System Settings, the body switches to a success state ("You
+granted full disk access!") and the footer flips to `Restart Cmdr`, so the screen feels connected to System Settings
+instead of guessing. The grant is tracked via `onboardingState.step1Granted`, set by `setStep1Granted()` (which also
+sets `step1FooterMode = 'restart'`).
+
+The poller calls `checkFullDiskAccessQuiet`, NOT `checkFullDiskAccess`. The heavy command fires a multi-trigger
+registration storm (`mmap` + `NSData` + `read_dir` of the parent) plus per-call logging on every denial, by design, to
+get Cmdr into the FDA list. Polling that twice a second would spam syscalls and the log, so the quiet command is a
+single side-effect-free `read()` per candidate file with no steady-state logging. Both share the same `CMDR_MOCK_FDA`
+override and the same `fda_probe_files()` candidate list (factored into `probe_fda_quiet()` / `mock_fda_override()` in
+`permissions.rs`). Keep `checkFullDiskAccess` for the one-shot registration moments (the re-probe before
+`openPrivacySettings`, the step-2 banner probe).
+
+The restart stays required even on live detection: the FDA gate is set once at boot, so the new permission only takes
+effect on relaunch (same reason as the Allow path; see § "Allow path requires a restart"). Detection only swaps the copy
+and button; it never clears the gate at runtime.
+
+Lifecycle: the interval starts on mount (only on the Allow/Deny variants, only on macOS, only when not already granted)
+and is cleared on unmount and on grant, so no interval leaks. The `already-granted` variant never polls (FDA is already
+on), and on Linux the whole component renders `null`, so nothing polls there.
+
 ### Allow path requires a restart
 
 Per the "FDA gate clear-on-Allow" decision (see also § "Key decisions" below): after the user clicks Allow, the wizard
@@ -322,9 +346,9 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 
 ## Dependencies
 
-- `$lib/tauri-commands`: `checkFullDiskAccess`, `getMacosMajorVersion`, `openPrivacySettings`,
-  `startIndexingAfterFdaDecision`, `openExternalUrl`, `notifyDialogOpened`, `notifyDialogClosed`, `isForceOnboarding`,
-  `betaSignup` (Step 3's email signup)
+- `$lib/tauri-commands`: `checkFullDiskAccess`, `checkFullDiskAccessQuiet` (Step 1's 500 ms grant-detection poller),
+  `getMacosMajorVersion`, `openPrivacySettings`, `startIndexingAfterFdaDecision`, `openExternalUrl`,
+  `notifyDialogOpened`, `notifyDialogClosed`, `isForceOnboarding`, `betaSignup` (Step 3's email signup)
 - `$lib/settings-store`: `saveSettings`, `loadSettings`
 - `$lib/shortcuts/key-capture`: `isMacOS`
 - `$lib/system-strings.svelte`: localized system pane names

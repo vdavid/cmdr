@@ -443,6 +443,7 @@ pub(super) fn collect_permission_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
         crate::permissions::check_full_disk_access,
+        crate::permissions::check_full_disk_access_quiet,
         crate::permissions::get_macos_major_version,
         crate::permissions::open_privacy_settings,
         crate::permissions::open_appearance_settings,
@@ -454,6 +455,7 @@ pub(super) fn collect_permission_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
         crate::permissions_linux::check_full_disk_access,
+        crate::permissions_linux::check_full_disk_access_quiet,
         crate::permissions_linux::get_macos_major_version,
         crate::permissions_linux::open_privacy_settings,
         crate::permissions_linux::open_appearance_settings,
@@ -465,6 +467,7 @@ pub(super) fn collect_permission_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
         crate::stubs::permissions::check_full_disk_access,
+        crate::stubs::permissions::check_full_disk_access_quiet,
         crate::stubs::permissions::get_macos_major_version,
         crate::stubs::permissions::open_privacy_settings,
         crate::stubs::permissions::open_appearance_settings,

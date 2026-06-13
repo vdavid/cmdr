@@ -12,6 +12,16 @@ pub fn check_full_disk_access() -> bool {
     true
 }
 
+/// Always returns `true` on Linux (no app sandboxing). Mirrors the macOS
+/// quiet poller so the generated bindings type-check identically across
+/// platforms; the onboarding FDA step never polls on Linux (it doesn't
+/// render there), but the command must exist for the bindings.
+#[tauri::command]
+#[specta::specta]
+pub fn check_full_disk_access_quiet() -> bool {
+    true
+}
+
 /// Stub: macOS version is meaningless on Linux. Returns `0`.
 #[tauri::command]
 #[specta::specta]

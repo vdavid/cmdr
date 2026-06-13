@@ -261,6 +261,25 @@ export async function checkFullDiskAccess(): Promise<boolean> {
 }
 
 /**
+ * Polls full disk access status without TCC-registration side effects.
+ *
+ * Unlike `checkFullDiskAccess`, this doesn't fire the `mmap` / `NSData` /
+ * `read_dir` registration storm on a denial, so it's safe to call repeatedly.
+ * The onboarding FDA step polls it every 500 ms to detect a same-session grant.
+ * Use `checkFullDiskAccess` for the one-shot registration moments (it's the
+ * call that gets Cmdr into the Full Disk Access list).
+ * @returns True if the app has FDA, false otherwise
+ */
+export async function checkFullDiskAccessQuiet(): Promise<boolean> {
+  try {
+    return await commands.checkFullDiskAccessQuiet()
+  } catch {
+    // Command not available (non-macOS) - assume we have access
+    return true
+  }
+}
+
+/**
  * Returns the current set of TCC-restricted paths (sorted, absolute). Used by
  * `$lib/stores/restricted-paths-store.svelte.ts` to hydrate the in-memory set
  * before the first `restricted-paths-changed` event arrives.

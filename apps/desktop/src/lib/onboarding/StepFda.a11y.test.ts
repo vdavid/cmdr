@@ -9,11 +9,12 @@
 import { describe, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 import StepFda from './StepFda.svelte'
-import { closeWizard, resetForTesting, openWizard, setStep1Variant } from './onboarding-state.svelte'
+import { closeWizard, resetForTesting, openWizard, setStep1Granted, setStep1Variant } from './onboarding-state.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/tauri-commands', () => ({
   checkFullDiskAccess: vi.fn(() => Promise.resolve(false)),
+  checkFullDiskAccessQuiet: vi.fn(() => Promise.resolve(false)),
   getMacosMajorVersion: vi.fn(() => Promise.resolve(14)),
   openPrivacySettings: vi.fn(() => Promise.resolve()),
   startIndexingAfterFdaDecision: vi.fn(() => Promise.resolve()),
@@ -74,6 +75,14 @@ describe('StepFda a11y', () => {
 
   it('already-granted variant has no a11y violations', async () => {
     setStep1Variant('already-granted')
+    const target = mountStep()
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('grant-detected success state has no a11y violations', async () => {
+    setStep1Variant('first-ask')
+    setStep1Granted()
     const target = mountStep()
     await tick()
     await expectNoA11yViolations(target)

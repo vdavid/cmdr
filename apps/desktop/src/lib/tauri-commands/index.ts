@@ -153,6 +153,7 @@ export {
   setDiskSpaceThreshold,
   setLowDiskSpaceConfig,
   checkFullDiskAccess,
+  checkFullDiskAccessQuiet,
   getRestrictedPaths,
   getMacosMajorVersion,
   openPrivacySettings,

@@ -23,6 +23,7 @@ import {
   resetForTesting,
   openWizard,
   setStep1Restart,
+  setStep1Granted,
   setCurrentStep,
   nextStep,
   previousStep,
@@ -138,6 +139,24 @@ describe('navigation state', () => {
     expect(getOnboardingState().currentStep).toBe(2)
     previousStep()
     expect(getOnboardingState().currentStep).toBe(1)
+    expect(getOnboardingState().step1FooterMode).toBe('decide')
+  })
+
+  it('setStep1Granted marks the grant and flips the footer to restart', () => {
+    openWizard('first-launch', ctxMac({}))
+    expect(getOnboardingState().step1Granted).toBe(false)
+    expect(getOnboardingState().step1FooterMode).toBe('decide')
+    setStep1Granted()
+    expect(getOnboardingState().step1Granted).toBe(true)
+    expect(getOnboardingState().step1FooterMode).toBe('restart')
+  })
+
+  it('previousStep from step 2 clears a prior step-1 grant flag', () => {
+    openWizard('first-launch', ctxMac({}))
+    setStep1Granted()
+    setCurrentStep(2)
+    previousStep()
+    expect(getOnboardingState().step1Granted).toBe(false)
     expect(getOnboardingState().step1FooterMode).toBe('decide')
   })
 })

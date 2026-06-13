@@ -25,6 +25,12 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
   (`relaunch()`), it does NOT advance in-session. The FDA gate (`fda_gate::FDA_PENDING`) is set once at boot; clearing
   it at runtime races the TCC popups the gate suppresses (we hit 5-10 stacked popups once). The resume rule lands the
   user on step 2 after relaunch. Deny advances normally.
+- **Step 1 polls for a live FDA grant (macOS).** While the Allow/Deny variants are open and FDA isn't granted, a 500 ms
+  `$effect` poller in `StepFda` calls `checkFullDiskAccessQuiet` (the side-effect-free probe, NOT `checkFullDiskAccess`,
+  which fires the TCC-registration storm and logging on every denial). On grant it calls `setStep1Granted()`, which
+  switches the body to a success state and flips the footer to "Restart Cmdr", then stops polling. The interval clears
+  on unmount and on grant (no leaks). The restart still applies (the gate is boot-set): don't try to clear the gate
+  live. The poller never runs on the `already-granted` variant or on Linux (the component renders nothing there).
 - **No Escape handler on the wizard.** Dismissing without choosing leaves no recorded preference; the user must commit
   to Allow / Deny / Next on each step. (Closing requires committing to a step; MCP close/focus aren't wired.)
 - **The AI step's forward button stays enabled regardless of API-key validity** (no-key-blocks-advance). Don't gate

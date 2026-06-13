@@ -454,6 +454,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(target_os = "macos")]
         crate::permissions::check_full_disk_access,
         #[cfg(target_os = "macos")]
+        crate::permissions::check_full_disk_access_quiet,
+        #[cfg(target_os = "macos")]
         crate::permissions::get_macos_major_version,
         #[cfg(target_os = "macos")]
         crate::permissions::open_privacy_settings,
@@ -464,6 +466,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(target_os = "linux")]
         crate::permissions_linux::check_full_disk_access,
         #[cfg(target_os = "linux")]
+        crate::permissions_linux::check_full_disk_access_quiet,
+        #[cfg(target_os = "linux")]
         crate::permissions_linux::get_macos_major_version,
         #[cfg(target_os = "linux")]
         crate::permissions_linux::open_privacy_settings,
@@ -473,6 +477,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::permissions_linux::open_system_settings_url,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::permissions::check_full_disk_access,
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        crate::stubs::permissions::check_full_disk_access_quiet,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::permissions::get_macos_major_version,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]

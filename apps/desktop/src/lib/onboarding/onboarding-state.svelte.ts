@@ -96,6 +96,14 @@ interface OnboardingStateData {
   step1Variant: Step1Variant
   /** Step 1 footer mode. Flips to `'restart'` when the user clicks Allow this session. */
   step1FooterMode: Step1FooterMode
+  /**
+   * True once the 500 ms FDA poller in `StepFda.svelte` detects that the user
+   * granted Full Disk Access while step 1 was open. Switches the step body to a
+   * success state ("You granted full disk access!") and flips the footer to
+   * "Restart Cmdr". A restart stays required: the FDA gate is set once at boot,
+   * so the new permission only takes effect on relaunch (see `StepFda.svelte`).
+   */
+  step1Granted: boolean
   /** Pre-computed step-2 banner mode (set on step transition, read by step 2). */
   stepTwoBanner: StepTwoFdaBanner
   /**
@@ -122,6 +130,7 @@ const state = $state<OnboardingStateData>({
   source: null,
   step1Variant: 'first-ask',
   step1FooterMode: 'decide',
+  step1Granted: false,
   stepTwoBanner: 'stuck',
   footerOverride: null,
   finishRequestTick: 0,
@@ -215,6 +224,7 @@ export function openWizard(source: OnboardingSource, ctx: ResumeContext | null =
     state.currentStep = isMacOS() ? 1 : 2
     state.step1Variant = 'first-ask'
     state.step1FooterMode = 'decide'
+    state.step1Granted = false
     state.stepTwoBanner = isMacOS() ? 'stuck' : 'linux'
     return
   }
@@ -230,6 +240,7 @@ export function openWizard(source: OnboardingSource, ctx: ResumeContext | null =
   }
   state.step1Variant = step1VariantFor(ctx, source)
   state.step1FooterMode = 'decide'
+  state.step1Granted = false
   state.stepTwoBanner = stepTwoBannerFor(ctx)
 }
 
@@ -238,6 +249,7 @@ export function closeWizard(): void {
   state.source = null
   state.step1Variant = 'first-ask'
   state.step1FooterMode = 'decide'
+  state.step1Granted = false
   state.stepTwoBanner = 'stuck'
   state.footerOverride = null
   state.finishRequestTick = 0
@@ -272,6 +284,7 @@ export function previousStep(): void {
   if (state.currentStep > 1) {
     state.currentStep = (state.currentStep - 1) as OnboardingStep
     state.step1FooterMode = 'decide'
+    state.step1Granted = false
     state.footerOverride = null
   }
 }
@@ -289,6 +302,17 @@ export function isAtLastStep(): boolean {
 
 /** Flip step 1's footer mode to `'restart'`. Called by `StepFda.svelte` after Allow. */
 export function setStep1Restart(): void {
+  state.step1FooterMode = 'restart'
+}
+
+/**
+ * Mark Full Disk Access as granted-this-session. Called by `StepFda.svelte`'s
+ * 500 ms poller the moment it detects the user toggled Cmdr on in System
+ * Settings. Switches the step body to the success state and flips the footer to
+ * "Restart Cmdr" (the new permission only takes effect after a relaunch).
+ */
+export function setStep1Granted(): void {
+  state.step1Granted = true
   state.step1FooterMode = 'restart'
 }
 
@@ -335,6 +359,7 @@ export function resetForTesting(): void {
   state.source = null
   state.step1Variant = 'first-ask'
   state.step1FooterMode = 'decide'
+  state.step1Granted = false
   state.stepTwoBanner = 'stuck'
   state.footerOverride = null
   state.finishRequestTick = 0

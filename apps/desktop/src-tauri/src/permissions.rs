@@ -101,6 +101,82 @@ fn try_read_dir_parent(path: &Path) -> std::io::Result<()> {
     std::fs::read_dir(parent).map(|_| ())
 }
 
+/// Reads the `CMDR_MOCK_FDA` test override, if set and recognized.
+///
+/// Mirrors `CMDR_MOCK_LICENSE`: `granted` forces `Some(true)`, `denied` /
+/// `notgranted` force `Some(false)`. Any other value (or an unset var)
+/// returns `None`, so the caller falls through to the real probe. The
+/// wizard distinguishes "denied" (user clicked Deny last step) vs
+/// "notgranted" (user clicked Allow but TCC still says no) via the
+/// persisted `fullDiskAccessChoice` setting; this mock only controls the
+/// OS-level signal so all four step-2 banner branches can be tested without
+/// ever opening real System Settings.
+///
+/// `quiet` suppresses the per-call debug log so the 500 ms onboarding
+/// poller (`check_full_disk_access_quiet`) doesn't spam the log.
+fn mock_fda_override(quiet: bool) -> Option<bool> {
+    let mock = std::env::var("CMDR_MOCK_FDA").ok()?;
+    match mock.as_str() {
+        "granted" => {
+            if !quiet {
+                log::debug!(target: "fda_probe", "CMDR_MOCK_FDA=granted → returning true (test override)");
+            }
+            Some(true)
+        }
+        "denied" | "notgranted" => {
+            if !quiet {
+                log::debug!(target: "fda_probe", "CMDR_MOCK_FDA={} → returning false (test override)", mock);
+            }
+            Some(false)
+        }
+        other => {
+            if !quiet {
+                log::warn!(target: "fda_probe", "CMDR_MOCK_FDA={:?} not recognized; falling through to real probe", other);
+            }
+            None
+        }
+    }
+}
+
+/// Side-effect-free FDA probe: reads one byte from each candidate protected
+/// file until one returns a definitive `Ok` (granted) or `PermissionDenied`
+/// (not granted). Unlike `check_full_disk_access`, it does NOT fire the
+/// `mmap` / `NSData` / `read_dir` registration triggers on a denial, so it's
+/// safe to call repeatedly (the onboarding 500 ms grant-detection poller
+/// uses it). It's a pure read with no logging in the steady state, keeping
+/// CPU, syscalls, and the log clean.
+fn probe_fda_quiet() -> bool {
+    for path in fda_probe_files() {
+        match try_read_byte(&path) {
+            Ok(()) => return true,
+            Err(e) if e.kind() == ErrorKind::PermissionDenied => return false,
+            Err(_) => continue, // NotFound etc.: not a definitive signal, try the next path.
+        }
+    }
+    // No probed file existed. Treat as "no FDA": better to keep polling than
+    // to falsely report a grant.
+    false
+}
+
+/// Polls FDA status without TCC-registration side effects.
+///
+/// Same return contract as `check_full_disk_access` (`true` = granted) and
+/// honors the same `CMDR_MOCK_FDA` override, but skips the multi-trigger
+/// `mmap` / `NSData` / `read_dir` storm and the per-call logging. Built for
+/// the onboarding FDA step, which calls this every 500 ms while visible and
+/// not-yet-granted to flip to a success state the moment the user toggles
+/// Cmdr on in System Settings. Keep `check_full_disk_access` for the
+/// one-shot registration moments (it's the one that gets Cmdr into the FDA
+/// list); this one is purely for detection.
+#[tauri::command]
+#[specta::specta]
+pub fn check_full_disk_access_quiet() -> bool {
+    if let Some(mocked) = mock_fda_override(true) {
+        return mocked;
+    }
+    probe_fda_quiet()
+}
+
 /// Checks if the app has full disk access by probing TCC-protected files.
 ///
 /// Probing is also how the bundle gets registered with TCC, which is what
@@ -111,30 +187,14 @@ fn try_read_dir_parent(path: &Path) -> std::io::Result<()> {
 /// denial we fire all three: raw `read`, `mmap`, `NSData`, plus a
 /// `read_dir` of the parent directory.
 ///
-/// `CMDR_MOCK_FDA` test override (macOS-only short-circuit, mirrors
-/// `CMDR_MOCK_LICENSE`): set to `granted` to force `true`, or `denied` /
-/// `notgranted` to force `false`. The wizard distinguishes "denied" (user
-/// clicked Deny last step) vs "notgranted" (user clicked Allow but TCC
-/// still says no) via the persisted `fullDiskAccessChoice` setting; this
-/// mock only controls the OS-level signal so all four step-2 banner
-/// branches can be tested without ever opening real System Settings.
+/// For repeated, side-effect-free polling (e.g. the onboarding grant
+/// detector), use `check_full_disk_access_quiet` instead, which skips these
+/// extra triggers and the logging.
 #[tauri::command]
 #[specta::specta]
 pub fn check_full_disk_access() -> bool {
-    if let Ok(mock) = std::env::var("CMDR_MOCK_FDA") {
-        match mock.as_str() {
-            "granted" => {
-                log::debug!(target: "fda_probe", "CMDR_MOCK_FDA=granted → returning true (test override)");
-                return true;
-            }
-            "denied" | "notgranted" => {
-                log::debug!(target: "fda_probe", "CMDR_MOCK_FDA={} → returning false (test override)", mock);
-                return false;
-            }
-            other => {
-                log::warn!(target: "fda_probe", "CMDR_MOCK_FDA={:?} not recognized; falling through to real probe", other);
-            }
-        }
+    if let Some(mocked) = mock_fda_override(false) {
+        return mocked;
     }
     for path in fda_probe_files() {
         match try_read_byte(&path) {
@@ -269,5 +329,48 @@ mod tests {
     fn test_has_full_disk_access_returns_bool() {
         // Just verify it doesn't panic - the return value is a bool by type system
         let _result: bool = check_full_disk_access();
+    }
+
+    #[test]
+    fn quiet_probe_returns_bool_without_panicking() {
+        // The 500 ms onboarding poller calls this repeatedly; it must never panic.
+        // The return value is a bool by the type system; we only check the call path.
+        let _result: bool = check_full_disk_access_quiet();
+    }
+
+    // `mock_fda_override` reads a process-global env var, so these run serially under one
+    // test to avoid racing the var across parallel test threads. They lock in the contract
+    // the onboarding poller relies on: `granted` → Some(true), `denied`/`notgranted` →
+    // Some(false), anything else → None (fall through to the real probe).
+    #[test]
+    fn mock_override_parses_known_values_and_ignores_unknown() {
+        // Save + restore so we don't leak state into other tests in this process.
+        let saved = std::env::var("CMDR_MOCK_FDA").ok();
+
+        // Safety: tests in this module touch the same var serially; no other thread reads
+        // it concurrently within this single test.
+        unsafe {
+            std::env::set_var("CMDR_MOCK_FDA", "granted");
+            assert_eq!(mock_fda_override(true), Some(true));
+            assert!(check_full_disk_access_quiet());
+
+            std::env::set_var("CMDR_MOCK_FDA", "denied");
+            assert_eq!(mock_fda_override(true), Some(false));
+            assert!(!check_full_disk_access_quiet());
+
+            std::env::set_var("CMDR_MOCK_FDA", "notgranted");
+            assert_eq!(mock_fda_override(true), Some(false));
+
+            std::env::set_var("CMDR_MOCK_FDA", "nonsense");
+            assert_eq!(mock_fda_override(true), None);
+
+            std::env::remove_var("CMDR_MOCK_FDA");
+            assert_eq!(mock_fda_override(true), None);
+
+            match saved {
+                Some(v) => std::env::set_var("CMDR_MOCK_FDA", v),
+                None => std::env::remove_var("CMDR_MOCK_FDA"),
+            }
+        }
     }
 }

@@ -2220,15 +2220,24 @@ export const commands = {
    *  denial we fire all three: raw `read`, `mmap`, `NSData`, plus a
    *  `read_dir` of the parent directory.
    *
-   *  `CMDR_MOCK_FDA` test override (macOS-only short-circuit, mirrors
-   *  `CMDR_MOCK_LICENSE`): set to `granted` to force `true`, or `denied` /
-   *  `notgranted` to force `false`. The wizard distinguishes "denied" (user
-   *  clicked Deny last step) vs "notgranted" (user clicked Allow but TCC
-   *  still says no) via the persisted `fullDiskAccessChoice` setting; this
-   *  mock only controls the OS-level signal so all four step-2 banner
-   *  branches can be tested without ever opening real System Settings.
+   *  For repeated, side-effect-free polling (e.g. the onboarding grant
+   *  detector), use `check_full_disk_access_quiet` instead, which skips these
+   *  extra triggers and the logging.
    */
   checkFullDiskAccess: () => __TAURI_INVOKE<boolean>('check_full_disk_access'),
+  /**
+   *  Polls FDA status without TCC-registration side effects.
+   *
+   *  Same return contract as `check_full_disk_access` (`true` = granted) and
+   *  honors the same `CMDR_MOCK_FDA` override, but skips the multi-trigger
+   *  `mmap` / `NSData` / `read_dir` storm and the per-call logging. Built for
+   *  the onboarding FDA step, which calls this every 500 ms while visible and
+   *  not-yet-granted to flip to a success state the moment the user toggles
+   *  Cmdr on in System Settings. Keep `check_full_disk_access` for the
+   *  one-shot registration moments (it's the one that gets Cmdr into the FDA
+   *  list); this one is purely for detection.
+   */
+  checkFullDiskAccessQuiet: () => __TAURI_INVOKE<boolean>('check_full_disk_access_quiet'),
   /**
    *  Returns the macOS major version (e.g. `13` for Ventura, `14` for Sonoma).
    *

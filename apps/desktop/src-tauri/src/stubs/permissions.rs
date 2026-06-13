@@ -13,6 +13,14 @@ pub fn check_full_disk_access() -> bool {
     true
 }
 
+/// Side-effect-free FDA poll (stub: always returns true). Mirrors the macOS
+/// quiet poller so the generated bindings are identical across platforms.
+#[tauri::command]
+#[specta::specta]
+pub fn check_full_disk_access_quiet() -> bool {
+    true
+}
+
 /// Stub: macOS version is meaningless on this platform. Returns `0`.
 #[tauri::command]
 #[specta::specta]
