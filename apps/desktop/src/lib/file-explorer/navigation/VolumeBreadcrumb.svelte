@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy, tick } from 'svelte'
+    import { onMount, onDestroy, tick, untrack } from 'svelte'
     import {
         ejectVolume,
         getIpcErrorMessage,
@@ -15,7 +15,7 @@
         reorderFavorites,
         stripFavoritePrefix,
     } from '$lib/tauri-commands'
-    import { moveItem, clampedReorderTarget, pointerReorderTarget } from './favorites-reorder'
+    import { moveItem, clampedReorderTarget, pointerReorderTarget, pointerInsertionSlot } from './favorites-reorder'
     import { ask } from '@tauri-apps/plugin-dialog'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
@@ -166,12 +166,17 @@
     // Flat list of all volumes for keyboard navigation
     const allVolumes = $derived(groupedVolumes.flatMap((g) => g.items))
 
-    // When dropdown opens, initialize highlight to current volume and fit to viewport
+    // When dropdown opens, initialize highlight to current volume and fit to viewport.
     $effect(() => {
         if (isOpen) {
-            const currentIdx = allVolumes.findIndex((v) => shouldShowCheckmark(v, containingVolumeId))
-            highlightedIndex = currentIdx >= 0 ? currentIdx : 0
-            void fitDropdownToViewport()
+            // Init ONCE on open. Read the volume list untracked: otherwise a later `volumes-changed`
+            // refresh (for example right after a favorite reorder) re-runs this effect and resets the
+            // highlight to the current volume, stealing it from the just-moved favorite.
+            untrack(() => {
+                const currentIdx = allVolumes.findIndex((v) => shouldShowCheckmark(v, containingVolumeId))
+                highlightedIndex = currentIdx >= 0 ? currentIdx : 0
+                void fitDropdownToViewport()
+            })
         } else {
             highlightedIndex = -1
             keyboardMode.reset()
@@ -292,16 +297,13 @@
                 const delta = e.key === 'ArrowUp' ? -1 : 1
                 void moveHighlightedFavorite(highlighted, delta).then((newFavIndex) => {
                     if (newFavIndex === null) return
-                    // Follow the moved favorite so repeated Alt+Down keeps moving the same item.
-                    void tick().then(() => {
-                        const movedIdx = allVolumes.findIndex(
-                            (v) => v.category === 'favorite' && v.id === highlighted.id,
-                        )
-                        if (movedIdx >= 0) {
-                            highlightedIndex = movedIdx
-                            enterKeyboardMode()
-                        }
-                    })
+                    // Favorites occupy the first slots of `allVolumes` in order, so the moved
+                    // favorite's new favorites index IS its new list index. Set it directly (no
+                    // findIndex against a list that may not have refreshed from `volumes-changed`
+                    // yet), so repeated Alt+Down keeps moving the same item instead of jumping to the
+                    // first volume. The open-effect's `untrack` keeps the refresh from resetting it.
+                    highlightedIndex = newFavIndex
+                    enterKeyboardMode()
                 })
                 return true
             }
@@ -636,8 +638,12 @@
         }
         const from = favorites.findIndex((f) => f.id === grabbed.id)
         if (from < 0) return
-        const target = pointerReorderTarget(favoriteRowMidpoints(), e.clientY, from)
-        dragOverIndex = target ?? from
+        // Drive the cue off the RAW insertion slot (the visual gap), not the move-target: dropping at
+        // slot `from` or `from + 1` leaves the item in place, so hide the cue then (matches when the
+        // drop's `pointerReorderTarget` returns null). Using the move-target here put the line one row
+        // too high on downward drags.
+        const slot = pointerInsertionSlot(favoriteRowMidpoints(), e.clientY)
+        dragOverIndex = slot === from || slot === from + 1 ? null : slot
     }
 
     function handleFavoriteMouseUp(e: MouseEvent) {
@@ -855,6 +861,10 @@
                         class:favorite-item={isFavorite}
                         class:is-dragging={isFavorite && draggingFavoriteId === volume.id}
                         class:is-drag-over={isFavorite && dragOverIndex === favIndex && draggingFavoriteId !== volume.id}
+                        class:is-drag-over-end={isFavorite &&
+                            draggingFavoriteId !== volume.id &&
+                            dragOverIndex === favorites.length &&
+                            favIndex === favorites.length - 1}
                         class:is-under-cursor={shouldShowCheckmark(volume, containingVolumeId)}
                         class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenu.volumeId}
                         class:is-restricted={isRestricted(volume.path)}
@@ -1274,6 +1284,12 @@
     /*noinspection CssUnusedSymbol*/
     .favorite-item.is-drag-over {
         box-shadow: inset 0 2px 0 0 var(--color-accent);
+    }
+
+    /* Drop at the very end of the list: bottom border on the last favorite. */
+    /*noinspection CssUnusedSymbol*/
+    .favorite-item.is-drag-over-end {
+        box-shadow: inset 0 -2px 0 0 var(--color-accent);
     }
 
     .favorite-rename-input {

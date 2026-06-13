@@ -127,9 +127,9 @@
         }
     }
 
-    /** Check if key event matches ⌘D (debug window, dev only) */
+    /** Check if key event matches ⌘⇧D (debug window, dev only) */
     function isDebugWindowShortcut(e: KeyboardEvent): boolean {
-        return import.meta.env.DEV && e.metaKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'd'
+        return import.meta.env.DEV && e.metaKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'd'
     }
 
     /** Check if key event should be suppressed (Cmd+A, Cmd+Opt+I in prod) */

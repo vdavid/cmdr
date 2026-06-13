@@ -42,14 +42,25 @@ export function clampedReorderTarget(from: number, delta: number, length: number
  */
 export function pointerReorderTarget(midpoints: readonly number[], pointerY: number, from: number): number | null {
   if (from < 0 || from >= midpoints.length) return null
-  // Number of rows whose midpoint is above the pointer = the insertion slot.
-  let slot = 0
-  for (const mid of midpoints) {
-    if (pointerY > mid) slot++
-  }
+  const slot = pointerInsertionSlot(midpoints, pointerY)
   // `slot` is an insertion index into the full list (0..length). Clamp to a valid move target and
   // account for the grabbed item being removed first: a slot past `from` shifts down by one.
   const target = slot > from ? slot - 1 : slot
   const clamped = Math.max(0, Math.min(midpoints.length - 1, target))
   return clamped === from ? null : clamped
+}
+
+/**
+ * The raw insertion slot for the drop-line CUE: how many rows the pointer sits below, i.e. the gap
+ * index in `0..length` where the grabbed item would be inserted. Unlike `pointerReorderTarget`, this
+ * is NOT adjusted for the grabbed item being removed first, so it maps directly to a visual gap (slot
+ * `k` = the line above row `k`; slot `length` = below the last row). Keeping the cue on the raw slot
+ * is why a downward drag highlights the correct gap instead of one row too high.
+ */
+export function pointerInsertionSlot(midpoints: readonly number[], pointerY: number): number {
+  let slot = 0
+  for (const mid of midpoints) {
+    if (pointerY > mid) slot++
+  }
+  return slot
 }

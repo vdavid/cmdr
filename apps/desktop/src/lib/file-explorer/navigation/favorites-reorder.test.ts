@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { moveItem, clampedReorderTarget, pointerReorderTarget } from './favorites-reorder'
+import { moveItem, clampedReorderTarget, pointerReorderTarget, pointerInsertionSlot } from './favorites-reorder'
 
 describe('moveItem', () => {
   it('moves an item later in the list, shifting the rest', () => {
@@ -73,5 +73,20 @@ describe('pointerReorderTarget', () => {
 
   it('returns null for an out-of-range grabbed index', () => {
     expect(pointerReorderTarget(midpoints, 50, 9)).toBeNull()
+  })
+})
+
+describe('pointerInsertionSlot', () => {
+  // Four rows, 20px tall, stacked from y=0: midpoints at 10, 30, 50, 70.
+  const midpoints = [10, 30, 50, 70]
+
+  it('returns the gap index for the drop-line cue (NOT adjusted for removal)', () => {
+    // Above every midpoint → insert before row 0.
+    expect(pointerInsertionSlot(midpoints, 5)).toBe(0)
+    // Between rows 2 and 3 (below midpoints 10/30/50, above 70) → slot 3, the gap above row 3.
+    // This is the case that was one row too high when the cue reused the move-target.
+    expect(pointerInsertionSlot(midpoints, 60)).toBe(3)
+    // Below every midpoint → slot 4 (past the last row, the bottom-edge cue).
+    expect(pointerInsertionSlot(midpoints, 999)).toBe(4)
   })
 })
