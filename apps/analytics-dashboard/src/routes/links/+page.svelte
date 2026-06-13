@@ -57,6 +57,34 @@
         caveat="Unknown codes still pass through as their own source verbatim, so this map only exists to give a short code a friendlier meaning. Edits take up to about 5 minutes to reach visitors, since the public list is cached at the edge."
     />
 
+    <div class="mb-6 rounded-lg border border-border-subtle bg-surface-elevated/50 p-4 text-xs leading-relaxed text-text-secondary">
+        <p class="mb-1 font-medium text-text-primary">Adding a code before a post</p>
+        <ul class="list-disc space-y-1 pl-4">
+            <li>
+                Keep codes short, lowercase, and kebab-case. Allowed characters are letters, numbers, and
+                <code>. _ -</code>, up to 64 long. Pick something you can drop into a link without it looking spammy.
+            </li>
+            <li>
+                Example: a code <code>rm</code> with source <code>reddit-macapps</code> turns
+                <code>getcmdr.com/?r=rm</code> into <code>utm_source=reddit-macapps</code>. Set a medium too if you want
+                the channel grouped (for example <code>social</code>).
+            </li>
+            <li>
+                You don't strictly need a code. An unknown <code>?r=foo</code> still works, it just passes through as
+                <code>utm_source=foo</code>. Codes only exist to give a clean, friendly source (and medium) to a link.
+            </li>
+            <li>
+                A new or edited code takes up to about 5 minutes to go live (the public list is edge-cached). Add it a few
+                minutes before you post, not as you hit publish.
+            </li>
+            <li>
+                A handful of legacy aliases (<code>h</code>, <code>r</code>, <code>x</code>, <code>nl</code>,
+                <code>ruf</code>) are built into the sites as a fallback, so old shared links keep resolving even if this
+                list is unreachable. A code you add here wins over a legacy alias of the same name.
+            </li>
+        </ul>
+    </div>
+
     {#if data.loadError}
         <p class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
             Couldn't load the codes: {data.loadError}

@@ -125,6 +125,16 @@ without JS (falls back to system preference) while supporting explicit overrides
 
 ## Analytics
 
+**Must-knows** (full detail below in this section):
+
+- `window.__cmdrRReady` gates Umami, PostHog, AND the first-touch `ref` script: all three await it before recording a
+  pageview or reading `utm_source`, so a `?r=` code expands first. Gate anything new that reads `utm_source` on it too.
+- Inline analytics/expansion `<script is:inline>` bodies must be raw JS, NEVER wrapped in a literal Astro `{`...`}`
+  expression: Astro ships that as inert dead text and analytics silently dies. The `website-analytics-injection` check
+  guards this.
+- The code/UTM charset is the cross-repo attribution contract (`docs/architecture.md` § Acquisition analytics): the
+  client-side `?r=` sanitizer must normalize identically to the api-server, or stored and pass-through values diverge.
+
 The website uses three analytics layers. The desktop app also sends anonymous beta usage analytics: an `anal_`-keyed
 hourly heartbeat (true DAU) plus curated, PII-free PostHog feature events, all behind a tri-state opt-out and stripped
 of file names, paths, queries, and prompts by allowlist. See `apps/desktop/src-tauri/src/analytics/CLAUDE.md`.

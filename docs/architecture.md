@@ -238,6 +238,24 @@ first (see [docs/security.md](security.md) for the privacy posture):
 
 Detail in the colocated `CLAUDE.md` files.
 
+## Acquisition analytics / `?r=` tracking
+
+Spans four surfaces. A short `?r=<code>` on a link expands to `utm_source` (+ `utm_medium`) client-side before analytics
+runs, so downloads attribute to a channel without a consent banner:
+
+- **api-server** (`apps/api-server/`): KV store for the code map + validation + the `/admin/funnel` aggregation. Serves
+  `GET /r-codes.json` (edge-cached) and `/admin/r-codes` CRUD. See its `CLAUDE.md` / `DETAILS.md`.
+- **website** (`apps/website/`) and the personal **blog** (separate repo, `~/projects-git/vdavid/blog`): client-side
+  `?r=` expansion, with the logic mirrored (pure module + an inline copy that must run before deferred analytics). See
+  `apps/website/CLAUDE.md` § Analytics.
+- **analytics-dashboard** (`apps/analytics-dashboard/`): reads the admin endpoints (`/admin/funnel`, `/admin/r-codes`)
+  and is where David edits codes day to day.
+
+**Shared invariant:** the code/UTM charset is the cross-repo attribution contract. The download `ref` sanitizer keeps
+`[a-z0-9._:-]`; the link-code/UTM sanitizer keeps `[a-z0-9._-]`. Every surface's sanitizer must normalize identically,
+or a stored value and a pass-through value diverge and attribution corrupts. The api-server is the source of truth and
+re-sanitizes; clients sanitize to reject bad input before a round-trip.
+
 ## Tooling and infrastructure
 
 Dev workflow docs and external service references. All in `docs/tooling/`.

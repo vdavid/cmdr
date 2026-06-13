@@ -44,5 +44,14 @@ The full route table, env-var/binding tables, data flows, runbooks, and decision
   split it into per-field columns.
 - **The default export uses the object form** (`{ fetch, scheduled }`); cron support breaks without it. `app` is also a
   named export so tests can `app.request()`.
+- **Charset is the cross-repo attribution contract** (`docs/architecture.md` § Acquisition analytics): `sanitizeRef`
+  (download `ref`, `telemetry.ts`) keeps `[a-z0-9._:-]` (colon included); `sanitizeUtmValue` (link codes,
+  `link-codes.ts`) keeps `[a-z0-9._-]` (no colon). Both lowercase and cap length (ref 120, code key 1..64). The
+  website + blog client-side sanitizers MUST normalize identically, or a pass-through value and a stored value diverge
+  and attribution corrupts.
+- **`/admin/funnel` returns `FunnelDay[]`, one per UTC day; in every column `null` = unknown/unavailable, `0` = a real
+  zero.** `downloadsByRef` buckets a NULL ref under `(none)`. **D7 retention:** for a cohort whose first heartbeat was
+  on day X, an install counts as retained if it has any heartbeat in the half-open window `[X+7d, X+8d)`; cohorts
+  younger than 8 days report `null` (unknown), not 0. (Deeper: DETAILS.md § funnel + § Download tracking.)
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
