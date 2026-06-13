@@ -285,14 +285,9 @@
 </section>
 
 <style>
-    /* The `:global(.error-provider-select)` rule in `+page.svelte` styled the old native
-       `<select>` (border, bg, padding). Now the class wraps a `ui/Select`, which brings its own
-       trigger chrome, so flatten the wrapper to a plain sizing box and let `Select` own the look. */
+    /* Sizing box for the per-row provider picker; `ui/Select` owns the trigger chrome. */
     .error-provider-select {
         display: inline-flex;
         width: 150px;
-        padding: 0;
-        background: transparent;
-        border: none;
     }
 </style>

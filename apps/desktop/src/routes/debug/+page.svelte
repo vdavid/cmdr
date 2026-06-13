@@ -733,18 +733,6 @@
         font-family: var(--font-system), sans-serif;
     }
 
-    :global(.error-provider-select) {
-        flex-shrink: 0;
-        width: 110px;
-        padding: 1px 4px;
-        font-size: var(--font-size-xs);
-        font-family: var(--font-system), sans-serif;
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-    }
-
     :global(.error-trigger-btn) {
         flex-shrink: 0;
         width: 24px;
