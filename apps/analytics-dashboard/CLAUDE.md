@@ -1,7 +1,22 @@
 # Analytics dashboard
 
-Private SvelteKit dashboard consolidating Cmdr business metrics into a single view, organized by acquisition stage.
-Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Access (zero-trust, no application code).
+Private SvelteKit dashboard consolidating Cmdr business metrics, organized by acquisition stage across a few pages under
+a shared top nav. Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Access (zero-trust, no
+application code).
+
+## Pages and where each section lives
+
+Three routes share `+layout.svelte` (sticky header: brand, nav, and the range/day picker). The picker is hidden on
+`/links`. Full structure, the data-loading split, and the componentization are in `DETAILS.md` § "Multi-page structure".
+
+- `/` (Acquisition, `routes/+page.svelte`): daily funnel + channels, awareness, interest, download.
+- `/product` (Product, `routes/product/+page.svelte`): active use, payment, retention, feedback & errors.
+- `/links` (Link codes, `routes/links/+page.svelte`): a stub for `?r=` short-link CRUD, filled in later. No data load.
+
+Each section is a component under `src/lib/components/sections/`; shared bits (funnel table, country table, metric
+row/table, state panels, descriptions) are in `src/lib/components/`. Don't import `$lib/server/*` as a runtime value
+into any of these (browser-bundled) — type-only is fine. The build's `vite-plugin-sveltekit-guard` enforces this;
+svelte-check does NOT catch it, so run `pnpm build` before declaring a client/server-boundary change done.
 
 ## Stack
 
@@ -12,21 +27,27 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 
 ## Key files
 
-| File                                        | Purpose                                                                                                                                                                        |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/app.css`                               | Tailwind v4 theme (dark palette matching getcmdr.com)                                                                                                                          |
-| `src/app.d.ts`                              | Platform env type declarations for CF Pages                                                                                                                                    |
-| `src/routes/+page.svelte`                   | Single-page dashboard: a top "Daily funnel" table, then 6 acquisition stages plus feedback & errors                                                                            |
-| `src/routes/+page.server.ts`                | Server load: reads `?range=` and `?day=` params, delegates to `fetch-all.ts`                                                                                                   |
-| `src/routes/api/report/+server.ts`          | Agent-readable plain-text report (includes the daily funnel) with all breakdowns                                                                                               |
-| `src/lib/server/fetch-all.ts`               | Shared data-fetching logic used by both the page and report API                                                                                                                |
-| `src/lib/components/Chart.svelte`           | Reusable uPlot chart with ResizeObserver and dark theme                                                                                                                        |
-| `src/lib/components/StackedBarChart.svelte` | Discrete per-day stacked bars (plain elements, not uPlot) with an exact-numbers hover/focus tooltip. Used for the by-source new-installs chart and the by-version update chart |
-| `src/lib/server/types.ts`                   | Shared types: `TimeRange`, `DashboardSelection`, `SourceResult`, time window + selection helpers                                                                               |
-| `src/lib/server/cache.ts`                   | CF Cache API wrapper with in-memory Map fallback for local dev                                                                                                                 |
-| `src/lib/server/sources/`                   | Data source modules (one per external API)                                                                                                                                     |
-| `svelte.config.js`                          | Adapter-cloudflare config                                                                                                                                                      |
-| `vitest.config.ts`                          | Vitest config for unit tests                                                                                                                                                   |
+- `src/app.css`: Tailwind v4 theme (dark palette matching getcmdr.com).
+- `src/app.d.ts`: Platform env type declarations for CF Pages.
+- `src/routes/+layout.svelte`: shared shell — sticky header, page nav, and the range/day picker (hidden on `/links`).
+- `src/routes/+layout.server.ts`: resolves the shared `DashboardSelection` from `?range=` / `?day=` once for the layout.
+- `src/routes/+page.{svelte,server.ts}`: Acquisition page; loads the funnel/Umami/Cloudflare/GitHub/PostHog subset.
+- `src/routes/product/+page.{svelte,server.ts}`: Product page; loads the Cloudflare/Paddle/license/feedback subset.
+- `src/routes/links/+page.svelte`: Link codes stub (no data load).
+- `src/routes/api/report/+server.ts`: agent-readable plain-text report (all sections, via `fetchDashboardData`).
+- `src/lib/server/fetch-all.ts`: per-source loaders plus the per-page composers (`fetchAcquisitionData`,
+  `fetchProductData`) and the all-sources `fetchDashboardData` for the report.
+- `src/lib/components/sections/`: one component per dashboard section.
+- `src/lib/components/`: shared UI (FunnelTable, CountryTable, MetricRow/MetricTable, ErrorState/EmptyState/
+  BetaEmptyState, SectionDescription, Methodology, ExternalLinks, Chart, StackedBarChart, MiniTimeline, PieChart).
+- `src/lib/{format,colors,chart-helpers}.ts`: client-safe formatters, color tokens, and chart data-shaping helpers.
+- `StackedBarChart.svelte`: discrete per-day stacked bars (plain elements, not uPlot) with an exact-numbers hover/focus
+  tooltip; used for the by-source new-installs chart and the by-version update chart.
+- `src/lib/server/types.ts`: shared types: `TimeRange`, `DashboardSelection`, `SourceResult`, time window + selection
+  helpers.
+- `src/lib/server/cache.ts`: CF Cache API wrapper with in-memory Map fallback for local dev.
+- `src/lib/server/sources/`: data source modules (one per external API).
+- `svelte.config.js`: adapter-cloudflare config. `vitest.config.ts`: Vitest config.
 
 ## Running locally
 
@@ -157,7 +178,10 @@ so no Listmonk secret reaches the dashboard.
 
 These colors are used in metric dots, chart strokes, and chart fills. Keep them consistent when adding new UI.
 
-**Decision**: Single page, not multi-page. **Why**: A handful of sections. Scroll is simpler than navigation.
+**Decision**: Split across pages (Acquisition, Product, Link codes) under a shared layout, not one long scroll. **Why**:
+the single page grew too dense. Grouping by stage keeps each route readable and lets each page fetch only the sources it
+renders. The range/day selection stays shared (resolved in the layout, carried in the URL), so switching pages preserves
+it. See `DETAILS.md` § "Multi-page structure".
 
 **Decision**: A "Feedback & errors" section reads the app's own stores via two worker admin endpoints (`/admin/feedback`
 from D1, `/admin/error-reports` from the R2 bucket's `list` with `customMetadata`), not Discord. **Why**: the

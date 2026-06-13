@@ -4,9 +4,6 @@
  */
 export type TimeRange = 'today' | '24h' | '7d' | '30d' | 'day'
 
-/** The ranges shown as buttons in the picker, in display order. `day` is set via a date input, not a button. */
-export const rangeButtons = ['today', '24h', '7d', '30d'] as const
-
 /**
  * The resolved time selection for a page load: the range plus, when `range === 'day'`, the specific UTC
  * day (`YYYY-MM-DD`) it refers to. Sources convert this to their own native windows via `toTimeWindow`.
