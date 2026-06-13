@@ -2,73 +2,62 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 
 import ViewModePicker from './ViewModePicker.svelte'
+import { expectNoA11yViolations } from '$lib/test-a11y'
 
 beforeEach(() => {
   document.body.innerHTML = ''
 })
 
+function mountPicker() {
+  const target = document.createElement('div')
+  document.body.appendChild(target)
+  const instance = mount(ViewModePicker, { target, props: { value: 'text', onChange: () => {} } })
+  return { target, instance }
+}
+
 describe('ViewModePicker accessibility', () => {
-  it('exposes aria-label so AT can identify the picker', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    const instance = mount(ViewModePicker, {
-      target,
-      props: {
-        value: 'text',
-        onChange: () => {},
-      },
-    })
+  it('has no a11y violations on the closed (disabled) picker', async () => {
+    const { target, instance } = mountPicker()
+    await tick()
+    await expectNoA11yViolations(target)
+    void unmount(instance)
+  })
+
+  it('exposes aria-label on the trigger so AT can identify the picker', async () => {
+    const { target, instance } = mountPicker()
     await tick()
 
-    const select = target.querySelector('select.view-mode-picker')
-    expect(select?.getAttribute('aria-label')).toBe('View mode')
+    expect(target.querySelector('.select-trigger')?.getAttribute('aria-label')).toBe('View mode')
 
     void unmount(instance)
   })
 
-  it('surfaces its disabled state to AT via the disabled attribute', async () => {
-    // Only one mode ships today; the picker is disabled. AT announces the
-    // disabled state via the native <select disabled> attribute, no extra
-    // ARIA needed. Pin the contract so a future "make it look enabled"
-    // refactor can't silently drop the disabled announcement.
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    const instance = mount(ViewModePicker, {
-      target,
-      props: {
-        value: 'text',
-        onChange: () => {},
-      },
-    })
+  it('surfaces its disabled state to AT', async () => {
+    // Only one mode ships today; the picker is disabled. Pin the contract so a
+    // future "make it look enabled" refactor can't silently drop the disabled
+    // announcement. Ark reflects it as `data-disabled` plus `disabled` on the
+    // trigger button.
+    const { target, instance } = mountPicker()
     await tick()
 
-    const select = target.querySelector<HTMLSelectElement>('select.view-mode-picker')
-    expect(select).not.toBeNull()
-    expect(select?.disabled).toBe(true)
+    const trigger = target.querySelector<HTMLButtonElement>('.select-trigger')
+    expect(trigger).not.toBeNull()
+    expect(trigger?.hasAttribute('data-disabled')).toBe(true)
 
     void unmount(instance)
   })
 
-  it('uses native <select> + <option> for keyboard navigation', async () => {
-    // Native <select> handles Tab focus, arrow-key option change, and Enter
-    // commit out of the box. The test pins that the picker stays on the
-    // native primitive rather than a custom widget that would need explicit
-    // ARIA roles + keyboard handlers (and would lose AT support).
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    const instance = mount(ViewModePicker, {
-      target,
-      props: {
-        value: 'text',
-        onChange: () => {},
-      },
-    })
+  it('uses the listbox combobox pattern for keyboard navigation', async () => {
+    // The Ark `Select` gives a `role="combobox"` trigger and a `role="listbox"`
+    // popover with full keyboard support out of the box. Pin that the picker
+    // stays on the accessible widget rather than a bare button.
+    const { target, instance } = mountPicker()
     await tick()
 
-    expect(target.querySelector('select')).not.toBeNull()
-    expect(target.querySelectorAll('option').length).toBeGreaterThan(0)
-    const option = target.querySelector('option[value="text"]')
-    expect(option?.textContent.trim()).toBe('Text')
+    expect(target.querySelector('[role="combobox"]')).not.toBeNull()
+    expect(target.querySelector('[role="listbox"]')).not.toBeNull()
+    const option = target.querySelector('[data-part="item"][data-value="text"]')
+    expect(option?.textContent).toContain('Text')
 
     void unmount(instance)
   })

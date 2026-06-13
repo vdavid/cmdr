@@ -71,57 +71,64 @@ test.describe('File viewer encoding picker', () => {
   })
 
   test('switching encoding on a 6 MB file keeps the viewport interactive', async () => {
-    // Wait for the encoding picker to appear with UTF-16 LE selected (detected).
-    await viewer.waitForSelector('select.encoding-picker', 8000)
+    // Wait for the encoding picker (Ark `ui/Select`) to appear with UTF-16 LE
+    // selected (detected). The selected option carries `aria-selected="true"`;
+    // its `data-value` is the encoding id.
+    await viewer.waitForSelector('.viewer-toolbar-pickers .select-trigger', 8000)
 
-    await expect
-      .poll(
-        async () => {
-          const selected = await viewer.evaluate<string | null>(`
-            (function () {
-              const picker = document.querySelector('select.encoding-picker')
-              return picker ? picker.value : null
-            })()
-          `)
-          return selected
-        },
-        { timeout: 8000 },
-      )
-      .toBe('utf16Le')
+    const selectedValue = `
+      (function () {
+        const opt = document.querySelector('.viewer-toolbar-pickers [data-part="item"][aria-selected="true"]')
+        return opt ? opt.getAttribute('data-value') : null
+      })()
+    `
+
+    await expect.poll(async () => viewer.evaluate<string | null>(selectedValue), { timeout: 8000 }).toBe('utf16Le')
 
     // Verify the detected suffix shows on the UTF-16 LE row.
     const detectedLabel = await viewer.evaluate<string | null>(`
       (function () {
-        const opt = document.querySelector('select.encoding-picker option[value="utf16Le"]')
+        const opt = document.querySelector('.viewer-toolbar-pickers [data-part="item"][data-value="utf16Le"]')
         return opt ? opt.textContent : null
       })()
     `)
     expect(detectedLabel).toContain('(Detected)')
 
     // Switch to UTF-8: triggers a non-instant rebuild (UTF-16 -> UTF-8 changes
-    // byte layout). The picker reflects the new selection immediately; the
-    // rebuild runs in the background.
+    // byte layout). Open the listbox, then click the UTF-8 option. The picker
+    // reflects the new selection immediately; the rebuild runs in the
+    // background. The encoding picker is the second trigger in the toolbar (the
+    // first is the view-mode picker, which is disabled).
     await viewer.evaluate(`
       (function () {
-        const picker = document.querySelector('select.encoding-picker')
-        picker.value = 'utf8'
-        picker.dispatchEvent(new Event('change', { bubbles: true }))
+        const triggers = document.querySelectorAll('.viewer-toolbar-pickers .select-trigger')
+        const encodingTrigger = triggers[triggers.length - 1]
+        encodingTrigger.click()
       })()
     `)
 
+    // Wait for the listbox to open, then pick UTF-8.
     await expect
       .poll(
-        async () => {
-          return await viewer.evaluate<string | null>(`
+        async () =>
+          viewer.evaluate<boolean>(`
             (function () {
-              const picker = document.querySelector('select.encoding-picker')
-              return picker ? picker.value : null
+              const opt = document.querySelector('.viewer-toolbar-pickers [data-part="item"][data-value="utf8"]')
+              return opt ? opt.offsetParent !== null : false
             })()
-          `)
-        },
+          `),
         { timeout: 3000 },
       )
-      .toBe('utf8')
+      .toBe(true)
+
+    await viewer.evaluate(`
+      (function () {
+        const opt = document.querySelector('.viewer-toolbar-pickers [data-part="item"][data-value="utf8"]')
+        opt.click()
+      })()
+    `)
+
+    await expect.poll(async () => viewer.evaluate<string | null>(selectedValue), { timeout: 3000 }).toBe('utf8')
 
     // The viewport must stay interactive during the rebuild: setting scrollTop
     // must take. Re-apply the gesture on every poll iteration rather than once

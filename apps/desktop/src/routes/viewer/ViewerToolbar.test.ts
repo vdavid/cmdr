@@ -14,6 +14,22 @@ beforeEach(() => {
   document.body.innerHTML = ''
 })
 
+/** The toolbar renders two `ui/Select`s; find a trigger by its aria-label. */
+function triggerByLabel(target: HTMLElement, label: string): HTMLButtonElement | null {
+  return (
+    Array.from(target.querySelectorAll<HTMLButtonElement>('.select-trigger')).find(
+      (t) => t.getAttribute('aria-label') === label,
+    ) ?? null
+  )
+}
+
+/** The Ark `Select` for `label` renders every option in the DOM even closed. */
+function optionByValue(target: HTMLElement, label: string, value: string): HTMLElement | undefined {
+  const trigger = triggerByLabel(target, label)
+  const root = trigger?.closest('[data-part="root"]')
+  return Array.from(root?.querySelectorAll<HTMLElement>(`[data-part="item"][data-value="${value}"]`) ?? [])[0]
+}
+
 interface MountOpts {
   fileName?: string
   currentEncoding?: FileEncoding
@@ -54,8 +70,8 @@ describe('ViewerToolbar', () => {
     const header = target.querySelector('header.viewer-toolbar')
     expect(header).not.toBeNull()
     expect(target.querySelector('.viewer-toolbar-title')?.textContent).toBe('notes.md')
-    expect(target.querySelector('select.view-mode-picker')).not.toBeNull()
-    expect(target.querySelector('select.encoding-picker')).not.toBeNull()
+    expect(triggerByLabel(target, 'View mode')).not.toBeNull()
+    expect(triggerByLabel(target, 'Encoding')).not.toBeNull()
     const toggle = target.querySelector('.viewer-toolbar-toggle')
     expect(toggle).not.toBeNull()
     expect(toggle?.getAttribute('role')).toBe('switch')
@@ -103,9 +119,11 @@ describe('ViewerToolbar', () => {
     const { target, instance } = mountToolbar({ onEncodingChange })
     await tick()
 
-    const select = target.querySelector('select.encoding-picker') as HTMLSelectElement
-    select.value = 'utf16Le'
-    select.dispatchEvent(new Event('change', { bubbles: true }))
+    // Open the encoding listbox, then pick UTF-16 LE (Ark routes selection only
+    // while the content is open).
+    triggerByLabel(target, 'Encoding')?.click()
+    await tick()
+    optionByValue(target, 'Encoding', 'utf16Le')?.click()
     await tick()
 
     expect(onEncodingChange).toHaveBeenCalledWith('utf16Le')
@@ -120,8 +138,7 @@ describe('ViewerToolbar', () => {
     const indicator = target.querySelector('.viewer-toolbar-indexing')
     expect(indicator).not.toBeNull()
     expect(indicator?.getAttribute('role')).toBe('status')
-    const select = target.querySelector('select.encoding-picker') as HTMLSelectElement
-    expect(select.disabled).toBe(true)
+    expect(triggerByLabel(target, 'Encoding')?.hasAttribute('data-disabled')).toBe(true)
 
     void unmount(instance)
   })

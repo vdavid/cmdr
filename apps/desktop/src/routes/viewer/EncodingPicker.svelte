@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { SvelteMap } from 'svelte/reactivity'
-
+  import Select, { type SelectItem } from '$lib/ui/Select.svelte'
   import type { EncodingChoice, EncodingGroup, FileEncoding } from '$lib/ipc/bindings'
 
   type Props = {
-    /** Currently active encoding (drives the `<select>` value). */
+    /** Currently active encoding (drives the selected value). */
     value: FileEncoding
     /** Encoding that auto-detection picked at session open. Gets a "(Detected)" suffix. */
     detected: FileEncoding
@@ -18,74 +17,28 @@
 
   const { value, detected, options, disabled = false, onChange }: Props = $props()
 
+  /** Heading text for each backend group discriminator. */
+  const groupToHeadingMap: Record<EncodingGroup, string> = {
+    unicode: 'Unicode',
+    western: 'Western',
+  }
+
   /**
-   * Split the options list into a Unicode group and a Western group, preserving
-   * the backend's order within each group. The labels for the `<optgroup>`s match
-   * the backend's `EncodingGroup` discriminator.
+   * Map each backend `EncodingChoice` to a `SelectItem`, keeping the backend's
+   * order. The `group` heading buckets the items into Unicode/Western sections;
+   * the detected encoding keeps its "(Detected)" suffix as label text.
    */
-  const grouped = $derived.by(() => {
-    const groups = new SvelteMap<EncodingGroup, EncodingChoice[]>()
-    for (const choice of options) {
-      const list = groups.get(choice.group) ?? []
-      list.push(choice)
-      groups.set(choice.group, list)
-    }
-    return groups
-  })
+  const items = $derived<SelectItem[]>(
+    options.map((choice) => ({
+      value: choice.encoding,
+      label: choice.encoding === detected ? `${choice.label} (Detected)` : choice.label,
+      group: groupToHeadingMap[choice.group],
+    })),
+  )
 
-  function decorate(choice: EncodingChoice): string {
-    return choice.encoding === detected ? `${choice.label} (Detected)` : choice.label
+  function handleChange(picked: string) {
+    onChange(picked as FileEncoding)
   }
-
-  function handleChange(event: Event) {
-    const target = event.target as HTMLSelectElement
-    onChange(target.value as FileEncoding)
-  }
-
-  const unicodeOptions = $derived(grouped.get('unicode') ?? [])
-  const westernOptions = $derived(grouped.get('western') ?? [])
 </script>
 
-<select
-  class="encoding-picker"
-  aria-label="Encoding"
-  {value}
-  {disabled}
-  onchange={handleChange}
->
-  {#if unicodeOptions.length > 0}
-    <optgroup label="Unicode">
-      {#each unicodeOptions as choice (choice.encoding)}
-        <option value={choice.encoding}>{decorate(choice)}</option>
-      {/each}
-    </optgroup>
-  {/if}
-  {#if westernOptions.length > 0}
-    <optgroup label="Western">
-      {#each westernOptions as choice (choice.encoding)}
-        <option value={choice.encoding}>{decorate(choice)}</option>
-      {/each}
-    </optgroup>
-  {/if}
-</select>
-
-<style>
-  .encoding-picker {
-    appearance: auto;
-    background: var(--color-bg-secondary);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    padding: var(--spacing-xxs) var(--spacing-xs);
-    font-size: var(--font-size-sm);
-  }
-
-  .encoding-picker:disabled {
-    opacity: 0.6;
-  }
-
-  .encoding-picker:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 1px;
-  }
-</style>
+<Select {items} {value} {disabled} ariaLabel="Encoding" onChange={handleChange} />

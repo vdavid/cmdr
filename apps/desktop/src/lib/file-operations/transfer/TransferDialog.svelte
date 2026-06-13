@@ -15,6 +15,7 @@
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import {
         deriveTransferLabel,
         generateTitle,
@@ -127,6 +128,8 @@
 
     // Filter to only actual volumes (not favorites)
     const actualVolumes = $derived(volumes.filter((v) => v.category !== 'favorite' && v.category !== 'network'))
+
+    const volumeItems = $derived<SelectItem[]>(actualVolumes.map((v) => ({ value: v.id, label: v.name })))
 
     // Get selected volume info
     const selectedVolume = $derived(actualVolumes.find((v) => v.id === selectedVolumeId))
@@ -429,11 +432,16 @@
 
     <!-- Volume selector -->
     <div class="volume-selector">
-        <select bind:value={selectedVolumeId} class="volume-select" aria-label="Destination volume">
-            {#each actualVolumes as volume (volume.id)}
-                <option value={volume.id}>{volume.name}</option>
-            {/each}
-        </select>
+        <div class="volume-select">
+            <Select
+                items={volumeItems}
+                value={selectedVolumeId}
+                ariaLabel="Destination volume"
+                onChange={(id: string) => {
+                    selectedVolumeId = id
+                }}
+            />
+        </div>
         {#if volumeSpace}
             <span class="space-info">{spaceInfoText}</span>
         {/if}
@@ -584,20 +592,12 @@
         margin-bottom: var(--spacing-md);
     }
 
+    /* Wrapper that bounds the `ui/Select` trigger (its trigger is width: 100%)
+       so the dropdown stays content-sized next to the free-space text rather
+       than stretching across the whole dialog. */
     .volume-select {
         flex: 0 0 auto;
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-size: var(--font-size-md);
-        font-family: var(--font-system) sans-serif;
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        color: var(--color-text-primary);
-    }
-
-    .volume-select:focus {
-        outline: none;
-        border-color: var(--color-accent);
+        min-width: 200px;
     }
 
     .space-info {

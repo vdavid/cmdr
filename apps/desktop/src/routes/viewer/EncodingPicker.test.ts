@@ -40,21 +40,30 @@ function mountPicker(opts: {
   return { target, instance }
 }
 
+/** The Ark `Select` renders every option in the DOM even while closed. */
+function optionEls(target: HTMLElement): HTMLElement[] {
+  return Array.from(target.querySelectorAll<HTMLElement>('[data-part="item"]'))
+}
+
+function optionByValue(target: HTMLElement, value: string): HTMLElement | undefined {
+  return optionEls(target).find((el) => el.getAttribute('data-value') === value)
+}
+
+function groupLabels(target: HTMLElement): string[] {
+  return Array.from(target.querySelectorAll<HTMLElement>('[data-part="item-group-label"]')).map((el) =>
+    el.textContent.trim(),
+  )
+}
+
 describe('EncodingPicker', () => {
   it('renders every choice grouped by Unicode and Western', async () => {
     const { target, instance } = mountPicker({ value: 'utf8', detected: 'utf8' })
     await tick()
 
-    const select = target.querySelector('select.encoding-picker')
-    expect(select).not.toBeNull()
-    const optgroups = target.querySelectorAll('optgroup')
-    expect(optgroups).toHaveLength(2)
-    const labels = Array.from(optgroups).map((o) => o.getAttribute('label'))
-    expect(labels).toContain('Unicode')
-    expect(labels).toContain('Western')
-
-    const options = target.querySelectorAll('option')
-    expect(options.length).toBe(allChoices.length)
+    expect(target.querySelector('.select-trigger')).not.toBeNull()
+    expect(groupLabels(target)).toContain('Unicode')
+    expect(groupLabels(target)).toContain('Western')
+    expect(optionEls(target)).toHaveLength(allChoices.length)
 
     void unmount(instance)
   })
@@ -63,14 +72,8 @@ describe('EncodingPicker', () => {
     const { target, instance } = mountPicker({ value: 'windows1252', detected: 'windows1252' })
     await tick()
 
-    const detectedOption = Array.from(target.querySelectorAll('option')).find(
-      (o) => o.getAttribute('value') === 'windows1252',
-    )
-    expect(detectedOption?.textContent).toContain('(Detected)')
-    const undetectedOption = Array.from(target.querySelectorAll('option')).find(
-      (o) => o.getAttribute('value') === 'utf8',
-    )
-    expect(undetectedOption?.textContent).not.toContain('(Detected)')
+    expect(optionByValue(target, 'windows1252')?.textContent).toContain('(Detected)')
+    expect(optionByValue(target, 'utf8')?.textContent).not.toContain('(Detected)')
 
     void unmount(instance)
   })
@@ -80,9 +83,11 @@ describe('EncodingPicker', () => {
     const { target, instance } = mountPicker({ value: 'utf8', detected: 'utf8', onChange })
     await tick()
 
-    const select = target.querySelector('select.encoding-picker') as HTMLSelectElement
-    select.value = 'utf16Le'
-    select.dispatchEvent(new Event('change', { bubbles: true }))
+    // Open the listbox before picking: Ark only routes selection through the
+    // interaction machinery while the content is open (closed content is hidden).
+    target.querySelector<HTMLButtonElement>('.select-trigger')?.click()
+    await tick()
+    optionByValue(target, 'utf16Le')?.click()
     await tick()
 
     expect(onChange).toHaveBeenCalledTimes(1)
@@ -91,12 +96,13 @@ describe('EncodingPicker', () => {
     void unmount(instance)
   })
 
-  it('reflects the disabled prop', async () => {
+  it('reflects the disabled prop on the trigger', async () => {
     const { target, instance } = mountPicker({ value: 'utf8', detected: 'utf8', disabled: true })
     await tick()
 
-    const select = target.querySelector('select.encoding-picker') as HTMLSelectElement
-    expect(select.disabled).toBe(true)
+    const trigger = target.querySelector<HTMLButtonElement>('.select-trigger')
+    expect(trigger).not.toBeNull()
+    expect(trigger?.hasAttribute('data-disabled')).toBe(true)
 
     void unmount(instance)
   })
@@ -105,10 +111,23 @@ describe('EncodingPicker', () => {
     const { target, instance } = mountPicker({ value: 'utf8', detected: 'utf8' })
     await tick()
 
-    const unicodeOptions = Array.from(target.querySelectorAll('optgroup[label="Unicode"] option')).map(
-      (o) => (o as HTMLOptionElement).value,
+    const unicodeGroup = Array.from(target.querySelectorAll<HTMLElement>('[data-part="item-group"]')).find(
+      (g) => (g.querySelector('[data-part="item-group-label"]')?.textContent ?? '').trim() === 'Unicode',
     )
-    expect(unicodeOptions).toEqual(['utf8', 'utf8WithBom', 'utf16Le', 'utf16Be'])
+    const unicodeValues = Array.from(unicodeGroup?.querySelectorAll<HTMLElement>('[data-part="item"]') ?? []).map(
+      (el) => el.getAttribute('data-value'),
+    )
+    expect(unicodeValues).toEqual(['utf8', 'utf8WithBom', 'utf16Le', 'utf16Be'])
+
+    void unmount(instance)
+  })
+
+  it('shows the currently selected encoding on the trigger', async () => {
+    const { target, instance } = mountPicker({ value: 'utf16Le', detected: 'utf8' })
+    await tick()
+
+    const valueText = target.querySelector('[data-part="value-text"]')
+    expect(valueText?.textContent).toContain('UTF-16 LE')
 
     void unmount(instance)
   })
