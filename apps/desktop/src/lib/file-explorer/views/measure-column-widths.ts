@@ -258,6 +258,13 @@ export function computeFullListColumnWidths(args: {
   /** Returns `true` for paths in the TCC-restricted set so the size cell
    * widths account for the `<no perms>` override. Defaults to never-restricted. */
   isRestricted?: (path: string) => boolean
+  /**
+   * When `true` (the `listing.showExtensionInName` setting), the full filename
+   * lives in the Name column and the Ext column is hidden, so we reserve no Ext
+   * width (`ext: 0`). Mirrors `FullList.svelte`, which drops the Ext track from
+   * the grid template in this mode. Defaults to the split layout.
+   */
+  showExtensionInName?: boolean
 }): ColumnWidths {
   const {
     entries,
@@ -269,12 +276,13 @@ export function computeFullListColumnWidths(args: {
     sortBy,
     sizeFormatOpts,
     isRestricted,
+    showExtensionInName = false,
   } = args
 
   const measure = getMeasure()
   if (!measure) {
     return {
-      ext: MIN_EXT_WIDTH,
+      ext: showExtensionInName ? 0 : MIN_EXT_WIDTH,
       size: MIN_SIZE_WIDTH,
       date: MIN_DATE_WIDTH,
     }
@@ -333,7 +341,9 @@ export function computeFullListColumnWidths(args: {
   }
 
   return {
-    ext: Math.max(MIN_EXT_WIDTH, Math.ceil(extMax + MEASUREMENT_SAFETY_PAD)),
+    // The Ext column is hidden when the extension rides in the Name column, so
+    // reserve no width for it (the grid template drops the track to match).
+    ext: showExtensionInName ? 0 : Math.max(MIN_EXT_WIDTH, Math.ceil(extMax + MEASUREMENT_SAFETY_PAD)),
     size: Math.max(MIN_SIZE_WIDTH, Math.ceil(sizeMax + MEASUREMENT_SAFETY_PAD)),
     date: Math.max(MIN_DATE_WIDTH, Math.ceil(dateMax + MEASUREMENT_SAFETY_PAD)),
   }

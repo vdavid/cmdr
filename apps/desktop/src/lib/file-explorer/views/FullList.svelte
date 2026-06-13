@@ -45,7 +45,7 @@
         getDirSizeDisplayState,
         hasSizeMismatch,
         getDisplayExtension,
-        getDisplayName,
+        getNameColumnText,
         pickSizeDisplay,
     } from './full-list-utils'
     import { computeFullListColumnWidths } from './measure-column-widths'
@@ -60,6 +60,7 @@
         getStripedRows,
         getFileSizeUnit,
         getFileSizeFormat,
+        getShowExtensionInName,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { onDebouncedScaleChange, getEffectiveScale } from '$lib/text-size.svelte'
@@ -203,6 +204,10 @@
     // Striped rows setting
     const stripedRows = $derived(getStripedRows())
 
+    // When on, the Name column shows the full filename and the Ext column (header
+    // included) is hidden. When off (default), Name and Ext split the filename.
+    const showExtensionInName = $derived(getShowExtensionInName())
+
     // Size column rendering: user-picked unit (dynamic / bytes / kB / MB / GB) × binary/SI base.
     const sizeFormatOpts = $derived({
         unit: getFileSizeUnit(),
@@ -258,13 +263,13 @@
 
     const gridTemplate = $derived.by(() => {
         const icon = `${String(iconColWidth)}px`
-        const ext = `${String(columnWidths.ext)}px`
+        // The Ext column is dropped entirely when its content rides in the Name
+        // column (`showExtensionInName`); the measurer returns `ext: 0` to match.
+        const ext = showExtensionInName ? '' : `${String(columnWidths.ext)}px `
         const size = `${String(columnWidths.size)}px`
         const date = `${String(columnWidths.date)}px`
-        if (gitColumnVisible) {
-            return `${icon} 1fr ${String(GIT_COLUMN_WIDTH)}px ${ext} ${size} ${date}`
-        }
-        return `${icon} 1fr ${ext} ${size} ${date}`
+        const git = gitColumnVisible ? `${String(GIT_COLUMN_WIDTH)}px ` : ''
+        return `${icon} 1fr ${git}${ext}${size} ${date}`
     })
 
     // ==== Virtual scrolling state ====
@@ -352,6 +357,7 @@
             sortBy,
             sizeFormatOpts,
             isRestricted,
+            showExtensionInName,
         })
     })
 
@@ -807,14 +813,16 @@
             {#if gitColumnVisible}
                 <span class="header-git" title="Git status of each file">Git</span>
             {/if}
-            <SortableHeader
-                column="extension"
-                {isFocused}
-                label="Ext"
-                currentSortColumn={sortBy}
-                currentSortOrder={sortOrder}
-                onClick={onSortChange ?? (() => {})}
-            />
+            {#if !showExtensionInName}
+                <SortableHeader
+                    column="extension"
+                    {isFocused}
+                    label="Ext"
+                    currentSortColumn={sortBy}
+                    currentSortOrder={sortOrder}
+                    onClick={onSortChange ?? (() => {})}
+                />
+            {/if}
             <SortableHeader
                 column="size"
                 {isFocused}
@@ -882,7 +890,11 @@
                     >
                         <FileIcon {file} {syncIcon} />
                         {#if renameState?.active && renameState.target?.index === globalIndex}
-                            <div class="col-rename" class:has-git={gitColumnVisible}>
+                            <div
+                                class="col-rename"
+                                class:has-git={gitColumnVisible}
+                                class:no-ext-col={showExtensionInName}
+                            >
                                 <InlineRenameEditor
                                     value={renameState.currentName}
                                     severity={renameState.validation.severity}
@@ -902,7 +914,7 @@
                                 <span
                                     class="col-name-text"
                                     use:useShortenMiddle={{
-                                        text: getDisplayName(file.name, file.isDirectory),
+                                        text: getNameColumnText(file.name, file.isDirectory, showExtensionInName),
                                         preferBreakAt: file.name.includes('/') ? '/' : '.',
                                         startRatio: 0.7,
                                         tooltipWhenTruncated: true,
@@ -923,13 +935,15 @@
                                     {status ? glyphFor(status) : ''}
                                 </span>
                             {/if}
-                            <span
-                                class="col-ext"
-                                use:useShortenMiddle={{
-                                    text: getDisplayExtension(file.name, file.isDirectory),
-                                    tooltipWhenTruncated: true,
-                                }}
-                            ></span>
+                            {#if !showExtensionInName}
+                                <span
+                                    class="col-ext"
+                                    use:useShortenMiddle={{
+                                        text: getDisplayExtension(file.name, file.isDirectory),
+                                        tooltipWhenTruncated: true,
+                                    }}
+                                ></span>
+                            {/if}
                         {/if}
                         <span
                             class="col-size"
@@ -1269,6 +1283,17 @@
     /* When the optional Git column is on, the editor also spans it. */
     .col-rename.has-git {
         grid-column: 2 / span 3;
+    }
+
+    /* With the Ext column hidden (full name in the Name column), there's no
+       Ext track to borrow, so the editor stays within the Name column and
+       (when present) the Git column to avoid bleeding into the Size column. */
+    .col-rename.no-ext-col {
+        grid-column: 2 / span 1;
+    }
+
+    .col-rename.no-ext-col.has-git {
+        grid-column: 2 / span 2;
     }
 
     .header-git {

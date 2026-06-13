@@ -117,6 +117,31 @@ describe('computeFullListColumnWidths', () => {
     expect(capped.ext).toBeGreaterThan(normal.ext)
   })
 
+  it('reserves no Ext width when showExtensionInName is on', () => {
+    _setMeasureForTests(fakeMeasure)
+    // A long extension would normally widen the Ext column; with the full name
+    // folded into the Name column the Ext column is hidden, so its width is 0.
+    const w = computeFullListColumnWidths({
+      ...baseArgs,
+      showExtensionInName: true,
+      entries: [entry({ name: 'a.verylongext', size: 0, physicalSize: 0 })],
+    })
+    expect(w.ext).toBe(0)
+    // Size and date are unaffected by the Ext column being hidden.
+    expect(w.size).toBeGreaterThan(0)
+    expect(w.date).toBeGreaterThan(0)
+  })
+
+  it('still reserves Ext width in the default split mode', () => {
+    _setMeasureForTests(fakeMeasure)
+    const w = computeFullListColumnWidths({
+      ...baseArgs,
+      showExtensionInName: false,
+      entries: [entry({ name: 'a.verylongext' })],
+    })
+    expect(w.ext).toBeGreaterThan(0)
+  })
+
   it('widens date column based on longest formatted date', () => {
     _setMeasureForTests(fakeMeasure)
     const short = computeFullListColumnWidths({

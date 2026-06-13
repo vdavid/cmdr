@@ -20,6 +20,7 @@
     const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
     const fnKeyBarDef = getSettingDefinition('appearance.showFunctionKeyBar') ?? { label: '', description: '' }
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
+    const showExtInNameDef = getSettingDefinition('listing.showExtensionInName') ?? { label: '', description: '' }
     const briefWidthModeDef = getSettingDefinition('listing.briefColumnWidthMode') ?? { label: '', description: '' }
 
     // Read the setting directly and subscribe in-window. `reactive-settings.svelte.ts` is only
@@ -63,6 +64,16 @@
             {searchQuery}
         >
             <SettingToggleGroup id="listing.directorySortMode" />
+        </SettingRow>
+    {/if}
+    {#if shouldShow('listing.showExtensionInName')}
+        <SettingRow
+            id="listing.showExtensionInName"
+            label={showExtInNameDef.label}
+            description={showExtInNameDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="listing.showExtensionInName" />
         </SettingRow>
     {/if}
     {#if shouldShow('listing.briefColumnWidthMode')}

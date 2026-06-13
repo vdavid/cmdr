@@ -147,6 +147,7 @@ export interface SettingsValues {
   'listing.sizeUnit': FileSizeUnit
   'listing.sizeMismatchWarning': boolean
   'listing.stripedRows': boolean
+  'listing.showExtensionInName': boolean
   'listing.briefColumnWidthMode': BriefColumnWidthMode
   'listing.briefColumnWidthMaxPx': number
 

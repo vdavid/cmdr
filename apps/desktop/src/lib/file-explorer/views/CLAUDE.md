@@ -38,5 +38,10 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
   (pretext measures without a reference element, so nothing is derived from the live DOM).
 - **Index-size refresh (`refresh_listing_index_sizes`) refetches column widths through the existing `cacheGeneration`
   reset path, not a separate trigger.** Adding one double-fetches.
+- **`listing.showExtensionInName` must stay in lockstep across the renderer and the measurer.** When on, the Name column
+  shows the full filename (`getNameColumnText` returns `name`, not `getDisplayName`) and the Ext column + header are not
+  rendered; `FullList`'s `gridTemplate` drops the Ext track and `computeFullListColumnWidths({ showExtensionInName })`
+  returns `ext: 0`. If you change one side (render the cell but keep reserving Ext width, or vice versa), the columns
+  drift. Sort-by-extension stays reachable via the `sort.byExtension` command/shortcut even with the header hidden.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

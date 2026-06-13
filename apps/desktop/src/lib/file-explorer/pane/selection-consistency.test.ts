@@ -138,6 +138,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getNetworkEnabled: vi.fn().mockReturnValue(true),
   getSizeMismatchWarning: vi.fn().mockReturnValue(false),
   getStripedRows: vi.fn().mockReturnValue(false),
+  getShowExtensionInName: vi.fn().mockReturnValue(false),
   getBriefColumnWidthMode: vi.fn().mockReturnValue('auto'),
   getBriefColumnWidthMaxPx: vi.fn().mockReturnValue(400),
   getIsCmdrGold: vi.fn().mockReturnValue(false),

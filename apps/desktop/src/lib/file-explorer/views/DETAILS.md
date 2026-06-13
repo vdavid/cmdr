@@ -184,6 +184,19 @@ bumps from the subscription, then reads inside the column-width `$effect`. `Brie
 the backend `get_brief_column_text_widths` IPC, which uses the live font ID. The same `onDebouncedScaleChange` callback
 triggers a refetch.
 
+**Decision**: `listing.showExtensionInName` (default off) folds the extension back into the Name column and hides the
+Ext column. **Why**: the Norton/Total Commander Name/Ext split confuses users who expect to see `launch.json` whole, not
+`launch` with the `json` parked two columns over. Off keeps today's split. On: the Name cell renders `file.name`
+verbatim (via `getNameColumnText`), and the Ext column header + cells aren't rendered. The renderer and the
+width-measurer are one contract: `FullList`'s `gridTemplate` drops the Ext track and `computeFullListColumnWidths`
+returns `ext: 0` in this mode, so the grid has no orphaned track and the Name column (`1fr`) absorbs the freed space.
+The shared `getNameColumnText(name, isDirectory, showExtensionInName)` in `full-list-utils.ts` is the single name-text
+decision both the cell and (implicitly, since name is `1fr` and unmeasured) the layout agree on. Sort-by-extension isn't
+stranded by hiding the header: the `sort.byExtension` command stays in the command palette and is shortcut-bindable, so
+the only loss is the click-the-header affordance. Brief view is unaffected (it already renders `file.name` whole). The
+inline rename editor's column span shrinks in this mode (`.col-rename.no-ext-col`) so it doesn't bleed into the Size
+column now that the Ext track is gone.
+
 ## Gotchas
 
 **Gotcha**: `$state()` cannot live in `.ts` files **Why**: `virtual-scroll.ts` is pure functions. Reactive state must be

@@ -8,6 +8,7 @@ import {
   getVirtualizationBufferRows,
   getDisplayExtension,
   getDisplayName,
+  getNameColumnText,
   pickSizeDisplay,
 } from './full-list-utils'
 import type { FileEntry } from '../types'
@@ -91,6 +92,25 @@ describe('getDisplayExtension / getDisplayName', () => {
   it('splits a dotfile with a secondary dot', () => {
     expect(getDisplayExtension('.env.local', false)).toBe('local')
     expect(getDisplayName('.env.local', false)).toBe('.env')
+  })
+})
+
+describe('getNameColumnText', () => {
+  it('strips the extension when the split mode is on (default)', () => {
+    expect(getNameColumnText('launch.json', false, false)).toBe('launch')
+    expect(getNameColumnText('file.tar.gz', false, false)).toBe('file.tar')
+  })
+
+  it('keeps the full filename when showExtensionInName is on', () => {
+    expect(getNameColumnText('launch.json', false, true)).toBe('launch.json')
+    expect(getNameColumnText('file.tar.gz', false, true)).toBe('file.tar.gz')
+  })
+
+  it('returns the full name in both modes when there is no extension to split', () => {
+    expect(getNameColumnText('README', false, false)).toBe('README')
+    expect(getNameColumnText('README', false, true)).toBe('README')
+    expect(getNameColumnText('My Folder', true, false)).toBe('My Folder')
+    expect(getNameColumnText('My Folder', true, true)).toBe('My Folder')
   })
 })
 

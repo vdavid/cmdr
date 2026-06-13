@@ -188,6 +188,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', async (importOriginal) => ({
   getFileSizeUnit: vi.fn().mockReturnValue('binary'),
   getFileSizeFormat: vi.fn().mockReturnValue('short'),
   getStripedRows: vi.fn().mockReturnValue(false),
+  getShowExtensionInName: vi.fn().mockReturnValue(false),
   getBriefColumnWidthMode: vi.fn().mockReturnValue('auto'),
   getBriefColumnWidthMaxPx: vi.fn().mockReturnValue(400),
   getNetworkEnabled: vi.fn().mockReturnValue(true),

@@ -46,6 +46,20 @@ export function getDisplayName(name: string, isDirectory: boolean): string {
   return ext ? name.slice(0, -(ext.length + 1)) : name
 }
 
+/**
+ * What the Name column renders for one row. When `showExtensionInName` is on
+ * (the `listing.showExtensionInName` setting), the Name column shows the full
+ * filename and the Ext column is hidden, so we return `name` verbatim. When
+ * off (the default Norton/Total Commander split), the extension lives in its
+ * own column, so we strip it from the name.
+ *
+ * The renderer (`FullList.svelte`) and the measurer (`measure-column-widths.ts`)
+ * both call this so the on-screen name and any width math stay in lockstep.
+ */
+export function getNameColumnText(name: string, isDirectory: boolean, showExtensionInName: boolean): string {
+  return showExtensionInName ? name : getDisplayName(name, isDirectory)
+}
+
 // ============================================================================
 // Date Column Width Measurement
 // ============================================================================

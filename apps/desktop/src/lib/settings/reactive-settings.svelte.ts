@@ -37,6 +37,7 @@ let sizeDisplay = $state<SizeDisplayMode>('smart')
 let sizeUnit = $state<FileSizeUnit>('dynamic')
 let sizeMismatchWarning = $state<boolean>(true)
 let stripedRows = $state<boolean>(false)
+let showExtensionInName = $state<boolean>(false)
 let briefColumnWidthMode = $state<BriefColumnWidthMode>('paneWidth')
 let briefColumnWidthMaxPx = $state<number>(400)
 let networkEnabled = $state<boolean>(true)
@@ -69,6 +70,7 @@ export async function initReactiveSettings(): Promise<void> {
     sizeUnit = getSetting('listing.sizeUnit')
     sizeMismatchWarning = getSetting('listing.sizeMismatchWarning')
     stripedRows = getSetting('listing.stripedRows')
+    showExtensionInName = getSetting('listing.showExtensionInName')
     briefColumnWidthMode = getSetting('listing.briefColumnWidthMode')
     briefColumnWidthMaxPx = getSetting('listing.briefColumnWidthMaxPx')
     networkEnabled = getSetting('network.enabled')
@@ -135,6 +137,9 @@ function applySettingChange(id: string, value: unknown): void {
       break
     case 'listing.stripedRows':
       stripedRows = value as boolean
+      break
+    case 'listing.showExtensionInName':
+      showExtensionInName = value as boolean
       break
     case 'listing.briefColumnWidthMode':
       briefColumnWidthMode = value as BriefColumnWidthMode
@@ -244,6 +249,15 @@ export function getFileSizeFormat(): FileSizeFormat {
 /** Get whether striped rows are enabled */
 export function getStripedRows(): boolean {
   return stripedRows
+}
+
+/**
+ * Whether the Full view shows the whole filename (extension included) in the
+ * Name column and hides the separate Ext column. When `false` (default), the
+ * Name and Ext columns split the filename (Norton/Total Commander style).
+ */
+export function getShowExtensionInName(): boolean {
+  return showExtensionInName
 }
 
 /** Get the Brief mode column-width mode: 'paneWidth' lets columns fill the pane; 'limited' caps them at `getBriefColumnWidthMaxPx`. */
