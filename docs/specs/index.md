@@ -31,6 +31,7 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 - [x] 2026-06-08 typed-events-plan.md - Make Tauri event names and payloads generated and typed
 - [x] 2026-06-09 beta-analytics-plan.md - Privacy-clean beta usage analytics with a true daily-active count
 - [x] 2026-06-11 query-dialogs-overhaul-plan.md - Overhaul the Search and Select dialogs end to end
+- [ ] 2026-06-13 dropdown-uniformization-plan.md - Converge every dropdown onto two reusable macOS-y Ark primitives
 
 ## Later
 
