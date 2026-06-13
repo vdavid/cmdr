@@ -54,6 +54,13 @@ the toast-level guide, and decisions are in [DETAILS.md](DETAILS.md).
   that would leak onto it). Derive the status via `getBadgeStatus(featureId)`, never hardcode it.
 - **`containerStyle` exists because stylelint blocks non-token CSS custom properties.** Use it for one-off layout sizing
   (width/max-width), not for anything that belongs in the design-token system.
+- **`Select` has a stable `.select-*` class contract** (`.select-trigger`, `.select-item`, `.select-content`,
+  `.option-description`): `SettingSelect` focuses `.select-trigger` by `querySelector` and `dropdown_states.go` keys on
+  the literal selector + `--color-accent` / `--color-accent-fg` tokens. Don't rename/recolor without both. DETAILS §
+  Select.
+- **`Combobox` is a text-field-with-suggestions, NOT a value-bound select** (DETAILS § Combobox): its text is
+  `inputValue`-driven, decoupled from collection membership (`selectionBehavior="preserve"` + `allowCustomValue`).
+  Driving it off `value`/`items` blanks the field on an empty/mid-fetch list and custom names.
 - **When adding a primitive,** add it to the Components catalog (`routes/dev/components/`) and a tier-3 a11y test. Full
   checklist in DETAILS.md.
 

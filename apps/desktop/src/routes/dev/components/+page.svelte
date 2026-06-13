@@ -5,6 +5,8 @@
     import Links from './sections/Links.svelte'
     import Groups from './sections/Groups.svelte'
     import ToggleGroupSection from './sections/ToggleGroupSection.svelte'
+    import SelectSection from './sections/SelectSection.svelte'
+    import ComboboxSection from './sections/ComboboxSection.svelte'
     import DropdownSection from './sections/DropdownSection.svelte'
     import FilterDropdownSection from './sections/FilterDropdownSection.svelte'
     import ChipSection from './sections/ChipSection.svelte'
@@ -39,6 +41,8 @@
         'links',
         'groups',
         'toggle-group',
+        'select',
+        'combobox',
         'dropdown',
         'filter-dropdown',
         'chip',
@@ -155,6 +159,8 @@
         <Links />
         <Groups />
         <ToggleGroupSection />
+        <SelectSection />
+        <ComboboxSection />
         <DropdownSection />
         <FilterDropdownSection />
         <ChipSection />

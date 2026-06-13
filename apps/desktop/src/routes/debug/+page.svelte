@@ -25,6 +25,8 @@
         | 'components-links'
         | 'components-groups'
         | 'components-toggle-group'
+        | 'components-select'
+        | 'components-combobox'
         | 'components-dropdown'
         | 'components-filter-dropdown'
         | 'components-chip'
@@ -63,6 +65,8 @@
                 { id: 'components-links', label: 'Links' },
                 { id: 'components-groups', label: 'Groups' },
                 { id: 'components-toggle-group', label: 'Toggle group' },
+                { id: 'components-select', label: 'Select' },
+                { id: 'components-combobox', label: 'Combobox' },
                 { id: 'components-dropdown', label: 'Dropdown' },
                 { id: 'components-filter-dropdown', label: 'Filter dropdown' },
                 { id: 'components-chip', label: 'Chip' },

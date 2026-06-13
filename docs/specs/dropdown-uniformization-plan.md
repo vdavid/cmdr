@@ -18,8 +18,8 @@ dep, the basis of `SettingSelect`) and both styled to our macOS-y house look:
 - **`lib/ui/Combobox.svelte`** — pick from a list OR type your own; list can load async. (Model-picker replacement.)
 
 Everything else stays. Category-D popovers/menus (`Dropdown`, `FilterDropdown`, `VolumeBreadcrumb`, context menus,
-swatch picker) are a different primitive — not in scope. `CommandPalette` is a bespoke fuzzy+recents+two-cursor launcher;
-forcing it onto Ark buys risk, not maintainability — explicitly out of scope.
+swatch picker) are a different primitive — not in scope. `CommandPalette` is a bespoke fuzzy+recents+two-cursor
+launcher; forcing it onto Ark buys risk, not maintainability — explicitly out of scope.
 
 **Design values that drive the choices** (from `docs/design-principles.md`, `AGENTS.md` § Principles): platform-native
 macOS look, keyboard-first but full mouse support, AA+ contrast in dark and light, respect `prefers-reduced-motion` and
@@ -34,8 +34,8 @@ from Ark for free — that's a primary reason to adopt it over hand-rolled listb
    On mount it runs `loadCloudProviderConfig()` (loads the saved key) but schedules **no** check. So `availableModels`
    stays `[]` and the Model row renders its plain-`<input>` fallback (`AiCloudSection.svelte:503`). The combobox
    literally cannot appear on open. **Fix:** on mount, if the config is checkable (has key/URL) and there's no fresh
-   cached list, kick off the check. `GET /models` does not consume provider token credits on the major providers, so
-   the existing 1000 ms debounce is enough — no need for lazier triggers. (David, this turn.)
+   cached list, kick off the check. `GET /models` does not consume provider token credits on the major providers, so the
+   existing 1000 ms debounce is enough — no need for lazier triggers. (David, this turn.)
 
 2. **The model list is component-local and lost on every close.** `availableModels` is `$state` inside the section, so
    leaving and reopening Settings refetches. **Fix:** a shared, session-scoped cache keyed by a config fingerprint. The
@@ -48,7 +48,7 @@ from Ark for free — that's a primary reason to adopt it over hand-rolled listb
 
 3. **Two hand-rolled model comboboxes are duplicates.** `AiCloudSection.svelte:433–502` and
    `CloudProviderSetup.svelte:518–576` are the same input+listbox+keyboard-state-machine. Both collapse into one
-   `lib/ui/Combobox` usage — this is the biggest maintainability win. **But note:** only the *listbox markup* is
+   `lib/ui/Combobox` usage — this is the biggest maintainability win. **But note:** only the _listbox markup_ is
    duplicated. `CloudProviderSetup` ALREADY loads its model list on open (`loadApiKeyForProvider` triggers
    `triggerConnectionCheck()` immediately on stored-key load, `CloudProviderSetup.svelte:126–130`). The "never loads on
    open" bug (finding #1) is **specific to `AiCloudSection`**. So M1 adds the mount-trigger to `AiCloudSection` ONLY;
@@ -77,15 +77,15 @@ from Ark for free — that's a primary reason to adopt it over hand-rolled listb
    (byte-identical behavior). **`ui/Select`'s contract is wider than a plain value-picker:** `SettingSelect` does
    immediate-apply-on-highlight (`handleHighlightChange`) AND toggles a `custom-highlighted` class on the content to
    suppress other items' checked state while "Custom…" is highlighted, AND renders per-item `description` text. So
-   `ui/Select` must forward `onHighlightChange`, allow a content-level class hook, and accept a per-item description. The
-   `__custom__` interception and the inline-number-input branch stay in `SettingSelect` (so the `setTimeout(0)`
+   `ui/Select` must forward `onHighlightChange`, allow a content-level class hook, and accept a per-item description.
+   The `__custom__` interception and the inline-number-input branch stay in `SettingSelect` (so the `setTimeout(0)`
    focus-restore quirk is untouched), but `SettingSelect`'s `handleCustomSubmit` focuses `.select-trigger` via
    `querySelector` — so `ui/Select`'s class names (`.select-trigger`, `.select-item`, `.select-content`,
    `.option-description`) and `ariaLabel`-on-trigger wiring are a **documented stable contract**, not free to rename.
 
-5b. **Tiny chevrons everywhere.** The combobox uses `&#x25BE;` at `--font-size-sm` (12px); `SettingSelect`'s indicator is
-   `▼` at `--font-size-xs` (10px). Standardize on a single Lucide `chevron-down` (`~icons/lucide/chevron-down`) at a
-   readable size with a real hit-area, shared by both `ui/Select` and `ui/Combobox`.
+5b. **Tiny chevrons everywhere.** The combobox uses `&#x25BE;` at `--font-size-sm` (12px); `SettingSelect`'s indicator
+is `▼` at `--font-size-xs` (10px). Standardize on a single Lucide `chevron-down` (`~icons/lucide/chevron-down`) at a
+readable size with a real hit-area, shared by both `ui/Select` and `ui/Combobox`.
 
 6. **`@ark-ui/svelte/combobox` is available but unused.** Confirmed in `node_modules`. Mirror `SettingSelect`'s
    `@ark-ui/svelte/select` usage (`createListCollection`, `Root`/`Control`/`Trigger`/`Content`/`Item`). Read
@@ -98,49 +98,51 @@ from Ark for free — that's a primary reason to adopt it over hand-rolled listb
 
 - TDD where marked **[TDD]** (per `tdd-red-green.md`): write the failing test, SEE it fail for the right reason, then
   implement. Mandatory for the model-cache fingerprint/invalidation logic and the load-on-mount trigger.
-- Each new `lib/ui/` primitive ships a `*.a11y.test.ts` (axe tier-3) like the other primitives, plus a Debug > Components
-  catalog section (`routes/dev/components/sections/`) wired into `routes/dev/components/+page.svelte`'s `SUB_IDS` and
-  mirrored in the catalog E2E spec. See `docs/specs/component-catalog-plan.md` for the catalog contract.
+- Each new `lib/ui/` primitive ships a `*.a11y.test.ts` (axe tier-3) like the other primitives, plus a Debug >
+  Components catalog section (`routes/dev/components/sections/`) wired into `routes/dev/components/+page.svelte`'s
+  `SUB_IDS` and mirrored in the catalog E2E spec. See `docs/specs/component-catalog-plan.md` for the catalog contract.
 - Keep colocated `CLAUDE.md` (must-knows) + `DETAILS.md` (depth) in sync (`docs-maintenance.md`): `lib/ui/` gets the two
   new primitives documented; `settings/components/CLAUDE.md` updates the `SettingSelect` line to note it wraps
   `ui/Select`.
-- The a11y-contrast checker models select highlighted/checked states in `scripts/check-a11y-contrast/dropdown_states.go`.
-  Reuse the existing `--color-accent` / `--color-accent-fg` token pairs that `SettingSelect` already uses so the matrix
-  still passes; if you introduce a new state color, extend the matrix.
+- The a11y-contrast checker models select highlighted/checked states in
+  `scripts/check-a11y-contrast/dropdown_states.go`. Reuse the existing `--color-accent` / `--color-accent-fg` token
+  pairs that `SettingSelect` already uses so the matrix still passes; if you introduce a new state color, extend the
+  matrix.
 - Don't string-match on labels/option text to classify state (`no-string-matching` rule); the value/`id` is the
   contract.
 - Run `pnpm check --fast` every few edits; `pnpm check` before each commit; `pnpm check --include-slow` before declaring
   a milestone done; always include `oxfmt`. Never tail/head checker output. Smoke-test 1–2 specs after touching test
   infra before a full run.
 - Commit per milestone (or finer), lead-with-impact messages, no co-author lines. Don't push.
-- Don't add to / raise `file-length-allowlist.json`, `claude-md-length-allowlist.json`, or `docs-reachable-allowlist.json`
-  without surfacing it. Extracting the comboboxes should SHRINK `AiCloudSection`; let the checker shrink-wrap entries.
+- Don't add to / raise `file-length-allowlist.json`, `claude-md-length-allowlist.json`, or
+  `docs-reachable-allowlist.json` without surfacing it. Extracting the comboboxes should SHRINK `AiCloudSection`; let
+  the checker shrink-wrap entries.
 
 ---
 
 ## Milestone M0 — Foundation primitives (runs first, on the hub branch; orchestrator reviews diff in full)
 
-**Scope:** Create `lib/ui/Select.svelte` and `lib/ui/Combobox.svelte`; refactor `SettingSelect` to wrap `ui/Select`;
-add the shared Lucide chevron; add both Debug > Components catalog sections; write a11y tests; document in
+**Scope:** Create `lib/ui/Select.svelte` and `lib/ui/Combobox.svelte`; refactor `SettingSelect` to wrap `ui/Select`; add
+the shared Lucide chevron; add both Debug > Components catalog sections; write a11y tests; document in
 `lib/ui/CLAUDE.md` + `DETAILS.md`.
 
 **Intentions:**
 
 - `ui/Select`: presentational, items-driven. Props (final names at the implementer's discretion, documented in
-  `DETAILS.md`): `items` (value + label + optional `description` + optional `group`/optgroup label), `value`, `onChange`,
-  **`onHighlightChange`** (SettingSelect applies on highlight), `disabled`, `placeholder`, `ariaLabel`, plus a
-  **content-level class hook** (SettingSelect needs to set `custom-highlighted` on the content). Supports grouped items
-  (Ark `ItemGroup`/`ItemGroupLabel`, for `EncodingPicker`) and a per-item `description` (for `SettingSelect`'s option
-  descriptions — NOT for TransferDialog, see M2). Standardized chevron. **Stable class contract** (`.select-trigger`,
-  `.select-item`, `.select-content`, `.option-description`) and `ariaLabel`-on-trigger: SettingSelect's
-  `handleCustomSubmit` focuses `.select-trigger` by `querySelector`, and the contrast matrix + consumer a11y tests key on
-  these names. Reuses `SettingSelect`'s existing `.select-*` styling/token choices so contrast holds.
+  `DETAILS.md`): `items` (value + label + optional `description` + optional `group`/optgroup label), `value`,
+  `onChange`, **`onHighlightChange`** (SettingSelect applies on highlight), `disabled`, `placeholder`, `ariaLabel`, plus
+  a **content-level class hook** (SettingSelect needs to set `custom-highlighted` on the content). Supports grouped
+  items (Ark `ItemGroup`/`ItemGroupLabel`, for `EncodingPicker`) and a per-item `description` (for `SettingSelect`'s
+  option descriptions — NOT for TransferDialog, see M2). Standardized chevron. **Stable class contract**
+  (`.select-trigger`, `.select-item`, `.select-content`, `.option-description`) and `ariaLabel`-on-trigger:
+  SettingSelect's `handleCustomSubmit` focuses `.select-trigger` by `querySelector`, and the contrast matrix + consumer
+  a11y tests key on these names. Reuses `SettingSelect`'s existing `.select-*` styling/token choices so contrast holds.
 - `ui/Combobox`: presentational, **text-field-with-suggestions** (per finding #4, NOT a value-bound select). Controls
   `inputValue` + `onInputValueChange` separately from `value`; `selectionBehavior="preserve"`; `allowCustomValue` true;
-  open-on-focus wired (`openOnClick`/Trigger). Props like: `items`, `inputValue`, `onInputValueChange`, `loading`
-  (our own in-field spinner overlay — Ark has no loading prop), `placeholder`, `ariaLabel`. The control shape never
-  morphs — it's always the combobox, showing the current `inputValue` even with an empty/loading list, and a typed
-  custom value never snaps back or blanks.
+  open-on-focus wired (`openOnClick`/Trigger). Props like: `items`, `inputValue`, `onInputValueChange`, `loading` (our
+  own in-field spinner overlay — Ark has no loading prop), `placeholder`, `ariaLabel`. The control shape never morphs —
+  it's always the combobox, showing the current `inputValue` even with an empty/loading list, and a typed custom value
+  never snaps back or blanks.
 - `SettingSelect` keeps its registry reads + `allowCustom` "Custom…" inline-number flow (incl. the `setTimeout(0)`
   focus-restore), builds an items array, and renders `ui/Select`; the `__custom__` sentinel + the inline-number-input
   branch stay in `SettingSelect`, so `ui/Select` never sees `__custom__`.
@@ -165,8 +167,8 @@ add the shared Lucide chevron; add both Debug > Components catalog sections; wri
 
 **Test plan:** `ui/Select.a11y.test.ts` + `ui/Combobox.a11y.test.ts` (axe tier-3); a functional test for Combobox
 free-text persistence + empty/loading state (assert the field keeps `inputValue` with empty `items`); the three existing
-`SettingSelect` consumers still pass their a11y/behavior tests; `pnpm check` green. Manual: open Debug > Components, both
-new sections render and are keyboard-navigable.
+`SettingSelect` consumers still pass their a11y/behavior tests; `pnpm check` green. Manual: open Debug > Components,
+both new sections render and are keyboard-navigable.
 
 **DONE:** Both primitives exist, cataloged, documented, tested; `SettingSelect` delegates to `ui/Select` with identical
 behavior; chevron standardized; `pnpm check` + relevant a11y green on the hub branch.
@@ -202,11 +204,11 @@ with other milestones.
 - **Add the mount-trigger to `AiCloudSection` ONLY.** `CloudProviderSetup` already loads on open (`:126–130`); a second
   trigger double-fires. Gate the `AiCloudSection` mount-trigger on warm-cache-miss AND no in-flight
   `connectionCheckTimer`, and ensure it doesn't race `handleCloudProviderChange`'s check.
-- **New network behavior in dev/E2E:** today nothing fires on mount. For no-key providers (`custom`/`ollama`/`lm-studio`)
-  `hasCheckableConfig` is true whenever the preset base URL is set, so a mount-trigger WOULD fire a real request in
-  dev/E2E. Add an explicit dev/E2E suppression for the mount-trigger (match how analytics/indexer suppress in dev), or
-  scope the auto-check to providers that already had a successful check / a stored key. `hasCheckableConfig` alone is
-  insufficient.
+- **New network behavior in dev/E2E:** today nothing fires on mount. For no-key providers
+  (`custom`/`ollama`/`lm-studio`) `hasCheckableConfig` is true whenever the preset base URL is set, so a mount-trigger
+  WOULD fire a real request in dev/E2E. Add an explicit dev/E2E suppression for the mount-trigger (match how
+  analytics/indexer suppress in dev), or scope the auto-check to providers that already had a successful check / a
+  stored key. `hasCheckableConfig` alone is insufficient.
 - API keys stay in the secret store; the cache must never persist or log a key (redaction-adjacent; see `redact/`).
 
 **Test plan:** `ai-model-cache` unit tests (warm/cold/invalidate); a11y tests for both converted sections still pass;
@@ -238,8 +240,8 @@ isn't clipped by the toolbar `overflow` or swallowed by `data-tauri-drag-region`
 **Test plan:** existing viewer + transfer dialog tests pass; manual: open the viewer encoding picker (grouped options
 render, keyboard nav works) and a copy/move dialog (volume switch refetches + shows free space). `pnpm check` green.
 
-**DONE:** Three native selects gone, replaced by `ui/Select`; grouping verified; TransferDialog space-info intact; checks
-green.
+**DONE:** Three native selects gone, replaced by `ui/Select`; grouping verified; TransferDialog space-info intact;
+checks green.
 
 ---
 
@@ -263,13 +265,13 @@ their state. No a11y test required for debug-only surfaces, but don't break the 
 
 ## Reconciliation (orchestrator)
 
-Merge `dropdowns-ai`, `dropdowns-views`, `dropdowns-debug` into the hub branch. File sets are disjoint by design:
-M0 owns `lib/ui/Select.svelte` + `Combobox.svelte` + `SettingSelect.svelte` + both catalog files
+Merge `dropdowns-ai`, `dropdowns-views`, `dropdowns-debug` into the hub branch. File sets are disjoint by design: M0
+owns `lib/ui/Select.svelte` + `Combobox.svelte` + `SettingSelect.svelte` + both catalog files
 (`routes/dev/components/+page.svelte` AND `routes/debug/+page.svelte`) + the new catalog sections; M1 owns all
-`AiCloudSection`/`CloudProviderSetup`/`ai-model-cache.ts`; M2 owns viewer + transfer; M3 owns ONLY the two debug
-*panel* files (not `routes/debug/+page.svelte`). Expect clean merges. Run `pnpm check --include-slow` on the reconciled
-hub. Then hand to David for the macOS-y look review (he explicitly wants to eyeball the visual result) BEFORE any FF to
-local `main`.
+`AiCloudSection`/`CloudProviderSetup`/`ai-model-cache.ts`; M2 owns viewer + transfer; M3 owns ONLY the two debug _panel_
+files (not `routes/debug/+page.svelte`). Expect clean merges. Run `pnpm check --include-slow` on the reconciled hub.
+Then hand to David for the macOS-y look review (he explicitly wants to eyeball the visual result) BEFORE any FF to local
+`main`.
 
 ## Invariants register (conformance review checks these at phase end)
 

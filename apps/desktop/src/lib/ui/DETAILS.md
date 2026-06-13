@@ -5,27 +5,29 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 
 ## Key files
 
-| File                    | Purpose                                                                                        |
-| ----------------------- | ---------------------------------------------------------------------------------------------- |
-| `ModalDialog.svelte`    | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
-| `focus-trap.ts`         | `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack            |
-| `dialog-registry.ts`    | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                        |
-| `Button.svelte`         | Styled button with variant and size props                                                      |
-| `Dropdown.svelte`       | Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close             |
-| `FilterDropdown.svelte` | `Dropdown` + a labelled section header; the query dialogs' Size / Modified / Search-in surface |
-| `Chip.svelte`           | Small pill button: filter chip (popover trigger + × clear) or recent pill (badge + truncate)   |
-| `LinkButton.svelte`     | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
-| `CommandBox.svelte`     | Copyable terminal command (monospace + Copy button)                                            |
-| `LoadingIcon.svelte`    | Animated spinner with progressive status text                                                  |
-| `AlertDialog.svelte`    | Single-action confirmation dialog built on `ModalDialog`                                       |
-| `ProgressBar.svelte`    | Reusable progress bar (just the bar, no labels or layout)                                      |
-| `Size.svelte`           | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
-| `SectionCard.svelte`    | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
-| `ToggleGroup.svelte`    | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
-| `DateLabel.svelte`      | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
-| `ShortcutChip.svelte`   | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode  |
-| `StatusBadge.svelte`    | Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by `feature-status.json` |
-| `toast/`                | Centralized toast notification system: store, container, item                                  |
+| File                    | Purpose                                                                                                   |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| `ModalDialog.svelte`    | Central modal container: overlay, dragging, Escape, focus, MCP tracking                                   |
+| `focus-trap.ts`         | `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack                       |
+| `dialog-registry.ts`    | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                                   |
+| `Button.svelte`         | Styled button with variant and size props                                                                 |
+| `Select.svelte`         | Presentational Ark `Select`: items-driven single-pick, the house dropdown (native-`<select>` replacement) |
+| `Combobox.svelte`       | Presentational Ark `Combobox`: text-field-with-suggestions, async list, free text (model picker)          |
+| `Dropdown.svelte`       | Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close                        |
+| `FilterDropdown.svelte` | `Dropdown` + a labelled section header; the query dialogs' Size / Modified / Search-in surface            |
+| `Chip.svelte`           | Small pill button: filter chip (popover trigger + × clear) or recent pill (badge + truncate)              |
+| `LinkButton.svelte`     | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer`            |
+| `CommandBox.svelte`     | Copyable terminal command (monospace + Copy button)                                                       |
+| `LoadingIcon.svelte`    | Animated spinner with progressive status text                                                             |
+| `AlertDialog.svelte`    | Single-action confirmation dialog built on `ModalDialog`                                                  |
+| `ProgressBar.svelte`    | Reusable progress bar (just the bar, no labels or layout)                                                 |
+| `Size.svelte`           | Canonical inline byte-count renderer: human-friendly + rainbow tier color                                 |
+| `SectionCard.svelte`    | macOS-style grouped card with optional label above; used for Debug/Settings groupings                     |
+| `ToggleGroup.svelte`    | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape                       |
+| `DateLabel.svelte`      | Canonical inline modified-date renderer: format + per-component age-tier coloring                         |
+| `ShortcutChip.svelte`   | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode             |
+| `StatusBadge.svelte`    | Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by `feature-status.json`            |
+| `toast/`                | Centralized toast notification system: store, container, item                                             |
 
 ## Not part of this module: soft sheets
 
@@ -198,6 +200,64 @@ by `lib/accent-color.ts`:
 The contrast checker (`scripts/check-a11y-contrast`) mirrors all of this in its accent matrix and runs against the 9
 runtime variants. **Don't restyle `.btn-*` colors from a scoped feature component** — `scripts/check-btn-restyle` will
 flag it. If you genuinely need a one-off variant, add the rationale via a `/* allowed-btn-restyle: <reason> */` comment.
+
+## Select
+
+`Select.svelte`: the house dropdown. Presentational, items-driven single-pick built on Ark UI's `Select`. Every
+native-`<select>` replacement in scope (settings via `SettingSelect`, viewer encoding / view-mode, transfer volume,
+debug panels) renders through it so the macOS-y look lives in one place.
+
+Props:
+
+- `items: SelectItem[]` — `{ value, label, description?, group? }`. `description` renders as quieter inline text after
+  the label (used by `SettingSelect`); `group`, when present on any item, buckets items under Ark `ItemGroup` /
+  `ItemGroupLabel` headings (used by the viewer's `EncodingPicker` for Unicode / Western).
+- `value: string` — the selected item's `value` (empty string → nothing selected, shows `placeholder`).
+- `onChange: (value: string) => void`.
+- `onHighlightChange?: (highlightedValue: string | null) => void` — fires on keyboard / pointer highlight.
+  `SettingSelect` uses it to apply on highlight.
+- `disabled?`, `placeholder?` (default `Select...`), `ariaLabel` (lands on the trigger).
+- `contentClass?: string` — extra class on the `.select-content` element (`SettingSelect` sets `custom-highlighted` to
+  suppress the checked state on other items while its "Custom…" row is highlighted).
+
+**Stable class contract (load-bearing, don't rename):** `.select-trigger`, `.select-item`, `.select-content`,
+`.option-description`. `SettingSelect`'s `handleCustomSubmit` focuses `.select-trigger` via `querySelector`, and the
+a11y-contrast checker (`scripts/check-a11y-contrast/dropdown_states.go`) keys on the literal
+`.select-item[data-highlighted] .option-description` selector + the `--color-accent` / `--color-accent-fg` tokens. The
+highlighted / checked item colors must stay on those accent tokens or the contrast matrix breaks. The styling moved here
+verbatim from `SettingSelect`.
+
+Standardized Lucide `chevron-down` indicator (16px, real hit-area) replaces the old tiny `▼` glyph. No `Portal` (the
+viewer's restricted capability set depends on no portal-to-body). No entrance animation (matches the old `SettingSelect`
+behavior); any future polish anim must gate behind `prefers-reduced-motion`.
+
+## Combobox
+
+`Combobox.svelte`: presentational text-field-with-suggestions built on Ark UI's `Combobox`. Pick from the list OR type
+your own; the list can be empty (cold start) or load async, and the field stays usable throughout. The AI model picker
+(settings + onboarding) is the consumer.
+
+**The value model is the whole point (and a trap to get wrong).** This is NOT a value-bound select. Ark's default
+`selectionBehavior: "replace"` runs `stringifyMany` on every `value` change, which DROPS any value not in the collection
+and writes `inputValue = ""` — blanking the field on an empty / mid-fetch list and on a custom name not in `/models`. So
+the component drives the displayed text off `inputValue` (controlled separately from `value`, never derived from
+collection membership), sets `selectionBehavior="preserve"`, and passes `allowCustomValue` so a typed value is accepted
+on close. `value` is intentionally left uncontrolled.
+
+Props:
+
+- `items: ComboboxItem[]` — `{ value, label }` suggestions.
+- `inputValue: string` + `onInputValueChange: (inputValue: string) => void` — the controlled displayed text. The
+  consumer holds the saved / typed model string here.
+- `loading?: boolean` — OUR in-field spinner overlay (`.spinner .spinner-sm`, respects reduced-motion via `app.css`);
+  Ark has no loading prop.
+- `disabled?`, `placeholder?`, `ariaLabel`, `emptyText?` (shown as a non-actionable `role="option"` row when `items` is
+  empty so the `role="listbox"` content satisfies axe's `aria-required-children`).
+
+Open-on-focus is wired via a controlled `open` state set in the input's `onfocus` (Ark has no `openOnFocus` prop; the
+chevron `Combobox.Trigger` also toggles it). Same standardized Lucide chevron as `Select`. No `Portal`, no entrance
+animation. Covered by `Combobox.svelte.test.ts` (the empty-list / custom-value / list-arrives-after-fetch invariants)
+and `Combobox.a11y.test.ts`.
 
 ## Dropdown
 
