@@ -89,6 +89,7 @@ mod drag_image_detection;
 #[cfg(target_os = "macos")]
 mod drag_image_swap;
 mod error_reporter;
+mod favorites;
 mod fda_gate;
 mod feedback;
 mod file_system;

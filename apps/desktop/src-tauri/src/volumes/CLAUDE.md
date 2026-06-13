@@ -12,7 +12,7 @@ macOS volume and location discovery, plus live mount/unmount watching via `NSWor
 ## Location categories
 
 ```
-Favorite:       hardcoded: /Applications, ~/Desktop, ~/Documents, ~/Downloads
+Favorite:       user-editable, from the `favorites/` store (seeded with /Applications, ~/Desktop, ~/Documents, ~/Downloads)
 MainVolume:     root volume at "/"
 AttachedVolume: /Volumes/* (skips /System, Preboot, Recovery, CloudStorage)
 CloudDrive:     iCloud at ~/Library/Mobile Documents/…, providers at ~/Library/CloudStorage/

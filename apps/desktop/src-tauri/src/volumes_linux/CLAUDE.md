@@ -12,7 +12,7 @@ Linux volume and location discovery, plus live mount/unmount watching via inotif
 ## Location categories
 
 ```
-Favorite:       Home, ~/Desktop, ~/Documents, ~/Downloads (only if they exist)
+Favorite:       user-editable, from the `favorites/` store (seeded with Home, ~/Desktop, ~/Documents, ~/Downloads), existence-checked
 MainVolume:     root "/" filesystem
 AttachedVolume: real filesystems from /proc/mounts (filters out virtual: proc, sysfs, tmpfs, etc.)
 CloudDrive:     ~/Dropbox, ~/Google Drive, ~/.local/share/Nextcloud, ~/OneDrive

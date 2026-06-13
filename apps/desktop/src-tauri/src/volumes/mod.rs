@@ -362,50 +362,37 @@ pub fn list_locations() -> Vec<LocationInfo> {
     locations
 }
 
-/// Get Finder favorites (common user folders).
+/// Get the user's favorites from the editable store (`favorites.json`).
+///
+/// Maps each stored `{ id, path, name }` to a `LocationInfo` with `category: Favorite`. Seeds the
+/// four defaults on first launch (file absent); see `favorites/CLAUDE.md`.
 fn get_favorites() -> Vec<LocationInfo> {
-    let home = dirs::home_dir().unwrap_or_default();
-    let desktop = home.join("Desktop");
-    let documents = home.join("Documents");
-    let downloads = home.join("Downloads");
-    let desktop_str = desktop.to_string_lossy();
-    let documents_str = documents.to_string_lossy();
-    let downloads_str = downloads.to_string_lossy();
-    // (path, name, is_protected). When `is_protected` is true and the FDA gate
-    // is pending, we MUST skip stat on this path: even `Path::exists()` trips
-    // TCC for the protected-folder service once `permissions::check_full_disk_access`
-    // has registered the bundle with tccd. We assume protected favorites exist
-    // (~/Desktop, ~/Documents, ~/Downloads are present on essentially every
-    // macOS account); if one really doesn't, navigation will surface a normal
-    // listing error.
-    let favorites_paths = [
-        ("/Applications", "Applications", false),
-        (desktop_str.as_ref(), "Desktop", true),
-        (documents_str.as_ref(), "Documents", true),
-        (downloads_str.as_ref(), "Downloads", true),
-    ];
-
     let fda_pending = crate::fda_gate::is_fda_pending_runtime();
 
-    favorites_paths
+    crate::favorites::store::list()
         .into_iter()
-        .filter(|(path, _, is_protected)| {
-            // Skip the existence check for protected paths while FDA is pending:
-            // see comment on `favorites_paths`. Non-protected paths are still
-            // checked because `/Applications` can be absent on slim systems.
-            (fda_pending && *is_protected) || Path::new(*path).exists()
+        .filter(|favorite| {
+            // While FDA is pending, MUST skip stat on TCC-protected paths: even `Path::exists()`
+            // trips TCC for the protected-folder service once `permissions::check_full_disk_access`
+            // has registered the bundle with tccd. We assume protected favorites exist (~/Desktop,
+            // ~/Documents, ~/Downloads are present on essentially every account); if one really
+            // doesn't, navigation surfaces a normal listing error. Non-protected paths are still
+            // checked, since for example `/Applications` can be absent on slim systems.
+            let protected =
+                crate::restricted_paths::tcc_paths::is_potentially_tcc_restricted(Path::new(&favorite.path));
+            (fda_pending && protected) || Path::new(&favorite.path).exists()
         })
-        .map(|(path, name, _)| {
-            // Favorites are folders on the boot volume, not mount points.
-            // statfs still works: it reports the underlying volume's fs type.
-            let fs_type = get_fs_type(path);
+        .map(|favorite| {
+            // Favorites are folders on the boot volume, not mount points. statfs still works: it
+            // reports the underlying volume's fs type.
+            let fs_type = get_fs_type(&favorite.path);
             let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
             LocationInfo {
-                id: format!("fav-{}", name.to_lowercase()),
-                name: name.to_string(),
-                path: path.to_string(),
+                id: format!("fav-{}", favorite.id),
+                name: favorite.name,
+                path: favorite.path.clone(),
                 category: LocationCategory::Favorite,
-                icon: get_icon_for_path(path),
+                icon: get_icon_for_path(&favorite.path),
                 is_ejectable: false,
                 fs_type,
                 supports_trash,

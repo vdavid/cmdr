@@ -224,40 +224,22 @@ pub fn list_mounted_volumes() -> Vec<LocationInfo> {
     list_locations()
 }
 
-/// Get common user directories as favorites.
+/// Get the user's favorites from the editable store (`favorites.json`).
+///
+/// Maps each stored `{ id, path, name }` to a `LocationInfo` with `category: Favorite`. Seeds the
+/// platform defaults on first launch (file absent); see `favorites/CLAUDE.md`. Linux has no TCC, so
+/// there's no FDA-pending skip: every favorite is existence-checked.
 fn get_favorites(mounts: &[MountEntry]) -> Vec<LocationInfo> {
-    let home = dirs::home_dir().unwrap_or_default();
-    let home_str = home.to_string_lossy().to_string();
-
-    let candidates = [
-        (home_str, "Home", "fav-home"),
-        (
-            home.join("Desktop").to_string_lossy().to_string(),
-            "Desktop",
-            "fav-desktop",
-        ),
-        (
-            home.join("Documents").to_string_lossy().to_string(),
-            "Documents",
-            "fav-documents",
-        ),
-        (
-            home.join("Downloads").to_string_lossy().to_string(),
-            "Downloads",
-            "fav-downloads",
-        ),
-    ];
-
-    candidates
+    crate::favorites::store::list()
         .into_iter()
-        .filter(|(path, _, _)| Path::new(path).exists())
-        .map(|(path, name, id)| {
-            let fs_type = linux_mounts::fs_type_for_path_from_entries(Path::new(&path), mounts);
+        .filter(|favorite| Path::new(&favorite.path).exists())
+        .map(|favorite| {
+            let fs_type = linux_mounts::fs_type_for_path_from_entries(Path::new(&favorite.path), mounts);
             let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
             LocationInfo {
-                id: id.to_string(),
-                name: name.to_string(),
-                path,
+                id: format!("fav-{}", favorite.id),
+                name: favorite.name,
+                path: favorite.path.clone(),
                 category: LocationCategory::Favorite,
                 icon: None,
                 is_ejectable: false,

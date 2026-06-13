@@ -123,7 +123,11 @@ All under `apps/desktop/src-tauri/src/`.
 - `text_size.rs`: macOS Accessibility text-size watcher (undocumented Apple APIs, risk notes in source). Emits
   `system-text-size-changed`
 - `system_strings.rs`: Localized macOS pane labels from `.loctable` system bundles (loctable catalog + risks in source)
-- `volumes/`: macOS location/volume discovery + `NSWorkspace` mount/unmount watcher. Distinct from `file_system/volume/`
+- `favorites/`: User-editable favorites. Ordered `favorites.json` store (`{ id, path, name }`) backing the volume
+  switcher's "Favorites" section. Seed-once-on-absence, dedup-by-path, pure testable core. Read by `get_favorites()` in
+  both `volumes/` twins; mutated via `commands/favorites.rs` (which re-emits `volumes-changed`)
+- `volumes/`: macOS location/volume discovery + `NSWorkspace` mount/unmount watcher. Distinct from
+  `file_system/volume/`. `get_favorites()` reads the `favorites/` store
 - `volumes_linux/`: Linux equivalent: location discovery + mount/unmount via `/proc/mounts` and GVFS
 - `space_poller.rs`: Live disk-space polling (per-volume-type intervals) plus the low-disk-space hysteresis warning
 - `fda_gate.rs`: Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See

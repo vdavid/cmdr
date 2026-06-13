@@ -9,6 +9,7 @@ pub mod e2e;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod eject;
 pub mod error_reporter;
+pub mod favorites;
 pub mod feedback;
 pub mod file_system;
 pub mod file_viewer;

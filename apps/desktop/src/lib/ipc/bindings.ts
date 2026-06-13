@@ -1504,6 +1504,23 @@ export const commands = {
   // Clears every recent-path entry.
   clearRecentPaths: () => typedError<null, string>(__TAURI_INVOKE('clear_recent_paths')),
   /**
+   *  Adds a favorite for `path`, deduping by normalized path. When `name` is omitted, the label
+   *  defaults to the path's file name.
+   */
+  addFavorite: (path: string, name: string | null) =>
+    typedError<null, IpcError>(__TAURI_INVOKE('add_favorite', { path, name })),
+  // Removes a favorite by id. No-op when the id isn't present.
+  removeFavorite: (id: string) => typedError<null, IpcError>(__TAURI_INVOKE('remove_favorite', { id })),
+  // Renames a favorite by id. No-op when the id isn't present.
+  renameFavorite: (id: string, name: string) =>
+    typedError<null, IpcError>(__TAURI_INVOKE('rename_favorite', { id, name })),
+  /**
+   *  Reorders the favorites to match `ordered_ids`. Unknown ids are ignored; favorites missing from
+   *  the list are appended in their current order, so a stale order never drops an entry.
+   */
+  reorderFavorites: (orderedIds: string[]) =>
+    typedError<null, IpcError>(__TAURI_INVOKE('reorder_favorites', { orderedIds })),
+  /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
    *
