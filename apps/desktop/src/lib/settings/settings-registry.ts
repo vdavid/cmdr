@@ -292,6 +292,16 @@ export const settingsRegistry: SettingDefinition[] = [
     component: 'switch',
   },
   {
+    id: 'appearance.showFunctionKeyBar',
+    section: ['Appearance', 'Listing'],
+    label: 'Show function key bar',
+    description: 'Show the row of F-key command buttons (Rename, View, Copy, and so on) at the bottom of the window.',
+    keywords: ['function', 'key', 'bar', 'f-key', 'fkey', 'shortcut', 'buttons', 'bottom', 'toolbar'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
     id: 'listing.directorySortMode',
     section: ['Appearance', 'Listing'],
     label: 'Sort directories',

@@ -10,6 +10,7 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'appearance.useAppIconsForDocuments') return true
+    if (key === 'appearance.showFunctionKeyBar') return true
     if (key === 'listing.directorySortMode') return 'likeFiles'
     if (key === 'listing.briefColumnWidthMode') return 'paneWidth'
     if (key === 'listing.briefColumnWidthMaxPx') return 400

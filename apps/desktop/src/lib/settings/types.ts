@@ -131,6 +131,7 @@ export interface SettingsValues {
   'appearance.textSize': number
   'appearance.uiDensity': UiDensity
   'appearance.useAppIconsForDocuments': boolean
+  'appearance.showFunctionKeyBar': boolean
   'appearance.fileSizeFormat': FileSizeFormat
   'appearance.sizeColors': SizeColorsPalette
   'appearance.dateColors': DateColorsPalette

@@ -18,6 +18,7 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
+    const fnKeyBarDef = getSettingDefinition('appearance.showFunctionKeyBar') ?? { label: '', description: '' }
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
     const briefWidthModeDef = getSettingDefinition('listing.briefColumnWidthMode') ?? { label: '', description: '' }
 
@@ -42,6 +43,16 @@
             {searchQuery}
         >
             <SettingSwitch id="appearance.useAppIconsForDocuments" />
+        </SettingRow>
+    {/if}
+    {#if shouldShow('appearance.showFunctionKeyBar')}
+        <SettingRow
+            id="appearance.showFunctionKeyBar"
+            label={fnKeyBarDef.label}
+            description={fnKeyBarDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="appearance.showFunctionKeyBar" />
         </SettingRow>
     {/if}
     {#if shouldShow('listing.directorySortMode')}

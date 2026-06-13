@@ -50,6 +50,7 @@
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { getSetting, setSetting } from '$lib/settings'
+    import { getShowFunctionKeyBar } from '$lib/settings/reactive-settings.svelte'
     import { addToast } from '$lib/ui/toast'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
@@ -107,7 +108,7 @@
     let explorerRef: ExplorerAPI | undefined = $state()
     let windowTitle = $state('Cmdr')
     let appMode = $state<AppMode>(getAppMode())
-    const showFunctionKeyBar = $state(true)
+    const showFunctionKeyBar = $derived(getShowFunctionKeyBar())
 
     // Event handlers stored for cleanup
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined

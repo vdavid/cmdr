@@ -30,6 +30,7 @@ let dateTimeFormat = $state<DateTimeFormat>('iso')
 let customDateTimeFormat = $state<string>('YYYY-MM-DD HH:mm')
 let fileSizeFormat = $state<FileSizeFormat>('binary')
 let useAppIconsForDocuments = $state<boolean>(true)
+let showFunctionKeyBar = $state<boolean>(true)
 let directorySortMode = $state<DirectorySortMode>('likeFiles')
 let appColor = $state<AppColor>('cmdr-gold')
 let sizeDisplay = $state<SizeDisplayMode>('smart')
@@ -61,6 +62,7 @@ export async function initReactiveSettings(): Promise<void> {
     customDateTimeFormat = getSetting('appearance.customDateTimeFormat')
     fileSizeFormat = getSetting('appearance.fileSizeFormat')
     useAppIconsForDocuments = getSetting('appearance.useAppIconsForDocuments')
+    showFunctionKeyBar = getSetting('appearance.showFunctionKeyBar')
     directorySortMode = getSetting('listing.directorySortMode')
     appColor = getSetting('appearance.appColor')
     sizeDisplay = getSetting('listing.sizeDisplay')
@@ -112,6 +114,9 @@ function applySettingChange(id: string, value: unknown): void {
       useAppIconsForDocuments = value as boolean
       // Clear the icon cache so icons are re-fetched with the new setting
       void clearExtensionIconCache()
+      break
+    case 'appearance.showFunctionKeyBar':
+      showFunctionKeyBar = value as boolean
       break
     case 'listing.directorySortMode':
       directorySortMode = value as DirectorySortMode
@@ -193,6 +198,11 @@ export function getIsCompactDensity(): boolean {
 /** Get current "use app icons for documents" setting */
 export function getUseAppIconsForDocuments(): boolean {
   return useAppIconsForDocuments
+}
+
+/** Get whether the bottom function key bar (F-key command buttons) is shown. */
+export function getShowFunctionKeyBar(): boolean {
+  return showFunctionKeyBar
 }
 
 /** Get current directory sort mode */

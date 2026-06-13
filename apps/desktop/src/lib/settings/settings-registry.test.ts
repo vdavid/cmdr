@@ -224,6 +224,33 @@ describe('search.recentSearches.maxCount', () => {
   })
 })
 
+describe('appearance.showFunctionKeyBar', () => {
+  it('registers a boolean switch in Appearance > Listing, defaulting to on (current behavior)', () => {
+    const def = getSettingDefinition('appearance.showFunctionKeyBar')
+    expect(def).toBeDefined()
+    expect(def?.type).toBe('boolean')
+    expect(def?.component).toBe('switch')
+    expect(getDefaultValue('appearance.showFunctionKeyBar')).toBe(true)
+    expect(def?.section).toEqual(['Appearance', 'Listing'])
+  })
+
+  it('is reachable via natural lookup keywords', () => {
+    const keywords = getSettingDefinition('appearance.showFunctionKeyBar')?.keywords ?? []
+    for (const term of ['function', 'key', 'bar', 'f-key', 'shortcut']) {
+      expect(keywords).toContain(term)
+    }
+  })
+
+  it('validates booleans only', () => {
+    expect(() => {
+      validateSettingValue('appearance.showFunctionKeyBar', false)
+    }).not.toThrow()
+    expect(() => {
+      validateSettingValue('appearance.showFunctionKeyBar', 'yes')
+    }).toThrow()
+  })
+})
+
 describe('buildSectionTree', () => {
   it('should build a tree from settings', () => {
     const tree = buildSectionTree()
