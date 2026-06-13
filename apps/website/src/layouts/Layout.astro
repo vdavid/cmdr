@@ -183,13 +183,13 @@ const {
                         umamiId: import.meta.env.PUBLIC_UMAMI_WEBSITE_ID,
                     }}
                 >
-                    {`(window.__cmdrRReady || Promise.resolve()).then(function () {
+                    ;(window.__cmdrRReady || Promise.resolve()).then(function () {
                         var s = document.createElement('script')
                         s.defer = true
                         s.src = umamiHost + '/mami'
                         s.setAttribute('data-website-id', umamiId)
                         document.head.appendChild(s)
-                    })`}
+                    })
                 </script>
             )
         }
@@ -216,13 +216,13 @@ const {
                         phHost: import.meta.env.PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
                     }}
                 >
-                    {`(window.__cmdrRReady || Promise.resolve()).then(function () {
+                    ;(window.__cmdrRReady || Promise.resolve()).then(function () {
                         var s = document.createElement('script')
                         s.src = '/scripts/posthog-init.js'
                         s.setAttribute('data-ph-key', phKey)
                         s.setAttribute('data-ph-host', phHost)
                         document.body.appendChild(s)
-                    })`}
+                    })
                 </script>
             )
         }
