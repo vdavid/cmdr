@@ -53,3 +53,5 @@ Deferred future work. Unchecked by default; the folder name is the status.
 - [ ] 2026-06-10 later/codegraph-tauri-resolver.md - Teach CodeGraph to trace Cmdr's Tauri IPC boundary
 - [ ] 2026-06-11 later/viewer-horizontal-virtualization-plan.md - Horizontally virtualize long lines in the file viewer
 - [ ] 2026-06-11 later/whats-new-popup-plan.md - Post-update "What's new" changelog dialog
+- [ ] 2026-06-13 later/docs-single-source-sweep.md - Multi-agent sweep to de-duplicate mechanism docs (map points, one
+      canonical home)
