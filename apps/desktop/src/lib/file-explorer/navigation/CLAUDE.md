@@ -34,5 +34,11 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   make it per-pane.
 - **`containingVolumeId` is derived via `resolvePathVolume(currentPath)`, not the `volumeId` prop** (which may be a
   favorite's virtual id), so the active checkmark tracks the real containing volume.
+- **Favorites are user-editable; mutate only via the `commands.*` wrappers and ALWAYS strip the `fav-` prefix.** The
+  switcher's `LocationInfo.id` is `fav-<favoriteId>`; `removeFavorite` / `renameFavorite` / `reorderFavorites` take the
+  bare id (`stripFavoritePrefix`). Don't pass the `fav-…` id straight through. The favorites group in
+  `volume-grouping.ts` always renders (even empty, for the placeholder) — don't "tidy" it back into the hide-when-empty
+  branch. Context-menu "Add to favorites" is handled in Rust (`FAVORITES_ADD_CONTEXT_ID`), not the `favorites.add`
+  command. Full flow in [DETAILS.md](DETAILS.md) § Editable favorites.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

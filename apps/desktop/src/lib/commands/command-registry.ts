@@ -149,6 +149,19 @@ export const commands: Command[] = [
   },
 
   // ============================================================================
+  // Main window - Favorites
+  // ============================================================================
+  {
+    id: 'favorites.add',
+    name: 'Add to favorites',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘D'],
+    description: "Add the focused pane's current folder to the switcher's Favorites.",
+    keywords: ['bookmark', 'favorite', 'pin', 'shortcut'],
+  },
+
+  // ============================================================================
   // Main window - Downloads
   // ============================================================================
   {

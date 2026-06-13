@@ -35,6 +35,7 @@
         refreshListingIndexSizes,
         resolvePathVolume,
         showFileContextMenu,
+        showParentRowContextMenu,
         trackEvent,
         type UnlistenFn,
         updateMenuContext,
@@ -1734,7 +1735,15 @@
     }
 
     async function handleContextMenu(entry: FileEntry) {
-        if (entry.name === '..') return // No context menu for parent entry
+        if (entry.name === '..') {
+            // The `..` row gets its own one-item menu: "Add to favorites" (favorites the
+            // parent dir `entry.path`). The full file menu (Copy / Move / Delete) makes no
+            // sense on `..`. On a snapshot pane there's no real parent to favorite, so skip.
+            typeToJump.clear()
+            if (volumeId === 'search-results') return
+            await showParentRowContextMenu(entry.path)
+            return
+        }
         // Spec: opening a context menu cancels in-flight type-to-jump.
         typeToJump.clear()
         // Match Finder: if the right-clicked entry is part of the current selection,

@@ -95,6 +95,16 @@ export async function showBreadcrumbContextMenu(
 }
 
 /**
+ * Shows the minimal `..` parent-row context menu (just "Add to favorites").
+ * The full file context menu doesn't fit `..`, so this is its own one-item menu.
+ * @param parentPath - The directory the `..` row points at; favorited on click.
+ */
+export async function showParentRowContextMenu(parentPath: string): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic over <R: Runtime>, not in typed bindings
+  await invoke('show_parent_row_context_menu', { parentPath })
+}
+
+/**
  * Show a file in the system file manager (reveal in parent folder).
  * On macOS, reveals in Finder. On Linux, uses the default file manager.
  * @param path - Absolute path to the file.

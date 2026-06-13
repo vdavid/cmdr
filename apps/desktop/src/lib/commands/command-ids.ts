@@ -48,6 +48,9 @@ export const COMMAND_IDS = [
   // Navigation (Go to path)
   'nav.goToPath',
 
+  // Favorites
+  'favorites.add',
+
   // Downloads
   'downloads.goToLatest',
 

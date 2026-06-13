@@ -9,6 +9,13 @@
         upgradeToSmbVolumeUsingSavedPassword,
         type UpgradeResult,
     } from '$lib/tauri-commands'
+    import {
+        removeFavorite,
+        renameFavorite,
+        reorderFavorites,
+        stripFavoritePrefix,
+    } from '$lib/tauri-commands'
+    import { moveItem, clampedReorderTarget } from './favorites-reorder'
     import { ask } from '@tauri-apps/plugin-dialog'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
@@ -463,7 +470,9 @@
     function openRowMenu(volume: VolumeInfo, event: MouseEvent) {
         event.preventDefault()
         event.stopPropagation()
-        if (!isVolumeEjectable(volume)) return
+        // Favorites get a Remove / Rename menu; ejectable volumes get the eject menu;
+        // everything else has no row menu.
+        if (volume.category !== 'favorite' && !isVolumeEjectable(volume)) return
         rowMenuVolumeId = volume.id
         rowMenuPosition = { left: event.clientX, top: event.clientY }
     }
@@ -471,6 +480,142 @@
     function closeRowMenu() {
         rowMenuVolumeId = null
         rowMenuPosition = null
+    }
+
+    // ── Favorites: remove, rename, reorder ───────────────────────────────
+    // Favorites arrive as VolumeInfo with `category: 'favorite'` and `id: 'fav-<favId>'`.
+    // The mutate commands take the bare id (strip the `fav-` prefix). Each mutation re-emits
+    // `volumes-changed`, so the list below re-derives with no manual refresh.
+    const favorites = $derived(volumes.filter((v) => v.category === 'favorite'))
+
+    /** Inline-rename state for a favorite (its `fav-…` id and the editable draft label). */
+    let renamingFavoriteId: string | null = $state(null)
+    let renameDraft = $state('')
+    let renameInputRef: HTMLInputElement | undefined = $state()
+
+    async function handleFavoriteRemove(volume: VolumeInfo) {
+        closeRowMenu()
+        try {
+            await removeFavorite(stripFavoritePrefix(volume.id))
+        } catch {
+            addToast("Couldn't remove that favorite. Try again?", { level: 'error' })
+        }
+    }
+
+    function startFavoriteRename(volume: VolumeInfo) {
+        closeRowMenu()
+        renamingFavoriteId = volume.id
+        renameDraft = volume.name
+        void tick().then(() => {
+            renameInputRef?.focus()
+            renameInputRef?.select()
+        })
+    }
+
+    function cancelFavoriteRename() {
+        renamingFavoriteId = null
+        renameDraft = ''
+    }
+
+    async function commitFavoriteRename(volume: VolumeInfo) {
+        const trimmed = renameDraft.trim()
+        const id = renamingFavoriteId
+        cancelFavoriteRename()
+        if (!id || !trimmed || trimmed === volume.name) return
+        try {
+            await renameFavorite(stripFavoritePrefix(id), trimmed)
+        } catch {
+            addToast("Couldn't rename that favorite. Try again?", { level: 'error' })
+        }
+    }
+
+    function handleRenameKeyDown(e: KeyboardEvent, volume: VolumeInfo) {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            e.stopPropagation()
+            void commitFavoriteRename(volume)
+        } else if (e.key === 'Escape') {
+            e.preventDefault()
+            e.stopPropagation()
+            cancelFavoriteRename()
+        }
+    }
+
+    // Drag-to-reorder within the Favorites section. `draggingFavoriteId` is the grabbed
+    // item; `dragOverFavoriteId` is the row the pointer currently sits over (for the
+    // drop-line cue). On drop we persist the full new order via `reorderFavorites`.
+    let draggingFavoriteId: string | null = $state(null)
+    let dragOverFavoriteId: string | null = $state(null)
+
+    function handleFavoriteDragStart(volume: VolumeInfo, e: DragEvent) {
+        draggingFavoriteId = volume.id
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move'
+            // Some browsers need data set for the drag to start.
+            e.dataTransfer.setData('text/plain', volume.id)
+        }
+    }
+
+    function handleFavoriteDragOver(volume: VolumeInfo, e: DragEvent) {
+        if (!draggingFavoriteId) return
+        e.preventDefault()
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+        dragOverFavoriteId = volume.id
+    }
+
+    async function handleFavoriteDrop(target: VolumeInfo, e: DragEvent) {
+        e.preventDefault()
+        const sourceId = draggingFavoriteId
+        draggingFavoriteId = null
+        dragOverFavoriteId = null
+        if (!sourceId || sourceId === target.id) return
+        const ids = favorites.map((f) => f.id)
+        const from = ids.indexOf(sourceId)
+        const to = ids.indexOf(target.id)
+        if (from < 0 || to < 0) return
+        await persistFavoriteOrder(moveItem(ids, from, to))
+    }
+
+    function handleFavoriteDragEnd() {
+        draggingFavoriteId = null
+        dragOverFavoriteId = null
+    }
+
+    /** Keyboard reorder: Alt+Up / Alt+Down on a focused favorite. Keeps the app keyboard-first. */
+    async function moveFavoriteByKeyboard(volume: VolumeInfo, delta: -1 | 1) {
+        const ids = favorites.map((f) => f.id)
+        const from = ids.indexOf(volume.id)
+        const to = clampedReorderTarget(from, delta, ids.length)
+        if (to === null) return
+        await persistFavoriteOrder(moveItem(ids, from, to))
+        // Keep focus on the moved item after the list re-renders.
+        void tick().then(() => {
+            const el = dropdownRef?.querySelector(
+                `.favorite-item[data-fav-id="${CSS.escape(volume.id)}"]`,
+            ) as HTMLElement | null
+            el?.focus()
+        })
+    }
+
+    async function persistFavoriteOrder(orderedLocationIds: string[]) {
+        try {
+            await reorderFavorites(orderedLocationIds.map(stripFavoritePrefix))
+        } catch {
+            addToast("Couldn't reorder favorites. Try again?", { level: 'error' })
+        }
+    }
+
+    function handleFavoriteItemKeyDown(e: KeyboardEvent, volume: VolumeInfo) {
+        if (e.altKey && e.key === 'ArrowUp') {
+            e.preventDefault()
+            void moveFavoriteByKeyboard(volume, -1)
+        } else if (e.altKey && e.key === 'ArrowDown') {
+            e.preventDefault()
+            void moveFavoriteByKeyboard(volume, 1)
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            void handleVolumeSelect(volume)
+        }
     }
 
     async function handleEjectClick(volume: VolumeInfo, event?: MouseEvent) {
@@ -626,21 +771,42 @@
                 {#if group.label}
                     <div class="category-label">{group.label}</div>
                 {/if}
+                {#if group.category === 'favorite' && group.items.length === 0}
+                    <!-- Empty state: the user removed every favorite. A disabled, non-focusable,
+                         non-clickable placeholder so the section reads as a real (empty) state. -->
+                    <div class="favorites-empty" aria-disabled="true">(Your favorites will show here)</div>
+                {/if}
                 {#each group.items as volume (volume.id)}
-                    <!-- svelte-ignore a11y_click_events_have_key_events -->
-                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                    {@const isFavorite = volume.category === 'favorite'}
                     <!-- svelte-ignore a11y_mouse_events_have_key_events -->
                     <div
                         class="volume-item"
+                        class:favorite-item={isFavorite}
+                        class:is-dragging={isFavorite && draggingFavoriteId === volume.id}
+                        class:is-drag-over={isFavorite && dragOverFavoriteId === volume.id && draggingFavoriteId !== volume.id}
                         class:is-under-cursor={shouldShowCheckmark(volume, containingVolumeId)}
                         class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenu.volumeId}
                         class:is-restricted={isRestricted(volume.path)}
                         data-index={allVolumes.indexOf(volume)}
-                        use:tooltip={isRestricted(volume.path) ? RESTRICTED_FOLDER_TOOLTIP : ''}
+                        data-fav-id={isFavorite ? volume.id : undefined}
+                        tabindex={isFavorite ? 0 : undefined}
+                        draggable={isFavorite && renamingFavoriteId !== volume.id ? true : undefined}
+                        role={isFavorite ? 'button' : undefined}
+                        use:tooltip={isRestricted(volume.path)
+                            ? RESTRICTED_FOLDER_TOOLTIP
+                            : isFavorite
+                              ? 'Drag to reorder, or Alt+Up / Alt+Down. Right-click to rename or remove.'
+                              : ''}
                         onclick={() => {
+                            if (renamingFavoriteId === volume.id) return
                             void handleVolumeSelect(volume)
                         }}
                         oncontextmenu={(e: MouseEvent) => { openRowMenu(volume, e); }}
+                        ondragstart={isFavorite ? (e: DragEvent) => { handleFavoriteDragStart(volume, e) } : undefined}
+                        ondragover={isFavorite ? (e: DragEvent) => { handleFavoriteDragOver(volume, e) } : undefined}
+                        ondrop={isFavorite ? (e: DragEvent) => { void handleFavoriteDrop(volume, e) } : undefined}
+                        ondragend={isFavorite ? () => { handleFavoriteDragEnd() } : undefined}
+                        onkeydown={isFavorite ? (e: KeyboardEvent) => { handleFavoriteItemKeyDown(e, volume) } : undefined}
                         onmouseover={(e: MouseEvent) => {
                             handleVolumeHover(volume)
                             if (volume.smbConnectionState === 'os_mount') {
@@ -672,7 +838,19 @@
                         {:else}
                             <span class="volume-icon-placeholder">📁</span>
                         {/if}
-                        <span class="volume-label">{volume.name}</span>
+                        {#if renamingFavoriteId === volume.id}
+                            <input
+                                class="favorite-rename-input"
+                                bind:this={renameInputRef}
+                                bind:value={renameDraft}
+                                onclick={(e: MouseEvent) => { e.stopPropagation() }}
+                                onkeydown={(e: KeyboardEvent) => { handleRenameKeyDown(e, volume) }}
+                                onblur={() => { void commitFavoriteRename(volume) }}
+                                aria-label="Rename favorite"
+                            />
+                        {:else}
+                            <span class="volume-label">{volume.name}</span>
+                        {/if}
                         {#if isRestricted(volume.path)}
                             <span class="restricted-indicator" aria-hidden="true">
                                 <InfoIcon />
@@ -841,17 +1019,34 @@
                 style:left="{rowMenuPosition.left}px"
                 style:top="{rowMenuPosition.top}px"
             >
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <div
-                    class="row-menu-item"
-                    class:row-menu-item-disabled={isVolumeBusy(rowMenuVolume.id)}
-                    use:tooltip={isVolumeBusy(rowMenuVolume.id) ? EJECT_BUSY_TOOLTIP : ''}
-                    onclick={(e: MouseEvent) => { void handleEjectClick(rowMenuVolume, e) }}
-                >
-                    {isVolumeBusy(rowMenuVolume.id)
-                        ? `Eject (${rowMenuVolume.name}) (busy)`
-                        : `Eject (${rowMenuVolume.name})`}
-                </div>
+                {#if rowMenuVolume.category === 'favorite'}
+                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                    <div
+                        class="row-menu-item"
+                        onclick={(e: MouseEvent) => { e.stopPropagation(); startFavoriteRename(rowMenuVolume) }}
+                    >
+                        Rename
+                    </div>
+                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                    <div
+                        class="row-menu-item"
+                        onclick={(e: MouseEvent) => { e.stopPropagation(); void handleFavoriteRemove(rowMenuVolume) }}
+                    >
+                        Remove
+                    </div>
+                {:else}
+                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                    <div
+                        class="row-menu-item"
+                        class:row-menu-item-disabled={isVolumeBusy(rowMenuVolume.id)}
+                        use:tooltip={isVolumeBusy(rowMenuVolume.id) ? EJECT_BUSY_TOOLTIP : ''}
+                        onclick={(e: MouseEvent) => { void handleEjectClick(rowMenuVolume, e) }}
+                    >
+                        {isVolumeBusy(rowMenuVolume.id)
+                            ? `Eject (${rowMenuVolume.name}) (busy)`
+                            : `Eject (${rowMenuVolume.name})`}
+                    </div>
+                {/if}
             </div>
         {/if}
     {/if}
@@ -987,6 +1182,51 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* ── Favorites section ──────────────────────────────────────────── */
+
+    .favorites-empty {
+        padding: var(--spacing-sm) var(--spacing-md);
+        color: var(--color-text-tertiary);
+        font-style: italic;
+        cursor: default;
+        user-select: none;
+    }
+
+    .favorite-item {
+        cursor: grab;
+    }
+
+    .favorite-item:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .favorite-item.is-dragging {
+        opacity: 0.5;
+    }
+
+    /* Drop-line cue: a top border on the row the pointer is over. */
+    /*noinspection CssUnusedSymbol*/
+    .favorite-item.is-drag-over {
+        box-shadow: inset 0 2px 0 0 var(--color-accent);
+    }
+
+    .favorite-rename-input {
+        flex: 1;
+        min-width: 0;
+        font: inherit;
+        color: var(--color-text-primary);
+        background-color: var(--color-bg-primary);
+        border: 1px solid var(--color-accent);
+        border-radius: var(--radius-sm);
+        padding: 0 var(--spacing-xxs);
+    }
+
+    .favorite-rename-input:focus {
+        outline: none;
     }
 
     /* TCC-restricted entries: faded text + (i) icon. The tooltip explains the

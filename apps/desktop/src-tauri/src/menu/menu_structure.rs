@@ -27,10 +27,11 @@ use super::menu_items::{
 #[cfg(target_os = "macos")]
 use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, QUICK_LOOK_ID};
 use super::{
-    COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EJECT_VOLUME_ID, FILE_COPY_ID, FILE_DELETE_ID,
-    FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, MenuItems, NETWORK_HOST_DISCONNECT_ID,
-    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID,
-    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EJECT_VOLUME_ID, FAVORITES_ADD_CONTEXT_ID,
+    FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, MenuItems,
+    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
+    SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID,
+    ViewMode,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -180,6 +181,16 @@ pub fn build_context_menu<R: Runtime>(
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
 
+    // Add to favorites — directories only (favorites are folders), and not on the search-results
+    // snapshot pane (its rows aren't a stable folder to favorite). Favorites the right-clicked
+    // folder's path, which `on_menu_event` reads from `MenuState.context.path`.
+    if is_directory && !restrict_destination_actions {
+        let add_favorite_item =
+            MenuItem::with_id(app, FAVORITES_ADD_CONTEXT_ID, "Add to favorites", true, None::<&str>)?;
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+        menu.append(&add_favorite_item)?;
+    }
+
     // Cloud actions (macOS File Provider): only show when the file is in a
     // cloud-managed folder, gated by sync status.
     #[cfg(target_os = "macos")]
@@ -224,6 +235,17 @@ pub fn build_context_menu<R: Runtime>(
         #[cfg(target_os = "macos")]
         open_with_apps,
     })
+}
+
+/// Builds the minimal context menu for the `..` parent row: a single "Add to favorites" item that
+/// favorites the parent directory. The full file context menu (Copy / Move / Delete, etc.) makes no
+/// sense on `..`, so this is its own one-item menu. The caller stashes the parent dir in
+/// `MenuState.context.path`; `on_menu_event` reads it back for the `FAVORITES_ADD_CONTEXT_ID` click.
+pub fn build_parent_row_context_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
+    let menu = Menu::new(app)?;
+    let add_favorite_item = MenuItem::with_id(app, FAVORITES_ADD_CONTEXT_ID, "Add to favorites", true, None::<&str>)?;
+    menu.append(&add_favorite_item)?;
+    Ok(menu)
 }
 
 /// Builds a context menu for the breadcrumb path bar.

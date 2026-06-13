@@ -1,8 +1,9 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
     CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode,
-    build_breadcrumb_context_menu, build_context_menu, build_network_host_context_menu, build_tab_context_menu,
-    frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items, sync_view_mode_check_states,
+    build_breadcrumb_context_menu, build_context_menu, build_network_host_context_menu, build_parent_row_context_menu,
+    build_tab_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items,
+    sync_view_mode_check_states,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
@@ -151,6 +152,26 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
         }
     }
 
+    menu.popup(window).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Shows the minimal `..` parent-row context menu (just "Add to favorites").
+///
+/// `parent_path` is the directory the `..` row points at; we stash it in `MenuState.context.path`
+/// so `on_menu_event` favorites it when the user clicks the item. The full file context menu makes
+/// no sense on `..`, hence this dedicated one-item menu.
+#[tauri::command]
+#[specta::specta]
+pub fn show_parent_row_context_menu<R: Runtime>(window: Window<R>, parent_path: String) -> Result<(), String> {
+    let app = window.app_handle();
+    {
+        let state = app.state::<MenuState<R>>();
+        let mut context = state.context.lock_ignore_poison();
+        context.path = parent_path;
+        context.filename = "..".to_string();
+    }
+    let menu = build_parent_row_context_menu(app).map_err(|e| e.to_string())?;
     menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
 }

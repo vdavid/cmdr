@@ -209,6 +209,31 @@ backend-side: `show_breadcrumb_context_menu` passes the volume ID, and the Rust 
 ` (busy)` suffix. The real safety net is the `eject_volume` backend guard, which refuses a busy volume even if the UI is
 stale or an MCP caller bypasses it. See `src-tauri/src/file_system/write_operations/CLAUDE.md` § "Busy-volumes set".
 
+### Editable favorites
+
+The "Favorites" group in the switcher is user-owned: add, remove, rename, reorder. Favorites arrive from `volume-store`
+as `VolumeInfo` with `category: 'favorite'` and `id: 'fav-<favoriteId>'` (the backend `favorites/` store is the source
+of truth; see `src-tauri/src/favorites/CLAUDE.md`). All mutations go through the typed `commands.*` wrappers in
+`$lib/tauri-commands/favorites.ts`; each re-emits `volumes-changed`, so the switcher re-renders live with no manual
+refresh. `stripFavoritePrefix(locationId)` recovers the bare favorite id (the remove / rename / reorder commands take
+the bare id, not the `fav-…` switcher id).
+
+- **Add** has three surfaces: the `favorites.add` command (palette, the Go menu's "Add to favorites", ⌘D) favorites the
+  focused pane's current dir (handler in `routes/(main)/command-handlers/misc-handlers.ts`); the folder-row and `..`
+  context menus favorite a SPECIFIC path. The context-menu add is handled entirely in Rust (`menu/menu_handlers.rs`
+  intercepts `FAVORITES_ADD_CONTEXT_ID` and favorites `MenuState.context.path`), so it never routes through
+  `favorites.add` (which would favorite the wrong dir). The folder-row item lives in `build_context_menu` (directories
+  only, not on search-results panes); the `..` row gets its own one-item menu via `show_parent_row_context_menu`
+  (`FilePane.handleContextMenu` calls it with the parent dir path).
+- **Remove / Rename** are per-item, on the existing dropdown `row-menu` (right-click a favorite). Rename swaps the label
+  for an inline `<input>` (Enter commits, Escape/blur cancels). Both strip the `fav-` prefix before calling the command.
+- **Reorder** is drag-to-reorder within the section (`draggingFavoriteId` / `dragOverFavoriteId` drive the drop-line
+  cue) AND keyboard (Alt+Up / Alt+Down on a focused favorite, since the app is keyboard-first). Both compute the new
+  order with the pure `favorites-reorder.ts` helpers and persist the FULL order via `reorderFavorites(barelIds)`.
+- **Empty state** is a real state (the user can remove every favorite). The `favorite` group in `volume-grouping.ts`
+  always renders (unlike every other group, which hides when empty), and the switcher shows a single disabled,
+  non-focusable placeholder row: "(Your favorites will show here)".
+
 ### USB link-speed indicator (MTP)
 
 MTP volumes carry `usbSpeed: UsbSpeed` (`'low' | 'full' | 'high' | 'super' | 'super_plus'`) sourced from `mtp-rs` via

@@ -15,6 +15,10 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/tauri-commands', () => ({
   resolvePathVolume: vi.fn(() => Promise.resolve({ volume: { id: 'root', path: '/' } })),
   upgradeToSmbVolume: vi.fn(() => Promise.resolve({ status: 'success' })),
+  removeFavorite: vi.fn(() => Promise.resolve()),
+  renameFavorite: vi.fn(() => Promise.resolve()),
+  reorderFavorites: vi.fn(() => Promise.resolve()),
+  stripFavoritePrefix: (id: string) => (id.startsWith('fav-') ? id.slice(4) : id),
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({

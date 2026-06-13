@@ -93,7 +93,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::icons::refresh_directory_icons,
         crate::commands::icons::clear_extension_icon_cache,
         crate::commands::icons::clear_directory_icon_cache,
-        // show_file_context_menu, show_breadcrumb_context_menu, update_pin_tab_menu,
+        // show_file_context_menu, show_breadcrumb_context_menu, show_parent_row_context_menu,
+        // update_pin_tab_menu,
         // set_reopen_closed_tab_enabled, show_main_window, update_menu_context,
         // set_menu_context, toggle_hidden_files, sync_menu_show_hidden,
         // update_view_mode_menu, copy_to_clipboard are generic (<R: Runtime>): excluded

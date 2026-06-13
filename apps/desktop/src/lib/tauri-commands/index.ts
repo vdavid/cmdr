@@ -84,6 +84,7 @@ export {
   openExternalUrl,
   showFileContextMenu,
   showBreadcrumbContextMenu,
+  showParentRowContextMenu,
   showInFinder,
   copyToClipboard,
   quickLookOpen,
@@ -94,6 +95,9 @@ export {
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
 } from './file-actions'
+
+// Favorites (user-editable switcher favorites)
+export { addFavorite, removeFavorite, renameFavorite, reorderFavorites, stripFavoritePrefix } from './favorites'
 
 // Icons (fetching and cache management)
 export {

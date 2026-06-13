@@ -27,7 +27,14 @@ export function groupByCategory(
   const groups: VolumeGroup[] = []
 
   for (const { category, label } of categoryOrder) {
-    if (category === 'mobile_device') {
+    if (category === 'favorite') {
+      // The Favorites group always renders, even when empty: an emptied list is a real
+      // user state (they can remove every favorite), and the switcher shows a disabled
+      // "(Your favorites will show here)" placeholder for it. Every other group hides when
+      // empty.
+      const items = vols.filter((v) => v.category === 'favorite')
+      groups.push({ category, label, items })
+    } else if (category === 'mobile_device') {
       const mobileItems = vols.filter((v) => v.category === 'mobile_device')
       if (mobileItems.length > 0) {
         groups.push({ category, label, items: mobileItems })

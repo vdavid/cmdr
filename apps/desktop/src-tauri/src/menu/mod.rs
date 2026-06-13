@@ -45,7 +45,7 @@ pub use menu_handlers::{
 };
 pub use menu_structure::{
     FileContextInfo, build_breadcrumb_context_menu, build_context_menu, build_menu, build_network_host_context_menu,
-    build_tab_context_menu, build_viewer_menu,
+    build_parent_row_context_menu, build_tab_context_menu, build_viewer_menu,
 };
 
 /// `settings-changed`: a CheckMenuItem toggle (currently only "Show hidden
@@ -153,6 +153,17 @@ pub const GO_TO_PATH_ID: &str = "go_to_path";
 /// "Go to latest download" (⌘J): jumps the focused pane to the most recent download.
 pub const GO_LATEST_DOWNLOAD_ID: &str = "go_latest_download";
 
+/// "Add to favorites" (⌘D), menu bar + palette: maps to the `favorites.add` command, which favorites
+/// the focused pane's current folder.
+pub const FAVORITES_ADD_ID: &str = "favorites_add";
+
+/// "Add to favorites", folder-row + parent-row CONTEXT menus: favorites `MenuState.context.path`
+/// directly in `on_menu_event` (the right-clicked folder, or the parent dir for `..`). A separate id
+/// from `FAVORITES_ADD_ID` so the menu-bar item (focused-pane dir) and the context item
+/// (right-clicked path) can't be confused; intercepted before the unified `menu_id_to_command`
+/// lookup, so it never routes through a command.
+pub const FAVORITES_ADD_CONTEXT_ID: &str = "favorites_add_context";
+
 /// Menu item IDs for sorting.
 pub const SORT_BY_NAME_ID: &str = "sort_by_name";
 pub const SORT_BY_EXTENSION_ID: &str = "sort_by_extension";
@@ -258,6 +269,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         GO_PARENT_ID => Some(("nav.parent", CommandScope::FileScoped)),
         GO_TO_PATH_ID => Some(("nav.goToPath", CommandScope::FileScoped)),
         GO_LATEST_DOWNLOAD_ID => Some(("downloads.goToLatest", CommandScope::FileScoped)),
+        FAVORITES_ADD_ID => Some(("favorites.add", CommandScope::FileScoped)),
 
         // Tab commands (file-scoped)
         NEW_TAB_ID => Some(("tab.new", CommandScope::FileScoped)),
@@ -350,6 +362,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "nav.parent" => Some(GO_PARENT_ID),
         "nav.goToPath" => Some(GO_TO_PATH_ID),
         "downloads.goToLatest" => Some(GO_LATEST_DOWNLOAD_ID),
+        "favorites.add" => Some(FAVORITES_ADD_ID),
         "tab.new" => Some(NEW_TAB_ID),
         "tab.close" => Some(CLOSE_TAB_ID),
         "tab.reopen" => Some(REOPEN_CLOSED_TAB_ID),
@@ -642,6 +655,7 @@ mod tests {
             "nav.parent",
             "nav.goToPath",
             "downloads.goToLatest",
+            "favorites.add",
             "tab.new",
             "tab.close",
             "tab.reopen",

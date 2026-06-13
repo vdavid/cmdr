@@ -286,6 +286,8 @@ export const menuCommands = [
   'nav.goToPath',
   // Downloads
   'downloads.goToLatest',
+  // Favorites
+  'favorites.add',
   // Tabs
   'tab.new',
   'tab.close',

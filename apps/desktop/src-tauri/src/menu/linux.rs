@@ -12,13 +12,13 @@ use super::menu_items::{
 use super::{
     ABOUT_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID,
     COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID,
-    EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID,
-    FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID,
-    GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
-    PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID,
-    SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
-    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
-    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
+    EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COPY_ID, FILE_DELETE_ID,
+    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID,
+    GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, MenuItems,
+    NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID,
+    SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID,
+    SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
+    VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
 };
 
 /// Linux menu: builds all menus from scratch, matching the macOS menu structure.
@@ -273,6 +273,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         Some("Cmd+J"),
     )?;
+    let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, "&Add to favorites", true, Some("Cmd+D"))?;
 
     let go_menu = Submenu::with_items(
         app,
@@ -286,6 +287,8 @@ pub(crate) fn build_menu_linux<R: Runtime>(
             &PredefinedMenuItem::separator(app)?,
             &go_to_path_item,
             &go_latest_download_item,
+            &PredefinedMenuItem::separator(app)?,
+            &favorites_add_item,
         ],
     )?;
     menu.append(&go_menu)?;
@@ -427,12 +430,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, SORT_BY_SIZE_ID, &sort_items.by_size, &sort_submenu, 3);
 
     // Go menu positions: back(0), forward(1), sep(2), parent(3), sep(4), go_to_path(5),
-    // go_latest_download(6)
+    // go_latest_download(6), sep(7), favorites_add(8)
     register_item(&mut items, GO_BACK_ID, &go_back_item, &go_menu, 0);
     register_item(&mut items, GO_FORWARD_ID, &go_forward_item, &go_menu, 1);
     register_item(&mut items, GO_PARENT_ID, &go_parent_item, &go_menu, 3);
     register_item(&mut items, GO_TO_PATH_ID, &go_to_path_item, &go_menu, 5);
     register_item(&mut items, GO_LATEST_DOWNLOAD_ID, &go_latest_download_item, &go_menu, 6);
+    register_item(&mut items, FAVORITES_ADD_ID, &favorites_add_item, &go_menu, 8);
 
     // Tab menu positions: new(0), close(1), reopen(2), sep(3), next(4), prev(5), sep(6), pin(7),
     // close_others(8)

@@ -5,6 +5,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import VolumeBreadcrumb from '../navigation/VolumeBreadcrumb.svelte'
 import { waitForUpdates, useMountTarget } from './integration-test-utils'
+import { getVolumes } from '$lib/stores/volume-store.svelte'
+import { removeFavorite, renameFavorite, reorderFavorites } from '$lib/tauri-commands'
 
 // ============================================================================
 // Mock setup (must be in each test file: Vitest hoists vi.mock calls)
@@ -93,6 +95,10 @@ vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn().mockResolvedValue(undefined),
   notifyDialogClosed: vi.fn().mockResolvedValue(undefined),
   watchVolumeSpace: vi.fn().mockResolvedValue(undefined),
+  removeFavorite: vi.fn().mockResolvedValue(undefined),
+  renameFavorite: vi.fn().mockResolvedValue(undefined),
+  reorderFavorites: vi.fn().mockResolvedValue(undefined),
+  stripFavoritePrefix: (id: string) => (id.startsWith('fav-') ? id.slice(4) : id),
 }))
 
 vi.mock('$lib/icon-cache', async () => {
@@ -690,6 +696,91 @@ describe('VolumeBreadcrumb', () => {
       const handled = handleKeyDown(event)
 
       expect(handled).toBe(false)
+    })
+  })
+
+  describe('Favorites section', () => {
+    const fav = (id: string, name: string, path: string) => ({
+      id: `fav-${id}`,
+      name,
+      path,
+      category: 'favorite' as const,
+      isEjectable: false,
+    })
+
+    async function openWithFavorites(favorites: ReturnType<typeof fav>[]) {
+      vi.mocked(getVolumes).mockReturnValue([
+        ...favorites,
+        { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
+      ])
+      const component = mount(VolumeBreadcrumb, {
+        target: getTarget(),
+        props: { volumeId: 'root', currentPath: '/' },
+      })
+      await waitForUpdates(100)
+      ;(component as unknown as { toggle: () => void }).toggle()
+      await tick()
+      return component
+    }
+
+    it('renders the disabled empty-state placeholder when there are no favorites', async () => {
+      await openWithFavorites([])
+      const placeholder = getTarget().querySelector('.favorites-empty')
+      expect(placeholder?.textContent).toBe('(Your favorites will show here)')
+      expect(placeholder?.getAttribute('aria-disabled')).toBe('true')
+      // Not focusable, not clickable.
+      expect(placeholder?.getAttribute('tabindex')).toBeNull()
+      expect(placeholder?.getAttribute('role')).toBeNull()
+    })
+
+    it('renders favorites as draggable, focusable items', async () => {
+      await openWithFavorites([fav('1', 'Documents', '/Users/me/Documents')])
+      const item = getTarget().querySelector('.favorite-item')
+      expect(item).toBeTruthy()
+      expect(item?.getAttribute('draggable')).toBe('true')
+      expect(item?.getAttribute('tabindex')).toBe('0')
+      expect(item?.getAttribute('data-fav-id')).toBe('fav-1')
+    })
+
+    it('Alt+Down keyboard reorder persists the new order with bare ids', async () => {
+      await openWithFavorites([fav('a', 'A', '/a'), fav('b', 'B', '/b'), fav('c', 'C', '/c')])
+      const first = getTarget().querySelector('.favorite-item[data-fav-id="fav-a"]') as HTMLElement
+      first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }))
+      await tick()
+      expect(reorderFavorites).toHaveBeenCalledWith(['b', 'a', 'c'])
+    })
+
+    it('right-click opens a Remove / Rename menu; Remove calls removeFavorite with the bare id', async () => {
+      await openWithFavorites([fav('x', 'Pics', '/Users/me/Pics')])
+      const item = getTarget().querySelector('.favorite-item[data-fav-id="fav-x"]') as HTMLElement
+      item.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 }))
+      await tick()
+      const menuItems = Array.from(getTarget().querySelectorAll('.row-menu-item'))
+      const labels = menuItems.map((m) => m.textContent.trim())
+      expect(labels).toEqual(['Rename', 'Remove'])
+      const removeItem = menuItems.find((m) => m.textContent.trim() === 'Remove') as HTMLElement
+      removeItem.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await tick()
+      expect(removeFavorite).toHaveBeenCalledWith('x')
+    })
+
+    it('Rename shows an inline input; committing calls renameFavorite with the bare id', async () => {
+      await openWithFavorites([fav('y', 'Old', '/Users/me/Old')])
+      const item = getTarget().querySelector('.favorite-item[data-fav-id="fav-y"]') as HTMLElement
+      item.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 }))
+      await tick()
+      const renameItem = Array.from(getTarget().querySelectorAll('.row-menu-item')).find(
+        (m) => m.textContent.trim() === 'Rename',
+      ) as HTMLElement
+      renameItem.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await tick()
+      const input = getTarget().querySelector('.favorite-rename-input') as HTMLInputElement
+      expect(input).toBeTruthy()
+      input.value = 'New name'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await tick()
+      expect(renameFavorite).toHaveBeenCalledWith('y', 'New name')
     })
   })
 })
