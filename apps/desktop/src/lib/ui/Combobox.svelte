@@ -22,9 +22,12 @@
      * - `allowCustomValue` accepts the custom value on close.
      * - `value` is intentionally left uncontrolled / unused: a typed custom value persists.
      *
-     * Open-on-focus is wired via a controlled `open` state (Ark has no `openOnFocus` prop). `loading`
-     * is OUR in-field spinner overlay (Ark has no loading prop). No `Portal` (keeps the viewer's
-     * restricted capability set unaffected). No entrance animation by default.
+     * Open state is owned entirely by Ark (uncontrolled) with `openOnClick`: clicking the text opens
+     * it, the chevron `Trigger` toggles it, typing opens it (`openOnChange`). Don't reintroduce a
+     * controlled `open` driven from the input's focus: the `Trigger` focuses the input on click, so a
+     * focus-open handler races the trigger's own toggle and flashes the popup shut. `loading` is OUR
+     * in-field spinner overlay (Ark has no loading prop). No `Portal` (keeps the viewer's restricted
+     * capability set unaffected). No entrance animation by default.
      */
     import { Combobox, createListCollection } from '@ark-ui/svelte/combobox'
     import IconChevronDown from '~icons/lucide/chevron-down'
@@ -62,14 +65,8 @@
         }),
     )
 
-    let open = $state(false)
-
     function handleInputValueChange(details: { inputValue: string }): void {
         onInputValueChange(details.inputValue)
-    }
-
-    function handleOpenChange(details: { open: boolean }): void {
-        open = details.open
     }
 </script>
 
@@ -77,22 +74,15 @@
     <Combobox.Root
         {collection}
         {inputValue}
-        {open}
         {disabled}
+        openOnClick
+        positioning={{ gutter: 2 }}
         selectionBehavior="preserve"
         allowCustomValue
         onInputValueChange={handleInputValueChange}
-        onOpenChange={handleOpenChange}
     >
         <Combobox.Control class="combobox-control">
-            <Combobox.Input
-                class="combobox-input"
-                {placeholder}
-                aria-label={ariaLabel}
-                onfocus={() => {
-                    open = true
-                }}
-            />
+            <Combobox.Input class="combobox-input" {placeholder} aria-label={ariaLabel} />
             {#if loading}
                 <span class="spinner spinner-sm combobox-spinner" aria-label="Loading suggestions" role="status"
                 ></span>
@@ -136,6 +126,7 @@
     }
 
     :global(.combobox-control) {
+        position: relative;
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
@@ -143,7 +134,6 @@
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
-        padding-right: var(--spacing-xs);
     }
 
     :global(.combobox-control:focus-within) {
@@ -171,16 +161,22 @@
         opacity: 0.5;
     }
 
+    /* Decorative overlay, not a flex child: floats just left of the chevron and passes clicks
+       through to the input beneath, so a click on the spinner still opens the suggestions. */
     .combobox-spinner {
-        align-self: center;
+        position: absolute;
+        right: 28px;
+        pointer-events: none;
     }
 
+    /* Full-height, padded hit area: the whole right side toggles the list, not just the icon. */
     :global(.combobox-trigger) {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        align-self: stretch;
         flex-shrink: 0;
-        padding: 0;
+        padding: 0 var(--spacing-sm);
         border: none;
         background: transparent;
         cursor: default;

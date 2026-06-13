@@ -94,6 +94,7 @@
     value={value ? [value] : []}
     onValueChange={handleValueChange}
     onHighlightChange={handleHighlightChange}
+    positioning={{ gutter: 2 }}
     {disabled}
 >
     <Select.Control>

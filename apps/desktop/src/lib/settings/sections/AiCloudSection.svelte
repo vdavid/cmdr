@@ -162,11 +162,9 @@
 
     /**
      * On open, serve the model list from the session cache instantly, or kick off a check that
-     * fills it. Gated so it only fires a real request in prod: for no-key providers
-     * (`custom`/`ollama`/`lm-studio`) `hasCheckableConfig` is true with the preset base URL, so a
-     * mount-trigger would otherwise hit a live endpoint in dev/E2E. A warm cache hit still works in
-     * dev/E2E (no network). Also skips when a check is already scheduled (for example from a
-     * just-handled provider switch) so we don't double-fire.
+     * fills it (dev and prod both auto-load; only automated E2E is suppressed, since it has no real
+     * provider). A warm cache hit still works everywhere, including E2E. Also skips when a check is
+     * already scheduled (for example from a just-handled provider switch) so we don't double-fire.
      */
     async function populateModelsOnOpen(): Promise<void> {
         if (!hasCheckableConfig) return
@@ -177,9 +175,10 @@
             connectionStatus = 'connected'
             return
         }
-        // No mount-triggered network in dev/E2E (the auto-check is the only request that fires
-        // without a user action). Cache hits above still work everywhere.
-        if (getAppMode() !== 'prod') return
+        // Auto-loading the list is the only request that fires without a user action; suppress it
+        // only in automated E2E (no real provider there, so it'd just add network flakiness). Dev and
+        // prod both auto-load. Cache hits above still work everywhere, including E2E.
+        if (getAppMode() === 'e2e') return
         if (connectionCheckTimer || connectionStatus === 'checking') return
         scheduleConnectionCheck()
     }

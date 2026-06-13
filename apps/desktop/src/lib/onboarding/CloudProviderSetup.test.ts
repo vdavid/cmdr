@@ -346,7 +346,11 @@ describe('CloudProviderSetup', () => {
     await advanceTimers(1500)
     const modelInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="Model"]')
     if (!modelInput) throw new Error('model input missing')
-    modelInput.dispatchEvent(new Event('focus', { bubbles: true }))
+    // Focus for real (not a bare `focus` Event): the combobox's machine only processes input
+    // changes once focused, and a synthetic `focus` event doesn't drive it there like a user click
+    // does. `.focus()` + `focusin` mirrors the real focus path the user takes before typing.
+    modelInput.focus()
+    modelInput.dispatchEvent(new Event('focusin', { bubbles: true }))
     await settle()
     modelInput.value = 'gpt-4o'
     modelInput.dispatchEvent(new Event('input', { bubbles: true }))
