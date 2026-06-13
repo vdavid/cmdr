@@ -16,6 +16,7 @@
     } from '$lib/tauri-commands'
     import SettingPasswordInput from '$lib/settings/components/SettingPasswordInput.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import Combobox, { type ComboboxItem } from '$lib/ui/Combobox.svelte'
     import { describeSecretError, type SecretErrorMessage } from '$lib/settings/sections/ai-secret-error'
     import { getAppLogger } from '$lib/logging/logger'
 
@@ -31,7 +32,9 @@
      *
      * The connection-check pipeline mirrors `AiCloudSection.svelte`: 1 s debounce on
      * key/base-URL change, calls `checkAiConnection(baseUrl, apiKey)`, surfaces the
-     * model list as a filterable combobox.
+     * model list through the shared `ui/Combobox`. Unlike the settings section, the
+     * model list already loads on open here (a stored key triggers a check in
+     * `loadApiKeyForProvider`), so there's no separate mount-trigger to add.
      *
      * Provider switching is owned by the parent (`StepAi.svelte`); on `providerId`
      * change we reload the per-provider state from the store + secret keychain. Keys
@@ -62,17 +65,6 @@
     let connectionError = $state<string | null>(null)
     let availableModels = $state<string[]>([])
     let secretError = $state<SecretErrorMessage | null>(null)
-
-    // Model combobox state (mirrors AiCloudSection's pattern).
-    let comboboxOpen = $state(false)
-    let comboboxFilter = $state('')
-    let highlightedIndex = $state(-1)
-
-    const filteredModels = $derived(
-        comboboxFilter
-            ? availableModels.filter((m) => m.toLowerCase().includes(comboboxFilter.toLowerCase()))
-            : availableModels,
-    )
 
     const API_KEY_SAVE_DEBOUNCE_MS = 300
     const CONNECTION_CHECK_DEBOUNCE_MS = 1000
@@ -170,7 +162,7 @@
         const idAtStart = activeProviderId
         connectionStatus = 'checking'
         connectionError = null
-        availableModels = []
+        // Keep the prior list during a refetch so the model combobox never blanks mid-check.
 
         try {
             const result = await checkAiConnection(baseUrl, key)
@@ -267,45 +259,6 @@
         scheduleConnectionCheck()
     }
 
-    function selectModel(model: string): void {
-        comboboxFilter = ''
-        comboboxOpen = false
-        highlightedIndex = -1
-        saveModel(model)
-    }
-
-    function handleComboboxKeydown(e: KeyboardEvent): void {
-        if (!comboboxOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-            comboboxOpen = true
-            highlightedIndex = 0
-            e.preventDefault()
-            return
-        }
-        if (!comboboxOpen) return
-        if (e.key === 'ArrowDown') {
-            e.preventDefault()
-            highlightedIndex = Math.min(highlightedIndex + 1, filteredModels.length - 1)
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault()
-            highlightedIndex = Math.max(highlightedIndex - 1, 0)
-        } else if (e.key === 'Enter' && highlightedIndex >= 0 && highlightedIndex < filteredModels.length) {
-            e.preventDefault()
-            selectModel(filteredModels[highlightedIndex])
-        } else if (e.key === 'Escape') {
-            comboboxOpen = false
-            highlightedIndex = -1
-        }
-    }
-
-    function handleComboboxBlur(): void {
-        // Delay so click events on dropdown options fire first (mirrors AiCloudSection).
-        setTimeout(() => {
-            comboboxOpen = false
-            highlightedIndex = -1
-            comboboxFilter = ''
-        }, 150)
-    }
-
     function openProviderUrl(url: string): void {
         if (!url) return
         void openExternalUrl(url).catch((error: unknown) => {
@@ -321,6 +274,8 @@
     const requiresApiKey = $derived(preset?.requiresApiKey ?? false)
     const apiKeyChecked = $derived(connectionStatus === 'connected' || connectionStatus === 'connected-no-models')
     const modelChecked = $derived(currentModel.trim() !== '')
+    const modelComboboxItems = $derived<ComboboxItem[]>(availableModels.map((m) => ({ value: m, label: m })))
+    const modelPlaceholder = $derived(preset?.defaultModel ? `Example: ${preset.defaultModel}` : 'Model name')
 
     // Per-provider sign-up and API-key console URLs. Kept inline because they're tied
     // to provider names a registry would just mirror; one source of truth per row.
@@ -497,102 +452,15 @@
                     {/if}
                 </span>
                 <div class="step-body">
-                    <label class="step-label" for="onboarding-cloud-model">Pick a model</label>
-                    {#if availableModels.length > 0}
-                        <div class="combobox-wrapper">
-                            <div class="combobox-input-wrapper">
-                                <input
-                                    id="onboarding-cloud-model"
-                                    class="text-input combobox-input"
-                                    type="text"
-                                    value={comboboxOpen ? comboboxFilter : currentModel}
-                                    onfocus={() => {
-                                        comboboxOpen = true
-                                        comboboxFilter = ''
-                                        highlightedIndex = -1
-                                    }}
-                                    onblur={handleComboboxBlur}
-                                    oninput={(event: Event) => {
-                                        const target = event.currentTarget as HTMLInputElement
-                                        comboboxFilter = target.value
-                                        currentModel = target.value
-                                        highlightedIndex = 0
-                                        saveModel(target.value)
-                                    }}
-                                    onkeydown={handleComboboxKeydown}
-                                    placeholder={preset.defaultModel
-                                        ? `Example: ${preset.defaultModel}`
-                                        : 'Model name'}
-                                    aria-label="Model"
-                                    aria-controls="onboarding-model-listbox"
-                                    aria-expanded={comboboxOpen}
-                                    aria-haspopup="listbox"
-                                    autocomplete="off"
-                                    spellcheck="false"
-                                    role="combobox"
-                                />
-                                <button
-                                    class="combobox-toggle"
-                                    type="button"
-                                    tabindex="-1"
-                                    aria-label="Show models"
-                                    onmousedown={(event: MouseEvent) => {
-                                        event.preventDefault()
-                                        comboboxOpen = !comboboxOpen
-                                    }}
-                                >
-                                    &#x25BE;
-                                </button>
-                            </div>
-                            {#if comboboxOpen}
-                                <div
-                                    class="combobox-dropdown"
-                                    role="listbox"
-                                    id="onboarding-model-listbox"
-                                >
-                                    {#if filteredModels.length === 0}
-                                        <div class="combobox-empty">No matching models</div>
-                                    {:else}
-                                        {#each filteredModels as model, i (model)}
-                                            <div
-                                                class="combobox-option"
-                                                class:highlighted={i === highlightedIndex}
-                                                class:selected={model === currentModel}
-                                                role="option"
-                                                aria-selected={model === currentModel}
-                                                onmousedown={(event: MouseEvent) => {
-                                                    event.preventDefault()
-                                                    selectModel(model)
-                                                }}
-                                                onmouseenter={() => {
-                                                    highlightedIndex = i
-                                                }}
-                                            >
-                                                {model}
-                                            </div>
-                                        {/each}
-                                    {/if}
-                                </div>
-                            {/if}
-                        </div>
-                    {:else}
-                        <input
-                            id="onboarding-cloud-model"
-                            class="text-input"
-                            type="text"
-                            value={currentModel}
-                            oninput={(event: Event) => {
-                                const target = event.currentTarget as HTMLInputElement
-                                saveModel(target.value)
-                            }}
-                            placeholder={preset.defaultModel
-                                ? `Example: ${preset.defaultModel}`
-                                : 'Model name'}
-                            aria-label="Model"
-                            autocomplete="off"
-                            spellcheck="false"
-                        />
-                    {/if}
+                    <span class="step-label">Pick a model</span>
+                    <Combobox
+                        items={modelComboboxItems}
+                        inputValue={currentModel}
+                        onInputValueChange={saveModel}
+                        loading={connectionStatus === 'checking'}
+                        placeholder={modelPlaceholder}
+                        ariaLabel="Model"
+                    />
                 </div>
             </li>
         </ol>
@@ -727,68 +595,5 @@
 
     .status-error {
         color: var(--color-error-text);
-    }
-
-    .combobox-wrapper {
-        position: relative;
-        width: 100%;
-    }
-
-    .combobox-input-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .combobox-input {
-        padding-right: var(--spacing-2xl);
-    }
-
-    .combobox-toggle {
-        position: absolute;
-        right: 6px;
-        background: none;
-        border: none;
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        padding: var(--spacing-xxs) var(--spacing-xs);
-        line-height: 1;
-    }
-
-    .combobox-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        margin-top: var(--spacing-xxs);
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        box-shadow: var(--shadow-md);
-        max-height: 220px;
-        overflow-y: auto;
-        z-index: var(--z-dropdown);
-    }
-
-    .combobox-option {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-    }
-
-    .combobox-option:hover,
-    .combobox-option.highlighted {
-        background: var(--color-bg-secondary);
-    }
-
-    .combobox-option.selected {
-        background: var(--color-accent-subtle);
-    }
-
-    .combobox-empty {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        font-style: italic;
     }
 </style>

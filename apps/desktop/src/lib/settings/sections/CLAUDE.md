@@ -37,6 +37,12 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   guard (it also fails when a new `CommandScope` lacks a `scopeOrder` entry).
 - **Cloud AI API keys never go through registry primitives.** `AiCloudSection` uses `SettingPasswordInput` in
   **controlled** mode (so the store isn't touched); keys live in the OS secret store via `saveAiApiKey` / `getAiApiKey`.
+- **The AI model picker is `ui/Combobox` (text-field-with-suggestions), and the list loads on open.** `AiCloudSection`
+  populates it on mount from the shared `ai-model-cache.ts` (warm hit) or a debounced check (cold miss, cached on
+  success). Don't zero `availableModels` at the start of a refetch (it flashes an empty list). The mount-trigger is
+  gated to prod (`getAppMode() === 'prod'`) so no-key providers don't hit a live endpoint in dev/E2E.
+  `CloudProviderSetup` gets NO mount-trigger (it already loads on open). The cache key is a SHA-256 digest; never
+  store/log the raw key. See DETAILS § "The model picker loads on open".
 - **Don't push the AI config from a section.** Sections just call `setSetting(...)`; hot-apply is wired in
   `settings-applier.ts` → `ai-config.ts::pushConfigToBackend()` (re-reads fresh). See parent CLAUDE.md.
 - **Don't hand-render anything tagged `showInAdvanced: true`** (it auto-renders in `AdvancedSection`), unless you're

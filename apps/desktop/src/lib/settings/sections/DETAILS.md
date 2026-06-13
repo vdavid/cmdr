@@ -109,6 +109,31 @@ Settings AI changes hot-apply because `settings-applier.ts` routes `ai.provider`
 `ai.cloudProviderConfigs` to `ai-config.ts::pushConfigToBackend()`, which re-reads everything fresh. Sections just call
 `setSetting(...)`; don't try to push the AI config from the section component.
 
+### The model picker loads on open and caches across reopens
+
+`AiCloudSection` renders the model field through the shared `$lib/ui/Combobox` (a text-field-with-suggestions, not a
+value-bound select), fed by `availableModels`. On mount, after the saved key resolves from the secret store,
+`populateModelsOnOpen()` runs: a warm hit from `$lib/settings/ai-model-cache.ts` populates the list instantly; a cold
+miss schedules the same debounced connection check the key/URL editors use, and a successful check writes the result
+back into the cache. The cache key is a SHA-256 digest of `providerId \0 baseUrl \0 apiKey` (collision-free across
+equal-length keys, so a revoked-vs-new key can't serve a stale list); the raw key and the digest input are never stored
+or logged.
+
+Two things keep the field honest, both load-bearing:
+
+- **`triggerConnectionCheck()` must NOT zero `availableModels` at the start of a refetch.** The field text is
+  `inputValue`-driven (the saved/typed model), but flashing an empty suggestion list mid-check is the regression we
+  forbid. A genuine config change (provider switch) still drops the list via `resetConnectionState()`.
+- **The mount-trigger is gated to prod (`getAppMode() === 'prod'`).** For no-key providers (`custom`/`ollama`/
+  `lm-studio`) `hasCheckableConfig` is true with just the preset base URL, so without the gate the mount-trigger would
+  fire a real request against a live endpoint in dev/E2E (today nothing fires on mount). Warm cache hits still work in
+  dev/E2E (no network). The mount-trigger also bails when a check is already scheduled or in flight, so it can't
+  double-fire with `handleCloudProviderChange`'s `setTimeout(0)` check.
+
+`CloudProviderSetup` (onboarding) uses the same `ui/Combobox` but gets **no** mount-trigger: it already loads on open
+(`loadApiKeyForProvider` triggers a check when a stored key resolves), so a second trigger would double-fire. The
+session cache is process-lifetime and shared by both consumers.
+
 ### Every command groups by scope (one group per `CommandScope`)
 
 `KeyboardShortcutsSection` renders one titled group per `CommandScope`, in a fixed reading order, via the pure

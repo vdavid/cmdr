@@ -247,7 +247,7 @@ describe('CloudProviderSetup', () => {
     expect(mounted.target.textContent).toContain('boom')
   })
 
-  it('a "connected" result with no models flips the API-key check but leaves the combobox plain', async () => {
+  it('a "connected" result with no models still flips the API-key check; the model field stays usable', async () => {
     checkAiConnection.mockResolvedValue({
       connected: true,
       authError: false,
@@ -263,7 +263,9 @@ describe('CloudProviderSetup', () => {
     keyInput.dispatchEvent(new Event('input', { bubbles: true }))
     await advanceTimers(1500)
     expect(mounted.target.textContent).toContain('Connected!')
-    expect(mounted.target.querySelector('[role="listbox"]')).toBeNull()
+    // The model field is always the combobox now (never morphs): it stays present even with no
+    // suggestions, so the user can still type a custom model.
+    expect(mounted.target.querySelector('input[aria-label="Model"]')).not.toBeNull()
   })
 
   it('an explicit `error` payload with connected=true is treated as an error', async () => {
@@ -296,32 +298,7 @@ describe('CloudProviderSetup', () => {
     expect(openExternalUrl).toHaveBeenCalled()
   })
 
-  it('keyboard arrow keys open the combobox and Enter selects the highlighted model', async () => {
-    mountSetup('openai')
-    await settle()
-    if (!mounted) throw new Error('not mounted')
-    // First populate the model list via a successful check.
-    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
-    if (!keyInput) throw new Error('API key input missing')
-    keyInput.value = 'sk-ok'
-    keyInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await advanceTimers(1500)
-    const modelInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="Model"]')
-    if (!modelInput) throw new Error('model input missing')
-    modelInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
-    await settle()
-    modelInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
-    await settle()
-    modelInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-    await settle()
-    // saveModel was called with one of the available models.
-    const stored = JSON.parse(settingsMap['ai.cloudProviderConfigs'] as string) as Partial<
-      Record<string, { model?: string }>
-    >
-    expect(['gpt-4.1-mini', 'gpt-4o-mini']).toContain(stored.openai?.model)
-  })
-
-  it('Escape on an open combobox closes it without selecting', async () => {
+  it('a successful check renders the returned models as suggestions in the combobox', async () => {
     mountSetup('openai')
     await settle()
     if (!mounted) throw new Error('not mounted')
@@ -330,41 +307,10 @@ describe('CloudProviderSetup', () => {
     keyInput.value = 'sk-ok'
     keyInput.dispatchEvent(new Event('input', { bubbles: true }))
     await advanceTimers(1500)
-    const modelInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="Model"]')
-    if (!modelInput) throw new Error('model input missing')
-    modelInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
-    await settle()
-    expect(mounted.target.querySelector('[role="listbox"]')).not.toBeNull()
-    modelInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    await settle()
-    // Listbox should drop on next render tick. We don't assert it here because
-    // Svelte 5's $state reactivity tracks the change; the assertion below covers the
-    // arrow-up branch, which already exercises both close paths.
-    modelInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }))
-    await settle()
-  })
-
-  it('clicking a model option in the dropdown selects it', async () => {
-    mountSetup('openai')
-    await settle()
-    if (!mounted) throw new Error('not mounted')
-    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
-    if (!keyInput) throw new Error('API key input missing')
-    keyInput.value = 'sk-ok'
-    keyInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await advanceTimers(1500)
-    const modelInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="Model"]')
-    if (!modelInput) throw new Error('model input missing')
-    modelInput.dispatchEvent(new Event('focus', { bubbles: true }))
-    await settle()
-    const options = mounted.target.querySelectorAll<HTMLDivElement>('[role="option"]')
-    expect(options.length).toBeGreaterThan(0)
-    options[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-    await settle()
-    const stored = JSON.parse(settingsMap['ai.cloudProviderConfigs'] as string) as Partial<
-      Record<string, { model?: string }>
-    >
-    expect(stored.openai?.model).toBe('gpt-4.1-mini')
+    // The shared `ui/Combobox` renders the model items; we assert the data flows through, not the
+    // popup open/close mechanics (that's Ark's job, covered by the primitive's own tests).
+    expect(mounted.target.textContent).toContain('gpt-4.1-mini')
+    expect(mounted.target.textContent).toContain('gpt-4o-mini')
   })
 
   it('a secret store read failure surfaces an inline error', async () => {
@@ -411,38 +357,15 @@ describe('CloudProviderSetup', () => {
     expect(stored.openai?.model).toBe('gpt-4o')
   })
 
-  it('clicking the combobox toggle button opens and closes the dropdown', async () => {
+  it('keeps showing the saved model even before any models load (the field never blanks)', async () => {
+    settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'my-custom-model' } })
+    // No key, so no check fires: the suggestion list stays empty (cold start). The field must still
+    // show the saved model, not blank, per the Combobox text-field-with-suggestions contract.
     mountSetup('openai')
     await settle()
     if (!mounted) throw new Error('not mounted')
-    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
-    if (!keyInput) throw new Error('API key input missing')
-    keyInput.value = 'sk-ok'
-    keyInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await advanceTimers(1500)
-    const toggle = mounted.target.querySelector<HTMLButtonElement>('button[aria-label="Show models"]')
-    if (!toggle) throw new Error('combobox toggle missing')
-    toggle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
-    await settle()
-    expect(mounted.target.querySelector('[role="listbox"]')).not.toBeNull()
-  })
-
-  it('blurring the combobox closes the dropdown after the 150 ms timeout', async () => {
-    mountSetup('openai')
-    await settle()
-    if (!mounted) throw new Error('not mounted')
-    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
-    if (!keyInput) throw new Error('API key input missing')
-    keyInput.value = 'sk-ok'
-    keyInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await advanceTimers(1500)
     const modelInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="Model"]')
-    if (!modelInput) throw new Error('model input missing')
-    modelInput.dispatchEvent(new Event('focus', { bubbles: true }))
-    await settle()
-    modelInput.dispatchEvent(new Event('blur', { bubbles: true }))
-    await advanceTimers(200)
-    expect(mounted.target.querySelector('[role="listbox"]')).toBeNull()
+    expect(modelInput?.value).toBe('my-custom-model')
   })
 
   it('flushes a pending key save when the provider switches mid-typing', async () => {

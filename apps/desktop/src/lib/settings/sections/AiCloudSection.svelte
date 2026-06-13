@@ -1,8 +1,10 @@
 <script lang="ts">
-    import { onDestroy } from 'svelte'
+    import { onDestroy, onMount } from 'svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingPasswordInput from '../components/SettingPasswordInput.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Select, { type SelectItem } from '$lib/ui/Select.svelte'
+    import Combobox, { type ComboboxItem } from '$lib/ui/Combobox.svelte'
     import {
         getSetting,
         setSetting,
@@ -14,6 +16,8 @@
     } from '$lib/settings'
     import { checkAiConnection, getAiApiKey, saveAiApiKey } from '$lib/tauri-commands'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
+    import { computeModelCacheKey, getCachedModels, setCachedModels } from '$lib/settings/ai-model-cache'
+    import { getAppMode } from '$lib/app-mode'
     import { describeSecretError, type SecretErrorMessage } from './ai-secret-error'
     import { addToast, dismissToast } from '$lib/ui/toast'
 
@@ -61,24 +65,16 @@
     // Captured at schedule time so a switch-provider-mid-typing flushes against the right key.
     let pendingApiKeySave: { providerId: string; value: string } | null = null
 
-    // Model combobox state
-    let comboboxOpen = $state(false)
-    let comboboxFilter = $state('')
-    let highlightedIndex = $state(-1)
-
-    const filteredModels = $derived(
-        comboboxFilter
-            ? availableModels.filter((m) => m.toLowerCase().includes(comboboxFilter.toLowerCase()))
-            : availableModels,
-    )
-
     // Event listeners cleanup
     const unlistenFns: Array<() => void> = []
 
-    // Load current cloud provider config into local state. The API key is async (lives in the OS
-    // secret store, not settings.json) so the input shows '' until the fetch resolves on first
-    // mount (fine for a settings panel that's not on the hot path).
-    void loadCloudProviderConfig(cloudProviderId)
+    // Load current cloud provider config into local state, then populate the model list on open
+    // (cache hit → instant; cold + checkable → one debounced check). The API key is async (lives in
+    // the OS secret store, not settings.json) so the field shows the saved model immediately while
+    // the key fetch resolves; the model list fills in once we know the config is checkable.
+    onMount(() => {
+        void loadCloudProviderConfig(cloudProviderId).then(() => void populateModelsOnOpen())
+    })
 
     // Subscribe to cloud provider changes
     const unsubCloudProvider = onSpecificSettingChange('ai.cloudProvider', (_id, newValue) => {
@@ -128,12 +124,19 @@
 
         if (!hasCheckableConfig) return
 
+        // Capture the config we're checking so we can cache the result under the right fingerprint
+        // even if the user keeps typing while the request is in flight.
+        const baseUrlAtStart = resolvedBaseUrl
+        const apiKeyAtStart = currentApiKey
+        const providerIdAtStart = cloudProviderId
+
         connectionStatus = 'checking'
         connectionError = null
-        availableModels = []
+        // Keep the prior list during a refetch: the field text is `inputValue`-driven, but a
+        // flashing-empty suggestion list mid-check is a regression we forbid (finding #4).
 
         try {
-            const result = await checkAiConnection(resolvedBaseUrl, currentApiKey)
+            const result = await checkAiConnection(baseUrlAtStart, apiKeyAtStart)
 
             if (result.authError) {
                 connectionStatus = 'auth-error'
@@ -147,6 +150,7 @@
             } else if (result.models.length > 0) {
                 connectionStatus = 'connected'
                 availableModels = result.models
+                void cacheModels(providerIdAtStart, baseUrlAtStart, apiKeyAtStart, result.models)
             } else {
                 connectionStatus = 'connected-no-models'
             }
@@ -154,6 +158,40 @@
             connectionStatus = 'error'
             connectionError = e instanceof Error ? e.message : 'Unknown error'
         }
+    }
+
+    /**
+     * On open, serve the model list from the session cache instantly, or kick off a check that
+     * fills it. Gated so it only fires a real request in prod: for no-key providers
+     * (`custom`/`ollama`/`lm-studio`) `hasCheckableConfig` is true with the preset base URL, so a
+     * mount-trigger would otherwise hit a live endpoint in dev/E2E. A warm cache hit still works in
+     * dev/E2E (no network). Also skips when a check is already scheduled (for example from a
+     * just-handled provider switch) so we don't double-fire.
+     */
+    async function populateModelsOnOpen(): Promise<void> {
+        if (!hasCheckableConfig) return
+        const fingerprint = await computeModelCacheKey(cloudProviderId, resolvedBaseUrl, currentApiKey)
+        const cached = getCachedModels(fingerprint)
+        if (cached) {
+            availableModels = cached
+            connectionStatus = 'connected'
+            return
+        }
+        // No mount-triggered network in dev/E2E (the auto-check is the only request that fires
+        // without a user action). Cache hits above still work everywhere.
+        if (getAppMode() !== 'prod') return
+        if (connectionCheckTimer || connectionStatus === 'checking') return
+        scheduleConnectionCheck()
+    }
+
+    async function cacheModels(
+        providerId: string,
+        baseUrl: string,
+        apiKey: string,
+        models: string[],
+    ): Promise<void> {
+        const fingerprint = await computeModelCacheKey(providerId, baseUrl, apiKey)
+        setCachedModels(fingerprint, models)
     }
 
     function resetConnectionState(): void {
@@ -287,49 +325,20 @@
         }, 0)
     }
 
-    function selectModel(model: string): void {
+    function handleModelInputChange(model: string): void {
         currentModel = model
-        comboboxFilter = ''
-        comboboxOpen = false
-        highlightedIndex = -1
         saveCloudProviderField('model', model)
-    }
-
-    function handleComboboxKeydown(e: KeyboardEvent): void {
-        if (!comboboxOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-            comboboxOpen = true
-            highlightedIndex = 0
-            e.preventDefault()
-            return
-        }
-        if (!comboboxOpen) return
-
-        if (e.key === 'ArrowDown') {
-            e.preventDefault()
-            highlightedIndex = Math.min(highlightedIndex + 1, filteredModels.length - 1)
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault()
-            highlightedIndex = Math.max(highlightedIndex - 1, 0)
-        } else if (e.key === 'Enter' && highlightedIndex >= 0 && highlightedIndex < filteredModels.length) {
-            e.preventDefault()
-            selectModel(filteredModels[highlightedIndex])
-        } else if (e.key === 'Escape') {
-            comboboxOpen = false
-            highlightedIndex = -1
-        }
-    }
-
-    function handleComboboxBlur(): void {
-        // Delay to allow click events on dropdown options to fire first
-        setTimeout(() => {
-            comboboxOpen = false
-            highlightedIndex = -1
-            comboboxFilter = ''
-        }, 150)
     }
 
     // Derived state
     const currentPreset = $derived(getCloudProvider(cloudProviderId))
+    const providerSelectItems = $derived<SelectItem[]>(
+        cloudProviderPresets.map((preset) => ({ value: preset.id, label: preset.name })),
+    )
+    const modelComboboxItems = $derived<ComboboxItem[]>(availableModels.map((m) => ({ value: m, label: m })))
+    const modelPlaceholder = $derived(
+        currentPreset?.defaultModel ? `Example: ${currentPreset.defaultModel}` : 'Model name',
+    )
     const showEditableBaseUrl = $derived(cloudProviderId === 'custom' || cloudProviderId === 'azure-openai')
     const resolvedBaseUrl = $derived(showEditableBaseUrl ? currentBaseUrl : (currentPreset?.baseUrl ?? ''))
     const requiresApiKey = $derived(currentPreset?.requiresApiKey ?? false)
@@ -351,19 +360,12 @@
         split
         {searchQuery}
     >
-        <select
-            class="cloud-provider-select"
+        <Select
+            items={providerSelectItems}
             value={cloudProviderId}
-            onchange={(e: Event) => {
-                const target = e.target as HTMLSelectElement
-                handleCloudProviderChange(target.value)
-            }}
-            aria-label="Cloud AI service"
-        >
-            {#each cloudProviderPresets as preset (preset.id)}
-                <option value={preset.id}>{preset.name}</option>
-            {/each}
-        </select>
+            onChange={handleCloudProviderChange}
+            ariaLabel="Cloud AI service"
+        />
     </SettingRow>
     {#if currentPreset?.description}
         <p class="provider-description">{currentPreset.description}</p>
@@ -429,95 +431,14 @@
     split
     {searchQuery}
 >
-    {#if availableModels.length > 0}
-        <div class="combobox-wrapper">
-            <div class="combobox-input-wrapper">
-                <input
-                    class="text-input combobox-input"
-                    type="text"
-                    value={comboboxOpen ? comboboxFilter : currentModel}
-                    onfocus={() => {
-                        comboboxOpen = true
-                        comboboxFilter = ''
-                        highlightedIndex = -1
-                    }}
-                    onblur={handleComboboxBlur}
-                    oninput={(e: Event) => {
-                        const target = e.target as HTMLInputElement
-                        comboboxFilter = target.value
-                        currentModel = target.value
-                        highlightedIndex = 0
-                        saveCloudProviderField('model', target.value)
-                    }}
-                    onkeydown={handleComboboxKeydown}
-                    placeholder={currentPreset?.defaultModel
-                        ? `Example: ${currentPreset.defaultModel}`
-                        : 'Model name'}
-                    aria-label="Model"
-                    aria-controls="model-listbox"
-                    aria-expanded={comboboxOpen}
-                    aria-haspopup="listbox"
-                    autocomplete="off"
-                    spellcheck="false"
-                    role="combobox"
-                />
-                <button
-                    class="combobox-toggle"
-                    tabindex="-1"
-                    aria-label="Show models"
-                    onmousedown={(e: MouseEvent) => {
-                        e.preventDefault()
-                        comboboxOpen = !comboboxOpen
-                    }}
-                >
-                    &#x25BE;
-                </button>
-            </div>
-            {#if comboboxOpen}
-                <div class="combobox-dropdown" role="listbox" id="model-listbox">
-                    {#if filteredModels.length === 0}
-                        <div class="combobox-empty">No matching models</div>
-                    {:else}
-                        {#each filteredModels as model, i (model)}
-                            <div
-                                class="combobox-option"
-                                class:highlighted={i === highlightedIndex}
-                                class:selected={model === currentModel}
-                                role="option"
-                                aria-selected={model === currentModel}
-                                onmousedown={(e: MouseEvent) => {
-                                    e.preventDefault()
-                                    selectModel(model)
-                                }}
-                                onmouseenter={() => {
-                                    highlightedIndex = i
-                                }}
-                            >
-                                {model}
-                            </div>
-                        {/each}
-                    {/if}
-                </div>
-            {/if}
-        </div>
-    {:else}
-        <input
-            class="text-input"
-            type="text"
-            value={currentModel}
-            oninput={(e: Event) => {
-                const target = e.target as HTMLInputElement
-                currentModel = target.value
-                saveCloudProviderField('model', target.value)
-            }}
-            placeholder={currentPreset?.defaultModel
-                ? `Example: ${currentPreset.defaultModel}`
-                : 'Model name'}
-            aria-label="Model"
-            autocomplete="off"
-            spellcheck="false"
-        />
-    {/if}
+    <Combobox
+        items={modelComboboxItems}
+        inputValue={currentModel}
+        onInputValueChange={handleModelInputChange}
+        loading={connectionStatus === 'checking'}
+        placeholder={modelPlaceholder}
+        ariaLabel="Model"
+    />
 </SettingRow>
 
 <!-- Connection status -->
@@ -581,26 +502,6 @@
 {/if}
 
 <style>
-    /* Cloud provider select */
-    .cloud-provider-select {
-        width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-md);
-        line-height: 1.4;
-        cursor: default;
-        transition: border-color var(--transition-base);
-    }
-
-    .cloud-provider-select:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
     .provider-description {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
@@ -697,71 +598,5 @@
 
     .secret-error-body {
         color: var(--color-text-secondary);
-    }
-
-    /* Model combobox */
-    .combobox-wrapper {
-        position: relative;
-        width: 100%;
-    }
-
-    .combobox-input-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .combobox-input {
-        padding-right: var(--spacing-2xl);
-    }
-
-    .combobox-toggle {
-        position: absolute;
-        right: 6px;
-        background: none;
-        border: none;
-        color: var(--color-text-secondary);
-        cursor: default;
-        font-size: var(--font-size-sm);
-        padding: var(--spacing-xxs) var(--spacing-xs);
-        line-height: 1;
-    }
-
-    .combobox-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        margin-top: var(--spacing-xxs);
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        box-shadow: var(--shadow-md);
-        max-height: 200px;
-        overflow-y: auto;
-        z-index: var(--z-sticky);
-    }
-
-    .combobox-option {
-        padding: var(--spacing-xs) var(--spacing-md);
-        cursor: default;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-    }
-
-    .combobox-option:hover,
-    .combobox-option.highlighted {
-        background: var(--color-bg-secondary);
-    }
-
-    .combobox-option.selected {
-        background: var(--color-accent-subtle);
-    }
-
-    .combobox-empty {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        font-style: italic;
     }
 </style>
