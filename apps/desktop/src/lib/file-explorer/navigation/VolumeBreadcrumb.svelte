@@ -15,7 +15,7 @@
         reorderFavorites,
         stripFavoritePrefix,
     } from '$lib/tauri-commands'
-    import { moveItem, clampedReorderTarget } from './favorites-reorder'
+    import { moveItem, clampedReorderTarget, pointerReorderTarget } from './favorites-reorder'
     import { ask } from '@tauri-apps/plugin-dialog'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
@@ -279,6 +279,34 @@
         // commit / cancel still work.
         if (renamingFavoriteId !== null) return false
 
+        // Keyboard reorder of the highlighted favorite (Alt+Up / Alt+Down). The rows
+        // aren't DOM-focused (the dropdown navigates by a virtual `highlightedIndex`),
+        // so this must run here, BEFORE `handleDropdownKey` consumes the bare arrows.
+        if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+            const highlighted =
+                highlightedIndex >= 0 && highlightedIndex < allVolumes.length
+                    ? allVolumes[highlightedIndex]
+                    : undefined
+            if (highlighted && highlighted.category === 'favorite') {
+                e.preventDefault()
+                const delta = e.key === 'ArrowUp' ? -1 : 1
+                void moveHighlightedFavorite(highlighted, delta).then((newFavIndex) => {
+                    if (newFavIndex === null) return
+                    // Follow the moved favorite so repeated Alt+Down keeps moving the same item.
+                    void tick().then(() => {
+                        const movedIdx = allVolumes.findIndex(
+                            (v) => v.category === 'favorite' && v.id === highlighted.id,
+                        )
+                        if (movedIdx >= 0) {
+                            highlightedIndex = movedIdx
+                            enterKeyboardMode()
+                        }
+                    })
+                })
+                return true
+            }
+        }
+
         const submenuResult = handleSubmenuKey(e.key, {
             isOpen: () => submenu.volumeId !== null,
             close: () => { submenu.close(); },
@@ -386,6 +414,9 @@
 
     onDestroy(() => {
         spaceManager.destroy()
+        // Tear down any in-flight pointer-drag listeners if the component unmounts mid-drag.
+        window.removeEventListener('mousemove', handleFavoriteMouseMove)
+        window.removeEventListener('mouseup', handleFavoriteMouseUp)
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('click', handleBreadcrumbPopupClickOutside)
         document.removeEventListener('click', handleRowMenuClickOutside)
@@ -541,71 +572,112 @@
     }
 
     function handleRenameKeyDown(e: KeyboardEvent, volume: VolumeInfo) {
+        // The focused rename `<input>` owns every keystroke. Stop ALL keys from
+        // bubbling to the pane's DOM listeners (Space-selection, type-to-jump,
+        // etc.); the dispatch-level guards don't cover the raw DOM Space handler,
+        // so without this a Space typed into the box also selects the file under
+        // the cursor. Enter commits, Escape cancels, everything else edits the text.
+        e.stopPropagation()
         if (e.key === 'Enter') {
             e.preventDefault()
-            e.stopPropagation()
             void commitFavoriteRename(volume)
         } else if (e.key === 'Escape') {
             e.preventDefault()
-            e.stopPropagation()
             cancelFavoriteRename()
         }
     }
 
-    // Drag-to-reorder within the Favorites section. `draggingFavoriteId` is the grabbed
-    // item; `dragOverFavoriteId` is the row the pointer currently sits over (for the
-    // drop-line cue). On drop we persist the full new order via `reorderFavorites`.
+    // ── Pointer-drag reorder within the Favorites section ───────────────
+    // HTML5 drag-and-drop does NOT fire under Tauri's `dragDropEnabled` (the OS
+    // intercepts drag gestures before the webview sees `dragstart`/`drop`), so
+    // we roll our own with pointer events, mirroring the native file-list drag.
+    // `mousedown` on a favorite row records the grabbed id + start Y and arms
+    // window-level move/up listeners; an actual reorder begins only once the
+    // pointer crosses a small threshold, so a plain click still navigates.
+    // `dragOverIndex` is the live insertion slot driving the drop-line cue.
+    const DRAG_THRESHOLD_PX = 4
     let draggingFavoriteId: string | null = $state(null)
-    let dragOverFavoriteId: string | null = $state(null)
+    let dragOverIndex: number | null = $state(null)
+    // Set once the threshold is crossed; before that a mouseup is a plain click.
+    let dragActive = false
+    let dragStartY = 0
+    let pendingDragFavorite: VolumeInfo | null = null
 
-    function handleFavoriteDragStart(volume: VolumeInfo, e: DragEvent) {
-        draggingFavoriteId = volume.id
-        if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = 'move'
-            // Some browsers need data set for the drag to start.
-            e.dataTransfer.setData('text/plain', volume.id)
+    /** Midpoints of each favorite row in list order, for `pointerReorderTarget`. */
+    function favoriteRowMidpoints(): number[] {
+        const root = dropdownRef
+        if (!root) return []
+        return favorites.map((f) => {
+            const el = root.querySelector(`.favorite-item[data-fav-id="${CSS.escape(f.id)}"]`)
+            if (!el) return Number.POSITIVE_INFINITY
+            const rect = el.getBoundingClientRect()
+            return rect.top + rect.height / 2
+        })
+    }
+
+    function handleFavoriteMouseDown(volume: VolumeInfo, e: MouseEvent) {
+        // Left button only; never start a drag from the inline rename input.
+        if (e.button !== 0 || renamingFavoriteId === volume.id) return
+        pendingDragFavorite = volume
+        dragStartY = e.clientY
+        dragActive = false
+        window.addEventListener('mousemove', handleFavoriteMouseMove)
+        window.addEventListener('mouseup', handleFavoriteMouseUp)
+    }
+
+    function handleFavoriteMouseMove(e: MouseEvent) {
+        const grabbed = pendingDragFavorite
+        if (!grabbed) return
+        if (!dragActive) {
+            if (Math.abs(e.clientY - dragStartY) < DRAG_THRESHOLD_PX) return
+            // Threshold crossed: begin the reorder.
+            dragActive = true
+            draggingFavoriteId = grabbed.id
         }
+        const from = favorites.findIndex((f) => f.id === grabbed.id)
+        if (from < 0) return
+        const target = pointerReorderTarget(favoriteRowMidpoints(), e.clientY, from)
+        dragOverIndex = target ?? from
     }
 
-    function handleFavoriteDragOver(volume: VolumeInfo, e: DragEvent) {
-        if (!draggingFavoriteId) return
-        e.preventDefault()
-        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
-        dragOverFavoriteId = volume.id
-    }
-
-    async function handleFavoriteDrop(target: VolumeInfo, e: DragEvent) {
-        e.preventDefault()
-        const sourceId = draggingFavoriteId
-        draggingFavoriteId = null
-        dragOverFavoriteId = null
-        if (!sourceId || sourceId === target.id) return
+    function handleFavoriteMouseUp(e: MouseEvent) {
+        window.removeEventListener('mousemove', handleFavoriteMouseMove)
+        window.removeEventListener('mouseup', handleFavoriteMouseUp)
+        const grabbed = pendingDragFavorite
+        const wasDragging = dragActive
+        endFavoriteDrag()
+        if (!grabbed) return
+        if (!wasDragging) {
+            // Never crossed the threshold: treat as a plain click → navigate.
+            if (renamingFavoriteId !== grabbed.id) void handleVolumeSelect(grabbed)
+            return
+        }
         const ids = favorites.map((f) => f.id)
-        const from = ids.indexOf(sourceId)
-        const to = ids.indexOf(target.id)
-        if (from < 0 || to < 0) return
-        await persistFavoriteOrder(moveItem(ids, from, to))
+        const from = ids.indexOf(grabbed.id)
+        if (from < 0) return
+        const to = pointerReorderTarget(favoriteRowMidpoints(), e.clientY, from)
+        if (to === null) return
+        void persistFavoriteOrder(moveItem(ids, from, to))
     }
 
-    function handleFavoriteDragEnd() {
+    function endFavoriteDrag() {
         draggingFavoriteId = null
-        dragOverFavoriteId = null
+        dragOverIndex = null
+        dragActive = false
+        dragStartY = 0
+        pendingDragFavorite = null
     }
 
-    /** Keyboard reorder: Alt+Up / Alt+Down on a focused favorite. Keeps the app keyboard-first. */
-    async function moveFavoriteByKeyboard(volume: VolumeInfo, delta: -1 | 1) {
+    /** Keyboard reorder of the highlighted favorite by ±1. Called from `handleKeyDown`
+     *  (Alt+Up / Alt+Down) so it works without the rows being DOM-focused. Returns the
+     *  favorite's new index so the caller can follow the moved item with the highlight. */
+    async function moveHighlightedFavorite(volume: VolumeInfo, delta: -1 | 1): Promise<number | null> {
         const ids = favorites.map((f) => f.id)
         const from = ids.indexOf(volume.id)
         const to = clampedReorderTarget(from, delta, ids.length)
-        if (to === null) return
+        if (to === null) return null
         await persistFavoriteOrder(moveItem(ids, from, to))
-        // Keep focus on the moved item after the list re-renders.
-        void tick().then(() => {
-            const el = dropdownRef?.querySelector(
-                `.favorite-item[data-fav-id="${CSS.escape(volume.id)}"]`,
-            ) as HTMLElement | null
-            el?.focus()
-        })
+        return to
     }
 
     async function persistFavoriteOrder(orderedLocationIds: string[]) {
@@ -613,19 +685,6 @@
             await reorderFavorites(orderedLocationIds.map(stripFavoritePrefix))
         } catch {
             addToast("Couldn't reorder favorites. Try again?", { level: 'error' })
-        }
-    }
-
-    function handleFavoriteItemKeyDown(e: KeyboardEvent, volume: VolumeInfo) {
-        if (e.altKey && e.key === 'ArrowUp') {
-            e.preventDefault()
-            void moveFavoriteByKeyboard(volume, -1)
-        } else if (e.altKey && e.key === 'ArrowDown') {
-            e.preventDefault()
-            void moveFavoriteByKeyboard(volume, 1)
-        } else if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            void handleVolumeSelect(volume)
         }
     }
 
@@ -789,35 +848,31 @@
                 {/if}
                 {#each group.items as volume (volume.id)}
                     {@const isFavorite = volume.category === 'favorite'}
+                    {@const favIndex = isFavorite ? favorites.findIndex((f) => f.id === volume.id) : -1}
                     <!-- svelte-ignore a11y_mouse_events_have_key_events -->
                     <div
                         class="volume-item"
                         class:favorite-item={isFavorite}
                         class:is-dragging={isFavorite && draggingFavoriteId === volume.id}
-                        class:is-drag-over={isFavorite && dragOverFavoriteId === volume.id && draggingFavoriteId !== volume.id}
+                        class:is-drag-over={isFavorite && dragOverIndex === favIndex && draggingFavoriteId !== volume.id}
                         class:is-under-cursor={shouldShowCheckmark(volume, containingVolumeId)}
                         class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenu.volumeId}
                         class:is-restricted={isRestricted(volume.path)}
                         data-index={allVolumes.indexOf(volume)}
                         data-fav-id={isFavorite ? volume.id : undefined}
-                        tabindex={isFavorite ? 0 : undefined}
-                        draggable={isFavorite && renamingFavoriteId !== volume.id ? true : undefined}
-                        role={isFavorite ? 'button' : undefined}
                         use:tooltip={isRestricted(volume.path)
                             ? RESTRICTED_FOLDER_TOOLTIP
                             : isFavorite
                               ? favoriteTooltip(volume)
                               : ''}
                         onclick={() => {
-                            if (renamingFavoriteId === volume.id) return
+                            // Favorites navigate from the pointer mouseup handler (it decides
+                            // click-vs-drag), so skip the click path for them to avoid a double-fire.
+                            if (isFavorite || renamingFavoriteId === volume.id) return
                             void handleVolumeSelect(volume)
                         }}
                         oncontextmenu={(e: MouseEvent) => { openRowMenu(volume, e); }}
-                        ondragstart={isFavorite ? (e: DragEvent) => { handleFavoriteDragStart(volume, e) } : undefined}
-                        ondragover={isFavorite ? (e: DragEvent) => { handleFavoriteDragOver(volume, e) } : undefined}
-                        ondrop={isFavorite ? (e: DragEvent) => { void handleFavoriteDrop(volume, e) } : undefined}
-                        ondragend={isFavorite ? () => { handleFavoriteDragEnd() } : undefined}
-                        onkeydown={isFavorite ? (e: KeyboardEvent) => { handleFavoriteItemKeyDown(e, volume) } : undefined}
+                        onmousedown={isFavorite ? (e: MouseEvent) => { handleFavoriteMouseDown(volume, e) } : undefined}
                         onmouseover={(e: MouseEvent) => {
                             handleVolumeHover(volume)
                             if (volume.smbConnectionState === 'os_mount') {
@@ -1209,17 +1264,13 @@
         cursor: grab;
     }
 
-    .favorite-item:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -2px;
-    }
-
     /*noinspection CssUnusedSymbol*/
     .favorite-item.is-dragging {
+        cursor: grabbing;
         opacity: 0.5;
     }
 
-    /* Drop-line cue: a top border on the row the pointer is over. */
+    /* Drop-line cue: a top border marking the gap the pointer is over. */
     /*noinspection CssUnusedSymbol*/
     .favorite-item.is-drag-over {
         box-shadow: inset 0 2px 0 0 var(--color-accent);

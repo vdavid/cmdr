@@ -29,3 +29,27 @@ export function clampedReorderTarget(from: number, delta: number, length: number
   if (to < 0 || to >= length) return null
   return to
 }
+
+/**
+ * Pointer-drag reorder math. Given the vertical midpoints of each favorite row (in list order) and
+ * the pointer's Y, returns the index the grabbed item should move TO. The pointer drops the item
+ * AFTER every row whose midpoint sits above it, so we count midpoints below `pointerY` and place the
+ * item just before the first one. The result is already a valid `moveItem(items, from, to)` target:
+ * because `moveItem` removes the grabbed item first, an index past `from` still lands correctly.
+ *
+ * `from` is the grabbed item's current index. Returns `null` when the target equals `from` (a no-op
+ * drop), so the caller can treat the gesture as a plain click instead of a reorder.
+ */
+export function pointerReorderTarget(midpoints: readonly number[], pointerY: number, from: number): number | null {
+  if (from < 0 || from >= midpoints.length) return null
+  // Number of rows whose midpoint is above the pointer = the insertion slot.
+  let slot = 0
+  for (const mid of midpoints) {
+    if (pointerY > mid) slot++
+  }
+  // `slot` is an insertion index into the full list (0..length). Clamp to a valid move target and
+  // account for the grabbed item being removed first: a slot past `from` shifts down by one.
+  const target = slot > from ? slot - 1 : slot
+  const clamped = Math.max(0, Math.min(midpoints.length - 1, target))
+  return clamped === from ? null : clamped
+}

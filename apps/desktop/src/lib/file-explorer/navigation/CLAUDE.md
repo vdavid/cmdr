@@ -40,10 +40,19 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `volume-grouping.ts` always renders (even empty, for the placeholder) — don't "tidy" it back into the hide-when-empty
   branch. Context-menu "Add to favorites" is handled in Rust (`FAVORITES_ADD_CONTEXT_ID`), not the `favorites.add`
   command. Full flow in [DETAILS.md](DETAILS.md) § Editable favorites.
-- **The favorite-rename `<input>` must not leak keystrokes to the panes.** Three guards work together; don't remove any:
-  `VolumeBreadcrumb.handleKeyDown` bails while `renamingFavoriteId !== null`; `DualPaneExplorer.routeToVolumeChooser`
-  swallows keys from the pane behind ANY open switcher dropdown (returns true even when the dropdown ignores the key);
-  and `+page.svelte`'s `isModalDialogOpen()` reads `explorerRef.isVolumeChooserOpen()` to suppress centralized dispatch.
-  The favorite reorder needs BOTH `dragover` `preventDefault()` and an `ondrop` handler, or the drop silently no-ops.
+- **The favorite-rename `<input>` must not leak keystrokes to the panes.** Four guards work together; don't remove any:
+  `VolumeBreadcrumb.handleRenameKeyDown` calls `e.stopPropagation()` for EVERY key (the focused input owns its
+  keystrokes; the pane's Space-selection DOM listener isn't covered by the dispatch-level guard, so without this a Space
+  typed into the box also selects the file under the cursor); `VolumeBreadcrumb.handleKeyDown` bails while
+  `renamingFavoriteId !== null`; `DualPaneExplorer.routeToVolumeChooser` swallows keys from the pane behind ANY open
+  switcher dropdown (returns true even when the dropdown ignores the key); and `+page.svelte`'s `isModalDialogOpen()`
+  reads `explorerRef.isVolumeChooserOpen()` to suppress centralized dispatch.
+- **Favorite reorder is POINTER-based, not HTML5 drag.** HTML5 `draggable`/`ondragstart`/`ondrop` never fire under
+  Tauri's `dragDropEnabled` (the OS intercepts drag gestures before the WKWebView sees them), so the reorder uses
+  `onmousedown` + window `mousemove`/`mouseup` listeners with a small move threshold (below it, a mouseup is a plain
+  click → navigate). Don't reintroduce HTML5 drag here. Keyboard reorder (Alt+↑ / Alt+↓) lives in the exported
+  `handleKeyDown` and acts on the virtual `highlightedIndex` (the rows aren't DOM-focused), so it must run before
+  `handleDropdownKey` consumes the bare arrows. Both paths persist the FULL order via `reorderFavorites(bareIds)` using
+  the pure `favorites-reorder.ts` helpers.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

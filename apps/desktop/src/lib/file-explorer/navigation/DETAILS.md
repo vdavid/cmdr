@@ -228,20 +228,35 @@ the bare id, not the `fav-…` switcher id).
   path).
 - **Remove / Rename** are per-item, on the existing dropdown `row-menu` (right-click a favorite). Rename swaps the label
   for an inline `<input>` (Enter commits, Escape/blur cancels). Both strip the `fav-` prefix before calling the command.
-  While a rename is active, `VolumeBreadcrumb.handleKeyDown` bails (`renamingFavoriteId !== null`) so the dropdown's
-  list-nav keys (arrows / Home / End) don't steal them from the textbox; Enter/Escape never reach it (the input's own
-  handler stops propagation). The broader keystroke-leak guard lives one level up: while ANY pane's switcher dropdown is
-  open, `DualPaneExplorer.routeToVolumeChooser` swallows the key from the pane behind it (returns true even when the
-  dropdown ignores the key), and `+page.svelte`'s `isModalDialogOpen()` reads `explorerRef.isVolumeChooserOpen()` to
-  suppress centralized webview-keydown dispatch. So ⌘A, ⌥←/→, Backspace, etc. edit the rename textbox instead of acting
-  on the pane.
-- **Reorder** is drag-to-reorder within the section (`draggingFavoriteId` / `dragOverFavoriteId` drive the drop-line
-  cue) AND keyboard (Option+Up / Option+Down on a focused favorite, since the app is keyboard-first; the row tooltip
-  reads `⌥↑ / ⌥↓` on macOS, `Alt+↑ / Alt+↓` elsewhere, built by the pure `favorite-tooltip.ts`). HTML5 DnD needs BOTH
-  `preventDefault()` on `dragover` (to mark a valid drop target, so the cue shows) AND an `ondrop` handler; keep both or
-  the drop silently no-ops. Both paths compute the new order with the pure `favorites-reorder.ts` helpers and persist
-  the FULL order via `reorderFavorites(bareIds)`. The favorite row's tooltip leads with the PATH (then the reorder hint)
-  so a renamed favorite still reveals where it points.
+  `handleRenameKeyDown` calls `e.stopPropagation()` on EVERY key: the focused input owns its keystrokes, and the pane's
+  Space-selection / type-to-jump DOM listeners aren't covered by the dispatch-level guard, so a leaked Space would
+  select the file under the cursor while the user types into the box. Enter commits, Escape cancels, everything else
+  edits the text. While a rename is active, `VolumeBreadcrumb.handleKeyDown` also bails (`renamingFavoriteId !== null`)
+  so the dropdown's list-nav keys (arrows / Home / End) don't steal them. The broader keystroke-leak guard lives one
+  level up: while ANY pane's switcher dropdown is open, `DualPaneExplorer.routeToVolumeChooser` swallows the key from
+  the pane behind it (returns true even when the dropdown ignores the key), and `+page.svelte`'s `isModalDialogOpen()`
+  reads `explorerRef.isVolumeChooserOpen()` to suppress centralized webview-keydown dispatch.
+- **Reorder** is pointer-drag within the section AND keyboard (Option+Up / Option+Down, since the app is keyboard-first;
+  the row tooltip reads `⌥↑ / ⌥↓` on macOS, `Alt+↑ / Alt+↓` elsewhere, built by the pure `favorite-tooltip.ts`).
+  - **Pointer drag** uses `onmousedown` on the row + `window` `mousemove`/`mouseup` listeners (armed on mousedown,
+    removed on mouseup and `onDestroy`), NOT HTML5 drag-and-drop. A reorder begins only once the pointer moves past a
+    small threshold (`DRAG_THRESHOLD_PX`); below it, a mouseup is a plain click that navigates. So favorite rows skip
+    the `onclick` navigate path (it would double-fire with the mouseup) and `handleVolumeSelect` runs from mouseup
+    instead. During the drag, `favoriteRowMidpoints()` + the pure `pointerReorderTarget()` compute the live insertion
+    slot (`dragOverIndex`) that drives the `is-drag-over` drop-line cue; the grabbed row carries `is-dragging`.
+  - **Why pointer and not HTML5 DnD:** under Tauri's `dragDropEnabled` (on by default), macOS intercepts drag gestures
+    at the OS layer before the WKWebView sees `dragstart`/`dragover`/`drop`, so an HTML5-`draggable` reorder silently
+    never fires (the events don't arrive). This is the same reason the native file-list drag (`views/FullList.svelte`)
+    is `onmousedown`-based, not `draggable`. Don't reintroduce HTML5 drag here; it'll look wired-up and do nothing.
+    Synthetic MCP/test events bypass the OS interception, so "it works under MCP" is not proof it works with a real
+    mouse.
+  - **Keyboard** (Alt+↑ / Alt+↓) is handled in the exported `handleKeyDown`, BEFORE `handleDropdownKey` consumes the
+    bare arrows, and acts on the highlighted favorite (`allVolumes[highlightedIndex]`) since the rows aren't DOM-focused
+    (the dropdown navigates by a virtual `highlightedIndex`). After persisting, it moves the highlight to follow the
+    moved favorite so repeated Alt+↓ keeps moving the same item.
+  - Both paths compute the new order with the pure `favorites-reorder.ts` helpers (`moveItem`, `clampedReorderTarget`,
+    `pointerReorderTarget`) and persist the FULL order via `reorderFavorites(bareIds)`. The favorite row's tooltip leads
+    with the PATH (then the reorder hint) so a renamed favorite still reveals where it points.
 - **Empty state** is a real state (the user can remove every favorite). The `favorite` group in `volume-grouping.ts`
   always renders (unlike every other group, which hides when empty), and the switcher shows a single disabled,
   non-focusable placeholder row: "(Your favorites will show here)".

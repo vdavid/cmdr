@@ -733,19 +733,24 @@ describe('VolumeBreadcrumb', () => {
       expect(placeholder?.getAttribute('role')).toBeNull()
     })
 
-    it('renders favorites as draggable, focusable items', async () => {
+    it('renders favorites as pointer-draggable rows (no HTML5 draggable, not DOM-focusable)', async () => {
       await openWithFavorites([fav('1', 'Documents', '/Users/me/Documents')])
       const item = getTarget().querySelector('.favorite-item')
       expect(item).toBeTruthy()
-      expect(item?.getAttribute('draggable')).toBe('true')
-      expect(item?.getAttribute('tabindex')).toBe('0')
+      // Reorder is pointer-based (HTML5 drag is dead under Tauri's `dragDropEnabled`), and the
+      // rows are navigated by the virtual `highlightedIndex`, not by DOM focus.
+      expect(item?.getAttribute('draggable')).toBeNull()
+      expect(item?.getAttribute('tabindex')).toBeNull()
       expect(item?.getAttribute('data-fav-id')).toBe('fav-1')
     })
 
-    it('Alt+Down keyboard reorder persists the new order with bare ids', async () => {
-      await openWithFavorites([fav('a', 'A', '/a'), fav('b', 'B', '/b'), fav('c', 'C', '/c')])
-      const first = getTarget().querySelector('.favorite-item[data-fav-id="fav-a"]') as HTMLElement
-      first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }))
+    it('Alt+Down keyboard reorder (on the highlighted favorite) persists the new order with bare ids', async () => {
+      const component = await openWithFavorites([fav('a', 'A', '/a'), fav('b', 'B', '/b'), fav('c', 'C', '/c')])
+      const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => boolean }).handleKeyDown
+      // Highlight the first favorite, then Alt+Down moves it to the second slot.
+      handleKeyDown(new KeyboardEvent('keydown', { key: 'Home' }))
+      await tick()
+      handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true }))
       await tick()
       expect(reorderFavorites).toHaveBeenCalledWith(['b', 'a', 'c'])
     })
