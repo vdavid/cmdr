@@ -3,6 +3,8 @@ export type Bindings = {
   LICENSE_CODES: KVNamespace
   // KV namespace for blog post likes
   BLOG_LIKES: KVNamespace
+  // KV namespace for tracking-link short codes (the `?r=<code>` -> UTM map served at /r-codes.json)
+  LINK_CODES: KVNamespace
   // Analytics Engine for device count tracking (fair use monitoring)
   DEVICE_COUNTS: AnalyticsEngineDataset
   // D1 database for telemetry persistence (crash reports, downloads, update checks, heartbeats)

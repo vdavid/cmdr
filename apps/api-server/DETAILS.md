@@ -17,6 +17,8 @@ live in [CLAUDE.md](CLAUDE.md).
 | `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                                                                                                |
 | `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                                                                                             |
 | `src/feedback.ts`                           | Route: `POST /feedback` (in-app feedback → D1 + Discord notify)                                                                                                                     |
+| `src/link-codes.ts`                         | Routes: `GET /r-codes.json` (public, edge-cached) + `/admin/r-codes` CRUD. `?r=<code>` → UTM map in KV (`LINK_CODES`). Pure `sanitizeUtmValue`/`isValidCode` are unit-tested        |
+| `src/link-codes.test.ts`                    | Tests for `/r-codes.json` (public map, CORS, cache), the admin CRUD (auth, upsert, delete), and the validators                                                                      |
 | `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                                                                                        |
 | `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                                                                                                       |
 | `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                                                                                        |
@@ -41,29 +43,34 @@ live in [CLAUDE.md](CLAUDE.md).
 
 ## Routes
 
-| Method | Path                       | Auth          | Purpose                                                                                                |
-| ------ | -------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
-| GET    | `/`                        | none          | Health check                                                                                           |
-| POST   | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                                                           |
-| POST   | `/activate`                | none          | Exchange short code → full cryptographic key                                                           |
-| POST   | `/validate`                | none          | Check subscription status via Paddle API                                                               |
-| POST   | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                                                     |
-| GET    | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)                                              |
-| GET    | `/admin/downloads`         | Bearer token  | Aggregated downloads by day/version/arch/country/source, with raw `count` + deduped `uniqueCount`      |
-| GET    | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                                                          |
-| GET    | `/admin/update-activity`   | Bearer token  | Per-day distinct update-enabled installs by version (retained aggregate ∪ today's raw)                 |
-| GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                                                         |
-| GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                              |
-| GET    | `/admin/funnel`            | Bearer token  | Per-UTC-day acquisition funnel for the last N days (downloads, installs, DAU, D7, signups)             |
-| GET    | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                                |
-| GET    | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first      |
-| GET    | `/download/:version/:arch` | none          | Log download to D1 (bot UAs skipped, source + first-touch `ref` tagged, IP daily-hashed), 302 → GitHub |
-| POST   | `/crash-report`            | none          | Ingest crash report to D1                                                                              |
-| POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                                   |
-| POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                     |
-| POST   | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                    |
-| POST   | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                           |
-| GET    | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                                    |
+| Method  | Path                       | Auth          | Purpose                                                                                                |
+| ------- | -------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| GET     | `/`                        | none          | Health check                                                                                           |
+| POST    | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                                                           |
+| POST    | `/activate`                | none          | Exchange short code → full cryptographic key                                                           |
+| POST    | `/validate`                | none          | Check subscription status via Paddle API                                                               |
+| POST    | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                                                     |
+| GET     | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)                                              |
+| GET     | `/admin/downloads`         | Bearer token  | Aggregated downloads by day/version/arch/country/source, with raw `count` + deduped `uniqueCount`      |
+| GET     | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                                                          |
+| GET     | `/admin/update-activity`   | Bearer token  | Per-day distinct update-enabled installs by version (retained aggregate ∪ today's raw)                 |
+| GET     | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                                                         |
+| GET     | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                              |
+| GET     | `/admin/funnel`            | Bearer token  | Per-UTC-day acquisition funnel for the last N days (downloads, installs, DAU, D7, signups)             |
+| GET     | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                                |
+| GET     | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first      |
+| GET     | `/download/:version/:arch` | none          | Log download to D1 (bot UAs skipped, source + first-touch `ref` tagged, IP daily-hashed), 302 → GitHub |
+| POST    | `/crash-report`            | none          | Ingest crash report to D1                                                                              |
+| POST    | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                                   |
+| POST    | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                     |
+| POST    | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                    |
+| POST    | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                           |
+| GET     | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                                    |
+| GET     | `/r-codes.json`            | none          | Public `?r=<code>` → UTM map (note stripped), edge-cached 5 min, `Access-Control-Allow-Origin: *`      |
+| OPTIONS | `/r-codes.json`            | none          | CORS preflight (204)                                                                                   |
+| GET     | `/admin/r-codes`           | Bearer token  | Full code map including admin `note`                                                                   |
+| PUT     | `/admin/r-codes/:code`     | Bearer token  | Upsert a code: `{ utm_source, utm_medium?, note? }` (utm values sanitized; code charset validated)     |
+| DELETE  | `/admin/r-codes/:code`     | Bearer token  | Remove a code from the map                                                                             |
 
 ## Environments
 
@@ -100,13 +107,14 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
-| Binding                | Type         | Purpose                                                                              |
-| ---------------------- | ------------ | ------------------------------------------------------------------------------------ |
-| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                   |
-| `ERROR_REPORT_META`    | KV namespace | `total_bytes` counter + `eviction_in_progress` lock for the eviction logic           |
-| `HEARTBEAT_LIMITER`    | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)        |
-| `BETA_SIGNUP_LIMITER`  | Rate limit   | Gates `POST /beta-signup` at 5 req/min/IP (signups are rare; tighter than heartbeat) |
-| `FEEDBACK_LIMITER`     | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)    |
+| Binding                | Type         | Purpose                                                                                                                                                                                                                                |
+| ---------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                                                                                                                                                                     |
+| `ERROR_REPORT_META`    | KV namespace | `total_bytes` counter + `eviction_in_progress` lock for the eviction logic                                                                                                                                                             |
+| `LINK_CODES`           | KV namespace | One key (`codes`) holds the whole `?r=<code>` → `{ utm_source, utm_medium?, note? }` map (id `6dbba67c8ece475daf3e8c0406d242c9`). Created with `wrangler kv namespace create LINK_CODES`; no preview id (matches the other namespaces) |
+| `HEARTBEAT_LIMITER`    | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)                                                                                                                                                          |
+| `BETA_SIGNUP_LIMITER`  | Rate limit   | Gates `POST /beta-signup` at 5 req/min/IP (signups are rare; tighter than heartbeat)                                                                                                                                                   |
+| `FEEDBACK_LIMITER`     | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)                                                                                                                                                      |
 
 **Paddle dashboards**: [sandbox](https://sandbox-vendors.paddle.com) | [live](https://vendors.paddle.com)
 
@@ -472,6 +480,26 @@ The error report route does NOT regenerate the id server-side. It validates the 
 shape `^ERR-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{5}$` and uses it as-is. On the astronomically rare R2 key collision (same
 id + same date + UUID clash), the route retries with a fresh UUID (never a fresh id), so the user-visible id from the
 preview dialog stays stable through to the toast.
+
+**Link codes (`?r=` tracking links, `src/link-codes.ts`):** Short, inconspicuous `?r=<code>` links (for example
+`getcmdr.com/?r=rmc`) expand to UTM params client-side on getcmdr.com and David's blog. The code → meaning map lets
+David invent a new code without a code change or deploy.
+
+- **KV model:** the WHOLE map lives under ONE key (`codes`) in the `LINK_CODES` namespace, as JSON
+  `{ "<code>": { "utm_source": "...", "utm_medium": "...", "note": "..." }, ... }`. The map is tiny (a handful of
+  channels), so one blob keeps the public endpoint a single KV get and writes a trivial read-modify-write of one value.
+  Key-per-code would buy nothing here.
+- **Public endpoint `GET /r-codes.json`:** returns the map with the admin-only `note` stripped (source + medium only),
+  `Access-Control-Allow-Origin: *` (public non-sensitive config, fetched cross-origin from both getcmdr.com and the blog
+  at veszelovszki.com), and `Cache-Control: public, max-age=300`. The 5-minute edge cache keeps blog page loads off KV;
+  a new code is live within the TTL. CORS preflight is `OPTIONS` → 204.
+- **Admin CRUD (`/admin/r-codes*`, Bearer `ADMIN_API_TOKEN`):** `GET` lists the full map (with notes);
+  `PUT /admin/r-codes/:code` upserts; `DELETE /admin/r-codes/:code` removes. The path `:code` must match `[a-z0-9._-]`,
+  1..64 chars (`isValidCode`), else 400. `utm_source` is required and `utm_medium`/`note` are optional; UTM values run
+  through `sanitizeUtmValue` (lowercase, drop outside `[a-z0-9._-]`, cap 120) — a source that sanitizes to empty is
+  rejected 400. `note` is capped at 500 chars and never leaves the admin endpoint.
+- **Charset is the contract:** `sanitizeUtmValue` mirrors the blogs' client-side sanitizer and the `/download` `ref`
+  rule, so a stored value and a client pass-through value normalize identically. Keep them in sync if any changes.
 
 ## Local development
 

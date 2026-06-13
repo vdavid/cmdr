@@ -8,7 +8,9 @@ Cloudflare Worker (Hono) backend for Cmdr: licensing (Paddle webhooks, Ed25519 k
 
 - `src/index.ts`: Hono app assembly + scheduled handler wiring. `src/types.ts`: shared `Bindings`, constants, auth.
 - Route modules: `licensing.ts`, `admin.ts`, `telemetry.ts` (crash/heartbeat/download/update-check), `likes.ts`,
-  `error-report.ts`, `beta-signup.ts`, `feedback.ts`. Cron in `scheduled.ts`; eviction in `error-report-eviction.ts`.
+  `error-report.ts`, `beta-signup.ts`, `feedback.ts`, `link-codes.ts` (`?r=` tracking-link codes: public
+  `/r-codes.json` + `/admin/r-codes` CRUD, map in the `LINK_CODES` KV namespace). Cron in `scheduled.ts`; eviction in
+  `error-report-eviction.ts`.
 - Crypto/Paddle: `license.ts` (short code + key gen), `paddle.ts` (HMAC verify), `paddle-api.ts`, `email.ts`,
   `discord.ts`, `device-tracking.ts`. Tests sit beside their module.
 

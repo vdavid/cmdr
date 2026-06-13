@@ -151,6 +151,21 @@ of file names, paths, queries, and prompts by allowlist. See `apps/desktop/src-t
   aggregate channel attribution. If you add a new download link, give it `data-download-link` (main) or `data-arch`
   inside `[data-download-dropdown]` (option) so the ref script finds it.
 
+  **`?r=<code>` tracking-link expansion (storage-free).** A short, inconspicuous `?r=` code on a link (for example
+  `getcmdr.com/?r=rmc`) expands to `utm_source` (+ `utm_medium`) before analytics runs, so visitors see a clean URL and
+  the channel is attributed. The code → meaning map lives in Cloudflare KV and is fetched from
+  `https://api.getcmdr.com/r-codes.json` (edge-cached), so a new code needs no website deploy. A known code maps to its
+  stored source/medium; an unknown code passes through as a sanitized `utm_source` verbatim. Storage-free: URL state
+  only (`history.replaceState`).
+
+  **CRITICAL ordering (don't break this).** The expansion is async (a fetch), and it MUST take effect before the
+  first-touch `ref` script, Umami, AND PostHog — they each read/record `utm_source` / the URL. The early `<head>` inline
+  script exposes `window.__cmdrRReady`, a Promise that resolves once the URL is final (or immediately when there's no
+  `?r=`). Umami and PostHog are injected via JS, and the `ref` script's first `run()` is deferred, all gated on
+  `.then(__cmdrRReady)` — that's how the order holds despite the fetch. If you add anything that reads `utm_source` or
+  records the pageview at load, gate it on `__cmdrRReady` too. Don't revert Umami/PostHog to static `<script>` tags: a
+  static tag fires before the fetch resolves and would record the raw `?r=`.
+
 **Decision/Why — client-side storage policy**: The site must never need a cookie consent banner.
 
 - Preference flags (theme, download arch, newsletter dismissed/subscribed) in localStorage are fine and settled — don't

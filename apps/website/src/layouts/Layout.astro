@@ -109,14 +109,88 @@ const {
             } catch { /* localStorage unavailable */ }
         </script>
 
-        {/* Umami analytics: self-hosted, cookieless */}
+        {/* `?r=<code>` tracking-link expansion (storage-free). MUST run before Umami, PostHog, AND
+           the first-touch `ref` script below, so all of them see the expanded `utm_source` (the
+           `ref` logic derives the channel from it, and Umami/PostHog record the clean URL, never the
+           raw `?r=`). The lookup is async (a KV-backed fetch), so this exposes `window.__cmdrRReady`,
+           a Promise the three consumers await before they run/init — that's how the ordering holds
+           despite the fetch. The code -> meaning map lives in Cloudflare KV (api.getcmdr.com/
+           r-codes.json), so a new code needs no website deploy.
+
+           Known codes set `utm_source` (+ `utm_medium`); an unknown code passes through as a
+           sanitized `utm_source` verbatim, so brand-new / self-explanatory codes work without a KV
+           entry. Storage-free: URL state only (history.replaceState), no localStorage/cookies. */}
+        <script is:inline>
+            ;(function () {
+                function sanitize(value) {
+                    if (!value) return ''
+                    return value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9._-]/g, '')
+                        .slice(0, 120)
+                }
+
+                function applyExpansion(code, map) {
+                    var params = new URLSearchParams(window.location.search)
+                    if (!params.has('r')) return
+                    if (params.has('utm_source')) {
+                        params.delete('r')
+                        history.replaceState(null, '', window.location.pathname + '?' + params)
+                        return
+                    }
+                    var entry = map && map[code]
+                    var source = entry && entry.utm_source ? entry.utm_source : sanitize(code)
+                    if (!source) return
+                    params.delete('r')
+                    params.set('utm_source', source)
+                    if (entry && entry.utm_medium && !params.has('utm_medium')) {
+                        params.set('utm_medium', entry.utm_medium)
+                    }
+                    history.replaceState(null, '', window.location.pathname + '?' + params)
+                }
+
+                // Resolves once the URL is final (or immediately when there's no `?r=`). Consumers
+                // (Umami, PostHog, ref) await this so they never see the raw `?r=`.
+                window.__cmdrRReady = new Promise(function (resolve) {
+                    var code = new URLSearchParams(window.location.search).get('r')
+                    if (!code) {
+                        resolve()
+                        return
+                    }
+                    fetch('https://api.getcmdr.com/r-codes.json')
+                        .then(function (res) {
+                            return res.ok ? res.json() : null
+                        })
+                        .catch(function () {
+                            return null
+                        })
+                        .then(function (map) {
+                            applyExpansion(code, map)
+                        })
+                        .finally(resolve)
+                })
+            })()
+        </script>
+
+        {/* Umami analytics: self-hosted, cookieless. Injected after `?r=` expansion settles
+           (window.__cmdrRReady) so the pageview records the expanded URL, not the raw `?r=`. */}
         {
             import.meta.env.PUBLIC_UMAMI_WEBSITE_ID && (
                 <script
-                    defer
-                    src={`${import.meta.env.PUBLIC_UMAMI_HOST}/mami`}
-                    data-website-id={import.meta.env.PUBLIC_UMAMI_WEBSITE_ID}
-                />
+                    is:inline
+                    define:vars={{
+                        umamiHost: import.meta.env.PUBLIC_UMAMI_HOST,
+                        umamiId: import.meta.env.PUBLIC_UMAMI_WEBSITE_ID,
+                    }}
+                >
+                    {`(window.__cmdrRReady || Promise.resolve()).then(function () {
+                        var s = document.createElement('script')
+                        s.defer = true
+                        s.src = umamiHost + '/mami'
+                        s.setAttribute('data-website-id', umamiId)
+                        document.head.appendChild(s)
+                    })`}
+                </script>
             )
         }
     </head>
@@ -128,16 +202,28 @@ const {
         {
             /* PostHog: session replay, heatmaps, click tracking.
             Loaded from PostHog's CDN to avoid bundling dompurify (has an unpatched XSS advisory).
-            Snippet lives in public/scripts/posthog-init.js (extracted to avoid prettier parse errors). */
+            Snippet lives in public/scripts/posthog-init.js (extracted to avoid prettier parse errors).
+            Injected after `?r=` expansion settles (window.__cmdrRReady) so the first pageview records
+            the expanded URL. posthog-init.js reads its config from `document.currentScript.dataset`,
+            so the injected element carries the same data-ph-* attributes the static tag did. */
         }
         {
             import.meta.env.PUBLIC_POSTHOG_KEY && (
                 <script
                     is:inline
-                    src="/scripts/posthog-init.js"
-                    data-ph-key={import.meta.env.PUBLIC_POSTHOG_KEY}
-                    data-ph-host={import.meta.env.PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com'}
-                />
+                    define:vars={{
+                        phKey: import.meta.env.PUBLIC_POSTHOG_KEY,
+                        phHost: import.meta.env.PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
+                    }}
+                >
+                    {`(window.__cmdrRReady || Promise.resolve()).then(function () {
+                        var s = document.createElement('script')
+                        s.src = '/scripts/posthog-init.js'
+                        s.setAttribute('data-ph-key', phKey)
+                        s.setAttribute('data-ph-host', phHost)
+                        document.body.appendChild(s)
+                    })`}
+                </script>
             )
         }
 
@@ -236,8 +322,10 @@ const {
                     window.__cmdrApplyRefToDownloadLinks(ref)
                 }
 
-                run()
-                // Re-run after Client Router swaps so the new page's links get the ref too.
+                // Wait for the `?r=` expansion to settle before the first run, so computeRef() reads
+                // the expanded utm_source rather than the raw `?r=`. Re-runs after Client Router swaps
+                // need no wait (no fresh `?r=` to expand there).
+                ;(window.__cmdrRReady || Promise.resolve()).then(run)
                 document.addEventListener('astro:page-load', run)
             })()
         </script>

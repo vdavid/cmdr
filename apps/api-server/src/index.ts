@@ -8,6 +8,7 @@ import { likes } from './likes'
 import { errorReport } from './error-report'
 import { betaSignup } from './beta-signup'
 import { feedback } from './feedback'
+import { linkCodes } from './link-codes'
 import {
   handleCrashNotifications,
   handleDailyAggregation,
@@ -31,6 +32,7 @@ app.route('/', likes)
 app.route('/', errorReport)
 app.route('/', betaSignup)
 app.route('/', feedback)
+app.route('/', linkCodes)
 
 export { app }
 
