@@ -156,7 +156,7 @@ export const commands: Command[] = [
     name: 'Add to favorites',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘D'],
+    shortcuts: ['⌘⇧D'],
     description: "Add the focused pane's current folder to the switcher's Favorites.",
     keywords: ['bookmark', 'favorite', 'pin', 'shortcut'],
   },

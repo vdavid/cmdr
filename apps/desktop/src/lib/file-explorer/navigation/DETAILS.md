@@ -218,18 +218,30 @@ of truth; see `src-tauri/src/favorites/CLAUDE.md`). All mutations go through the
 refresh. `stripFavoritePrefix(locationId)` recovers the bare favorite id (the remove / rename / reorder commands take
 the bare id, not the `fav-…` switcher id).
 
-- **Add** has three surfaces: the `favorites.add` command (palette, the Go menu's "Add to favorites", ⌘D) favorites the
-  focused pane's current dir (handler in `routes/(main)/command-handlers/misc-handlers.ts`); the folder-row and `..`
-  context menus favorite a SPECIFIC path. The context-menu add is handled entirely in Rust (`menu/menu_handlers.rs`
-  intercepts `FAVORITES_ADD_CONTEXT_ID` and favorites `MenuState.context.path`), so it never routes through
-  `favorites.add` (which would favorite the wrong dir). The folder-row item lives in `build_context_menu` (directories
-  only, not on search-results panes); the `..` row gets its own one-item menu via `show_parent_row_context_menu`
-  (`FilePane.handleContextMenu` calls it with the parent dir path).
+- **Add** has three surfaces: the `favorites.add` command (palette, the Go menu's "Add to favorites", ⌘⇧D — ⌘D is the
+  dev-only Debug window) favorites the focused pane's current dir (handler in
+  `routes/(main)/command-handlers/misc-handlers.ts`); the folder-row and `..` context menus favorite a SPECIFIC path.
+  The context-menu add is handled entirely in Rust (`menu/menu_handlers.rs` intercepts `FAVORITES_ADD_CONTEXT_ID` and
+  favorites `MenuState.context.path`), so it never routes through `favorites.add` (which would favorite the wrong dir).
+  The folder-row item lives in `build_context_menu` (directories only, not on search-results panes); the `..` row gets
+  its own one-item menu via `show_parent_row_context_menu` (`FilePane.handleContextMenu` calls it with the parent dir
+  path).
 - **Remove / Rename** are per-item, on the existing dropdown `row-menu` (right-click a favorite). Rename swaps the label
   for an inline `<input>` (Enter commits, Escape/blur cancels). Both strip the `fav-` prefix before calling the command.
+  While a rename is active, `VolumeBreadcrumb.handleKeyDown` bails (`renamingFavoriteId !== null`) so the dropdown's
+  list-nav keys (arrows / Home / End) don't steal them from the textbox; Enter/Escape never reach it (the input's own
+  handler stops propagation). The broader keystroke-leak guard lives one level up: while ANY pane's switcher dropdown is
+  open, `DualPaneExplorer.routeToVolumeChooser` swallows the key from the pane behind it (returns true even when the
+  dropdown ignores the key), and `+page.svelte`'s `isModalDialogOpen()` reads `explorerRef.isVolumeChooserOpen()` to
+  suppress centralized webview-keydown dispatch. So ⌘A, ⌥←/→, Backspace, etc. edit the rename textbox instead of acting
+  on the pane.
 - **Reorder** is drag-to-reorder within the section (`draggingFavoriteId` / `dragOverFavoriteId` drive the drop-line
-  cue) AND keyboard (Alt+Up / Alt+Down on a focused favorite, since the app is keyboard-first). Both compute the new
-  order with the pure `favorites-reorder.ts` helpers and persist the FULL order via `reorderFavorites(barelIds)`.
+  cue) AND keyboard (Option+Up / Option+Down on a focused favorite, since the app is keyboard-first; the row tooltip
+  reads `⌥↑ / ⌥↓` on macOS, `Alt+↑ / Alt+↓` elsewhere, built by the pure `favorite-tooltip.ts`). HTML5 DnD needs BOTH
+  `preventDefault()` on `dragover` (to mark a valid drop target, so the cue shows) AND an `ondrop` handler; keep both or
+  the drop silently no-ops. Both paths compute the new order with the pure `favorites-reorder.ts` helpers and persist
+  the FULL order via `reorderFavorites(bareIds)`. The favorite row's tooltip leads with the PATH (then the reorder hint)
+  so a renamed favorite still reveals where it points.
 - **Empty state** is a real state (the user can remove every favorite). The `favorite` group in `volume-grouping.ts`
   always renders (unlike every other group, which hides when empty), and the switcher shows a single disabled,
   non-focusable placeholder row: "(Your favorites will show here)".

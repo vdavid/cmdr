@@ -727,19 +727,31 @@
         log.info('Unreachable tab opened home folder for {pane} pane', { pane })
     }
 
-    /** Routes to whichever pane has its volume chooser open. Returns true if handled. */
+    /**
+     * Routes keys to whichever pane has its volume switcher dropdown open, and
+     * SWALLOWS them from the pane behind it. Returns true whenever a chooser is
+     * open (F1/F2 can open one on the non-focused pane, so we scan both):
+     *
+     * - If the dropdown's own handler consumes the key (arrow nav, Enter, Escape),
+     *   we're done.
+     * - If it doesn't (the inline favorite-rename `<input>` is active, so the
+     *   dropdown deliberately ignores arrows/Home/End and lets the textbox edit),
+     *   we STILL return true so the key never reaches `activePaneRef.handleKeyDown`
+     *   and moves the pane cursor. While the switcher is open it owns keyboard
+     *   focus; the panes behind it must stay inert (Fix E).
+     */
     function routeToVolumeChooser(e: KeyboardEvent): boolean {
-        // Check if EITHER pane has a volume chooser open - if so, route events there
-        // This is important because F1/F2 can open a volume chooser on the non-focused pane
+        let chooserOpen = false
         for (const side of ['left', 'right'] as const) {
             const ref = getPaneRef(side)
             if (ref?.isVolumeChooserOpen()) {
+                chooserOpen = true
                 if (ref.handleVolumeChooserKeyDown(e)) {
                     return true
                 }
             }
         }
-        return false
+        return chooserOpen
     }
 
     function handleEscapeDuringLoading(): boolean {
@@ -1014,6 +1026,18 @@
     /** Returns whether any confirmation dialog is currently open. */
     export function isConfirmationDialogOpen(): boolean {
         return fileOps.isConfirmationDialogOpen()
+    }
+
+    /**
+     * Returns whether the volume switcher dropdown is open on EITHER pane. The
+     * dropdown hosts the inline favorite-rename `<input>` plus a focusable list,
+     * so while it's open the app must stop firing pane/global shortcuts (⌘A,
+     * ⌥←/→, ⌘[/], Backspace, etc.) that would otherwise steal keystrokes from
+     * the textbox. `+page.svelte`'s `isModalDialogOpen()` reads this through the
+     * ExplorerAPI so suppression rides the existing scope-suppression seam.
+     */
+    export function isVolumeChooserOpen(): boolean {
+        return (paneRefs.left?.isVolumeChooserOpen() ?? false) || (paneRefs.right?.isVolumeChooserOpen() ?? false)
     }
 
     /** Opens the file viewer for the file under the cursor. */

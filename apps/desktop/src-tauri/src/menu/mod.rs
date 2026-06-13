@@ -153,8 +153,9 @@ pub const GO_TO_PATH_ID: &str = "go_to_path";
 /// "Go to latest download" (⌘J): jumps the focused pane to the most recent download.
 pub const GO_LATEST_DOWNLOAD_ID: &str = "go_latest_download";
 
-/// "Add to favorites" (⌘D), menu bar + palette: maps to the `favorites.add` command, which favorites
-/// the focused pane's current folder.
+/// "Add to favorites" (⌘⇧D), menu bar + palette: maps to the `favorites.add` command, which favorites
+/// the focused pane's current folder. ⌘⇧D, not ⌘D, because dev builds bind ⌘D to "Open Debug window"
+/// (non-configurable) and the two would clash.
 pub const FAVORITES_ADD_ID: &str = "favorites_add";
 
 /// "Add to favorites", folder-row + parent-row CONTEXT menus: favorites `MenuState.context.path`

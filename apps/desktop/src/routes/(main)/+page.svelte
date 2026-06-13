@@ -478,6 +478,18 @@
         return !!active?.closest('[contenteditable]')
     }
 
+    /**
+     * Explorer-owned overlays that should suppress centralized dispatch: a
+     * confirmation dialog, an active inline rename, OR the volume switcher
+     * dropdown (it hosts the inline favorite-rename input + a focusable list, so
+     * while it's open pane/global shortcuts must not fire — text-editing keys
+     * reach the textbox instead — Fix E).
+     */
+    function isExplorerOverlayOpen(): boolean {
+        if (!explorerRef) return false
+        return explorerRef.isConfirmationDialogOpen() || explorerRef.isRenaming() || explorerRef.isVolumeChooserOpen()
+    }
+
     /** Check if any modal dialog is open that should suppress centralized dispatch. */
     function isModalDialogOpen(): boolean {
         return (
@@ -488,8 +500,7 @@
             showLicenseKeyDialog ||
             showExpiredModal ||
             showCommercialReminder ||
-            (explorerRef?.isConfirmationDialogOpen() ?? false) ||
-            (explorerRef?.isRenaming() ?? false)
+            isExplorerOverlayOpen()
         )
     }
 

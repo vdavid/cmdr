@@ -30,9 +30,13 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
+    import { isMacOS } from '$lib/shortcuts/key-capture'
     import InfoIcon from '~icons/lucide/info'
     import { describeUsbSpeed, type VolumeInfo } from '../types'
     import { isVolumeEjectable } from './eject-predicate'
+    import { buildFavoriteTooltip } from './favorite-tooltip'
+
+    const favoriteTooltip = (volume: VolumeInfo): string => buildFavoriteTooltip(volume.path, isMacOS())
 
     /** "USB 3.2 Gen 1 (Max. 625 MB/s)" - shared between the chip tooltip and the dropdown subline. */
     function usbSpeedDisplay(volume: VolumeInfo | undefined): string {
@@ -267,6 +271,13 @@
     // Export keyboard handler for parent components to call
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (!isOpen) return false
+
+        // While renaming a favorite, the inline `<input>` owns every key: arrows,
+        // Home/End, etc. move the text cursor, not the dropdown highlight. Bail so
+        // the dropdown's list navigation doesn't steal them from the textbox. Enter
+        // / Escape never reach here (the input's own handler stops propagation), so
+        // commit / cancel still work.
+        if (renamingFavoriteId !== null) return false
 
         const submenuResult = handleSubmenuKey(e.key, {
             isOpen: () => submenu.volumeId !== null,
@@ -795,7 +806,7 @@
                         use:tooltip={isRestricted(volume.path)
                             ? RESTRICTED_FOLDER_TOOLTIP
                             : isFavorite
-                              ? 'Drag to reorder, or Alt+Up / Alt+Down. Right-click to rename or remove.'
+                              ? favoriteTooltip(volume)
                               : ''}
                         onclick={() => {
                             if (renamingFavoriteId === volume.id) return

@@ -273,7 +273,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         Some("Cmd+J"),
     )?;
-    let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, "&Add to favorites", true, Some("Cmd+D"))?;
+    let favorites_add_item = MenuItem::with_id(app, FAVORITES_ADD_ID, "&Add to favorites", true, Some("Cmd+Shift+D"))?;
 
     let go_menu = Submenu::with_items(
         app,

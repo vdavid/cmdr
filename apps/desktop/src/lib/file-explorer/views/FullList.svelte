@@ -802,14 +802,42 @@
             bind:clientHeight={headerHeight}
         >
             <span class="header-icon"></span>
-            <SortableHeader
-                column="name"
-                {isFocused}
-                label="Name"
-                currentSortColumn={sortBy}
-                currentSortOrder={sortOrder}
-                onClick={onSortChange ?? (() => {})}
-            />
+            {#if showExtensionInName}
+                <!-- Extension rides in the Name column, so there's no separate Ext
+                     header to click. Keep sort-by-extension reachable by splitting
+                     the single Name-column header into two sort triggers: "Name"
+                     fills the space on the left, "Ext" shrinks to its label on the
+                     right. The data cells below stay as the full filename in the
+                     Name column (no Ext data cell). -->
+                <span class="header-name-ext">
+                    <SortableHeader
+                        column="name"
+                        {isFocused}
+                        label="Name"
+                        currentSortColumn={sortBy}
+                        currentSortOrder={sortOrder}
+                        onClick={onSortChange ?? (() => {})}
+                    />
+                    <SortableHeader
+                        column="extension"
+                        {isFocused}
+                        label="Ext"
+                        align="right"
+                        currentSortColumn={sortBy}
+                        currentSortOrder={sortOrder}
+                        onClick={onSortChange ?? (() => {})}
+                    />
+                </span>
+            {:else}
+                <SortableHeader
+                    column="name"
+                    {isFocused}
+                    label="Name"
+                    currentSortColumn={sortBy}
+                    currentSortOrder={sortOrder}
+                    onClick={onSortChange ?? (() => {})}
+                />
+            {/if}
             {#if gitColumnVisible}
                 <span class="header-git" title="Git status of each file">Git</span>
             {/if}
@@ -1294,6 +1322,29 @@
 
     .col-rename.no-ext-col.has-git {
         grid-column: 2 / span 2;
+    }
+
+    /* Combined Name + Ext header for the `showExtensionInName` layout: occupies
+       the single Name column (`1fr`) and lays its two sort triggers in a row,
+       Name filling the space, Ext shrinking to its label on the right. The
+       inner `SortableHeader` buttons keep their own hover/active styling. */
+    .header-name-ext {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: var(--spacing-sm);
+    }
+
+    /* The Name trigger takes all spare width; Ext stays just wide enough for
+       its label + caret. `min-width: 0` lets the Name button's label ellipsize
+       instead of pushing Ext off the edge in a very narrow pane. */
+    .header-name-ext > :global(.sortable-header:first-child) {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .header-name-ext > :global(.sortable-header:last-child) {
+        flex: 0 0 auto;
     }
 
     .header-git {

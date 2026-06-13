@@ -109,6 +109,13 @@ export interface ExplorerAPI {
   confirmDialog: (dialogType: ConfirmDialogType, onConflict?: string) => void
   isConfirmationDialogOpen: () => boolean
   isRenaming: () => boolean
+  /**
+   * Whether the volume switcher dropdown is open on either pane. The dropdown
+   * hosts the inline favorite-rename input, so `isModalDialogOpen()` reads this
+   * to suppress pane/global shortcuts while it's open (so text-editing keys
+   * reach the textbox instead of the panes).
+   */
+  isVolumeChooserOpen: () => boolean
   openViewerForCursor: () => Promise<void>
   /**
    * Open a search-results snapshot in the target pane (defaults to focused).

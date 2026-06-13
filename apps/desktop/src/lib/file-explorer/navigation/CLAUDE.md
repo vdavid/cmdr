@@ -40,5 +40,10 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `volume-grouping.ts` always renders (even empty, for the placeholder) — don't "tidy" it back into the hide-when-empty
   branch. Context-menu "Add to favorites" is handled in Rust (`FAVORITES_ADD_CONTEXT_ID`), not the `favorites.add`
   command. Full flow in [DETAILS.md](DETAILS.md) § Editable favorites.
+- **The favorite-rename `<input>` must not leak keystrokes to the panes.** Three guards work together; don't remove any:
+  `VolumeBreadcrumb.handleKeyDown` bails while `renamingFavoriteId !== null`; `DualPaneExplorer.routeToVolumeChooser`
+  swallows keys from the pane behind ANY open switcher dropdown (returns true even when the dropdown ignores the key);
+  and `+page.svelte`'s `isModalDialogOpen()` reads `explorerRef.isVolumeChooserOpen()` to suppress centralized dispatch.
+  The favorite reorder needs BOTH `dragover` `preventDefault()` and an `ondrop` handler, or the drop silently no-ops.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

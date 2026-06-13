@@ -39,9 +39,12 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
 - **Index-size refresh (`refresh_listing_index_sizes`) refetches column widths through the existing `cacheGeneration`
   reset path, not a separate trigger.** Adding one double-fetches.
 - **`listing.showExtensionInName` must stay in lockstep across the renderer and the measurer.** When on, the Name column
-  shows the full filename (`getNameColumnText` returns `name`, not `getDisplayName`) and the Ext column + header are not
-  rendered; `FullList`'s `gridTemplate` drops the Ext track and `computeFullListColumnWidths({ showExtensionInName })`
+  shows the full filename (`getNameColumnText` returns `name`, not `getDisplayName`) and there's no separate Ext DATA
+  column; `FullList`'s `gridTemplate` drops the Ext track and `computeFullListColumnWidths({ showExtensionInName })`
   returns `ext: 0`. If you change one side (render the cell but keep reserving Ext width, or vice versa), the columns
-  drift. Sort-by-extension stays reachable via the `sort.byExtension` command/shortcut even with the header hidden.
+  drift. The HEADER still offers sort-by-extension: when on, the single Name-column header splits into two
+  `SortableHeader` triggers inside a `.header-name-ext` flex row (Name fills, Ext right-aligned, shrink-to-label), both
+  clickable, each showing its caret when active. The split lives inside the `1fr` Name track, so the measurer needs no
+  Ext width for it. Sort-by-extension also stays reachable via the `sort.byExtension` command/shortcut.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
