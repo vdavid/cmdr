@@ -1658,12 +1658,12 @@ fn handle_compute_all_aggregates(
     match classify_skip_severity(inserted, skipped) {
         SkipSeverity::None => {}
         SkipSeverity::Benign => log::debug!(
-            "Index scan: {skipped} of {total} entries skipped on UNIQUE conflict (expected dedup: firmlinks, case/NFD siblings)",
-            total = inserted + skipped,
+            "Index scan: {skipped} of {entries} skipped on UNIQUE conflict (expected dedup: firmlinks, case/NFD siblings)",
+            entries = pluralize_with(inserted + skipped, "entry", "entries"),
         ),
         SkipSeverity::Suspicious => log::warn!(
-            "Index scan: {skipped} of {total} entries skipped on UNIQUE conflict ({pct:.1}%); a high ratio can mean two writers raced on one DB",
-            total = inserted + skipped,
+            "Index scan: {skipped} of {entries} skipped on UNIQUE conflict ({pct:.1}%); a high ratio can mean two writers raced on one DB",
+            entries = pluralize_with(inserted + skipped, "entry", "entries"),
             pct = skipped as f64 / (inserted + skipped) as f64 * 100.0,
         ),
     }
