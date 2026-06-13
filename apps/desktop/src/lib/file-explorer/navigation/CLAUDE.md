@@ -57,6 +57,7 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `optimisticFavoriteIds` override (which `effectiveVolumes` / `favorites` derive from) synchronously, so the list
   re-renders instantly and rapid Alt+↑/↓ presses compute against fresh state instead of racing the backend
   `volumes-changed` round-trip; a reconciliation `$effect` clears the override once the store catches up (or the
-  favorite set changes). Don't make the reorder await the IPC before updating the UI, or fast repeats move the wrong item.
+  favorite set changes). Don't make the reorder await the IPC before updating the UI, or fast repeats move the wrong
+  item.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

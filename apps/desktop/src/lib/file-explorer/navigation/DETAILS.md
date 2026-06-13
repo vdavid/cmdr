@@ -218,8 +218,9 @@ of truth; see `src-tauri/src/favorites/CLAUDE.md`). All mutations go through the
 refresh. `stripFavoritePrefix(locationId)` recovers the bare favorite id (the remove / rename / reorder commands take
 the bare id, not the `fav-…` switcher id).
 
-- **Add** has three surfaces: the `favorites.add` command (palette, the Go menu's "Add to favorites", ⌘⇧D — ⌘D is the
-  dev-only Debug window) favorites the focused pane's current dir (handler in
+- **Add** has three surfaces: the `favorites.add` command (palette + the Go menu's "Add to favorites", with NO default
+  shortcut since adding a favorite is infrequent; it's assignable in Settings > Keyboard shortcuts, and the Go-menu
+  item's accelerator syncs to whatever the user binds) favorites the focused pane's current dir (handler in
   `routes/(main)/command-handlers/misc-handlers.ts`); the folder-row and `..` context menus favorite a SPECIFIC path.
   The context-menu add is handled entirely in Rust (`menu/menu_handlers.rs` intercepts `FAVORITES_ADD_CONTEXT_ID` and
   favorites `MenuState.context.path`), so it never routes through `favorites.add` (which would favorite the wrong dir).
@@ -242,8 +243,19 @@ the bare id, not the `fav-…` switcher id).
     removed on mouseup and `onDestroy`), NOT HTML5 drag-and-drop. A reorder begins only once the pointer moves past a
     small threshold (`DRAG_THRESHOLD_PX`); below it, a mouseup is a plain click that navigates. So favorite rows skip
     the `onclick` navigate path (it would double-fire with the mouseup) and `handleVolumeSelect` runs from mouseup
-    instead. During the drag, `favoriteRowMidpoints()` + the pure `pointerReorderTarget()` compute the live insertion
-    slot (`dragOverIndex`) that drives the `is-drag-over` drop-line cue; the grabbed row carries `is-dragging`.
+    instead. During the drag, `favoriteRowMidpoints()` feeds two pure helpers from `favorites-reorder.ts`: the CUE uses
+    the raw `pointerInsertionSlot()` (the visual gap, `0..length`) so the drop-line sits at the right gap —
+    `is-drag-over` (top border) for an in-list gap, `is-drag-over-end` (bottom border on the last row) for dropping past
+    the end — while the DROP uses `pointerReorderTarget()` (that slot adjusted for the grabbed item being removed
+    first). Driving the cue off the move-target instead put the line one row too high on downward drags. The grabbed row
+    carries `is-dragging`.
+  - **Local-first / optimistic:** both reorder paths call `persistFavoriteOrder`, which sets an in-component
+    `optimisticFavoriteIds` override (that `effectiveVolumes` / `favorites` derive from) SYNCHRONOUSLY, then persists
+    via `reorderFavorites` in the background. The list re-renders instantly, and a rapid second Alt+↑/↓ computes against
+    the fresh order instead of racing the `volumes-changed` round-trip (which would move the wrong item). A
+    reconciliation `$effect` clears the override once the store catches up (or the favorite set changes elsewhere); a
+    failed persist drops it, reverting to the store truth with a toast. Don't make the reorder await the IPC before
+    updating the UI.
   - **Why pointer and not HTML5 DnD:** under Tauri's `dragDropEnabled` (on by default), macOS intercepts drag gestures
     at the OS layer before the WKWebView sees `dragstart`/`dragover`/`drop`, so an HTML5-`draggable` reorder silently
     never fires (the events don't arrive). This is the same reason the native file-list drag (`views/FullList.svelte`)
