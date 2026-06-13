@@ -2214,11 +2214,12 @@ export const commands = {
    *
    *  Probing is also how the bundle gets registered with TCC, which is what
    *  makes Cmdr show up in the Full Disk Access list in System Settings. On
-   *  macOS 26 (Tahoe), the kernel/sandbox can short-circuit `read()` denials
-   *  without consulting tccd, leaving the bundle out of the FDA list. To
-   *  maximize the chance one of the access paths threads the needle, on a
-   *  denial we fire all three: raw `read`, `mmap`, `NSData`, plus a
-   *  `read_dir` of the parent directory.
+   *  macOS 13+ (Tahoe especially) a denied file `read()` no longer lists a
+   *  notarized bundle: the access that registers is a raw `open()` on a
+   *  protected *directory* (what Path Finder uses). So on a denial we fire every
+   *  trigger we know: the legacy file `mmap` / `NSData` / parent `read_dir` (old
+   *  macOS), plus a directory `open()` on each protected dir (macOS 13+; see
+   *  `fda_probe_dirs`).
    *
    *  For repeated, side-effect-free polling (e.g. the onboarding grant
    *  detector), use `check_full_disk_access_quiet` instead, which skips these

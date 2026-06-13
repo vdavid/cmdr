@@ -333,11 +333,14 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 - **Deep-link host changed in Ventura.** macOS 13+ uses `com.apple.settings.PrivacySecurity.extension`; older macOS uses
   `com.apple.preference.security`. `openPrivacySettings()` picks via `get_macos_major_version`. The same version informs
   the modal copy: macOS 12 and older append new FDA entries at the end of the list (instead of alphabetical).
-- **macOS 26 (Tahoe) FDA auto-add is broken.** Even with a notarized Developer ID build at `/Applications/Cmdr.app`, the
-  kernel / sandbox can short-circuit `read()` denials on TCC-protected paths without consulting `tccd`, meaning Cmdr may
-  not enter the FDA list automatically. The "+" button fallback (documented in step 1's `step-tip`) is the user-side
-  workaround. References: [Apple Developer Forums #809549](https://developer.apple.com/forums/thread/809549),
-  [Backrest issue #986](https://github.com/garethgeorge/backrest/issues/986),
+- **macOS 13+ (Tahoe) lists the app on a directory `open()`, not a file `read()`.** On macOS 12 a denied file `read()`
+  of a TCC-protected path registered a notarized bundle in the FDA list. On macOS 13+ (Tahoe especially) that read is
+  refused without listing the app; the access that still registers is a raw `open()` on a protected _directory_ (traced
+  from Path Finder, which polls `open(~/Library/Mail)` and lands in the list the instant it does). So
+  `check_full_disk_access` in `permissions.rs` fires directory opens (`fda_probe_dirs`: `~/Library/Mail`, the TCC dir,
+  etc.) alongside the legacy file `mmap` / `NSData` / `read_dir` triggers. The "+" button fallback (step 1's `step-tip`)
+  stays as a backstop for any machine that still doesn't list Cmdr. References:
+  [Apple Developer Forums #809549](https://developer.apple.com/forums/thread/809549),
   [Apple Developer Forums #757768](https://developer.apple.com/forums/thread/757768).
 - **The wizard renders the app behind it.** First launch lands on `~`, so what peeks through the backdrop is friendly.
   No "white screen until wizard done" code path.

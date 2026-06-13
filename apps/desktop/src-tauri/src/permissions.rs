@@ -6,20 +6,20 @@ use std::io::{ErrorKind, Read};
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
-/// Specific TCC-protected files we probe to determine FDA status.
+/// Specific TCC-protected files we probe to determine FDA status, and (on
+/// older macOS) to register the bundle in the Full Disk Access list.
 ///
-/// We `open()` + `read()` actual *files*, not directory listings: TCC's
-/// registration hook fires on read syscalls into protected paths, not on
-/// `opendir()`. A `read_dir` attempt against a protected directory may be
-/// silently denied without ever adding the bundle to System Settings → Privacy
-/// & Security → Full Disk Access. Even `open()` alone has been observed not
-/// to register the bundle on some macOS versions; the actual `read()` is
-/// what reliably triggers `tccd`.
+/// We `open()` + `read()` actual *files*: a denied `read()` is what added the
+/// bundle to System Settings → Privacy & Security → Full Disk Access on macOS
+/// 12 and earlier. On macOS 13+ (Tahoe especially) that stopped working for
+/// notarized apps: the denied file `read()` is refused without listing the
+/// app, and the access that DOES register is now a raw `open()` on a protected
+/// *directory* (see `fda_probe_dirs`). We keep both: file reads for old macOS,
+/// directory opens for current macOS.
 ///
 /// Order matters: we walk until we hit a file that exists on this account,
-/// because `NotFound` doesn't trigger TCC. Once we hit one, the read attempt
-/// either succeeds (FDA granted) or returns `PermissionDenied` (FDA not
-/// granted, bundle now registered with TCC).
+/// because `NotFound` doesn't reach TCC. Once we hit one, the read either
+/// succeeds (FDA granted) or returns `PermissionDenied` (not granted).
 fn fda_probe_files() -> Vec<PathBuf> {
     let Some(home) = dirs::home_dir() else {
         return Vec::new();
@@ -34,6 +34,27 @@ fn fda_probe_files() -> Vec<PathBuf> {
     ]
 }
 
+/// Protected TCC *directories* we `open()` (read-only, no read) to register the
+/// bundle in the Full Disk Access list on macOS 13+ (Ventura/Sonoma/Tahoe).
+///
+/// On Tahoe a denied file `read()` no longer lists a notarized bundle, but a
+/// raw `open()` on a TCC-protected directory still does (verified against Path
+/// Finder, which polls `open(~/Library/Mail)` and lands in the list the instant
+/// it does). Use a raw `open()`, NOT `opendir`/`read_dir`: the latter doesn't
+/// register. The TCC dir always exists; the rest cover the common case where
+/// the user has Mail/Safari/Messages set up.
+fn fda_probe_dirs() -> Vec<PathBuf> {
+    let Some(home) = dirs::home_dir() else {
+        return Vec::new();
+    };
+    vec![
+        home.join("Library/Mail"),                              // present for Mail users
+        home.join("Library/Safari"),                            // present after Safari use
+        home.join("Library/Messages"),                          // present for Messages users
+        home.join("Library/Application Support/com.apple.TCC"), // always exists, TCC-protected
+    ]
+}
+
 /// Tries to open `path` and read at least one byte from it. The read is what
 /// trips TCC; `open()` alone has been observed not to register the bundle.
 fn try_read_byte(path: &Path) -> std::io::Result<()> {
@@ -44,6 +65,15 @@ fn try_read_byte(path: &Path) -> std::io::Result<()> {
     // is the `Err` case, which is what TCC denial returns.
     let _ = f.read(&mut buf)?;
     Ok(())
+}
+
+/// Tries to `open()` `path` read-only without reading from it. This is the
+/// access that lists the bundle in Full Disk Access on macOS 13+ when `path` is
+/// a protected directory (mirrors Path Finder's `open(~/Library/Mail)`). Works
+/// on dirs and files; we deliberately don't `read()` (a directory read returns
+/// `EISDIR`). The `Err(PermissionDenied)` case is the FDA denial that registers.
+fn try_open_path(path: &Path) -> std::io::Result<()> {
+    File::open(path).map(|_| ())
 }
 
 /// Tries to mmap the first byte of `path`. Different syscall path than
@@ -181,11 +211,12 @@ pub fn check_full_disk_access_quiet() -> bool {
 ///
 /// Probing is also how the bundle gets registered with TCC, which is what
 /// makes Cmdr show up in the Full Disk Access list in System Settings. On
-/// macOS 26 (Tahoe), the kernel/sandbox can short-circuit `read()` denials
-/// without consulting tccd, leaving the bundle out of the FDA list. To
-/// maximize the chance one of the access paths threads the needle, on a
-/// denial we fire all three: raw `read`, `mmap`, `NSData`, plus a
-/// `read_dir` of the parent directory.
+/// macOS 13+ (Tahoe especially) a denied file `read()` no longer lists a
+/// notarized bundle: the access that registers is a raw `open()` on a
+/// protected *directory* (what Path Finder uses). So on a denial we fire every
+/// trigger we know: the legacy file `mmap` / `NSData` / parent `read_dir` (old
+/// macOS), plus a directory `open()` on each protected dir (macOS 13+; see
+/// `fda_probe_dirs`).
 ///
 /// For repeated, side-effect-free polling (e.g. the onboarding grant
 /// detector), use `check_full_disk_access_quiet` instead, which skips these
@@ -228,6 +259,20 @@ pub fn check_full_disk_access() -> bool {
                     Ok(()) => log::debug!(target: "fda_probe", "FDA probe extra: read_dir(parent of {:?}) OK", path),
                     Err(e) => {
                         log::debug!(target: "fda_probe", "FDA probe extra: read_dir(parent of {:?}) → {} ({:?})", path, e, e.kind())
+                    }
+                }
+                // macOS 13+/Tahoe: a raw open() on a protected DIRECTORY is the
+                // access that actually lists the bundle in Full Disk Access (the
+                // file read above no longer registers notarized apps there). Fire
+                // it on every existing protected dir. See `fda_probe_dirs`.
+                for dir in fda_probe_dirs() {
+                    match try_open_path(&dir) {
+                        Ok(()) => {
+                            log::debug!(target: "fda_probe", "FDA probe extra: open dir {:?} OK (FDA actually granted? unexpected)", dir)
+                        }
+                        Err(e) => {
+                            log::debug!(target: "fda_probe", "FDA probe extra: open dir {:?} → {} ({:?})", dir, e, e.kind())
+                        }
                     }
                 }
                 return false;

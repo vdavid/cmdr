@@ -202,9 +202,10 @@ Rules that cut across many modules. All existing commands follow these; apply th
 
 - **Full Disk Access**: checked by trying to read 1 byte from a list of TCC-protected files
   (`~/Library/Safari/History.db`, `~/Library/Mail/V10/MailData/Envelope Index`, etc.) until one returns either `Ok` (FDA
-  granted) or `PermissionDenied` (denied; bundle gets registered with TCC). On denial, also fires `mmap` +
-  `NSData dataWithContentsOfFile:` + `read_dir` of the parent (multi-trigger fallback because macOS 26 (Tahoe) can
-  short-circuit `read()` denials without consulting tccd). Prompt on first launch. See
+  granted) or `PermissionDenied` (denied). Listing the app in System Settings is a separate concern: on macOS 12 the
+  denied file `read()` registered it, but on macOS 13+ (Tahoe) only a raw `open()` on a protected _directory_
+  (`~/Library/Mail`, the TCC dir, etc.) registers a notarized app, so on denial we fire that plus the legacy `mmap` /
+  `NSData` / `read_dir` triggers. Prompt on first launch. See `permissions.rs` and
   `apps/desktop/src/lib/onboarding/CLAUDE.md`.
 - **Keychain**: stores network credentials and trial state. Uses `security-framework` crate.
 - **copyfile(3)**: preserves xattrs, ACLs, resource forks. `COPYFILE_CLONE` for instant APFS clones.
