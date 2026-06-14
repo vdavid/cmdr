@@ -19,12 +19,12 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
 use super::byte_seek::ByteSeekBackend;
-use super::content_kind::{CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, media_mime};
+use super::content_kind::ViewerContentKind;
 use super::encoding::{FileEncoding, detect, same_byte_layout};
 use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
-use super::media::{self, MediaEntry};
-use super::media_backend::MediaBackend;
+use super::media;
+use super::media_session::{self, MediaDimensions};
 use super::range_read::{RangeEnd, read_range as do_read_range};
 use super::search_matcher::{Matcher, SearchMode};
 use super::watcher::{VIEWER_WATCHER_MANAGER, WatcherEvent};
@@ -129,14 +129,6 @@ pub struct ViewerOpenResult {
     pub media_dimensions: Option<MediaDimensions>,
 }
 
-/// Image pixel dimensions, read header-only at open time.
-#[derive(Debug, Clone, Copy, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MediaDimensions {
-    pub width: u32,
-    pub height: u32,
-}
-
 /// Current status of a viewer session.
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -188,7 +180,13 @@ struct SearchState {
 }
 
 /// A viewer session wraps a backend and tracks search state.
-struct ViewerSession {
+///
+/// Constructed via [`ViewerSession::new`] from a [`ViewerSessionInit`]; the per-session
+/// runtime fields (`search`, `rebuilding`, `pending_grew`, `tail_mode`, `active_reads`)
+/// always start at their idle defaults, so callers only supply what actually varies
+/// between a text open and a media open. The media-open path lives in `media_session.rs`
+/// and builds its `ViewerSession` through the same constructor.
+pub(super) struct ViewerSession {
     /// `ArcSwap` so background threads (ByteSeek → LineIndex upgrade, encoding rebuild,
     /// tail-mode `extend_to`) can replace the backend without a write lock on the
     /// `get_lines` read path. Each backend is immutable; readers pick up either the
@@ -237,7 +235,40 @@ struct ViewerSession {
     media_token: Option<String>,
 }
 
+/// The fields that vary between a text open and a media open. Everything else on a
+/// [`ViewerSession`] starts at an idle default (no search, no rebuild, no pending
+/// grew, tail off, no active reads), filled in by [`ViewerSession::new`].
+pub(super) struct ViewerSessionInit {
+    pub(super) backend: Box<dyn FileViewerBackend>,
+    pub(super) backend_type: BackendType,
+    pub(super) upgrading: Option<Arc<AtomicBool>>,
+    pub(super) encoding: FileEncoding,
+    pub(super) detected_encoding: FileEncoding,
+    pub(super) watcher_stop: Arc<AtomicBool>,
+    pub(super) path: PathBuf,
+    pub(super) media_token: Option<String>,
+}
+
 impl ViewerSession {
+    /// Builds a session from its varying fields, defaulting the idle runtime state.
+    pub(super) fn new(init: ViewerSessionInit) -> Self {
+        Self {
+            backend: Arc::new(ArcSwap::from_pointee(init.backend)),
+            backend_type: Mutex::new(init.backend_type),
+            search: None,
+            upgrading: Mutex::new(init.upgrading),
+            rebuilding: Mutex::new(None),
+            pending_grew: Mutex::new(None),
+            encoding: Mutex::new(init.encoding),
+            detected_encoding: init.detected_encoding,
+            tail_mode: AtomicBool::new(false),
+            watcher_stop: init.watcher_stop,
+            active_reads: Mutex::new(HashMap::new()),
+            path: init.path,
+            media_token: init.media_token,
+        }
+    }
+
     /// Loads a freshly cloned `Arc` to the current backend. Holds no lock so calls to
     /// `get_lines` can run in parallel.
     fn load_backend(&self) -> Arc<Box<dyn FileViewerBackend>> {
@@ -246,7 +277,8 @@ impl ViewerSession {
 }
 
 /// Global session cache.
-static SESSIONS: LazyLock<Mutex<HashMap<String, ViewerSession>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+pub(super) static SESSIONS: LazyLock<Mutex<HashMap<String, ViewerSession>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Maps a viewer window label (`viewer-<timestamp>`) to its session id.
 ///
@@ -290,7 +322,7 @@ const INITIAL_LINE_COUNT: usize = 200;
 const INDEXING_TIMEOUT_SECS: u64 = 5;
 
 /// Generates a unique session ID.
-fn generate_session_id() -> String {
+pub(super) fn generate_session_id() -> String {
     uuid::Uuid::new_v4().to_string()
 }
 
@@ -328,15 +360,10 @@ fn open_session_inner(path: &str, force_text: bool) -> Result<ViewerOpenResult, 
     let file_size = metadata.len();
 
     // Classify by magic bytes (unless the caller forced text, e.g. "View as text").
-    // Media kinds open a no-op session that serves bytes via `cmdr-media://`.
-    if !force_text {
-        let head = read_head(&file_path, CLASSIFY_HEAD_LEN);
-        let ext = file_path.extension().and_then(|e| e.to_str());
-        let is_local = is_local_posix_path(&file_path);
-        let kind = classify_viewer_content(&head, ext, is_local);
-        if matches!(kind, ViewerContentKind::Image | ViewerContentKind::Pdf) {
-            return open_media_session(&file_path, file_size, &head, kind);
-        }
+    // A media kind (Image/Pdf on a local volume) opens a no-op session that serves bytes
+    // via `cmdr-media://`; the whole media-open path lives in `media_session.rs`.
+    if !force_text && let Some(result) = media_session::try_open_media(&file_path, file_size) {
+        return result;
     }
 
     // Auto-detect encoding at open time. Used as the initial encoding for every backend.
@@ -360,8 +387,6 @@ fn open_session_inner(path: &str, force_text: bool) -> Result<ViewerOpenResult, 
     let total_lines = backend_box.total_lines();
     let file_name = backend_box.file_name().to_string();
 
-    let backend: Arc<ArcSwap<Box<dyn FileViewerBackend>>> = Arc::new(ArcSwap::from_pointee(backend_box));
-
     let session_id = generate_session_id();
     let upgrade_cancel = upgrading.clone();
     let is_indexing = upgrade_cancel.is_some();
@@ -369,21 +394,16 @@ fn open_session_inner(path: &str, force_text: bool) -> Result<ViewerOpenResult, 
     let watcher_stop = Arc::new(AtomicBool::new(false));
     let watcher_stop_for_thread = watcher_stop.clone();
 
-    let session = ViewerSession {
-        backend,
-        backend_type: Mutex::new(backend_type.clone()),
-        search: None,
-        upgrading: Mutex::new(upgrade_cancel.clone()),
-        rebuilding: Mutex::new(None),
-        pending_grew: Mutex::new(None),
-        encoding: Mutex::new(detected_encoding),
+    let session = ViewerSession::new(ViewerSessionInit {
+        backend: backend_box,
+        backend_type: backend_type.clone(),
+        upgrading: upgrade_cancel.clone(),
+        encoding: detected_encoding,
         detected_encoding,
-        tail_mode: AtomicBool::new(false),
         watcher_stop,
-        active_reads: Mutex::new(HashMap::new()),
         path: file_path.clone(),
         media_token: None,
-    };
+    });
 
     // Calculate estimated total lines from the initial sample
     let estimated_total_lines = if let Some(lines) = total_lines {
@@ -524,132 +544,6 @@ fn open_session_inner(path: &str, force_text: bool) -> Result<ViewerOpenResult, 
     }
 
     Ok(result)
-}
-
-/// Opens a media (Image/PDF) session: no text backend, a minted `cmdr-media://` token,
-/// and best-effort header-only image dimensions. Creates a real `ViewerSession` (with a
-/// `MediaBackend` no-op) so close/teardown stays uniform with text sessions.
-fn open_media_session(
-    file_path: &Path,
-    file_size: u64,
-    head: &[u8],
-    kind: ViewerContentKind,
-) -> Result<ViewerOpenResult, ViewerError> {
-    let file_name = file_path
-        .file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_default();
-
-    let mime = media_mime(head, kind).unwrap_or("application/octet-stream").to_string();
-
-    // Mint the capability token: token -> { canonical_path, kind, mime }. The FE builds
-    // the URL from this; the scheme handler resolves it back to the path.
-    let media_token = media::mint_token(MediaEntry {
-        canonical_path: file_path.to_path_buf(),
-        kind,
-        mime,
-    });
-
-    // Header-only, best-effort image dimensions. Must not extend the open past a quick
-    // header read; `image::image_dimensions` reads only the header (and returns `None`
-    // for HEIC/SVG, which the `image` crate can't parse).
-    let media_dimensions = if matches!(kind, ViewerContentKind::Image) {
-        media::read_image_dimensions(file_path).map(|(width, height)| MediaDimensions { width, height })
-    } else {
-        None
-    };
-
-    let backend_box: Box<dyn FileViewerBackend> = Box::new(MediaBackend::new(file_name.clone(), file_size));
-    let capabilities = backend_box.capabilities();
-    let backend: Arc<ArcSwap<Box<dyn FileViewerBackend>>> = Arc::new(ArcSwap::from_pointee(backend_box));
-
-    let session_id = generate_session_id();
-    let watcher_stop = Arc::new(AtomicBool::new(false));
-
-    let session = ViewerSession {
-        backend,
-        backend_type: Mutex::new(BackendType::FullLoad),
-        search: None,
-        upgrading: Mutex::new(None),
-        rebuilding: Mutex::new(None),
-        pending_grew: Mutex::new(None),
-        encoding: Mutex::new(FileEncoding::Utf8),
-        detected_encoding: FileEncoding::Utf8,
-        tail_mode: AtomicBool::new(false),
-        watcher_stop,
-        active_reads: Mutex::new(HashMap::new()),
-        path: file_path.to_path_buf(),
-        media_token: Some(media_token.clone()),
-    };
-
-    // No watcher and no LineIndex upgrade for media: there's no text viewport to
-    // tail-follow, and the bytes are re-read fresh per `cmdr-media://` request anyway.
-    SESSIONS.lock_ignore_poison().insert(session_id.clone(), session);
-
-    let empty_initial = LineChunk {
-        lines: Vec::new(),
-        first_line_number: 0,
-        byte_offset: 0,
-        total_lines: Some(0),
-        total_bytes: file_size,
-    };
-
-    Ok(ViewerOpenResult {
-        session_id,
-        file_name,
-        total_bytes: file_size,
-        total_lines: Some(0),
-        estimated_total_lines: 0,
-        backend_type: BackendType::FullLoad,
-        capabilities,
-        initial_lines: empty_initial,
-        is_indexing: false,
-        encoding: FileEncoding::Utf8,
-        kind,
-        media_token: Some(media_token),
-        media_dimensions,
-    })
-}
-
-/// Reads up to `max` bytes from the start of `file_path` for magic-byte classification.
-/// Best-effort: a read error yields an empty slice (-> classified as `Text`).
-fn read_head(file_path: &Path, max: usize) -> Vec<u8> {
-    use std::io::Read;
-    let Ok(mut file) = std::fs::File::open(file_path) else {
-        return Vec::new();
-    };
-    let mut buf = vec![0u8; max];
-    match file.read(&mut buf) {
-        Ok(n) => {
-            buf.truncate(n);
-            buf
-        }
-        Err(_) => Vec::new(),
-    }
-}
-
-/// Whether `file_path` lives on a local POSIX volume (the only volumes eligible for
-/// media rendering in v1). MTP has no POSIX path; SMB paths can block. We consult the
-/// registered volumes: the most-specific volume by mount-root prefix decides. A volume
-/// is "local" when it supports `std::fs` access AND is not an SMB mount
-/// (`smb_connection_state().is_none()`). When no registered volume claims the path
-/// (the path is a real file outside any mount, e.g. under `/`), it's local.
-fn is_local_posix_path(file_path: &Path) -> bool {
-    let manager = crate::file_system::get_volume_manager();
-    let mut best: Option<(usize, bool)> = None; // (root component count, is_local)
-    for (_id, volume) in manager.list_volumes_with_handles() {
-        let root = volume.root();
-        // The "root" LocalPosixVolume roots at "/", a prefix of everything; more
-        // specific mounts (longer roots) win the tie.
-        if file_path.starts_with(root) {
-            let depth = root.components().count();
-            let is_local = volume.supports_local_fs_access() && volume.smb_connection_state().is_none();
-            if best.is_none_or(|(d, _)| depth > d) {
-                best = Some((depth, is_local));
-            }
-        }
-    }
-    best.map(|(_, is_local)| is_local).unwrap_or(true)
 }
 
 /// Test-only millisecond sleep injected at the start of the upgrade thread so

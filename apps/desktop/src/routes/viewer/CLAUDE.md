@@ -45,6 +45,9 @@ FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CL
 - **`media-view.ts`**: pure helpers for the media branch: `mediaUrl(token)` (the ONE place the `cmdr-media://localhost/`
   origin lives), `isMediaKind`, `mediaKindLabel`, `formatMediaDimensions`, and the image zoom math (`clampZoom`,
   `nextClickZoom`). Unit-tested in `media-view.test.ts`.
+- **`viewer-media.svelte.ts`**: `createViewerMedia` composable: owns the media state (`kind` / `mediaToken` /
+  `mediaDimensions`), the `isMedia` / `mediaSrc` deriveds, and the "View as text" trigger. Tested in
+  `viewer-media.svelte.test.ts`.
 - **`MediaImageView.svelte`**: inline `<img>` from `cmdr-media://`. Fit-by-default, click toggles 100%/fit,
   scroll/`+`/`-` zoom, drag pan, checkerboard behind transparency, spinner + friendly error states, keyboard-reachable.
 - **`MediaPdfView.svelte`**: inline `<embed type="application/pdf">` from `cmdr-media://`; WKWebView supplies
@@ -67,17 +70,20 @@ works in `.svelte` or `.svelte.ts` files at the top level of a component or `cre
 ### Media rendering (image / PDF)
 
 `viewer_open` returns `kind` (`text` / `image` / `pdf`) + `mediaToken` / `mediaDimensions` (backend:
-`src-tauri/src/file_viewer/`). The page branches on `kind`: text uses the line pipeline; `image` / `pdf` render
-`MediaImageView` / `MediaPdfView` from `cmdr-media://localhost/<token>`, built ONLY via `mediaUrl(token)`
-(`media-view.ts`), the single source for the origin form.
+`src-tauri/src/file_viewer/`). The `createViewerMedia` composable (`viewer-media.svelte.ts`) owns this state; the page
+branches on `media.kind`: text uses the line pipeline; `image` / `pdf` render `MediaImageView` / `MediaPdfView` from
+`media.mediaSrc` (`cmdr-media://localhost/<token>`, built ONLY via `mediaUrl(token)` in `media-view.ts`, the single
+source for the origin form). `openViewerSession` hands the result to `media.setFromOpenResult(result)`.
 
 - **Text-only paths are data-gated, not just hidden.** Every page `$effect` driving the line machinery early-returns on
-  `isMedia`, `openViewerSession` skips the line/index/tail/encoding setup for media, and the window keydown router only
-  handles Escape in media mode (image keys live on the focused `MediaImageView` stage; the PDF embed owns its own). A
-  media session has empty text fields, so don't undo these guards or the empty line code runs and can throw.
-- **"View as text"** (`viewAsText()`) opens a fresh text session via `viewerOpenAsText`, swaps to it, and closes the old
-  media session EXPLICITLY (different id, so window teardown alone wouldn't free it); it tears down per-session
-  listeners first because `openViewerSession` re-attaches them.
+  `isMedia` (derived from `media.isMedia`), `openViewerSession` skips the line/index/tail/encoding setup for media, and
+  the window keydown router only handles Escape in media mode (image keys live on the focused `MediaImageView` stage;
+  the PDF embed owns its own). A media session has empty text fields, so don't undo these guards or the empty line code
+  runs and can throw.
+- **"View as text"** (`media.viewAsText()`) resets the media state up front (so a failed re-open can't leave a dangling
+  image), then calls the page's `reopenAsText`, which opens a fresh text session via `viewerOpenAsText`, swaps to it,
+  and closes the old media session EXPLICITLY (different id). The page tears down per-session listeners first because
+  `openViewerSession` re-attaches them.
 - CSP: the `cmdr-media:` token is in `img-src` + `object-src` (`tauri.conf.json`); `viewer-media.spec.ts` locks "no
   `cmdr-media`/`img-src`/`object-src` violation". WKWebView applies EXIF orientation by default (phone photos upright).
 

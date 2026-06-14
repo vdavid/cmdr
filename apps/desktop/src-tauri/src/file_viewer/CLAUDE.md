@@ -17,8 +17,9 @@ open-viewer helper and binary-warning classifier.
 - Backend selection: `< 1MB` -> `FullLoad`; else `ByteSeek` (instant open) with a background `LineIndex` build that
   upgrades when ready. Full per-file roles, Tauri commands, and decision rationale are in [DETAILS.md](DETAILS.md).
 - Media (Image/PDF): `content_kind.rs` (pure `classify_viewer_content`), `media.rs` (the `cmdr-media://` token map),
-  `media_protocol.rs` (the async scheme handler), `media_backend.rs` (no-op `MediaBackend`). See [DETAILS.md](DETAILS.md)
-  § "Media rendering".
+  `media_protocol.rs` (the async scheme handler), `media_backend.rs` (no-op `MediaBackend`), `media_session.rs` (the
+  media-open path: `try_open_media` / `open_media_session` / `is_local_posix_path` / `MediaDimensions`, built on
+  `session.rs`'s `ViewerSession`). See [DETAILS.md](DETAILS.md) § "Media rendering".
 
 ## Must-knows
 

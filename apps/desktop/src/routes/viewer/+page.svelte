@@ -49,11 +49,12 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { commands } from '$lib/ipc/bindings'
-    import type { EncodingChoice, FileEncoding, MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
+    import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
     import type { RangeEnd } from '$lib/tauri-commands'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
     import { categorizeForViewerWarning } from '$lib/file-viewer/binary-warning'
-    import { mediaUrl, isMediaKind } from './media-view'
+    import { isMediaKind } from './media-view'
+    import { createViewerMedia } from './viewer-media.svelte'
 
     const log = getAppLogger('viewer')
 
@@ -79,16 +80,16 @@
     let encodingChoices = $state<EncodingChoice[]>([])
 
     /**
-     * Content kind from the backend. `text` flows through the line / virtual-scroll
-     * pipeline; `image` / `pdf` render inline from `mediaToken` via the
-     * `cmdr-media://` scheme and leave the text fields empty. Every text-only data
-     * path and control below guards on `kind === 'text'`.
+     * Media (Image / PDF) concern: the `kind` / `mediaToken` / `mediaDimensions`
+     * session state, the `isMedia` / `mediaSrc` deriveds, and the "View as text"
+     * override. `text` flows through the line / virtual-scroll pipeline; `image` /
+     * `pdf` render inline via the `cmdr-media://` scheme and leave the text fields
+     * empty. Every text-only data path and control below guards on `media.isMedia`.
      */
-    let kind = $state<ViewerContentKind>('text')
-    let mediaToken = $state<string | null>(null)
-    let mediaDimensions = $state<MediaDimensions | null>(null)
-    const isMedia = $derived(isMediaKind(kind))
-    const mediaSrc = $derived(mediaToken !== null ? mediaUrl(mediaToken) : '')
+    const media = createViewerMedia({
+        reopenAsText: () => reopenAsText(),
+    })
+    const isMedia = $derived(media.isMedia)
 
     /**
      * Tail mode: when on, the open viewport auto-follows newly appended bytes.
@@ -553,9 +554,7 @@
         isIndexing = result.isIndexing
         currentEncoding = result.encoding
         detectedEncoding = result.encoding
-        kind = result.kind
-        mediaToken = result.mediaToken
-        mediaDimensions = result.mediaDimensions
+        media.setFromOpenResult(result)
 
         const openedAsMedia = isMediaKind(result.kind)
 
@@ -704,15 +703,15 @@
     }
 
     /**
-     * "View as text" override for a media file. Opens a fresh full text session via
-     * `viewerOpenAsText`, swaps to it, and closes the old media session. We tear down
-     * the per-session listeners first (they get re-attached by `openViewerSession`),
-     * close the old session explicitly (the new session has a different id, so window
-     * teardown alone wouldn't free the old one), and reset the media state so the text
-     * pipeline takes over.
+     * Page-side half of the "View as text" override (the media composable owns the
+     * trigger and the media-state reset). Opens a fresh full text session via
+     * `viewerOpenAsText`, swaps to it, and closes the old media session: we tear down
+     * the per-session listeners first (they get re-attached by `openViewerSession`)
+     * and close the old session explicitly (the new session has a different id, so
+     * window teardown alone wouldn't free the old one).
      */
-    async function viewAsText() {
-        if (!filePath || kind === 'text') return
+    async function reopenAsText() {
+        if (!filePath) return
         const oldSessionId = sessionId
         loading = true
         error = ''
@@ -720,11 +719,6 @@
         cleanupListeners()
         viewerTail.destroy()
         indexingPoll.stop()
-        // Reset media state up front so a re-open failure can't leave a stale image
-        // rendered with no live session behind it.
-        kind = 'text'
-        mediaToken = null
-        mediaDimensions = null
         try {
             await openViewerSession(filePath, { asText: true })
             if (oldSessionId && oldSessionId !== sessionId) {
@@ -842,14 +836,14 @@
     <h1 class="sr-only">File viewer</h1>
     <ViewerToolbar
         {fileName}
-        {kind}
+        kind={media.kind}
         {currentEncoding}
         {detectedEncoding}
         {encodingChoices}
         {isIndexing}
         {tailMode}
         onViewAsText={() => {
-            void viewAsText()
+            void media.viewAsText()
         }}
         onEncodingChange={(enc: FileEncoding) => void handleEncodingChange(enc)}
         onToggleTail={() => {
@@ -1001,10 +995,10 @@
         </div>
     {:else if error}
         <div class="status-message error">{error}</div>
-    {:else if kind === 'image'}
-        <MediaImageView src={mediaSrc} {fileName} />
-    {:else if kind === 'pdf'}
-        <MediaPdfView src={mediaSrc} {fileName} />
+    {:else if media.kind === 'image'}
+        <MediaImageView src={media.mediaSrc} {fileName} />
+    {:else if media.kind === 'pdf'}
+        <MediaPdfView src={media.mediaSrc} {fileName} />
     {:else}
         <div
             class="file-content"
@@ -1052,8 +1046,8 @@
 
     <ViewerStatusBar
         {fileName}
-        {kind}
-        {mediaDimensions}
+        kind={media.kind}
+        mediaDimensions={media.mediaDimensions}
         {totalLines}
         {totalBytes}
         {currentMode}

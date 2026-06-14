@@ -11,9 +11,14 @@ Frontend counterpart: [`apps/desktop/src/routes/viewer/CLAUDE.md`](../../../src/
 
 - `mod.rs`: public API, constants (1MB threshold, 256-line checkpoints, 8KB backward scan limit), `ViewerError` typed
   enum
-- `session.rs`: session orchestration, backend switching, search state, per-read cancel registry (`active_reads`),
+- `session.rs`: text-session orchestration, backend switching, search state, per-read cancel registry (`active_reads`),
   encoding-switch (`set_encoding`), drain-and-swap-under-lock protocol via `pending_grew`, `read_range` and
-  `cancel_read` entry points
+  `cancel_read` entry points. Owns the `ViewerSession` type + its `ViewerSession::new(ViewerSessionInit)` constructor and
+  the `SESSIONS` / `WINDOW_TO_SESSION` maps, shared with the media-open path. `close_session` is the single teardown
+  choke point (drops the media token too)
+- `media_session.rs`: the media-open path. `try_open_media` (classify + dispatch, called by `open_session` before it
+  builds a text backend), `open_media_session` (mint token, header-only dimensions, install a `MediaBackend` via
+  `ViewerSession::new`), `is_local_posix_path` (the local-volume gate), and the `MediaDimensions` type
 - `range_read.rs`: backend-agnostic stitching of a `(line, offset) -> (line, offset)` range into one UTF-8 string,
   UTF-16 -> UTF-8 offset clamp (surrogate-safe), streaming via byte-offset seeks to keep `ByteSeek` honest
 - `encoding.rs`: `FileEncoding` enum (UTF-8, UTF-8 with BOM, Windows-1252, ISO-8859-1, Mac Roman, US-ASCII, UTF-16 LE,
@@ -53,12 +58,18 @@ The viewer renders images and PDFs inline instead of showing the binary warning.
   windows are lazy and inherit the app-wide scheme).
 - `media_backend.rs`: `MediaBackend`, a no-op `FileViewerBackend` so a media session can fill the non-optional
   `backend` field without a text backend. Every text-shaped call returns empty/zero.
+- `media_session.rs`: the media-open path, kept out of `session.rs` so that file stays text-backend orchestration.
+  `try_open_media(file_path, file_size)` reads the head, classifies (`is_local_posix_path` decides locality),
+  and for a media kind calls `open_media_session`; otherwise returns `None` so `open_session` falls through to text.
+  `open_media_session` mints the token, reads dimensions best-effort, installs a `MediaBackend`, and builds the
+  `ViewerSession` via `session::ViewerSession::new`. Owns the `MediaDimensions` type. Covered by `media_session_test.rs`
+  (image / PDF / text-fallthrough / open-as-text through the public `open_session`).
 
-Open flow: `open_session` reads the head, classifies, and for a media kind calls `open_media_session`, which mints the
-token, reads dimensions best-effort (header-only, must not extend the open past the metadata read), installs a
-`MediaBackend`, and returns a `ViewerOpenResult` with `kind` + `media_token` + `media_dimensions` and empty text
-fields. Media sessions spawn no watcher and no LineIndex upgrade. `open_session_as_text` (behind the
-`viewer_open_as_text` IPC) forces the text path for the "View as text" override; it returns a fresh full text session
+Open flow: `open_session` calls `media_session::try_open_media` before building a text backend; a media kind opens
+there (mint token, header-only dimensions that must not extend the open past the metadata read, `MediaBackend`) and
+returns a `ViewerOpenResult` with `kind` + `media_token` + `media_dimensions` and empty text fields. Media sessions
+spawn no watcher and no LineIndex upgrade. `open_session_as_text` (behind the `viewer_open_as_text` IPC) skips
+classification entirely and forces the text path for the "View as text" override; it returns a fresh full text session
 the FE swaps to (no in-place upgrade).
 
 **Token lifetime == session lifetime.** `close_session` (the single choke point both teardown paths funnel through, the
