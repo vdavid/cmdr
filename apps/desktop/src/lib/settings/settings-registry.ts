@@ -136,17 +136,6 @@ export const settingsRegistry: SettingDefinition[] = [
     default: false,
     component: 'switch',
   },
-  {
-    id: 'listing.showExtensionInName',
-    section: ['Appearance', 'Listing'],
-    label: 'Show file extensions in the name column',
-    description:
-      'Show the full filename (like launch.json) in the Name column and hide the separate Ext column. Affects Full view only.',
-    keywords: ['extension', 'ext', 'filename', 'name', 'column', 'full', 'split', 'suffix'],
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-  },
   // Volume tints (12-color picker, rendered by `AppearanceSection.svelte` via
   // `SettingColorSwatchPicker`, not the registry-driven enum components).
   // Enum type carries the valid values for MCP agents and runtime validation;
@@ -310,6 +299,17 @@ export const settingsRegistry: SettingDefinition[] = [
     keywords: ['function', 'key', 'bar', 'f-key', 'fkey', 'shortcut', 'buttons', 'bottom', 'toolbar'],
     type: 'boolean',
     default: true,
+    component: 'switch',
+  },
+  {
+    id: 'listing.showExtensionInName',
+    section: ['Appearance', 'Listing'],
+    label: 'Show file extensions in the name column',
+    description:
+      'Show the full filename (like launch.json) in the Name column and hide the separate Ext column. Affects Full view only.',
+    keywords: ['extension', 'ext', 'filename', 'name', 'column', 'full', 'split', 'suffix'],
+    type: 'boolean',
+    default: false,
     component: 'switch',
   },
   {
