@@ -3,14 +3,24 @@
 import {
   commands,
   type FileEncoding,
+  type MediaDimensions,
   type RangeEnd,
   type SearchMode as ViewerSearchMode,
   type SearchStatus as ViewerSearchStatus,
+  type ViewerContentKind,
   type ViewerError,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { FileEncoding, RangeEnd, ViewerError, ViewerSearchMode, ViewerSearchStatus }
+export type {
+  FileEncoding,
+  MediaDimensions,
+  RangeEnd,
+  ViewerContentKind,
+  ViewerError,
+  ViewerSearchMode,
+  ViewerSearchStatus,
+}
 
 /** A chunk of lines returned by the viewer backend. */
 export interface LineChunk {
@@ -44,6 +54,22 @@ export interface ViewerOpenResult {
   isIndexing: boolean
   /** Auto-detected encoding (also the initial picker selection). */
   encoding: FileEncoding
+  /**
+   * Detected content kind. `text` flows through the line pipeline (the fields above
+   * are populated); `image` / `pdf` render inline from `mediaToken` and leave the
+   * text fields empty.
+   */
+  kind: ViewerContentKind
+  /**
+   * Present only for media kinds (`image` / `pdf`): the unguessable token the FE puts
+   * in the `cmdr-media://localhost/<token>` URL. `null` for text.
+   */
+  mediaToken: string | null
+  /**
+   * Image pixel dimensions, header-only and best-effort. Set only for some raster
+   * images; `null` for HEIC, SVG, PDF, text, or on any read error.
+   */
+  mediaDimensions: MediaDimensions | null
 }
 
 /** Current status of a viewer session. */
@@ -90,6 +116,18 @@ export interface SearchPollResult {
  */
 export async function viewerOpen(path: string, windowLabel = ''): Promise<ViewerOpenResult> {
   const res = await commands.viewerOpen(path, windowLabel)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * Opens a fresh full text session for a file, bypassing media detection. Backs the
+ * viewer's "View as text" override for an image / PDF: the caller swaps to the new
+ * session and closes the old media one. Returns a `kind: 'text'` result with the
+ * line fields populated, exactly like a text-detected `viewerOpen`.
+ */
+export async function viewerOpenAsText(path: string, windowLabel = ''): Promise<ViewerOpenResult> {
+  const res = await commands.viewerOpenAsText(path, windowLabel)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

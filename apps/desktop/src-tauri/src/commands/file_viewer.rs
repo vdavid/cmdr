@@ -38,6 +38,23 @@ pub async fn viewer_open(path: String, window_label: String) -> Result<ViewerOpe
     .await
 }
 
+/// Opens a fresh, full **text** session for `path`, ignoring media classification.
+///
+/// Backs the viewer's "View as text" override: a media (Image/PDF) session isn't
+/// upgraded in place; the FE calls this, swaps to the returned text session, and closes
+/// the old one. Re-registers the window -> session link so the window-destroyed handler
+/// frees the new session.
+#[tauri::command]
+#[specta::specta]
+pub async fn viewer_open_as_text(path: String, window_label: String) -> Result<ViewerOpenResult, IpcError> {
+    blocking_result_with_timeout(VIEWER_TIMEOUT, move || {
+        let result = file_viewer::open_session_as_text(&path).map_err(|e| e.to_string())?;
+        file_viewer::register_window_session(&window_label, &result.session_id);
+        Ok(result)
+    })
+    .await
+}
+
 /// Fetches a range of lines from a viewer session.
 ///
 /// # Arguments

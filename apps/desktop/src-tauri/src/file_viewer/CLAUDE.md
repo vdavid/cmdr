@@ -16,6 +16,9 @@ open-viewer helper and binary-warning classifier.
   `search_matcher.rs`: `Matcher`, huge-line chunking. `watcher.rs`: shared tail-mode watcher singleton.
 - Backend selection: `< 1MB` -> `FullLoad`; else `ByteSeek` (instant open) with a background `LineIndex` build that
   upgrades when ready. Full per-file roles, Tauri commands, and decision rationale are in [DETAILS.md](DETAILS.md).
+- Media (Image/PDF): `content_kind.rs` (pure `classify_viewer_content`), `media.rs` (the `cmdr-media://` token map),
+  `media_protocol.rs` (the async scheme handler), `media_backend.rs` (no-op `MediaBackend`). See [DETAILS.md](DETAILS.md)
+  § "Media rendering".
 
 ## Must-knows
 
@@ -35,7 +38,11 @@ open-viewer helper and binary-warning classifier.
   rebuilds replace the backend without blocking the `get_lines` read path. Each backend is immutable.
 - **`SESSIONS` is freed on BOTH close paths.** The titlebar-X path never fires `viewer_close`; it's covered by a
   `WindowEvent::Destroyed` branch in `lib.rs::on_window_event` for `viewer-*` labels (via the `WINDOW_TO_SESSION` map).
-  Without it, titlebar-closed viewers leak their session until app quit.
+  Without it, titlebar-closed viewers leak their session until app quit. The `cmdr-media://` token is dropped at this
+  same choke point (`media::drop_token`); don't drop it elsewhere, or a closed viewer leaks a live token mapping a path.
+  The scheme handler serves `Content-Type` from stored magic bytes (never the extension), does its OWN
+  `spawn_blocking` + timeout (504, not `blocking_with_timeout`), and 404s an unknown token. See
+  [DETAILS.md](DETAILS.md) § "Media rendering".
 - **`search_cancel` must not null `session.search`**: the cancel flag is what the search thread writes `Cancelled` into;
   nulling first lands the write in a dropped state and `search_poll` returns `Idle`. See [DETAILS.md](DETAILS.md).
 - **`SearchMatch.column` / `.length` are UTF-16 code units** (match JS `String.substring()`), avoiding a class of

@@ -17,6 +17,8 @@ function mountStatusBar(props: {
   isIndexing: boolean
   wordWrap: boolean
   totalLines: number | null
+  kind?: 'text' | 'image' | 'pdf'
+  mediaDimensions?: { width: number; height: number } | null
 }) {
   const target = document.createElement('div')
   document.body.appendChild(target)
@@ -24,6 +26,8 @@ function mountStatusBar(props: {
     target,
     props: {
       fileName: 'example.txt',
+      kind: props.kind ?? 'text',
+      mediaDimensions: props.mediaDimensions ?? null,
       totalLines: props.totalLines,
       totalBytes: 2048,
       currentMode: props.currentMode,
@@ -44,6 +48,19 @@ describe('ViewerStatusBar a11y', () => {
 
   it('streaming + wrap + unknown line count has no a11y violations', async () => {
     const target = mountStatusBar({ currentMode: 'byteSeek', isIndexing: true, wordWrap: true, totalLines: null })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('image media mode has no a11y violations', async () => {
+    const target = mountStatusBar({
+      currentMode: 'fullLoad',
+      isIndexing: false,
+      wordWrap: false,
+      totalLines: null,
+      kind: 'image',
+      mediaDimensions: { width: 800, height: 600 },
+    })
     await tick()
     await expectNoA11yViolations(target)
   })

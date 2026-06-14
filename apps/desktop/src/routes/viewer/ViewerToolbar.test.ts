@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 
 import ViewerToolbar from './ViewerToolbar.svelte'
-import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
+import type { EncodingChoice, FileEncoding, ViewerContentKind } from '$lib/ipc/bindings'
 
 const choices: EncodingChoice[] = [
   { encoding: 'utf8', label: 'UTF-8', group: 'unicode' },
@@ -32,11 +32,12 @@ function optionByValue(target: HTMLElement, label: string, value: string): HTMLE
 
 interface MountOpts {
   fileName?: string
+  kind?: ViewerContentKind
   currentEncoding?: FileEncoding
   detectedEncoding?: FileEncoding
   isIndexing?: boolean
   tailMode?: boolean
-  onViewModeChange?: (mode: 'text') => void
+  onViewAsText?: () => void
   onEncodingChange?: (encoding: FileEncoding) => void
   onToggleTail?: () => void
 }
@@ -48,13 +49,13 @@ function mountToolbar(opts: MountOpts = {}) {
     target,
     props: {
       fileName: opts.fileName ?? 'example.txt',
-      viewMode: 'text',
+      kind: opts.kind ?? 'text',
       currentEncoding: opts.currentEncoding ?? 'utf8',
       detectedEncoding: opts.detectedEncoding ?? 'utf8',
       encodingChoices: choices,
       isIndexing: opts.isIndexing ?? false,
       tailMode: opts.tailMode ?? false,
-      onViewModeChange: opts.onViewModeChange ?? (() => {}),
+      onViewAsText: opts.onViewAsText ?? (() => {}),
       onEncodingChange: opts.onEncodingChange ?? (() => {}),
       onToggleTail: opts.onToggleTail ?? (() => {}),
     },
@@ -139,6 +140,33 @@ describe('ViewerToolbar', () => {
     expect(indicator).not.toBeNull()
     expect(indicator?.getAttribute('role')).toBe('status')
     expect(triggerByLabel(target, 'Encoding')?.hasAttribute('data-disabled')).toBe(true)
+
+    void unmount(instance)
+  })
+
+  it('hides text-only controls (encoding, tail) in media mode', async () => {
+    const { target, instance } = mountToolbar({ kind: 'image' })
+    await tick()
+
+    // View-mode picker stays (it carries "View as text"); encoding + tail go away.
+    expect(triggerByLabel(target, 'View mode')).not.toBeNull()
+    expect(triggerByLabel(target, 'Encoding')).toBeNull()
+    expect(target.querySelector('.viewer-toolbar-toggle')).toBeNull()
+
+    void unmount(instance)
+  })
+
+  it('calls onViewAsText when the user picks "View as text" on a media file', async () => {
+    const onViewAsText = vi.fn()
+    const { target, instance } = mountToolbar({ kind: 'pdf', onViewAsText })
+    await tick()
+
+    triggerByLabel(target, 'View mode')?.click()
+    await tick()
+    optionByValue(target, 'View mode', 'viewAsText')?.click()
+    await tick()
+
+    expect(onViewAsText).toHaveBeenCalledTimes(1)
 
     void unmount(instance)
   })

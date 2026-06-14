@@ -53,6 +53,7 @@ export type {
 // File viewer (session management, search, seeking)
 export {
   viewerOpen,
+  viewerOpenAsText,
   viewerGetLines,
   viewerSearchStart,
   viewerSearchPoll,
@@ -69,6 +70,8 @@ export type {
   LineChunk,
   BackendCapabilities,
   ViewerOpenResult,
+  ViewerContentKind,
+  MediaDimensions,
   ViewerSessionStatus,
   ViewerSearchMatch,
   ViewerSearchMode,

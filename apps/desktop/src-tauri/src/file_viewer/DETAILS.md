@@ -30,6 +30,52 @@ Frontend counterpart: [`apps/desktop/src/routes/viewer/CLAUDE.md`](../../../src/
 - `*_test.rs`: unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math, range reads,
   cancellation, encoding detection, UTF-16 newline scanning, encoding-switch rebuild + drain-and-swap
 
+## Media rendering (Image / PDF)
+
+The viewer renders images and PDFs inline instead of showing the binary warning. The backend half:
+
+- `content_kind.rs`: pure `classify_viewer_content(head, ext, is_local) -> ViewerContentKind { Text, Image, Pdf }`.
+  Magic bytes decide (JPEG/PNG/GIF/WebP/BMP/TIFF/HEIC/PDF); the extension is a tiebreaker only, and only for SVG (an
+  `.svg` ext AND an `<svg` root after BOM/prolog/comments/DOCTYPE). Non-local files always classify `Text` (v1 scopes
+  media to local POSIX volumes; MTP has no POSIX path, SMB can block). `media_mime(head, kind)` re-sniffs the magic to
+  pick the served `Content-Type`.
+- `media.rs`: the `cmdr-media://` capability-token registry. `mint_token(entry)` stores
+  `token -> { canonical_path, kind, mime }` (128-bit CSPRNG via `rand`, 32 hex chars) and returns the token;
+  `resolve_token` / `drop_token` round it out. `read_image_dimensions` reads header-only pixel dimensions best-effort
+  (the `image` crate; `None` for HEIC/SVG/errors).
+- `media_protocol.rs`: the async URI scheme handler. Pure helpers (`parse_token_from_uri`, `resolve_range`,
+  `build_response`) are unit-tested; `handle_request` is the thin Tauri shell. It resolves the token (unknown -> 404),
+  then runs its OWN `tauri::async_runtime::spawn_blocking` + `tokio::time::timeout` (expiry -> 504; deliberately NOT
+  `blocking_with_timeout`, which returns an `IpcError`, not an HTTP response). Honors `Range`: 206 with inclusive
+  `Content-Range`/`Accept-Ranges`, end clamped to `size-1`, 416 when unsatisfiable, 200 when no range. `Content-Type`
+  comes from the token's stored magic-byte MIME, never the extension. Registered once in the `lib.rs` builder chain via
+  `register_asynchronous_uri_scheme_protocol(media_protocol::SCHEME, ...)`, before any window exists (correct: `viewer-*`
+  windows are lazy and inherit the app-wide scheme).
+- `media_backend.rs`: `MediaBackend`, a no-op `FileViewerBackend` so a media session can fill the non-optional
+  `backend` field without a text backend. Every text-shaped call returns empty/zero.
+
+Open flow: `open_session` reads the head, classifies, and for a media kind calls `open_media_session`, which mints the
+token, reads dimensions best-effort (header-only, must not extend the open past the metadata read), installs a
+`MediaBackend`, and returns a `ViewerOpenResult` with `kind` + `media_token` + `media_dimensions` and empty text
+fields. Media sessions spawn no watcher and no LineIndex upgrade. `open_session_as_text` (behind the
+`viewer_open_as_text` IPC) forces the text path for the "View as text" override; it returns a fresh full text session
+the FE swaps to (no in-place upgrade).
+
+**Token lifetime == session lifetime.** `close_session` (the single choke point both teardown paths funnel through, the
+`viewer_close` IPC and the `WindowEvent::Destroyed` net via `close_session_for_window`) calls `media::drop_token`, so a
+closed-window viewer can't leave a live token mapping a real path. An unknown token is a 404, covering both
+never-existed and already-dropped.
+
+CSP: `tauri.conf.json` adds `cmdr-media:` to `img-src` and `object-src`. On macOS WKWebView a Tauri custom scheme
+surfaces as `cmdr-media://localhost/...`, so the CSP token is the scheme `cmdr-media:` (verified by `viewer-media.spec.ts`
+E2E rendering a real image + PDF under this CSP with no violation, on macOS 26.5.1 / WKWebView 25F80, 2026-06-14;
+resource origin can differ by Tauri version / platform, e.g. `http://cmdr-media.localhost` on Windows). Access is gated
+by the per-open token in the handler, not by CSP, so the app-wide allowance is acceptable.
+
+FDA: the handler `File::open`s a real path off an IPC-minted token, inheriting the viewer's existing assumption that a
+viewer only opens after the user picked the file (so FDA is already decided). This is NOT a new pre-gate read path
+(`fda_gate.rs`); a stray TCC denial reading bytes here is a real access failure, not a scheme bug.
+
 ## Backend selection logic
 
 ```rust

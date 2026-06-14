@@ -176,6 +176,18 @@ pub fn run() {
     let invoke_handler = specta_builder.invoke_handler();
     let builder = tauri::Builder::default();
 
+    // Register the `cmdr-media://` async URI scheme the file viewer serves images and
+    // PDFs through. Registered before any window exists (correct: `viewer-*` windows
+    // are created lazily and inherit the app-wide scheme). The handler is a thin shell
+    // over `file_viewer::media_protocol`; access is gated by an unguessable per-open
+    // token, not the path. See `file_viewer/media_protocol.rs`.
+    let builder = builder.register_asynchronous_uri_scheme_protocol(
+        file_viewer::media_protocol::SCHEME,
+        |_ctx, request, responder| {
+            file_viewer::media_protocol::handle_request(request, responder);
+        },
+    );
+
     // Window state plugin is only available on desktop platforms. The filter
     // restricts persistence to the main window: Settings, Debug, and viewer
     // windows are deliberately reset on every launch. Within a session they

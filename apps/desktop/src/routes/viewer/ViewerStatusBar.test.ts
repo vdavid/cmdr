@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 
 import ViewerStatusBar from './ViewerStatusBar.svelte'
+import type { MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getFileSizeFormat: () => 'binary',
@@ -13,6 +14,8 @@ beforeEach(() => {
 
 interface MountOpts {
   fileName?: string
+  kind?: ViewerContentKind
+  mediaDimensions?: MediaDimensions | null
   totalLines?: number | null
   totalBytes?: number
   currentMode?: 'fullLoad' | 'byteSeek' | 'lineIndex'
@@ -27,6 +30,8 @@ function mountStatusBar(opts: MountOpts = {}) {
     target,
     props: {
       fileName: opts.fileName ?? 'example.txt',
+      kind: opts.kind ?? 'text',
+      mediaDimensions: opts.mediaDimensions ?? null,
       totalLines: opts.totalLines === undefined ? 42 : opts.totalLines,
       totalBytes: opts.totalBytes ?? 1024,
       currentMode: opts.currentMode ?? 'fullLoad',
@@ -106,5 +111,36 @@ describe('ViewerStatusBar', () => {
     expect(badges).toContain('wrap')
 
     void unmount(instance)
+  })
+
+  describe('media mode', () => {
+    it('shows the kind badge, dimensions, and file size for an image, not line / backend info', async () => {
+      const { target, instance } = mountStatusBar({
+        kind: 'image',
+        mediaDimensions: { width: 1920, height: 1080 },
+        totalLines: null,
+      })
+      await tick()
+
+      const text = target.querySelector('.status-bar')?.textContent ?? ''
+      expect(text).toContain('Image')
+      expect(text).toContain('1,920 × 1,080')
+      // No backend badges (in memory / streaming / etc.) and no line count.
+      expect(text).not.toContain('in memory')
+      expect(text).not.toMatch(/\bline\b/)
+
+      void unmount(instance)
+    })
+
+    it('omits dimensions when they are unknown (HEIC / SVG / PDF)', async () => {
+      const { target, instance } = mountStatusBar({ kind: 'pdf', mediaDimensions: null, totalLines: null })
+      await tick()
+
+      const text = target.querySelector('.status-bar')?.textContent ?? ''
+      expect(text).toContain('PDF')
+      expect(text).not.toContain('×')
+
+      void unmount(instance)
+    })
   })
 })

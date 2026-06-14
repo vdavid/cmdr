@@ -8,10 +8,10 @@ beforeEach(() => {
   document.body.innerHTML = ''
 })
 
-function mountPicker() {
+function mountPicker(kind: 'text' | 'image' | 'pdf' = 'text') {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  const instance = mount(ViewModePicker, { target, props: { value: 'text', onChange: () => {} } })
+  const instance = mount(ViewModePicker, { target, props: { kind, onViewAsText: () => {} } })
   return { target, instance }
 }
 

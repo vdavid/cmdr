@@ -708,6 +708,16 @@ export const commands = {
   viewerOpen: (path: string, windowLabel: string) =>
     typedError<ViewerOpenResult, IpcError>(__TAURI_INVOKE('viewer_open', { path, windowLabel })),
   /**
+   *  Opens a fresh, full **text** session for `path`, ignoring media classification.
+   *
+   *  Backs the viewer's "View as text" override: a media (Image/PDF) session isn't
+   *  upgraded in place; the FE calls this, swaps to the returned text session, and closes
+   *  the old one. Re-registers the window -> session link so the window-destroyed handler
+   *  frees the new session.
+   */
+  viewerOpenAsText: (path: string, windowLabel: string) =>
+    typedError<ViewerOpenResult, IpcError>(__TAURI_INVOKE('viewer_open_as_text', { path, windowLabel })),
+  /**
    *  Fetches a range of lines from a viewer session.
    *
    *  # Arguments
@@ -3770,6 +3780,12 @@ export type Markdown = string & { readonly __markdown: unique symbol }
  */
 export type McpSettingsClose = null
 
+// Image pixel dimensions, read header-only at open time.
+export type MediaDimensions = {
+  width: number
+  height: number
+}
+
 /**
  *  `menu-sort`: a Sort-by menu item (column or order) clicked. `action` is
  *  `"sortBy"` (then `value` is a column name) or `"sortOrder"` (then `value` is
@@ -5158,6 +5174,15 @@ export type ViewModeChanged = {
 }
 
 /**
+ *  What the viewer should render a file as. The frontend branches on this:
+ *  `Image` -> `<img>`, `Pdf` -> `<embed>`, `Text` -> the line pipeline.
+ *
+ *  "Media" survives only as an internal code word (the `cmdr-media://` scheme and
+ *  this enum); users never see it. Future kinds (Markdown, Html) slot in here.
+ */
+export type ViewerContentKind = 'text' | 'image' | 'pdf'
+
+/**
  *  Errors from the viewer backends.
  *
  *  Variants carry the typed reason; the IPC layer maps these to user-facing strings.
@@ -5194,6 +5219,23 @@ export type ViewerOpenResult = {
   isIndexing: boolean
   // Auto-detected encoding (also the initial selection of the picker).
   encoding: FileEncoding
+  /**
+   *  Detected content kind. `Text` flows through the line pipeline (the fields
+   *  above are populated); `Image` / `Pdf` render inline from `media_token` and
+   *  leave the text fields empty.
+   */
+  kind: ViewerContentKind
+  /**
+   *  Present only for media kinds (`Image` / `Pdf`): the unguessable token the FE
+   *  puts in the `cmdr-media://localhost/<token>` URL. `None` for text.
+   */
+  mediaToken: string | null
+  /**
+   *  Image pixel dimensions, header-only and best-effort. `Some` only for some
+   *  `Image` files (raster formats the `image` crate can parse; `None` for HEIC,
+   *  SVG, PDFs, text, or on any read error).
+   */
+  mediaDimensions: MediaDimensions | null
 }
 
 // Current status of a viewer session.

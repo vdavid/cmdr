@@ -19,9 +19,28 @@
 
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
 
 const smallFileContent = 'A'.repeat(1024) // ~1 KB
+
+// Tiny binary media fixtures (a few-KB PNG + a 1-page PDF) committed under
+// `media-fixtures/`, copied into `left/` so the viewer media E2E specs have a
+// real image and PDF to open. Kept as committed files (not generated) so the
+// bytes are deterministic and reviewable.
+const mediaFixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'media-fixtures')
+const mediaFixtures = [
+  { rel: 'left/sample.png', source: 'sample.png' },
+  { rel: 'left/sample.pdf', source: 'sample.pdf' },
+] as const
+
+function copyMediaFixtures(rootPath: string): void {
+  for (const file of mediaFixtures) {
+    const dest = path.join(rootPath, file.rel)
+    fs.mkdirSync(path.dirname(dest), { recursive: true })
+    fs.copyFileSync(path.join(mediaFixturesDir, file.source), dest)
+  }
+}
 
 const fixtureLayout = {
   textFiles: [
@@ -225,6 +244,8 @@ export function createFixtures(instanceId?: string): string {
     fs.writeFileSync(filePath, file.content)
   }
 
+  copyMediaFixtures(rootPath)
+
   if (instanceId) {
     ensureCacheBuilt()
     hardlinkBulkFromCache(rootPath)
@@ -299,6 +320,9 @@ export function recreateFixtures(rootPath: string): void {
     fs.mkdirSync(path.dirname(filePath), { recursive: true })
     fs.writeFileSync(filePath, file.content)
   }
+
+  // Re-copy the media fixtures: they live under left/, which the cleanup above wiped.
+  copyMediaFixtures(rootPath)
 
   // Bulk .dat files are NOT recreated; they persist from createFixtures()
 }

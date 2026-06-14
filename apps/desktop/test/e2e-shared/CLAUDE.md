@@ -27,6 +27,7 @@ The on-disk layout `fixtures.ts` produces (relative to the per-instance fixture 
 ```
 left/                         right/  (empty)
   file-a.txt, file-b.txt
+  sample.png, sample.pdf
   sub-dir/nested-file.txt
   .hidden-file
   bulk/  (3 x 50 MB + 20 x 1 MB .dat files)
@@ -34,7 +35,9 @@ left/                         right/  (empty)
 
 Text files are full copies because tests mutate them. Bulk `.dat` files are zero-filled, deterministic, and hardlinked
 from the cache. `recreateFixtures()` (called in `beforeEach` of mutating specs) restores the text files; bulk files
-survive across tests since they're read-only.
+survive across tests since they're read-only. `sample.png` (2×2 RGBA) and `sample.pdf` (1 page) are committed under
+`media-fixtures/` and copied into `left/` for the viewer media specs (`viewer-media.spec.ts`); they're re-copied by
+`recreateFixtures()` too since the cleanup wipes `left/`.
 
 ## Hardlink cache protocol
 

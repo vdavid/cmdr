@@ -156,6 +156,10 @@ details.
 - **`network-toggle.spec.ts`**: 4 tests: volume picker shows "Network" / "Network (disabled)" depending on the
   `network.enabled` setting; toggling silences mDNS without losing the visible entry
 - **`viewer.spec.ts`**: 10 tests: file viewer, search, error handling
+- **`viewer-media.spec.ts`**: 2 tests: a fixture PNG renders inline (`<img>` `naturalWidth > 0`) and a fixture PDF
+  renders inline (`<embed>` present), both with the binary-warning banner absent and no `cmdr-media` / `img-src` /
+  `object-src` CSP violation (the wrong-token failure mode). Fixtures `left/sample.png` + `left/sample.pdf` from
+  `e2e-shared/fixtures.ts`.
 - **`viewer-regex-search.spec.ts`**: 1 test: regex toggle finds digit groups via `\d+`. Cross-component flow: toolbar
   toggle → composable state → IPC → backend matcher → results in the viewport.
 - **`viewer-encoding-picker.spec.ts`**: 1 test: switching encoding from UTF-16 LE to UTF-8 on a 6 MB file keeps the

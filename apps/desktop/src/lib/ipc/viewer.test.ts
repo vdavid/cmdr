@@ -47,6 +47,9 @@ const openResult: ViewerOpenResult = {
   initialLines,
   isIndexing: false,
   encoding: 'utf8',
+  kind: 'text',
+  mediaToken: null,
+  mediaDimensions: null,
 }
 
 describe('commands.viewerOpen', () => {

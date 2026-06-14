@@ -171,6 +171,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::child_window_state::get_child_window_rect,
         crate::commands::child_window_state::set_child_window_rect,
         crate::commands::file_viewer::viewer_open,
+        crate::commands::file_viewer::viewer_open_as_text,
         crate::commands::file_viewer::viewer_get_lines,
         crate::commands::file_viewer::viewer_get_status,
         crate::commands::file_viewer::viewer_search_start,

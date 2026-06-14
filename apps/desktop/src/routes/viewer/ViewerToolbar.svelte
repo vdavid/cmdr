@@ -16,13 +16,14 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import EncodingPicker from './EncodingPicker.svelte'
     import ViewModePicker from './ViewModePicker.svelte'
-    import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
+    import type { EncodingChoice, FileEncoding, ViewerContentKind } from '$lib/ipc/bindings'
+    import { isMediaKind } from './media-view'
 
     interface Props {
         /** File name shown in the flexible middle of the bar. */
         fileName: string
-        /** Current view mode (today only "text"). */
-        viewMode: 'text'
+        /** Detected content kind. Media kinds hide the text-only controls (encoding, tail). */
+        kind: ViewerContentKind
         /** Currently active encoding. */
         currentEncoding: FileEncoding
         /** Encoding auto-detection picked at open time. Gets a "(Detected)" suffix. */
@@ -33,8 +34,8 @@
         isIndexing: boolean
         /** Whether tail mode is on. */
         tailMode: boolean
-        /** Called when the user picks a different view mode. */
-        onViewModeChange: (mode: 'text') => void
+        /** Called when the user picks "View as text" on a media file. */
+        onViewAsText: () => void
         /** Called when the user picks a different encoding. */
         onEncodingChange: (encoding: FileEncoding) => void
         /** Called when the user toggles tail mode. */
@@ -43,43 +44,49 @@
 
     const {
         fileName,
-        viewMode,
+        kind,
         currentEncoding,
         detectedEncoding,
         encodingChoices,
         isIndexing,
         tailMode,
-        onViewModeChange,
+        onViewAsText,
         onEncodingChange,
         onToggleTail,
     }: Props = $props()
+
+    const isMedia = $derived(isMediaKind(kind))
 </script>
 
 <header class="viewer-toolbar" data-tauri-drag-region>
     <span class="viewer-toolbar-title" data-tauri-drag-region>{fileName}</span>
     <div class="viewer-toolbar-pickers">
-        <ViewModePicker value={viewMode} onChange={onViewModeChange} />
-        <EncodingPicker
-            value={currentEncoding}
-            detected={detectedEncoding}
-            options={encodingChoices}
-            disabled={isIndexing}
-            onChange={onEncodingChange}
-        />
-        <button
-            type="button"
-            class="viewer-toolbar-toggle"
-            class:active={tailMode}
-            role="switch"
-            aria-checked={tailMode}
-            aria-label="Tail mode: follow file changes"
-            onclick={onToggleTail}
-            use:tooltip={{ text: 'Auto-follow file changes', shortcut: 'F' }}
-        >
-            Tail
-        </button>
-        {#if isIndexing}
-            <span class="viewer-toolbar-indexing" role="status" aria-live="polite">Reindexing…</span>
+        <ViewModePicker {kind} {onViewAsText} />
+        {#if !isMedia}
+            <!-- Encoding, tail, and the reindexing indicator are text-only; a media
+                 session has no decoded bytes / line index, so they're hidden. -->
+            <EncodingPicker
+                value={currentEncoding}
+                detected={detectedEncoding}
+                options={encodingChoices}
+                disabled={isIndexing}
+                onChange={onEncodingChange}
+            />
+            <button
+                type="button"
+                class="viewer-toolbar-toggle"
+                class:active={tailMode}
+                role="switch"
+                aria-checked={tailMode}
+                aria-label="Tail mode: follow file changes"
+                onclick={onToggleTail}
+                use:tooltip={{ text: 'Auto-follow file changes', shortcut: 'F' }}
+            >
+                Tail
+            </button>
+            {#if isIndexing}
+                <span class="viewer-toolbar-indexing" role="status" aria-live="polite">Reindexing…</span>
+            {/if}
         {/if}
     </div>
 </header>

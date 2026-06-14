@@ -10,10 +10,16 @@
 <script lang="ts">
     import { tooltip } from '$lib/tooltip/tooltip'
     import Size from '$lib/ui/Size.svelte'
+    import type { MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
+    import { isMediaKind, mediaKindLabel, formatMediaDimensions } from './media-view'
 
     interface Props {
         /** File name shown at the start of the bar. */
         fileName: string
+        /** Content kind. Media kinds (image / PDF) show kind + dimensions instead of line / backend info. */
+        kind: ViewerContentKind
+        /** Image pixel dimensions, when known (raster only). Shown only in media mode. */
+        mediaDimensions: MediaDimensions | null
         /** Total line count, or `null` when not yet known (streaming, no index). */
         totalLines: number | null
         /** File size in bytes. */
@@ -28,16 +34,36 @@
         indexingTimeoutSecs: number
     }
 
-    const { fileName, totalLines, totalBytes, currentMode, isIndexing, wordWrap, indexingTimeoutSecs }: Props = $props()
+    const {
+        fileName,
+        kind,
+        mediaDimensions,
+        totalLines,
+        totalBytes,
+        currentMode,
+        isIndexing,
+        wordWrap,
+        indexingTimeoutSecs,
+    }: Props = $props()
+
+    const isMedia = $derived(isMediaKind(kind))
+    const dimensionsText = $derived(formatMediaDimensions(mediaDimensions))
 </script>
 
 <div class="status-bar" aria-label="File information">
     <span>{fileName}</span>
-    {#if totalLines !== null}
-        <span>{totalLines} {totalLines === 1 ? 'line' : 'lines'}</span>
-    {/if}
-    <span><Size bytes={totalBytes} /></span>
-    {#if currentMode === 'fullLoad'}
+    {#if isMedia}
+        <span class="backend-badge">{mediaKindLabel(kind)}</span>
+        {#if dimensionsText}
+            <span>{dimensionsText}</span>
+        {/if}
+        <span><Size bytes={totalBytes} /></span>
+    {:else}
+        {#if totalLines !== null}
+            <span>{totalLines} {totalLines === 1 ? 'line' : 'lines'}</span>
+        {/if}
+        <span><Size bytes={totalBytes} /></span>
+        {#if currentMode === 'fullLoad'}
         <span
             class="backend-badge"
             use:tooltip={'You have the file entirely in memory. You can quickly scroll to any line.'}
@@ -55,19 +81,27 @@
             use:tooltip={`This is a large file in streaming mode. We're building an index in background (max ${String(indexingTimeoutSecs)} sec)... Line numbers are currently approximate.`}
             >streaming, indexing...</span
         >
+        {:else}
+            <span
+                class="backend-badge"
+                use:tooltip={`This is a large file in streaming mode. Indexing would've taken longer than ${String(indexingTimeoutSecs)} sec, so we didn't do it. The line numbers are estimates.`}
+                >streaming</span
+            >
+        {/if}
+        {#if wordWrap}
+            <span class="backend-badge" use:tooltip={{ text: 'Lines wrap at the window edge', shortcut: 'W' }}>wrap</span
+            >
+        {/if}
+    {/if}
+    {#if kind === 'image'}
+        <span class="shortcut-hint">Click 100% / fit &middot; Scroll zoom &middot; Drag pan &middot; Esc close</span>
+    {:else if kind === 'pdf'}
+        <span class="shortcut-hint">Esc close</span>
     {:else}
-        <span
-            class="backend-badge"
-            use:tooltip={`This is a large file in streaming mode. Indexing would've taken longer than ${String(indexingTimeoutSecs)} sec, so we didn't do it. The line numbers are estimates.`}
-            >streaming</span
+        <span class="shortcut-hint"
+            >W wrap &middot; F tail &middot; ⌘A select all &middot; ⌘C copy &middot; ⌘F search &middot; Esc close</span
         >
     {/if}
-    {#if wordWrap}
-        <span class="backend-badge" use:tooltip={{ text: 'Lines wrap at the window edge', shortcut: 'W' }}>wrap</span>
-    {/if}
-    <span class="shortcut-hint"
-        >W wrap &middot; F tail &middot; ⌘A select all &middot; ⌘C copy &middot; ⌘F search &middot; Esc close</span
-    >
 </div>
 
 <style>

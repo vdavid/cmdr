@@ -14,20 +14,20 @@ beforeEach(() => {
   document.body.innerHTML = ''
 })
 
-function mountToolbar(props: { isIndexing: boolean; tailMode: boolean }) {
+function mountToolbar(props: { isIndexing: boolean; tailMode: boolean; kind?: 'text' | 'image' | 'pdf' }) {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(ViewerToolbar, {
     target,
     props: {
       fileName: 'example.txt',
-      viewMode: 'text',
+      kind: props.kind ?? 'text',
       currentEncoding: 'utf8',
       detectedEncoding: 'utf8',
       encodingChoices: choices,
       isIndexing: props.isIndexing,
       tailMode: props.tailMode,
-      onViewModeChange: () => {},
+      onViewAsText: () => {},
       onEncodingChange: () => {},
       onToggleTail: () => {},
     },
@@ -44,6 +44,12 @@ describe('ViewerToolbar a11y', () => {
 
   it('indexing + tail-on state has no a11y violations', async () => {
     const target = mountToolbar({ isIndexing: true, tailMode: true })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('media mode (image) has no a11y violations', async () => {
+    const target = mountToolbar({ isIndexing: false, tailMode: false, kind: 'image' })
     await tick()
     await expectNoA11yViolations(target)
   })

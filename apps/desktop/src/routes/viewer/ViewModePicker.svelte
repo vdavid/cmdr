@@ -1,25 +1,41 @@
 <script lang="ts">
   /**
-   * View mode picker. Ships with only "Text" today; the dropdown structure is
-   * placeholder for future modes (hex, image, HTML strip). Disabled because
-   * there's nothing to switch to yet.
+   * View-mode picker. Shows the detected content kind (Image / PDF / Text). For a
+   * media kind (image or PDF) it also offers "View as text", which re-opens the file
+   * as a fresh full text session (the viewer swaps to it). For a text file there's
+   * nothing to switch to, so the picker is disabled.
    */
   import Select, { type SelectItem } from '$lib/ui/Select.svelte'
+  import type { ViewerContentKind } from '$lib/ipc/bindings'
+  import { mediaKindLabel, isMediaKind } from './media-view'
 
-  type ViewMode = 'text'
+  // The "View as text" item uses a sentinel value distinct from the three kinds.
+  const VIEW_AS_TEXT = 'viewAsText'
 
   type Props = {
-    value: ViewMode
-    onChange?: (mode: ViewMode) => void
+    kind: ViewerContentKind
+    /** Called when the user picks "View as text" on a media file. */
+    onViewAsText?: () => void
   }
 
-  const { value, onChange }: Props = $props()
+  const { kind, onViewAsText }: Props = $props()
 
-  const items: SelectItem[] = [{ value: 'text', label: 'Text' }]
+  const items = $derived<SelectItem[]>(
+    isMediaKind(kind)
+      ? [
+          { value: kind, label: mediaKindLabel(kind) },
+          { value: VIEW_AS_TEXT, label: 'View as text' },
+        ]
+      : [{ value: 'text', label: 'Text' }],
+  )
 
-  function handleChange(picked: string) {
-    onChange?.(picked as ViewMode)
+  // A text file has only one option, so the picker is inert (matches the
+  // encoding picker's disabled-when-nothing-to-do convention).
+  const disabled = $derived(!isMediaKind(kind))
+
+  function handleChange(picked: string): void {
+    if (picked === VIEW_AS_TEXT) onViewAsText?.()
   }
 </script>
 
-<Select {items} {value} disabled ariaLabel="View mode" onChange={handleChange} />
+<Select {items} value={kind} {disabled} ariaLabel="View mode" onChange={handleChange} />

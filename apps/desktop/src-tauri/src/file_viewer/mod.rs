@@ -6,9 +6,13 @@
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
 mod byte_seek;
+pub mod content_kind;
 pub mod encoding;
 mod full_load;
 mod line_index;
+pub mod media;
+mod media_backend;
+pub mod media_protocol;
 mod range_read;
 mod search_matcher;
 pub mod session;
@@ -17,11 +21,15 @@ pub mod watcher;
 #[cfg(test)]
 mod byte_seek_test;
 #[cfg(test)]
+mod content_kind_test;
+#[cfg(test)]
 mod encoding_test;
 #[cfg(test)]
 mod full_load_test;
 #[cfg(test)]
 mod line_index_test;
+#[cfg(test)]
+mod media_protocol_test;
 #[cfg(test)]
 mod search_matcher_test;
 #[cfg(test)]
@@ -29,14 +37,15 @@ mod session_test;
 #[cfg(test)]
 mod watcher_test;
 
+pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
 pub use range_read::RangeEnd;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
-    EncodingOptions, SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session,
-    close_session_for_window, get_encoding_options, get_lines, get_session_status, init_app_handle, open_session,
-    read_range, register_window_session, reload, search_cancel, search_poll, search_start, set_encoding, set_tail_mode,
-    write_range_to_file,
+    EncodingOptions, MediaDimensions, SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read,
+    close_session, close_session_for_window, get_encoding_options, get_lines, get_session_status, init_app_handle,
+    open_session, open_session_as_text, read_range, register_window_session, reload, search_cancel, search_poll,
+    search_start, set_encoding, set_tail_mode, write_range_to_file,
 };
 
 use serde::Serialize;

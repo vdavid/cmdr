@@ -7,6 +7,7 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import {
         viewerOpen,
+        viewerOpenAsText,
         viewerGetLines,
         viewerClose,
         viewerSetupMenu,
@@ -43,12 +44,15 @@
     import ViewerToolbar from './ViewerToolbar.svelte'
     import ViewerStatusBar from './ViewerStatusBar.svelte'
     import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
+    import MediaImageView from './MediaImageView.svelte'
+    import MediaPdfView from './MediaPdfView.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { commands } from '$lib/ipc/bindings'
-    import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
+    import type { EncodingChoice, FileEncoding, MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
     import type { RangeEnd } from '$lib/tauri-commands'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
     import { categorizeForViewerWarning } from '$lib/file-viewer/binary-warning'
+    import { mediaUrl, isMediaKind } from './media-view'
 
     const log = getAppLogger('viewer')
 
@@ -72,7 +76,18 @@
     let currentEncoding = $state<FileEncoding>('utf8')
     let detectedEncoding = $state<FileEncoding>('utf8')
     let encodingChoices = $state<EncodingChoice[]>([])
-    let viewMode = $state<'text'>('text')
+
+    /**
+     * Content kind from the backend. `text` flows through the line / virtual-scroll
+     * pipeline; `image` / `pdf` render inline from `mediaToken` via the
+     * `cmdr-media://` scheme and leave the text fields empty. Every text-only data
+     * path and control below guards on `kind === 'text'`.
+     */
+    let kind = $state<ViewerContentKind>('text')
+    let mediaToken = $state<string | null>(null)
+    let mediaDimensions = $state<MediaDimensions | null>(null)
+    const isMedia = $derived(isMediaKind(kind))
+    const mediaSrc = $derived(mediaToken !== null ? mediaUrl(mediaToken) : '')
 
     /**
      * Tail mode: when on, the open viewport auto-follows newly appended bytes.
@@ -148,7 +163,12 @@
     let warningSuppressed = $state(false)
     let bannerDismissed = $state(false)
     const warning = $derived(categorizeForViewerWarning(fileName))
-    const showWarningBanner = $derived(warning.shouldWarn && !bannerDismissed && !warningSuppressed && !loading)
+    // Media kinds render inline, so they never warn (the classifier already returns
+    // no-warn for images / PDFs, but gate on `isMedia` too so a stray extension
+    // mismatch can't surface the raw-bytes banner over a rendered image).
+    const showWarningBanner = $derived(
+        !isMedia && warning.shouldWarn && !bannerDismissed && !warningSuppressed && !loading,
+    )
 
     function dismissBanner(): void {
         bannerDismissed = true
@@ -321,48 +341,61 @@
         setFocus: selection.setFocus,
     })
 
+    // Every effect below drives the text / virtual-scroll pipeline. In media mode the
+    // text fields are empty and `.file-content` isn't rendered, so they all no-op:
+    // gate on `isMedia` up front so nothing touches the (empty) line machinery.
+
     // Fetch lines when visible range changes (debounced)
     $effect(() => {
+        if (isMedia) return
         scroll.runFetchEffect()
     })
 
     // Track horizontal content width so .scroll-spacer can create a scrollbar
     $effect(() => {
+        if (isMedia) return
         return scroll.runContentWidthEffect()
     })
 
     // Measure average wrapped line height for virtual scroll approximation
     $effect(() => {
+        if (isMedia) return
         return scroll.runWrappedLineHeightEffect()
     })
 
     // Compensate scroll position when scrollLineHeight changes
     $effect(() => {
+        if (isMedia) return
         scroll.runScrollCompensationEffect()
     })
 
     // Height map: trigger preparation when word wrap + fullLoad lines + textWidth are available
     $effect(() => {
+        if (isMedia) return
         scroll.runHeightMapInitEffect()
     })
 
     // Height map: reflow when textWidth changes
     $effect(() => {
+        if (isMedia) return
         scroll.runHeightMapReflowEffect()
     })
 
     // Track available text width for height map calculations via ResizeObserver + visible lines change
     $effect(() => {
+        if (isMedia) return
         return textWidthTracker.runResizeEffect()
     })
 
     // Re-measure text width when lines first appear (ResizeObserver won't fire if container size didn't change)
     $effect(() => {
+        if (isMedia) return
         textWidthTracker.runVisibleLinesEffect()
     })
 
     // Debounce search input
     $effect(() => {
+        if (isMedia) return
         search.runDebounceEffect()
     })
 
@@ -461,6 +494,24 @@
         closeWindow,
     })
 
+    /**
+     * Window-level keydown router. In text mode it delegates to the full viewer
+     * keyboard (search, selection, copy, navigation). In media mode the text
+     * shortcuts don't apply (there are no lines to search / select / copy), so only
+     * Escape closes the window; the image's own fit / zoom / pan keys are handled by
+     * the focused `MediaImageView` stage, and the PDF embed owns its own keys.
+     */
+    function handleWindowKeyDown(e: KeyboardEvent) {
+        if (isMedia) {
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                closeWindow()
+            }
+            return
+        }
+        keyboard.handleKeyDown(e)
+    }
+
     async function setupMcpListeners(myFilePath: string) {
         unlistenMcpClose = await listen<{ path?: string }>('mcp-viewer-close', (event) => {
             const requestedPath = event.payload.path
@@ -479,11 +530,17 @@
         })
     }
 
-    async function openViewerSession(path: string) {
+    /**
+     * Opens (or re-opens) the viewer session for `path`. `asText: true` forces a full
+     * text session even for a media file (the "View as text" override); the default
+     * lets the backend classify and return a media or text session.
+     */
+    async function openViewerSession(path: string, { asText = false }: { asText?: boolean } = {}) {
         const t0 = performance.now()
         // Pass the window label so the backend can free this session when the
         // window is closed via the titlebar X (which never fires `viewerClose`).
-        const result = await viewerOpen(path, getCurrentWindow().label)
+        const open = asText ? viewerOpenAsText : viewerOpen
+        const result = await open(path, getCurrentWindow().label)
         log.debug('viewer_open IPC took {ms}ms', { ms: Math.round(performance.now() - t0) })
 
         sessionId = result.sessionId
@@ -495,17 +552,26 @@
         isIndexing = result.isIndexing
         currentEncoding = result.encoding
         detectedEncoding = result.encoding
-        // Fetch the dropdown options once; they don't change after open.
-        void commands
-            .viewerGetEncodingOptions(result.sessionId)
-            .then((res) => {
-                if (res.status === 'ok') {
-                    encodingChoices = res.data.all
-                    detectedEncoding = res.data.detected
-                    currentEncoding = res.data.current
-                }
-            })
-            .catch(() => {})
+        kind = result.kind
+        mediaToken = result.mediaToken
+        mediaDimensions = result.mediaDimensions
+
+        const openedAsMedia = isMediaKind(result.kind)
+
+        // Encoding options are text-only; a media session has no decoded bytes to pick
+        // an encoding for. Fetch the dropdown options once for text; they don't change.
+        if (!openedAsMedia) {
+            void commands
+                .viewerGetEncodingOptions(result.sessionId)
+                .then((res) => {
+                    if (res.status === 'ok') {
+                        encodingChoices = res.data.all
+                        detectedEncoding = res.data.detected
+                        currentEncoding = res.data.current
+                    }
+                })
+                .catch(() => {})
+        }
 
         log.debug(
             'Opened file: {fileName}, {totalBytes} {bytesNoun}, totalLines={totalLines}, estimatedTotalLines={estimatedTotalLines}, backend={backendType}, isIndexing={isIndexing}',
@@ -520,47 +586,52 @@
             },
         )
 
-        if (result.isIndexing) {
-            indexingPoll.start()
-        }
+        // The line / index / tail pipeline is text-only. A media session has no lines
+        // to index, cache, or tail-follow, so skip all of it; the image / PDF renders
+        // from `mediaToken` instead.
+        if (!openedAsMedia) {
+            if (result.isIndexing) {
+                indexingPoll.start()
+            }
 
-        // Subscribe to the watcher event stream. Tail mode itself starts off on
-        // every open; the user re-enables it per session.
-        await viewerTail.init()
+            // Subscribe to the watcher event stream. Tail mode itself starts off on
+            // every open; the user re-enables it per session.
+            await viewerTail.init()
 
-        scroll.lineCache.clear()
-        for (let i = 0; i < result.initialLines.lines.length; i++) {
-            scroll.lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
-        }
+            scroll.lineCache.clear()
+            for (let i = 0; i < result.initialLines.lines.length; i++) {
+                scroll.lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
+            }
 
-        log.debug('Initial cache: {count} {linesNoun} loaded', {
-            count: result.initialLines.lines.length,
-            linesNoun: pluralize(result.initialLines.lines.length, 'line'),
-        })
+            log.debug('Initial cache: {count} {linesNoun} loaded', {
+                count: result.initialLines.lines.length,
+                linesNoun: pluralize(result.initialLines.lines.length, 'line'),
+            })
 
-        // For FullLoad files, fetch ALL lines so the height map can prepare them.
-        // The initial chunk only contains ~200 lines, but FullLoad files are <1MB so
-        // fetching the rest in one IPC call is trivial.
-        if (
-            result.backendType === 'fullLoad' &&
-            result.totalLines !== null &&
-            result.initialLines.lines.length < result.totalLines
-        ) {
-            const remaining = result.totalLines - result.initialLines.lines.length
-            const startLine = result.initialLines.firstLineNumber + result.initialLines.lines.length
-            const tFetch = performance.now()
-            viewerGetLines(result.sessionId, 'line', startLine, remaining)
-                .then((chunk) => {
-                    log.debug('FullLoad fetch remaining {count} {linesNoun} took {ms}ms', {
-                        count: chunk.lines.length,
-                        linesNoun: pluralize(chunk.lines.length, 'line'),
-                        ms: Math.round(performance.now() - tFetch),
+            // For FullLoad files, fetch ALL lines so the height map can prepare them.
+            // The initial chunk only contains ~200 lines, but FullLoad files are <1MB so
+            // fetching the rest in one IPC call is trivial.
+            if (
+                result.backendType === 'fullLoad' &&
+                result.totalLines !== null &&
+                result.initialLines.lines.length < result.totalLines
+            ) {
+                const remaining = result.totalLines - result.initialLines.lines.length
+                const startLine = result.initialLines.firstLineNumber + result.initialLines.lines.length
+                const tFetch = performance.now()
+                viewerGetLines(result.sessionId, 'line', startLine, remaining)
+                    .then((chunk) => {
+                        log.debug('FullLoad fetch remaining {count} {linesNoun} took {ms}ms', {
+                            count: chunk.lines.length,
+                            linesNoun: pluralize(chunk.lines.length, 'line'),
+                            ms: Math.round(performance.now() - tFetch),
+                        })
+                        for (let i = 0; i < chunk.lines.length; i++) {
+                            scroll.lineCache.set(startLine + i, chunk.lines[i])
+                        }
                     })
-                    for (let i = 0; i < chunk.lines.length; i++) {
-                        scroll.lineCache.set(startLine + i, chunk.lines[i])
-                    }
-                })
-                .catch(() => {}) // Non-critical: height map just won't activate
+                    .catch(() => {}) // Non-critical: height map just won't activate
+            }
         }
 
         await initAppMode()
@@ -629,6 +700,44 @@
         unlistenMcpFocus?.()
         unlistenWordWrap?.()
         unlistenWindowFocus?.()
+    }
+
+    /**
+     * "View as text" override for a media file. Opens a fresh full text session via
+     * `viewerOpenAsText`, swaps to it, and closes the old media session. We tear down
+     * the per-session listeners first (they get re-attached by `openViewerSession`),
+     * close the old session explicitly (the new session has a different id, so window
+     * teardown alone wouldn't free the old one), and reset the media state so the text
+     * pipeline takes over.
+     */
+    async function viewAsText() {
+        if (!filePath || kind === 'text') return
+        const oldSessionId = sessionId
+        loading = true
+        error = ''
+        errorIsTimeout = false
+        cleanupListeners()
+        viewerTail.destroy()
+        indexingPoll.stop()
+        // Reset media state up front so a re-open failure can't leave a stale image
+        // rendered with no live session behind it.
+        kind = 'text'
+        mediaToken = null
+        mediaDimensions = null
+        try {
+            await openViewerSession(filePath, { asText: true })
+            if (oldSessionId && oldSessionId !== sessionId) {
+                viewerClose(oldSessionId).catch(() => {})
+            }
+        } catch (e) {
+            error = typeof e === 'string' ? e : isIpcError(e) ? e.message : 'Failed to read file'
+            errorIsTimeout = isIpcError(e) && e.timedOut
+            log.error('View as text failed: {error}', { error: String(e) })
+        } finally {
+            loading = false
+            await tick()
+            scroll.containerRef?.focus()
+        }
     }
 
     onMount(async () => {
@@ -707,7 +816,7 @@
     })
 </script>
 
-<svelte:window on:keydown={keyboard.handleKeyDown} on:blur={pointerDrag.handleWindowBlur} />
+<svelte:window on:keydown={handleWindowKeyDown} on:blur={pointerDrag.handleWindowBlur} />
 
 <main
     class="viewer-container"
@@ -715,6 +824,9 @@
     tabindex={-1}
     data-window-ready={windowReady ? (error ? 'error' : 'loaded') : 'loading'}
     oncopy={(e: ClipboardEvent) => {
+        // Media mode has no custom text selection; let the browser's native copy
+        // (e.g. copying the image) run unintercepted.
+        if (isMedia) return
         // Intercept any copy gesture (menu Edit > Copy, ⌘C from anywhere inside the
         // viewer) so the custom selection model wins over the browser's native one.
         const target = e.target as HTMLElement | null
@@ -729,14 +841,14 @@
     <h1 class="sr-only">File viewer</h1>
     <ViewerToolbar
         {fileName}
-        {viewMode}
+        {kind}
         {currentEncoding}
         {detectedEncoding}
         {encodingChoices}
         {isIndexing}
         {tailMode}
-        onViewModeChange={(mode: 'text') => {
-            viewMode = mode
+        onViewAsText={() => {
+            void viewAsText()
         }}
         onEncodingChange={(enc: FileEncoding) => void handleEncodingChange(enc)}
         onToggleTail={() => {
@@ -888,6 +1000,10 @@
         </div>
     {:else if error}
         <div class="status-message error">{error}</div>
+    {:else if kind === 'image'}
+        <MediaImageView src={mediaSrc} {fileName} />
+    {:else if kind === 'pdf'}
+        <MediaPdfView src={mediaSrc} {fileName} />
     {:else}
         <div
             class="file-content"
@@ -935,6 +1051,8 @@
 
     <ViewerStatusBar
         {fileName}
+        {kind}
+        {mediaDimensions}
         {totalLines}
         {totalBytes}
         {currentMode}

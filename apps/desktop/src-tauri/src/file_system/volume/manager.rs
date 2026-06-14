@@ -129,6 +129,19 @@ impl VolumeManager {
             .unwrap_or_default()
     }
 
+    /// Returns all registered volumes as (id, handle) pairs. Unlike [`list_volumes`]
+    /// (which returns display names), this hands back the `Volume` handles so callers
+    /// can inspect capabilities (`root`, `supports_local_fs_access`,
+    /// `smb_connection_state`). Used by the file viewer's locality check.
+    ///
+    /// [`list_volumes`]: Self::list_volumes
+    pub fn list_volumes_with_handles(&self) -> Vec<(String, Arc<dyn Volume>)> {
+        self.volumes
+            .read()
+            .map(|volumes| volumes.iter().map(|(id, vol)| (id.clone(), vol.clone())).collect())
+            .unwrap_or_default()
+    }
+
     /// Returns the number of registered volumes.
     pub fn count(&self) -> usize {
         self.volumes.read().map(|v| v.len()).unwrap_or(0)

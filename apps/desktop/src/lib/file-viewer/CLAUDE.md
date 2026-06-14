@@ -9,10 +9,16 @@ route shell lives at [`src/routes/viewer/CLAUDE.md`](../../routes/viewer/CLAUDE.
 ## Key files
 
 - `open-viewer.ts`: `openFileViewer(filePath)` creates new `WebviewWindow` with unique label
-- `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` helper that classifies a file as `image` / `document`
-  / `<EXT-uppercased>` (or "don't warn" for text/source/unknown). The viewer route renders a red banner at the top
+- `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` helper that classifies a file as `document` /
+  `<EXT-uppercased>` (or "don't warn" for text/source/unknown). The viewer route renders a red banner at the top
   whenever the helper says `shouldWarn`. Suppressible per-instance via the banner's **Close** button or forever via
   **Never show this warning again** (flips `fileViewer.suppressBinaryWarning` in Settings > Advanced).
+  - **Rendered media is suppressed by backend `kind`, not by trimming this list.** `binary-warning.ts` still classifies
+    every image / document / binary extension (unchanged). The viewer page shows the banner only when
+    `!isMedia && warning.shouldWarn`, where `isMedia` comes from the authoritative backend `kind`. So a rendered image /
+    PDF (`kind` image/pdf) never shows it, while formats the classifier promotes to neither (RAW like `.cr2`/`.nef`,
+    `.avif`, `.ico`, `.docx`, `.epub`, archives, etc.) still warn. Don't trim the image set here to "suppress" rendered
+    formats: that also silences the unrendered ones (RAW/AVIF/ICO), which then show raw bytes with no nudge.
 - Route: `apps/desktop/src/routes/viewer/+page.svelte`: viewer UI with virtual scrolling, search bar, status bar
 
 ## User interaction
