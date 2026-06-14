@@ -1,6 +1,6 @@
 [package]
 name = "cmdr"
-version = "0.26.0"
+version = "0.27.0"
 description = "A blazing fast, keyboard-driven, two-pane file manager built, Rust, Tauri, and ❤️"
 authors = ["David Veszelovszki <david@getcmdr.com>"]
 edition = "2024"

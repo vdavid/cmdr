@@ -5,6 +5,89 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-06-14
+
+You can now add/rename/reorder/remove Favorite folders in the Volume selector, hide the bottom F5/F6/F8 bar, and can set
+Full mode to display filenames+extensions in one column. Also added `Help > Keyboard shortcuts`, a What's new popup that
+shows up after Cmdr updates, and improved the Full Disk Access part of the onboarding.
+
+### Added
+
+- Show a What's new popup after Cmdr updates, with the changelog since the version you last saw and an opt-out in
+  Settings ([4e5ccbba](https://github.com/vdavid/cmdr/commit/4e5ccbba),
+  [cc222919](https://github.com/vdavid/cmdr/commit/cc222919),
+  [04f75ddb](https://github.com/vdavid/cmdr/commit/04f75ddb),
+  [9ca6c524](https://github.com/vdavid/cmdr/commit/9ca6c524))
+- Curate your favorites in the volume switcher: add (command palette, Go menu, or right-click a folder), rename, reorder
+  by drag or ⌥↑/⌥↓, and remove ([c660d6f4](https://github.com/vdavid/cmdr/commit/c660d6f4),
+  [685fcac5](https://github.com/vdavid/cmdr/commit/685fcac5),
+  [335331ef](https://github.com/vdavid/cmdr/commit/335331ef),
+  [608b8c81](https://github.com/vdavid/cmdr/commit/608b8c81),
+  [d3db386f](https://github.com/vdavid/cmdr/commit/d3db386f),
+  [9dc2e968](https://github.com/vdavid/cmdr/commit/9dc2e968),
+  [e3acd2a4](https://github.com/vdavid/cmdr/commit/e3acd2a4))
+- Add a Help > Keyboard shortcuts window: a scannable reference of every command's shortcuts, live-synced to your
+  customizations ([3bcbc285](https://github.com/vdavid/cmdr/commit/3bcbc285))
+- Add a setting to show full filenames in the Name column instead of splitting off the extension
+  ([27060493](https://github.com/vdavid/cmdr/commit/27060493))
+- Add a setting to hide the bottom function key bar ([950a213c](https://github.com/vdavid/cmdr/commit/950a213c))
+
+### Changed
+
+- Onboarding now detects Full Disk Access the instant you grant it, and gets Cmdr into the macOS 13+ Full Disk Access
+  list ([dbf4d70b](https://github.com/vdavid/cmdr/commit/dbf4d70b),
+  [19e992dc](https://github.com/vdavid/cmdr/commit/19e992dc))
+- The AI cloud model picker now loads its list on open and keeps it when you reopen
+  ([f8aa514d](https://github.com/vdavid/cmdr/commit/f8aa514d))
+- In Search and Select, ⌥←/⌥→ now move by word in the query field instead of navigating folders
+  ([dd8573b2](https://github.com/vdavid/cmdr/commit/dd8573b2))
+- Search now remembers your query when you open a single result, not only "Open in pane"
+  ([5eae2139](https://github.com/vdavid/cmdr/commit/5eae2139))
+
+### Fixed
+
+- Fix dragging a file from Cmdr into a browser upload field doing nothing
+  ([7c338b51](https://github.com/vdavid/cmdr/commit/7c338b51))
+- Fix the file viewer misreading some binaries as UTF-16, which slowed the open by about a second
+  ([8f069f28](https://github.com/vdavid/cmdr/commit/8f069f28))
+- Fix the downloads jump re-opening a folder already shown in the other pane
+  ([9eee5395](https://github.com/vdavid/cmdr/commit/9eee5395))
+- Fix Search abbreviating paths that fit the column ([3e558c7f](https://github.com/vdavid/cmdr/commit/3e558c7f))
+- Fix a rare drive-indexer race that could lose a folder's size
+  ([439d7fcb](https://github.com/vdavid/cmdr/commit/439d7fcb))
+- Stop local AI logging an error when you turn it off while it's still starting
+  ([1c8363b4](https://github.com/vdavid/cmdr/commit/1c8363b4))
+
+### Non-app
+
+- Add a KV-backed `?r=` short-code system so tracking links expand to UTM params without a website deploy
+  ([f2b2c465](https://github.com/vdavid/cmdr/commit/f2b2c465),
+  [7a532406](https://github.com/vdavid/cmdr/commit/7a532406))
+- Fix silently-broken Umami and PostHog injection (website analytics had stopped loading), and add a check guarding the
+  regression ([9cb620e8](https://github.com/vdavid/cmdr/commit/9cb620e8),
+  [36d85974](https://github.com/vdavid/cmdr/commit/36d85974))
+- Add a per-day acquisition funnel with first-touch channel attribution to the analytics dashboard
+  ([8cae7906](https://github.com/vdavid/cmdr/commit/8cae7906),
+  [a1dd804e](https://github.com/vdavid/cmdr/commit/a1dd804e),
+  [a011de50](https://github.com/vdavid/cmdr/commit/a011de50))
+- Split the analytics dashboard into Acquisition, Product, and Link codes pages
+  ([83eb55be](https://github.com/vdavid/cmdr/commit/83eb55be))
+- Converge the app's dropdowns onto two reusable Ark primitives for a consistent macOS-native look
+  ([d282fdba](https://github.com/vdavid/cmdr/commit/d282fdba),
+  [6ac9016e](https://github.com/vdavid/cmdr/commit/6ac9016e),
+  [a705696d](https://github.com/vdavid/cmdr/commit/a705696d),
+  [69130e27](https://github.com/vdavid/cmdr/commit/69130e27),
+  [5f355670](https://github.com/vdavid/cmdr/commit/5f355670))
+- Add a `docs-reachable` check keeping every doc linked from the repo root, and connect the orphaned docs
+  ([69e91dbe](https://github.com/vdavid/cmdr/commit/69e91dbe),
+  [185afddb](https://github.com/vdavid/cmdr/commit/185afddb),
+  [74ef31ee](https://github.com/vdavid/cmdr/commit/74ef31ee),
+  [36b7075b](https://github.com/vdavid/cmdr/commit/36b7075b))
+- Quiet the drive indexer's UNIQUE-conflict warning to fire only when two writers are racing the database
+  ([ba5a538c](https://github.com/vdavid/cmdr/commit/ba5a538c))
+- Ban two-column tables in agent-facing docs and convert all 130 existing ones, with a check enforcing it
+  ([a909679b](https://github.com/vdavid/cmdr/commit/a909679b))
+
 ## [0.26.0] - 2026-06-11
 
 This release sharpens the Search and Select dialogs: a Files or Folders filter, folders matched by size, an AI strip
