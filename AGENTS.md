@@ -288,7 +288,9 @@ shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shi
 
 - Use `pnpm dev --worktree <slug>` on worktrees. Such sessions never collide. See
   [docs/tooling/instance-isolation.md](docs/tooling/instance-isolation.md) for the full breakdown.
-- When FF-ing main, always delete the worktree+branch.
+- When FF-ing main, always delete the worktree+branch. Also remove the worktree's now-orphaned dev data dir
+  (`~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>`): a `pnpm dev --worktree <slug>` session leaves one
+  behind (often ~1 GB once its drive index builds), and nothing cleans it up when the worktree goes. They pile up fast.
 
 ## Workflow
 

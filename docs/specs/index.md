@@ -43,7 +43,6 @@ Deferred future work. Unchecked by default; the folder name is the status.
 - [ ] 2026-03-10 later/db-first-listings-plan.md - Serve directory listings from the SQLite index for sub-ms navigation
 - [ ] 2026-03-10 later/dropbox-sync-status-linux.md - Detect Dropbox sync status on Linux via command socket
 - [ ] 2026-03-10 later/linux-builds-plan.md - Add Linux release build target plus website download detection
-- [ ] 2026-03-10 later/viewer-menu-swap-plan.md - Per-window menu bar for the viewer on macOS
 - [ ] 2026-04-01 later/rust-word-wrap-heights-plan.md - Move viewer word-wrap height calculation from JS to Rust
 - [ ] 2026-05-10 later/totalcmd-plugin-analysis.md - Not a spec, but Total Commander packer-plugin research backing
       future archive/plugin work
