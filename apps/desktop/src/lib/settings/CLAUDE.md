@@ -11,6 +11,11 @@ Registry-based user settings for Cmdr: defined once in `settings-registry.ts`, a
 
 ## Must-knows
 
+- **A registry entry alone does NOT render.** Most sections hand-render each row, so adding a setting takes two steps:
+  the `settings-registry.ts` entry AND a `SettingRow` in its `sections/*Section.svelte` component (only
+  `AdvancedSection` auto-renders, for `showInAdvanced` settings). Miss step two and the setting persists and is
+  searchable but is invisible in the UI. Full end-to-end checklist:
+  [adding a new setting](../../../../../docs/guides/adding-a-new-setting.md).
 - **Every setting MUST apply immediately without restart.** Adding a setting that changes backend behavior requires all
   three: (a) a Tauri command on the Rust side, (b) a typed wrapper in `$lib/tauri-commands/settings.ts`, (c) an
   `onSettingChange` case in `settings-applier.ts` that invokes it. Restart-required is a bug, not a design choice; even

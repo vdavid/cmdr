@@ -20,6 +20,7 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const autoCheckDef = getSettingDefinition('updates.autoCheck') ?? { label: '', description: '' }
+    const whatsNewDef = getSettingDefinition('whatsNew.showOnUpdate') ?? { label: '', description: '' }
     const analyticsDef = getSettingDefinition('analytics.enabled') ?? { label: '', description: '' }
     const emailDef = getSettingDefinition('analytics.email') ?? { label: '', description: '' }
     const crashReportsDef = getSettingDefinition('updates.crashReports') ?? { label: '', description: '' }
@@ -115,6 +116,16 @@
             {searchQuery}
         >
             <SettingSwitch id="updates.autoCheck" />
+        </SettingRow>
+    {/if}
+    {#if shouldShow('whatsNew.showOnUpdate')}
+        <SettingRow
+            id="whatsNew.showOnUpdate"
+            label={whatsNewDef.label}
+            description={whatsNewDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="whatsNew.showOnUpdate" />
         </SettingRow>
     {/if}
     {#if shouldShow('analytics.enabled')}

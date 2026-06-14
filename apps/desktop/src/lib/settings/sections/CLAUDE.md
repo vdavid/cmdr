@@ -16,6 +16,10 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 
 ## Must-knows
 
+- **Adding a setting to an existing section means hand-rendering its row HERE.** A `settings-registry.ts` entry alone
+  doesn't render: add a `SettingRow` (with the matching control + a `shouldShow(id)` guard) to the section component, or
+  the setting is invisible. Only `AdvancedSection` auto-renders (`showInAdvanced`). Full checklist:
+  [adding a new setting](../../../../../../docs/guides/adding-a-new-setting.md).
 - **Adding a section: register the route in `SettingsContent.svelte` AND the top-level entry in `TOP_LEVEL_ORDER`
   (`SettingsSidebar.svelte`), and mirror it in `apps/desktop/test/e2e-playwright/settings.spec.ts`.** Sections are
   picked by registry-driven routing, not string match.

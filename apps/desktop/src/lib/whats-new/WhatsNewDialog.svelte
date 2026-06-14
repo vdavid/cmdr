@@ -106,9 +106,7 @@
         </div>
 
         <div class="footer">
-            <span class="opt-out">
-                <LinkButton onclick={handleOptOut}>Not interested in changelogs</LinkButton>
-            </span>
+            <Button variant="secondary" onclick={handleOptOut}>Not interested in changelogs</Button>
             <Button variant="primary" onclick={handleClose}>Close</Button>
         </div>
     </div>
@@ -217,16 +215,5 @@
         margin-top: var(--spacing-lg);
         padding-top: var(--spacing-md);
         border-top: 1px solid var(--color-border);
-    }
-
-    /* The opt-out reads as a quiet aside, not a call to action: subtle, no underline accent. */
-    .opt-out :global(.link-button) {
-        color: var(--color-text-secondary);
-        text-decoration: none;
-        font-size: var(--font-size-sm);
-    }
-
-    .opt-out :global(.link-button:hover) {
-        text-decoration: underline;
     }
 </style>

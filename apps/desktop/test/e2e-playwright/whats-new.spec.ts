@@ -55,18 +55,18 @@ function popupOpen(page: TauriPage): Promise<boolean> {
   return page.evaluate<boolean>(`document.querySelector('#whats-new-body') !== null`)
 }
 
-/** Clicks the footer "Not interested in changelogs" opt-out link by its text. */
+/** Clicks the footer "Not interested in changelogs" opt-out button by its text. */
 function clickOptOut(page: TauriPage): Promise<void> {
   return page.evaluate(`
     (function () {
-      const links = document.querySelectorAll('#whats-new-body .footer .link-button')
-      for (const link of links) {
-        if ((link.textContent || '').trim() === 'Not interested in changelogs') {
-          link.click()
+      const buttons = document.querySelectorAll('#whats-new-body .footer .btn')
+      for (const button of buttons) {
+        if ((button.textContent || '').trim() === 'Not interested in changelogs') {
+          button.click()
           return
         }
       }
-      throw new Error('opt-out link not found')
+      throw new Error('opt-out button not found')
     })()
   `)
 }
