@@ -267,6 +267,10 @@ pub enum ActiveMenuKind {
 /// the menu tree.
 pub struct ViewerMenuItems<R: Runtime> {
     pub menu: Menu<R>,
+    /// Only read on macOS: the viewer app-menu swap is macOS-only, and `lib.rs` captures this ref
+    /// under `#[cfg(target_os = "macos")]` for `viewer_set_word_wrap`. On Linux the field is built
+    /// but never read, so allow dead_code off macOS to keep the `deny(dead_code)` Linux build green.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     pub word_wrap: CheckMenuItem<R>,
 }
 
