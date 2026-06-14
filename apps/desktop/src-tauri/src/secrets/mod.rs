@@ -74,7 +74,31 @@ pub fn is_file_backed() -> bool {
     FILE_BACKED.load(std::sync::atomic::Ordering::Relaxed)
 }
 
+// Under `cfg(test)` the production backend code below is compiled (so `info!`,
+// `KeychainStore`, etc. stay referenced) but unreachable at runtime past the early
+// test return; allow the resulting warning rather than gating the body out.
+#[cfg_attr(
+    test,
+    allow(
+        unreachable_code,
+        reason = "production backend selection stays compiled under test (keeps `info!` / `KeychainStore` referenced) but is unreachable past the early `TestStore` return"
+    )
+)]
 fn init_store() -> Box<dyn SecretStore> {
+    // Tests must NEVER reach the real OS keychain. `STORE` is a process-global
+    // `LazyLock`, so on macOS it would otherwise pin `KeychainStore` on whichever
+    // secret-touching test accessed it first, and a later test would read the
+    // developer's real Keychain entries (the flaky
+    // `ai::api_keys::tests::has_reflects_save_and_delete` `!has("openai")` failure,
+    // where the dev's real `openai` key made `has` true). `TestStore` resolves its
+    // backing dir fresh per operation from `CMDR_DATA_DIR`, so each test's
+    // `isolate_secrets()` takes effect regardless of the global's init order.
+    #[cfg(test)]
+    {
+        FILE_BACKED.store(true, std::sync::atomic::Ordering::Relaxed);
+        return Box::new(TestStore);
+    }
+
     // Check env var override first
     if let Ok(val) = std::env::var("CMDR_SECRET_STORE")
         && val == "file"
@@ -122,6 +146,29 @@ fn init_store() -> Box<dyn SecretStore> {
         info!("Secret store: PlainFileStore (unsupported platform fallback)");
         FILE_BACKED.store(true, std::sync::atomic::Ordering::Relaxed);
         Box::new(plain_file::PlainFileStore::new(dir))
+    }
+}
+
+/// Test-only secret store: never touches the OS keychain, and resolves its backing
+/// dir fresh on every operation from `CMDR_DATA_DIR` (via `secret_store_dir()`), so a
+/// test's `isolate_secrets()` takes effect no matter when the global `STORE` was first
+/// initialized or which test ran first. Delegates to `PlainFileStore`, whose own
+/// static `Mutex` serializes file access across the per-op instances.
+#[cfg(test)]
+struct TestStore;
+
+#[cfg(test)]
+impl SecretStore for TestStore {
+    fn set(&self, key: &str, value: &[u8]) -> Result<(), SecretStoreError> {
+        plain_file::PlainFileStore::new(secret_store_dir()).set(key, value)
+    }
+
+    fn get(&self, key: &str) -> Result<Vec<u8>, SecretStoreError> {
+        plain_file::PlainFileStore::new(secret_store_dir()).get(key)
+    }
+
+    fn delete(&self, key: &str) -> Result<(), SecretStoreError> {
+        plain_file::PlainFileStore::new(secret_store_dir()).delete(key)
     }
 }
 
