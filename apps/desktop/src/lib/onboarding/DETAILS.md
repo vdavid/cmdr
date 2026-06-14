@@ -335,9 +335,6 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 
 ## Key gotchas
 
-- **TCC's registration hook fires on `open()`, not `opendir()`.** Without a `read()` attempt on a protected file, Cmdr
-  never enters the Full Disk Access list. `StepFda` re-runs `checkFullDiskAccess()` right before `openPrivacySettings()`
-  so the registration is fresh when the Settings pane loads. See `permissions.rs` for the per-file probe list.
 - **Deep-link host changed in Ventura.** macOS 13+ uses `com.apple.settings.PrivacySecurity.extension`; older macOS uses
   `com.apple.preference.security`. `openPrivacySettings()` picks via `get_macos_major_version`. The same version informs
   the modal copy: macOS 12 and older append new FDA entries at the end of the list (instead of alphabetical).
@@ -345,8 +342,8 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
   mechanism (detect via a file `read()`; register via a directory `open()` on macOS 13+, file reads on macOS 12) lives
   in one place: the module doc of `src-tauri/src/permissions.rs`. Don't restate it here. Onboarding-relevant parts only:
   registration rides the heavy `check_full_disk_access` (fired at boot, on step-1 mount, and right before opening System
-  Settings), and the "+" button fallback (step 1's `step-tip`) stays as the backstop for any machine that still doesn't
-  list Cmdr (notably until the directory-open path is confirmed on a notarized release). References:
+  Settings), and the "+" button fallback (step 1's `step-tip`) stays as the backstop for the edge cases that still
+  wouldn't list Cmdr (a machine where none of the probe dirs exist, or a future OS change). References:
   [Apple Developer Forums #809549](https://developer.apple.com/forums/thread/809549),
   [Apple Developer Forums #757768](https://developer.apple.com/forums/thread/757768).
 - **The wizard renders the app behind it.** First launch lands on `~`, so what peeks through the backdrop is friendly.

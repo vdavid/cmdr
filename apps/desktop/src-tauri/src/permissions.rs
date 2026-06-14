@@ -30,10 +30,11 @@
 //! KNOWN (traced with `fs_usage` on macOS 26.5.1, 2026-06): Path Finder's whole
 //! FDA probe is `open(~/Library/Mail)`, and it appears in the list the instant
 //! it runs; a notarized app's denied file `read()` does NOT list it on 13+.
-//! UNVERIFIED: that our mirrored directory `open()` actually lists *Cmdr*. It
-//! only manifests on a real notarized build, so confirm on the next release
-//! (`tccutil reset SystemPolicyAllFiles com.veszelovszki.cmdr`, launch, check
-//! the list). Until then the onboarding `+` step-tip stays as the backstop.
+//! VERIFIED for Cmdr too (notarized v0.27.0, macOS 26.5.1, 2026-06-14): after
+//! `tccutil reset SystemPolicyAllFiles com.veszelovszki.cmdr`, a fresh launch
+//! lists Cmdr with no `+`. The onboarding `+` step-tip stays as a backstop for
+//! edge cases (a machine where none of `fda_probe_dirs` exist, or a future OS
+//! change).
 
 use std::ffi::CString;
 use std::fs::File;
