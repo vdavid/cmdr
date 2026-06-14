@@ -35,6 +35,8 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 - [ ] 2026-06-13 dropdown-uniformization-plan.md - Converge every dropdown onto two reusable macOS-y Ark primitives
 - [ ] 2026-06-13 editable-favorites-plan.md - User-editable favorites (add, remove, rename, reorder) in the volume
       switcher
+- [ ] 2026-06-14 viewer-media-plan.md - Render images (incl. HEIC, SVG) and PDFs inline in the File viewer via
+      WKWebView, no Rust decoder
 
 ## Later
 
