@@ -19,8 +19,9 @@ impact queries become correct across Cmdr's Rust↔TS boundary** with zero per-q
 - `codegraph_callers` on a Rust command returns its real frontend callers.
 - `codegraph_impact` on a command or event includes the frontend consumers, so "what breaks if I change this" finally
   spans the wire, the single most common refactor question in a Tauri app.
-- Event emit↔listen edges become visible (made trivially joinable by the [typed-events migration](typed-events-plan.md),
-  which gave every event a `PascalCase` Rust struct ↔ `camelCase` TS symbol pairing).
+- Event emit↔listen edges become visible (made trivially joinable by the
+  [typed-events migration](../typed-events-plan.md), which gave every event a `PascalCase` Rust struct ↔ `camelCase` TS
+  symbol pairing).
 
 It feeds **the graph agents already query**, not a separate tool, so the win is automatic and invisible-in-a-good-way.
 
@@ -193,7 +194,7 @@ no runtime, no app launch, the inverse of the typed-events migration's E2E-only 
 ## References
 
 - This codebase: the typed-events groundwork that makes events name-joinable:
-  [`typed-events-plan.md`](typed-events-plan.md) (note: that file lives in `docs/specs/`, may have been swept; the
+  [`typed-events-plan.md`](../typed-events-plan.md) (note: that file lives in `docs/specs/`, may have been swept; the
   typed-events pattern is in `lib/ipc/CLAUDE.md`).
 - CodeGraph: [`github.com/colbymchenry/codegraph`](https://github.com/colbymchenry/codegraph) (MIT),
   [framework-resolver design](https://github.com/colbymchenry/codegraph/blob/main/docs/plans/2026-04-24-framework-resolver-extract.md),

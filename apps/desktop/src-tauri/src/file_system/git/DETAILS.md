@@ -3,7 +3,7 @@
 Pull-tier docs for `file_system/git/`: architecture, flows, and decision rationale. Must-know invariants and gotchas
 live in [CLAUDE.md](CLAUDE.md).
 
-Frontend counterpart: [`apps/desktop/src/lib/file-explorer/git/CLAUDE.md`](../../../../../src/lib/file-explorer/git/CLAUDE.md) for the breadcrumb chip, status column, and the live `RepoInfo` store.
+Frontend counterpart: [`apps/desktop/src/lib/file-explorer/git/CLAUDE.md`](../../../../src/lib/file-explorer/git/CLAUDE.md) for the breadcrumb chip, status column, and the live `RepoInfo` store.
 
 Backend module for the git browser. Provides:
 

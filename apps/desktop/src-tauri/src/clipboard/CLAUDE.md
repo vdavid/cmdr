@@ -39,7 +39,7 @@ Acceptance: a full E2E run leaves `pbpaste` unchanged.
 **Why**: The override is a debugging tool for prod-feature builds. Sampled once via `LazyLock` at first access so the
 hot path is a single atomic load. Both compile-time and runtime mock paths share `store.rs`, so a test that flips the
 env in one process sees the same data the E2E mock module sees in another. See "Mock-backend convention" in
-[`docs/tooling/instance-isolation.md`](../../../../docs/tooling/instance-isolation.md) § "Mock-backend convention".
+[`docs/tooling/instance-isolation.md`](../../../../../docs/tooling/instance-isolation.md) § "Mock-backend convention".
 
 ## Gotchas
 

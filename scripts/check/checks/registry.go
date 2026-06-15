@@ -748,6 +748,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDocsReachable,
 	},
 	{
+		ID:          "docs-dead-links",
+		Nickname:    "dead-links",
+		DisplayName: "no dead links in docs",
+		App:         AppOther,
+		Tech:        "🔗 Links",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs, // scans every markdown doc for relative links to missing files
+		Run:         RunDocsDeadLinks,
+	},
+	{
 		ID:          "docs-no-two-col-tables",
 		Nickname:    "no-two-col-tables",
 		DisplayName: "no 2-column tables in agent docs",

@@ -5,8 +5,8 @@ parts of Quick Look (the most likely things to silently break in refactors) via 
 after touching anything in `src-tauri/src/quick_look/`, `commands/ui.rs::quick_look_*`, or
 `src/lib/file-explorer/quick-look/`.
 
-The native panel rendering itself isn't covered — verify that visually per
-[`docs/specs/quick-look-plan.md`](../../../../docs/specs/quick-look-plan.md) § "Test plan (manual)".
+The native panel rendering itself isn't covered, so verify that visually. See the Quick Look module doc
+[`src-tauri/src/quick_look/CLAUDE.md`](../../src-tauri/src/quick_look/CLAUDE.md) for the architecture.
 
 ## Prerequisites
 
@@ -97,8 +97,9 @@ The native panel rendering itself isn't covered — verify that visually per
 
 ## What this does NOT cover
 
-- The native panel becoming key, the menu bar saying "Cmdr", the panel rendering thumbnails — visual checks live in
-  [`docs/specs/quick-look-plan.md`](../../../../docs/specs/quick-look-plan.md) § "Test plan (manual)".
+- The native panel becoming key, the menu bar saying "Cmdr", the panel rendering thumbnails — these are visual checks,
+  done by eye. See [`src-tauri/src/quick_look/CLAUDE.md`](../../src-tauri/src/quick_look/CLAUDE.md) for the
+  architecture.
 - The AppKit-side close paths (✕ button, Esc). The Rust observer fires `quick-look-closed` for all three close routes;
   this procedure covers the IPC-initiated close, and the other two routes share the same observer codepath.
 - Key forwarding (`quick-look-key` events). The Vitest spec

@@ -12,7 +12,7 @@ regardless of `RUST_LOG` or the verbose toggle; terminal defaults to Info).
   `src-tauri/src/logging/CLAUDE.md`.
 
 Full architecture and decisions: [DETAILS.md](DETAILS.md). Usage (adding logging, `RUST_LOG` recipes, the verbose
-toggle): [docs/tooling/logging.md](../../../docs/tooling/logging.md).
+toggle): [docs/tooling/logging.md](../../../../../docs/tooling/logging.md).
 
 ## Must-knows
 

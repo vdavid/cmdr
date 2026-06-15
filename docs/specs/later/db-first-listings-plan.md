@@ -3,8 +3,8 @@
 Serve directory listings from the SQLite index instead of `readdir` + `stat`, cutting navigation time from 2–50ms to
 sub-millisecond. Background verification on each navigation keeps the DB accurate.
 
-See also: [plan.md](../drive-indexing/plan.md) (parent plan, "Future: DB-first directory listings" section),
-[tasks.md](../drive-indexing/tasks.md)
+See also the drive-indexing module doc [`indexing/CLAUDE.md`](../../../apps/desktop/src-tauri/src/indexing/CLAUDE.md)
+for the current index architecture.
 
 Date: 2026-03-03.
 

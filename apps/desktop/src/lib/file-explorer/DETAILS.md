@@ -286,7 +286,7 @@ Context-menu wiring on the snapshot pane:
   transfer path. Drag-out uses the `'paths'` drag context (see `drag/CLAUDE.md`) which routes through
   `start_drag_paths`. Post-move snapshot cleanup is the cleanup hook in `dialog-state::handleTransferComplete`.
 
-For the dialog-side wiring see [`apps/desktop/src/lib/search/CLAUDE.md`](../../search/CLAUDE.md).
+For the dialog-side wiring see [`apps/desktop/src/lib/search/CLAUDE.md`](../search/CLAUDE.md).
 
 ## Operations (`operations/`)
 

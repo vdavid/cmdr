@@ -4,7 +4,7 @@ Backend module for the git browser: repo discovery/info/status, the per-repo wat
 (`branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`, `submodules/` browsable as virtual trees), with cross-volume
 copy "for free" because git blobs flow through the existing `VolumeReadStream` abstraction.
 
-Frontend counterpart: [`apps/desktop/src/lib/file-explorer/git/CLAUDE.md`](../../../../../src/lib/file-explorer/git/CLAUDE.md)
+Frontend counterpart: [`apps/desktop/src/lib/file-explorer/git/CLAUDE.md`](../../../../src/lib/file-explorer/git/CLAUDE.md)
 for the breadcrumb chip, status column, and the live `RepoInfo` store.
 
 ## Module map
