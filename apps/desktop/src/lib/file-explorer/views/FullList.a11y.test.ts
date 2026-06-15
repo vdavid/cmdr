@@ -37,6 +37,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getRowHeight: () => 20,
   getIconSize: () => 16,
   getIsCompactDensity: () => false,
+  getIsCmdrGold: () => false,
   getUseAppIconsForDocuments: () => true,
   formatDateTime: (t: number | undefined) => (t ? '2025-03-14 10:30' : ''),
   formattedDate: (t: number | undefined) =>

@@ -79,13 +79,6 @@ export function getEntryAt(
   return undefined
 }
 
-/** Fallback emoji for files without icons */
-export function getFallbackEmoji(file: FileEntry): string {
-  if (file.isSymlink) return '🔗'
-  if (file.isDirectory) return '📁'
-  return '📄'
-}
-
 /** Parameters for fetchVisibleRange */
 export interface FetchRangeParams {
   listingId: string

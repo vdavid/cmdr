@@ -36,6 +36,7 @@ vi.mock('$lib/indexing/index-state.svelte', () => ({
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getRowHeight: () => 20,
   getIsCompactDensity: () => false,
+  getIsCmdrGold: () => false,
   getUseAppIconsForDocuments: () => true,
   formatDateTime: (t: number | undefined) => (t ? '2025-03-14 10:30' : ''),
   formatFileSize: (n: number) => `${String(n)} B`,

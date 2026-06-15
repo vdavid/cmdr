@@ -6,7 +6,6 @@ import {
   getSyncIconPath,
   createParentEntry,
   getEntryAt,
-  getFallbackEmoji,
   calculateFetchRange,
   isRangeCached,
   shouldResetCache,
@@ -167,68 +166,6 @@ describe('getEntryAt', () => {
   it('handles cached range that does not start at 0', () => {
     const entry = getEntryAt(10, false, '/parent', mockEntries, { start: 10, end: 12 })
     expect(entry?.name).toBe('file1.txt')
-  })
-})
-
-describe('getFallbackEmoji', () => {
-  it('returns link emoji for symlinks', () => {
-    const file: FileEntry = {
-      name: 'link',
-      path: '/link',
-      isDirectory: false,
-      isSymlink: true,
-      permissions: 0o777,
-      owner: 'user',
-      group: 'group',
-      iconId: 'link',
-      extendedMetadataLoaded: true,
-    }
-    expect(getFallbackEmoji(file)).toBe('🔗')
-  })
-
-  it('returns folder emoji for directories', () => {
-    const file: FileEntry = {
-      name: 'dir',
-      path: '/dir',
-      isDirectory: true,
-      isSymlink: false,
-      permissions: 0o755,
-      owner: 'user',
-      group: 'group',
-      iconId: 'dir',
-      extendedMetadataLoaded: true,
-    }
-    expect(getFallbackEmoji(file)).toBe('📁')
-  })
-
-  it('returns document emoji for regular files', () => {
-    const file: FileEntry = {
-      name: 'file.txt',
-      path: '/file.txt',
-      isDirectory: false,
-      isSymlink: false,
-      permissions: 0o644,
-      owner: 'user',
-      group: 'group',
-      iconId: 'txt',
-      extendedMetadataLoaded: true,
-    }
-    expect(getFallbackEmoji(file)).toBe('📄')
-  })
-
-  it('prioritizes symlink over directory', () => {
-    const file: FileEntry = {
-      name: 'link-to-dir',
-      path: '/link-to-dir',
-      isDirectory: true,
-      isSymlink: true,
-      permissions: 0o777,
-      owner: 'user',
-      group: 'group',
-      iconId: 'link',
-      extendedMetadataLoaded: true,
-    }
-    expect(getFallbackEmoji(file)).toBe('🔗')
   })
 })
 

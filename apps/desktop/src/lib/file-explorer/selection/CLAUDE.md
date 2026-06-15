@@ -7,7 +7,7 @@ lives in `FilePane.svelte` as a `Set<number>`).
 
 - **`selection-info-utils.ts`**: Pure utilities, no DOM deps, fully tested
 - **`SelectionInfo.svelte`**: Status bar below each pane
-- **`FileIcon.svelte`**: 16x16 icon with emoji fallback and overlay badges
+- **`FileIcon.svelte`**: 16x16 icon with a bundled macOS-default-icon fallback and overlay badges
 - **`SortableHeader.svelte`**: Clickable column header with sort direction triangle
 - **`selection-info-utils.test.ts`**: Unit tests for all util functions
 - **`components.test.ts`**: Component render tests
@@ -92,7 +92,10 @@ Date column width is computed via `measureDateColumnWidth(formatDateTime)` to st
 Props: `file: FileEntry`, `syncIcon?: string` (URL for sync overlay badge).
 
 - Primary: `<img>` from `getCachedIcon(file.iconId)`.
-- Fallback: emoji via `getFallbackEmoji(file)` from `file-list-utils`.
+- Fallback (cache miss only — cold first launch, or briefly after a theme/accent change clears the cache): the bundled
+  macOS default folder/file icon (`static/icons/default-folder.png` / `default-file.png`, extracted from the system
+  `GenericFolderIcon`/`GenericDocumentIcon`), chosen by `isFolderIcon`. Not an emoji — it swaps seamlessly to the live
+  accent-tinted OS icon once `get_icons` populates the cache.
 - Symlink badge: the `link` glyph via `<Icon>` (size 10, `--color-accent-pop` — a mode-aware higher-contrast accent,
   darker in light mode and lighter in dark mode, so it stays legible over gold/accent folder icons in both schemes),
   bottom-right by default. Moves to top-left when `syncIcon` is also present.
@@ -167,7 +170,6 @@ formatter callback keeps the util pure (no reactive imports here); the `tooltip`
 
 - `../types`: `FileEntry`, `SortColumn`, `SortOrder`
 - `../views/full-list-utils`: `measureDateColumnWidth`
-- `../views/file-list-utils`: `getFallbackEmoji`
 - `$lib/icon-cache`: `getCachedIcon`, `iconCacheVersion`
 - `$lib/settings/reactive-settings.svelte`: `formatFileSize`, `formatDateTime`
 - `$lib/indexing/index-state.svelte`: `isScanning`

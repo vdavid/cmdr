@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { FileEntry } from '../types'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
-    import { getFallbackEmoji } from '../views/file-list-utils'
     import { getIsCmdrGold } from '$lib/settings/reactive-settings.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import type { IconName } from '$lib/ui/icons/icon-map'
@@ -53,7 +52,19 @@
     {:else if getIconUrl(file)}
         <img class="icon" class:gold-folder={recolorToGold} src={getIconUrl(file)} alt="" width="16" height="16" />
     {:else}
-        <span class="icon-emoji">{getFallbackEmoji(file)}</span>
+        <!-- Cache miss (cold first launch, or briefly after a theme/accent change clears the cache):
+             show the bundled macOS default folder/file icon (from `static/icons/default-*.png`,
+             extracted from the system GenericFolderIcon/GenericDocumentIcon) so the placeholder is
+             always the real OS-shaped icon, never an emoji. It swaps seamlessly to the live
+             (accent-tinted) OS icon once `get_icons` populates the cache. -->
+        <img
+            class="icon"
+            class:gold-folder={recolorToGold}
+            src={isFolderIcon ? '/icons/default-folder.png' : '/icons/default-file.png'}
+            alt=""
+            width="16"
+            height="16"
+        />
     {/if}
     {#if file.isSymlink}
         <span class="symlink-badge" class:has-sync={!!syncIcon}><Icon name="link" size={10} /></span>
@@ -79,13 +90,6 @@
 
     .gold-folder {
         filter: grayscale(1) sepia(1) hue-rotate(3deg) saturate(2.5) brightness(0.95);
-    }
-
-    .icon-emoji {
-        font-size: var(--font-size-sm);
-        width: var(--spacing-icon-size);
-        text-align: center;
-        display: block;
     }
 
     .git-icon {
