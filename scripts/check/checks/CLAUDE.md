@@ -45,6 +45,7 @@ see [`../CLAUDE.md`](../CLAUDE.md).
   useful stats ("12 tests passed"), not generic "OK". Return `Skipped(reason)` when a check can't run,
   `SuccessWithChanges` when it made local fixes (CI mode must still error on the same drift).
 - After authoring, run `pnpm check go-vet staticcheck` (staticcheck is strict about idiomatic Go), and update the "Apps
-  and check counts" table in DETAILS.md plus `AGENTS.md`'s fast-lane list if the check is `IsFast`.
+  and check counts" table in DETAILS.md. `--fast` membership is just the `IsFast` field in `registry.go` (editorially
+  curated), so there's no separate list anywhere to keep in sync.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
