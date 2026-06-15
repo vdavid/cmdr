@@ -16,11 +16,14 @@
 //! - Copy rollback on failure (CopyTransaction)
 //! - Atomic cross-filesystem moves using staging directory
 
+mod analytics;
 mod cancellable;
 mod conflict;
 mod delete;
 mod durability;
+mod error_classification;
 mod eta;
+mod event_sinks;
 mod overwrite;
 mod scan;
 mod scan_preview;

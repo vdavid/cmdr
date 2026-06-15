@@ -3,15 +3,21 @@
 //! Contains enums, event structs, error types, and configuration.
 
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 use tauri_specta::Event;
 
 use crate::file_system::volume::{ScanConflict, SpaceInfo};
-#[cfg(test)]
-use crate::ignore_poison::IgnorePoison;
 
 // Re-export sort types from sorting module
 pub use crate::file_system::listing::{SortColumn, SortOrder};
+
+// Behavior that used to live here now lives in sibling modules. These re-exports
+// keep every existing `types::…` path valid so callers don't change. The event
+// sinks (`event_sinks`), analytics (`analytics`), and IO-error classification
+// (`error_classification`) all depend on the DTOs below, never the reverse.
+pub(super) use super::error_classification::IoResultExt;
+#[cfg(test)]
+pub(crate) use super::event_sinks::CollectorEventSink;
+pub use super::event_sinks::{OperationEventSink, TauriEventSink};
 
 // ============================================================================
 // Operation types
@@ -128,68 +134,6 @@ pub struct WriteProgressEvent {
     pub expected_bytes_total: Option<u64>,
 }
 
-impl WriteProgressEvent {
-    /// Construct an event with the 8 core counter fields. Rate/ETA fields are
-    /// filled in by `WriteOperationState::enrich_progress` right before the
-    /// event is emitted. The scanning-only metadata (`current_dir`,
-    /// `expected_files_total`, `expected_bytes_total`) defaults to `None` and
-    /// is populated by the scan emit sites via `with_scan_meta`. Always go
-    /// through this constructor at emit sites so the extra fields stay out of
-    /// call sites as visual noise.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "These are the natural fields of a progress event. Bundling into a struct adds ceremony without cleaning anything up."
-    )]
-    pub fn new(
-        operation_id: String,
-        operation_type: WriteOperationType,
-        phase: WriteOperationPhase,
-        current_file: Option<String>,
-        files_done: usize,
-        files_total: usize,
-        bytes_done: u64,
-        bytes_total: u64,
-    ) -> Self {
-        Self {
-            operation_id,
-            operation_type,
-            phase,
-            current_file,
-            current_dir: None,
-            files_done,
-            files_total,
-            bytes_done,
-            bytes_total,
-            dirs_done: 0,
-            bytes_per_second: None,
-            files_per_second: None,
-            eta_seconds: None,
-            expected_files_total: None,
-            expected_bytes_total: None,
-        }
-    }
-
-    /// Attach scanning-phase metadata (current directory, running dirs count,
-    /// and index-derived expected totals) to an event. Only emit sites in the
-    /// scanning phase call this; everywhere else leaves the fields at their
-    /// defaults (`None` / `0`).
-    #[must_use]
-    pub fn with_scan_meta(
-        mut self,
-        current_dir: Option<String>,
-        dirs_done: usize,
-        expected: Option<crate::indexing::expected_totals::ExpectedTotals>,
-    ) -> Self {
-        self.current_dir = current_dir;
-        self.dirs_done = dirs_done;
-        if let Some(e) = expected {
-            self.expected_files_total = Some(e.files);
-            self.expected_bytes_total = Some(e.bytes);
-        }
-        self
-    }
-}
-
 /// Completion event payload.
 ///
 /// `files_processed` counts every source the operation considered (transferred + skipped),
@@ -226,52 +170,6 @@ pub struct WriteErrorEvent {
     pub error: WriteOperationError,
     #[serde(default)]
     pub friendly: Option<crate::file_system::volume::friendly_error::FriendlyError>,
-}
-
-impl WriteErrorEvent {
-    /// Construct a `WriteErrorEvent`, automatically deriving the `FriendlyError`
-    /// payload from the typed `error` variant via `friendly_from_write_error`.
-    /// Every emit site goes through here by default, so every `write-error` event
-    /// the FE receives carries a `friendly` payload it can render directly.
-    pub fn new(operation_id: String, operation_type: WriteOperationType, error: WriteOperationError) -> Self {
-        let friendly = Some(crate::file_system::volume::friendly_error::friendly_from_write_error(
-            &error,
-        ));
-        Self {
-            operation_id,
-            operation_type,
-            error,
-            friendly,
-        }
-    }
-
-    /// Construct a `WriteErrorEvent` with the `FriendlyError` derived from the
-    /// originating `VolumeError + path` via the richer
-    /// `friendly_error_from_volume_error` + `enrich_with_provider` pipeline (the
-    /// same one the listing-error path uses). Picks up provider-specific
-    /// suggestions like "This folder is managed by **MacDroid**…" that the
-    /// `WriteOperationError`-shaped `friendly_from_write_error` can't reach.
-    ///
-    /// Use this from volume-aware emit paths that still have the original
-    /// `VolumeError + path` in scope (`volume_move`, `volume_copy`). When that
-    /// context isn't available, fall back to `new`.
-    pub fn with_friendly(
-        operation_id: String,
-        operation_type: WriteOperationType,
-        error: WriteOperationError,
-        volume_error: &crate::file_system::volume::VolumeError,
-        path: &Path,
-    ) -> Self {
-        use crate::file_system::volume::friendly_error::{enrich_with_provider, friendly_error_from_volume_error};
-        let mut friendly = friendly_error_from_volume_error(volume_error, path);
-        enrich_with_provider(&mut friendly, path);
-        Self {
-            operation_id,
-            operation_type,
-            error,
-            friendly: Some(friendly),
-        }
-    }
 }
 
 /// Emitted when all files belonging to a top-level source item have been processed.
@@ -542,68 +440,6 @@ pub enum WriteOperationError {
     },
 }
 
-/// Classifies a raw `std::io::Error` into a specific `WriteOperationError` variant.
-///
-/// Only `errno` and `ErrorKind` are consulted — never the formatted message.
-/// Backend errors (SMB, MTP, etc.) are typed and flow through
-/// `transfer/volume_copy.rs::map_volume_error`, so this function only sees
-/// `std::io::Error` values produced by local-FS calls, which always carry a
-/// `raw_os_error()` on Unix. Pre-fix the function had a lowercase-substring
-/// fallback (`"disconnect"`, `"read-only"`, `"connection"`, `"operation not
-/// permitted"`, …) that quietly misclassified errors on localized macOS
-/// (the wording localizes; the substrings don't match) and was the exact
-/// shape AGENTS.md bans.
-fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
-    #[cfg(unix)]
-    if let Some(code) = e.raw_os_error() {
-        match code {
-            libc::EROFS => {
-                return WriteOperationError::ReadOnlyDevice {
-                    path,
-                    device_name: None,
-                };
-            }
-            libc::ENAMETOOLONG => return WriteOperationError::NameTooLong { path },
-            libc::ENOTCONN | libc::ENETDOWN | libc::ENETUNREACH | libc::EHOSTUNREACH | libc::ETIMEDOUT => {
-                return WriteOperationError::ConnectionInterrupted { path };
-            }
-            libc::ENODEV => return WriteOperationError::DeviceDisconnected { path },
-            _ => {} // Fall through to ErrorKind classification
-        }
-    }
-
-    match e.kind() {
-        std::io::ErrorKind::NotFound => WriteOperationError::SourceNotFound { path },
-        std::io::ErrorKind::PermissionDenied => WriteOperationError::PermissionDenied {
-            path,
-            message: e.to_string(),
-        },
-        std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists { path },
-        _ => WriteOperationError::IoError {
-            path,
-            message: e.to_string(),
-        },
-    }
-}
-
-/// Extension trait for converting `io::Result` to `Result<T, WriteOperationError>` with path
-/// context.
-pub(super) trait IoResultExt<T> {
-    fn with_path(self, path: &Path) -> Result<T, WriteOperationError>;
-}
-
-impl<T> IoResultExt<T> for std::io::Result<T> {
-    fn with_path(self, path: &Path) -> Result<T, WriteOperationError> {
-        self.map_err(|e| classify_io_error(&e, path.display().to_string()))
-    }
-}
-
-impl From<std::io::Error> for WriteOperationError {
-    fn from(err: std::io::Error) -> Self {
-        classify_io_error(&err, String::new())
-    }
-}
-
 // ============================================================================
 // Result types
 // ============================================================================
@@ -766,203 +602,6 @@ pub struct ScanPreviewTotals {
 // Volume copy types
 // ============================================================================
 
-// ============================================================================
-// Event sink trait (decouples write operations from Tauri)
-// ============================================================================
-
-/// Abstraction for emitting write operation events.
-///
-/// Decouples the copy/move/delete pipeline from `tauri::AppHandle`. The Tauri
-/// layer provides `TauriEventSink` (calls `app.emit`). Tests use
-/// `CollectorEventSink` (stores events in a `Vec` for assertions).
-pub trait OperationEventSink: Send + Sync {
-    fn emit_progress(&self, event: WriteProgressEvent);
-    fn emit_complete(&self, event: WriteCompleteEvent);
-    fn emit_cancelled(&self, event: WriteCancelledEvent);
-    fn emit_error(&self, event: WriteErrorEvent);
-    fn emit_conflict(&self, event: WriteConflictEvent);
-    fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent);
-    /// Per-iteration progress during dry-run scanning (separate from `write-progress`).
-    fn emit_scan_progress(&self, event: ScanProgressEvent);
-    /// One `ConflictInfo` per conflicting file during dry-run scanning.
-    fn emit_scan_conflict(&self, conflict: ConflictInfo);
-    /// Final dry-run result with conflict sample.
-    fn emit_dry_run_complete(&self, result: DryRunResult);
-    /// Emitted exactly once per op, after the spawned task fully returns
-    /// (success, error, cancel, or panic). Default impl is a no-op so existing
-    /// production sinks compile unchanged — `TauriEventSink` and
-    /// `CollectorEventSink` override it. See `WriteSettledEvent` for the
-    /// ordering contract.
-    ///
-    /// Production emit goes through `WriteSettledGuard` directly to
-    /// `app.emit`; this trait method exists so tests can observe the same
-    /// event without a Tauri runtime.
-    #[allow(
-        dead_code,
-        reason = "Trait method consumed only by test sinks; production emits via WriteSettledGuard"
-    )]
-    fn emit_settled(&self, _event: WriteSettledEvent) {}
-}
-
-/// Tauri-backed event sink: calls `app.emit()` for each event.
-pub struct TauriEventSink {
-    app: tauri::AppHandle,
-}
-
-impl TauriEventSink {
-    pub fn new(app: tauri::AppHandle) -> Self {
-        Self { app }
-    }
-}
-
-impl OperationEventSink for TauriEventSink {
-    fn emit_progress(&self, event: WriteProgressEvent) {
-        let _ = event.emit(&self.app);
-    }
-    fn emit_complete(&self, event: WriteCompleteEvent) {
-        // PII-free analytics: a transfer or delete completed. Categorical only (op, a count
-        // bucket, a bool); never names or paths. Copy/Move map to `file_transfer_completed`,
-        // Delete/Trash to `delete_used`. Fires before the emit so it can read the moved event.
-        emit_completion_analytics(&event);
-        let _ = event.emit(&self.app);
-    }
-    fn emit_cancelled(&self, event: WriteCancelledEvent) {
-        let _ = event.emit(&self.app);
-    }
-    fn emit_error(&self, event: WriteErrorEvent) {
-        let _ = event.emit(&self.app);
-    }
-    fn emit_conflict(&self, event: WriteConflictEvent) {
-        let _ = event.emit(&self.app);
-    }
-    fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent) {
-        let _ = event.emit(&self.app);
-    }
-    fn emit_scan_progress(&self, event: ScanProgressEvent) {
-        let _ = event.emit(&self.app);
-    }
-    fn emit_scan_conflict(&self, conflict: ConflictInfo) {
-        let _ = conflict.emit(&self.app);
-    }
-    fn emit_dry_run_complete(&self, result: DryRunResult) {
-        let _ = result.emit(&self.app);
-    }
-    fn emit_settled(&self, event: WriteSettledEvent) {
-        let _ = event.emit(&self.app);
-    }
-}
-
-/// Buckets an item count into a coarse, PII-free range string for analytics. A raw count is fine to
-/// ship (it's not PII), but a bucket keeps the dashboard's cardinality low and the signal readable.
-fn item_count_bucket(count: usize) -> &'static str {
-    match count {
-        0 => "0",
-        1 => "1",
-        2..=10 => "2-10",
-        11..=100 => "11-100",
-        101..=1000 => "101-1000",
-        _ => "1000+",
-    }
-}
-
-/// Emits the PII-free PostHog event for a completed write operation. Copy/Move → `file_transfer_completed`
-/// (with `op`, an item-count bucket, and a `had_conflicts` bool); Delete/Trash → `delete_used` (with
-/// a `trashed` bool and a count bucket). Every prop is categorical; no names or paths cross. The
-/// `had_conflicts` proxy is `files_skipped > 0` (skips happen only via conflict resolution, see
-/// `WriteCompleteEvent::files_skipped`).
-fn emit_completion_analytics(event: &WriteCompleteEvent) {
-    use serde_json::json;
-    let bucket = item_count_bucket(event.files_processed);
-    match event.operation_type {
-        WriteOperationType::Copy | WriteOperationType::Move => {
-            let op = if event.operation_type == WriteOperationType::Copy {
-                "copy"
-            } else {
-                "move"
-            };
-            crate::analytics::posthog::capture(
-                "file_transfer_completed",
-                json!({ "op": op, "item_count": bucket, "had_conflicts": event.files_skipped > 0 }),
-            );
-        }
-        WriteOperationType::Delete | WriteOperationType::Trash => {
-            let trashed = event.operation_type == WriteOperationType::Trash;
-            crate::analytics::posthog::capture("delete_used", json!({ "trashed": trashed, "item_count": bucket }));
-        }
-    }
-}
-
-/// Test event sink: stores events for inspection.
-#[cfg(test)]
-#[allow(
-    dead_code,
-    reason = "Fields are populated by emit_* methods; read in test assertions as needed"
-)]
-pub(crate) struct CollectorEventSink {
-    pub progress: std::sync::Mutex<Vec<WriteProgressEvent>>,
-    pub complete: std::sync::Mutex<Vec<WriteCompleteEvent>>,
-    pub cancelled: std::sync::Mutex<Vec<WriteCancelledEvent>>,
-    pub errors: std::sync::Mutex<Vec<WriteErrorEvent>>,
-    pub conflicts: std::sync::Mutex<Vec<WriteConflictEvent>>,
-    pub scan_progress: std::sync::Mutex<Vec<ScanProgressEvent>>,
-    pub scan_conflicts: std::sync::Mutex<Vec<ConflictInfo>>,
-    pub dry_run: std::sync::Mutex<Vec<DryRunResult>>,
-    pub settled: std::sync::Mutex<Vec<WriteSettledEvent>>,
-}
-
-#[cfg(test)]
-impl CollectorEventSink {
-    pub fn new() -> Self {
-        Self {
-            progress: std::sync::Mutex::new(Vec::new()),
-            complete: std::sync::Mutex::new(Vec::new()),
-            cancelled: std::sync::Mutex::new(Vec::new()),
-            errors: std::sync::Mutex::new(Vec::new()),
-            conflicts: std::sync::Mutex::new(Vec::new()),
-            scan_progress: std::sync::Mutex::new(Vec::new()),
-            scan_conflicts: std::sync::Mutex::new(Vec::new()),
-            dry_run: std::sync::Mutex::new(Vec::new()),
-            settled: std::sync::Mutex::new(Vec::new()),
-        }
-    }
-}
-
-#[cfg(test)]
-impl OperationEventSink for CollectorEventSink {
-    fn emit_progress(&self, event: WriteProgressEvent) {
-        self.progress.lock_ignore_poison().push(event);
-    }
-    fn emit_complete(&self, event: WriteCompleteEvent) {
-        self.complete.lock_ignore_poison().push(event);
-    }
-    fn emit_cancelled(&self, event: WriteCancelledEvent) {
-        self.cancelled.lock_ignore_poison().push(event);
-    }
-    fn emit_error(&self, event: WriteErrorEvent) {
-        self.errors.lock_ignore_poison().push(event);
-    }
-    fn emit_conflict(&self, event: WriteConflictEvent) {
-        self.conflicts.lock_ignore_poison().push(event);
-    }
-    fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {}
-    fn emit_scan_progress(&self, event: ScanProgressEvent) {
-        self.scan_progress.lock_ignore_poison().push(event);
-    }
-    fn emit_scan_conflict(&self, conflict: ConflictInfo) {
-        self.scan_conflicts.lock_ignore_poison().push(conflict);
-    }
-    fn emit_dry_run_complete(&self, result: DryRunResult) {
-        self.dry_run.lock_ignore_poison().push(result);
-    }
-    fn emit_settled(&self, event: WriteSettledEvent) {
-        self.settled.lock_ignore_poison().push(event);
-    }
-}
-
-// ============================================================================
-// Volume copy types
-// ============================================================================
-
 /// Copy operation configuration for volume-to-volume copy.
 #[derive(Debug, Clone, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -1064,24 +703,5 @@ mod write_conflict_event_serde_tests {
         let back: WriteConflictEvent = serde_json::from_str(&json).unwrap();
         assert_eq!(back.source_size, None);
         assert_eq!(back.size_difference, None);
-    }
-}
-
-#[cfg(test)]
-mod analytics_bucket_tests {
-    use super::*;
-
-    #[test]
-    fn item_count_buckets_map_to_coarse_ranges() {
-        assert_eq!(item_count_bucket(0), "0");
-        assert_eq!(item_count_bucket(1), "1");
-        assert_eq!(item_count_bucket(2), "2-10");
-        assert_eq!(item_count_bucket(10), "2-10");
-        assert_eq!(item_count_bucket(11), "11-100");
-        assert_eq!(item_count_bucket(100), "11-100");
-        assert_eq!(item_count_bucket(101), "101-1000");
-        assert_eq!(item_count_bucket(1000), "101-1000");
-        assert_eq!(item_count_bucket(1001), "1000+");
-        assert_eq!(item_count_bucket(50_000), "1000+");
     }
 }
