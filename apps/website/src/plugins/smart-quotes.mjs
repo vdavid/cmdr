@@ -4,7 +4,9 @@
  * <script>, <style>, <code>, <pre>, and <kbd> tags.
  *
  * Works alongside remark-smartypants (which handles markdown content).
- * This integration catches .astro template text that remark doesn't reach.
+ * This integration catches .astro template text that remark doesn't reach,
+ * whether the quotes arrive literal (set:html) or HTML-entity-encoded
+ * (Astro's `{text}` interpolation emits `&quot;` / `&#39;`).
  */
 
 import { readFile, readdir, writeFile } from 'node:fs/promises'
@@ -14,6 +16,12 @@ import { join } from 'node:path'
 function convertQuotes(text) {
   return (
     text
+      // Astro's `{text}` interpolation HTML-escapes quotes (`&quot;`) and apostrophes (`&#39;`),
+      // whereas `set:html` and markdown leave them literal. Decode these quote entities first so
+      // both render paths get curled by the rules below. Browsers render the entity and the literal
+      // identically, so this is display-safe, and we never touch `&amp;`.
+      .replace(/&quot;|&#0*34;|&#x0*22;/gi, '"')
+      .replace(/&apos;|&#0*39;|&#x0*27;/gi, "'")
       // Apostrophes inside words: don't, it's, we're
       .replace(/(\w)'(\w)/g, '$1\u2019$2')
       // Opening double quotes (after whitespace or start)
