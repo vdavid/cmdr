@@ -90,9 +90,9 @@ One component for all three index-activity states (scan, aggregation, replay). T
 mental model — "the drive index is updating" — so they share a single quiet indicator instead of three overlays fighting
 for the corner.
 
-- **Rendering**: a small Lucide hourglass (`~icons/lucide/hourglass`, ~14px, the same icon as the size-column stale
-  indicator) pinned `position: absolute; top/right: var(--spacing-sm)` in tertiary text color. It pulses opacity gently
-  to signal activity (design principle: show some anim when the app is doing something), gated behind
+- **Rendering**: a small `hourglass` glyph (via `<Icon>`, ~14px, the same icon as the size-column stale indicator)
+  pinned `position: absolute; top/right: var(--spacing-sm)` in tertiary text color. It pulses opacity gently to signal
+  activity (design principle: show some anim when the app is doing something), gated behind
   `prefers-reduced-motion: reduce` (static then). The full detail lives in a rich tooltip on hover/focus.
 - **Visibility**: `isScanning() || isAggregating() || isReplaying()`. Any index activity shows the icon immediately — no
   grace delay, because a small icon is unobtrusive and showing it immediately keeps the indicator honest.

@@ -387,9 +387,8 @@ and actionable error experience.
 Receives a `FriendlyError` struct from Rust (all content is pre-baked on the backend, the frontend doesn't do any error
 classification or OS-specific logic):
 
-- **Title**: large text, always in accent color. Lucide icon (via `unplugin-icons`) signals severity: ⚠
-  `~icons/lucide/triangle-alert` in warning color for transient, ⊘ `~icons/lucide/circle-alert` in error color for
-  serious, no icon for needs-action
+- **Title**: large text, always in accent color. A glyph via `<Icon>` signals severity: ⚠ `triangle-alert` in warning
+  color for transient, ⊘ `circle-alert` in error color for serious, no icon for needs-action
 - **Folder path**: shown in secondary text so the user knows exactly which folder is affected
 - **Explanation**: rendered as markdown via `snarkdown` (plain-language description of what happened)
 - **Suggestion**: rendered as markdown (actionable steps, often provider-specific, for example, "Open **MacDroid** and

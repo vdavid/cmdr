@@ -61,7 +61,7 @@ In `selection-summary` mode, directory recursive sizes are included in the size 
 index). The `hasOnlyDirs` branch shows size triads when `totalSize > 0`; when sizes are unavailable (indexing off), it
 falls back to showing only dir count and percentage.
 
-Stale indicator (Lucide hourglass icon via `~icons/lucide/hourglass`, rendered in accent color) appears in two places:
+Stale indicator (the `hourglass` glyph via `<Icon>`, rendered in accent color) appears in two places:
 
 - `selection-summary` mode, when `isScanning()` is true and directories are selected (aggregate signal across the
   selection — a per-folder check wouldn't fit N mixed items).
@@ -75,8 +75,8 @@ Stale indicator (Lucide hourglass icon via `~icons/lucide/hourglass`, rendered i
   overlays it onto the cursor entry via `updateIndexSizesInPlace([entry])` (skipping `..`, whose entry path is the
   parent folder), and re-runs on `index-dir-updated` so the hourglass tracks a storm live.
 
-Symlink hint (Lucide info icon via `~icons/lucide/info`, rendered in tertiary text color) appears next to a directory's
-size in `file-info` mode when `entry.recursiveHasSymlinks === true`. The tooltip reads: "This folder contains symlinks.
+Symlink hint (the `info` glyph via `<Icon>`, rendered in tertiary text color) appears next to a directory's size in
+`file-info` mode when `entry.recursiveHasSymlinks === true`. The tooltip reads: "This folder contains symlinks.
 Symlinked content is not counted in the total to avoid double counting." This explains why a folder of symlinks may show
 `0 bytes`. Cmdr deliberately matches `du`/Finder behavior. The flag is computed by the indexing module
 (`recursive_has_symlinks` on `dir_stats`) and surfaced through enrichment.

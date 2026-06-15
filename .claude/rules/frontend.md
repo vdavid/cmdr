@@ -9,6 +9,11 @@
 - A new user-facing action needs its id in `COMMAND_IDS`, an entry in `command-registry.ts`, and a handler in
   `routes/(main)/command-handlers/` (a missing handler is a compile error). Enforced by `cmdr/no-raw-command-dispatch`.
   See `lib/commands/CLAUDE.md`.
+- ❌ Render inline glyphs via `<Icon name size>` (`$lib/ui/Icon.svelte`) and loading spinners via `<Spinner size>`
+  (`$lib/ui/Spinner.svelte`). Don't import `~icons/lucide/*` in feature code or hand-roll a spinner ring. Add a new
+  glyph to `lib/ui/icons/icon-map.ts` (the one place lucide is imported); custom non-Lucide glyphs live as components in
+  `lib/ui/icons/` and register there too. `Icon` has no `color` prop (set `color` on the wrapping span). Every glyph and
+  spinner appears in the Debug "Graphics" catalog (`routes/dev/graphics/`). See `docs/guides/icons.md`.
 - Stay aligned to Ark UI's naming. When wrapping an `@ark-ui/svelte` primitive in `lib/ui/`, name the wrapper after
   Ark's component (`Select`, `Combobox`, `Popover`, `Menu`, …) so the wrapper layer maps 1:1 to Ark and stays
   predictable. Flag any divergence from Ark's vocabulary (raise it, don't silently rename); a wrapper whose name drifts
