@@ -586,6 +586,9 @@ jobs:
       - name: Check no 2-column tables in agent docs
         run: ./scripts/check/check --check docs-no-two-col-tables --ci
 
+      - name: Check every CLAUDE.md has a sibling DETAILS.md
+        run: ./scripts/check/check --check claude-md-details-sibling --ci
+
       - name: Check workflow hardening
         run: ./scripts/check/check --check workflows-hardening --ci
 

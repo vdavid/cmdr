@@ -759,6 +759,29 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDocsNoTwoColTables,
 	},
 	{
+		ID:          "claude-md-details-sibling",
+		Nickname:    "details-sibling",
+		DisplayName: "CLAUDE.md has a sibling DETAILS.md",
+		App:         AppOther,
+		Tech:        "📝 Docs",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs, // walks every CLAUDE.md and reads each one's sibling DETAILS.md
+		Run:         RunClaudeMdDetailsSibling,
+	},
+	{
+		ID:          "resident-doc-budget",
+		Nickname:    "resident-budget",
+		DisplayName: "resident agent-doc budget",
+		App:         AppOther,
+		Tech:        "📏 Metrics",
+		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs, // reads root CLAUDE.md, its @-imports, and .claude/rules/**
+		Run:         RunResidentDocBudget,
+	},
+	{
 		ID:          "changelog-commit-links",
 		Nickname:    "changelog-links",
 		DisplayName: "CHANGELOG commit links",
