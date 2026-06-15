@@ -18,9 +18,11 @@ auto-connects devices on USB hotplug and owns all connection orchestration.
 - **Frontend listens to exactly four events**, all in `initialize()`: `onMtpDeviceConnected`, `onMtpDeviceDisconnected`,
   `onMtpExclusiveAccessError`, `onMtpPermissionError`. There's no directory-changed listener. Don't reintroduce one
   without the backend emitting it.
-- **The connect toast reads module-level `$state` (`lastConnectedDeviceName`), not props**: the toast system renders
-  components with zero props, so the caller sets it via `setLastConnectedDeviceName()` before `addToast()`. Gated by the
-  `fileOperations.mtpConnectionWarning` setting (default `true`).
+- **The connect toast reads module-level `$state` (in `mtp-connected-toast-state.svelte.ts`), not props**: the toast
+  system renders components with zero props, so the caller sets it via `setLastConnectedDeviceName()` before
+  `addToast()` and the toast reads `getLastConnectedDeviceName()`. The state lives in a `.svelte.ts` module (not the
+  toast's `<script module>`) so its exports type across imports. Gated by the `fileOperations.mtpConnectionWarning`
+  setting (default `true`).
 - **MTP can be disabled entirely** via the `fileOperations.mtpEnabled` setting (Settings > General > MTP). When off,
   devices disconnect and hotplug is ignored; the frontend just reacts to `volumes-changed` as usual.
 - **`resetForTesting()` must clear every module-level field.** Tests call it instead of `vi.resetModules()` to skip the

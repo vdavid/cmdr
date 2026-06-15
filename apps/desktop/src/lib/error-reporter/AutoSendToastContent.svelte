@@ -1,26 +1,9 @@
-<script module lang="ts">
-    /**
-     * Module-level slot for the most recently auto-sent report ID. Mirrors the bridge
-     * pattern used by `ErrorReportToastContent` and `MtpConnectedToastContent`: the
-     * toast helper sets the ID right before `addToast(...)` so the rendered toast can
-     * read it without prop bridging.
-     */
-    let lastAutoSentReportId = $state('')
-
-    export function setLastAutoSentReportId(id: string): void {
-        lastAutoSentReportId = id
-    }
-
-    export function getLastAutoSentReportId(): string {
-        return lastAutoSentReportId
-    }
-</script>
-
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { openErrorReportDialog } from './error-report-flow.svelte'
+    import { getLastAutoSentReportId } from './auto-send-toast-state.svelte'
 
     const TOAST_ID = 'error-report-auto-sent'
 
@@ -42,7 +25,7 @@
     <div class="title">Error report sent</div>
     <div class="body">
         Reference ID:
-        <span class="id-badge">{lastAutoSentReportId}</span>
+        <span class="id-badge">{getLastAutoSentReportId()}</span>
     </div>
     <div class="actions">
         <Button size="mini" variant="secondary" onclick={handleChangeSettings}>Change settings</Button>

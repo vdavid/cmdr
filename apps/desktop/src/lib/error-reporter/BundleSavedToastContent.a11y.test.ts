@@ -8,7 +8,8 @@
 
 import { describe, it, vi, expect } from 'vitest'
 import { mount, tick } from 'svelte'
-import BundleSavedToastContent, { setLastSavedBundlePath } from './BundleSavedToastContent.svelte'
+import BundleSavedToastContent from './BundleSavedToastContent.svelte'
+import { setLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { dismissToast } from '$lib/ui/toast'
 import { showInFinder } from '$lib/tauri-commands'
@@ -23,7 +24,6 @@ vi.mock('$lib/tauri-commands', () => ({
 
 describe('BundleSavedToastContent', () => {
   it('default render has no a11y violations', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastSavedBundlePath('/Users/test/Application Support/com.veszelovszki.cmdr-dev/error-report-debug.zip')
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -33,7 +33,6 @@ describe('BundleSavedToastContent', () => {
   })
 
   it('renders the most recently saved path', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastSavedBundlePath('/tmp/bundle-XYZ.zip')
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -42,7 +41,6 @@ describe('BundleSavedToastContent', () => {
   })
 
   it('Reveal in Finder button calls showInFinder with the saved path', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastSavedBundlePath('/tmp/bundle-REV.zip')
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -57,7 +55,6 @@ describe('BundleSavedToastContent', () => {
   })
 
   it('Dismiss button calls dismissToast with the toast ID', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastSavedBundlePath('/tmp/bundle-DIS.zip')
     const target = document.createElement('div')
     document.body.appendChild(target)

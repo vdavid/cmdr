@@ -50,8 +50,7 @@
         binding = next
         // Live-apply: re-register with the backend right away. We pass the
         // current `enabled` so toggling-off elsewhere isn't overridden.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry key
-        const enabled = getSetting(GLOBAL_GO_TO_LATEST_ENABLED_KEY as any) as boolean
+        const enabled = getSetting(GLOBAL_GO_TO_LATEST_ENABLED_KEY)
         const result = await commands.setGlobalGoToLatestShortcut(enabled, next)
         if (result.status === 'ok') {
             statusText = result.data.status === 'registered' ? 'Registered' : 'Not registered'

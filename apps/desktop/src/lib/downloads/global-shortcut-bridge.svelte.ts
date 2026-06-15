@@ -53,10 +53,8 @@ export async function startGlobalShortcutBridge(explorer: ExplorerAPI | undefine
 async function handleFired(explorer: ExplorerAPI | undefined): Promise<void> {
   // Read the snapshot eagerly so the toast carries the binding string that
   // was active at THIS moment, even if the user remaps mid-flight.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry key
-  const acknowledged = getSetting(GLOBAL_GO_TO_LATEST_ACKNOWLEDGED_KEY as any) as boolean
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry key
-  const binding = getSetting(GLOBAL_GO_TO_LATEST_BINDING_KEY as any) as string
+  const acknowledged = getSetting(GLOBAL_GO_TO_LATEST_ACKNOWLEDGED_KEY)
+  const binding = getSetting(GLOBAL_GO_TO_LATEST_BINDING_KEY)
 
   if (!acknowledged) {
     // Flip first to collapse the back-to-back-press race. The toast itself

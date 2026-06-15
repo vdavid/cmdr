@@ -1,26 +1,15 @@
-<script module lang="ts">
-    /**
-     * Module-level slot for the path of the most recently saved debug bundle.
-     * `ErrorReportDialog` sets this right before `addToast(BundleSavedToastContent, ...)`.
-     * Same prop-bridging pattern as `ErrorReportToastContent`.
-     */
-    let lastSavedBundlePath = $state('')
-
-    export function setLastSavedBundlePath(path: string): void {
-        lastSavedBundlePath = path
-    }
-</script>
-
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { showInFinder } from '$lib/tauri-commands'
+    import { getLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
 
     const toastId = 'error-report-bundle-saved'
 
     function handleReveal() {
-        if (lastSavedBundlePath) {
-            void showInFinder(lastSavedBundlePath)
+        const path = getLastSavedBundlePath()
+        if (path) {
+            void showInFinder(path)
         }
     }
 
@@ -31,7 +20,7 @@
 
 <div class="content">
     <span class="message">Saved bundle to disk</span>
-    <span class="path" title={lastSavedBundlePath}>{lastSavedBundlePath}</span>
+    <span class="path" title={getLastSavedBundlePath()}>{getLastSavedBundlePath()}</span>
     <div class="actions">
         <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
         <Button size="mini" variant="primary" onclick={handleReveal}>Reveal in Finder</Button>

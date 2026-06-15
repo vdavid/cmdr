@@ -1,17 +1,9 @@
-<script module lang="ts">
-    // Module-level state: set by +layout.svelte before addToast is called
-    let lastConnectedDeviceName = $state('MTP device')
-
-    export function setLastConnectedDeviceName(name: string) {
-        lastConnectedDeviceName = name
-    }
-</script>
-
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { setSetting } from '$lib/settings'
     import { isMacOS } from '$lib/shortcuts/key-capture'
+    import { getLastConnectedDeviceName } from './mtp-connected-toast-state.svelte'
 
     const toastId = 'mtp-connected'
     let dontShowAgain = $state(false)
@@ -33,7 +25,7 @@
 </script>
 
 <div class="mtp-toast">
-    <p class="title">Connected to {lastConnectedDeviceName}</p>
+    <p class="title">Connected to {getLastConnectedDeviceName()}</p>
     <p class="body">
         {#if isMacOS()}
             Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable

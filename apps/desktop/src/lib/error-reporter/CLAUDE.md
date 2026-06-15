@@ -22,7 +22,7 @@ event into a confirmation toast.
   `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md`.
 - **Display the preview ID in the dialog, but show the post-send toast with the server's response ID.** The server may
   regenerate the ID on a HEAD collision, so `sendErrorReport`'s return value is canonical. The dialog calls
-  `setLastSentReportId(id)` (exported from `ErrorReportToastContent.svelte`'s `<script module>`) before `addToast`.
+  `setLastSentReportId(id)` (from `error-report-toast-state.svelte.ts`) before `addToast`.
 - **Char counting uses `Array.from(userNote).length`** (code points) to match the Rust validator's `.chars().count()`.
   `userNote.length` (UTF-16 units) would let emoji-heavy notes pass the FE cap then fail server-side. Hard limit 100 000
   chars (Send disabled, both layers enforce); soft warning at 50 000; server also caps total payload at 10 MB.

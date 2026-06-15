@@ -11,7 +11,7 @@ import { describe, it, vi, expect, beforeEach } from 'vitest'
 import { listen } from '@tauri-apps/api/event'
 import { addToast } from '$lib/ui/toast'
 
-import { getLastAutoSentReportId } from './AutoSendToastContent.svelte'
+import { getLastAutoSentReportId } from './auto-send-toast-state.svelte'
 import { initAutoSendToastListener, cleanupAutoSendToastListener } from './auto-send-toast.svelte'
 
 vi.mock('@tauri-apps/api/event', () => ({
@@ -64,7 +64,6 @@ describe('auto-send toast listener', () => {
       dismissal: 'transient',
       timeoutMs: 10_000,
     })
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     expect(getLastAutoSentReportId()).toBe('ERR-LSTN1')
   })
 

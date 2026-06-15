@@ -78,36 +78,26 @@ export function searchSettings(query: string): SettingSearchResult[] {
   }
 
   const haystack = index.map((e) => e.searchableText)
-  const results = fuzzy.search(haystack, query.toLowerCase())
-
-  // uFuzzy can return null/undefined in some edge cases
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!results?.[0]) {
-    return []
-  }
-
-  const [matchedIndices, info, order] = results
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!order || !info) {
+  // A null idxs/order is uFuzzy's "no matches" shape; the guard also narrows the
+  // result to the ranked case, so `info` is non-null in the map below.
+  const [matchedIndices, info, order] = fuzzy.search(haystack, query.toLowerCase())
+  if (!matchedIndices || !order) {
     return []
   }
 
   // Build results with match information
   return order.map((idx) => {
     const entry = index[matchedIndices[idx]]
+    // ranges is a flat array of [start, end) pairs (end exclusive)
     const ranges = info.ranges[idx]
 
     // Convert ranges to individual character indices
     const indices: number[] = []
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (ranges) {
-      for (let i = 0; i < ranges.length; i += 2) {
-        const start = ranges[i]
-        const end = ranges[i + 1]
-        for (let j = start; j < end; j++) {
-          indices.push(j)
-        }
+    for (let i = 0; i < ranges.length; i += 2) {
+      const start = ranges[i]
+      const end = ranges[i + 1]
+      for (let j = start; j < end; j++) {
+        indices.push(j)
       }
     }
 
@@ -139,17 +129,8 @@ export function searchAdvancedSettings(query: string): SettingSearchResult[] {
   }))
 
   const haystack = entries.map((e) => e.searchableText)
-  const results = fuzzy.search(haystack, query.toLowerCase())
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!results?.[0]) {
-    return []
-  }
-
-  const [matchedIndices, info, order] = results
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!order || !info) {
+  const [matchedIndices, info, order] = fuzzy.search(haystack, query.toLowerCase())
+  if (!matchedIndices || !order) {
     return []
   }
 
@@ -158,14 +139,11 @@ export function searchAdvancedSettings(query: string): SettingSearchResult[] {
     const ranges = info.ranges[idx]
 
     const indices: number[] = []
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (ranges) {
-      for (let i = 0; i < ranges.length; i += 2) {
-        const start = ranges[i]
-        const end = ranges[i + 1]
-        for (let j = start; j < end; j++) {
-          indices.push(j)
-        }
+    for (let i = 0; i < ranges.length; i += 2) {
+      const start = ranges[i]
+      const end = ranges[i + 1]
+      for (let j = start; j < end; j++) {
+        indices.push(j)
       }
     }
 

@@ -19,8 +19,10 @@
         type PreviewPayload,
     } from '$lib/tauri-commands/error-reporter'
      
-    import ErrorReportToastContent, { setLastSentReportId } from './ErrorReportToastContent.svelte'
-    import BundleSavedToastContent, { setLastSavedBundlePath } from './BundleSavedToastContent.svelte'
+    import ErrorReportToastContent from './ErrorReportToastContent.svelte'
+    import BundleSavedToastContent from './BundleSavedToastContent.svelte'
+    import { setLastSentReportId } from './error-report-toast-state.svelte'
+    import { setLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
     import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
     import { getSetting, setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
@@ -115,7 +117,6 @@
                 setSetting('updates.attachEmailToReports', attachEmail)
             }
             const result = await sendErrorReport(userNote || undefined, emailToAttach)
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
             setLastSentReportId(result.id)
             addToast(ErrorReportToastContent, {
                 id: 'error-report-sent',
@@ -135,7 +136,6 @@
     async function handleSaveToDisk() {
         try {
             const path = await saveErrorReportToDisk(userNote || undefined, emailToAttach)
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
             setLastSavedBundlePath(path)
             addToast(BundleSavedToastContent, {
                 id: 'error-report-bundle-saved',

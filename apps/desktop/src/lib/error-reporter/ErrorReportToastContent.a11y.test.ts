@@ -7,7 +7,8 @@
 
 import { describe, it, vi, expect } from 'vitest'
 import { mount, tick } from 'svelte'
-import ErrorReportToastContent, { setLastSentReportId, getLastSentReportId } from './ErrorReportToastContent.svelte'
+import ErrorReportToastContent from './ErrorReportToastContent.svelte'
+import { setLastSentReportId, getLastSentReportId } from './error-report-toast-state.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { dismissToast } from '$lib/ui/toast'
 
@@ -23,7 +24,6 @@ Object.defineProperty(navigator, 'clipboard', {
 
 describe('ErrorReportToastContent', () => {
   it('default render has no a11y violations', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastSentReportId('ERR-AB23X')
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -33,9 +33,7 @@ describe('ErrorReportToastContent', () => {
   })
 
   it('renders the most recently set sent ID', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastSentReportId('ERR-99XYZ')
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     expect(getLastSentReportId()).toBe('ERR-99XYZ')
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -44,7 +42,6 @@ describe('ErrorReportToastContent', () => {
   })
 
   it('Copy ID button copies to the clipboard', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastSentReportId('ERR-COPY1')
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -59,7 +56,6 @@ describe('ErrorReportToastContent', () => {
   })
 
   it('Dismiss button calls dismissToast with the toast ID', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastSentReportId('ERR-DISMS')
     const target = document.createElement('div')
     document.body.appendChild(target)

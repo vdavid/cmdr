@@ -9,11 +9,9 @@ import { getSetting, setSetting } from '$lib/settings'
 const COLLAPSED_KEY = 'behavior.fileSystemWatching.downloadsToastCollapsed'
 
 export function getDownloadsToastCollapsed(): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
-  return getSetting(COLLAPSED_KEY as any) as boolean
+  return getSetting(COLLAPSED_KEY)
 }
 
 export function setDownloadsToastCollapsed(value: boolean): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
-  setSetting(COLLAPSED_KEY as any, value)
+  setSetting(COLLAPSED_KEY, value)
 }

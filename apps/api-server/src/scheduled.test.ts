@@ -3,7 +3,7 @@ import { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck, ha
 import { ERROR_REPORT_PREFIX, TOTAL_BYTES_KEY } from './error-report-eviction'
 
 // Mock Resend: intercept email sends
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock stands in for Resend's send; a precise signature adds no test value
 const mockSend = vi.fn<any>(() => Promise.resolve({ id: 'test-email-id' }))
 vi.mock('resend', () => ({
   Resend: class {

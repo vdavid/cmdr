@@ -25,18 +25,15 @@ export {
 }
 
 export function getGlobalGoToLatestEnabled(): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
-  return getSetting(ENABLED_KEY as any) as boolean
+  return getSetting(ENABLED_KEY)
 }
 
 export function getGlobalGoToLatestBinding(): string {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
-  return getSetting(BINDING_KEY as any) as string
+  return getSetting(BINDING_KEY)
 }
 
 export function setGlobalGoToLatestEnabled(value: boolean): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
-  setSetting(ENABLED_KEY as any, value)
+  setSetting(ENABLED_KEY, value)
 }
 
 /**
@@ -44,13 +41,10 @@ export function setGlobalGoToLatestEnabled(value: boolean): void {
  * whole point of this helper — see the module docstring.
  */
 export function setGlobalGoToLatestBinding(value: string): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
-  setSetting(BINDING_KEY as any, value)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
-  setSetting(ACKNOWLEDGED_KEY as any, false)
+  setSetting(BINDING_KEY, value)
+  setSetting(ACKNOWLEDGED_KEY, false)
 }
 
 export function setGlobalGoToLatestAcknowledged(value: boolean): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
-  setSetting(ACKNOWLEDGED_KEY as any, value)
+  setSetting(ACKNOWLEDGED_KEY, value)
 }

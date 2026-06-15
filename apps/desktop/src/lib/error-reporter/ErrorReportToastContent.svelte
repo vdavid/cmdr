@@ -1,30 +1,13 @@
-<script module lang="ts">
-    /**
-     * Module-level slot for the most recently sent report ID. The dialog calls
-     * `setLastSentReportId(id)` right before `addToast(ErrorReportToastContent, ...)`
-     * so the toast can render the ID without prop bridging (the toast system mounts
-     * components with no props).
-     */
-    let lastSentReportId = $state('')
-
-    export function setLastSentReportId(id: string): void {
-        lastSentReportId = id
-    }
-
-    export function getLastSentReportId(): string {
-        return lastSentReportId
-    }
-</script>
-
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
+    import { getLastSentReportId } from './error-report-toast-state.svelte'
 
     const toastId = 'error-report-sent'
     let copied = $state(false)
 
     async function handleCopy() {
-        await navigator.clipboard.writeText(lastSentReportId)
+        await navigator.clipboard.writeText(getLastSentReportId())
         copied = true
         setTimeout(() => (copied = false), 2000)
     }
@@ -37,7 +20,7 @@
 <div class="content">
     <span class="message">
         Error report sent. Your reference ID is
-        <span class="id-badge">{lastSentReportId}</span>
+        <span class="id-badge">{getLastSentReportId()}</span>
     </span>
     <div class="actions">
         <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>

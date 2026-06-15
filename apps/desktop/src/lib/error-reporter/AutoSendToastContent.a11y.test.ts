@@ -7,7 +7,8 @@
 
 import { describe, it, vi, expect } from 'vitest'
 import { mount, tick } from 'svelte'
-import AutoSendToastContent, { setLastAutoSentReportId, getLastAutoSentReportId } from './AutoSendToastContent.svelte'
+import AutoSendToastContent from './AutoSendToastContent.svelte'
+import { setLastAutoSentReportId, getLastAutoSentReportId } from './auto-send-toast-state.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { dismissToast } from '$lib/ui/toast'
 import { openSettingsWindow } from '$lib/settings/settings-window'
@@ -25,7 +26,6 @@ vi.mock('./error-report-flow.svelte', () => ({
 
 describe('AutoSendToastContent', () => {
   it('default render has no a11y violations', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastAutoSentReportId('ERR-AUTO1')
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -35,9 +35,7 @@ describe('AutoSendToastContent', () => {
   })
 
   it('renders the most recently set auto-sent ID', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastAutoSentReportId('ERR-AUTO2')
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     expect(getLastAutoSentReportId()).toBe('ERR-AUTO2')
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -48,7 +46,6 @@ describe('AutoSendToastContent', () => {
   })
 
   it('View button dismisses the toast and opens the report dialog', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastAutoSentReportId('ERR-VIEW1')
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -62,7 +59,6 @@ describe('AutoSendToastContent', () => {
   })
 
   it('Change settings button dismisses the toast and opens the settings window', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastAutoSentReportId('ERR-SET01')
     const target = document.createElement('div')
     document.body.appendChild(target)

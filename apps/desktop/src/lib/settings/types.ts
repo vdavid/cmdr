@@ -201,6 +201,8 @@ export interface SettingsValues {
 
   // File system watching - downloads notifications + global go-to-latest shortcut.
   'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode
+  /** Internal: remembers whether the user last collapsed the new-download toast, so a new toast opens the same way. */
+  'behavior.fileSystemWatching.downloadsToastCollapsed': boolean
   'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled': boolean
   'behavior.fileSystemWatching.globalGoToLatestShortcut.binding': string
   /** Internal: suppresses the first-trigger warn toast once the user acknowledges it. */

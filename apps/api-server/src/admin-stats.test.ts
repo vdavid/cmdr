@@ -7,7 +7,7 @@ function createMockKv(store: Record<string, string> = {}): KVNamespace {
     get: vi.fn((key: string, format?: string) => {
       if (!(key in store)) return null
       const value = store[key]
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- JSON.parse returns any; mirrors KVNamespace.get's json-format contract
       if (format === 'json') return JSON.parse(value)
       return value
     }),

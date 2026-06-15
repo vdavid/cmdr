@@ -19,9 +19,11 @@ The listener is initialized in `(main)/+layout.svelte` next to the Flow A dialog
 
 ## ID-bridging pattern
 
-`ErrorReportToastContent.svelte` exports `setLastSentReportId(id)` from a `<script module>` block. The dialog calls it
-right before `addToast(component, ...)` so the toast renders the ID without the toast system forwarding props. Same
-pattern as `MtpConnectedToastContent`.
+`error-report-toast-state.svelte.ts` holds the report ID in a module-level `$state` with `setLastSentReportId(id)` /
+`getLastSentReportId()`. The dialog sets it right before `addToast(component, ...)` so the toast renders the ID without
+the toast system forwarding props; the toast reads it via the getter. The state lives in a `.svelte.ts` module rather
+than the toast's `<script module>` so its exports are typed across imports (a `.svelte` module export is seen as `any`).
+Same pattern in `bundle-saved-toast-state`, `auto-send-toast-state`, and mtp's `mtp-connected-toast-state`.
 
 ## Note-capture timing and gotchas
 

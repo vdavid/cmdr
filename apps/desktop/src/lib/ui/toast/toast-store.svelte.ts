@@ -4,7 +4,7 @@ export type ToastLevel = 'default' | 'info' | 'success' | 'warn' | 'error'
 export type ToastDismissal = 'transient' | 'persistent'
 
 /** Content can be a plain string (rendered as text) or a Svelte component (mounted as-is). */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- a toast holds any component; its prop types can't be enumerated here
 export type ToastContent = string | Component<any>
 
 /**
