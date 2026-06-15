@@ -16,8 +16,9 @@ import (
 // turn of every session. The cap is seeded at the measured total at creation
 // time; it must only ever ratchet DOWN as we trim the docs, never up. Raising it
 // needs explicit user consent (same discipline as the other allowlists). Word
-// counting matches `wc -w`.
-const residentDocBudgetWords = 9472
+// counting matches `wc -w`. Ratcheted from the original 9472 after the doc diet
+// re-homed desktop ops out of the root and moved area rules to colocated docs.
+const residentDocBudgetWords = 1982
 
 // claudeImportRe captures @-import tokens in a CLAUDE.md. Claude Code treats a
 // leading-@ token as a file import; we resolve each against the filesystem and

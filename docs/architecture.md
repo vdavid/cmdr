@@ -190,22 +190,10 @@ operations, or volumes.
 
 ### Platform constraints
 
-Rules that cut across many modules. All existing commands follow these; apply them to new code too.
-
-1. **Tauri IPC threading.** Synchronous `#[tauri::command]` functions block the IPC handler thread. If one command hangs
-   (e.g., a filesystem syscall on a dead network mount), ALL subsequent IPC calls from the frontend queue behind it and
-   the app appears frozen. All filesystem-touching commands are `async` with `blocking_with_timeout` (2s default). When
-   adding new commands that touch the filesystem, follow this pattern; see `commands/file_system/` for examples.
-
-2. **Network mount blocking syscalls.** `statfs`, `readdir`, `metadata()`, NSURL resource queries, and `realpath` can
-   all block indefinitely on slow/hung network mounts (kernel waits 30–120s). Every Tauri command that calls these is
-   wrapped in `blocking_with_timeout`. New commands MUST do the same. See `commands/CLAUDE.md` for the full pattern and
-   timeout tiers.
-
-3. **Two-layer timeout defense.** Backend: `blocking_with_timeout` (2–15s) wraps syscalls in `tokio::time::timeout`.
-   Frontend: `withTimeout` (500ms–3s) races IPC calls and returns a fallback on expiry. Both layers are applied for
-   critical paths (volume switching, path resolution, volume space queries). Apply both when adding new IPC calls to
-   slow paths.
+The Rust backend's cross-cutting filesystem and IPC guardrails (synchronous commands block the IPC handler thread;
+network-mount syscalls block 30-120s; the two-layer timeout defense; no rayon for macOS-framework calls) are must-knows
+for backend work and live in [`apps/desktop/src-tauri/CLAUDE.md`](../apps/desktop/src-tauri/CLAUDE.md) § Platform
+constraints.
 
 ### macOS specifics
 
