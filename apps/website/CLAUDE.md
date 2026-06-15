@@ -199,6 +199,10 @@ See `docs/tooling/umami.md` and `docs/tooling/posthog.md` for API access and con
 
 ## Gotchas
 
+- **Keep TS generic calls single-line in `.astro` `<script>` blocks.** The astro-eslint parser chokes on a multi-line
+  generic call (`querySelectorAll<HTMLElement>(\n  …\n)` errors at the closing paren), failing `website-eslint` and
+  cascade-blocking typecheck/build/deploy. Single-line `foo<T>(...)` calls parse fine (every other `querySelector<T>(…)`
+  in the codebase is single-line).
 - The `@ts-expect-error` in `astro.config.mjs` is for a Vite version mismatch between Astro and Tailwind. It doesn't
   affect the build.
 - `site` must be set in `astro.config.mjs` for RSS and OG image URLs to work.

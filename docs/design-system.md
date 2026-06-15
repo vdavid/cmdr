@@ -28,7 +28,13 @@ Hover and focus variants are derived, not hardcoded, because the base color is d
 --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%); /* light mode */
 --color-accent-hover: color-mix(in oklch, var(--color-accent), white 10%); /* dark mode */
 --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%); /* tinted bg */
+--color-accent-pop: color-mix(in oklch, var(--color-accent), black 40%); /* light: darker than accent */
+--color-accent-pop: color-mix(in oklch, var(--color-accent), white 40%); /* dark: lighter than accent */
 ```
+
+`--color-accent-pop` is a higher-contrast accent for small marks sitting ON accent-tinted surfaces (the symlink badge
+over a gold folder icon), where plain `--color-accent` would blend in. It flips direction by scheme: darker than the
+accent in light mode, lighter in dark mode.
 
 The folder color setting (System Settings > Appearance > Folder color) is separate from the accent color. We use the
 accent (theme) color for interactive UI chrome. This matches macOS intent: accent is for controls, folder tint is

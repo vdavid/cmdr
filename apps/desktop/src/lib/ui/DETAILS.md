@@ -253,8 +253,8 @@ Props:
 - `items: ComboboxItem[]` — `{ value, label }` suggestions.
 - `inputValue: string` + `onInputValueChange: (inputValue: string) => void` — the controlled displayed text. The
   consumer holds the saved / typed model string here.
-- `loading?: boolean` — OUR in-field spinner overlay (`.spinner .spinner-sm`, respects reduced-motion via `app.css`);
-  Ark has no loading prop.
+- `loading?: boolean` — OUR in-field spinner overlay (a `<Spinner size="sm">` positioned over the input); Ark has no
+  loading prop.
 - `disabled?`, `placeholder?`, `ariaLabel`, `emptyText?` (shown as a non-actionable `role="option"` row when `items` is
   empty so the `role="listbox"` content satisfies axe's `aria-required-children`).
 
