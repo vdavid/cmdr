@@ -68,3 +68,5 @@ Tauri-MCP plugin gets a post-bind connect-check on the Rust side that warns on m
 - `node:net`, `node:fs`, `node:os`, `node:path`, `node:child_process` (stdlib only: no npm deps).
 - `instance-id.js` exports are imported by both `tauri-wrapper.js` and `instance-id.test.js`. If you add a new helper,
   give it a default-arg shape so existing wrapper code keeps working.
+
+Full details: [DETAILS.md](DETAILS.md).

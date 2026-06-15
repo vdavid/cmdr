@@ -171,3 +171,5 @@ the instant Finder might query them), but `NSDraggingSession.draggingSequenceNum
 AFTER `beginDraggingSessionWithItems:…` returns. A monotonic key generated up front and stashed on
 the source object sidesteps the chicken-and-egg, and the source reads its own key back in the end
 callback — no session→key mapping needed.
+
+Full details: [DETAILS.md](DETAILS.md).

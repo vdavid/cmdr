@@ -86,3 +86,5 @@ dialog before acting. Reuses `TransferProgressDialog` for progress display.
   individual files). Byte-level progress only shows when per-item sizes are available from the scan or drive index.
 - **Selection cleared after delete**: Items no longer exist, so selection is cleared. Both panes refresh (they might
   show the same directory).
+
+Full details: [DETAILS.md](DETAILS.md).

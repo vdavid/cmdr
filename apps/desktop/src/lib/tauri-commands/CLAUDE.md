@@ -123,3 +123,5 @@ distinguish "timed out" from "genuinely empty/none":
 - `@tauri-apps/api/event`: `listen`, `UnlistenFn`
 - `@tauri-apps/plugin-opener`: `openPath`, `openUrl`
 - Types from `$lib/file-explorer/types`
+
+Full details: [DETAILS.md](DETAILS.md).

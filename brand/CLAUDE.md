@@ -18,3 +18,5 @@ animation sources) stay in `_ignored/designs/`, which is gitignored.
   [`docs/guides/branding.md`](../docs/guides/branding.md).
 - **Regenerate the logo from source**:
   [`docs/guides/regenerating-app-icon.md`](../docs/guides/regenerating-app-icon.md).
+
+Full details: [DETAILS.md](DETAILS.md).

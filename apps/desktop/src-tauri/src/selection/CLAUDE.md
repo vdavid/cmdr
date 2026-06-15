@@ -115,3 +115,5 @@ appear in `apps/desktop/src/lib/ipc/bindings.ts`; the typed wrappers live in
 
 No other modules depend on `selection`; the dialog frontend and command-dispatch wiring live in
 `apps/desktop/src/lib/selection-dialog/` and `apps/desktop/src/lib/commands/`.
+
+Full details: [DETAILS.md](DETAILS.md).

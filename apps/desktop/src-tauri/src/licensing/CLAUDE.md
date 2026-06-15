@@ -133,3 +133,5 @@ actively waiting, and the cooldown must not block a retry after a transient fail
 
 External: `ed25519-dalek`, `base64`, `reqwest`, `tauri_plugin_store`, `sha2`, `core-foundation` (macOS)
 Internal: none
+
+Full details: [DETAILS.md](DETAILS.md).

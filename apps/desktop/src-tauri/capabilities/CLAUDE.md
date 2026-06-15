@@ -65,3 +65,5 @@ This same pattern caught the missing `core:window:allow-set-min-size` / `allow-s
 
 **Gotcha**: `playwright:default` can't go in `default.json`.
 **Why**: The plugin's permission schemas are only generated when the `playwright-e2e` Cargo feature is enabled. Adding `playwright:default` to `default.json` would break normal (non-feature) builds because Tauri's build step rejects unknown permissions. Instead, `build.rs` generates a separate `playwright.json` capability file only when the feature is active, and removes it when building without the feature.
+
+Full details: [DETAILS.md](DETAILS.md).

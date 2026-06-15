@@ -50,3 +50,5 @@ well before that block. Don't special-case it.
   input, so the next real `cargo build` picks it up. Don't "fix" this by adding the file to the watcher: it would
   restart the app on every changelog edit.
 - **No runtime I/O.** The changelog is embedded, so the commands can't hang and skip `blocking_with_timeout` on purpose.
+
+Full details: [DETAILS.md](DETAILS.md).

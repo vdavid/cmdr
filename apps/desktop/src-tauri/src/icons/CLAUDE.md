@@ -112,3 +112,5 @@ real folders can be cloud folders whose icon lookup descends through deep FilePr
 2 MB worker stack. The extension branch (sample temp paths, never cloud) stays on rayon. All fetches are FDA-gated in
 `commands/icons.rs` (NSWorkspace touches TCC services); the FE re-requests after the gate clears. Linux skips
 NSWorkspace entirely and resolves via the XDG theme lookup, so `special:*` degrades to the generic folder icon there.
+
+Full details: [DETAILS.md](DETAILS.md).

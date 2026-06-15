@@ -107,3 +107,5 @@ branch with a `match` on the version that calls a `migrate_v1_to_v2` helper.
 
 **Gotcha**: `expand_tilde` imported from `crate::commands::file_system` in `ai/query_builder.rs`.
 **Why**: Business logic reaching into the IPC layer. Architecturally backwards but pragmatic -- moving `expand_tilde` to a shared module would touch 20+ call sites across four files. Worth a separate cleanup PR.
+
+Full details: [DETAILS.md](DETAILS.md).

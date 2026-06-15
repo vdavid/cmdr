@@ -173,3 +173,5 @@ formatter callback keeps the util pure (no reactive imports here); the `tooltip`
 - `$lib/icon-cache`: `getCachedIcon`, `iconCacheVersion`
 - `$lib/settings/reactive-settings.svelte`: `formatFileSize`, `formatDateTime`
 - `$lib/indexing/index-state.svelte`: `isScanning`
+
+Full details: [DETAILS.md](DETAILS.md).

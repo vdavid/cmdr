@@ -36,3 +36,5 @@ On other platforms (not macOS, not Linux), all stubs are used. Never compiled on
 - `libc` (`volumes.rs` only, for `statvfs`)
 - `dirs` (`volumes.rs`, for `home_dir()`)
 - Tauri runtime types (`tauri::command`, `tauri::AppHandle`, `tauri::Runtime`)
+
+Full details: [DETAILS.md](DETAILS.md).

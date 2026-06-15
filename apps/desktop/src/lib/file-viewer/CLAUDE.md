@@ -122,3 +122,5 @@ await openFileViewer('/path/to/file.txt')
 ```
 
 **Test large files**: Generate via `dd if=/dev/zero of=large.txt bs=1m count=1000` (1GB file).
+
+Full details: [DETAILS.md](DETAILS.md).

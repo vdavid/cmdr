@@ -165,3 +165,5 @@ driven by Tauri events). Manual end-to-end testing via the Rust indexer with `pn
 - `$lib/file-explorer/selection/selection-info-utils`: `formatNumber` (indicator only)
 - `$lib/tooltip/tooltip`: `tooltip` action with the `contentEl` live-content param (indicator only)
 - `$lib/ui/ProgressBar.svelte`: reusable progress bar, size `sm` (in the indicator tooltip)
+
+Full details: [DETAILS.md](DETAILS.md).

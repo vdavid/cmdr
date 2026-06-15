@@ -239,3 +239,5 @@ the test invocation in a high timeout the first time.
 broke `read_accent_color_returns_valid_hex` in CI for 4 days in May 2026. Linux unit tests with bounded probes can
 exercise the live D-Bus path here in addition to Docker (where the bus is absent entirely). That dual coverage is the
 whole reason to keep the VM around for unit tests, not just E2E.
+
+Full details: [DETAILS.md](DETAILS.md).

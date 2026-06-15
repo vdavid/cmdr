@@ -265,3 +265,5 @@ or vice versa).
 ## Dependencies
 
 - `@leeoniya/ufuzzy` (npm): pure TypeScript, no Tauri or Svelte deps in this module.
+
+Full details: [DETAILS.md](DETAILS.md).

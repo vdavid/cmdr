@@ -96,3 +96,5 @@ running app instead.
 - **Debug-print rule applies here too.** Use `log::debug!(target:
   "selection::ai", ...)`; `eprintln!` / `println!` / `dbg!` are denied at the
   crate root. `--no-capture` test runs work fine with `log::info!`.
+
+Full details: [DETAILS.md](DETAILS.md).

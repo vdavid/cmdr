@@ -106,3 +106,5 @@ All coordinates are in 2x retina pixels on the 2508 x 1634 canvas (which include
 | Pane divider gap          | (1247, 281)                 | 14 px wide   | Between the two cutouts (includes resize bar)      |
 | Left pane mask rectangle  | (114, 281) to (1246, 1387)  |              | Used in the `-draw` command                        |
 | Right pane mask rectangle | (1261, 281) to (2393, 1387) |              | Used in the `-draw` command                        |
+
+Full details: [DETAILS.md](DETAILS.md).

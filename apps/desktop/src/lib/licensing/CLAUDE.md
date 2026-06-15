@@ -123,3 +123,5 @@ security delete-generic-password -s "com.veszelovszki.cmdr" -a "trial-*"
 
 **Generate a test license key**: See
 [API server CLAUDE.md](../../../../apps/api-server/CLAUDE.md#generate-a-test-license-key).
+
+Full details: [DETAILS.md](DETAILS.md).

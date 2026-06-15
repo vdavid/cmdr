@@ -102,3 +102,5 @@ dialog.
   are formatted as hex and are useful for grouping identical crash sites across reports.
 - The signal handler uses `execinfo.h`'s `backtrace()` which is async-signal-safe on macOS. On Linux, glibc's
   implementation is also safe in practice but not guaranteed by POSIX.
+
+Full details: [DETAILS.md](DETAILS.md).

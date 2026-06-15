@@ -60,3 +60,5 @@ This produces `resources/Assets.car` (and a `Sequoia.icns` fallback, not current
 - **Tauri native support pending**: Tauri has a commit ready to support `.icon` files natively
   ([tauri#14207](https://github.com/tauri-apps/tauri/issues/14207)). Once shipped, the manual `actool` step and
   `bundle.macOS.files` config can be replaced with a path in the `bundle.icon` array.
+
+Full details: [DETAILS.md](DETAILS.md).

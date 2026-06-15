@@ -56,3 +56,5 @@ Props-only (`toastId`, `availableBytes`, `freePercent`), snapshotted at event ar
 flips the mode to `'off'` (the applier pushes the disable to the backend), dismisses the toast, and deep-links to the
 Settings sub-group so the user sees where to re-enable it. The macOS native notification is text-only — the plugin can't
 carry custom action buttons on desktop, so the disable affordance lives on the in-app toast and in Settings.
+
+Full details: [DETAILS.md](DETAILS.md).

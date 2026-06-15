@@ -226,3 +226,5 @@ or the settings rows. Each step is independent; you can stop after the ones that
 14. Revoke FDA in System Settings → return to Cmdr. The two sub-groups grey out with the shared FDA hint. The global
     hotkey unregisters. Pressing `⌘J` from Cmdr shows the FDA INFO toast (with a stable dedup id so spamming `⌘J`
     doesn't stack toasts).
+
+Full details: [DETAILS.md](DETAILS.md).

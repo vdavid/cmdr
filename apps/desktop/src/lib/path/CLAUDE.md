@@ -35,3 +35,5 @@ must guard on `canonicalPath !== null` until `userHomePath` resolves — the pan
 **Virtual-volume URLs use slash arithmetic too.** `mtp://device/storage/Music` → `mtp://device/storage` via simple
 `lastIndexOf('/')`. The brand exists to make this _safe to assume_: anything that survived `toCanonical` is known to
 have a slash where the parent boundary lives.
+
+Full details: [DETAILS.md](DETAILS.md).

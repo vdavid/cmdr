@@ -134,3 +134,5 @@ trimmed value.
 - **Refresh timing**: File watcher event arrives asynchronously. `moveCursorToNewFolder()` pattern: subscribe to
   `directory-diff`, wait 50ms after event for listing cache update, then query `findFileIndex()`. Cleanup listener after
   3s timeout.
+
+Full details: [DETAILS.md](DETAILS.md).

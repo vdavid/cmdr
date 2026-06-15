@@ -28,3 +28,5 @@ Backend counterpart for everything in this directory:
   throughput during the scan phase, since `EtaEstimator` (backend) only covers write phases. Returns nulls until two
   samples land, clamps negative deltas to zero, and resets cleanly between scans. Pure module, no Svelte/Tauri coupling.
 - **`scan-throughput.test.ts`**: Vitest tests for the estimator.
+
+Full details: [DETAILS.md](DETAILS.md).

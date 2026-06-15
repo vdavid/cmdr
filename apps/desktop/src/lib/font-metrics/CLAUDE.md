@@ -83,3 +83,5 @@ triggers a re-measure. Multiple sizes coexist in the cache; the Rust side never 
 - `$lib/tauri-commands`: `storeFontMetrics`, `hasFontMetrics`
 - `$lib/logging/logger`: `getAppLogger`
 - Rust counterpart: `apps/desktop/src-tauri/src/font_metrics/mod.rs`
+
+Full details: [DETAILS.md](DETAILS.md).

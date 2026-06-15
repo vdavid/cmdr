@@ -50,3 +50,5 @@ env in one process sees the same data the E2E mock module sees in another. See "
 - **MTP paths are excluded**: MTP virtual paths can't be represented as `public.file-url`. The UI suggests F5/F6.
 - **Linux is stubbed**: `#[cfg(target_os = "macos")]` gates all NSPasteboard code. Linux needs `text/uri-list` MIME
   handling (future work).
+
+Full details: [DETAILS.md](DETAILS.md).

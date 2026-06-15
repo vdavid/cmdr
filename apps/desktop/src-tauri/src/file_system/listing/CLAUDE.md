@@ -194,3 +194,5 @@ where `.await` isn't available. `cancel_listing()` sets both: `cancelled.store(t
 
 **Gotcha**: Double-sort in the full re-read watcher path is intentional
 **Why**: `list_directory_core` returns entries in Name/Asc order. The watcher's `handle_directory_change` re-sorts them to match the listing's current sort params before calling `compute_diff`. This looks redundant but is required: without it, diff indices would be computed against a differently-ordered list, producing incorrect add/remove positions.
+
+Full details: [DETAILS.md](DETAILS.md).

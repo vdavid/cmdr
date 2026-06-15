@@ -147,3 +147,5 @@ watcher and the mount-time `register_smb_volume`, so they always agree. The unmo
 
 External: `dirs`, `objc2`, `objc2_foundation`, `objc2_app_kit` (`NSWorkspace`), `block2` (`RcBlock` for the observer callbacks)
 Internal: `crate::file_system::{get_volume_manager, volume::LocalPosixVolume}`, `crate::icons::get_icon_for_path`
+
+Full details: [DETAILS.md](DETAILS.md).

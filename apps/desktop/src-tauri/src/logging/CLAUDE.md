@@ -145,3 +145,5 @@ the rotator at startup stays. Restart-to-apply is documented in the settings UI 
 - RUST_LOG always wins at startup. If the user has both `RUST_LOG=info` and the verbose
   toggle on, the toggle is ignored at startup but takes over the next time they flip it
   (it overwrites the AtomicU8 directly).
+
+Full details: [DETAILS.md](DETAILS.md).

@@ -60,3 +60,5 @@ land via the directory watcher.
   `file-operations.spec.ts › Create folder round-trip › cursor lands on the newly created folder`.
 - **`moveCursorToNewFolder` is shared with `mkfile`.** The same function handles both since cursor positioning is
   entry-type-agnostic.
+
+Full details: [DETAILS.md](DETAILS.md).

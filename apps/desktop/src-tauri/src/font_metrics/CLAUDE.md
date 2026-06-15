@@ -70,3 +70,5 @@ cached for ~100–300 ms while metrics get re-measured.
 External: `bincode2`
 Internal: `crate::config::resolved_app_data_dir`
 Internal: none
+
+Full details: [DETAILS.md](DETAILS.md).

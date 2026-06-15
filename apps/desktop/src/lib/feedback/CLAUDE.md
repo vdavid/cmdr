@@ -38,3 +38,5 @@ in `(main)/+layout.svelte` next to `ErrorReportDialog` (same pattern).
 
 Backend counterpart: `apps/desktop/src-tauri/src/feedback.rs` (validation + payload + send) and `commands/feedback.rs`
 (thin IPC wrapper). Server: `apps/api-server/src/feedback.ts`.
+
+Full details: [DETAILS.md](DETAILS.md).

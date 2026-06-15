@@ -37,3 +37,5 @@ The delete needs a live device/session. If the device just disconnected, the del
 - **`ListingCache` TTL is per-entry, not invalidated by mutations**: `create_folder` / `rename` / `delete` update the on-device state but a concurrent reader within the 5 s window still sees the stale listing. Mutations should invalidate explicitly if read-after-write consistency matters in that call site.
 - **Disconnect-from-event-loop must clear the device registry**: when `next_event()` returns `Error::Disconnected`, `event_loop.rs` calls back into `connection_manager().handle_device_disconnected(...)`. Skipping this leaves a dead entry in `devices` and the next `connect()` fails with "already connected."
 - **`MtpDisconnectReason` is load-bearing for logs/UI**: pass `User` only for the settings-toggle / explicit-disconnect path. Hotplug loss and I/O drops are `Removed`. Misclassifying makes unstable-USB sessions read like the user keeps pulling the cable.
+
+Full details: [DETAILS.md](DETAILS.md).

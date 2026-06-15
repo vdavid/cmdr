@@ -122,3 +122,5 @@ and `log::info!` / `log::warn!` for lifecycle / errors. The `target:` prefix let
 the test entry point; production code uses `DownloadsWatcher::start(&app)` which resolves
 `dirs::download_dir()`. Tests use `unhidden_tempdir()` (a `cmdr-downloads-test-` prefix) so the
 `is_eligible` hidden-component check doesn't shadow positive-path assertions on macOS.
+
+Full details: [DETAILS.md](DETAILS.md).

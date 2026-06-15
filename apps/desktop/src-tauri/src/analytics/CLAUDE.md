@@ -185,3 +185,5 @@ PII-free; this set grows over time. Backend events fire at success chokepoints; 
 `analytics::init(app.handle())` + `analytics::start()` run from `lib.rs` setup, alongside
 `space_poller`. `install_id::init()` runs earlier (before the crash reporter) to snapshot the diag
 id for the panic hook.
+
+Full details: [DETAILS.md](DETAILS.md).

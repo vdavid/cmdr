@@ -79,3 +79,5 @@ app's data dir convention). Existing Linux alpha users would need to re-enter SM
   always returns true (PlainFileStore), but the toast isn't relevant since it's dev.
 - `KeyringStore::is_available()` does a full write-read-delete probe to catch locked keyrings that silently accept writes
   without persisting. This runs once at startup.
+
+Full details: [DETAILS.md](DETAILS.md).

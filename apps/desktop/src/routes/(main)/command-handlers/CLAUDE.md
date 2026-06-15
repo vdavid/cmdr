@@ -50,3 +50,5 @@ breadcrumb IPC per keypress (a P2 perf regression), not a completion.
 Add the handler to the right family module. A missing one is a COMPILE error (the record is keyed by
 `Exclude<CommandId, DispatchExemptId>`). An intentionally handlerless command goes in `DISPATCH_EXEMPT_IDS` with a
 documented reason. The `command-handler-record.test.ts` set-equality test fails if the id is in neither.
+
+Full details: [DETAILS.md](DETAILS.md).

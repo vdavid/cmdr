@@ -119,3 +119,5 @@ Three steps:
   pattern captures a leading delimiter (`^` or one whitespace char) into `bare_lead` and
   re-emits it; this anchors the match so it can't grab the `//user@host` tail inside a
   scheme'd `http://user@host` (which `url_userinfo` handles, listed earlier).
+
+Full details: [DETAILS.md](DETAILS.md).

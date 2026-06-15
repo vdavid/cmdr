@@ -67,3 +67,5 @@ that matter (elegance lives between duplication and overengineering - AGENTS.md)
 The store clones `search/history.rs`'s lock idiom verbatim: `.lock().unwrap_or_else(|e| e.into_inner())` and
 `match … Err(poisoned) => poisoned.into_inner()`. A "simplification" to `.lock().unwrap()` trips the `lock-poison`
 check.
+
+Full details: [DETAILS.md](DETAILS.md).

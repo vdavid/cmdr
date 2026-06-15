@@ -81,3 +81,5 @@ The admin-privilege path (`rsync -a`) already uses atomic rename by default.
 - `flate2`, `tar` -- tarball extraction
 - `filetime` -- touching the bundle after install to trigger LaunchServices refresh
 - `base64` -- decoding the double-encoded minisign key and signatures
+
+Full details: [DETAILS.md](DETAILS.md).

@@ -76,3 +76,5 @@ clipboard requires local file paths, which MTP virtual paths can't provide, so t
 - **`resetForTesting()` must stay in sync with module state**: When adding new module-level state to
   `mtp-store.svelte.ts`, update `resetForTesting()` to clear it. Tests use this instead of `vi.resetModules()` to avoid
   ~8s module re-parse penalty per test.
+
+Full details: [DETAILS.md](DETAILS.md).

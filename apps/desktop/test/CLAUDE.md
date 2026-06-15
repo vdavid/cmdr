@@ -81,3 +81,5 @@ tests don't affect each other.
 
 - `e2e-playwright/CLAUDE.md` -- Playwright test suite (macOS + Linux)
 - `e2e-linux/CLAUDE.md` -- Docker infrastructure for Linux E2E
+
+Full details: [DETAILS.md](DETAILS.md).

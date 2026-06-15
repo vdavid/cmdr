@@ -36,3 +36,5 @@ See [README.md](README.md) for setup and usage.
   type errors.
 - **Server name for NTLM**: Using the IP as `server_name` in `connect_to_address` is fine for NTLM. SPN only matters for
   Kerberos.
+
+Full details: [DETAILS.md](DETAILS.md).

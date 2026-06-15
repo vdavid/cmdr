@@ -150,3 +150,5 @@ follow from it.
 External: `objc2`, `objc2-app-kit`, `objc2-foundation`, `objc2-quick-look-ui` (all macOS-only).
 Internal: `tauri::AppHandle`, `crate::file_system::get_volume_manager` (volume gate, via the IPC
 layer in `commands/ui.rs`).
+
+Full details: [DETAILS.md](DETAILS.md).

@@ -51,3 +51,5 @@ incremental handler compares the symlink/firmlink-normalized forms (`indexing::f
 matching event paths onto the listing's directory, so `has_entry` lookups and diff entries stay in the listing's own
 path space. A raw `path.parent() == dir_path` comparison silently dropped every event for listings under `/tmp`,
 `/var`, and `/etc` — the pane never updated until the user re-navigated.
+
+Full details: [DETAILS.md](DETAILS.md).

@@ -73,3 +73,5 @@ recipes, and the verbose toggle.
 
 When debugging issues, the error report bundle from the Help menu (**Help > Send error report…**) includes recent
 debug-level logs from the file target, the same logs the cap setting governs.
+
+Full details: [DETAILS.md](DETAILS.md).

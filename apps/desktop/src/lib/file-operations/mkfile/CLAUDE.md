@@ -41,3 +41,5 @@ Backend counterpart:
   pick the backend index from `paneRef.getCursorIndex()`. Keep the two helpers in lock-step.
 - **`createFile` then `openInEditor` is a two-step IPC.** If the editor launch fails (no default app, denied), the file
   is still created; the dialog closes successfully and the user can open it manually.
+
+Full details: [DETAILS.md](DETAILS.md).

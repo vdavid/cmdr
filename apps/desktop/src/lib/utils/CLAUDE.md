@@ -144,3 +144,5 @@ tooltip. Existing callers default to always-on tooltip behavior.
 - `filename-validation.ts`: zero external dependencies
 - `confirm-dialog.ts`: `@tauri-apps/plugin-dialog`
 - `shorten-middle.ts`: `@chenglou/pretext` (type import only; runtime import via `createPretextMeasure` caller)
+
+Full details: [DETAILS.md](DETAILS.md).

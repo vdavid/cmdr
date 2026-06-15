@@ -65,3 +65,5 @@ Mounts under `/run/media/$USER/` or `/media/$USER/` are marked as ejectable (`is
 - `libc`: `statvfs` for volume space info
 - `notify`: inotify-based watcher on `/proc/mounts`
 - Internal: `crate::file_system::{get_volume_manager, volume::LocalPosixVolume}`
+
+Full details: [DETAILS.md](DETAILS.md).

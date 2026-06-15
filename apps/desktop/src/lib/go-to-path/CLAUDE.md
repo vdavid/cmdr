@@ -115,3 +115,5 @@ Run through this after any change to the dialog, the handler, or the recents mir
 8. Click a recent row → jumps immediately. Click a row's `[x]` → removes the entry without jumping.
 9. Rebind `nav.back` in Settings > Keyboard shortcuts, trigger the ancestor toast again → the toast shows the new combo
    (snapshotted per toast). An already-visible toast keeps its old combo.
+
+Full details: [DETAILS.md](DETAILS.md).

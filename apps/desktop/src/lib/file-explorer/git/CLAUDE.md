@@ -101,3 +101,5 @@ elsewhere.
 
 **Gotcha**: Status column data uses _relative_ paths (relative to the repo root). The `FullList.svelte` cell renderer
 needs to compute the relative path for each entry before lookup; don't compare against the absolute path.
+
+Full details: [DETAILS.md](DETAILS.md).
