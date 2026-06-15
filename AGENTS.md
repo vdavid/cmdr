@@ -23,7 +23,8 @@ Shared tooling: the Go check runner ([`scripts/check/CLAUDE.md`](scripts/check/C
 ## Where to look (router)
 
 - **Editing code**: the colocated `CLAUDE.md` auto-loads when you touch a directory. For "where does symbol X live", use
-  CodeGraph (`codegraph_search`), not a doc.
+  CodeGraph (`codegraph_search`), not a doc. Auto-load is touch-based, so read a subsystem's `CLAUDE.md` before running
+  its tooling/tests (e.g. `test/e2e-playwright/CLAUDE.md` before the E2E suite).
 - **Planning in an unfamiliar area**: [`docs/architecture.md`](docs/architecture.md), the subsystem map (what + where +
   a pointer to each area's docs).
 - **A procedure** (release, screenshots, deps, adding a window or icon): [`docs/guides/`](docs/guides/) and the skills.
@@ -93,11 +94,10 @@ conversational and actionable and never use the words "error" or "failed". The w
 
 ## Checking
 
-Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.). It's cache-aware and its output is
-concise, so don't pipe it through `head` / `tail`. Cadence: `--fast` while iterating, plain `pnpm check` per milestone,
-`--include-slow` before wrapping. Scope by name (`pnpm check clippy`), tech (`rust` / `svelte` / `go`), or app
-(`desktop` / `website` / ...). Full docs: [`scripts/check/CLAUDE.md`](scripts/check/CLAUDE.md). **Finish every unit of
-work by running the right checks.**
+Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.); it's cache-aware. Cadence: `--fast`
+while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping. Scope by name (`pnpm check clippy`),
+tech (`rust` / `svelte` / `go`), or app (`desktop` / `website` / ...). Full docs:
+[`scripts/check/CLAUDE.md`](scripts/check/CLAUDE.md). **Finish every unit of work by running the right checks.**
 
 ## Testing
 
@@ -107,10 +107,9 @@ mechanics live in [`apps/desktop/CLAUDE.md`](apps/desktop/CLAUDE.md).
 
 ## Where to put instructions
 
-Split by kind and level. Imperatives ("always / never X") go in `rules/` files (`~/.claude/rules/` cross-project,
-[`.claude/rules/`](.claude/rules/) project); keep them concise. Knowledge (how the code works, gotchas, how-tos) goes in
-this file and colocated `DETAILS.md`. User-level rules already apply everywhere, so don't restate them here. Don't use
-`memory/MEMORY.md` for either.
+Split by kind and level: imperatives ("always / never X") go in `rules/` (`~/.claude/rules/` cross-project,
+[`.claude/rules/`](.claude/rules/) project), kept concise; knowledge (how the code works, gotchas, how-tos) in this file
+and colocated `DETAILS.md`. Don't restate user-level rules here, nor use `memory/MEMORY.md` for either.
 
 ## Hard rules
 
