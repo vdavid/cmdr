@@ -1,72 +1,58 @@
 # Pane subsystem
 
-Per-pane orchestrator: cursor, scroll, focus, dual-pane coordination, tab state, selection, type-to-jump, dialog
-lifecycle, drag handling, volume tinting, and navigation primitives. Up: [`../CLAUDE.md`](../CLAUDE.md).
+Per-pane orchestrator: cursor, focus, dual-pane coordination, tab state, selection, type-to-jump, dialogs, drag, volume
+tinting, and navigation primitives. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and conventions:
+[DETAILS.md](DETAILS.md).
 
 ## Module map
 
 - `DualPaneExplorer.svelte`: root, owns both panes, unified key/command dispatch, the dialog manager, the MCP surface.
-- `FilePane.svelte`: one pane, owns its listing, cursor, selection, view mode, type-to-jump buffer, rename flow,
-  breadcrumb, and the alt-view `{#if}` chain (MTP / network / SMB-reconnect / search-results / error / list).
+- `FilePane.svelte`: one pane, owns its listing, cursor, selection, view mode, type-to-jump, rename flow, breadcrumb,
+  and the alt-view `{#if}` chain (MTP / network / SMB-reconnect / search-results / error / list).
 - State factories (`*.svelte.ts`): `explorer-state` (the store), `selection-state`, `rename-flow`, `type-to-jump-state`,
   `volume-tint`, `pane-mcp-sync`, `persistence-subscriber`, `listing-diff-sync`, `drag-drop-controller`, `dialog-state`.
 - Pure utilities (`*.ts`): `navigate`, `volume-capabilities`, `has-parent`, `snapshot-pane-navigation`, `pane-access`,
-  `focused-pane-reads`, the command-body factories, `function-key-commands`, `selection-dialog-keys`, `transfer-entry`.
-
-Full file table, conventions, and decision rationale: [DETAILS.md](DETAILS.md).
+  `focused-pane-reads`, the command-body factories, and the function-key / selection-dialog key helpers.
 
 ## Must-knows
 
 - **Exactly one pane is focused.** `focusedPane: 'left' | 'right'` lives in the explorer store; `setFocusedPane` is its
-  ONLY mutator. Pane-switch (Tab) clears type-to-jump and rename mode on both panes.
-- **Explorer-store fields are module-private with exactly one mutator each** (`focusedPane`, `showHiddenFiles`,
-  `leftPaneWidthPercent`, `leftTabMgr`, `rightTabMgr`). Assigning any property of the store object outside
+  ONLY mutator. Pane-switch (Tab) clears type-to-jump and rename mode on both.
+- **Explorer-store fields are module-private with exactly one mutator each.** Assigning any store property outside
   `explorer-state.svelte.ts` is a lint error (`cmdr/no-explorer-state-writes`). `cursorIndex`, selection, and listing UI
-  state stay LOCAL to `FilePane` (perf invariant P3), never in the store.
-- **`getTabMgr(pane)` returns the live `$state` holder, never a snapshot.** Returning a `$state.snapshot` severs
-  reactivity at the seam (same rule `pane-access.ts` documents).
+  state stay LOCAL to `FilePane` (perf P3).
+- **`getTabMgr(pane)` returns the live `$state` holder, never a snapshot** (`$state.snapshot` severs reactivity).
 - **Guard logic branches on `VolumeCapabilities`, never on volume-id strings** (invariant A6). `volume-capabilities.ts`
-  is the single FE source of truth: a closed `VolumeKind` union keys a frozen per-kind table. Per-VOLUME runtime flags
-  (`isReadOnly`, `supportsTrash`, `smbConnectionState`) stay on `VolumeInfo`, NOT in the table. The A6 sweep is DONE;
-  remaining `=== 'search-results'` / `startsWith('mtp-')` hits are justified residue (classifier internals, path/scheme
-  mechanics, display selection, persistence). Read DETAILS § "A6 residue inventory" before converting any.
-- **`capabilitiesFor` / `volumeKindOf` must stay TOTAL** (never return `undefined`): unknown real ids fall to the
-  `local` default; the two virtual ids short-circuit first. The tint classifier `volumeKindFor` keeps its own body and
-  output so tint stays byte-stable; never feed the `local` default back into tinting.
-- **`FilePane.applyIndices` jumps the cursor on SELECT only.** A committed select moves the cursor to the first
-  newly-selected row and scrolls it into view (via `setCursorIndex`); a deselect (`'remove'`) leaves the cursor put. The
-  target is `firstSelectedIndex(idxs, hasParent)`, which applies the SAME `hasParent && i === 0` skip
-  `selection.applyIndices` uses, so it never lands on `..`. Don't reach for raw `idxs[0]`; it can be the `..` row.
-- **Snapshot pane (`volumeId === 'search-results'`) couples two integration points**: `computeHasParent` returns `false`
-  (no `..` row) AND `isCrossVolumeNavigation` routes any real-path nav through the volume-change machinery. Skipping
-  either breaks selection (off-by-one) or poisons the pane with a `search-results` volumeId + a real path.
-- **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network +
-  search-results also lack a system clipboard; an MTP-worded toast on a network paste would be wrong).
-- **Functions that WRITE component navigation state stay in the component** (`switchPane`, `swapPanes`,
-  `toggleHiddenFiles`, `setViewMode`, `navigate`, `setSort*`, `moveCursor`, `selectVolumeBy*`, `copyPathBetweenPanes`,
-  the `mirror*`/`restoreFocus` helpers). Only read-only / delegating bodies move into the `PaneAccess`-reading
-  factories.
-- **The focus guard must exempt dialog content.** `DualPaneExplorer.handleFocusGuard` must keep its
-  `[role="dialog"], [role="alertdialog"]` exemption: rename dialogs mount inside FilePane, and without it the guard and
-  `use:trapFocus` ping-pong focus in an endless microtask loop that freezes the webview. Pinned by the "rename to
-  existing name on MTP" E2E.
-- **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, invariant A5). Don't add
-  scattered `saveAppStatus` / `saveTabsForPaneSide` calls in nav / sort / view-mode / focus / swap / mirror paths:
-  mutate the store and the subscriber reacts. Layout-split (drag-end only) and last-used-path (a delta `navigate()`
-  owns) come in as explicit hooks. Tab STRUCTURE (open/close/reorder/pin) persists separately from `tab-operations.ts`.
-- **Don't add `cd`-style heuristics in `commitPathFromListing`.** A stale `onPathChange` is dropped by the
-  drop-foreign-listings policy (prefix match for virtual volumes, `isPathOnVolume` otherwise). New virtual namespace →
-  extend the explicit prefix branch. See `../CLAUDE.md` and DETAILS § "The `navigate()` transaction".
-- **`navigate(intent, deps)` is the single coordinator-level pane-nav entry**, sitting on top of FilePane's listing
-  primitives. Its `NavigateResult` refusal `message` strings are an EXACT contract (the MCP adapter forwards them
-  verbatim; tests pin them byte-for-byte). Don't reword without updating the pinned tests, and don't "upgrade" the
-  in-place arm to commit immediately (it changes when the breadcrumb updates relative to the listing).
+  is the single FE source of truth: a closed `VolumeKind` union keys a frozen per-kind table; per-VOLUME runtime flags
+  (`isReadOnly`, `supportsTrash`, etc.) stay on `VolumeInfo`, NOT the table. The sweep is DONE; remaining string hits
+  are justified residue (DETAILS § "A6 residue inventory").
+- **`capabilitiesFor` / `volumeKindOf` must stay TOTAL** (never `undefined`): unknown real ids fall to the `local`
+  default, the two virtual ids short-circuit first. Keep the tint classifier `volumeKindFor` separate for byte-stable
+  tint; never feed the `local` default into tinting.
+- **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via
+  `firstSelectedIndex(idxs, hasParent)`, which skips the `..` row. Don't use raw `idxs[0]`; it can be `..`.
+- **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`
+  row) AND `isCrossVolumeNavigation` routes any real-path nav through the volume-change machinery. Skip either and
+  selection goes off-by-one or the pane keeps `search-results` on a real path.
+- **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network and
+  search-results also lack one, so the MTP-worded toast would be wrong).
+- **The focus guard (`DualPaneExplorer.handleFocusGuard`) must keep its `[role="dialog"], [role="alertdialog"]`
+  exemption.** Rename dialogs mount inside FilePane; without it the guard and `use:trapFocus` ping-pong focus in an
+  endless microtask loop that freezes the webview. Pinned by E2E.
+- **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, invariant A5). Don't scatter
+  `saveAppStatus` / `saveTabsForPaneSide` calls across nav paths: mutate the store and the subscriber reacts (exceptions
+  in DETAILS).
+- **`navigate(intent, deps)` is the single coordinator-level pane-nav entry.** Its `NavigateResult` refusal `message`
+  strings are an EXACT contract (pinned byte-for-byte; the MCP adapter forwards them verbatim): don't reword without
+  updating the tests, and don't make the in-place arm commit immediately. Also don't add `cd`-style heuristics in
+  `commitPathFromListing` (the drop-foreign-listings policy handles stale `onPathChange`; new virtual namespace → extend
+  the prefix branch). DETAILS § "The navigate() transaction".
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes
   `consumableSelfDragIdentity` only when self-drag is active AND `sourceVolumeId` is a registered backend-real volume).
   See [`../drag/CLAUDE.md`](../drag/CLAUDE.md).
-- **`DualPaneExplorer.svelte` and `FilePane.svelte` are ~3000 lines each** and flagged by `file-length`. Don't add to
-  them: new cross-cutting state → a `*.svelte.ts` factory; new pure logic → a `*.ts` helper with a colocated test.
-- **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`; a reactive `mediaTick`
-  repaints it on `prefers-color-scheme` / `prefers-contrast` flips (without it, dark-mode swaps wouldn't repaint).
+- **`DualPaneExplorer.svelte` and `FilePane.svelte` are ~3000 lines each** (`file-length`-flagged). Don't add to them:
+  cross-cutting state → a `*.svelte.ts` factory; pure logic → a `*.ts` helper + colocated test.
+- **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Don't drop the reactive
+  `mediaTick`, or dark-mode / contrast swaps won't repaint the tint.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Read [DETAILS.md](DETAILS.md) before structural changes here.

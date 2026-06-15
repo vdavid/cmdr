@@ -1,88 +1,62 @@
 # Commands module
 
-Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` functions and delegates
-immediately to business-logic modules. No significant logic lives here.
+Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` functions and delegates immediately to
+business-logic modules. **No business logic here**: if you're adding branching or data transformation, it belongs in the
+relevant subsystem module.
 
-## File map
+## Module map (one file per domain)
 
-| File | Domain | Notes |
-|------|--------|-------|
-| `mod.rs` | Re-exports | `mtp`, `network` gated behind `#[cfg(any(target_os = "macos", target_os = "linux"))]`; `volumes` behind `#[cfg(target_os = "macos")]`; `volumes_linux` behind `#[cfg(target_os = "linux")]` |
-| `util.rs` | Shared helpers | `TimedOut<T>`, `IpcError`, `blocking_with_timeout`, `blocking_with_timeout_flag`, `blocking_result_with_timeout`. See "Timeout-aware return types" below. |
-| `file_system/` | File listing & writes | Directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, and tests. `listing.rs`: streaming + virtual-scroll listing API, path queries, `find_first_fuzzy_match` (type-to-jump), benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode; replaces the removed `get_max_filename_width`). `refresh_listing` short-circuits on watcher-backed listings (`Volume::listing_is_watched(path) == true`): the cache is already kept fresh by `notify_mutation`, so a redundant full re-read after every transfer outcome (the FE's `refreshPanesAfterTransfer`) used to wedge slow volumes (MTP 17 s + USB session collision). Logs at debug `target: "refresh_listing"` when the short-circuit fires. `write_ops.rs`: create, copy, move, delete, trash, scan preview, conflict resolution, synthetic diff helpers. `volume_copy.rs`: cross-volume copy/move/scan, `SourceItemInput`. `scan_volume_for_conflicts` optionally takes a source volume id + source paths and resolves each item's real `is_directory` + size from the source volume via ONE batched `scan_for_copy_batch` (O(top-level items), never a subtree walk), overriding the FE's name-only placeholders so dir-vs-dir collisions classify as silent merges; back-compatible when omitted. `stat.rs`: `stat_paths_kinds(paths) -> TimedOut<Vec<Option<bool>>>` — batched top-level "is this a directory?" probe for the drag-and-drop transfer path (`Some(true)` = dir, `Some(false)` = file, `None` = unknown / non-local / vanished). One `spawn_blocking` under the read timeout, never a subtree walk; per-item failures map to `None` so a virtual MTP/SMB path on the pasteboard can't poison the batch. The pure `stat_paths_kinds_blocking` helper is reused by `clipboard.rs::read_clipboard_files`. `drag.rs`: native drag, self-drag overlay. `e2e_support.rs`: feature-gated E2E/debug commands. |
-| `volumes.rs` | Volume management (macOS) | `list_volumes`, `get_default_volume_id`, `get_volume_space`, `resolve_path_volume` (statfs-based, no volume enumeration) |
-| `volumes_linux.rs` | Volume management (Linux) | Same interface as `volumes.rs`, delegates to `volumes_linux` module |
-| `mtp.rs` | MTP devices | Full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan) |
-| `network.rs` | SMB/network shares | Discovery, share listing, keychain, mounting, direct-connection upgrade, in-place reconnect (`reconnect_smb_volume`: backend single-flighted via `Volume::attempt_reconnect`; `reconnect_smb_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via `Volume::reconnect_with_credentials`), per-volume disconnect (`disconnect_smb_volume`: macOS shells out to `diskutil unmount`, Linux drops the smb2 session). Borrow Finder's saved password (macOS): `system_has_saved_smb_password` (prompt-free probe — does the login keychain hold a password Finder saved for this server?, drives the "Use saved password" offer) and `upgrade_to_smb_volume_using_saved_password` (consent-gated read via `secrets::system_keychain_smb` → direct smb2 → copies the password into Cmdr's own store so future reconnects are silent → `CredentialsNeeded` fallback if absent/denied). User-initiated only. Lazy-startup hooks: `ensure_network_discovery_started` (idempotent: kicks off mDNS + manual-server load + smb-mount upgrade on first user network action) and `set_network_enabled` (live-applies the `network.enabled` toggle: stops mDNS and clears discovered hosts when off). Upgrade business logic (address resolution, credential lookup, smb2 connection) lives in `network::smb_upgrade`; commands here are thin wrappers. |
-| `eject.rs` | Volume eject | `eject_volume(volume_id)`: dispatches by kind. MTP → `mtp::connection_manager().disconnect`; SMB → `diskutil unmount` (FSEvents handles smb2 teardown via `on_unmount`); physical/DMG → `diskutil eject`. Pure `decide_eject_action` (unit-tested) keeps the dispatch logic separate from the impure shell-out. Guards against ejecting a volume with an in-flight write op (`busy_volume_ids().contains(...)` → error) so a transfer can't be truncated. `get_busy_volume_ids()`: bootstrap for the picker's busy set (see `write_operations/DETAILS.md` § "Busy-volumes set"). |
-| `favorites.rs` | User-editable favorites | `add_favorite`, `remove_favorite`, `rename_favorite`, `reorder_favorites`. Thin pass-throughs over `crate::favorites::store`; each persists `favorites.json` (5s write timeout) then re-emits `volumes-changed`. No `list_favorites` (listing rides `list_volumes` / `volumes-changed`). See `favorites/CLAUDE.md`. |
-| `font_metrics.rs` | Font metrics cache | `store_font_metrics`, `has_font_metrics` |
-| `icons.rs` | File icons | `get_icons`, `get_custom_folder_icon_ids` (visible-range custom-folder detection), `refresh_directory_icons`, cache clear |
-| `rename.rs` | Rename / trash | `move_to_trash` (delegates to `write_operations::trash::move_to_trash_sync`), `check_rename_permission`, `check_rename_validity`, `rename_file`. `rename_file` calls `notify_mutation` after success to update the listing cache (both local and volume-aware paths). |
-| `restricted_paths.rs` | TCC-restricted paths | `get_restricted_paths`: read-only snapshot for the frontend store bootstrap. See `crate::restricted_paths` for the underlying state machine and the `restricted-paths-changed` event payload. |
-| `file_viewer.rs` | File viewer | Session lifecycle, regex/literal search with mode flags, word wrap, menu state, encoding pickers (`viewer_set_encoding` / `viewer_get_encoding_options`), tail mode (`viewer_set_tail_mode`), `viewer_reload` |
-| `ui.rs` | UI / menu | Context menu (file/breadcrumb/tab/network host), Finder reveal, clipboard, Quick Look, Get Info, view mode, `activate_window_menu` (per-window focus-gain: swaps the macOS app menu bar between main/viewer, then enables/disables file-scoped items via the private `set_menu_context` helper; see `menu/DETAILS.md`), `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive eviction/download via `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`) |
-| `settings.rs` | Settings | Port availability check, watcher debounce, menu accelerator updates, live-apply setters for `network.directSmbConnection`, `advanced.filterSafeSaveArtifacts`, `network.smbConcurrency`, and the restricted-window pair `get_restricted_window_settings` / `persist_restricted_window_setting` (the viewer's typed settings surface; see `capabilities/CLAUDE.md` § viewer) |
-| `mcp.rs` | MCP server | `set_mcp_enabled`, `set_mcp_port`: live start/stop/port-change of the MCP server without app restart. `get_mcp_token`: returns the per-instance bearer token so in-process / E2E callers can authenticate the destructive-auto-confirm tools (see `mcp/DETAILS.md` § Authentication) |
-| `licensing.rs` | Licensing | Status query, activation, expiry, reminder, key validation |
-| `indexing.rs` | Drive index | `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats`, `get_dir_stats_batch`, `clear_drive_index`, `set_indexing_enabled`, `get_index_debug_status` (dev-only extended stats). Uses `State<IndexManagerState>`. |
-| `clipboard.rs` | Clipboard file ops | `copy_files_to_clipboard`, `cut_files_to_clipboard`, `copy_paths_to_clipboard` / `cut_paths_to_clipboard` (paths-by-value siblings used by the search-results pane, which has no backend listing for index-based ops), `read_clipboard_files`, `clear_clipboard_cut_state`. macOS uses NSPasteboard via `clipboard::pasteboard`; non-macOS stubs return errors. `read_clipboard_files` returns `ClipboardReadResult { paths, is_cut, is_directory }` where `is_directory` is an index-aligned `Vec<Option<bool>>` from a batched off-main-thread `stat_paths_kinds_blocking` (`Some(true)` = dir, `Some(false)` = file, `None` = unknown), so the paste completion toast can split files vs. folders without walking trees. |
-| `crash_reporter.rs` | Crash reporting | `check_pending_crash_report`, `dismiss_crash_report`, `send_crash_report`. Delegates to `crash_reporter` module. Send is skipped in dev/CI. |
-| `beta_signup.rs` | Beta-tester signup | `beta_signup(email)`: POSTs ONLY the email (never an install id) to the api-server `POST /beta-signup`. Returns a typed `BetaSignupResult` (`subscribed`/`invalidEmail`/`softFailure`) the UI branches on. Network, not filesystem, so no `blocking_with_timeout` (the `reqwest` client carries its own 10 s timeout). |
-| `error_reporter.rs` | Error reports (Flow A) | `prepare_error_report_preview`, `send_error_report`. Two-step so the preview dialog is deterministic without shipping the full bundle through IPC twice. Delegates to `error_reporter` module. Upload is skipped in dev/CI. |
-| `search.rs` | Drive search | Thin IPC wrappers over `search` module. `resolve_ai_backend` for AI provider config. Post-filters directory sizes after `fill_directory_sizes`. |
-| `sync_status.rs` | Cloud sync status | `get_sync_status`: macOS delegates to `file_system::sync_status`; non-macOS returns empty map via `#[cfg]` on the function itself (not the module). |
+- `mod.rs`: re-exports + platform gates. `util.rs`: shared timeout helpers (see "Timeouts" below).
+- `file_system/`: directory listing/streaming, path queries, type-to-jump, Brief column widths, create/copy/move/delete,
+  scan preview, conflict resolution, drag, `stat.rs` (batched "is dir?" probe), `e2e_support.rs`.
+- `volumes.rs` (macOS) / `volumes_linux.rs` (Linux): list, default, space, path→volume resolution.
+- `mtp.rs`, `network.rs` (SMB discovery/mount/reconnect/disconnect, saved-password borrow, lazy-startup hooks),
+  `eject.rs`, `clipboard.rs`, `rename.rs`, `icons.rs`, `favorites.rs`, `font_metrics.rs`, `restricted_paths.rs`,
+  `file_viewer.rs`, `ui.rs`, `settings.rs`, `mcp.rs`, `licensing.rs`, `indexing.rs`, `search.rs`, `sync_status.rs`,
+  `crash_reporter.rs`, `error_reporter.rs`, `beta_signup.rs`.
+- AI and space-poller commands register DIRECTLY from their own modules (`ai::manager`/`suggestions`/`api_keys`,
+  `space_poller.rs`); there is intentionally no `commands/ai.rs` or `commands/space_poller.rs`.
 
-## Key decisions
+Per-file function inventories and decision rationale: [DETAILS.md](DETAILS.md).
 
-**Decision**: One commands file per domain, with no business logic in commands.
-**Why**: Tauri command functions are the IPC boundary -- they handle argument deserialization, state extraction, and error mapping. Mixing business logic here makes it untestable (Tauri commands need a running app to invoke). Keeping commands as thin pass-throughs means the real logic lives in subsystem modules that can be unit-tested independently.
+## Must-knows
 
-**Decision**: Platform gating at the module level in `mod.rs`, not inside individual functions.
-**Why**: Entire command surfaces (MTP, network, volumes) are platform-specific. Gating at the module level means the compiler excludes unused code entirely rather than compiling stub functions. This also prevents accidentally calling an unsupported command -- if the module doesn't exist on that platform, the Tauri command isn't registered at all.
+- **Every filesystem-touching command is `async` + timeout-wrapped** (`statfs`/`readdir`/`metadata`/NSURL/`realpath`
+  block 30-120s on hung mounts; a hung sync command stalls the whole IPC thread). Tiers: 2s reads, 5s writes
+  (`create_directory`, `rename_file`), 15s trash, 30s recursive scans. Three helpers in `util.rs`:
+  - `blocking_with_timeout_flag(dur, fallback, closure)` → `TimedOut<T>` for `Vec`/`HashMap`/`Option`/`()` returns
+    (frontend checks `.timedOut`). **Prefer this** over the bare `blocking_with_timeout`, whose timeout is
+    indistinguishable from the fallback.
+  - `blocking_result_with_timeout(dur, closure)` → `Result<T, IpcError>` for commands already returning `Result`
+    (timeout → `Err(IpcError { timedOut: true })`). For hand-rolled `tokio::time::timeout`, map `Elapsed` to
+    `IpcError::timeout()`.
+  - Matching TS types live in `$lib/tauri-commands/ipc-types.ts`. `path_exists` returns `TimedOut<bool>` and is
+    SMB-aware: a `Disconnected` `SmbVolume` returns immediate `false`, so the command re-checks
+    `volume.smb_connection_state()` and reports `timedOut: true` (so the frontend won't evict users from a network folder
+    on a transient blip).
+- **`expand_tilde` is conditional.** For `list_directory` it's gated on `volume_id == "root"`; for write operations
+  (copy, move, delete, scan preview) it's always applied. MTP and network volume paths must NEVER be tilde-expanded.
+- **`create_directory_core` / `create_file_core` error on an unregistered volume; NO `std::fs` fallback.** "root" and
+  every mount is registered in `VolumeManager` at startup, so an unregistered `volume_id` means a race (unmount mid-op).
+  A bare `std::fs` fallback had no timeout and broke the "every FS-touching command is timed" contract on a hung mount;
+  don't re-add it. Unit tests register a real local "root" via `ensure_root_volume()` (they never call
+  `init_volume_manager`).
+- **Platform gates at the module level in `mod.rs`, not per-function.** `volumes` is macOS-only; `mtp` and `network` are
+  macOS+Linux; `volumes_linux` is Linux-only. Compiler excludes the whole surface (so an unsupported command isn't even
+  registered). Individual functions use `#[cfg]` only where behavior differs (for example `sync_status`).
+- **`delete_files` and `rename_file` accept `volume_id`.** Non-root → `delete_files` routes to the volume-aware delete
+  and skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`); `rename_file` passes `volume_id`
+  through for MTP and skips permission checks for non-root volumes. `rename_file` calls `notify_mutation` after success.
+- **`start_selection_drag` / `start_drag_paths` require the main thread** (via `run_drag_on_main_thread`). Each derives
+  the session locality (`locality_for_volume`, keyed on `Volume::supports_local_fs_access()`) for
+  `native_drag::start_drag`: a LOCAL session gets file-URL + legacy filenames per item (matching Finder, no path text,
+  which broke browser uploads, issue #28); a VIRTUAL session (MTP, direct SMB, search-results) gets no legacy types plus
+  an `NSFilePromiseProvider` per item. Composition is the pure `native_drag::type_plan::plan_pasteboard_items`.
+- **Close tab (⌘W): `CLOSE_TAB_ID` is the one menu item NOT disabled when the main window loses focus.** On focus loss,
+  `activate_window_menu("other")` disables all non-App items except this one, because on macOS ⌘W must keep closing the
+  front window (Settings, viewer, debug) via the `on_menu_event` exception. Disabling it would stop its accelerator
+  firing and break ⌘W in non-main windows. See `menu/DETAILS.md`.
+- **`list_shares_with_credentials` carries `#[allow(clippy::too_many_arguments)]`** because Tauri command params must be
+  top-level args (no struct bundling).
 
-**Decision**: `blocking_with_timeout` for all filesystem-touching commands, not just read-only ones.
-**Why**: `spawn_blocking` alone doesn't protect against hung NFS/SMB mounts where even a simple `path.exists()` can block indefinitely. The timeout wrapper (2s for reads, 5s for writes, 15s for trash, 30s for recursive scans) returns a fallback value (or error for `Result`-returning commands) instead of freezing the IPC thread or exhausting the blocking pool. The helper lives in `util.rs` so all command files can share it. Commands that already use `spawn_blocking` (P2 commands like `rename_file`, `move_to_trash`) wrap the existing `spawn_blocking` with `tokio::time::timeout` instead.
-
-**Decision**: Timeout-aware return types (`TimedOut<T>` and `IpcError`) for all timeout-protected commands.
-**Why**: The original `blocking_with_timeout` returned a fallback value indistinguishable from a real empty/none result. The frontend couldn't tell "no volumes mounted" from "timed out before listing volumes." Two wrapper types solve this:
-- `TimedOut<T>` (`{ data: T, timedOut: bool }`): for commands that don't return `Result` (collections, `Option`, `()`). Use `blocking_with_timeout_flag` to produce these.
-- `IpcError` (`{ message: String, timedOut: bool }`): for commands returning `Result<T, _>`. Use `blocking_result_with_timeout` or map `tokio::time::timeout` errors to `IpcError::timeout()`.
-The frontend has matching TypeScript types in `$lib/tauri-commands/ipc-types.ts` (`TimedOut<T>`, `IpcError`, `isIpcError`, `getIpcErrorMessage`). `path_exists` returns `TimedOut<bool>` and is also SMB-aware: an `SmbVolume` in `Disconnected` state returns an immediate `false` (no timeout), so the command checks `volume.smb_connection_state()` after the call and surfaces that as `timedOut: true`. The frontend uses this to avoid evicting users from a network folder on transient connection blips. The bare `blocking_with_timeout` helper is still around for any future read where timeout distinction genuinely isn't needed.
-
-**Decision**: JSON for all Tauri IPC, not binary formats (MessagePack, Protobuf).
-**Why**: Benchmarked with real directory listings: MessagePack is 34-58% SLOWER than JSON despite being 17-19% smaller. Tauri serializes `Vec<u8>` as a JSON array of numbers, so binary data gets wrapped in JSON anyway, negating size benefits and adding extra decoding overhead. See [benchmark data](../../../../../docs/notes/json-ipc-benchmarks.md).
-
-**Decision**: No `commands/ai.rs` file -- AI commands register directly from `ai::manager`, `ai::suggestions`, and `ai::api_keys`.
-**Why**: The AI subsystem has its own complex lifecycle (model loading, suggestion pipelines, secret-store-backed API keys). Adding a thin wrapper in `commands/` would just be boilerplate forwarding. Registering directly keeps the AI command surface co-located with its implementation, which changes frequently.
-
-**Decision**: No `commands/space_poller.rs` -- space poller commands register directly from `space_poller.rs`.
-**Why**: Same reasoning as AI. The poller has its own lifecycle (init, start, watch/unwatch). Three commands: `watch_volume_space`, `unwatch_volume_space`, `set_disk_space_threshold`.
-
-## Key patterns and gotchas
-
-- **No business logic here.** If you find yourself adding branching or data transformation, move it to the relevant subsystem module.
-- **`spawn_blocking` for filesystem I/O.** All blocking operations in async commands are wrapped in `tokio::task::spawn_blocking`.
-- **Timeout-protected I/O with distinguishable results.** All filesystem-touching commands use timeout wrappers from `util.rs`. Timeouts: 2s for reads, 5s for writes (`create_directory`, `rename_file`), 15s for trash (`move_to_trash`), 30s for recursive scans. Three helpers:
-  - `blocking_with_timeout(duration, fallback, closure)`: returns raw `T`, timeout indistinguishable from fallback. Reserved for cases where the distinction genuinely doesn't matter; prefer the `_flag` variant by default.
-  - `blocking_with_timeout_flag(duration, fallback, closure)` → `TimedOut<T>`: for commands returning `Vec`, `HashMap`, `Option`, or `()`. Frontend unwraps `.data` and can check `.timedOut`.
-  - `blocking_result_with_timeout(duration, closure)` → `Result<T, IpcError>`: for commands that already return `Result`. Timeout becomes `Err(IpcError { message, timedOut: true })`.
-  - For commands that wrap raw `tokio::time::timeout` directly (those that need a custom shape around the helpers above), map the `Elapsed` error to `IpcError::timeout()` and other errors to `IpcError::from_err(msg)`.
-- **`expand_tilde`** is applied conditionally: for `list_directory` it's gated on `volume_id == "root"`, but for write operations (copy, move, delete, scan preview) it's always applied. MTP and network volume paths must never be tilde-expanded.
-- **`create_directory_core` / `create_file_core` error on an unregistered volume; no `std::fs` fallback.** "root" and every mount is always registered in `VolumeManager` (`init_volume_manager` at startup), so an unregistered `volume_id` means a race (unmount mid-op). Both return `IpcError::from_err("Volume not found: …")` rather than falling back to a synchronous `std::fs::create_dir` / `File::create_new` on the async executor — that bare syscall had no timeout and broke the "every FS-touching command is timed" contract on a hung mount. Don't re-add the fallback. Unit tests register a real local "root" via `ensure_root_volume()` (in `file_system/mod.rs` tests) because tests never call `init_volume_manager`.
-- **AI commands** are registered directly from `ai::manager`, `ai::suggestions`, and `ai::api_keys`; there is no `commands/ai.rs` file.
-- **Platform gates.** `volumes` is macOS-only; `mtp` and `network` are macOS+Linux; `volumes_linux` is Linux-only. Individual functions also use `#[cfg]` where behaviour differs (e.g., `sync_status`).
-- **`delete_files` and `rename_file` accept `volume_id`.** When set to a non-root volume, `delete_files` routes to the volume-aware delete path and skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`). `rename_file` passes `volume_id` through for MTP rename support; permission checks are skipped for non-root volumes.
-- **`start_selection_drag` and `start_drag_paths`** require the main thread. Both delegate to a shared `run_drag_on_main_thread` helper that hops via `app.run_on_main_thread()` plus a `std::sync::mpsc` channel and returns the result synchronously. Each derives the drag SESSION's locality (`locality_for_volume`, keyed on `Volume::supports_local_fs_access()`) and passes it to `native_drag::start_drag`: `start_selection_drag` reads the volume off the listing; `start_drag_paths` takes an optional `source_volume_id` (`None` → local, back-compatible). Pasteboard construction lives in `crate::native_drag`: a LOCAL session gets file-URL + legacy filenames per item, matching Finder (no path text; it broke browser uploads, issue #28); a VIRTUAL session (MTP, direct SMB, search-results) gets items carrying no legacy types (so an external drop can't materialize the `.textClipping` junk) plus an `NSFilePromiseProvider` per item that streams the real bytes when Finder asks. The composition itself is the pure, unit-tested `native_drag::type_plan::plan_pasteboard_items`.
-- **`list_shares_with_credentials`** has `#[allow(clippy::too_many_arguments)]` because Tauri command parameters must be top-level arguments (no struct bundling).
-- **Menu activation and Close tab (⌘W).** When the main window loses focus, `activate_window_menu("other")` (via its
-  private `set_menu_context("other")` step) disables all non-App menu items, but `CLOSE_TAB_ID` is explicitly excluded. On macOS, ⌘W means "close the front window," and the
-  `on_menu_event` close-tab exception handles this: if main is focused it closes a tab, otherwise it closes the focused
-  non-main window (Settings, viewer, debug). If `CLOSE_TAB_ID` were disabled, its accelerator wouldn't fire and ⌘W would
-  stop working in non-main windows. This is the only item that needs this exemption; all other non-App items are
-  correctly disabled because they only make sense in the explorer.
-
-## Dependencies
-
-All major subsystems: `file_system`, `volumes`, `mtp`, `network`, `font_metrics`, `icons`,
-`file_viewer`, `licensing`, `indexing`, `menu`, `rename`, `sync_status`, and Tauri's `AppHandle` / `State`.
+Full details: [DETAILS.md](DETAILS.md).

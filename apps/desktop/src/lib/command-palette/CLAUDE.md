@@ -2,152 +2,55 @@
 
 VS Code/Spotlight-style modal for searching and executing app commands via fuzzy matching.
 
-## Files
+## Module map
 
-- **`CommandPalette.svelte`**: Modal UI: keyboard nav, mouse hover, fuzzy-highlighted results, recents on empty
-- **`CommandPalette.test.ts`**: Vitest tests with mocked `$lib/commands` and `$lib/app-status-store`
+- **`CommandPalette.svelte`**: modal UI (keyboard nav, mouse hover, fuzzy-highlighted results, recents on empty query).
+- **`CommandPalette.test.ts`** / **`CommandPalette.a11y.test.ts`**: Vitest tests with mocked `$lib/commands` and
+  `$lib/app-status-store`.
 
-## Data flow
+`+page.svelte` sets `showCommandPalette = true` on ⌘⇧P; the palette mounts, prunes recents, searches reactively, and
+calls `onExecute(commandId)` → `handleCommandExecute()` on Enter / click.
 
-```
-User presses ⌘⇧P
-  → +page.svelte sets showCommandPalette = true
-  → CommandPalette mounts, calls pruneRecentCommands(validIds) (load + drop stale + save), focuses input
-  → searchCommands(query, recentCommandIds) returns CommandMatch[] (reactive via $derived)
-  → User navigates with ↑/↓ (keyboard cursor) or mouse (hover cursor)
-  → Enter / click → pushRecentCommand(id), onExecute(commandId) → handleCommandExecute()
-  → Escape / overlay click → onClose() called
-```
+## Must-knows (invariants and guardrails)
 
-## Key patterns
-
-**Two-cursor hover model**: `cursorIndex` (keyboard) and `hoveredIndex` (mouse) are independent. Arrow keys clear
-`hoveredIndex`; mouse enter/leave updates `hoveredIndex` without touching `cursorIndex`. The CSS classes
-`is-under-cursor` and `is-hovered` apply different highlight intensities (`--color-accent-subtle` vs. a subtle rgba
-overlay).
-
-**Event propagation**: `stopPropagation()` is called on every `keydown` in the overlay `div`'s handler. This prevents
-the file list from scrolling or handling shortcuts behind the modal.
-
-**Focus containment**: two layers. (1) `handleKeyDown` swallows Tab outright (`preventDefault`): the palette is a
-combobox, so DOM focus belongs on the input the whole time — without the swallow, two Tab presses walked focus through
-the roving-tabindex option row into the blurred background, where the suppressed global dispatch left Esc / ⌘⇧P / Tab
-all dead (a full keyboard lockout, mouse-only recovery). (2) The overlay carries `use:trapFocus={{ onEscape: onClose }}`
-(`$lib/ui/focus-trap`, see `lib/ui/DETAILS.md` § "Focus trapping"), which pulls back programmatic focus leaks and keeps
-Escape working even if focus somehow escapes anyway. Tier-2 regression coverage:
-`test/e2e-playwright/focus-trap.spec.ts`.
-
-**Recents on empty query**: `pruneRecentCommands` / `pushRecentCommand` from `$lib/app-status-store` (Tauri store). On
-mount, the palette calls `pruneRecentCommands(validIds)`: this loads the persisted recents, drops any IDs that are no
-longer valid palette commands (renamed / removed since last use), saves the cleaned list back, and returns it. The
-pruned list is then passed to `searchCommands(query, recentCommandIds)`. When the query is empty, recents lead the
-result (most-recent first), with a `Recent` subheader above them and an `All commands` subheader before the rest. On
-every Enter / click, `pushRecentCommand(id)` moves the ID to the front; duplicates are removed; the list is capped
-at 10. The query itself is not persisted across opens; the palette always opens empty so the user's last-executed
-command sits at index 0 (cursor default), making Enter re-run it.
-
-**Own overlay, no shared ModalDialog**: `CommandPalette` manages its own `position: fixed` overlay and `role="dialog"`
-ARIA attributes. It does not use the shared `ModalDialog` component.
-
-**Combobox + roving tabindex**: The input is a WAI-ARIA combobox (`role="combobox"`, `aria-controls="palette-listbox"`,
-`aria-expanded`, `aria-autocomplete="list"`, `aria-activedescendant` pointing to the cursor option's id). DOM focus
-stays on the input the whole time; the active option is announced to screen readers via `aria-activedescendant`, not by
-moving focus. Each option has a stable id (`palette-option-{command.id}`). The cursor option also gets `tabindex="0"`
-(others get `tabindex="-1"`), a roving tabindex on a single item. This satisfies axe's `scrollable-region-focusable`
-rule (the scrollable listbox has at least one focusable descendant) without moving DOM focus away from the input. The
-listbox itself isn't rendered when a search yields zero results (the "No commands found" message replaces it), so the
-scrollable-region rule has nothing to flag in the empty state, and `aria-expanded` flips to `false`.
-
-**Cursor reset**: `cursorIndex` resets to `0` and `hoveredIndex` to `null` on every query change (via `$effect` tracking
-`query`).
-
-**Fuzzy highlight rendering**: `highlightMatches()` converts the flat `matchedIndices` set into `{ text, highlighted }`
-segments and renders `<mark class="match-highlight">` for matched chars.
-
-**Shortcut display**: each row reads `getEffectiveShortcutsReactive(command.id)` (live effective bindings, NOT the
-registry defaults in `command.shortcuts`), caps at three (`MAX_SHORTCUTS_SHOWN`), and renders each combo as a
-non-clickable, dense (`size="sm"`) `ShortcutChip`. The chips track rebinds live: `getEffectiveShortcutsReactive`
-subscribes the component to the shortcuts-store version, so a Settings/MCP rebind updates the open palette without a
-reopen. Chips are non-clickable because the whole row already owns the click (decision (a) in
-`docs/specs/shortcut-display-unification-plan.md`). On the accent-subtle cursor row, the chip background is lifted to
-`--color-bg-secondary` so it stays legible against the tint (both themes).
-
-**Stability badge**: rows whose command carries `status: 'alpha' | 'beta'` render a `StatusBadge` pill between the name
-and the shortcut chips. The registry derives the field from `getBadgeStatus()` in `$lib/feature-status` (repo-root
-`feature-status.json` is the single source of truth), so graduating a feature removes the badge with a JSON edit.
-
-**jsdom limitation**: `scrollIntoView` is not implemented in jsdom; tests mock it via
-`Element.prototype.scrollIntoView = vi.fn()`.
-
-## Key decisions
-
-**Decision**: Own overlay and modal, not using the shared `ModalDialog` component. **Why**: The command palette has
-unique interaction requirements (live fuzzy filtering, keyboard-first navigation, two-cursor hover model) that don't fit
-`ModalDialog`'s confirm/cancel pattern. Sharing would mean adding palette- specific escape hatches to a generic
-component. The palette's overlay also needs `stopPropagation` on all keydown events, a concern that shouldn't leak into
-a shared component.
-
-**Decision**: Two independent cursor models (`cursorIndex` for keyboard, `hoveredIndex` for mouse). **Why**: VS Code and
-Spotlight both have this behavior: arrow keys move a "hard" cursor, while mouse hover shows a "soft" highlight that
-doesn't interfere with keyboard navigation. Arrow keys clear `hoveredIndex` so there's never two items highlighted at
-the same intensity. Without this separation, moving the mouse would fight keyboard navigation.
-
-**Decision**: Combobox + `aria-activedescendant` instead of moving DOM focus to the cursor option. **Why**: This is the
-WAI-ARIA combobox-with-listbox pattern. Typing must stay routed to the input while the user is browsing options, so
-moving real focus to a row would mean every arrow press steals focus from the search field and breaks the search-as-
-you-type flow. `aria-activedescendant` lets screen readers announce the active option without changing DOM focus. The
-cursor option still gets `tabindex="0"` (roving tabindex of one); this is what satisfies axe's
-`scrollable-region-focusable` rule, which otherwise flags the listbox because no descendant would be in the tab order.
-The combination (combobox semantics + a single tabbable descendant) is what GitHub's command bar and several other
-production palettes ship.
-
-**Decision**: Empty-query view shows recents (last 10 executed commands, most-recent first) instead of persisting the
-last query. **Why**: Users tend to reach for the same handful of commands. Persisting the query only helped the "run a
-related command" reopen case; recents covers that AND every other reopen (the last-executed command is at index 0, so
-Enter re-runs it just like the old query-persist behavior, but the previous 9 commands are also one arrow press away).
-Single mechanism replaces two. Recents update on every Enter / click via `pushRecentCommand`, which dedups and caps
-at 10.
-
-**Decision**: `$derived` for search results instead of debounced input. **Why**: `searchCommands()` via uFuzzy is fast
-enough for ~60 commands that debouncing would only add latency. The `$derived` reactive binding reruns the search
-synchronously on every keystroke, keeping results perfectly in sync with the input. Debouncing would be needed if the
-command list grew to thousands.
-
-**Decision**: Shortcut display caps at three (`MAX_SHORTCUTS_SHOWN`) and reads the live effective bindings via
-`getEffectiveShortcutsReactive`, not the registry defaults. **Why**: Some commands have many shortcuts (for example,
-`nav.parent` has `Backspace` and `⌘↑`); showing all crowds the row. Three is the product-decided cap (power users use
-the palette to discover alternates like `⌘3` / `⌘F3`) — the dense `size="sm"` chip keeps three legible without dropping
-the count. Reading the effective bindings (instead of `command.shortcuts`) fixes the long-standing bug where a rebound
-command showed a combo that no longer worked; the reactive read also keeps an open palette in sync with a mid-session
-rebind. The full list still lives in the shortcut settings.
-
-## Gotchas
-
-**Gotcha**: `stopPropagation()` is called on every `keydown`, not just handled keys. **Why**: Without this, unhandled
-keys (letters, numbers) would propagate to the file explorer behind the modal and trigger quick-search or other
-handlers. The palette's overlay div catches all keyboard events first.
-
-**Gotcha**: `cursorIndex` and `hoveredIndex` both reset on every query change. **Why**: After typing, the old cursor
-position may point beyond the new results array. Resetting to 0 / null avoids an out-of-bounds index. This happens in a
-`$effect` tracking `query`.
-
-**Gotcha**: `scrollIntoView` is mocked in tests (`Element.prototype.scrollIntoView = vi.fn()`). **Why**: jsdom doesn't
-implement `scrollIntoView`. The palette calls it after arrow key navigation to keep the cursor visible. Tests would
-crash without the mock.
-
-**Gotcha**: Overlay click detection uses `e.target === e.currentTarget`. **Why**: Clicks on the modal content (input,
-results) bubble up to the overlay. Only clicks on the semi-transparent backdrop itself should close the palette.
-Checking `target === currentTarget` ensures the click originated on the overlay div, not a child.
+- **`stopPropagation()` runs on every `keydown`, not just handled keys.** Without it, unhandled keys (letters, numbers)
+  propagate to the file explorer behind the modal and trigger quick-search or other handlers.
+- **Focus containment has two layers; don't remove either.** (1) `handleKeyDown` swallows Tab (`preventDefault`): the
+  palette is a combobox, so DOM focus must stay on the input. Without the swallow, two Tab presses walk focus into the
+  blurred background where the suppressed global dispatch leaves Esc / ⌘⇧P / Tab all dead (a full keyboard lockout,
+  mouse-only recovery). (2) The overlay carries `use:trapFocus={{ onEscape: onClose }}` (`$lib/ui/focus-trap`), pulling
+  back programmatic focus leaks and keeping Escape working. Regression coverage: `e2e-playwright/focus-trap.spec.ts`.
+- **Two independent cursors.** `cursorIndex` (keyboard) and `hoveredIndex` (mouse) are separate. Arrow keys clear
+  `hoveredIndex`; mouse enter/leave updates `hoveredIndex` without touching `cursorIndex`. Both reset on every query
+  change (a `$effect` tracking `query`), because the old cursor can point beyond the new results array.
+- **Own overlay, not the shared `ModalDialog`.** `CommandPalette` manages its own `position: fixed` overlay and
+  `role="dialog"` / combobox ARIA. Overlay-click-to-close uses `e.target === e.currentTarget` so only backdrop clicks
+  close it (content clicks bubble up).
+- **Combobox + `aria-activedescendant`, never moving DOM focus to the cursor row.** The active option is announced via
+  `aria-activedescendant`; the cursor option also gets `tabindex="0"` (roving tabindex of one) to satisfy axe's
+  `scrollable-region-focusable`. Moving real focus to a row would steal it from the search input and break
+  search-as-you-type.
+- **`scrollIntoView` is mocked in tests** (`Element.prototype.scrollIntoView = vi.fn()`): jsdom doesn't implement it,
+  and the palette calls it after arrow navigation. Tests crash without the mock.
+- **Shortcut chips read live effective bindings, not registry defaults.** Each row reads
+  `getEffectiveShortcutsReactive(command.id)` (capped at `MAX_SHORTCUTS_SHOWN = 3`), so a Settings/MCP rebind updates an
+  open palette without reopening. Reading `command.shortcuts` instead would show stale, no-longer-working combos.
+- **Recents are pruned on mount.** `pruneRecentCommands(validIds)` loads persisted recents, drops ids no longer valid
+  palette commands, saves the cleaned list, and feeds it to `searchCommands`. `pushRecentCommand(id)` on every Enter /
+  click moves the id to front, dedups, caps at 10. The query is never persisted: the palette opens empty so the
+  last-executed command sits at index 0 and Enter re-runs it.
 
 ## Adding a new command
 
-Add the command to `$lib/commands/command-registry.ts` and handle the ID in the `handleCommandExecute` switch in
-`routes/(main)/command-dispatch.ts`. The palette itself needs no changes.
+Add it to `$lib/commands/command-registry.ts` and handle the id in `routes/(main)/command-dispatch.ts` (see
+`commands/CLAUDE.md`). The palette itself needs no changes.
 
 ## Dependencies
 
-- `$lib/commands`: `searchCommands`, `getPaletteCommands`, `CommandMatch`
-- `$lib/app-status-store`: `pruneRecentCommands`, `pushRecentCommand`
-- `$lib/shortcuts/reactive-shortcuts.svelte`: `getEffectiveShortcutsReactive` (live effective bindings per row)
-- `$lib/ui/ShortcutChip.svelte`: renders each combo (literal `key` mode, `size="sm"`, non-clickable)
-- CSS variables from `app.css` (`--z-modal`, `--color-accent-subtle`, `--color-bg-secondary`, etc.)
+- `$lib/commands`: `searchCommands`, `getPaletteCommands`, `CommandMatch`.
+- `$lib/app-status-store`: `pruneRecentCommands`, `pushRecentCommand`.
+- `$lib/shortcuts/reactive-shortcuts.svelte`: `getEffectiveShortcutsReactive`.
+- `$lib/ui/ShortcutChip.svelte` and `$lib/ui/StatusBadge.svelte`.
+
+Full details (data flow, the stability-badge derivation, fuzzy-highlight rendering, and decision rationale):
+[DETAILS.md](DETAILS.md).

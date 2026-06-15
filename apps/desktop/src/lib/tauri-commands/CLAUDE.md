@@ -1,127 +1,58 @@
 # Tauri commands
 
 Typed TypeScript wrappers for every Tauri IPC command and event. This is the canonical import path for all backend
-communication. Never import from sub-files directly.
+communication.
 
 ```ts
-// Correct
-import { listDirectoryStart, copyFiles } from '$lib/tauri-commands'
-
-// Wrong: imports from sub-files directly
-import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
+import { listDirectoryStart, copyFiles } from '$lib/tauri-commands' // correct
+import { listDirectoryStart } from '$lib/tauri-commands/file-listing' // wrong: never import sub-files directly
 ```
 
-## Files
+## Module map
 
-- **`ipc-types.ts`**: `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()`: shared timeout-aware types
-- **`index.ts`**: Barrel re-export of everything below
-- **`file-listing.ts`**: Virtual-scroll listing API, batch accessors (`getPathsAtIndices`, `getFilesAtIndices`),
-  drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics
-- **`file-viewer.ts`**: Viewer session only: open, seek, search (with `useRegex` / `caseSensitive` modes), close, word
-  wrap menu, encoding pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`),
-  `viewerReload`
-- **`file-actions.ts`**: Open file/URL, Finder reveal, Quick Look, Get Info, context menu (file / breadcrumb /
-  parent-row), clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` / `cloudRemoveDownload`, iCloud
-  Drive only)
-- **`favorites.ts`**: User-editable switcher favorites: `addFavorite`, `removeFavorite`, `renameFavorite`,
-  `reorderFavorites`, plus `stripFavoritePrefix` (recover the bare id from a `fav-…` switcher id). Listing rides
-  `listVolumes` / `volumes-changed`; there's no `listFavorites`.
-- **`icons.ts`**: Icon fetching (`getIcons`, `getCustomFolderIconIds`, `refreshDirectoryIcons`) and cache invalidation
-- **`app-state.ts`**: MCP pane state, dialog open/close tracking, menu context, view settings, `showMainWindow`
-- **`write-operations.ts`**: Copy/move/delete, conflict resolution, scan preview, `formatBytes`/`formatDuration`
-- **`rename.ts`**: `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`
-- **`storage.ts`**: `listVolumes`, `getVolumeSpace`, `watchVolumeSpace`/`unwatchVolumeSpace`, `ejectVolume`,
-  `getBusyVolumeIds` (bootstrap for the eject-busy gate), `onVolumeContextAction`, `checkFullDiskAccess`,
-  `checkFullDiskAccessQuiet`, `getMacosMajorVersion`, `openPrivacySettings`, `openSystemSettingsUrl`
-- **`networking.ts`**: SMB host discovery, share listing, Keychain credential ops, mounting, direct-connection upgrade,
-  in-place `reconnectSmbVolume` and per-volume `disconnectSmbVolume`
-- **`mtp.ts`**: Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy
-- **`licensing.ts`**: License status, activation, expiry, server validation
-- **`settings.ts`**: Port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands
-- **`tab.ts`**: Tab context menu: `showTabContextMenu`, `onTabContextAction`
-- **`clipboard-files.ts`**: Clipboard file operations: copy/cut files to system clipboard, read/paste, clear cut state
-- **`indexing.ts`**: Drive-indexing event listeners: typed `on*` wrappers over the `tauri-specta` `events.index*`
-  helpers (scan/replay/aggregation progress + complete, rescan notification, dir-updated, memory warning)
-- **`ai.ts`**: AI lifecycle event listeners:
-  `onAi{DownloadProgress,Starting,ServerReady,Verifying,Installing,InstallComplete,Extracting}` over the `events.ai*`
-  helpers
-- **`appearance.ts`**: `onAccentColorChanged` / `onSystemTextSizeChanged` over the OS appearance / text-size events
-- **`menu-events.ts`**: `onViewModeChanged` / `onMenuSort` over the direct (non-`execute-command`) native-menu events
-- **`directory-watcher.ts`**: `onDirectoryDiff` / `onDirectoryDeleted` over the file-watcher events (`onDirectoryDiff`
-  casts the generated payload to the FE `DirectoryDiff` whose `entry` is the FE `FileEntry`)
-- **`native-drag.ts`**: `onDragImageSize` / `onDragModifiers` (macOS drag overlay) + `onDragOutSessionStarted` /
-  `onDragOutSessionComplete` (drag-out-to-Finder toasts)
-- **`quick-look.ts`**: `onQuickLookKey` / `onQuickLookClosed` over the Quick Look panel events
-- **`downloads.ts`**: `onDownloadDetected` / `onGlobalShortcutFired` over the downloads-watcher + global-hotkey events
-- **`restricted-paths.ts`**: `onRestrictedPathsChanged` over the TCC-restricted-path-set event
-- **`dialog-events.ts`**: Window-management events: `onExecuteCommand` + `emitExecuteCommand` (the unified
-  menu/cross-window relay), the MCP `dialog` lifecycle
-  (`on{Open,Focus,Close}Settings`/`…FileViewer`/`…About`/`…Confirmation`, `onCloseAllFileViewers`,
-  `onMcpSettingsClose`), `requestOpenSettings` (emit `open-settings` so the main window opens Settings on behalf of a
-  window without window-creation perms), `onViewerWordWrapToggled`, `onPersistRestrictedSetting`
+`index.ts` barrel-re-exports per-domain sub-files: `file-listing.ts`, `file-viewer.ts`, `file-actions.ts`,
+`favorites.ts`, `icons.ts`, `app-state.ts`, `write-operations.ts`, `rename.ts`, `storage.ts`, `networking.ts`, `mtp.ts`,
+`licensing.ts`, `settings.ts`, `tab.ts`, `clipboard-files.ts`, plus event-listener modules (`indexing.ts`, `ai.ts`,
+`appearance.ts`, `menu-events.ts`, `directory-watcher.ts`, `native-drag.ts`, `quick-look.ts`, `downloads.ts`,
+`restricted-paths.ts`, `dialog-events.ts`). `ipc-types.ts` holds the shared `TimedOut<T>`, `IpcError`, `isIpcError()`,
+`getIpcErrorMessage()` types. DETAILS.md has the per-file contents and the "where to put a new command" routing map.
 
-## Where to put new commands
+## Must-knows (invariants and guardrails)
 
-- **Viewer session** (anything prefixed `viewer_*`) → `file-viewer.ts`
-- **File listing display** (listing API, sync status, font metrics) → `file-listing.ts`
-- **Single-file actions** (open, reveal, preview, context menu) → `file-actions.ts`
-- **Icons** (fetch, refresh, cache clear) → `icons.ts`
-- **MCP pane/dialog state, menu sync, window lifecycle** → `app-state.ts`
-- **Copy/move/delete operations** → `write-operations.ts`
-- **Rename/trash** → `rename.ts`
-- **Volumes/disk access** → `storage.ts`
-- **Network/SMB** → `networking.ts`
-- **MTP/Android** → `mtp.ts`
-- **Licensing** → `licensing.ts`
-- **Settings/AI** → `settings.ts`
-- **Clipboard file operations** (copy/cut/paste files via system clipboard) → `clipboard-files.ts`
+- **Always import from the `$lib/tauri-commands` barrel, never a sub-file directly.** Sub-file layout is internal and
+  shifts; the barrel is the stable contract.
+- **Prefer the typed-bindings path for new commands.** Every wrapper delegates to `$lib/ipc/bindings`
+  (`commands.commandName(args)`), unwrapping the `Result<T, E>` via `throwIpcError`. A few commands aren't yet in the
+  typed bindings (see `lib/ipc/CLAUDE.md` § Excluded commands); those still call `invoke<T>(commandName, args)` with
+  camelCase args matching Rust's `serde(rename_all = "camelCase")` and carry an
+  `// eslint-disable-next-line cmdr/no-raw-tauri-invoke -- …` comment naming the conversion blocker. Only fall back to
+  raw `invoke` if the signature hits a documented specta blocker.
+- **Event listeners return `UnlistenFn`; call it in `onDestroy` or you leak.**
 
-## Key patterns
+  ```ts
+  const unlisten = await onWriteProgress((event) => { ... })
+  onDestroy(() => { unlisten() })
+  ```
 
-**Every function** delegates to the typed bindings in `$lib/ipc/bindings` (`commands.commandName(args)`), unwrapping the
-`Result<T, E>` shape via `throwIpcError` from `./ipc-types` where applicable. A small number of commands aren't yet in
-the typed bindings (see `apps/desktop/src/lib/ipc/CLAUDE.md` § Excluded commands); those wrappers still call
-`invoke<T>(commandName, args)` with camelCase args matching Rust's `serde(rename_all = "camelCase")` and carry an
-`// eslint-disable-next-line cmdr/no-raw-tauri-invoke -- …` opt-out comment that names the conversion blocker.
-
-When adding a new command, prefer the typed-bindings path. Only fall back to raw `invoke` if the command's signature
-hits one of the documented specta blockers.
-
-**Event listeners** return `UnlistenFn`. Callers must call it in `onDestroy` to avoid leaks:
-
-```ts
-const unlisten = await onWriteProgress((event) => { ... })
-onDestroy(() => { unlisten() })
-```
-
-**macOS-only commands** (e.g. `quickLook`, `getInfo`, `showInFinder`, `openPrivacySettings`) are wrapped in try/catch
-returning safe empty/null fallbacks so the same code runs on other platforms.
-
-**Timeout-aware return types**: Commands that use backend timeouts return structured types so the frontend can
-distinguish "timed out" from "genuinely empty/none":
-
-- `TimedOut<T>` (`{ data: T, timedOut: boolean }`): for commands returning collections, `Option`, or `()`. Callers
-  unwrap `.data` for the value and check `.timedOut` to detect timeouts. Used by `listVolumes`, `getVolumeSpace`,
-  `getSyncStatus`, `getIcons`, `refreshDirectoryIcons`, `refreshListing`.
-- `IpcError` (`{ message: string, timedOut: boolean }`): thrown as exception by commands returning `Result<T, _>`. Use
-  `isIpcError(e)` type guard and `getIpcErrorMessage(e)` helper in catch blocks. Used by `viewerOpen`, `viewerGetLines`,
-  `createDirectory`, `createFile`, `listDirectoryStart`, `moveToTrash`, `checkRenamePermission`, `checkRenameValidity`,
-  `renameFile`, `scanVolumeForCopy`, `scanVolumeForConflicts`.
-
-## Notable non-obvious placements
-
-- `formatBytes` and `formatDuration` are co-located in `write-operations.ts` with no IPC calls.
-- `listen` and `UnlistenFn` from `@tauri-apps/api/event` are re-exported through `write-operations.ts`.
-- `getSyncStatus` and font metrics (`storeFontMetrics`, `hasFontMetrics`) live in `file-listing.ts` because they
-  directly support file list rendering.
+- **macOS-only commands** (`quickLook`, `getInfo`, `showInFinder`, `openPrivacySettings`, …) are wrapped in try/catch
+  returning safe empty/null fallbacks, so the same code runs on other platforms.
+- **Timeout-aware return types distinguish "timed out" from "genuinely empty".** Don't collapse them.
+  - `TimedOut<T>` (`{ data: T, timedOut: boolean }`): for commands returning collections, `Option`, or `()`. Unwrap
+    `.data`, check `.timedOut`. Used by `listVolumes`, `getVolumeSpace`, `getSyncStatus`, `getIcons`,
+    `refreshDirectoryIcons`, `refreshListing`.
+  - `IpcError` (`{ message: string, timedOut: boolean }`): thrown by commands returning `Result<T, _>`. Use
+    `isIpcError(e)` / `getIpcErrorMessage(e)` in catch blocks. Used by `viewerOpen`, `viewerGetLines`,
+    `createDirectory`, `createFile`, `listDirectoryStart`, `moveToTrash`, `checkRenamePermission`,
+    `checkRenameValidity`, `renameFile`, `scanVolumeForCopy`, `scanVolumeForConflicts`.
 
 ## Dependencies
 
-- `$lib/ipc/bindings`: typed `commands.*` and `events.*` (auto-generated by `tauri-specta`)
-- `./ipc-types`: `throwIpcError`, `TimedOut`, `IpcError` helpers
-- `@tauri-apps/api/core`: raw `invoke` (only for excluded commands; see `lib/ipc/CLAUDE.md`)
-- `@tauri-apps/api/event`: `listen`, `UnlistenFn`
-- `@tauri-apps/plugin-opener`: `openPath`, `openUrl`
-- Types from `$lib/file-explorer/types`
+- `$lib/ipc/bindings`: typed `commands.*` and `events.*` (auto-generated by `tauri-specta`).
+- `./ipc-types`: `throwIpcError`, `TimedOut`, `IpcError`.
+- `@tauri-apps/api/core`: raw `invoke` (only for excluded commands; see `lib/ipc/CLAUDE.md`).
+- `@tauri-apps/api/event`: `listen`, `UnlistenFn`.
+- `@tauri-apps/plugin-opener`: `openPath`, `openUrl`.
+- Types from `$lib/file-explorer/types`.
 
-Full details: [DETAILS.md](DETAILS.md).
+Full details (per-file command inventory, the new-command routing map, and notable non-obvious placements):
+[DETAILS.md](DETAILS.md).

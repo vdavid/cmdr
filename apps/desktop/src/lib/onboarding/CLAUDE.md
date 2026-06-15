@@ -14,10 +14,10 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
 ## Must-knows
 
 - **The Open beta page (step 3) is non-skippable, and the AI step has no skip-to-finish.** Every first-launch user must
-  see the anonymous-analytics disclosure once (the opt-out default only reads as fair consent if it was shown). So the
-  AI step's only forward button ("Next") always lands on Beta. The Beta page itself offers a "Start using Cmdr!" finish
-  (which skips the optional step) and a "One more optional setup step" continue, so the user can't reach the app without
-  passing through Beta. Don't re-add a skip-to-finish on the AI step (it bypasses the disclosure).
+  see the anonymous-analytics disclosure once (the opt-out default only reads as fair consent if it was shown), so the
+  AI step's only forward button ("Next") always lands on Beta. Beta itself offers "Start using Cmdr!" (skips the
+  optional step) and "One more optional setup step", so the user can't reach the app without passing through Beta. Don't
+  re-add a skip-to-finish on the AI step (it bypasses the disclosure).
 - **The step-2 "Full disk access granted" banner shows ONLY on a fresh first-run grant** (`hasFda && !isOnboarded`).
   Once onboarded, menu / palette re-entry with FDA on shows no banner (`stepTwoBanner === 'none'`). Gated in both
   `stepTwoBannerFor()` and `StepAi`'s on-mount probe.
@@ -27,10 +27,9 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
   user on step 2 after relaunch. Deny advances normally.
 - **Step 1 polls for a live FDA grant (macOS).** While the Allow/Deny variants are open and FDA isn't granted, a 500 ms
   `$effect` poller in `StepFda` calls `checkFullDiskAccessQuiet` (the side-effect-free probe, NOT `checkFullDiskAccess`,
-  which fires the TCC-registration storm and logging on every denial). On grant it calls `setStep1Granted()`, which
-  switches the body to a success state and flips the footer to "Restart Cmdr", then stops polling. The interval clears
-  on unmount and on grant (no leaks). The restart still applies (the gate is boot-set): don't try to clear the gate
-  live. The poller never runs on the `already-granted` variant or on Linux (the component renders nothing there).
+  which fires the TCC-registration storm and logging on every denial). On grant it calls `setStep1Granted()` (success
+  state, footer flips to "Restart Cmdr") and stops; the interval also clears on unmount (no leaks). The restart still
+  applies (the gate is boot-set); don't try to clear it live. The poller never runs on `already-granted` or Linux.
 - **No Escape handler on the wizard.** Dismissing without choosing leaves no recorded preference; the user must commit
   to Allow / Deny / Next on each step. (Closing requires committing to a step; MCP close/focus aren't wired.)
 - **The AI step's forward button stays enabled regardless of API-key validity** (no-key-blocks-advance). Don't gate

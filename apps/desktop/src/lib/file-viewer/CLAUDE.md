@@ -1,126 +1,69 @@
 # File viewer module (frontend)
 
-Opens files in a read-only viewer with instant load for any file size, virtual scrolling, and background search.
+Opens files in a read-only viewer with instant load for any file size, virtual scrolling, and background search. Full
+details (decisions, the full gotcha catalog): [DETAILS.md](DETAILS.md).
 
-Backend counterpart: [`apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`](../../../src-tauri/src/file_viewer/CLAUDE.md)
-for the three backend strategies (chunked, full-load, pretext), session lifecycle, and background search. The viewer
-route shell lives at [`src/routes/viewer/CLAUDE.md`](../../routes/viewer/CLAUDE.md).
+Backend counterpart: [`src-tauri/src/file_viewer/CLAUDE.md`](../../../src-tauri/src/file_viewer/CLAUDE.md) for the three
+backend strategies, session lifecycle, and background search. The viewer route shell:
+[`src/routes/viewer/CLAUDE.md`](../../routes/viewer/CLAUDE.md).
 
 ## Key files
 
-- `open-viewer.ts`: `openFileViewer(filePath)` creates new `WebviewWindow` with unique label
-- `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` helper that classifies a file as `document` /
-  `<EXT-uppercased>` (or "don't warn" for text/source/unknown). The viewer route renders a red banner at the top
-  whenever the helper says `shouldWarn`. Suppressible per-instance via the banner's **Close** button or forever via
-  **Never show this warning again** (flips `fileViewer.suppressBinaryWarning` in Settings > Advanced).
-  - **Rendered media is suppressed by backend `kind`, not by trimming this list.** `binary-warning.ts` still classifies
-    every image / document / binary extension (unchanged). The viewer page shows the banner only when
-    `!isMedia && warning.shouldWarn`, where `isMedia` comes from the authoritative backend `kind`. So a rendered image /
-    PDF (`kind` image/pdf) never shows it, while formats the classifier promotes to neither (RAW like `.cr2`/`.nef`,
-    `.avif`, `.ico`, `.docx`, `.epub`, archives, etc.) still warn. Don't trim the image set here to "suppress" rendered
-    formats: that also silences the unrendered ones (RAW/AVIF/ICO), which then show raw bytes with no nudge.
-- Route: `apps/desktop/src/routes/viewer/+page.svelte`: viewer UI with virtual scrolling, search bar, status bar
+- `open-viewer.ts`: `openFileViewer(filePath)` creates a new `WebviewWindow` with a unique label.
+- `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` that classifies a file as `image` / `document` /
+  `<EXT-uppercased>` (or "don't warn" for text/source/unknown). The viewer route renders a red banner whenever
+  `shouldWarn`. Suppressible per-instance (banner **Close**) or forever (**Never show this warning again**, flips
+  `fileViewer.suppressBinaryWarning` in Settings > Advanced).
+- Route: `src/routes/viewer/+page.svelte`: viewer UI with virtual scrolling, search bar, status bar.
+
+**Don't trim the image set in `binary-warning.ts` to suppress rendered formats.** Rendered media is suppressed by the
+authoritative backend `kind`, not by this list: the viewer page shows the banner only when
+`!isMedia && warning.shouldWarn`. So a rendered image / PDF never shows it, while formats the classifier promotes to
+neither (RAW like `.cr2`/`.nef`, `.avif`, `.ico`, `.docx`, `.epub`, archives) still warn. Trimming the image set here
+also silences the unrendered ones, which then show raw bytes with no nudge.
 
 ## User interaction
 
-- **F3** in file list opens viewer for file under cursor
-- **Cmd+F / Ctrl+F** opens search bar (case-insensitive, 100ms debounce)
-- **Enter / Shift+Enter** navigates to next/previous match
-- **W** toggles word wrap (per-line heights for FullLoad, averaged for others)
-- **Escape** closes search bar (if open) or closes window
+- **F3** in file list opens the viewer for the file under the cursor.
+- **Cmd+F / Ctrl+F** opens the search bar (case-insensitive, 100ms debounce); **Enter / Shift+Enter** = next/previous
+  match; **Escape** closes the search bar (if open) else the window.
+- **W** toggles word wrap (per-line heights for FullLoad, averaged for others).
 
-## Architecture
+## Architecture (summary)
 
-- **Virtual scrolling**: only visible lines rendered. Fixed 18px line height, per-line pretext heights when wrap is on
-  (FullLoad), or averaged heights (ByteSeek/LineIndex).
-- **Session-based**: `viewer_open` returns session ID. All operations pass session ID. `viewer_close` frees resources.
-- **Three backends** (chosen by Rust based on file size):
-  - FullLoad (<1MB): entire file in RAM
-  - ByteSeek (instant): no pre-scan, seeks by byte offset
-  - LineIndex (after scan): O(lines/256) memory, O(1) line seeks
-- **Background search**: frontend calls `search_start`, polls `search_poll` until done or canceled
-- **Multiple viewers**: each window has unique label (`viewer-${timestamp}`). No limit on open viewers.
+- **Virtual scrolling**: only visible lines rendered. Fixed 18px line height; per-line pretext heights when wrap is on
+  (FullLoad), averaged heights otherwise.
+- **Session-based**: `viewer_open` returns a session ID passed to all operations; `viewer_close` frees resources.
+- **Three backends, chosen by Rust on file size**: FullLoad (<1MB, in RAM), ByteSeek (instant, no pre-scan, byte-offset
+  seeks, approximate line numbers), LineIndex (after a background scan, exact line seeks). ByteSeek scrolls by byte
+  fraction; it switches to exact line seeks once the indexer finishes.
+- **Background search**: frontend calls `search_start`, polls `search_poll` until done or canceled.
+- **Multiple viewers**: each window has a unique label (`viewer-${timestamp}`). No limit.
 
-## Key decisions
+Rationale for each in [DETAILS.md](DETAILS.md) § Key decisions.
 
-**Decision**: Three-tier backend strategy (FullLoad / ByteSeek / LineIndex) chosen automatically by file size. **Why**:
-Opening a 10 GB log file must feel instant. FullLoad is fastest for small files (everything in RAM), but impossible for
-large files. ByteSeek gives instant open for any file size by seeking to byte offsets without scanning, but line numbers
-are approximate. LineIndex builds an O(lines/256) index in the background for exact line seeks. The user sees
-progressively better behavior without choosing a mode.
+## Gotchas (WebKit / load-bearing)
 
-**Decision**: Fraction-based seeking as the default scroll model for ByteSeek. **Why**: Without a line index, the
-frontend can't ask for "line 50000". The backend doesn't know where it is. Instead, scrolling maps to a byte fraction of
-the file (e.g., 50% = seek to byte offset at file midpoint). The frontend caches lines at the position it requested, not
-at the backend's reported line number, because the two estimates can differ (different average line length assumptions).
-Once the background indexer finishes, it switches to exact line seeks automatically.
+These guard against macOS WebKit crashes and toggle loops. Keep them; the why is in [DETAILS.md](DETAILS.md).
 
-**Decision**: Timestamp-based unique window labels (`viewer-${Date.now()}`). **Why**: Each viewer needs its own Tauri
-`WebviewWindow` label. Using the file path would prevent opening the same file twice. Timestamps are unique enough
-(millisecond resolution) and don't need escaping.
+- **Double `requestAnimationFrame` before `window.close()`.** WebKit on macOS can crash if you destroy a `WebPageProxy`
+  while it recalculates content insets; one rAF isn't enough (the current frame must complete AND the next start). Also
+  do NOT call `setFocus()` on another window before closing: that can trigger the dying window to recalculate.
+- **The `windowReady` flag gates `closeWindow()`.** If Escape is pressed before mount finishes, close is queued. WebKit
+  crashes if you close a window before its content process finished initializing; the flag is set after a post-mount
+  `requestAnimationFrame`.
+- **Word-wrap menu sync is two-way; keep the `fromMenu` guard.** "W" calls `viewerSetWordWrap` to update the menu's
+  checked state; the menu item emits `viewer-word-wrap-toggled` back. The `fromMenu` parameter prevents an infinite
+  toggle loop.
 
-**Decision**: Double `requestAnimationFrame` before `window.close()`. **Why**: WebKit on macOS can crash if you destroy
-a `WebPageProxy` while it's recalculating content insets. A single `requestAnimationFrame` isn't enough. You need the
-current frame to complete AND the next one to start. This also means you must NOT call `setFocus()` on another window
-before closing, as that can trigger the dying window to recalculate.
-
-**Decision**: FullLoad files use `@chenglou/pretext` for per-line height calculation when word wrap is on. **Why**:
-Pretext runs `prepare()` on each line's text using canvas font metrics, then `layout()` computes wrapped height without
-rendering to the DOM. A prefix-sum array (`Float64Array`) gives O(1) `getLineTop(n)` and O(log n)
-`getLineAtPosition(y)`. Preparation runs async via `requestIdleCallback` (with a 2s timeout and 50k line cap). While it
-runs, the viewer falls back to averaged heights, so there's zero regression. Width changes call `reflow()` (re-runs
-`layout()` only, ~0.0002ms/line) instead of re-preparing. A generation counter discards stale preparations.
-
-**Decision**: Word wrap uses averaged line height as fallback for ByteSeek/LineIndex files and while pretext prepares.
-**Why**: When lines wrap, each line has a different rendered height. Measuring every line would require rendering the
-entire file. Instead, the viewer measures the average height of currently-visible lines and uses that for the scroll
-spacer. This is slightly inaccurate (scroll thumb position drifts) but keeps the O(1) virtual scroll contract. The
-measurement effect depends on `scrollTop` rather than `visibleLines` to avoid a feedback loop:
-`visibleLines -> measure -> avgHeight -> effectiveLineHeight -> visibleLines`.
-
-**Decision**: Proportional scroll compensation when `effectiveLineHeight` changes. **Why**: Toggling word wrap or
-updating the averaged height changes the total scroll height. Without compensation, the viewport jumps to a different
-part of the file. Multiplying `scrollTop` by `newHeight / oldHeight` preserves the same line at the top of the viewport,
-and since `ON ratio * OFF ratio = 1.0`, there's zero cumulative drift across toggles.
-
-## Gotchas
-
-**Gotcha**: Window position isn't remembered across sessions. **Why**: `tauri-plugin-window-state` persists
-size/position per window label, but each viewer label is unique (timestamp-based). There's no stable identifier to key
-on since the same file can be opened multiple times. Within a session, viewers cascade from the main window's top-left
-(+24px per opened viewer, wrapping at 8) via `lib/window-positioning.ts` so successive opens don't pile on top of each
-other.
-
-**Gotcha**: Binary files shown with lossy UTF-8 (replacement chars for invalid bytes, no binary mode). **Why**: The
-viewer is designed for text/log files. Adding a hex/binary mode would require a completely different rendering pipeline.
-Lossy display is good enough for quick inspection.
-
-**Gotcha**: Search uses byte offsets internally, converted to UTF-16 code units for JS. **Why**: Rust searches over raw
-bytes for speed. JS `String.substring()` uses UTF-16 code units. The backend does the conversion so the frontend can
-highlight matches correctly in JavaScript strings.
-
-**Gotcha**: The `windowReady` flag gates `closeWindow()`. If Escape is pressed before mount finishes, close is queued.
-**Why**: WebKit crashes if you close a window before its content process has finished initializing. The flag is set
-after a `requestAnimationFrame` post-mount, ensuring at least one paint cycle has completed.
-
-**Gotcha**: Menu integration requires two-way sync for word wrap state. **Why**: The "W" key and the menu CheckMenuItem
-both toggle word wrap. When "W" is pressed, the frontend calls `viewerSetWordWrap` to update the menu's checked state.
-When the menu item is clicked, it emits `viewer-word-wrap-toggled` back to the frontend. The `fromMenu` parameter
-prevents an infinite toggle loop.
-
-**Gotcha**: `needsFetch()` samples three points instead of iterating the entire visible range. **Why**: The visible
-range can be hundreds of lines. Checking every line against the cache on every scroll event would be expensive. Sampling
-the first, middle, and last lines catches the common case (scrolling into uncached territory) with O(1) work.
+Other behavior gotchas (window position not remembered across sessions, lossy-UTF-8 binary display, byte-offset → UTF-16
+search conversion, `needsFetch()` three-point sampling): [DETAILS.md](DETAILS.md) § Gotchas.
 
 ## Development
-
-**Open viewer programmatically**:
 
 ```typescript
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 await openFileViewer('/path/to/file.txt')
 ```
 
-**Test large files**: Generate via `dd if=/dev/zero of=large.txt bs=1m count=1000` (1GB file).
-
-Full details: [DETAILS.md](DETAILS.md).
+Test large files via `dd if=/dev/zero of=large.txt bs=1m count=1000` (1GB file).

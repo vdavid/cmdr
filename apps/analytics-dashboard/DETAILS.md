@@ -102,3 +102,132 @@ runtime value import (e.g. a `const`) trips `vite-plugin-sveltekit-guard` at BUI
 catch it. So always run `pnpm build`, not just `pnpm check`, after touching imports across that boundary. Client-shared
 runtime values live outside `$lib/server`: `$lib/funnel.ts`, `$lib/feedback-and-errors.ts`, `$lib/format.ts`,
 `$lib/colors.ts`, `$lib/chart-helpers.ts`.
+
+## Key files
+
+- `src/app.css`: Tailwind v4 theme (dark palette matching getcmdr.com). `src/app.d.ts`: CF Pages platform env types.
+- `src/routes/+layout.svelte`: shared shell (header, page nav, range/day picker). `src/routes/+layout.server.ts`:
+  resolves the shared `DashboardSelection` from `?range=` / `?day=` once for the layout.
+- `src/routes/+page.{svelte,server.ts}`: Acquisition page (funnel/Umami/Cloudflare/GitHub/PostHog subset).
+  `src/routes/product/+page.{svelte,server.ts}`: Product page (Cloudflare/Paddle/license/feedback subset).
+  `src/routes/links/+page.{svelte,server.ts}`: Link codes CRUD (`load` lists, `save`/`delete` form actions proxy).
+- `src/routes/api/report/+server.ts`: agent-readable plain-text report (all sections, via `fetchDashboardData`).
+- `src/lib/server/fetch-all.ts`: per-source loaders, per-page composers (`fetchAcquisitionData`, `fetchProductData`),
+  and the all-sources `fetchDashboardData`.
+- `src/lib/server/types.ts`: `TimeRange`, `DashboardSelection`, `SourceResult`, time window + selection helpers.
+- `src/lib/server/cache.ts`: CF Cache API wrapper with in-memory Map fallback for local dev.
+- `src/lib/server/sources/`: data source modules (one per external API).
+- `src/lib/components/sections/`: one component per dashboard section. `src/lib/components/`: shared UI (FunnelTable,
+  CountryTable, MetricRow/MetricTable, ErrorState/EmptyState/BetaEmptyState, SectionDescription, Methodology,
+  ExternalLinks, Chart, StackedBarChart, MiniTimeline, PieChart).
+- `src/lib/{format,colors,chart-helpers}.ts`: client-safe formatters, color tokens, chart data-shaping helpers.
+- `src/lib/link-codes.ts`: client-safe `?r=` helpers (validation mirroring the api-server, row flattening, example
+  link), shared by the `/links` page, its server action, and tests.
+- `StackedBarChart.svelte`: discrete per-day stacked bars (plain elements, not uPlot) with an exact-numbers hover/focus
+  tooltip; used for by-source new-installs and by-version update charts.
+- `svelte.config.js` (adapter-cloudflare), `vitest.config.ts`.
+
+## Data sources
+
+Each source under `src/lib/server/sources/` exports a typed fetch returning `SourceResult<T>`:
+
+- `umami.ts` (JWT login): page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com,
+  getprvw.com.
+- `cloudflare.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): downloads (by version/arch/country/source, raw +
+  same-day-deduped), true per-day DAU + beats from the heartbeat, per-day update-check activity by version, from worker
+  endpoints (`/admin/downloads`, `/admin/heartbeat-dau`, `/admin/update-activity`).
+- `paddle.ts` (Bearer, cursor pagination): completed transactions, subscriptions by status.
+- `github.ts` (optional Bearer): release download counts per asset; star history (daily + cumulative) for cmdr and
+  mtp-rs.
+- `posthog.ts` (Bearer personal API key): pageview trends via the HogQL query API (EU endpoint).
+- `license.ts` (Bearer admin token): activation count + active devices from `/admin/stats`.
+- `feedback-and-errors.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): in-app feedback + error-report bundle metadata
+  from `/admin/feedback` and `/admin/error-reports`. Pure helpers + row types in client-safe
+  `$lib/feedback-and-errors.ts`.
+- `funnel.ts` (Bearer + Umami + Paddle): feeds the top "Daily funnel" table (per-UTC-day, last 30 days, always 30 days
+  independent of the picker), joining `/admin/funnel` with Umami per-day visitors/clicks and Paddle purchases. Per-day
+  `downloadsByRef` feeds the "Channels" breakdown (rolled up by `aggregateChannels` in `$lib/funnel.ts`).
+- `worker-endpoint.ts` (shared helper): `fetchWorkerEndpoint(token, path)`, used by the three worker-backed sources.
+
+## Local QA against a local worker
+
+The download/update-activity/feedback/error charts come from the api-server worker (default `https://api.getcmdr.com`).
+To QA against seeded data with zero production impact, run the worker locally and point the dashboard at it via
+`WORKER_BASE_URL`:
+
+1. From `apps/api-server/`, start the worker on a local D1 with seeded rows:
+   ```bash
+   pnpm exec wrangler d1 migrations apply cmdr-telemetry --local
+   pnpm exec wrangler d1 execute cmdr-telemetry --local --file=scripts/seed-local-telemetry.sql
+   pnpm exec wrangler dev --port 18900 --var ADMIN_API_TOKEN:local-qa-token
+   ```
+   The seed uses dates relative to `now`, includes a same-day duplicate IP (dedup), a pre-migration NULL-source row, and
+   a 0.24→0.25 update rollout.
+2. In `.env`, set `WORKER_BASE_URL=http://127.0.0.1:18900` and `LICENSE_SERVER_ADMIN_TOKEN=local-qa-token`, then
+   `pnpm dev:dashboard`.
+
+`WORKER_BASE_URL` is unset in production (sources fall back to `api.getcmdr.com`). Sources without local creds (Umami,
+Paddle, PostHog) show "Couldn't load" and don't block the worker-backed charts.
+
+## Deployment and env vars
+
+Auto-deploys to CF Pages on push to `main` when `apps/analytics-dashboard/` changes
+(`.github/workflows/deploy-dashboard.yml`: checkout, install, build, wrangler deploy).
+
+Manual setup (not in code): create CF Pages project `cmdr-analytics-dashboard`; add `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` to GitHub repo secrets; set all env vars below as CF Pages secrets; configure the custom domain
+`analdash.getcmdr.com` and the Cloudflare Access policy.
+
+All env vars are CF Pages secrets, never in code:
+
+- `UMAMI_API_URL`: `https://anal.veszelovszki.com`. `UMAMI_USERNAME` / `UMAMI_PASSWORD`: Umami credentials.
+- `UMAMI_WEBSITE_ID`: getcmdr.com. `UMAMI_BLOG_WEBSITE_ID`: veszelovszki.com (name kept for CF secret compatibility).
+  `UMAMI_PRVW_WEBSITE_ID`: getprvw.com (add when deploying).
+- `PADDLE_API_KEY_LIVE`: live key (not sandbox).
+- `POSTHOG_API_KEY`: personal `phx_...` key (not the public `phc_...`). `POSTHOG_PROJECT_ID`: `136072`.
+  `POSTHOG_API_URL`: `https://eu.posthog.com` (must be EU).
+- `GITHUB_TOKEN`: optional, avoids public-repo API rate limits.
+- `LICENSE_SERVER_ADMIN_TOKEN`: dedicated admin secret, also set on the API server.
+
+## Key decisions
+
+- **Metrics organized by acquisition stage, not as a cohort funnel.** Tracking is cookieless and anonymous, so there's
+  no way to follow an individual from blog visit to download to payment. Stages show independent aggregate numbers.
+- **A top "Daily funnel" table lines stages up per UTC day** (last 30 days, newest first, today partial), independent of
+  the picker, to answer "what happened on day Y across the whole path". It's NOT a true cohort funnel across columns
+  (still no cross-site identity); each column is its own per-day aggregate. Clicks won't equal server downloads (clicks
+  are in-browser; server downloads also include Homebrew, direct links, GitHub-page traffic, bots filtered imperfectly).
+  D7 needs a cohort ≥8 days old that had installs, so recent/empty days show a dash. The api-server owns the funnel
+  contract and the D7 definition (`apps/api-server/DETAILS.md` § "Per-day funnel").
+- **Time selection is a `DashboardSelection` (`{ range, day }`) carried in the URL,** not a bare `TimeRange`: David
+  needs "today" and any single specific day, not just rolling windows. A valid `?day=YYYY-MM-DD` forces `range: 'day'`
+  (so a single-day link is shareable/stable). Worker-backed and PostHog sources can't isolate one day cheaply, so they
+  map `today`/`day` to their nearest coarse window (`24h`) via `selectionToWorkerRange`; Umami and Paddle honor the
+  exact day. Cache keys include the day (`selectionCacheKey`) so two picked days never collide.
+- **Every section carries a "what insight + how reliable" blurb** (`sectionDescription`) plus per-chart `methodology`
+  notes, because an opaque analytics number is worse than none. They state real caveats (Umami under/double-counts;
+  clicks vs server downloads differ; new installs miss opt-outs and debug builds; heartbeat DAU is the trustworthy one;
+  D7 needs old cohorts; Paddle has minor webhook lag; all days UTC).
+- **"Active use" daily-active count comes from the heartbeat** (`/admin/heartbeat-dau`, `COUNT(DISTINCT anal_id)` per
+  day), not from summed update checks (which multiplied a ~10/day figure into a wildly inflated total). Charted gold
+  over the range, with `beats/day` as an engagement signal. Starts empty at release and fills as beta testers update.
+- **"New installs" (Download) and "Got the latest release" (Active use) are two distinct charts off two distinct tables,
+  never merged.** A DMG download (`downloads` table) is a fresh acquisition; an update check (`update_checks` table) is
+  an existing install updating in place; in-app auto-updates fetch from GitHub and never hit the download endpoint, so
+  the populations don't overlap. New-installs bars stack by source using the deduped same-day-distinct count
+  (`uniqueDownloads`); update bars stack by the version each install was on when it checked.
+- **"Feedback & errors" reads the app's own stores via two worker admin endpoints** (`/admin/feedback` from D1,
+  `/admin/error-reports` from R2 `list` with `customMetadata`), not Discord (the `#feedback`/`#error-reports` channels
+  are private and denied to the community bot). The row types and pure aggregation helpers live in
+  `$lib/feedback-and-errors.ts` (client-safe) so the page, the report endpoint, and tests share one copy. The
+  agent-facing local digest (`/feedback-and-error-digest-from-app`) reads the same stores; see
+  `docs/tooling/feedback-and-error-digest.md`.
+- **PostHog uses the HogQL query API** (`/api/projects/{id}/query/`), not the legacy Trends API (`/insights/trend/`),
+  which returns "Legacy insight endpoints are not available" for newer accounts.
+- **Umami metrics use `type=path`** (not `type=url`): `url` and `page` return 400, but `path`, `referrer`, `event`, and
+  `country` work.
+- **uPlot for charts** (~45 KB, fast canvas, simple API, no wrapper). **Dark mode only** (internal tool, always on a
+  laptop).
+- **Split across pages under a shared layout, not one long scroll:** the single page grew too dense; grouping by stage
+  keeps each route readable and lets each page fetch only what it renders. Selection stays shared (resolved in the
+  layout, carried in the URL). See § "Multi-page structure".

@@ -1,148 +1,51 @@
 # MTP module
 
-MTP (Media Transfer Protocol) support for Android devices and PTP cameras connected via USB.
-Available on macOS and Linux (`#[cfg(any(target_os = "macos", target_os = "linux"))]`).
-On Linux, users may need udev rules for USB device permissions (see `resources/99-cmdr-mtp.rules`).
+MTP (Media Transfer Protocol) for Android devices and PTP cameras over USB. macOS and Linux only
+(`#[cfg(any(target_os = "macos", target_os = "linux"))]`). On Linux, users may need udev rules for USB permissions
+(`resources/99-cmdr-mtp.rules`).
 
-Frontend counterpart: [`apps/desktop/src/lib/mtp/CLAUDE.md`](../../../src/lib/mtp/CLAUDE.md) for the connection toast,
-storage picker, and reactive volume state.
+Frontend counterpart: [`apps/desktop/src/lib/mtp/CLAUDE.md`](../../../src/lib/mtp/CLAUDE.md) (connection toast, storage
+picker, reactive volume state). The frontend is a passive consumer: it subscribes to `volumes-changed` and
+`mtp-device-connected` / `mtp-device-disconnected`; it never orchestrates connections.
 
 ## File map
 
-- **`mod.rs`**: Re-exports public surface; module-level doc
-- **`types.rs`**: `MtpDeviceInfo`, `MtpStorageInfo`: camelCase JSON via `serde(rename_all)`. `MtpDeviceInfo::usb_speed` mirrors `mtp_rs::UsbSpeed` via the shared `crate::usb_speed::UsbSpeed` (also surfaced on `LocationInfo` for MTP volumes so the volume switcher can show a colored dot).
-- **`discovery.rs`**: `list_mtp_devices()` via `mtp_rs::MtpDevice::list_devices()`; device IDs formatted as `"mtp-{location_id}"`
-- **`watcher.rs`**: `start_mtp_watcher()`: nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones
-- **`macos_workaround.rs`**: macOS-only (`#[cfg(target_os = "macos")]`). Auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill`; restores on disconnect/exit; `ensure_ptpcamerad_enabled()` on startup for crash recovery. Falls back to manual `PTPCAMERAD_WORKAROUND_COMMAND` dialog if suppression fails
-- **`connection/`**: Per-device session layer: `MtpConnectionManager` singleton, connect / disconnect (with `MtpDisconnectReason` so logs and UI distinguish explicit toggle-off from hotplug-loss), event-loop task, list / read / write / mutate / bulk ops. See [`connection/CLAUDE.md`](connection/CLAUDE.md) for the file-by-file breakdown, lock semantics, caches, and gotchas.
-- **`virtual_device.rs`**: Virtual MTP device for E2E testing and dev sessions; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Dev opt-in: `CMDR_VIRTUAL_MTP=1 pnpm dev` (the wrapper adds the feature; `=<dir>` backs it with a custom dir). See [`docs/tooling/virtual-mtp.md`](../../../../../docs/tooling/virtual-mtp.md).
+- `mod.rs`: re-exports + module doc. `types.rs`: `MtpDeviceInfo`, `MtpStorageInfo` (camelCase JSON); `usb_speed` mirrors
+  `mtp_rs::UsbSpeed` via `crate::usb_speed::UsbSpeed`.
+- `discovery.rs`: `list_mtp_devices()`; device IDs formatted `"mtp-{location_id}"`.
+- `watcher.rs`: nusb hotplug watcher; 500 ms connect delay; auto-connect/disconnect; owns the `MTP_ENABLED` gate.
+- `macos_workaround.rs` (macOS-only): ptpcamerad suppression (see below).
+- `connection/`: per-device session layer (`MtpConnectionManager` singleton, connect/disconnect, event loop, list / read
+  / write / mutate / bulk ops). See [`connection/CLAUDE.md`](connection/CLAUDE.md) for locks, caches, and gotchas.
+- `virtual_device.rs`: virtual MTP device for E2E + dev, gated behind the `virtual-mtp` feature; dev opt-in
+  `CMDR_VIRTUAL_MTP=1 pnpm dev`. See [`docs/tooling/virtual-mtp.md`](../../../../../docs/tooling/virtual-mtp.md).
 
-### Virtual MTP device (dev + E2E activation)
+## Must-knows
 
-The `virtual-mtp` feature compiles in `virtual_device.rs`; whether the device actually registers at startup is decided
-at runtime by `activate_from_env_if_requested()` (called from `lib.rs`). It registers when **either** `CMDR_E2E_MODE=1`
-(an E2E run) **or** `CMDR_VIRTUAL_MTP` is set (the dev opt-in), and never when `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP` is set
-(the override non-MTP E2E shards use to avoid racing the shared backing dir). So a `virtual-mtp`-compiled binary launched
-with none of those env vars stays inert and matches a plain build — the dev opt-in is purely additive to the E2E path.
-The fixture tree mirrors `test/e2e-shared/mtp-fixtures.ts`. The gating logic (`decide_startup_root`) is pure and
-unit-tested in `virtual_device.rs::tests`.
+- **`MTP_ENABLED` (`AtomicBool`, default `true`, in `watcher.rs`) gates all auto-connect.** The watcher loop always runs
+  (`OnceLock`, no shutdown channel); `check_for_device_changes()` returns early when disabled. Setting key:
+  `fileOperations.mtpEnabled` in `settings.json`, read by `settings/loader.rs` at startup.
+  - `set_mtp_enabled_flag(bool)`: sets the flag with no side effects; called at startup before `start_mtp_watcher()` so
+    the initial auto-connect respects the persisted setting.
+  - `set_mtp_enabled(bool)`: async runtime path (the `set_mtp_enabled` Tauri command). Disabling disconnects all devices,
+    clears `KNOWN_DEVICES`, and restores ptpcamerad (macOS); enabling re-runs `check_for_device_changes()` to pick up
+    already-plugged devices.
+- **Write-capability probe.** `probe_write_capability()` creates a hidden `.cmdr_write_probe` folder to detect cameras
+  that advertise write support but reject writes (`StoreReadOnly`). Timeout or non-fatal errors are treated as writable
+  (benefit of the doubt).
+- **macOS ptpcamerad suppression.** The watcher auto-suppresses `ptpcamerad` (`launchctl disable` + `pkill -9`) before
+  connecting, restores it when all devices disconnect or on exit, and runs `ensure_ptpcamerad_enabled()` at startup for
+  crash recovery. If suppression fails, the `ExclusiveAccess` dialog is the manual fallback. Disabling MTP calls
+  `restore_ptpcamerad_unconditionally()`.
+- **Error events the frontend depends on:** `mtp-exclusive-access-error` (ptpcamerad still holds the device; carries the
+  blocking process name from `ioreg`, `None` on Linux), `mtp-permission-error` (Linux missing udev rules → frontend shows
+  `MtpPermissionDialog` with the install command).
+- **Volume IDs:** `"{device_id}:{storage_id}"` (e.g. `"mtp-336592896:65537"`).
+- **Cancel propagation bails at the next per-USB-roundtrip boundary** (per-handle in `ObjectListing::next`), driven by
+  `WriteOperationState.backend_cancel` (`Arc<AtomicBool>`) wrapped as an `mtp_rs::CancelToken`. Without it, a cancel only
+  stops the loop above the USB call, so an in-flight `list_objects` for a 950-photo dir would run all roundtrips to
+  completion (15–30 s) and wedge the device behind the 30 s op timeout. Don't switch list/delete to PTP
+  `CancelTransaction` (rationale in DETAILS.md).
 
-## Architecture / data flow
-
-```
-USB plug-in
-  → nusb hotplug event (watcher.rs)
-  → 500 ms delay
-  → check MTP_ENABLED gate, skip if disabled
-  → list_mtp_devices() (discovery.rs)
-  → auto_connect_device() (watcher.rs)
-    → MtpConnectionManager::connect()
-    → open_device() via MtpDeviceBuilder
-    → probe_write_capability() per storage
-    → register MtpVolume in global VolumeManager
-    → start_event_loop() per device
-    → emit mtp-device-connected (JSON payload includes `deviceName`: from `connected_info.device.product`, empty string if unknown)
-    → broadcast::emit_volumes_changed()
-
-USB unplug
-  → nusb hotplug event (watcher.rs)
-  → auto_disconnect_device() (watcher.rs)
-    → MtpConnectionManager::disconnect()
-    → emit mtp-device-disconnected
-    → broadcast::emit_volumes_changed()
-
-Event loop (event_loop.rs)
-  → device.next_event()
-  → ObjectAdded/Removed/Changed → compute_diff() → emit directory-diff
-  → StoreAdded → handle_storage_added() → register MtpVolume → emit volumes-changed
-  → StoreRemoved → handle_storage_removed() → unregister MtpVolume → emit volumes-changed
-```
-
-### MTP enabled/disabled toggle
-
-`MTP_ENABLED` (`AtomicBool`, default `true`) in `watcher.rs` gates all auto-connect behavior. The watcher loop always runs (it's `OnceLock`-based, no shutdown channel), but `check_for_device_changes()` returns early when disabled.
-
-- **`set_mtp_enabled_flag(bool)`**: Sets the flag without side effects. Called at startup from `lib.rs` before `start_mtp_watcher()` so the initial auto-connect respects the persisted setting.
-- **`set_mtp_enabled(bool, app)`**: Async. Called at runtime via the `set_mtp_enabled` Tauri command. When disabling: disconnects all devices, clears `KNOWN_DEVICES`, restores ptpcamerad (macOS). When enabling: calls `check_for_device_changes()` to pick up already-plugged devices.
-- **Setting key**: `fileOperations.mtpEnabled` in `settings.json`, read by `settings/loader.rs` at startup.
-- **Interaction with ptpcamerad**: disabling MTP calls `restore_ptpcamerad_unconditionally()`. Re-enabling triggers auto-connect, which re-suppresses ptpcamerad if devices are found.
-
-The frontend is a passive consumer: it subscribes to `volumes-changed` (for the volume picker)
-and `mtp-device-connected`/`mtp-device-disconnected` (for device connection state tracking).
-It never orchestrates MTP connections.
-
-## Key patterns and gotchas
-
-- **Write capability probe**: `probe_write_capability()` creates a hidden `.cmdr_write_probe` folder to detect cameras that advertise write support but reject writes at runtime (`StoreReadOnly`). Timeout or non-fatal errors are treated as writable (benefit of the doubt).
-- **Automatic ptpcamerad suppression**: on macOS, the watcher auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill -9` before connecting to MTP devices, and restores it when all devices disconnect or the app exits. On startup, `ensure_ptpcamerad_enabled()` runs to recover from a previous crash. If suppression fails, the existing `ExclusiveAccess` dialog serves as a manual fallback.
-- **ExclusiveAccess errors (fallback)**: when `ptpcamerad` claims a device despite suppression, `connect()` emits `mtp-exclusive-access-error` with the blocking process name (from `ioreg`) so the frontend can show a dialog with the workaround command. On Linux, the blocking process is reported as `None`.
-- **PermissionDenied errors (Linux)**: when `open_device()` fails with "permission denied" (missing udev rules), `connect()` emits `mtp-permission-error`. Frontend shows `MtpPermissionDialog` with a copyable udev install command. Rules file at `resources/99-cmdr-mtp.rules`.
-- **Volume IDs**: MTP storage volumes use `"{device_id}:{storage_id}"` (e.g., `"mtp-336592896:65537"`).
-- For session-level details (device lock, caches, cache-only path resolution, event-loop shutdown, async recursion), see [`connection/CLAUDE.md`](connection/CLAUDE.md).
-
-## Cancel propagation
-
-Long MTP operations bail at the next per-USB-roundtrip boundary when the
-caller's write-op intent flips to `Stopped`/`RollingBack`. Without this, a
-cancel would only stop the **loop above** the USB call — the in-flight
-`list_objects` for a 950-photo `/DCIM/Camera` would still run all 950
-`GetObjectInfo` roundtrips to completion (15–30 s), and the user's next op
-would queue behind it, hit the 30 s op timeout, and wedge the device.
-
-Wiring:
-
-- `WriteOperationState.backend_cancel` (`Arc<AtomicBool>`) is created per write
-  op alongside `intent`. `cancel_write_operation` and
-  `cancel_all_write_operations` flip both together so any cancel path stops the
-  wire activity.
-- `MtpVolume::list_directory_with_cancel` and `MtpVolume::delete_with_cancel`
-  wrap the flag as a fresh `mtp_rs::CancelToken` via
-  `CancelToken::from_arc(Arc::clone(...))` — the token shares the inner atomic,
-  no second polling task.
-- `MtpConnectionManager::list_directory_with_cancel`,
-  `list_directory_with_progress_and_cancel`, and `delete_object_with_cancel`
-  thread the token to `storage.list_objects_with_cancel` /
-  `storage.delete_with_cancel` in `mtp-rs`. The token is also checked between
-  iterations of the recursive child-delete loop inside `delete_object_with_cancel`.
-
-The actual stop point is **per-handle in `ObjectListing::next`** (one
-`GetObjectInfo` USB roundtrip each, ~17 ms on real Android). One roundtrip's
-latency is well under the user-visible "Cancelling…" indicator's settling
-window.
-
-### Why not PTP `CancelTransaction (0x4001)` for list/delete?
-
-PTP defines `CancelTransaction` (interrupt-OUT control request, SIC class-cancel
-with `bRequest=0x64`). mtp-rs already implements it via
-`Transport::cancel_transfer` for streaming downloads (`FileDownload::cancel`),
-where there's a multi-MB bulk-IN transfer to drain.
-
-For `list_objects` and `delete_object`, each PTP transaction completes in
-milliseconds. Mid-transaction cancel via `CancelTransaction` would be
-high-complexity (drain bulk endpoints, recover session state) for sub-roundtrip
-benefit. Checking the token **between** roundtrips:
-
-- Bails within ≈one USB roundtrip's latency (the actual wedge point).
-- Leaves bulk endpoints in a clean state — no drain race.
-- Leaves the device session intact for the next op.
-
-Streaming downloads continue to use the SIC class-cancel path (see the
-"Transfer cancellation" section in `mtp-rs/AGENTS.md`); that's a different
-mechanism for a different problem.
-
-### Hardware caveats
-
-Some Android devices may still leave the session in a degraded state after a
-flurry of operations, even when cancel is clean on our side (Pixel 6/7 era
-firmware has been observed mis-handling rapid op-cancel-op sequences). This is
-hardware-side and unfixable in software; the settled-state gate (see
-`file_system/write_operations/DETAILS.md` § "Settle contract") ensures the user
-doesn't issue the next op until our side is fully quiet, which avoids
-provoking the device-side bug in practice.
-
-## Dependencies
-
-- `mtp_rs`: MTP session, object listing, file transfer
-- `nusb`: USB hotplug events
-- `futures_util`: `StreamExt` for hotplug stream
-- `crate::file_system`: `VolumeManager`, `MtpVolume`, `FileEntry`, `compute_diff`
+Full details (data-flow diagram, virtual-device activation gating, cancel-propagation wiring, why-not-CancelTransaction,
+hardware caveats, dependencies): [DETAILS.md](DETAILS.md).

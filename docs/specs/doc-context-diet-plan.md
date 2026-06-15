@@ -30,7 +30,7 @@ The leaks:
 
 ## The model: three tiers
 
-- **Resident (every agent, every worktree, every subagent).** Only what passes one test: "would an agent doing *any*
+- **Resident (every agent, every worktree, every subagent).** Only what passes one test: "would an agent doing _any_
   task get something wrong, or violate something, if it never saw this?" Almost nothing currently resident passes.
   Target: what-is-Cmdr, the 4-app map, the universal rails, and a router. ~3,000–3,500 project words.
 - **Path-scoped auto (colocated `CLAUDE.md`).** Loads when an agent works in that area. Must-knows only, ≤600 words.
@@ -46,8 +46,8 @@ being resident.
 
 - **Every area `CLAUDE.md` must have a sibling `DETAILS.md`, and link it.** Repo-root `CLAUDE.md` is the only exception.
   Mandate it as a stub (`# <area> — details` + one line: "Depth and rationale live here; CLAUDE.md holds only
-  must-knows.") so the C→D link has a real target and the create-decision disappears. Rationale: the *existence
-  decision* is the friction that makes agents cram depth into C; removing it leaves only the right question (must-know
+  must-knows.") so the C→D link has a real target and the create-decision disappears. Rationale: the _existence
+  decision_ is the friction that makes agents cram depth into C; removing it leaves only the right question (must-know
   vs depth). Enforced by a check (presence + link), folded into the `claude-md-length` walker.
 - **All `CLAUDE.md` ratchet to ≤600 words**, allowlist trending to empty. Migration is per-file and careful (dropping a
   must-know is a real regression), not a mechanical truncation. Do the 13 files over 1,500 first. Keep the check at warn

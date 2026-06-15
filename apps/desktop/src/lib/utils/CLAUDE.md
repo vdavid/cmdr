@@ -4,145 +4,56 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 
 ## Files
 
-- **`filename-validation.ts`**: Pure client-side filename validation for instant keystroke feedback
-- **`filename-validation.test.ts`**: Vitest tests covering all validators
-- **`confirm-dialog.ts`**: Wrapper around Tauri's native dialog API
-- **`timing.ts`**: `withTimeout`, `createDebounce`, and `createThrottle` for timing control
-- **`timing.test.ts`**: Vitest tests for withTimeout, debounce, and throttle
-- **`shorten-middle.ts`**: `shortenMiddle` mid-truncation + `createPretextMeasure` factory
-- **`shorten-middle.test.ts`**: Vitest tests for shortenMiddle (mock measureWidth, 14 tests)
-- **`shorten-middle-action.ts`**: Svelte action wrapping `shortenMiddle` with ResizeObserver + async pretext
-- **`srgb-mix.ts`**: Tiny sRGB color helpers (`mixSrgb`, `withAlpha`, `parseHex`, `toHex`)
-- **`webkit-compat.ts`**: One-shot `color-mix()` feature detection + boot-time telemetry log
+- **`filename-validation.ts`**: pure client-side filename validation for instant keystroke feedback.
+- **`confirm-dialog.ts`**: wrapper around Tauri's native dialog `ask()`.
+- **`timing.ts`**: `withTimeout`, `createDebounce`, `createThrottle`.
+- **`shorten-middle.ts`**: `shortenMiddle` mid-truncation + `createPretextMeasure` factory.
+- **`shorten-middle-action.ts`**: Svelte action wrapping `shortenMiddle` with ResizeObserver + async pretext.
+- **`pluralize.ts`**: count + noun formatting ("1 user" / "3 users").
+- **`srgb-mix.ts`**: sRGB color helpers (`mixSrgb`, `withAlpha`, `parseHex`, `toHex`, `relativeLuminance`,
+  `contrastRatio`, `readableFgOn`).
+- **`webkit-compat.ts`**: one-shot `color-mix()` feature detection + boot-time telemetry log.
 
-## srgb-mix.ts / webkit-compat.ts
+## Must-knows
 
-The CSS we ship uses `color-mix()` heavily; Safari < 16.2 (still in the wild on macOS 12 Monterey) doesn't parse it, so
-the variables go unset and downstream UI loses color. Two safety nets work together:
+- **Validation runs on the frontend (pure TS), not via Rust round-trips.** Keystroke feedback needs sub-millisecond
+  latency; an IPC round-trip per keystroke would stutter. All rules (length, chars, conflicts) are deterministic given
+  the sibling list, so no filesystem access is needed. Don't move validation to the backend.
+- **Length limits are `>= 255` bytes (name) and `>= 1024` bytes (path), strictly**, not `> 255`: the filesystem reserves
+  the last byte. Byte length is measured with `TextEncoder`, not `.length`, to handle multi-byte characters.
+- **`validateConflict` is case-insensitive (APFS).** A case-only rename (`foo` → `Foo`) passes without warning. Pass
+  `originalName` correctly or you get false positives. This assumes macOS/APFS; Linux support will need a per-filesystem
+  case-sensitivity flag.
+- **`getExtension(filename)` returns the extension WITH the dot** (`.txt`), or `''` for dotfiles without an extension
+  (`.gitignore` → `''`), via `lastIndexOf('.') <= 0`.
+- **`extensionsDifferMeaningfully(oldName, newName)` decides whether an extension change needs confirmation.** Returns
+  false for case-only changes (`.JPG` → `.jpg`) and known equivalents (`.jpeg` → `.jpg`, `.md` → `.txt`); the
+  equivalence groups live in `EQUIVALENT_EXTENSION_GROUPS` in the same file. Extend that constant to add aliases. Used
+  by both `validateExtensionChange` and the rename save flow's "ask" gate.
+- **Use `confirmDialog` everywhere instead of `window.confirm()`** (unreliable in Tauri). It wraps Tauri's `ask()` with
+  an explicit `cancelLabel: 'Cancel'`: macOS `NSAlert` only assigns Escape to a button labeled "Cancel", so without the
+  override Escape does nothing in confirmation dialogs.
+- **The CSS ships `color-mix()` heavily, which Safari < 16.2 (still on macOS 12 Monterey) doesn't parse.** Two safety
+  nets must both stay: `app.css` static fallbacks inside `@supports not (color: color-mix(...))` blocks, and
+  `accent-color.ts` / `volume-tint.svelte.ts` computing runtime-derived colors in JS via `mixSrgb` / `withAlpha` (the
+  tokens that depend on the live macOS accent color). Don't introduce `color-mix()` for accent-derived tokens.
+- **`readableFgOn(accentHex)` (returns `#000000` / `#ffffff` by WCAG contrast) is mirrored in
+  `scripts/check-a11y-contrast/accent_matrix.go`.** Keep the JS and Go logic in sync, or the design-time contrast
+  checker tests a different fg than the app renders.
 
-- `app.css` ships static fallback declarations inside `@supports not (color: color-mix(...))` blocks.
-- `accent-color.ts` and `volume-tint.svelte.ts` compute their runtime-derived colors in JS using `mixSrgb` / `withAlpha`
-  from `srgb-mix.ts`, sidestepping `color-mix()` entirely for the tokens that depend on the live macOS accent color.
-- `srgb-mix.ts` also exports `relativeLuminance`, `contrastRatio`, and `readableFgOn`. `readableFgOn(accentHex)` returns
-  `#000000` or `#ffffff` based on which gives the higher WCAG contrast against the given accent. Used by
-  `accent-color.ts` to compute `--color-accent-fg` per runtime accent. The same logic is mirrored in
-  `scripts/check-a11y-contrast/accent_matrix.go` so the design-time checker exercises every macOS-accent variant against
-  the JS-derived fg.
+## Gotchas
 
-`webkit-compat.ts` exposes `hasColorMix` (computed once at module load) so consumers can branch, and `logWebkitCompat()`
-which the main layout calls at boot — emits one log line so we can spot affected users in error reports.
+- **`validateFilename` returns the FIRST error or warning, not a list.** Checks run in priority order (errors before
+  warnings): `validateNotEmpty` → `validateDisallowedChars` (`/` or `\0`) → `validateNameLength` → `validatePathLength`
+  → `validateExtensionChange` → `validateConflict`. Inline rename UI has space for one message.
+- **`validateDirectoryPath(path)` validates full paths, not filenames** (empty, must-be-absolute, null byte, total
+  length, per-component length). Used by TransferDialog; composable in NewFolderDialog.
+- **`'ask'` extension setting returns `ok` at validation time**; the save dialog handles the confirmation separately.
+- **`createDebounce` exposes `flush()`** (for `beforeunload` cleanup, e.g. the log bridge) and `createThrottle`
+  guarantees a trailing call. Both are hand-rolled (<35 lines each) deliberately, not lodash.
+- **`useShortenMiddle` action takes `tooltipWhenTruncated?` (default `false`)**: when set, the native `title` applies
+  only when truncation actually trimmed the string. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit
+  fallback path on modern WebKit (see DETAILS.md and `docs/guides/releasing.md` § old-macOS smoke test).
 
-**Dev override**: `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the fallback path on modern WebKit. It does two things
-at module load: flips `hasColorMix` to `false` (routes the JS-mix branches) and sets `data-force-old-webkit` on `<html>`
-(activates the `:root[data-force-old-webkit]` blocks in `app.css` that mirror the `@supports not (...)` fallbacks). Use
-it to verify the old-WebKit look without tracking down a real Safari 15.x environment.
-
-See `docs/guides/releasing.md` § "Pre-release smoke test on old macOS" for the manual check before tagging.
-
-## filename-validation.ts
-
-`validateFilename()` is the main orchestrator for single-file renames. It runs checks in priority order: errors first,
-then warnings. Returns the first non-ok result, or `{ severity: 'ok', message: '' }`.
-
-```
-validateFilename()
-  ├── validateNotEmpty()          : error if blank after trim
-  ├── validateDisallowedChars()   : error if / or \0 present
-  ├── validateNameLength()        : error if >= 255 bytes (UTF-8)
-  ├── validatePathLength()        : error if >= 1024 bytes (UTF-8)
-  ├── validateExtensionChange()   : error/ok depending on 'yes'|'no'|'ask' setting
-  └── validateConflict()          : warning if a sibling already has that name (case-insensitive)
-```
-
-`validateDirectoryPath()` validates full directory paths (not filenames). Used by TransferDialog and composable with
-individual validators in NewFolderDialog.
-
-```
-validateDirectoryPath(path)
-  ├── empty check                 : error if blank after trim
-  ├── absolute check              : error if doesn't start with /
-  ├── null byte check             : error if contains \0
-  ├── total path length           : error if >= 1024 bytes (UTF-8)
-  └── per-component length        : error if any segment >= 255 bytes (splits on /, filters empty)
-```
-
-Key types:
-
-```ts
-type ValidationSeverity = 'error' | 'warning' | 'ok'
-interface ValidationResult {
-  severity: ValidationSeverity
-  message: string
-}
-```
-
-### Gotchas
-
-- Limits are `>= 255` and `>= 1024` (strictly), not `> 255`: the filesystem reserves the last byte.
-- `TextEncoder` is used for byte length, not `.length`, to handle multi-byte characters correctly.
-- `validateConflict` is case-insensitive (APFS). A case-only rename of the same file (e.g. `foo` → `Foo`) passes without
-  warning. Pass `originalName` correctly or you'll get false positives.
-- `getExtension(filename)` returns the extension including the dot (e.g. `.txt`), or `''` for dotfiles without extension
-  (e.g. `.gitignore` → `''`). Implemented as `lastIndexOf('.') <= 0`.
-- Extension change behavior is controlled by the `allowExtensionChanges` user setting (`yes`/`no`/`ask`). `'ask'`
-  returns `ok` at validation time; the save dialog handles it separately.
-- `extensionsDifferMeaningfully(oldName, newName)` is the shared helper that decides whether an extension change is
-  worth a confirmation. It returns false for case-only changes (e.g. `.JPG` → `.jpg`) and for changes between known
-  equivalents (e.g. `.jpeg` → `.jpg`, `.md` → `.txt`), so users aren't pestered to confirm a metadata tweak. The
-  equivalence groups live in `EQUIVALENT_EXTENSION_GROUPS` in the same file; extend that constant to add more aliases.
-  Used by both `validateExtensionChange` and the rename save flow's "ask" gate.
-
-## confirm-dialog.ts
-
-Thin wrapper around `@tauri-apps/plugin-dialog`'s `ask()`. Use this everywhere instead of `window.confirm()`, which is
-unreliable in Tauri.
-
-```ts
-confirmDialog(message: string, title?: string): Promise<boolean>
-```
-
-Shows a native warning dialog with OK/Cancel. Resolves `true` on confirm.
-
-## Key decisions
-
-**Decision**: Validation runs on the frontend (pure TS) instead of round-tripping to Rust. **Why**: Keystroke-level
-feedback needs sub-millisecond latency. An IPC round-trip per keystroke would add ~1-5ms and could stutter during fast
-typing. All the rules (length, chars, conflicts) are deterministic given the sibling list, so there is no need for
-filesystem access.
-
-**Decision**: `validateFilename` returns the first error or warning, not a list of all issues. **Why**: Inline rename UI
-has space for one message. Showing the highest-priority issue keeps the feedback focused. Errors are checked before
-warnings so a blocking issue always takes precedence over an advisory one.
-
-**Decision**: Case-insensitive conflict check (APFS default) rather than per-filesystem logic. **Why**: macOS (APFS) is
-the only supported platform today. The check is case-insensitive to match the default APFS case-insensitive behavior.
-When Linux support ships, this will need a per-filesystem case-sensitivity flag.
-
-**Decision**: `confirmDialog` wraps Tauri's `ask()` with explicit `cancelLabel: 'Cancel'` instead of the default.
-**Why**: The default label is "No", but macOS `NSAlert` only assigns the Escape key equivalent to a button labeled
-"Cancel". Without this override, Escape does nothing in confirmation dialogs, a jarring UX break.
-
-**Decision**: Custom `createDebounce`/`createThrottle` instead of lodash or a library. **Why**: Both are <35 lines. The
-throttle guarantees a trailing call (last value always fires), which lodash's default does not. The debounce exposes
-`flush()` for `beforeunload` cleanup (e.g. log bridge). No need for a 70KB dependency.
-
-## shorten-middle.ts
-
-`shortenMiddle()` truncates text in the middle with an ellipsis, using pixel-accurate width measurement via an injected
-`measureWidth` function. Supports `preferBreakAt` (snap cuts to a delimiter like `/`), `startRatio` (bias budget toward
-start or end), and custom ellipsis strings.
-
-`createPretextMeasure()` creates a `measureWidth` function backed by `@chenglou/pretext`'s `prepareWithSegments` +
-`measureNaturalWidth`. Caches prepared texts for repeated measurements of the same string.
-
-`useShortenMiddle` Svelte action accepts `tooltipWhenTruncated?: boolean` (default `false`). When set, the native
-`title` is applied only when truncation actually trimmed the string; short, fully-visible text doesn't get a redundant
-tooltip. Existing callers default to always-on tooltip behavior.
-
-## Dependencies
-
-- `filename-validation.ts`: zero external dependencies
-- `confirm-dialog.ts`: `@tauri-apps/plugin-dialog`
-- `shorten-middle.ts`: `@chenglou/pretext` (type import only; runtime import via `createPretextMeasure` caller)
-
-Full details: [DETAILS.md](DETAILS.md).
+Full details (full export catalogs, validator/decision rationale, the old-WebKit dev override mechanism):
+[DETAILS.md](DETAILS.md).

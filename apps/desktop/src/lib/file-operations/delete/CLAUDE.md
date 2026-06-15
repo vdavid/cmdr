@@ -1,90 +1,46 @@
-# Delete and trash
+# Delete and trash (frontend)
 
 Delete files permanently or move them to macOS Trash, with a confirmation dialog, scan preview, and progress tracking.
-
-## Purpose
-
-Provides the delete/trash workflow triggered by F8 (trash) or Shift+F8 (permanent delete). Always shows a confirmation
-dialog before acting. Reuses `TransferProgressDialog` for progress display.
+Triggered by F8 (trash) or Shift+F8 (permanent). Always shows a confirmation dialog; reuses `TransferProgressDialog` for
+progress. Backend counterpart:
+[`src-tauri/src/file_system/write_operations/delete/CLAUDE.md`](../../../../src-tauri/src/file_system/write_operations/delete/CLAUDE.md).
 
 ## Files
 
-- **DeleteDialog.svelte**: Confirmation dialog with file list (max 10 items + overflow), live scan stats, symlink
-  notice, no-trash volume warning, and a Trash/Delete segmented control that lets the user flip the operation in-dialog
-  (hidden on no-trash volumes, where permanent is forced). Uses `ModalDialog` with `role="dialog"` for trash and
-  `role="alertdialog"` for permanent delete. The role flips reactively when the toggle changes.
-- **delete-dialog-utils.ts**: Pure utility functions: `generateDeleteTitle()` (handles "N selected files" vs "1 file
-  under cursor"), `abbreviatePath()`, `getSymlinkNotice()`, `countSymlinks()`.
-- **delete-dialog-utils.test.ts**: Vitest tests for the pure utilities.
+- **DeleteDialog.svelte**: confirmation dialog with file list (max 10 + overflow), live scan stats, symlink notice,
+  no-trash warning, and a Trash/Delete segmented control that flips the operation in-dialog (hidden on no-trash volumes,
+  where permanent is forced). Uses `ModalDialog` with `role="dialog"` for trash, `role="alertdialog"` for permanent; the
+  role flips reactively with the toggle.
+- **delete-dialog-utils.ts** (+ test): pure utilities `generateDeleteTitle()`, `abbreviatePath()`, `getSymlinkNotice()`,
+  `countSymlinks()`.
 
-## How delete flows
+## Must-knows
 
-1. **Shortcut**: F8 or Shift+F8 (permanent delete)
-2. **Command**: `file.delete` or `file.deletePermanently` in `command-registry.ts`, handled in `+page.svelte`
-3. **Selection**: `DualPaneExplorer.openDeleteDialog(permanent)` builds props from selection or cursor item (same
-   pattern as copy/move). Looks up `supportsTrash` from the source volume's `VolumeInfo`.
-4. **Dialog**: `DeleteDialog` opens with file list, scan preview starts in background via `startScanPreview()`
-5. **Confirm**: `DeleteDialog` passes back the active `isPermanent` (from the toggle), and
-   `dialog-state.svelte.ts::handleDeleteConfirm(previewId, isPermanent)` transitions to `TransferProgressDialog` with
-   `operationType: 'trash'` or `'delete'`
-6. **Backend**: `trash_files_start()` or `delete_files_start()` in `write_operations/mod.rs` runs the operation
-7. **Progress**: `TransferProgressDialog` shows items/bytes progress with cancel support
-8. **Completion**: Toast notification, both panes refreshed, 400ms minimum display time
+- **F8/Shift+F8 just set the initial mode; the user can flip it in-dialog.** F8 preselects trash, Shift+F8 preselects
+  permanent. `file.delete` / `file.deletePermanently` commands; `DualPaneExplorer.openDeleteDialog(permanent)` builds
+  props from selection or cursor and looks up `supportsTrash` from the source `VolumeInfo`.
+- **`DeleteDialog` must forward `sourceVolumeId` into `startScanPreview`.** Without it, an MTP delete runs
+  `walk_dir_recursive` on `/DCIM/Camera`, hits path-not-found, and silently leaves the dialog stuck at "0 files".
+  Non-local volumes (MTP, SMB) must route through `run_volume_scan_preview`, not the local-FS walker.
+- **`supportsTrash` drives the mode.** Each volume exposes it from `fsType` (statfs): APFS/HFS+ yes; FAT32, exFAT,
+  smbfs, nfs, afpfs, webdav no. When false, the dialog forces permanent mode with a warning banner.
+- **Trash cancels the scan on confirm; permanent delete waits for it.** `trashItemAtURL` is atomic per top-level item,
+  so trash needs no scan; permanent delete needs the full count first. Scan events still carry index-derived
+  `expectedFilesTotal`/`expectedBytesTotal`, but the FE no longer renders a progress bar from them (it read as "already
+  deleting" during scan).
+- **No undo, no `confirmBeforeDelete` setting.** Delete is destructive so the dialog always shows; both delete settings
+  were removed from the registry. Items trashed via `NSFileManager.trashItemAtURL` support Finder's "Put back".
+- **`TransferProgressDialog` is shared** (`operationType: 'delete' | 'trash'`); transfer-only props (`destinationPath`,
+  `direction`, `conflictResolution`) are optional and hidden. Progress dialog stays visible ≥400 ms to avoid flashes.
+- **After delete, cursor stays at the same position index** (not the same file): `apply-diff.ts` returns
+  `Math.min(originalCursorIndex, files.length - 1)`. Selection is cleared (items gone); both panes refresh.
+- **Existence checks use `symlink_metadata()`, not `path.exists()`** so a dangling symlink is still a valid item to
+  trash/delete.
 
-## Key design decisions
+## Backend touchpoints
 
-- **Trash by default**: F8 moves to trash. Shift+F8 opens the same dialog with permanent preselected. Either way, the
-  user can flip the mode via the Trash/Delete segmented control before confirming, so the shortcut just sets the initial
-  state.
-- **Always show dialog**: No `confirmBeforeDelete` setting. Delete is destructive, so the user always sees what they're
-  about to delete. Both delete settings were removed from the settings registry.
-- **No undo**: Cmdr doesn't implement undo, but items trashed via `NSFileManager.trashItemAtURL` support Finder's "Put
-  back" automatically.
-- **`supportsTrash` detection**: Each volume exposes `supportsTrash` based on `fsType` from `statfs`. APFS/HFS+ support
-  trash; FAT32, exFAT, and network filesystems (smbfs, nfs, afpfs, webdav) do not. When `supportsTrash` is false, the
-  dialog forces permanent delete mode with a warning banner.
-- **Scan preview integration**: The confirmation dialog starts a scan preview for deep file/dir/byte counts. For trash,
-  the scan is cancelled on confirm (trashItemAtURL is atomic per top-level item, no need to wait). For permanent delete,
-  the scan must complete first (the progress dialog shows scanning phase if needed). The dialog shows the running
-  tallies, the current scanning directory, and a throughput readout from `ScanThroughput` (`../scan-throughput.ts`).
-  `DeleteDialog` forwards `sourceVolumeId` into `startScanPreview` so non-local volumes (MTP, SMB) route through
-  `run_volume_scan_preview` instead of the local-FS walker — without it, an MTP delete would attempt
-  `walk_dir_recursive` on `/DCIM/Camera`, get a path-not-found error, and silently leave the dialog stuck at "0 files".
-  Note: scan events still carry index-derived `expectedFilesTotal` / `expectedBytesTotal` from the BE, but the FE no
-  longer renders a progress bar from them (it read as "already deleting" during scan).
-- **400ms minimum display**: Progress dialog stays visible for at least 400ms to prevent jarring flashes on fast
-  operations.
-- **Cursor positioning**: After delete, cursor stays at the same position index (not same file). Fixed in
-  `apply-diff.ts`: returns `Math.min(originalCursorIndex, files.length - 1)` instead of 0 when cursor file is removed.
+`write_operations/trash.rs` (`move_to_trash_sync`, `trash_files_with_progress`) and `write_operations/delete/walker.rs`
+(`delete_files_with_progress`). `WriteOperationType::Trash` is a distinct variant in event payloads. MCP `delete` tool
+opens this confirmation dialog (`delete-confirmation` dialog type).
 
-## Backend (Rust)
-
-- **`write_operations/trash.rs`**: `move_to_trash_sync()` (ObjC `trashItemAtURL` wrapper, reused by
-  `commands/rename.rs`) and `trash_files_with_progress()` (batch trash with per-item progress and cancellation)
-- **`write_operations/delete.rs`**: `delete_files_with_progress()` for permanent delete (scan, then delete files first,
-  dirs deepest-first)
-- **`WriteOperationType::Trash`**: Distinct variant for trash operations in all event payloads
-
-## Edge cases
-
-- **Dangling symlinks**: Uses `symlink_metadata()` instead of `path.exists()` for existence checks. A dangling symlink
-  (target deleted) is still a valid item to trash/delete.
-- **Locked files**: `trashItemAtURL` handles locked files on APFS. Permanent delete fails on locked files with a
-  specific error message suggesting unlocking via Finder.
-- **No-trash volumes**: Detected proactively via `supportsTrash` on the volume. Dialog forces permanent delete and shows
-  warning. If `trashItemAtURL` unexpectedly fails on a "supports trash" volume, the per-item error message suggests
-  using Shift+F8.
-- **Partial failures**: If some items fail, the operation continues. Successful items stay deleted/trashed. Errors are
-  reported via `TransferErrorDialog` after completion.
-- **MCP**: `delete` tool in `tools.rs` opens the delete confirmation dialog. `delete-confirmation` dialog type added.
-
-## Gotchas
-
-- **TransferProgressDialog reuse**: Delete/trash use `TransferProgressDialog` with `operationType: 'delete' | 'trash'`.
-  Transfer-specific props (`destinationPath`, `direction`, `conflictResolution`) are optional and hidden for delete.
-- **Trash has no scan phase**: `trashItemAtURL` is atomic per top-level item, so progress tracks top-level items (not
-  individual files). Byte-level progress only shows when per-item sizes are available from the scan or drive index.
-- **Selection cleared after delete**: Items no longer exist, so selection is cleared. Both panes refresh (they might
-  show the same directory).
-
-Full details: [DETAILS.md](DETAILS.md).
+Full details (the full F8→completion flow, partial-failure and locked-file handling): [DETAILS.md](DETAILS.md).

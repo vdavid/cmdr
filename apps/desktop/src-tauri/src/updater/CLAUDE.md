@@ -1,85 +1,37 @@
 # Updater module
 
-Custom macOS updater that syncs files *into* the existing `.app` bundle, preserving its inode and
-`com.apple.macl` xattr so macOS TCC (Full Disk Access) permissions survive across updates.
-
-Compiled only on macOS (`#[cfg(target_os = "macos")]`). On other platforms, the Tauri updater plugin handles updates
-and the frontend calls the plugin API directly.
+Custom macOS updater that syncs files *into* the existing `.app` bundle, preserving its inode and `com.apple.macl` xattr
+so macOS TCC (Full Disk Access) permissions survive updates. macOS-only (`#[cfg(target_os = "macos")]`); other platforms
+use the Tauri updater plugin and the frontend calls the plugin API directly.
 
 ## File map
 
-- **`mod.rs`**: Three Tauri commands (`check_for_update`, `download_update`, `install_update`) and shared `UpdateState`
-- **`manifest.rs`**: Parses `latest.json`, compares versions, resolves platform key
-- **`signature.rs`**: Minisign signature verification (base64-wrapped, matching Tauri's format)
-- **`installer.rs`**: Extracts tarball, syncs into running bundle, handles privilege escalation
+- `mod.rs`: the three Tauri commands (`check_for_update`, `download_update`, `install_update`) and shared `UpdateState`.
+- `manifest.rs`: parses `latest.json`, compares versions, resolves the platform key.
+- `signature.rs`: minisign signature verification (base64-wrapped, matching Tauri's format).
+- `installer.rs`: tarball extraction, sync into the running bundle, privilege escalation.
 
-## Key decisions
+## Must-knows
 
-**Decision**: Sync files into the bundle instead of replacing the `.app` directory.
-**Why**: Replacing the bundle changes its inode, which causes macOS TCC to lose FDA grants. Users would have to
-re-grant Full Disk Access after every update.
+- **Sync into the bundle, never replace the `.app` directory.** Replacing it changes the inode and macOS TCC loses FDA
+  grants, forcing the user to re-grant after every update. The install path fundamentally can't work outside a bundle
+  (no `Contents/` to sync into).
+- **Per-file writes use atomic rename (temp + `rename()`), not in-place `fs::copy`.** `fs::copy` keeps the same inode;
+  macOS's kernel code-signing cache keys on inode and validates the new binary against the old cached code directory,
+  causing `SIGKILL (Code Signature Invalid)` on launch. A new inode forces fresh validation. The admin path (`rsync -a`)
+  already renames atomically.
+- **Staging dir is per-instance: `<tmp>/cmdr-update-staging-{CMDR_INSTANCE_ID}`** (`installer::staging_dir`; production
+  with no env var lands at `…-default`). Don't make it shared: concurrent `Cmdr` processes (main + a worktree) race on
+  one path and trip `ENOTEMPTY`.
+- **Dev-build guard:** `check_for_update` returns `None` when the exe isn't inside a `.app` bundle
+  (`installer::is_running_from_app_bundle`). Don't loosen it: outside a bundle the updater can't work and would spam
+  noisy errors into the auto error reporter.
+- **CI guard:** `check_for_update` returns `None` when `CI` is set, so no network calls in tests.
+- **Manifest fetch is bounded** (`connect_timeout` 10 s, overall `timeout` 30 s); download/install paths are
+  intentionally NOT timed out (they run with user attention). Don't add timeouts there.
+- **Manifest URL routes through the API server** (`https://api.getcmdr.com/update-check/{version}?arch={arch}`), which
+  logs the check to D1 for active-user counting, then 302-redirects to `https://getcmdr.com/latest.json`. Built at
+  runtime from the compile-time version and arch.
 
-**Decision**: Sync order is Resources, Info.plist, _CodeSignature, then MacOS binary last.
-**Why**: Updating the binary last minimizes the window where the code signature is inconsistent with the binary on
-disk. If the app crashes mid-update, the old binary is still intact.
-
-**Decision**: Unconditional deletion of stale files after sync.
-**Why**: Old files left behind could cause version mismatches or bloat. The deletion pass removes anything in the
-destination that isn't in the source, then cleans up empty directories bottom-up.
-
-**Decision**: Minisign verification before writing tarball to disk.
-**Why**: Ensures integrity and authenticity of the update. The public key is compiled into the binary. Both key and
-signatures use base64(minisign-text-format) encoding, matching Tauri's internal convention.
-
-**Decision**: Privilege escalation via `osascript` with `rsync -a --delete`.
-**Why**: When the app is installed in `/Applications` (owned by root), direct writes fail. `osascript`'s
-`do shell script ... with administrator privileges` shows the native macOS auth dialog. `rsync` is used because it
-expresses the full sync (copy + delete stale) in a single shell command.
-
-**Decision**: Bounded `connect_timeout` (10 s) and overall `timeout` (30 s) on the manifest fetch.
-**Why**: `reqwest::get` uses a default client with no overall timeout. A stuck TCP handshake to the redirect target
-(`getcmdr.com/latest.json`) was observed to hang for 2.5 min before reporting `error sending request for url …`,
-which made transient network blips look like a hung app and tripped the auto error reporter. The bounds keep the
-periodic check honest. Download/install paths are intentionally NOT timed out: they run with user attention and
-can legitimately take a while.
-
-**Decision**: Walk `reqwest::Error::source()` for log-friendly messages (`describe_error_chain`).
-**Why**: `reqwest::Error`'s `Display` only prints the outermost layer (`error sending request for url …`), so logs
-hid the real cause (DNS lookup, TCP connect timeout, TLS handshake). Walking the source chain surfaces the
-underlying error class without pulling in `anyhow`.
-
-**Decision**: Atomic rename (write to temp file, then `rename()`) instead of in-place `fs::copy`.
-**Why**: `fs::copy` overwrites the destination in-place, keeping the same inode. macOS's kernel code signing cache
-keys on inode (it validates the new binary's pages against the old binary's cached code directory), causing
-`SIGKILL (Code Signature Invalid)` on launch. Atomic rename creates a new inode, forcing a fresh validation.
-The admin-privilege path (`rsync -a`) already uses atomic rename by default.
-
-## Key patterns and gotchas
-
-- **macOS-only.** The module, command registrations, and `UpdateState` are all gated with `#[cfg(target_os = "macos")]`.
-  On non-macOS, the frontend uses `@tauri-apps/plugin-updater` directly.
-- **Staging dir is per-instance: `<tmp>/cmdr-update-staging-{CMDR_INSTANCE_ID}`** (`installer::staging_dir`).
-  Cleaned before and after install. Production (no wrapper, no env var) lands at `cmdr-update-staging-default`.
-  Dev/worktree sessions get their own subdir so concurrent `Cmdr` processes don't race on the same path and trip
-  `ENOTEMPTY` (we observed exactly this when running main + a worktree side-by-side).
-- **Privilege escalation via `osascript`.** Only triggers when direct writes to `/Applications/Cmdr.app` are denied.
-  Users who run from `~/Applications` or a dev build won't see the auth dialog.
-- **CI guard.** `check_for_update` returns `None` when the `CI` env var is set, avoiding network calls in tests.
-- **Dev-build guard.** `check_for_update` also returns `None` when the current exe isn't inside a `.app` bundle
-  (via `installer::is_running_from_app_bundle`). Without it, dev builds run from `target/<triple>/release/Cmdr` would
-  surface a noisy `Couldn't find .app bundle in path: ...` error every time the auto-error-reporter caught it. The
-  gate makes the updater a silent no-op for any binary that isn't packaged. Don't loosen it: the install path
-  fundamentally can't work outside a bundle (the sync target has no `Contents/` to sync into).
-- **Manifest URL routes through the API server** (`https://api.getcmdr.com/update-check/{version}?arch={arch}`),
-  which logs the check to D1 for active user counting, then 302-redirects to `https://getcmdr.com/latest.json`.
-  The URL is constructed at runtime from the compile-time version and architecture.
-
-## Dependencies
-
-- `reqwest` -- HTTP client for manifest and tarball download
-- `minisign-verify` -- signature verification
-- `flate2`, `tar` -- tarball extraction
-- `filetime` -- touching the bundle after install to trigger LaunchServices refresh
-- `base64` -- decoding the double-encoded minisign key and signatures
-
-Full details: [DETAILS.md](DETAILS.md).
+Full details (sync order, deletion pass, minisign rationale, privilege escalation, error-chain logging,
+dependencies): [DETAILS.md](DETAILS.md).
