@@ -22,12 +22,12 @@ Shared tooling: the Go check runner ([`scripts/check/CLAUDE.md`](scripts/check/C
 
 ## Where to look (router)
 
-- **Editing code**: the colocated `CLAUDE.md` auto-loads when you touch a directory. For "where does symbol X live", use
-  CodeGraph (`codegraph_search`), not a doc. Auto-load is touch-based, so read a subsystem's `CLAUDE.md` before running
+- **Editing code**: the colocated `CLAUDE.md` autoloads when you touch a directory. For "where does symbol X live", use
+  CodeGraph (`codegraph_search`), not a doc. Autoload is touch-based, so read a subsystem's `CLAUDE.md` before running
   its tooling/tests (e.g. `test/e2e-playwright/CLAUDE.md` before the E2E suite).
 - **Planning in an unfamiliar area**: [`docs/architecture.md`](docs/architecture.md), the subsystem map (what + where +
   a pointer to each area's docs).
-- **A procedure** (release, screenshots, deps, adding a window or icon): [`docs/guides/`](docs/guides/) and the skills.
+- **A procedure** (release, screenshots, deps, adding a window or icon): [`docs/guides/`](docs/guides) and the skills.
 - **Branding / marketing**: [`brand/CLAUDE.md`](brand/CLAUDE.md), `apps/website/`, and [`README.md`](README.md). You
   don't need app internals.
 - **Writing, code, or UI-copy style**: [`docs/style-guide.md`](docs/style-guide.md) (read before writing user-facing
@@ -58,7 +58,7 @@ screen readers).
 Two colocated tiers per code area, enforced by checks:
 
 - **`CLAUDE.md`** (push tier): auto-injected whenever an agent touches the directory, so it loads in every such session,
-  worktree, and subagent. Hold ONLY must-knows: invariants, gotchas, "don't do X because Y" guardrails, a 2-3 line
+  worktree, and subagent. Hold ONLY must-knows: invariants, gotchas, "don't do X because Y" guardrails, a 2–3 line
   module map, and a pointer to `DETAILS.md`. The litmus: "would an agent editing a file here get something wrong, or
   silently break something, without this line?" If not, it's not a must-know. Keep it as small as the essentials allow
   (hard ceiling 600 words, usually far less); `claude-md-length` warns past that.
@@ -86,7 +86,7 @@ conversational and actionable and never use the words "error" or "failed". The w
   Linux Docker E2E, SMB fixtures), `scripts/`.
 - `apps/{website,api-server,analytics-dashboard}/`: the other three apps.
 - `brand/`: tracked brand and press-kit assets.
-- `docs/`: [`architecture.md`](docs/architecture.md) (the map), [`guides/`](docs/guides/) (how-tos), `tooling/` (service
+- `docs/`: [`architecture.md`](docs/architecture.md) (the map), [`guides/`](docs/guides) (how-tos), `tooling/` (service
   and workflow references), [`specs/index.md`](docs/specs/index.md) (per-development plans, periodically wiped),
   [`notes/README.md`](docs/notes/README.md) (benchmarks and analysis), `style-guide.md`, `design-principles.md`,
   `security.md`, `maintenance.md`.
@@ -95,8 +95,8 @@ conversational and actionable and never use the words "error" or "failed". The w
 ## Checking
 
 Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.); it's cache-aware. Cadence: `--fast`
-while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping. Scope by name (`pnpm check clippy`),
-tech (`rust` / `svelte` / `go`), or app (`desktop` / `website` / ...). Full docs:
+while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping. Scope by name
+(`pnpm check clippy`), tech (`rust` / `svelte` / `go`), or app (`desktop` / `website` / ...). Full docs:
 [`scripts/check/CLAUDE.md`](scripts/check/CLAUDE.md). **Finish every unit of work by running the right checks.**
 
 ## Testing
@@ -108,12 +108,12 @@ mechanics live in [`apps/desktop/CLAUDE.md`](apps/desktop/CLAUDE.md).
 ## Where to put instructions
 
 Split by kind and level: imperatives ("always / never X") go in `rules/` (`~/.claude/rules/` cross-project,
-[`.claude/rules/`](.claude/rules/) project), kept concise; knowledge (how the code works, gotchas, how-tos) in this file
+[`.claude/rules/`](.claude/rules) project), kept concise; knowledge (how the code works, gotchas, how-tos) in this file
 and colocated `DETAILS.md`. Don't restate user-level rules here, nor use `memory/MEMORY.md` for either.
 
 ## Hard rules
 
-Project hard rules are focused, auto-loaded files in [`.claude/rules/`](.claude/rules/) (always in context; non-Claude
+Project hard rules are focused, autoloaded files in [`.claude/rules/`](.claude/rules) (always in context; non-Claude
 agents should read them manually). Two facts worth stating directly: tool versions are mise-managed (`.mise.toml`; if
 `go` / `node` isn't found, check that `~/.local/share/mise/shims` is on `$PATH`), and icons come from `unplugin-icons` +
 `@iconify-json/lucide` (see [`docs/guides/icons.md`](docs/guides/icons.md)).

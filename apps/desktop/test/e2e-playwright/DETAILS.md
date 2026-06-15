@@ -244,8 +244,8 @@ changes nothing they observe. The mechanism lives at the code: `test_mode::is_e2
 `commands::ui::{show_main_window, order_window_to_back}` (per-window `orderBack:`), called from the openers via
 `app-mode.ts`'s `orderChildWindowToBackInE2e`.
 
-The activation policy is set through Tauri's own API, not a hand-rolled `objc2` call: `App::set_activation_policy`
-(and `AppHandle::set_activation_policy`) plus the re-exported `tauri::ActivationPolicy` enum (`Regular` / `Accessory` /
+The activation policy is set through Tauri's own API, not a hand-rolled `objc2` call: `App::set_activation_policy` (and
+`AppHandle::set_activation_policy`) plus the re-exported `tauri::ActivationPolicy` enum (`Regular` / `Accessory` /
 `Prohibited`) are public on macOS (verified on tauri 2.10.3). Only the per-window `orderBack:` drops to `objc2`
 (`ns_window()` + `msg_send!`), because Tauri exposes no "order to back without focus" on `WebviewWindow`.
 
