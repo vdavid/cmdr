@@ -8,9 +8,13 @@ the toast-level guide, and decisions are in [DETAILS.md](DETAILS.md).
 
 - `ModalDialog.svelte` (overlay + drag + Escape + focus + MCP tracking), `focus-trap.ts` (`use:trapFocus`),
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
-- Primitives: `Button`, `LinkButton`, `CommandBox`, `LoadingIcon`, `ProgressBar`, `Size`, `DateLabel`, `ShortcutChip`,
+- Primitives: `Icon` (every inline glyph, via the `icons/icon-map.ts` registry), `Spinner` (the one loading spinner),
+  `Button`, `LinkButton`, `CommandBox`, `LoadingIcon`, `ProgressBar`, `Size`, `DateLabel`, `ShortcutChip`,
   `StatusBadge`, `SectionCard`, `ToggleGroup`, `Popover`, `FilterPopover`, `Chip`, plus the `toast/` system. Tooltip
   lives in `../tooltip/tooltip.ts`.
+- **Render glyphs via `Icon`, spinners via `Spinner`; don't import `~icons/lucide/*` or hand-roll a ring.** Add new
+  glyphs to `icons/icon-map.ts` (the one place lucide is imported). Both surface in the Debug "Graphics" catalog. See
+  `docs/guides/icons.md`.
 - Ark UI (`@ark-ui/svelte`) is the headless library for complex interactive components; simple ones are our own thin
   wrappers.
 

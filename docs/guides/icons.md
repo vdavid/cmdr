@@ -23,23 +23,38 @@ candidates to the user with the search URL and terms so they can browse and pick
 
 ## Using icons in templates
 
+Render every glyph through the shared `Icon` component, never by importing `~icons/lucide/*` directly in feature code.
+`Icon` picks the glyph by `name` from the central registry (`lib/ui/icons/icon-map.ts`) and renders it at `size` px:
+
 ```svelte
 <script lang="ts">
-    import IconTriangleAlert from '~icons/lucide/triangle-alert'
+    import Icon from '$lib/ui/Icon.svelte'
 </script>
 
 <!-- Basic usage: inherits parent text color -->
-<IconTriangleAlert />
+<Icon name="triangle-alert" size={16} />
 
-<!-- With explicit size (use px props, not em) -->
-<IconTriangleAlert width="12" height="12" />
+<!-- Decorative vs meaningful: a11y attributes pass through to the svg -->
+<Icon name="triangle-alert" size={16} aria-hidden="true" />
+<Icon name="hourglass" size={12} role="img" aria-label="Size updating" />
 ```
 
-For styling (color, layout), wrap the icon in a `<span>` with a scoped CSS class. Applying a parent's scoped class
-directly to a component's root can be brittle; the wrapping span keeps the usual scoped-style semantics.
+A dynamic glyph (chosen at runtime) takes a typed name:
 
 ```svelte
-<span class="my-icon"><IconCircleAlert width="12" height="12" /></span>
+<script lang="ts">
+    import type { IconName } from '$lib/ui/icons/icon-map'
+    const glyph: IconName = isBranch ? 'git-branch' : 'tag'
+</script>
+<Icon name={glyph} size={16} />
+```
+
+For styling (color, layout), wrap the icon in a `<span>` with a scoped CSS class. `Icon` has no `color` prop on purpose:
+the glyph inherits `currentColor`, so color lives on the wrapper. Don't pass a scoped class to `Icon` directly; a scoped
+class on a component root is brittle. Use a wrapping span:
+
+```svelte
+<span class="my-icon"><Icon name="circle-alert" size={12} /></span>
 
 <style>
     .my-icon {
@@ -51,14 +66,14 @@ directly to a component's root can be brittle; the wrapping span keeps the usual
 
 ## Sizing
 
-Pass explicit `width` / `height` props (in px) on the icon. Don't use `em`: sizing should be predictable and not float
-with surrounding text size.
+Pass an explicit `size` (px) on `Icon`. Don't rely on `em`: sizing should be predictable and not float with surrounding
+text size.
 
 ## Coloring
 
-Icons use `currentColor` by default (they inherit the parent's text color). To color an icon:
+The glyph inherits `currentColor`. To color an icon, set `color` on the wrapping element:
 
-- **Preferred**: Set `color` on the parent element (a wrapping `<span>` with a scoped CSS class)
+- **Preferred**: Set `color` on the wrapping `<span>` (a scoped CSS class)
 - **For accent color**: Use a scoped class with a stylelint disable comment (because `color: var(--color-accent)` is
   disallowed by default for a11y reasons, as it has insufficient contrast as text):
   ```css
@@ -69,14 +84,21 @@ Icons use `currentColor` by default (they inherit the parent's text color). To c
   ```
 - **For semantic colors**: Use `var(--color-warning)`, `var(--color-error)`, etc. directly (these aren't restricted)
 
-## Adding a new icon set
+## Adding a new glyph
 
-If Lucide doesn't have what you need, install another Iconify set (for example, `pnpm add -D @iconify-json/mdi` for
-Material Design Icons). Import from `~icons/mdi/{icon-name}`. Prefer sticking to one set per context for visual
-consistency.
+1. Find the icon at [icones.js.org](https://icones.js.org/) in the Lucide collection (stay in one set for visual
+   cohesion).
+2. Add it to the registry `lib/ui/icons/icon-map.ts`: `import IconName from '~icons/lucide/{icon-name}'` at the top, and
+   one `'{icon-name}': IconName` entry in `ICON_COMPONENTS`. This is the only place `~icons/lucide/*` is imported.
+3. Render it anywhere: `<Icon name="{icon-name}" size={16} />`. The `IconName` union, the Debug "Graphics" catalog
+   (`routes/dev/graphics/`), and tests all pick it up automatically.
 
-## Checklist for adding a new icon
+A custom glyph Lucide doesn't ship (for example `eject`) lives as a small `.svelte` component in `lib/ui/icons/` (a bare
+`<svg {...rest}>`) and registers the same way, so it's interchangeable with Lucide glyphs at the call site.
 
-1. Find the icon at [icones.js.org](https://icones.js.org/) in the Lucide collection
-2. Import it: `import IconName from '~icons/lucide/{icon-name}'`
-3. Render it: `<IconName width="16" height="16" />` (or wrap in a `<span>` with a scoped class for color/layout)
+If Lucide lacks what you need and there's no custom glyph, install another Iconify set (for example
+`pnpm add -D @iconify-json/mdi`) and import it into the registry from `~icons/mdi/{icon-name}`. Prefer one set per
+context.
+
+Every registered glyph appears in the Debug window's **Graphics** catalog (Cmd+Shift+D → Graphics → Icons), with a
+tooltip describing where it's used.
