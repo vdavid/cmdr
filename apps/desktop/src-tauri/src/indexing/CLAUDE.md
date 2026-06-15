@@ -6,8 +6,9 @@ size aggregates so listings can show directory sizes.
 ## Module map
 
 - **Lifecycle / state**: `state.rs` (`IndexPhase` machine, `INDEXING` mutex, public API), `manager.rs` (coordinator).
-- **Write path**: `writer.rs` (single writer thread + write connection), `scanner.rs` (jwalk walk), `aggregator.rs`
-  (dir-stats), `reconciler.rs` + `event_loop.rs` (replay + live FSEvents).
+- **Write path**: `writer/` (single writer thread + write connection; `mod.rs` = protocol + loop, `entries.rs` /
+  `delta.rs` / `aggregation.rs` / `maintenance.rs` = handlers), `scanner.rs` (jwalk walk), `aggregator.rs` (dir-stats),
+  `reconciler.rs` + `event_loop.rs` (replay + live FSEvents).
 - **Read path**: `enrichment.rs` (`ReadPool`, listing enrichment), `store.rs` (schema, queries, collation),
   `verifier.rs` (per-navigation readdir diff), `expected_totals.rs`, `pending_sizes.rs`.
 - **Support**: `partial_agg.rs`, `metadata.rs`, `firmlinks.rs`, `watcher.rs`, `memory_watchdog.rs`, `events.rs`. Thin
