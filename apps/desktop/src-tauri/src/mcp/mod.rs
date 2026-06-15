@@ -3,6 +3,7 @@
 //! Provides a Streamable HTTP server that exposes cmdr functionality as MCP tools,
 //! enabling AI agents to control the file manager.
 
+mod auth;
 pub mod config;
 pub mod dialog_state;
 mod executor;
@@ -17,10 +18,11 @@ mod tools;
 #[cfg(test)]
 mod tests;
 
+pub use auth::current_mcp_token;
 pub use config::McpConfig;
 pub use dialog_state::SoftDialogTracker;
 pub use pane_state::PaneStateStore;
 pub use server::{
-    McpServerOutcome, current_mcp_token, get_mcp_actual_port, is_mcp_running, rebind_interactive,
-    start_mcp_server_background, stop_mcp_server, stop_mcp_server_and_wait,
+    McpServerOutcome, get_mcp_actual_port, is_mcp_running, rebind_interactive, start_mcp_server_background,
+    stop_mcp_server, stop_mcp_server_and_wait,
 };

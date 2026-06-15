@@ -11,12 +11,27 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Server (`server.rs`)
 
+`server.rs` is server/dispatch only: HTTP/Axum setup, the bind/rebind lifecycle, request dispatch (`process_request`),
+and response formatting (`format_sse_event` / `build_sse_response` / `build_json_response`). Per-request auth and
+validation live in `auth.rs` (below); the server `use`s them. The split is one-directional — `server` depends on
+`auth`, never the reverse.
+
 - Runs in a background tokio task spawned at app startup
 - Binds `127.0.0.1` only (localhost). Port defaults to ephemeral: when `developer.mcpPort` (the user setting) is 0 (the new default), the server binds `127.0.0.1:0` and asks the kernel for an unused port. A non-zero setting pins that port. `resolve_bind_strategy` turns the resolved port into `BindStrategy::Ephemeral` or `BindStrategy::Pinned(port)`; `bind_listener` then binds it under one of two `BindMode`s: **`ProbeOnCollision`** (startup auto-start — probe upward up to 100 ports so *a* server comes up when nobody's watching) or **`Exact`** (interactive settings changes — fail with `BindError::PortInUse` so the user is told their chosen port is busy instead of silently landing elsewhere). Both helpers are unit-tested in `server.rs`. The legacy fixed defaults (`19224` prod / `19225` dev) still live in `config.rs::DEFAULT_PORT` as the fallback for `CMDR_MCP_PORT` parse failures and are mirrored in the FE registry for users who want to pin a port.
 - Writes the actual bound port to `<data_dir>/mcp.port` atomically (tempfile + fsync + rename, mode 0o600) after `bind`, plus a fresh per-instance bearer token to `<data_dir>/mcp.token` (same atomic write, 0o600). External readers (the `scripts/mcp-call.sh` CLI, E2E fixtures, agent helpers) discover the port and token from those files and send `Authorization: Bearer <token>` on every request; the FE still uses the `get_mcp_port` / `get_mcp_token` IPC to read the same in-process state. On clean shutdown both files are removed and the in-process token is cleared; on crash they stay and readers discover staleness via `ECONNREFUSED`. See `port_file.rs` for the `write_port_file` / `write_secret_file` / read / remove API and typed `PortDiscoveryError`.
 - **Auth**: every `/mcp` request runs `validate_origin` (browser-CSRF / DNS-rebinding layer). The bearer token is then required only for the narrow set of calls that bypass the user's in-app confirmation dialog — see the Authentication section below. `validate_token` reads `Authorization: Bearer <token>`, compares against the in-process token in constant time, and returns `Err(())` on missing/empty/mismatched; the POST handler turns that into a friendly in-band JSON-RPC error via `auto_confirm_token_required_response` (HTTP 200, **not** 401 — see Authentication for why). It fails closed if no token is set. `GET /mcp/health` and `GET /mcp` (SSE) are unauthenticated.
 - Streamable HTTP transport (MCP spec 2025-11-25)
 - Endpoints: `POST /mcp` (JSON-RPC), `GET /mcp` (optional SSE), `GET /mcp/health`
+
+### Auth (`auth.rs`)
+
+Owns the per-instance bearer-token lifecycle and all per-request validation the POST handler runs. The token statics
+(`MCP_TOKEN` + `mcp_token_slot`) and accessors `current_mcp_token` (re-exported from `mod.rs` for the `get_mcp_token`
+IPC) / `set_mcp_token` (server-lifecycle only) live here, alongside `generate_token` and the constant-time compare.
+Validation: `validate_origin` (+ `is_localhost_origin`), `validate_accept_header`, `prefers_sse`, `get_protocol_version`,
+`tool_call_requires_token` (the pure gate predicate), `validate_token`, and `auto_confirm_token_required_response`. The
+full model — what's gated, why only those calls, and why the rejection is HTTP 200 not 401 — is in the Authentication
+section below.
 
 ### Protocol (`protocol.rs`)
 

@@ -1,9 +1,10 @@
 use serde_json::json;
 
+use crate::mcp::auth::prefers_sse;
 use crate::mcp::protocol::{
     INTERNAL_ERROR, INVALID_PARAMS, INVALID_REQUEST, METHOD_NOT_FOUND, McpRequest, McpResponse, PARSE_ERROR,
 };
-use crate::mcp::server::{DEFAULT_PROTOCOL_VERSION, PROTOCOL_VERSION, format_sse_event, prefers_sse};
+use crate::mcp::server::{DEFAULT_PROTOCOL_VERSION, PROTOCOL_VERSION, format_sse_event};
 
 // =============================================================================
 // MCP Spec 2025-11-25 Compliance Tests
@@ -98,7 +99,7 @@ fn test_mcp_response_null_id_allowed() {
 
 #[test]
 fn test_origin_validation_localhost_variants() {
-    use crate::mcp::server::validate_origin;
+    use crate::mcp::auth::validate_origin;
     use axum::http::{HeaderMap, HeaderValue, header};
 
     // All localhost variants should be allowed
@@ -125,7 +126,7 @@ fn test_origin_validation_localhost_variants() {
 //noinspection HttpUrlsUsage
 #[test]
 fn test_origin_validation_rejects_external() {
-    use crate::mcp::server::validate_origin;
+    use crate::mcp::auth::validate_origin;
     use axum::http::{HeaderMap, HeaderValue, header};
 
     let malicious_origins = [
@@ -145,7 +146,7 @@ fn test_origin_validation_rejects_external() {
 
 #[test]
 fn test_origin_validation_allows_null() {
-    use crate::mcp::server::validate_origin;
+    use crate::mcp::auth::validate_origin;
     use axum::http::{HeaderMap, HeaderValue, header};
 
     // null origin is sent by file:// and some non-browser contexts
@@ -156,7 +157,7 @@ fn test_origin_validation_allows_null() {
 
 #[test]
 fn test_origin_validation_allows_tauri() {
-    use crate::mcp::server::validate_origin;
+    use crate::mcp::auth::validate_origin;
     use axum::http::{HeaderMap, HeaderValue, header};
 
     let mut headers = HeaderMap::new();
@@ -166,7 +167,7 @@ fn test_origin_validation_allows_tauri() {
 
 #[test]
 fn test_origin_validation_allows_no_header() {
-    use crate::mcp::server::validate_origin;
+    use crate::mcp::auth::validate_origin;
     use axum::http::HeaderMap;
 
     // Non-browser clients typically don't send Origin
@@ -176,7 +177,7 @@ fn test_origin_validation_allows_no_header() {
 
 #[test]
 fn test_protocol_version_extraction() {
-    use crate::mcp::server::get_protocol_version;
+    use crate::mcp::auth::get_protocol_version;
     use axum::http::{HeaderMap, HeaderValue};
 
     let mut headers = HeaderMap::new();
@@ -191,7 +192,7 @@ fn test_protocol_version_extraction() {
 
 #[test]
 fn test_protocol_version_default_when_missing() {
-    use crate::mcp::server::get_protocol_version;
+    use crate::mcp::auth::get_protocol_version;
     use axum::http::HeaderMap;
 
     let headers = HeaderMap::new();
@@ -200,7 +201,7 @@ fn test_protocol_version_default_when_missing() {
 
 #[test]
 fn test_accept_header_validation() {
-    use crate::mcp::server::validate_accept_header;
+    use crate::mcp::auth::validate_accept_header;
     use axum::http::{HeaderMap, HeaderValue, header};
 
     // Proper MCP client Accept header - just validates it doesn't panic
