@@ -1,6 +1,5 @@
 <script lang="ts">
-    import IconHourglass from '~icons/lucide/hourglass'
-    import IconInfo from '~icons/lucide/info'
+    import Icon from '$lib/ui/Icon.svelte'
     import type { FileEntry, ListingStats } from '../types'
     import {
         buildDateTooltip,
@@ -245,7 +244,7 @@
                         aria-label="Size not ready yet"
                         use:tooltip={'Sizes appear as the scan progresses'}
                     >
-                        <IconHourglass width="12" height="12" />
+                        <Icon name="hourglass" size={12} />
                     </span>
                 {/if}
             {:else if sizeDisplay}
@@ -259,7 +258,7 @@
                         aria-label="Size updating"
                         use:tooltip={'Updating index, size may change.'}
                     >
-                        <IconHourglass width="12" height="12" />
+                        <Icon name="hourglass" size={12} />
                     </span>
                 {/if}
             {/if}
@@ -270,7 +269,7 @@
                     aria-label={symlinkHintTooltip}
                     use:tooltip={symlinkHintTooltip}
                 >
-                    <IconInfo width="12" height="12" />
+                    <Icon name="info" size={12} />
                 </span>
             {/if}
         </span>
@@ -302,7 +301,7 @@
                     selected{/if}.
                 {#if showSelectionStale}
                     <span class="stale-indicator stale-icon" use:tooltip={'Updating index, size may change.'}
-                        ><IconHourglass width="12" height="12" /></span
+                        ><Icon name="hourglass" size={12} /></span
                     >
                 {/if}
             {:else if hasFiles}
@@ -316,7 +315,7 @@
                     {pluralize(totalDirs, 'dir')}{/if}.
                 {#if showSelectionStale}
                     <span class="stale-indicator stale-icon" use:tooltip={'Updating index, size may change.'}
-                        ><IconHourglass width="12" height="12" /></span
+                        ><Icon name="hourglass" size={12} /></span
                     >
                 {/if}
             {/if}

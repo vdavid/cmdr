@@ -3,6 +3,7 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingPasswordInput from '../components/SettingPasswordInput.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import Combobox, { type ComboboxItem } from '$lib/ui/Combobox.svelte'
     import {
@@ -455,7 +456,7 @@
 
 {#if connectionStatus === 'checking'}
     <div class="connection-status">
-        <span class="status-spinner">&#x27F3;</span>
+        <Spinner size="sm" />
         <span class="connection-status-text">Checking...</span>
     </div>
 {:else if connectionStatus === 'connected'}
@@ -548,12 +549,6 @@
         gap: var(--spacing-sm);
         padding: var(--spacing-xs) 0;
         font-size: var(--font-size-sm);
-    }
-
-    .status-spinner {
-        display: inline-block;
-        animation: spin 1s linear infinite;
-        color: var(--color-text-secondary);
     }
 
     .connection-status-icon {

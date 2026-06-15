@@ -1,5 +1,6 @@
 <script lang="ts">
     import Size from '$lib/ui/Size.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
 
@@ -47,7 +48,7 @@
         <span class="scan-value">{formatNumber(scanDirsFound)}</span>
         <span class="scan-label">{scanDirsFound === 1 ? 'dir' : 'dirs'}</span>
     </div>
-    <span class="scan-spinner"></span>
+    <Spinner size="sm" />
 </div>
 
 <!-- Throughput -->
@@ -143,16 +144,6 @@
 
     .scan-divider {
         color: var(--color-text-tertiary);
-    }
-
-    .scan-spinner {
-        width: 12px;
-        height: 12px;
-        border: 2px solid var(--color-accent);
-        border-top-color: transparent;
-        border-radius: var(--radius-full);
-        animation: spin 0.8s linear infinite;
-        margin-left: var(--spacing-xs);
     }
 
     /* Current file styles - shared with parent but scoped here for the snippet portion */

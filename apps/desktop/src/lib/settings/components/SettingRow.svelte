@@ -3,6 +3,7 @@
     import { isModified, resetSetting, onSpecificSettingChange, type SettingId } from '$lib/settings'
     import { getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import Icon from '$lib/ui/Icon.svelte'
     import { onMount } from 'svelte'
 
     interface Props {
@@ -71,15 +72,7 @@
                     onclick={handleReset}
                     aria-label="Reset to default"
                 >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path
-                            d="M2 2v3.5h2.5M3 10a6 6 0 1 0 5-8 6.5 6.5 0 0 0-4.5 1.8L2 5.5"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
+                    <Icon name="rotate-ccw" size={14} aria-hidden="true" />
                 </button>
             {/if}
             {#if disabled && disabledReason}

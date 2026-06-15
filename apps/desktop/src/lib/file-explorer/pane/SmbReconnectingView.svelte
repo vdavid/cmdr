@@ -2,6 +2,7 @@
     import { onDestroy } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import {
         smbReconnectManager,
@@ -88,7 +89,7 @@
         <h2 class="title">Reconnecting to server…</h2>
 
         <div class="spinner-row">
-            <span class="spinner spinner-md" aria-hidden="true"></span>
+            <Spinner size="md" />
         </div>
 
         <div class="progress-row">

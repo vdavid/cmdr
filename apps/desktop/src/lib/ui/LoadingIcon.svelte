@@ -1,5 +1,6 @@
 <script lang="ts">
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
 
     interface Props {
         openingFolder?: boolean
@@ -16,7 +17,7 @@
 </script>
 
 <div class="loading-container">
-    <div class="spinner spinner-lg"></div>
+    <Spinner size="lg" />
     {#if finalizingCount !== undefined}
         <div class="loading-text">
             All {formatNumber(finalizingCount)}

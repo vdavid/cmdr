@@ -5,6 +5,7 @@
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import Button from '$lib/ui/Button.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
 
     interface Props {
         id: string
@@ -187,17 +188,7 @@
         use:tooltip={closeTooltip}
         aria-label="Dismiss notification"
     >
-        <svg
-            width="10"
-            height="10"
-            viewBox="0 0 10 10"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-        >
-            <path d="M1 1l8 8M9 1l-8 8" />
-        </svg>
+        <Icon name="x" size={10} />
     </button>
 </div>
 

@@ -6,6 +6,7 @@
      */
     import { onMount, onDestroy } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import {
         getNetworkHosts,
         getDiscoveryState,
@@ -595,7 +596,7 @@
 
         {#if isSearching}
             <div class="searching-indicator">
-                <span class="spinner spinner-sm"></span>
+                <Spinner size="sm" />
                 Searching...
             </div>
         {/if}

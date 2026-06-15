@@ -1,6 +1,5 @@
 <script lang="ts">
-    import IconCircleAlert from '~icons/lucide/circle-alert'
-    import IconHourglass from '~icons/lucide/hourglass'
+    import Icon from '$lib/ui/Icon.svelte'
     import { type UnlistenFn } from '@tauri-apps/api/event'
     import { onGitStateChanged } from '$lib/tauri-commands'
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
@@ -34,7 +33,6 @@
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
-    import InfoIcon from '~icons/lucide/info'
     const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
     import {
         getVisibleItemsCount as getVisibleItemsCountUtil,
@@ -951,7 +949,7 @@
                                     class="restricted-indicator"
                                     aria-hidden="true"
                                     use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
-                                ><InfoIcon /></span>{/if}</span>
+                                ><Icon name="info" size={12} /></span>{/if}</span>
                             {#if gitColumnVisible}
                                 {@const status = gitStatusFor(file)}
                                 <span
@@ -1007,7 +1005,7 @@
                                     >
                                     {#if dirSizeState === 'size-stale'}
                                         <span class="size-stale icon-indicator" use:tooltip={'Updating index: size may change.'}
-                                            ><IconHourglass width="12" height="12" /></span
+                                            ><Icon name="hourglass" size={12} /></span
                                         >
                                     {/if}
                                     {#if showSizeMismatchWarning && hasSizeMismatch(file.recursiveSize, file.recursivePhysicalSize)}
@@ -1031,7 +1029,7 @@
                                                     dirTooltipHtml,
                                             }}
                                         >
-                                            <IconCircleAlert width="12" height="12" />
+                                            <Icon name="circle-alert" size={12} />
                                         </span>
                                     {/if}
                                 {:else if dirSizeState === 'scanning'}
@@ -1041,7 +1039,7 @@
                                         role="img"
                                         aria-label="Size not ready yet"
                                         use:tooltip={'Sizes appear as the scan progresses'}
-                                        ><IconHourglass width="12" height="12" /></span
+                                        ><Icon name="hourglass" size={12} /></span
                                     >
                                 {:else}
                                     <span class="size-dir">&lt;dir&gt;</span>

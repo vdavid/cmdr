@@ -44,7 +44,7 @@
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
-    import InfoIcon from '~icons/lucide/info'
+    import Icon from '$lib/ui/Icon.svelte'
 
     const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
     import { iconCacheCleared } from '$lib/icon-cache'
@@ -928,7 +928,7 @@
                                                 class="restricted-indicator"
                                                 aria-hidden="true"
                                                 use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
-                                            ><InfoIcon /></span>{/if}</span>
+                                            ><Icon name="info" size={12} /></span>{/if}</span>
                                 {/if}
                             </div>
                         {/each}

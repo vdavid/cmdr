@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy, tick, untrack } from 'svelte'
     import { relaunch } from '@tauri-apps/plugin-process'
-    import IconArrowLeft from '~icons/lucide/arrow-left'
+    import Icon from '$lib/ui/Icon.svelte'
     import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
     import Button from '$lib/ui/Button.svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
@@ -229,7 +229,7 @@
                         aria-label="Go to previous step"
                         use:tooltip={'Back'}
                     >
-                        <IconArrowLeft width="16" height="16" />
+                        <Icon name="arrow-left" size={16} />
                     </button>
                 {/if}
             </div>

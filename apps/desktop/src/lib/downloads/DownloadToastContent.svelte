@@ -19,8 +19,7 @@
     import Button from '$lib/ui/Button.svelte'
     import { dismissToast } from '$lib/ui/toast'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import IconChevronUp from '~icons/lucide/chevron-up'
-    import IconChevronDown from '~icons/lucide/chevron-down'
+    import Icon from '$lib/ui/Icon.svelte'
     import { goToDownload } from './go-to-latest'
     import {
         setDownloadsNotificationsMode,
@@ -183,7 +182,7 @@
                 use:tooltip={'Show the shortcut tip'}
                 onclick={toggleCollapsed}
             >
-                <IconChevronDown width="14" height="14" />
+                <Icon name="chevron-down" size={14} />
             </button>
         </span>
     {:else}
@@ -211,7 +210,7 @@
                     use:tooltip={'Make this notification more compact'}
                     onclick={toggleCollapsed}
                 >
-                    <IconChevronUp width="14" height="14" />
+                    <Icon name="chevron-up" size={14} />
                 </button>
             </div>
         {/if}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import IconGitBranch from '~icons/lucide/git-branch'
+  import Icon from '$lib/ui/Icon.svelte'
   import type { RepoInfo } from './git-store.svelte'
 
   interface Props {
@@ -52,7 +52,7 @@
 </script>
 
 <span class="repo-chip" class:dirty={state === 'dirty'} class:ahead={state === 'ahead'} class:behind={state === 'behind'} class:detached={state === 'detached'} class:unborn={state === 'unborn'} title={tooltip} aria-label={tooltip} data-state={state}>
-  <span class="icon"><IconGitBranch width="12" height="12" /></span>
+  <span class="icon"><Icon name="git-branch" size={12} /></span>
   <span class="label">{label}</span>
   {#if subtitle}
     <span class="sep" aria-hidden="true">·</span>

@@ -6,6 +6,7 @@
     import { onMount } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
     import CommandBox from '$lib/ui/CommandBox.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import type { AuthMode, NetworkHost, ShareInfo, ShareListError } from '../types'
     import {
         getShareState,
@@ -523,7 +524,7 @@
         />
     {:else if loading}
         <div class="loading-state">
-            <span class="spinner spinner-md"></span>
+            <Spinner size="md" />
             Connecting to {host.name}...
         </div>
     {:else if error && !showLoginForm}

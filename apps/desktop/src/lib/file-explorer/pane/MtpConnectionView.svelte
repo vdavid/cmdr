@@ -3,6 +3,7 @@
     import { connect as connectMtpDevice } from '$lib/mtp/mtp-store.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import Button from '$lib/ui/Button.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
 
     const log = getAppLogger('mtpConnection')
 
@@ -160,7 +161,7 @@
     <div class="mtp-connecting">
         {#if mtpConnecting}
             <div class="connecting-spinner">
-                <div class="spinner spinner-md"></div>
+                <Spinner size="md" />
                 <span>Connecting to device...</span>
             </div>
         {:else if mtpConnectionError}

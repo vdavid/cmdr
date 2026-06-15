@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import Spinner from '$lib/ui/Spinner.svelte'
 
     interface IndexStatusMeta {
         schemaVersion: string | null
@@ -230,7 +231,7 @@
                         }}
                     >
                         {#if isActivePhase(debugStatus.activityPhase)}
-                            <span class="spinner spinner-sm"></span>
+                            <Spinner size="sm" />
                         {/if}
                         {debugStatus.activityPhase.charAt(0).toUpperCase() + debugStatus.activityPhase.slice(1)}
                         <span
@@ -266,7 +267,7 @@
                         class="status-badge active"
                         use:tooltip={{ text: 'Background post-replay directory verification' }}
                     >
-                        <span class="spinner spinner-sm"></span>
+                        <Spinner size="sm" />
                         Verifying
                     </span>
                 </div>

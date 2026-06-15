@@ -14,7 +14,7 @@
      * handler), which lets this component stay stateless and lets the parent decide
      * which selection paths to send.
      */
-    import IconMoreHorizontal from '~icons/lucide/more-horizontal'
+    import Icon from '$lib/ui/Icon.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
 
     interface Props {
@@ -36,7 +36,7 @@
         onOpen()
     }}
 >
-    <IconMoreHorizontal width="16" height="16" />
+    <Icon name="more-horizontal" size={16} />
 </button>
 
 <style>

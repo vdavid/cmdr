@@ -30,7 +30,7 @@
      * set depends on no portal-to-body).
      */
     import { Select, createListCollection, type SelectValueChangeDetails } from '@ark-ui/svelte/select'
-    import IconChevronDown from '~icons/lucide/chevron-down'
+    import Icon from '$lib/ui/Icon.svelte'
 
     interface Props {
         items: SelectItem[]
@@ -100,7 +100,7 @@
     <Select.Control>
         <Select.Trigger class="select-trigger" aria-label={ariaLabel}>
             <Select.ValueText {placeholder} />
-            <span class="select-indicator"><IconChevronDown width="16" height="16" /></span>
+            <span class="select-indicator"><Icon name="chevron-down" size={16} /></span>
         </Select.Trigger>
     </Select.Control>
     <Select.Positioner>

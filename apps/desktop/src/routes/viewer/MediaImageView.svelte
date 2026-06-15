@@ -11,6 +11,7 @@
    * Loading + error states ship from the start: a spinner until `load` / `error`
    * fires, and a friendly inline message on `error`.
    */
+  import Spinner from '$lib/ui/Spinner.svelte'
   import { clampZoom, nextClickZoom, type ImageViewMode } from './media-view'
 
   type Props = {
@@ -176,7 +177,7 @@
 >
   {#if loadState === 'loading'}
     <div class="media-status" role="status">
-      <span class="spinner spinner-lg" aria-hidden="true"></span>
+      <Spinner size="lg" />
       <span class="sr-only">Loading image</span>
     </div>
   {/if}

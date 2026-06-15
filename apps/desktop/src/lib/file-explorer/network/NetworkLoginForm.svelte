@@ -5,6 +5,7 @@
      */
     import { onMount } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import type { AuthMode, ConnectionMode, KnownNetworkShare, NetworkHost } from '../types'
     import { getUsernameHints, getKnownShareByName } from '$lib/tauri-commands'
 
@@ -230,7 +231,7 @@
                 <Button variant="primary" type="submit" disabled={!canSubmit || isConnecting}>
                     <span class="btn-content">
                         {#if isConnecting}
-                            <span class="spinner"></span>
+                            <Spinner size="sm" />
                             Connecting...
                         {:else}
                             Connect
@@ -412,15 +413,6 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-    }
-
-    .spinner {
-        width: 14px;
-        height: 14px;
-        border: 2px solid color-mix(in srgb, white, transparent 70%);
-        border-top-color: white;
-        border-radius: var(--radius-full);
-        animation: spin 0.8s linear infinite;
     }
 
     /* Screen reader only */

@@ -24,7 +24,8 @@
     import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { isMacOS } from '$lib/shortcuts/key-capture'
-    import InfoIcon from '~icons/lucide/info'
+    import Icon from '$lib/ui/Icon.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import { describeUsbSpeed, type VolumeInfo } from '../types'
     import { isVolumeEjectable } from './eject-predicate'
     import { buildFavoriteTooltip } from './favorite-tooltip'
@@ -678,22 +679,7 @@
             use:tooltip={isVolumeBusy(currentVolume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${currentVolume.name}`}
             onclick={(e: MouseEvent) => { void handleEjectClick(currentVolume, e) }}
         >
-            <!-- Inline SVG: Lucide doesn't ship an `eject` icon (as of v0.477).
-                 Shape matches the macOS menu-bar eject glyph: filled triangle
-                 above a short bar. -->
-            <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-                focusable="false"
-            >
-                <path d="M5 14 L12 5 L19 14 Z" />
-                <line x1="5" y1="19" x2="19" y2="19" />
-            </svg>
+            <Icon name="eject" size={14} aria-hidden="true" />
         </button>
     {/if}
 
@@ -789,7 +775,7 @@
                         {/if}
                         {#if isRestricted(volume.path)}
                             <span class="restricted-indicator" aria-hidden="true">
-                                <InfoIcon />
+                                <Icon name="info" size={12} />
                             </span>
                         {/if}
                         {#if volume.isReadOnly}
@@ -819,22 +805,7 @@
                                 use:tooltip={isVolumeBusy(volume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${volume.name}`}
                                 onclick={(e: MouseEvent) => { void handleEjectClick(volume, e) }}
                             >
-                                <!-- Inline SVG: Lucide doesn't ship an `eject` icon (as of v0.477).
-                 Shape matches the macOS menu-bar eject glyph: filled triangle
-                 above a short bar. -->
-            <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-                focusable="false"
-            >
-                <path d="M5 14 L12 5 L19 14 Z" />
-                <line x1="5" y1="19" x2="19" y2="19" />
-            </svg>
+                                <Icon name="eject" size={14} aria-hidden="true" />
                             </button>
                         {/if}
                     </div>
@@ -867,7 +838,7 @@
                                 : 'Retrying\u2026'}
                         >
                             <div class="volume-space-bar volume-space-bar-timeout">
-                                <span class="volume-space-timeout-icon space-spinner">\u21BB</span>
+                                <Spinner size="sm" />
                             </div>
                             <span class="volume-space-text volume-space-text-timeout">Retrying</span>
                         </div>
@@ -1247,12 +1218,6 @@
         transition: opacity var(--transition-base);
     }
 
-    /* Spinner for retrying state */
-    .space-spinner {
-        display: inline-block;
-        animation: spin 1s linear infinite;
-    }
-
     /* Shake on retry failure */
     /*noinspection CssUnusedSymbol*/
     .space-shake {
@@ -1348,25 +1313,10 @@
             animation: none;
         }
 
-        /* Reduced motion: pulsing opacity instead of spinning */
-        .space-spinner {
-            animation: pulse-opacity 1.5s ease-in-out infinite;
-        }
-
         /* Reduced motion: opacity flash instead of shake */
         /*noinspection CssUnusedSymbol*/
         .space-shake {
             animation: flash-warning 300ms ease;
-        }
-    }
-
-    @keyframes pulse-opacity {
-        0%,
-        100% {
-            opacity: 1;
-        }
-        50% {
-            opacity: 0.3;
         }
     }
 
@@ -1600,12 +1550,6 @@
        to the SMB / USB badges instead of jamming against them. */
     .breadcrumb-eject-button {
         margin-left: var(--spacing-xs);
-    }
-
-    /* The inline eject glyph inside the button: sized to match the row height. */
-    .eject-button svg {
-        width: 14px;
-        height: 14px;
     }
 
     /* ── Per-volume right-click menu (dropdown rows) ──────────────── */

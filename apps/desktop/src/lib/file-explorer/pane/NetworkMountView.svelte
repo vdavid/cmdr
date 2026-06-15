@@ -10,6 +10,7 @@
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import ConnectToServerDialog from '../network/ConnectToServerDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
 
     const log = getAppLogger('fileExplorer')
 
@@ -284,7 +285,7 @@
 
 {#if isMounting}
     <div class="mounting-state">
-        <span class="spinner spinner-md"></span>
+        <Spinner size="md" />
         <span class="mounting-text">Mounting {currentNetworkHost?.name ?? 'share'}...</span>
     </div>
 {:else if showMountLoginForm && currentNetworkHost}

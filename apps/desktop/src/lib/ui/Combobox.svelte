@@ -30,7 +30,8 @@
      * capability set unaffected). No entrance animation by default.
      */
     import { Combobox, createListCollection } from '@ark-ui/svelte/combobox'
-    import IconChevronDown from '~icons/lucide/chevron-down'
+    import Icon from '$lib/ui/Icon.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
 
     interface Props {
         items: ComboboxItem[]
@@ -84,11 +85,12 @@
         <Combobox.Control class="combobox-control">
             <Combobox.Input class="combobox-input" {placeholder} aria-label={ariaLabel} />
             {#if loading}
-                <span class="spinner spinner-sm combobox-spinner" aria-label="Loading suggestions" role="status"
-                ></span>
+                <span class="combobox-spinner">
+                    <Spinner size="sm" label="Loading suggestions" />
+                </span>
             {/if}
             <Combobox.Trigger class="combobox-trigger" aria-label="Show suggestions">
-                <span class="combobox-indicator"><IconChevronDown width="16" height="16" /></span>
+                <span class="combobox-indicator"><Icon name="chevron-down" size={16} /></span>
             </Combobox.Trigger>
         </Combobox.Control>
         <Combobox.Positioner>

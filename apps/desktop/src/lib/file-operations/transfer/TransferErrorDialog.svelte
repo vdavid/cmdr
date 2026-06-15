@@ -5,9 +5,7 @@
     import FallbackErrorContent from './FallbackErrorContent.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import IconCircleAlert from '~icons/lucide/circle-alert'
-    import IconTriangleAlert from '~icons/lucide/triangle-alert'
-    import IconInfo from '~icons/lucide/info'
+    import Icon from '$lib/ui/Icon.svelte'
 
     interface Props {
         operationType: TransferOperationType
@@ -72,11 +70,11 @@
                 aria-hidden="true"
             >
                 {#if category === 'serious'}
-                    <IconCircleAlert width="22" height="22" />
+                    <Icon name="circle-alert" size={22} />
                 {:else if category === 'transient'}
-                    <IconTriangleAlert width="22" height="22" />
+                    <Icon name="triangle-alert" size={22} />
                 {:else}
-                    <IconInfo width="22" height="22" />
+                    <Icon name="info" size={22} />
                 {/if}
             </span>
             {titleText}
@@ -93,9 +91,7 @@
     <div class="details-section">
         <button class="details-toggle" onclick={toggleDetails} aria-expanded={showDetails}>
             <span class="toggle-icon" class:expanded={showDetails}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 2L8 6L4 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
+                <Icon name="chevron-right" size={12} />
             </span>
             Technical details
         </button>

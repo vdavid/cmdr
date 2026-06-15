@@ -1,5 +1,5 @@
 <script lang="ts">
-    import IconSearch from '~icons/lucide/search'
+    import Icon from '$lib/ui/Icon.svelte'
     import { buildSectionTree, type SettingsSection } from '$lib/settings'
     import { sectionHasMatches } from '$lib/settings/settings-search'
 
@@ -177,7 +177,7 @@
 
 <aside class="settings-sidebar">
     <div class="search-container">
-        <span class="search-icon" aria-hidden="true"><IconSearch /></span>
+        <span class="search-icon" aria-hidden="true"><Icon name="search" size={16} aria-hidden="true" /></span>
         <input
             bind:this={searchInput}
             type="text"

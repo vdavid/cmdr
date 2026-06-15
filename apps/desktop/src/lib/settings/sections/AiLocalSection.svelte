@@ -4,6 +4,7 @@
     import SettingSelect from '../components/SettingSelect.svelte'
     import Button from '$lib/ui/Button.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import {
@@ -531,7 +532,7 @@
         <div class="confirm-body">
             {#if isDeleting}
                 <div class="deleting-status">
-                    <span class="status-spinner">&#x27F3;</span>
+                    <Spinner size="sm" />
                     <span>Stopping server and removing files...</span>
                 </div>
             {:else}
@@ -737,13 +738,6 @@
         display: flex;
         gap: var(--spacing-md);
         margin-top: var(--spacing-sm);
-    }
-
-    /* Status spinner (shared with delete dialog) */
-    .status-spinner {
-        display: inline-block;
-        animation: spin 1s linear infinite;
-        color: var(--color-text-secondary);
     }
 
     /* Delete confirmation dialog */

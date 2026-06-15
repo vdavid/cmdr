@@ -20,6 +20,7 @@
      *   - ⌘1/⌘2/⌘3 switch modes (numbering changes when AI is off).
      */
     import { tooltip } from '$lib/tooltip/tooltip'
+    import Icon from '$lib/ui/Icon.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import type { SearchMode } from './query-filter-state.svelte'
 
@@ -81,10 +82,7 @@
 </script>
 
 <div class="search-bar" class:is-disabled={disabled}>
-    <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5" />
-        <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-    </svg>
+    <span class="search-icon"><Icon name="search" size={16} aria-hidden="true" /></span>
     <input
         bind:this={inputElement}
         type="text"
@@ -137,6 +135,7 @@
     }
 
     .search-icon {
+        display: inline-flex;
         flex-shrink: 0;
         color: var(--color-text-tertiary);
     }

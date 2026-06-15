@@ -22,6 +22,8 @@
     } from './delete-dialog-utils'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import Size from '$lib/ui/Size.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { ScanThroughput } from '../scan-throughput'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
@@ -241,19 +243,7 @@
     {#if !supportsTrash}
         <div class="warning-banner" role="alert">
             <span class="warning-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L1 21h22L12 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-                    <line
-                        x1="12"
-                        y1="9"
-                        x2="12"
-                        y2="15"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                    />
-                    <circle cx="12" cy="18" r="1" fill="currentColor" />
-                </svg>
+                <Icon name="triangle-alert" size={18} />
             </span>
             <p id="delete-warning-text">
                 <strong>This volume doesn't support trash.</strong> Files will be permanently deleted.
@@ -302,19 +292,7 @@
     {#if symlinkNotice}
         <div class="symlink-notice">
             <span class="symlink-icon" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L1 21h22L12 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-                    <line
-                        x1="12"
-                        y1="9"
-                        x2="12"
-                        y2="15"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                    />
-                    <circle cx="12" cy="18" r="1" fill="currentColor" />
-                </svg>
+                <Icon name="triangle-alert" size={14} />
             </span>
             <span>{symlinkNotice}</span>
         </div>
@@ -336,7 +314,7 @@
             <span class="scan-label">{dirsFound === 1 ? 'dir' : 'dirs'}</span>
         </div>
         {#if isScanning}
-            <span class="scan-spinner"></span>
+            <Spinner size="sm" />
         {:else if scanComplete}
             <span class="scan-checkmark">&#10003;</span>
         {/if}
@@ -502,16 +480,6 @@
 
     .scan-divider {
         color: var(--color-text-tertiary);
-    }
-
-    .scan-spinner {
-        width: 12px;
-        height: 12px;
-        border: 2px solid var(--color-accent);
-        border-top-color: transparent;
-        border-radius: var(--radius-full);
-        animation: spin 0.8s linear infinite;
-        margin-left: var(--spacing-xs);
     }
 
     .scan-checkmark {

@@ -47,6 +47,7 @@
     import MediaImageView from './MediaImageView.svelte'
     import MediaPdfView from './MediaPdfView.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import { commands } from '$lib/ipc/bindings'
     import type { EncodingChoice, FileEncoding, MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
     import type { RangeEnd } from '$lib/tauri-commands'
@@ -922,7 +923,7 @@
                 {#if search.searchStatus === 'invalidQuery'}
                     <span class="search-error" role="alert">{search.searchError}</span>
                 {:else if search.searchStatus === 'running'}
-                    <span class="spinner spinner-sm search-spinner" aria-hidden="true"></span>
+                    <span class="search-spinner"><Spinner size="sm" /></span>
                     {#if search.searchMatches.length > 0}
                         {search.currentMatchIndex + 1} of {search.searchMatches.length}{search.searchLimitReached
                             ? '+'

@@ -1,5 +1,6 @@
 <script lang="ts">
     import Button from '$lib/ui/Button.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
 
     interface Props {
         originalPath: string
@@ -29,11 +30,7 @@
 <div class="unreachable-banner" role="alert">
     <div class="banner-content">
         <div class="banner-header">
-            <svg class="warning-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <path
-                    d="M8 1a.75.75 0 0 1 .65.375l6.25 10.75A.75.75 0 0 1 14.25 13H1.75a.75.75 0 0 1-.65-1.125L7.35 1.375A.75.75 0 0 1 8 1zm0 4a.75.75 0 0 0-.75.75v3a.75.75 0 0 0 1.5 0v-3A.75.75 0 0 0 8 5zm0 6.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"
-                />
-            </svg>
+            <span class="warning-icon"><Icon name="triangle-alert" size={16} aria-hidden="true" /></span>
             <span class="banner-message">Couldn't reach {originalPath}</span>
         </div>
         <p class="banner-detail">
@@ -84,6 +81,7 @@
     }
 
     .warning-icon {
+        display: inline-flex;
         flex-shrink: 0;
         color: var(--color-warning);
     }

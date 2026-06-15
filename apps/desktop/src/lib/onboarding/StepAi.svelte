@@ -3,10 +3,7 @@
     import OnboardingStepShell from './OnboardingStepShell.svelte'
     import CloudProviderPicker from './CloudProviderPicker.svelte'
     import CloudProviderSetup from './CloudProviderSetup.svelte'
-    import IconShieldCheck from '~icons/lucide/shield-check'
-    import IconShieldOff from '~icons/lucide/shield-off'
-    import IconTriangleAlert from '~icons/lucide/triangle-alert'
-    import IconSparkles from '~icons/lucide/sparkles'
+    import Icon from '$lib/ui/Icon.svelte'
     import { getOnboardingState, setFooterOverride, setStepTwoBanner, nextStep } from './onboarding-state.svelte'
     import {
         checkFullDiskAccess,
@@ -231,7 +228,7 @@
 <OnboardingStepShell>
     {#if onboardingState.stepTwoBanner === 'granted'}
         <section class="banner banner-ok" role="status">
-            <span class="banner-icon"><IconShieldCheck width="20" height="20" /></span>
+            <span class="banner-icon"><Icon name="shield-check" size={20} /></span>
             <div class="banner-body">
                 <p class="banner-title">{bannerTitleByMode.granted}</p>
                 <p>Thanks for granting full disk access! Now, the app can access your disk. Great!</p>
@@ -239,7 +236,7 @@
         </section>
     {:else if onboardingState.stepTwoBanner === 'denied'}
         <section class="banner banner-info" role="status">
-            <span class="banner-icon"><IconShieldOff width="20" height="20" /></span>
+            <span class="banner-icon"><Icon name="shield-off" size={20} /></span>
             <div class="banner-body">
                 <p class="banner-title">{bannerTitleByMode.denied}</p>
                 <p>
@@ -251,7 +248,7 @@
         </section>
     {:else if onboardingState.stepTwoBanner === 'stuck'}
         <section class="banner banner-warn" role="status">
-            <span class="banner-icon"><IconTriangleAlert width="20" height="20" /></span>
+            <span class="banner-icon"><Icon name="triangle-alert" size={20} /></span>
             <div class="banner-body">
                 <p class="banner-title">{bannerTitleByMode.stuck}</p>
                 <p>
@@ -293,7 +290,7 @@
                 <th scope="col">Without AI</th>
                 <th scope="col" class="with-ai">
                     <span class="with-ai-head">
-                        <IconSparkles width="14" height="14" />
+                        <Icon name="sparkles" size={14} />
                         With AI
                     </span>
                 </th>

@@ -3,10 +3,8 @@
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import { getFallbackEmoji } from '../views/file-list-utils'
     import { getIsCmdrGold } from '$lib/settings/reactive-settings.svelte'
-    import IconGitBranch from '~icons/lucide/git-branch'
-    import IconTag from '~icons/lucide/tag'
-    import IconGitCommit from '~icons/lucide/git-commit-horizontal'
-    import IconGitFork from '~icons/lucide/git-fork'
+    import Icon from '$lib/ui/Icon.svelte'
+    import type { IconName } from '$lib/ui/icons/icon-map'
 
     interface Props {
         file: FileEntry
@@ -31,20 +29,26 @@
     // `FileEntry` schema (`git:`-prefixed) and rendered as Lucide
     // components here.
     const isGitIcon = $derived(file.iconId.startsWith('git:'))
+
+    // Maps the reserved `git:`-prefixed icon ids to the shared registry glyph names.
+    const gitIconName = $derived.by((): IconName => {
+        switch (file.iconId) {
+            case 'git:branch':
+                return 'git-branch'
+            case 'git:tag':
+                return 'tag'
+            case 'git:commit':
+                return 'git-commit-horizontal'
+            default:
+                return 'git-fork'
+        }
+    })
 </script>
 
 <span class="icon-wrapper">
     {#if isGitIcon}
         <span class="git-icon">
-            {#if file.iconId === 'git:branch'}
-                <IconGitBranch width="16" height="16" />
-            {:else if file.iconId === 'git:tag'}
-                <IconTag width="16" height="16" />
-            {:else if file.iconId === 'git:commit'}
-                <IconGitCommit width="16" height="16" />
-            {:else}
-                <IconGitFork width="16" height="16" />
-            {/if}
+            <Icon name={gitIconName} size={16} />
         </span>
     {:else if getIconUrl(file)}
         <img class="icon" class:gold-folder={recolorToGold} src={getIconUrl(file)} alt="" width="16" height="16" />

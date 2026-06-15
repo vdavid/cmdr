@@ -1,5 +1,5 @@
 <script lang="ts">
-    import IconHourglass from '~icons/lucide/hourglass'
+    import Icon from '$lib/ui/Icon.svelte'
     import {
         isScanning,
         getEntriesScanned,
@@ -221,7 +221,7 @@
         aria-label="Drive indexing status"
         use:tooltip={{ contentEl: tooltipContent }}
     >
-        <IconHourglass width="14" height="14" />
+        <Icon name="hourglass" size={14} />
     </span>
 
     <div hidden>

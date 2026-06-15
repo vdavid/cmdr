@@ -8,6 +8,7 @@
         type SettingId,
         type SettingsValues,
     } from '$lib/settings'
+    import Icon from '$lib/ui/Icon.svelte'
     import { onMount } from 'svelte'
 
     interface Props {
@@ -37,15 +38,7 @@
 <Checkbox.Root {checked} onCheckedChange={handleChange} {disabled} aria-label={label}>
     <Checkbox.Control class="checkbox-control">
         <Checkbox.Indicator class="checkbox-indicator">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                <path
-                    d="M2.5 6L5 8.5L9.5 3.5"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                />
-            </svg>
+            <Icon name="check" size={12} aria-hidden="true" />
         </Checkbox.Indicator>
     </Checkbox.Control>
     <Checkbox.HiddenInput />

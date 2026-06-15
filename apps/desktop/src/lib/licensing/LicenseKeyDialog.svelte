@@ -21,6 +21,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
 
     interface Props {
@@ -446,13 +447,13 @@
                 {#if isServerInvalidError}
                     <Button variant="secondary" onclick={handleCancelAfterInvalid}>Cancel</Button>
                     <Button variant="primary" onclick={handleActivate} disabled={isActivating}>
-                        {#if isActivating}<span class="btn-spinner"></span>{/if}
+                        {#if isActivating}<Spinner size="sm" />{/if}
                         {isActivating ? 'Checking...' : 'Try again'}
                     </Button>
                 {:else}
                     <Button variant="secondary" onclick={handleClose}>Cancel</Button>
                     <Button variant="primary" onclick={handleActivate} disabled={isActivating || !cleanedKey}>
-                        {#if isActivating}<span class="btn-spinner"></span>{/if}
+                        {#if isActivating}<Spinner size="sm" />{/if}
                         {isActivating ? 'Activating...' : hasError ? 'Try again' : 'Activate'}
                     </Button>
                 {/if}
@@ -606,17 +607,5 @@
 
     .button-row.details-buttons {
         justify-content: center;
-    }
-
-    .btn-spinner {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border: 2px solid var(--color-accent-fg);
-        border-top-color: transparent;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        vertical-align: middle;
-        margin-right: var(--spacing-xs);
     }
 </style>

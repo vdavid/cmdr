@@ -56,7 +56,8 @@
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { ScanThroughput } from '../scan-throughput'
-    import IconTriangleAlert from '~icons/lucide/triangle-alert'
+    import Icon from '$lib/ui/Icon.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
 
     /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
     function getSizeColorClass(bytes: number): string {
@@ -1083,7 +1084,7 @@
                      swap gets called out here so the user can't miss it. -->
                 <p class="conflict-warning" role="alert">
                     <span class="conflict-warning-icon" aria-hidden="true">
-                        <IconTriangleAlert width="16" height="16" />
+                        <Icon name="triangle-alert" size={16} />
                     </span>
                     <span>
                         The target exists and is a <strong>folder</strong>. You're about to overwrite it with a
@@ -1268,7 +1269,7 @@
                         {#if status === 'done'}
                             <span class="checkmark">&#10003;</span>
                         {:else if status === 'active'}
-                            <span class="spinner spinner-sm stage-spinner"></span>
+                            <Spinner size="sm" />
                         {:else}
                             <span class="dot"></span>
                         {/if}
@@ -1429,11 +1430,6 @@
         height: 8px;
         border-radius: var(--radius-full);
         background: var(--color-text-tertiary);
-    }
-
-    .stage-spinner {
-        border-color: var(--color-accent);
-        border-top-color: transparent;
     }
 
     .stage-connector {

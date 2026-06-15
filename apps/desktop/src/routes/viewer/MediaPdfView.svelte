@@ -4,6 +4,8 @@
    * `<embed>` supplies its own scroll / zoom / page UI, so we only fill the content
    * area and surface a brief loading spinner.
    */
+  import Spinner from '$lib/ui/Spinner.svelte'
+
   type Props = {
     /** `cmdr-media://localhost/<token>` URL for the PDF bytes. */
     src: string
@@ -35,7 +37,7 @@
 <div class="media-pdf-stage">
   {#if !loaded}
     <div class="media-status" role="status">
-      <span class="spinner spinner-lg" aria-hidden="true"></span>
+      <Spinner size="lg" />
       <span class="sr-only">Loading PDF</span>
     </div>
   {/if}

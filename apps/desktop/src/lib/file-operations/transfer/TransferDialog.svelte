@@ -31,7 +31,8 @@
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
     import { getAppLogger } from '$lib/logging/logger'
-    import IconTriangleAlert from '~icons/lucide/triangle-alert'
+    import Icon from '$lib/ui/Icon.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
 
     const log = getAppLogger('transferDialog')
 
@@ -490,7 +491,7 @@
             <span class="scan-label">{dirsFound === 1 ? 'dir' : 'dirs'}</span>
         </div>
         {#if isScanning}
-            <span class="scan-spinner"></span>
+            <Spinner size="sm" />
         {:else if scanComplete}
             <span class="scan-checkmark">✓</span>
         {/if}
@@ -511,7 +512,7 @@
     <!-- Conflicts section -->
     {#if isCheckingConflicts}
         <div class="conflicts-checking">
-            <span class="scan-spinner"></span>
+            <Spinner size="sm" />
             <span class="conflicts-checking-text">Checking for conflicts...</span>
         </div>
     {:else if totalConflictCount > 0 || mergeFolderCount > 0}
@@ -565,7 +566,7 @@
             {#if hasTypeMismatchConflict && conflictPolicy === 'overwrite'}
                 <p class="conflict-warning" role="alert">
                     <span class="conflict-warning-icon" aria-hidden="true">
-                        <IconTriangleAlert width="16" height="16" />
+                        <Icon name="triangle-alert" size={16} />
                     </span>
                     <span>
                         Some clashes mix a file and a folder by the same name. Overwriting will replace items of a
@@ -696,16 +697,6 @@
 
     .scan-divider {
         color: var(--color-text-tertiary);
-    }
-
-    .scan-spinner {
-        width: 12px;
-        height: 12px;
-        border: 2px solid var(--color-accent);
-        border-top-color: transparent;
-        border-radius: var(--radius-full);
-        animation: spin 0.8s linear infinite;
-        margin-left: var(--spacing-xs);
     }
 
     .scan-checkmark {

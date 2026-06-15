@@ -19,6 +19,7 @@
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import Size from '$lib/ui/Size.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import DateLabel from '$lib/ui/DateLabel.svelte'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import EmptyState from './EmptyState.svelte'
@@ -208,7 +209,7 @@
         </div>
     {:else if !isIndexReady && hasSearched}
         <div class="loading-state">
-            <div class="spinner spinner-md" aria-hidden="true"></div>
+            <Spinner size="md" />
             <div class="loading-label">Loading drive index...</div>
         </div>
     {:else if isSearching}
@@ -217,7 +218,7 @@
              since the previous result set is now stale relative to the new
              query/filter state. -->
         <div class="loading-state">
-            <div class="spinner spinner-md" aria-hidden="true"></div>
+            <Spinner size="md" />
             <div class="loading-label">Searching...</div>
         </div>
     {:else if results.length === 0 && hasSearched && !isSearching && (query.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}

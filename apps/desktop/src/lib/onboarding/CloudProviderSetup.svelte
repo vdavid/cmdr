@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onDestroy } from 'svelte'
-    import IconCheck from '~icons/lucide/check'
+    import Icon from '$lib/ui/Icon.svelte'
     import {
         getCloudProvider,
         getProviderConfigs,
@@ -338,7 +338,7 @@
             {#if links.signup}
                 <li class="setup-step done">
                     <span class="step-marker" aria-hidden="true">
-                        <IconCheck width="14" height="14" />
+                        <Icon name="check" size={14} />
                     </span>
                     <div class="step-body">
                         <span class="step-label">
@@ -363,7 +363,7 @@
             {#if requiresApiKey && links.apiKeys}
                 <li class="setup-step done">
                     <span class="step-marker" aria-hidden="true">
-                        <IconCheck width="14" height="14" />
+                        <Icon name="check" size={14} />
                     </span>
                     <div class="step-body">
                         <span class="step-label">
@@ -388,7 +388,7 @@
                 <li class="setup-step" class:done={currentBaseUrl.trim() !== ''}>
                     <span class="step-marker" aria-hidden="true">
                         {#if currentBaseUrl.trim() !== ''}
-                            <IconCheck width="14" height="14" />
+                            <Icon name="check" size={14} />
                         {/if}
                     </span>
                     <div class="step-body">
@@ -414,7 +414,7 @@
                 <li class="setup-step" class:done={apiKeyChecked}>
                     <span class="step-marker" aria-hidden="true">
                         {#if apiKeyChecked}
-                            <IconCheck width="14" height="14" />
+                            <Icon name="check" size={14} />
                         {/if}
                     </span>
                     <div class="step-body">
@@ -448,7 +448,7 @@
             <li class="setup-step" class:done={modelChecked}>
                 <span class="step-marker" aria-hidden="true">
                     {#if modelChecked}
-                        <IconCheck width="14" height="14" />
+                        <Icon name="check" size={14} />
                     {/if}
                 </span>
                 <div class="step-body">

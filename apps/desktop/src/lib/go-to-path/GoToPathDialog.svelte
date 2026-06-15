@@ -29,7 +29,7 @@
         loadRecentPaths,
         removeRecentPath as removeRecentPathFromState,
     } from './recent-paths-state.svelte'
-    import XIcon from '~icons/lucide/x'
+    import Icon from '$lib/ui/Icon.svelte'
 
     interface Props {
         /** The focused pane's current path; relative input resolves against it. */
@@ -251,7 +251,7 @@
                             use:tooltip={'Remove from list'}
                             onclick={(event) => void handleRemoveRecent(event, recent.id)}
                         >
-                            <XIcon />
+                            <Icon name="x" size={14} />
                         </button>
                     </li>
                 {/each}

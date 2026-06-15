@@ -2,6 +2,7 @@
     import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Spinner from '$lib/ui/Spinner.svelte'
     import { connectToServer } from '$lib/tauri-commands'
     import { triggerNetworkDiscovery } from './lazy-trigger'
     import type { NetworkHost } from '../types'
@@ -91,7 +92,7 @@
             <Button variant="secondary" onclick={onClose}>Cancel</Button>
             <Button variant="primary" onclick={() => void handleSubmit()} disabled={!canSubmit}>
                 {#if dialogState === 'connecting'}
-                    <span class="spinner spinner-sm"></span>
+                    <Spinner size="sm" />
                     Connecting...
                 {:else}
                     Connect
