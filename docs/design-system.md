@@ -106,17 +106,17 @@ Note: blog code blocks use a dark syntax theme regardless of page mode; they kee
 
 ### Semantic colors
 
-| Token                  | Light                   | Dark                       | Role                                                                                                   |
-| ---------------------- | ----------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `--color-allow`        | `#2e7d32`               | `#66bb6a`                  | Success, granted                                                                                       |
-| `--color-error`        | `#d32f2f`               | `#f44336`                  | Error, destructive (for borders, badges, icons)                                                        |
-| `--color-error-text`   | `#b91c1c`               | `#fca5a5`                  | Error text (darker/lighter than `--color-error` to meet 4.5:1 on `--color-error-bg` and similar tints) |
-| `--color-error-bg`     | `#fef2f2`               | `#450a0a`                  | Error background fill                                                                                  |
-| `--color-error-border` | `#fecaca`               | `#7f1d1d`                  | Error container border                                                                                 |
-| `--color-warning`      | `#e65100`               | `#f5a623`                  | Caution (for borders, badges, icons)                                                                   |
-| `--color-warning-text` | `#9a3412`               | `#fdba74`                  | Warning text (see `--color-error-text` rationale)                                                      |
-| `--color-warning-bg`   | `rgba(230, 81, 0, 0.1)` | `rgba(245, 166, 35, 0.15)` | Warning background fill                                                                                |
-| `--color-selection-fg` | `#c9a227`               | `#d4a82a`                  | Selected file names (gold, distinct from accent)                                                       |
+| Token                  | Light                   | Dark                       | Role                                                                                |
+| ---------------------- | ----------------------- | -------------------------- | ----------------------------------------------------------------------------------- |
+| `--color-allow`        | `#2e7d32`               | `#66bb6a`                  | Success, granted                                                                    |
+| `--color-error`        | `#d32f2f`               | `#f44336`                  | Error, destructive (for borders, badges, icons)                                     |
+| `--color-error-text`   | `#b91c1c`               | `#fca5a5`                  | Error text, dark/light enough to meet 4.5:1 on `--color-error-bg` and similar tints |
+| `--color-error-bg`     | `#fef2f2`               | `#450a0a`                  | Error background fill                                                               |
+| `--color-error-border` | `#fecaca`               | `#7f1d1d`                  | Error container border                                                              |
+| `--color-warning`      | `#e65100`               | `#f5a623`                  | Caution (for borders, badges, icons)                                                |
+| `--color-warning-text` | `#9a3412`               | `#fdba74`                  | Warning text (see `--color-error-text` rationale)                                   |
+| `--color-warning-bg`   | `rgba(230, 81, 0, 0.1)` | `rgba(245, 166, 35, 0.15)` | Warning background fill                                                             |
+| `--color-selection-fg` | `#c9a227`               | `#d4a82a`                  | Selected file names (gold, distinct from accent)                                    |
 
 **When to use the `-text` variants:** use `--color-error-text` / `--color-warning-text` for `color:` on text rendered on
 a same-hue tinted bg (or any bg where 4.5:1 isn't guaranteed). Use `--color-error` / `--color-warning` for
@@ -504,15 +504,18 @@ setup, onboarding). The canonical implementation is `OnboardingWizard.svelte`. U
 title bar, no drag, no Escape close, no × button: the body owns the close gesture (Next / Finish / Allow / Deny). The
 sheet is centered, lifted off the canvas with a frosted backdrop, and sized via the `--sheet-*` tokens below.
 
-| Token                     | Value                        | Role                                                                                                                                                                        |
-| ------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--sheet-width-fraction`  | `90vw`                       | Sheet width target. Pair with `min(var(--sheet-max-width), var(--sheet-width-fraction))`.                                                                                   |
-| `--sheet-height-fraction` | `90vh`                       | Sheet height target. Pair with `min(var(--sheet-max-height), var(--sheet-height-fraction))`.                                                                                |
-| `--sheet-max-width`       | `1200px`                     | Hard cap so the sheet stays readable on ultra-wide displays.                                                                                                                |
-| `--sheet-max-height`      | `900px`                      | Hard cap so the sheet stays compact on 4K+ vertical setups.                                                                                                                 |
-| `--sheet-radius`          | `var(--radius-lg)` (8px)     | Matches macOS sheet convention.                                                                                                                                             |
-| `--sheet-backdrop-blur`   | `10px`                       | Frosted-glass amount. GPU-composited; the sheet is the only consumer today.                                                                                                 |
-| `--sheet-backdrop-color`  | `var(--color-overlay-heavy)` | Dim layer behind the sheet. Resolves to `rgba(0,0,0,0.6)` in both themes (heavier than `ModalDialog`'s scrim because sheets sit over the full app, not a centered cluster). |
+| Token                     | Value                        | Role                                                                                         |
+| ------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| `--sheet-width-fraction`  | `90vw`                       | Sheet width target. Pair with `min(var(--sheet-max-width), var(--sheet-width-fraction))`.    |
+| `--sheet-height-fraction` | `90vh`                       | Sheet height target. Pair with `min(var(--sheet-max-height), var(--sheet-height-fraction))`. |
+| `--sheet-max-width`       | `1200px`                     | Hard cap so the sheet stays readable on ultra-wide displays.                                 |
+| `--sheet-max-height`      | `900px`                      | Hard cap so the sheet stays compact on 4K+ vertical setups.                                  |
+| `--sheet-radius`          | `var(--radius-lg)` (8px)     | Matches macOS sheet convention.                                                              |
+| `--sheet-backdrop-blur`   | `10px`                       | Frosted-glass amount. GPU-composited; the sheet is the only consumer today.                  |
+| `--sheet-backdrop-color`  | `var(--color-overlay-heavy)` | Dim layer behind the sheet. Resolves to `rgba(0,0,0,0.6)` in both themes.                    |
+
+`--sheet-backdrop-color` is heavier than `ModalDialog`'s scrim because sheets sit over the full app, not a centered
+cluster.
 
 **When to use a sheet vs `ModalDialog`:** each line pairs the sheet case with the matching `ModalDialog` case.
 

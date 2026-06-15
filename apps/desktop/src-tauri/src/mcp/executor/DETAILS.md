@@ -27,15 +27,20 @@ budget on timeout.
 
 `AckSignal` variants, when they fire, and who uses them:
 
-| Variant | Fires when | Used by |
-| --- | --- | --- |
-| `GenerationAdvanced` | `PaneStateStore.generation` strictly greater than captured value | Pane mutators: `set_view_mode`, `sort`, `toggle_hidden`, `tab`, `nav_*`, auto-confirmed `copy`/`move`/`delete`, `dialog confirm`. NOT `select`/`refresh` (both round-trips). |
-| `SoftDialogAppeared(id)` | Soft dialog with that id is in `SoftDialogTracker` | Confirmation dialogs from `copy`/`move`/`delete` (`autoConfirm: false`), `mkdir`, `mkfile`, `dialog open about`. |
-| `SoftDialogDisappeared(id)` | Soft dialog with that id is no longer tracked | `dialog close <confirmation>` (the FE `ModalDialog` fires `notifyDialogClosed` on unmount). |
-| `WindowAppeared(label)` | A `webview_windows()` entry matches (exact, or `viewer-*`) | `dialog open settings\|file-viewer`, `dialog focus`. |
-| `WindowDisappeared(label)` | The matching `webview_windows()` entry is gone | `dialog close settings` (single-window family). |
-| `WindowCountBelow {prefix, threshold}` | Matching window count is `< threshold` | `dialog close file-viewer` (snapshot count, ack when one closes; don't wait for all viewers to vanish). |
-| `Any([...])` | Logical OR over inner signals | Reserved for multi-mode tools. |
+- **`GenerationAdvanced`**: fires when `PaneStateStore.generation` is strictly greater than the captured value. Used by
+  pane mutators: `set_view_mode`, `sort`, `toggle_hidden`, `tab`, `nav_*`, auto-confirmed `copy`/`move`/`delete`, and
+  `dialog confirm`. NOT `select`/`refresh` (both round-trips).
+- **`SoftDialogAppeared(id)`**: fires when a soft dialog with that id is in `SoftDialogTracker`. Used by confirmation
+  dialogs from `copy`/`move`/`delete` (`autoConfirm: false`), `mkdir`, `mkfile`, and `dialog open about`.
+- **`SoftDialogDisappeared(id)`**: fires when a soft dialog with that id is no longer tracked. Used by
+  `dialog close <confirmation>` (the FE `ModalDialog` fires `notifyDialogClosed` on unmount).
+- **`WindowAppeared(label)`**: fires when a `webview_windows()` entry matches (exact, or `viewer-*`). Used by
+  `dialog open settings|file-viewer` and `dialog focus`.
+- **`WindowDisappeared(label)`**: fires when the matching `webview_windows()` entry is gone. Used by
+  `dialog close settings` (single-window family).
+- **`WindowCountBelow {prefix, threshold}`**: fires when the matching window count is `< threshold`. Used by
+  `dialog close file-viewer` (snapshot count, ack when one closes; don't wait for all viewers to vanish).
+- **`Any([...])`**: fires on a logical OR over inner signals. Reserved for multi-mode tools.
 
 Polling cadence: 250 ms for state-driven signals (matches the `await` tool); 100 ms for window/soft-dialog signals (both
 react faster than a full pane state push).

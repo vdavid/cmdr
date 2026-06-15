@@ -6,13 +6,13 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 
 ## Workflow inventory
 
-| Workflow                | Trigger                                 | What it does                                                                                                                |
-| ----------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`                | PRs, pushes to main, manual             | The main suite. Change-detection gates per-app jobs; a `hygiene` job always runs; deploys the website on green main pushes. |
-| `slow-checks.yml`       | Every 6 days (3 AM UTC), manual         | cargo-audit/deny/udeps, govulncheck, type-aware ESLint, website Docker build. Plus the manual-only 30-min SMB soak.         |
-| `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                                              |
-| `deploy-dashboard.yml`  | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                                             |
-| `release.yml`           | `v*` tags                               | Builds, signs, and publishes the desktop app (self-hosted macOS runners).                                                   |
+| Workflow                | Trigger                                 | What it does                                                                                         |
+| ----------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `ci.yml`                | PRs, pushes to main, manual             | Main suite. Change detection gates the per-app jobs; `hygiene` always runs; deploys website on green |
+| `slow-checks.yml`       | Every 6 days (3 AM UTC), manual         | cargo-audit/deny/udeps, govulncheck, type-aware ESLint, website Docker build, manual 30-min SMB soak |
+| `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                       |
+| `deploy-dashboard.yml`  | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                      |
+| `release.yml`           | `v*` tags                               | Builds, signs, and publishes the desktop app (self-hosted macOS runners).                            |
 
 The website deploy is a job inside `ci.yml` (gated on the website checks passing), NOT a standalone workflow. There used
 to be a standalone `deploy-website.yml` on the same path filters; it deployed a second time per push and didn't wait for

@@ -586,8 +586,8 @@ jobs:
       - name: Check no dead links in docs
         run: ./scripts/check/check --check docs-dead-links --ci
 
-      - name: Check no 2-column tables in agent docs
-        run: ./scripts/check/check --check docs-no-two-col-tables --ci
+      - name: Check agent-doc table hygiene
+        run: ./scripts/check/check --check docs-table-hygiene --ci
 
       - name: Check every CLAUDE.md has a sibling DETAILS.md
         run: ./scripts/check/check --check claude-md-details-sibling --ci

@@ -518,12 +518,12 @@ the per-component tier rules in `age-tier-utils.ts`, and the HTML-string variant
 `ShortcutChip.svelte`: the one component that renders a keyboard shortcut anywhere in the UI, so the look stays uniform
 and new call sites can't hand-roll a divergent style. Two mutually exclusive modes:
 
-| Prop        | Type            | Notes                                                                                                    |
-| ----------- | --------------- | -------------------------------------------------------------------------------------------------------- |
-| `commandId` | `CommandId?`    | Dynamic mode. Renders the command's first effective shortcut via `getFirstShortcutReactive`, reactively. |
-| `key`       | `string?`       | Literal mode. A fixed key string (toast snapshots, fixed interaction keys). Never clickable.             |
-| `clickable` | `boolean?`      | Default `true` in `commandId` mode; ignored (forced non-clickable) in literal mode.                      |
-| `size`      | `'sm' \| 'md'?` | Visual density. `md` (default) is the standalone pill; `sm` tightens padding + radius for dense rows.    |
+| Prop        | Type            | Notes                                                                                               |
+| ----------- | --------------- | --------------------------------------------------------------------------------------------------- |
+| `commandId` | `CommandId?`    | Dynamic mode. Renders the command's first shortcut via `getFirstShortcutReactive`, reactively.      |
+| `key`       | `string?`       | Literal mode. A fixed key string (toast snapshots, fixed interaction keys). Never clickable.        |
+| `clickable` | `boolean?`      | Default `true` in `commandId` mode; ignored (forced non-clickable) in literal mode.                 |
+| `size`      | `'sm' \| 'md'?` | Visual density. `md` (default) is the standalone pill; `sm` tightens padding/radius for dense rows. |
 
 Exactly one of `commandId` / `key` must be set (a dev-time error otherwise).
 

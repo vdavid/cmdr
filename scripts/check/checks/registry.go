@@ -759,15 +759,15 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDocsDeadLinks,
 	},
 	{
-		ID:          "docs-no-two-col-tables",
-		Nickname:    "no-two-col-tables",
-		DisplayName: "no 2-column tables in agent docs",
+		ID:          "docs-table-hygiene",
+		Nickname:    "table-hygiene",
+		DisplayName: "agent-doc table hygiene",
 		App:         AppOther,
 		Tech:        "📝 Docs",
 		DependsOn:   nil,
 		IsFast:      true,
 		Inputs:      wholeRepoInputs, // scans every CLAUDE.md / DETAILS.md / AGENTS.md / docs / .claude/rules markdown
-		Run:         RunDocsNoTwoColTables,
+		Run:         RunDocsTableHygiene,
 	},
 	{
 		ID:          "claude-md-details-sibling",

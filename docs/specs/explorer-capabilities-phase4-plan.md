@@ -96,7 +96,7 @@ export type VolumeKind =
  * What a pane on a given volume KIND can do. Real typed interface (NOT a
  * `Record<string, boolean>` bag): the `kind` field is the discriminant; the
  * rest are the structural capabilities that current guards branch on. Per-VOLUME
- * runtime flags (isReadOnly, supportsTrash, smbConnectionState) are NOT here —
+ * runtime flags (isReadOnly, supportsTrash, smbConnectionState) are NOT here:
  * they live on `VolumeInfo` and layer on top (a specific USB stick is read-only,
  * the "local" KIND is not).
  */
@@ -249,20 +249,28 @@ already collapsed navigation's string compares into `navigate.ts`; this is the p
 
 ### Capability-style guards (CONVERT – this phase's target)
 
-| Site                                                 | Current branch                                                                                                                                     | Capability it becomes                                                                                                                                                         |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `command-dispatch.ts:99`                             | `getFocusedPaneVolumeId() !== 'search-results'` (guard gate)                                                                                       | `!capabilitiesFor(focusedVolId).canPasteInto`-driven                                                                                                                          |
-| `command-dispatch.ts:101-107`                        | `blockedBySearchResultsPane` id set (paste/mkdir/mkfile/rename)                                                                                    | per-command `canExecute` reads caps (M2)                                                                                                                                      |
-| `FunctionKeyBar.svelte:57-63`                        | `=== 'search-results'` → `canMkdir`/`canMkfile`/`canRename`                                                                                        | `caps.canCreateChild` / `caps.canRenameInPlace` (A6 exception removal)                                                                                                        |
-| `clipboard-operations.ts:84,121,148`                 | `volumeId.startsWith('mtp-')` → "Use F5/F6" refusal toasts                                                                                         | `!caps.supportsSystemClipboard` (§ L10)                                                                                                                                       |
-| `clipboard-operations.ts:53`                         | `focusedVolId !== 'search-results'` (snapshot clip path gate)                                                                                      | reads `pathScheme === 'search-results'` (mechanics-adjacent; see keep note)                                                                                                   |
-| `file-operation-commands.ts:236,288,398`             | `=== 'search-results'` (transfer/delete snapshot-source routing)                                                                                   | `!caps.hasBackendListing` picks the snapshot builder                                                                                                                          |
-| `file-operation-commands.ts:294,413`                 | `destVolume?.isReadOnly` (read-only alert)                                                                                                         | **KEEP** – per-`VolumeInfo` data, not kind (Q4)                                                                                                                               |
-| `pane-commands.ts:229`                               | `getVolumeId() === 'search-results'` → `isSnapshotPane`                                                                                            | `!caps.hasBackendListing` (or a `isSnapshotPane` cap helper)                                                                                                                  |
-| `pane-mcp-sync.svelte.ts:65,149`                     | `deps.getIsNetworkView() \|\| deps.getIsSearchResultsView()` skip (BOOLEAN deps off FilePane deriveds – NOT a `=== 'network'` string compare here) | `!caps.syncsToMcp` (the deps interface gains a `getSyncsToMcp()`/`getCapabilities()` accessor; the A6 win is the SOURCE of the boolean moves to the kind, not the gate shape) |
-| `FilePane.svelte:273,283`                            | `isNetworkView`/`isSearchResultsView` deriveds                                                                                                     | derive `caps` once; the alt-view descriptor reads it (M4)                                                                                                                     |
-| `FilePane.svelte:345,389,421,648,689,747,825,1230,…` | per-feature `isNetworkView`/`isSearchResultsView`/`isMtpView` gates                                                                                | read `caps` fields where they're capability questions (M4; some stay per-feature)                                                                                             |
-| `has-parent.ts:32`                                   | `input.isSearchResultsView` → `false` (one of THREE rules; the `=== '/'` and `=== root` path comparisons stay)                                     | `caps.hasParentRow` folds ONLY the snapshot rule; the two path comparisons remain in `computeHasParent` (L5 – stays coupled to `isCrossVolumeNavigation`)                     |
+| Site                                                 | Current branch                                                      | Capability it becomes                                                             |
+| ---------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `command-dispatch.ts:99`                             | `getFocusedPaneVolumeId() !== 'search-results'` (guard gate)        | `!capabilitiesFor(focusedVolId).canPasteInto`-driven                              |
+| `command-dispatch.ts:101-107`                        | `blockedBySearchResultsPane` id set (paste/mkdir/mkfile/rename)     | per-command `canExecute` reads caps (M2)                                          |
+| `FunctionKeyBar.svelte:57-63`                        | `=== 'search-results'` → `canMkdir`/`canMkfile`/`canRename`         | `caps.canCreateChild` / `caps.canRenameInPlace` (A6 exception removal)            |
+| `clipboard-operations.ts:84,121,148`                 | `volumeId.startsWith('mtp-')` → "Use F5/F6" refusal toasts          | `!caps.supportsSystemClipboard` (§ L10)                                           |
+| `clipboard-operations.ts:53`                         | `focusedVolId !== 'search-results'` (snapshot clip path gate)       | reads `pathScheme === 'search-results'` (mechanics-adjacent; see keep note)       |
+| `file-operation-commands.ts:236,288,398`             | `=== 'search-results'` (transfer/delete snapshot-source routing)    | `!caps.hasBackendListing` picks the snapshot builder                              |
+| `file-operation-commands.ts:294,413`                 | `destVolume?.isReadOnly` (read-only alert)                          | **KEEP** – per-`VolumeInfo` data, not kind (Q4)                                   |
+| `pane-commands.ts:229`                               | `getVolumeId() === 'search-results'` → `isSnapshotPane`             | `!caps.hasBackendListing` (or a `isSnapshotPane` cap helper)                      |
+| `FilePane.svelte:273,283`                            | `isNetworkView`/`isSearchResultsView` deriveds                      | derive `caps` once; the alt-view descriptor reads it (M4)                         |
+| `FilePane.svelte:345,389,421,648,689,747,825,1230,…` | per-feature `isNetworkView`/`isSearchResultsView`/`isMtpView` gates | read `caps` fields where they're capability questions (M4; some stay per-feature) |
+
+Two rows carry prose too long for the table; they convert the same way:
+
+- **`pane-mcp-sync.svelte.ts:65,149`**: current branch is `deps.getIsNetworkView() || deps.getIsSearchResultsView()`
+  skip (BOOLEAN deps off FilePane deriveds, NOT a `=== 'network'` string compare here). It becomes `!caps.syncsToMcp`
+  (the deps interface gains a `getSyncsToMcp()`/`getCapabilities()` accessor; the A6 win is that the SOURCE of the
+  boolean moves to the kind, not the gate shape).
+- **`has-parent.ts:32`**: current branch is `input.isSearchResultsView` → `false` (one of THREE rules; the `=== '/'` and
+  `=== root` path comparisons stay). It becomes `caps.hasParentRow`, which folds ONLY the snapshot rule; the two path
+  comparisons remain in `computeHasParent` (L5: stays coupled to `isCrossVolumeNavigation`).
 
 ### Namespace/prefix mechanics (KEEP – not capability guards; § Convert vs keep)
 
@@ -342,9 +350,9 @@ reverts as one merge range.
 
 **Scope:** new `lib/file-explorer/capabilities/volume-capabilities.ts` (or colocate in `pane/`) exporting `VolumeKind`,
 `VolumeCapabilities`, the frozen per-kind table, `volumeKindOf`, `capabilitiesForKind`, `capabilitiesFor`. Re-express
-`volumeKindFor` (tint) over `volumeKindOf` so there's ONE classifier (§ Kind classifier). NO consumer migration yet —
-the string-compare guards still run; M2–M4 swap them. This is the seam-defining commit – **flag for David's review**
-(the interface, the `kind` union, the table, the classifier unify, the Q4 per-kind-vs-per-volume split).
+`volumeKindFor` (tint) over `volumeKindOf` so there's ONE classifier (§ Kind classifier). NO consumer migration yet: the
+string-compare guards still run; M2–M4 swap them. This is the seam-defining commit – **flag for David's review** (the
+interface, the `kind` union, the table, the classifier unify, the Q4 per-kind-vs-per-volume split).
 
 **Intentions:**
 
@@ -530,7 +538,7 @@ expressible vs genuinely per-feature (master § 4 – "investigate what's actual
   kind (+ the device-only sub-state for MTP). Express them as a small `paneViewKind` derivation
   (`'network' | 'search-results' | 'mtp-connect' | 'normal'`) off `caps.kind` (+ `isMtpDeviceOnly`), and let the `{#if}`
   chain branch on it. **This is NOT a new component (A8)** – it's a derived discriminant the existing chain reads.
-- **The RUNTIME-state branches STAY per-feature, NOT kind-driven:** `unreachable` (volume resolution timed out —
+- **The RUNTIME-state branches STAY per-feature, NOT kind-driven:** `unreachable` (volume resolution timed out,
   runtime), `showSmbReconnecting` / `showSmbGaveUp` (reconnect-manager state – runtime), `smbUpgradeLogin` (inline login
   flow – runtime), `loading` / `friendlyError` / `error` (listing lifecycle – runtime). These are PER-EXECUTION states,
   not "what may this kind do." Forcing them through capabilities is the over-zealous failure mode. They keep their own

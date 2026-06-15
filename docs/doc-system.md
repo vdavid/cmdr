@@ -60,8 +60,9 @@ checks (they mutate shared allowlists mid-run), and review every diff yourself. 
 - **Single-source**: a mechanism lives in ONE canonical doc; everywhere else points to it by path. `architecture.md` is
   a map (what + where + a pointer), never how.
 - **Evidence-anchor volatile claims**: OS, version, and empirical claims carry `(verified on <env>, <method>, <date>)`.
-- **Agent-facing style** ([`style-guide.md`](style-guide.md) § Agent-facing docs): no two-column tables (bullet lists),
-  sentence case, en-dash not em-dash, Oxford comma. Docs are a token stream, not a 2D layout.
+- **Agent-facing style** ([`style-guide.md`](style-guide.md) § Agent-facing docs): no two-column tables and no column
+  wider than 100 chars (bullet lists instead), sentence case, en-dash not em-dash, Oxford comma. Docs are a token
+  stream, not a 2D layout.
 - **Never bump an allowlist without David's OK**
   ([`.claude/rules/file-length-allowlist.md`](../.claude/rules/file-length-allowlist.md)): trim or split instead;
   leaving a warn is safe.

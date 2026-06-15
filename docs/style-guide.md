@@ -136,10 +136,15 @@ AI agents as a linear token stream, not a 2D layout. So:
   then a literal ": " (colon + space) separator, then the rest of the row. Never a dash or em-dash as the separator. The
   padding in an aligned table wastes tokens and, worse, any edit reflows every row, which causes spurious git merge
   conflicts. A three-column table whose first column is a pure sequential index counts as two columns: drop the index (a
-  numbered list works if the index is meaningful) and bullet the two real columns. The `docs-no-two-col-tables` check
+  numbered list works if the index is meaningful) and bullet the two real columns. The `docs-table-hygiene` check
   enforces this (error-level, no allowlist: a two-column table is always convertible).
+- **No column wider than 100 characters.** oxfmt pads every cell in a column out to its widest cell, so a single
+  prose-or-list cell taxes the whole column with padding tokens. A column that wide isn't tabular data: trim the cell,
+  or destructure the table into sections (a `###` heading per row) or bullets. `docs-table-hygiene` enforces this too,
+  error-level and no allowlist (every wide column is fixable by trimming or destructuring).
 - **Genuine matrices stay tables.** A table with three or more meaningful columns (a capability grid with ✓/✗ across
-  several columns, a comparison table) is legitimately 2D, so keep it. The check only flags the two-column case.
+  several columns, a comparison table) is legitimately 2D, so keep it. The check flags only the two-column case and
+  oversized columns, never a real matrix whose cells stay short.
 
 This is the doc-specific form of the user-level `agent-facing-docs` rule (skip column-alignment padding; prefer simple
 bulleted lists). Human-facing markdown is exempt: `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and everything under

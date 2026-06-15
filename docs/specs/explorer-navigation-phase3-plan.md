@@ -230,13 +230,13 @@ exact fallback behavior (incl. the history-push asymmetry – see M5).
 
 ### Persistence sites (fresh count, verified 2026-06-05 – master § Caller map's ~25/~24/~6/~12 was approximate)
 
-| Call                                 | Count | Where   | Disposition                                                                                             |
-| ------------------------------------ | ----- | ------- | ------------------------------------------------------------------------------------------------------- |
-| `saveAppStatus`                      | 24    | DPE     | Absorb into subscriber (it ALREADY debounces 200ms + diffs, see § M4)                                   |
-| `saveTabsForPaneSide`                | 24    | DPE     | Absorb (per-pane tab persistence triggered by nav/sort/tab mutations)                                   |
-| `saveLastUsedPathForVolume`          | 4     | DPE     | Absorb. The four sites: 439, 481, 1040 (nav commits) + 615 (the volume-change pre-save of the OLD path) |
-| `saveTabsForPane`                    | 11    | tab-ops | **KEEP in tab-operations** – tab CRUD, not nav-state; see § M4 scope                                    |
-| `updatePaneTabs`/`updateFocusedPane` | 6     | DPE     | **KEEP** – MCP backend mirror (L8), NOT disk persistence                                                |
+| Call                                 | Count | Where   | Disposition                                                                                |
+| ------------------------------------ | ----- | ------- | ------------------------------------------------------------------------------------------ |
+| `saveAppStatus`                      | 24    | DPE     | Absorb into subscriber (it ALREADY debounces 200ms + diffs, see § M4)                      |
+| `saveTabsForPaneSide`                | 24    | DPE     | Absorb (per-pane tab persistence triggered by nav/sort/tab mutations)                      |
+| `saveLastUsedPathForVolume`          | 4     | DPE     | Absorb. Sites: 439, 481, 1040 (nav commits) + 615 (volume-change pre-save of the OLD path) |
+| `saveTabsForPane`                    | 11    | tab-ops | **KEEP in tab-operations** – tab CRUD, not nav-state; see § M4 scope                       |
+| `updatePaneTabs`/`updateFocusedPane` | 6     | DPE     | **KEEP** – MCP backend mirror (L8), NOT disk persistence                                   |
 
 ### Deviations from master spec
 

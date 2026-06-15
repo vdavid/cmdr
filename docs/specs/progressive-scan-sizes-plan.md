@@ -181,11 +181,12 @@ New small accessors on `IndexWriter`: `queue_depth()` (read the existing atomic)
 
 ### Constants (single block in `writer.rs` or `event_loop.rs`-style location, with rationale comments)
 
-| Constant                      | Initial value | Rationale                                                                                                                              |
-| ----------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `PARTIAL_AGG_TICK_INTERVAL`   | 10 (= 5 s)    | Matches FE's 2 s/pane refresh throttle (no wasted emits); ~30 reveals over a 2.5 min scan feels live without measurable scan slowdown. |
-| `PARTIAL_AGG_MAX_DEPTH`       | 3             | Depth from scan root: `/Users` =1, `/Users/david` =2, `~/Downloads` =3. Covers onboarding browsing; thousands of rows, not 100K+.      |
-| `PARTIAL_AGG_MAX_QUEUE_DEPTH` | 4 000         | ~20% of channel capacity. Deep backlog means the writer is the bottleneck; don't add work. Tuned with M4 measurements.                 |
+- **`PARTIAL_AGG_TICK_INTERVAL`** (initial value: 10, = 5 s): matches FE's 2 s/pane refresh throttle (no wasted emits);
+  ~30 reveals over a 2.5 min scan feels live without measurable scan slowdown.
+- **`PARTIAL_AGG_MAX_DEPTH`** (initial value: 3): depth from scan root: `/Users` =1, `/Users/david` =2, `~/Downloads`
+  =3. Covers onboarding browsing; thousands of rows, not 100K+.
+- **`PARTIAL_AGG_MAX_QUEUE_DEPTH`** (initial value: 4 000): ~20% of channel capacity. Deep backlog means the writer is
+  the bottleneck; don't add work. Tuned with M4 measurements.
 
 These are starting points; M4 (manual verification on a real volume) measures per-pass cost from the handler's log line
 and adjusts. Capture final numbers + measurements in the constants' comments.

@@ -60,18 +60,40 @@ Surveyed 2026-06-06. Two classes:
 
 ### Class A — sites displaying a _registry command's_ binding (customizable → must become dynamic)
 
-| Site                      | File                                                                  | Today                                                                                                                                                       | Command id(s)                                                                                                                                                                                                                   |
-| ------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Command palette rows      | `lib/command-palette/CommandPalette.svelte:250-252`                   | `match.command.shortcuts` = registry DEFAULTS (bug), `slice(0, 2)`, plain span                                                                              | every palette command                                                                                                                                                                                                           |
-| F-key function bar        | `lib/file-explorer/pane/FunctionKeyBar.svelte:95-184`                 | hardcoded `<kbd>F5</kbd>` etc., two platform variants                                                                                                       | `file.rename`, `file.view`, `file.edit`, `file.newFile`, `file.copy`, `file.move`, `file.newFolder`, `file.delete`, `file.deletePermanently` (map per button at implementation time; the bar's aria-labels list the combos too) |
-| Tab bar "+" tooltip       | `lib/file-explorer/tabs/TabBar.svelte:153`                            | hardcoded `shortcut: '⌘T'`                                                                                                                                  | `tab.new`                                                                                                                                                                                                                       |
-| Quick Look hint toast     | `lib/file-explorer/quick-look/QuickLookHintToastContent.svelte:36-46` | hardcoded `<kbd>⇧Space</kbd>`                                                                                                                               | `file.quickLook` (the Space/Enter kbds in the same toast are Class B)                                                                                                                                                           |
-| Downloads toast           | `lib/downloads/DownloadToastContent.svelte:119`                       | snapshot prop (already effective-first)                                                                                                                     | `downloads.goToLatest`                                                                                                                                                                                                          |
-| Go-to-path ancestor toast | `lib/go-to-path/GoToPathAncestorToastContent.svelte:32`               | snapshot prop (already effective-first)                                                                                                                     | `nav.back`                                                                                                                                                                                                                      |
-| Transfer error suggestion | `lib/file-operations/transfer/transfer-error-messages.ts:80`          | hardcoded `Shift+F8` in the `trash_not_supported` entry's `suggestion` field (not `message`)                                                                | `file.deletePermanently` (interpolate effective-first at message build; plain text is fine here)                                                                                                                                |
-| Onboarding AI step        | `lib/onboarding/StepAi.svelte:327`                                    | hardcoded `<kbd>⌘+</kbd>` — **factually wrong today**: the Select files dialog opens on bare `+` (`selection.selectFiles`, registry shortcut `['+']`, no ⌘) | `selection.selectFiles`. The migration intentionally changes the displayed key from `⌘+` to `+` — that's a truthfulness fix, not a regression                                                                                   |
-| Sort column headers       | `lib/file-explorer/selection/SortableHeader.svelte`                   | already reactive via `getFirstShortcutReactive` (shipped)                                                                                                   | `sort.by*`                                                                                                                                                                                                                      |
-| Settings editor           | `lib/settings/sections/KeyboardShortcutsSection.svelte`               | it IS the editor; out of scope for chip migration                                                                                                           | all                                                                                                                                                                                                                             |
+- **Command palette rows** (file `lib/command-palette/CommandPalette.svelte:250-252`):
+  - Today: `match.command.shortcuts` = registry DEFAULTS (bug), `slice(0, 2)`, plain span.
+  - Command id(s): every palette command.
+- **F-key function bar** (file `lib/file-explorer/pane/FunctionKeyBar.svelte:95-184`):
+  - Today: hardcoded `<kbd>F5</kbd>` etc., two platform variants.
+  - Command id(s): `file.rename`, `file.view`, `file.edit`, `file.newFile`, `file.copy`, `file.move`, `file.newFolder`,
+    `file.delete`, `file.deletePermanently` (map per button at implementation time; the bar's aria-labels list the
+    combos too).
+- **Tab bar "+" tooltip** (file `lib/file-explorer/tabs/TabBar.svelte:153`):
+  - Today: hardcoded `shortcut: '⌘T'`.
+  - Command id(s): `tab.new`.
+- **Quick Look hint toast** (file `lib/file-explorer/quick-look/QuickLookHintToastContent.svelte:36-46`):
+  - Today: hardcoded `<kbd>⇧Space</kbd>`.
+  - Command id(s): `file.quickLook` (the Space/Enter kbds in the same toast are Class B).
+- **Downloads toast** (file `lib/downloads/DownloadToastContent.svelte:119`):
+  - Today: snapshot prop (already effective-first).
+  - Command id(s): `downloads.goToLatest`.
+- **Go-to-path ancestor toast** (file `lib/go-to-path/GoToPathAncestorToastContent.svelte:32`):
+  - Today: snapshot prop (already effective-first).
+  - Command id(s): `nav.back`.
+- **Transfer error suggestion** (file `lib/file-operations/transfer/transfer-error-messages.ts:80`):
+  - Today: hardcoded `Shift+F8` in the `trash_not_supported` entry's `suggestion` field (not `message`).
+  - Command id(s): `file.deletePermanently` (interpolate effective-first at message build; plain text is fine here).
+- **Onboarding AI step** (file `lib/onboarding/StepAi.svelte:327`):
+  - Today: hardcoded `<kbd>⌘+</kbd>`, which is **factually wrong today**: the Select files dialog opens on bare `+`
+    (`selection.selectFiles`, registry shortcut `['+']`, no ⌘).
+  - Command id(s): `selection.selectFiles`. The migration intentionally changes the displayed key from `⌘+` to `+`,
+    which is a truthfulness fix, not a regression.
+- **Sort column headers** (file `lib/file-explorer/selection/SortableHeader.svelte`):
+  - Today: already reactive via `getFirstShortcutReactive` (shipped).
+  - Command id(s): `sort.by*`.
+- **Settings editor** (file `lib/settings/sections/KeyboardShortcutsSection.svelte`):
+  - Today: it IS the editor; out of scope for chip migration.
+  - Command id(s): all.
 
 ### Class B — fixed interaction keys (not commands; uniform look only, never dynamic, never clickable)
 
@@ -125,12 +147,14 @@ One component, two mutually exclusive modes:
 
 Props:
 
-| Prop        | Type            | Notes                                                                                                                                                                                                                                     |
-| ----------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `commandId` | `CommandId?`    | Dynamic mode. Renders the first effective shortcut via `getFirstShortcutReactive`. Renders **nothing** when the command has no binding (callers embedding the chip in prose must conditionalize the sentence — check each migrated site). |
-| `key`       | `string?`       | Literal mode. Exactly one of `commandId` / `key` must be set; a dev-time error otherwise.                                                                                                                                                 |
-| `clickable` | `boolean?`      | Default `true` in `commandId` mode, forced `false`/ignored in literal mode. Set `false` when the chip sits inside another interactive control (palette rows; the F-key bar, if it adopts the chip).                                       |
-| `size`      | `'sm' \| 'md'?` | `sm` for dense contexts (palette), `md` default. Add only if the first visual pass needs it; don't speculate.                                                                                                                             |
+- **`commandId`** (type: `CommandId?`): dynamic mode. Renders the first effective shortcut via
+  `getFirstShortcutReactive`. Renders **nothing** when the command has no binding (callers embedding the chip in prose
+  must conditionalize the sentence, so check each migrated site).
+- **`key`** (type: `string?`): literal mode. Exactly one of `commandId` / `key` must be set; a dev-time error otherwise.
+- **`clickable`** (type: `boolean?`): default `true` in `commandId` mode, forced `false`/ignored in literal mode. Set
+  `false` when the chip sits inside another interactive control (palette rows; the F-key bar, if it adopts the chip).
+- **`size`** (type: `'sm' | 'md'?`): `sm` for dense contexts (palette), `md` default. Add only if the first visual pass
+  needs it; don't speculate.
 
 Rendering and behavior:
 

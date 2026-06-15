@@ -58,19 +58,19 @@ The registry and its consumers:
 
 Entry paths that bypass or duplicate the dispatch:
 
-| Entry path                    | Site                                                                                                   | Current shape                                                                                          |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| Global keydown                | `+page.svelte:368`                                                                                     | `lookupCommand(string)` → `handleCommandExecute(commandId)`. Already on the bus. A7 guards at 359/365. |
-| Native menu `execute-command` | `+page.svelte:225`                                                                                     | `handleCommandExecute(commandId)`. Already on the bus (most menu items route here from Rust).          |
-| Palette                       | `+page.svelte:881` `onExecute={handleCommandExecute}`                                                  | Already on the bus.                                                                                    |
-| Selection-dialog key prop     | `FilePane.svelte:1874` → `DualPaneExplorer.svelte:1979` → `+page.svelte:927`                           | `onCommand?.(string)` chain → `handleCommandExecute`. **String-typed prop**, reaches the bus.          |
-| F-key bar                     | `+page.svelte:774-811` `handleFn*` → `FunctionKeyBar.svelte` `on*` props                               | **Bypasses dispatch.** 9 `handleFn*` closures call `explorerRef` directly, duplicating `file.*`.       |
-| `menu-action` (Rust)          | `FilePane.svelte:2401` `listen('menu-action')`                                                         | **In-pane listener.** Only `action === 'open'` → `handleNavigate(cursorEntry)`. Duplicates `nav.open`. |
-| `view-mode-changed` (Rust)    | `DualPaneExplorer.svelte:966` `listen('view-mode-changed')`                                            | **In-component listener.** Per-pane `setPaneViewMode` + persistence. Duplicates `view.brief/fullMode`. |
-| `menu-sort` (Rust)            | `mcp-listeners.ts:61` `listen('menu-sort')`                                                            | Native-menu event mis-filed among MCP listeners. `setSortColumn/setSortOrder`. Duplicates `sort.*`.    |
-| Quick Look forwarding         | `DualPaneExplorer.svelte:1496` `routePanelKey` → `paneCommands.routePanelKey` (`pane-commands.ts:128`) | Synthesized KeyboardEvent; `file.quickLook` toggle lives in dispatch (`command-dispatch.ts:513`).      |
-| Debug panel (dev only)        | `+page.svelte:304/308/312` `debug-inject-error` / `debug-reset-error` / `debug-trigger-transfer-error` | Direct `explorerRef.injectError/resetError/triggerTransferError`. Dev-only, not commands.              |
-| MCP events                    | `mcp-listeners.ts` (17 mcp-\*) + `DualPaneExplorer.svelte:1012` `mcp-tab` (1)                          | 18 inbound events, ~15 `as {...}` casts in `mcp-listeners.ts`. See the MCP table below.                |
+| Entry path                    | Site                                                                                   | Current shape                                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Global keydown                | `+page.svelte:368`                                                                     | `lookupCommand(string)` → `handleCommandExecute(commandId)`. On the bus; A7 guards at 359/365.      |
+| Native menu `execute-command` | `+page.svelte:225`                                                                     | `handleCommandExecute(commandId)`. Already on the bus (most menu items route here from Rust).       |
+| Palette                       | `+page.svelte:881` `onExecute={handleCommandExecute}`                                  | Already on the bus.                                                                                 |
+| Selection-dialog key prop     | `FilePane.svelte:1874` → `DualPaneExplorer.svelte:1979` → `+page.svelte:927`           | `onCommand?.(string)` chain → `handleCommandExecute`. **String-typed prop**, reaches the bus.       |
+| F-key bar                     | `+page.svelte:774-811` `handleFn*` → `FunctionKeyBar.svelte` `on*` props               | **Bypasses dispatch.** 9 `handleFn*` closures call `explorerRef` directly, duplicating `file.*`.    |
+| `menu-action` (Rust)          | `FilePane.svelte:2401` `listen('menu-action')`                                         | **In-pane listener.** Only `action === 'open'` → `handleNavigate(cursorEntry)`; dupes `nav.open`.   |
+| `view-mode-changed` (Rust)    | `DualPaneExplorer.svelte:966` `listen('view-mode-changed')`                            | **In-component listener.** Per-pane `setPaneViewMode` + persistence; dupes `view.brief/fullMode`.   |
+| `menu-sort` (Rust)            | `mcp-listeners.ts:61` `listen('menu-sort')`                                            | Native-menu event mis-filed among MCP listeners. `setSortColumn/setSortOrder`. Duplicates `sort.*`. |
+| Quick Look forwarding         | `DualPaneExplorer.svelte:1496` → `paneCommands.routePanelKey` (`pane-commands.ts:128`) | Synthesized KeyboardEvent; `file.quickLook` toggle lives in dispatch (`command-dispatch.ts:513`).   |
+| Debug panel (dev only)        | `+page.svelte:304/308/312` `debug-{inject,reset,trigger-transfer}-error`               | Direct `explorerRef.injectError/resetError/triggerTransferError`. Dev-only, not commands.           |
+| MCP events                    | `mcp-listeners.ts` (17 mcp-\*) + `DualPaneExplorer.svelte:1012` `mcp-tab` (1)          | 18 inbound events, ~15 `as {...}` casts in `mcp-listeners.ts`. See the MCP table below.             |
 
 String-action sub-dispatchers to promote (master § Target arch 2, "No string-action sub-dispatchers survive"):
 
@@ -122,27 +122,41 @@ For M4. **18 inbound MCP events** (17 handled in `mcp-listeners.ts` + `mcp-tab` 
 `listenTauri` calls (17 mcp-\* events + `menu-sort`). Classified by: maps to an existing registry command, needs a new
 command/arg shape, or stays adapter-local.
 
-| Event                    | Payload (current cast)                                    | Maps to                                                                                                                                                                                                                                                |
-| ------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `mcp-open-search-dialog` | validated whitelist (no cast) → `applySearchPrefill`      | Adapter-local: prefill + `search.open`. Already the validating-parse precedent.                                                                                                                                                                        |
-| `mcp-key`                | `{ key: string }`                                         | `nav.back`/`nav.forward` (GoBack/GoForward) else `sendKeyToFocusedPane`. Keep the key passthrough; route the two nav cases through the bus, keep them on OLD nav entries (sequencing rule).                                                            |
-| `menu-sort`              | `{ action, value: string }`                               | Native menu → `sort.*` commands (M3, not M4).                                                                                                                                                                                                          |
-| `mcp-sort`               | `{ pane, by, order: string }`                             | Needs a `sort.set` command with `{ column, order, pane }` args (per-pane, no current registry equivalent – the `sort.*` commands act on the focused pane).                                                                                             |
-| `mcp-volume-select`      | `{ pane, name: string }`                                  | New command `volume.selectByName` `{ pane, name }`. Navigation-adjacent: keep calling `selectVolumeByName` (Phase 3 owns volume mechanics).                                                                                                            |
-| `mcp-select`             | `{ pane, start, count, mode: string }`                    | New command `selection.mcpSelect` `{ pane, start, count, mode }`; promote `handleMcpSelect`'s `mode` to a literal union.                                                                                                                               |
-| `mcp-nav-to-path`        | `{ pane, path, requestId? }`                              | **Stays OFF the bus in Phase 2** – the `string`-sentinel return can't pass through fire-and-forget `dispatch`. Adapter keeps calling `navigateToPath` directly (L12). `nav.toPath` registry entry + bus wiring lands in Phase 3 with `NavigateResult`. |
-| `mcp-open-under-cursor`  | `{ requestId }`                                           | `nav.openUnderCursor` (or reuse `nav.open` with a focused-pane variant). Round-trip stays in adapter.                                                                                                                                                  |
-| `mcp-move-cursor`        | `{ pane, to, requestId }`                                 | New command `cursor.moveTo` `{ pane, to }`. Round-trip stays in adapter. **L1/L2** (focus re-anchor + `whenLoadSettles`) live inside `moveCursor` – don't touch.                                                                                       |
-| `mcp-scroll-to`          | `{ pane, index }`                                         | New command `cursor.scrollTo` `{ pane, index }`.                                                                                                                                                                                                       |
-| `mcp-set-view-mode`      | `{ pane, mode: string }`                                  | `view.briefMode`/`view.fullMode` but per-pane → new `view.setMode` `{ pane, mode }` arg variant (the existing commands act on the focused pane).                                                                                                       |
-| `mcp-refresh`            | `()`                                                      | New command `pane.refresh`.                                                                                                                                                                                                                            |
-| `mcp-copy`               | `{ autoConfirm?, onConflict? }`                           | `file.copy` with optional `{ autoConfirm, onConflict }` args.                                                                                                                                                                                          |
-| `mcp-move`               | `{ autoConfirm?, onConflict? }`                           | `file.move` with optional args.                                                                                                                                                                                                                        |
-| `mcp-mkdir`              | `()`                                                      | `file.newFolder`.                                                                                                                                                                                                                                      |
-| `mcp-mkfile`             | `()`                                                      | `file.newFile`.                                                                                                                                                                                                                                        |
-| `mcp-delete`             | `{ autoConfirm? }`                                        | `file.delete` with optional `{ autoConfirm }` arg.                                                                                                                                                                                                     |
-| `mcp-confirm-dialog`     | `{ type, onConflict? }`                                   | New command `dialog.confirm` `{ type, onConflict }`; promote `confirmOpenDialog`'s `dialogType` to a literal union.                                                                                                                                    |
-| `mcp-tab`                | `{ action, pane, tabId?, pinned? }` (in DualPaneExplorer) | `tab.*` commands but with `{ pane, tabId?, pinned? }` args – the existing `tab.new`/`tab.close`/etc. act on the focused pane. Either add per-pane args or a `tab.mcpAction` command.                                                                   |
+- **`mcp-open-search-dialog`**: payload: validated whitelist (no cast) → `applySearchPrefill`. Maps to: adapter-local,
+  prefill + `search.open`. Already the validating-parse precedent.
+- **`mcp-key`**: payload: `{ key: string }`. Maps to: `nav.back`/`nav.forward` (GoBack/GoForward) else
+  `sendKeyToFocusedPane`. Keep the key passthrough; route the two nav cases through the bus, keep them on OLD nav
+  entries (sequencing rule).
+- **`menu-sort`**: payload: `{ action, value: string }`. Maps to: native menu → `sort.*` commands (M3, not M4).
+- **`mcp-sort`**: payload: `{ pane, by, order: string }`. Maps to: needs a `sort.set` command with
+  `{ column, order, pane }` args (per-pane, no current registry equivalent; the `sort.*` commands act on the focused
+  pane).
+- **`mcp-volume-select`**: payload: `{ pane, name: string }`. Maps to: new command `volume.selectByName`
+  `{ pane, name }`. Navigation-adjacent: keep calling `selectVolumeByName` (Phase 3 owns volume mechanics).
+- **`mcp-select`**: payload: `{ pane, start, count, mode: string }`. Maps to: new command `selection.mcpSelect`
+  `{ pane, start, count, mode }`; promote `handleMcpSelect`'s `mode` to a literal union.
+- **`mcp-nav-to-path`**: payload: `{ pane, path, requestId? }`. Maps to: **stays OFF the bus in Phase 2**: the
+  `string`-sentinel return can't pass through fire-and-forget `dispatch`. Adapter keeps calling `navigateToPath`
+  directly (L12). `nav.toPath` registry entry + bus wiring lands in Phase 3 with `NavigateResult`.
+- **`mcp-open-under-cursor`**: payload: `{ requestId }`. Maps to: `nav.openUnderCursor` (or reuse `nav.open` with a
+  focused-pane variant). Round-trip stays in adapter.
+- **`mcp-move-cursor`**: payload: `{ pane, to, requestId }`. Maps to: new command `cursor.moveTo` `{ pane, to }`.
+  Round-trip stays in adapter. **L1/L2** (focus re-anchor + `whenLoadSettles`) live inside `moveCursor`. Don't touch.
+- **`mcp-scroll-to`**: payload: `{ pane, index }`. Maps to: new command `cursor.scrollTo` `{ pane, index }`.
+- **`mcp-set-view-mode`**: payload: `{ pane, mode: string }`. Maps to: `view.briefMode`/`view.fullMode` but per-pane →
+  new `view.setMode` `{ pane, mode }` arg variant (the existing commands act on the focused pane).
+- **`mcp-refresh`**: payload: `()`. Maps to: new command `pane.refresh`.
+- **`mcp-copy`**: payload: `{ autoConfirm?, onConflict? }`. Maps to: `file.copy` with optional
+  `{ autoConfirm, onConflict }` args.
+- **`mcp-move`**: payload: `{ autoConfirm?, onConflict? }`. Maps to: `file.move` with optional args.
+- **`mcp-mkdir`**: payload: `()`. Maps to: `file.newFolder`.
+- **`mcp-mkfile`**: payload: `()`. Maps to: `file.newFile`.
+- **`mcp-delete`**: payload: `{ autoConfirm? }`. Maps to: `file.delete` with optional `{ autoConfirm }` arg.
+- **`mcp-confirm-dialog`**: payload: `{ type, onConflict? }`. Maps to: new command `dialog.confirm`
+  `{ type, onConflict }`; promote `confirmOpenDialog`'s `dialogType` to a literal union.
+- **`mcp-tab`**: payload: `{ action, pane, tabId?, pinned? }` (in DualPaneExplorer). Maps to: `tab.*` commands but with
+  `{ pane, tabId?, pinned? }` args: the existing `tab.new`/`tab.close`/etc. act on the focused pane. Either add per-pane
+  args or a `tab.mcpAction` command.
 
 **Validating parses (M4):** every cast above gets a defensive parse per the `mcp-open-search-dialog` precedent
 (`mcp-listeners.ts:27-45`): validate the discriminant strings against a whitelist, collapse unknowns to a safe default
@@ -406,7 +420,7 @@ unchanged (L9 contract). Debug-error-preview dev flow still works (manual). Docs
 `no-raw-command-dispatch` green with no unjustified opt-outs; all docs swept; **phase-end:** `--include-slow` green +
 manual Quick Look + drag-drop checklists + watch CI to green before the phase merge to `main`.
 
-### M6 (optional) – Flat handler record conversion — DONE
+### M6 (optional) – Flat handler record conversion: DONE
 
 Executed as its own plan: [command-handler-record-plan.md](command-handler-record-plan.md). The `handleCommandExecute`
 switch is now a small dispatch core over a flat handler record keyed by `Exclude<CommandId, DispatchExemptId>` (the win:

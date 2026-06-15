@@ -93,10 +93,10 @@ notifications. This spec is about agent behavior, inputs, outputs, storage, cont
 
 ### 4.1 Two databases
 
-| DB                                        | Location                               | Nature                                                                                                      | Backup                            |
-| ----------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `drive-index-{volume_id}.db` (per volume) | `~/Library/Caches/<bundle id>/`        | Regenerable cache: the drive index (today's per-volume `index-{volume_id}.db` files, renamed and relocated) | None; Time Machine skips Caches   |
-| `main.db`                                 | `<app data dir>` (Application Support) | Durable catch-all: summaries, proposals, logs, conversations, action history                                | Time Machine picks it up normally |
+| DB                                        | Location                               | Nature                                                                                              | Backup                            |
+| ----------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `drive-index-{volume_id}.db` (per volume) | `~/Library/Caches/<bundle id>/`        | Regenerable cache: the drive index (per-volume `index-{volume_id}.db` files, renamed and relocated) | None; Time Machine skips Caches   |
+| `main.db`                                 | `<app data dir>` (Application Support) | Durable catch-all: summaries, proposals, logs, conversations, action history                        | Time Machine picks it up normally |
 
 The existing drive index is already **per-volume** (`index-{volume_id}.db`, per `indexing/CLAUDE.md`), not a single
 file. The relocation is therefore N files (or a `drive-index/` subdirectory), the naming keeps the volume id, and it
@@ -661,66 +661,116 @@ Settings > Advanced, or dropping some, is a later editing decision, not a v1 gat
 
 ## 19. Decision log
 
-| #   | Decision                                                                                                                       | Rationale                                                                                                     |
-| --- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| D1  | Two DB families: per-volume `drive-index-{volume_id}.db` (cache) + `main.db` (durable catch-all)                               | Regenerable vs. valuable; separate writers; different backup policies; index is per-volume today              |
-| D2  | The drive-index DB family lives in `~/Library/Caches/<bundle id>/`                                                             | Platform-native "purgeable, no backup"; Time Machine skips Caches                                             |
-| D3  | `main.db` is a generic catch-all, not agent-specialized                                                                        | Action logs and future durable state land there too                                                           |
-| D4  | No custom collation in `main.db`                                                                                               | Stay `sqlite3`-inspectable; the index DB's collation forced a custom query tool                               |
-| D5  | Everything keys `(volume_id, rel_path)`; volumes table ships in v1                                                             | Multi-volume (NAS, S3, FTP) need arrives within weeks; retrofitting keys is brutal                            |
-| D6  | Local volume only active in v1; SMB/MTP/S3 summaries deferred                                                                  | Staleness/reconnect semantics differ per type; don't block the spine                                          |
-| D7  | Staleness is per-volume, first-class; agent caveats answers                                                                    | Enables answering about unmounted volumes (offline NAS index), a headline feature                             |
-| D8  | Deterministic importance scorer, cached in the drive index                                                                     | Fast, free, testable; gates summaries, event interest, and informs the LLM                                    |
-| D9  | Summaries: whole drive at system-decided depth, via prune + threshold + descend-list                                           | One pass; LLM refines depth only as a byproduct of calls already paid for                                     |
-| D10 | Summaries feed from the drive index, not the filesystem                                                                        | Listing-tier summaries need zero extra I/O                                                                    |
-| D11 | Two summary tiers: listing-only bulk vs. content-aware deep                                                                    | 10-100x cost cliff; content reserved for hot folders and on-demand                                            |
-| D12 | Cloud model is the summarization default; local stays an option                                                                | Opt-in + BYO key + value justifies cost; "nothing leaves the Mac" kept for those who want it                  |
-| D13 | Batch APIs rejected for the initial pass                                                                                       | ~24h async window conflicts with "summaries ready right after indexing"                                       |
-| D14 | Hot folders summarize in parallel with indexing                                                                                | Their paths are known a priori                                                                                |
-| D15 | Preflight with folder count, cost estimate, privacy disclosure; resumable                                                      | Transparency; resolves the "how many important folders" guess empirically                                     |
-| D16 | FTS5 over summaries first; embeddings deferred                                                                                 | Cheap, good enough for "where do invoices live"; vectors are regenerable later                                |
-| D17 | Agent receives digests, never raw events; deadline-scheduled inbox; drain-all on wake                                          | Bounded context; MAX(interest) wake policy falls out implicitly                                               |
-| D18 | No idle/heartbeat LLM calls; noise absorbed deterministically                                                                  | ~Zero cost when nothing happens                                                                               |
-| D19 | Digest has a hard token budget; aggregator decides granularity                                                                 | The LLM never sees unbounded input                                                                            |
-| D20 | Restart: roll-forward digest; full-rescan recovers via `list_stale_summaries` diff tool                                        | Events are hints, state is truth; also covers macOS purging the cache DB                                      |
-| D21 | User actions inside Cmdr are first-class agent input                                                                           | Highest-signal events; manual moves and rejections carry intent                                               |
-| D22 | Beliefs and rules in markdown (`~/.cmdr/`); operational data in SQLite                                                         | Human-auditable agent "mind"; radical transparency                                                            |
-| D23 | `~/.cmdr/CMDR.md` global profile + `rules/*.md` with `applies_to` globs                                                        | Folder-scoped rules without polluting folders                                                                 |
-| D24 | Folder-level `CMDR.md` cut from v1                                                                                             | Injection vector with authority; `applies_to` covers the need                                                 |
-| D25 | Agent memory in `~/.cmdr/memory/`, separate from rules, capped, writes logged                                                  | "Told me" vs. "inferred" never blur; user can audit/edit/delete                                               |
-| D26 | No direct write tools; proposals are the only write path, shared by ALL AI consumers                                           | Safety by construction; structural prompt-injection defense; one consent surface                              |
-| D27 | Freeze proposals at creation (pattern → concrete list); pattern kept as display text                                           | No drift between what was shown and what runs                                                                 |
-| D28 | Per-op child rows with own statuses; partial apply                                                                             | "Apply 11, skip 3 stale" beats all-or-nothing                                                                 |
-| D29 | Drift detection via per-op `(inode, size, mtime)` snapshot, re-verified at apply                                               | Creation→apply gap can be days                                                                                |
-| D30 | Trash over delete; batch op caps; proposals expire                                                                             | Reversibility; reviewable batches; stale suggestions are worse than none                                      |
-| D31 | Standing rules (live patterns) deferred to v2 with own consent UX                                                              | A persistent auto-applying pattern is a different risk class                                                  |
-| D32 | No `priority` column; `created_by_model` is provenance only                                                                    | YAGNI; no logic on "authoritativeness"                                                                        |
-| D33 | Apply rides the upcoming execution-queue feature and the existing op pipeline                                                  | Zero new write paths; preflight/rollback for free                                                             |
-| D34 | No subagents in v1; four job types (wake, chat, planner, summarizer) instead                                                   | One brain, different prompts/models per job; hierarchy unearned                                               |
-| D35 | "Librarian" is a tool, not an agent                                                                                            | An FTS SELECT needs no LLM intermediary                                                                       |
-| D36 | Wake context is fresh each time; continuity via DB/memory, not transcript                                                      | The defining difference between an agentic app and a chat app                                                 |
-| D37 | Single-flight agent; chat priority; wakes queue and digests merge                                                              | No self-conflicting concurrent writes                                                                         |
-| D38 | Per-wake budgets (tool turns, wall time, file reads) + house cancellation pattern                                              | Runaway loops impossible by construction; visible and killable                                                |
-| D39 | Proactivity dial chosen at onboarding; named policy bundles; never silently self-adjusts                                       | No silent default; "want me to pipe down?" over creepy auto-tuning                                            |
-| D40 | Tier 1 providers: Anthropic, OpenAI, Gemini, local; Tier 2: any OpenAI-compatible endpoint                                     | Bounded certification surface; OpenRouter (already integrated) carries the long tail                          |
-| D41 | Own `AgentLlm` trait with opaque per-message provider state, over the already-shipped `genai` integration                      | Thinking-state round-trip is the make-or-break; the trait is the asset; never build a parallel provider layer |
-| D42 | Pinned default models + "untested" badge + evals as regression suite                                                           | New-model churn becomes a button press, not a project                                                         |
-| D43 | Two model slots: bulk vs. interactive                                                                                          | Summarization and judgment have different cost/quality needs                                                  |
-| D44 | Name: "agent" (user-facing and internal); "AI" stays the capability umbrella                                                   | Name-internals-after-UI rule; honest and specific enough                                                      |
-| D45 | Prompts as markdown + frontmatter + minijinja-as-needed; dev hot-reload; `prompt-lint` check                                   | Iterate fast; catch template drift in CI                                                                      |
-| D46 | Acceptance rate is the north-star metric                                                                                       | Directly measures suggestion quality                                                                          |
-| D47 | Data-dir rename decoupled from this work                                                                                       | Aesthetic change with plugin/migration risk; must not block the agent                                         |
-| D48 | User action log: local-only, opt-out, ~90-day retention                                                                        | High-signal input with a privacy posture                                                                      |
-| D49 | The tool registry is agent-first; external AI clients get the same surface as the agent                                        | The interface stays natural for its primary consumer; one write path for all AI                               |
-| D50 | Index relocation migrates by moving files when cheap; full rescan is the acceptable fallback                                   | Kind to existing testers without committing to heavy migration code                                           |
-| D51 | Agent enable is a toggle in the onboarding AI step, gated on a working API key                                                 | Meets users where AI setup already happens; FDA step precedes it naturally                                    |
-| D52 | Background jobs never materialize dataless cloud files; synced-file content is readable; dataless content only on explicit ask | No unexpected downloads; sync state is already known to the app                                               |
-| D53 | Local model allowed in both slots with honest labeling and graceful degradation                                                | Local is a headline option; fail soft with a polite notice, never hard-fail                                   |
-| D54 | Background-refresh budget defaults to ~$10/month, transparent and user-adjustable                                              | Real utility over penny-pinching; the user stays in control                                                   |
-| D55 | The execution queue is a separate effort and a prerequisite for the proposals milestone                                        | Proposals apply through it; its design happens in its own effort                                              |
-| D56 | Agent operational state lives in `main.db`; the settings store is preferences only                                             | Backend-writable state needs a backend home; respects settings ownership                                      |
-| D57 | Late wakes keep full priority; the notification cap counts only notifications actually shown                                   | Late is fine, dropped is not; the cap protects attention, which is only spent on screen                       |
-| D58 | Every agent tunable is exposed in Settings from v1                                                                             | Better too many dials than hidden behavior; pruning to Advanced (or dropping) comes later                     |
+- **D1**: Two DB families: per-volume `drive-index-{volume_id}.db` (cache) + `main.db` (durable catch-all). Rationale:
+  Regenerable vs. valuable; separate writers; different backup policies; index is per-volume today.
+- **D2**: The drive-index DB family lives in `~/Library/Caches/<bundle id>/`. Rationale: Platform-native "purgeable, no
+  backup"; Time Machine skips Caches.
+- **D3**: `main.db` is a generic catch-all, not agent-specialized. Rationale: Action logs and future durable state land
+  there too.
+- **D4**: No custom collation in `main.db`. Rationale: Stay `sqlite3`-inspectable; the index DB's collation forced a
+  custom query tool.
+- **D5**: Everything keys `(volume_id, rel_path)`; volumes table ships in v1. Rationale: Multi-volume (NAS, S3, FTP)
+  need arrives within weeks; retrofitting keys is brutal.
+- **D6**: Local volume only active in v1; SMB/MTP/S3 summaries deferred. Rationale: Staleness/reconnect semantics differ
+  per type; don't block the spine.
+- **D7**: Staleness is per-volume, first-class; agent caveats answers. Rationale: Enables answering about unmounted
+  volumes (offline NAS index), a headline feature.
+- **D8**: Deterministic importance scorer, cached in the drive index. Rationale: Fast, free, testable; gates summaries,
+  event interest, and informs the LLM.
+- **D9**: Summaries: whole drive at system-decided depth, via prune + threshold + descend-list. Rationale: One pass; LLM
+  refines depth only as a byproduct of calls already paid for.
+- **D10**: Summaries feed from the drive index, not the filesystem. Rationale: Listing-tier summaries need zero extra
+  I/O.
+- **D11**: Two summary tiers: listing-only bulk vs. content-aware deep. Rationale: 10-100x cost cliff; content reserved
+  for hot folders and on-demand.
+- **D12**: Cloud model is the summarization default; local stays an option. Rationale: Opt-in + BYO key + value
+  justifies cost; "nothing leaves the Mac" kept for those who want it.
+- **D13**: Batch APIs rejected for the initial pass. Rationale: ~24h async window conflicts with "summaries ready right
+  after indexing".
+- **D14**: Hot folders summarize in parallel with indexing. Rationale: Their paths are known a priori.
+- **D15**: Preflight with folder count, cost estimate, privacy disclosure; resumable. Rationale: Transparency; resolves
+  the "how many important folders" guess empirically.
+- **D16**: FTS5 over summaries first; embeddings deferred. Rationale: Cheap, good enough for "where do invoices live";
+  vectors are regenerable later.
+- **D17**: Agent receives digests, never raw events; deadline-scheduled inbox; drain-all on wake. Rationale: Bounded
+  context; MAX(interest) wake policy falls out implicitly.
+- **D18**: No idle/heartbeat LLM calls; noise absorbed deterministically. Rationale: ~Zero cost when nothing happens.
+- **D19**: Digest has a hard token budget; aggregator decides granularity. Rationale: The LLM never sees unbounded
+  input.
+- **D20**: Restart: roll-forward digest; full-rescan recovers via `list_stale_summaries` diff tool. Rationale: Events
+  are hints, state is truth; also covers macOS purging the cache DB.
+- **D21**: User actions inside Cmdr are first-class agent input. Rationale: Highest-signal events; manual moves and
+  rejections carry intent.
+- **D22**: Beliefs and rules in markdown (`~/.cmdr/`); operational data in SQLite. Rationale: Human-auditable agent
+  "mind"; radical transparency.
+- **D23**: `~/.cmdr/CMDR.md` global profile + `rules/*.md` with `applies_to` globs. Rationale: Folder-scoped rules
+  without polluting folders.
+- **D24**: Folder-level `CMDR.md` cut from v1. Rationale: Injection vector with authority; `applies_to` covers the need.
+- **D25**: Agent memory in `~/.cmdr/memory/`, separate from rules, capped, writes logged. Rationale: "Told me" vs.
+  "inferred" never blur; user can audit/edit/delete.
+- **D26**: No direct write tools; proposals are the only write path, shared by ALL AI consumers. Rationale: Safety by
+  construction; structural prompt-injection defense; one consent surface.
+- **D27**: Freeze proposals at creation (pattern → concrete list); pattern kept as display text. Rationale: No drift
+  between what was shown and what runs.
+- **D28**: Per-op child rows with own statuses; partial apply. Rationale: "Apply 11, skip 3 stale" beats all-or-nothing.
+- **D29**: Drift detection via per-op `(inode, size, mtime)` snapshot, re-verified at apply. Rationale: Creation→apply
+  gap can be days.
+- **D30**: Trash over delete; batch op caps; proposals expire. Rationale: Reversibility; reviewable batches; stale
+  suggestions are worse than none.
+- **D31**: Standing rules (live patterns) deferred to v2 with own consent UX. Rationale: A persistent auto-applying
+  pattern is a different risk class.
+- **D32**: No `priority` column; `created_by_model` is provenance only. Rationale: YAGNI; no logic on
+  "authoritativeness".
+- **D33**: Apply rides the upcoming execution-queue feature and the existing op pipeline. Rationale: Zero new write
+  paths; preflight/rollback for free.
+- **D34**: No subagents in v1; four job types (wake, chat, planner, summarizer) instead. Rationale: One brain, different
+  prompts/models per job; hierarchy unearned.
+- **D35**: "Librarian" is a tool, not an agent. Rationale: An FTS SELECT needs no LLM intermediary.
+- **D36**: Wake context is fresh each time; continuity via DB/memory, not transcript. Rationale: The defining difference
+  between an agentic app and a chat app.
+- **D37**: Single-flight agent; chat priority; wakes queue and digests merge. Rationale: No self-conflicting concurrent
+  writes.
+- **D38**: Per-wake budgets (tool turns, wall time, file reads) + house cancellation pattern. Rationale: Runaway loops
+  impossible by construction; visible and killable.
+- **D39**: Proactivity dial chosen at onboarding; named policy bundles; never silently self-adjusts. Rationale: No
+  silent default; "want me to pipe down?" over creepy auto-tuning.
+- **D40**: Tier 1 providers: Anthropic, OpenAI, Gemini, local; Tier 2: any OpenAI-compatible endpoint. Rationale:
+  Bounded certification surface; OpenRouter (already integrated) carries the long tail.
+- **D41**: Own `AgentLlm` trait with opaque per-message provider state, over the already-shipped `genai` integration.
+  Rationale: Thinking-state round-trip is the make-or-break; the trait is the asset; never build a parallel provider
+  layer.
+- **D42**: Pinned default models + "untested" badge + evals as regression suite. Rationale: New-model churn becomes a
+  button press, not a project.
+- **D43**: Two model slots: bulk vs. interactive. Rationale: Summarization and judgment have different cost/quality
+  needs.
+- **D44**: Name: "agent" (user-facing and internal); "AI" stays the capability umbrella. Rationale:
+  Name-internals-after-UI rule; honest and specific enough.
+- **D45**: Prompts as markdown + frontmatter + minijinja-as-needed; dev hot-reload; `prompt-lint` check. Rationale:
+  Iterate fast; catch template drift in CI.
+- **D46**: Acceptance rate is the north-star metric. Rationale: Directly measures suggestion quality.
+- **D47**: Data-dir rename decoupled from this work. Rationale: Aesthetic change with plugin/migration risk; must not
+  block the agent.
+- **D48**: User action log: local-only, opt-out, ~90-day retention. Rationale: High-signal input with a privacy posture.
+- **D49**: The tool registry is agent-first; external AI clients get the same surface as the agent. Rationale: The
+  interface stays natural for its primary consumer; one write path for all AI.
+- **D50**: Index relocation migrates by moving files when cheap; full rescan is the acceptable fallback. Rationale: Kind
+  to existing testers without committing to heavy migration code.
+- **D51**: Agent enable is a toggle in the onboarding AI step, gated on a working API key. Rationale: Meets users where
+  AI setup already happens; FDA step precedes it naturally.
+- **D52**: Background jobs never materialize dataless cloud files; synced-file content is readable; dataless content
+  only on explicit ask. Rationale: No unexpected downloads; sync state is already known to the app.
+- **D53**: Local model allowed in both slots with honest labeling and graceful degradation. Rationale: Local is a
+  headline option; fail soft with a polite notice, never hard-fail.
+- **D54**: Background-refresh budget defaults to ~$10/month, transparent and user-adjustable. Rationale: Real utility
+  over penny-pinching; the user stays in control.
+- **D55**: The execution queue is a separate effort and a prerequisite for the proposals milestone. Rationale: Proposals
+  apply through it; its design happens in its own effort.
+- **D56**: Agent operational state lives in `main.db`; the settings store is preferences only. Rationale:
+  Backend-writable state needs a backend home; respects settings ownership.
+- **D57**: Late wakes keep full priority; the notification cap counts only notifications actually shown. Rationale: Late
+  is fine, dropped is not; the cap protects attention, which is only spent on screen.
+- **D58**: Every agent tunable is exposed in Settings from v1. Rationale: Better too many dials than hidden behavior;
+  pruning to Advanced (or dropping) comes later.
 
 ## 20. How to use this spec (starting sequence)
 
