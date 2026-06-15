@@ -160,3 +160,14 @@ export async function showMainWindow(): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('show_main_window')
 }
+
+/**
+ * E2E-only: orders the labeled window behind everything without focusing it, so
+ * a test run's child windows don't pop in front of the developer's work. No-op
+ * outside E2E (the backend gates on `CMDR_E2E_MODE`). The caller is
+ * `orderChildWindowToBackInE2e` in `$lib/app-mode`, which has the full rationale.
+ */
+export async function orderWindowToBack(label: string): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from typed bindings (see ipc_collectors.rs)
+  await invoke('order_window_to_back', { label })
+}

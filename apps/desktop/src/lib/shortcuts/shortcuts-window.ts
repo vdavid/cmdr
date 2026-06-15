@@ -19,7 +19,7 @@ import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { emitTo } from '@tauri-apps/api/event'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
-import { decorateChildWindowTitle, getAppMode } from '$lib/app-mode'
+import { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } from '$lib/app-mode'
 import {
   centerOnMain,
   nearestMonitor,
@@ -74,7 +74,7 @@ export async function openShortcutsWindow(): Promise<void> {
 
   const rect = main ? resolveChildPosition({ size: { width, height }, main, monitors, saved }) : null
 
-  new WebviewWindow('shortcuts', {
+  const win = new WebviewWindow('shortcuts', {
     url: '/shortcuts',
     title: decorateChildWindowTitle('Keyboard shortcuts'),
     width: rect?.width ?? width,
@@ -93,4 +93,7 @@ export async function openShortcutsWindow(): Promise<void> {
     hiddenTitle: true,
     trafficLightPosition: new LogicalPosition(14, 18),
   })
+  // E2E: push the window behind everything so a run's windows don't pop in front
+  // of the developer's work. No-op outside E2E. See `orderChildWindowToBackInE2e`.
+  void orderChildWindowToBackInE2e(win)
 }

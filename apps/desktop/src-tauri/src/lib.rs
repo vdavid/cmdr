@@ -294,6 +294,19 @@ pub fn run() {
             // from the registry. See `ipc.rs` for the event collection.
             specta_builder.mount_events(app);
 
+            // E2E: keep a test run's swarm of windows from stealing the developer's
+            // focus. The activation policy is the robust lever — a `Prohibited` app
+            // can never become the active application, which defeats every focus path
+            // at once (launch-time activation, a child window's `makeKeyAndOrderFront`)
+            // regardless of how many windows a run opens. Paired with per-window
+            // `orderBack:` so the windows also stay visually behind (see
+            // `commands::ui::show_main_window` and `commands::ui::order_window_to_back`).
+            // Strictly additive: gated on `CMDR_E2E_MODE`, so production is untouched.
+            #[cfg(target_os = "macos")]
+            if test_mode::is_e2e_mode() {
+                app.set_activation_policy(tauri::ActivationPolicy::Prohibited);
+            }
+
             // === Logging setup ===
             //
             // Hand-rolled fern dispatch tree (`logging::dispatch::init`) replaces

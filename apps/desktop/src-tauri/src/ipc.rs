@@ -202,6 +202,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::ui::update_pin_tab_menu,
         crate::commands::ui::set_reopen_closed_tab_enabled,
         crate::commands::ui::show_main_window,
+        crate::commands::ui::order_window_to_back,
         crate::commands::ui::update_menu_context,
         crate::commands::ui::activate_window_menu,
         crate::commands::ui::toggle_hidden_files,

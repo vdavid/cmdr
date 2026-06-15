@@ -15,7 +15,7 @@ let cascadeIndex = 0
 /** Opens a file viewer window for the given file path. Multiple viewers can be open at once. */
 export async function openFileViewer(filePath: string): Promise<void> {
   const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
-  const { decorateChildWindowTitle, getAppMode } = await import('$lib/app-mode')
+  const { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } = await import('$lib/app-mode')
 
   // Use a unique label per viewer instance (timestamp-based)
   const label = `viewer-${String(Date.now())}`
@@ -36,7 +36,7 @@ export async function openFileViewer(filePath: string): Promise<void> {
     if (monitor) rect = clampToMonitor(rect, monitor)
   }
 
-  new WebviewWindow(label, {
+  const win = new WebviewWindow(label, {
     url: `/viewer?path=${encodedPath}`,
     title: decorateChildWindowTitle(filePath.split('/').pop() ?? 'Viewer'),
     width: VIEWER_WIDTH,
@@ -57,4 +57,7 @@ export async function openFileViewer(filePath: string): Promise<void> {
     trafficLightPosition: new LogicalPosition(9, 17),
     hiddenTitle: true,
   })
+  // E2E: push the window behind everything so a run's viewers don't pop in front
+  // of the developer's work. No-op outside E2E. See `orderChildWindowToBackInE2e`.
+  void orderChildWindowToBackInE2e(win)
 }

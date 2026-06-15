@@ -23,7 +23,7 @@ import { emitTo } from '@tauri-apps/api/event'
 import { Effect, EffectState } from '@tauri-apps/api/window'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
-import { decorateChildWindowTitle, getAppMode } from '$lib/app-mode'
+import { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } from '$lib/app-mode'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '$lib/window-positioning'
 
 const log = getAppLogger('settings')
@@ -147,6 +147,10 @@ export async function openSettingsWindow(section?: string[], anchor?: string): P
         log.warn('Failed to apply window effects: {error}', { error: String(error) })
       })
   })
+
+  // E2E: push the window behind everything so a run's Settings windows don't pop
+  // in front of the developer's work. No-op outside E2E. See `orderChildWindowToBackInE2e`.
+  void orderChildWindowToBackInE2e(win)
 }
 
 /**

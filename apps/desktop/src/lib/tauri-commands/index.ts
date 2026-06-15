@@ -126,6 +126,7 @@ export {
   syncMenuShowHidden,
   updateViewModeMenu,
   showMainWindow,
+  orderWindowToBack,
   updatePinTabMenu,
   setReopenClosedTabEnabled,
 } from './app-state'

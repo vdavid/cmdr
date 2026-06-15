@@ -176,28 +176,60 @@ pub fn show_parent_row_context_menu<R: Runtime>(window: Window<R>, parent_path: 
     Ok(())
 }
 
+/// macOS: send the given NSWindow to the back of the window list without focusing
+/// it. `orderBack:` still makes the window visible (just behind everything), so
+/// the webview keeps rendering and the E2E tests can drive it over the socket.
+#[cfg(target_os = "macos")]
+fn order_ns_window_back(ns_window: *mut objc2::runtime::AnyObject) -> Result<(), String> {
+    use objc2::msg_send;
+    use objc2::runtime::AnyObject;
+    if ns_window.is_null() {
+        return Err("NSWindow pointer is null".into());
+    }
+    unsafe {
+        let _: () = msg_send![ns_window, orderBack: std::ptr::null_mut::<AnyObject>()];
+    }
+    Ok(())
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
-    // E2E: on macOS, use `orderFront:` instead of `makeKeyAndOrderFront:` so the
-    // window appears without stealing focus from whatever the user is currently
-    // working in. `window.show()` calls the latter on macOS, which always grabs
-    // OS focus. Linux/Windows test runs happen in headless containers, so the
-    // standard show is fine there.
+    // E2E: on macOS, order the window to the back without focusing it instead of
+    // `window.show()` (which calls `makeKeyAndOrderFront:`, always grabbing OS
+    // focus AND raising the window to the front). This keeps a test run's windows
+    // out of the developer's way. Linux/Windows test runs happen in headless
+    // containers, so the standard show is fine there.
     #[cfg(target_os = "macos")]
     if crate::test_mode::is_e2e_mode() {
-        use objc2::msg_send;
         use objc2::runtime::AnyObject;
         let ns_window = window.ns_window().map_err(|e| e.to_string())? as *mut AnyObject;
-        if ns_window.is_null() {
-            return Err("NSWindow pointer is null".into());
-        }
-        unsafe {
-            let _: () = msg_send![ns_window, orderFront: std::ptr::null_mut::<AnyObject>()];
-        }
-        return Ok(());
+        return order_ns_window_back(ns_window);
     }
     window.show().map_err(|e| e.to_string())
+}
+
+/// E2E-only: order a freshly created child window (Settings, file viewer,
+/// shortcuts) to the back without focusing it, so a test run's windows don't pop
+/// in front of the developer's work. Invoked by the opener (the main window) right
+/// after the child window is created, resolving it by label. No-op off macOS or
+/// outside E2E; pairs with the `Prohibited` activation policy (`crate::run`) and
+/// the child windows' own `focus: false`. See `crate::test_mode::is_e2e_mode`.
+#[tauri::command]
+#[specta::specta]
+pub fn order_window_to_back<R: Runtime>(app: AppHandle<R>, label: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    if crate::test_mode::is_e2e_mode() {
+        use objc2::runtime::AnyObject;
+        let window = app
+            .get_webview_window(&label)
+            .ok_or_else(|| format!("no window with label {label}"))?;
+        let ns_window = window.ns_window().map_err(|e| e.to_string())? as *mut AnyObject;
+        return order_ns_window_back(ns_window);
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = (app, label);
+    Ok(())
 }
 
 /// Toggle hidden files visibility - updates menu checkbox and emits event.

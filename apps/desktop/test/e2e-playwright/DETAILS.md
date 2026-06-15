@@ -237,6 +237,13 @@ production. Tests that exercise them must do so through the production multi-win
 to `/viewer` or `/settings`. The latter exercises the page component but skips label uniqueness, restricted
 capabilities, and the cross-window focus/close lifecycle.
 
+On macOS under `CMDR_E2E_MODE`, every window (main and child) opens unfocused and ordered to the back, and the app runs
+with `ActivationPolicy::Prohibited` so it can never become active. A run's swarm of windows therefore doesn't steal the
+developer's keystrokes or pop in front of their work. Tests drive the app over the socket, never OS input, so this
+changes nothing they observe. The mechanism lives at the code: `test_mode::is_e2e_mode`, `crate::run` (policy), and
+`commands::ui::{show_main_window, order_window_to_back}` (per-window `orderBack:`), called from the openers via
+`app-mode.ts`'s `orderChildWindowToBackInE2e`.
+
 The plugin (`tauri-plugin-playwright` 0.3.0+) supports scoping a `TauriPage` to any open window:
 
 - `tauriPage.listWindows()`: returns `WindowInfo[]` (`{ label, url, title, visible }`).

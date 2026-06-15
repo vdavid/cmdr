@@ -61,6 +61,13 @@ pub fn effective_copy_throttle_ms() -> Option<u64> {
 /// Subsystems may use this to enable diagnostics or skip behaviors that don't
 /// make sense during automated tests (popping the AI offer, mDNS, etc.).
 ///
+/// On macOS it also keeps the run's windows out of the developer's way: the app
+/// sets `ActivationPolicy::Prohibited` (so it can never become active, in
+/// `crate::run`) and every window is ordered to the back without focus (see
+/// `crate::commands::ui::show_main_window` and `order_window_to_back`). Tests
+/// drive the app over the playwright socket, never OS input, so a backgrounded
+/// window passes every test while no longer stealing keystrokes.
+///
 /// **Strictly additive**: code must keep working with the var unset.
 pub fn is_e2e_mode() -> bool {
     std::env::var("CMDR_E2E_MODE").as_deref() == Ok("1")
