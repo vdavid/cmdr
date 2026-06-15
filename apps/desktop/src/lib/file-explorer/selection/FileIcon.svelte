@@ -56,7 +56,7 @@
         <span class="icon-emoji">{getFallbackEmoji(file)}</span>
     {/if}
     {#if file.isSymlink}
-        <span class="symlink-badge" class:has-sync={!!syncIcon}>🔗</span>
+        <span class="symlink-badge" class:has-sync={!!syncIcon}><Icon name="link" size={10} /></span>
     {/if}
     {#if syncIcon}
         <img class="sync-badge" src={syncIcon} alt="" width="10" height="10" />
@@ -101,9 +101,10 @@
         position: absolute;
         bottom: -2px;
         right: -2px;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- below type scale, tiny badge */
-        font-size: 8px;
-        line-height: 1;
+        display: inline-flex;
+        /* A darker accent so the badge stays legible over (gold) folder icons and accent-tinted
+           icons, where a plain --color-accent would blend in. */
+        color: var(--color-accent-dark);
     }
 
     .symlink-badge.has-sync {

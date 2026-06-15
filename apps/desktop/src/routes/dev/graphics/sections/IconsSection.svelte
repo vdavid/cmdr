@@ -22,6 +22,7 @@
         hourglass:
             'Pending recursive-size indicator in the file lists and selection info, and the drive-indexing status indicator.',
         info: 'Restricted-path marker in the volume breadcrumb and file lists, and the info banner in the transfer error dialog.',
+        link: 'Symlink badge overlaid on a file or folder icon when the entry is a symlink.',
         lock: 'Pinned-tab marker in the tab bar.',
         'more-horizontal': 'Row actions menu trigger in the search and selection results.',
         'rotate-ccw': 'Reset-to-default button on a settings row.',

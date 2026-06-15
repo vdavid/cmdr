@@ -12,6 +12,7 @@ import IconGitCommitHorizontal from '~icons/lucide/git-commit-horizontal'
 import IconGitFork from '~icons/lucide/git-fork'
 import IconHourglass from '~icons/lucide/hourglass'
 import IconInfo from '~icons/lucide/info'
+import IconLink from '~icons/lucide/link'
 import IconLock from '~icons/lucide/lock'
 import IconMoreHorizontal from '~icons/lucide/more-horizontal'
 import IconRotateCcw from '~icons/lucide/rotate-ccw'
@@ -50,6 +51,7 @@ export const ICON_COMPONENTS = {
   'git-fork': IconGitFork,
   hourglass: IconHourglass,
   info: IconInfo,
+  link: IconLink,
   lock: IconLock,
   'more-horizontal': IconMoreHorizontal,
   'rotate-ccw': IconRotateCcw,
