@@ -85,6 +85,7 @@ describe('app-mode', () => {
       await initAppMode()
       const win = fakeWindow('viewer-123')
       await orderChildWindowToBackInE2e(win)
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vitest mock, no `this` binding
       expect(win.once).toHaveBeenCalledWith('tauri://created', expect.any(Function))
       expect(orderWindowToBackSpy).toHaveBeenCalledWith('viewer-123')
     })
@@ -94,6 +95,7 @@ describe('app-mode', () => {
       await initAppMode()
       const win = fakeWindow('settings')
       await orderChildWindowToBackInE2e(win)
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vitest mock, no `this` binding
       expect(win.once).not.toHaveBeenCalled()
       expect(orderWindowToBackSpy).not.toHaveBeenCalled()
     })
