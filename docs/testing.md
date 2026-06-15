@@ -198,6 +198,22 @@ human presence at the machine and vanish on idle hosts. Grep the involved window
 before blaming load. Legitimate rAF uses (animation, paint-coupled measurement like the drag-autoscroll loop) are fine —
 those want frames; readiness/lifecycle signals don't.
 
+## Sanctioned slow-test exceptions
+
+Most "raise the timeout" instincts are wrong (see the `retries: 1` and `sleep(N)` anti-patterns above): a flaky timeout
+usually means a real race to fix, not a budget to enlarge. The rare exception is a test whose slow step is **external
+and genuinely not optimizable** — then a generous, loudly-commented timeout is correct. Keep this list short; a new
+entry needs a real "we can't make this faster" justification, not convenience.
+
+- **`smb_integration_volume_id_is_per_mount_not_per_path_shape`** (`src-tauri/src/network/mount.rs`): uses a **16s**
+  NetFS connect timeout (double the usual 8s). It's one of only two SMB tests that do a real macOS NetFS _kernel_ mount
+  (`NetFSMountURLSync`); the other ~36 use the userspace `smb2` lib with no OS mount. The kernel mount RTT depends on
+  factors we don't control (the OS mount queue, host CPU/lease contention when the full slow suite + both e2e lanes run
+  at once), so the default 8s spuriously timed out under load. The mount is pure setup there (the test asserts on the
+  resolved volume id, not mount speed), so the larger budget only delays how long a genuinely-hung mount waits before
+  nextest's 30s slow-timeout cap fires. Don't copy the 16s to other tests, and don't apply it to
+  `smb_integration_mount_guest_no_dialog`, whose 8s budget IS its assertion.
+
 ## When you add X, also add Y
 
 - **New `#[tauri::command]`**: (a) unit test for the underlying `*_core` / `ops_*` helper; (b) IPC contract test in

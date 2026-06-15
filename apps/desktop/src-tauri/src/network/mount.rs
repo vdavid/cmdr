@@ -740,7 +740,18 @@ mod tests {
             .args(["unmount", "force", "/Volumes/public"])
             .output();
 
-        let mount_result = mount_share(host.clone(), "public".to_string(), None, None, port, Some(8_000))
+        // RARE, SANCTIONED EXCEPTION: a generous 16s connect timeout (double the usual 8s). This is
+        // one of only two SMB tests that go through the real macOS NetFS *kernel* mount
+        // (`NetFSMountURLSync`); the other ~36 use the userspace `smb2` lib and need no OS mount.
+        // NetFS guest-mount RTT depends on external factors we can't optimize away (the kernel mount
+        // queue, plus host CPU/lease contention when the full slow-check suite and both e2e lanes run
+        // concurrently), so under load the default 8s spuriously timed out. The mount is pure setup
+        // here — this test asserts on the resolved volume id, not mount speed (unlike
+        // `smb_integration_mount_guest_no_dialog`, whose 8s budget IS the assertion) — so a bigger
+        // budget only changes how long a genuinely-hung mount waits before the nextest 30s
+        // slow-timeout cap fires. Don't generalize this number to other tests. See docs/testing.md
+        // § "Sanctioned slow-test exceptions".
+        let mount_result = mount_share(host.clone(), "public".to_string(), None, None, port, Some(16_000))
             .await
             .unwrap_or_else(|e| panic!("guest mount against {host}:{port} failed: {e:?}"));
 
