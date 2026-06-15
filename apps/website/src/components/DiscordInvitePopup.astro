@@ -283,9 +283,7 @@ const DISCORD_INVITE_URL = 'https://discord.gg/4BVafBneKJ'
                 return
             }
             if (e.key !== 'Tab' || !dialog) return
-            const focusables = dialog.querySelectorAll<HTMLElement>(
-                'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-            )
+            const focusables = dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')
             if (focusables.length === 0) return
             const first = focusables[0]
             const last = focusables[focusables.length - 1]
