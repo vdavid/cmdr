@@ -10,7 +10,7 @@ The key UX win: showing directory sizes in file listings. Design history is in g
 
 ### Module structure
 
-- **mod.rs** -- Thin public-API facade. Module declarations, re-exports of the state machine functions, plus the integration tests that wire scanner → aggregator → enrichment together.
+- **mod.rs** -- Thin public-API facade. Module declarations and re-exports of the state machine functions. The end-to-end integration tests that wire scanner → aggregator → enrichment together live in the sibling `integration_tests.rs`.
 - **state.rs** -- `IndexPhase` enum, `INDEXING` static mutex, phase transitions, and the `IndexManager` + `ReadPool` bootstrap. Public API entry points (`init()`, `start_indexing()`, `stop_indexing()`, `clear_index()`, `force_scan()`, `stop_scan()`, `get_status()`, `get_debug_status()`, `get_dir_stats()`, `get_dir_stats_batch()`, `trigger_verification()`, `is_active()`, `should_auto_start_indexing()`). Re-exported through `mod.rs`.
 - **manager.rs** -- `IndexManager` (central coordinator). Owns the SQLite store (reads), writer thread (writes), scanner handle, and FSEvents watcher. Methods: `new()`, `resume_or_scan()`, `start_scan()` (takes `scan_trigger: &str`), `start_replay()`, `stop_scan()`, `get_status()`, `get_debug_status()`, `shutdown()`. `start_scan`'s 500 ms progress reporter also drives mid-scan partial aggregation: a tick counter gates the per-tick block behind `partial_agg::should_send_partial_agg` (fires every 10th tick, skips under a deep writer queue), which snapshots the listing cache (`caching::snapshot_listings()`), runs `partial_agg::collect_hot_paths`, and fires a non-blocking `writer.try_send(ComputePartialAggregates { hot_paths })`. The whole block sits behind the gate so skipped ticks do zero extra work (one call-site toggle). The reporter dies when `scan_done` is set, so partial passes are structurally scoped to the full-scan window.
 - **partial_agg.rs** -- Pure helpers for mid-scan partial aggregation, kept side-effect-free so the timer loop in `manager.rs` stays a dumb caller and both helpers are exhaustively unit-tested. `should_send_partial_agg(tick, queue_depth)` is the send gate: fires every `PARTIAL_AGG_TICK_INTERVAL`-th tick (10 = 5 s), never on tick 0, skips when `queue_depth > PARTIAL_AGG_MAX_QUEUE_DEPTH` (4 000). `collect_hot_paths(listings, scanned_volume_id)` turns a `snapshot_listings()` result into firmlink-normalized hot paths: keeps only listings whose `volume_id` equals the scanned volume's (dropping `network`/`search-results`/`mtp-*`/SMB and other local volumes whose absolute-looking paths would resolve against the wrong per-volume DB) and whose `path` is absolute, normalizes via `firmlinks::normalize_path`, dedups preserving first-seen order. The two constants live here with their rationale and the real-volume tuning numbers.
@@ -143,7 +143,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 - Scanner: full scan with temp dir trees, exclusion filtering, cancellation
 - Firmlinks: path normalization, edge cases
 - Writer: message processing, priority handling
-- mod.rs: end-to-end integration (scan → aggregate → enrich → watcher update → re-enrich), enrichment fast path, fallback, root-level enrichment
+- integration_tests.rs: end-to-end integration (scan → aggregate → enrich → watcher update → re-enrich), enrichment fast path, fallback, root-level enrichment, `ReadPool` (reuse, invalidation, cross-thread, contention), `should_auto_start_indexing` FDA gate, and `IndexPhase` lifecycle transitions
 - stress_tests_concurrency.rs: concurrency stress tests (concurrent scan + replay, concurrent batch inserts, concurrent scan + enrichment reads, live event storm + reads)
 - stress_tests_lifecycle.rs: lifecycle stress tests (start/stop/restart under load, clean lifecycle, double-start guard, early shutdown, rapid cycles, mixed queued work shutdown)
 - stress_tests_partial_aggregation.rs: the partial-aggregation differential test — same synthetic tree fed to two writers (final-only vs partial-passes-interleaved), both compared after the final aggregation; the primary oracle is `check_db_consistency`'s independent recompute-from-`entries` on the partial-pass arm (it catches a maps-corruption bug an (a)==(b) comparison would miss, since corruption poisons both arms identically), with `check_recursive_has_symlinks` and the row-for-row (a)==(b) comparison as secondary oracles
@@ -155,7 +155,7 @@ The `IndexPhase` lifecycle (`Disabled → Initializing → Running`, plus the `I
 is the trickiest backend state machine to test cleanly. Three rules for tests in this area:
 
 1. **Tests must serialize on a dedicated mutex.** `INDEXING` is a global; concurrent tests will corrupt each other.
-   Pattern in `mod.rs::tests`: dedicated mutex + `IndexStore` fixtured via `tempdir`.
+   Pattern in `integration_tests.rs`: dedicated mutex + `IndexStore` fixtured via `tempdir`.
 2. **`Initializing { store: IndexStore }` carries non-`Clone` owned state.** Building fixtures is verbose. Where you'd
    like to test a pure transition without the owned data, extract a pure classifier (e.g. `is_initializing_phase`) and
    test that in isolation. Don't pretend to mock `IndexStore`.
