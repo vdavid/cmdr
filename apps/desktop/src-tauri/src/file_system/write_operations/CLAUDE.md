@@ -9,12 +9,12 @@ contract.
 
 - Subdirs: [`transfer/`](transfer/CLAUDE.md) (copy + move, conflict resolution, transfer driver, platform copy
   backends), [`delete/`](delete/CLAUDE.md) (delete walker, trash, oracle-aware fast path).
-- Top level: `mod.rs` (public API + `start_write_operation` spawn lifecycle), `types.rs` (pure serializable DTOs;
-  re-exports the items below so `types::…` paths stay valid), `event_sinks.rs` (`OperationEventSink` +
-  `TauriEventSink`/`CollectorEventSink` + event-builder impls), `analytics.rs` (PII-free completion analytics),
-  `error_classification.rs` (`classify_io_error`, `IoResultExt`), `state.rs` (the two caches, `WriteOperationState`,
-  `CopyTransaction`, settle guard), `validation.rs`, `conflict.rs`, `overwrite.rs`, `durability.rs`, `cancellable.rs`,
-  `scan.rs`, `scan_preview.rs`, `eta.rs`. The three behavior modules depend on `types`, never the reverse.
+- Top level: `mod.rs` (public API + `start_write_operation` spawn lifecycle), `types.rs` (DTOs; re-exports the behavior
+  items so `types::…` paths stay valid), `event_sinks.rs` (`OperationEventSink`, sinks, builders),
+  `analytics.rs` (analytics), `error_classification.rs` (`classify_io_error`, `IoResultExt`), `state.rs` (the
+  two caches, `WriteOperationState`, `CopyTransaction`, settle guard), `validation.rs`, `conflict.rs`, `overwrite.rs`,
+  `durability.rs`, `cancellable.rs`, `scan.rs`, `scan_preview.rs`, `eta.rs`. The behavior modules depend on `types`, not
+  the reverse.
 - Frontend counterpart: [`src/lib/file-operations/CLAUDE.md`](../../../../src/lib/file-operations/CLAUDE.md) plus
   colocated child docs.
 
