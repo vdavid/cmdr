@@ -137,7 +137,7 @@ func formatLongClaudeMd(files []longClaudeMd, allowlist claudeMdLengthAllowlist,
 	if allowlistedCount > 0 {
 		suffix = fmt.Sprintf(" (%d allowlisted)", allowlistedCount)
 	}
-	return fmt.Sprintf("%d new CLAUDE.md %s over %d words%s (move depth into DETAILS.md):\n%s",
+	return fmt.Sprintf("%d new CLAUDE.md %s over %d words%s (condense wording first, then move real depth to DETAILS.md — playbook: docs/doc-system.md):\n%s",
 		len(files), Pluralize(len(files), "file", "files"),
 		claudeMdWarnWords, suffix, strings.TrimRight(sb.String(), "\n"))
 }

@@ -1,29 +1,28 @@
 # Website (getcmdr.com)
 
 Marketing site and blog for Cmdr. Astro + Tailwind v4 (CSS-first config in `src/styles/global.css`), Playwright E2E in
-`e2e/`, statically built, deployed via Docker + Caddy. Full details: [DETAILS.md](DETAILS.md). This app is human-facing,
-so its markdown may use tables freely.
+`e2e/`, statically built. Full details: [DETAILS.md](DETAILS.md). This app is human-facing, so its markdown may use
+tables freely.
 
 ## Module map
 
-- `src/pages/`, `src/layouts/`, `src/components/`: pages, layouts (`Layout.astro` base, `BlogLayout.astro`,
-  `LegalLayout.astro`), components.
+- `src/pages/`, `src/layouts/`, `src/components/`: pages, layouts, and components.
 - `src/components/icons/`: shared `<Icon name size>` glyph system (Lucide line-art). Every icon goes through it; no
   `<img>`/raw `~icons`/decorative emoji. [DETAILS.md](DETAILS.md) § Icons.
 - `src/content/blog/{slug}/index.md`: blog posts with colocated images (schema in `src/content.config.ts`). Add a post:
   `docs/guides/writing-blog-posts.md`.
 - `src/dev/blog-editor/`: dev-only Markdown editor at `/dev/blog` (Vite middleware, not an Astro page, absent from prod
-  builds). `pnpm dev:website`, then open it.
+  builds; via `pnpm dev:website`).
 - `src/pages/llms.txt.ts` / `llms-full.txt.ts`: agent-facing product descriptions. Keep in sync when product facts
   (pricing, features, requirements) change.
 
 ## Deployment
 
-The website auto-deploys on push to `main` when `apps/website/**` changes, via the `deploy-website` job in `ci.yml`
-(gated on `needs: website`): a signed (HMAC-SHA256, `DEPLOY_WEBHOOK_SECRET`) hook to the Hetzner VPS, which pulls and
-rebuilds the Docker image. This is the ONLY deploy path. `release.yml` hits the same hook after a desktop release (to
-publish the refreshed `latest.json`); `workflow_dispatch` on `main` (run_all) is the manual lever. Server-side steps and
-fallback: `docs/guides/deploy-website.md`.
+The website auto-deploys on push to `main` touching `apps/website/**`, via the `deploy-website` job in `ci.yml` (gated on
+`needs: website`): a signed (HMAC-SHA256, `DEPLOY_WEBHOOK_SECRET`) hook to the Hetzner VPS that pulls and rebuilds the
+Docker image. This is the ONLY deploy path. `release.yml` hits the same hook after a desktop release (refreshing
+`latest.json`); `workflow_dispatch` on `main` (run_all) is the manual lever. Server-side steps and fallback:
+`docs/guides/deploy-website.md`.
 
 - **Deploy order (gotcha)**: always `docker compose build` before `docker compose down`. Building first keeps the old
   container serving traffic; `down → build → up` causes ~15s downtime.
@@ -56,8 +55,8 @@ API access: `docs/tooling/umami.md`, `docs/tooling/posthog.md`.
 
 ## Color scheme (light/dark)
 
-All pages support both modes; a header toggle (`ThemeToggle.astro`) overrides system preference. Mechanism
-(dual-selector token setup, FOUC-free inline head script) in [DETAILS.md](DETAILS.md) § Color scheme.
+All pages support both modes; a header toggle (`ThemeToggle.astro`) overrides system preference. Mechanism in
+[DETAILS.md](DETAILS.md) § Color scheme.
 
 - Don't hardcode colors; use CSS variables from `global.css`. (OG images are the exception: Satori can't read CSS
   variables, so keep their hardcoded colors in sync with `global.css` theme values.)

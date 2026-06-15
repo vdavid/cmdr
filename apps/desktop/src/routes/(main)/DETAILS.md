@@ -82,6 +82,21 @@ A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`), 
 `explorerRef.navigate({ pane, to: { history: 'back' | 'forward' }, source: 'user' })`, same shape as `nav.parent`
 (`to: { history: 'parent' }`). Every other key stays a `sendKeyToFocusedPane` passthrough (invariant P2).
 
+## Native-menu and input-focus interactions
+
+These three CLAUDE.md gotchas share the same root: a native macOS menu accelerator fires before the webview keydown, so
+the dispatch path can't rely on the keydown bail.
+
+- **⌘A (`selection.selectAll`).** Intercepted as a menu accelerator before the webview. The handler routes to
+  `active.select()` when a `<input>` / `<textarea>` is focused, otherwise delegates to
+  `explorerRef.handleSelectionAction('selectAll')`. The keydown bail doesn't help; the menu fires first.
+- **`edit.paste` into a text input.** Reads via the `readClipboardText` Rust IPC, then writes with
+  `document.execCommand('insertText')`. `navigator.clipboard.readText()` would surface a WebKit "Paste" confirmation the
+  user must click each time, so it's avoided.
+- **`view.showHidden` is local-first.** Flips frontend state via `explorerRef.toggleHiddenFiles()` synchronously, then
+  pushes the check state to the native menu fire-and-forget. Routing the toggle through Rust adds an IPC + event hop and
+  flaked the hidden-file E2E under slow-lane load.
+
 ## Off-bus test and debug hooks
 
 - **E2E drop hook.** `+page.svelte` registers an `e2e-trigger-file-drop` listener gated on `getAppMode() === 'e2e'` (set

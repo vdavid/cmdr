@@ -18,13 +18,11 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   `media_protocol.rs` (async scheme handler), `media_backend.rs` (no-op `MediaBackend`), `media_session.rs` (the
   media-open path, built on `session.rs`'s `ViewerSession`). See [DETAILS.md](DETAILS.md) § "Media rendering".
 
-Per-file roles, Tauri commands, and decision rationale: [DETAILS.md](DETAILS.md).
-
 ## Must-knows
 
 - **`viewer_set_encoding`, `viewer_set_tail_mode`, and `viewer_reload` are `async` + `spawn_blocking` + 2 s timeout**
-  (via `blocking_viewer_op`), not synchronous: they touch the filesystem, and a sync call would freeze the viewer
-  window's IPC thread behind concurrent scroll/search. Don't revert to plain `fn`. The watcher manager thread calls
+  (via `blocking_viewer_op`), not synchronous: a sync call would freeze the viewer window's IPC thread behind concurrent
+  scroll/search. Don't revert to plain `fn`. The watcher manager thread calls
   `reload` / `apply_tail_extend` directly (already off the IPC thread), so those stay synchronous.
 - **The FSEvents subscribe runs on the manager thread, NOT inline in `open_session`.** It's blocking and
   `fseventsd`-bound (~100 ms idle, seconds under load), so inline it risks the 2 s `viewer_open` timeout. The

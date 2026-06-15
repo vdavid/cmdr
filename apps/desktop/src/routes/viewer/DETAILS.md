@@ -8,6 +8,32 @@ The file viewer opens files in a separate Tauri window with virtual scrolling an
 strategies (chunked, full-load, pretext), session orchestration, and background search. Reusable FE primitives live at
 [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CLAUDE.md).
 
+## Module map
+
+Per-file inventory for the route. Locate symbols via `codegraph_search`; this is the orientation layer.
+
+- **`+page.svelte`**: top-level component (lifecycle, window management, UI).
+- Composables: **`viewer-scroll`** (virtual scroll), **`viewer-search`** (start/poll/cancel/navigate, regex projection),
+  **`viewer-line-heights`** (word-wrap height map via pretext, FullLoad only), **`viewer-text-width`** (`ResizeObserver`
+  width tracker), **`viewer-tail`** (`viewer:file-changed:<sid>` → reload toasts).
+- **`viewer-indexing-poll.ts`**: `viewer_get_status` poll during line-index build.
+- **`viewer-keyboard.ts`**: pure key helpers + `createViewerKeyboard`, the keydown router (modifiers, Escape ladder, ⌘A,
+  bare-key dispatch).
+- Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-pointer.ts`** (pure
+  caret math, surrogate-safe), **`viewer-pointer-drag.svelte.ts`** (pointer/drag/context-menu controller),
+  **`viewer-word.ts`** (word-boundary via `Intl.Segmenter`).
+- **`viewer-search-scroll.ts`**: pure per-axis scroll-to-match centring (`recenterOffset`, rect-based).
+- Copy: **`viewer-copy.ts`** (pure silent/confirm/refuse policy + thresholds), **`viewer-copy.svelte.ts`**
+  (`createViewerCopy` + `createViewerCopyOrchestrator`). Autoscroll: **`viewer-autoscroll.ts`** (curve) +
+  **`.svelte.ts`** (RAF controller).
+- Media: **`media-view.ts`** (pure helpers incl. `mediaUrl(token)`, the ONE `cmdr-media://localhost/` origin, + zoom
+  math), **`viewer-media.svelte.ts`** (`createViewerMedia`: state, `isMedia`/`mediaSrc`, `lastMediaKind`, switch
+  triggers), **`MediaImageView` / `MediaPdfView`** (inline `<img>` / `<embed>`).
+- Presentational: **`ViewerContextMenu`**, **`ViewerToolbar`** (title-bar overlay, owns `data-tauri-drag-region`,
+  disabled-not-hidden in media), **`ViewerStatusBar`** (keeps `user-select: text`), **`ViewerCopyDialogs`**,
+  **`EncodingPicker`**, **`ViewModePicker`** (two-way media↔text switch), **`ViewerReloadToast`** (session id via
+  `setReloadToastContext()`).
+
 ## Architecture
 
 The page component creates two composables via `createViewerScroll` and `createViewerSearch`. Both use callback-based

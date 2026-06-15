@@ -184,6 +184,8 @@ Fields:
 - `query`, `mode` (the unified search input + mode discriminator)
 - `sizeFilter` + value/unit, plus the `Max` half for `between` ranges
 - `dateFilter` + value, plus `dateValueMax` for `between` ranges
+- `typeFilter: 'both' | 'file' | 'folder'` (default `'both'`), mapped onto the existing IPC
+  `SearchQuery.isDirectory: Option<bool>` — no new IPC field or schema change
 - `caseSensitive`
 - `lastAiPrompt`, `lastAiCaveat` (the AI transparency strip's content)
 - per-mode `handTyped` buffers (`ai` / `filename` / `regex`)

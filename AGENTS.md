@@ -2,9 +2,9 @@
 
 This file is for AI agents. Human contributors, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Cmdr is an extremely fast, keyboard-first two-pane file manager written in Rust, free forever for personal use on macOS
-(BSL license). Downloadable at [the website](https://getcmdr.com). It started 2025-12-25 and is in open beta with a few
-dozen users who understand the early stage.
+Cmdr is an extremely fast, keyboard-first two-pane file manager in Rust, free forever for personal use on macOS (BSL
+license), at [getcmdr.com](https://getcmdr.com). Started 2025-12-25; in open beta with a few dozen early-stage-aware
+users.
 
 This is a monorepo of four apps:
 
@@ -39,7 +39,7 @@ Full product and design values: [`docs/design-principles.md`](docs/design-princi
 
 1. **Delightful UX**, not just functional: thoughtful phrasing, real dark/light modes, OS-native everything, respect the
    system font, theme, and `prefers-reduced-motion`.
-2. **Elegance above all**: a clean architecture over hacks; we're in this for the long run.
+2. **Elegance above all**: clean architecture over hacks; we're here for the long run.
 3. **Rock solid**: never block the main thread, immediate feedback, honest progress and ETA, everything cancelable
    (background work too), handle the hostile case (dead mount, huge dir, crash mid-operation).
 4. **Protect the user's data**: safe-overwrite (temp+rename), atomic ops where possible, design for the crash, test
@@ -82,9 +82,8 @@ conversational and actionable and never use the words "error" or "failed". The w
 
 ## File structure
 
-- `apps/desktop/`: the Tauri app: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright,
-  Linux Docker E2E, SMB fixtures), `scripts/`.
-- `apps/{website,api-server,analytics-dashboard}/`: the other three apps.
+- `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker
+  E2E, SMB fixtures), `scripts/`. The other three apps are listed above.
 - `brand/`: tracked brand and press-kit assets.
 - `docs/`: [`architecture.md`](docs/architecture.md) (the map), [`guides/`](docs/guides) (how-tos), `tooling/` (service
   and workflow references), [`specs/index.md`](docs/specs/index.md) (per-development plans, periodically wiped),

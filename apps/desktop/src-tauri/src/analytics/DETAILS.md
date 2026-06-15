@@ -2,6 +2,20 @@
 
 Depth behind the must-knows in `CLAUDE.md`.
 
+## Wiring
+
+`analytics::init(app.handle())` + `analytics::start()` run from `lib.rs` setup (mirroring `space_poller`): `init`
+stores the app handle, `start` spawns the loop (one beat on launch, then hourly). `install_id::init()` runs earlier in
+setup (before the crash reporter) so it can snapshot the diag id for the panic hook.
+
+## Install-id storage and signal-safe read
+
+The ids resolve their data dir without an `AppHandle` (mirroring `settings/loader.rs`'s `early_load_*`), so the no-arg
+accessors work from the panic hook, next-launch crash assembly, and the analytics loop alike. `diagnostics_id()`
+allocates and locks, which is unsafe in the async-signal-safe crash signal handler, so `install_id::init()` snapshots
+the diag id into a `OnceLock` that the panic-hook path reads via `diagnostics_id_snapshot()`; the signal path attaches
+the diag id later, at next-launch assembly, where the full stdlib is available.
+
 ## Why two ids (the GDPR reasoning)
 
 If two datasets *can* be joined, treat them as joined, so we make them genuinely unjoinable. With a separate `diag_` id,
@@ -39,6 +53,13 @@ cloud, project `136072`). Shape:
 - **The key is `option_env!("CMDR_POSTHOG_KEY")`**, baked at build time (a GitHub secret on the `tauri-action` step in
   `release.yml`; `build.rs` has a `rerun-if-env-changed` for it). `None` locally → `capture` is a no-op (logged once at
   debug). The key is public by design (PostHog ingest keys are safe in client code).
+
+## The `track_event` IPC
+
+Frontend events call the `track_event` IPC (`commands/analytics.rs`), a thin pass-through to `capture`. It takes
+`props_json: String` rather than a structured type because the prop set is open and `serde_json::Value` can't cross the
+specta IPC boundary; the frontend's typed `trackEvent` wrapper `JSON.stringify`s the props. A malformed or non-object
+`props_json` degrades to no props (the event still fires with `source: "desktop"`).
 
 ## How to add an event
 

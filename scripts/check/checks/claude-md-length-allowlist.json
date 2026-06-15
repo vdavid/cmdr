@@ -1,14 +1,4 @@
 {
   "$comment": "Files under `files` are exempt from the claude-md-length warning up to their recorded word count (plus a 10% growth buffer). The push-tier CLAUDE.md is auto-injected into agent context, so it has a ~600-word budget; deeper docs belong in the pull-tier DETAILS.md, which is unlimited and not checked. The check shrink-wraps stale entries on local runs: dead entries and files back under the threshold are removed, and entries with more than 10% slack are ratcheted down to the file's current count. See `.claude/rules/file-length-allowlist.md`.",
-  "files": {
-    "apps/desktop/src-tauri/src/analytics/CLAUDE.md": 681,
-    "apps/desktop/src-tauri/src/commands/CLAUDE.md": 605,
-    "apps/desktop/src-tauri/src/indexing/CLAUDE.md": 681,
-    "apps/desktop/src-tauri/src/network/CLAUDE.md": 663,
-    "apps/desktop/src/lib/ui/CLAUDE.md": 654,
-    "apps/desktop/src/routes/(main)/CLAUDE.md": 698,
-    "apps/desktop/src/routes/viewer/CLAUDE.md": 660,
-    "apps/desktop/test/e2e-linux/CLAUDE.md": 621,
-    "apps/desktop/test/e2e-playwright/CLAUDE.md": 666
-  }
+  "files": {}
 }

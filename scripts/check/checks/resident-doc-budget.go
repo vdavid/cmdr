@@ -183,7 +183,7 @@ func formatResidentDocBudget(entries []residentDocEntry, total int) string {
 	overage := total - residentDocBudgetWords
 	return fmt.Sprintf(
 		"Resident agent-doc bundle is %s%d words%s, over the %d-word cap by %d "+
-			"(this bundle loads in EVERY session; trim it, don't raise the cap):\n%s",
+			"(this bundle loads in EVERY session; trim it, don't raise the cap — playbook: docs/doc-system.md):\n%s",
 		ansiYellow, total, ansiReset, residentDocBudgetWords, overage,
 		strings.TrimRight(sb.String(), "\n"))
 }

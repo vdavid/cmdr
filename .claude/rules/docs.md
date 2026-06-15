@@ -6,17 +6,17 @@ assumption, and a `Decision/Why` to the nearest `DETAILS.md` (plus a one-line `C
 decision can silently break something). Rich evidence (benchmarks, analysis) goes in `docs/notes/` and is linked from
 the `DETAILS.md`. Skip all this for trivial changes (formatting, small fixes that don't change architecture).
 
+**Before a sweeping `CLAUDE.md` / `DETAILS.md` slimming or restructuring pass, read `docs/doc-system.md` first** (the
+condense-first playbook and the C-vs-D litmus); its own read-trigger otherwise lives only inside it.
+
 **Single-source.** A load-bearing technical claim or mechanism lives in exactly ONE canonical doc (the module doc or
 colocated `DETAILS.md` nearest the code); everywhere else points to it by path, never restates it. Copied prose rots
 independently. `docs/architecture.md` is a map: what + where + a pointer, never how (no mechanism, flows, or triggers).
 This extends `use-codegraph` ("don't transcribe what codegraph owns") from symbol locations to behavioral facts.
 
 **Current state, not history.** Docs describe the code as it is now; git holds the history. Drop narration of previous
-shapes ("we originally tried X", "no longer applicable as of Z", date-stamped milestone framing). Keep the non-obvious
-why, actionable guardrails ("don't switch to X, it breaks Y"), and historical pain that encodes a constraint the current
-code must defend. Litmus: if removing the history still leaves current state described AND enough rationale to defend
-the code against a "let's clean this up" pass, drop it. David's user-level `describe-current-not-history` rule carries
-the full drop/keep lists and the code-comment carve-outs (for code comments, when in doubt, leave it).
+shapes; keep the non-obvious why, actionable guardrails, and historical pain that encodes a constraint the current code
+must defend. Full drop/keep lists and code-comment carve-outs: David's user-level `describe-current-not-history` rule.
 
 **Evidence-anchor volatile claims.** Any claim about OS/external behavior, a version, or an empirical finding carries
 `(verified on <version/env>, <method>, <date-or-commit>)`. Undated confident claims about drifting behavior turn into

@@ -1,66 +1,52 @@
 # UI primitives
 
-Reusable UI components used across the whole desktop app. Because nearly every frontend session touches this directory,
-only the rules that prevent silent breakage live here. Usage catalogs, prop tables, the toast guide, and decisions are
-in [DETAILS.md](DETAILS.md).
+Reusable components used across the desktop app. Almost every frontend session touches here, so only silent-breakage
+rules live in this file; catalogs, prop tables, and decisions sit in [DETAILS.md](DETAILS.md) (read before structural
+changes).
 
 ## Module map
 
 - Dialogs: `ModalDialog.svelte` (overlay + drag + Escape + focus + MCP tracking), `focus-trap.ts` (`use:trapFocus`),
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
-- Primitives: `Icon` (every inline glyph, via `icons/icon-map.ts`), `Spinner` (the one loading spinner), `Button`,
-  `LinkButton`, `CommandBox`, `LoadingIcon`, `ProgressBar`, `Size`, `DateLabel`, `ShortcutChip`, `StatusBadge`,
-  `SectionCard`, `ToggleGroup`, `Popover`, `FilterPopover`, `Chip`, plus the `toast/` system. Tooltip lives in
-  `../tooltip/tooltip.ts`.
-- Ark UI (`@ark-ui/svelte`) is the headless library for complex interactive components; simple ones are our own thin
-  wrappers.
-
-Full architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+- Primitives: `Icon`, `Spinner`, `Button`, `LinkButton`, `Select`, `Combobox`, `ShortcutChip`, the `toast/` system, and
+  more (full list: DETAILS § Key files). Tooltip is the sibling `../tooltip/tooltip.ts`. Ark UI (`@ark-ui/svelte`) backs
+  complex interactive components; simple ones are thin in-house wrappers.
 
 ## Must-knows
 
-- **Render glyphs via `Icon`, spinners via `Spinner`; don't import `~icons/lucide/*` or hand-roll a ring.** Add new
-  glyphs to `icons/icon-map.ts` (the one place lucide is imported, enforced by `cmdr/no-raw-lucide-import`). See
-  `docs/guides/icons.md`.
+- **Render glyphs via `Icon`, spinners via `Spinner`; don't import `~icons/lucide/*` or hand-roll a ring.** Add glyphs
+  to `icons/icon-map.ts`, the only lucide import site (enforced by `cmdr/no-raw-lucide-import`).
 - **Every `role="dialog"` / `role="alertdialog"` element MUST carry `use:trapFocus` on the same element** (enforced by
-  `cmdr/dialog-needs-focus-trap`). Without it, Tab leaks focus into the suppressed-shortcut background, a full keyboard
-  lockout. `ModalDialog` owns the directive, so `role`-prop callers don't repeat it. Opt out only with
-  `eslint-disable-next-line cmdr/dialog-needs-focus-trap -- <reason>` (today only `NetworkLoginForm`, a non-modal
-  in-pane form). Omit `onEscape` only for dialogs that must swallow Escape (the onboarding wizard).
-- **Adding a dialog: add its id to `SOFT_DIALOG_REGISTRY` and pass it as `ModalDialog`'s `dialogId`.** An unregistered
-  `dialogId` is a TypeScript error; the registry is sent to the Rust MCP backend at startup, so MCP "available dialogs"
-  silently drifts if you skip it. Soft sheets (`OnboardingWizard`) are NOT `ModalDialog` but still register
-  (`'onboarding'`) for MCP tracking.
+  `cmdr/dialog-needs-focus-trap`). Without it, Tab leaks focus into the suppressed-shortcut background: a full keyboard
+  lockout. `ModalDialog` owns the directive, so `role`-prop callers don't repeat it. Opt out only via the documented
+  `eslint-disable` (just `NetworkLoginForm` today). DETAILS § Focus trapping.
+- **Adding a dialog: add its id to `SOFT_DIALOG_REGISTRY` and pass it as `ModalDialog`'s `dialogId`** (an unregistered
+  `dialogId` is a TypeScript error). The registry feeds the Rust MCP backend, so skipping it silently drifts MCP's
+  "available dialogs". Soft sheets register too. DETAILS § Dialog registry.
 - **The `ModalDialog` overlay starts at `inset: var(--titlebar-height) 0 0 0`, not `inset: 0`**, so the scrim never
-  covers the macOS overlay title bar (the OS window-drag region stays live). Any new full-window backdrop outside
-  `ModalDialog` must do the same.
-- **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle` flags it; a one-off
-  needs `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY place that opts back into `cursor: pointer`
-  (app-wide `cursor: default`); don't roll your own link-styled button.
-- **`ShortcutChip` must NOT statically import `openShortcutCustomization`** (it pulls in
-  `@tauri-apps/api/webviewWindow`, which must stay out of the chip's module-eval surface so the chip works in the
-  capability-restricted viewer window). Load it via dynamic `import()` in the click handler only. Exactly one of
-  `commandId` / `key` must be set; a `commandId` chip renders NOTHING when the command has no binding, so conditionalize
-  the surrounding prose. DETAILS § ShortcutChip.
+  covers the macOS title bar, keeping the OS window-drag region live. Any new full-window backdrop must too.
+- **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle` flags it; one-offs need
+  `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in (app-wide `cursor: default`);
+  don't hand-roll a link button.
+- **`ShortcutChip` must NOT statically import `openShortcutCustomization`**: it pulls in
+  `@tauri-apps/api/webviewWindow`, which must stay off the chip's module-eval surface so the chip loads in the
+  capability-restricted viewer window. Use dynamic `import()` in the click handler only. Set exactly one of `commandId`
+  / `key`; a `commandId` chip renders NOTHING with no binding, so conditionalize prose around it. DETAILS § ShortcutChip.
 - **Tooltip detached-trigger gotcha (corner tooltip)**: a recycled virtual-scroll row removed while hovered never fires
   `mouseleave`, so the 400 ms timer can fire against a detached node. Two guards must both stay: the action's
   `destroy()` cancels its timer, and `showTooltip` / `positionTooltip` bail on `isTriggerDetached(el)`
-  (`!el.isConnected`). Don't swap that for a zero-rect heuristic (happy-dom reports zero rects for connected elements
-  too).
-- **Toasts (full guide in DETAILS § Toast system)**: five levels carry meaning by feedback kind, not wording, so pick
-  the lowest-intensity fitting level (`default` is rare on purpose). A full stack of all-persistent toasts silently
-  drops new ones (intentional, they hold important state). Action buttons use `Button` mini in a right-aligned
-  `.actions` row (default action far right; `DownloadToastContent` is the reference), filled `variant="primary"` only
-  for the one genuinely affirmative action, everything else `secondary`.
-- **`StatusBadge` class is `feature-status-badge`, NOT `status-badge`** (a Debug-window `:global(.status-badge)` would
-  leak onto it). Derive status via `getBadgeStatus(featureId)`, never hardcode it.
-- **`containerStyle` is for one-off layout sizing (width/max-width)** only (it exists because stylelint blocks non-token
-  CSS custom properties); never for anything that belongs in the design-token system.
-- **`Select` has a stable `.select-*` class contract** (`.select-trigger`, `.select-item`, `.select-content`,
-  `.option-description`): `SettingSelect` focuses `.select-trigger` by `querySelector` and `dropdown_states.go` keys on
-  the literal selector + accent tokens. Don't rename/recolor without both (DETAILS § Select).
-- **`Combobox` is a text-field-with-suggestions, NOT a value-bound select**: its text is `inputValue`-driven, decoupled
-  from collection membership (`selectionBehavior="preserve"` + `allowCustomValue`). Driving it off `value` / `items`
-  blanks the field on an empty/mid-fetch list and on custom names. DETAILS § Combobox.
-- **When adding a primitive**, add it to the Components catalog (`routes/dev/components/`) and a tier-3 a11y test (full
-  checklist in DETAILS.md).
+  (`!el.isConnected`, not a zero-rect heuristic: happy-dom reports zero rects on connected elements). DETAILS § Tooltip.
+- **Toasts (full guide, including levels and action-button styling, in DETAILS § Toast system)**: pick a level by
+  feedback kind, not wording (lowest-intensity that fits). A full all-persistent stack silently drops new toasts
+  (intentional: they hold important state).
+- **`containerStyle` is one-off layout sizing (width/max-width) only** (it bypasses stylelint's non-token-CSS-var
+  block); never for what belongs in design tokens.
+- **`StatusBadge` class is `feature-status-badge`, NOT `status-badge`** (the Debug window's `:global(.status-badge)`
+  would leak onto it). Derive status via `getBadgeStatus(featureId)`, never hardcode it.
+- **`Select` has a stable `.select-*` class contract** (the four classes in DETAILS § Select) that `SettingSelect`'s
+  `querySelector` and `dropdown_states.go`'s contrast matrix depend on. Don't rename, or recolor off the accent tokens,
+  without updating both.
+- **`Combobox` is a text-field-with-suggestions, NOT a value-bound select**: drive its text off `inputValue`, never off
+  `value` / `items` (which blanks the field on an empty list or custom name). DETAILS § Combobox.
+- **When adding a primitive**, add it to the Components catalog (`routes/dev/components/`) and a tier-3 a11y test
+  (DETAILS § Component catalog).
