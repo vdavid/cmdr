@@ -20,6 +20,10 @@ directory's colocated `CLAUDE.md`.
 - **Data dirs are separate** for prod, plain dev, and each `--worktree` slug, and an FF-merge leaves the worktree's dev
   data dir behind (~1 GB) to clean up by hand. Debugging, logging (`RUST_LOG=cmdr_lib::…`), crash/error reports, and dev
   mock flags: [DETAILS.md](DETAILS.md) § Debugging.
+- **Run Playwright E2E via `pnpm check desktop-e2e-playwright`** (full lifecycle: build, launch, run, teardown). Raw
+  `npx playwright test` fails with `ECONNREFUSED` — the suite connects to a running app over a socket, it doesn't launch
+  one. Single-spec iteration and the manual launch+`pkill` recipe:
+  [`test/e2e-playwright/CLAUDE.md`](test/e2e-playwright/CLAUDE.md).
 
 ## Structure
 
