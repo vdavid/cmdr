@@ -211,9 +211,6 @@
     "settings/sections/AppearanceSection.svelte": {
       "reason": "UI section, simple rendering"
     },
-    "settings/sections/KeyboardShortcutsSection.svelte": {
-      "reason": "UI section, logic tested in shortcuts/*.test.ts"
-    },
     "settings/sections/LicenseSection.svelte": {
       "reason": "UI section, pure logic extracted to license-section-utils.ts and tested"
     },

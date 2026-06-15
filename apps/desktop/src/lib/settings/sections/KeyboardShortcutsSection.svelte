@@ -3,39 +3,15 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import SettingsSection from '../components/SettingsSection.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import { commands } from '$lib/commands/command-registry'
-    import { searchAllCommands } from '$lib/commands/fuzzy-search'
     import {
         getEffectiveShortcuts,
         isShortcutModified,
-        setShortcut,
-        addShortcut,
-        removeShortcut,
-        resetShortcut,
-        resetAllShortcuts,
         onShortcutChange,
         isNativeShortcutCommand,
         isFixedKeyCommand,
     } from '$lib/shortcuts'
-    import {
-        formatKeyCombo,
-        isModifierKey,
-        isMacOS,
-        findConflictsForShortcut,
-        getConflictingCommandIds,
-        getConflictCount,
-    } from '$lib/shortcuts'
-    import { confirmDialog } from '$lib/utils/confirm-dialog'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
-    import { groupCommandsByScope } from './keyboard-shortcuts-grouping'
-    import {
-        classifyConflict,
-        classifySystemShortcut,
-        fixedKeyMessage,
-        reservedByMacOsMessage,
-        systemShortcutMessage,
-        type ConflictKind,
-    } from './keyboard-shortcuts-banner'
+    import { fixedKeyMessage, reservedByMacOsMessage, systemShortcutMessage } from './keyboard-shortcuts-banner'
     import { shortcutAnchorId } from '$lib/settings/settings-window'
     import {
         getPendingShortcutHighlight,
@@ -43,6 +19,7 @@
         registerShortcutFilterReset,
         unregisterShortcutFilterReset,
     } from '$lib/settings/pending-shortcut-highlight.svelte'
+    import { createKeyboardShortcutsController } from './KeyboardShortcutsSection.controller.svelte'
 
     interface Props {
         searchQuery: string
@@ -50,35 +27,21 @@
 
     const { searchQuery }: Props = $props()
 
-    // Use global search query if provided, otherwise use local search
-    let localNameSearchQuery = $state('')
-    const nameSearchQuery = $derived(searchQuery.trim() ? searchQuery : localNameSearchQuery)
-    let keySearchQuery = $state('')
+    // Business logic (capture/conflict engine, CRUD, filtering, key-filter helpers)
+    // lives in the controller; this component keeps the markup, scoped styles, the
+    // capture-phase listener, DOM refs, and the deep-link highlight wiring. Passing
+    // `() => searchQuery` (an accessor, not a snapshot) keeps the controller's
+    // name-search derivation reactive to the parent-driven global search.
+    const controller = createKeyboardShortcutsController(() => searchQuery)
+
+    // Purely-UI DOM ref for the key-filter input.
     let keyFilterInput: HTMLInputElement | null = $state(null)
-    let activeFilter = $state<'all' | 'modified' | 'conflicts'>('all')
-    let editingShortcut = $state<{ commandId: string; index: number } | null>(null)
-    let pendingKey = $state('')
-    let confirmTimeout = $state<ReturnType<typeof setTimeout> | null>(null)
-    // The captured combo plus its classification (native → reserved-by-macOS,
-    // Cancel-only; normal → resolvable Remove/Keep/Cancel). See keyboard-shortcuts-banner.ts.
-    let conflictWarning = $state<{ shortcut: string; conflict: ConflictKind } | null>(null)
 
-    // "Adding" is pure UI state: the add slot is the editing target one past the
-    // end of the command's real shortcuts. Nothing is written to the store until a
-    // key is captured and confirmed, so abandoning an add (Escape, clicking away,
-    // clicking + elsewhere) leaks nothing. See CLAUDE.md § "The add slot is UI-only".
-    const isAddingNewShortcut = $derived.by(() => {
-        if (!editingShortcut) return false
-        return editingShortcut.index === getEffectiveShortcuts(editingShortcut.commandId).length
-    })
-
-    // Reactivity trigger for shortcut changes
-    let shortcutChangeCounter = $state(0)
-
-    // Subscribe to shortcut changes
+    // Subscribe to shortcut changes; bumping the controller's counter re-runs its
+    // derivations and re-keys the rows in the `{#each}` below.
     $effect(() => {
         return onShortcutChange(() => {
-            shortcutChangeCounter++
+            controller.bumpShortcutChangeCounter()
         })
     })
 
@@ -100,339 +63,25 @@
         }
     })
 
-    // Register a filter resetter so a deep link to a row that a leftover filter
-    // would hide can clear the filters first (the settings page calls this before
-    // its scroll). Unregister on unmount so the page no-ops when the section is gone.
-    function resetFilters() {
-        activeFilter = 'all'
-        localNameSearchQuery = ''
-        keySearchQuery = ''
-    }
+    // Register the controller's filter resetter so a deep link to a row that a
+    // leftover filter would hide can clear the filters first (the settings page
+    // calls this before its scroll). Unregister on unmount so the page no-ops when
+    // the section is gone.
     $effect(() => {
-        registerShortcutFilterReset(resetFilters)
+        registerShortcutFilterReset(controller.resetFilters)
         return () => {
-            unregisterShortcutFilterReset(resetFilters)
+            unregisterShortcutFilterReset(controller.resetFilters)
         }
     })
-
-    // Get conflict count for badge
-    const conflictCount = $derived.by(() => {
-        // Trigger on shortcut changes
-        void shortcutChangeCounter
-        return getConflictCount()
-    })
-
-    // Get conflicting command IDs for filtering
-    const conflictingIds = $derived.by(() => {
-        // Trigger on shortcut changes
-        void shortcutChangeCounter
-        return getConflictingCommandIds()
-    })
-
-    // Get commands filtered by search and filter
-    const filteredCommands = $derived.by(() => {
-        // Trigger on shortcut changes
-        void shortcutChangeCounter
-
-        let cmds = [...commands]
-
-        // Filter by name search. `searchAllCommands`, not `searchCommands`: this section
-        // renders the full registry, so the search must cover the same set (palette-only
-        // search made non-palette commands like "Open command palette" unfindable here).
-        if (nameSearchQuery.trim()) {
-            const results = searchAllCommands(nameSearchQuery)
-            const matchedIds = new Set(results.map((r) => r.command.id))
-            cmds = cmds.filter((c) => matchedIds.has(c.id))
-        }
-
-        // Filter by key search (subset match: filter's modifiers + key must all be present in shortcut)
-        if (keySearchQuery.trim()) {
-            cmds = cmds.filter((c) => {
-                const shortcuts = getEffectiveShortcuts(c.id)
-                return shortcuts.some((s) => keyFilterMatches(s, keySearchQuery))
-            })
-        }
-
-        // Filter by modified/conflicts
-        if (activeFilter === 'modified') {
-            cmds = cmds.filter((c) => isShortcutModified(c.id))
-        } else if (activeFilter === 'conflicts') {
-            cmds = cmds.filter((c) => conflictingIds.has(c.id))
-        }
-
-        return cmds
-    })
-
-    // The global go-to-latest hotkey is a bespoke row (its binding lives in
-    // settings.json, not shortcuts.json — see `GlobalShortcutRow.svelte`). It
-    // shows whenever there's no active filter, or the name filter matches its
-    // label. The key filter doesn't apply (we don't index its combo here).
-    const showGlobalGoToLatestRow = $derived.by(() => {
-        if (activeFilter === 'modified' || activeFilter === 'conflicts') return false
-        if (keySearchQuery.trim()) return false
-        if (!nameSearchQuery.trim()) return true
-        return 'go to latest download global'.includes(nameSearchQuery.trim().toLowerCase())
-    })
-
-    // Group filtered commands by scope into the fixed display order. Every command
-    // renders in exactly one group (keyed by its scope), so all are rebindable here.
-    const groupedCommands = $derived(groupCommandsByScope(filteredCommands))
-
-    function handleKeyCapture(event: KeyboardEvent) {
-        if (!editingShortcut) return
-
-        event.preventDefault()
-        event.stopPropagation()
-
-        // Ignore pure modifier key presses
-        if (isModifierKey(event.key)) return
-
-        // Format the key combo
-        const combo = formatKeyCombo(event)
-        pendingKey = combo
-
-        // Clear any existing timeout
-        if (confirmTimeout) {
-            clearTimeout(confirmTimeout)
-        }
-
-        // Check for conflicts (editingShortcut is guaranteed non-null here due to early return)
-        const currentEditCommandId = editingShortcut.commandId
-        const command = commands.find((c) => c.id === currentEditCommandId)
-        if (command) {
-            const conflicts = findConflictsForShortcut(combo, command.scope, command.id)
-            // In-app conflicts take priority; with none, still warn when macOS
-            // itself usually owns the combo (Spotlight, Mission Control, …).
-            const conflict = classifyConflict(conflicts) ?? classifySystemShortcut(combo)
-            if (conflict) {
-                conflictWarning = { shortcut: combo, conflict }
-                return // Don't auto-save, wait for user decision
-            }
-        }
-
-        // No conflicts - set 500ms confirmation delay
-        confirmTimeout = setTimeout(() => {
-            saveShortcut()
-        }, 500)
-    }
-
-    function saveShortcut() {
-        if (!editingShortcut || !pendingKey) return
-
-        // Capture values before calling any functions that might change state
-        const currentCommandId = editingShortcut.commandId
-        const currentIndex = editingShortcut.index
-        const addingNew = isAddingNewShortcut
-
-        // Already bound to this same action? Nothing to do (no store touch on the
-        // add slot means there's nothing to clean up either) - just exit.
-        const currentShortcuts = getEffectiveShortcuts(currentCommandId)
-        const isDuplicate = currentShortcuts.some((s, i) => s === pendingKey && i !== currentIndex)
-        if (isDuplicate) {
-            cancelEdit()
-            return
-        }
-
-        if (addingNew) {
-            // First time the store hears about this binding: append it.
-            addShortcut(currentCommandId, pendingKey)
-        } else {
-            setShortcut(currentCommandId, currentIndex, pendingKey)
-        }
-        cancelEdit()
-    }
-
-    function handleRemoveFromOther() {
-        // Only valid for a normal (resolvable) conflict; the native banner never
-        // renders this action.
-        if (!conflictWarning || conflictWarning.conflict.kind !== 'normal' || !editingShortcut) return
-
-        // Find the index of the shortcut in the conflicting command
-        const other = conflictWarning.conflict.command
-        const conflictShortcuts = getEffectiveShortcuts(other.id)
-        const conflictIndex = conflictShortcuts.indexOf(conflictWarning.shortcut)
-        if (conflictIndex >= 0) {
-            removeShortcut(other.id, conflictIndex)
-        }
-
-        // Now save our shortcut
-        saveShortcut()
-    }
-
-    function handleKeepBoth() {
-        // Just save without removing from other
-        saveShortcut()
-    }
-
-    function cancelEdit() {
-        if (confirmTimeout) {
-            clearTimeout(confirmTimeout)
-            confirmTimeout = null
-        }
-        editingShortcut = null
-        pendingKey = ''
-        conflictWarning = null
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-        if (!editingShortcut) return
-
-        // Handle Escape to cancel - MUST stop immediate propagation to prevent closing settings window
-        // (stopPropagation alone doesn't work because both listeners are on the same window element)
-        if (event.key === 'Escape') {
-            event.preventDefault()
-            event.stopImmediatePropagation()
-            // The add slot is UI-only, so canceling an add just drops edit state.
-            cancelEdit()
-            return
-        }
-
-        // Backspace/Delete on an empty capture removes the shortcut being edited.
-        // On the add slot there's no real entry to remove, so it just cancels.
-        if (event.key === 'Backspace' || event.key === 'Delete') {
-            if (!pendingKey) {
-                event.preventDefault()
-                event.stopPropagation()
-                if (!isAddingNewShortcut) {
-                    removeShortcut(editingShortcut.commandId, editingShortcut.index)
-                }
-                cancelEdit()
-                return
-            }
-        }
-
-        handleKeyCapture(event)
-    }
-
-    function handleAddShortcut(commandId: string) {
-        // Don't materialize a store entry - the add slot is one past the end and
-        // stays UI-only until a key is confirmed. Starting a fresh add also
-        // dismisses any pending conflict decision from a previous edit.
-        editingShortcut = { commandId, index: getEffectiveShortcuts(commandId).length }
-        pendingKey = ''
-        conflictWarning = null
-    }
-
-    function handleRemoveShortcutAtIndex(commandId: string, index: number) {
-        removeShortcut(commandId, index)
-    }
-
-    function handleResetShortcut(commandId: string) {
-        resetShortcut(commandId)
-    }
-
-    async function handleResetAll() {
-        const confirmed = await confirmDialog(
-            'Reset all keyboard shortcuts to their defaults?',
-            'Reset keyboard shortcuts',
-        )
-        if (confirmed) {
-            await resetAllShortcuts()
-        }
-    }
-
-    /** Check if a filter combo is a subset of a shortcut (all filter modifiers + key present in shortcut) */
-    const macModifierSet = new Set(['⌘', '⌃', '⌥', '⇧'])
-    const nonMacModifierSet = new Set(['Ctrl', 'Alt', 'Shift', 'Super'])
-
-    function splitCombo(combo: string): { mods: Set<string>; key: string } {
-        if (isMacOS()) {
-            const chars = Array.from(combo)
-            const mods = new Set(chars.filter((ch) => macModifierSet.has(ch)))
-            const key = chars.filter((ch) => !macModifierSet.has(ch)).join('')
-            return { mods, key }
-        }
-        const parts = combo.split('+')
-        const mods = new Set(parts.filter((p) => nonMacModifierSet.has(p)))
-        const key = parts.filter((p) => !nonMacModifierSet.has(p)).join('+')
-        return { mods, key }
-    }
-
-    function keyFilterMatches(shortcut: string, filter: string): boolean {
-        const s = splitCombo(shortcut)
-        const f = splitCombo(filter)
-
-        for (const mod of f.mods) {
-            if (!s.mods.has(mod)) return false
-        }
-        if (f.key && s.key.toLowerCase() !== f.key.toLowerCase()) return false
-        return true
-    }
-
-    // Key filter field: track modifiers and build combo string
-    function formatModifiers(event: KeyboardEvent): string {
-        const parts: string[] = []
-        if (isMacOS()) {
-            if (event.metaKey) parts.push('\u2318')
-            if (event.ctrlKey) parts.push('\u2303')
-            if (event.altKey) parts.push('\u2325')
-            if (event.shiftKey) parts.push('\u21E7')
-        } else {
-            if (event.ctrlKey) parts.push('Ctrl')
-            if (event.altKey) parts.push('Alt')
-            if (event.shiftKey) parts.push('Shift')
-            if (event.metaKey) parts.push('Win')
-        }
-        return isMacOS() ? parts.join('') : parts.join('+')
-    }
-
-    function handleKeyFilterKeyDown(event: KeyboardEvent) {
-        // Let Tab through for focus navigation
-        if (event.key === 'Tab') return
-
-        // ESC clears the filter when it has a value; otherwise let it bubble (closes window)
-        if (event.key === 'Escape') {
-            if (keySearchQuery) {
-                event.preventDefault()
-                event.stopImmediatePropagation()
-                keySearchQuery = ''
-            }
-            return
-        }
-
-        event.preventDefault()
-        event.stopPropagation()
-
-        // If it's only a modifier key, show it temporarily
-        if (isModifierKey(event.key)) {
-            keySearchQuery = formatModifiers(event)
-            return
-        }
-
-        // It's a complete combo - format and keep it
-        keySearchQuery = formatKeyCombo(event)
-    }
-
-    function handleKeyFilterKeyUp(event: KeyboardEvent) {
-        // If we only have modifiers showing (no complete combo), check if all modifiers released
-        if (isModifierKey(event.key)) {
-            // Check if any modifier is still held
-            const stillHasModifier = event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
-            if (!stillHasModifier) {
-                // All modifiers released - check if current value looks like only modifiers
-                const currentValue = keySearchQuery
-                // If the value is only modifiers (no regular key), clear it
-                const isOnlyModifiers = isMacOS()
-                    ? /^[\u2318\u2303\u2325\u21E7]*$/.test(currentValue)
-                    : /^(Ctrl\+?|Alt\+?|Shift\+?|Win\+?)*$/.test(currentValue)
-                if (isOnlyModifiers) {
-                    keySearchQuery = ''
-                }
-            } else {
-                // Still have some modifiers held - update the display
-                keySearchQuery = formatModifiers(event)
-            }
-        }
-    }
 
     // Use capture phase listener to intercept key events before they reach +page.svelte's window listener
     // This allows us to stop ESC from closing the settings window when editing shortcuts
     onMount(() => {
         function captureKeyDown(event: KeyboardEvent) {
-            if (!editingShortcut) return
+            if (!controller.editingShortcut) return
 
             // Handle all key events during editing
-            handleKeyDown(event)
+            controller.handleKeyDown(event)
         }
 
         document.addEventListener('keydown', captureKeyDown, true) // true = capture phase
@@ -449,10 +98,10 @@
                 type="text"
                 class="search-input"
                 placeholder="Search by action name..."
-                value={searchQuery.trim() ? searchQuery : localNameSearchQuery}
+                value={searchQuery.trim() ? searchQuery : controller.localNameSearchQuery}
                 oninput={(e) => {
                     const target = e.target
-                    if (target instanceof HTMLInputElement) localNameSearchQuery = target.value
+                    if (target instanceof HTMLInputElement) controller.localNameSearchQuery = target.value
                 }}
                 disabled={!!searchQuery.trim()}
                 autocomplete="off"
@@ -464,45 +113,50 @@
                     type="text"
                     class="search-input key-search"
                     placeholder="Filter by keys..."
-                    bind:value={keySearchQuery}
+                    bind:value={controller.keySearchQuery}
                     bind:this={keyFilterInput}
-                    onkeydown={handleKeyFilterKeyDown}
-                    onkeyup={handleKeyFilterKeyUp}
+                    onkeydown={controller.handleKeyFilterKeyDown}
+                    onkeyup={controller.handleKeyFilterKeyUp}
                     autocomplete="off"
                     autocapitalize="off"
                     spellcheck="false"
                 />
-                <span class="key-search-hint" class:visible={!!keySearchQuery}>Press ESC to clear</span>
+                <span class="key-search-hint" class:visible={!!controller.keySearchQuery}>Press ESC to clear</span>
             </div>
         </div>
 
         <div class="filters">
-            <button class="filter-chip" class:active={activeFilter === 'all'} onclick={() => (activeFilter = 'all')}>
+            <button
+                class="filter-chip"
+                class:active={controller.activeFilter === 'all'}
+                onclick={() => (controller.activeFilter = 'all')}
+            >
                 All
             </button>
             <button
                 class="filter-chip"
-                class:active={activeFilter === 'modified'}
-                onclick={() => (activeFilter = 'modified')}
+                class:active={controller.activeFilter === 'modified'}
+                onclick={() => (controller.activeFilter = 'modified')}
             >
                 Modified
             </button>
             <button
                 class="filter-chip"
-                class:active={activeFilter === 'conflicts'}
-                onclick={() => (activeFilter = 'conflicts')}
+                class:active={controller.activeFilter === 'conflicts'}
+                onclick={() => (controller.activeFilter = 'conflicts')}
             >
                 Conflicts
-                {#if conflictCount > 0}
-                    <span class="conflict-badge">{conflictCount}</span>
+                {#if controller.conflictCount > 0}
+                    <span class="conflict-badge">{controller.conflictCount}</span>
                 {/if}
             </button>
         </div>
     </div>
 
-    {#if conflictWarning}
+    {#if controller.conflictWarning}
         <!-- `{@const}` snapshot so the kind checks narrow the union (a re-read of the
              `$state` field doesn't narrow, and `SystemConflict` has no `command`). -->
+        {@const conflictWarning = controller.conflictWarning}
         {@const conflict = conflictWarning.conflict}
         <div class="conflict-warning">
             <span class="warning-icon">⚠️</span>
@@ -513,7 +167,7 @@
                     {reservedByMacOsMessage(conflictWarning.shortcut, conflict.command)}
                 </span>
                 <div class="warning-actions">
-                    <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}>Cancel</Button>
                 </div>
             {:else if conflict.kind === 'system'}
                 <!-- macOS usually intercepts this combo before Cmdr sees it, but the user
@@ -522,8 +176,8 @@
                     {systemShortcutMessage(conflictWarning.shortcut, conflict.label)}
                 </span>
                 <div class="warning-actions">
-                    <Button variant="secondary" size="mini" onclick={handleKeepBoth}>Use anyway</Button>
-                    <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}>Use anyway</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}>Cancel</Button>
                 </div>
             {:else if conflict.kind === 'fixed'}
                 <!-- The combo is hardcoded in a component: it can't be removed there and
@@ -532,35 +186,37 @@
                     {fixedKeyMessage(conflictWarning.shortcut, conflict.command)}
                 </span>
                 <div class="warning-actions">
-                    <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}>Cancel</Button>
                 </div>
             {:else if conflict.kind === 'normal'}
                 <span class="warning-text">
                     <strong>{conflictWarning.shortcut}</strong> is already bound to "{conflict.command.name}"
                 </span>
                 <div class="warning-actions">
-                    <Button variant="secondary" size="mini" onclick={handleRemoveFromOther}>Remove from other</Button>
-                    <Button variant="secondary" size="mini" onclick={handleKeepBoth}>Keep both</Button>
-                    <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.handleRemoveFromOther}
+                        >Remove from other</Button
+                    >
+                    <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}>Keep both</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}>Cancel</Button>
                 </div>
             {/if}
         </div>
     {/if}
 
     <div class="commands-list">
-        {#each groupedCommands as group (group.scope)}
+        {#each controller.groupedCommands as group (group.scope)}
             <div class="scope-group">
                 <h3 class="scope-title">{group.title}</h3>
-                {#each group.commands as command (`${command.id}-${String(shortcutChangeCounter)}`)}
+                {#each group.commands as command (`${command.id}-${String(controller.shortcutChangeCounter)}`)}
                     {@const shortcuts = getEffectiveShortcuts(command.id)}
                     {@const isModified = isShortcutModified(command.id)}
-                    {@const hasConflicts = conflictingIds.has(command.id)}
+                    {@const hasConflicts = controller.conflictingIds.has(command.id)}
                     {@const isNative = isNativeShortcutCommand(command.id)}
                     {@const isFixed = isFixedKeyCommand(command.id)}
                     {@const isAddingHere =
-                        editingShortcut !== null &&
-                        editingShortcut.commandId === command.id &&
-                        editingShortcut.index === shortcuts.length}
+                        controller.editingShortcut !== null &&
+                        controller.editingShortcut.commandId === command.id &&
+                        controller.editingShortcut.index === shortcuts.length}
                     <div
                         id={shortcutAnchorId(command.id)}
                         class="command-row"
@@ -606,22 +262,20 @@
                                 {#if shortcuts.length > 0}
                                 {#each shortcuts as shortcut, i (i)}
                                     {@const isEditing =
-                                        editingShortcut !== null &&
-                                        editingShortcut.commandId === command.id &&
-                                        editingShortcut.index === i}
+                                        controller.editingShortcut !== null &&
+                                        controller.editingShortcut.commandId === command.id &&
+                                        controller.editingShortcut.index === i}
                                     <button
                                         class="shortcut-pill"
                                         class:editing={isEditing}
-                                        class:pending-conflict={isEditing && conflictWarning !== null}
+                                        class:pending-conflict={isEditing && controller.conflictWarning !== null}
                                         class:empty={!shortcut && !isEditing}
                                         onclick={() => {
-                                            editingShortcut = { commandId: command.id, index: i }
-                                            pendingKey = ''
-                                            conflictWarning = null
+                                            controller.startEditingShortcut(command.id, i)
                                         }}
                                     >
                                         {#if isEditing}
-                                            {pendingKey || 'Press keys...'}
+                                            {controller.pendingKey || 'Press keys...'}
                                         {:else if shortcut}
                                             {shortcut}
                                             <span
@@ -631,12 +285,12 @@
                                                 tabindex="-1"
                                                 onclick={(e) => {
                                                     e.stopPropagation()
-                                                    handleRemoveShortcutAtIndex(command.id, i)
+                                                    controller.handleRemoveShortcutAtIndex(command.id, i)
                                                 }}
                                                 onkeydown={(e) => {
                                                     if (e.key === 'Enter' || e.key === ' ') {
                                                         e.stopPropagation()
-                                                        handleRemoveShortcutAtIndex(command.id, i)
+                                                        controller.handleRemoveShortcutAtIndex(command.id, i)
                                                     }
                                                 }}>×</span
                                             >
@@ -654,13 +308,12 @@
                                      the add leaks no junk entry. -->
                                 <button
                                     class="shortcut-pill editing"
-                                    class:pending-conflict={conflictWarning !== null}
+                                    class:pending-conflict={controller.conflictWarning !== null}
                                     onclick={() => {
-                                        pendingKey = ''
-                                        conflictWarning = null
+                                        controller.resetPendingCapture()
                                     }}
                                 >
-                                    {pendingKey || 'Press keys...'}
+                                    {controller.pendingKey || 'Press keys...'}
                                 </button>
                             {/if}
                             <button
@@ -668,7 +321,7 @@
                                 aria-label="Add shortcut"
                                 use:tooltip={'Add shortcut'}
                                 onclick={() => {
-                                    handleAddShortcut(command.id)
+                                    controller.handleAddShortcut(command.id)
                                 }}
                             >
                                 +
@@ -680,7 +333,7 @@
                                     use:tooltip={'Reset to default'}
                                     onclick={(e) => {
                                         e.stopPropagation()
-                                        handleResetShortcut(command.id)
+                                        controller.handleResetShortcut(command.id)
                                     }}
                                 >
                                     ↩
@@ -692,13 +345,13 @@
                 {/each}
             </div>
         {/each}
-        {#if showGlobalGoToLatestRow}
+        {#if controller.showGlobalGoToLatestRow}
             <GlobalShortcutRow />
         {/if}
     </div>
 
     <div class="shortcuts-footer">
-        <Button variant="secondary" size="mini" onclick={handleResetAll}>Reset all to defaults</Button>
+        <Button variant="secondary" size="mini" onclick={controller.handleResetAll}>Reset all to defaults</Button>
     </div>
 </SettingsSection>
 

@@ -41,7 +41,19 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`ViewerSection.svelte`**: `Viewer`
 - **`KeyboardShortcutsSection.svelte`**: `Keyboard shortcuts`: special (non-registry) section, renders the shortcut
   table from `shortcuts.json`, plus a bespoke `Global` group hosting `lib/downloads/GlobalShortcutRow.svelte` (the
-  go-to-latest hotkey, marked `(global)`, binding stored in `settings.json` not `shortcuts.json`)
+  go-to-latest hotkey, marked `(global)`, binding stored in `settings.json` not `shortcuts.json`). Thin: markup +
+  scoped styles + the capture-phase `document` keydown listener (and its `onMount` cleanup) + the deep-link highlight
+  wiring; all business logic lives in its `*.controller.svelte.ts` (see below)
+- **`KeyboardShortcutsSection.controller.svelte.ts`**: the section's business logic behind a
+  `createKeyboardShortcutsController(getSearchQuery)` factory (per-mount `$state`/`$derived`, exposed via
+  getters/setters so the markup's `bind:`s stay live). Holds the keyboard-capture + conflict engine
+  (`handleKeyDown`/`saveShortcut`/`handleRemoveFromOther`/`handleKeepBoth`/`cancelEdit`, `editingShortcut`/`pendingKey`/
+  `conflictWarning`/`confirmTimeout`, the `isAddingNewShortcut` derived), shortcut CRUD wrappers, the search/filter
+  derivations (`filteredCommands`, `conflictingIds`/`conflictCount`, `showGlobalGoToLatestRow`, `groupedCommands`,
+  filter `$state` + `resetFilters`), and the key-filter field helpers (`splitCombo`/`keyFilterMatches`/
+  `formatModifiers`/`handleKeyFilterKeyDown`/`handleKeyFilterKeyUp`). It imports the pure `keyboard-shortcuts-grouping`
+  and `keyboard-shortcuts-banner` helpers rather than duplicating them. The `getSearchQuery` arg is an accessor (not a
+  snapshot) so the name-search derivation stays reactive to the parent-driven global search prop
 - **`McpServerSection.svelte`**: `Developer > MCP server`
 - **`LoggingSection.svelte`**: `Developer > Logging`
 - **`UpdatesSection.svelte`**: `Updates & privacy`: update checks, the `updates.crashReports` / `updates.errorReports`
@@ -69,6 +81,9 @@ the pure-helper `.ts` files have unit tests next to them. `FileSystemWatchingSec
 with the functional render contract since both share the same heavy IPC mock setup.
 `KeyboardShortcutsSection.svelte.test.ts` runs the real `$lib/shortcuts` store against an in-memory disk (mocks only the
 Tauri boundaries, like `shortcuts-store.test.ts`) and drives the add/edit/conflict flows through the DOM.
+`KeyboardShortcutsSection.controller.svelte.test.ts` instantiates the controller factory directly via `$effect.root`
+(store + registry mocked) to cover the units the DOM test doesn't reach: the key-filter field helpers (platform-aware
+combo splitting and subset matching) and the search/filter derivations.
 
 ## Conventions
 
