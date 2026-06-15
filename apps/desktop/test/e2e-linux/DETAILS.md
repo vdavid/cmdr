@@ -16,7 +16,7 @@ for one shard isn't worth it.
 ```
 e2e-linux.sh
 ├─ Build Tauri binary in Docker (--features playwright-e2e,virtual-mtp,smb-e2e)
-├─ Start SMB Docker containers (smb-consumer-guest, smb-consumer-auth)
+├─ Start SMB Docker containers (smb-consumer-guest, -auth, -50shares, -unicode)
 ├─ Launch E2E container on smb-consumer_default network
 │   ├─ entrypoint.sh: Xvfb + dbus + GVFS + optional VNC
 │   ├─ Create fixtures, start Tauri app (with SMB_E2E_*_HOST/PORT env vars)
@@ -73,11 +73,14 @@ Docker named volumes).
 
 ## SMB E2E networking
 
-The E2E container joins the `smb-consumer_default` Docker network so it can reach the SMB containers
-(`smb-consumer-guest:445`, `smb-consumer-auth:445`) by name. Containers come from smb2's consumer test harness.
-`e2e-linux.sh` starts them automatically and passes env vars (`SMB_E2E_GUEST_HOST`, `SMB_E2E_GUEST_PORT`, etc.) to the
-Tauri app; Rust's `virtual_smb_hosts.rs` reads these to inject the correct addresses. On macOS (local dev), smb2's
-default ports (10480/10481) are used instead.
+The E2E container joins the `smb-consumer_default` Docker network so it can reach the four SMB containers by name on
+:445: `smb-consumer-guest` (no-auth public share), `smb-consumer-auth` (testuser/testpass), `smb-consumer-50shares` (a
+server exposing 50 shares, for share-list scale), and `smb-consumer-unicode` (shares with CJK, emoji, and accented
+names). They come from smb2's consumer test harness; `e2e-linux.sh` starts exactly this set (via
+`smb-servers/start.sh e2e`) and passes per-container env vars (`SMB_E2E_GUEST_HOST` / `_PORT`, plus the `AUTH` /
+`50SHARES` / `UNICODE` equivalents) to the Tauri app, which `virtual_smb_hosts.rs` reads to inject the correct
+addresses. On macOS (local dev), smb2's default ports (guest 10480, auth 10481, 50shares 10483, unicode 10484) are used
+instead.
 
 The Docker image includes `smbclient` (for the `smb_smbclient.rs` fallback), `cifs-utils`, and GVFS packages (`gvfs`,
 `gvfs-backends`, `gvfs-daemons`, `gvfs-fuse`). The entrypoint starts `gvfsd` so `gio mount` works for user-space SMB

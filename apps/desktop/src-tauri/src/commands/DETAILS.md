@@ -40,6 +40,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   absent/denied). User-initiated only. Lazy-startup hooks: `ensure_network_discovery_started` (idempotent: kicks off
   mDNS + manual-server load + smb-mount upgrade on first user network action) and `set_network_enabled` (live-applies
   the `network.enabled` toggle). Upgrade business logic lives in `network::smb_upgrade`; commands here are thin wrappers.
+- **`smb_diagnostics.rs`** (debug window only): `list_smb_volumes` (the dashboard's volume picker) and
+  `get_smb_diagnostics(volume_id)` (a snapshot of one volume's `smb2::SmbClient`). The snapshot DTOs mirror
+  `smb2::Diagnostics` & friends with `specta::Type` derives (so `smb2` needn't depend on specta), one `impl From` per
+  type.
 - **`eject.rs`**: `eject_volume(volume_id)` dispatches by kind. MTP → `mtp::connection_manager().disconnect`; SMB →
   `diskutil unmount` (FSEvents handles smb2 teardown via `on_unmount`); physical/DMG → `diskutil eject`. Pure
   `decide_eject_action` (unit-tested) keeps dispatch separate from the impure shell-out. Guards against ejecting a
@@ -49,6 +53,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `crate::favorites::store`; each persists `favorites.json` (5s write timeout) then re-emits `volumes-changed`. No
   `list_favorites` (listing rides `list_volumes` / `volumes-changed`). See `favorites/CLAUDE.md`.
 - **`font_metrics.rs`**: `store_font_metrics`, `has_font_metrics`.
+- **`logging.rs`**: `batch_fe_logs` (forwards batched frontend log entries into the fern logger) and `set_log_level`.
 - **`icons.rs`**: `get_icons`, `get_custom_folder_icon_ids` (visible-range custom-folder detection),
   `refresh_directory_icons`, cache clear.
 - **`rename.rs`**: `move_to_trash` (delegates to `write_operations::trash::move_to_trash_sync`),
@@ -63,6 +68,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   enables/disables file-scoped items via the private `set_menu_context` helper; see `menu/DETAILS.md`),
   `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive eviction/download via `FileManager` ubiquity
   APIs; see `file_system/cloud_actions.rs`).
+- **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` persist per-label
+  child-window (viewer, settings) geometry via `State<ChildWindowRectStore>`.
 - **`settings.rs`**: port availability check, watcher debounce, menu accelerator updates, live-apply setters for
   `network.directSmbConnection`, `advanced.filterSafeSaveArtifacts`, `network.smbConcurrency`, and the restricted-window
   pair `get_restricted_window_settings` / `persist_restricted_window_setting` (the viewer's typed settings surface; see
@@ -70,6 +77,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`mcp.rs`**: `set_mcp_enabled`, `set_mcp_port` (live start/stop/port-change without app restart), `get_mcp_token`
   (returns the per-instance bearer token for in-process / E2E callers; see `mcp/DETAILS.md` § Authentication).
 - **`licensing.rs`**: status query, activation, expiry, reminder, key validation.
+- **`whats_new.rs`**: `get_whats_new(since_version, max)` (release entries for the What's New dialog) and
+  `whats_new_dev_override` (dev-only).
 - **`indexing.rs`**: `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats`,
   `get_dir_stats_batch`, `clear_drive_index`, `set_indexing_enabled`, `get_index_debug_status` (dev-only). Uses
   `State<IndexManagerState>`.
@@ -86,10 +95,23 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `blocking_with_timeout` (the `reqwest` client carries its own 10 s timeout).
 - **`error_reporter.rs`** (Flow A): `prepare_error_report_preview`, `send_error_report`. Two-step so the preview dialog
   is deterministic without shipping the full bundle through IPC twice. Upload skipped in dev/CI.
+- **`analytics.rs`**: `track_event(name, props_json)`, a thin pass-through to `posthog::capture` for the open set of
+  frontend feature events. No capability entry; the PII-free prop contract lives in `analytics/CLAUDE.md`.
+- **`feedback.rs`**: `send_feedback(feedback_text, email?)` POSTs to `/feedback` via `crate::feedback`, returning a
+  typed `SendFeedbackResult` (`Invalid` on a bad email, etc.). Network, not filesystem, so no `blocking_with_timeout`
+  (the `reqwest` client carries its own 10 s timeout).
 - **`search.rs`**: thin IPC wrappers over the `search` module. `resolve_ai_backend` for AI provider config. Post-filters
   directory sizes after `fill_directory_sizes`.
+- **`selection.rs`**: Selection-dialog backend (parallel to `search.rs`), thin wrappers over `crate::selection`:
+  `translate_selection_query` (AI translation via `crate::ai` + `crate::selection::ai`) plus the recent-selections
+  history (`get_recent_selections`, `add_recent_selection`, `remove_recent_selection`, `clear_recent_selections`,
+  `apply_recent_selections_max_count`).
+- **`go_to_path.rs`**: the "Go to path" quick-nav surface: `resolve_go_to_path(input, base_dir)` plus recent-paths
+  history (`get_recent_paths`, `add_recent_path`, `remove_recent_path`, `clear_recent_paths`).
 - **`sync_status.rs`**: `get_sync_status`: macOS delegates to `file_system::sync_status`; non-macOS returns an empty map
   via `#[cfg]` on the function itself (not the module).
+- **`e2e.rs`**: E2E/test-support hooks, always compiled in (reading an unset env var is a no-op in production):
+  `get_e2e_start_path`, `is_e2e_mode`, `is_force_onboarding`, `set_test_throttle`, `flush_file_watcher`.
 
 ## Decisions
 
