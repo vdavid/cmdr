@@ -2,7 +2,6 @@ package checks
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -19,17 +18,6 @@ var reminderSourceExts = map[string]bool{
 	".css":    true,
 	".go":     true,
 	".js":     true,
-}
-
-// reminderSkipDirs lists directories that should never be scanned for CLAUDE.md
-// files (matches the directories `git status` would never report on either).
-var reminderSkipDirs = map[string]bool{
-	"vendor":        true,
-	"node_modules":  true,
-	".cargo-docker": true,
-	"target":        true,
-	"build":         true,
-	"dist":          true,
 }
 
 type reminderMiss struct {
@@ -121,28 +109,23 @@ func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 	}, nil
 }
 
-// findClaudeMdFiles walks the repo and returns paths to all CLAUDE.md files
-// relative to rootDir. Skips vendor, node_modules, build outputs, hidden dirs.
+// findClaudeMdFiles returns repo-relative paths to all first-party CLAUDE.md
+// files. Git-aware (reuses findMarkdownDocs): it excludes .gitignored scratch and
+// build output, vendored/generated trees, and hidden dirs, so the CLAUDE.md checks
+// agree with the doc graph on what's in scope (a plain filesystem walk would flag
+// gitignored CLAUDE.md files that never get committed).
 func findClaudeMdFiles(rootDir string) ([]string, error) {
+	docs, err := findMarkdownDocs(rootDir)
+	if err != nil {
+		return nil, err
+	}
 	var files []string
-	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-		if d.IsDir() {
-			name := d.Name()
-			if strings.HasPrefix(name, ".") || reminderSkipDirs[name] {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if d.Name() == "CLAUDE.md" {
-			rel, _ := filepath.Rel(rootDir, path)
+	for _, rel := range docs {
+		if rel == "CLAUDE.md" || strings.HasSuffix(rel, "/CLAUDE.md") {
 			files = append(files, rel)
 		}
-		return nil
-	})
-	return files, err
+	}
+	return files, nil
 }
 
 // changedFiles returns repo-relative paths of files that differ between the
