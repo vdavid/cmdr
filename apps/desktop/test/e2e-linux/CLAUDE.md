@@ -22,10 +22,9 @@ pnpm test:e2e:linux:vnc                # VNC mode with hot reload (pnpm dev)
   bake into `docker/Dockerfile.base`. Put new packages there. The base is content-addressed (tagged by
   `sha256(Dockerfile.base)`) so editing it auto-invalidates; the thin final `docker/Dockerfile` rebuilds every run, so
   `entrypoint.sh` / `Dockerfile` edits propagate with no `--build`.
-- **The base is pinned to `ubuntu:26.04`, not 24.04.** webkit2gtk 2.50.4 (ships with 24.04) returns
-  `startOffset: 0` from `document.caretRangeFromPoint` inside `user-select: none` text, breaking the viewer's
-  pointer-drag selection (`viewer.spec.ts`). Dropping back means skipping that test or reworking the production
-  caret-from-point.
+- **The base is pinned to `ubuntu:26.04`, not 24.04.** webkit2gtk 2.50.4 (ships with 24.04) returns `startOffset: 0`
+  from `document.caretRangeFromPoint` inside `user-select: none` text, breaking the viewer's pointer-drag selection
+  (`viewer.spec.ts`). Dropping back means skipping that test or reworking the production caret-from-point.
 - **Don't "optimize away" the chromium install** in `Dockerfile.base`. No spec drives a browser (all run the `tauri`
   socket-bridge project), but `@playwright/test` still launches a headless chromium per worker as a runtime dependency;
   remove it and every test fails at setup with `Executable doesn't exist`.

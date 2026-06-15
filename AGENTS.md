@@ -82,8 +82,8 @@ conversational and actionable and never use the words "error" or "failed". The w
 
 ## File structure
 
-- `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker
-  E2E, SMB fixtures), `scripts/`. The other three apps are listed above.
+- `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker E2E,
+  SMB fixtures), `scripts/`. The other three apps are listed above.
 - `brand/`: tracked brand and press-kit assets.
 - `docs/`: [`architecture.md`](docs/architecture.md) (the map), [`guides/`](docs/guides) (how-tos), `tooling/` (service
   and workflow references), [`specs/index.md`](docs/specs/index.md) (per-development plans, periodically wiped),

@@ -18,9 +18,9 @@ tables freely.
 
 ## Deployment
 
-The website auto-deploys on push to `main` touching `apps/website/**`, via the `deploy-website` job in `ci.yml` (gated on
-`needs: website`): a signed (HMAC-SHA256, `DEPLOY_WEBHOOK_SECRET`) hook to the Hetzner VPS that pulls and rebuilds the
-Docker image. This is the ONLY deploy path. `release.yml` hits the same hook after a desktop release (refreshing
+The website auto-deploys on push to `main` touching `apps/website/**`, via the `deploy-website` job in `ci.yml` (gated
+on `needs: website`): a signed (HMAC-SHA256, `DEPLOY_WEBHOOK_SECRET`) hook to the Hetzner VPS that pulls and rebuilds
+the Docker image. This is the ONLY deploy path. `release.yml` hits the same hook after a desktop release (refreshing
 `latest.json`); `workflow_dispatch` on `main` (run_all) is the manual lever. Server-side steps and fallback:
 `docs/guides/deploy-website.md`.
 

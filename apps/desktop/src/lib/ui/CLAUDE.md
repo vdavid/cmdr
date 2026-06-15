@@ -26,12 +26,13 @@ changes).
 - **The `ModalDialog` overlay starts at `inset: var(--titlebar-height) 0 0 0`, not `inset: 0`**, so the scrim never
   covers the macOS title bar, keeping the OS window-drag region live. Any new full-window backdrop must too.
 - **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle` flags it; one-offs need
-  `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in (app-wide `cursor: default`);
-  don't hand-roll a link button.
+  `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in (app-wide
+  `cursor: default`); don't hand-roll a link button.
 - **`ShortcutChip` must NOT statically import `openShortcutCustomization`**: it pulls in
   `@tauri-apps/api/webviewWindow`, which must stay off the chip's module-eval surface so the chip loads in the
   capability-restricted viewer window. Use dynamic `import()` in the click handler only. Set exactly one of `commandId`
-  / `key`; a `commandId` chip renders NOTHING with no binding, so conditionalize prose around it. DETAILS § ShortcutChip.
+  / `key`; a `commandId` chip renders NOTHING with no binding, so conditionalize prose around it. DETAILS §
+  ShortcutChip.
 - **Tooltip detached-trigger gotcha (corner tooltip)**: a recycled virtual-scroll row removed while hovered never fires
   `mouseleave`, so the 400 ms timer can fire against a detached node. Two guards must both stay: the action's
   `destroy()` cancels its timer, and `showTooltip` / `positionTooltip` bail on `isTriggerDetached(el)`

@@ -29,8 +29,8 @@ Consumer-specific decisions: [`lib/search/CLAUDE.md`](../search/CLAUDE.md),
   written separately; don't fold them into the core method.
 - **`stopPropagation()` on every dialog `keydown`** (shields the explorer behind it; otherwise keys trigger
   quick-search/nav). All `use:trapFocus` listeners run in the capture phase so this can't starve the trap.
-- **Don't wipe state from `onDestroy` / any lifecycle hook.** State survives unmount by design; the ONLY sanctioned reset
-  is `⌘N`. Wiping on unmount turns every close+reopen into lost work.
+- **Don't wipe state from `onDestroy` / any lifecycle hook.** State survives unmount by design; the ONLY sanctioned
+  reset is `⌘N`. Wiping on unmount turns every close+reopen into lost work.
 - **Reopen re-derives results, not the empty state.** A restored NON-AI session sets `runOnMount` to re-run; AI restored
   sessions must NOT re-run (cloud cost). Don't loosen the `mode !== 'ai'` gate. Lifecycle: DETAILS.md § `runOnMount`
   consumer.

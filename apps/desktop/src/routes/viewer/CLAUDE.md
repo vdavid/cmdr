@@ -12,8 +12,8 @@ orchestration, background search). Reusable FE primitives:
 scroll, search, line-heights, text-width, tail, media, copy, and autoscroll, plus selection/caret/segment helpers and
 the `createViewerKeyboard` keydown router. Media renders inline via `MediaImageView` / `MediaPdfView`; presentational
 parts are `ViewerToolbar`, `ViewerStatusBar`, `ViewerContextMenu`, `ViewModePicker`, `EncodingPicker`,
-`ViewerCopyDialogs`, and `ViewerReloadToast`. Full per-file inventory and the media flow:
-[DETAILS.md](DETAILS.md) § "Module map". Locate symbols via `codegraph_search`, not this list.
+`ViewerCopyDialogs`, and `ViewerReloadToast`. Full per-file inventory and the media flow: [DETAILS.md](DETAILS.md) §
+"Module map". Locate symbols via `codegraph_search`, not this list.
 
 ## Must-knows
 
@@ -25,8 +25,8 @@ Each line is a break-if-ignored invariant; the named [DETAILS.md](DETAILS.md) se
   keep the early-returns in line effects / `openViewerSession` / the keydown router, else the empty-line code runs and
   can throw. (§ "Media rendering")
 - **Media↔text two-way switch resets media state BEFORE reopening, and `reset()` PRESERVES `lastMediaKind`.** Both
-  handlers route through `reopenSession({ asText })`. Don't reorder the reset-then-reopen or clear `lastMediaKind`.
-  (§ "Media rendering")
+  handlers route through `reopenSession({ asText })`. Don't reorder the reset-then-reopen or clear `lastMediaKind`. (§
+  "Media rendering")
 - **`cmdr-media://` URLs are built ONLY via `mediaUrl(token)` in `media-view.ts`**, and the `cmdr-media:` scheme is in
   the `img-src` + `object-src` CSP (`tauri.conf.json`). A src bypassing `mediaUrl`, or a CSP edit dropping the scheme,
   trips `viewer-media.spec.ts`. (§ "Media rendering")
@@ -34,8 +34,8 @@ Each line is a break-if-ignored invariant; the named [DETAILS.md](DETAILS.md) se
   competes and loses its anchor on scroll-out. `.status-bar` opts back in with `user-select: text`. Has a webkit2gtk
   `caretRangeFromPoint` trap (pinned Docker image). (§ Gotchas)
 - **Selection / IPC offsets are UTF-16 code units, not bytes or graphemes.** Caret math (`viewer-pointer.ts`) and
-  anything crossing `viewer_read_range` must preserve this; the backend converts to UTF-8 and clamps lone surrogates.
-  (§ "Selection model")
+  anything crossing `viewer_read_range` must preserve this; the backend converts to UTF-8 and clamps lone surrogates. (§
+  "Selection model")
 - **`closeWindow()` and `windowReady` both defer via `setTimeout(0)`, never rAF.** A sync `close()` in a webview handler
   stalls other webviews' IPC on the GTK tick; rAF starves in unfocused E2E windows and times out the suite. (§ Gotchas;
   `docs/testing.md` § "rAF in unfocused windows")

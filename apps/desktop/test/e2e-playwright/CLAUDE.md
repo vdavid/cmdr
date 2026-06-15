@@ -1,7 +1,7 @@
 # Playwright E2E tests (tauri-playwright)
 
-Playwright E2E for Cmdr in Tauri mode: commands inject into the real Tauri webview over a Unix socket. The same specs run
-on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ride the `CTRL_OR_META` constant in
+Playwright E2E for Cmdr in Tauri mode: commands inject into the real Tauri webview over a Unix socket. The same specs
+run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ride the `CTRL_OR_META` constant in
 `helpers.ts`. Architecture, per-spec table, run recipes, and decisions: [DETAILS.md](DETAILS.md).
 
 ## Module map
@@ -24,16 +24,17 @@ on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ride t
   the main process, so leaks accumulate.
 - **Never `tauriPage.keyboard.press('Escape')` to close a dialog/popover/dropdown/palette.** Under Linux Xvfb, X11 focus
   delivery is unreliable and the keystroke can vanish, failing with an opaque timeout that looks like a flake. Use
-  `dismissOverlay(tauriPage)` (synthetic Escape on the topmost overlay) and `expectAndDismissToast(tauriPage, substring)`
-  (asserts then dismisses; the wording IS the contract). `fixtures.ts`'s global `afterEach` fails and auto-cleans any
-  test that leaks an overlay/toast, so no defensive double-Escape in `beforeEach`.
+  `dismissOverlay(tauriPage)` (synthetic Escape on the topmost overlay) and
+  `expectAndDismissToast(tauriPage, substring)` (asserts then dismisses; the wording IS the contract). `fixtures.ts`'s
+  global `afterEach` fails and auto-cleans any test that leaks an overlay/toast, so no defensive double-Escape in
+  `beforeEach`.
 - **Bare `await pollUntil(...)` is silent on timeout** (returns `false`, doesn't throw), so the test passes green even
   when the condition never holds. Use `await expect.poll(() => cond(), { timeout }).toBeTruthy()` (preferred) or
   `expect(await pollUntil(...)).toBe(true)`. Same trap for every `Promise<boolean>` helper (`pollFs`, `pollActiveMode`,
   etc.). The `bare-poll` fast-lane check flags these; opt out with `// allowed-bare-poll: <reason>`.
 - **Exercise viewer + settings through the production multi-window flow** (`openViewerWindow` /
-  `openSettingsWindowViaProd` / `closeScopedWindow`, via the scoped page), not by routing the main window to `/viewer` or
-  `/settings` (that skips label uniqueness, restricted capabilities, focus/close lifecycle). A scoped page that can't
+  `openSettingsWindowViaProd` / `closeScopedWindow`, via the scoped page), not by routing the main window to `/viewer`
+  or `/settings` (that skips label uniqueness, restricted capabilities, focus/close lifecycle). A scoped page that can't
   call a Tauri command is a REAL bug (production hits the same wall): fix the capability or use a permitted command.
 - **`ensureAppReady()` resets route, volume, AND directories, in that order.** The volume reset is required:
   `navigateToPath` rejects `mcp-nav-to-path` for non-local panes (pane state persists across tests), so without it nav
@@ -45,8 +46,8 @@ on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ride t
   bytes live in a Rust `Mutex`, not `NSPasteboard`. `pbpaste` won't see test contents; read mock state through the
   clipboard IPC commands (`src-tauri/src/clipboard/CLAUDE.md`).
 - **`tauri-plugin-store` stores read your REAL store files unless redirected**, so a locally-flipped setting leaks in
-  (passes in CI, fails locally). `getStore()` resolves through `resolveStorePath(name)`, which a `CMDR_DATA_DIR` instance
-  redirects to isolated data. A persisted-UI-state spec passing in CI but failing locally usually means a stale value in
-  your real store.
+  (passes in CI, fails locally). `getStore()` resolves through `resolveStorePath(name)`, which a `CMDR_DATA_DIR`
+  instance redirects to isolated data. A persisted-UI-state spec passing in CI but failing locally usually means a stale
+  value in your real store.
 
 Read [DETAILS.md](DETAILS.md) in whole before structural changes here.
