@@ -133,34 +133,25 @@ either duplicate work or risk a different result.
 
 ## Scroll-to-match
 
-`scrollToMatch` brings the active match into view on both axes by centring its real rendered `mark.active` rect.
-`recenterOffset` (pure, in `viewer-search-scroll.ts`, unit-tested) is the per-axis math: given the mark's and the
-viewport's edges plus the current scroll offset, it returns the centring target, or `null` when the match is already
-comfortably in view (a 10% edge margin), unless `forceCenter` overrides that. Working from the rendered rect (not a
-`column * charWidth` estimate) makes it exact for word-wrapped rows and for wide-CJK / astral glyphs.
+`scrollToMatch` (on `findNext` / `findPrev`, not the initial auto-select) centres the active match on both axes from its
+real rendered `mark.active` rect. The per-axis math is `recenterOffset` (pure, in `viewer-search-scroll.ts`,
+unit-tested): it returns the centring target, or `null` when the match is already within a 10% edge margin unless
+`forceCenter` overrides. Working from the rendered rect, not a `column * charWidth` estimate, keeps it exact for
+word-wrapped rows and wide-CJK / astral glyphs (the arithmetic approach drifted on both). Horizontal centring is skipped
+in word-wrap mode; the `mark.active` lookup is scoped to the target line's row so a stale `.active` elsewhere isn't
+picked up after a cross-line jump.
 
-Two paths, chosen by whether the match's line row is already in the DOM (`[data-line=N]` — a wrapped line is one tall
-element, so any on-screen part means the whole line, including a match below the fold, is rendered):
+Two paths, by whether the match's line row is in the DOM (a wrapped line is one tall element, so any on-screen part
+means the whole line is rendered):
 
-- **Gentle (line rendered).** After `tick()` (so the `.active` class has moved to the new match), one `recenterOffset`
-  pass with `forceCenter` off. An already-visible match isn't touched, so stepping between on-screen matches doesn't
-  jump. This is the common case for small files where every line is always rendered.
-- **Ensure (line off-screen).** Rough-scroll toward the line (`getLineTop - viewportHeight/2`) so it renders, then a
-  `requestAnimationFrame` loop force-centres and re-reads the rect each frame until it's stable. The loop exists because
-  a tall wrapped line's layout is still settling on the first frame after it renders, so a single post-scroll read lands
-  the match in the wrong place.
+- **Gentle (line rendered):** after `tick()`, one `recenterOffset` pass with `forceCenter` off, so an already-visible
+  match isn't touched and stepping between on-screen hits doesn't jump.
+- **Ensure (line off-screen):** rough-scroll toward the line so it renders, then a `requestAnimationFrame` loop
+  force-centres and re-reads the rect each frame until stable (a tall wrapped line's layout is still settling on the
+  first frame, so a single post-scroll read mislands).
 
-`scrollToMatch` runs on `findNext` / `findPrev`, not on the initial auto-select when results first arrive. Horizontal
-centring is skipped in word-wrap mode (no horizontal overflow). The `mark.active` lookup is scoped to the target line's
-row so a stale `.active` on a different still-mounted line can't be picked up after a cross-line jump.
-
-**Decision: centre from the DOM rect, not arithmetic. Why:** an earlier `column * charWidth` approach drifted on
-word-wrapped lines (word-boundary wrapping is not character-count division) and on non-ASCII; the rect is exact and
-already available once the line renders. The cost is async (a frame or two for layout to settle), which the
-gentle/ensure split keeps off the common on-screen path.
-
-**Guardrail:** don't replace the gentle/ensure split with an unconditional rough-scroll. Rough-scrolling a match whose
-line is already on screen flings the view to the line top on every Enter (the regression the split prevents).
+**Guardrail:** don't collapse the two into an unconditional rough-scroll: rough-scrolling a match whose line is already
+on screen flings the view to the line top on every Enter.
 
 ## Gotchas
 

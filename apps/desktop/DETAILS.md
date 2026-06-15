@@ -23,6 +23,11 @@ ports, or the Dock label. The slug is sanitized to lowercase ASCII (max 32 chars
 still defaults to 1420). Canonical reference (per-resource breakdown, precedence, debug recipes, acceptance smoke):
 [`/docs/tooling/instance-isolation.md`](../../docs/tooling/instance-isolation.md).
 
+**Run `pnpm dev --worktree <slug>` FROM the worktree dir** (`cd` into it first). Vite serves whatever source tree it's
+launched in, so running it from the main repo root serves **main's** frontend with only the worktree's data dir, ports,
+and Dock label: your worktree edits never load and the app looks unfixed (you QA the wrong code). The flag isolates the
+instance, not the source.
+
 ### Dev watcher and markdown files
 
 Two watchers run during `pnpm dev`, each with its own shield (don't delete either):
