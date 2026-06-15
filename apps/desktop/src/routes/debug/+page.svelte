@@ -10,6 +10,7 @@
     import DebugSmbDiagnosticsPanel from './DebugSmbDiagnosticsPanel.svelte'
     import DebugToastPanel from './DebugToastPanel.svelte'
     import ComponentsCatalog from '../dev/components/+page.svelte'
+    import GraphicsCatalog from '../dev/graphics/+page.svelte'
 
     /** Section ids. The `components-*` ids are children of the `'components'` parent. */
     type SectionId =
@@ -41,6 +42,12 @@
         | 'components-shortcut-chip'
         | 'components-commandbox'
         | 'components-empty-states'
+        | 'graphics'
+        | 'graphics-icons'
+        | 'graphics-spinners'
+        | 'graphics-status-badges'
+        | 'graphics-illustrations'
+        | 'graphics-animations'
 
     interface Section {
         id: SectionId
@@ -83,6 +90,17 @@
                 { id: 'components-empty-states', label: 'Empty states' },
             ],
         },
+        {
+            id: 'graphics',
+            label: 'Graphics',
+            children: [
+                { id: 'graphics-icons', label: 'Icons' },
+                { id: 'graphics-spinners', label: 'Spinners' },
+                { id: 'graphics-status-badges', label: 'Status badges' },
+                { id: 'graphics-illustrations', label: 'Illustrations' },
+                { id: 'graphics-animations', label: 'Animations' },
+            ],
+        },
     ]
 
     let pageElement: HTMLElement | undefined = $state()
@@ -102,6 +120,22 @@
 
     function handleSectionInView(subId: string | null) {
         const target: SectionId = subId === null ? 'components' : (`components-${subId}` as SectionId)
+        if (selected !== target) selected = target
+    }
+
+    /** Sub-anchor for the graphics catalog (the bit after `graphics-`), or null for top of catalog. */
+    const graphicsAnchor = $derived.by((): string | null => {
+        if (selected === 'graphics') return null
+        if (selected.startsWith('graphics-')) return selected.slice('graphics-'.length)
+        return null
+    })
+
+    const isGraphicsView = $derived.by(
+        () => selected === 'graphics' || selected.startsWith('graphics-'),
+    )
+
+    function handleGraphicsSectionInView(subId: string | null) {
+        const target: SectionId = subId === null ? 'graphics' : (`graphics-${subId}` as SectionId)
         if (selected !== target) selected = target
     }
 
@@ -194,6 +228,8 @@
                 <DebugErrorPreviewPanel />
             {:else if isComponentsView}
                 <ComponentsCatalog targetAnchor={catalogAnchor} onSectionInView={handleSectionInView} />
+            {:else if isGraphicsView}
+                <GraphicsCatalog targetAnchor={graphicsAnchor} onSectionInView={handleGraphicsSectionInView} />
             {/if}
         </div>
     </div>
