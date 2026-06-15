@@ -7,7 +7,10 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
 ## Module map
 
 - **`+layout.svelte`** / **`+page.svelte`**: main-window layout (gates children on `settingsReady`) and the app shell
-  (mounts `DualPaneExplorer`, owns dialog visibility + the `explorerRef` handle, wires keydown / menu listeners).
+  (mounts `DualPaneExplorer`, owns dialog visibility + the `explorerRef` handle + keydown + onboarding / licensing, and
+  orchestrates `listener-setup.ts`).
+- **`listener-setup.ts`**: menu, MCP-dialog, and window-focus Tauri listener setup (plain `.ts`, no runes); state
+  crosses via a `ListenerSetupContext` of getters + setters. See DETAILS.md.
 - **`command-dispatch.ts`** + **`command-handlers/`**: the dispatch core (preamble, then a flat `commandHandlers`-record
   lookup) and the family-grouped handlers; context types in `command-dispatch-context.ts`. See
   [`command-handlers/CLAUDE.md`](command-handlers/CLAUDE.md).
@@ -35,7 +38,9 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
 - **`mcp-listeners.ts` validate-parses each `mcp-*` payload** via small pure parsers and dispatches typed `CommandId`
   consts, so a registry rename breaks compilation here. `mcp-nav-to-path` and the `mcp-response` round-trips stay off the
   bus; read DETAILS.md § MCP transport before touching it.
-- **Don't pile new state into `+page.svelte`** (it's `file-length`-flagged): extract a `setupXxxListeners(ctx)` module.
+- **New Tauri listener wiring goes in `listener-setup.ts`, not `+page.svelte`** (which is `file-length`-flagged): thread
+  `$state` through `ListenerSetupContext` (getters for reads, setters for writes, the shared `unlistenFns` array for HMR
+  cleanup). Logic that reads/writes `$state` directly (keydown, onboarding, licensing) can't move (no runes in a `.ts`).
   New commands get a `command-handlers/` handler, NOT a branch in the small core; only `handleTextRegionShortcut` and
   `blockedByCapabilities` belong there.
 - **E2E and debug listeners stay off the bus (intentional, not unfinished).** `e2e-trigger-file-drop` and the

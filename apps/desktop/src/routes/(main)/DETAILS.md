@@ -7,7 +7,18 @@ Depth and rationale for the app orchestrator. `CLAUDE.md` holds the must-knows; 
 - **`+layout.svelte`**: main-window layout (updater, settings applier, AI state init, MCP shortcuts/settings bridges,
   toast container, crash + MTP + error-report dialogs).
 - **`+page.svelte`**: app shell: mounts `DualPaneExplorer`, owns top-level dialog visibility (`$state`) and the
-  `explorerRef` handle, wires keydown / context-menu / menu-event listeners, runs onboarding gating.
+  `explorerRef` handle, owns the keydown / context-menu handlers and onboarding / licensing gating, and orchestrates the
+  extracted listener setup (`setupTauriEventListeners` calls into `listener-setup.ts`, then wires MCP + the event
+  bridges).
+- **`listener-setup.ts`**: the menu, MCP-dialog, and window-focus Tauri listener wiring, extracted out of the component
+  to keep it focused on reactive `$state`. A plain `.ts` (no runes), so it can't hold `$state` directly: state crosses
+  the boundary through `ListenerSetupContext` (getter functions for reads, setter callbacks for writes), which keeps the
+  moved closures reading LIVE reactive values instead of a stale capture. Exports `setupMenuListeners`,
+  `setupDialogListeners`, `setupWindowFocusListener`, and `makeListenTauri` (the cleanup-array-bound `listenTauri` the
+  component also passes into `setupMcpListeners`). Every registered unlisten is pushed onto the component-owned
+  `unlistenFns` array (folded `unlistenExecuteCommand` / `unlistenWindowFocus` into it too), so the `onDestroy` loop
+  tears them all down — important for HMR, which otherwise stacks duplicate listeners on reload. The keydown handler,
+  licensing init, and onboarding gating stay in the component because they read/write `$state` directly.
 - **`command-dispatch.ts`**: `handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)`, the dispatch core.
   Referenced from `$lib/commands` and many tests.
 - **`command-dispatch-context.ts`**: `CommandDispatchContext` + `CommandDispatchDialogs`: the per-call context (the

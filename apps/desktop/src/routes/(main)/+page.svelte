@@ -27,34 +27,25 @@
     import {
         showMainWindow,
         checkFullDiskAccess,
-        listen,
         type UnlistenFn,
-        activateWindowMenu,
         getWindowTitle,
         registerKnownDialogs,
-        onViewModeChanged,
-        onMenuSort,
-        onExecuteCommand,
-        onOpenSettings,
-        onOpenFileViewer,
-        onFocusFileViewer,
-        onFocusAbout,
-        onFocusConfirmation,
-        onCloseFileViewer,
-        onCloseAllFileViewers,
-        onCloseAbout,
-        onCloseConfirmation,
     } from '$lib/tauri-commands'
+    import {
+        type ListenerSetupContext,
+        makeListenTauri,
+        setupMenuListeners,
+        setupDialogListeners,
+        setupWindowFocusListener,
+    } from './listener-setup'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { getAppLogger } from '$lib/logging/logger'
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
-    import { openSettingsWindow } from '$lib/settings/settings-window'
-    import { getSetting, seedSettingForE2E, setSetting } from '$lib/settings'
+    import { getSetting, setSetting } from '$lib/settings'
     import { getShowFunctionKeyBar } from '$lib/settings/reactive-settings.svelte'
     import { addToast } from '$lib/ui/toast'
-    import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
     import { startGlobalShortcutBridge } from '$lib/downloads/global-shortcut-bridge.svelte'
     import { startLowDiskSpaceEventBridge } from '$lib/low-disk-space/event-bridge.svelte'
@@ -63,8 +54,7 @@
         handleCommandExecute as dispatchCommand,
         type CommandDispatchContext,
     } from './command-dispatch'
-    import { isCommandId, type CommandId, type CommandDispatchArgs } from '$lib/commands'
-    import type { ViewMode } from '$lib/app-status-store'
+    import { type CommandId, type CommandDispatchArgs } from '$lib/commands'
     import { setupMcpListeners } from './mcp-listeners'
     import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { initAppMode, getAppMode, type AppMode } from '$lib/app-mode'
@@ -74,7 +64,6 @@
         triggerValidationIfNeeded,
     } from '$lib/licensing/licensing-store.svelte'
     import { updateLicenseCommandName } from '$lib/commands/command-registry'
-    import type { FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
     import type { ExplorerAPI } from './explorer-api'
 
     const log = getAppLogger('main-page')
@@ -115,8 +104,6 @@
     // Event handlers stored for cleanup
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined
     let handleContextMenu: ((e: MouseEvent) => void) | undefined
-    let unlistenExecuteCommand: UnlistenFn | undefined
-    let unlistenWindowFocus: UnlistenFn | undefined
 
     /** Opens the debug window (dev mode only) */
     async function openDebugWindow() {
@@ -140,358 +127,14 @@
         return !import.meta.env.DEV && e.metaKey && e.altKey && e.key === 'i'
     }
 
-    /** Safe wrapper for Tauri event listeners - handles non-Tauri environment */
-    async function safeListenTauri(
-        event: string,
-        handler: (event: { payload: unknown }) => void,
-    ): Promise<UnlistenFn | undefined> {
-        try {
-            return await listen(event, handler)
-        } catch {
-            return undefined
-        }
-    }
-
-    /** Get all file viewer windows (labels starting with 'viewer-'), sorted by creation time (most recent first) */
-    async function getFileViewerWindows() {
-        try {
-            const { getAllWindows } = await import('@tauri-apps/api/window')
-            const windows = await getAllWindows()
-            return windows
-                .filter((w) => w.label.startsWith('viewer-'))
-                .sort((a, b) => {
-                    const aTime = parseInt(a.label.replace('viewer-', ''), 10)
-                    const bTime = parseInt(b.label.replace('viewer-', ''), 10)
-                    return bTime - aTime // Most recent first
-                })
-        } catch {
-            return []
-        }
-    }
-
-    /** Emit an event to file viewer windows. Returns true if the event was emitted to at least one viewer. */
-    async function emitToFileViewers(event: string, payload?: { path?: string }): Promise<boolean> {
-        try {
-            const { emit } = await import('@tauri-apps/api/event')
-            await emit(event, payload)
-            return true
-        } catch {
-            return false
-        }
-    }
-
-    /** Close a file viewer window. If path is provided, closes the viewer with that path. Otherwise closes the most recent. */
-    async function closeFileViewer(path?: string) {
-        const viewers = await getFileViewerWindows()
-        if (viewers.length === 0) return
-
-        if (path) {
-            // Emit event with path - the viewer with that path will close itself
-            await emitToFileViewers('mcp-viewer-close', { path })
-        } else {
-            // Close the most recent viewer directly
-            try {
-                await viewers[0].close()
-            } catch {
-                // Window may already be closed
-            }
-        }
-    }
-
-    /** Close all file viewer windows sequentially to avoid concurrent destruction races */
-    async function closeAllFileViewers() {
-        const viewers = await getFileViewerWindows()
-        for (const viewer of viewers) {
-            try {
-                await viewer.close()
-            } catch {
-                // Window may already be closed
-            }
-        }
-    }
-
-    /** Focus a file viewer window. If path is provided, focuses the viewer with that path. Otherwise focuses the most recent. */
-    async function focusFileViewer(path?: string) {
-        const viewers = await getFileViewerWindows()
-        if (viewers.length === 0) return
-
-        if (path) {
-            // Emit event with path - the viewer with that path will focus itself
-            await emitToFileViewers('mcp-viewer-focus', { path })
-        } else {
-            try {
-                await viewers[0].setFocus()
-            } catch {
-                // Window may already be closed
-            }
-        }
-    }
-
-    /** Focus the main window */
-    async function focusMainWindow() {
-        try {
-            const { getCurrentWindow } = await import('@tauri-apps/api/window')
-            await getCurrentWindow().setFocus()
-        } catch {
-            // Not in Tauri environment
-        }
-    }
-
-    /** Set up menu-related event listeners */
-    async function setupMenuListeners() {
-        // Single unified listener for all menu commands routed through "execute-command"
-        try {
-            unlistenExecuteCommand = await onExecuteCommand((payload) => {
-                const { commandId } = payload
-                // The Rust menu emit (`menu_id_to_command`) and cross-window emits send a bare
-                // string across IPC; the `CommandId` union can't reach over that boundary. Narrow
-                // at the edge so a stale Rust id is dropped here rather than no-oping in the switch
-                // `default`. The Rust↔registry drift test pins the two id sets together.
-                if (isCommandId(commandId)) {
-                    // Tag the source so the dispatch core can swallow the spurious
-                    // second half of a macOS keyboard+menu double-fire (dispatch-dedup.ts).
-                    markDispatchSource('menu')
-                    void handleCommandExecute(commandId)
-                }
-            })
-        } catch {
-            // Not in a Tauri environment
-        }
-
-        // Per-pane view change from a native-menu click. Rust emits this directly
-        // (not via `execute-command`) because the CheckMenuItem already toggled
-        // its own state; the dispatch maps it onto the `view.setMode` command. The
-        // payload is validated rather than `as`-cast: an unknown `mode` is dropped,
-        // and an absent/unknown `pane` falls back to the focused pane (matching the
-        // old in-component listener's `event.payload.pane ?? focusedPane`).
-        tauriUnlistenFns.push(
-            await onViewModeChanged((payload) => {
-                const mode: ViewMode | undefined =
-                    payload.mode === 'full' || payload.mode === 'brief' ? payload.mode : undefined
-                if (!mode) return
-                const pane: 'left' | 'right' =
-                    payload.pane === 'left' || payload.pane === 'right'
-                        ? payload.pane
-                        : (explorerRef?.getFocusedPane() ?? 'left')
-                // `viewSetModeCommand` is a typed const (not an inline literal) so a
-                // registry rename breaks compilation and `cmdr/no-raw-command-dispatch`
-                // stays satisfied (A3). `fromMenu: true` → the handler skips
-                // `pushViewMenuState` (the menu already toggled its CheckMenuItem).
-                void handleCommandExecute(viewSetModeCommand, { pane, mode, fromMenu: true })
-            }),
-        )
-
-        // Native sort-menu clicks. Rust emits this directly (not via
-        // `execute-command`) with `{ action, value }`; the dispatch maps each
-        // value onto the focused-pane `sort.*` command. Validated, not `as`-cast:
-        // an unknown `action`/`value` pair is dropped.
-        tauriUnlistenFns.push(
-            await onMenuSort((payload) => {
-                const command = menuSortToCommand(payload.action, payload.value)
-                if (command) void handleCommandExecute(command)
-            }),
-        )
-    }
-
-    /** Typed id for the per-pane view command (keeps dispatch off raw literals; A3). */
-    const viewSetModeCommand: CommandId = 'view.setMode'
-
-    /**
-     * Maps a native `menu-sort` payload onto a focused-pane `sort.*` command id,
-     * or `undefined` for an unrecognized payload. `sortBy` selects the column;
-     * `sortOrder` selects ascending/descending (the menu never emits `toggle`).
-     */
-    function menuSortToCommand(action: unknown, value: unknown): CommandId | undefined {
-        if (action === 'sortBy') {
-            const byColumn: Record<string, CommandId> = {
-                name: 'sort.byName',
-                extension: 'sort.byExtension',
-                size: 'sort.bySize',
-                modified: 'sort.byModified',
-                created: 'sort.byCreated',
-            }
-            return typeof value === 'string' ? byColumn[value] : undefined
-        }
-        if (action === 'sortOrder') {
-            const byOrder: Record<string, CommandId> = {
-                asc: 'sort.ascending',
-                desc: 'sort.descending',
-                toggle: 'sort.toggleOrder',
-            }
-            return typeof value === 'string' ? byOrder[value] : undefined
-        }
-        return undefined
-    }
-
-    // Unlisten functions for MCP and dialog listeners (cleaned up on destroy, important for HMR)
+    // Unlisten functions for menu, MCP, and dialog listeners (cleaned up on
+    // destroy, important for HMR). Shared with the extracted `listener-setup.ts`
+    // helpers and with `setupMcpListeners` so every registered listener tears
+    // down through one array.
     const tauriUnlistenFns: UnlistenFn[] = []
 
-    /** Like safeListenTauri but also stores the unlisten function for cleanup. */
-    async function listenTauri(event: string, handler: (event: { payload: unknown }) => void): Promise<void> {
-        const unlisten = await safeListenTauri(event, handler)
-        if (unlisten) tauriUnlistenFns.push(unlisten)
-    }
-
-    /**
-     * Registers a typed `on*` event wrapper and stores its unlisten for cleanup.
-     * Swallows the non-Tauri-environment rejection, matching `listenTauri`.
-     */
-    async function pushTauri(register: () => Promise<UnlistenFn>): Promise<void> {
-        try {
-            tauriUnlistenFns.push(await register())
-        } catch {
-            // Not in a Tauri environment
-        }
-    }
-
-    /** Set up MCP dialog event listeners (close/focus) */
-    async function setupDialogListeners() {
-        // Settings with section (MCP-specific: "dialog open settings --section shortcuts").
-        // The Rust MCP executor (`mcp/executor/dialogs.rs`) emits `{ section: <string> }`
-        // — a BARE string, no anchor (the `dialog` tool has no anchor param, so MCP can't
-        // deep-link to a row today; that's future work). Parse defensively (no `as` cast,
-        // same discipline as `mcp-listeners.ts`) and wrap the bare string in an array.
-        await pushTauri(() =>
-            onOpenSettings((payload) => {
-                const section = payload.section || undefined
-                void openSettingsWindow(section ? [section] : undefined)
-            }),
-        )
-
-        // About dialog
-        await pushTauri(() =>
-            onCloseAbout(() => {
-                showAboutWindow = false
-            }),
-        )
-        await pushTauri(() =>
-            onFocusAbout(() => {
-                // Already shown, just ensure it's visible
-                showAboutWindow = true
-            }),
-        )
-
-        // Volume picker
-        await listenTauri('open-volume-picker', () => {
-            explorerRef?.openVolumeChooser()
-        })
-        await listenTauri('close-volume-picker', () => {
-            explorerRef?.closeVolumeChooser()
-        })
-        await listenTauri('focus-volume-picker', () => {
-            // Volume picker is handled by DualPaneExplorer
-        })
-
-        // File viewer
-        await pushTauri(() =>
-            onOpenFileViewer((payload) => {
-                if (payload.path) {
-                    // Open viewer for specific path
-                    void openFileViewer(payload.path)
-                } else {
-                    // Open viewer for cursor file
-                    void explorerRef?.openViewerForCursor()
-                }
-            }),
-        )
-        await pushTauri(() =>
-            onCloseFileViewer((payload) => {
-                void closeFileViewer(payload.path ?? undefined)
-            }),
-        )
-        await pushTauri(() =>
-            onCloseAllFileViewers(() => {
-                void closeAllFileViewers()
-            }),
-        )
-        await pushTauri(() =>
-            onFocusFileViewer((payload) => {
-                void focusFileViewer(payload.path ?? undefined)
-            }),
-        )
-
-        // Confirmation dialog - handled by DualPaneExplorer
-        await pushTauri(() =>
-            onCloseConfirmation(() => {
-                explorerRef?.closeConfirmationDialog()
-            }),
-        )
-        await pushTauri(() =>
-            onFocusConfirmation(() => {
-                // The confirmation dialog is a modal overlay in the main window.
-                // If it's open, ensure the main window is focused so the dialog is visible.
-                if (explorerRef?.isConfirmationDialogOpen()) {
-                    void focusMainWindow()
-                }
-            }),
-        )
-
-        // Debug error injection (dev mode only)
-        if (import.meta.env.DEV) {
-            await listenTauri('debug-inject-error', (event) => {
-                const { pane, friendly } = event.payload as { pane: 'left' | 'right'; friendly: FriendlyError }
-                explorerRef?.injectError(pane, friendly)
-            })
-            await listenTauri('debug-reset-error', (event) => {
-                const { pane } = event.payload as { pane: 'left' | 'right' | 'both' }
-                explorerRef?.resetError(pane)
-            })
-            await listenTauri('debug-trigger-transfer-error', (event) => {
-                const { friendly } = event.payload as { friendly: FriendlyError }
-                explorerRef?.triggerTransferError(friendly)
-            })
-        }
-
-        // E2E only: drive the native drag-and-drop drop entry programmatically.
-        // Real OS drag can't be synthesized in Playwright, so the harness emits
-        // this event to exercise OUR drop handling (the shared destination guard,
-        // source-volume resolution, and transfer dialog) through the SAME
-        // `dragDrop.handleFileDrop` the live drop branch runs. Gated on
-        // `getAppMode() === 'e2e'` (set by CMDR_E2E_MODE=1, never true in prod),
-        // so production never reacts even if the event were somehow emitted.
-        await listenTauri('e2e-trigger-file-drop', (event) => {
-            if (getAppMode() !== 'e2e') return
-            const { paths, targetPane, targetFolderPath, operation, recordedIdentity } = event.payload as {
-                paths: string[]
-                targetPane: 'left' | 'right'
-                targetFolderPath?: string
-                operation?: TransferOperationType
-                recordedIdentity?: { sourceVolumeId: string; sourcePaths: string[] }
-            }
-            explorerRef?.triggerFileDrop(paths, targetPane, targetFolderPath, operation, recordedIdentity)
-        })
-
-        // E2E only: seed settings, then re-run the "What's new" check with `force`.
-        // The boot auto-check is suppressed under E2E mode (see `maybeRunWhatsNew`),
-        // so no popup leaks into other specs. To exercise the real auto-show path,
-        // the whats-new spec emits this event with `isOnboarded: true` and an old
-        // `lastSeenVersion`; the handler seeds them and runs `maybeRunWhatsNew(true)`,
-        // the SAME trigger the boot path uses. Gated on `getAppMode() === 'e2e'`,
-        // never true in prod.
-        //
-        // The whats-new keys are seeded via `seedSettingForE2E` (cache + save, NO
-        // cross-window emit), NOT `setSetting`: the trigger then stamps
-        // `lastSeenVersion` to the current version, and a `setSetting` seed's
-        // self-echo (`settings:changed` loops back to this same window) could land
-        // AFTER the stamp and revert it. The non-emitting seed sidesteps that race,
-        // matching production where the seed comes from disk at boot, never a live
-        // emit.
-        await listenTauri('e2e-rerun-whats-new', (event) => {
-            if (getAppMode() !== 'e2e') return
-            const { isOnboarded, lastSeenVersion, showOnUpdate } = event.payload as {
-                isOnboarded: boolean
-                lastSeenVersion: string
-                showOnUpdate: boolean
-            }
-            void (async () => {
-                await saveSettings({ isOnboarded })
-                seedSettingForE2E('whatsNew.lastSeenVersion', lastSeenVersion)
-                seedSettingForE2E('whatsNew.showOnUpdate', showOnUpdate)
-                await maybeRunWhatsNew(true)
-            })()
-        })
-    }
-
+    /** `listenTauri` bound to the shared cleanup array; passed to `setupMcpListeners`. */
+    const listenTauri = makeListenTauri(tauriUnlistenFns)
 
     /** True if the user has selected text in the document (non-collapsed range). */
     function hasTextSelection(): boolean {
@@ -811,8 +454,8 @@
      * Set up Tauri event listeners for menu actions, MCP events, etc.
      */
     async function setupTauriEventListeners() {
-        await setupMenuListeners()
-        await setupDialogListeners()
+        await setupMenuListeners(listenerSetupCtx)
+        await setupDialogListeners(listenerSetupCtx)
         await setupMcpListeners({
             getExplorer: () => explorerRef,
             // The MCP adapter dispatches through the same typed command bus as the
@@ -824,7 +467,7 @@
             isAiEnabled: () => getSetting('ai.provider') !== 'off',
         })
         await initIndexState()
-        await setupWindowFocusListener()
+        await setupWindowFocusListener(listenerSetupCtx)
         // Native Quick Look (macOS) event wiring: `quick-look-closed` flips
         // `isOpen` on the state singleton; `quick-look-key` routes panel
         // keystrokes back into the focused pane (and intercepts Shift+Space
@@ -854,18 +497,6 @@
         tauriUnlistenFns.push(unlistenDragOut)
     }
 
-    /** Sync file-scoped menu items with main window focus state. */
-    async function setupWindowFocusListener() {
-        try {
-            const { getCurrentWindow } = await import('@tauri-apps/api/window')
-            unlistenWindowFocus = await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-                void activateWindowMenu(focused ? 'main' : 'other')
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-    }
-
     onDestroy(() => {
         destroyShortcutDispatch()
         destroyIndexState()
@@ -875,13 +506,8 @@
         if (handleContextMenu) {
             document.removeEventListener('contextmenu', handleContextMenu)
         }
-        if (unlistenExecuteCommand) {
-            unlistenExecuteCommand()
-        }
-        if (unlistenWindowFocus) {
-            unlistenWindowFocus()
-        }
-        // Clean up MCP and dialog listeners (prevents duplicate listeners after HMR)
+        // Clean up every menu / MCP / dialog / window-focus listener (prevents
+        // duplicate listeners after HMR). All of them register into this one array.
         for (const unlisten of tauriUnlistenFns) {
             unlisten()
         }
@@ -1055,6 +681,24 @@
         ...args: CommandDispatchArgs<K>
     ): Promise<void> {
         await dispatchCommand(commandId, commandDispatchCtx, ...args)
+    }
+
+    /**
+     * Context for the extracted `listener-setup.ts` helpers: live getters for
+     * reads, setter callbacks for writes, the shared cleanup array, and the
+     * dispatch + whats-new callbacks that stay component-owned (they touch
+     * reactive `$state`).
+     */
+    const listenerSetupCtx: ListenerSetupContext = {
+        getExplorer: () => explorerRef,
+        dispatch: handleCommandExecute,
+        unlistenFns: tauriUnlistenFns,
+        dialogs: {
+            setAboutWindow: (show: boolean) => {
+                showAboutWindow = show
+            },
+        },
+        maybeRunWhatsNew,
     }
 </script>
 
