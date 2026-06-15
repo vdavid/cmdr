@@ -66,10 +66,10 @@ Two colocated tiers per code area, enforced by checks:
 - **Every area `CLAUDE.md` has a sibling `DETAILS.md` and links it** (enforced by `claude-md-details-sibling`), so
   "should this area have a `DETAILS.md`?" is never a question: it always does. Default new content to `DETAILS.md`;
   promote a line to `CLAUDE.md` only if it clears the must-know bar. Never `@`-import `DETAILS.md` from a `CLAUDE.md`.
-- Shorthand: `D.md` / `C.md` (or `D/C.md`); D leads because D is the default home.
 - The doc graph is enforced: `docs-reachable` (every doc reachable from this file by link-walking), `docs-dead-links`
   (no broken links), and `resident-doc-budget` (the always-resident bundle, this file plus its `@`-imports plus
   `.claude/rules/`, can't silently regrow). Keep this section crisp: it's the contract every agent replicates.
+- How the doc system works and how to slim it (playbook, principles, why): [`docs/doc-system.md`](docs/doc-system.md).
 
 ## Writing voice
 
