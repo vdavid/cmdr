@@ -1,0 +1,39 @@
+---
+// Gold line-art icon. Renders a Lucide glyph (inline SVG, no per-site .svg files, no emoji) at `size`
+// pixels. Lucide glyphs stroke with `currentColor`, so the default gold comes from `color` on the
+// wrapper; pass `class` (e.g. a Tailwind `text-…`) to recolor. See icon-map.ts for the glyph registry.
+//
+// Size is set in CSS, not via width/height props: the glyph already ships `width="1.2em"`, so passing
+// width/height props would emit duplicate attributes (which html-validate's no-dup-attr rejects). The
+// CSS rule overrides the glyph's own width/height cleanly.
+import { ICONS, type IconName } from './icon-map'
+
+interface Props {
+    name: IconName
+    /** Width and height in px. */
+    size?: number
+    class?: string
+}
+
+const { name, size = 24, class: className } = Astro.props
+const Glyph = ICONS[name]
+if (!Glyph) throw new Error(`Icon "${name}" is not registered in src/components/icons/icon-map.ts`)
+---
+
+<span class:list={['icon', className]} style={`--icon-size: ${size}px`}>
+    <Glyph aria-hidden="true" />
+</span>
+
+<style>
+    .icon {
+        display: inline-flex;
+        line-height: 0;
+        color: var(--color-accent);
+        vertical-align: middle;
+    }
+
+    .icon :global(svg) {
+        width: var(--icon-size);
+        height: var(--icon-size);
+    }
+</style>

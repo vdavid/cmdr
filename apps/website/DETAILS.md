@@ -91,6 +91,43 @@ in `public/fonts/`.
   facts (pricing, features, system requirements) change. nginx serves `.md` as `text/markdown` via a dedicated location
   block in `nginx.conf`.
 
+## Icons
+
+All icons are monochrome gold line-art Lucide glyphs, inline-SVG, rendered through one `<Icon>` component. No per-site
+`.svg` files, no `~icons/*` imports outside the registry, no emoji for decorative/marker use. This mirrors the desktop
+app's `apps/desktop/src/lib/ui/icons/` system (an `<Icon>` plus a single `icon-map`), so the two apps stay aligned. The
+site used to ship ~25 hand-authored `public/icons/*.svg` (Lucide glyphs with the accent stroke baked in) plus scattered
+roadmap emoji; consolidating gives one look, one place to add a glyph, and real `currentColor` theming.
+
+How it's wired:
+
+- `unplugin-icons` + `@iconify-json/lucide` (devDeps) resolve `~icons/lucide/<name>` to inline-SVG Astro components. The
+  Vite plugin is `Icons({ compiler: 'astro' })` in `astro.config.mjs`; the `~icons/*` module type is declared in
+  `src/env.d.ts` so `astro check` resolves the imports.
+- `src/components/icons/icon-map.ts` is the ONE place `~icons/lucide/*` is imported. It exports `ICONS` (a
+  `name → glyph` registry, keyed by the Lucide kebab name) and `IconName` (the union of registered names).
+- `src/components/icons/Icon.astro` looks the name up and renders the glyph. Props: `name` (`IconName`), `size` (px,
+  default 24), `class` (passthrough). It throws on an unregistered name, so a typo fails the build.
+
+Using it:
+
+- `<Icon name="rocket" size={40} />`. Default gold comes from `.icon { color: var(--color-accent) }` plus Lucide's
+  `currentColor` stroke; recolor by passing a `class` (e.g. a Tailwind `text-[…]`).
+- When a data array feeds `<Icon name={…}>` (the `Features.astro` / `features.astro` grids), type its `icon` field as
+  `IconName` via `satisfies { …; icon: IconName }[]` so a bad name is a compile error at the data site.
+- **Size is applied as CSS `width`/`height`, never as width/height attributes.** Lucide glyphs already ship
+  `width="1.2em" height="1.2em"`; passing width/height props too emits duplicate attributes, which `html-validate`'s
+  `no-dup-attr` rejects (it runs over `dist/**/*.html`). `Icon.astro` sizes via a scoped `.icon :global(svg)` rule.
+
+Adding a glyph: find the name at [lucide.dev/icons](https://lucide.dev/icons) (it must exist in the installed
+`@iconify-json/lucide`; some are recent renames, e.g. `chart-pie` not `pie-chart`), import it from
+`~icons/lucide/<name>` in `icon-map.ts`, and register it under that kebab name. `IconName` updates automatically.
+
+Emoji policy: no emoji for decorative or marker use. The one sanctioned exception is the roadmap's Linux milestone 🐧
+(Lucide ships no penguin, and a penguin from another icon set would mean a second, off-style stroke). Genuinely tonal
+in-prose emoji (the `❤️` in the newsletter CTA, the `😅` on a roadmap note) are a deliberate copy/voice choice owned by
+a human (`AGENTS.md` principle 6), kept on purpose; don't bulk-swap those for glyphs.
+
 ## Color scheme (light/dark mode)
 
 All pages support both light and dark mode. Users can override their system preference via a theme toggle in the header.

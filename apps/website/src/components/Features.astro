@@ -1,62 +1,64 @@
 ---
 import StatusPill from './StatusPill.astro'
-import { getFeature } from '../lib/feature-status'
+import Icon from './icons/Icon.astro'
+import type { IconName } from './icons/icon-map'
+import { getFeature, type FeatureStatus } from '../lib/feature-status'
 
 const shipped = [
     {
         slug: 'full-disk-index',
-        icon: '/icons/database.svg',
+        icon: 'database',
         title: 'Live full-disk index',
         description:
             'Indexes <em>your entire drive</em> in 4 minutes. Once. Then stays current forever, even across restarts.',
     },
     {
         slug: 'local-ai',
-        icon: '/icons/sparkles.svg',
+        icon: 'sparkles',
         title: 'Private LLM included',
         description:
             'Comes with an on-device model for local, private use. Bring your own OpenAI/Anthropic/etc. API key for smarter results.',
     },
     {
         slug: 'file-explorer',
-        icon: '/icons/rocket.svg',
+        icon: 'rocket',
         title: 'Really, really fast',
         description:
             'Built in Rust. Opens a 100k-file folder in 4 seconds with icons, sizes, and dates, cold. In 1 second when warm.',
     },
     {
         slug: 'keyboard-shortcuts',
-        icon: '/icons/keyboard.svg',
+        icon: 'keyboard',
         title: 'Keyboard-first',
         description:
             'Kb-first navigate, select, copy, move, rename; menus, tabs, settings; command palette. But works with a mouse, too.',
     },
-]
+] satisfies { slug: string; icon: IconName; title: string; description: string }[]
 
 const upcoming = [
     {
         slug: 'search',
-        icon: '/icons/search.svg',
+        icon: 'search',
         title: 'Smart search',
         description: 'Find files by saying: "that PDF contract from last month" or "all my node_modules folders"',
         status: getFeature('search')?.status,
     },
     {
         slug: 'ai-rename',
-        icon: '/icons/brain.svg',
+        icon: 'brain',
         title: 'Natural language rename',
         description: 'Commands like "make these files lowercase and add date prefix". No regex, no scripts.',
         status: getFeature('ai-rename')?.status,
     },
     {
         slug: 'ai-batch',
-        icon: '/icons/zap.svg',
+        icon: 'zap',
         title: 'AI file organization',
         description:
             'Say "Clean up my Downloads folder" to get a list of move/delete suggestions you can approve/reject.',
         status: getFeature('ai-batch')?.status,
     },
-]
+] satisfies { slug: string; icon: IconName; title: string; description: string; status: FeatureStatus | undefined }[]
 ---
 
 <section id="features" class="relative px-6 py-32">
@@ -79,7 +81,7 @@ const upcoming = [
                         href={`/features#${feature.slug}`}
                         class="group relative block rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 no-underline transition-all duration-300 hover:border-[var(--color-accent)]/30 hover:bg-[var(--color-surface-elevated)]"
                     >
-                        <img src={feature.icon} alt="" class="mb-4 size-10" />
+                        <Icon name={feature.icon} size={40} class="mb-4" />
                         <h3 class="mb-2 text-xl font-semibold">{feature.title}</h3>
                         <p class="text-[var(--color-text-secondary)]" set:html={feature.description} />
                     </a>
@@ -105,7 +107,7 @@ const upcoming = [
                                 <StatusPill status={feature.status} link={false} />
                             </span>
                         )}
-                        <img src={feature.icon} alt="" class="mb-4 size-10" />
+                        <Icon name={feature.icon} size={40} class="mb-4" />
                         <h3 class="mb-2 text-xl font-semibold">{feature.title}</h3>
                         <p class="text-[var(--color-text-secondary)]" set:html={feature.description} />
                     </a>

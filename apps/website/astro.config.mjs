@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config'
 import tailwindcss from '@tailwindcss/vite'
+import Icons from 'unplugin-icons/vite'
 import rehypeExternalLinks from 'rehype-external-links'
 import remarkSmartypants from 'remark-smartypants'
 import sitemap from '@astrojs/sitemap'
@@ -41,6 +42,6 @@ export default defineConfig({
       strictPort: true,
     },
     // @ts-expect-error Vite version mismatch between Astro and Tailwind - doesn't affect build
-    plugins: [tailwindcss(), blogEditorDevServer()],
+    plugins: [tailwindcss(), Icons({ compiler: 'astro' }), blogEditorDevServer()],
   },
 })

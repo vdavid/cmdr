@@ -5,6 +5,8 @@ import Footer from '../components/Footer.astro'
 import DownloadButton from '../components/DownloadButton.astro'
 import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
 import StatusPill from '../components/StatusPill.astro'
+import Icon from '../components/icons/Icon.astro'
+import type { IconName } from '../components/icons/icon-map'
 import { features, type Feature } from '../lib/feature-status'
 
 /**
@@ -17,7 +19,7 @@ import { features, type Feature } from '../lib/feature-status'
 interface CardSpec {
     id: string
     category: 'Find stuff' | 'AI' | 'Core' | 'Keyboard' | 'Connect' | 'Extras'
-    icon: string
+    icon: IconName
     flagship?: boolean
     /** Marketing title override; defaults to the JSON name. */
     title?: string
@@ -31,52 +33,52 @@ const cards: CardSpec[] = [
     {
         id: 'full-disk-index',
         category: 'Find stuff',
-        icon: '/icons/database.svg',
+        icon: 'database',
         flagship: true,
         title: 'Live full-disk index',
         blurb: 'Indexes your whole drive in ~4 minutes, then stays current by watching real-time file system events. Folder sizes show right in the listing, and a background verifier makes sure they don\'t drift.',
     },
-    { id: 'go-to-path', category: 'Find stuff', icon: '/icons/navigation.svg' },
+    { id: 'go-to-path', category: 'Find stuff', icon: 'navigation' },
     {
         id: 'search',
         category: 'Find stuff',
-        icon: '/icons/search.svg',
+        icon: 'search',
         flagship: true,
         title: 'Smart search',
         blurb: 'Find files like "that PDF contract from last month". AI turns it into filters, see hits in a second.',
     },
-    { id: 'select-files', category: 'Core', icon: '/icons/list-checks.svg' },
+    { id: 'select-files', category: 'Core', icon: 'list-checks' },
     {
         id: 'local-ai',
         category: 'AI',
-        icon: '/icons/sparkles.svg',
+        icon: 'sparkles',
         flagship: true,
         title: 'Private LLM included',
         blurb: 'Cmdr ships with a 3B language model that runs on your Mac. Nothing leaves your machine. For a smarter AI, you can connect OpenAI/Anthropic/Google/etc., or any OpenAI-compatible endpoint.',
     },
-    { id: 'ai-rename', category: 'AI', icon: '/icons/brain.svg' },
+    { id: 'ai-rename', category: 'AI', icon: 'brain' },
     // Core
-    { id: 'file-explorer', category: 'Core', icon: '/icons/folder.svg' },
-    { id: 'file-operations', category: 'Core', icon: '/icons/copy.svg' },
-    { id: 'file-viewer', category: 'Core', icon: '/icons/eye.svg' },
-    { id: 'tabs', category: 'Core', icon: '/icons/app-window.svg' },
-    { id: 'drag-and-drop', category: 'Core', icon: '/icons/pointer.svg' },
-    { id: 'archives', category: 'Core', icon: '/icons/file-archive.svg' },
+    { id: 'file-explorer', category: 'Core', icon: 'folder' },
+    { id: 'file-operations', category: 'Core', icon: 'copy' },
+    { id: 'file-viewer', category: 'Core', icon: 'eye' },
+    { id: 'tabs', category: 'Core', icon: 'app-window' },
+    { id: 'drag-and-drop', category: 'Core', icon: 'pointer' },
+    { id: 'archives', category: 'Core', icon: 'file-archive' },
     // Details: keyboard + connectivity
-    { id: 'keyboard-shortcuts', category: 'Keyboard', icon: '/icons/keyboard.svg' },
-    { id: 'command-palette', category: 'Keyboard', icon: '/icons/square-chevron-right.svg' },
-    { id: 'network-drives', category: 'Connect', icon: '/icons/server.svg' },
-    { id: 'android-devices', category: 'Connect', icon: '/icons/smartphone.svg' },
-    { id: 'more-file-systems', category: 'Connect', icon: '/icons/cloud.svg' },
-    { id: 'windows-linux', category: 'Connect', icon: '/icons/monitor.svg' },
+    { id: 'keyboard-shortcuts', category: 'Keyboard', icon: 'keyboard' },
+    { id: 'command-palette', category: 'Keyboard', icon: 'square-chevron-right' },
+    { id: 'network-drives', category: 'Connect', icon: 'server' },
+    { id: 'android-devices', category: 'Connect', icon: 'smartphone' },
+    { id: 'more-file-systems', category: 'Connect', icon: 'cloud' },
+    { id: 'windows-linux', category: 'Connect', icon: 'monitor' },
     // AI, the rest
-    { id: 'ai-batch', category: 'AI', icon: '/icons/zap.svg' },
-    { id: 'ai-tell-me', category: 'AI', icon: '/icons/message-circle-question-mark.svg' },
+    { id: 'ai-batch', category: 'AI', icon: 'zap' },
+    { id: 'ai-tell-me', category: 'AI', icon: 'message-circle-question-mark' },
     // Extras
-    { id: 'git-browser', category: 'Extras', icon: '/icons/git-branch.svg' },
-    { id: 'download-notifications', category: 'Extras', icon: '/icons/bell.svg' },
-    { id: 'disk-space-visualizer', category: 'Extras', icon: '/icons/chart-pie.svg' },
-    { id: 'plugins', category: 'Extras', icon: '/icons/puzzle.svg' },
+    { id: 'git-browser', category: 'Extras', icon: 'git-branch' },
+    { id: 'download-notifications', category: 'Extras', icon: 'bell' },
+    { id: 'disk-space-visualizer', category: 'Extras', icon: 'chart-pie' },
+    { id: 'plugins', category: 'Extras', icon: 'puzzle' },
 ]
 
 // Completeness check: the page must place every JSON feature exactly once.
@@ -130,7 +132,7 @@ const resolved = cards.map((card) => {
                         ]}
                     >
                         <div class="flex items-center gap-2.5">
-                            <img src={card.icon} alt="" class="size-6" />
+                            <Icon name={card.icon} size={24} />
                             <h2 class="text-base font-semibold text-[var(--color-text-primary)]">{card.title}</h2>
                         </div>
                         <p class="flex-1 text-sm text-[var(--color-text-secondary)]">

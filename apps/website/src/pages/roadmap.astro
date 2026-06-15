@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro'
 import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import CheckIcon from '../components/CheckIcon.astro'
+import Icon from '../components/icons/Icon.astro'
 import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
 ---
 
@@ -32,7 +33,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Dec 25)</span>
-                        <span class="title">Start project 🎄</span>
+                        <span class="title">Start project <Icon name="party-popper" size={18} class="ml-1.5" /></span>
                         <span class="description">Create Rust + Tauri + Svelte boilerplate.</span>
                     </li>
                     <li>
@@ -94,7 +95,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Jan 10)</span>
-                        <span class="title">Ship initial release 🚢</span>
+                        <span class="title">Ship initial release <Icon name="ship" size={18} class="ml-1.5" /></span>
                         <span class="description">And created getcmdr.com!</span>
                     </li>
                     <li>
@@ -149,7 +150,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Jan 24)</span>
-                        <span class="title">Add file viewer (F3) 📄</span>
+                        <span class="title">Add file viewer (F3) <Icon name="file-text" size={18} class="ml-1.5" /></span>
                         <span class="description">Works for 10+ GB files instantly, with fast search.</span>
                     </li>
                     <li>
@@ -173,7 +174,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Jan 27)</span>
-                        <span class="title">Add local AI 🧠</span>
+                        <span class="title">Add local AI <Icon name="brain" size={18} class="ml-1.5" /></span>
                         <span class="description"
                             >Privacy-first on-device LLM, folder name suggestions, no data leaves your Mac</span
                         >
@@ -190,7 +191,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Feb 4)</span>
-                        <span class="title">Add MTP support 📱</span>
+                        <span class="title">Add MTP support <Icon name="smartphone" size={18} class="ml-1.5" /></span>
                         <span class="description">Copy files to/from Android phones and cameras very fast!</span>
                     </li>
                     <li>
@@ -249,7 +250,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Mar 11)</span>
-                        <span class="title">Add cloud AI support ☁️</span>
+                        <span class="title">Add cloud AI support <Icon name="cloud" size={18} class="ml-1.5" /></span>
                         <span class="description"
                             >15 providers incl. OpenAI, Anthropic, Gemini, xAI, OpenRouter, and Ollama</span
                         >
@@ -274,7 +275,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Apr 10)</span>
-                        <span class="title">Direct SMB connections ✨</span>
+                        <span class="title">Direct SMB connections <Icon name="sparkles" size={18} class="ml-1.5" /></span>
                         <span class="description">~4x faster file ops via native smb2 protocol, manual connections.</span>
                     </li>
                     <li>
@@ -319,7 +320,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(May 23)</span>
-                        <span class="title">AI-powered smart selection ✨</span>
+                        <span class="title">AI-powered smart selection <Icon name="sparkles" size={18} class="ml-1.5" /></span>
                         <span class="description">Support queries like "Select all error logs from last week".</span>
                     </li>
                     <li>
@@ -364,7 +365,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Jun 10)</span>
-                        <span class="title">Open beta 🚀</span>
+                        <span class="title">Open beta <Icon name="rocket" size={18} class="ml-1.5" /></span>
                         <span class="description">Feature status page, in-app Beta badges, Send feedback, anonymous usage stats.</span>
                     </li>
                     <li>
@@ -414,7 +415,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={false} />
                         <span class="title">Add plugins</span>
-                        <span class="description">Let you 🫵 extend Cmdr with your scripts and tools.</span>
+                        <span class="description">Let you extend Cmdr with your scripts and tools.</span>
                     </li>
                     <li>
                         <CheckIcon checked={false} />

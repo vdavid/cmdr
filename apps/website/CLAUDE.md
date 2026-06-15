@@ -8,6 +8,8 @@ so its markdown may use tables freely.
 
 - `src/pages/`, `src/layouts/`, `src/components/`: pages, layouts (`Layout.astro` base, `BlogLayout.astro`,
   `LegalLayout.astro`), components.
+- `src/components/icons/`: shared `<Icon name size>` glyph system (Lucide line-art). Every icon goes through it; no
+  `<img>`/raw `~icons`/decorative emoji. [DETAILS.md](DETAILS.md) § Icons.
 - `src/content/blog/{slug}/index.md`: blog posts with colocated images (schema in `src/content.config.ts`). Add a post:
   `docs/guides/writing-blog-posts.md`.
 - `src/dev/blog-editor/`: dev-only Markdown editor at `/dev/blog` (Vite middleware, not an Astro page, absent from prod
