@@ -121,6 +121,11 @@ menu is swapped wholesale via `app.set_menu()`:
   item refs stored in `MenuState` keep mutating the live menu after a swap-back.
 - The **viewer menu** is built once at startup (`build_viewer_menu`) and stored in
   `MenuState.viewer_menu`, with its `Word wrap` CheckMenuItem ref in `MenuState.viewer_word_wrap`.
+  - Its **Edit** submenu carries the full predefined Cut/Copy/Paste/Select all, not Copy-only: predefined items route
+    the native `cut:`/`copy:`/`paste:`/`selectAll:` selectors to the focused text field (the search box) through the
+    responder chain, so don't trim it back — that's what left ⌘X/⌘V dead in the viewer search field. Predefined is fine
+    here (unlike the main menu's custom Edit items above) because the viewer menu is a separate menu, never installed
+    alongside the main one, so there's no item to conflict with.
 - `MenuState.active_menu_kind` tracks which menu is installed, so a same-kind focus event (viewer →
   viewer, main → main) skips the swap entirely.
 - `"main"` and `"other"` install the main menu; `"viewer"` installs the viewer menu. After any swap
