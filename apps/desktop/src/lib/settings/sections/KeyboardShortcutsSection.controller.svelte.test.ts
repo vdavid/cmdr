@@ -27,10 +27,18 @@ const confirmDialog = vi.fn<(message: string, title: string) => Promise<boolean>
 vi.mock('$lib/shortcuts', () => ({
   getEffectiveShortcuts: (id: string) => effectiveShortcuts.get(id) ?? [],
   isShortcutModified: (id: string) => modifiedIds.has(id),
-  setShortcut: (...a: [string, number, string]) => { setShortcut(...a); },
-  addShortcut: (...a: [string, string]) => { addShortcut(...a); },
-  removeShortcut: (...a: [string, number]) => { removeShortcut(...a); },
-  resetShortcut: (...a: [string]) => { resetShortcut(...a); },
+  setShortcut: (...a: [string, number, string]) => {
+    setShortcut(...a)
+  },
+  addShortcut: (...a: [string, string]) => {
+    addShortcut(...a)
+  },
+  removeShortcut: (...a: [string, number]) => {
+    removeShortcut(...a)
+  },
+  resetShortcut: (...a: [string]) => {
+    resetShortcut(...a)
+  },
   resetAllShortcuts: () => resetAllShortcuts(),
   isMacOS: () => macOS,
   isModifierKey: (key: string) => ['Meta', 'Control', 'Alt', 'Shift'].includes(key),

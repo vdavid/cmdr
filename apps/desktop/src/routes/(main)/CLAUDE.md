@@ -20,11 +20,11 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
 ## Must-knows
 
 - **`ExplorerAPI` is the only handle.** `+page.svelte` passes a `getExplorer()` getter (not the bare `explorerRef`) into
-  `command-dispatch.ts` and `mcp-listeners.ts`, so each call reads the current ref. HMR can swap the instance or null it,
-  so every site uses `explorerRef?.…`; listeners bail or reply `ok: false`.
+  `command-dispatch.ts` and `mcp-listeners.ts`, so each call reads the current ref. HMR can swap the instance or null
+  it, so every site uses `explorerRef?.…`; listeners bail or reply `ok: false`.
 - **Adding a user-facing action** needs the id in `COMMAND_IDS`, a `command-registry.ts` entry, and a
-  `command-handlers/` handler (a missing one is a COMPILE error; handlerless ones go in `DISPATCH_EXEMPT_IDS`). Branch on
-  the `CommandId`, never the label.
+  `command-handlers/` handler (a missing one is a COMPILE error; handlerless ones go in `DISPATCH_EXEMPT_IDS`). Branch
+  on the `CommandId`, never the label.
 - **❌ Never add a handler for a per-keystroke `nav.*` id.** Per-keypress registry lookup + log + breadcrumb IPC is a P2
   perf regression; exempt by design.
 - **Dialog state lives in `+page.svelte`, not in dispatch.** `command-dispatch.ts` only flips visibility via write-only
@@ -36,8 +36,8 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
   `VolumeCapabilities` and bails for destination-side ops the pane can't satisfy. Gate on capabilities, never a
   `volumeId === 'search-results'` compare. Detail: DETAILS.md § Capability guard.
 - **`mcp-listeners.ts` validate-parses each `mcp-*` payload** and dispatches typed `CommandId` consts, so a registry
-  rename breaks compilation here. `mcp-nav-to-path` and `mcp-response` round-trips stay off the bus; see DETAILS.md
-  § MCP transport before touching it.
+  rename breaks compilation here. `mcp-nav-to-path` and `mcp-response` round-trips stay off the bus; see DETAILS.md §
+  MCP transport before touching it.
 - **New Tauri listener wiring goes in `listener-setup.ts`, not `+page.svelte`** (which is `file-length`-flagged): thread
   `$state` through `ListenerSetupContext` (getters/setters; shared `unlistenFns` for HMR cleanup). Runes-touching logic
   (keydown, onboarding, licensing) can't move. New commands get a `command-handlers/` handler, NOT a branch in the small

@@ -41,9 +41,9 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`ViewerSection.svelte`**: `Viewer`
 - **`KeyboardShortcutsSection.svelte`**: `Keyboard shortcuts`: special (non-registry) section, renders the shortcut
   table from `shortcuts.json`, plus a bespoke `Global` group hosting `lib/downloads/GlobalShortcutRow.svelte` (the
-  go-to-latest hotkey, marked `(global)`, binding stored in `settings.json` not `shortcuts.json`). Thin: markup +
-  scoped styles + the capture-phase `document` keydown listener (and its `onMount` cleanup) + the deep-link highlight
-  wiring; all business logic lives in its `*.controller.svelte.ts` (see below)
+  go-to-latest hotkey, marked `(global)`, binding stored in `settings.json` not `shortcuts.json`). Thin: markup + scoped
+  styles + the capture-phase `document` keydown listener (and its `onMount` cleanup) + the deep-link highlight wiring;
+  all business logic lives in its `*.controller.svelte.ts` (see below)
 - **`KeyboardShortcutsSection.controller.svelte.ts`**: the section's business logic behind a
   `createKeyboardShortcutsController(getSearchQuery)` factory (per-mount `$state`/`$derived`, exposed via
   getters/setters so the markup's `bind:`s stay live). Holds the keyboard-capture + conflict engine

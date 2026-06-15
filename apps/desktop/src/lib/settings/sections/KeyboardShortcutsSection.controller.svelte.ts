@@ -55,9 +55,9 @@ export interface EditingShortcut {
 
 // Plain `Set`, not `SvelteSet`: these are immutable module-level constants read
 // imperatively inside pure helpers, never reactive state to subscribe to.
- 
+
 const MAC_MODIFIER_SET = new Set(['⌘', '⌃', '⌥', '⇧'])
- 
+
 const NON_MAC_MODIFIER_SET = new Set(['Ctrl', 'Alt', 'Shift', 'Super'])
 
 /**
@@ -303,10 +303,7 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
   }
 
   async function handleResetAll() {
-    const confirmed = await confirmDialog(
-      'Reset all keyboard shortcuts to their defaults?',
-      'Reset keyboard shortcuts',
-    )
+    const confirmed = await confirmDialog('Reset all keyboard shortcuts to their defaults?', 'Reset keyboard shortcuts')
     if (confirmed) {
       await resetAllShortcuts()
     }
