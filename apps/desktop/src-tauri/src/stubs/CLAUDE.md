@@ -1,40 +1,31 @@
 # Stubs module
 
-Non-macOS/non-Linux compilation stubs for platform-specific modules.
-Linux now has real implementations for all modules: volumes (`volumes_linux/`), MTP (`mtp/`),
-network (`network/`), accent color (`accent_color_linux.rs`), and permissions (`permissions_linux.rs`).
-On other platforms (not macOS, not Linux), all stubs are used. Never compiled on macOS.
+Compilation stubs for platform-specific modules on platforms that aren't macOS and aren't Linux. Never compiled on
+macOS. Most sub-modules are gated `#[cfg(not(target_os = "linux"))]` since Linux has real implementations (volumes,
+MTP, network, accent color, permissions); `text_size.rs` is gated `#[cfg(not(target_os = "macos"))]` because the
+Accessibility text-size signal is macOS-only.
 
-## File map
+## Module map
 
-- **`mod.rs`**: Declares sub-modules; all gated with `#[cfg(not(target_os = "linux"))]` since Linux has real implementations for everything
-- **`accent_color.rs`**: `get_accent_color` returns `"#d4a006"` (brand gold fallback). Only compiled on non-macOS, non-Linux platforms.
-- **`mtp.rs`**: All MTP commands return `MtpConnectionError::NotSupported`; defines its own local `FileEntry` subset and additional stub types: `ConnectedDeviceInfo`, `MtpOperationResult`, `MtpObjectInfo`, `MtpScanResult`. Only compiled on non-macOS, non-Linux platforms.
-- **`network.rs`**: All ~20 network commands return empty results or errors; types mirror the macOS shapes for JSON compatibility. Only compiled on non-macOS, non-Linux platforms.
-- **`permissions.rs`**: `check_full_disk_access` always returns `true`; `open_privacy_settings` returns an error. Only compiled on non-macOS, non-Linux platforms.
-- **`text_size.rs`**: `get_system_text_size_multiplier` returns `1.0` (no system scaling). Compiled on non-macOS: the Sonoma+ Accessibility text-size signal is macOS-only. The user's in-app `appearance.textSize` slider still works on every platform.
-- **`volumes.rs`**: Returns root `/`, Home, and existing Desktop/Documents/Downloads; `get_volume_space` uses `libc::statvfs`; `start_volume_watcher` is a no-op. Only compiled on non-macOS, non-Linux platforms.
+- **`mod.rs`**: declares the sub-modules with the cfg gates above.
+- **`mtp.rs`**, **`network.rs`**, **`permissions.rs`**, **`accent_color.rs`**, **`volumes.rs`**: non-macOS/non-Linux
+  stubs returning empty/success values; types mirror the macOS shapes for JSON compatibility.
+- **`text_size.rs`**: non-macOS `get_system_text_size_multiplier` returns `1.0`. The in-app `appearance.textSize`
+  slider still works on every platform.
 
-## Key decisions
+Per-stub behavior is cataloged in [DETAILS.md](DETAILS.md).
 
-**Decision**: Duplicate `FileEntry` struct in `stubs/mtp.rs` instead of importing `crate::file_system::FileEntry`.
-**Why**: Stubs are compiled on platforms where the real `file_system` module may have platform-specific dependencies or conditional compilation that differs. Keeping the stub dependency-free avoids pulling in code that may not compile on the target platform, and keeps stub compilation fast by minimizing the dependency graph.
+## Invariants
 
-**Decision**: Stubs return hardcoded success values (empty vecs, `true` for permissions) rather than errors.
-**Why**: The frontend doesn't branch on platform. It calls the same commands everywhere. Returning errors would trigger error-handling UI (toast notifications, retry prompts) on unsupported platforms, confusing users. Returning empty/success means the feature silently doesn't appear, which is the correct UX for "not available on this platform."
-
-## Key patterns and gotchas
-
-- **JSON shape must match macOS.** The frontend does not branch on platform. If a macOS type gains or loses fields, the corresponding stub type needs manual alignment. This is most fragile in `stubs/mtp.rs`, which has a local `FileEntry` that mirrors `crate::file_system::FileEntry`. If the real struct changes, update the stub too.
-- **`stubs/mtp.rs` avoids importing `crate::file_system`** to keep the stub dependency-free and fast to compile. The local `FileEntry` is a deliberate duplication.
-- **`#[allow(dead_code)]`** on no-op functions (e.g., `start_volume_watcher`, `start_discovery`, `load_known_shares`) that exist only to keep the API surface symmetric with macOS for any internal callers.
-- **`libc` is the only external dependency** (used in `volumes.rs` for `statvfs`). Everything else is intentionally minimal.
-- **Do not add logic here.** Stubs must remain trivial. Real functionality belongs in platform-specific subsystem modules.
-
-## Dependencies
-
-- `libc` (`volumes.rs` only, for `statvfs`)
-- `dirs` (`volumes.rs`, for `home_dir()`)
-- Tauri runtime types (`tauri::command`, `tauri::AppHandle`, `tauri::Runtime`)
+- **JSON shape must match macOS.** The frontend doesn't branch on platform; it calls the same commands everywhere. If a
+  macOS type gains or loses a field, align the corresponding stub type by hand. Most fragile in `mtp.rs`, which keeps a
+  local `FileEntry` duplicating `crate::file_system::FileEntry`.
+- **`mtp.rs` deliberately doesn't import `crate::file_system`**: that keeps the stub dependency-free and fast to compile
+  on targets where the real module's platform-specific deps may not build. The duplicated `FileEntry` is intentional.
+- **Stubs return hardcoded success** (empty vecs, `true` for permissions), never errors: the frontend doesn't branch on
+  platform, so an error would trigger error UI; empty/success makes the feature silently not appear, the correct UX for
+  "not available here."
+- **❌ Don't add logic here.** Stubs stay trivial; real functionality belongs in the platform-specific subsystem
+  modules. `libc` (`volumes.rs` `statvfs`) and `dirs` (`volumes.rs` `home_dir`) are the only non-Tauri deps.
 
 Full details: [DETAILS.md](DETAILS.md).

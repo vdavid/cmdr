@@ -14,33 +14,31 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals:
   `recent-items/*`. Pure helpers: `enter-action.ts`, `path-pills-layout.ts`, `recent-chips-layout.ts`.
 - `query-filter-state.svelte.ts`: factory owning cross-consumer state. `filter-chips/`: chip subsystem.
 - `apply-ai-filters.ts`: shared `applySizeFromAi` / `applyDateFromAi` / `applyTypeFromAi`. `ai-summary.ts`: pure
-  `buildAiSummary()` → the `AiPromptStrip` mirror (the live chips stay truth).
+  `buildAiSummary()` → the `AiPromptStrip` mirror.
 
 ## Must-knows
 
-- **Three pieces of state are QueryDialog's alone; consumer callbacks MUST NOT write them:** `state.lastDialogEvent`
+- **Three state fields are QueryDialog's alone; consumer callbacks MUST NOT write them:** `state.lastDialogEvent`
   (drives `deriveEnterAction` + the `⏎` swap), `state.lastAiPrompt` / `lastAiCaveat`, and `state.results` / `totalCount`
-  / `cursorIndex`. Writing these from a consumer breaks the ⏎ ownership swap. Full table (and the `runQuery` /
-  `translateAi` return shapes) in DETAILS.md § Ownership contracts.
+  / `cursorIndex`. Writing them from a consumer breaks the ⏎ ownership swap. `runQuery` returns
+  `{ entries, totalCount }` and `translateAi` returns `{ caveat, highlightedFields }` only; neither touches state. Full
+  table in DETAILS.md § Ownership contracts.
 - **AI translation errors surface once, in QueryDialog, for both consumers.** The consumer's `translateAi` must let the
   typed `AiTranslateError` throw; QueryDialog catches it and calls `showAiTranslateErrorToast`. A `null` return is a
   benign empty translation, not an error. Don't re-add a per-consumer catch.
 - **`createQueryFilterState()` owns ONLY cross-consumer fields.** Adding a field, ask "would Selection care?" Yes → core
   factory; no → the consumer's extras module (`createSearchExtrasState()` etc.). `lastAiLabel` is the textbook "no".
 - **`typeFilter: 'both' | 'file' | 'folder'`** (core, default `'both'`) maps onto the existing IPC
-  `SearchQuery.isDirectory: Option<bool>` (`both → null`, `file → false`, `folder → true`): no new IPC field or schema
-  change. Mapping detail in DETAILS.md § State shape.
+  `SearchQuery.isDirectory: Option<bool>`: no new IPC field or schema change.
 - **`recordAiTranslation` (core) writes ONLY `handTyped[mode]`.** The Search-only label/pattern slots live in the extras
   and are written separately. Don't fold them into the core method.
 - **`stopPropagation()` on every dialog `keydown`** (shields the explorer behind it; otherwise keys trigger
   quick-search/nav). All `use:trapFocus` listeners run in the capture phase so this can't starve the trap.
-- **Don't wipe state from `onDestroy` / any lifecycle hook.** State survives unmount by design (the dialog mounts on
-  open, unmounts on close). The ONLY sanctioned reset is `⌘N`. Wiping on unmount turns every close+reopen into lost
-  work.
-- **Reopen re-derives results so they show immediately, not the empty state.** `hasSearched` (component-local) is seeded
-  from `getLastRunQuery() !== null`. A restored NON-AI session sets `runOnMount` to re-run; AI restored sessions must
-  NOT re-run (cloud cost), so the `onMount` gate excludes `mode === 'ai'`. Don't loosen the `mode !== 'ai'` gate. Full
-  lifecycle in DETAILS.md § `runOnMount` consumer.
+- **Don't wipe state from `onDestroy` / any lifecycle hook.** State survives unmount by design (mount on open, unmount
+  on close). The ONLY sanctioned reset is `⌘N`. Wiping on unmount turns every close+reopen into lost work.
+- **Reopen re-derives results, not the empty state.** A restored NON-AI session sets `runOnMount` to re-run; AI restored
+  sessions must NOT re-run (cloud cost). Don't loosen the `mode !== 'ai'` gate. Full lifecycle in DETAILS.md §
+  `runOnMount` consumer.
 - **⌘⏎ and ⇧⏎ are explicit no-ops** (`preventDefault`); bare Enter is the only key that runs a search or opens the
   cursor row, via `enterAction`. `⌘N` is captured before the dialog's `stopPropagation` so it doesn't reach the
   route-level new-tab handler.
@@ -55,16 +53,14 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals:
   yields `role="listbox"` with no `option` children = axe `aria-required-children` (critical). Pinned by the "searching
   with stale results" test in `QueryResults.a11y.test.ts`.
 - **Content chip is visible-disabled with NO shortcut** (`⌘4` reserved): when Content ships it claims `⌘3` and Regex
-  moves to `⌘4`.
+  moves to `⌘4`. Wiring a shortcut to a disabled control is hostile UX.
 - **AI mode never auto-applies** (cost); filename/regex auto-apply behind `search.autoApply` (default on, 1,000 ms
   debounce, IME-gated), in `scheduleSearch()`'s early-return chain.
-- **The AI translation overwrites `query` + `mode`.** Use `getLastAiPrompt()` for the original prompt; don't assume
-  `query` still holds natural-language input after an AI run.
-- **The `AiPromptStrip` is a human-readable MIRROR, never the source of truth.** `buildAiSummary()` renders current chip
-  state into the strip; the live chips stay editable. Its first-person agent voice is a SANCTIONED exception to the
-  no-first-person copy rule (alongside onboarding / About).
-- **The spinner covers the AI translate round-trip.** `runAiSearch` sets `isSearching` true BEFORE the cloud translate,
-  leaving it on through `executeQuery` (cleared in `finally`; early-returns reset it so it can't stick).
+- **AI translation overwrites `query` + `mode`.** Use `getLastAiPrompt()` for the original prompt; don't assume `query`
+  still holds natural-language input after an AI run.
+- **The `AiPromptStrip` is a human-readable MIRROR, never the source of truth** (`buildAiSummary()` renders chip state;
+  live chips stay editable). Its first-person agent voice is a SANCTIONED exception to the no-first-person copy rule
+  (alongside onboarding / About).
 - **Type-in-AI is leave-alone-if-null; size/date are reset-first. Don't "consistency-fix" this.** Each AI run resets
   `sizeFilter` / `dateFilter` to `'any'` before applying (helpers no-op on a null bound, so without the reset a prior
   run's filter leaks). Type is the deliberate asymmetry: `applyTypeFromAi` writes only on a non-null `isDirectory`, so

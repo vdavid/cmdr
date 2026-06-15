@@ -1,80 +1,32 @@
 # MTP frontend integration
 
-UI and state management for Android device file browsing via MTP (Media Transfer Protocol).
+UI and state for Android device browsing via MTP. The frontend is a passive consumer: the backend (`src-tauri/src/mtp/`)
+auto-connects devices on USB hotplug and owns all connection orchestration.
 
-## Architecture
+## Module map
 
-- **State**: `mtp-store.svelte.ts`: reactive device list, connection status, Tauri event listeners
-- **Path utils**: `mtp-path-utils.ts`: parse/construct MTP paths (`mtp://{deviceId}:{storageId}/path`)
-- **Dialog**: `PtpcameradDialog.svelte`: macOS-specific helper for `ptpcamerad` workaround (shows Terminal command)
-- **Toast**: `MtpConnectedToastContent.svelte`: sticky toast shown when an MTP device connects. Explains ptpcamerad
-  suppression (macOS) or generic info (Linux). Offers "Don't show again" checkbox and "Disable MTP..." link. Uses
-  module-level `$state` (`lastConnectedDeviceName`) set by `+layout.svelte` before `addToast()`, since the toast system
-  renders components with zero props. Gated by `fileOperations.mtpConnectionWarning` setting (default `true`).
-- **Backend**: See `src-tauri/src/mtp/` for device management, file operations, event loop
-
-## Key decisions
-
-### Path format: `mtp://{deviceId}:{storageId}/path`
-
-- `deviceId`: unique USB device identifier (vendor:product)
-- `storageId`: MTP storage ID (hex, like `0x00010001` for Internal Storage)
-- `path`: virtual filesystem path on device (for example, `/DCIM/Camera`)
-
-Multiple storages (Internal + SD Card) become separate volumes in UI. Each has distinct volume ID.
-
-### Event-driven refresh
-
-Listen to `mtp-directory-changed` events from backend. When device emits MTP `ObjectAdded/Removed/Changed`, backend
-sends event with `deviceId`. Frontend re-fetches current directory if viewing that device.
-
-### Settings toggle (`fileOperations.mtpEnabled`)
-
-MTP support can be disabled entirely from Settings > General > MTP. The toggle calls `setMtpEnabled()` (wired through
-`settings-applier.ts`), which invokes the `set_mtp_enabled` Tauri command. When disabled, all devices disconnect and
-hotplug events are ignored. The frontend is passive and reacts to `volumes-changed` events as usual.
-
-### Automatic ptpcamerad suppression (macOS)
-
-On macOS, `ptpcamerad` daemon auto-claims MTP/PTP devices. The backend now handles this automatically:
-
-1. When MTP devices are detected (watcher), backend runs `launchctl disable` + `pkill -9 ptpcamerad`
-2. Emits `mtp-ptpcamerad-suppressed` event → frontend shows a brief info toast
-3. When all MTP devices disconnect (or app exits), backend runs `launchctl enable` to restore the daemon
-4. On startup, `ensure_ptpcamerad_enabled()` runs unconditionally to recover from a previous crash
-
-If automatic suppression fails, the existing `PtpcameradDialog` (manual Terminal command) serves as a fallback.
-
-### Linux USB permission handling
-
-On Linux, USB device files need udev rules to grant user access. When `open_device()` fails with EACCES:
-
-1. Backend detects "permission denied" in the USB error string (`#[cfg(target_os = "linux")]`)
-2. Emits `mtp-permission-error` event
-3. Frontend shows `MtpPermissionDialog` with a copyable command to install udev rules and reload them
-4. User runs command, replugs device, clicks "Retry connection"
-
-The udev rules file is at `src-tauri/resources/99-cmdr-mtp.rules` (for deb/rpm packaging).
-
-### Volume trait integration
-
-MTP volumes implement the `Volume` trait. Browsing, `create_directory`, `delete`, `rename`, copy (F5), move (F6), and
-delete (F8) all route through the Volume abstraction. Clipboard operations (Cmd+C/V/X) remain blocked because the system
-clipboard requires local file paths, which MTP virtual paths can't provide, so the UI suggests F5/F6 instead.
+- `mtp-store.svelte.ts`: reactive device list + connection state; sets up the event listeners in `initialize()`
+- `mtp-path-utils.ts`: parse/construct MTP paths
+- `PtpcameradDialog.svelte` (macOS) and `MtpPermissionDialog.svelte` (Linux): manual-fix dialogs with a copyable command
+- `MtpConnectedToastContent.svelte`: sticky toast shown on connect
 
 ## Gotchas
 
-- **Backend auto-connects**: The backend watcher auto-connects MTP devices on USB hotplug. The frontend MTP store is a
-  passive consumer that tracks connection state via `mtp-device-connected`/`mtp-device-disconnected` events. It never
-  orchestrates connections.
-- **Storage ID is hex string in Tauri, number in mtp-rs**: Backend converts `u32` to hex string for frontend. Parse with
-  `parseInt(storageId, 16)` if needed.
-- **Directory cache invalidation is coarse**: Any `ObjectAdded` event invalidates entire directory cache for that
-  device. Not granular (don't know which directory changed without extra MTP calls).
-- **30-second timeout is intentional**: Some Android devices are slow (USB 2.0, old hardware). MTP operations have 30s
-  timeout, not the usual 10s.
-- **`resetForTesting()` must stay in sync with module state**: When adding new module-level state to
-  `mtp-store.svelte.ts`, update `resetForTesting()` to clear it. Tests use this instead of `vi.resetModules()` to avoid
-  ~8s module re-parse penalty per test.
+- **Path format is `mtp://{deviceId}/{storageId}/{path}`, all slashes.** `deviceId` looks like `0-5`, `storageId` is a
+  decimal number (for example `65537`). No colon separator, no hex, no vendor:product encoding. Each storage (Internal,
+  SD card) is a separate volume with its own ID.
+- **Frontend listens to exactly four events**, all in `initialize()`: `onMtpDeviceConnected`, `onMtpDeviceDisconnected`,
+  `onMtpExclusiveAccessError`, `onMtpPermissionError`. There's no directory-changed listener. Don't reintroduce one
+  without the backend emitting it.
+- **The connect toast reads module-level `$state` (`lastConnectedDeviceName`), not props**: the toast system renders
+  components with zero props, so the caller sets it via `setLastConnectedDeviceName()` before `addToast()`. Gated by the
+  `fileOperations.mtpConnectionWarning` setting (default `true`).
+- **MTP can be disabled entirely** via the `fileOperations.mtpEnabled` setting (Settings > General > MTP). When off,
+  devices disconnect and hotplug is ignored; the frontend just reacts to `volumes-changed` as usual.
+- **`resetForTesting()` must clear every module-level field.** Tests call it instead of `vi.resetModules()` to skip the
+  ~8s module re-parse penalty; new module state that it misses leaks across tests.
+- **Clipboard (Cmd+C/X/V) is blocked for MTP** because the system clipboard needs local file paths. Copy/move route
+  through the `Volume` trait (F5/F6); the UI suggests those instead.
 
-Full details: [DETAILS.md](DETAILS.md).
+Full details (storage-ID hex conversion at the IPC boundary, ptpcamerad auto-suppression flow, Linux udev rules at
+`src-tauri/resources/99-cmdr-mtp.rules`, coarse cache invalidation): [DETAILS.md](DETAILS.md).

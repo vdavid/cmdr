@@ -1,7 +1,7 @@
 # Brand assets
 
-The canonical, tracked home for Cmdr's reusable exported artifacts: the press-kit / media-kit set that the README, the
-website, AlternativeTo, the newsletter, and any new surface all pull from.
+The canonical, tracked home for Cmdr's reusable exported artifacts: the press-kit / media-kit set that the README,
+website, AlternativeTo, newsletter, and any new surface all pull from.
 
 - `logos/`: clean exported logos (`cmdr-{512,128,32}.png`), copied from the desktop app icons. The grab-here set.
 - `screenshots/`: pristine full-window product shots. `app-main-{dark,light}.png` is the master pair that feeds the

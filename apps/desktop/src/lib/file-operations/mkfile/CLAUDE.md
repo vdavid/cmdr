@@ -1,45 +1,28 @@
 # New file
 
-Shift+F4 opens a dialog to create a new empty file in the focused pane, then opens it in the default editor.
+Shift+F4 dialog (`file.newFile` command) that creates a new empty file in the focused pane. Flow narrative and design
+rationale: [DETAILS.md](DETAILS.md).
 
-Backend counterpart:
-[`apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`](../../../../src-tauri/src/file_system/write_operations/CLAUDE.md)
-(`create_file` lives directly under `write_operations`, no dedicated subdir).
+## Module map
 
-## File map
+- `NewFileDialog.svelte`: dialog UI, name validation, async conflict check, then `createFile` and `onCreated(name)`.
+- `new-file-operations.ts`: `getInitialFileName()`, extracts the full filename (with extension) from the cursor entry.
 
-- **`NewFileDialog.svelte`**: Dialog UI, name validation, async conflict check, create + open in editor
-- **`new-file-operations.ts`**: `getInitialFileName()`: extracts the full filename (with extension) from the cursor
-  entry
-- **`NewFileDialog.a11y.test.ts`**: A11y assertions
-- **`new-file-operations.test.ts`**: Pure-utility tests
+## Must-knows
 
-## How new-file flows
+- **The dialog only validates and creates; it does NOT open the editor or move the cursor.** It calls `onCreated(name)`
+  and stops. Opening the new file in the editor and landing the cursor on it happen in the parent's
+  `handleNewFileCreated` (`file-explorer/pane/dialog-state.svelte.ts`, via `moveCursorToNewFolder` and
+  `onOpenInEditor`). Editor-launch / cursor logic edits go there, not here.
+- **The pre-fill cursor offset matches `mkdir`.** `getInitialFileName` picks the backend index from
+  `paneRef.getCursorIndex()` using the same `..` + `hasParent` arithmetic as the folder dialog. Keep the two helpers in
+  lock-step, or the pre-fill reads the wrong entry.
+- **Validation uses the shared filename validators** (`validateDisallowedChars`, `validateNameLength`,
+  `validatePathLength` from `$lib/utils/filename-validation`), same as `NewFolderDialog`. Async conflict check via
+  `findFileIndex` + `getFileAt`.
+- **Extension is preserved on pre-fill** (unlike the folder dialog, which strips it): a cursor item `report.pdf` opens
+  the dialog with `report.pdf` selected. Directories and `..` pre-fill empty.
 
-1. Shift+F4 (or `file.newFile` command) opens `NewFileDialog` pre-filled with the cursor item's full filename (keeping
-   the extension for files; empty for directories and ".." entries).
-2. Validation uses the same shared validators as `NewFolderDialog`: `validateDisallowedChars`, `validateNameLength`,
-   `validatePathLength`. Async conflict check via `findFileIndex()` + `getFileAt` reports "There is already a
-   file/folder by this name in this folder."
-3. On confirm, `createFile(currentPath, name, volumeId)` creates an empty file, then `openInEditor` opens it in the
-   default text editor.
-4. Cursor lands on the new file via the shared `moveCursorToNewFolder` helper from `../mkdir/new-folder-operations.ts`
-   (the function is entry-type-agnostic; see the mkdir `setPendingCursorName` gotcha for why it works that way).
-
-## Key decisions
-
-### Simpler than `NewFolderDialog` by design
-
-- **No AI suggestions.** Users always know what filename they want; the AI panel would be noise.
-- **No timeout warning banner.** File creation is near-instant on every supported backend.
-- **Extension is preserved on pre-fill.** A cursor item named `report.pdf` opens the dialog with `report.pdf` selected
-  (folder dialog would strip the `.pdf`). The user can keep or change the extension.
-
-## Gotchas
-
-- **The pre-fill cursor offset matches `mkdir`.** Both dialogs route through the same ".." + `hasParent` arithmetic to
-  pick the backend index from `paneRef.getCursorIndex()`. Keep the two helpers in lock-step.
-- **`createFile` then `openInEditor` is a two-step IPC.** If the editor launch fails (no default app, denied), the file
-  is still created; the dialog closes successfully and the user can open it manually.
-
-Full details: [DETAILS.md](DETAILS.md).
+Backend counterpart: `create_file` lives directly under
+[`src-tauri/src/file_system/write_operations/`](../../../../src-tauri/src/file_system/write_operations/CLAUDE.md) (no
+dedicated subdir).

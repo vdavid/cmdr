@@ -1,32 +1,25 @@
 # File operations
 
-Transfer (copy/move), delete/trash, mkfile, and mkdir dialogs with progress tracking and conflict resolution.
+Umbrella over the transfer (copy/move), delete/trash, new-file, and new-folder dialogs, triggered by Shift+F4 (new
+file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete). Depth: [DETAILS.md](DETAILS.md).
 
-## Purpose
+## Module map
 
-Provides unified UI for file operations triggered by Shift+F4 (new file), F5 (copy), F6 (move), F7 (new folder), and
-F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgressDialog`, parameterized by
-`operationType: 'copy' | 'move' | 'delete' | 'trash'`.
+- [`transfer/`](transfer/CLAUDE.md): copy + move dialogs, plus `TransferProgressDialog` (reused by delete/trash,
+  parameterized by `operationType: 'copy' | 'move' | 'delete' | 'trash'`), error rendering, and shared utilities.
+- [`delete/`](delete/CLAUDE.md): F8 / Shift+F8 delete + trash confirmation dialog and pure utilities.
+- [`mkdir/`](mkdir/CLAUDE.md): F7 new-folder dialog with AI suggestions.
+- [`mkfile/`](mkfile/CLAUDE.md): Shift+F4 new-file dialog.
+- `scan-throughput.ts`: rolling-window scan-rate estimator (see below).
 
-Backend counterpart for everything in this directory:
-[`apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`](../../../src-tauri/src/file_system/write_operations/CLAUDE.md)
-(plus its [`transfer/`](../../../src-tauri/src/file_system/write_operations/transfer/CLAUDE.md) and
+## Must-knows
+
+- **`scan-throughput.ts` covers the scan phase only.** The backend `EtaEstimator` covers write phases, so `DeleteDialog`
+  and `TransferProgressDialog` use `ScanThroughput` to show `filesPerSecond` / `bytesPerSecond` during the scan. It
+  returns nulls until two samples land, clamps negative deltas to zero, and must be `reset()` between scans. Pure, no
+  Svelte / Tauri coupling.
+
+Backend counterpart for everything here:
+[`src-tauri/src/file_system/write_operations/`](../../../src-tauri/src/file_system/write_operations/CLAUDE.md) (plus its
+[`transfer/`](../../../src-tauri/src/file_system/write_operations/transfer/CLAUDE.md) and
 [`delete/`](../../../src-tauri/src/file_system/write_operations/delete/CLAUDE.md) subdirs).
-
-## Subdirs
-
-- [`transfer/CLAUDE.md`](transfer/CLAUDE.md) — copy + move dialogs, progress dialog (reused by delete/trash), error
-  rendering, scan-phase body, direction indicator, and the shared transfer utilities.
-- [`delete/CLAUDE.md`](delete/CLAUDE.md) — delete/trash confirmation dialog and pure utilities.
-- [`mkdir/CLAUDE.md`](mkdir/CLAUDE.md) — F7 new-folder dialog with AI suggestions.
-- [`mkfile/CLAUDE.md`](mkfile/CLAUDE.md) — Shift+F4 new-file dialog.
-
-## Top-level files
-
-- **`scan-throughput.ts`**: `ScanThroughput`, a tiny rolling-window estimator (default 2 s window) that turns scan-event
-  tally deltas into `filesPerSecond` / `bytesPerSecond`. Used by `DeleteDialog` and `TransferProgressDialog` to show
-  throughput during the scan phase, since `EtaEstimator` (backend) only covers write phases. Returns nulls until two
-  samples land, clamps negative deltas to zero, and resets cleanly between scans. Pure module, no Svelte/Tauri coupling.
-- **`scan-throughput.test.ts`**: Vitest tests for the estimator.
-
-Full details: [DETAILS.md](DETAILS.md).
