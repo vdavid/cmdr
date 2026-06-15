@@ -102,9 +102,9 @@
         bottom: -2px;
         right: -2px;
         display: inline-flex;
-        /* A darker accent so the badge stays legible over (gold) folder icons and accent-tinted
-           icons, where a plain --color-accent would blend in. */
-        color: var(--color-accent-dark);
+        /* Higher-contrast accent (darker than the accent in light mode, lighter in dark mode) so the
+           badge stays legible over gold/accent-tinted icons in both schemes. */
+        color: var(--color-accent-pop);
     }
 
     .symlink-badge.has-sync {

@@ -93,8 +93,9 @@ Props: `file: FileEntry`, `syncIcon?: string` (URL for sync overlay badge).
 
 - Primary: `<img>` from `getCachedIcon(file.iconId)`.
 - Fallback: emoji via `getFallbackEmoji(file)` from `file-list-utils`.
-- Symlink badge: the `link` glyph via `<Icon>` (size 10, `--color-accent-dark` so it stays legible over gold/accent
-  folder icons), bottom-right by default. Moves to top-left when `syncIcon` is also present.
+- Symlink badge: the `link` glyph via `<Icon>` (size 10, `--color-accent-pop` — a mode-aware higher-contrast accent,
+  darker in light mode and lighter in dark mode, so it stays legible over gold/accent folder icons in both schemes),
+  bottom-right by default. Moves to top-left when `syncIcon` is also present.
 - Sync badge: 10×10px `<img>` at bottom-right.
 - Reactivity: subscribes to `$iconCacheVersion` store, re-renders when the icon cache is populated.
 
