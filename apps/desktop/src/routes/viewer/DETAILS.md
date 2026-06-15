@@ -50,6 +50,14 @@ It runs `prepare()` asynchronously via `requestIdleCallback` after first render,
 `getLineTop(n)` and O(log n) `getLineAtPosition(y)`. While preparation runs (or for ByteSeek/LineIndex files), the
 viewer falls back to the existing averaged-height approach with zero regression.
 
+**Extending exact wrap to ByteSeek/LineIndex (multi-MB) is unsolved, and the obvious fix is a trap.** Counting chars per
+line in Rust and dividing by column width (`ceil(chars * charWidth / availWidth)`) does NOT give the wrapped row count:
+the viewer wraps at word boundaries (`overflow-wrap: break-word` on `.line-text`), so the ragged right edge pushes
+content into rows the division never predicts — shipping it would regress the FullLoad path pretext gets right. It's a
+pick-two-of-three (exact word wrap / a compact per-line scalar / instant local resize reflow); word-boundary wrapping
+can't be reconstructed from a per-line count, so you can't have all three. Computing the wrap in Rust (exact + compact,
+reflow needs an IPC recompute) is the most promising path. This breadcrumb replaces a deleted speculative plan.
+
 **Integration flow:** The scroll composable creates the height map and exposes `runHeightMapInitEffect` (triggers
 preparation when word wrap + lines + textWidth are available) and `runHeightMapReflowEffect` (re-layouts on width change
 with synchronous scroll compensation). The page component wires these as `$effect`s and tracks `textWidth` via a

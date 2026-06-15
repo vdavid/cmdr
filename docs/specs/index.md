@@ -48,7 +48,6 @@ Deferred future work. Unchecked by default; the folder name is the status.
 - [ ] 2026-03-10 later/db-first-listings-plan.md - Serve directory listings from the SQLite index for sub-ms navigation
 - [ ] 2026-03-10 later/dropbox-sync-status-linux.md - Detect Dropbox sync status on Linux via command socket
 - [ ] 2026-03-10 later/linux-builds-plan.md - Add Linux release build target plus website download detection
-- [ ] 2026-04-01 later/rust-word-wrap-heights-plan.md - Move viewer word-wrap height calculation from JS to Rust
 - [ ] 2026-05-10 later/totalcmd-plugin-analysis.md - Not a spec, but Total Commander packer-plugin research backing
       future archive/plugin work
 - [ ] 2026-05-29 later/disk-cleanup-advice-process.md - Not a spec, but reference notes for a future disk-cleanup advice
@@ -56,6 +55,5 @@ Deferred future work. Unchecked by default; the folder name is the status.
 - [ ] 2026-06-04 later/agent-spec.md - Persistent in-app agent proposing file operations
 - [ ] 2026-06-04 later/data-dir-rename-spec-draft.md - Rename data directories from bundle-id to plain names
 - [ ] 2026-06-10 later/codegraph-tauri-resolver.md - Teach CodeGraph to trace Cmdr's Tauri IPC boundary
-- [ ] 2026-06-11 later/viewer-horizontal-virtualization-plan.md - Horizontally virtualize long lines in the file viewer
 - [ ] 2026-06-13 later/docs-single-source-sweep.md - Multi-agent sweep to de-duplicate mechanism docs (map points, one
       canonical home)
