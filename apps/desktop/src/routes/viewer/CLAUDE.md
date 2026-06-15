@@ -21,6 +21,7 @@ FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CL
   ⌘A, bare-key dispatch)
 - **`selection.svelte.ts`**: Selection model: state + pure helpers (normalise, in-range, segment bounds, byte estimator)
 - **`line-segments.ts`**: Pure shared segmenter: merges search matches + selection bounds into render spans
+- **`viewer-search-scroll.ts`**: Pure per-axis scroll-to-match centring math (`recenterOffset`, rect-based)
 - **`viewer-pointer.ts`**: Pure caret-from-point math: `(x, y)` -> `LineOffset` with surrogate-safe sibling-offset sum
 - **`viewer-pointer-drag.svelte.ts`**: `createViewerPointerDrag`: stateful pointer / drag / context-menu controller
   (drag `pointerId`, `contextMenuPos`, autoscroll wiring, double / triple-click word/line select)
@@ -102,6 +103,8 @@ Each line is a break-if-ignored invariant. The matching DETAILS.md section carri
 - **Search error / invalid-query state is a typed `searchStatus` + sibling `searchError` string, never inspected as
   text** (no-error-string-match rule). In regex mode, line spans come from the backend's `searchMatches`, not a JS
   recompile. See [DETAILS.md](DETAILS.md) § "Search modes".
+- **`scrollToMatch` centres from the rendered `mark.active` rect, with two paths (gentle if the line row is rendered,
+  else rough-scroll + a converge loop).** Don't collapse them into an unconditional rough-scroll: that flings an
+  on-screen match to its line top on every Enter. See [DETAILS.md](DETAILS.md) § "Scroll-to-match".
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
-</content>

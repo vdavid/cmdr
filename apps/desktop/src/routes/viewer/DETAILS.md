@@ -131,6 +131,37 @@ In regex mode, `getLineMatches` reads spans straight from the backend's authorit
 recomputing them client-side; the regex compile already happened in the backend, and re-running it per line in JS would
 either duplicate work or risk a different result.
 
+## Scroll-to-match
+
+`scrollToMatch` brings the active match into view on both axes by centring its real rendered `mark.active` rect.
+`recenterOffset` (pure, in `viewer-search-scroll.ts`, unit-tested) is the per-axis math: given the mark's and the
+viewport's edges plus the current scroll offset, it returns the centring target, or `null` when the match is already
+comfortably in view (a 10% edge margin), unless `forceCenter` overrides that. Working from the rendered rect (not a
+`column * charWidth` estimate) makes it exact for word-wrapped rows and for wide-CJK / astral glyphs.
+
+Two paths, chosen by whether the match's line row is already in the DOM (`[data-line=N]` — a wrapped line is one tall
+element, so any on-screen part means the whole line, including a match below the fold, is rendered):
+
+- **Gentle (line rendered).** After `tick()` (so the `.active` class has moved to the new match), one `recenterOffset`
+  pass with `forceCenter` off. An already-visible match isn't touched, so stepping between on-screen matches doesn't
+  jump. This is the common case for small files where every line is always rendered.
+- **Ensure (line off-screen).** Rough-scroll toward the line (`getLineTop - viewportHeight/2`) so it renders, then a
+  `requestAnimationFrame` loop force-centres and re-reads the rect each frame until it's stable. The loop exists because
+  a tall wrapped line's layout is still settling on the first frame after it renders, so a single post-scroll read lands
+  the match in the wrong place.
+
+`scrollToMatch` runs on `findNext` / `findPrev`, not on the initial auto-select when results first arrive. Horizontal
+centring is skipped in word-wrap mode (no horizontal overflow). The `mark.active` lookup is scoped to the target line's
+row so a stale `.active` on a different still-mounted line can't be picked up after a cross-line jump.
+
+**Decision: centre from the DOM rect, not arithmetic. Why:** an earlier `column * charWidth` approach drifted on
+word-wrapped lines (word-boundary wrapping is not character-count division) and on non-ASCII; the rect is exact and
+already available once the line renders. The cost is async (a frame or two for layout to settle), which the
+gentle/ensure split keeps off the common on-screen path.
+
+**Guardrail:** don't replace the gentle/ensure split with an unconditional rough-scroll. Rough-scrolling a match whose
+line is already on screen flings the view to the line top on every Enter (the regression the split prevents).
+
 ## Gotchas
 
 - `$state(false)` in `.svelte.ts` triggers `@typescript-eslint/no-unnecessary-condition` because the linter doesn't know

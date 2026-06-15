@@ -322,12 +322,19 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
     menu.append(&file_menu)?;
 
     // --- Edit menu ---
+    // Predefined items carry the native cut:/copy:/paste:/selectAll: selectors, which
+    // macOS routes to the focused text field (the search box) through the responder
+    // chain. All four are needed: without Cut/Paste, ⌘X/⌘V are dead in the viewer's
+    // search input (the viewer menu is the active app menu while a viewer is focused).
     let edit_menu = Submenu::with_items(
         app,
         "Edit",
         true,
         &[
+            &PredefinedMenuItem::cut(app, None)?,
             &PredefinedMenuItem::copy(app, None)?,
+            &PredefinedMenuItem::paste(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::select_all(app, None)?,
         ],
     )?;

@@ -35,6 +35,7 @@ function emptyDeps() {
     getLineTop: (n: number) => n * 18,
     getViewportHeight: () => 600,
     getContentRef: () => undefined,
+    isWordWrap: () => false,
   }
 }
 

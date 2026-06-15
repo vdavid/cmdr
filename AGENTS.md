@@ -288,6 +288,10 @@ shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shi
 
 - Use `pnpm dev --worktree <slug>` on worktrees. Such sessions never collide. See
   [docs/tooling/instance-isolation.md](docs/tooling/instance-isolation.md) for the full breakdown.
+  - **Run it FROM the worktree dir** (`cd` into the worktree first). Vite serves whatever source tree it's launched in,
+    so `pnpm dev --worktree <slug>` from the main repo root runs **main's** frontend with only the worktree's data
+    dir/ports/Dock label. Your worktree edits then never load and the app looks unfixed (a real trap: you QA the wrong
+    code). The `--worktree` flag isolates the instance, not the source.
 - When FF-ing main, always delete the worktree+branch. Also remove the worktree's now-orphaned dev data dir
   (`~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>`): a `pnpm dev --worktree <slug>` session leaves one
   behind (often ~1 GB once its drive index builds), and nothing cleans it up when the worktree goes. They pile up fast.

@@ -9,6 +9,7 @@ import {
   type ViewerSearchStatus,
 } from '$lib/tauri-commands'
 import { segmentLine, type LineSegment, type SegmentMatchInput, type SelectionBoundsInput } from './line-segments'
+import { recenterOffset } from './viewer-search-scroll'
 
 const SEARCH_POLL_INTERVAL = 100
 
@@ -27,6 +28,8 @@ interface SearchDeps {
   getLineTop: (n: number) => number
   getViewportHeight: () => number
   getContentRef: () => HTMLDivElement | undefined
+  /** No-wrap mode only; wrap mode has no horizontal overflow to scroll. */
+  isWordWrap: () => boolean
 }
 
 export function createViewerSearch(deps: SearchDeps) {
@@ -233,8 +236,96 @@ export function createViewerSearch(deps: SearchDeps) {
     } else {
       targetLine = totalBytes > 0 ? (match.byteOffset / totalBytes) * deps.getEstimatedTotalLines() : match.line
     }
-    const targetScroll = deps.getLineTop(targetLine) - deps.getViewportHeight() / 2
-    contentRef.scrollTop = Math.max(0, targetScroll)
+    // Only do a rough scroll when the target line ISN'T already rendered. A
+    // wrapped line is one tall element, so whenever any part of it is on-screen
+    // its row exists in the DOM and we can recentre from the match's real rect
+    // without jumping to the line top first. Rough-scrolling unconditionally is
+    // what made an on-screen match jump to the start of the line on every Enter.
+    const lineRendered = Number.isInteger(targetLine) && lineRowExists(contentRef, targetLine)
+    if (lineRendered) {
+      // Line already on screen (its row exists, even if the match is below the
+      // fold of a tall wrapped line): recentre gently from the real rect, leaving
+      // an already-visible match untouched so stepping doesn't jump.
+      void recenterGently(contentRef, targetLine)
+    } else {
+      // Line off screen: rough-scroll near it so it renders, then actively
+      // converge on the match. A single post-scroll read is unreliable for a tall
+      // wrapped line whose layout is still settling, so we re-read each frame.
+      contentRef.scrollTop = Math.max(0, deps.getLineTop(targetLine) - deps.getViewportHeight() / 2)
+      void recenterUntilCentred(contentRef, targetLine)
+    }
+  }
+
+  function lineRowExists(contentRef: HTMLDivElement, line: number): boolean {
+    return contentRef.querySelector(`[data-line="${String(line)}"]`) !== null
+  }
+
+  function markSelector(targetLine: number): string {
+    return Number.isInteger(targetLine) ? `[data-line="${String(targetLine)}"] mark.active` : 'mark.active'
+  }
+
+  /** Applies one centring pass for the given mark. With `forceCenter`, returns
+   *  whether the vertical axis is already centred (within 2px) so a convergence
+   *  loop can stop; otherwise it skips axes whose match is already visible. */
+  function applyRecenter(contentRef: HTMLDivElement, mark: Element, forceCenter: boolean): boolean {
+    const view = contentRef.getBoundingClientRect()
+    const m = mark.getBoundingClientRect()
+
+    const top = recenterOffset({
+      markStart: m.top,
+      markEnd: m.bottom,
+      viewStart: view.top,
+      viewEnd: view.bottom,
+      currentScroll: contentRef.scrollTop,
+      forceCenter,
+    })
+    const verticalSettled = top === null || Math.abs(top - contentRef.scrollTop) <= 2
+    if (top !== null && !verticalSettled) contentRef.scrollTop = top
+
+    if (!deps.isWordWrap()) {
+      const left = recenterOffset({
+        markStart: m.left,
+        markEnd: m.right,
+        viewStart: view.left,
+        viewEnd: view.right,
+        currentScroll: contentRef.scrollLeft,
+        forceCenter,
+      })
+      if (left !== null && Math.abs(left - contentRef.scrollLeft) > 2) contentRef.scrollLeft = left
+    }
+    return verticalSettled
+  }
+
+  /** Gentle path: the match's line is already rendered. Centre it only if it's
+   *  out of view (an already-visible match stays put). `tick()` flushes the moved
+   *  `.active` class first. */
+  async function recenterGently(contentRef: HTMLDivElement, targetLine: number) {
+    await tick()
+    const mark = contentRef.querySelector(markSelector(targetLine))
+    if (mark) applyRecenter(contentRef, mark, false)
+  }
+
+  /** Ensure path: the line was off screen and we just rough-scrolled toward it.
+   *  Drive scrollTop to centre the match, re-reading each frame so a tall wrapped
+   *  line's still-settling layout converges instead of leaving the match stuck
+   *  off-screen. Stops once the rect is stable (or the budget runs out). */
+  async function recenterUntilCentred(contentRef: HTMLDivElement, targetLine: number) {
+    await tick()
+    const selector = markSelector(targetLine)
+    for (let frame = 0; frame < 24; frame++) {
+      await nextFrame()
+      const mark = contentRef.querySelector(selector)
+      if (!mark) continue
+      if (applyRecenter(contentRef, mark, true)) return
+    }
+  }
+
+  function nextFrame(): Promise<void> {
+    return new Promise((resolve) =>
+      requestAnimationFrame(() => {
+        resolve()
+      }),
+    )
   }
 
   function findNext() {

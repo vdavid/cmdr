@@ -260,6 +260,7 @@
         getLineTop: (n: number) => scroll.getLineTop(n),
         getViewportHeight: () => scroll.viewportHeight,
         getContentRef: () => scroll.contentRef,
+        isWordWrap: () => scroll.wordWrap,
     })
 
     const selection = createViewerSelection()
