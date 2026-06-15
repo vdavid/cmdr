@@ -94,13 +94,9 @@
         {/if}
     {/if}
     {#if kind === 'image'}
-        <span class="shortcut-hint">Click 100% / fit &middot; Scroll zoom &middot; Drag pan &middot; Esc close</span>
-    {:else if kind === 'pdf'}
-        <span class="shortcut-hint">Esc close</span>
-    {:else}
-        <span class="shortcut-hint"
-            >W wrap &middot; F tail &middot; ⌘A select all &middot; ⌘C copy &middot; ⌘F search &middot; Esc close</span
-        >
+        <span class="shortcut-hint">Click 100% / fit &middot; Scroll zoom &middot; Drag pan</span>
+    {:else if kind === 'text'}
+        <span class="shortcut-hint">W wrap &middot; F tail &middot; ⌘F search</span>
     {/if}
 </div>
 

@@ -14,7 +14,12 @@ beforeEach(() => {
   document.body.innerHTML = ''
 })
 
-function mountToolbar(props: { isIndexing: boolean; tailMode: boolean; kind?: 'text' | 'image' | 'pdf' }) {
+function mountToolbar(props: {
+  isIndexing: boolean
+  tailMode: boolean
+  kind?: 'text' | 'image' | 'pdf'
+  lastMediaKind?: 'text' | 'image' | 'pdf' | null
+}) {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(ViewerToolbar, {
@@ -22,12 +27,14 @@ function mountToolbar(props: { isIndexing: boolean; tailMode: boolean; kind?: 't
     props: {
       fileName: 'example.txt',
       kind: props.kind ?? 'text',
+      lastMediaKind: props.lastMediaKind ?? null,
       currentEncoding: 'utf8',
       detectedEncoding: 'utf8',
       encodingChoices: choices,
       isIndexing: props.isIndexing,
       tailMode: props.tailMode,
       onViewAsText: () => {},
+      onViewAsMedia: () => {},
       onEncodingChange: () => {},
       onToggleTail: () => {},
     },
@@ -50,6 +57,12 @@ describe('ViewerToolbar a11y', () => {
 
   it('media mode (image) has no a11y violations', async () => {
     const target = mountToolbar({ isIndexing: false, tailMode: false, kind: 'image' })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('media file read as text (reverse-switch picker) has no a11y violations', async () => {
+    const target = mountToolbar({ isIndexing: false, tailMode: false, kind: 'text', lastMediaKind: 'image' })
     await tick()
     await expectNoA11yViolations(target)
   })

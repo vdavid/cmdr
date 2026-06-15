@@ -33,21 +33,25 @@ FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CL
 - **`viewer-word.ts`**: Pure word-boundary finder via `Intl.Segmenter` for double-click selection
 - **`ViewerContextMenu.svelte`**: Minimal in-app right-click menu (Copy, Select all)
 - **`ViewerToolbar.svelte`**: Presentational title-bar overlay: file name, view-mode + encoding pickers, tail toggle,
-  reindexing indicator. Owns `data-tauri-drag-region`.
+  reindexing indicator. Owns `data-tauri-drag-region`. Same controls in every mode: in media mode the encoding picker
+  and tail toggle render **disabled** (not hidden) so the chrome doesn't reshuffle when switching media↔text; the
+  encoding picker shows its "Encoding" placeholder there (no decoded bytes yet).
 - **`ViewerStatusBar.svelte`**: Presentational bottom bar: line / byte counts, backend badge, word-wrap badge, shortcut
   hint. Keeps `user-select: text` (see Gotchas).
 - **`ViewerCopyDialogs.svelte`**: Presentational copy-confirm (10 to 100 MiB) and refuse (> 100 MiB) modals.
   `createViewerCopyOrchestrator` owns the copy-flow state and IPC handlers.
 - **`EncodingPicker.svelte`**: `ui/Select` with Unicode / Western `group` headings. Reactive to backend
   `EncodingChoice[]`. Detected encoding gets a "(Detected)" suffix.
-- **`ViewModePicker.svelte`**: `ui/Select` showing the detected kind (Image / PDF / Text). For media it offers "View as
-  text" (sentinel value `viewAsText` → `onViewAsText`); for text it's a single disabled "Text" option.
+- **`ViewModePicker.svelte`**: `ui/Select` showing the detected kind (Image / PDF / Text) with a two-way switch. For
+  media it offers "View as text" (sentinel `viewAsText` → `onViewAsText`); while a media file is read as text (it gets
+  `lastMediaKind`) it offers the reverse "View as image" / "View as PDF" (sentinel `viewAsMedia` → `onViewAsMedia`); a
+  genuine text file (no `lastMediaKind`) is a single disabled "Text" option.
 - **`media-view.ts`**: pure helpers for the media branch: `mediaUrl(token)` (the ONE place the `cmdr-media://localhost/`
   origin lives), `isMediaKind`, `mediaKindLabel`, `formatMediaDimensions`, and the image zoom math (`clampZoom`,
   `nextClickZoom`). Unit-tested in `media-view.test.ts`.
 - **`viewer-media.svelte.ts`**: `createViewerMedia` composable: owns the media state (`kind` / `mediaToken` /
-  `mediaDimensions`), the `isMedia` / `mediaSrc` deriveds, and the "View as text" trigger. Tested in
-  `viewer-media.svelte.test.ts`.
+  `mediaDimensions`), the `isMedia` / `mediaSrc` deriveds, the remembered natural kind (`lastMediaKind`), and the
+  two-way switch triggers (`viewAsText` / `viewAsMedia`). Tested in `viewer-media.svelte.test.ts`.
 - **`MediaImageView.svelte`**: inline `<img>` from `cmdr-media://`. Fit-by-default, click toggles 100%/fit,
   scroll/`+`/`-` zoom, drag pan, checkerboard behind transparency, spinner + friendly error states, keyboard-reachable.
 - **`MediaPdfView.svelte`**: inline `<embed type="application/pdf">` from `cmdr-media://`; WKWebView supplies
@@ -80,10 +84,15 @@ source for the origin form). `openViewerSession` hands the result to `media.setF
   the window keydown router only handles Escape in media mode (image keys live on the focused `MediaImageView` stage;
   the PDF embed owns its own). A media session has empty text fields, so don't undo these guards or the empty line code
   runs and can throw.
-- **"View as text"** (`media.viewAsText()`) resets the media state up front (so a failed re-open can't leave a dangling
-  image), then calls the page's `reopenAsText`, which opens a fresh text session via `viewerOpenAsText`, swaps to it,
-  and closes the old media session EXPLICITLY (different id). The page tears down per-session listeners first because
-  `openViewerSession` re-attaches them.
+- **Two-way switch between rendered media and raw text.** A viewer window shows exactly one file for its life, so the
+  file's natural media kind stays recoverable on the frontend: `media.setFromOpenResult` stamps `lastMediaKind` on any
+  media open, and `reset()` PRESERVES it across the switch to text. "View as text" (`media.viewAsText()`) resets the
+  media state up front (so a failed re-open can't leave a dangling image), then calls the page's `reopenAsText`. The
+  reverse "View as image / PDF" (`media.viewAsMedia()`, a no-op unless `kind === 'text' && lastMediaKind !== null`)
+  calls `reopenNatural`. Both page handlers share `reopenSession({ asText })`: it opens a fresh session via
+  `viewer_open_as_text` (text) or `viewer_open` (re-classifies → media), swaps to it, and closes the old session
+  EXPLICITLY (different id). The page tears down per-session listeners first because `openViewerSession` re-attaches
+  them. No backend change: `viewer_open` re-classification is what re-derives the media kind.
 - CSP: the `cmdr-media:` token is in `img-src` + `object-src` (`tauri.conf.json`); `viewer-media.spec.ts` locks "no
   `cmdr-media`/`img-src`/`object-src` violation". WKWebView applies EXIF orientation by default (phone photos upright).
 

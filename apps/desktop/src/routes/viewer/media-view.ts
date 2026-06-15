@@ -37,6 +37,23 @@ export function mediaKindLabel(kind: ViewerContentKind): string {
   }
 }
 
+/**
+ * The picker's reverse-switch label for a media kind: "View as image" / "View as
+ * PDF". Lowercases "image" (sentence case) but keeps "PDF" uppercase. `text` has
+ * no media render to switch to, so it falls back to a plain "View as text"-shaped
+ * string (never shown: callers only use this for a remembered media kind).
+ */
+export function viewAsMediaLabel(kind: ViewerContentKind): string {
+  switch (kind) {
+    case 'image':
+      return 'View as image'
+    case 'pdf':
+      return 'View as PDF'
+    case 'text':
+      return 'View as text'
+  }
+}
+
 /** Formats pixel dimensions for the status bar (`1,920 × 1,080`), or null when absent. */
 export function formatMediaDimensions(dimensions: MediaDimensions | null): string | null {
   if (dimensions === null) return null

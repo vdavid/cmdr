@@ -33,11 +33,13 @@ function optionByValue(target: HTMLElement, label: string, value: string): HTMLE
 interface MountOpts {
   fileName?: string
   kind?: ViewerContentKind
+  lastMediaKind?: ViewerContentKind | null
   currentEncoding?: FileEncoding
   detectedEncoding?: FileEncoding
   isIndexing?: boolean
   tailMode?: boolean
   onViewAsText?: () => void
+  onViewAsMedia?: () => void
   onEncodingChange?: (encoding: FileEncoding) => void
   onToggleTail?: () => void
 }
@@ -50,12 +52,14 @@ function mountToolbar(opts: MountOpts = {}) {
     props: {
       fileName: opts.fileName ?? 'example.txt',
       kind: opts.kind ?? 'text',
+      lastMediaKind: opts.lastMediaKind ?? null,
       currentEncoding: opts.currentEncoding ?? 'utf8',
       detectedEncoding: opts.detectedEncoding ?? 'utf8',
       encodingChoices: choices,
       isIndexing: opts.isIndexing ?? false,
       tailMode: opts.tailMode ?? false,
       onViewAsText: opts.onViewAsText ?? (() => {}),
+      onViewAsMedia: opts.onViewAsMedia ?? (() => {}),
       onEncodingChange: opts.onEncodingChange ?? (() => {}),
       onToggleTail: opts.onToggleTail ?? (() => {}),
     },
@@ -144,14 +148,17 @@ describe('ViewerToolbar', () => {
     void unmount(instance)
   })
 
-  it('hides text-only controls (encoding, tail) in media mode', async () => {
+  it('keeps the text-only controls (encoding, tail) present but disabled in media mode', async () => {
     const { target, instance } = mountToolbar({ kind: 'image' })
     await tick()
 
-    // View-mode picker stays (it carries "View as text"); encoding + tail go away.
+    // The toolbar stays consistent across modes: same controls, same places. Encoding
+    // and tail are text-only, so in media mode they render disabled rather than hidden.
     expect(triggerByLabel(target, 'View mode')).not.toBeNull()
-    expect(triggerByLabel(target, 'Encoding')).toBeNull()
-    expect(target.querySelector('.viewer-toolbar-toggle')).toBeNull()
+    expect(triggerByLabel(target, 'Encoding')?.hasAttribute('data-disabled')).toBe(true)
+    const tail = target.querySelector<HTMLButtonElement>('.viewer-toolbar-toggle')
+    expect(tail).not.toBeNull()
+    expect(tail?.disabled).toBe(true)
 
     void unmount(instance)
   })
@@ -167,6 +174,21 @@ describe('ViewerToolbar', () => {
     await tick()
 
     expect(onViewAsText).toHaveBeenCalledTimes(1)
+
+    void unmount(instance)
+  })
+
+  it('calls onViewAsMedia when the user picks "View as image" while reading a media file as text', async () => {
+    const onViewAsMedia = vi.fn()
+    const { target, instance } = mountToolbar({ kind: 'text', lastMediaKind: 'image', onViewAsMedia })
+    await tick()
+
+    triggerByLabel(target, 'View mode')?.click()
+    await tick()
+    optionByValue(target, 'View mode', 'viewAsMedia')?.click()
+    await tick()
+
+    expect(onViewAsMedia).toHaveBeenCalledTimes(1)
 
     void unmount(instance)
   })

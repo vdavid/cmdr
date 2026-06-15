@@ -88,6 +88,7 @@
      */
     const media = createViewerMedia({
         reopenAsText: () => reopenAsText(),
+        reopenNatural: () => reopenNatural(),
     })
     const isMedia = $derived(media.isMedia)
 
@@ -703,14 +704,19 @@
     }
 
     /**
-     * Page-side half of the "View as text" override (the media composable owns the
-     * trigger and the media-state reset). Opens a fresh full text session via
-     * `viewerOpenAsText`, swaps to it, and closes the old media session: we tear down
-     * the per-session listeners first (they get re-attached by `openViewerSession`)
-     * and close the old session explicitly (the new session has a different id, so
-     * window teardown alone wouldn't free the old one).
+     * Page-side half of the two-way view switch (the media composable owns the
+     * triggers and the media-state reset). Re-opens the same file and swaps to the
+     * fresh session, closing the old one: we tear down the per-session listeners
+     * first (they get re-attached by `openViewerSession`) and close the old session
+     * explicitly (the new session has a different id, so window teardown alone
+     * wouldn't free the old one).
+     *
+     * `asText: true` forces a text session ("View as text"); the default lets the
+     * backend re-classify the file back to its natural media kind ("View as image /
+     * PDF"). Both paths feed the result back through `media.setFromOpenResult` inside
+     * `openViewerSession`, so the new kind / token / dimensions flow through.
      */
-    async function reopenAsText() {
+    async function reopenSession({ asText }: { asText: boolean }, logLabel: string) {
         if (!filePath) return
         const oldSessionId = sessionId
         loading = true
@@ -720,19 +726,29 @@
         viewerTail.destroy()
         indexingPoll.stop()
         try {
-            await openViewerSession(filePath, { asText: true })
+            await openViewerSession(filePath, { asText })
             if (oldSessionId && oldSessionId !== sessionId) {
                 viewerClose(oldSessionId).catch(() => {})
             }
         } catch (e) {
             error = typeof e === 'string' ? e : isIpcError(e) ? e.message : 'Failed to read file'
             errorIsTimeout = isIpcError(e) && e.timedOut
-            log.error('View as text failed: {error}', { error: String(e) })
+            log.error('{label} failed: {error}', { label: logLabel, error: String(e) })
         } finally {
             loading = false
             await tick()
             scroll.containerRef?.focus()
         }
+    }
+
+    /** "View as text" override: re-open the media file as a full text session. */
+    function reopenAsText() {
+        return reopenSession({ asText: true }, 'View as text')
+    }
+
+    /** "View as image / PDF" reverse switch: re-open the file so it re-renders as media. */
+    function reopenNatural() {
+        return reopenSession({ asText: false }, 'View as media')
     }
 
     onMount(async () => {
@@ -837,6 +853,7 @@
     <ViewerToolbar
         {fileName}
         kind={media.kind}
+        lastMediaKind={media.lastMediaKind}
         {currentEncoding}
         {detectedEncoding}
         {encodingChoices}
@@ -844,6 +861,9 @@
         {tailMode}
         onViewAsText={() => {
             void media.viewAsText()
+        }}
+        onViewAsMedia={() => {
+            void media.viewAsMedia()
         }}
         onEncodingChange={(enc: FileEncoding) => void handleEncodingChange(enc)}
         onToggleTail={() => {

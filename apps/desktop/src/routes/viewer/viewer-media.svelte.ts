@@ -6,7 +6,9 @@
  * inline from the backend's `cmdr-media://` scheme. This composable holds the
  * media session state (`kind` / `mediaToken` / `mediaDimensions`), derives
  * whether the current session is media (`isMedia`) and the URL the `<img>` /
- * `<embed>` loads (`mediaSrc`), and orchestrates the "View as text" override.
+ * `<embed>` loads (`mediaSrc`), remembers the file's natural media kind across a
+ * switch to text (`lastMediaKind`), and orchestrates the two-way switch between
+ * the rendered media and the raw text view (`viewAsText` / `viewAsMedia`).
  *
  * It follows the same shape as the other `createViewer*` composables: getter /
  * callback deps so it reads and drives the page's reactive state without
@@ -24,6 +26,13 @@ interface ViewerMediaDeps {
    * this call; the page owns the actual session open + listener wiring.
    */
   reopenAsText: () => Promise<void>
+  /**
+   * Re-opens the file via the normal `viewer_open` path, which re-classifies it
+   * back to its natural media kind (image / PDF) and swaps the page to it. The
+   * reverse of `reopenAsText`. The page wires `setFromOpenResult` so the new
+   * media kind / token / dimensions flow back in.
+   */
+  reopenNatural: () => Promise<void>
 }
 
 export function createViewerMedia(deps: ViewerMediaDeps) {
@@ -36,6 +45,14 @@ export function createViewerMedia(deps: ViewerMediaDeps) {
   let kind = $state<ViewerContentKind>('text')
   let mediaToken = $state<string | null>(null)
   let mediaDimensions = $state<MediaDimensions | null>(null)
+  /**
+   * The file's natural media kind, remembered across a switch to text. A viewer
+   * window shows exactly one file for its life, so once we've seen it open as
+   * media, the kind stays recoverable even while the user reads it as text. This
+   * is what the text view "remembers" to offer switching back to (`viewAsMedia`).
+   * Stays `null` for a genuine text file (nothing to switch to).
+   */
+  let lastMediaKind = $state<ViewerContentKind | null>(null)
 
   const isMedia = $derived(isMediaKind(kind))
   const mediaSrc = $derived(mediaToken !== null ? mediaUrl(mediaToken) : '')
@@ -45,12 +62,14 @@ export function createViewerMedia(deps: ViewerMediaDeps) {
     kind = result.kind
     mediaToken = result.mediaToken
     mediaDimensions = result.mediaDimensions
+    if (isMediaKind(result.kind)) lastMediaKind = result.kind
   }
 
   /**
    * Resets to the text-session shape. Used up front in the "View as text"
    * override so a re-open failure can't leave a stale image rendered with no
-   * live session behind it.
+   * live session behind it. PRESERVES `lastMediaKind`: the text view needs it to
+   * offer switching back to the natural media kind.
    */
   function reset(): void {
     kind = 'text'
@@ -69,9 +88,23 @@ export function createViewerMedia(deps: ViewerMediaDeps) {
     await deps.reopenAsText()
   }
 
+  /**
+   * "View as image / PDF" reverse switch, available only while reading a media
+   * file as text. Re-opens the file via the normal `viewer_open` path, which
+   * re-classifies it back to its natural media kind. A no-op unless we're in text
+   * view of a file that was originally media (`lastMediaKind` remembers that).
+   */
+  async function viewAsMedia(): Promise<void> {
+    if (kind !== 'text' || lastMediaKind === null) return
+    await deps.reopenNatural()
+  }
+
   return {
     get kind() {
       return kind
+    },
+    get lastMediaKind() {
+      return lastMediaKind
     },
     get mediaDimensions() {
       return mediaDimensions
@@ -85,5 +118,6 @@ export function createViewerMedia(deps: ViewerMediaDeps) {
     setFromOpenResult,
     reset,
     viewAsText,
+    viewAsMedia,
   }
 }

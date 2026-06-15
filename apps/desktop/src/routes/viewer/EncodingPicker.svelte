@@ -3,19 +3,22 @@
   import type { EncodingChoice, EncodingGroup, FileEncoding } from '$lib/ipc/bindings'
 
   type Props = {
-    /** Currently active encoding (drives the selected value). */
-    value: FileEncoding
+    /** Currently active encoding (drives the selected value). Empty when there's no text
+     *  session yet (media mode), so the picker shows its `placeholder`, disabled. */
+    value: FileEncoding | ''
     /** Encoding that auto-detection picked at session open. Gets a "(Detected)" suffix. */
     detected: FileEncoding
     /** All selectable encodings, ordered for the dropdown. Backend-authoritative. */
     options: EncodingChoice[]
-    /** Whether the picker is currently disabled (for example during a rebuild). */
+    /** Whether the picker is currently disabled (for example during a rebuild, or in media mode). */
     disabled?: boolean
+    /** Shown when nothing is selected (media mode, before any text session exists). */
+    placeholder?: string
     /** Called when the user picks a different encoding. */
     onChange: (encoding: FileEncoding) => void
   }
 
-  const { value, detected, options, disabled = false, onChange }: Props = $props()
+  const { value, detected, options, disabled = false, placeholder = 'Encoding', onChange }: Props = $props()
 
   /** Heading text for each backend group discriminator. */
   const groupToHeadingMap: Record<EncodingGroup, string> = {
@@ -41,4 +44,4 @@
   }
 </script>
 
-<Select {items} {value} {disabled} ariaLabel="Encoding" onChange={handleChange} />
+<Select {items} {value} {disabled} {placeholder} ariaLabel="Encoding" onChange={handleChange} />

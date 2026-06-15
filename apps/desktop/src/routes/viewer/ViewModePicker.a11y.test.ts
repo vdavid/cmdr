@@ -8,10 +8,13 @@ beforeEach(() => {
   document.body.innerHTML = ''
 })
 
-function mountPicker(kind: 'text' | 'image' | 'pdf' = 'text') {
+function mountPicker(kind: 'text' | 'image' | 'pdf' = 'text', lastMediaKind: 'text' | 'image' | 'pdf' | null = null) {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  const instance = mount(ViewModePicker, { target, props: { kind, onViewAsText: () => {} } })
+  const instance = mount(ViewModePicker, {
+    target,
+    props: { kind, lastMediaKind, onViewAsText: () => {}, onViewAsMedia: () => {} },
+  })
   return { target, instance }
 }
 
@@ -32,11 +35,11 @@ describe('ViewModePicker accessibility', () => {
     void unmount(instance)
   })
 
-  it('surfaces its disabled state to AT', async () => {
-    // Only one mode ships today; the picker is disabled. Pin the contract so a
-    // future "make it look enabled" refactor can't silently drop the disabled
-    // announcement. Ark reflects it as `data-disabled` plus `disabled` on the
-    // trigger button.
+  it('surfaces its disabled state to AT for a genuine text file', async () => {
+    // A genuine text file (no remembered media kind) has nothing to switch to, so
+    // the picker is disabled. Pin the contract so a future "make it look enabled"
+    // refactor can't silently drop the disabled announcement. Ark reflects it as
+    // `data-disabled` plus `disabled` on the trigger button.
     const { target, instance } = mountPicker()
     await tick()
 
@@ -44,6 +47,13 @@ describe('ViewModePicker accessibility', () => {
     expect(trigger).not.toBeNull()
     expect(trigger?.hasAttribute('data-disabled')).toBe(true)
 
+    void unmount(instance)
+  })
+
+  it('has no a11y violations on the enabled reverse-switch picker (media file read as text)', async () => {
+    const { target, instance } = mountPicker('text', 'image')
+    await tick()
+    await expectNoA11yViolations(target)
     void unmount(instance)
   })
 

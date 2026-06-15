@@ -22,8 +22,14 @@
     interface Props {
         /** File name shown in the flexible middle of the bar. */
         fileName: string
-        /** Detected content kind. Media kinds hide the text-only controls (encoding, tail). */
+        /** Detected content kind. Media kinds disable the text-only controls (encoding, tail). */
         kind: ViewerContentKind
+        /**
+         * The file's natural media kind, remembered across a switch to text. Lets the
+         * view-mode picker offer the reverse "View as image / PDF" switch while a media
+         * file is read as text. Null for a genuine text file.
+         */
+        lastMediaKind: ViewerContentKind | null
         /** Currently active encoding. */
         currentEncoding: FileEncoding
         /** Encoding auto-detection picked at open time. Gets a "(Detected)" suffix. */
@@ -36,6 +42,8 @@
         tailMode: boolean
         /** Called when the user picks "View as text" on a media file. */
         onViewAsText: () => void
+        /** Called when the user picks "View as image / PDF" from the text view of a media file. */
+        onViewAsMedia: () => void
         /** Called when the user picks a different encoding. */
         onEncodingChange: (encoding: FileEncoding) => void
         /** Called when the user toggles tail mode. */
@@ -45,12 +53,14 @@
     const {
         fileName,
         kind,
+        lastMediaKind,
         currentEncoding,
         detectedEncoding,
         encodingChoices,
         isIndexing,
         tailMode,
         onViewAsText,
+        onViewAsMedia,
         onEncodingChange,
         onToggleTail,
     }: Props = $props()
@@ -61,32 +71,34 @@
 <header class="viewer-toolbar" data-tauri-drag-region>
     <span class="viewer-toolbar-title" data-tauri-drag-region>{fileName}</span>
     <div class="viewer-toolbar-pickers">
-        <ViewModePicker {kind} {onViewAsText} />
-        {#if !isMedia}
-            <!-- Encoding, tail, and the reindexing indicator are text-only; a media
-                 session has no decoded bytes / line index, so they're hidden. -->
-            <EncodingPicker
-                value={currentEncoding}
-                detected={detectedEncoding}
-                options={encodingChoices}
-                disabled={isIndexing}
-                onChange={onEncodingChange}
-            />
-            <button
-                type="button"
-                class="viewer-toolbar-toggle"
-                class:active={tailMode}
-                role="switch"
-                aria-checked={tailMode}
-                aria-label="Tail mode: follow file changes"
-                onclick={onToggleTail}
-                use:tooltip={{ text: 'Auto-follow file changes', shortcut: 'F' }}
-            >
-                Tail
-            </button>
-            {#if isIndexing}
-                <span class="viewer-toolbar-indexing" role="status" aria-live="polite">Reindexing…</span>
-            {/if}
+        <!-- The toolbar stays consistent across modes: the same controls in the same
+             places. Encoding and tail are text-only, so in media mode they render
+             DISABLED rather than disappearing (no chrome reshuffle when switching
+             between rendered media and raw text). The encoding picker shows its
+             "Encoding" placeholder there, since a media session has no decoded bytes. -->
+        <ViewModePicker {kind} {lastMediaKind} {onViewAsText} {onViewAsMedia} />
+        <EncodingPicker
+            value={isMedia ? '' : currentEncoding}
+            detected={detectedEncoding}
+            options={encodingChoices}
+            disabled={isMedia || isIndexing}
+            onChange={onEncodingChange}
+        />
+        <button
+            type="button"
+            class="viewer-toolbar-toggle"
+            class:active={tailMode}
+            role="switch"
+            aria-checked={tailMode}
+            aria-label="Tail mode: follow file changes"
+            disabled={isMedia}
+            onclick={onToggleTail}
+            use:tooltip={{ text: 'Auto-follow file changes', shortcut: 'F' }}
+        >
+            Tail
+        </button>
+        {#if isIndexing}
+            <span class="viewer-toolbar-indexing" role="status" aria-live="polite">Reindexing…</span>
         {/if}
     </div>
 </header>
@@ -155,8 +167,13 @@
         transition: all var(--transition-base);
     }
 
-    .viewer-toolbar-toggle:hover {
+    .viewer-toolbar-toggle:hover:not(:disabled) {
         background: var(--color-bg-secondary);
+    }
+
+    .viewer-toolbar-toggle:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
     .viewer-toolbar-toggle:focus-visible {

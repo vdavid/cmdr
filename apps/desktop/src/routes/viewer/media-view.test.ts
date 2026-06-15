@@ -4,6 +4,7 @@ import {
   mediaUrl,
   isMediaKind,
   mediaKindLabel,
+  viewAsMediaLabel,
   formatMediaDimensions,
   clampZoom,
   nextClickZoom,
@@ -35,6 +36,13 @@ describe('mediaKindLabel', () => {
     expect(mediaKindLabel('text')).toBe('Text')
     expect(mediaKindLabel('image')).toBe('Image')
     expect(mediaKindLabel('pdf')).toBe('PDF')
+  })
+})
+
+describe('viewAsMediaLabel', () => {
+  it('builds the reverse-switch label: sentence case, but PDF stays uppercase', () => {
+    expect(viewAsMediaLabel('image')).toBe('View as image')
+    expect(viewAsMediaLabel('pdf')).toBe('View as PDF')
   })
 })
 
