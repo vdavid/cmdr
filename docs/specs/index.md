@@ -37,8 +37,9 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
       switcher
 - [ ] 2026-06-14 viewer-media-plan.md - Render images (incl. HEIC, SVG) and PDFs inline in the File viewer via
       WKWebView, no Rust decoder
-- [ ] 2026-06-15 doc-context-diet-plan.md - Shrink the resident agent-doc bundle: re-home desktop content, ratchet
-      CLAUDE.md to 600, mandate sibling DETAILS.md, diet the rules, enforce with checks
+- [x] 2026-06-15 doc-context-diet-plan.md - Shrank the resident agent-doc bundle (9.5k → 2k words): re-homed desktop
+      content, ratcheted CLAUDE.md toward 600, mandated sibling DETAILS.md, dieted the rules to path-scoped homes,
+      enforced with checks (details-sibling, resident-doc-budget, dead-links)
 
 ## Later
 
