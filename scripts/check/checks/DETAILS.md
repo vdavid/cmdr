@@ -185,9 +185,13 @@ below for the section-aware patterns to follow.
 }
 ```
 
+- The scanner enumerates git-tracked files only (`git ls-files -z` from the repo root), so gitignored or untracked
+  generated output (a built `dist-analytics/` page, say) is excluded for free without any per-path skip rule. Outside a
+  git work tree (a throwaway test dir) it falls back to a filesystem walk with the `fileLengthSkipDirs` exact-name skip
+  set. So `exempt` is for generated files that ARE tracked; a gitignored generated file needs no entry at all.
 - `files` entries suppress the warning up to the recorded line count plus a 10% growth buffer; beyond that the file is
   reported with current and allowed counts plus growth percentage.
-- `exempt` entries never warn (generated files whose length is not actionable); each needs a reason.
+- `exempt` entries never warn (tracked generated files whose length is not actionable); each needs a reason.
 - New files not in either section are reported normally.
 - If the allowlist file is missing, all long files are reported (backwards-compatible).
 

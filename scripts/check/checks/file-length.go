@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -117,45 +118,92 @@ type fileLengthScanResult struct {
 	allowlistedCount int
 }
 
-// scanFileLengths walks the repo and collects files exceeding the threshold.
+// scanFileLengths collects source files exceeding the threshold. It enumerates
+// git-tracked files (so gitignored/untracked generated output is excluded for
+// free), falling back to a filesystem walk outside a git work tree (e.g. tests
+// against a throwaway dir). Each candidate is filtered by extension, line count,
+// and the allowlist; a tracked file that's locally deleted is skipped silently.
 func scanFileLengths(rootDir string, allowlist fileLengthAllowlist) (fileLengthScanResult, error) {
-	var result fileLengthScanResult
+	relPaths, ok := gitTrackedFiles(rootDir)
+	if !ok {
+		var err error
+		relPaths, err = walkSourceFiles(rootDir)
+		if err != nil {
+			return fileLengthScanResult{}, err
+		}
+	}
 
+	var result fileLengthScanResult
+	for _, relPath := range relPaths {
+		if !fileLengthSourceExtensions[filepath.Ext(relPath)] {
+			continue
+		}
+		absPath := filepath.Join(rootDir, relPath)
+		lineCount, err := countLines(absPath)
+		if err != nil || lineCount < fileLengthWarnLines {
+			continue
+		}
+		if _, exempt := allowlist.Exempt[relPath]; exempt {
+			result.allowlistedCount++
+			continue
+		}
+		if allowedLines, ok := allowlist.Files[relPath]; ok && lineCount <= allowedLines*(100+fileLengthAllowlistBufferPct)/100 {
+			result.allowlistedCount++
+			continue
+		}
+		info, err := os.Stat(absPath)
+		if err != nil {
+			continue
+		}
+		result.longFiles = append(result.longFiles, longFile{relPath: relPath, lines: lineCount, sizeBytes: info.Size()})
+	}
+	return result, nil
+}
+
+// gitTrackedFiles returns every tracked file as a repo-relative, forward-slashed
+// path. Returns (nil, false) when rootDir isn't a git work tree, so the caller
+// can fall back to a filesystem walk. Tracked-only (no `--others`) is the whole
+// point: gitignored and untracked generated output never reaches the scanner.
+func gitTrackedFiles(rootDir string) ([]string, bool) {
+	cmd := exec.Command("git", "-C", rootDir, "ls-files", "-z")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, false
+	}
+	var files []string
+	for rel := range strings.SplitSeq(string(out), "\x00") {
+		if rel != "" {
+			files = append(files, rel)
+		}
+	}
+	return files, true
+}
+
+// walkSourceFiles is the non-git fallback: a filesystem walk returning every
+// source file as a repo-relative path, skipping hidden and vendored/generated
+// dirs by name. Less precise than the git enumeration (exact-name skip set, not
+// gitignore-aware), but it only runs outside a git work tree.
+func walkSourceFiles(rootDir string) ([]string, error) {
+	var files []string
 	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
 		if d.IsDir() {
 			name := d.Name()
-			if strings.HasPrefix(name, ".") || fileLengthSkipDirs[name] {
+			if path != rootDir && (strings.HasPrefix(name, ".") || fileLengthSkipDirs[name]) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if !fileLengthSourceExtensions[filepath.Ext(d.Name())] {
+		relPath, relErr := filepath.Rel(rootDir, path)
+		if relErr != nil {
 			return nil
 		}
-		lineCount, err := countLines(path)
-		if err != nil || lineCount < fileLengthWarnLines {
-			return nil
-		}
-		relPath, _ := filepath.Rel(rootDir, path)
-		if _, exempt := allowlist.Exempt[relPath]; exempt {
-			result.allowlistedCount++
-			return nil
-		}
-		if allowedLines, ok := allowlist.Files[relPath]; ok && lineCount <= allowedLines*(100+fileLengthAllowlistBufferPct)/100 {
-			result.allowlistedCount++
-			return nil
-		}
-		info, err := d.Info()
-		if err != nil {
-			return nil
-		}
-		result.longFiles = append(result.longFiles, longFile{relPath: relPath, lines: lineCount, sizeBytes: info.Size()})
+		files = append(files, filepath.ToSlash(relPath))
 		return nil
 	})
-	return result, err
+	return files, err
 }
 
 // formatLongFiles builds the warning message listing long files.

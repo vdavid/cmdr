@@ -3,6 +3,7 @@ package checks
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -118,6 +119,51 @@ func TestRunFileLength_DetectsLongFiles(t *testing.T) {
 	}
 	if strings.Contains(result.Message, "long.txt") {
 		t.Errorf("expected message to NOT contain 'long.txt' (non-source), got: %s", result.Message)
+	}
+}
+
+// TestRunFileLength_SkipsGitignoredFiles is the core contract: inside a git work
+// tree the scanner enumerates tracked files only, so a gitignored long source
+// file (e.g. generated build output under dist-analytics/) never warns, while a
+// tracked long file still does. This is gitignore-aware for free, not a hardcoded
+// skip set.
+func TestRunFileLength_SkipsGitignoredFiles(t *testing.T) {
+	tmp := t.TempDir()
+	gitInit(t, tmp)
+
+	if err := os.WriteFile(filepath.Join(tmp, ".gitignore"), []byte("generated/\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	tracked := filepath.Join(tmp, "tracked.go")
+	if err := os.WriteFile(tracked, []byte(strings.Repeat("line\n", 900)), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	genDir := filepath.Join(tmp, "generated")
+	if err := os.MkdirAll(genDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// A gitignored, long source file: present on disk but never tracked.
+	if err := os.WriteFile(filepath.Join(genDir, "build.html"), []byte(strings.Repeat("line\n", 2400)), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Only tracked.go gets added to the index; the generated tree stays ignored.
+	gitRun(t, tmp, "add", ".gitignore", "tracked.go")
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultWarning {
+		t.Fatalf("expected warning for the tracked long file, got code %d: %s", result.Code, result.Message)
+	}
+	if !strings.Contains(result.Message, "tracked.go") {
+		t.Errorf("expected tracked.go in message, got: %s", result.Message)
+	}
+	if strings.Contains(result.Message, "build.html") {
+		t.Errorf("expected gitignored build.html to be excluded, got: %s", result.Message)
 	}
 }
 
@@ -518,5 +564,23 @@ func TestRunFileLength_CIReportsStaleWithoutRewriting(t *testing.T) {
 	reloaded := loadFileLengthAllowlist(tmp)
 	if _, ok := reloaded.Files["gone.go"]; !ok {
 		t.Error("expected allowlist untouched in CI mode")
+	}
+}
+
+// gitInit creates a minimal git work tree at dir so the scanner takes its
+// tracked-files path instead of the filesystem-walk fallback.
+func gitInit(t *testing.T, dir string) {
+	t.Helper()
+	gitRun(t, dir, "init", "-q")
+	gitRun(t, dir, "config", "user.email", "test@example.com")
+	gitRun(t, dir, "config", "user.name", "test")
+}
+
+// gitRun runs a git subcommand at dir, failing the test on error.
+func gitRun(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
 	}
 }
