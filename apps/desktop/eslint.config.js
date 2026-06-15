@@ -32,6 +32,7 @@ import noErrorStringMatch from './eslint-plugins/no-error-string-match.js'
 import noRawTauriInvoke from './eslint-plugins/no-raw-tauri-invoke.js'
 import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
+import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
 import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
 import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
 
@@ -239,6 +240,7 @@ export default tseslint.config(
           'no-raw-tauri-invoke': noRawTauriInvoke,
           'no-explorer-state-writes': noExplorerStateWrites,
           'no-raw-command-dispatch': noRawCommandDispatch,
+          'no-raw-lucide-import': noRawLucideImport,
           'dialog-needs-focus-trap': dialogNeedsFocusTrap,
         },
       },
@@ -248,6 +250,7 @@ export default tseslint.config(
       'cmdr/no-raw-tauri-invoke': 'error',
       'cmdr/no-explorer-state-writes': 'error',
       'cmdr/no-raw-command-dispatch': 'error',
+      'cmdr/no-raw-lucide-import': 'error',
       'cmdr/dialog-needs-focus-trap': 'error',
     },
   },

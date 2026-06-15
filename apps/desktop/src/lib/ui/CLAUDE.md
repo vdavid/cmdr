@@ -13,8 +13,8 @@ the toast-level guide, and decisions are in [DETAILS.md](DETAILS.md).
   `StatusBadge`, `SectionCard`, `ToggleGroup`, `Popover`, `FilterPopover`, `Chip`, plus the `toast/` system. Tooltip
   lives in `../tooltip/tooltip.ts`.
 - **Render glyphs via `Icon`, spinners via `Spinner`; don't import `~icons/lucide/*` or hand-roll a ring.** Add new
-  glyphs to `icons/icon-map.ts` (the one place lucide is imported). Both surface in the Debug "Graphics" catalog. See
-  `docs/guides/icons.md`.
+  glyphs to `icons/icon-map.ts` (the one place lucide is imported, enforced by `cmdr/no-raw-lucide-import`). Both
+  surface in the Debug "Graphics" catalog. See `docs/guides/icons.md`.
 - Ark UI (`@ark-ui/svelte`) is the headless library for complex interactive components; simple ones are our own thin
   wrappers.
 
