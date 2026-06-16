@@ -5,6 +5,7 @@
 
 import type { DateTimeFormat, FileSizeFormat, FileSizeUnit } from './types'
 import { tierForYear, tierForMonth, tierForDay, tierForTime, type AgeTierClass } from './age-tier-utils'
+import { getLocale } from '$lib/intl/locale'
 import { getNumberFormatter } from '$lib/intl/number-format'
 
 /**
@@ -216,11 +217,12 @@ function ageClassForIntlPart(type: Intl.DateTimeFormatPartTypes, tiers: Componen
 }
 
 /**
- * Lazily constructed `Intl.DateTimeFormat` for the `'system'` format. The
- * instance depends only on the runtime locale + options, both of which are
- * stable for the life of the page, so one formatter serves every call.
+ * Lazily constructed `Intl.DateTimeFormat` for the `'system'` format, keyed on
+ * the active locale from the `lib/intl` chokepoint. One formatter serves every
+ * call for a given locale; it rebuilds only when the locale changes.
  * Constructing one per call is ~10× the cost of `formatToParts` itself, which
- * adds up across virtualized file-list re-renders.
+ * adds up across virtualized file-list re-renders, so the cache is load-bearing
+ * for hot scroll.
  *
  * We request fixed-width components (`2-digit` month/day/hour/minute, numeric
  * year) rather than `dateStyle: 'short'`, which in many locales drops the
@@ -230,16 +232,19 @@ function ageClassForIntlPart(type: Intl.DateTimeFormatPartTypes, tiers: Componen
  * the native format, just padded. The hour-cycle is left to the locale.
  */
 let systemLocaleFormatter: Intl.DateTimeFormat | null = null
+let systemLocaleFormatterLocale: string | null = null
 
 function getSystemLocaleFormatter(): Intl.DateTimeFormat {
-  if (systemLocaleFormatter === null) {
-    systemLocaleFormatter = new Intl.DateTimeFormat(undefined, {
+  const locale = getLocale()
+  if (systemLocaleFormatter === null || systemLocaleFormatterLocale !== locale) {
+    systemLocaleFormatter = new Intl.DateTimeFormat(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
     })
+    systemLocaleFormatterLocale = locale
   }
   return systemLocaleFormatter
 }

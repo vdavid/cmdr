@@ -115,6 +115,39 @@ describe('formatDateForDisplay: segments (system)', () => {
   })
 })
 
+describe("formatDateForDisplay: 'system' follows the locale chokepoint", () => {
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  it('switches the system date to the active locale (de-DE) without touching iso/short/custom', () => {
+    _setLocaleForTests('de-DE')
+    const expectedDe = new Intl.DateTimeFormat('de-DE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+      .formatToParts(fixedDate)
+      .map((p) => p.value)
+      .join('')
+    expect(formatDateForDisplay(timestamp, 'system', '', NOW_MS).text).toBe(expectedDe)
+
+    // The fixed-token formats are locale-independent BY DESIGN: unchanged under de-DE.
+    expect(formatDateForDisplay(timestamp, 'iso', '', NOW_MS).text).toBe('2024-03-15 14:30')
+    expect(formatDateForDisplay(timestamp, 'short', '', NOW_MS).text).toBe('03/15 14:30')
+    expect(formatDateForDisplay(timestamp, 'custom', 'YYYY/MM/DD HH:mm:ss', NOW_MS).text).toBe('2024/03/15 14:30:45')
+  })
+
+  it('uses a stable cached instance across calls (one formatter per locale)', () => {
+    _setLocaleForTests('de-DE')
+    const a = formatDateForDisplay(timestamp, 'system', '', NOW_MS).text
+    const b = formatDateForDisplay(timestamp, 'system', '', NOW_MS).text
+    expect(a).toBe(b)
+  })
+})
+
 describe('formatDateForDisplay: per-component ageClass', () => {
   it('colors year, month, day, time as fresh when the file is "today" relative to now', () => {
     // The timestamp is 2024-03-15 14:30:45 local; NOW_MS is 2024-03-16 14:30:45.
