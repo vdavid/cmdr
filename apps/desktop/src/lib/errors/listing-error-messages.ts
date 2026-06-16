@@ -80,6 +80,7 @@ export type ListingErrorReason =
   | { reason: 'emptyRootICloud' }
 
 /** Maps a classified listing reason to its user-facing message (verbatim copy). */
+// eslint-disable-next-line complexity -- one flat arm per listing reason; the high branch count is the taxonomy size, by design (1:1 reason→message). Splitting would scatter the verbatim copy.
 export function getListingErrorMessage(r: ListingErrorReason): FriendlyErrorMessage {
   switch (r.reason) {
     // ── errno: transient ──
@@ -88,8 +89,7 @@ export function getListingErrorMessage(r: ListingErrorReason): FriendlyErrorMess
         title: 'Interrupted',
         message:
           'A system operation was interrupted before it could finish. This is almost always a one-off, caused by a signal or background process momentarily getting in the way.',
-        suggestion:
-          'Navigate here again to retry. This kind of interruption almost never happens twice in a row.',
+        suggestion: 'Navigate here again to retry. This kind of interruption almost never happens twice in a row.',
       }
     case 'notEnoughMemory':
       return {
@@ -221,8 +221,7 @@ export function getListingErrorMessage(r: ListingErrorReason): FriendlyErrorMess
         title: 'Cross-device operation',
         message:
           "Cmdr can't move this item directly because the source and destination are on different volumes (for example, an internal drive and a USB stick). Moving across volumes requires copying the data and then removing the original.",
-        suggestion:
-          'Copy the item to the destination instead of moving it. Cmdr will handle the copy automatically.',
+        suggestion: 'Copy the item to the destination instead of moving it. Cmdr will handle the copy automatically.',
       }
     case 'notAFolder':
       return {
@@ -324,16 +323,14 @@ export function getListingErrorMessage(r: ListingErrorReason): FriendlyErrorMess
     case 'authRequiredEneedauth':
       return {
         title: 'Authentication required',
-        message:
-          'This volume requires you to log in, but no credentials have been provided yet.',
+        message: 'This volume requires you to log in, but no credentials have been provided yet.',
         suggestion:
           "Here's what to try:\n- Disconnect and reconnect the volume in Finder\n- Enter your username and password when prompted\n- If you're not sure about the credentials, check with the server's administrator",
       }
     case 'devicePoweredOff':
       return {
         title: 'Device powered off',
-        message:
-          "The device is powered off or in a deep sleep state, so Cmdr can't communicate with it.",
+        message: "The device is powered off or in a deep sleep state, so Cmdr can't communicate with it.",
         suggestion: 'Turn on the device, wait for it to fully start up, then navigate here again.',
       }
     case 'attributeNotFound':
@@ -476,7 +473,7 @@ export function getListingErrorMessage(r: ListingErrorReason): FriendlyErrorMess
       return {
         title: 'iCloud Drive looks empty',
         message: expandSystemStrings(
-          'Cmdr opened iCloud Drive but it came back with no files. macOS hides iCloud Drive contents from apps that don\'t have **{full_disk_access}**, so granting Cmdr that permission is the most likely fix.\n\nIf your iCloud Drive really is empty, you can ignore this hint.',
+          "Cmdr opened iCloud Drive but it came back with no files. macOS hides iCloud Drive contents from apps that don't have **{full_disk_access}**, so granting Cmdr that permission is the most likely fix.\n\nIf your iCloud Drive really is empty, you can ignore this hint.",
         ),
         suggestion: expandSystemStrings(
           "Here's what to try:\n- Open [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) and pick **{full_disk_access}**\n- Add Cmdr (use the **+** button) and toggle it on\n- Quit and reopen Cmdr\n- Come back here to retry",

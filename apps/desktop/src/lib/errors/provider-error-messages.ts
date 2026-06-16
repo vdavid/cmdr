@@ -36,6 +36,7 @@ export type Provider =
 export type ProviderCategory = 'transient' | 'needs_action' | 'serious'
 
 /** Provider display name (the `**bold**` name shown in suggestions). */
+// eslint-disable-next-line complexity -- one flat arm per provider; the branch count is the provider list size, not nested logic.
 function displayName(p: Provider): string {
   switch (p) {
     case 'dropbox':
@@ -78,6 +79,7 @@ function displayName(p: Provider): string {
 }
 
 /** App name, or null for providers without a single distinct app. */
+// eslint-disable-next-line complexity -- one flat arm per provider; the branch count is the provider list size, not nested logic.
 function appName(p: Provider): string | null {
   switch (p) {
     case 'dropbox':
@@ -122,6 +124,7 @@ function appName(p: Provider): string | null {
  * Builds the provider-specific suggestion (verbatim from Rust `provider_suggestion`).
  * Provider names are static (trusted), so no escaping is needed.
  */
+// eslint-disable-next-line complexity -- one flat arm per (provider, category) suggestion; the branch count is the suggestion-table size, by design (1:1 with Rust `provider_suggestion`).
 export function getProviderSuggestion(provider: Provider, category: ProviderCategory): string {
   const name = displayName(provider)
 
@@ -129,11 +132,11 @@ export function getProviderSuggestion(provider: Provider, category: ProviderCate
     case 'macDroid':
       switch (category) {
         case 'transient':
-          return 'This folder is managed by **MacDroid**. Here\'s what to try:\n- Open MacDroid and check that your phone is connected\n- Make sure your phone is unlocked and set to file transfer mode\n- Unplug and replug the USB cable, then navigate here again'
+          return "This folder is managed by **MacDroid**. Here's what to try:\n- Open MacDroid and check that your phone is connected\n- Make sure your phone is unlocked and set to file transfer mode\n- Unplug and replug the USB cable, then navigate here again"
         case 'needs_action':
-          return 'This folder is managed by **MacDroid**. Here\'s what to try:\n- Open MacDroid and check that your phone is connected\n- Make sure your phone is unlocked with the screen on\n- Check that USB file transfer mode is enabled on your phone'
+          return "This folder is managed by **MacDroid**. Here's what to try:\n- Open MacDroid and check that your phone is connected\n- Make sure your phone is unlocked with the screen on\n- Check that USB file transfer mode is enabled on your phone"
         case 'serious':
-          return 'This folder is managed by **MacDroid**. Here\'s what to try:\n- Unplug and replug the USB cable\n- Restart MacDroid\n- Try a different USB port or cable'
+          return "This folder is managed by **MacDroid**. Here's what to try:\n- Unplug and replug the USB cable\n- Restart MacDroid\n- Try a different USB port or cable"
       }
       break
 
@@ -151,18 +154,18 @@ export function getProviderSuggestion(provider: Provider, category: ProviderCate
     case 'macFuse':
       switch (category) {
         case 'transient':
-          return 'This is a **macFUSE** mount. The remote server may be slow or unreachable. Here\'s what to try:\n- Check your network connection\n- Check that the remote server is running\n- Navigate here again to retry'
+          return "This is a **macFUSE** mount. The remote server may be slow or unreachable. Here's what to try:\n- Check your network connection\n- Check that the remote server is running\n- Navigate here again to retry"
         case 'serious':
-          return 'This is a **macFUSE** mount. The FUSE process backing it has likely crashed or disconnected. Here\'s what to try:\n- Force-unmount the volume: run `umount -f /Volumes/<name>` in Terminal\n- Remount using the original mount command\n- If this keeps happening, check that macFUSE is up to date'
+          return "This is a **macFUSE** mount. The FUSE process backing it has likely crashed or disconnected. Here's what to try:\n- Force-unmount the volume: run `umount -f /Volumes/<name>` in Terminal\n- Remount using the original mount command\n- If this keeps happening, check that macFUSE is up to date"
         case 'needs_action':
-          return 'This is a **macFUSE** mount. Here\'s what to try:\n- Check that the FUSE process backing this mount is still running\n- Force-unmount and remount the volume if needed\n- Make sure macFUSE is up to date in **System Settings > General > Login Items & Extensions**'
+          return "This is a **macFUSE** mount. Here's what to try:\n- Check that the FUSE process backing this mount is still running\n- Force-unmount and remount the volume if needed\n- Make sure macFUSE is up to date in **System Settings > General > Login Items & Extensions**"
       }
       break
 
     case 'pCloudFuse':
       switch (category) {
         case 'transient':
-          return 'This folder is on **pCloud**\'s virtual drive. Here\'s what to try:\n- Check your internet connection\n- Make sure the pCloud app is running\n- Navigate here again to retry'
+          return "This folder is on **pCloud**'s virtual drive. Here's what to try:\n- Check your internet connection\n- Make sure the pCloud app is running\n- Navigate here again to retry"
         case 'serious':
           return "This folder is on **pCloud**'s virtual drive. The pCloud FUSE process may have crashed. Here's what to try:\n- Quit and reopen the pCloud app\n- If the drive doesn't reappear, force-unmount it: run `umount -f /Volumes/pCloudDrive` in Terminal\n- After a macOS update, re-approve pCloud's system extension in **System Settings > General > Login Items & Extensions**"
         case 'needs_action':
@@ -183,15 +186,15 @@ export function getProviderSuggestion(provider: Provider, category: ProviderCate
 
     case 'cmVolumes':
       if (category === 'transient') {
-        return 'This is a cloud mount. Here\'s what to try:\n- Check your internet connection\n- Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n- Navigate here again to retry'
+        return "This is a cloud mount. Here's what to try:\n- Check your internet connection\n- Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n- Navigate here again to retry"
       }
-      return 'This is a cloud mount. Here\'s what to try:\n- Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n- Disconnect and reconnect the mount\n- Check your credentials haven\'t expired'
+      return "This is a cloud mount. Here's what to try:\n- Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n- Disconnect and reconnect the mount\n- Check your credentials haven't expired"
 
     case 'genericCloudStorage':
       if (category === 'transient') {
-        return 'This folder is managed by a cloud provider. Here\'s what to try:\n- Check your internet connection\n- Check that the sync app is running\n- Navigate here again to retry'
+        return "This folder is managed by a cloud provider. Here's what to try:\n- Check your internet connection\n- Check that the sync app is running\n- Navigate here again to retry"
       }
-      return 'This folder is managed by a cloud provider. Here\'s what to try:\n- Check that the sync app is running\n- Sign out and back in to the cloud app\n- Check your internet connection'
+      return "This folder is managed by a cloud provider. Here's what to try:\n- Check that the sync app is running\n- Sign out and back in to the cloud app\n- Check your internet connection"
 
     // Cloud providers with an app name: Dropbox, Google Drive, OneDrive, Box,
     // pCloud, Nextcloud, SynologyDrive, Tresorit, ProtonDrive, Sync, Egnyte.

@@ -51,6 +51,7 @@ function isMdSpecial(c: string): boolean {
  * through snarkdown without triggering formatting, then render as the original
  * characters in the browser. The `&` is encoded first.
  */
+// eslint-disable-next-line complexity -- flat per-character escape scan; the branch count is the HTML-entity set, not nested logic. Keeping it as one function preserves the 1:1 port of the Rust escaper (the XSS boundary).
 export function escapeMarkdown(s: string): string {
   let needsEscape = false
   for (const c of s) {

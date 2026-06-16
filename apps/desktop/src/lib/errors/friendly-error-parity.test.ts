@@ -151,7 +151,9 @@ function providerMessage(spec: ProviderSpec, cat: ProviderCategory): FriendlyErr
   let base: ListingErrorReason
   if (cat === 'transient') base = { reason: 'connectionTimedOut' }
   else if (cat === 'needs_action')
-    base = spec.tcc ? { reason: 'tccRestricted', path: spec.basePath } : { reason: 'permissionDenied', path: spec.basePath }
+    base = spec.tcc
+      ? { reason: 'tccRestricted', path: spec.basePath }
+      : { reason: 'permissionDenied', path: spec.basePath }
   else base = { reason: 'ioSerious', path: spec.basePath, osMessage: 'x' }
 
   const message = getListingErrorMessage(base)

@@ -26,7 +26,7 @@ export type FriendlyGitErrorKind =
 const GIT_MESSAGES: Record<FriendlyGitErrorKind, FriendlyErrorMessage> = {
   notARepo: {
     title: 'No git repo here',
-    message: 'Cmdr looked up the folder tree and didn\'t find a `.git` here.',
+    message: "Cmdr looked up the folder tree and didn't find a `.git` here.",
     suggestion: 'Open a folder inside a git clone to see the repo chip.',
   },
   orphanedWorktree: {
@@ -68,7 +68,7 @@ const GIT_MESSAGES: Record<FriendlyGitErrorKind, FriendlyErrorMessage> = {
   missingObject: {
     title: 'A git object is missing',
     message:
-      'Git is looking for an object that\'s no longer in the pack files. The repo might be partially fetched or damaged.',
+      "Git is looking for an object that's no longer in the pack files. The repo might be partially fetched or damaged.",
     suggestion: 'Try `git fetch` to repopulate the missing object, or `git fsck` to inspect the damage.',
   },
   gitDirPermissionDenied: {

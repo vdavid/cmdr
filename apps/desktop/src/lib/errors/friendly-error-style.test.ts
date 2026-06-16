@@ -158,10 +158,9 @@ describe('friendly-error copy obeys the writing rules', () => {
       it(`provider "${provider}" × "${cat}" suggestion is clean`, () => {
         const suggestion = getProviderSuggestion(provider, cat)
         for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS]) {
-          expect(
-            containsWord(suggestion, word),
-            `provider ${provider}/${cat} contains "${word}": ${suggestion}`,
-          ).toBe(false)
+          expect(containsWord(suggestion, word), `provider ${provider}/${cat} contains "${word}": ${suggestion}`).toBe(
+            false,
+          )
         }
       })
     }
