@@ -354,10 +354,14 @@ Multi-card pages and their groups (confirmed groupings 4–8):
 - **Appearance › Listing**: Names and icons (app icons, show extensions, sort directories, function key bar) · Brief mode
   (column width mode, max width).
 - **Behavior › File operations**: Renaming (extension changes) · Conflicts and progress (max conflicts, progress
-  interval). (`maxConflictsToShow`/`progressUpdateInterval` are `showInAdvanced` mirrors; here they get a `cardKey` for
-  their main page — Advanced handles its own grouping in M6.)
+  interval). **`maxConflictsToShow`/`progressUpdateInterval` are `showInAdvanced` mirrors NOT rendered on this page
+  today** — M3 must ADD them as new `SettingRow`s here (guarded by `shouldShow(id)`), with a `cardKey`. This is load-
+  bearing for M6 (see the mirror hazard): once Advanced joins the global index, these must already render here or their
+  section matches-but-shows-nothing.
 - **File systems › SMB/Network shares**: Connection (enable networking, direct SMB) · Performance and timeouts (share
-  cache, timeout mode, custom timeout, concurrency).
+  cache, timeout mode, custom timeout, concurrency). **`network.smbConcurrency` is a `showInAdvanced` mirror NOT rendered
+  here today** — M3 must ADD it as a new `SettingRow` in the Performance card (guarded by `shouldShow(id)`), with a
+  `cardKey` (same M6 mirror-hazard reason).
 - **Updates & privacy**: Updates (auto-check, what's new) · Privacy and data sharing (anonymous stats, beta email, crash
   reports, error reports).
 
@@ -411,11 +415,25 @@ currently unfindable from the main settings search** (the sidebar/section gates 
 them). David explicitly wants them grouped AND "searchable just like the rest". So:
 
 - **Unify search onto the global pipeline.** Stop excluding `showInAdvanced` from `buildSearchIndex`; drive the Advanced
-  section with `createShouldShow(searchQuery)` + `shouldShow(id)` like every other page; retire `searchAdvancedSettings`.
-  This makes advanced settings light the sidebar and render under global search, and fixes the latent
-  `getMatchIndicesForLabel` highlight-offset bug (it currently runs advanced rows against an index that excludes them).
-  Verify advanced settings don't leak into other pages' results (they won't — each carries `section: ['Advanced']`, and
-  `getMatchingSettingIdsInSection` is section-scoped).
+  section with `createShouldShow(searchQuery)` + `shouldShow(id)` like every other page. This makes advanced settings
+  light the sidebar and render under global search, and fixes the latent `getMatchIndicesForLabel` highlight-offset bug
+  (it currently runs advanced rows against an index that excludes them).
+- **⚠️ Mirror hazard (must resolve, or it reintroduces the empty-section bug).** Three `showInAdvanced` settings do NOT
+  have `section: ['Advanced']` — they are mirrors that keep their natural section path AND also surface in Advanced:
+  `network.smbConcurrency` (`['File systems','SMB/Network shares']`), `fileOperations.maxConflictsToShow` and
+  `fileOperations.progressUpdateInterval` (`['Behavior','File operations']`). Today they're excluded from the global
+  index, so their natural pages don't match them. Un-excluding them makes the SMB / File-operations **sections** match
+  (and the sidebar light) on queries like "concurrency" / "progress interval" — but those pages don't hand-render these
+  rows today, so you'd get a matching-but-empty section: exactly the bug we kill. **Resolution (Option A, which M3
+  already intends):** M3 must HAND-RENDER these three on their natural pages — `smbConcurrency` in the SMB "Performance
+  and timeouts" card, `maxConflictsToShow`/`progressUpdateInterval` in the File-operations "Conflicts and progress" card
+  — as new `SettingRow`s guarded by `shouldShow(id)` (they don't exist on those pages today). With M3 done first, the
+  un-exclusion is safe: each mirror is a first-class row on its natural page AND a flat row in Advanced. **Order: M3
+  before M6.** Do NOT ship M6's un-exclusion until those three rows render on their natural pages. (Verify in the app:
+  search "concurrency" → SMB page shows the row in its card, not a blank section.)
+- **Retire `searchAdvancedSettings` cleanly:** remove its `index.ts` barrel export and delete/rewrite its
+  `describe('searchAdvancedSettings')` block in `settings-search.test.ts` (don't leave a dangling export/import or
+  orphaned test).
 - **Add `cardKey` to all 21 `showInAdvanced` settings**, grouped into logical cards (working titles, David reviews
   later). Proposed cards: **Performance** (prefetch buffer, virtualization rows/cols), **File watching** (file-watcher
   debounce, disk-space change threshold), **File operations** (max conflicts, progress interval), **Network and mounts**
@@ -429,9 +447,16 @@ them). David explicitly wants them grouped AND "searchable just like the rest". 
   `{#if anyVisible(shouldShow, ...memberIds)}<SectionCard label={tString(cardKey)}>`, inner loop renders each row guarded
   by `{#if shouldShow(id)}`. Keep the bespoke `.advanced-setting-row` rendering for now (migrating it to shared
   `SettingRow` is optional/out-of-scope; don't expand risk).
+- **Preserve the existing per-row machinery under the new two-level loop:** the inner row key must still fold in
+  `settingsChangeCounter` (today `` `${id}-${settingsChangeCounter}` ``) so the modified-dot (`isModified`) and reset
+  link recompute on changes; keep `getLabelSegments`/`highlightMatches` wiring intact (after un-exclusion the advanced
+  highlight starts working — lock it with a test asserting a highlighted advanced row). `groupAdvancedByCard` can be
+  computed outside the counter dependency (rows read `getSetting(id)` live), but the counter must stay in the keyed inner
+  block.
 - Tests: `groupAdvancedByCard` set-equality guard (union of grouped settings === all advanced settings; fails if a new
   advanced setting lacks a `cardKey` bucket); a search test that advanced settings now match the global search and group
-  into cards with no empty frames. Update `AdvancedSection.a11y.test.ts`.
+  into cards with no empty frames (call `clearSearchIndex()` in the test setup — the index is module-cached); update
+  `AdvancedSection.a11y.test.ts` (incl. a highlighted-row assertion).
 - Feedback loop: in the app, confirm advanced settings are now findable from the main search and grouped sensibly.
 
 ### M7. Keyboard shortcuts — scope groups become `SectionCard`s; the Global row gets a home
@@ -439,17 +464,22 @@ them). David explicitly wants them grouped AND "searchable just like the rest". 
 `groupCommandsByScope` already emits only non-empty groups, so empty-card-hiding is FREE — no `anyVisible`/`shouldShow`
 plumbing needed here (commands aren't registry settings). Plan:
 - Swap the `.scope-group`/`.scope-title` (`<h3>`) rendering for `<SectionCard label={group.title}>` keyed on
-  `group.scope`; drop the old `.scope-title` CSS. Group titles stay sourced from `scopeOrder`/`group.title` (don't
-  reintroduce an ad-hoc title list — the existing grouping guard).
+  `group.scope`; drop the old `.scope-title` CSS. **Fully REMOVE the old `<h3 class="scope-title">`** — let
+  `SectionCard`'s own `<h3>` label be the only heading, or you get a nested/duplicate `<h3>` (a11y heading-order
+  regression). Result: `h2` (section) → `h3` (one per card), matching FSW. Group titles stay sourced from
+  `scopeOrder`/`group.title` (don't reintroduce an ad-hoc title list — the existing grouping guard).
 - Both the in-section filter (name/key/chip) and the global settings search already flow through `groupCommandsByScope`,
   so a group's card shows iff it has ≥1 visible row automatically, under both — exactly the requested behavior.
 - **The Global row (`GlobalShortcutRow`, the go-to-latest hotkey) needs an explicit home:** it renders outside the
   `{#each}` (it's not a registry `Command`/`CommandScope`; its binding lives in `settings.json`). Give it its own small
-  `SectionCard` (a "Global" card) so it reads consistently, rather than a bare trailing row. Note it's the same shortcut
-  FSW surfaces as the "Go to latest download" card — that duplication is deliberate (rebinding here, on/off there).
-- **Scrolling decision:** keep the cards inside the existing `.commands-list` scroller (preserving its scrollbar-gutter
-  logic) unless the app feedback loop shows page-scroll reads better. Verify the deep-link flash + scroll-into-view still
-  lands on a row inside a card.
+  `SectionCard` (a "Global" card) so it reads consistently. **Keep the existing `{#if controller.showGlobalGoToLatestRow}`
+  gate OUTSIDE the new `<SectionCard>`** (`{#if showGlobalGoToLatestRow}<SectionCard …><GlobalShortcutRow/></SectionCard>{/if}`),
+  or an empty "Global" card renders whenever the filter excludes it. Note it's the same shortcut FSW surfaces as the
+  "Go to latest download" card — that duplication is deliberate (rebinding here, on/off there).
+- **Scrolling: keep the cards INSIDE the existing `.commands-list` scroller** (not page-scroll). The deep-link scroll
+  does `target.closest('.commands-list')` and the scrollbar-gutter logic lives on `.commands-list`; moving cards out
+  breaks both. `SectionCard` renders inside it fine (the row id stays on the row, not the card). Verify the deep-link
+  flash + scroll-into-view still lands on a row inside a card.
 - Read-only native/fixed-key rows need no special handling (they flow into cards via `group.commands`). Tests: keep the
   `keyboard-shortcuts-grouping` set-equality guard; update the section's functional + a11y tests for the card wrapper;
   confirm the deep-link/flash test still passes.
