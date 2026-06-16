@@ -545,9 +545,9 @@ fn build_ns_error(err: &super::fulfillment::FulfillError) -> Retained<NSError> {
     // non-zero code and shows the friendly title.
     let code: isize = if err.cancelled { NS_USER_CANCELLED_ERROR } else { 1 };
     let domain = NSString::from_str(ERROR_DOMAIN);
-    // localizedDescription = friendly title, paired into userInfo under
-    // NSLocalizedDescriptionKey so AppKit renders our copy.
-    let message = NSString::from_str(&err.friendly.title);
+    // localizedDescription = the short category-keyed title, paired into userInfo
+    // under NSLocalizedDescriptionKey so AppKit renders our copy.
+    let message = NSString::from_str(err.nserror_title());
 
     // SAFETY: `NSLocalizedDescriptionKey` is the documented userInfo key (an
     // `NSErrorUserInfoKey`, i.e. `NSString`, which conforms to `NSCopying`);
@@ -568,18 +568,15 @@ fn build_ns_error(err: &super::fulfillment::FulfillError) -> Retained<NSError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::file_system::volume::friendly_error::{ErrorCategory, FriendlyError};
-    use crate::md;
+    use crate::file_system::volume::VolumeError;
+    use crate::file_system::volume::friendly_error::listing_error_from_volume_error;
 
-    fn sample_friendly(title: &str) -> FriendlyError {
-        FriendlyError {
-            category: ErrorCategory::Serious,
-            title: title.to_string(),
-            explanation: md!("explanation"),
-            suggestion: md!("suggestion"),
-            raw_detail: "raw".to_string(),
-            retry_hint: false,
-            action_kind: None,
+    /// Builds a `FulfillError` of the given category for the NSError-mapping tests.
+    /// The exact title is category-keyed in `FulfillError::nserror_title`.
+    fn sample_fulfill_error(err: VolumeError, cancelled: bool) -> super::super::fulfillment::FulfillError {
+        super::super::fulfillment::FulfillError {
+            error: listing_error_from_volume_error(&err, std::path::Path::new("/x.jpg")),
+            cancelled,
         }
     }
 
@@ -618,18 +615,23 @@ mod tests {
     // ---- NSError mapping ----
 
     #[test]
-    fn ns_error_carries_domain_and_friendly_title() {
+    fn ns_error_carries_domain_and_title() {
         if MainThreadMarker::new().is_none() {
             return;
         }
-        let err = super::super::fulfillment::FulfillError {
-            friendly: sample_friendly("Couldn't read this file"),
-            cancelled: false,
-        };
+        // A serious read problem (EIO) → the serious-category NSError title.
+        let err = sample_fulfill_error(
+            VolumeError::IoError {
+                message: "io".into(),
+                raw_os_error: Some(5),
+            },
+            false,
+        );
         let ns = build_ns_error(&err);
         assert_eq!(ns.domain().to_string(), ERROR_DOMAIN);
         assert_eq!(ns.code(), 1);
-        assert_eq!(ns.localizedDescription().to_string(), "Couldn't read this file");
+        assert_eq!(ns.localizedDescription().to_string(), err.nserror_title());
+        assert!(!ns.localizedDescription().to_string().is_empty());
     }
 
     #[test]
@@ -637,10 +639,7 @@ mod tests {
         if MainThreadMarker::new().is_none() {
             return;
         }
-        let err = super::super::fulfillment::FulfillError {
-            friendly: sample_friendly("Cancelled"),
-            cancelled: true,
-        };
+        let err = sample_fulfill_error(VolumeError::Cancelled("cancelled".into()), true);
         let ns = build_ns_error(&err);
         assert_eq!(ns.code(), NS_USER_CANCELLED_ERROR);
     }

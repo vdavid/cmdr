@@ -17,10 +17,10 @@
 //! tiny whitelist of (bundle path, key) tuples once at startup, pick the user's
 //! preferred language from `NSUserDefaults.AppleLanguages`, and fall back to the
 //! English defaults we ship if any step fails. The frontend reads the snapshot
-//! once via `get_localized_system_strings` and substitutes the values into
-//! user-facing copy. The backend's friendly-error builders run `expand(...)` on
-//! template strings containing `{system_settings}` etc. so the same snapshot
-//! drives both surfaces.
+//! once via `get_localized_system_strings` and substitutes the `{system_settings}`
+//! etc. placeholders into user-facing copy itself
+//! (`src/lib/errors/compose.ts::expandSystemStrings`); all friendly-error words
+//! live on the frontend.
 //!
 //! ## Risks (knowingly accepted)
 //!
@@ -49,8 +49,8 @@ use serde::Serialize;
 
 /// Snapshot of the system pane labels we surface in user-facing copy.
 ///
-/// Field names match the placeholder tokens used by [`expand`] (`{system_settings}` →
-/// [`Self::system_settings`], etc.).
+/// Field names match the placeholder tokens the frontend substitutes
+/// (`{system_settings}` → [`Self::system_settings`], etc.).
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalizedSystemStrings {
@@ -82,38 +82,20 @@ impl LocalizedSystemStrings {
 static SNAPSHOT: LazyLock<LocalizedSystemStrings> = LazyLock::new(build_snapshot);
 
 /// Returns a `'static` reference to the cached snapshot. Fast (no lock,
-/// pointer-copy after first call). Used by the friendly-error builders.
+/// pointer-copy after first call). Placeholder expansion now lives on the
+/// frontend (`src/lib/errors/compose.ts::expandSystemStrings`), which reads the
+/// snapshot via `get_localized_system_strings`; this accessor is test-only.
+#[cfg(test)]
 pub fn snapshot() -> &'static LocalizedSystemStrings {
     &SNAPSHOT
 }
 
 /// Tauri command: returns the localized system strings. The frontend caches
-/// the result for the session.
+/// the result for the session and substitutes the placeholders itself.
 #[tauri::command]
 #[specta::specta]
 pub fn get_localized_system_strings() -> LocalizedSystemStrings {
     SNAPSHOT.clone()
-}
-
-/// Replaces `{system_settings}`, `{privacy_and_security}`, `{full_disk_access}`,
-/// `{files_and_folders}`, `{local_network}`, `{appearance}` placeholders in `input`
-/// with the cached localized values. Unknown placeholders are left untouched.
-///
-/// The Rust friendly-error builders call this on their markdown templates so a
-/// "Open `{system_settings}` → `{privacy_and_security}` → `{full_disk_access}`"
-/// sentence becomes (on Hungarian macOS): "Open `Rendszerbeállítások` →
-/// `Adatvédelem és biztonság` → `Teljes hozzáférés a lemezhez`". The English
-/// surrounding text stays as-is; that's intentional — we're not translating the
-/// app, we're matching the user's OS menu names so they can find the items.
-pub fn expand(input: &str) -> String {
-    let s = snapshot();
-    input
-        .replace("{system_settings}", &s.system_settings)
-        .replace("{privacy_and_security}", &s.privacy_and_security)
-        .replace("{full_disk_access}", &s.full_disk_access)
-        .replace("{files_and_folders}", &s.files_and_folders)
-        .replace("{local_network}", &s.local_network)
-        .replace("{appearance}", &s.appearance)
 }
 
 // =================================================================================
@@ -334,16 +316,6 @@ mod tests {
     fn candidate_codes_always_include_english_fallback() {
         let out = candidate_lang_codes(&["fi".to_string()]);
         assert!(out.contains(&"en".to_string()));
-    }
-
-    #[test]
-    fn expand_substitutes_known_placeholders_and_leaves_unknown_ones() {
-        // `expand` uses the cached snapshot, which on the test host may already
-        // be localized. We just check that the placeholder is gone and unknown
-        // tokens stay.
-        let out = expand("Go to {system_settings} > {unknown_token}");
-        assert!(!out.contains("{system_settings}"));
-        assert!(out.contains("{unknown_token}"));
     }
 
     #[cfg(target_os = "macos")]

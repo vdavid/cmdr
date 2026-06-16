@@ -196,48 +196,15 @@ fn list_status_returns_one_per_status() {
 
 // ── Friendly errors ──────────────────────────────────────────────────────
 
-#[test]
-fn friendly_messages_never_contain_error_or_failed() {
-    for kind in [
-        FriendlyGitErrorKind::NotARepo,
-        FriendlyGitErrorKind::OrphanedWorktree,
-        FriendlyGitErrorKind::CorruptRepo,
-        FriendlyGitErrorKind::IndexLocked,
-        FriendlyGitErrorKind::PermissionDenied,
-        FriendlyGitErrorKind::BareRepo,
-    ] {
-        let title = kind.title().to_lowercase();
-        let explanation = kind.explanation().to_lowercase();
-        let suggestion = kind.suggestion().to_lowercase();
-        assert!(!title.contains("error"), "title contains 'error': {}", kind.title());
-        assert!(!title.contains("failed"), "title contains 'failed': {}", kind.title());
-        assert!(!explanation.contains("error"));
-        assert!(!explanation.contains("failed"));
-        assert!(!suggestion.contains("error"));
-        assert!(!suggestion.contains("failed"));
-    }
-}
-
-#[test]
-fn friendly_titles_use_sentence_case() {
-    for kind in [
-        FriendlyGitErrorKind::NotARepo,
-        FriendlyGitErrorKind::CorruptRepo,
-        FriendlyGitErrorKind::PermissionDenied,
-    ] {
-        let title = kind.title();
-        // First char uppercase, rest mostly lowercase (proper nouns aside).
-        let first = title.chars().next().unwrap();
-        assert!(first.is_uppercase(), "title doesn't start with uppercase: {title}");
-    }
-}
+// The git copy and its writing-rules checks moved to the frontend
+// (`src/lib/errors/git-error-messages.ts` + `friendly-error-style.test.ts`),
+// which iterates every kind × rendered output. Rust keeps only the typed shape.
 
 #[test]
 fn friendly_error_struct_carries_kind_and_path() {
     let err = FriendlyGitError::new(FriendlyGitErrorKind::NotARepo, "/tmp/foo");
     assert_eq!(err.kind, FriendlyGitErrorKind::NotARepo);
     assert_eq!(err.path, "/tmp/foo");
-    assert!(!err.title().is_empty());
 }
 
 // ── Watcher integration ─────────────────────────────────────────────────

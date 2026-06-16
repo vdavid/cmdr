@@ -41,6 +41,7 @@
         updateMenuContext,
     } from '$lib/tauri-commands'
     import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
+    import { renderListingError } from '$lib/errors/listing-error'
     import { updateIndexSizesInPlace } from '../views/file-list-utils'
     import { evictPerPathIconsForDir } from '$lib/icon-cache'
     import { classifySelectionDialogKey } from './selection-dialog-keys'
@@ -1494,7 +1495,8 @@
                                 })
                             } else {
                                 // Path exists, or we couldn't tell: show the original listing error
-                                resetLoadingState(payload.message, false, payload.friendly ?? undefined)
+                                const rendered = payload.error ? renderListingError(payload.error) : undefined
+                                resetLoadingState(payload.message, false, rendered)
                                 // Record the failed path in history so Cmd+[ goes back one step,
                                 // not two. The success path pushes via the `onPathChange` call in
                                 // `handleListingComplete`; without this call, an error pane would

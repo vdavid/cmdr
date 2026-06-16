@@ -15,7 +15,7 @@ use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::volume::VolumeError;
 use crate::file_system::volume::friendly_error::{
-    FriendlyError, enrich_with_provider, friendly_error_for_restricted_empty_root, friendly_error_from_volume_error,
+    ListingError, enrich_with_provider, listing_error_for_restricted_empty_root, listing_error_from_volume_error,
 };
 use crate::file_system::watcher::start_watching;
 #[cfg(test)]
@@ -70,9 +70,12 @@ pub struct ListingCompleteEvent {
 #[tauri_specta(event_name = "listing-error")]
 pub struct ListingErrorEvent {
     pub listing_id: String,
+    /// Raw message kept for the FE's non-display logic (MTP fallback, deleted-path
+    /// detection); the user-facing copy is rendered from `error`.
     pub message: String,
-    /// Structured error info when available. `None` for internal errors (task panics).
-    pub friendly: Option<FriendlyError>,
+    /// Typed, word-free classification when available. `None` for internal errors
+    /// (task panics). The FE renders all copy from this.
+    pub error: Option<ListingError>,
 }
 
 /// Cancelled event payload
@@ -124,7 +127,7 @@ pub(crate) trait ListingEventSink: Send + Sync {
     fn emit_progress(&self, listing_id: &str, loaded_count: usize);
     fn emit_read_complete(&self, listing_id: &str, total_count: usize);
     fn emit_complete(&self, listing_id: &str, total_count: usize, volume_root: String);
-    fn emit_error(&self, listing_id: &str, message: String, friendly: Option<FriendlyError>);
+    fn emit_error(&self, listing_id: &str, message: String, error: Option<ListingError>);
     fn emit_cancelled(&self, listing_id: &str);
 }
 
@@ -172,11 +175,11 @@ impl ListingEventSink for TauriListingEventSink {
         .emit(&self.app);
     }
 
-    fn emit_error(&self, listing_id: &str, message: String, friendly: Option<FriendlyError>) {
-        // PII-free analytics: a listing failed with a categorized friendly error. Only the
+    fn emit_error(&self, listing_id: &str, message: String, error: Option<ListingError>) {
+        // PII-free analytics: a listing failed with a categorized error. Only the
         // category enum crosses; never the path, message, or any provider detail.
-        if let Some(f) = &friendly {
-            let category = serde_json::to_value(f.category)
+        if let Some(e) = &error {
+            let category = serde_json::to_value(e.category)
                 .ok()
                 .and_then(|v| v.as_str().map(str::to_string));
             if let Some(category) = category {
@@ -186,7 +189,7 @@ impl ListingEventSink for TauriListingEventSink {
         let _ = ListingErrorEvent {
             listing_id: listing_id.to_string(),
             message,
-            friendly,
+            error,
         }
         .emit(&self.app);
     }
@@ -248,7 +251,7 @@ impl ListingEventSink for CollectorListingEventSink {
             .push((listing_id.to_string(), total_count));
     }
 
-    fn emit_error(&self, listing_id: &str, message: String, _friendly: Option<FriendlyError>) {
+    fn emit_error(&self, listing_id: &str, message: String, _error: Option<ListingError>) {
         self.errors.lock_ignore_poison().push((listing_id.to_string(), message));
     }
 
@@ -329,8 +332,8 @@ pub async fn list_directory_start_streaming(
         match result {
             Err(e) => {
                 // Function returned an error (volume not found, permission denied, I/O, etc.)
-                let mut friendly = friendly_error_from_volume_error(&e, &path_for_error);
-                enrich_with_provider(&mut friendly, &path_for_error);
+                let mut listing_error = listing_error_from_volume_error(&e, &path_for_error);
+                enrich_with_provider(&mut listing_error, &path_for_error);
                 if matches!(&e, VolumeError::PermissionDenied(_)) {
                     crate::restricted_paths::record_denial(&path_for_error);
                 }
@@ -343,7 +346,7 @@ pub async fn list_directory_start_streaming(
                     &path_for_error.to_string_lossy(),
                     &message,
                 );
-                events_for_error.emit_error(&listing_id_for_cleanup, message, Some(friendly));
+                events_for_error.emit_error(&listing_id_for_cleanup, message, Some(listing_error));
             }
             Ok(()) => {
                 // Success: listing-complete already emitted. If this path was
@@ -553,11 +556,11 @@ pub(crate) async fn read_directory_with_progress(
     // that this hint is acceptable noise, and the FE shows a "Try again" button.
     if total_count == 0
         && volume_root_path.as_deref() == Some(path)
-        && let Some(friendly) = friendly_error_for_restricted_empty_root(volume_id, path)
+        && let Some(listing_error) = listing_error_for_restricted_empty_root(volume_id, path)
     {
-        let message = friendly.raw_detail.clone();
+        let message = listing_error.raw_detail.clone();
         crate::mcp::listing_errors::record(listing_id, volume_id, &path.to_string_lossy(), &message);
-        events.emit_error(listing_id, message, Some(friendly));
+        events.emit_error(listing_id, message, Some(listing_error));
         return Ok(());
     }
 

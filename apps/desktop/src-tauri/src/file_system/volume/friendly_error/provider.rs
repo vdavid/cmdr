@@ -1,36 +1,25 @@
 //! Provider detection and enrichment: detects which cloud/mount provider manages a path
-//! and tailors error suggestions accordingly.
+//! and SETS the typed `provider` field on the classification.
 //!
-//! Used by `friendly_error.rs` to overwrite the generic suggestion with provider-specific advice.
+//! Detection stays in Rust (it needs path patterns + `statfs`); the words live on
+//! the frontend (`src/lib/errors/provider-error-messages.ts`), which overlays the
+//! provider-specific suggestion when `provider` is present.
 
 use std::path::Path;
 
-use super::{ErrorCategory, FriendlyError, Markdown};
-use crate::md;
+use super::ListingError;
 
 // ============================================================================
-// Provider enrichment
+// Provider detection
 // ============================================================================
 
-/// Detects the cloud/mount provider from the path and overwrites `suggestion`
-/// (and sometimes `explanation`) with provider-specific advice.
-///
-/// Leaves `title`, `category`, and `retry_hint` unchanged.
-pub fn enrich_with_provider(error: &mut FriendlyError, path: &Path) {
-    let Some(provider) = detect_provider(path) else {
-        return;
-    };
-
-    // Build provider-specific suggestion based on the error category and provider.
-    let suggestion = provider_suggestion(&provider, error);
-    error.suggestion = suggestion;
-}
-
-// ── Provider detection ──────────────────────────────────────────────────
-
-/// Known cloud/mount provider.
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum Provider {
+/// Known cloud/mount provider. The variant identity crosses IPC (serialized
+/// camelCase); the FE maps it to display names, app names, and the
+/// (provider, category) suggestion table. Variant names match the TS `Provider`
+/// union member-for-member.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum Provider {
     Dropbox,
     GoogleDrive,
     OneDrive,
@@ -52,50 +41,12 @@ enum Provider {
     GenericCloudStorage,
 }
 
-impl Provider {
-    fn display_name(&self) -> &'static str {
-        match self {
-            Self::Dropbox => "Dropbox",
-            Self::GoogleDrive => "Google Drive",
-            Self::OneDrive => "OneDrive",
-            Self::Box => "Box",
-            Self::PCloud => "pCloud",
-            Self::Nextcloud => "Nextcloud",
-            Self::SynologyDrive => "Synology Drive",
-            Self::Tresorit => "Tresorit",
-            Self::ProtonDrive => "Proton Drive",
-            Self::Sync => "Sync.com",
-            Self::Egnyte => "Egnyte",
-            Self::MacDroid => "MacDroid",
-            Self::ICloud => "iCloud Drive",
-            Self::PCloudFuse => "pCloud",
-            Self::MacFuse => "macFUSE",
-            Self::VeraCrypt => "VeraCrypt",
-            Self::CmVolumes => "Cloud mount",
-            Self::GenericCloudStorage => "your cloud provider",
-        }
-    }
-
-    fn app_name(&self) -> Option<&'static str> {
-        match self {
-            Self::Dropbox => Some("Dropbox"),
-            Self::GoogleDrive => Some("Google Drive"),
-            Self::OneDrive => Some("OneDrive"),
-            Self::Box => Some("Box Drive"),
-            Self::PCloud | Self::PCloudFuse => Some("pCloud Drive"),
-            Self::MacFuse => None, // macFUSE is a framework, not a single app
-            Self::Nextcloud => Some("Nextcloud"),
-            Self::SynologyDrive => Some("Synology Drive"),
-            Self::Tresorit => Some("Tresorit"),
-            Self::ProtonDrive => Some("Proton Drive"),
-            Self::Sync => Some("Sync.com"),
-            Self::Egnyte => Some("Egnyte Connect"),
-            Self::MacDroid => Some("MacDroid"),
-            Self::ICloud => None, // Built into macOS
-            Self::VeraCrypt => Some("VeraCrypt"),
-            Self::CmVolumes => None,
-            Self::GenericCloudStorage => None,
-        }
+/// Detects the cloud/mount provider from the path and SETS the typed `provider`
+/// field. Leaves everything else unchanged. The FE overlays the
+/// provider-specific suggestion when `provider` is present.
+pub fn enrich_with_provider(error: &mut ListingError, path: &Path) {
+    if let Some(provider) = detect_provider(path) {
+        error.provider = Some(provider);
     }
 }
 
@@ -203,171 +154,6 @@ fn detect_provider(path: &Path) -> Option<Provider> {
     None
 }
 
-/// Builds a provider-specific suggestion. Provider display names are static
-/// strings, but we still route them through `md!` so the type signature is
-/// consistent and any future user-supplied text gets escaped by default.
-fn provider_suggestion(provider: &Provider, error: &FriendlyError) -> Markdown {
-    let name = provider.display_name();
-
-    match provider {
-        Provider::MacDroid => match error.category {
-            ErrorCategory::Transient => md!("This folder is managed by **MacDroid**. Here's what to try:\n\
-                - Open MacDroid and check that your phone is connected\n\
-                - Make sure your phone is unlocked and set to file transfer mode\n\
-                - Unplug and replug the USB cable, then navigate here again"),
-            ErrorCategory::NeedsAction => md!("This folder is managed by **MacDroid**. Here's what to try:\n\
-                - Open MacDroid and check that your phone is connected\n\
-                - Make sure your phone is unlocked with the screen on\n\
-                - Check that USB file transfer mode is enabled on your phone"),
-            ErrorCategory::Serious => md!("This folder is managed by **MacDroid**. Here's what to try:\n\
-                - Unplug and replug the USB cable\n\
-                - Restart MacDroid\n\
-                - Try a different USB port or cable"),
-        },
-
-        Provider::ICloud => match error.category {
-            ErrorCategory::Transient => md!(
-                "This folder is managed by **{}**. Here's what to try:\n\
-                - Check your internet connection\n\
-                - Make sure you're signed in to iCloud in System Settings\n\
-                - Navigate here again to retry",
-                name,
-            ),
-            ErrorCategory::NeedsAction => md!(
-                "This folder is managed by **{}**. Here's what to try:\n\
-                - Check that iCloud Drive is enabled in **System Settings > Apple Account > iCloud**\n\
-                - Make sure you're signed in to the right Apple account\n\
-                - Check your iCloud storage isn't full",
-                name,
-            ),
-            ErrorCategory::Serious => md!(
-                "This folder is managed by **{}**. Here's what to try:\n\
-                - Sign out and back in to iCloud in System Settings\n\
-                - Check Apple's [system status page](https://www.apple.com/support/systemstatus/)",
-                name,
-            ),
-        },
-
-        Provider::MacFuse => match error.category {
-            ErrorCategory::Transient => md!(
-                "This is a **macFUSE** mount. The remote server may be slow or unreachable. \
-                Here's what to try:\n\
-                - Check your network connection\n\
-                - Check that the remote server is running\n\
-                - Navigate here again to retry"
-            ),
-            ErrorCategory::Serious => md!("This is a **macFUSE** mount. The FUSE process backing it has likely \
-                crashed or disconnected. Here's what to try:\n\
-                - Force-unmount the volume: run `umount -f /Volumes/<name>` in Terminal\n\
-                - Remount using the original mount command\n\
-                - If this keeps happening, check that macFUSE is up to date"),
-            ErrorCategory::NeedsAction => md!("This is a **macFUSE** mount. Here's what to try:\n\
-                - Check that the FUSE process backing this mount is still running\n\
-                - Force-unmount and remount the volume if needed\n\
-                - Make sure macFUSE is up to date in **System Settings > General > Login Items & Extensions**"),
-        },
-
-        Provider::PCloudFuse => match error.category {
-            ErrorCategory::Transient => md!("This folder is on **pCloud**'s virtual drive. Here's what to try:\n\
-                - Check your internet connection\n\
-                - Make sure the pCloud app is running\n\
-                - Navigate here again to retry"),
-            ErrorCategory::Serious => md!(
-                "This folder is on **pCloud**'s virtual drive. The pCloud FUSE process may have \
-                crashed. Here's what to try:\n\
-                - Quit and reopen the pCloud app\n\
-                - If the drive doesn't reappear, force-unmount it: run `umount -f /Volumes/pCloudDrive` in Terminal\n\
-                - After a macOS update, re-approve pCloud's system extension in \
-                  **System Settings > General > Login Items & Extensions**"
-            ),
-            ErrorCategory::NeedsAction => md!("This folder is on **pCloud**'s virtual drive. Here's what to try:\n\
-                - Make sure the pCloud app is running and you're signed in\n\
-                - Check your internet connection\n\
-                - After a macOS update, re-approve pCloud's system extension in \
-                  **System Settings > General > Login Items & Extensions**"),
-        },
-
-        Provider::VeraCrypt => match error.category {
-            ErrorCategory::Transient => md!(
-                "This is a **{}** encrypted volume. Here's what to try:\n\
-                - Check that the VeraCrypt volume is still mounted\n\
-                - Navigate here again to retry",
-                name,
-            ),
-            ErrorCategory::NeedsAction => md!(
-                "This is a **{}** encrypted volume. Here's what to try:\n\
-                - Open VeraCrypt and check that this volume is mounted\n\
-                - Dismount and remount the volume if needed",
-                name,
-            ),
-            ErrorCategory::Serious => md!(
-                "This is a **{}** encrypted volume. Here's what to try:\n\
-                - Dismount and remount the volume in VeraCrypt\n\
-                - If the volume keeps having issues, check it with VeraCrypt's repair tools",
-                name,
-            ),
-        },
-
-        Provider::CmVolumes => match error.category {
-            ErrorCategory::Transient => md!("This is a cloud mount. Here's what to try:\n\
-                - Check your internet connection\n\
-                - Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n\
-                - Navigate here again to retry"),
-            _ => md!("This is a cloud mount. Here's what to try:\n\
-                - Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n\
-                - Disconnect and reconnect the mount\n\
-                - Check your credentials haven't expired"),
-        },
-
-        Provider::GenericCloudStorage => match error.category {
-            ErrorCategory::Transient => md!("This folder is managed by a cloud provider. Here's what to try:\n\
-                - Check your internet connection\n\
-                - Check that the sync app is running\n\
-                - Navigate here again to retry"),
-            _ => md!("This folder is managed by a cloud provider. Here's what to try:\n\
-                - Check that the sync app is running\n\
-                - Sign out and back in to the cloud app\n\
-                - Check your internet connection"),
-        },
-
-        // Cloud providers with an app name: Dropbox, Google Drive, OneDrive, Box,
-        // pCloud, Nextcloud, SynologyDrive, Tresorit, ProtonDrive, Sync, Egnyte
-        _ => {
-            let app = provider.app_name().unwrap_or(name);
-            match error.category {
-                ErrorCategory::Transient => md!(
-                    "This folder is managed by **{}**. Here's what to try:\n\
-                    - Check your internet connection\n\
-                    - Open {} and make sure it's running and synced\n\
-                    - Navigate here again to retry",
-                    name,
-                    app,
-                ),
-                ErrorCategory::NeedsAction => md!(
-                    "This folder is managed by **{}**. Here's what to try:\n\
-                    - Open {} and check your sync status\n\
-                    - Make sure you're signed in to {}\n\
-                    - Check that you have access to this folder in {}",
-                    name,
-                    app,
-                    app,
-                    name,
-                ),
-                ErrorCategory::Serious => md!(
-                    "This folder is managed by **{}**. Here's what to try:\n\
-                    - Quit and reopen {}\n\
-                    - Sign out and back in to {}\n\
-                    - Check {}'s status page for outages",
-                    name,
-                    app,
-                    app,
-                    name,
-                ),
-            }
-        }
-    }
-}
-
 // ============================================================================
 // Tests
 // ============================================================================
@@ -378,7 +164,7 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::file_system::volume::VolumeError;
-    use crate::file_system::volume::friendly_error::friendly_error_from_volume_error;
+    use crate::file_system::volume::friendly_error::listing_error_from_volume_error;
 
     // ── Provider detection tests ────────────────────────────────────────
 
@@ -419,8 +205,8 @@ mod tests {
             let path = home_path(suffix);
             let detected = detect_provider(&path);
             assert_eq!(
-                detected.as_ref(),
-                Some(&expected),
+                detected,
+                Some(expected),
                 "Path suffix '{}' should detect {:?}, got {:?}",
                 suffix,
                 expected,
@@ -468,28 +254,23 @@ mod tests {
     // ── Enrichment behavior tests ───────────────────────────────────────
 
     #[test]
-    fn enrichment_overwrites_suggestion_but_not_title_or_category() {
+    fn enrichment_sets_provider_but_not_category_or_retry() {
         let err = VolumeError::ConnectionTimeout("test".into());
         let path = home_path("Library/CloudStorage/Dropbox/some/folder");
 
-        let mut friendly = friendly_error_from_volume_error(&err, &path);
-        let original_title = friendly.title.clone();
-        let original_category = friendly.category;
-        let original_retry = friendly.retry_hint;
-        let original_suggestion = friendly.suggestion.clone();
+        let mut listing = listing_error_from_volume_error(&err, &path);
+        let original_category = listing.category;
+        let original_retry = listing.retry_hint;
+        assert_eq!(listing.provider, None, "provider starts unset");
 
-        enrich_with_provider(&mut friendly, &path);
+        enrich_with_provider(&mut listing, &path);
 
-        assert_eq!(friendly.title, original_title, "title should not change");
-        assert_eq!(friendly.category, original_category, "category should not change");
-        assert_eq!(friendly.retry_hint, original_retry, "retry_hint should not change");
-        assert_ne!(
-            friendly.suggestion, original_suggestion,
-            "suggestion should be overwritten by provider enrichment"
-        );
-        assert!(
-            friendly.suggestion.as_str().contains("Dropbox"),
-            "enriched suggestion should mention Dropbox"
+        assert_eq!(listing.category, original_category, "category should not change");
+        assert_eq!(listing.retry_hint, original_retry, "retry_hint should not change");
+        assert_eq!(
+            listing.provider,
+            Some(Provider::Dropbox),
+            "provider should be set by enrichment"
         );
     }
 
@@ -498,213 +279,33 @@ mod tests {
         let err = VolumeError::ConnectionTimeout("test".into());
         let path = Path::new("/Users/test/Documents/folder");
 
-        let mut friendly = friendly_error_from_volume_error(&err, path);
-        let original_suggestion = friendly.suggestion.clone();
+        let mut listing = listing_error_from_volume_error(&err, path);
+        enrich_with_provider(&mut listing, path);
 
-        enrich_with_provider(&mut friendly, path);
-
-        assert_eq!(
-            friendly.suggestion, original_suggestion,
-            "suggestion should not change for unknown paths"
-        );
+        assert_eq!(listing.provider, None, "provider should stay unset for unknown paths");
     }
 
-    // ── Provider suggestion tests ───────────────────────────────────────
-
     #[test]
-    fn all_providers_produce_specific_suggestions() {
-        let providers_and_paths: Vec<(&str, Provider)> = vec![
-            ("Library/CloudStorage/Dropbox/f", Provider::Dropbox),
-            ("Library/CloudStorage/GoogleDrive-x/f", Provider::GoogleDrive),
-            ("Library/CloudStorage/OneDrive-x/f", Provider::OneDrive),
-            ("Library/CloudStorage/Box-x/f", Provider::Box),
-            ("Library/CloudStorage/pCloud/f", Provider::PCloud),
-            ("Library/CloudStorage/Nextcloud-x/f", Provider::Nextcloud),
-            ("Library/CloudStorage/SynologyDrive-x/f", Provider::SynologyDrive),
-            ("Library/CloudStorage/Tresorit/f", Provider::Tresorit),
-            ("Library/CloudStorage/ProtonDrive-x/f", Provider::ProtonDrive),
-            ("Library/CloudStorage/Sync-x/f", Provider::Sync),
-            ("Library/CloudStorage/Egnyte-x/f", Provider::Egnyte),
-            ("Library/CloudStorage/MacDroid-x/f", Provider::MacDroid),
-            ("Library/CloudStorage/Unknown-x/f", Provider::GenericCloudStorage),
-            ("Library/Mobile Documents/com~apple~CloudDocs/f", Provider::ICloud),
-        ];
-
-        for (suffix, expected_provider) in &providers_and_paths {
-            let path = home_path(suffix);
-            let err = VolumeError::ConnectionTimeout("test".into());
-            let mut friendly = friendly_error_from_volume_error(&err, &path);
-            enrich_with_provider(&mut friendly, &path);
-
-            assert!(
-                friendly.suggestion.as_str().contains(expected_provider.display_name())
-                    || *expected_provider == Provider::GenericCloudStorage
-                    || *expected_provider == Provider::CmVolumes,
-                "Suggestion for {:?} should mention provider name. Got: {}",
-                expected_provider,
-                friendly.suggestion
-            );
-        }
-
-        // Specific-path providers
-        let specific_paths: Vec<(&str, Provider)> = vec![
+    fn enrichment_sets_specific_path_providers() {
+        for (path_str, expected) in [
             ("/Volumes/pCloudDrive/f", Provider::PCloudFuse),
             ("/Volumes/veracrypt1/f", Provider::VeraCrypt),
-        ];
-
-        for (path_str, expected_provider) in &specific_paths {
+        ] {
             let path = Path::new(path_str);
             let err = VolumeError::ConnectionTimeout("test".into());
-            let mut friendly = friendly_error_from_volume_error(&err, path);
-            enrich_with_provider(&mut friendly, path);
-
-            assert!(
-                friendly.suggestion.as_str().contains(expected_provider.display_name()),
-                "Suggestion for {:?} should mention provider name. Got: {}",
-                expected_provider,
-                friendly.suggestion
+            let mut listing = listing_error_from_volume_error(&err, path);
+            enrich_with_provider(&mut listing, path);
+            assert_eq!(
+                listing.provider,
+                Some(expected),
+                "path {path_str} should set {expected:?}"
             );
         }
 
-        // CmVolumes
         let cm_path = home_path(".CMVolumes/MyMount/f");
         let err = VolumeError::ConnectionTimeout("test".into());
-        let mut friendly = friendly_error_from_volume_error(&err, &cm_path);
-        enrich_with_provider(&mut friendly, &cm_path);
-        assert!(
-            friendly.suggestion.as_str().contains("cloud mount"),
-            "CmVolumes suggestion should mention cloud mount"
-        );
-    }
-
-    // ── MacFuse and PCloudFuse suggestion tests ────────────────────────
-
-    #[test]
-    fn macfuse_suggestions_mention_macfuse() {
-        let categories = [
-            ErrorCategory::Transient,
-            ErrorCategory::NeedsAction,
-            ErrorCategory::Serious,
-        ];
-        for category in categories {
-            let error = FriendlyError {
-                category,
-                title: "test".into(),
-                explanation: md!("test"),
-                suggestion: md!("placeholder"),
-                raw_detail: "test".into(),
-                retry_hint: false,
-                action_kind: None,
-            };
-            let suggestion = provider_suggestion(&Provider::MacFuse, &error);
-            assert!(
-                suggestion.as_str().contains("macFUSE"),
-                "MacFuse {:?} suggestion should mention macFUSE. Got: {}",
-                category,
-                suggestion
-            );
-        }
-    }
-
-    #[test]
-    fn pcloud_fuse_suggestions_mention_pcloud() {
-        let categories = [
-            ErrorCategory::Transient,
-            ErrorCategory::NeedsAction,
-            ErrorCategory::Serious,
-        ];
-        for category in categories {
-            let error = FriendlyError {
-                category,
-                title: "test".into(),
-                explanation: md!("test"),
-                suggestion: md!("placeholder"),
-                raw_detail: "test".into(),
-                retry_hint: false,
-                action_kind: None,
-            };
-            let suggestion = provider_suggestion(&Provider::PCloudFuse, &error);
-            assert!(
-                suggestion.as_str().contains("pCloud"),
-                "PCloudFuse {:?} suggestion should mention pCloud. Got: {}",
-                category,
-                suggestion
-            );
-        }
-    }
-
-    #[test]
-    fn fuse_provider_suggestions_follow_style_guide() {
-        let providers = [Provider::MacFuse, Provider::PCloudFuse];
-        let categories = [
-            ErrorCategory::Transient,
-            ErrorCategory::NeedsAction,
-            ErrorCategory::Serious,
-        ];
-
-        for provider in &providers {
-            for category in &categories {
-                let error = FriendlyError {
-                    category: *category,
-                    title: "test".into(),
-                    explanation: md!("test"),
-                    suggestion: md!("placeholder"),
-                    raw_detail: "test".into(),
-                    retry_hint: false,
-                    action_kind: None,
-                };
-                let suggestion = provider_suggestion(provider, &error);
-                // Content check on UI copy (not error/state classification);
-                // pick a variable name that doesn't match the no-error-
-                // string-match linter's `lower` shape.
-                let copy_text = suggestion.as_str().to_lowercase();
-
-                assert!(
-                    !copy_text.contains("error") && !copy_text.contains("failed"),
-                    "{:?} {:?} suggestion contains 'error' or 'failed': {}",
-                    provider,
-                    category,
-                    suggestion
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn macfuse_serious_suggests_force_unmount() {
-        let error = FriendlyError {
-            category: ErrorCategory::Serious,
-            title: "test".into(),
-            explanation: md!("test"),
-            suggestion: md!("placeholder"),
-            raw_detail: "test".into(),
-            retry_hint: false,
-            action_kind: None,
-        };
-        let suggestion = provider_suggestion(&Provider::MacFuse, &error);
-        assert!(
-            suggestion.as_str().contains("umount -f"),
-            "MacFuse Serious suggestion should mention force-unmount. Got: {}",
-            suggestion
-        );
-    }
-
-    #[test]
-    fn pcloud_fuse_serious_suggests_system_extension_reapproval() {
-        let error = FriendlyError {
-            category: ErrorCategory::Serious,
-            title: "test".into(),
-            explanation: md!("test"),
-            suggestion: md!("placeholder"),
-            raw_detail: "test".into(),
-            retry_hint: false,
-            action_kind: None,
-        };
-        let suggestion = provider_suggestion(&Provider::PCloudFuse, &error);
-        assert!(
-            suggestion.as_str().contains("System Settings"),
-            "PCloudFuse Serious suggestion should mention System Settings. Got: {}",
-            suggestion
-        );
+        let mut listing = listing_error_from_volume_error(&err, &cm_path);
+        enrich_with_provider(&mut listing, &cm_path);
+        assert_eq!(listing.provider, Some(Provider::CmVolumes));
     }
 }

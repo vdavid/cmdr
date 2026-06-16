@@ -51,16 +51,18 @@
 use std::path::{Path, PathBuf};
 
 use crate::file_system::volume::Volume;
-use crate::file_system::volume::friendly_error::{FriendlyError, friendly_error_from_volume_error};
+use crate::file_system::volume::friendly_error::{ErrorCategory, ListingError, listing_error_from_volume_error};
 use crate::file_system::volume::{VolumeError, VolumeReadStream};
 
-/// A drag-out fulfillment failure, carrying a fully-rendered [`FriendlyError`]
-/// so the delegate can surface its text through the promise completion
-/// handler's `NSError` (Finder shows its own alert).
+/// A drag-out fulfillment failure, carrying the typed [`ListingError`]
+/// classification so the delegate can surface a title through the promise
+/// completion handler's `NSError` (Finder shows its own alert). The exact
+/// title is a native-OS surface (not Cmdr's webview), so we derive a short
+/// category-keyed string here rather than crossing IPC to the FE copy.
 #[derive(Debug, Clone)]
 pub struct FulfillError {
-    /// User-facing, rendered copy (title / explanation / suggestion / category).
-    pub friendly: FriendlyError,
+    /// Typed classification (category drives the NSError title).
+    pub error: ListingError,
     /// Whether this was a user/system cancellation (app quit, device
     /// disconnect mid-stream surfaces as a read error, not this). The delegate
     /// maps a cancel to a Cancelled-shaped `NSError` so Finder doesn't shout.
@@ -69,14 +71,24 @@ pub struct FulfillError {
 
 impl FulfillError {
     /// Builds a `FulfillError` from a `VolumeError` and the destination path
-    /// (used for provider-aware friendly copy). The path is the DEST so the
-    /// friendly mapper can detect the destination provider; for a source-read
-    /// error the dest is still the most useful path to show the user.
+    /// (used for provider-aware classification). The path is the DEST so the
+    /// provider detector can pick the destination provider; for a source-read
+    /// error the dest is still the most useful path.
     fn from_volume_error(err: &VolumeError, dest: &Path) -> Self {
         let cancelled = matches!(err, VolumeError::Cancelled(_));
         Self {
-            friendly: friendly_error_from_volume_error(err, dest),
+            error: listing_error_from_volume_error(err, dest),
             cancelled,
+        }
+    }
+
+    /// Short, native-OS title for the Finder `NSError`. The detailed copy lives
+    /// on the FE; Finder only needs a one-line summary, keyed off the category.
+    pub fn nserror_title(&self) -> &'static str {
+        match self.error.category {
+            ErrorCategory::Transient => "Couldn't copy the item right now",
+            ErrorCategory::NeedsAction => "Couldn't copy the item",
+            ErrorCategory::Serious => "Couldn't copy the item",
         }
     }
 }
@@ -192,7 +204,7 @@ pub(crate) async fn fulfill_with_resolver(
             "promise fulfillment failed for {} -> {}: {}",
             source_path.display(),
             dest_path.display(),
-            err.friendly.title
+            err.nserror_title()
         );
     }
     result.map(|()| FulfillOutcome { is_dir })
@@ -476,7 +488,7 @@ mod tests {
             .expect_err("a mid-stream read failure must surface an error");
 
         assert!(!err.cancelled, "a device disconnect is not a user cancel");
-        assert!(!err.friendly.title.is_empty(), "must carry friendly copy");
+        assert!(!err.nserror_title().is_empty(), "must carry friendly copy");
         // The cleanup contract: the local writer does NOT self-clean on a read
         // error, so the service must remove the partial itself.
         assert!(
@@ -502,7 +514,7 @@ mod tests {
         let err = fulfill_with_resolver(&resolver, "phone", Path::new("/a.txt"), &dest)
             .await
             .expect_err("an unwritable destination must error");
-        assert!(!err.friendly.title.is_empty());
+        assert!(!err.nserror_title().is_empty());
         assert!(!dest.exists());
     }
 
@@ -516,7 +528,7 @@ mod tests {
         let err = fulfill_with_resolver(&resolver, "gone", Path::new("/x.jpg"), &dest)
             .await
             .expect_err("a vanished source volume must error");
-        assert!(!err.friendly.title.is_empty());
+        assert!(!err.nserror_title().is_empty());
         assert!(!dest.exists());
     }
 
@@ -727,7 +739,7 @@ mod tests {
         let err = fulfill_with_resolver(&resolver, "phone", Path::new("/DCIM"), &dest)
             .await
             .expect_err("a mid-folder read failure must surface an error");
-        assert!(!err.friendly.title.is_empty());
+        assert!(!err.nserror_title().is_empty());
         // The whole created tree must be gone — not a half-downloaded folder.
         assert!(
             !dest.exists(),

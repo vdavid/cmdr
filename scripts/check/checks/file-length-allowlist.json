@@ -44,7 +44,6 @@
     "apps/desktop/src-tauri/src/indexing/verifier.rs": 873,
     "apps/desktop/src-tauri/src/indexing/writer/entries.rs": 2568,
     "apps/desktop/src-tauri/src/indexing/writer/mod.rs": 1286,
-    "apps/desktop/src-tauri/src/ipc.rs": 805,
     "apps/desktop/src-tauri/src/lib.rs": 865,
     "apps/desktop/src-tauri/src/mcp/server.rs": 1008,
     "apps/desktop/src-tauri/src/mcp/tools.rs": 971,

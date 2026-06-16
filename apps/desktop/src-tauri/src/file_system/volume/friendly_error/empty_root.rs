@@ -8,9 +8,9 @@
 
 use std::path::Path;
 
-use super::{ErrorCategory, FriendlyError, Markdown};
+use super::{ErrorActionKind, ErrorCategory, ListingError, ListingErrorReason};
 
-/// Returns a friendly hint when a directory at a TCC-sensitive volume root listed
+/// Returns a typed hint when a directory at a TCC-sensitive volume root listed
 /// successfully but came back empty.
 ///
 /// The user gets a "Try again" button via `retry_hint: true` so they can re-list
@@ -18,28 +18,17 @@ use super::{ErrorCategory, FriendlyError, Markdown};
 ///
 /// Returns `None` when no hint is warranted (any non-recognized volume, or any
 /// non-root path).
-pub fn friendly_error_for_restricted_empty_root(volume_id: &str, path: &Path) -> Option<FriendlyError> {
+pub fn listing_error_for_restricted_empty_root(volume_id: &str, path: &Path) -> Option<ListingError> {
     // Match the literal volume ID (`crate::volumes` is macOS-only, so we can't import
     // the constant from there). Kept in sync with `volumes::ICLOUD_VOLUME_ID` (macOS).
     if volume_id == "cloud-icloud" {
-        Some(FriendlyError {
+        Some(ListingError {
             category: ErrorCategory::NeedsAction,
-            title: "iCloud Drive looks empty".into(),
-            explanation: Markdown::literal(crate::system_strings::expand(
-                "Cmdr opened iCloud Drive but it came back with no files. macOS hides iCloud Drive contents \
-                from apps that don't have **{full_disk_access}**, so granting Cmdr that permission is the most \
-                likely fix.\n\nIf your iCloud Drive really is empty, you can ignore this hint.",
-            )),
-            suggestion: Markdown::literal(crate::system_strings::expand(
-                "Here's what to try:\n\
-                - Open [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) and pick **{full_disk_access}**\n\
-                - Add Cmdr (use the **+** button) and toggle it on\n\
-                - Quit and reopen Cmdr\n\
-                - Come back here to retry",
-            )),
-            raw_detail: format!("volume={volume_id}, path={}, entries=0", path.display()),
+            reason: ListingErrorReason::EmptyRootICloud,
+            provider: None,
+            action_kind: Some(ErrorActionKind::OpenPrivacySettings),
             retry_hint: true,
-            action_kind: Some(super::ErrorActionKind::OpenPrivacySettings),
+            raw_detail: format!("volume={volume_id}, path={}, entries=0", path.display()),
         })
     } else {
         None

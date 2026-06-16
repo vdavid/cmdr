@@ -1,9 +1,9 @@
 # Move friendly-error text to the frontend
 
 Move all user-facing PROSE out of the Rust `friendly_error` system and onto the Svelte frontend, while keeping error
-CLASSIFICATION in Rust. This is step 1 of the larger "i18n-ready" effort, but it stands on its own: it realizes the
-"all displayable text lives on the frontend, smart backend stays smart" principle. i18n-readiness is the free side
-effect (a single frontend home for error copy that a catalog tool can later own).
+CLASSIFICATION in Rust. This is step 1 of the larger "i18n-ready" effort, but it stands on its own: it realizes the "all
+displayable text lives on the frontend, smart backend stays smart" principle. i18n-readiness is the free side effect (a
+single frontend home for error copy that a catalog tool can later own).
 
 ## Goal
 
@@ -114,9 +114,9 @@ detection in Rust (it needs path patterns + `statfs`), move the words to the FE:
   trusted template literal, escaping every param first, then passing the result through the existing single
   `renderErrorMarkdown` → `snarkdown` → `{@html}` site.
 - Port the Rust `escape()` function (`friendly_error/markdown.rs`) to a small TS helper verbatim (same HTML-entity set,
-  same line-start-char carve-outs) with its unit tests ported. This is the security boundary: state as an invariant
-  that EVERY interpolated runtime value (path, OS message, device name, any free-form provider text) MUST pass through
-  this escaper before reaching `snarkdown`. Template literals are the only trusted markdown; params are never trusted.
+  same line-start-char carve-outs) with its unit tests ported. This is the security boundary: state as an invariant that
+  EVERY interpolated runtime value (path, OS message, device name, any free-form provider text) MUST pass through this
+  escaper before reaching `snarkdown`. Template literals are the only trusted markdown; params are never trusted.
 - Remove from Rust: the `Markdown` newtype, `MarkdownArg`, the `md!` macro, the `escape`/`is_md_special` functions, and
   the `ipc.rs:787-803` brand post-processing. Remove the `Markdown` type from `bindings.ts` (regenerate). `rawDetail`
   stays a plain `String` (it already is; it is rendered as plain text, not markdown: confirm and preserve that).
@@ -205,14 +205,15 @@ Each step compiles and passes checks before the next.
    Rust; remove the `ipc.rs:787-803` brand block; regenerate bindings (the `Markdown` type disappears).
 7. **Tests.** Delete Rust prose tests, add Rust mapping tests, port style + escaper tests to the FE, add the TS parity
    snapshot, extend transfer tests. Remove the temporary Rust golden-snapshot test once the TS parity test is green.
-8. **Docs.** Update `friendly_error/CLAUDE.md` and `DETAILS.md`: the "mapping in Rust, not the frontend" decision becomes
-   "CLASSIFICATION in Rust, WORDS on the frontend" with the new split and the FE escaping invariant. Update the markdown
-   section (escaping now lives on the FE). Note the new home of the writing-rules tests. Touch
+8. **Docs.** Update `friendly_error/CLAUDE.md` and `DETAILS.md`: the "mapping in Rust, not the frontend" decision
+   becomes "CLASSIFICATION in Rust, WORDS on the frontend" with the new split and the FE escaping invariant. Update the
+   markdown section (escaping now lives on the FE). Note the new home of the writing-rules tests. Touch
    `docs/architecture.md` only if a one-line pointer needs it (it is a map: no mechanism).
 
 ## Files in scope (from inventory; verify before editing)
 
 Rust:
+
 - `src-tauri/src/file_system/volume/friendly_error/{mod,errno,kinds,volume_error,write_error,empty_root,provider,markdown}.rs`
 - `src-tauri/src/file_system/git/friendly.rs`
 - `src-tauri/src/file_system/listing/streaming.rs` (`ListingErrorEvent`)
@@ -221,6 +222,7 @@ Rust:
 - `src-tauri/src/ipc.rs` (remove Markdown brand block)
 
 Frontend:
+
 - `src/lib/ipc/bindings.ts` (regenerated, do not hand-edit)
 - `src/lib/file-operations/transfer/transfer-error-messages.ts` (+ `.test.ts`)
 - `src/lib/file-operations/transfer/{FriendlyErrorContent,FallbackErrorContent,TransferErrorDialog}.svelte` (+ tests)
@@ -238,8 +240,8 @@ Frontend:
 - The style-rule test (no "error"/"failed"/trivializing words) passes over EVERY reason, provider×category, and git
   kind, on the FE.
 - No `Markdown`, `md!`, or markdown-escaping code remains in Rust; no `friendly: Option<FriendlyError>` on either event.
-- A manual spot-check of three representative errors (a permission-denied on a TCC path, a Dropbox timeout, a git
-  "no repo here") renders identically to before, including the localized macOS pane name and the action button.
+- A manual spot-check of three representative errors (a permission-denied on a TCC path, a Dropbox timeout, a git "no
+  repo here") renders identically to before, including the localized macOS pane name and the action button.
 
 ## Data-safety call-out for the reviewer
 

@@ -14,10 +14,11 @@ pub fn inject_listing_error(volume_id: String, error_code: i32) -> Result<(), St
     Ok(())
 }
 
-/// Debug-only command that generates a real `FriendlyError` for the debug error pane preview.
+/// Debug-only command that generates a real typed `ListingError` for the debug
+/// error pane preview.
 ///
 /// Accepts either an errno code (for `IoError` variants) or a `VolumeError` variant name.
-/// Optionally enriches with provider-specific suggestions when `provider_path` is set.
+/// Optionally sets the detected provider when `provider_path` is set.
 #[cfg(debug_assertions)]
 #[tauri::command]
 #[specta::specta]
@@ -25,9 +26,9 @@ pub fn preview_friendly_error(
     error_code: Option<i32>,
     variant: Option<String>,
     provider_path: Option<String>,
-) -> Result<crate::file_system::volume::friendly_error::FriendlyError, String> {
+) -> Result<crate::file_system::volume::friendly_error::ListingError, String> {
     use crate::file_system::volume::VolumeError;
-    use crate::file_system::volume::friendly_error::{enrich_with_provider, friendly_error_from_volume_error};
+    use crate::file_system::volume::friendly_error::{enrich_with_provider, listing_error_from_volume_error};
     use std::path::Path;
 
     let path_str = provider_path
@@ -63,11 +64,11 @@ pub fn preview_friendly_error(
         return Err("Provide either error_code or variant".into());
     };
 
-    let mut friendly = friendly_error_from_volume_error(&volume_error, path);
+    let mut listing_error = listing_error_from_volume_error(&volume_error, path);
 
     if provider_path.is_some() {
-        enrich_with_provider(&mut friendly, path);
+        enrich_with_provider(&mut listing_error, path);
     }
 
-    Ok(friendly)
+    Ok(listing_error)
 }

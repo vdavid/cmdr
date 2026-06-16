@@ -1,8 +1,8 @@
-//! Git-specific friendly errors.
+//! Git-specific error CLASSIFICATION.
 //!
-//! Mirrors the conventions of `volume::friendly_error`: warm, active voice,
-//! never the words "error" or "failed". Each variant is tested in
-//! `tests::friendly_*`.
+//! Carries a typed `FriendlyGitErrorKind`; the user-facing words live on the
+//! frontend (`src/lib/errors/git-error-messages.ts`), warm and active voice,
+//! never the words "error" or "failed".
 //!
 //! ## How git errors reach the user
 //!
@@ -11,18 +11,18 @@
 //! 2. `mod.rs::friendly_to_volume_error` wraps it as `VolumeError::FriendlyGit(FriendlyGitError)`:
 //!    a typed variant that carries the kind + path + optional raw detail end-to-end.
 //! 3. The streaming pipeline (`listing/streaming.rs`) emits a `listing-error` event.
-//!    `friendly_error_from_volume_error` matches on `FriendlyGit` and calls `to_friendly_error()`
-//!    so `ErrorPane` renders title + explanation + suggestion
-//!    + category.
+//!    `listing_error_from_volume_error` matches on `FriendlyGit` (FIRST, the Layer-0
+//!    pass-through) and ships the typed kind as the `Git` reason so the FE renders
+//!    git-specific copy from its parallel git factory.
 
 use std::error::Error as StdError;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::file_system::volume::friendly_error::{ErrorCategory, FriendlyError};
+use crate::file_system::volume::friendly_error::ErrorCategory;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum FriendlyGitErrorKind {
     /// `gix::discover` returned `Discover(_)` – we walked up to the FS root and
@@ -53,84 +53,6 @@ pub enum FriendlyGitErrorKind {
 }
 
 impl FriendlyGitErrorKind {
-    pub fn title(&self) -> &'static str {
-        match self {
-            FriendlyGitErrorKind::NotARepo => "No git repo here",
-            FriendlyGitErrorKind::OrphanedWorktree => "This worktree is orphaned",
-            FriendlyGitErrorKind::CorruptRepo => "This repo looks damaged",
-            FriendlyGitErrorKind::IndexLocked => "Another git is mid-write",
-            FriendlyGitErrorKind::PermissionDenied => "Cmdr can't read this repo",
-            FriendlyGitErrorKind::BareRepo => "Bare repos aren't supported yet",
-            FriendlyGitErrorKind::BlobTooLarge => "This file's too big to load from history",
-            FriendlyGitErrorKind::ShallowBoundary => "Beyond the shallow-clone boundary",
-            FriendlyGitErrorKind::MissingObject => "A git object is missing",
-            FriendlyGitErrorKind::GitDirPermissionDenied => "Cmdr can't open the `.git` folder",
-        }
-    }
-
-    pub fn explanation(&self) -> &'static str {
-        match self {
-            FriendlyGitErrorKind::NotARepo => "Cmdr looked up the folder tree and didn't find a `.git` here.",
-            FriendlyGitErrorKind::OrphanedWorktree => {
-                "This is a linked worktree but its main repo is missing, so git can't follow the link."
-            }
-            FriendlyGitErrorKind::CorruptRepo => {
-                "Some of the on-disk repo data is unreadable. The folder might have been edited outside git."
-            }
-            FriendlyGitErrorKind::IndexLocked => {
-                "Git's index is locked, which usually means another git command is still running."
-            }
-            FriendlyGitErrorKind::PermissionDenied => {
-                "The OS won't let Cmdr open the `.git` folder, so git info isn't available."
-            }
-            FriendlyGitErrorKind::BareRepo => {
-                "Bare repos don't have a working tree, and the git browser is built around one."
-            }
-            FriendlyGitErrorKind::BlobTooLarge => {
-                "Cmdr reads git blobs whole-file at a time, and this one's over the safety cap."
-            }
-            FriendlyGitErrorKind::ShallowBoundary => {
-                "This commit lives past the boundary of your shallow clone, so its data isn't on disk."
-            }
-            FriendlyGitErrorKind::MissingObject => {
-                "Git is looking for an object that's no longer in the pack files. The repo might be partially fetched or damaged."
-            }
-            FriendlyGitErrorKind::GitDirPermissionDenied => {
-                "The OS denied access to the `.git` folder, even though the working tree is readable."
-            }
-        }
-    }
-
-    pub fn suggestion(&self) -> &'static str {
-        match self {
-            FriendlyGitErrorKind::NotARepo => "Open a folder inside a git clone to see the repo chip.",
-            FriendlyGitErrorKind::OrphanedWorktree => {
-                "Try opening the main repo, or remove the orphan with `git worktree prune`."
-            }
-            FriendlyGitErrorKind::CorruptRepo => {
-                "Run `git fsck` to inspect the repo. A fresh clone often clears it up."
-            }
-            FriendlyGitErrorKind::IndexLocked => {
-                "Wait for the running git command to finish, then navigate here again."
-            }
-            FriendlyGitErrorKind::PermissionDenied => {
-                "Open **System Settings > Privacy & Security > Files and Folders** and grant Cmdr access to the folder."
-            }
-            FriendlyGitErrorKind::BareRepo => "Clone the repo into a working directory to use the git browser.",
-            FriendlyGitErrorKind::BlobTooLarge => "Check out the file from a working tree if you want to read it.",
-            FriendlyGitErrorKind::ShallowBoundary => {
-                "Run `git fetch --unshallow` (or `--depth=N`) to bring more history into the clone."
-            }
-            FriendlyGitErrorKind::MissingObject => {
-                "Try `git fetch` to repopulate the missing object, or `git fsck` to inspect the damage."
-            }
-            FriendlyGitErrorKind::GitDirPermissionDenied => {
-                "Open **System Settings > Privacy & Security > Files and Folders** and grant Cmdr access. \
-                 In Terminal, `ls -la .git` shows the current owner and mode."
-            }
-        }
-    }
-
     /// Maps each variant to the closest `ErrorCategory` so `ErrorPane` picks
     /// the right icon and severity color.
     pub fn category(&self) -> ErrorCategory {
@@ -205,47 +127,20 @@ impl FriendlyGitError {
         }
     }
 
-    pub fn title(&self) -> &'static str {
-        self.kind.title()
-    }
-
-    pub fn explanation(&self) -> &'static str {
-        self.kind.explanation()
-    }
-
-    #[allow(
-        dead_code,
-        reason = "Surfaced via to_friendly_error; kept for direct callers / tests"
-    )]
-    pub fn suggestion(&self) -> &'static str {
-        self.kind.suggestion()
-    }
-
-    /// Build a fully-shaped `FriendlyError` for `ErrorPane`. The path goes
-    /// into `raw_detail` so power users can copy-paste it from the
-    /// "Technical details" disclosure.
-    pub fn to_friendly_error(&self) -> FriendlyError {
-        let raw_detail = match &self.raw {
+    /// Builds the technical-details string for the disclosure. The path or raw
+    /// source rides here so power users can copy-paste it; the kind token lets
+    /// them grep logs and bug reports for a specific kind.
+    pub fn raw_detail(&self) -> String {
+        match &self.raw {
             Some(raw) if !raw.is_empty() => format!("git: {} ({})", self.kind.token(), raw),
             _ => format!("git: {} (path={})", self.kind.token(), self.path),
-        };
-        FriendlyError {
-            category: self.kind.category(),
-            title: self.kind.title().to_string(),
-            // Git friendly-error copy is hand-authored markdown (sometimes
-            // contains `code` spans and **bold**); wrap as literal.
-            explanation: crate::file_system::volume::friendly_error::Markdown::literal(self.kind.explanation()),
-            suggestion: crate::file_system::volume::friendly_error::Markdown::literal(self.kind.suggestion()),
-            raw_detail,
-            retry_hint: matches!(self.kind.category(), ErrorCategory::Transient),
-            action_kind: None,
         }
     }
 }
 
 impl fmt::Display for FriendlyGitError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.title(), self.explanation())
+        write!(f, "git: {} ({})", self.kind.token(), self.path)
     }
 }
 
@@ -255,39 +150,11 @@ impl StdError for FriendlyGitError {}
 mod tests {
     use super::*;
 
-    fn never_says_error_or_failed(s: &str) {
-        // Inspect user-facing copy for forbidden words. This is a content-
-        // check on UI copy, not an error/state classification, so it doesn't
-        // fall under the no-error-string-match rule. The local variable
-        // name avoids the `lower` shape the linter looks for.
-        let copy_text = s.to_lowercase();
-        for word in ["error", "failed"] {
-            assert!(!copy_text.contains(word), "{s:?} contains the forbidden word `{word}`");
-        }
-    }
-
-    #[test]
-    fn every_kind_has_title_explanation_suggestion() {
-        for kind in [
-            FriendlyGitErrorKind::NotARepo,
-            FriendlyGitErrorKind::OrphanedWorktree,
-            FriendlyGitErrorKind::CorruptRepo,
-            FriendlyGitErrorKind::IndexLocked,
-            FriendlyGitErrorKind::PermissionDenied,
-            FriendlyGitErrorKind::BareRepo,
-            FriendlyGitErrorKind::BlobTooLarge,
-            FriendlyGitErrorKind::ShallowBoundary,
-            FriendlyGitErrorKind::MissingObject,
-            FriendlyGitErrorKind::GitDirPermissionDenied,
-        ] {
-            assert!(!kind.title().is_empty(), "{kind:?} title");
-            assert!(!kind.explanation().is_empty(), "{kind:?} explanation");
-            assert!(!kind.suggestion().is_empty(), "{kind:?} suggestion");
-            never_says_error_or_failed(kind.title());
-            never_says_error_or_failed(kind.explanation());
-            never_says_error_or_failed(kind.suggestion());
-        }
-    }
+    // The user-facing words now live on the frontend
+    // (`src/lib/errors/git-error-messages.ts`); the writing-rules checks moved
+    // there too (`friendly-error-style.test.ts`, every kind × rendered output).
+    // These tests assert only the typed mapping (category) and that the technical
+    // detail preserves the path.
 
     #[test]
     fn category_assignments_match_intent() {
@@ -308,9 +175,9 @@ mod tests {
     }
 
     #[test]
-    fn typed_variant_to_friendly_preserves_path_with_colon_chars() {
+    fn typed_variant_preserves_path_with_colon_chars() {
         use crate::file_system::volume::VolumeError;
-        use crate::file_system::volume::friendly_error::friendly_error_from_volume_error;
+        use crate::file_system::volume::friendly_error::{ListingErrorReason, listing_error_from_volume_error};
 
         // macOS resource fork style, Windows drive letter, a stash spec, and
         // a path with embedded colons all need to ride through the typed
@@ -323,38 +190,26 @@ mod tests {
             "/repo/.git/stash/0/path:with:colons.txt",
         ] {
             let err = VolumeError::FriendlyGit(FriendlyGitError::new(FriendlyGitErrorKind::ShallowBoundary, path));
-            let friendly = friendly_error_from_volume_error(&err, std::path::Path::new(path));
-            assert_eq!(friendly.title, "Beyond the shallow-clone boundary");
-            assert_eq!(friendly.category, ErrorCategory::NeedsAction);
-            assert!(!friendly.retry_hint, "needs-action variants don't retry");
-            // The path lands in `raw_detail` via `to_friendly_error`'s
-            // `path=...` branch, so log greps still find it.
+            let listing = listing_error_from_volume_error(&err, std::path::Path::new(path));
             assert!(
-                friendly.raw_detail.contains(path),
-                "raw_detail {:?} should preserve path {path:?}",
-                friendly.raw_detail
+                matches!(
+                    listing.reason,
+                    ListingErrorReason::Git {
+                        kind: FriendlyGitErrorKind::ShallowBoundary
+                    }
+                ),
+                "should carry the git kind as the Git reason, got {:?}",
+                listing.reason
             );
-        }
-    }
-
-    #[test]
-    fn to_friendly_error_keeps_messages_clean() {
-        for kind in [
-            FriendlyGitErrorKind::NotARepo,
-            FriendlyGitErrorKind::OrphanedWorktree,
-            FriendlyGitErrorKind::CorruptRepo,
-            FriendlyGitErrorKind::IndexLocked,
-            FriendlyGitErrorKind::PermissionDenied,
-            FriendlyGitErrorKind::BareRepo,
-            FriendlyGitErrorKind::BlobTooLarge,
-            FriendlyGitErrorKind::ShallowBoundary,
-            FriendlyGitErrorKind::MissingObject,
-            FriendlyGitErrorKind::GitDirPermissionDenied,
-        ] {
-            let f = FriendlyGitError::new(kind, "/some/path").to_friendly_error();
-            never_says_error_or_failed(&f.title);
-            never_says_error_or_failed(f.explanation.as_str());
-            never_says_error_or_failed(f.suggestion.as_str());
+            assert_eq!(listing.category, ErrorCategory::NeedsAction);
+            assert!(!listing.retry_hint, "needs-action variants don't retry");
+            // The path lands in `raw_detail` via `raw_detail()`'s `path=...`
+            // branch, so log greps still find it.
+            assert!(
+                listing.raw_detail.contains(path),
+                "raw_detail {:?} should preserve path {path:?}",
+                listing.raw_detail
+            );
         }
     }
 }

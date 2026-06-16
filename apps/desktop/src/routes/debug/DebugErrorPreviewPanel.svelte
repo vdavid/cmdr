@@ -1,6 +1,7 @@
 <script lang="ts">
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { FriendlyError } from '$lib/file-explorer/types'
+    import type { ListingError } from '$lib/ipc/bindings'
+    import { renderListingError } from '$lib/errors/listing-error'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
 
     type ErrorCategory = 'transient' | 'needs_action' | 'serious'
@@ -126,11 +127,12 @@
 
         try {
             const { invoke } = await import('@tauri-apps/api/core')
-            const friendly = await invoke<FriendlyError>('preview_friendly_error', {
+            const listingError = await invoke<ListingError>('preview_friendly_error', {
                 errorCode: state.code ?? null,
                 variant: state.code === undefined ? state.name : null,
                 providerPath,
             })
+            const friendly = renderListingError(listingError)
             const { emitTo } = await import('@tauri-apps/api/event')
             await emitTo('main', 'debug-inject-error', { pane, friendly })
         } catch (error) {
@@ -152,11 +154,12 @@
     async function triggerTransferErrorDialog(state: ErrorState) {
         try {
             const { invoke } = await import('@tauri-apps/api/core')
-            const friendly = await invoke<FriendlyError>('preview_friendly_error', {
+            const listingError = await invoke<ListingError>('preview_friendly_error', {
                 errorCode: state.code ?? null,
                 variant: state.code === undefined ? state.name : null,
                 providerPath: null,
             })
+            const friendly = renderListingError(listingError)
             const { emitTo } = await import('@tauri-apps/api/event')
             await emitTo('main', 'debug-trigger-transfer-error', { friendly })
         } catch (error) {

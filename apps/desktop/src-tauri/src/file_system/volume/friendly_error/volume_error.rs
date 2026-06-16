@@ -1,40 +1,51 @@
-//! `VolumeError → FriendlyError`.
+//! `VolumeError → ListingError`.
 //!
-//! Most variants delegate to the canonical `kinds::*` constructors so users see
-//! the same copy regardless of which layer the error originated in. A few
+//! Most variants delegate to the canonical `kinds::*` constructors so the typed
+//! `reason` is the same regardless of which layer the error originated in. A few
 //! variants are unique to this layer:
-//! - `IoError { raw_os_error: Some(_) }` dispatches to `errno::friendly_error_from_errno` for
-//!   per-errno copy
-//! - `FriendlyGit(_)` carries a fully-shaped `FriendlyError` from the git module
+//! - `IoError { raw_os_error: Some(_) }` dispatches to `errno::listing_error_from_errno` for
+//!   per-errno reasons
+//! - `FriendlyGit(_)` carries a typed `FriendlyGitErrorKind` from the git module, which rides as
+//!   the `Git` reason so the FE renders git copy from its parallel git factory
 
 use std::path::Path;
 
-use super::errno::friendly_error_from_errno;
-use super::{ErrorCategory, FriendlyError, kinds};
+use super::errno::listing_error_from_errno;
+use super::{ErrorCategory, ListingError, ListingErrorReason, kinds};
 use crate::file_system::volume::VolumeError;
-use crate::md;
 
-/// Converts a `VolumeError` into a user-facing `FriendlyError`.
+/// Converts a `VolumeError` into a typed, word-free `ListingError`.
 ///
 /// For `IoError` with a `raw_os_error`, matches against platform-specific errno codes.
 /// For typed `VolumeError` variants, delegates to the shared `kinds::*` constructors.
 ///
 /// Git failures arrive as `VolumeError::FriendlyGit(FriendlyGitError)` from the
-/// `file_system::git` volume hooks; we hand the carried payload straight to
-/// `to_friendly_error` so `ErrorPane` shows git-specific titles and suggestions
-/// instead of the generic I/O copy.
-pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> FriendlyError {
+/// `file_system::git` volume hooks; the `FriendlyGit` arm is matched FIRST (the
+/// Layer-0 pass-through), before any errno mapping, so git copy isn't clobbered
+/// by the generic I/O fallback. The carried kind rides as the `Git` reason and
+/// the FE renders the git-specific copy.
+pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> ListingError {
     let path_display = path.display().to_string();
     let raw = err.to_string();
 
     match err {
-        VolumeError::FriendlyGit(git_err) => git_err.to_friendly_error(),
+        VolumeError::FriendlyGit(git_err) => {
+            let raw_detail = git_err.raw_detail();
+            ListingError {
+                category: git_err.kind.category(),
+                reason: ListingErrorReason::Git { kind: git_err.kind },
+                provider: None,
+                action_kind: None,
+                retry_hint: matches!(git_err.kind.category(), ErrorCategory::Transient),
+                raw_detail,
+            }
+        }
         VolumeError::NotFound(_) => kinds::not_found(&path_display, raw),
         VolumeError::PermissionDenied(_) => {
             // If this is a known TCC-restricted path (Downloads/Documents/Desktop/...
-            // or a network volume), surface the dedicated copy that points to both
+            // or a network volume), surface the dedicated reason that points to both
             // Full Disk Access AND the per-folder Files & Folders pane. Otherwise
-            // fall through to the generic permission-denied copy.
+            // fall through to the generic permission-denied reason.
             if crate::restricted_paths::tcc_paths::is_potentially_tcc_restricted(path)
                 || crate::restricted_paths::tcc_paths::is_network_volume_path(path)
             {
@@ -51,19 +62,18 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
         VolumeError::ConnectionTimeout(_) => kinds::connection_timeout(raw),
         VolumeError::Cancelled(_) => kinds::cancelled(raw),
         VolumeError::DeletePending(_) => kinds::delete_pending(&path_display, raw),
-        VolumeError::IsADirectory(_) => FriendlyError {
+        VolumeError::IsADirectory(_) => ListingError {
             category: ErrorCategory::NeedsAction,
-            title: "This is a folder, not a file".into(),
-            explanation: md!("Cmdr tried to open `{}` as a file, but it's a folder.", path_display),
-            suggestion: md!("Navigate into the folder instead of opening it as a file."),
-            raw_detail: raw,
-            retry_hint: false,
+            reason: ListingErrorReason::IsADirectory { path: path_display },
+            provider: None,
             action_kind: None,
+            retry_hint: false,
+            raw_detail: raw,
         },
         VolumeError::IoError {
             raw_os_error: Some(errno),
             ..
-        } => friendly_error_from_errno(*errno, path, err),
+        } => listing_error_from_errno(*errno, path, err),
         VolumeError::IoError {
             raw_os_error: None,
             message,

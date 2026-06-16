@@ -1,5 +1,3 @@
-import type { Markdown } from '$lib/ipc/bindings'
-
 export interface FileEntry {
   name: string
   path: string
@@ -99,13 +97,19 @@ export interface StreamingListingStartResult {
 /** Action kind for errors that require a specific user action (mirrors Rust `ErrorActionKind`). */
 export type ErrorActionKind = 'open_privacy_settings'
 
-/** Structured error info for user-facing display (mirrors Rust `FriendlyError`). */
+/**
+ * Rendered, displayable error copy for `ErrorPane`. The backend ships a typed,
+ * word-free `ListingError`; `lib/errors/listing-error.ts::renderListingError`
+ * composes this shape (picking the words from the FE factories, escaping runtime
+ * params inside them). `explanation` / `suggestion` are trusted markdown rendered
+ * through `renderErrorMarkdown` → `snarkdown`.
+ */
 export interface FriendlyError {
   category: 'transient' | 'needs_action' | 'serious'
   title: string
-  // Branded markdown from the Rust `md!(...)` site (escaping happens there).
-  explanation: Markdown
-  suggestion: Markdown
+  /** Trusted markdown (runtime params already escaped by the FE factories). */
+  explanation: string
+  suggestion: string
   rawDetail: string
   retryHint: boolean
   actionKind?: ErrorActionKind | null

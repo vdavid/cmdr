@@ -1178,7 +1178,7 @@ export const commands = {
   getSystemMemoryInfo: () => __TAURI_INVOKE<SystemMemoryInfo>('get_system_memory_info'),
   /**
    *  Tauri command: returns the localized system strings. The frontend caches
-   *  the result for the session.
+   *  the result for the session and substitutes the placeholders itself.
    */
   getLocalizedSystemStrings: () => __TAURI_INVOKE<LocalizedSystemStrings>('get_localized_system_strings'),
   // Cancels an in-progress download.
@@ -2338,13 +2338,14 @@ export const commands = {
   saveErrorReportToDisk: (userNote: string | null, email: string | null) =>
     typedError<string, string>(__TAURI_INVOKE('save_error_report_to_disk', { userNote, email })),
   /**
-   *  Debug-only command that generates a real `FriendlyError` for the debug error pane preview.
+   *  Debug-only command that generates a real typed `ListingError` for the debug
+   *  error pane preview.
    *
    *  Accepts either an errno code (for `IoError` variants) or a `VolumeError` variant name.
-   *  Optionally enriches with provider-specific suggestions when `provider_path` is set.
+   *  Optionally sets the detected provider when `provider_path` is set.
    */
   previewFriendlyError: (errorCode: number | null, variant: string | null, providerPath: string | null) =>
-    typedError<FriendlyError, string>(__TAURI_INVOKE('preview_friendly_error', { errorCode, variant, providerPath })),
+    typedError<ListingError, string>(__TAURI_INVOKE('preview_friendly_error', { errorCode, variant, providerPath })),
 }
 
 /** Events */
@@ -3216,29 +3217,40 @@ export type FocusFileViewer = {
 // `focus-settings`: bring the settings window forward (MCP `dialog focus`).
 export type FocusSettings = null
 
-export type FriendlyError = {
-  category: ErrorCategory
-  title: string
+export type FriendlyGitErrorKind =
   /**
-   *  Markdown (rendered by snarkdown on FE). Build with `md!(...)` so
-   *  interpolated runtime strings get escaped.
+   *  `gix::discover` returned `Discover(_)` – we walked up to the FS root and
+   *  found no `.git`.
    */
-  explanation: Markdown
+  | 'notARepo'
   /**
-   *  Markdown rendered by snarkdown on the frontend. Build with `md!(...)`
-   *  so interpolated runtime strings get escaped.
+   *  `gix::discover` opened the gitlink but the linked dir is gone, or
+   *  `.git` is a file pointing at a worktree that no longer exists.
    */
-  suggestion: Markdown
-  // For the technical details disclosure, for example "ETIMEDOUT (os error 60)".
-  rawDetail: string
-  // FE shows a "Try again" button when true.
-  retryHint: boolean
+  | 'orphanedWorktree'
+  // gix returned an open / parse error that suggests on-disk damage.
+  | 'corruptRepo'
+  // `.git/index.lock` is held – a concurrent git process is mid-write.
+  | 'indexLocked'
+  // We can read the path but the OS denied the gitdir contents.
+  | 'permissionDenied'
+  // The repo is bare. We don't anchor the UX on bare repos.
+  | 'bareRepo'
   /**
-   *  Typed action the frontend should offer. Drives the "Open System Settings" button
-   *  without substring-matching the title.
+   *  Blob is larger than `MAX_BLOB_BYTES` (256 MB by default). Reading
+   *  would allocate the whole thing into RAM (gix limitation), so we
+   *  refuse instead of OOM-ing.
    */
-  actionKind: ErrorActionKind | null
-}
+  | 'blobTooLarge'
+  // User typed a SHA that's beyond the shallow-clone boundary.
+  | 'shallowBoundary'
+  /**
+   *  gix can't find a referenced object – the pack file is missing or
+   *  corrupt.
+   */
+  | 'missingObject'
+  // We can read the worktree but the OS denied the `.git` directory itself.
+  | 'gitDirPermissionDenied'
 
 export type FrontendLogEntry = {
   level: LogLevel
@@ -3621,13 +3633,118 @@ export type ListingCompleteEvent = {
   volumeRoot: string
 }
 
+/**
+ *  The typed, word-free classification of a listing/empty-root/git failure.
+ *
+ *  Carries everything the frontend needs to render the message itself: the
+ *  `category` (drives styling), the semantic `reason` (the FE switches on it to
+ *  pick the message factory; variant-carried params keep impossible param
+ *  combinations unrepresentable), the detected `provider` (FE overlays the
+ *  provider suggestion), the `action_kind` (drives the "Open System Settings"
+ *  button), the `retry_hint`, and the technical `raw_detail` (rendered as plain
+ *  text in the disclosure).
+ */
+export type ListingError = {
+  category: ErrorCategory
+  reason: ListingErrorReason
+  /**
+   *  Detected cloud/mount provider, if any. The FE replaces the base reason's
+   *  suggestion with the provider-specific one.
+   */
+  provider: Provider | null
+  /**
+   *  Typed action the frontend should offer. Drives the "Open System Settings"
+   *  button without substring-matching the title.
+   */
+  actionKind: ErrorActionKind | null
+  // FE shows a "Try again" button when true.
+  retryHint: boolean
+  /**
+   *  For the technical-details disclosure, for example "ETIMEDOUT (os error 60)".
+   *  Plain text, never markdown.
+   */
+  rawDetail: string
+}
+
 // Error event payload
 export type ListingErrorEvent = {
   listingId: string
+  /**
+   *  Raw message kept for the FE's non-display logic (MTP fallback, deleted-path
+   *  detection); the user-facing copy is rendered from `error`.
+   */
   message: string
-  // Structured error info when available. `None` for internal errors (task panics).
-  friendly: FriendlyError | null
+  /**
+   *  Typed, word-free classification when available. `None` for internal errors
+   *  (task panics). The FE renders all copy from this.
+   */
+  error: ListingError | null
 }
+
+/**
+ *  The semantic reason for a listing/empty-root/git failure. One variant per
+ *  currently-distinct message (errnos that share identical copy collapse to one
+ *  reason). Variant names AND field names match the TS `ListingErrorReason`
+ *  union (plus the wire-only `git` variant) member-for-member.
+ *
+ *  The frontend NEVER sees raw errno numbers: Rust maps errno → semantic reason,
+ *  the FE switches on the reason. Git rides as the `git` variant carrying its own
+ *  typed kind; the FE routes it to its parallel git factory.
+ */
+export type ListingErrorReason =
+  | { reason: 'interrupted' }
+  | { reason: 'notEnoughMemory' }
+  | { reason: 'resourceBusy'; path: string }
+  | { reason: 'temporarilyUnavailable' }
+  | { reason: 'networkDown' }
+  | { reason: 'networkConnectionDropped' }
+  | { reason: 'connectionDropped' }
+  | { reason: 'connectionReset' }
+  | { reason: 'connectionTimedOutErrno' }
+  | { reason: 'hostDown' }
+  | { reason: 'staleConnection' }
+  | { reason: 'lockUnavailable' }
+  | { reason: 'cancelledErrno' }
+  | { reason: 'notPermitted'; path: string }
+  | { reason: 'pathNotFoundErrno'; path: string }
+  | { reason: 'noPermissionErrno'; path: string }
+  | { reason: 'alreadyExistsErrno'; path: string }
+  | { reason: 'crossDeviceOperation' }
+  | { reason: 'notAFolder'; path: string }
+  | { reason: 'isAFolderErrno'; path: string }
+  | { reason: 'diskFullErrno' }
+  | { reason: 'readOnlyVolumeErrno' }
+  | { reason: 'notSupportedErrno' }
+  | { reason: 'networkUnreachable' }
+  | { reason: 'connectionRefused' }
+  | { reason: 'symlinkLoopErrno'; path: string }
+  | { reason: 'nameTooLongErrno' }
+  | { reason: 'hostUnreachable' }
+  | { reason: 'folderNotEmpty'; path: string }
+  | { reason: 'quotaExceeded' }
+  | { reason: 'authRequiredEauth' }
+  | { reason: 'authRequiredEneedauth' }
+  | { reason: 'devicePoweredOff' }
+  | { reason: 'attributeNotFound' }
+  | { reason: 'diskReadProblem'; path: string }
+  | { reason: 'unexpectedSystemResponse' }
+  | { reason: 'deviceProblem' }
+  | { reason: 'couldntReadUnknown'; path: string }
+  | { reason: 'notFound'; path: string }
+  | { reason: 'tccRestricted'; path: string }
+  | { reason: 'permissionDenied'; path: string }
+  | { reason: 'alreadyExists'; path: string }
+  | { reason: 'cancelled' }
+  | { reason: 'deviceDisconnected'; path: string }
+  | { reason: 'readOnly' }
+  | { reason: 'storageFull' }
+  | { reason: 'connectionTimedOut' }
+  | { reason: 'notSupported' }
+  | { reason: 'deletePending'; path: string }
+  | { reason: 'ioSerious'; path: string; osMessage: string }
+  | { reason: 'isADirectory'; path: string }
+  | { reason: 'emptyRootICloud' }
+  | { reason: 'git'; kind: FriendlyGitErrorKind }
 
 // Opening event payload (emitted just before read_dir starts - the slow part for network folders)
 export type ListingOpeningEvent = {
@@ -3690,8 +3807,8 @@ export type ListingStatus =
 /**
  *  Snapshot of the system pane labels we surface in user-facing copy.
  *
- *  Field names match the placeholder tokens used by [`expand`] (`{system_settings}` →
- *  [`Self::system_settings`], etc.).
+ *  Field names match the placeholder tokens the frontend substitutes
+ *  (`{system_settings}` → [`Self::system_settings`], etc.).
  */
 export type LocalizedSystemStrings = {
   systemSettings: string
@@ -3769,8 +3886,6 @@ export type ManualConnectResult = {
   host: NetworkHost
   sharePath: string | null
 }
-
-export type Markdown = string & { readonly __markdown: unique symbol }
 
 /**
  *  `mcp-settings-close`: ask the settings window to close itself. Emitted via a
@@ -4252,6 +4367,33 @@ export type PrepareResult = {
   ready: boolean
   entryCount: number
 }
+
+/**
+ *  Known cloud/mount provider. The variant identity crosses IPC (serialized
+ *  camelCase); the FE maps it to display names, app names, and the
+ *  (provider, category) suggestion table. Variant names match the TS `Provider`
+ *  union member-for-member.
+ */
+export type Provider =
+  | 'dropbox'
+  | 'googleDrive'
+  | 'oneDrive'
+  | 'box'
+  | 'pCloud'
+  | 'nextcloud'
+  | 'synologyDrive'
+  | 'tresorit'
+  | 'protonDrive'
+  | 'sync'
+  | 'egnyte'
+  | 'macDroid'
+  | 'iCloud'
+  | 'pCloudFuse'
+  | 'macFuse'
+  | 'veraCrypt'
+  | 'cmVolumes'
+  // Any unrecognized dir under `~/Library/CloudStorage/`.
+  | 'genericCloudStorage'
 
 /**
  *  `quick-look-closed`: the preview panel left the screen (our `orderOut:`, the
