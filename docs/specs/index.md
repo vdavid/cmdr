@@ -43,6 +43,8 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
       formatting layer with a single locale source; step 3 of i18n-readiness (formatters only, no plurals/catalog)
 - [ ] 2026-06-16 i18n-runtime-plan.md - Custom thin i18n runtime + JSON message catalog (intl-messageformat ICU engine,
       Svelte `<Trans>`, generated `MessageKey` types, semantic scoped keys, no TMS); step 2 of i18n-readiness
+- [ ] 2026-06-16 i18n-screenshots-plan.md - Auto-couple a context screenshot to every catalog key via runtime
+      capture-mode + a Playwright driver; visual context for translator agents (i18n follow-on)
 - [x] 2026-06-15 doc-context-diet-plan.md - Shrank the resident agent-doc bundle (9.5k → 2k words): re-homed desktop
       content, ratcheted CLAUDE.md toward 600, mandated sibling DETAILS.md, dieted the rules to path-scoped homes,
       enforced with checks (details-sibling, resident-doc-budget, dead-links)
