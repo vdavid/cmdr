@@ -87,7 +87,6 @@ export function recreateMtpFixtures(): void {
     fs.writeFileSync(filePath, file.content)
   }
 
-  // eslint-disable-next-line no-console
   console.log(`MTP fixtures created at ${root}`)
 }
 
@@ -119,7 +118,6 @@ export function cleanupMtpFixtures(): void {
     throw new Error(`Refusing to delete path outside /tmp/cmdr-mtp-*: ${MTP_FIXTURE_ROOT}`)
   }
   fs.rmSync(MTP_FIXTURE_ROOT, { recursive: true, force: true })
-  // eslint-disable-next-line no-console
   console.log(`MTP fixtures cleaned up: ${MTP_FIXTURE_ROOT}`)
 }
 
@@ -127,13 +125,10 @@ export function cleanupMtpFixtures(): void {
 if (process.argv[1]?.endsWith('mtp-fixtures.ts')) {
   try {
     recreateMtpFixtures()
-    // eslint-disable-next-line no-console
     console.log('Self-test passed. Cleaning up...')
     cleanupMtpFixtures()
-    // eslint-disable-next-line no-console
     console.log('Done.')
   } catch (err: unknown) {
-    // eslint-disable-next-line no-console
     console.error('Self-test failed:', err)
     process.exit(1)
   }

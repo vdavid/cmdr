@@ -123,7 +123,6 @@ async function runAxeAudit(
 
   // Log all violations for visibility
   for (const v of results.violations) {
-    // eslint-disable-next-line no-console
     console.log(
       `[axe/${v.impact}] [${viewName}] ${v.id}: ${v.description}\n` +
         `  Help: ${v.helpUrl}\n` +
@@ -140,10 +139,8 @@ async function runAxeAudit(
     ]
       .filter(Boolean)
       .join(', ')
-    // eslint-disable-next-line no-console
     console.log(`\n⚠ [${viewName}] ${counts} violation(s) found`)
   } else {
-    // eslint-disable-next-line no-console
     console.log(`✓ [${viewName}] No accessibility violations`)
   }
 
@@ -389,7 +386,6 @@ for (const mode of ['light', 'dark'] as const) {
           const sectionSelector = `[data-section-id="${section.sectionId}"]`
           const sectionVisible = await pollUntil(settings, async () => settings.isVisible(sectionSelector), 5000)
           if (!sectionVisible) {
-            // eslint-disable-next-line no-console
             console.log(`⚠ Settings section "${section.name}" not visible, skipping`)
             continue
           }

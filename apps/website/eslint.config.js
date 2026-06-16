@@ -52,6 +52,15 @@ export default tseslint.config(
     },
   },
   {
+    // Console is the legitimate diagnostic channel in E2E specs (no app context;
+    // axe-violation output is the point). Placed after the `**/*.ts` block so it
+    // wins for `e2e/**`. Runtime code keeps `no-console: warn`.
+    files: ['e2e/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['src/dev/**/*.ts'],
     languageOptions: {
       globals: {

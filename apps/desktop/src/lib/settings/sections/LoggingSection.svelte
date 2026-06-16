@@ -52,8 +52,8 @@ Timestamp: ${info.timestamp}
                 copyFeedback = false
             }, 2000)
         } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error('Failed to copy diagnostic info:', error)
+            const log = getAppLogger('settings')
+            log.error('Failed to copy diagnostic info: {error}', { error: String(error) })
         }
     }
 </script>

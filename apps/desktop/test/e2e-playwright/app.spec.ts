@@ -428,7 +428,6 @@ test.describe('Navigation', () => {
     // next failure pinpoints which step blew the budget; remove once stable.
     const t0 = Date.now()
     const log = (phase: string) => {
-      // eslint-disable-next-line no-console
       console.log(`[backspace-test] ${phase} +${String(Date.now() - t0)}ms`)
     }
 

@@ -140,7 +140,6 @@ export function ensureCacheBuilt(): void {
         // Another concurrent builder won. Their cache is authoritative.
         fs.rmSync(tmpDir, { recursive: true, force: true })
       } else if (code === 'EXDEV') {
-        // eslint-disable-next-line no-console
         console.warn(`Cache rename hit EXDEV; falling back to copy into ${CACHE_ROOT}`)
         copyDirRecursive(tmpDir, CACHE_ROOT)
         fs.rmSync(tmpDir, { recursive: true, force: true })
@@ -207,7 +206,6 @@ function hardlinkBulkFromCache(targetRoot: string): void {
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code
       if (code === 'EXDEV') {
-        // eslint-disable-next-line no-console
         console.warn(`Hardlink hit EXDEV for ${fixtureFile}; falling back to copy`)
         fs.copyFileSync(cacheFile, fixtureFile)
       } else {
@@ -258,7 +256,6 @@ export function createFixtures(instanceId?: string): string {
     }
   }
 
-  // eslint-disable-next-line no-console
   console.log(`Fixtures created at ${rootPath} (~170 MB${instanceId ? ', bulk hardlinked from cache' : ''})`)
   return rootPath
 }
@@ -268,7 +265,6 @@ export function cleanupFixtures(rootPath: string): void {
     throw new Error(`Refusing to delete path outside ${LEGACY_PREFIX}*: ${rootPath}`)
   }
   fs.rmSync(rootPath, { recursive: true, force: true })
-  // eslint-disable-next-line no-console
   console.log(`Fixtures cleaned up: ${rootPath}`)
 }
 
@@ -332,13 +328,10 @@ if (process.argv[1]?.endsWith('fixtures.ts')) {
   try {
     const instanceId = process.env.CMDR_INSTANCE_ID
     const root = createFixtures(instanceId)
-    // eslint-disable-next-line no-console
     console.log('Self-test passed. Cleaning up...')
     cleanupFixtures(root)
-    // eslint-disable-next-line no-console
     console.log('Done.')
   } catch (err: unknown) {
-    // eslint-disable-next-line no-console
     console.error('Self-test failed:', err)
     process.exit(1)
   }

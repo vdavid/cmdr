@@ -41,7 +41,6 @@ for (const theme of ['light', 'dark'] as const) {
 
         // Log violations for visibility
         for (const v of results.violations) {
-          // eslint-disable-next-line no-console
           console.log(
             `[axe/${v.impact}] [${name} ${theme}] ${v.id}: ${v.description}\n` +
               `  Help: ${v.helpUrl}\n` +
@@ -52,7 +51,6 @@ for (const theme of ['light', 'dark'] as const) {
         }
 
         if (results.violations.length > 0) {
-          // eslint-disable-next-line no-console
           console.log(`⚠ [${name} ${theme}] ${results.violations.length} violation(s)`)
         }
 

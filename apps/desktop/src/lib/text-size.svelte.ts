@@ -53,8 +53,7 @@ let systemMultiplier = 1
 let unlistenSystem: UnlistenFn | undefined
 let unlistenSetting: (() => void) | undefined
 let remeasureTimer: number | undefined
-// eslint-disable-next-line prefer-const -- mutated via .add/.delete/.clear, never reassigned
-let scaleChangeListeners = new SvelteSet<(scale: number) => void>()
+const scaleChangeListeners = new SvelteSet<(scale: number) => void>()
 
 /**
  * Pure compounding function: the single point where system + user inputs

@@ -272,4 +272,15 @@ export default tseslint.config(
       'cmdr/no-arbitrary-sleep-in-e2e': 'error',
     },
   },
+  {
+    // Console is the legitimate diagnostic channel in tests and fixtures: there's
+    // no app logger in a Playwright/Vitest context, and the output is the point
+    // (axe violations, fixture lifecycle, skip reasons). Allow it here instead of
+    // scattering per-line `eslint-disable no-console` across the suite. Runtime
+    // code keeps `no-console: warn` and routes through `getAppLogger`.
+    files: ['test/**', 'src/**/*.test.ts', 'src/lib/test-a11y.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 )

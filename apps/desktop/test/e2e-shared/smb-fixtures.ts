@@ -97,7 +97,6 @@ export function areSmbContainersRunning(): boolean {
 /** Starts SMB Docker containers.
  * @param mode - 'minimal' (guest+auth, default), 'core', or 'all' (14 containers) */
 export function startSmbContainers(mode: 'minimal' | 'core' | 'all' = 'minimal'): void {
-  // eslint-disable-next-line no-console
   console.log(`Starting SMB Docker containers (${mode})...`)
   execSync(`./start.sh ${mode}`, {
     cwd: SMB_SERVERS_DIR,
@@ -124,7 +123,6 @@ export function ensureSmbContainers(): void {
  */
 export function preMountGuestShare(): void {
   if (fs.existsSync(SMB_GUEST_MOUNT)) {
-    // eslint-disable-next-line no-console
     console.log(`Guest share already mounted at ${SMB_GUEST_MOUNT}`)
     return
   }
@@ -145,7 +143,6 @@ export function preMountGuestShare(): void {
         },
       )
     }
-    // eslint-disable-next-line no-console
     console.log(`Mounted guest share at ${SMB_GUEST_MOUNT}`)
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
@@ -155,7 +152,6 @@ export function preMountGuestShare(): void {
       msg.includes('Device or resource busy') ||
       msg.includes('Location is already mounted')
     ) {
-      // eslint-disable-next-line no-console
       console.log(`Guest share already mounted at ${SMB_GUEST_MOUNT}`)
     } else {
       throw new Error(`Failed to mount guest share: ${msg}`, { cause: err })
@@ -171,7 +167,6 @@ export function unmountSmbShares(): void {
     for (const url of urls) {
       try {
         execSync(`gio mount -u '${url}'`, { encoding: 'utf-8', timeout: 10_000 })
-        // eslint-disable-next-line no-console
         console.log(`Unmounted ${url}`)
       } catch {
         // Best-effort: may already be unmounted
@@ -182,7 +177,6 @@ export function unmountSmbShares(): void {
       if (fs.existsSync(mountPoint)) {
         try {
           execSync(`umount ${mountPoint}`, { encoding: 'utf-8', timeout: 10_000 })
-          // eslint-disable-next-line no-console
           console.log(`Unmounted ${mountPoint}`)
         } catch {
           // Best-effort: may already be unmounted
@@ -239,13 +233,11 @@ function resetSmbSuiteDir(host: string, port: number, share: string): void {
         timeout: 15_000,
       })
     }
-    // eslint-disable-next-line no-console
     console.log(
       `SMB suite dir reset: //${host}/${share}/${SMB_E2E_SUITE_DIR} (cleared ${String(entries.length)} file(s))`,
     )
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
-    // eslint-disable-next-line no-console
     console.warn(`SMB suite dir reset failed (continuing anyway): ${msg}`)
   }
 }
@@ -271,7 +263,6 @@ export function setupSmb(): void {
     preMountGuestShare()
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
-    // eslint-disable-next-line no-console
     console.warn(`Pre-mount skipped: ${msg}`)
   }
   resetSmbSuiteDir(SMB_GUEST_HOST, SMB_GUEST_PORT, SMB_GUEST_SHARE)
@@ -313,13 +304,10 @@ export function smbWriteFile(host: string, port: number, share: string, remoteNa
 if (process.argv[1]?.endsWith('smb-fixtures.ts')) {
   try {
     setupSmb()
-    // eslint-disable-next-line no-console
     console.log('SMB setup complete. Tearing down...')
     teardownSmb()
-    // eslint-disable-next-line no-console
     console.log('Done.')
   } catch (err: unknown) {
-    // eslint-disable-next-line no-console
     console.error('SMB setup failed:', err)
     process.exit(1)
   }

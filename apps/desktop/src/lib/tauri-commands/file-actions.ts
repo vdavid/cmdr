@@ -41,7 +41,7 @@ export async function showFileContextMenu(
   paths: string[],
   restrictDestinationActions = false,
 ): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('show_file_context_menu', {
     path,
     filename,
@@ -86,7 +86,7 @@ export async function showBreadcrumbContextMenu(
   ejectVolumeId?: string,
   ejectVolumeName?: string,
 ): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('show_breadcrumb_context_menu', {
     shortcut,
     ejectVolumeId: ejectVolumeId ?? null,
@@ -119,7 +119,7 @@ export async function showInFinder(path: string): Promise<void> {
  * @param text - Text to copy.
  */
 export async function copyToClipboard(text: string): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('copy_to_clipboard', { text })
 }
 

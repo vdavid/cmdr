@@ -76,10 +76,8 @@ test.beforeEach(async ({ tauriPage }) => {
   // SMB tests start. Log the MCP port to help diagnose when/why this happens.
   try {
     const port = await tauriPage.evaluate<number>(`window.__TAURI_INTERNALS__.invoke('get_mcp_port')`)
-    // eslint-disable-next-line no-console
     console.log(`[SMB diag] MCP port: ${String(port)}`)
   } catch (err: unknown) {
-    // eslint-disable-next-line no-console
     console.error(`[SMB diag] MCP port check failed (app may be dead):`, err instanceof Error ? err.message : err)
   }
 

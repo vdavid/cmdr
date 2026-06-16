@@ -10,7 +10,7 @@
  * `DispatchExemptId` families (native-menu-owned, per-keystroke P2, and
  * component-scoped); they silently no-op after the preamble.
  */
-import { invoke } from '@tauri-apps/api/core'
+import { recordBreadcrumb } from '$lib/error-reporter/breadcrumbs'
 import { addToast } from '$lib/ui/toast'
 import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 import { getAppLogger } from '$lib/logging/logger'
@@ -157,10 +157,7 @@ export async function handleCommandExecute<K extends CommandId>(
   // - A `kind: "command"` breadcrumb → the manifest's rolling buffer, so triagers
   //   see what the user did right before an error fired.
   log.info(id)
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  void invoke('record_breadcrumb', { kind: 'command', message: id, ctx: null }).catch(() => {
-    // Best-effort: a failing breadcrumb shouldn't break the dispatch.
-  })
+  recordBreadcrumb('command', id)
 
   ctx.dialogs.showCommandPalette(false)
 

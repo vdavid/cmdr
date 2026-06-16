@@ -294,7 +294,7 @@ export async function getAiModelInfo(): Promise<AiModelInfo> {
 
 /** Starts downloading the AI model and inference runtime. */
 export async function startAiDownload(): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('start_ai_download')
 }
 
@@ -321,7 +321,7 @@ export async function configureAi(
   cloudBaseUrl: string,
   cloudModel: string,
 ): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('configure_ai', { provider, contextSize, cloudApiKey, cloudBaseUrl, cloudModel })
 }
 
@@ -332,7 +332,7 @@ export async function stopAiServer(): Promise<void> {
 
 /** Starts the local llama-server with the given context size. */
 export async function startAiServer(ctxSize: number): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('start_ai_server', { ctxSize })
 }
 

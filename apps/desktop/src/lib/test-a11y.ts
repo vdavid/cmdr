@@ -57,7 +57,6 @@ export async function expectNoA11yViolations(element: Element | Document = docum
   const results: AxeResults = await axe.run(element, AXE_OPTIONS)
 
   if (process.env.CMDR_A11Y_DEBUG) {
-    // eslint-disable-next-line no-console
     console.log(
       `[a11y] ran ${String(results.passes.length + results.violations.length + results.incomplete.length)} checks: ${String(results.passes.length)} pass, ${String(results.violations.length)} violations, ${String(results.incomplete.length)} incomplete`,
     )

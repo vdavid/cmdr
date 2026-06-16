@@ -147,7 +147,7 @@ test.describe('Drive indexing', () => {
     // Wait for the index to have data for sub-dir
     const stats = await waitForIndexData(tauriPage, subDirPath)
     if (!stats) {
-      console.warn('SKIPPED: Drive index not ready for fixture path within 500 s') // eslint-disable-line no-console
+      console.warn('SKIPPED: Drive index not ready for fixture path within 500 s')
       return
     }
 
@@ -172,7 +172,7 @@ test.describe('Drive indexing', () => {
 
     const initialStats = await waitForIndexData(tauriPage, subDirPath)
     if (!initialStats) {
-      console.warn('SKIPPED: Drive index not ready for fixture path within 500 s') // eslint-disable-line no-console
+      console.warn('SKIPPED: Drive index not ready for fixture path within 500 s')
       return
     }
 
@@ -214,12 +214,11 @@ test.describe('Drive indexing', () => {
       // Index might not have data yet, or hasn't picked up the extra file
       const fallback = await waitForIndexData(tauriPage, subDirPath)
       if (!fallback) {
-        console.warn('SKIPPED: Drive index not ready for fixture path within 500 s (fallback)') // eslint-disable-line no-console
+        console.warn('SKIPPED: Drive index not ready for fixture path within 500 s (fallback)')
         return
       }
       // If the index has data but not the exact size, the extra file hasn't been indexed yet.
       // Wait a bit more.
-      // eslint-disable-next-line no-console -- test diagnostic for index-readiness fallback timing
       console.warn(
         `Index has recursiveSize=${String(fallback.recursiveSize)}, expected ${String(expectedSizeWithExtra)}`,
       )

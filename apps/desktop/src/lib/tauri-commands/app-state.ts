@@ -47,7 +47,7 @@ export async function updatePaneTabs(pane: string, tabs: McpTabInfo[]): Promise<
 
 /** Updates the File menu "Pin tab" / "Unpin tab" label based on active tab state. */
 export async function updatePinTabMenu(isPinned: boolean): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('update_pin_tab_menu', { isPinned })
 }
 
@@ -86,7 +86,7 @@ export async function registerKnownDialogs(dialogs: readonly { id: string; descr
  * @param filename - Name of the file.
  */
 export async function updateMenuContext(path: string, filename: string): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('update_menu_context', { path, filename })
 }
 
@@ -115,7 +115,7 @@ export async function activateWindowMenu(kind: 'main' | 'viewer' | 'other'): Pro
  * @returns The new state of showHiddenFiles.
  */
 export async function toggleHiddenFiles(): Promise<boolean> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   return invoke<boolean>('toggle_hidden_files')
 }
 
@@ -126,7 +126,7 @@ export async function toggleHiddenFiles(): Promise<boolean> {
  * to call even before the menu is built (no-op if uninitialized).
  */
 export async function syncMenuShowHidden(checked: boolean): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('sync_menu_show_hidden', { checked })
 }
 
@@ -144,7 +144,7 @@ export async function updateViewModeMenu(
   leftMode: 'full' | 'brief',
   rightMode: 'full' | 'brief',
 ): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('update_view_mode_menu', { activePane, leftMode, rightMode })
 }
 
@@ -157,7 +157,7 @@ export async function updateViewModeMenu(
  * Should be called when the frontend is ready to avoid white flash.
  */
 export async function showMainWindow(): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('show_main_window')
 }
 
