@@ -350,7 +350,7 @@ function parseTsInterfaces(content: string): TsInterface[] {
 /**
  * Parses TypeScript type alias definitions (for union types like enums).
  */
-// eslint-disable-next-line complexity
+// eslint-disable-next-line complexity -- branchy string parser; not worth splitting for a build-time check
 function parseTsTypeAliases(content: string): TsTypeAlias[] {
   const aliases: TsTypeAlias[] = []
 
@@ -635,7 +635,7 @@ function compareSimpleEnumToUnion(rust: RustEnum, tsDefinition: string): DriftEr
 /**
  * Main function to run the drift detection.
  */
-// eslint-disable-next-line complexity
+// eslint-disable-next-line complexity -- orchestration entry point for this build-time drift check
 function main(): void {
   // pnpm runs scripts from the package directory (apps/desktop)
   const desktopDir = process.cwd()

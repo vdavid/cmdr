@@ -16,7 +16,6 @@ function createMockKv(store: Record<string, string> = {}): KVNamespace {
       return Promise.resolve()
     }),
     delete: vi.fn((key: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test mock, key is a local var
       delete store[key]
       return Promise.resolve()
     }),

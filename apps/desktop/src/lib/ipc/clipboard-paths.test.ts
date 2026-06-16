@@ -34,7 +34,6 @@ describe('commands.copyPathsToClipboard', () => {
   it('surfaces a string error when the backend rejects an empty list', async () => {
     const ipc = installIpcMock()
     ipc.mock('copy_paths_to_clipboard', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw wire shape to test the wire contract
       throw 'No files to copy'
     })
 

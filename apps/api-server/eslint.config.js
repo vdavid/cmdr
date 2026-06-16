@@ -60,4 +60,11 @@ export default tseslint.config(
       },
     },
   },
+  {
+    // Test fixtures delete dynamic keys off mock objects, which runtime code shouldn't.
+    files: ['src/**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-dynamic-delete': 'off',
+    },
+  },
 )

@@ -36,7 +36,7 @@
 </script>
 
 {#if href}
-    <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+    <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external URL in a Tauri app, not a SvelteKit route; resolve() does not apply -->
     <a class="link-button" {href} {target} {rel} {onclick} aria-label={ariaLabel}>
         {@render children()}
     </a>

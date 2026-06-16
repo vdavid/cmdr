@@ -46,7 +46,6 @@ describe('commands.connectToServer', () => {
   it('surfaces a string error on unreachable hosts', async () => {
     const ipc = installIpcMock()
     ipc.mock('connect_to_server', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw wire shape to test the wire contract
       throw 'host unreachable'
     })
 
@@ -89,7 +88,6 @@ describe('commands.listSharesOnHost', () => {
   it('surfaces the typed ShareListError discriminator (e.g. auth_required)', async () => {
     const ipc = installIpcMock()
     ipc.mock('list_shares_on_host', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw typed-error shape to test the wire contract
       throw { type: 'auth_required', message: 'Server requires credentials' }
     })
 
@@ -130,7 +128,6 @@ describe('commands.mountNetworkShare', () => {
   it('surfaces typed MountError variants (auth_failed) on the error branch', async () => {
     const ipc = installIpcMock()
     ipc.mock('mount_network_share', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw typed-error shape to test the wire contract
       throw { type: 'auth_failed', message: 'bad credentials' }
     })
 

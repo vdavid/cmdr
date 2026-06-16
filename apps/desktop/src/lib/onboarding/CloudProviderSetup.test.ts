@@ -40,7 +40,6 @@ vi.mock('$lib/tauri-commands', () => ({
 const settingsMap: Record<string, unknown> = {}
 function resetSettings(): void {
   for (const k of Object.keys(settingsMap)) {
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test fixture reset
     delete settingsMap[k]
   }
   settingsMap['ai.cloudProviderConfigs'] = '{}'

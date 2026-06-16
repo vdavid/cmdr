@@ -71,10 +71,7 @@ describe('quickLookState', () => {
     quickLookState.isOpen = false
     quickLookCloseMock.mockClear()
     for (const k of Object.keys(handlers)) {
-      // Reset module-singleton handlers between tests. ESLint's
-      // `no-dynamic-delete` is for production code; in test plumbing the
-      // dynamic delete is the simplest way to clear an open-shape mock map.
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      // Reset the open-shape mock map of module-singleton handlers between tests.
       delete handlers[k]
     }
     unlistenFns.length = 0

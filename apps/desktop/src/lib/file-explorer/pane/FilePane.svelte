@@ -2423,7 +2423,7 @@
         // sync mutation. Keep the guard at runtime.
          
         const e = snap.entries[cursorIndex]
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard; cursor can point past entries after delete-sync (see comment above)
         if (!e) {
             entryUnderCursor = null
             return

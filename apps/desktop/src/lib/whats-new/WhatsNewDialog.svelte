@@ -78,14 +78,14 @@
                             <span class="date">{release.date}</span>
                         </h3>
                         {#if release.lead != null}
-                            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                            <!-- eslint-disable-next-line svelte/no-at-html-tags -- trusted: renders our committed CHANGELOG via renderMarkdown(), not user input -->
                             <p class="lead">{@html renderMarkdown(release.lead)}</p>
                         {/if}
                         {#each release.sections as section (section.title)}
                             <h4 class="section-title">{section.title}</h4>
                             <ul class="entries">
                                 {#each section.entries as entry, i (i)}
-                                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                    <!-- eslint-disable-next-line svelte/no-at-html-tags -- trusted: renders our committed CHANGELOG via renderMarkdown(), not user input -->
                                     <li>{@html renderMarkdown(entry)}</li>
                                 {/each}
                             </ul>

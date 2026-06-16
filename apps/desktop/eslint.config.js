@@ -273,14 +273,19 @@ export default tseslint.config(
     },
   },
   {
-    // Console is the legitimate diagnostic channel in tests and fixtures: there's
-    // no app logger in a Playwright/Vitest context, and the output is the point
-    // (axe violations, fixture lifecycle, skip reasons). Allow it here instead of
-    // scattering per-line `eslint-disable no-console` across the suite. Runtime
-    // code keeps `no-console: warn` and routes through `getAppLogger`.
+    // Test code legitimately does things runtime code shouldn't, so relax a few
+    // rules here instead of scattering per-line `eslint-disable` across the suite:
+    // - no-console: no app logger in a Playwright/Vitest context; the output is the
+    //   point (axe violations, fixture lifecycle, skip reasons).
+    // - only-throw-error: mockIPC must throw the raw wire/typed-error shape to
+    //   exercise the IPC contract.
+    // - no-dynamic-delete: fixture resets delete dynamic keys off mock objects.
+    // Runtime code keeps all three on (console routes through `getAppLogger`).
     files: ['test/**', 'src/**/*.test.ts', 'src/lib/test-a11y.ts'],
     rules: {
       'no-console': 'off',
+      '@typescript-eslint/only-throw-error': 'off',
+      '@typescript-eslint/no-dynamic-delete': 'off',
     },
   },
 )

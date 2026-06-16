@@ -43,7 +43,6 @@ vi.mock('$lib/settings', async (importOriginal) => {
     getRawStoreValue: (key: string) => Promise.resolve(rawStoreMap[key]),
     deleteRawStoreKeys: (keys: readonly string[]) => {
       for (const k of keys) {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test fixture
         delete rawStoreMap[k]
       }
       return Promise.resolve()
@@ -81,11 +80,9 @@ import { migrateApiKeysFromSettings, pushConfigToBackend } from './ai-config'
 
 function resetState(): void {
   for (const k of Object.keys(settingsMap)) {
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test fixture reset
     delete settingsMap[k]
   }
   for (const k of Object.keys(rawStoreMap)) {
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test fixture reset
     delete rawStoreMap[k]
   }
   saveAiApiKey.mockReset()

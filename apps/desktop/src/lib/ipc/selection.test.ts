@@ -64,7 +64,6 @@ describe('commands.translateSelectionQuery', () => {
   it("surfaces the backend error string when the cloud provider isn't configured", async () => {
     const ipc = installIpcMock()
     ipc.mock('translate_selection_query', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw wire shape to test the contract
       throw 'AI selection needs a cloud provider. Set one in Settings > AI.'
     })
 
@@ -144,7 +143,6 @@ describe('commands.clearRecentSelections', () => {
   it('propagates a backend error so the UI can toast it', async () => {
     const ipc = installIpcMock()
     ipc.mock('clear_recent_selections', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw wire shape
       throw "Couldn't write selection history"
     })
 

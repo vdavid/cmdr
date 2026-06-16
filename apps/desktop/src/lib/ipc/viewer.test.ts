@@ -66,7 +66,6 @@ describe('commands.viewerOpen', () => {
   it('surfaces IpcError on the error branch (timedOut: false for non-blocking errors)', async () => {
     const ipc = installIpcMock()
     ipc.mock('viewer_open', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw IpcError shape to test the wire contract
       throw { message: 'File not found', timedOut: false }
     })
 
@@ -195,7 +194,6 @@ describe('commands.viewerClose', () => {
   it('surfaces a string error on the error branch (viewer_close uses Result<_, String>)', async () => {
     const ipc = installIpcMock()
     ipc.mock('viewer_close', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw wire shape to test the wire contract
       throw 'session not found'
     })
 
@@ -251,7 +249,6 @@ describe('commands.viewerReadRange', () => {
   it('surfaces a typed `Cancelled` error on the error branch', async () => {
     const ipc = installIpcMock()
     ipc.mock('viewer_read_range', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw ViewerError shape
       throw { kind: 'cancelled' }
     })
 
@@ -271,7 +268,6 @@ describe('commands.viewerReadRange', () => {
   it('surfaces a typed `TimedOut` error on the error branch', async () => {
     const ipc = installIpcMock()
     ipc.mock('viewer_read_range', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw ViewerError shape
       throw { kind: 'timedOut' }
     })
 

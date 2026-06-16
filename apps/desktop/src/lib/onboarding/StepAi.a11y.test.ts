@@ -91,7 +91,6 @@ function mountStep() {
 
 beforeEach(() => {
   for (const k of Object.keys(settingsMap)) {
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test fixture reset
     delete settingsMap[k]
   }
   settingsMap['ai.provider'] = 'off'

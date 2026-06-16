@@ -68,7 +68,6 @@ describe('commands.copyFiles', () => {
   it('surfaces a WriteOperationError variant on the error branch', async () => {
     const ipc = installIpcMock()
     ipc.mock('copy_files', () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw typed-error shape to test the wire contract
       throw { type: 'source_not_found', path: '/a/missing.txt' }
     })
 
