@@ -7,6 +7,8 @@
 // Use log::* macros instead of println!/eprintln!/dbg! for proper log level control
 // and so error-report bundles capture the context. See `logging/CLAUDE.md` for the rules.
 #![deny(clippy::print_stdout, clippy::print_stderr, clippy::dbg_macro)]
+// No leftover `todo!()` / `unimplemented!()` stubs reaching a build (`unreachable!()` stays allowed).
+#![deny(clippy::todo, clippy::unimplemented)]
 // Require justification for all #[allow] attributes
 #![warn(clippy::allow_attributes_without_reason)]
 // Require a `// SAFETY:` comment on every `unsafe {}` block: each site must state the concrete
