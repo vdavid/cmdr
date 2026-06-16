@@ -339,16 +339,35 @@ pattern; record D2/D4/D10 as Decision/Why.
 Checks: `pnpm check --fast` while iterating; `pnpm check desktop`; FSW functional + a11y suites; settings E2E
 (`settings.spec.ts`).
 
-### M3. Roll out to the remaining pages (gated on D7 decisions)
+### M3. Roll out to the standard pages (David's decisions, confirmed 2026-06-17)
 
-Intent: apply the breakdown mechanically after placements are settled.
+Intent: apply the breakdown mechanically to every registry-driven page.
 
-- Resolve D7 placement decisions with David first.
-- For each page: set `cardKey` on its settings (add catalog entries + a `MessageKey` codegen run for any new card
-  title), wrap each card's row run in `{#if anyVisible(...)}<SectionCard>` (D2). Add a hidden anchor for any
-  non-registry searchable row (none known beyond index-size today). Single-card pages get one unlabeled `SectionCard`,
-  subject to the D8 visual check.
-- Visual pass in the running app (D8): confirm single-row pages don't read as too heavy; opt out per-page if they do.
+**D7 placements (decided): no moves.** `fileViewer.suppressBinaryWarning` stays in Advanced; `appearance.showFunctionKeyBar`
+and `listing.directorySortMode` stay in `Appearance › Listing`. **D8 (decided): single-card pages get one unlabeled
+`SectionCard`** (no bare-row opt-out). **Card titles: placeholder copy is fine for now** (catalog strings David will
+review later); use the working titles below.
+
+Multi-card pages and their groups (confirmed groupings 4–8):
+- **Appearance › Colors and formats**: Theme (theme mode, app color) · List coloring (size colors, date colors, striped
+  rows) · Date and time (format, custom format) · Pane tints (local, SMB, MTP).
+- **Appearance › Listing**: Names and icons (app icons, show extensions, sort directories, function key bar) · Brief mode
+  (column width mode, max width).
+- **Behavior › File operations**: Renaming (extension changes) · Conflicts and progress (max conflicts, progress
+  interval). (`maxConflictsToShow`/`progressUpdateInterval` are `showInAdvanced` mirrors; here they get a `cardKey` for
+  their main page — Advanced handles its own grouping in M6.)
+- **File systems › SMB/Network shares**: Connection (enable networking, direct SMB) · Performance and timeouts (share
+  cache, timeout mode, custom timeout, concurrency).
+- **Updates & privacy**: Updates (auto-check, what's new) · Privacy and data sharing (anonymous stats, beta email, crash
+  reports, error reports).
+
+Single-card (one unlabeled `SectionCard`): Appearance › File and folder sizes, Appearance › Zoom and density, Behavior ›
+Search, File systems › MTP, File systems › Git, Viewer, Developer › MCP server, Developer › Logging.
+
+- For each page: set `cardKey` on its settings (catalog entries under `settings.<feature>.card*` + `pnpm intl:keys`),
+  wrap each card's row run in `{#if anyVisible(...)}<SectionCard>` (D2). Single-card pages: one unlabeled `SectionCard`
+  wrapping all rows.
+- Feedback loop: run the app and look at every migrated page (search + no-search) before calling a page done.
 
 Tests: each page's `*Section.a11y.test.ts` updated; add a search-empty-card assertion to a representative multi-card
 page (e.g. `Updates & privacy`); E2E `settings.spec.ts`: a cross-card search groups correctly; sidebar order unchanged.
@@ -356,6 +375,94 @@ page (e.g. `Updates & privacy`); E2E `settings.spec.ts`: a cross-card search gro
 Docs: each touched `sections/DETAILS.md` entry notes its card breakdown.
 
 Checks: full `pnpm check` per milestone; `pnpm check --include-slow` before wrapping (E2E).
+
+## Special sections (M4–M7): bring AI, License, Advanced, Keyboard shortcuts into the card language
+
+David wants the four custom sections to look like the rest. All use the same `SectionCard` + (where applicable)
+`{#if anyVisible}` pattern; the `card`-is-layout-only invariant (D2) holds everywhere. Run sequentially, each with an
+app feedback loop. Order: M4 (License, trivial) → M5 (AI) → M6 (Advanced, the structural one) → M7 (Keyboard).
+
+### M4. License — one unlabeled `SectionCard`
+
+License is one logical block (`getLicenseInfo`/`getLicenseStatus`, no store/state machine). Wrap the `.license-info` +
+`.actions` block in a single unlabeled `SectionCard`. Drop `.license-info`'s existing card-like styling to avoid a
+card-in-card. The personal/commercial/expired/loading states are presentational variants of the one block. a11y test
+stays green; add nothing structural.
+
+### M5. AI — tasteful cards, not one box over everything
+
+`AiSection` is a provider shell (`ai.provider` toggle → conditional `AiCloudSection`/`AiLocalSection`). Do NOT force one
+card over the whole section: it has full-bleed blocks that read as cards already or don't belong inside one
+(`AiLocalSection`'s `.status-card`, `.ram-gauge-container`, `.actions`, the body-level delete `ModalDialog`). Plan:
+- Wrap the provider toggle in its own unlabeled `SectionCard` (or a "Provider" card).
+- `AiCloudSection`: wrap its `SettingRow` list + status block in one `SectionCard`.
+- `AiLocalSection`: wrap the registry-row cluster (context size, etc.) in a `SectionCard`; leave the status card, RAM
+  gauge, install/actions, and modal outside (they're already visually distinct).
+- `SectionCard` is pure presentation and subcomponents already take `shouldShow` as a prop, so no state-machine risk.
+- **This is a judgment call — verify the exact card boundaries in the running app** and adjust for "superb UX". David's
+  steer was "maybe one SectionCard for the whole thing?"; the tasteful split above is the recommendation, but confirm
+  visually.
+
+### M6. Advanced — card-group the auto-rendered rows AND make them globally searchable (the structural one)
+
+Today `AdvancedSection` auto-renders a flat list from `getAdvancedSettings()` and uses a SEPARATE `searchAdvancedSettings`
+index; the global index excludes `showInAdvanced` (`settings-search.ts:38-39`). Consequence: **advanced settings are
+currently unfindable from the main settings search** (the sidebar/section gates run the global index, which excludes
+them). David explicitly wants them grouped AND "searchable just like the rest". So:
+
+- **Unify search onto the global pipeline.** Stop excluding `showInAdvanced` from `buildSearchIndex`; drive the Advanced
+  section with `createShouldShow(searchQuery)` + `shouldShow(id)` like every other page; retire `searchAdvancedSettings`.
+  This makes advanced settings light the sidebar and render under global search, and fixes the latent
+  `getMatchIndicesForLabel` highlight-offset bug (it currently runs advanced rows against an index that excludes them).
+  Verify advanced settings don't leak into other pages' results (they won't — each carries `section: ['Advanced']`, and
+  `getMatchingSettingIdsInSection` is section-scoped).
+- **Add `cardKey` to all 21 `showInAdvanced` settings**, grouped into logical cards (working titles, David reviews
+  later). Proposed cards: **Performance** (prefetch buffer, virtualization rows/cols), **File watching** (file-watcher
+  debounce, disk-space change threshold), **File operations** (max conflicts, progress interval), **Network and mounts**
+  (SMB concurrency, mount timeout, service-resolve timeout, filter safe-save artifacts), **Hints and warnings** (suppress
+  binary-view warning, suppress Quick Look hint), **Input** (drag threshold, type-to-jump reset delay), **History and
+  limits** (closed-tab history, recent searches, recent selections), **Logging and diagnostics** (max log storage,
+  attach email to reports), **Updates** (update-check interval). Settings with no `cardKey` fall into a trailing **Other**
+  card (none expected if all 21 are assigned).
+- **Render as cards.** Replace the flat `{#each}` with: a pure, unit-tested `groupAdvancedByCard(settings)` (parallel to
+  `groupCommandsByScope`) → ordered list of `{cardKey, title, settings[]}`; outer loop renders
+  `{#if anyVisible(shouldShow, ...memberIds)}<SectionCard label={tString(cardKey)}>`, inner loop renders each row guarded
+  by `{#if shouldShow(id)}`. Keep the bespoke `.advanced-setting-row` rendering for now (migrating it to shared
+  `SettingRow` is optional/out-of-scope; don't expand risk).
+- Tests: `groupAdvancedByCard` set-equality guard (union of grouped settings === all advanced settings; fails if a new
+  advanced setting lacks a `cardKey` bucket); a search test that advanced settings now match the global search and group
+  into cards with no empty frames. Update `AdvancedSection.a11y.test.ts`.
+- Feedback loop: in the app, confirm advanced settings are now findable from the main search and grouped sensibly.
+
+### M7. Keyboard shortcuts — scope groups become `SectionCard`s; the Global row gets a home
+
+`groupCommandsByScope` already emits only non-empty groups, so empty-card-hiding is FREE — no `anyVisible`/`shouldShow`
+plumbing needed here (commands aren't registry settings). Plan:
+- Swap the `.scope-group`/`.scope-title` (`<h3>`) rendering for `<SectionCard label={group.title}>` keyed on
+  `group.scope`; drop the old `.scope-title` CSS. Group titles stay sourced from `scopeOrder`/`group.title` (don't
+  reintroduce an ad-hoc title list — the existing grouping guard).
+- Both the in-section filter (name/key/chip) and the global settings search already flow through `groupCommandsByScope`,
+  so a group's card shows iff it has ≥1 visible row automatically, under both — exactly the requested behavior.
+- **The Global row (`GlobalShortcutRow`, the go-to-latest hotkey) needs an explicit home:** it renders outside the
+  `{#each}` (it's not a registry `Command`/`CommandScope`; its binding lives in `settings.json`). Give it its own small
+  `SectionCard` (a "Global" card) so it reads consistently, rather than a bare trailing row. Note it's the same shortcut
+  FSW surfaces as the "Go to latest download" card — that duplication is deliberate (rebinding here, on/off there).
+- **Scrolling decision:** keep the cards inside the existing `.commands-list` scroller (preserving its scrollbar-gutter
+  logic) unless the app feedback loop shows page-scroll reads better. Verify the deep-link flash + scroll-into-view still
+  lands on a row inside a card.
+- Read-only native/fixed-key rows need no special handling (they flow into cards via `group.commands`). Tests: keep the
+  `keyboard-shortcuts-grouping` set-equality guard; update the section's functional + a11y tests for the card wrapper;
+  confirm the deep-link/flash test still passes.
+
+### Definition of done (M3–M7)
+
+- Every Settings page renders its rows in `SectionCard`s, consistent with FSW; empty cards never appear under search.
+- Advanced settings are findable from the main settings search and grouped into cards.
+- Keyboard scope groups are cards and group correctly under both the section filter and the global search; the Global row
+  has a card home.
+- AI and License match the card language without breaking their state machines.
+- All card titles come from the catalog (no raw strings); `pnpm intl:keys` clean; `pnpm check` (incl. a11y + settings
+  E2E) green. Each section visually verified in the running app.
 
 ## Parallelization
 
@@ -369,8 +476,9 @@ wrap pages one at a time. Sequential is fine and lower-risk.
 - Card visibility is computed from the same `shouldShow` the rows use (single source) — no registry-derived second path.
 - The two reported FSW bugs have regression tests that were red before the fix, at the correct layers.
 - The index-size row is searchable via its hidden anchor; the "pure-action card" hole is closed by the anchor pattern.
-- `cardKey` is documented as metadata-only and ignored by Advanced; card titles come from the catalog (no raw strings,
-  D0); D7 placements resolved with David; D8 single-card visual check done in-app.
+- `cardKey` is documented as metadata-only (never read for visibility); card titles come from the catalog (no raw
+  strings, D0); D7 placements resolved with David; D8 single-card visual check done in-app. (Note: M6 brings Advanced
+  onto the same `cardKey`/global-search pipeline; the earlier "ignored by Advanced" note no longer holds.)
 - No new wrapper component; the third level is an inline `{#if anyVisible}<SectionCard>` (D2/D10); section/subsection
   vocabulary unchanged.
 - `pnpm check` (incl. a11y and E2E) green; docs in sync, with the D2/D4/D10 decisions captured as Decision/Why.
