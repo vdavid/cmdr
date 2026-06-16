@@ -118,7 +118,9 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
             fe.display_size = Some(pluralize_with(count, "branch", "branches"));
             fe.display_size_tooltip = Some(format!(
                 "{} on this repo",
-                fe.display_size.as_ref().expect("display_size set to Some on the line above")
+                fe.display_size
+                    .as_ref()
+                    .expect("display_size set to Some on the line above")
             ));
             fe.modified_at = newest_branch_tip_secs(handle);
         }
@@ -128,7 +130,9 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
             fe.display_size = Some(pluralize(count, "tag"));
             fe.display_size_tooltip = Some(format!(
                 "{} on this repo",
-                fe.display_size.as_ref().expect("display_size set to Some on the line above")
+                fe.display_size
+                    .as_ref()
+                    .expect("display_size set to Some on the line above")
             ));
             fe.modified_at = newest_tag_secs(handle);
         }
@@ -138,7 +142,9 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
             fe.display_size = Some(pluralize(count, "commit"));
             fe.display_size_tooltip = Some(format!(
                 "{} reachable from HEAD",
-                fe.display_size.as_ref().expect("display_size set to Some on the line above")
+                fe.display_size
+                    .as_ref()
+                    .expect("display_size set to Some on the line above")
             ));
             fe.modified_at = head_commit_secs(handle);
         }
@@ -148,7 +154,11 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
                 .unwrap_or(0);
             fe.size = Some(count);
             fe.display_size = Some(pluralize_with(count, "stash entry", "stash entries"));
-            fe.display_size_tooltip = Some(fe.display_size.clone().expect("display_size set to Some on the line above"));
+            fe.display_size_tooltip = Some(
+                fe.display_size
+                    .clone()
+                    .expect("display_size set to Some on the line above"),
+            );
             fe.modified_at = newest_stash_secs(repo_root);
         }
         Cat::Worktrees => {
@@ -156,7 +166,11 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
             let count = entries.len() as u64;
             fe.size = Some(count);
             fe.display_size = Some(pluralize(count, "linked worktree"));
-            fe.display_size_tooltip = Some(fe.display_size.clone().expect("display_size set to Some on the line above"));
+            fe.display_size_tooltip = Some(
+                fe.display_size
+                    .clone()
+                    .expect("display_size set to Some on the line above"),
+            );
             fe.modified_at = newest_worktree_head_secs(&repo);
         }
         Cat::Submodules => {
@@ -164,7 +178,11 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
             let count = entries.len() as u64;
             fe.size = Some(count);
             fe.display_size = Some(pluralize(count, "submodule"));
-            fe.display_size_tooltip = Some(fe.display_size.clone().expect("display_size set to Some on the line above"));
+            fe.display_size_tooltip = Some(
+                fe.display_size
+                    .clone()
+                    .expect("display_size set to Some on the line above"),
+            );
             fe.modified_at = newest_submodule_secs(&repo, handle, repo_root);
         }
     }

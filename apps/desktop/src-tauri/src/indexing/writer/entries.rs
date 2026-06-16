@@ -272,19 +272,18 @@ fn upsert_insert_new(
     next_id: &AtomicI64,
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
-    let (logical_size, physical_size) =
-        if should_dedup
-            && IndexStore::has_sized_entry_for_inode(
-                conn,
-                inode.expect("should_dedup is true only when inode.is_some()"),
-                None,
-            )
-            .unwrap_or(false)
-        {
-            (None, None)
-        } else {
-            (logical_size, physical_size)
-        };
+    let (logical_size, physical_size) = if should_dedup
+        && IndexStore::has_sized_entry_for_inode(
+            conn,
+            inode.expect("should_dedup is true only when inode.is_some()"),
+            None,
+        )
+        .unwrap_or(false)
+    {
+        (None, None)
+    } else {
+        (logical_size, physical_size)
+    };
 
     let new_entry_id = next_id.fetch_add(1, Ordering::Relaxed);
     match IndexStore::insert_entry_v2_with_id(

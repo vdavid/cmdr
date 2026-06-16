@@ -54,7 +54,9 @@ fn make_file_entry(name: &str, parent: &str, size: u64) -> FileEntry {
 }
 
 fn insert_listing(id: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>) {
-    let mut cache = LISTING_CACHE.write().expect("LISTING_CACHE lock poisoned by a panicked test thread");
+    let mut cache = LISTING_CACHE
+        .write()
+        .expect("LISTING_CACHE lock poisoned by a panicked test thread");
     cache.insert(
         id.to_string(),
         CachedListing {
@@ -72,7 +74,9 @@ fn insert_listing(id: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>
 }
 
 fn remove_listing(id: &str) {
-    let mut cache = LISTING_CACHE.write().expect("LISTING_CACHE lock poisoned by a panicked test thread");
+    let mut cache = LISTING_CACHE
+        .write()
+        .expect("LISTING_CACHE lock poisoned by a panicked test thread");
     cache.remove(id);
 }
 

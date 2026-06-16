@@ -709,7 +709,8 @@ async fn process_request<R: Runtime>(
             (
                 McpResponse::success(
                     request.id,
-                    serde_json::to_value(caps).expect("ServerCapabilities is a plain serde struct that always serializes"),
+                    serde_json::to_value(caps)
+                        .expect("ServerCapabilities is a plain serde struct that always serializes"),
                 ),
                 Some(session_id),
             )
