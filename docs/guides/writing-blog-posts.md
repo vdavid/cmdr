@@ -36,24 +36,35 @@ description: A one- or two-sentence summary for SEO and social sharing.
 ## Description vs. excerpt
 
 - **`description`** (frontmatter): a concise 1–2 sentence summary. Used for meta tags (`og:description`,
-  `<meta name="description">`), the subtitle on the post page header, and the OG image.
-- **Excerpt** (`<!-- more -->` marker): controls what readers see on the blog index. Can be multiple paragraphs with
-  full markdown formatting.
+  `<meta name="description">`), the subtitle on the post page header, and the OG image. It's also the last-resort blurb
+  on the blog index (see below).
+- **Excerpt**: what shows under the title on the blog index, followed by a "Read more" link.
 
-## Excerpts
+## Blog-index blurb
 
-Place `<!-- more -->` in your post to control what appears on the blog index. Content above the marker is shown as the
-excerpt, followed by a "Read more" link. Content below the marker only appears on the individual post page.
+The blog index picks each post's blurb from the first of these that's set, so you control it without dumping the top of
+the article into the list:
 
-```markdown
-Here's the intro paragraph that shows on the blog index.
+1. **`excerpt`** frontmatter (markdown): an explicit list-only blurb. Use this when the opening of the post (a heading,
+   a long first paragraph) wouldn't read well in the list.
 
-<!-- more -->
+   ```yaml
+   excerpt: A one-liner written just for the blog index.
+   ```
 
-This part only shows on the full post page.
-```
+2. **`<!-- more -->` marker** in the body: everything above it becomes the blurb. Good for a multi-paragraph teaser that
+   doubles as the article's intro. Content below the marker only appears on the full post page.
 
-If you omit the marker, the full post is shown on the index.
+   ```markdown
+   Here's the intro that shows on the blog index.
+
+   <!-- more -->
+
+   This part only shows on the full post page.
+   ```
+
+3. **`description`**: if neither of the above is set, the index falls back to the `description`. So a short post that
+   opens straight into a heading can just rely on its `description` and skip both.
 
 ## Download dropdown
 

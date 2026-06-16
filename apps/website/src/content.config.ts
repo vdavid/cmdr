@@ -7,6 +7,9 @@ const blog = defineCollection({
     title: z.string(),
     date: z.coerce.date(),
     description: z.string(),
+    // Optional blog-index blurb (markdown). Overrides the `<!-- more -->` slice and the `description`
+    // fallback for what shows under the post title on /blog. See docs/guides/writing-blog-posts.md.
+    excerpt: z.string().optional(),
     cover: z.string().optional(),
   }),
 })

@@ -1,7 +1,8 @@
 ---
 title: '35 years of file managers'
 date: 2026-06-15
-description: 'And how I ended up building my own.'
+description: 'I was a big Norton and Total Commander fan, but found no great macOS alternative, so I created Cmdr.'
+excerpt: 'And how I ended up building my own.'
 ---
 
 ## Norton Commander
@@ -10,8 +11,6 @@ When I got my first PC at age 6, I cried. It was **1991**, and I'd really wanted
 [Commodore 64](https://en.wikipedia.org/wiki/Commodore_64#/media/File:Commodore-64-Computer-FL.jpg), because I knew it
 had a lot of games. And instead, I got this crappy PC, with an
 [Intel 286 CPU](https://en.wikipedia.org/wiki/Intel_80286), 40 MB of HDD, and a monochrome screen.
-
-<!-- more -->
 
 I had three pieces of software on this PC:
 
