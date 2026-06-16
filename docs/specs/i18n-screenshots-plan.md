@@ -169,6 +169,69 @@ step (capture in parallel if needed, couple once). Given no rush, sequential is 
 - `docs/guides/i18n.md` § Screenshots reflects the shipped mechanism + the re-run command.
 - Capture mode is a verified production no-op.
 
+## Fresh-eyes review findings (folded in 2026-06-16 — these correct the spec above)
+
+A reviewer read this spec against the committed spike (`99f9fd07`) and the real harness/E2E APIs. Key outcome: the
+committed spike DIVERGES from the design as first written, and has a few guaranteed breaks. Treat the items below as
+authoritative where they contradict the sections above.
+
+Spec-vs-code drift (reconcile the spec TO the committed code, which is the more-evolved truth):
+- **Capture gating (corrects Decision 1).** The code does NOT use `CMDR_I18N_CAPTURE=1` / a Vite `define` /
+  `window.__i18nCapture`. It gates on `getAppMode() !== 'prod'` (runtime, from `import.meta.env.DEV` + the
+  `CMDR_E2E_MODE` backend flag) and exposes `window.__cmdrI18nCapture`. Either adopt the code's approach in the spec, or
+  consciously switch — but pick one.
+- **"Zero prod overhead" is NOT met as built (corrects the non-goal + DoD).** The hook is `if (captureActive) record(key)`
+  with `captureActive` a runtime `let` — a single always-false, well-predicted branch that DOES compile into the prod
+  bundle (it inherits into `tString`, which `measure-column-widths.ts` calls in its fold). So "verified production no-op"
+  is unsatisfiable as written. DECISION for execution (recommend (b)): (a) accept it and reword the promise to
+  "negligible single-branch overhead, not zero"; or (b) gate behind a build-time-eliminable constant (`import.meta.env`
+  / Vite `define`) so the dead-code-eliminator strips it, and verify by grepping the prod bundle. Resolve this — it's
+  the central non-goal.
+- **"stash" references are stale (corrects Decisions 2-3 + Milestones).** The WIP is the committed `99f9fd07`, not a
+  stash; replace every remaining "the stash" / "resume the stash" with "the committed WIP". (Typo too: the intentions
+  section has "coantically" → "semantically".)
+
+Guaranteed M0 breaks in the committed spike — fix these FIRST:
+- **Screenshot dir mismatch.** The capture spec writes to `src/lib/intl/messages/screenshots/` but `couple-screenshots.js`
+  reads the report from `messages/en/screenshots/`. They never meet → `i18n:couple` always errors. The docs say
+  `screenshots/` is a sibling of `en/`, so the SPEC is right and the COUPLER is wrong: fix the coupler's report/dir path
+  to `messages/screenshots/` (catalog writes stay under `messages/en/`).
+- **`.ts` import under plain node.** `scripts/i18n-capture.js` does `await import('../test/e2e-shared/fixtures.js')`
+  (resolves `.ts`) but runs via `node` — plain node can't import TS. Run it under `tsx` (like the codegen scripts) or
+  reach `createFixtures` another way.
+- **Coupler may mint check-failing `@key` twins.** When a key lacks a twin, the coupler creates `{ screenshot: "x.png" }`
+  with no `description`. Verify `desktop-message-key-naming`'s twin schema doesn't require a non-empty `description`; if
+  it does, skip keys lacking a description rather than minting bare twins.
+
+Coverage truths to bake into the design:
+- **Snapshot-resolved strings need capture-on-before-trigger, not `rerender()`-after (extends Decision 1/2 + Decision 4).**
+  The spike's `rerender()` bumps the locale rune to re-run reactive `t()` in MOUNTED markup. But many transient strings
+  resolve as SNAPSHOTS in plain `.ts` at emit time — e.g. `settings-applier.ts:239` `addToast(tString(...))`, and the
+  dynamic `getMessage(\`errors.listing.${reason}.title\`)` keys. For those, `rerender()` records nothing; capture must be
+  ENABLED BEFORE the action fires (the `getMessage`/`t` hook records the resolved key only if capture is active at
+  resolution time). The whole "Toasts" category + error keys are snapshot-resolved. Drive them by enabling capture, then
+  triggering the action; accept that keys resolved before `enable()` are unrecoverable, and log them (Decision 4).
+- **MTP is largely automatable — there's a `virtual-mtp` Cargo feature (corrects Staging + Open Question 2).** Existing
+  MTP E2E specs run via `--features playwright-e2e,virtual-mtp` (see `apps/desktop/test/CLAUDE.md`, `mtp-fixtures.ts`).
+  The connected toast, MTP volume, and browse surfaces are capturable without hardware. Re-scope: only genuinely
+  device-specific nuances (real reauth, real device naming) might need David's device — verify at M2 before asking.
+- **Some inventory surfaces are "stage-or-defer", not flatly drivable (refines the inventory):** crash-report dialog (the
+  app must actually crash — can't screenshot a crashed webview), commercial-reminder/EXPIRATION (needs `CMDR_MOCK_LICENSE`
+  + possibly an expired-state mock / time manipulation — verify the mock supports expired, not just `commercial`),
+  auto-dismiss toasts (capture must land in the visible window — pin the toast or capture fast), download/latest-download
+  toasts (depend on backend download events). Mark these explicitly stage-or-defer.
+
+Lower-priority:
+- The coupler round-trips whole catalogs through `JSON.stringify` + oxfmt (the allowed option, not line-surgical). Add a
+  TDD test asserting "values byte-identical, only `@key.screenshot` changed" against a real catalog before scaling.
+- `pnpm i18n:shots` (the single re-run entry in Goal/DoD) doesn't exist yet — `package.json` has `i18n:capture` +
+  `i18n:couple`. M1 adds the chained `i18n:shots`.
+
+What's solid (reviewer-confirmed): runtime-instrumentation-as-coupling-source is the right call (dynamic `errors.*` keys
+can't be statically scanned); the `tauri-playwright` fork genuinely supports native per-window screenshots + multi-window
+targeting (`window(label)`, `openSettingsWindowViaProd`); all spike helper refs resolve; the coupler preserves the
+strip-on-load metadata model so parity + the key union stay untouched; the M0 stop-and-report gate is well-placed.
+
 ## Open questions for David
 
 1. **Coverage bar**: aim for ~all reachable surfaces now (incl. SMB fixture states), or a high-value subset first
