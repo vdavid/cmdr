@@ -3,6 +3,7 @@ import { access, copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
+import { serializeMarkdownFile } from './serialize.mjs'
 
 const websiteRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const draftRoot = path.join(websiteRoot, '.blog-drafts')
@@ -201,6 +202,7 @@ async function readEntry(root, entryId, kind) {
     title: parsed.frontmatter.title ?? '',
     date: parsed.frontmatter.date ?? todayString(),
     description: parsed.frontmatter.description ?? '',
+    excerpt: parsed.frontmatter.excerpt ?? '',
     cover: parsed.frontmatter.cover ?? '',
     body: parsed.body,
     path: relativeToWebsite(filePath),
@@ -349,6 +351,7 @@ function normalizePayload(value) {
   const title = normalizeString(value.title, 'title').trim()
   const date = normalizeString(value.date, 'date').trim()
   const description = normalizeString(value.description, 'description').trim()
+  const excerpt = typeof value.excerpt === 'string' ? value.excerpt.trim() : ''
   const body = normalizeString(value.body, 'body').replace(/\r\n?/g, '\n')
   const cover = typeof value.cover === 'string' ? value.cover.trim() : ''
 
@@ -360,7 +363,7 @@ function normalizePayload(value) {
     throw new BlogEditorError(400, 'Date must use YYYY-MM-DD.')
   }
 
-  return { title, slug, date, description, cover, body }
+  return { title, slug, date, description, excerpt, cover, body }
 }
 
 function normalizeString(value, field) {
@@ -368,27 +371,6 @@ function normalizeString(value, field) {
     throw new BlogEditorError(400, `${field} must be a string.`)
   }
   return value
-}
-
-function serializeMarkdownFile(payload, options) {
-  const frontmatter = [
-    '---',
-    `title: ${quoteYamlString(payload.title)}`,
-    `date: ${payload.date}`,
-    `description: ${quoteYamlString(payload.description)}`,
-  ]
-
-  if (options.includeSlug) {
-    frontmatter.push(`slug: ${payload.slug}`)
-  }
-
-  if (payload.cover) {
-    frontmatter.push(`cover: ${quoteYamlString(payload.cover)}`)
-  }
-
-  frontmatter.push('---')
-  const body = payload.body.endsWith('\n') ? payload.body : `${payload.body}\n`
-  return `${frontmatter.join('\n')}\n\n${body}`
 }
 
 function parseMarkdownFile(markdown) {
@@ -450,10 +432,6 @@ function parseYamlScalar(value) {
   }
 
   return trimmed
-}
-
-function quoteYamlString(value) {
-  return JSON.stringify(value)
 }
 
 async function readJson(req, options = { maxBytes: maxBodyBytes }) {

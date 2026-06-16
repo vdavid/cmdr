@@ -12,10 +12,12 @@ pnpm dev:website
 # Open http://localhost:4829/dev/blog
 ```
 
-The editor autosaves drafts to `apps/website/.blog-drafts/` and only writes to the published blog collection when you
-click **Publish**. The draft directory is gitignored. Use **Add image**, paste, or drag/drop in the Markdown editor to
-add images; the editor stores draft images separately, inserts relative Markdown paths, and copies referenced images
-next to the post when publishing.
+The editor has fields for title, slug, date, description, and excerpt (see "Blog-index blurb" below), plus a **Copy
+markdown** button that copies the whole post (frontmatter + body) to the clipboard, handy for pasting a draft to an
+agent for review. It autosaves drafts to `apps/website/.blog-drafts/` and only writes to the published blog collection
+when you click **Publish**. The draft directory is gitignored. Use **Add image**, paste, or drag/drop in the Markdown
+editor to add images; the editor stores draft images separately, inserts relative Markdown paths, and copies referenced
+images next to the post when publishing.
 
 For manual authoring:
 

@@ -62,9 +62,21 @@
           <span>Date</span>
           <input id="dateInput" type="date" />
         </label>
+        <button
+          id="copyMarkdownButton"
+          type="button"
+          class="copy-markdown-button"
+          title="Copy the whole post (frontmatter + body) as markdown to the clipboard"
+        >
+          Copy markdown
+        </button>
         <label class="field field-description">
           <span>Description</span>
           <textarea id="descriptionInput" rows="2"></textarea>
+        </label>
+        <label class="field field-excerpt">
+          <span>Excerpt</span>
+          <textarea id="excerptInput" rows="2"></textarea>
         </label>
       </section>
 

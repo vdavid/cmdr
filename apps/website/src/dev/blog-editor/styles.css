@@ -199,12 +199,19 @@ button:disabled {
 
 .metadata-panel {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 11rem;
+  grid-template-columns: 2fr 1.2fr 11rem auto;
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
-.field-description {
+.copy-markdown-button {
+  /* Sits in the top row to the right of Date; align its bottom with the inputs. */
+  align-self: end;
+  white-space: nowrap;
+}
+
+.field-description,
+.field-excerpt {
   grid-column: 1 / -1;
 }
 

@@ -1,4 +1,5 @@
 import { marked } from 'marked'
+import { serializeMarkdownFile } from './serialize.mjs'
 
 type EntryKind = 'draft' | 'post'
 
@@ -9,6 +10,7 @@ interface BlogEntry {
   title: string
   date: string
   description: string
+  excerpt: string
   cover?: string
   body: string
   path?: string
@@ -53,7 +55,9 @@ const restoreBackupButton = element<HTMLButtonElement>('restoreBackupButton')
 const titleInput = element<HTMLInputElement>('titleInput')
 const slugInput = element<HTMLInputElement>('slugInput')
 const dateInput = element<HTMLInputElement>('dateInput')
+const copyMarkdownButton = element<HTMLButtonElement>('copyMarkdownButton')
 const descriptionInput = element<HTMLTextAreaElement>('descriptionInput')
+const excerptInput = element<HTMLTextAreaElement>('excerptInput')
 const bodyInput = element<HTMLTextAreaElement>('bodyInput')
 const previewDate = element<HTMLTimeElement>('previewDate')
 const previewTitle = element<HTMLElement>('previewTitle')
@@ -153,6 +157,15 @@ function attachListeners() {
   descriptionInput.addEventListener('input', () => {
     entry.description = descriptionInput.value
     markChanged()
+  })
+
+  excerptInput.addEventListener('input', () => {
+    entry.excerpt = excerptInput.value
+    markChanged()
+  })
+
+  copyMarkdownButton.addEventListener('click', () => {
+    void copyMarkdown()
   })
 
   bodyInput.addEventListener('input', () => {
@@ -275,6 +288,7 @@ function applyEntry(nextEntry: BlogEntry, options: { markSaved: boolean; checkBa
   slugInput.value = entry.slug
   dateInput.value = entry.date
   descriptionInput.value = entry.description
+  excerptInput.value = entry.excerpt
   bodyInput.value = entry.body
 
   const hash = currentHash()
@@ -573,8 +587,21 @@ function toPayload(): BlogEntry {
     title: entry.title,
     date: entry.date,
     description: entry.description,
+    excerpt: entry.excerpt,
     cover: entry.cover ?? '',
     body: entry.body,
+  }
+}
+
+async function copyMarkdown() {
+  // Reuse the dev server's exporter so the clipboard text matches the published file. `includeSlug`
+  // keeps the slug in the frontmatter, which is useful context when pasting a draft to an agent.
+  const markdown = serializeMarkdownFile(toPayload(), { includeSlug: true })
+  try {
+    await navigator.clipboard.writeText(markdown)
+    setStatus('Copied the post as markdown to your clipboard.')
+  } catch (error) {
+    setStatus(`Copy failed: ${errorMessage(error)}`, 'error')
   }
 }
 
@@ -597,12 +624,15 @@ function emptyEntry(): BlogEntry {
     title: '',
     date: todayString(),
     description: '',
+    excerpt: '',
     body: '',
   }
 }
 
 function hasMeaningfulContent(value: BlogEntry) {
-  return Boolean(value.title.trim() || value.slug.trim() || value.description.trim() || value.body.trim())
+  return Boolean(
+    value.title.trim() || value.slug.trim() || value.description.trim() || value.excerpt.trim() || value.body.trim(),
+  )
 }
 
 function createDraftId() {
