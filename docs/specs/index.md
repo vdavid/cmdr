@@ -39,6 +39,8 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
       WKWebView, no Rust decoder
 - [x] 2026-06-16 friendly-error-text-to-frontend-plan.md - Move all user-facing error prose from Rust to the frontend
       (typed reason + params over IPC), keeping classification in Rust; step 1 of i18n-readiness
+- [ ] 2026-06-16 i18n-formatter-layer-plan.md - Route numbers, file sizes, and the system date through one locale-aware
+      formatting layer with a single locale source; step 3 of i18n-readiness (formatters only, no plurals/catalog)
 - [x] 2026-06-15 doc-context-diet-plan.md - Shrank the resident agent-doc bundle (9.5k → 2k words): re-homed desktop
       content, ratcheted CLAUDE.md toward 600, mandated sibling DETAILS.md, dieted the rules to path-scoped homes,
       enforced with checks (details-sibling, resident-doc-budget, dead-links)
