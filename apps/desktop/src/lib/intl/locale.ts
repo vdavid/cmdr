@@ -41,9 +41,22 @@ export function getLocale(): string {
 }
 
 /**
- * Test seam: pin the locale (mirrors `_setMeasureForTests` in
+ * Sets (or clears, with `null`) the active-locale override: the single locale
+ * VALUE the whole formatting layer reads. This is the value half of a locale
+ * switch; the reactivity half (re-rendering open `t()`/`<Trans>` usages) lives
+ * in `messages.svelte.ts`'s `setLocale()`, which calls this AND bumps a version
+ * rune. Call `setLocale()` from app code, not this, so re-render fires.
+ */
+export function setLocaleOverride(locale: string | null): void {
+  localeOverride = locale
+}
+
+/**
+ * Test seam: pin the locale value only (mirrors `_setMeasureForTests` in
  * `measure-column-widths.ts`). Pass `null` to revert to the runtime default.
- * Tests inject the locale here rather than reaching into `Intl` globals.
+ * Use for non-reactive value-snapshot tests; it does NOT bump the message
+ * runtime's version rune, so it won't drive a markup re-render (use
+ * `setLocale()` for that).
  */
 export function _setLocaleForTests(locale: string | null): void {
   localeOverride = locale

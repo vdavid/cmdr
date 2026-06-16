@@ -1,9 +1,9 @@
 # Custom i18n runtime + message catalog (i18n-readiness, step 2)
 
 Give Cmdr a thin, owned i18n runtime: every user-facing string resolves from a JSON message catalog through one typed
-`t()` (and a `<Trans>` for sentences with inline components), formatted with a real ICU engine for the
-multiple-variable cases, scoped by semantic keys, with compile-time key safety. English-only ships today; this makes the
-app translation-ready without adopting an i18n framework or a TMS.
+`t()` (and a `<Trans>` for sentences with inline components), formatted with a real ICU engine for the multiple-variable
+cases, scoped by semantic keys, with compile-time key safety. English-only ships today; this makes the app
+translation-ready without adopting an i18n framework or a TMS.
 
 This is step 2 of the "i18n-ready" effort. Step 1 (error prose → frontend) and step 3 (locale-aware formatter layer,
 `$lib/intl`) shipped. This step builds directly on `$lib/intl`: it reads the locale via the existing `getLocale()`
@@ -22,9 +22,9 @@ The decision history with David, captured so the implementer understands the "wh
   Svelte integration. Owning a thin runtime fits Cmdr's principles (smart backend / thin frontend, elegance, here for
   the long run, agents read all the code) and composes cleanly with the `$lib/intl` seam already shipped.
 - **`intl-messageformat` (ICU MessageFormat) as the format engine.** A file manager genuinely has multi-variable
-  sentences (`transfer-complete-toast.ts`: "Copied 3 files and 1 folder", "Moved 5, skipped 2"). A flat
-  `{ one, other }` JSON can't express two independent plurals in one sentence with locale-dependent word order; ICU can.
-  Do NOT hand-roll ICU/CLDR plural selection: that's the one piece worth a dependency.
+  sentences (`transfer-complete-toast.ts`: "Copied 3 files and 1 folder", "Moved 5, skipped 2"). A flat `{ one, other }`
+  JSON can't express two independent plurals in one sentence with locale-dependent word order; ICU can. Do NOT hand-roll
+  ICU/CLDR plural selection: that's the one piece worth a dependency.
 - **`<Trans>` for components mid-sentence.** A sentence with an inline interactive element (the FDA hint's
   `<LinkButton>Open System Settings</LinkButton>`, a styled chip) needs its component re-inserted at the locale's word
   order. Every battle-tested `<Trans>` is React; in Svelte we build a ~50-line snippet-based one regardless of library
@@ -34,9 +34,9 @@ The decision history with David, captured so the implementer understands the "wh
   review UI; we have none of those (agents translate, the pipeline is scripted, all in git). Descriptions and screenshot
   references live in `@key` metadata; screenshots are image files in the repo referenced by filename (one shared across
   many keys = many keys naming the same file).
-- **Semantic prefix-scoped keys (`area.feature.leaf`) + a generated `MessageKey` union + a naming check.** Semantic
-  keys survive copy edits (English-as-key orphans translations when copy changes) and make scoping free: the key path IS
-  the scope, so the same English word can diverge per window just by having its own key. The generated union gives
+- **Semantic prefix-scoped keys (`area.feature.leaf`) + a generated `MessageKey` union + a naming check.** Semantic keys
+  survive copy edits (English-as-key orphans translations when copy changes) and make scoping free: the key path IS the
+  scope, so the same English word can diverge per window just by having its own key. The generated union gives
   compile-time typo-proofing, autocomplete, find-usages, and dead-key / missing-key detection. A naming check enforces
   structure "even when you forget", which was David's explicit worry.
 
@@ -86,8 +86,8 @@ The decision history with David, captured so the implementer understands the "wh
 - **The hard multi-variable case is `transfer-complete-toast.ts`**: builds "Copied N files and M folders", "Moved N,
   skipped M (already at the target)", with verb conjugation (`Copied`/`Moved`/`copied`/`moved`), was/were agreement, and
   `parts.join(' and ')` fragment concatenation. This is exactly what ICU `select` + `plural` replaces, and the pilot.
-- **Rough string count: ~800–1,200** (command palette ~100–150; settings ~160–240; errors ~300; menus ~30–40; the
-  long tail across ~202 components ~300–500). The extraction dry-run (M1) produces the real number; two big buckets
+- **Rough string count: ~800–1,200** (command palette ~100–150; settings ~160–240; errors ~300; menus ~30–40; the long
+  tail across ~202 components ~300–500). The extraction dry-run (M1) produces the real number; two big buckets
   (settings, errors) are already consolidated.
 - **A `cmdr/no-raw-locale-format` ESLint rule already exists** (from step 3); the new no-hardcoded-string lint extends
   that pattern (`apps/desktop/eslint-plugins/`).
@@ -96,8 +96,8 @@ The decision history with David, captured so the implementer understands the "wh
 
 ### Decision 1: the runtime (`messages.svelte.ts`)
 
-`t(key, params?)`: resolve `catalog[activeLocale][key]`, fall back to `catalog.en[key]`, fall back to the key string
-(so a missing key is visible, never a crash). Compile the resolved ICU string with `intl-messageformat` (cached by
+`t(key, params?)`: resolve `catalog[activeLocale][key]`, fall back to `catalog.en[key]`, fall back to the key string (so
+a missing key is visible, never a crash). Compile the resolved ICU string with `intl-messageformat` (cached by
 `(locale, key)`), `.format(params)`. Always route through `intl-messageformat` even for plain `{name}` interpolation, so
 there's ONE code path (it handles trivial interpolation too; compiled instances are cached, so the parse cost is paid
 once per key per locale). Plurals/selects are handled by the engine via `Intl.PluralRules` internally; we never
@@ -107,19 +107,19 @@ The runtime ALSO exposes a raw accessor `getMessage(key): string` (same lookup +
 catalog value WITHOUT ICU parsing, for callers that do their own composition and must not hit ICU's brace/apostrophe
 grammar — specifically the error pipeline (`compose.ts` + `expandSystemStrings` + snarkdown). Most code uses `t()`; the
 error pipeline uses `getMessage()`. Reactivity note: `getMessage()` reads the version rune like `t()`, but the error
-pipeline calls it inside plain-`.ts` compose functions (a non-reactive context), so error copy is effectively a
-SNAPSHOT taken at compose time, not live-reactive to a locale change. That's intentional and correct (errors are
-transient, re-composed on the next failure) — same transient-snapshot semantics as the caveat above; don't expect error
-copy to re-render in place on a locale switch.
+pipeline calls it inside plain-`.ts` compose functions (a non-reactive context), so error copy is effectively a SNAPSHOT
+taken at compose time, not live-reactive to a locale change. That's intentional and correct (errors are transient,
+re-composed on the next failure) — same transient-snapshot semantics as the caveat above; don't expect error copy to
+re-render in place on a locale switch.
 
-Reactivity (precise, this is load-bearing): a module-level locale-version `$state` lives here (hence `.svelte.ts`). It is
-a reactivity SIGNAL, not a second locale source: `getLocale()` (in `locale.ts`) stays the single source of truth for the
-locale value. `t()` MUST read the version `$state` UNCONDITIONALLY at the top of every call, BEFORE any compiled-message
-cache lookup, then call `getLocale()` for the value. If the cache is consulted before the rune is read, the reactive
-dependency isn't tracked and `{t('key')}` won't re-run on a locale change. The proven pattern in this repo is
-`system-strings.svelte.ts` (markup reads a `$state` property during render); follow it. Note `state_referenced_locally`
-is in the suppressed-warnings list, so the compiler will NOT warn you if you read the rune wrong; the
-`messages.svelte.test.ts` reactivity test is the only guard.
+Reactivity (precise, this is load-bearing): a module-level locale-version `$state` lives here (hence `.svelte.ts`). It
+is a reactivity SIGNAL, not a second locale source: `getLocale()` (in `locale.ts`) stays the single source of truth for
+the locale value. `t()` MUST read the version `$state` UNCONDITIONALLY at the top of every call, BEFORE any
+compiled-message cache lookup, then call `getLocale()` for the value. If the cache is consulted before the rune is read,
+the reactive dependency isn't tracked and `{t('key')}` won't re-run on a locale change. The proven pattern in this repo
+is `system-strings.svelte.ts` (markup reads a `$state` property during render); follow it. Note
+`state_referenced_locally` is in the suppressed-warnings list, so the compiler will NOT warn you if you read the rune
+wrong; the `messages.svelte.test.ts` reactivity test is the only guard.
 
 `setLocale(locale)` is the seam (no in-app picker ships now; tests drive it): it writes the locale into `locale.ts`'s
 override (the same single source `_setLocaleForTests` uses, so the `$lib/intl` formatters pick up the change too) AND
@@ -204,16 +204,19 @@ lives in sibling `@key` entries, stripped at load/build:
 
 ```jsonc
 {
-  "transfer.moved": "{folders, plural, =0 {} other {{folders, number} folders}}",  // illustrative; real ICU in M0
-  "@transfer.moved": { "description": "Toast after copy/move. {files}/{folders} are top-level counts.",
-                       "screenshot": "transfer-complete-toast.png" }
+  "transfer.moved": "{folders, plural, =0 {} other {{folders, number} folders}}", // illustrative; real ICU in M0
+  "@transfer.moved": {
+    "description": "Toast after copy/move. {files}/{folders} are top-level counts.",
+    "screenshot": "transfer-complete-toast.png",
+  },
 }
 ```
 
 ### Decision 5: keys, type safety, structure enforcement
 
-Semantic, prefix-scoped, lowerCamel leaf: `area.feature.leaf` (`settings.fsWatch.clearIndex`, `common.openSystemSettings`).
-A codegen step (in the check pipeline) reads `messages/en/*.json` and emits `$lib/intl/keys.gen.ts`:
+Semantic, prefix-scoped, lowerCamel leaf: `area.feature.leaf` (`settings.fsWatch.clearIndex`,
+`common.openSystemSettings`). A codegen step (in the check pipeline) reads `messages/en/*.json` and emits
+`$lib/intl/keys.gen.ts`:
 
 ```ts
 export type MessageKey = 'settings.fsWatch.title' | 'common.openSystemSettings' | 'transfer.moved' | /* … */;
@@ -221,9 +224,10 @@ export type MessageKey = 'settings.fsWatch.title' | 'common.openSystemSettings' 
 
 `t(key: MessageKey, …)` and `<Trans key: MessageKey>` ⇒ wrong/missing keys are compile errors with autocomplete and
 find-usages. The codegen ALSO reports: keys used in code but absent from the catalog (build failure), and catalog keys
-never used in code (dead-string warning). A naming check (Go check or ESLint) enforces the `^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)+$`
-shape and that the first segment is a known area, so structure can't drift. Optional later upgrade: generate per-key
-PARAM types (so `t('transfer.moved')` without `{files}` errors) — Paraglide-style; defer unless cheap.
+never used in code (dead-string warning). A naming check (Go check or ESLint) enforces the
+`^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)+$` shape and that the first segment is a known area, so structure can't drift.
+Optional later upgrade: generate per-key PARAM types (so `t('transfer.moved')` without `{files}` errors) —
+Paraglide-style; defer unless cheap.
 
 Scoping rule: window/area divergence is achieved by distinct keys (the prefix), never a positional "window" argument.
 Shared strings live in `common.*`; the moment one site needs a different translation, it gets its own area key.
@@ -231,10 +235,10 @@ Shared strings live in `common.*`; the moment one site needs a different transla
 ### Decision 6: base-unchanged invariant + reactivity seam
 
 `en` is the base/source locale. Every migrated string's base-locale rendered output must equal the pre-migration English
-(parity net per area). The reactive rune is built now but exercised only by tests (no picker ships). Test-seam rule (don't mix these up):
-the REACTIVITY test must drive locale via `setLocale()` (which bumps the version rune AND writes `locale.ts`'s override);
-driving it via `locale.ts`'s `_setLocaleForTests` only changes the value, not the rune, so a re-render would never fire
-and the test would lie. `_setLocaleForTests` is for non-reactive value-snapshot tests only.
+(parity net per area). The reactive rune is built now but exercised only by tests (no picker ships). Test-seam rule
+(don't mix these up): the REACTIVITY test must drive locale via `setLocale()` (which bumps the version rune AND writes
+`locale.ts`'s override); driving it via `locale.ts`'s `_setLocaleForTests` only changes the value, not the rune, so a
+re-render would never fire and the test would lie. `_setLocaleForTests` is for non-reactive value-snapshot tests only.
 
 ## Milestone 0 — Spike on the transfer toasts (de-risk before building)
 
@@ -242,25 +246,58 @@ Prove the whole loop on the hardest case before committing to the full design. I
 
 - Add `intl-messageformat`; write `transfer.*` ICU messages reproducing EVERY branch of `composeTransferCompleteToast`
   (trash, delete, copy/move × {files+folders, files-only}, skipped suffixes, was/were, all-skipped collapse). This is
-  the acid test that ICU `select`+`plural` can express the current wording. Two known restructurings the caller must
-  do (don't expect raw counts to suffice): (a) the omit-zero-part "N files and M folders" join can't be expressed from
-  `{files}`/`{folders}` alone (ICU branches are independent, they can't see each other's emptiness without a dangling
-  " and " / stray space) — pass a discriminator param (`kind: 'both' | 'filesOnly' | 'foldersOnly'`) and `select` on it;
-  (b) embed counts by passing `$lib/intl`-preformatted count STRINGS as params (keeps formatting single-sourced),
-  NOT ICU's inline `{n, number}`. Double apostrophes (`''`) in every message or parity breaks (see Decision 2).
+  the acid test that ICU `select`+`plural` can express the current wording. Two known restructurings the caller must do
+  (don't expect raw counts to suffice): (a) the omit-zero-part "N files and M folders" join can't be expressed from
+  `{files}`/`{folders}` alone (ICU branches are independent, they can't see each other's emptiness without a dangling "
+  and " / stray space) — pass a discriminator param (`kind: 'both' | 'filesOnly' | 'foldersOnly'`) and `select` on it;
+  (b) embed counts by passing `$lib/intl`-preformatted count STRINGS as params (keeps formatting single-sourced), NOT
+  ICU's inline `{n, number}`. Double apostrophes (`''`) in every message or parity breaks (see Decision 2).
 - Stand up the minimal runtime (`t()` with the read-rune-before-cache reactivity invariant + compiled-MF cache) and the
   `<Trans>` proof against ONE component-in-sentence case (the FDA hint), validating the `format()`-with-tag-handlers →
   Svelte snippet mapping (NOT `formatToParts`, which the core lacks — see Decision 3).
 - Generate the `MessageKey` union for just these keys; confirm the typed call sites + a deliberately-wrong key fails the
   typecheck.
 
-**Exit criteria (the spike answers these):** (a) ICU expresses all transfer-toast branches at en-US parity; (b) `<Trans>`
-renders an inline `<LinkButton>` correctly via snippets; (c) the generated-key typecheck catches a bad key; (d) the
-runtime is reactive in markup. If (a) reveals ICU can't cleanly express a branch, STOP and report — that reshapes
-Decision 2. Capture findings in the plan before M1.
+**Exit criteria (the spike answers these):** (a) ICU expresses all transfer-toast branches at en-US parity; (b)
+`<Trans>` renders an inline `<LinkButton>` correctly via snippets; (c) the generated-key typecheck catches a bad key;
+(d) the runtime is reactive in markup. If (a) reveals ICU can't cleanly express a branch, STOP and report — that
+reshapes Decision 2. Capture findings in the plan before M1.
 
 Tests: TDD the runtime resolution/fallback (`messages.svelte.test.ts`, red→green) and a parity test mirroring
 `transfer-complete-toast.test.ts` asserting the ICU output equals the current composer's output for a branch matrix.
+
+### Milestone 0 findings (spike done — all four exit criteria PASS)
+
+All four exit criteria pass; the design holds and M1 can proceed unchanged. Built in `$lib/intl`: `messages.svelte.ts`
+(`t` / `tString` / `getMessage` / `setLocale` + the locale-version rune + the compiled-MF cache), `Trans.svelte`,
+`keys.gen.ts` (+ `scripts/gen-message-keys.js`, `pnpm intl:keys`), `messages/en/{transfer,common}.json`. ICU engine:
+`intl-messageformat@^11.2.7` (latest pnpm-`minimumReleaseAge`-allowed at adoption; `11.2.8` was gated; BSD-3-Clause).
+
+- **(a) ICU parity — PASS.** `transfer-complete-toast-icu.ts` reproduces every branch of `composeTransferCompleteToast`;
+  `transfer-complete-toast-icu.parity.test.ts` asserts byte-identical output over the explicit case set plus a generated
+  0/1/2/3/1234 × op-type sweep. The two restructurings the plan predicted were both necessary and sufficient: a
+  `kind: both|filesOnly|foldersOnly` discriminator for the omit-zero join, and `$lib/intl`-preformatted count STRINGS
+  (`*Text` params) for display with the raw integer alongside ONLY to drive `plural` (noun + was/were). No branch
+  resisted ICU; Decision 2 is unchanged.
+- **(b) `<Trans>` — PASS.** `format()` with tag-handler functions returning markers maps cleanly to Svelte snippets (no
+  `formatToParts`, no `{@html}`). One Svelte-5 detail worth recording: a tag's inner content is rendered by defining a
+  zero-arg `{#snippet content()}` INSIDE the `{#each}` over parts (closing over `part.chunks`) and passing it to the
+  consumer snippet — you cannot call a snippet as a function to produce a value (`invalid_snippet_arguments`).
+  XSS-safety is proven (script-looking text renders as literal text; no injected node).
+- **(c) generated-key typecheck — PASS.** Removing the `@ts-expect-error` on a bad key makes `svelte-check` error
+  (`not assignable to parameter of type 'MessageKey'`).
+- **(d) reactivity — PASS.** A mounted fixture reading `t()` in markup re-renders on `setLocale()` (rune bump) and does
+  NOT on `_setLocaleForTests` (value-only). Verified the test is a real guard: moving the rune read after the cache
+  lookup turns it red.
+
+ICU apostrophe note (verified on `intl-messageformat@11.2.7`, 2026-06-16): a LONE `'` is literal unless it immediately
+precedes a special char (`{`, `<`, `#`), where it opens a quoted section; `''` always collapses to `'`. Cmdr's transfer
+copy has no apostrophe adjacent to a placeholder, so parity holds either way, but messages still double apostrophes per
+Decision 2 since `''` is always safe and the rule must hold for future copy.
+
+Spike seams kept for M1: `_setCatalogForTests` (register a second locale for fallback/reactivity tests without shipping
+one) and `_clearCompiledCacheForTests`. `messages.svelte.ts` carries two justified eslint disables (the load-bearing
+rune-read expression statements) and one (`prefer-svelte-reactivity`) for the non-reactive compiled cache.
 
 ## Milestone 1 — Runtime, codegen, checks, extraction dry-run
 
@@ -288,8 +325,8 @@ Generalize the spike into the real infrastructure.
   the `''` apostrophe rule, the error pipeline uses `getMessage()` not ICU) + `DETAILS.md` (the full design, intentions,
   the error-pipeline boundary, the ICU-vs-`$lib/intl` formatting split). Give `messages/` its own `CLAUDE.md` +
   `DETAILS.md` pair (NOT just a README): agents will edit catalog files there, so the must-knows (key shape, `''`
-  apostrophe escaping, `@key` metadata, screenshots-by-filename, never hand-edit `keys.gen.ts`) should autoload on touch,
-  and the `claude-md-details-sibling` check requires the pair anyway.
+  apostrophe escaping, `@key` metadata, screenshots-by-filename, never hand-edit `keys.gen.ts`) should autoload on
+  touch, and the `claude-md-details-sibling` check requires the pair anyway.
 
 Tests: TDD the codegen (given a catalog, emits the right union + flags a missing/dead key) and the metadata stripper.
 Lint/check tests for the naming rule and no-raw-string rule (mirror the existing `no-raw-locale-format.test.js`).
@@ -306,12 +343,13 @@ parity. Independently shippable. Suggested order (smallest/most-consolidated fir
    `git-error-messages.ts`, `provider-error-messages.ts`, `compose.ts` (`esc` + `expandSystemStrings`),
    `markdown-escape.ts`, guarded by `friendly-error-parity.test.ts` against a FROZEN golden fixture
    (`__fixtures__/friendly_error_golden.json`) plus `friendly-error-style.test.ts`. Migration: the literal English moves
-   into `errors.*` catalog keys, but the composition logic, `esc()` param-escaping (the XSS boundary), `expandSystemStrings`
-   (`{system_settings}` tokens), and the snarkdown/`{@html}` render pipeline ALL stay. Error strings are resolved by
-   `getMessage()` as PLAIN catalog lookups and do NOT go through ICU `format()` — their `{system_settings}` tokens and `esc` HTML
-   entities collide with ICU's brace/apostrophe grammar (see Decision 2). The `friendly-error-parity.test.ts` must stay
-   green and the golden fixture must NOT be regenerated (the errors `CLAUDE.md` forbids it). This tranche is the trickiest
-   precisely because of these two non-ICU constraints; budget for it.
+   into `errors.*` catalog keys, but the composition logic, `esc()` param-escaping (the XSS boundary),
+   `expandSystemStrings` (`{system_settings}` tokens), and the snarkdown/`{@html}` render pipeline ALL stay. Error
+   strings are resolved by `getMessage()` as PLAIN catalog lookups and do NOT go through ICU `format()` — their
+   `{system_settings}` tokens and `esc` HTML entities collide with ICU's brace/apostrophe grammar (see Decision 2). The
+   `friendly-error-parity.test.ts` must stay green and the golden fixture must NOT be regenerated (the errors
+   `CLAUDE.md` forbids it). This tranche is the trickiest precisely because of these two non-ICU constraints; budget for
+   it.
 4. `commands` / command palette (~77, label + description).
 5. `menu`, then the long tail by feature directory (search, viewer, onboarding, file-operations dialogs, …).
 
@@ -322,8 +360,8 @@ aren't user-facing; the extraction dry-run flags them, the lint exempts them.
 **Surfaces beyond markup props — enumerate so none are missed:** the document/window `<title>`s, imperatively-set
 `aria-label`s (not just markup attributes), toast strings (the `composeTransferCompleteToast`-style composers return the
 `t()` result; the `addToast` call site just displays it — both sides migrate, but the string is BORN in the composer),
-and `Intl.Segmenter`/role values which are NOT user copy (leave). **Native menu labels are a real open question
-(see Open decisions):** the macOS menu is built in Rust (`muda`), so its English labels live in Rust. "Don't touch the
+and `Intl.Segmenter`/role values which are NOT user copy (leave). **Native menu labels are a real open question (see
+Open decisions):** the macOS menu is built in Rust (`muda`), so its English labels live in Rust. "Don't touch the
 backend / Rust stays word-free" was about ERROR PROSE (step 1), not menu labels — those are an un-migrated surface. This
 step does NOT migrate native menu labels; resolving them (FE passes a label map at menu-build time, or a Rust-side
 catalog) is deferred and called out below.
@@ -336,8 +374,8 @@ check only in M3 once no caller remains.
 
 ## Milestone 3 — Enforcement complete
 
-When the tranche list is exhausted: the no-raw-string lint's area allowlist is empty (it covers all areas it CAN cover
-— see the honesty caveat next), the dead-key codegen warning is clean, and `$lib/intl`/`messages/` docs are final.
+When the tranche list is exhausted: the no-raw-string lint's area allowlist is empty (it covers all areas it CAN cover —
+see the honesty caveat next), the dead-key codegen warning is clean, and `$lib/intl`/`messages/` docs are final.
 "i18n-ready" finish line: machinery + base catalog + enforcement in place; real translations are a later effort.
 
 **Honesty caveat:** the no-raw-string lint is a closed-set heuristic (specific sinks, Decision/M1), so "allowlist empty"
@@ -365,9 +403,9 @@ Per milestone: `pnpm check --fast` while iterating; full `pnpm check` at each mi
 ## Parallelization
 
 Mostly sequential (M0 → M1 gates the design; M1 infra gates M2). Within M2, area tranches are independent and COULD run
-in parallel worktrees, but they share `keys.gen.ts` and the lint allowlist, so parallel tranches race on those two
-files — only parallelize if each agent owns regenerating + merging those, or serialize the regen step. Given we're not
-in a hurry, sequential tranches are the safe default.
+in parallel worktrees, but they share `keys.gen.ts` and the lint allowlist, so parallel tranches race on those two files
+— only parallelize if each agent owns regenerating + merging those, or serialize the regen step. Given we're not in a
+hurry, sequential tranches are the safe default.
 
 ## Files in scope (verify before editing)
 
@@ -399,7 +437,7 @@ in a hurry, sequential tranches are the safe default.
    recommended) vs use ICU's inline `{n, number}` (lets translators control placement, but splits formatting ownership).
 4. **Per-key param typing:** generate it now (more codegen, catches missing params) vs defer (key-union only). Recommend
    defer to a later upgrade.
-5. **Native menu labels (Rust-built via `muda`):** out of scope for this step, but how to localize them eventually —
-   FE passes a label map to the menu builder at build/locale-change time (keeps words on the FE, matches the overall
+5. **Native menu labels (Rust-built via `muda`):** out of scope for this step, but how to localize them eventually — FE
+   passes a label map to the menu builder at build/locale-change time (keeps words on the FE, matches the overall
    principle) vs a Rust-side catalog. Recommend the FE-label-map approach when it's tackled; for now, explicitly
    deferred. (Flagged because it's the one user-facing surface that isn't FE-owned.)

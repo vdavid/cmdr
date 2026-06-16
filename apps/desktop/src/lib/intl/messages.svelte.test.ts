@@ -1,0 +1,121 @@
+/**
+ * Runtime tests for the i18n message layer: resolution, the fallback chain, and
+ * the load-bearing read-rune-before-cache reactivity invariant.
+ *
+ * `.svelte.` infix: the reactivity test mounts a real component that reads `t()`
+ * in markup and drives a locale change through `setLocale()` (which bumps the
+ * version rune), proving `{t('key')}` re-renders. Driving via
+ * `_setLocaleForTests` (value only, no rune bump) would NOT re-render — that's
+ * the seam distinction Decision 6 warns about.
+ */
+import { describe, it, expect, afterEach } from 'vitest'
+import { mount, unmount, flushSync } from 'svelte'
+import { t, tString, getMessage, setLocale, _setCatalogForTests, _clearCompiledCacheForTests } from './messages.svelte'
+import { _setLocaleForTests } from './locale'
+import Fixture from './messages-reactivity-fixture.svelte'
+
+const TEST_LOCALE = 'zz-ZZ'
+const TEST_LANG = 'zz'
+
+afterEach(() => {
+  setLocale(null)
+  _setLocaleForTests(null)
+  _setCatalogForTests(TEST_LOCALE, null)
+  _setCatalogForTests(TEST_LANG, null)
+  _clearCompiledCacheForTests()
+})
+
+describe('t() resolution', () => {
+  it('resolves and ICU-formats a plural message at the active locale', () => {
+    _setLocaleForTests('en-US')
+    expect(tString('transfer.trash', { countText: '3', count: 3 })).toBe('Moved 3 files to trash')
+    expect(tString('transfer.trash', { countText: '1', count: 1 })).toBe('Moved 1 file to trash')
+  })
+
+  it('runs trivial interpolation through the engine (one code path)', () => {
+    _setLocaleForTests('en-US')
+    expect(tString('transfer.split.clean', { verb: 'copy', phrase: '2 files' })).toBe('Copied 2 files.')
+  })
+})
+
+describe('fallback chain (locale → base language → en → key)', () => {
+  it('prefers an exact-locale catalog entry when present', () => {
+    _setCatalogForTests(TEST_LOCALE, { 'transfer.trash': 'EXACT' })
+    _setLocaleForTests(TEST_LOCALE)
+    expect(tString('transfer.trash', { countText: '1', count: 1 })).toBe('EXACT')
+  })
+
+  it('falls back from a region tag to its base-language catalog', () => {
+    _setCatalogForTests(TEST_LANG, { 'transfer.trash': 'LANG' })
+    _setLocaleForTests(TEST_LOCALE) // zz-ZZ → zz
+    expect(tString('transfer.trash', { countText: '1', count: 1 })).toBe('LANG')
+  })
+
+  it('falls back to en when neither the locale nor its base language has the key', () => {
+    _setLocaleForTests(TEST_LOCALE)
+    expect(tString('transfer.trash', { countText: '2', count: 2 })).toBe('Moved 2 files to trash')
+  })
+
+  it('falls back to the key string when the key is missing everywhere (never crashes)', () => {
+    _setLocaleForTests('en-US')
+    // @ts-expect-error deliberately-unknown key to exercise the last fallback
+    expect(t('transfer.doesNotExist')).toBe('transfer.doesNotExist')
+  })
+})
+
+describe('getMessage() raw accessor', () => {
+  it('returns the raw catalog string without ICU parsing', () => {
+    _setLocaleForTests('en-US')
+    expect(getMessage('common.downloadsFdaHint')).toBe(
+      'Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>',
+    )
+  })
+
+  it('uses the same fallback chain as t()', () => {
+    _setCatalogForTests(TEST_LOCALE, { 'transfer.trash': 'RAW EXACT' })
+    _setLocaleForTests(TEST_LOCALE)
+    expect(getMessage('transfer.trash')).toBe('RAW EXACT')
+  })
+})
+
+describe('reactivity in markup (read-rune-before-cache invariant)', () => {
+  it('re-renders a markup t() usage when setLocale() bumps the version rune', () => {
+    // A test-only second locale so the rendered text actually CHANGES on switch
+    // (with only `en`, identical output couldn't distinguish a re-render).
+    _setCatalogForTests(TEST_LANG, { 'transfer.trash': 'SWITCHED {countText}' })
+
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(Fixture, { target, props: { messageKey: 'transfer.trash' } })
+    flushSync()
+
+    const span = target.querySelector('[data-test="trans-text"]')
+    expect(span?.textContent).toBe('Moved 1 file to trash')
+
+    // Drive via setLocale (bumps the rune) — the reactive path.
+    setLocale(TEST_LANG)
+    flushSync()
+    expect(span?.textContent).toBe('SWITCHED 1')
+
+    void unmount(component)
+  })
+
+  it('does NOT re-render when only the value changes without a rune bump (seam distinction)', () => {
+    _setCatalogForTests(TEST_LANG, { 'transfer.trash': 'SWITCHED {countText}' })
+
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(Fixture, { target, props: { messageKey: 'transfer.trash' } })
+    flushSync()
+    const span = target.querySelector('[data-test="trans-text"]')
+    expect(span?.textContent).toBe('Moved 1 file to trash')
+
+    // Value-only change: no rune bump, so markup must NOT re-render.
+    _setLocaleForTests(TEST_LANG)
+    _clearCompiledCacheForTests()
+    flushSync()
+    expect(span?.textContent).toBe('Moved 1 file to trash')
+
+    void unmount(component)
+  })
+})

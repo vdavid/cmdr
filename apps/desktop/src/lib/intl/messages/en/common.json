@@ -1,0 +1,7 @@
+{
+  "common.downloadsFdaHint": "Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "description": "Hint shown when the downloads watcher lacks Full Disk Access. <settingsLink> wraps the inline action that opens System Settings.",
+    "screenshot": "file-system-watching-section.png"
+  }
+}

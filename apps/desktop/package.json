@@ -30,7 +30,8 @@
     "test:e2e:playwright:build": "node scripts/tauri-wrapper.js build --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features playwright-e2e,virtual-mtp",
     "knip": "knip",
     "check:type-drift": "tsx scripts/check-type-drift.ts",
-    "bindings:regen": "cd src-tauri && cargo nextest run --no-fail-fast --run-ignored=ignored-only ipc::tests::export_bindings_test && cd .. && pnpm exec oxfmt src/lib/ipc/bindings.ts"
+    "bindings:regen": "cd src-tauri && cargo nextest run --no-fail-fast --run-ignored=ignored-only ipc::tests::export_bindings_test && cd .. && pnpm exec oxfmt src/lib/ipc/bindings.ts",
+    "intl:keys": "node scripts/gen-message-keys.js && pnpm exec oxfmt src/lib/intl/keys.gen.ts"
   },
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
@@ -47,6 +48,7 @@
     "@tauri-apps/plugin-store": "^2.4.2",
     "@tauri-apps/plugin-updater": "^2.10.1",
     "@tauri-apps/plugin-window-state": "~2.4.1",
+    "intl-messageformat": "^11.2.7",
     "snarkdown": "2.0.0"
   },
   "devDependencies": {

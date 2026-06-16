@@ -1,0 +1,61 @@
+{
+  "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to trash",
+  "@transfer.trash": {
+    "description": "Toast after moving items to the system trash. {countText} is the preformatted file count (locale-grouped); {count} is the raw integer for plural selection.",
+    "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.delete": "Delete complete: {countText} {count, plural, one {file} other {files}}",
+  "@transfer.delete": {
+    "description": "Toast after a permanent delete. {countText} preformatted count, {count} raw integer for plural selection.",
+    "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {file} other {files}} and {foldersText} {folders, plural, one {folder} other {folders}}} foldersOnly {{foldersText} {folders, plural, one {folder} other {folders}}} other {{filesText} {files, plural, one {file} other {files}}}}",
+  "@transfer.movedPhrase": {
+    "description": "The 'N files and M folders' phrase, omitting the zero part. {kind} discriminates both/filesOnly/foldersOnly so independent plural branches never emit a dangling ' and '. *Text params are preformatted counts; raw {files}/{folders} drive plural selection only.",
+    "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.split.clean": "{verb, select, copy {Copied} other {Moved}} {phrase}.",
+  "@transfer.split.clean": {
+    "description": "Copy/move success with a per-type split and no skips. {phrase} is the already-rendered transfer.movedPhrase result.",
+    "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.split.skipped": "{verb, select, copy {Copied} other {Moved}} {phrase}, skipped {skippedText} {skipped, plural, one {file} other {files}} (already at the target).",
+  "@transfer.split.skipped": {
+    "description": "Copy/move success with a per-type split plus a skipped-files suffix. {phrase} is transfer.movedPhrase; {skippedText} preformatted, {skipped} raw for plural.",
+    "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.fileOnly.allDone": "{verb, select, copy {Copy} other {Move}} complete: {verb, select, copy {copied} other {moved}} {transferredText} {transferred, plural, one {file} other {files}}.",
+  "@transfer.fileOnly.allDone": {
+    "description": "File-count-only wording (clipboard paste, no per-type split), everything transferred, nothing skipped.",
+    "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Copy} other {Move}} complete: file already at the target, not {verb, select, copy {copied} other {moved}}.",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "description": "File-count-only wording, a single file that was already at the target (nothing transferred).",
+    "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copy} other {Move}} complete: skipped all {skippedText} files (already at the target), nothing was {verb, select, copy {copied} other {moved}}.",
+  "@transfer.fileOnly.allSkippedMany": {
+    "description": "File-count-only wording, every file (2+) was already at the target (nothing transferred).",
+    "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.fileOnly.mixedCopy": "Copy complete: copied {transferredText}, skipped {skippedText}. All {processedText} of your selected {processed, plural, one {file} other {files}} are now at the target.",
+  "@transfer.fileOnly.mixedCopy": {
+    "description": "File-count-only copy wording, some copied and some skipped. Copy phrasing reassures all selected files are now present.",
+    "screenshot": "transfer-complete-toast.png"
+  },
+
+  "transfer.fileOnly.mixedMove": "Move complete: moved {transferredText}, skipped {skippedText}. {skippedText} {skipped, plural, one {file} other {files}} {skipped, plural, one {was} other {were}} already at the target.",
+  "@transfer.fileOnly.mixedMove": {
+    "description": "File-count-only move wording, some moved and some skipped. Move phrasing reports the skipped files were already at the target, with was/were agreement.",
+    "screenshot": "transfer-complete-toast.png"
+  }
+}
