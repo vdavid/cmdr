@@ -201,7 +201,7 @@
         color: var(--color-accent-text);
         text-decoration: underline;
         /* The global `cursor: default` on html overrides the anchor's default pointer. */
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- re-enable pointer on links over the global cursor: default (see above) */
         cursor: pointer;
     }
 

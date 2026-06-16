@@ -227,7 +227,6 @@
         font-size: var(--font-size-md);
         font-weight: 500;
         line-height: 1.5;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- Mirror Button.svelte regular padding (32px target) */
         padding: 7px 20px;
         border-radius: var(--radius-md);
     }

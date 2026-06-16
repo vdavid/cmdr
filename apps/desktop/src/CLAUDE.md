@@ -6,9 +6,10 @@ These rules apply to all frontend code under here.
 
 ## Frontend rules
 
-- Always use the CSS variables in `app.css` (stylelint rejects undefined ones). Never raw `px` for `font-size`,
-  `border-radius`, `font-family`, or `z-index` ≥ 10: use the `--font-size-*` / `--radius-*` / `--font-*` / `--z-*`
-  tokens.
+- Always use the CSS variables in `app.css` (stylelint rejects undefined ones). Don't hardcode a `px` value that has a
+  matching `--spacing-*` / `--font-size-*` / `--radius-*` token (or `z-index` ≥ 10, or a non-token `font-family`):
+  stylelint's `declaration-property-value-disallowed-list` flags exactly those values, so use the token. Token-less
+  values (1px borders, negative nudges, display font sizes) may stay raw, with a `stylelint-disable` + `-- reason`.
 - ❌ No raw `invoke('…')` outside `lib/ipc/`. Call the typed `commands.*` wrappers (regenerate with
   `pnpm bindings:regen`); prefer named locals over inline primitives at call sites. Enforced by
   `cmdr/no-raw-tauri-invoke`. See [`lib/ipc/CLAUDE.md`](lib/ipc/CLAUDE.md).

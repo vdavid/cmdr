@@ -194,7 +194,6 @@
         /* 5 px gap = 2 px margin + 1 px separator + 2 px margin between
            adjacent tabs. The `.tab::before` separator (above) sits inside
            this gap at `left: -3px`. */
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         gap: 5px;
     }
 
@@ -265,7 +264,6 @@
         /* Bar height + 1px so the active tab covers any seam with the
            path bar; the extra px hangs below via `margin-bottom: -1px`. */
         height: calc(var(--spacing-tab-bar-height) + 1px);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin-bottom: -1px;
         /* Absorb the `.tab-list { gap: 5px }` on either side: the gap
            paints `--color-bg-tab-inactive` between tabs, which reads as a
@@ -274,9 +272,7 @@
            against (or under, via shoulders) the adjacent inactive tabs.
            First-child / last-child overrides below handle the ends of
            the tab list where there's no gap to absorb. */
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- exact gap absorption, must match `.tab-list { gap }` */
         margin-left: -5px;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- exact gap absorption, must match `.tab-list { gap }` */
         margin-right: -5px;
         z-index: 1;
         /* Let the Chrome-style shoulders extend past the tab's left/right
@@ -301,7 +297,6 @@
         right: 0;
         height: 2px;
         background-color: var(--color-accent);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- partial radius, no token */
         border-radius: 1px 1px 0 0;
     }
 

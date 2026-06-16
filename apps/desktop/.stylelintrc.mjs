@@ -33,9 +33,14 @@ export default {
     // Forbid var() with fallback values - all colors should be in app.css
     'declaration-property-value-disallowed-list': {
       '/.*/': ['/var\\(--[\\w-]+\\s*,/'],
-      '/^(padding|margin|gap|row-gap|column-gap)(-\\w+)?$/': ['/\\d+px/'],
-      'font-size': ['/\\dpx/'],
-      'border-radius': ['/\\dpx/'],
+      // Ban only raw px values that ALREADY have a design token, i.e. "if a token
+      // exists for this exact value, use it." Sub-grid nudges (1px borders, -1px
+      // overlaps) and token-less display sizes have no token and stay raw without
+      // a disable. Keep these value lists in sync with the --spacing-* /
+      // --font-size-* / --radius-* scales in `app.css`.
+      '/^(padding|margin|gap|row-gap|column-gap)(-\\w+)?$/': ['/\\b(2|4|8|12|16|24|32)px\\b/'], // --spacing-*
+      'font-size': ['/\\b(10|12|14|16|20)px\\b/'], // --font-size-*
+      'border-radius': ['/\\b(2|4|6|8|20|29)px\\b/'], // --radius-*
       'z-index': ['/^\\d{2,}/'],
       'font-family': ['/^(?!var\\(|inherit|unset|initial)/'],
       cursor: ['pointer'],

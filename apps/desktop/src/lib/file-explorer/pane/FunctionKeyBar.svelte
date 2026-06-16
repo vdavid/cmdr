@@ -200,7 +200,6 @@
         font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px var(--spacing-xs);
         white-space: nowrap;
         flex-shrink: 0;

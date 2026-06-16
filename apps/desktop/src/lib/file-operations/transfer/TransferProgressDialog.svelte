@@ -1568,7 +1568,6 @@
         display: inline-flex;
         align-items: center;
         color: var(--color-error-text);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- align icon with first line of text */
         margin-top: 1px;
     }
 

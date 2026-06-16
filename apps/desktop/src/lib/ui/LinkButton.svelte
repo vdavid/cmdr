@@ -56,7 +56,7 @@
         padding: 0;
         /* Cmdr sets `cursor: default` globally on `html` and `a` for native feel.
            Links opt back in here: the only sanctioned `cursor: pointer` in the app. */
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- links opt back into pointer; Cmdr sets cursor: default globally (see above) */
         cursor: pointer;
     }
 

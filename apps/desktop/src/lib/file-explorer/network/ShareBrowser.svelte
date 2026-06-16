@@ -622,7 +622,6 @@
 
     .error-icon,
     .empty-icon {
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- emoji icon, outside type scale */
         font-size: 32px;
     }
 
@@ -664,7 +663,6 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px var(--spacing-sm);
         font-family: var(--font-system), sans-serif;
         font-size: calc(var(--font-size-sm) * 0.9);

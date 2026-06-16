@@ -142,7 +142,6 @@
         width: 1px;
         height: 1px;
         padding: 0;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin: -1px;
         overflow: hidden;
         clip-path: inset(50%);

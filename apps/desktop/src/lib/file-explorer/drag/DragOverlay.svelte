@@ -88,7 +88,6 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 0;
         display: flex;
         align-items: center;

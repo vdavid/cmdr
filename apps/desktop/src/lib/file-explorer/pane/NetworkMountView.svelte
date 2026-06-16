@@ -362,7 +362,6 @@
     }
 
     .mount-error-state .error-icon {
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- emoji icon, outside type scale */
         font-size: 32px;
     }
 

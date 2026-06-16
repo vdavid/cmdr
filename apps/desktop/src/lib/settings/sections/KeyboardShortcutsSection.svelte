@@ -441,7 +441,6 @@
         background: var(--color-warning);
         color: var(--color-accent-fg);
         font-size: var(--font-size-xs);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 5px;
         border-radius: var(--radius-lg);
         font-weight: 600;

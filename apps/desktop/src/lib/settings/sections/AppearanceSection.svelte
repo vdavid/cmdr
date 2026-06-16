@@ -388,8 +388,7 @@
 
     .format-help code {
         background: var(--color-bg-tertiary);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        padding: 1px 4px;
+        padding: 1px var(--spacing-xs);
         border-radius: var(--radius-xs);
         font-family: var(--font-mono);
     }

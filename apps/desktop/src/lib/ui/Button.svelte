@@ -73,7 +73,6 @@
 
     /* === Size: regular === */
     .btn-regular {
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- Button height target: 32px */
         padding: 7px 20px;
         font-size: var(--font-size-md);
     }

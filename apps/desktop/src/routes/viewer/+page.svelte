@@ -1364,9 +1364,7 @@
     mark {
         background: var(--color-highlight);
         border-radius: var(--radius-xs);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 0 1px;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin: 0 -1px;
     }
 

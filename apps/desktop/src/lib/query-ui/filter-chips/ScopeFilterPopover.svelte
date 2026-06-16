@@ -158,8 +158,7 @@
         width: 100%;
         font-size: var(--font-size-sm);
         font-family: var(--font-system);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        padding: 6px 8px;
+        padding: 6px var(--spacing-sm);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
@@ -184,7 +183,6 @@
         font-family: var(--font-mono);
         font-size: var(--font-size-xs);
         background: var(--color-bg-tertiary);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 3px;
         border-radius: var(--radius-xs);
     }

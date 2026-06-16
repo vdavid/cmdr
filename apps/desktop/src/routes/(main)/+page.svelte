@@ -838,7 +838,6 @@
          * fixed-height title bar. The compounded scale (system × user) can
          * push `--font-size-sm` higher than this; `min()` keeps the rendered
          * size within bounds while still scaling down at small text sizes. */
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- absolute cap, not a token-eligible value */
         font-size: min(var(--font-size-sm), 18px);
         color: var(--color-text-secondary);
         font-weight: 500;

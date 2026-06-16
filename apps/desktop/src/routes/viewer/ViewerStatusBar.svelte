@@ -119,8 +119,7 @@
     }
 
     .backend-badge {
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        padding: 1px 4px;
+        padding: 1px var(--spacing-xs);
         border-radius: var(--radius-sm);
         background: var(--color-bg-tertiary);
         color: var(--color-text-tertiary);

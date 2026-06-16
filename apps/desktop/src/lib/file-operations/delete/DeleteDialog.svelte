@@ -367,7 +367,6 @@
     .warning-icon {
         flex-shrink: 0;
         color: var(--color-warning);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin-top: 1px;
     }
 
@@ -448,7 +447,6 @@
 
     .symlink-icon {
         flex-shrink: 0;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin-top: 1px;
     }
 

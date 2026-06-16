@@ -1174,7 +1174,7 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- left pad aligns to a computed icon+gap offset; 14px/16px are measured widths */
         padding: 0 var(--spacing-md) var(--spacing-xs) calc(14px + var(--spacing-sm) + 16px + var(--spacing-sm));
     }
 
