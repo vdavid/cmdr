@@ -11,6 +11,7 @@
         type LicenseStatus,
     } from '$lib/tauri-commands'
     import Button from '$lib/ui/Button.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getLicenseTypeLabel, getStatusText } from './license-section-utils'
 
@@ -51,47 +52,51 @@
     {#if isLoading}
         <p class="loading-text">{tString('licensing.section.loading')}</p>
     {:else}
-        <div class="license-info">
-            <div class="info-row">
-                <span class="info-label">{tString('licensing.section.labelType')}</span>
-                <span class="info-value">{getLicenseTypeLabel(licenseInfo)}</span>
+        <SectionCard>
+            <div class="license-info">
+                <div class="info-row">
+                    <span class="info-label">{tString('licensing.section.labelType')}</span>
+                    <span class="info-value">{getLicenseTypeLabel(licenseInfo)}</span>
+                </div>
+                {#if licenseInfo?.organizationName}
+                    <div class="info-row">
+                        <span class="info-label">{tString('licensing.section.labelOrganization')}</span>
+                        <span class="info-value">{licenseInfo.organizationName}</span>
+                    </div>
+                {/if}
+                {#if statusText}
+                    <div class="info-row">
+                        <span class="info-label">{tString('licensing.section.labelStatus')}</span>
+                        <span
+                            class="info-value"
+                            class:status-expired={licenseStatus?.type === 'expired'}
+                            class:status-active={licenseStatus?.type === 'commercial'}>{statusText}</span
+                        >
+                    </div>
+                {/if}
+                {#if licenseInfo?.shortCode}
+                    <div class="info-row">
+                        <span class="info-label">{tString('licensing.section.labelKey')}</span>
+                        <span class="info-value mono">{licenseInfo.shortCode}</span>
+                    </div>
+                {/if}
             </div>
-            {#if licenseInfo?.organizationName}
-                <div class="info-row">
-                    <span class="info-label">{tString('licensing.section.labelOrganization')}</span>
-                    <span class="info-value">{licenseInfo.organizationName}</span>
-                </div>
-            {/if}
-            {#if statusText}
-                <div class="info-row">
-                    <span class="info-label">{tString('licensing.section.labelStatus')}</span>
-                    <span
-                        class="info-value"
-                        class:status-expired={licenseStatus?.type === 'expired'}
-                        class:status-active={licenseStatus?.type === 'commercial'}>{statusText}</span
-                    >
-                </div>
-            {/if}
-            {#if licenseInfo?.shortCode}
-                <div class="info-row">
-                    <span class="info-label">{tString('licensing.section.labelKey')}</span>
-                    <span class="info-value mono">{licenseInfo.shortCode}</span>
-                </div>
-            {/if}
-        </div>
 
-        <div class="actions">
-            {#if hasLicense}
-                <Button variant="secondary" onclick={handleManageLicense}
-                    >{tString('licensing.section.manageKey')}</Button
-                >
-            {:else}
-                <Button variant="secondary" onclick={handleManageLicense}
-                    >{tString('licensing.section.enterKey')}</Button
-                >
-                <Button variant="secondary" onclick={handleBuyLicense}>{tString('licensing.section.getLicense')}</Button>
-            {/if}
-        </div>
+            <div class="actions">
+                {#if hasLicense}
+                    <Button variant="secondary" onclick={handleManageLicense}
+                        >{tString('licensing.section.manageKey')}</Button
+                    >
+                {:else}
+                    <Button variant="secondary" onclick={handleManageLicense}
+                        >{tString('licensing.section.enterKey')}</Button
+                    >
+                    <Button variant="secondary" onclick={handleBuyLicense}
+                        >{tString('licensing.section.getLicense')}</Button
+                    >
+                {/if}
+            </div>
+        </SectionCard>
     {/if}
 </SettingsSection>
 
@@ -102,10 +107,9 @@
         margin: 0;
     }
 
+    /* No background/border/radius of its own: the wrapping SectionCard owns the
+       card frame, so this is just the rows-plus-separator block inside it. */
     .license-info {
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-lg);
-        padding: var(--spacing-xs) var(--spacing-lg);
         margin-bottom: var(--spacing-lg);
     }
 

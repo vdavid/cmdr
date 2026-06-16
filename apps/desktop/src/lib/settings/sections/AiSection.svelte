@@ -3,22 +3,14 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import {
-        getSetting,
-        setSetting,
-        onSpecificSettingChange,
-        type AiProvider,
-    } from '$lib/settings'
-    import {
-        getAiRuntimeStatus,
-        stopAiServer,
-        type AiRuntimeStatus,
-    } from '$lib/tauri-commands'
+    import { getSetting, setSetting, onSpecificSettingChange, type AiProvider } from '$lib/settings'
+    import { getAiRuntimeStatus, stopAiServer, type AiRuntimeStatus } from '$lib/tauri-commands'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logging/logger'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import AiCloudSection from './AiCloudSection.svelte'
     import AiLocalSection from './AiLocalSection.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -92,7 +84,7 @@
 
     const providerTooltips: Record<string, string> = {
         off: tString('settings.ai.tooltipOff'),
-        'cloud': tString('settings.ai.tooltipCloud'),
+        cloud: tString('settings.ai.tooltipCloud'),
         local: tString('settings.ai.tooltipLocal'),
         'local-disabled': tString('settings.ai.tooltipLocalDisabled'),
     }
@@ -115,52 +107,54 @@
     {:else}
         <!-- Provider toggle with per-option tooltips -->
         {#if shouldShow('ai.provider')}
-            <SettingRow
-                id="ai.provider"
-                label={tString('settings.ai.provider.label')}
-                description={tString('settings.ai.provider.description')}
-                {searchQuery}
-            >
-                <div class="provider-toggle" role="radiogroup" aria-label={tString('settings.ai.providerAria')}>
-                    <button
-                        class="provider-option"
-                        class:selected={provider === 'off'}
-                        onclick={() => {
-                            handleProviderSelect('off')
-                        }}
-                        use:tooltip={getProviderTooltip('off')}
-                        role="radio"
-                        aria-checked={provider === 'off'}
-                    >
-                        {tString('settings.ai.provider.opt.off')}
-                    </button>
-                    <button
-                        class="provider-option"
-                        class:selected={provider === 'cloud'}
-                        onclick={() => {
-                            handleProviderSelect('cloud')
-                        }}
-                        use:tooltip={getProviderTooltip('cloud')}
-                        role="radio"
-                        aria-checked={provider === 'cloud'}
-                    >
-                        {tString('settings.ai.provider.opt.cloud')}
-                    </button>
-                    <button
-                        class="provider-option"
-                        class:selected={provider === 'local'}
-                        disabled={!localAiSupported}
-                        onclick={() => {
-                            handleProviderSelect('local')
-                        }}
-                        use:tooltip={getProviderTooltip('local')}
-                        role="radio"
-                        aria-checked={provider === 'local'}
-                    >
-                        {tString('settings.ai.provider.opt.local')}
-                    </button>
-                </div>
-            </SettingRow>
+            <SectionCard>
+                <SettingRow
+                    id="ai.provider"
+                    label={tString('settings.ai.provider.label')}
+                    description={tString('settings.ai.provider.description')}
+                    {searchQuery}
+                >
+                    <div class="provider-toggle" role="radiogroup" aria-label={tString('settings.ai.providerAria')}>
+                        <button
+                            class="provider-option"
+                            class:selected={provider === 'off'}
+                            onclick={() => {
+                                handleProviderSelect('off')
+                            }}
+                            use:tooltip={getProviderTooltip('off')}
+                            role="radio"
+                            aria-checked={provider === 'off'}
+                        >
+                            {tString('settings.ai.provider.opt.off')}
+                        </button>
+                        <button
+                            class="provider-option"
+                            class:selected={provider === 'cloud'}
+                            onclick={() => {
+                                handleProviderSelect('cloud')
+                            }}
+                            use:tooltip={getProviderTooltip('cloud')}
+                            role="radio"
+                            aria-checked={provider === 'cloud'}
+                        >
+                            {tString('settings.ai.provider.opt.cloud')}
+                        </button>
+                        <button
+                            class="provider-option"
+                            class:selected={provider === 'local'}
+                            disabled={!localAiSupported}
+                            onclick={() => {
+                                handleProviderSelect('local')
+                            }}
+                            use:tooltip={getProviderTooltip('local')}
+                            role="radio"
+                            aria-checked={provider === 'local'}
+                        >
+                            {tString('settings.ai.provider.opt.local')}
+                        </button>
+                    </div>
+                </SettingRow>
+            </SectionCard>
         {/if}
 
         <!-- Cloud / API section -->

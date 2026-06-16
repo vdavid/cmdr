@@ -6,6 +6,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import Combobox, { type ComboboxItem } from '$lib/ui/Combobox.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import {
         getSetting,
         setSetting,
@@ -185,12 +186,7 @@
         scheduleConnectionCheck()
     }
 
-    async function cacheModels(
-        providerId: string,
-        baseUrl: string,
-        apiKey: string,
-        models: string[],
-    ): Promise<void> {
+    async function cacheModels(providerId: string, baseUrl: string, apiKey: string, models: string[]): Promise<void> {
         const fingerprint = await computeModelCacheKey(providerId, baseUrl, apiKey)
         setCachedModels(fingerprint, models)
     }
@@ -355,154 +351,158 @@
     )
 </script>
 
-{#if shouldShow('ai.cloudProvider')}
-    <SettingRow
-        id="ai.cloudProvider"
-        label={tString('settings.ai.cloudProvider.label')}
-        description={tString('settings.ai.cloudProvider.description')}
-        split
-        {searchQuery}
-    >
-        <Select
-            items={providerSelectItems}
-            value={cloudProviderId}
-            onChange={handleCloudProviderChange}
-            ariaLabel={tString('ai.cloud.serviceAria')}
-        />
-    </SettingRow>
-    {#if currentPreset?.description}
-        <p class="provider-description">{currentPreset.description}</p>
+<SectionCard>
+    {#if shouldShow('ai.cloudProvider')}
+        <SettingRow
+            id="ai.cloudProvider"
+            label={tString('settings.ai.cloudProvider.label')}
+            description={tString('settings.ai.cloudProvider.description')}
+            split
+            {searchQuery}
+        >
+            <Select
+                items={providerSelectItems}
+                value={cloudProviderId}
+                onChange={handleCloudProviderChange}
+                ariaLabel={tString('ai.cloud.serviceAria')}
+            />
+        </SettingRow>
+        {#if currentPreset?.description}
+            <p class="provider-description">{currentPreset.description}</p>
+        {/if}
     {/if}
-{/if}
 
-<SettingRow
-    id="ai.cloudProviderConfigs"
-    label={tString('ai.cloud.endpointLabel')}
-    description={tString('ai.cloud.endpointDescription')}
-    split
-    {searchQuery}
->
-    {#if showEditableBaseUrl}
-        <input
-            class="text-input"
-            type="text"
-            value={currentBaseUrl}
-            oninput={(e: Event) => {
-                const target = e.target as HTMLInputElement
-                currentBaseUrl = target.value
-                saveCloudProviderField('baseUrl', target.value)
-            }}
-            placeholder={tString('ai.cloud.endpointPlaceholder')}
-            aria-label={tString('ai.cloud.endpointAria')}
-            autocomplete="off"
-            spellcheck="false"
-        />
-    {:else}
-        <input
-            class="text-input text-input-readonly"
-            type="text"
-            value={resolvedBaseUrl}
-            readonly
-            aria-label={tString('ai.cloud.endpointAria')}
-            tabindex="-1"
-        />
-    {/if}
-</SettingRow>
-
-{#if requiresApiKey}
     <SettingRow
         id="ai.cloudProviderConfigs"
-        label={tString('ai.cloud.apiKeyLabel')}
-        description={tString('ai.cloud.apiKeyDescription')}
+        label={tString('ai.cloud.endpointLabel')}
+        description={tString('ai.cloud.endpointDescription')}
         split
         {searchQuery}
     >
-        <SettingPasswordInput
+        {#if showEditableBaseUrl}
+            <input
+                class="text-input"
+                type="text"
+                value={currentBaseUrl}
+                oninput={(e: Event) => {
+                    const target = e.target as HTMLInputElement
+                    currentBaseUrl = target.value
+                    saveCloudProviderField('baseUrl', target.value)
+                }}
+                placeholder={tString('ai.cloud.endpointPlaceholder')}
+                aria-label={tString('ai.cloud.endpointAria')}
+                autocomplete="off"
+                spellcheck="false"
+            />
+        {:else}
+            <input
+                class="text-input text-input-readonly"
+                type="text"
+                value={resolvedBaseUrl}
+                readonly
+                aria-label={tString('ai.cloud.endpointAria')}
+                tabindex="-1"
+            />
+        {/if}
+    </SettingRow>
+
+    {#if requiresApiKey}
+        <SettingRow
             id="ai.cloudProviderConfigs"
-            placeholder={apiKeyPlaceholder}
-            ariaLabel={tString('ai.cloud.apiKeyLabel')}
-            value={currentApiKey}
-            onchange={handleApiKeyChange}
+            label={tString('ai.cloud.apiKeyLabel')}
+            description={tString('ai.cloud.apiKeyDescription')}
+            split
+            {searchQuery}
+        >
+            <SettingPasswordInput
+                id="ai.cloudProviderConfigs"
+                placeholder={apiKeyPlaceholder}
+                ariaLabel={tString('ai.cloud.apiKeyLabel')}
+                value={currentApiKey}
+                onchange={handleApiKeyChange}
+            />
+        </SettingRow>
+    {/if}
+
+    <SettingRow
+        id="ai.cloudProviderConfigs"
+        label={tString('ai.cloud.modelLabel')}
+        description={tString('ai.cloud.modelDescription')}
+        split
+        {searchQuery}
+    >
+        <Combobox
+            items={modelComboboxItems}
+            inputValue={currentModel}
+            onInputValueChange={handleModelInputChange}
+            loading={connectionStatus === 'checking'}
+            placeholder={modelPlaceholder}
+            ariaLabel={tString('ai.cloud.modelLabel')}
         />
     </SettingRow>
-{/if}
 
-<SettingRow
-    id="ai.cloudProviderConfigs"
-    label={tString('ai.cloud.modelLabel')}
-    description={tString('ai.cloud.modelDescription')}
-    split
-    {searchQuery}
->
-    <Combobox
-        items={modelComboboxItems}
-        inputValue={currentModel}
-        onInputValueChange={handleModelInputChange}
-        loading={connectionStatus === 'checking'}
-        placeholder={modelPlaceholder}
-        ariaLabel={tString('ai.cloud.modelLabel')}
-    />
-</SettingRow>
+    <!-- Connection status -->
+    {#if secretError}
+        <div class="secret-error" role="alert">
+            <span class="connection-status-icon connection-status-error">&#x2717;</span>
+            <span class="secret-error-text">
+                <span class="secret-error-title">{secretError.title}</span>
+                {#if secretError.body}
+                    <span class="secret-error-body">{secretError.body}</span>
+                {/if}
+            </span>
+        </div>
+    {/if}
 
-<!-- Connection status -->
-{#if secretError}
-    <div class="secret-error" role="alert">
-        <span class="connection-status-icon connection-status-error">&#x2717;</span>
-        <span class="secret-error-text">
-            <span class="secret-error-title">{secretError.title}</span>
-            {#if secretError.body}
-                <span class="secret-error-body">{secretError.body}</span>
-            {/if}
-        </span>
-    </div>
-{/if}
-
-{#if connectionStatus === 'checking'}
-    <div class="connection-status">
-        <Spinner size="sm" />
-        <span class="connection-status-text">{tString('ai.cloud.checking')}</span>
-    </div>
-{:else if connectionStatus === 'connected'}
-    <div class="connection-status">
-        <span class="connection-status-icon connection-status-ok">&#x2713;</span>
-        <span class="connection-status-text">{tString('ai.cloud.connected')}</span>
-        <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
-    </div>
-{:else if connectionStatus === 'connected-no-models'}
-    <div class="connection-status">
-        <span class="connection-status-icon connection-status-ok">&#x2713;</span>
-        <span class="connection-status-text">{tString('ai.cloud.connectedNoModels')}</span>
-        <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
-    </div>
-{:else if connectionStatus === 'auth-error'}
-    <div class="connection-status">
-        <span class="connection-status-icon connection-status-error">&#x2717;</span>
-        <span class="connection-status-text connection-status-error-text"
-            >{connectionError ?? tString('ai.cloud.authError')}</span
-        >
-        <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
-    </div>
-{:else if connectionStatus === 'connection-error'}
-    <div class="connection-status">
-        <span class="connection-status-icon connection-status-error">&#x2717;</span>
-        <span class="connection-status-text connection-status-error-text"
-            >{connectionError ?? tString('ai.cloud.connectionError')}</span
-        >
-        <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
-    </div>
-{:else if connectionStatus === 'error'}
-    <div class="connection-status">
-        <span class="connection-status-icon connection-status-error">&#x2717;</span>
-        <span class="connection-status-text connection-status-error-text"
-            >{connectionError ?? tString('ai.cloud.genericError')}</span
-        >
-        <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
-    </div>
-{:else if connectionStatus === 'idle' && hasCheckableConfig}
-    <div class="connection-status">
-        <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.testConnection')}</Button>
-    </div>
-{/if}
+    {#if connectionStatus === 'checking'}
+        <div class="connection-status">
+            <Spinner size="sm" />
+            <span class="connection-status-text">{tString('ai.cloud.checking')}</span>
+        </div>
+    {:else if connectionStatus === 'connected'}
+        <div class="connection-status">
+            <span class="connection-status-icon connection-status-ok">&#x2713;</span>
+            <span class="connection-status-text">{tString('ai.cloud.connected')}</span>
+            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+        </div>
+    {:else if connectionStatus === 'connected-no-models'}
+        <div class="connection-status">
+            <span class="connection-status-icon connection-status-ok">&#x2713;</span>
+            <span class="connection-status-text">{tString('ai.cloud.connectedNoModels')}</span>
+            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+        </div>
+    {:else if connectionStatus === 'auth-error'}
+        <div class="connection-status">
+            <span class="connection-status-icon connection-status-error">&#x2717;</span>
+            <span class="connection-status-text connection-status-error-text"
+                >{connectionError ?? tString('ai.cloud.authError')}</span
+            >
+            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+        </div>
+    {:else if connectionStatus === 'connection-error'}
+        <div class="connection-status">
+            <span class="connection-status-icon connection-status-error">&#x2717;</span>
+            <span class="connection-status-text connection-status-error-text"
+                >{connectionError ?? tString('ai.cloud.connectionError')}</span
+            >
+            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+        </div>
+    {:else if connectionStatus === 'error'}
+        <div class="connection-status">
+            <span class="connection-status-icon connection-status-error">&#x2717;</span>
+            <span class="connection-status-text connection-status-error-text"
+                >{connectionError ?? tString('ai.cloud.genericError')}</span
+            >
+            <Button size="mini" onclick={() => void triggerConnectionCheck()}>{tString('ai.cloud.recheck')}</Button>
+        </div>
+    {:else if connectionStatus === 'idle' && hasCheckableConfig}
+        <div class="connection-status">
+            <Button size="mini" onclick={() => void triggerConnectionCheck()}
+                >{tString('ai.cloud.testConnection')}</Button
+            >
+        </div>
+    {/if}
+</SectionCard>
 
 <style>
     .provider-description {

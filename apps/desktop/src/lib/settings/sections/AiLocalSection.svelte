@@ -5,6 +5,7 @@
     import Button from '$lib/ui/Button.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import {
@@ -385,112 +386,115 @@
     {/if}
 </div>
 
-<!-- Context window (only when installed) -->
+<!-- Context window (only when installed). Card-framed to match the rest of
+     Settings; the status card, RAM gauge actions, and modal below stay outside
+     a card (already visually distinct full-bleed blocks). -->
 {#if modelInstalled && shouldShow('ai.localContextSize')}
-    <SettingRow
-        id="ai.localContextSize"
-        label={tString('settings.ai.localContextSize.label')}
-        description={tString('settings.ai.localContextSize.description')}
-        split
-        {searchQuery}
-    >
-        <div class="context-size-controls">
-            <SettingSelect id="ai.localContextSize" />
-            {#if showApplyButton}
-                <div class="apply-wrapper">
-                    {#if warningLevel === 'caution'}
-                        <span
-                            class="warning-icon warning-caution"
-                            use:tooltip={warningTooltip}
-                            aria-label={tString('ai.local.memoryWarningAria')}
+    <SectionCard>
+        <SettingRow
+            id="ai.localContextSize"
+            label={tString('settings.ai.localContextSize.label')}
+            description={tString('settings.ai.localContextSize.description')}
+            split
+            {searchQuery}
+        >
+            <div class="context-size-controls">
+                <SettingSelect id="ai.localContextSize" />
+                {#if showApplyButton}
+                    <div class="apply-wrapper">
+                        {#if warningLevel === 'caution'}
+                            <span
+                                class="warning-icon warning-caution"
+                                use:tooltip={warningTooltip}
+                                aria-label={tString('ai.local.memoryWarningAria')}
+                            >
+                                &#x26A0;
+                            </span>
+                        {:else if warningLevel === 'danger'}
+                            <span
+                                class="warning-icon warning-danger"
+                                use:tooltip={warningTooltip}
+                                aria-label={tString('ai.local.memoryWarningAria')}
+                            >
+                                &#x26A0;
+                            </span>
+                        {/if}
+                        <Button
+                            variant="primary"
+                            size="mini"
+                            disabled={actionsDisabled}
+                            onclick={() => void handleApplyContextSize()}
                         >
-                            &#x26A0;
-                        </span>
-                    {:else if warningLevel === 'danger'}
-                        <span
-                            class="warning-icon warning-danger"
-                            use:tooltip={warningTooltip}
-                            aria-label={tString('ai.local.memoryWarningAria')}
-                        >
-                            &#x26A0;
-                        </span>
-                    {/if}
-                    <Button
-                        variant="primary"
-                        size="mini"
-                        disabled={actionsDisabled}
-                        onclick={() => void handleApplyContextSize()}
-                    >
-                        {tString('ai.local.applyContextSize')}
-                    </Button>
-                </div>
-            {/if}
-        </div>
-    </SettingRow>
+                            {tString('ai.local.applyContextSize')}
+                        </Button>
+                    </div>
+                {/if}
+            </div>
+        </SettingRow>
 
-    <!-- RAM gauge -->
-    {#if systemMemory && systemMemory.totalBytes > 0 && gaugeSegments}
-        <div class="ram-gauge-container" aria-label={tString('ai.local.ramGaugeAria')}>
-            <div class="ram-gauge-bar">
-                <div
-                    class="ram-segment ram-system"
-                    style="width: {gaugeSegments.systemPercent.toFixed(2)}%"
-                ></div>
-                <div
-                    class="ram-segment ram-other-apps"
-                    style="width: {gaugeSegments.otherAppsPercent.toFixed(2)}%"
-                ></div>
-                <div
-                    class="ram-segment ram-current-ai"
-                    style="width: {gaugeSegments.retainedAiPercent.toFixed(2)}%"
-                ></div>
-                {#if gaugeSegments.addedPercent > 0}
+        <!-- RAM gauge -->
+        {#if systemMemory && systemMemory.totalBytes > 0 && gaugeSegments}
+            <div class="ram-gauge-container" aria-label={tString('ai.local.ramGaugeAria')}>
+                <div class="ram-gauge-bar">
+                    <div class="ram-segment ram-system" style="width: {gaugeSegments.systemPercent.toFixed(2)}%"></div>
                     <div
-                        class="ram-segment ram-projected"
-                        style="width: {gaugeSegments.addedPercent.toFixed(2)}%"
+                        class="ram-segment ram-other-apps"
+                        style="width: {gaugeSegments.otherAppsPercent.toFixed(2)}%"
                     ></div>
-                {/if}
-                {#if gaugeSegments.freedPercent > 0}
                     <div
-                        class="ram-segment ram-freed"
-                        style="width: {gaugeSegments.freedPercent.toFixed(2)}%"
+                        class="ram-segment ram-current-ai"
+                        style="width: {gaugeSegments.retainedAiPercent.toFixed(2)}%"
                     ></div>
-                {/if}
-            </div>
-            <div class="ram-legend">
-                <span class="ram-legend-item"
-                    ><span class="ram-legend-swatch ram-system"></span>{t('ai.local.ramLegendSystem', {
-                        size: formatMemoryGb(gaugeSegments.systemBytes),
-                    })}</span
-                >
-                <span class="ram-legend-item"
-                    ><span class="ram-legend-swatch ram-other-apps"></span>{t('ai.local.ramLegendApps', {
-                        size: formatMemoryGb(gaugeSegments.otherAppsBytes),
-                    })}</span
-                >
-                <span class="ram-legend-item"
-                    ><span class="ram-legend-swatch ram-current-ai"></span>{t('ai.local.ramLegendCmdrAi', {
-                        size: projectedMemoryFormatted,
-                    })}</span
-                >
-                {#if gaugeSegments.addedPercent > 0}
+                    {#if gaugeSegments.addedPercent > 0}
+                        <div
+                            class="ram-segment ram-projected"
+                            style="width: {gaugeSegments.addedPercent.toFixed(2)}%"
+                        ></div>
+                    {/if}
+                    {#if gaugeSegments.freedPercent > 0}
+                        <div
+                            class="ram-segment ram-freed"
+                            style="width: {gaugeSegments.freedPercent.toFixed(2)}%"
+                        ></div>
+                    {/if}
+                </div>
+                <div class="ram-legend">
                     <span class="ram-legend-item"
-                        ><span class="ram-legend-swatch ram-projected"></span>{tString('ai.local.ramLegendProjected')}</span
+                        ><span class="ram-legend-swatch ram-system"></span>{t('ai.local.ramLegendSystem', {
+                            size: formatMemoryGb(gaugeSegments.systemBytes),
+                        })}</span
                     >
-                {/if}
-                {#if gaugeSegments.freedPercent > 0}
                     <span class="ram-legend-item"
-                        ><span class="ram-legend-swatch ram-freed"></span>{tString('ai.local.ramLegendFreed')}</span
+                        ><span class="ram-legend-swatch ram-other-apps"></span>{t('ai.local.ramLegendApps', {
+                            size: formatMemoryGb(gaugeSegments.otherAppsBytes),
+                        })}</span
                     >
-                {/if}
-                <span class="ram-legend-item"
-                    ><span class="ram-legend-swatch ram-free-space"></span>{t('ai.local.ramLegendFree', {
-                        size: formatMemoryGb(gaugeSegments.freeBytes),
-                    })}</span
-                >
+                    <span class="ram-legend-item"
+                        ><span class="ram-legend-swatch ram-current-ai"></span>{t('ai.local.ramLegendCmdrAi', {
+                            size: projectedMemoryFormatted,
+                        })}</span
+                    >
+                    {#if gaugeSegments.addedPercent > 0}
+                        <span class="ram-legend-item"
+                            ><span class="ram-legend-swatch ram-projected"></span>{tString(
+                                'ai.local.ramLegendProjected',
+                            )}</span
+                        >
+                    {/if}
+                    {#if gaugeSegments.freedPercent > 0}
+                        <span class="ram-legend-item"
+                            ><span class="ram-legend-swatch ram-freed"></span>{tString('ai.local.ramLegendFreed')}</span
+                        >
+                    {/if}
+                    <span class="ram-legend-item"
+                        ><span class="ram-legend-swatch ram-free-space"></span>{t('ai.local.ramLegendFree', {
+                            size: formatMemoryGb(gaugeSegments.freeBytes),
+                        })}</span
+                    >
+                </div>
             </div>
-        </div>
-    {/if}
+        {/if}
+    </SectionCard>
 {/if}
 
 <!-- Actions -->
@@ -513,7 +517,9 @@
             >{tString('ai.local.deleteModel')}</Button
         >
     {:else}
-        <Button variant="secondary" onclick={() => void handleDownloadModel()}>{tString('ai.local.downloadModel')}</Button>
+        <Button variant="secondary" onclick={() => void handleDownloadModel()}
+            >{tString('ai.local.downloadModel')}</Button
+        >
     {/if}
 </div>
 
