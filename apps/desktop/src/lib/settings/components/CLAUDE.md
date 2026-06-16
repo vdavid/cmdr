@@ -50,9 +50,9 @@ functional `*.test.ts`.
   combobox rows. Don't use it for switches (too small), toggle groups (may not fit 50% at narrow widths), or full-width
   custom layouts. Description text spans full width regardless.
 - **Card groups: wrap each row run in `{#if anyVisible(shouldShow, ...ids)}<SectionCard>`** (no wrapper component). The
-  frame guard and each row's `{#if shouldShow(id)}` MUST read the SAME `shouldShow`, so an all-filtered-out card hides its
-  frame (no empty cards). Visibility is section-owned, never re-derived from the registry `card` field. Why + reference:
-  `sections/DETAILS.md` (FSW).
+  frame guard and each row's `{#if shouldShow(id)}` MUST read the SAME `shouldShow`, so an all-filtered-out card hides
+  its frame (no empty cards). Visibility is section-owned, never re-derived from the registry `card` field. Why +
+  reference: `sections/DETAILS.md` (FSW).
 
 ## Gotchas
 
