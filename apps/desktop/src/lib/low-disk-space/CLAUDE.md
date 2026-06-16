@@ -31,4 +31,5 @@ watcher, hysteresis detector, the `set_low_disk_space_config` live-apply command
 - **The bridge bails on `'off'` as defense in depth**: the backend removes its watcher when off, so no event should
   arrive, but the bridge re-checks the mode per event in case a settings flip races an in-flight emit.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

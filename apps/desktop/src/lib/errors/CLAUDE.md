@@ -61,4 +61,5 @@ factory (the compose pipeline reads its keys automatically; a runtime param goes
 as a `{token}` in the catalog value). Add the reason to the parity + style test matrices. Full recipe + the convergence
 note: [DETAILS.md](DETAILS.md).
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

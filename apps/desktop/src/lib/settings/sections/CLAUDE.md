@@ -52,4 +52,5 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **Don't hand-render anything tagged `showInAdvanced: true`** (it auto-renders in `AdvancedSection`), unless you're
   deliberately mirroring a setting in a second section for discoverability.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

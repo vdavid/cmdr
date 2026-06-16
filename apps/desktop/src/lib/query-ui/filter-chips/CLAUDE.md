@@ -42,4 +42,5 @@ Search and Selection. See [`../CLAUDE.md`](../CLAUDE.md) for the orchestrator an
   `KeyM` / `KeyI` first and fall back to `event.key` for synthesized test events. `⌥I` (Search in) is Search-only;
   Selection passes `scopeChipVisible: false` and suppresses it.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

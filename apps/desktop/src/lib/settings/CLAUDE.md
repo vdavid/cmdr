@@ -54,4 +54,5 @@ Registry-based user settings for Cmdr: defined once in `settings-registry.ts`, a
   Synchronous `close()` from a keydown handler stalls cross-webview IPC on Linux/webkit2gtk; `rAF` is throttled in
   unfocused windows on macOS. See DETAILS § Gotchas and `docs/testing.md` § "rAF in unfocused windows".
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

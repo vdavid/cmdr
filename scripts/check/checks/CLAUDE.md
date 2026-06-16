@@ -48,4 +48,5 @@ see [`../CLAUDE.md`](../CLAUDE.md).
   and check counts" table in DETAILS.md. `--fast` membership is just the `IsFast` field in `registry.go` (editorially
   curated), so there's no separate list anywhere to keep in sync.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

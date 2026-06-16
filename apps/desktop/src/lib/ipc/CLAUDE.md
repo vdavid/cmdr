@@ -37,4 +37,5 @@ The Rust side lives in `apps/desktop/src-tauri/src/ipc.rs`.
 For the add-a-command steps, the full typed-events rules, the excluded-commands table, IPC contract testing, and the
 specta version-bump procedure, see DETAILS.md.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

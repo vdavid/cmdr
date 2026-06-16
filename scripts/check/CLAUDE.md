@@ -45,4 +45,5 @@ see [DETAILS.md](DETAILS.md).
   smb2's own `consumer` harness coexist instead of fighting over ports. `checks.ApplySmbPortEnv()` sets this before
   bring-up; don't revert to the default range.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

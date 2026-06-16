@@ -52,4 +52,5 @@ ETA/throughput, settle contract).
 - **MTP move is interleaved copy + delete per file** (not copy-all-then-delete-all): on partial failure only the current
   file exists in both places. Rollback hidden during the delete phase.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

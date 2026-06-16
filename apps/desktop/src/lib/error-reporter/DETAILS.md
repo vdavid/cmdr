@@ -1,6 +1,7 @@
 # Error reporter (frontend) — details
 
-Read this before any non-trivial work here: editing, planning, reorganizing, or advising. `CLAUDE.md` holds the must-knows; this is the depth.
+Read this before any non-trivial work here: editing, planning, reorganizing, or advising. `CLAUDE.md` holds the
+must-knows; this is the depth.
 
 ## Flow B: auto-send toast
 
