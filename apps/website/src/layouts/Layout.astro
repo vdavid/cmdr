@@ -400,9 +400,85 @@ const {
                     .catch(function () {})
             })()
         </script>
+
+        <!-- Download dropdown toggle: open/close, click-outside, and keyboard nav for every
+             `[data-download-split-btn]` on the page (the header/hero buttons and the inline
+             blog-post dropdown the rehypeDownloadDropdown plugin emits). Arch detection above marks
+             the recommended option. -->
+        <script>
+            document.addEventListener('astro:page-load', () => {
+                document.querySelectorAll<HTMLElement>('[data-download-split-btn]').forEach((wrapper) => {
+                    const chevron = wrapper.querySelector<HTMLButtonElement>('[data-download-chevron]')
+                    const dropdown = wrapper.querySelector<HTMLElement>('[data-download-dropdown]')
+                    if (!chevron || !dropdown || chevron.dataset.bound) return
+                    chevron.dataset.bound = 'true'
+
+                    const open = () => {
+                        // Close any other open dropdowns first
+                        document.querySelectorAll<HTMLElement>('[data-download-dropdown]').forEach((d) => {
+                            if (d !== dropdown) {
+                                d.hidden = true
+                                const otherWrapper = d.closest<HTMLElement>('[data-download-split-btn]')
+                                otherWrapper
+                                    ?.querySelector('[data-download-chevron]')
+                                    ?.setAttribute('aria-expanded', 'false')
+                                if (otherWrapper) delete otherWrapper.dataset.open
+                            }
+                        })
+                        dropdown.hidden = false
+                        chevron.setAttribute('aria-expanded', 'true')
+                        wrapper.dataset.open = ''
+                    }
+
+                    const close = () => {
+                        dropdown.hidden = true
+                        chevron.setAttribute('aria-expanded', 'false')
+                        delete wrapper.dataset.open
+                    }
+
+                    chevron.addEventListener('click', (e: MouseEvent) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        dropdown.hidden ? open() : close()
+                    })
+
+                    document.addEventListener('click', (e: MouseEvent) => {
+                        if (!wrapper.contains(e.target as Node)) close()
+                    })
+
+                    document.addEventListener('keydown', (e: KeyboardEvent) => {
+                        if (e.key === 'Escape' && !dropdown.hidden) {
+                            close()
+                            chevron.focus()
+                        }
+                    })
+
+                    dropdown.addEventListener('keydown', (e: KeyboardEvent) => {
+                        const items = [...dropdown.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+                        const idx = items.indexOf(document.activeElement as HTMLElement)
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault()
+                            items[(idx + 1) % items.length]?.focus()
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault()
+                            items[(idx - 1 + items.length) % items.length]?.focus()
+                        }
+                    })
+
+                    chevron.addEventListener('keydown', (e: KeyboardEvent) => {
+                        if ((e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') && dropdown.hidden) {
+                            e.preventDefault()
+                            open()
+                            dropdown.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+                        }
+                    })
+                })
+            })
+        </script>
     </body>
 </html>
 
 <style is:global>
     @import '../styles/global.css';
+    @import '../styles/download-button.css';
 </style>

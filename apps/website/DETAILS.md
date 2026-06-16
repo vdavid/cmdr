@@ -85,6 +85,15 @@ in `public/fonts/`.
 - **Layouts**: `Layout.astro` (base), `BlogLayout.astro` (posts), `LegalLayout.astro` (terms, privacy)
 - **CSS variables**: defined in `src/styles/global.css` under `@theme`. Use them everywhere.
 - **External links**: `rehype-external-links` auto-adds `target="_blank" rel="noopener noreferrer"`
+- **Download dropdown**: the split-button + arch menu. `DownloadButton.astro` holds only markup (variants
+  `hero`/`card`/`header`/`mobile`/`pricing`); its styling is global in `src/styles/download-button.css` and its
+  open/close + keyboard JS is a global `astro:page-load` script in `Layout.astro`, both keyed off
+  `[data-download-split-btn]`/`[data-download-chevron]`/`[data-download-dropdown]`. Arch auto-detection (the recommended
+  ✓) is a separate inline script in `Layout.astro`. Because all three are global and attribute-driven, the dropdown also
+  works when the `rehypeDownloadDropdown` plugin (`src/plugins/download-dropdown.mjs`) emits an inline copy into a blog
+  post from the `[download](cmdr:download)` marker. That plugin must run after `rehype-external-links` (so its GitHub
+  links don't get `target="_blank"`) and reads `public/latest.json` directly, mirroring `src/lib/release.ts`'s
+  GitHub-fallback URL/size logic.
 - **RSS autodiscovery**: `<link>` tag in `Layout.astro`
 - **Agent-facing endpoints**: `src/pages/llms.txt.ts` (concise) and `llms-full.txt.ts` (detailed) describe Cmdr for AI
   agents; each blog post also has a Markdown mirror at `/blog/{slug}/index.md`. Keep the llms files in sync when product

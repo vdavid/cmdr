@@ -55,6 +55,14 @@ This part only shows on the full post page.
 
 If you omit the marker, the full post is shown on the index.
 
+## Download dropdown
+
+To drop an inline download link into a post, use the marker `[download](cmdr:download)`. The `rehypeDownloadDropdown`
+plugin replaces it with the same arch-aware dropdown the rest of the site uses (Apple Silicon / Intel / Universal, with
+the visitor's arch auto-marked): the link text reads as a normal prose link with a download glyph, and clicking it opens
+the menu. The link text is whatever you write between the brackets. The dev editor's `marked` preview shows it as a
+plain link (the plugin only runs in the real Astro build).
+
 ## Images
 
 - Colocate images next to `index.md` in the post folder. The dev editor does this automatically when publishing.

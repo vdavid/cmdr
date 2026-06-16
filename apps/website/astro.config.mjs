@@ -6,6 +6,7 @@ import rehypeExternalLinks from 'rehype-external-links'
 import remarkSmartypants from 'remark-smartypants'
 import sitemap from '@astrojs/sitemap'
 import { smartQuotesIntegration } from './src/plugins/smart-quotes.mjs'
+import { rehypeDownloadDropdown } from './src/plugins/download-dropdown.mjs'
 import { blogEditorDevServer } from './src/dev/blog-editor/dev-server.mjs'
 
 // https://astro.build/config
@@ -32,7 +33,12 @@ export default defineConfig({
     },
     // @ts-expect-error remark-smartypants types use generic Node, Astro expects Root
     remarkPlugins: [remarkSmartypants],
-    rehypePlugins: [[rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]],
+    // rehypeDownloadDropdown must run after external-links so the GitHub download links it creates
+    // don't get `target="_blank"` (and the prose `↗` arrow) applied to them.
+    rehypePlugins: [
+      [rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }],
+      rehypeDownloadDropdown,
+    ],
   },
   vite: {
     optimizeDeps: {

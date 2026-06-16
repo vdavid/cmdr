@@ -1,0 +1,438 @@
+/* Download split-button and its arch dropdown. Global (not scoped to DownloadButton.astro) because
+ * the same dropdown markup is also emitted into blog posts by the `rehypeDownloadDropdown` plugin,
+ * which can't carry Astro's scoped-style hash. The toggle/keyboard behavior lives in Layout.astro;
+ * arch auto-detection (the recommended ✓) lives in Layout.astro's inline script. Single source for
+ * all of it. */
+
+/* Split button layout */
+.split-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 0.75rem;
+  z-index: 1;
+}
+
+.split-btn[data-open] {
+  z-index: 60;
+}
+
+.split-btn--header,
+.split-btn--mobile,
+.split-btn--pricing {
+  border-radius: 0.5rem;
+}
+
+/* Main download link */
+.split-btn__main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  text-decoration: none;
+  transition:
+    background-color var(--duration-normal),
+    border-radius 150ms ease;
+  border-radius: inherit;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.split-btn[data-open] .split-btn__main {
+  border-bottom-left-radius: 0;
+}
+
+.split-btn__main:hover {
+  background: var(--color-accent-hover);
+}
+
+.split-btn__main:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+/* Chevron trigger */
+.split-btn__chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border: none;
+  border-left: 1px solid rgba(20, 19, 15, 0.2);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-normal),
+    border-radius 150ms ease;
+  border-radius: inherit;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.split-btn[data-open] .split-btn__chevron {
+  border-bottom-right-radius: 0;
+}
+
+.split-btn__chevron:hover {
+  background: var(--color-accent-hover);
+}
+
+.split-btn__chevron:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.split-btn__chevron-svg {
+  width: 10px;
+  height: 10px;
+  transition: transform 150ms ease;
+}
+
+.split-btn__chevron[aria-expanded='true'] .split-btn__chevron-svg {
+  transform: rotate(180deg);
+}
+
+/* --- Variant sizes --- */
+
+/* Hero & Card (large) */
+.split-btn--hero .split-btn__main,
+.split-btn--card .split-btn__main {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.split-btn--hero .split-btn__chevron,
+.split-btn--card .split-btn__chevron {
+  padding: 1rem 0.875rem;
+}
+
+.split-btn--hero .split-btn__icon,
+.split-btn--card .split-btn__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.split-btn--card .split-btn__main {
+  justify-content: center;
+}
+
+/* Header (compact) */
+.split-btn--header .split-btn__main {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  gap: 0.375rem;
+}
+
+.split-btn--header .split-btn__chevron {
+  padding: 0.5rem;
+}
+
+.split-btn--header .split-btn__icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Mobile */
+.split-btn--mobile .split-btn__main {
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.split-btn--mobile .split-btn__chevron {
+  padding: 0.75rem;
+  min-height: 44px;
+}
+
+.split-btn--mobile .split-btn__icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Pricing */
+.split-btn--pricing .split-btn__main {
+  padding: 1rem 2rem;
+  gap: 0.75rem;
+}
+
+.split-btn--pricing .split-btn__chevron {
+  padding: 1rem 0.875rem;
+}
+
+.split-btn--pricing .split-btn__icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+}
+
+/* Label stack (two-line content) */
+.split-btn__stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.split-btn__stack--center {
+  align-items: center;
+}
+
+.split-btn__label {
+  font-weight: 600;
+}
+
+.split-btn__label--pricing {
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.split-btn__sub {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.split-btn__sub--header {
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+/* Hover scale for hero & card */
+.split-btn--hero,
+.split-btn--card {
+  transition: transform var(--duration-normal);
+}
+
+.split-btn--hero:hover,
+.split-btn--card:hover {
+  transform: scale(1.02);
+}
+
+/* Header hover shadow */
+.split-btn--header {
+  transition: box-shadow 200ms;
+}
+
+.split-btn--header:hover {
+  box-shadow: 0 0 12px var(--color-accent-glow);
+}
+
+/* Mobile hover */
+.split-btn--mobile {
+  transition:
+    background-color var(--duration-normal),
+    box-shadow var(--duration-normal);
+}
+
+.split-btn--mobile:hover {
+  box-shadow: 0 0 20px var(--color-accent-glow);
+}
+
+/* --- Inline variant (blog prose) --- */
+/* Trigger reads as a normal prose link with a download glyph to its right; clicking it opens the
+ * dropdown (there's no direct-download main link). Everything is a <span>/<button> so it stays valid
+ * phrasing content inside the host <p>. */
+.split-btn--inline {
+  display: inline-flex;
+  align-items: baseline;
+  vertical-align: baseline;
+}
+
+.split-btn__inline-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  color: var(--color-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s;
+}
+
+.split-btn__inline-trigger:hover {
+  color: var(--color-accent-hover);
+}
+
+.split-btn__inline-trigger:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 0.125rem;
+}
+
+.split-btn__inline-icon {
+  width: 0.9em;
+  height: 0.9em;
+  flex-shrink: 0;
+}
+
+/* --- Dropdown --- */
+.split-btn__dropdown {
+  display: block;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  border-radius: 0 0 0.5rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-top: none;
+  background: var(--color-surface-elevated);
+  padding: 4px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  animation: split-dropdown-in 150ms ease-out;
+  text-align: left;
+}
+
+/* Mobile dropdown opens upward to avoid overflow clipping */
+.split-btn--mobile .split-btn__dropdown {
+  top: auto;
+  bottom: 100%;
+  border-radius: 0.5rem 0.5rem 0 0;
+  border: 1px solid var(--color-border);
+  border-bottom: none;
+  animation: split-dropdown-in-up 150ms ease-out;
+}
+
+/* Mobile: invert radius transition (top goes to 0 when open) */
+.split-btn--mobile[data-open] .split-btn__main {
+  border-bottom-left-radius: inherit;
+  border-top-left-radius: 0;
+}
+
+.split-btn--mobile[data-open] .split-btn__chevron {
+  border-bottom-right-radius: inherit;
+  border-top-right-radius: 0;
+}
+
+/* Header dropdown: right-align, allow wider than button, and round the top-left corner since the
+ * button only covers the top-right (the dropdown juts out to the left under nothing). */
+.split-btn--header .split-btn__dropdown {
+  left: auto;
+  right: 0;
+  min-width: 200px;
+  border-radius: 0.5rem 0 0.5rem 0.5rem;
+}
+
+/* Inline dropdown: no button above it, so round all four corners and carry a full border. */
+.split-btn--inline .split-btn__dropdown {
+  right: auto;
+  min-width: 220px;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+
+.split-btn__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  border-radius: 0.375rem;
+  transition: background-color 150ms;
+  white-space: nowrap;
+}
+
+/* Beat the prose `a` rule (`.blog-content[cid] a`, specificity 0-2-1) when the dropdown is rendered
+ * inside a post: three classes (0-3-0) keeps the option names white and un-underlined, like the
+ * header/hero dropdowns. */
+.split-btn .split-btn__dropdown .split-btn__option {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.split-btn__option-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.split-btn__option-name {
+  flex: 1;
+}
+
+.split-btn__option:hover,
+.split-btn__option:focus {
+  background: var(--color-surface);
+  outline: none;
+}
+
+.split-btn .split-btn__dropdown .split-btn__option:hover,
+.split-btn .split-btn__dropdown .split-btn__option:focus {
+  color: var(--color-text-primary);
+}
+
+.split-btn__option:focus-visible {
+  background: var(--color-surface);
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.split-btn__option-size {
+  color: var(--color-text-tertiary);
+  font-size: 0.8125rem;
+}
+
+/* Recommended indicator (set by arch detection script) */
+.split-btn__option[data-recommended] .split-btn__option-name::after {
+  content: ' ✓';
+  color: var(--color-accent-text);
+  font-size: 0.75rem;
+}
+
+@keyframes split-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes split-dropdown-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .split-btn--hero,
+  .split-btn--card {
+    transition: none;
+  }
+
+  .split-btn--hero:hover,
+  .split-btn--card:hover {
+    transform: none;
+  }
+
+  .split-btn__dropdown {
+    animation: none;
+  }
+
+  .split-btn__chevron-svg {
+    transition: none;
+  }
+}
