@@ -4,12 +4,13 @@
      * indexer and the downloads watcher. Both depend on the same FDA gate, so
      * we group them and surface a single hint when the gate is closed.
      *
-     * The section renders three sub-groups inside `SectionCard`s:
+     * The section renders four card groups inside `SectionCard`s:
      *
      *   1. **Drive indexing** — the existing `indexing.enabled` toggle plus
-     *      the clear-index action. Stays interactive even when the FDA gate
-     *      is closed (indexing operates on whatever paths it has access to;
-     *      the gate is for the downloads watcher).
+     *      the clear-index action (the hidden `indexing.indexSize` search
+     *      anchor). Stays interactive even when the FDA gate is closed
+     *      (indexing operates on whatever paths it has access to; the gate is
+     *      for the downloads watcher).
      *   2. **Downloads notifications** — the 4-option ToggleGroup driving
      *      `behavior.fileSystemWatching.downloadsNotifications`. Greyed out
      *      when the FDA gate is closed. Carries a stable anchor id so the
@@ -26,8 +27,12 @@
      *      stable anchor id so the warn toast's "Disable these notifications"
      *      button can deep-link here.
      *
-     * Sub-groups 2 and 3 share ONE FDA hint, not one per sub-group, per the
-     * plan's "Locked copy" decision.
+     * Card visibility under search is section-owned, not registry-derived: each
+     * `SectionCard` frame is wrapped in `{#if anyVisible(shouldShow, ...ids)}`
+     * over its member setting ids, the SAME `shouldShow` predicate that gates
+     * each row inside, so a card whose rows all filter out hides its frame too
+     * (no empty cards). Cards 2 and 3 dim via `SectionCard`'s `gated` prop and
+     * share ONE FDA hint, not one per card, per the "Locked copy" decision.
      */
     import { commands } from '$lib/ipc/bindings'
     import { onMount } from 'svelte'
@@ -43,7 +48,7 @@
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import Size from '$lib/ui/Size.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { openPrivacySettings } from '$lib/tauri-commands'
@@ -226,57 +231,65 @@
 {/snippet}
 
 <SettingsSection title={tString('settings.section.fileSystemWatching')}>
-    <SectionCard label={tString('settings.indexing.enabled.label')}>
-        {#if shouldShow('indexing.enabled')}
-            <SettingRow
-                id="indexing.enabled"
-                label={enabledDef.label}
-                description={enabledDef.description}
-                {searchQuery}
-            >
-                <SettingSwitch id="indexing.enabled" />
-            </SettingRow>
-        {/if}
-
-        <div class="index-info">
-            <div class="index-row">
-                <span class="info-label">{tString('settings.fileSystemWatching.indexSize')}</span>
-                <div class="index-controls">
-                    {#if dbFileSize != null || clearing}
-                        <Button variant="secondary" size="mini" onclick={handleClearIndex} disabled={clearing}>
-                            {clearing
-                                ? tString('settings.fileSystemWatching.clearing')
-                                : tString('settings.fileSystemWatching.clearIndex')}
-                        </Button>
-                    {/if}
-                    <span class="info-value">
-                        {#if dbFileSize != null}
-                            <Size bytes={dbFileSize} />
-                        {:else}
-                            {tString('settings.fileSystemWatching.noIndex')}
-                        {/if}
-                    </span>
-                </div>
-            </div>
-
-            <p class="clear-description">
-                {tString('settings.fileSystemWatching.clearIndexDescription')}
-            </p>
-
-            {#if clearError}
-                <div class="clear-error">{clearError}</div>
+    {#if anyVisible(shouldShow, 'indexing.enabled', 'indexing.indexSize')}
+        <SectionCard label={tString('settings.indexing.enabled.label')}>
+            {#if shouldShow('indexing.enabled')}
+                <SettingRow
+                    id="indexing.enabled"
+                    label={enabledDef.label}
+                    description={enabledDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="indexing.enabled" />
+                </SettingRow>
             {/if}
-        </div>
-    </SectionCard>
 
-    {#if downloadsGated}
+            {#if shouldShow('indexing.indexSize')}
+                <div class="index-info">
+                    <div class="index-row">
+                        <span class="info-label">{tString('settings.fileSystemWatching.indexSize')}</span>
+                        <div class="index-controls">
+                            {#if dbFileSize != null || clearing}
+                                <Button variant="secondary" size="mini" onclick={handleClearIndex} disabled={clearing}>
+                                    {clearing
+                                        ? tString('settings.fileSystemWatching.clearing')
+                                        : tString('settings.fileSystemWatching.clearIndex')}
+                                </Button>
+                            {/if}
+                            <span class="info-value">
+                                {#if dbFileSize != null}
+                                    <Size bytes={dbFileSize} />
+                                {:else}
+                                    {tString('settings.fileSystemWatching.noIndex')}
+                                {/if}
+                            </span>
+                        </div>
+                    </div>
+
+                    <p class="clear-description">
+                        {tString('settings.fileSystemWatching.clearIndexDescription')}
+                    </p>
+
+                    {#if clearError}
+                        <div class="clear-error">{clearError}</div>
+                    {/if}
+                </div>
+            {/if}
+        </SectionCard>
+    {/if}
+
+    {#if downloadsGated && anyVisible(shouldShow, DOWNLOADS_NOTIFICATIONS_SETTING_KEY, GLOBAL_GO_TO_LATEST_ENABLED_KEY)}
         <p class="fda-hint">
             <Trans key="common.downloadsFdaHint" snippets={{ settingsLink }} />
         </p>
     {/if}
 
-    <div id={DOWNLOADS_NOTIFICATIONS_ANCHOR_ID} data-gated={downloadsGated ? 'true' : 'false'}>
-        <SectionCard label={tString('settings.fileSystemWatching.cardDownloads')}>
+    {#if anyVisible(shouldShow, DOWNLOADS_NOTIFICATIONS_SETTING_KEY)}
+        <SectionCard
+            id={DOWNLOADS_NOTIFICATIONS_ANCHOR_ID}
+            label={tString('settings.fileSystemWatching.cardDownloads')}
+            gated={downloadsGated}
+        >
             {#if shouldShow(DOWNLOADS_NOTIFICATIONS_SETTING_KEY)}
                 <SettingRow
                     id={DOWNLOADS_NOTIFICATIONS_SETTING_KEY}
@@ -288,10 +301,10 @@
                 </SettingRow>
             {/if}
         </SectionCard>
-    </div>
+    {/if}
 
-    <div data-gated={downloadsGated ? 'true' : 'false'}>
-        <SectionCard label={tString('settings.fileSystemWatching.cardGoToLatest')}>
+    {#if anyVisible(shouldShow, GLOBAL_GO_TO_LATEST_ENABLED_KEY)}
+        <SectionCard label={tString('settings.fileSystemWatching.cardGoToLatest')} gated={downloadsGated}>
             {#if shouldShow(GLOBAL_GO_TO_LATEST_ENABLED_KEY)}
                 <SettingRow
                     id={GLOBAL_GO_TO_LATEST_ENABLED_KEY}
@@ -316,10 +329,10 @@
                 </p>
             {/if}
         </SectionCard>
-    </div>
+    {/if}
 
-    <div id={LOW_DISK_SPACE_ANCHOR_ID}>
-        <SectionCard label={tString('settings.fileSystemWatching.cardLowDiskSpace')}>
+    {#if anyVisible(shouldShow, LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY, LOW_DISK_SPACE_THRESHOLD_SETTING_KEY)}
+        <SectionCard id={LOW_DISK_SPACE_ANCHOR_ID} label={tString('settings.fileSystemWatching.cardLowDiskSpace')}>
             {#if shouldShow(LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY)}
                 <SettingRow
                     id={LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY}
@@ -346,7 +359,7 @@
                 </SettingRow>
             {/if}
         </SectionCard>
-    </div>
+    {/if}
 </SettingsSection>
 
 <style>
@@ -409,13 +422,10 @@
         gap: var(--spacing-sm);
     }
 
-    /* The two gated sub-groups dim their content and fade interaction affordances.
-       Inner controls own their own `disabled` state (the toggle group, checkbox,
-       and text input all pass `downloadsGated` through), so the wrapper only
-       owns the visual cue. */
-    [data-gated='true'] :global(.section-card) {
-        opacity: 0.5;
-    }
+    /* The two gated cards dim via `SectionCard`'s `gated` prop (it owns the
+       `[data-gated='true'] .section-card { opacity: .5 }` rule). Inner controls
+       own their own `disabled` state (toggle group, switch, number input all
+       pass `downloadsGated` through), so the card only owns the visual cue. */
 
     .shortcut-hint {
         margin: var(--spacing-xs) 0 0;

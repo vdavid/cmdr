@@ -605,11 +605,17 @@ background" — Settings panels, the Debug window's Components catalog, anywhere
 
 Props:
 
-| Prop       | Type      | Notes                                                                                |
-| ---------- | --------- | ------------------------------------------------------------------------------------ |
-| `label`    | `string?` | Rendered as a sentence-case `<h3>` above the card. Omit for an unlabelled grouping.  |
-| `id`       | `string?` | Set on the outer `<section>` element. Use for scroll-to anchors (`#components-foo`). |
-| `children` | Snippet   | Slot for whatever goes inside the card                                               |
+| Prop       | Type       | Notes                                                                                         |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------- |
+| `label`    | `string?`  | Rendered as a sentence-case `<h3>` above the card. Omit for an unlabelled grouping.           |
+| `id`       | `string?`  | Set on the outer `<section>` element. Use for scroll-to anchors (`#components-foo`).          |
+| `gated`    | `boolean?` | Default `false`. `true` dims the card (see below) to signal a closed gate (e.g. FDA-pending). |
+| `children` | Snippet    | Slot for whatever goes inside the card                                                        |
+
+`gated` emits `data-gated="true"` on the outer `<section>` and the card owns the dimming rule
+(`.section-card-wrap[data-gated='true'] .section-card { opacity: .5 }`), so consumers stop hand-rolling a wrapper div
+for it (`FileSystemWatchingSection`'s two FDA-gated cards). It owns only the visual cue — inner controls keep their own
+`disabled` state. Omitted when `false` (no attribute), so `[data-gated]` selectors and tests stay clean.
 
 Spacing between adjacent `SectionCard`s is built in (`var(--spacing-xl)` bottom margin); consumers don't have to manage
 it. Stack them top-to-bottom and they read correctly.

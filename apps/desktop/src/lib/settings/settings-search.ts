@@ -261,6 +261,19 @@ export function createShouldShow(searchQuery: string): (id: string) => boolean {
 }
 
 /**
+ * Whether any of the given setting ids is currently visible under `shouldShow`.
+ *
+ * Sections pass the SAME `createShouldShow(searchQuery)` predicate they use to
+ * gate each row, so a card's frame (`{#if anyVisible(...)}`) and its rows
+ * (`{#if shouldShow(id)}`) can never disagree: an all-filtered-out card hides
+ * its frame too, so search never leaves empty cards behind. Pure; no registry
+ * read (card visibility is section-owned, never re-derived from `card`).
+ */
+export function anyVisible(shouldShow: (id: string) => boolean, ...ids: string[]): boolean {
+  return ids.some(shouldShow)
+}
+
+/**
  * Clear the search index (for testing or when settings change).
  */
 export function clearSearchIndex(): void {

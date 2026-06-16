@@ -51,4 +51,29 @@ describe('SectionCard', () => {
     const section = target.querySelector('section')
     expect(section?.id).toBe('components-buttons')
   })
+
+  it('emits data-gated="true" on the wrapper when gated', async () => {
+    const target = document.createElement('div')
+    mount(SectionCard, {
+      target,
+      props: { gated: true, children: textSnippet('body') },
+    })
+    await tick()
+    const section = target.querySelector('section')
+    expect(section?.getAttribute('data-gated')).toBe('true')
+    // The dimming selector targets the inner `.section-card`, so the gated
+    // attribute must sit on an element that still contains it.
+    expect(section?.querySelector('.section-card')).not.toBeNull()
+  })
+
+  it('omits data-gated entirely when not gated', async () => {
+    const target = document.createElement('div')
+    mount(SectionCard, {
+      target,
+      props: { children: textSnippet('body') },
+    })
+    await tick()
+    const section = target.querySelector('section')
+    expect(section?.hasAttribute('data-gated')).toBe(false)
+  })
 })

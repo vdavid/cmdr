@@ -33,6 +33,15 @@
                 </SectionCard>
             </div>
         </div>
+
+        <div>
+            <p class="example-caption">Gated (dimmed when a gate is closed)</p>
+            <div class="inner-wrap">
+                <SectionCard label="Gated card" gated>
+                    <p class="placeholder">Dimmed via the gated prop.</p>
+                </SectionCard>
+            </div>
+        </div>
     </div>
 </SectionCard>
 

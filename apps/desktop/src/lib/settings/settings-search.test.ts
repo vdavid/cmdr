@@ -7,6 +7,8 @@ import {
   highlightMatches,
   clearSearchIndex,
   getMatchIndicesForLabel,
+  anyVisible,
+  createShouldShow,
 } from './settings-search'
 import { getSettingDefinition } from './settings-registry'
 
@@ -162,6 +164,30 @@ describe('card title indexing', () => {
       expect(idx).toBeGreaterThanOrEqual(0)
       expect(idx).toBeLessThan(label.length)
     }
+  })
+})
+
+describe('anyVisible', () => {
+  it('returns true when at least one id passes the predicate', () => {
+    const shouldShow = (id: string) => id === 'b'
+    expect(anyVisible(shouldShow, 'a', 'b', 'c')).toBe(true)
+  })
+
+  it('returns false when no id passes the predicate', () => {
+    const shouldShow = (id: string) => id === 'z'
+    expect(anyVisible(shouldShow, 'a', 'b', 'c')).toBe(false)
+  })
+
+  it('returns false for an empty id list', () => {
+    const shouldShow = () => true
+    expect(anyVisible(shouldShow)).toBe(false)
+  })
+
+  it('uses the same predicate the rows use (empty query shows all → card visible)', () => {
+    // `createShouldShow('')` returns a predicate that is true for every id, so a
+    // card built from any member ids is visible on a non-search page.
+    const showAll = createShouldShow('')
+    expect(anyVisible(showAll, 'indexing.enabled', 'indexing.indexSize')).toBe(true)
   })
 })
 

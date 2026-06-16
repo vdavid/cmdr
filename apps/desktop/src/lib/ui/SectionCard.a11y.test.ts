@@ -23,4 +23,12 @@ describe('SectionCard a11y', () => {
     await tick()
     await expectNoA11yViolations(target)
   })
+
+  it('gated card has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SectionCard, { target, props: { label: 'Downloads notifications', gated: true, children: snip('Body') } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
 })

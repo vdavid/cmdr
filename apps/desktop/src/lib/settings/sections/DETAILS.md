@@ -20,12 +20,20 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width
 - **`FileOperationsSection.svelte`**: `Behavior > File operations`: extension-change confirms (`maxConflictsToShow` /
   `progressUpdateInterval` live in Advanced)
-- **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: four `SectionCard` sub-groups — Drive
-  indexing (toggle + clear-index), Downloads notifications (4-option ToggleGroup, anchor
-  `settings-downloads-notifications`), Go to latest download (a single on/off `Switch` whose description references the
-  live global binding; the combo is edited under Keyboard shortcuts), Low disk space (3-option ToggleGroup + percent
-  number input, anchor `settings-low-disk-space`, NOT FDA-gated — statfs needs no TCC permission). FDA-closed greys
-  sub-groups 2-3 with one shared hint linking to System Settings.
+- **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: four `SectionCard` card groups — Drive
+  indexing (toggle + clear-index action, the hidden `indexing.indexSize` search anchor), Downloads notifications
+  (4-option ToggleGroup, anchor `settings-downloads-notifications`), Go to latest download (a single on/off `Switch`
+  whose description references the live global binding; the combo is edited under Keyboard shortcuts), Low disk space
+  (3-option ToggleGroup + percent number input, anchor `settings-low-disk-space`, NOT FDA-gated — statfs needs no TCC
+  permission). FDA-closed greys cards 2-3 (via `SectionCard`'s `gated` prop) with one shared hint linking to System
+  Settings. **Card-group pattern (the empty-card / blank-page fix):** each `SectionCard` frame is wrapped in
+  `{#if anyVisible(shouldShow, ...memberIds)}` over the card's member setting ids, reading the SAME `shouldShow`
+  (`createShouldShow(searchQuery)`) the rows use, so a card whose rows all filter out under search hides its frame too
+  (no empty cards). No wrapper component; card visibility is section-owned, never re-derived from the registry `card`
+  field. The anchor ids now sit on `SectionCard`'s own `<section id>`, so the `navigate-to-section` deep-links still
+  land. The hidden `indexing.indexSize` anchor (its `section` equals this page's) makes "index size" a search hit, and
+  the index-size action row is gated on `shouldShow('indexing.indexSize')`, so searching it keeps the section visible
+  (no blank pane) and shows the Drive-indexing card. See `lib/settings/components/CLAUDE.md` § card groups.
 - **`SearchSection.svelte`**: `Behavior > Search`: auto-apply switch plus mirrored `recentSearches.maxCount` /
   `recentSelections.maxCount` rows from Advanced
 - **`AiSection.svelte`**: `AI` wrapper: provider toggle (Off / Cloud / Local), auto-stops local server on switch-away,

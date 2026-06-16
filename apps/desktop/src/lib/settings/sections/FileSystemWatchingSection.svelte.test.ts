@@ -106,10 +106,10 @@ beforeEach(() => {
   setStatus(false)
 })
 
-async function mountSection(): Promise<HTMLDivElement> {
+async function mountSection(searchQuery = ''): Promise<HTMLDivElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(FileSystemWatchingSection, { target, props: { searchQuery: '' } })
+  mount(FileSystemWatchingSection, { target, props: { searchQuery } })
   // The `onMount` chain awaits multiple promises (status, recheck, set shortcut).
   // Two `await tick()`s + a `Promise.resolve()` flush is enough on jsdom.
   await tick()
@@ -258,6 +258,23 @@ describe('FileSystemWatchingSection', () => {
   it('calls recheckDownloadsWatcherGate on mount (belt-and-braces FDA re-check)', async () => {
     const target = await mountSection()
     expect(recheckGateMock).toHaveBeenCalled()
+    target.remove()
+  })
+
+  it('renders only the matching card when searching, leaving no empty cards', async () => {
+    // Pre-fix this rendered three empty cards: each `SectionCard` drew its frame
+    // unconditionally, so a search that matched only the Drive-indexing rows
+    // still painted Downloads / Go to latest / Low disk space as empty boxes.
+    // The fix gates each card frame on `anyVisible(shouldShow, ...memberIds)`,
+    // the SAME predicate the rows use, so an all-filtered-out card hides too.
+    const target = await mountSection('drive index')
+    const labels = Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
+    expect(labels).toContain('Drive indexing')
+    expect(labels).not.toContain('Downloads notifications')
+    expect(labels).not.toContain('Go to latest download')
+    expect(labels).not.toContain('Low disk space')
+    // Exactly one card frame is left standing.
+    expect(target.querySelectorAll('.section-card')).toHaveLength(1)
     target.remove()
   })
 })
