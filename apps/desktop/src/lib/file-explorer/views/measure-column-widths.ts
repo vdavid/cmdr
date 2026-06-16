@@ -178,8 +178,11 @@ export interface SizeFormatOpts {
 
 /**
  * The full size-cell string as it appears in the DOM. In raw-bytes mode this
- * is the concatenation of the triad chunks (with their U+2009 thin-space
- * separators); in human-friendly mode it's something like "1.02 MB".
+ * is the concatenation of the triad chunks (with their locale group separators);
+ * in human-friendly mode it's something like "1.02 MB" / "1,02 MB". Render and
+ * measure read the SAME locale via `formatSizeForDisplay`, so the separator
+ * matches in both paths (the tabular-nums model in `tabularize` only touches
+ * digits, so a non-ASCII separator is measured at its real width).
  */
 function sizeCellText(bytes: number, opts: SizeFormatOpts): string {
   return formatSizeForDisplay(bytes, opts)

@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { FileEntry } from '../types'
 
 import { _setMeasureForTests, computeFullListColumnWidths } from './measure-column-widths'
+import { _setLocaleForTests } from '$lib/intl/locale'
+import { formatSizeForDisplay } from '../selection/selection-info-utils'
 
 const fakeMeasure = (text: string): number => text.length * 7
 
@@ -276,4 +278,64 @@ describe('computeFullListColumnWidths', () => {
   // Path column tests removed: the optional path column was dropped. The
   // search-results pane now shows full paths in the Name column
   // (mid-truncated via `useShortenMiddle`) instead.
+
+  describe('comma-decimal locale (de-DE) size column', () => {
+    afterEach(() => {
+      _setLocaleForTests(null)
+    })
+
+    it('measures the localized size string the renderer produces (separators differ from ASCII)', () => {
+      // The fake measurer is `length * 7`, so the measured width is a direct
+      // proxy for the character count of the string the renderer emits. Render
+      // and measure share `formatSizeForDisplay`, so the de-DE comma-decimal /
+      // period-grouped string is what gets measured. Pin the size width to the
+      // exact localized cell text + the safety pad, proving no second
+      // ASCII-only formatting path sneaks in.
+      _setMeasureForTests(fakeMeasure)
+      _setLocaleForTests('de-DE')
+      const big = entry({ name: 'z.bin', size: 1_073_208, physicalSize: 1_073_208 })
+      const opts = { unit: 'dynamic' as const, format: 'binary' as const }
+
+      // The exact cell string the renderer shows for this file under de-DE.
+      const cell = formatSizeForDisplay(1_073_208, opts)
+        .map((t) => t.value)
+        .join('')
+      expect(cell).toBe('1,02 MB') // comma decimal, ASCII space before the unit
+
+      const w = computeFullListColumnWidths({ ...baseArgs, entries: [big], sizeFormatOpts: opts })
+      // 7 chars × 7 px + 2 px MEASUREMENT_SAFETY_PAD. No clip (we measured the
+      // real localized string), no over-reserve (no extra path widened it).
+      expect(w.size).toBe(cell.length * 7 + 2)
+    })
+
+    it('raw-bytes triads use the locale group separator consistently in render and measure', () => {
+      _setMeasureForTests(fakeMeasure)
+      _setLocaleForTests('de-DE')
+      const big = entry({ name: 'z.bin', size: 1_073_208, physicalSize: 1_073_208 })
+      const opts = { unit: 'bytes' as const, format: 'binary' as const }
+
+      const cell = formatSizeForDisplay(1_073_208, opts)
+        .map((t) => t.value)
+        .join('')
+      expect(cell).toBe('1.073.208') // de-DE period grouping
+
+      const w = computeFullListColumnWidths({ ...baseArgs, entries: [big], sizeFormatOpts: opts })
+      expect(w.size).toBe(cell.length * 7 + 2)
+    })
+
+    it('keeps the size column consistent across locales for the same byte count (no drift)', () => {
+      _setMeasureForTests(fakeMeasure)
+      const big = entry({ name: 'z.bin', size: 1_073_208, physicalSize: 1_073_208 })
+      const opts = { unit: 'bytes' as const, format: 'binary' as const }
+
+      _setLocaleForTests('en-US')
+      const enWidth = computeFullListColumnWidths({ ...baseArgs, entries: [big], sizeFormatOpts: opts }).size
+      _setLocaleForTests('de-DE')
+      const deWidth = computeFullListColumnWidths({ ...baseArgs, entries: [big], sizeFormatOpts: opts }).size
+
+      // Same digit + separator count ("1,073,208" vs "1.073.208"), so the
+      // shrink-wrapped width is identical: the separator swap doesn't drift it.
+      expect(deWidth).toBe(enWidth)
+    })
+  })
 })
