@@ -13,8 +13,19 @@ const shardKind = process.env.CMDR_E2E_SHARD_KIND ?? 'all'
 // MTP backing dir must live on the dedicated MTP shard — running two MTP
 // specs in parallel corrupts the shared fixture root.
 const mtpSpecMatch = /mtp(-[a-z-]+)?\.spec\.ts$/
-const testMatch = shardKind === 'mtp' ? mtpSpecMatch : '*.spec.ts'
-const testIgnore = shardKind === 'non-mtp' ? mtpSpecMatch : undefined
+// The i18n screenshot-capture driver is not a pass/fail test; it's excluded from
+// every normal lane and only runs under its own `i18n-capture` shard kind (used
+// by `pnpm i18n:capture`). Keeping it out of `all`/`mtp`/`non-mtp` means a full
+// suite run never spends time taking screenshots.
+const i18nCaptureSpecMatch = /i18n-capture\.spec\.ts$/
+const testMatch =
+  shardKind === 'mtp' ? mtpSpecMatch : shardKind === 'i18n-capture' ? i18nCaptureSpecMatch : '*.spec.ts'
+const testIgnore =
+  shardKind === 'i18n-capture'
+    ? undefined
+    : shardKind === 'non-mtp'
+      ? [mtpSpecMatch, i18nCaptureSpecMatch]
+      : i18nCaptureSpecMatch
 
 // Per-shard JSON report path keeps parallel Playwright processes from
 // overwriting each other's output. Defaults preserve the legacy filename.

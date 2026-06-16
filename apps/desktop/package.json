@@ -31,7 +31,9 @@
     "knip": "knip",
     "check:type-drift": "tsx scripts/check-type-drift.ts",
     "bindings:regen": "cd src-tauri && cargo nextest run --no-fail-fast --run-ignored=ignored-only ipc::tests::export_bindings_test && cd .. && pnpm exec oxfmt src/lib/ipc/bindings.ts",
-    "intl:keys": "node scripts/gen-message-keys.js && pnpm exec oxfmt src/lib/intl/keys.gen.ts"
+    "intl:keys": "node scripts/gen-message-keys.js && pnpm exec oxfmt src/lib/intl/keys.gen.ts",
+    "i18n:capture": "node scripts/i18n-capture.js",
+    "i18n:couple": "node scripts/couple-screenshots.js"
   },
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {

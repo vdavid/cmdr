@@ -10,9 +10,30 @@
  */
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, unmount, flushSync } from 'svelte'
-import { t, tString, getMessage, setLocale, _setCatalogForTests, _clearCompiledCacheForTests } from './messages.svelte'
+import {
+  t,
+  tString,
+  getMessage,
+  setLocale,
+  _setCatalogForTests,
+  _clearCompiledCacheForTests,
+  _resetCaptureForTests,
+} from './messages.svelte'
 import { _setLocaleForTests } from './locale'
 import Fixture from './messages-reactivity-fixture.svelte'
+
+interface I18nCaptureApi {
+  enable: () => boolean
+  disable: () => void
+  setSurface: (label: string) => void
+  dump: () => Record<string, string[]>
+  reset: () => void
+}
+function captureApi(): I18nCaptureApi {
+  const api = (window as unknown as { __cmdrI18nCapture?: I18nCaptureApi }).__cmdrI18nCapture
+  if (api === undefined) throw new Error('__cmdrI18nCapture not installed (expected outside prod)')
+  return api
+}
 
 const TEST_LOCALE = 'zz-ZZ'
 const TEST_LANG = 'zz'
@@ -23,6 +44,48 @@ afterEach(() => {
   _setCatalogForTests(TEST_LOCALE, null)
   _setCatalogForTests(TEST_LANG, null)
   _clearCompiledCacheForTests()
+  _resetCaptureForTests()
+})
+
+describe('capture mode (screenshot-coupling instrumentation)', () => {
+  it('records nothing while disabled (zero-cost default)', () => {
+    _setLocaleForTests('en-US')
+    const api = captureApi()
+    api.reset()
+    tString('transfer.trash', { countText: '1', count: 1 })
+    getMessage('common.downloadsFdaHint')
+    expect(api.dump()).toEqual({})
+  })
+
+  it('records resolved keys against the active surface for both t() and getMessage()', () => {
+    _setLocaleForTests('en-US')
+    const api = captureApi()
+    api.reset()
+    expect(api.enable()).toBe(true)
+    api.setSurface('main-window')
+    tString('transfer.trash', { countText: '1', count: 1 })
+    getMessage('common.downloadsFdaHint')
+    api.setSurface('a-dialog')
+    tString('transfer.split.clean', { verb: 'copy', phrase: '2 files' })
+    api.disable()
+
+    expect(api.dump()).toEqual({
+      'main-window': ['common.downloadsFdaHint', 'transfer.trash'],
+      'a-dialog': ['transfer.split.clean'],
+    })
+  })
+
+  it('stops recording after disable()', () => {
+    _setLocaleForTests('en-US')
+    const api = captureApi()
+    api.reset()
+    api.enable()
+    api.setSurface('s1')
+    tString('transfer.trash', { countText: '1', count: 1 })
+    api.disable()
+    tString('transfer.split.clean', { verb: 'copy', phrase: '2 files' })
+    expect(api.dump()).toEqual({ s1: ['transfer.trash'] })
+  })
 })
 
 describe('t() resolution', () => {
