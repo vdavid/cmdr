@@ -1,6 +1,8 @@
 {
   "_comment": "Components that can't or shouldn't have a tier-3 a11y test. Each entry MUST have a reason explaining why. See scripts/check/checks/desktop-svelte-a11y-coverage.go for the check; it fails on dead entries (file gone) and redundant ones (a valid a11y test exists anyway). Remove entries as they become testable.",
   "exempt": {
+    "apps/desktop/src/lib/intl/messages-reactivity-fixture.svelte": "test-only fixture (mounted by messages.svelte.test.ts to exercise locale-rune reactivity); not a shipped component",
+    "apps/desktop/src/lib/intl/trans-fixture.svelte": "test-only fixture; the real a11y surface is covered by Trans.a11y.test.ts which mounts it",
     "apps/desktop/src/lib/file-explorer/drag/DragOverlay.svelte": "purely visual with aria-hidden=\"true\"; no meaningful a11y surface for axe",
     "apps/desktop/src/lib/file-explorer/pane/DualPaneExplorer.svelte": "too composed for jsdom (pulls the full app surface); tier 2 E2E covers",
     "apps/desktop/src/lib/file-explorer/pane/FilePane.svelte": "1000+ lines with a huge dep graph; tier 2 E2E covers",

@@ -1,5 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { composeTransferCompleteToast } from './transfer-complete-toast'
+import { _setLocaleForTests } from '$lib/intl/locale'
+
+// The composer resolves its wording through `t()` (catalog + ICU), which reads
+// the active locale. Pin en-US so these golden assertions are the parity net:
+// the ICU-rendered output must equal the historic English copy byte-for-byte.
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
 
 describe('composeTransferCompleteToast', () => {
   describe('copy with selection split (fileCount / folderCount available)', () => {

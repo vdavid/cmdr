@@ -34,6 +34,7 @@ import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
 import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
 import noRawLocaleFormat from './eslint-plugins/no-raw-locale-format.js'
+import noRawUserFacingString from './eslint-plugins/no-raw-user-facing-string.js'
 import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
 import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
 
@@ -243,6 +244,7 @@ export default tseslint.config(
           'no-raw-command-dispatch': noRawCommandDispatch,
           'no-raw-lucide-import': noRawLucideImport,
           'no-raw-locale-format': noRawLocaleFormat,
+          'no-raw-user-facing-string': noRawUserFacingString,
           'dialog-needs-focus-trap': dialogNeedsFocusTrap,
         },
       },
@@ -259,6 +261,12 @@ export default tseslint.config(
       // formatter. Turned OFF for `*.test.ts` below (tests legitimately
       // construct `Intl.NumberFormat`/`DateTimeFormat` to compute expecteds).
       'cmdr/no-raw-locale-format': 'error',
+      // No hardcoded user-facing strings in migrated areas: route copy through
+      // the i18n catalog (`t()`/`<Trans>`). Scoped to a closed sink set AND an
+      // area allowlist inside the rule (M1 enforces `transfer` only; each M2
+      // tranche widens it). Turned OFF for `*.test.ts` below (tests use literal
+      // copy for fixtures/assertions).
+      'cmdr/no-raw-user-facing-string': 'error',
       'cmdr/dialog-needs-focus-trap': 'error',
     },
   },
@@ -296,6 +304,8 @@ export default tseslint.config(
       '@typescript-eslint/no-dynamic-delete': 'off',
       // Tests construct `Intl.*` formatters to compute expected values, on purpose.
       'cmdr/no-raw-locale-format': 'off',
+      // Tests use literal copy for fixtures and assertions, on purpose.
+      'cmdr/no-raw-user-facing-string': 'off',
     },
   },
 )

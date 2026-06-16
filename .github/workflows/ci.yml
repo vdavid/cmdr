@@ -254,6 +254,12 @@ jobs:
       - name: Check import cycles
         run: ./scripts/check/check --check desktop-svelte-import-cycles --ci
 
+      - name: Check message-keys freshness
+        run: ./scripts/check/check --check desktop-message-keys-fresh --ci
+
+      - name: Check message-key naming
+        run: ./scripts/check/check --check desktop-message-key-naming --ci
+
       - name: Run Knip
         run: ./scripts/check/check --check desktop-svelte-knip --ci
 

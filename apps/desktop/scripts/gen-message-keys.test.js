@@ -1,0 +1,111 @@
+/**
+ * TDD for the message-key codegen (`gen-message-keys-lib.js`): catalog → the
+ * `MessageKey` union, plus the missing-key (build failure) and dead-key
+ * (warning) reports.
+ *
+ * The codegen reads `messages/en/*.json` and scans source for `t()`/`<Trans>`/
+ * `getMessage()` key usages. These tests drive both pure pieces (the catalog
+ * parse + the source scan + the diff) against in-memory inputs, so no real
+ * catalog or source tree is touched.
+ */
+import { describe, it, expect } from 'vitest'
+import {
+  collectCatalogKeys,
+  stripMetadataKeys,
+  extractUsedKeys,
+  diffKeys,
+  emitKeysModule,
+} from './gen-message-keys-lib.js'
+
+describe('stripMetadataKeys', () => {
+  it('keeps message keys and drops ARB-style @key metadata entries', () => {
+    const raw = {
+      'transfer.trash': 'Moved {countText} to trash',
+      '@transfer.trash': { description: 'meta', screenshot: 'x.png' },
+      'transfer.delete': 'Deleted',
+    }
+    expect(stripMetadataKeys(raw)).toEqual(['transfer.trash', 'transfer.delete'])
+  })
+})
+
+describe('collectCatalogKeys', () => {
+  it('merges keys across files, sorts, and dedupes', () => {
+    const files = {
+      'common.json': { 'common.cancel': 'Cancel', '@common.cancel': { description: 'm' } },
+      'transfer.json': { 'transfer.trash': 'x', 'transfer.delete': 'y' },
+    }
+    expect(collectCatalogKeys(files)).toEqual(['common.cancel', 'transfer.delete', 'transfer.trash'])
+  })
+})
+
+describe('extractUsedKeys', () => {
+  it("finds t('key'), tString('key'), getMessage('key'), and <Trans key=\"...\">", () => {
+    const src = [
+      `const a = t('transfer.trash', { count: 1 })`,
+      `const b = tString("transfer.delete")`,
+      `const c = getMessage('common.cancel')`,
+      `<Trans key="common.downloadsFdaHint" />`,
+      "<Trans key='settings.title' params={p} />",
+    ].join('\n')
+    expect(extractUsedKeys(src)).toEqual(
+      new Set(['transfer.trash', 'transfer.delete', 'common.cancel', 'common.downloadsFdaHint', 'settings.title']),
+    )
+  })
+
+  it('ignores non-message calls and dynamic (non-literal) keys', () => {
+    const src = [
+      `translate(key)`, // dynamic
+      `t(dynamicKey)`, // dynamic, not extractable
+      `something('not.a.key')`, // not a message accessor
+      `t(\`transfer.\${x}\`)`, // template with expression, skipped
+    ].join('\n')
+    expect(extractUsedKeys(src)).toEqual(new Set())
+  })
+})
+
+describe('diffKeys', () => {
+  it('reports keys used in code but missing from the catalog', () => {
+    const result = diffKeys({
+      catalogKeys: ['transfer.trash'],
+      usedKeys: new Set(['transfer.trash', 'transfer.missing']),
+    })
+    expect(result.missing).toEqual(['transfer.missing'])
+    expect(result.dead).toEqual([])
+  })
+
+  it('reports catalog keys never used in code (dead)', () => {
+    const result = diffKeys({
+      catalogKeys: ['transfer.trash', 'transfer.unused'],
+      usedKeys: new Set(['transfer.trash']),
+    })
+    expect(result.missing).toEqual([])
+    expect(result.dead).toEqual(['transfer.unused'])
+  })
+
+  it('returns both lists sorted and empty when in sync', () => {
+    const result = diffKeys({
+      catalogKeys: ['a.one', 'a.two'],
+      usedKeys: new Set(['a.two', 'a.one']),
+    })
+    expect(result.missing).toEqual([])
+    expect(result.dead).toEqual([])
+  })
+})
+
+describe('emitKeysModule', () => {
+  it('emits a string-literal union (in the order given) with the do-not-edit header', () => {
+    // The caller (collectCatalogKeys) sorts; emit reflects the given order.
+    const out = emitKeysModule(['common.cancel', 'transfer.trash'])
+    expect(out).toContain('AUTO-GENERATED')
+    expect(out).toContain('Do not edit by hand')
+    expect(out).toContain('export type MessageKey =')
+    expect(out).toContain("  | 'common.cancel'")
+    expect(out).toContain("  | 'transfer.trash'")
+    // Sorted: common before transfer.
+    expect(out.indexOf("'common.cancel'")).toBeLessThan(out.indexOf("'transfer.trash'"))
+  })
+
+  it('emits `never` for an empty catalog', () => {
+    expect(emitKeysModule([])).toContain('  never')
+  })
+})

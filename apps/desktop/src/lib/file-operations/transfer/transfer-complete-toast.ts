@@ -1,5 +1,33 @@
+/**
+ * Composes the toast shown when a copy/move/trash/delete operation completes.
+ *
+ * This is the i18n pilot (the hardest existing multi-variable case): every
+ * wording lives in `transfer.*` catalog keys resolved through `t()` and ICU
+ * `select` + `plural`, NOT hardcoded English. The branch SHAPE matches the
+ * historic composer exactly; `transfer-complete-toast.test.ts` is the parity
+ * net asserting the rendered en output is byte-identical to the pre-i18n copy.
+ *
+ * Copy and move report what the user SELECTED at the top level, split by type:
+ * "Moved 1 file and 3 folders". Interior counts never surface — moving one
+ * folder with thousands of files inside still reads as one folder. When the user
+ * skipped clashing files, the skipped count appears as a suffix (skips are
+ * always file-level because folders always merge). When the per-type split is
+ * unknown (a top-level kind probe came back partial), it falls back to the
+ * file-count wording. Trash and delete keep the historic short wording.
+ *
+ * Two restructurings ICU needs (raw counts alone can't express the wording):
+ *  - The "N files and M folders" join omits a zero part. ICU plural branches are
+ *    independent and can't see each other's emptiness, so the caller passes a
+ *    `kind` discriminator (`both` | `filesOnly` | `foldersOnly`) and the message
+ *    `select`s on it.
+ *  - Counts are embedded as `$lib/intl`-preformatted STRINGS (`formatNumber`)
+ *    passed as `*Text` params, keeping number formatting single-sourced in
+ *    `$lib/intl`. The raw integer is passed alongside ONLY to drive ICU plural
+ *    selection (noun + was/were), never for display.
+ */
+
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
-import { pluralize } from '$lib/utils/pluralize'
+import { tString } from '$lib/intl/messages.svelte'
 import type { TransferOperationType } from '$lib/file-explorer/types'
 
 export interface TransferCompleteToastInput {
@@ -16,93 +44,104 @@ export interface TransferCompleteToastInput {
   folderCount?: number
 }
 
-/**
- * Composes the toast shown when a copy/move/trash/delete operation completes.
- *
- * Copy and move report what the user SELECTED at the top level, split by type:
- * "Moved 1 file and 3 folders". Interior counts never surface — moving one folder
- * with thousands of files inside still reads as one folder. When the user skipped
- * clashing files, the skipped count appears as a suffix (skips are always file-level
- * because folders always merge).
- *
- * When the per-type split is unknown (a top-level kind probe came back partial),
- * it falls back to the file-count wording ("Copy complete: copied 5 files.").
- *
- * Trash and delete don't have a skip or merge concept and keep the historic short wording.
- */
+/** Composes the copy/move/trash/delete completion toast from catalog keys. */
 export function composeTransferCompleteToast(input: TransferCompleteToastInput): string {
   const { operationType, filesProcessed, filesSkipped, fileCount, folderCount } = input
 
   if (operationType === 'trash') {
-    return `Moved ${formatNumber(filesProcessed)} ${pluralize(filesProcessed, 'file')} to trash`
+    return tString('transfer.trash', { countText: formatNumber(filesProcessed), count: filesProcessed })
   }
   if (operationType === 'delete') {
-    return `Delete complete: ${formatNumber(filesProcessed)} ${pluralize(filesProcessed, 'file')}`
+    return tString('transfer.delete', { countText: formatNumber(filesProcessed), count: filesProcessed })
   }
 
-  const verbPast = operationType === 'copy' ? 'Copied' : 'Moved'
+  const verb = verbParam(operationType)
 
   // Selection split: report the top-level items the user picked. Folders always
   // merge (never skipped), so the moved-file count is `fileCount - filesSkipped`.
   if (fileCount !== undefined && folderCount !== undefined) {
     const movedFiles = fileCount - filesSkipped
-    const movedPhrase = describeCounts(movedFiles, folderCount)
+    const phrase = describeCounts(movedFiles, folderCount)
 
-    if (movedPhrase === null) {
+    if (phrase === null) {
       // Nothing actually landed (no folders, every selected file skipped).
-      // Fall through to the file-only all-skipped wording below.
       return composeFileOnlyToast(operationType, filesProcessed, filesSkipped)
     }
 
     if (filesSkipped === 0) {
-      return `${verbPast} ${movedPhrase}.`
+      return tString('transfer.split.clean', { verb, phrase })
     }
-    return `${verbPast} ${movedPhrase}, skipped ${formatNumber(filesSkipped)} ${pluralize(filesSkipped, 'file')} (already at the target).`
+    return tString('transfer.split.skipped', {
+      verb,
+      phrase,
+      skippedText: formatNumber(filesSkipped),
+      skipped: filesSkipped,
+    })
   }
 
   // Fallback (clipboard paste): no selection split available, report file counts.
   return composeFileOnlyToast(operationType, filesProcessed, filesSkipped)
 }
 
-/**
- * Builds the "N files and M folders" phrase, omitting any zero part. Returns
- * `null` when both counts are zero (nothing to report).
- */
-function describeCounts(files: number, folders: number): string | null {
-  const parts: string[] = []
-  if (files > 0) parts.push(`${formatNumber(files)} ${pluralize(files, 'file')}`)
-  if (folders > 0) parts.push(`${formatNumber(folders)} ${pluralize(folders, 'folder')}`)
-  if (parts.length === 0) return null
-  return parts.join(' and ')
+/** `'copy'` stays `'copy'`; everything else maps to the `other` (move) ICU branch. */
+function verbParam(operationType: TransferOperationType): string {
+  return operationType === 'copy' ? 'copy' : 'move'
 }
 
-/** The file-count-only wording used by the clipboard-paste path and the all-skipped collapse. */
+/**
+ * Builds the "N files and M folders" phrase via the `kind`-discriminated ICU
+ * message, omitting any zero part. Returns `null` when both counts are zero.
+ */
+function describeCounts(files: number, folders: number): string | null {
+  if (files <= 0 && folders <= 0) return null
+  const kind = files > 0 && folders > 0 ? 'both' : folders > 0 ? 'foldersOnly' : 'filesOnly'
+  return tString('transfer.movedPhrase', {
+    kind,
+    filesText: formatNumber(files),
+    files,
+    foldersText: formatNumber(folders),
+    folders,
+  })
+}
+
+/** The file-count-only wording (clipboard paste + the all-skipped collapse). */
 function composeFileOnlyToast(
   operationType: TransferOperationType,
   filesProcessed: number,
   filesSkipped: number,
 ): string {
   const transferred = filesProcessed - filesSkipped
-  const verbPast = operationType === 'copy' ? 'copied' : 'moved'
-  const verbNoun = operationType === 'copy' ? 'Copy' : 'Move'
+  const verb = verbParam(operationType)
 
   // All transferred, none skipped.
   if (filesSkipped === 0) {
-    return `${verbNoun} complete: ${verbPast} ${formatNumber(transferred)} ${pluralize(transferred, 'file')}.`
+    return tString('transfer.fileOnly.allDone', {
+      verb,
+      transferredText: formatNumber(transferred),
+      transferred,
+    })
   }
 
   // Nothing transferred, all skipped.
   if (transferred === 0) {
     if (filesSkipped === 1) {
-      return `${verbNoun} complete: file already at the target, not ${verbPast}.`
+      return tString('transfer.fileOnly.allSkippedSingle', { verb })
     }
-    return `${verbNoun} complete: skipped all ${formatNumber(filesSkipped)} files (already at the target), nothing was ${verbPast}.`
+    return tString('transfer.fileOnly.allSkippedMany', { verb, skippedText: formatNumber(filesSkipped) })
   }
 
   // Mixed: some transferred, some skipped.
-  const tail =
-    operationType === 'copy'
-      ? `All ${formatNumber(filesProcessed)} of your selected ${pluralize(filesProcessed, 'file')} are now at the target.`
-      : `${formatNumber(filesSkipped)} ${pluralize(filesSkipped, 'file')} ${filesSkipped === 1 ? 'was' : 'were'} already at the target.`
-  return `${verbNoun} complete: ${verbPast} ${formatNumber(transferred)}, skipped ${formatNumber(filesSkipped)}. ${tail}`
+  if (operationType === 'copy') {
+    return tString('transfer.fileOnly.mixedCopy', {
+      transferredText: formatNumber(transferred),
+      skippedText: formatNumber(filesSkipped),
+      processedText: formatNumber(filesProcessed),
+      processed: filesProcessed,
+    })
+  }
+  return tString('transfer.fileOnly.mixedMove', {
+    transferredText: formatNumber(transferred),
+    skippedText: formatNumber(filesSkipped),
+    skipped: filesSkipped,
+  })
 }

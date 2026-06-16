@@ -1,16 +1,34 @@
-# Locale-aware formatting layer
+# Locale-aware formatting and message runtime
 
-One locale source feeding one formatting layer. Every user-facing number, file size, and date formats per the active
-locale, read from exactly one place here.
+One locale source feeding two consumers: the formatting layer (numbers, sizes, dates) and the message runtime (catalog
+text via ICU). Both read the locale from exactly one place here.
 
 ## Module map
 
-- `locale.ts`: `getLocale()`, the single locale source (OS runtime default today). `_setLocaleForTests` injects a
-  locale.
+- `locale.ts`: `getLocale()`, the single locale source (OS runtime default today). `_setLocaleForTests` injects a value
+  only (no rune bump); `setLocale()` in `messages.svelte.ts` is the reactive switch.
 - `number-format.ts`: memoized `Intl.NumberFormat` factory (`getNumberFormatter`), plus `formatInteger` (counts) and
   `getGroupSeparator` (byte-triad separator).
+- `messages.svelte.ts`: the message runtime: `t(key, params?)` (catalog + ICU), `getMessage(key)` (raw, no ICU),
+  `setLocale()`, the locale-version rune, the compiled-`IntlMessageFormat` cache. `Trans.svelte`: inline-component
+  sentences. `keys.gen.ts`: the generated `MessageKey` union (never hand-edit). `messages/`: the JSON catalogs (see its
+  [`CLAUDE.md`](messages/CLAUDE.md)).
 
 ## Must-knows
+
+- **`t()`/`getMessage()` MUST read the locale-version rune FIRST, before any cache lookup.** It's a load-bearing
+  reactive dependency: read it after the compiled-message cache and `{t('key')}` won't re-run on a locale change.
+  `setLocale()` bumps the rune; `_setLocaleForTests` does NOT (value only). `state_referenced_locally` is suppressed, so
+  the compiler won't warn on a wrong read; the `messages.svelte.test.ts` reactivity test is the only guard.
+- **Error copy uses `getMessage()` (raw lookup), NOT `t()`/ICU.** The error pipeline's `{system_settings}` tokens and
+  `esc()` HTML entities collide with ICU's brace/apostrophe grammar. Only genuine multi-variable plural/select sentences
+  go through `t()`. Don't route error strings through `format()`.
+- **Catalog messages double apostrophes (`''`).** ICU treats `'` as an escape char; a lone `'` before `{`/`<`/`#` opens
+  a quoted section and swallows text. `''` always collapses to `'` and is always safe, so it's the rule even where a
+  lone `'` would happen to render fine.
+- **`<Trans>` renders a tag's inner content via a zero-arg `{#snippet content()}` inside the parts `{#each}`** (closing
+  over `part.chunks`), passed to the consumer snippet. You can't call a snippet as a function to produce a value
+  (`invalid_snippet_arguments`). No `{@html}` → XSS-safe by construction.
 
 - **Read the locale ONLY via `getLocale()`; format ONLY through this layer + `$lib/settings/format-utils`.** Don't
   hardcode a locale, call `toLocaleString`, or build an `Intl.NumberFormat`/`DateTimeFormat` in feature code. Enforced
@@ -26,4 +44,5 @@ locale, read from exactly one place here.
   space). Human-friendly sizes use `useGrouping: false` so en-US stays identical (a forced `10000.00 MB` must not become
   `10,000.00`). The parity net is `en-us-parity.test.ts`.
 
-Depth (the seam's scope, why uncached, the en-US triad change, step-2 hand-off): [DETAILS.md](DETAILS.md).
+Depth (the runtime design, the error-pipeline boundary, the ICU-vs-`$lib/intl` formatting split, the seam's scope, why
+uncached, the en-US triad change): [DETAILS.md](DETAILS.md).

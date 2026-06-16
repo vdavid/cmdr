@@ -320,7 +320,9 @@ Generalize the spike into the real infrastructure.
   attributes: `title`/`label`/`placeholder`/`aria-label`, `addToast(...)`, etc.) and emits a candidate list grouped by
   area, with a count. This gives the REAL string total and surfaces every multi-variable/rich-text case that needs ICU
   or `<Trans>`. Output is a working doc (not committed catalog), used to plan M2 tranches. Log what the heuristic
-  necessarily misses (dynamic strings, concatenations) so coverage isn't overstated.
+  necessarily misses (dynamic strings, concatenations) so coverage isn't overstated. Shipped as
+  `apps/desktop/scripts/extract-user-facing-strings.js`; its latest run is captured in
+  [`../notes/i18n-extraction-dryrun.md`](../notes/i18n-extraction-dryrun.md).
 - Docs: `$lib/intl/CLAUDE.md` (add the runtime/`<Trans>`/key-safety must-knows: the read-rune-before-cache invariant,
   the `''` apostrophe rule, the error pipeline uses `getMessage()` not ICU) + `DETAILS.md` (the full design, intentions,
   the error-pipeline boundary, the ICU-vs-`$lib/intl` formatting split). Give `messages/` its own `CLAUDE.md` +

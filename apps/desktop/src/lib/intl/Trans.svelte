@@ -41,18 +41,20 @@
     const { key, snippets = {}, params }: Props = $props()
 
     function isMarker(part: unknown): part is Marker {
-        return typeof part === 'object' && part !== null && (part as Marker).__trans === true
+        return typeof part === 'object' && part !== null && '__trans' in part
     }
 
     // Build tag handlers: each `<tag>` returns a marker the renderer matches to a snippet.
-    const parts = $derived.by(() => {
+    const parts = $derived.by((): unknown[] => {
         const handlers: TranslationParams = { ...params }
         for (const tag of Object.keys(snippets)) {
             handlers[tag] = (chunks: unknown[]): Marker => ({ __trans: true, tag, chunks })
         }
         const result = t(key, handlers)
-        // A message with no tags formats to a plain string; normalize to an array.
-        return Array.isArray(result) ? result : [result]
+        // A message with tags formats to an array of strings + markers; one with
+        // no tags formats to a plain string (or, defensively, any non-array).
+        // Normalize to an array either way.
+        return Array.isArray(result) ? (result as unknown[]) : [result]
     })
 </script>
 
