@@ -102,32 +102,33 @@ create a spurious **third sidebar level**. The card axis is orthogonal to naviga
   mirror membership). The takeaway for this plan: don't claim the mirror "just works", and don't rely on a mirror row
   appearing in a card during search.
 
-### D2. Card visibility is an explicit `visible` boolean the section computes from `shouldShow`
+### D2. Card visibility is an inline `{#if anyVisible(...)}` guard around the existing `SectionCard` — no new component
 
-New wrapper `SettingCardGroup.svelte` (named in the `Setting*` family to sit beside `SettingRow`/`SettingSwitch`, and to
-avoid `SettingsCard`↔`SectionCard` transposition). Props: `label: string` (a **resolved/keyed** title the caller passes
-via `tString(cardKey)` or `<Trans>`, never a literal — `no-raw-user-facing-string`, D0), `id?` (anchor), `gated?`
-(dimming, see D6), `visible: boolean`, `children`. It renders `<SectionCard {label} {id}>` **iff `visible`**, else
-nothing. It is pure presentation: no store, no IPC, no registry read, so it is safe in any window including the
-restricted viewer window. (Same shape as the bare `SectionCard` calls FSW makes today; the wrapper only adds `visible`
-gating and `gated`.)
-
-The section computes `visible` from the **same** `createShouldShow(searchQuery)` predicate it already uses to gate rows.
-A tiny helper keeps it readable: `anyVisible(shouldShow, ...ids) => ids.some(shouldShow)`. Example (FSW; the
-Drive-indexing card has no dedicated `card*` key today, so it reuses the row-label key — M2 may add a
-`settings.fileSystemWatching.cardDriveIndexing` key for naming consistency with its `cardDownloads` siblings):
+**Terminology (settled, see D10):** the nav vocabulary `section` (any nav node / the registry path) and `subsection`
+(a child section) is sound and stays. The third level is **not** a nav node; it is a visual grouping of rows into a card
+inside a leaf section, so it stays in the *visual* vocabulary (`SectionCard`) and gets **no** `*Section*`-flavored name.
+We do **not** add a `SettingCardGroup` / `CardSection` wrapper: it would re-overload "section" and transpose with the
+existing `SectionCard` primitive. Instead the section conditionally renders the existing `lib/ui/SectionCard` directly:
 
 ```svelte
-<SettingCardGroup label={tString('settings.indexing.enabled.label')}
-                  visible={anyVisible(shouldShow, 'indexing.enabled', 'indexing.indexSize')}>
-  {#if shouldShow('indexing.enabled')}<SettingSwitch id="indexing.enabled" />{/if}
-  {#if shouldShow('indexing.indexSize')}<!-- index-size readout + Clear index action -->{/if}
-</SettingCardGroup>
+{#if anyVisible(shouldShow, 'indexing.enabled', 'indexing.indexSize')}
+  <SectionCard label={tString('settings.indexing.enabled.label')} id={INDEXING_ANCHOR} gated={fdaClosed}>
+    {#if shouldShow('indexing.enabled')}<SettingSwitch id="indexing.enabled" />{/if}
+    {#if shouldShow('indexing.indexSize')}<!-- index-size readout + Clear index action -->{/if}
+  </SectionCard>
+{/if}
 ```
 
-Because the card's `visible` and each row's `{#if shouldShow}` read the identical predicate, the frame and its contents
-can never disagree: no empty frames, no hidden-but-non-empty cards. This is the C2 fix and it also removes the need for
-any `getVisibleCards`/`cardHasVisibleRows` registry-derived helpers (they would have been a second source of truth).
+New surface is minimal: a one-line pure helper `anyVisible(shouldShow, ...ids) => ids.some(shouldShow)`, plus a `gated`
+prop on `SectionCard` (D6) for the FDA dimming. `label` is a resolved/keyed title (`tString(cardKey)`, never a literal —
+`no-raw-user-facing-string`, D0). `SectionCard` stays pure presentation (no store/IPC/registry read), safe in any
+window including the restricted viewer window.
+
+The `{#if anyVisible}` guard and each row's `{#if shouldShow}` read the **same** `createShouldShow(searchQuery)`
+predicate, so the frame and its contents can never disagree: no empty frames, no hidden-but-non-empty cards. This is the
+C2 fix and it removes any need for `getVisibleCards`/`cardHasVisibleRows` registry-derived helpers (a second source of
+truth). (FSW's Drive-indexing card has no dedicated `card*` key today, so it reuses the row-label key; M2 may add
+`settings.fileSystemWatching.cardDriveIndexing` for naming consistency with its `cardDownloads` siblings.)
 
 **Rejected alternative:** a pure-CSS `:has()` auto-hide (frame `display:none` when it has no rendered rows). Elegant, but
 `:has()` is unreliable in happy-dom (breaks unit tests) and adds a WebKit-version dependency; explicit `visible` is
@@ -145,7 +146,7 @@ single source of both order and visibility, so the guard is unnecessary. Dropped
   (after `...keywords`).** `getMatchIndicesForLabel` (settings-search.ts:294) reconstructs label-highlight offsets
   assuming `section › … + ' ' + label` at the front; inserting `card` between section and label would silently
   mis-highlight labels. Appending is offset-safe. The card-title catalog keys for the reference page already exist (FSW's
-  `cardDownloads` etc., D0); reuse them as the members' `cardKey`. Keep the member-`cardKey` and the `SettingCardGroup`
+  `cardDownloads` etc., D0); reuse them as the members' `cardKey`. Keep the member-`cardKey` and the `SectionCard`
   display key the **same** catalog key (a check could later assert it; not required for v1).
 - The page already builds its match signal once: `SettingsContent.sectionHasMatchingSettings` calls
   `getMatchingSettingIdsInSection`, and each section builds `createShouldShow(searchQuery)` once. No per-card search
@@ -198,15 +199,16 @@ Advanced to grow cards.
 ### D6. Anchors and the FDA dimming wrapper must survive the migration
 
 FSW today wraps cards in outer `<div id={…_ANCHOR_ID}>` for toast deep-links, and dims FDA-gated cards via a wrapper
-whose rule targets the **inner** `.section-card` (`[data-gated='true'] :global(.section-card){opacity:.5}`).
-`SettingCardGroup` must preserve both:
-- The anchor `id` can move onto `SectionCard`'s `<section class="section-card-wrap" {id}>` — the deep-link
-  `getElementById(anchorId).offsetTop` scroll path (routes/settings/+page.svelte) is compatible.
-- The dimming selector targets the inner `.section-card`, so `data-gated` must sit on an element that **wraps**
-  `SettingCardGroup` (i.e. still contains `.section-card`), not on the card frame itself. Don't collapse the gating
-  wrapper into the card.
-- When `visible=false` during search, the anchor element won't exist; harmless (deep-links only fire when not
-  searching), but note it.
+whose rule targets the **inner** `.section-card` (`[data-gated='true'] :global(.section-card){opacity:.5}`). The
+migration must preserve both:
+- **Anchor `id`:** pass it to `SectionCard`'s `id` prop (rendered on `<section class="section-card-wrap" {id}>`) — the
+  deep-link `getElementById(anchorId).offsetTop` scroll path (routes/settings/+page.svelte) is compatible. Note: under
+  the `{#if anyVisible}` guard, the anchor element doesn't exist when `visible=false` during search; harmless (deep-links
+  only fire when not searching).
+- **`gated` prop on `SectionCard`:** the dimming selector targets the inner `.section-card`, and `data-gated` must sit on
+  an element that **wraps** the card (still contains `.section-card`). Add a `gated` prop to `SectionCard` that emits the
+  `data-gated` wrapper around its own frame (or keep the existing outer gating div in the section markup). Either way,
+  don't break the `[data-gated] :global(.section-card)` relationship.
 
 Verify the `navigate-to-section` deep-link still lands after the change.
 
@@ -227,15 +229,26 @@ M1/M2 don't depend on these; M3 does.
 
 ### D8. Single-card and no-card pages: default to a card, verify visual weight in-app
 
-macOS wraps even a single group, so default: a page with `card`-tagged settings renders one `SettingCardGroup` per
-group; a page with none renders its rows in one default unlabeled card for consistency. **Open risk (verify in the
+macOS wraps even a single group, so default: a page with `cardKey`-tagged settings renders one `SectionCard` per group;
+a page with none renders its rows in one default unlabeled `SectionCard` for consistency. **Open risk (verify in the
 running app during M3):** a single short row (e.g. `Viewer` → "Word wrap", unless D7 adds a second row) may look heavier
-inside a big card than bare. If so, allow a per-page opt-out (bare rows, no wrapper). Not pre-committed.
+inside a big card than bare. If so, allow a per-page opt-out (bare rows, no card). Not pre-committed.
 
 ### D9. Heading order is fine (resolved)
 
 Page is `h1` (sr-only "Settings") → `h2` (`SettingsSection` title) → `h3` (`SectionCard` label). No skipped level; the
-card `<h3>` is correct. Lock it with the tier-3 axe test on `SettingCardGroup`; not an open risk.
+card `<h3>` is correct. `SectionCard` already has an a11y test; just ensure the FSW migration keeps the tier-3 axe pass.
+Not an open risk.
+
+### D10. Keep section/subsection; the third level is "a card", not a nav term
+
+Audit result: the nav vocabulary is sound. `section` means any nav node / the registry path; `subsection` means a child
+section (the i18n catalog ratifies this — every nav node at both levels is keyed flat as `settings.section.*`). The leaf
+page being called a "section" (in `data-section-id`, the `SettingsSection.svelte` wrapper, and David's usage) is correct
+under this model. So **no rename** of the existing levels. The one minor overload (`SettingsSection` is both the
+recursive tree-node type and the leaf-page component) is left as-is (different namespaces). The third level is a *visual*
+card, so it is named `SectionCard` (the existing primitive) and never gets a `*Section*`/`CardSection` name that would
+re-overload the nav vocabulary or transpose with the primitive.
 
 ## Proposed card breakdown per page
 
@@ -288,16 +301,17 @@ groups; add a hidden anchor for a searchable non-setting row).
 Checks: `pnpm check --fast`; then `pnpm check svelte` (incl. `no-raw-user-facing-string` and the i18n catalog/codegen
 checks) for the touched TS.
 
-### M2. `SettingCardGroup` wrapper + reference migration (FileSystemWatchingSection)
+### M2. `anyVisible` helper + `SectionCard` `gated` prop + reference migration (FileSystemWatchingSection)
 
-Intent: build the one reusable piece and prove it on the broken page, fixing both bugs.
+Intent: prove the pattern on the broken page, fixing both bugs, with no new component (D2).
 
-- New `SettingCardGroup.svelte` in `lib/settings/components/`: props `label` (resolved/keyed string, never a literal —
-  D0/D2), `id?`, `gated?`, `visible`, `children`; renders `<SectionCard>` iff `visible`; pure presentation (no store/IPC)
-  so it's restricted-window-safe (D2). Add the `anyVisible(shouldShow, ...ids)` helper (pure, unit-tested).
-- Migrate `FileSystemWatchingSection.svelte`: replace the four bare `SectionCard`s with `SettingCardGroup`, compute each
-  `visible` from the existing `shouldShow`, preserve the anchor ids and the `gated` dimming (D6), and gate the
-  index-size action row on `shouldShow('indexing.indexSize')`.
+- Add the pure `anyVisible(shouldShow, ...ids) => ids.some(shouldShow)` helper (in `settings-search.ts` or a small
+  sibling), unit-tested.
+- Add a `gated?: boolean` prop to `lib/ui/SectionCard.svelte` that emits the `data-gated` wrapper (D6) so callers stop
+  hand-rolling the dimming div. Keep `SectionCard` pure presentation.
+- Migrate `FileSystemWatchingSection.svelte`: wrap each card's rows in `{#if anyVisible(shouldShow, ...memberIds)}` and
+  render the existing `SectionCard` (with `id` anchor + `gated`), preserve the FDA dimming, and gate the index-size
+  action row on `shouldShow('indexing.indexSize')`.
 
 Tests (bug fixes → real red→green per David's user-level `tdd-red-green` rule; the two bugs live at **different layers**,
 so split them):
@@ -308,12 +322,12 @@ so split them):
   the Drive-indexing card (not a blank pane). This bug is `sectionHasMatchingSettings` hiding the section; its red→green
   belongs here, not in the FSW section test.
 - `anyVisible` pure-helper unit tests (match, no-match, empty query).
-- a11y: `SettingCardGroup.a11y.test.ts` (tier-3 axe, locks D9 heading order); add `SettingCardGroup` to the dev
-  component catalog (`routes/dev/components/`) per the components convention.
+- a11y: extend `SectionCard`'s existing a11y test if needed for the `gated` prop; confirm the FSW tier-3 axe pass holds
+  (D9 heading order). No new catalog component.
 
-Docs: `components/CLAUDE.md` (the wrapper; **pass `visible` from the same `shouldShow` as the rows**; document the
-`SettingCardGroup`→`SectionCard` mapping and the `Setting*` naming so it isn't confused with `SectionCard`);
-`sections/DETAILS.md` FSW entry references `SettingCardGroup`.
+Docs: `components/CLAUDE.md` and/or `lib/ui` DETAILS (the `{#if anyVisible}` + `SectionCard` pattern; **the `anyVisible`
+guard reads the same `shouldShow` as the rows**; `gated` prop); `sections/DETAILS.md` FSW entry notes the inline-guard
+pattern; record D2/D4/D10 as Decision/Why.
 
 Checks: `pnpm check --fast` while iterating; `pnpm check desktop`; FSW functional + a11y suites; settings E2E
 (`settings.spec.ts`).
@@ -324,9 +338,9 @@ Intent: apply the breakdown mechanically after placements are settled.
 
 - Resolve D7 placement decisions with David first.
 - For each page: set `cardKey` on its settings (add catalog entries + a `MessageKey` codegen run for any new card
-  title), wrap row runs in `SettingCardGroup` with `visible` from `shouldShow`. Add a hidden anchor for any non-registry
-  searchable row (none known beyond index-size today). Single-card pages get one unlabeled wrapper, subject to the D8
-  visual check.
+  title), wrap each card's row run in `{#if anyVisible(...)}<SectionCard>` (D2). Add a hidden anchor for any non-registry
+  searchable row (none known beyond index-size today). Single-card pages get one unlabeled `SectionCard`, subject to the
+  D8 visual check.
 - Visual pass in the running app (D8): confirm single-row pages don't read as too heavy; opt out per-page if they do.
 
 Tests: each page's `*Section.a11y.test.ts` updated; add a search-empty-card assertion to a representative multi-card page
@@ -350,4 +364,6 @@ wrap pages one at a time. Sequential is fine and lower-risk.
 - The index-size row is searchable via its hidden anchor; the "pure-action card" hole is closed by the anchor pattern.
 - `cardKey` is documented as metadata-only and ignored by Advanced; card titles come from the catalog (no raw strings,
   D0); D7 placements resolved with David; D8 single-card visual check done in-app.
-- `pnpm check` (incl. a11y and E2E) green; docs in sync, with the D2/D4 decisions captured as Decision/Why.
+- No new wrapper component; the third level is an inline `{#if anyVisible}<SectionCard>` (D2/D10); section/subsection
+  vocabulary unchanged.
+- `pnpm check` (incl. a11y and E2E) green; docs in sync, with the D2/D4/D10 decisions captured as Decision/Why.
