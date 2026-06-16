@@ -22,15 +22,9 @@ pub mod mount;
 #[path = "mount_linux.rs"]
 pub mod mount;
 
-// Platform-agnostic on purpose (the Linux `gio mount` path should adopt it too), but
-// today only the macOS mount path consumes it, so tolerate "unused" off macOS.
-#[cfg_attr(
-    not(target_os = "macos"),
-    allow(
-        dead_code,
-        reason = "only the macOS mount path consumes it today; Linux should adopt it"
-    )
-)]
+// Cross-platform: `same_server` and `credential_key` are used on both macOS and Linux
+// (mount dedup, `smb_upgrade`, keychain keying). Only `same_server_live` is macOS-only,
+// gated at its definition, so no module-wide dead-code allowance is needed.
 pub mod server_identity;
 pub mod smb_client;
 

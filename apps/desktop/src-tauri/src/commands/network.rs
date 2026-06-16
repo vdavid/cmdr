@@ -693,12 +693,17 @@ pub async fn upgrade_to_smb_volume_using_saved_password(
 #[tauri::command]
 #[specta::specta]
 pub async fn disconnect_network_host(
-    _host_id: String,
+    host_id: String,
     host_name: String,
     ip_address: Option<String>,
 ) -> Result<Vec<String>, String> {
     use crate::commands::util::blocking_with_timeout;
     use std::time::Duration;
+
+    // Drop the cached share list so a later browse re-fetches fresh shares and
+    // auth mode rather than serving a stale (up to 30 s TTL) entry for a host
+    // the user just disconnected from.
+    smb_client::invalidate_cache(&host_id);
 
     let result = blocking_with_timeout(Duration::from_secs(15), vec![], move || {
         mount::unmount_smb_shares_from_host(&host_name, ip_address.as_deref())

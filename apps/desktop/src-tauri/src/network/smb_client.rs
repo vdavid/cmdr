@@ -8,6 +8,7 @@ use std::time::Duration;
 
 // Re-export public types (re-exports of items used in smb_client's public API)
 pub use super::smb_cache::get_cached_shares_auth_mode;
+pub use super::smb_cache::invalidate_cache;
 pub use super::smb_types::{AuthMode, ShareListError, ShareListResult};
 
 // Internal imports

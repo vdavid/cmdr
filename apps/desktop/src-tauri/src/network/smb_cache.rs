@@ -58,11 +58,10 @@ pub fn cache_shares(host_id: &str, result: &ShareListResult, cache_ttl_ms: u64) 
     }
 }
 
-/// Invalidates cache for a host.
-#[allow(
-    dead_code,
-    reason = "Will be used when implementing cache invalidation on host disconnect"
-)]
+/// Invalidates the cached share list for a host. Called when the user
+/// disconnects from a host (`disconnect_network_host`) so a later browse
+/// re-fetches the share list and auth mode fresh instead of serving a stale
+/// cached entry (a server that went away, or whose creds/shares changed).
 pub fn invalidate_cache(host_id: &str) {
     if let Ok(mut cache) = get_share_cache().lock() {
         cache.remove(host_id);
