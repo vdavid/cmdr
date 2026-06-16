@@ -169,6 +169,17 @@ export function getUserFriendlyMessage(
           ? 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
           : 'The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.',
       }
+    case 'delete_pending':
+      // STATUS_DELETE_PENDING: the file is marked for deletion on the server but
+      // an open handle is keeping it alive. Transient: retry-after-a-moment.
+      // Mirrors the prose the Rust write_error path produced (kinds::delete_pending).
+      return {
+        title: 'File is being removed',
+        message:
+          "This file is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.",
+        suggestion:
+          'Wait a moment and try again. Once the last handle closes, the file disappears. If it sticks around, close any other apps that might have it open.',
+      }
     default:
       return {
         title: `${Verb} failed`,
@@ -189,6 +200,7 @@ const pathOnlyTypes = new Set<WriteOperationError['type']>([
   'trash_not_supported',
   'connection_interrupted',
   'name_too_long',
+  'delete_pending',
 ])
 
 /** Error types where technical details include path + error message. */

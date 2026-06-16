@@ -245,6 +245,24 @@ describe('getUserFriendlyMessage', () => {
       expect(result.message).toContain('characters not allowed')
     })
 
+    it('handles delete_pending with a dedicated message', () => {
+      const error: WriteOperationError = { type: 'delete_pending', path: '/Volumes/share/photo.jpg' }
+      const result = getUserFriendlyMessage(error)
+
+      expect(result.title).toBe('File is being removed')
+      expect(result.message).toContain('marked it for deletion')
+      expect(result.suggestion).toContain('Wait a moment')
+    })
+
+    it('handles read_only_device with a dedicated message (no fallthrough)', () => {
+      const error: WriteOperationError = { type: 'read_only_device', path: '/path', deviceName: 'My Phone' }
+      const result = getUserFriendlyMessage(error)
+
+      expect(result.title).toBe('Read-only device')
+      expect(result.message).toContain('My Phone')
+      expect(result.suggestion).toContain('different destination')
+    })
+
     it('returns generic message for unknown io_error', () => {
       const error: WriteOperationError = {
         type: 'io_error',
