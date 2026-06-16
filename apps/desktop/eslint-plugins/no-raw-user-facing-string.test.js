@@ -18,10 +18,13 @@ const svelteTester = new RuleTester({
 // surface (the real dialogs are still excluded until their M2 tranche).
 const TRANSFER_TS = 'src/lib/file-operations/transfer/transfer-complete-toast.ts'
 const TRANSFER_SVELTE = 'src/lib/file-operations/transfer/CompletedTransferBanner.svelte'
-// An excluded (un-migrated) transfer dialog: still-raw copy must NOT flag yet.
-const EXCLUDED_TRANSFER_SVELTE = 'src/lib/file-operations/transfer/TransferDialog.svelte'
-// A non-enforced area: identical raw strings here must NOT flag yet.
+// A still-excluded file inside an enforced area (the one remaining ledger entry,
+// the command-handlers subtree): still-raw copy must NOT flag yet.
+const EXCLUDED_SVELTE = 'src/routes/(main)/command-handlers/favorites-handlers.svelte'
+// A non-enforced area (file-explorer's migration is still finishing on its
+// branch): identical raw strings here must NOT flag yet.
 const OTHER_SVELTE = 'src/lib/file-explorer/pane/FilePane.svelte'
+const OTHER_TS = 'src/lib/file-explorer/pane/clipboard-operations.ts'
 
 tsTester.run('no-raw-user-facing-string (ts sinks)', rule, {
   valid: [
@@ -38,7 +41,7 @@ tsTester.run('no-raw-user-facing-string (ts sinks)', rule, {
     // A raw addToast string OUTSIDE an enforced area is not flagged yet.
     {
       code: `addToast('Copied 3 files')`,
-      filename: 'src/lib/search/search-toast.ts',
+      filename: OTHER_TS,
     },
     // A string literal that isn't a recognized sink (a log line) is ignored.
     {
@@ -79,10 +82,10 @@ svelteTester.run('no-raw-user-facing-string (svelte sinks)', rule, {
       code: `<button class="primary"><Icon name="x" /></button>`,
       filename: TRANSFER_SVELTE,
     },
-    // An excluded (un-migrated) transfer dialog: still-raw copy must NOT flag.
+    // A still-excluded file (the command-handlers ledger entry): raw copy must NOT flag.
     {
       code: `<button title="Cancel transfer"><Icon name="x" /></button>`,
-      filename: EXCLUDED_TRANSFER_SVELTE,
+      filename: EXCLUDED_SVELTE,
     },
     // CSS inside a `<style>` block is code, not copy: the parser emits it as a
     // SvelteText node, so the rule must skip it (it was flagging stylesheets).
