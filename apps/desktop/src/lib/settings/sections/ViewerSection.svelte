@@ -3,8 +3,9 @@
     import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
@@ -18,14 +19,18 @@
 </script>
 
 <SettingsSection title={tString('settings.section.viewer')}>
-    {#if shouldShow('viewer.wordWrap')}
-        <SettingRow
-            id="viewer.wordWrap"
-            label={wordWrapDef.label}
-            description={wordWrapDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="viewer.wordWrap" />
-        </SettingRow>
+    {#if anyVisible(shouldShow, 'viewer.wordWrap')}
+        <SectionCard>
+            {#if shouldShow('viewer.wordWrap')}
+                <SettingRow
+                    id="viewer.wordWrap"
+                    label={wordWrapDef.label}
+                    description={wordWrapDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="viewer.wordWrap" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 </SettingsSection>

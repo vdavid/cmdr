@@ -1372,6 +1372,14 @@
   "@settings.fileOperations.card.conflictsAndProgress": {
     "description": "Heading of the conflicts-and-progress card (max conflicts to show, progress update interval) in Settings > Behavior > File operations."
   },
+  "settings.network.card.connection": "Connection",
+  "@settings.network.card.connection": {
+    "description": "Heading of the connection card (enable networking, direct SMB connection) in Settings > File systems > SMB/Network shares."
+  },
+  "settings.network.card.performanceAndTimeouts": "Performance and timeouts",
+  "@settings.network.card.performanceAndTimeouts": {
+    "description": "Heading of the performance-and-timeouts card (share cache duration, network timeout mode, custom timeout, SMB concurrency) in Settings > File systems > SMB/Network shares."
+  },
   "settings.updates.card.updates": "Updates",
   "@settings.updates.card.updates": {
     "description": "Heading of the updates card (auto-check for updates, show what''s new on update) in Settings > Updates & privacy."

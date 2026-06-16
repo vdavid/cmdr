@@ -1754,6 +1754,8 @@ export type MessageKey =
   | 'settings.mcp.portInUseStillRunning'
   | 'settings.mcp.runningOnPort'
   | 'settings.mcp.usePortInstead'
+  | 'settings.network.card.connection'
+  | 'settings.network.card.performanceAndTimeouts'
   | 'settings.network.customTimeout.description'
   | 'settings.network.customTimeout.label'
   | 'settings.network.customTimeoutUnit'

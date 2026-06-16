@@ -4,6 +4,7 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSetting, getSettingDefinition, setSetting, onSpecificSettingChange } from '$lib/settings'
     import {
         checkPortAvailable,
@@ -14,7 +15,7 @@
         getMcpPort,
         type McpServerOutcome,
     } from '$lib/tauri-commands'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logging/logger'
     import { onMount } from 'svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -27,6 +28,7 @@
     const log = getAppLogger('mcp-settings')
 
     const shouldShow = $derived(createShouldShow(searchQuery))
+    const cardVisible = $derived(anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpPort'))
 
     const defaultDef = { label: '', description: '' }
     const mcpEnabledDef = getSettingDefinition('developer.mcpEnabled') ?? defaultDef
@@ -192,70 +194,79 @@
 </script>
 
 <SettingsSection title={tString('settings.section.mcpServer')}>
-    {#if shouldShow('developer.mcpEnabled')}
-        <SettingRow
-            id="developer.mcpEnabled"
-            label={mcpEnabledDef.label}
-            description={mcpEnabledDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="developer.mcpEnabled" />
-        </SettingRow>
-    {/if}
+    {#if cardVisible}
+        <SectionCard>
+            {#if shouldShow('developer.mcpEnabled')}
+                <SettingRow
+                    id="developer.mcpEnabled"
+                    label={mcpEnabledDef.label}
+                    description={mcpEnabledDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="developer.mcpEnabled" />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('developer.mcpPort')}
-        <SettingRow
-            id="developer.mcpPort"
-            label={mcpPortDef.label}
-            description={mcpPortDef.description}
-            split
-            {searchQuery}
-        >
-            <div class="port-setting">
-                <SettingNumberInput id="developer.mcpPort" />
-                <Button variant="secondary" size="mini" onclick={checkPort}>{tString('settings.mcp.checkPort')}</Button>
-            </div>
-        </SettingRow>
-    {/if}
+            {#if shouldShow('developer.mcpPort')}
+                <SettingRow
+                    id="developer.mcpPort"
+                    label={mcpPortDef.label}
+                    description={mcpPortDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <div class="port-setting">
+                        <SettingNumberInput id="developer.mcpPort" />
+                        <Button variant="secondary" size="mini" onclick={checkPort}
+                            >{tString('settings.mcp.checkPort')}</Button
+                        >
+                    </div>
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('developer.mcpEnabled') || shouldShow('developer.mcpPort')}
-        {#if serverError}
-            <div class="port-status unavailable">{serverError}</div>
-        {:else}
-            {#if serverWarning}
-                <div class="port-status warning">{serverWarning}</div>
+            {#if serverError}
+                <div class="port-status unavailable">{serverError}</div>
+            {:else}
+                {#if serverWarning}
+                    <div class="port-status warning">{serverWarning}</div>
+                {/if}
+                {#if serverRunning && runningPort}
+                    <div class="port-status active">
+                        {tString('settings.mcp.runningOnPort', { runningPort })}
+                        {#if getSetting('developer.mcpPort') === 0}
+                            {tString('settings.mcp.ephemeral')}
+                        {:else if runningPort !== getSetting('developer.mcpPort') && portStatus !== 'unavailable'}
+                            {tString('settings.mcp.portInUseFallback', { port: getSetting('developer.mcpPort') })}
+                        {/if}
+                    </div>
+                {/if}
+                <!-- The availability notice coexists with the running line: a failed port change
+                     (portInUse) shows both "running on the old port" and "the new one is busy". -->
+                {#if portStatus === 'checking'}
+                    <div class="port-status checking">{tString('settings.mcp.checkingPort')}</div>
+                {:else if portStatus === 'available' && !serverRunning}
+                    <div class="port-status available">
+                        {tString('settings.mcp.portAvailable', { port: getSetting('developer.mcpPort') })}
+                    </div>
+                {:else if portStatus === 'unavailable'}
+                    <div class="port-status unavailable">
+                        {#if serverRunning && runningPort}
+                            {tString('settings.mcp.portInUseStillRunning', {
+                                port: getSetting('developer.mcpPort'),
+                                runningPort,
+                            })}
+                        {:else}
+                            {tString('settings.mcp.portInUse', { port: getSetting('developer.mcpPort') })}
+                        {/if}
+                        {#if suggestedPort}
+                            <Button variant="primary" size="mini" onclick={useSuggestedPort}>
+                                {tString('settings.mcp.usePortInstead', { suggestedPort })}
+                            </Button>
+                        {/if}
+                    </div>
+                {/if}
             {/if}
-            {#if serverRunning && runningPort}
-                <div class="port-status active">
-                    {tString('settings.mcp.runningOnPort', { runningPort })}
-                    {#if getSetting('developer.mcpPort') === 0}
-                        {tString('settings.mcp.ephemeral')}
-                    {:else if runningPort !== getSetting('developer.mcpPort') && portStatus !== 'unavailable'}
-                        {tString('settings.mcp.portInUseFallback', { port: getSetting('developer.mcpPort') })}
-                    {/if}
-                </div>
-            {/if}
-            <!-- The availability notice coexists with the running line: a failed port change
-                 (portInUse) shows both "running on the old port" and "the new one is busy". -->
-            {#if portStatus === 'checking'}
-                <div class="port-status checking">{tString('settings.mcp.checkingPort')}</div>
-            {:else if portStatus === 'available' && !serverRunning}
-                <div class="port-status available">{tString('settings.mcp.portAvailable', { port: getSetting('developer.mcpPort') })}</div>
-            {:else if portStatus === 'unavailable'}
-                <div class="port-status unavailable">
-                    {#if serverRunning && runningPort}
-                        {tString('settings.mcp.portInUseStillRunning', { port: getSetting('developer.mcpPort'), runningPort })}
-                    {:else}
-                        {tString('settings.mcp.portInUse', { port: getSetting('developer.mcpPort') })}
-                    {/if}
-                    {#if suggestedPort}
-                        <Button variant="primary" size="mini" onclick={useSuggestedPort}>
-                            {tString('settings.mcp.usePortInstead', { suggestedPort })}
-                        </Button>
-                    {/if}
-                </div>
-            {/if}
-        {/if}
+        </SectionCard>
     {/if}
 </SettingsSection>
 

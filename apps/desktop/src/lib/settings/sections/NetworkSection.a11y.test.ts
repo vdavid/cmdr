@@ -11,8 +11,10 @@ vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'network.enabled') return true
     if (key === 'network.directSmbConnection') return true
-    if (key === 'network.shareCacheDuration') return 300
-    if (key === 'network.timeoutMode') return 'balanced'
+    if (key === 'network.shareCacheDuration') return 30000
+    if (key === 'network.timeoutMode') return 'normal'
+    if (key === 'network.customTimeout') return 15
+    if (key === 'network.smbConcurrency') return 10
     return undefined
   }),
   setSetting: vi.fn(() => Promise.resolve()),

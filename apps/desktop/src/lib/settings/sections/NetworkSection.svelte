@@ -5,8 +5,9 @@
     import SettingSelect from '../components/SettingSelect.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import { openSystemSettingsUrl } from '$lib/tauri-commands'
     import { systemStrings } from '$lib/system-strings.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -24,6 +25,7 @@
     const directSmbDef = getSettingDefinition('network.directSmbConnection') ?? defaultDef
     const cacheDurationDef = getSettingDefinition('network.shareCacheDuration') ?? defaultDef
     const timeoutModeDef = getSettingDefinition('network.timeoutMode') ?? defaultDef
+    const smbConcurrencyDef = getSettingDefinition('network.smbConcurrency') ?? defaultDef
 
     function handlePrivacyLinkClick(event: MouseEvent) {
         event.preventDefault()
@@ -35,86 +37,106 @@
 </script>
 
 <SettingsSection title={tString('settings.section.smbNetworkShares')}>
-    {#if shouldShow('network.enabled')}
-        <SettingRow
-            id="network.enabled"
-            label={networkEnabledDef.label}
-            description={networkEnabledDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="network.enabled" />
-        </SettingRow>
+    {#if anyVisible(shouldShow, 'network.enabled', 'network.directSmbConnection')}
+        <SectionCard label={tString('settings.network.card.connection')}>
+            {#if shouldShow('network.enabled')}
+                <SettingRow
+                    id="network.enabled"
+                    label={networkEnabledDef.label}
+                    description={networkEnabledDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="network.enabled" />
+                </SettingRow>
 
-        <div class="local-network-info">
-            <h3>{localNetworkAccessLabel}</h3>
-            <p>
-                {tString('settings.network.permissionIntroPrefix', {
-                    localNetwork: systemStrings.localNetwork,
-                })}<strong>{tString('settings.network.permissionIntroConnectLink')}</strong
-                >{tString('settings.network.permissionIntroSuffix')}
-            </p>
-            <p>
-                {tString('settings.network.manageAnytimePrefix')}
-                <button type="button" class="link-button" onclick={handlePrivacyLinkClick}
-                    >{tString('settings.network.permissionPath', {
-                        systemSettings: systemStrings.systemSettings,
-                        privacyAndSecurity: systemStrings.privacyAndSecurity,
-                        localNetwork: systemStrings.localNetwork,
-                    })}</button
-                >.
-            </p>
-            <p class="muted">
-                {tString('settings.network.permissionWithout')}
-            </p>
-        </div>
+                <div class="local-network-info">
+                    <h4>{localNetworkAccessLabel}</h4>
+                    <p>
+                        {tString('settings.network.permissionIntroPrefix', {
+                            localNetwork: systemStrings.localNetwork,
+                        })}<strong>{tString('settings.network.permissionIntroConnectLink')}</strong
+                        >{tString('settings.network.permissionIntroSuffix')}
+                    </p>
+                    <p>
+                        {tString('settings.network.manageAnytimePrefix')}
+                        <button type="button" class="link-button" onclick={handlePrivacyLinkClick}
+                            >{tString('settings.network.permissionPath', {
+                                systemSettings: systemStrings.systemSettings,
+                                privacyAndSecurity: systemStrings.privacyAndSecurity,
+                                localNetwork: systemStrings.localNetwork,
+                            })}</button
+                        >.
+                    </p>
+                    <p class="muted">
+                        {tString('settings.network.permissionWithout')}
+                    </p>
+                </div>
+            {/if}
+
+            {#if shouldShow('network.directSmbConnection')}
+                <SettingRow
+                    id="network.directSmbConnection"
+                    label={directSmbDef.label}
+                    description={directSmbDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="network.directSmbConnection" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 
-    {#if shouldShow('network.directSmbConnection')}
-        <SettingRow
-            id="network.directSmbConnection"
-            label={directSmbDef.label}
-            description={directSmbDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="network.directSmbConnection" />
-        </SettingRow>
-    {/if}
+    {#if anyVisible(shouldShow, 'network.shareCacheDuration', 'network.timeoutMode', 'network.smbConcurrency')}
+        <SectionCard label={tString('settings.network.card.performanceAndTimeouts')}>
+            {#if shouldShow('network.shareCacheDuration')}
+                <SettingRow
+                    id="network.shareCacheDuration"
+                    label={cacheDurationDef.label}
+                    description={cacheDurationDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingSelect id="network.shareCacheDuration" />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('network.shareCacheDuration')}
-        <SettingRow
-            id="network.shareCacheDuration"
-            label={cacheDurationDef.label}
-            description={cacheDurationDef.description}
-            split
-            {searchQuery}
-        >
-            <SettingSelect id="network.shareCacheDuration" />
-        </SettingRow>
-    {/if}
+            {#if shouldShow('network.timeoutMode')}
+                <SettingRow
+                    id="network.timeoutMode"
+                    label={timeoutModeDef.label}
+                    description={timeoutModeDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <div class="timeout-setting">
+                        <SettingRadioGroup id="network.timeoutMode">
+                            {#snippet customContent(value)}
+                                {#if value === 'custom'}
+                                    <div class="custom-timeout">
+                                        <SettingNumberInput
+                                            id="network.customTimeout"
+                                            unit={tString('settings.network.customTimeoutUnit')}
+                                        />
+                                    </div>
+                                {/if}
+                            {/snippet}
+                        </SettingRadioGroup>
+                    </div>
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('network.timeoutMode')}
-        <SettingRow
-            id="network.timeoutMode"
-            label={timeoutModeDef.label}
-            description={timeoutModeDef.description}
-            split
-            {searchQuery}
-        >
-            <div class="timeout-setting">
-                <SettingRadioGroup id="network.timeoutMode">
-                    {#snippet customContent(value)}
-                        {#if value === 'custom'}
-                            <div class="custom-timeout">
-                                <SettingNumberInput
-                                    id="network.customTimeout"
-                                    unit={tString('settings.network.customTimeoutUnit')}
-                                />
-                            </div>
-                        {/if}
-                    {/snippet}
-                </SettingRadioGroup>
-            </div>
-        </SettingRow>
+            {#if shouldShow('network.smbConcurrency')}
+                <SettingRow
+                    id="network.smbConcurrency"
+                    label={smbConcurrencyDef.label}
+                    description={smbConcurrencyDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingNumberInput id="network.smbConcurrency" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 </SettingsSection>
 
@@ -138,7 +160,7 @@
         line-height: 1.5;
     }
 
-    .local-network-info h3 {
+    .local-network-info h4 {
         margin: 0 0 var(--spacing-xs);
         font-size: var(--font-size-sm);
         font-weight: 600;

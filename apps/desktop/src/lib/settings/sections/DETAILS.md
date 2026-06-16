@@ -46,11 +46,17 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   `ai.cloudProviderConfigs`, API key in OS secret store, two-step connection check
 - **`AiLocalSection.svelte`**: Local llama-server lifecycle, model install with multi-step tracking, context window
   "Apply" (server restart), RAM gauge, delete confirmation
-- **`NetworkSection.svelte`**: `File systems > SMB/Network shares`: `network.enabled` master switch and the Local
-  Network access info card
-- **`MtpSection.svelte`**: `File systems > MTP (Android/Kindle/cameras)`
-- **`GitSection.svelte`**: `File systems > Git`
-- **`ViewerSection.svelte`**: `Viewer`
+- **`NetworkSection.svelte`**: `File systems > SMB/Network shares`: two `SectionCard` card groups — Connection
+  (`network.enabled` master switch + the inline Local Network access info block + `network.directSmbConnection`) and
+  Performance and timeouts (`shareCacheDuration` select, `timeoutMode` radio with its inline custom-timeout number, and
+  `smbConcurrency`). `network.smbConcurrency` is a `showInAdvanced` mirror that ALSO renders here (its natural page), so
+  a globally-searchable Advanced doesn't match this page and then paint a blank section; it keeps its Advanced presence.
+  The info block's own heading is `<h4>` (the card's `<h3>` is the group heading). Card frames are gated via
+  `anyVisible(shouldShow, ...)` (same pattern as FSW above).
+- **`MtpSection.svelte`**: `File systems > MTP (Android/Kindle/cameras)`: one unlabeled `SectionCard`, gated via
+  `anyVisible(shouldShow, ...)`
+- **`GitSection.svelte`**: `File systems > Git`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
+- **`ViewerSection.svelte`**: `Viewer`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
 - **`KeyboardShortcutsSection.svelte`**: `Keyboard shortcuts`: special (non-registry) section, renders the shortcut
   table from `shortcuts.json`, plus a bespoke `Global` group hosting `lib/downloads/GlobalShortcutRow.svelte` (the
   go-to-latest hotkey, marked `(global)`, binding stored in `settings.json` not `shortcuts.json`). Thin: markup + scoped
@@ -66,8 +72,10 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   `formatModifiers`/`handleKeyFilterKeyDown`/`handleKeyFilterKeyUp`). It imports the pure `keyboard-shortcuts-grouping`
   and `keyboard-shortcuts-banner` helpers rather than duplicating them. The `getSearchQuery` arg is an accessor (not a
   snapshot) so the name-search derivation stays reactive to the parent-driven global search prop
-- **`McpServerSection.svelte`**: `Developer > MCP server`
-- **`LoggingSection.svelte`**: `Developer > Logging`
+- **`McpServerSection.svelte`**: `Developer > MCP server`: one unlabeled `SectionCard` wrapping the enable switch, port
+  row, and the live port-status block, gated via `anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpPort')`
+- **`LoggingSection.svelte`**: `Developer > Logging`: one unlabeled `SectionCard` wrapping the verbose-logging switch and
+  the open-log/copy-diagnostics action buttons, gated via `anyVisible(shouldShow, ...)`
 - **`UpdatesSection.svelte`**: `Updates & privacy`: two `SectionCard` card groups — Updates (the "Check for updates"
   action + status, `updates.autoCheck`, `whatsNew.showOnUpdate`) and Privacy and data sharing (the beta analytics
   opt-out `analytics.enabled` default-on, the `analytics.email` contact field with its "never sent with your usage data"
