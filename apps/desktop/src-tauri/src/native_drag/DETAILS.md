@@ -107,15 +107,16 @@ or failure + leaf) on the queue thread via `leave_fulfillment`; the drain point 
 `session_summary::summarize`.
 
 **Failure complements Finder, not duplicates it.** Finder shows its own NSError alert per failed item (see NSError
-mapping below). Our failure toast names the file and leans on Finder for the technical detail (the friendly copy already
-rode the `FriendlyError` pipeline). Mirrors the transfer-failure pattern.
+mapping below). Our failure toast names the file and leans on Finder for the technical detail (the failure is classified
+through the typed `ListingError` pipeline). Mirrors the transfer-failure pattern.
 
 ## NSError mapping
 
-A `FulfillError` carries a rendered `FriendlyError`. The delegate maps it to an `NSError` in domain
-`com.veszelovszki.cmdr.drag-out` with the friendly title as `localizedDescription` (Finder shows its own alert). A
-cancelled fulfillment uses the `NSUserCancelledError` code (3072) so Finder stays quiet; a real failure uses code 1 and
-shows the title.
+A `FulfillError` carries a typed `ListingError` (`file_system::volume::friendly_error`) plus a `cancelled` flag. The
+delegate maps it to an `NSError` in domain `com.veszelovszki.cmdr.drag-out`, using `FulfillError::nserror_title()` (a
+short, category-keyed one-liner) as `localizedDescription` (Finder shows its own alert; the detailed user-facing prose
+lives on the frontend). A cancelled fulfillment uses the `NSUserCancelledError` code (3072) so Finder stays quiet; a
+real failure uses code 1.
 
 ## Testing
 

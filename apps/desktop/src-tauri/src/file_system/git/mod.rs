@@ -211,9 +211,9 @@ pub(crate) fn resolve_commit_for_cat(
 
 fn friendly_to_volume_error(err: FriendlyGitError) -> VolumeError {
     // Carry the structured payload through the typed variant so the listing
-    // pipeline's friendly-error mapper rebuilds a fully-shaped `FriendlyError`
-    // for `ErrorPane`. Using `VolumeError::PermissionDenied` for the gitdir
-    // permission case would lose the git-specific repair copy (the user
-    // would land on the generic "No permission" branch).
+    // pipeline's classifier ships the git kind as the `Git` reason and the FE
+    // renders the git-specific copy. Using `VolumeError::PermissionDenied` for
+    // the gitdir permission case would lose the git-specific repair copy (the
+    // user would land on the generic "No permission" branch).
     VolumeError::FriendlyGit(err)
 }

@@ -13,8 +13,8 @@ volume root**.
 - `manager.rs`: `VolumeManager`, a thread-safe `RwLock<HashMap>` registry with a default volume.
 - `backends/`: per-backend impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See
   [`backends/CLAUDE.md`](backends/CLAUDE.md).
-- `friendly_error/`: user-facing error messages + provider detection. See
-  [`friendly_error/CLAUDE.md`](friendly_error/CLAUDE.md).
+- `friendly_error/`: typed, word-free error classification (errno → reason, provider detection); the words live on the
+  FE. See [`friendly_error/CLAUDE.md`](friendly_error/CLAUDE.md).
 
 ## Must-knows
 

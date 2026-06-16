@@ -1,44 +1,44 @@
-# Friendly error system
+# Friendly error CLASSIFICATION
 
-Turns raw OS errors into warm, actionable messages (a friendly title, a plain-language explanation, and
-provider-specific advice) instead of "I/O error: Operation timed out (os error 60)". Raw details (errno name, code) stay
-available in a collapsible "Technical details" section.
+Turns a raw OS error + path into a TYPED, word-free `ListingError` the frontend renders. The split: CLASSIFICATION in
+Rust (errno → reason, provider detection, category/retry/action), WORDS on the frontend
+([`src/lib/errors/`](../../../../../src/lib/errors/CLAUDE.md)). This module emits zero user-facing prose.
 
-Parent: [`volume/CLAUDE.md`](../CLAUDE.md) (trait + manager + capability matrix). Broader app-wide error conventions:
-`docs/guides/error-handling.md`.
+Parent: [`volume/CLAUDE.md`](../CLAUDE.md) (trait + manager + capability matrix). App-wide error conventions:
+[`docs/guides/error-handling.md`](../../../../../../../docs/guides/error-handling.md).
 
 ## Module map
 
-- `mod.rs`: `FriendlyError`, `ErrorCategory`, `ErrorActionKind` data model + public re-exports.
-- `errno.rs`: raw macOS errno → `FriendlyError` (37 codes), non-macOS fallback.
-- `volume_error.rs`: `VolumeError` → `FriendlyError` (dispatches to `errno` for raw `IoError`s).
-- `empty_root.rs`: TCC-restricted volume-root hint (single special case).
-- `kinds.rs`: shared failure classification used by `volume_error`.
-- `markdown.rs`: `Markdown` newtype + `md!` macro (escapes interpolated runtime strings before snarkdown).
-- `provider.rs`: `Provider` enum (18 variants), `detect_provider()`, `provider_suggestion()`, `enrich_with_provider()`.
+- `mod.rs`: data model (`ListingError`, `ListingErrorReason`, `ErrorCategory`, `ErrorActionKind`) + public re-exports +
+  the typed-mapping tests.
+- `volume_error.rs`: `VolumeError` → `ListingError` (the entry point; dispatches to `errno` for raw `IoError`s).
+- `errno.rs`: raw macOS errno → `ListingError` (one reason per distinct outcome), non-macOS fallback.
+- `kinds.rs`: shared `ListingError` constructors for `VolumeError` variants that map to the same conceptual reason.
+- `empty_root.rs`: TCC-restricted volume-root hint (the iCloud-looks-empty special case).
+- `provider.rs`: `Provider` enum (18 variants), `detect_provider`, `enrich_with_provider` (sets the typed `provider`).
 
 ## Must-knows
 
-- **Mapping lives in Rust, not the frontend.** The FE receives a fully-baked `FriendlyError` via `listing-error` /
-  `write-error` events and renders it with category-based styling; it never sees errno codes or does OS-specific logic.
-- **`explanation` / `suggestion` are typed `Markdown`, built via the `md!` macro.** Use positional `{}` args only:
-  captured-identifier syntax (`md!("foo {bar}")`) bypasses the escape path and renders the literal `{bar}` in the UI.
-  Positional args route through `MarkdownArg::render_arg`, which escapes plain strings (paths, OS messages, names) and
-  passes `Markdown` values through unescaped. Raw OS strings contain markdown specials (`STATUS_DELETE_PENDING` would
-  render with italics), so unescaped interpolation is a real bug. See DETAILS.md § Markdown escaping.
+- **This layer emits NO prose.** `ListingErrorReason` carries a semantic reason + typed params; the FE switches on the
+  reason to pick the words. Don't reintroduce `title`/`explanation`/`suggestion` strings here. Reason and `Provider`
+  variant names are the IPC contract with `src/lib/errors/`; renaming one without the other breaks the FE parity test.
+- **The frontend NEVER sees raw errno numbers.** Rust maps errno → semantic reason; the FE switches on the reason.
+  Errnos that produce identical FE copy collapse to one reason; nothing else merges (the 1:1 mapping is what makes the
+  parity check meaningful).
 - **Layer 0 git pass-through must match first.** `VolumeError::FriendlyGit(...)` is matched before any errno mapping and
-  returns its carried `FriendlyError` directly, so git-specific copy isn't clobbered by the generic I/O fallback. Don't
-  reorder it below the errno arms.
-- **Writing rules for messages are non-negotiable and partly test-enforced.** NEVER use "error" or "failed" (the
-  `error_messages_never_contain_error_or_failed` test catches this). Active voice, contractions, no trivializing
-  ("just"/"simply"), no permissive language, no em dashes, sentence case in titles, platform-native terms ("System
-  Settings", "Finder", "Trash"), max two sentences per explanation. Full list + good/bad examples in DETAILS.md.
-- **Keep the two provider lists in sync.** Adding a `Provider` variant also requires updating the `volumes/CLAUDE.md`
-  provider table.
+  rides as the `Git` reason carrying its typed `FriendlyGitErrorKind`, so git copy isn't clobbered by the generic I/O
+  fallback and is never provider-enriched. Don't reorder it below the errno arms.
+- **`enrich_with_provider` SETS `provider`, never overwrites prose.** Detection stays in Rust (needs path patterns +
+  `statfs`); the FE overlays the provider-specific suggestion. Adding a `Provider` variant also requires updating the
+  FE `provider-error-messages.ts` table AND the `volumes/CLAUDE.md` provider table.
+- **`raw_detail` is plain text, never markdown** (errno name + code, or the git kind token). It's rendered verbatim in
+  the technical-details disclosure, not through snarkdown.
 
-## Adding error messages or providers
+## Adding a new error message
 
-Step-by-step recipes (new errno/`VolumeError` arm; new provider) and the provider-detection strategy table live in
-DETAILS.md § Adding a new error message and § Adding a new provider.
+Recipe (Rust side; FE side is in [`src/lib/errors/CLAUDE.md`](../../../../../src/lib/errors/CLAUDE.md)): add the
+`ListingErrorReason` variant (with its typed params), add the map arm in `errno.rs` / `volume_error.rs` / `kinds.rs`
+choosing the `category`/`retry_hint`/`action_kind`, and add a typed-mapping test in `mod.rs`. Full recipe + the
+provider-detection strategy table: [DETAILS.md](DETAILS.md).
 
 Full details: [DETAILS.md](DETAILS.md).

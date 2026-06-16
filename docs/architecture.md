@@ -27,6 +27,9 @@ All under `apps/desktop/src/lib/`.
 - `file-explorer/quick-look/`: Frontend Quick Look (Shift+Space) trigger and keyboard plumbing
 - `file-operations/`: Umbrella over `transfer/`, `delete/`, `mkdir/`, `mkfile/` dialogs (shared progress dialog) plus
   `scan-throughput.ts`
+- `errors/`: The user-facing error WORDS (titles, explanations, provider suggestions) for the listing/git/empty-root
+  paths, rendered from the typed `ListingError` Rust ships; plus the markdown escaper (the XSS boundary). Canonical home
+  of error copy
 - `file-operations/transfer/`: Copy + move dialogs, progress dialog (reused by delete/trash), error rendering,
   scan-phase body
 - `file-operations/delete/`: F8 / Shift+F8 delete + trash confirmation dialog and pure utilities
@@ -101,10 +104,11 @@ All under `apps/desktop/src-tauri/src/`.
   capability matrix for new backends
 - `file_system/volume/backends/`: Per-backend `Volume` impls: `LocalPosixVolume`, `MtpVolume`, `SmbVolume` (+
   `SmbWatcher`), `InMemoryVolume`
-- `file_system/volume/friendly_error/`: `FriendlyError`, `ErrorCategory`, errno mapping (~36 codes), provider detection
-  (19 providers), the `md!` macro
+- `file_system/volume/friendly_error/`: typed, word-free error CLASSIFICATION (`ListingError` / `ListingErrorReason`,
+  `ErrorCategory`, errno → reason mapping, provider detection over 18 providers). The user-facing WORDS live on the FE
+  (`src/lib/errors/`)
 - `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
-  hooks, FriendlyError integration
+  hooks, typed git-error classification (`FriendlyGitErrorKind`)
 - `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
 - `network/`: SMB: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting, Keychain
 - `clipboard/`: File clipboard (Cmd+C/X/V) with NSPasteboard interop; tracks cut state and validates at paste

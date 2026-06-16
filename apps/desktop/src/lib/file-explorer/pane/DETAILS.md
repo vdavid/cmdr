@@ -316,8 +316,8 @@ prop into `FullList` / `BriefList` so the drag-start sites can stamp the source 
 architecture in [`../drag/CLAUDE.md`](../drag/CLAUDE.md) § "Self-drag identity".
 
 **Dialog state lifecycle.** `dialog-state.svelte.ts` exposes one factory per `DualPaneExplorer`. Handlers like
-`handleTransferError(error, friendly?)` accept the typed `WriteOperationError` plus the optional `FriendlyError` from
-the backend `write-error` event so the rendered dialog can prefer the backend copy. The factory pattern keeps the giant
+`handleTransferError(error)` accept the typed `WriteOperationError` from the backend `write-error` event; the dialog
+renders the copy on the FE from that typed error (`transfer-error-messages.ts`). The factory pattern keeps the giant
 component testable: pass deps in, get back a struct of state + handlers.
 
 **Live disk space.** `FilePane` registers each pane independently with the backend space poller (`watchVolumeSpace`

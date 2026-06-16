@@ -13,8 +13,8 @@ Backend module for the git browser. Provides:
   Branches/tags/commits/stash browse a commit tree; worktrees/submodules surface `redirectToPath` so the frontend opens
   the working dir directly.
 - A live toggle for the portal so `cd .git` can fall through to raw on-disk contents.
-- FriendlyError integration end-to-end so every git failure reaches `ErrorPane` with a warm title + explanation +
-  suggestion.
+- Typed git-error classification end-to-end: every git failure reaches `ErrorPane` as a typed `FriendlyGitErrorKind`,
+  which the frontend renders into a warm title + explanation + suggestion (`src/lib/errors/git-error-messages.ts`).
 
 **The portal root listing mixes real `.git/*` entries (HEAD, config, hooks/, objects/, refs/, …) with the six virtual
 categories so the user sees everything in one place.**
@@ -34,7 +34,7 @@ categories so the user sees everything in one place.**
 - **`read_blob.rs`**: `GitBlobReadStream` – owns the full `Vec<u8>` and yields 256 KB chunks. See *Honest blob streaming* below
 - **`status.rs`**: `list_status(repo, dir)` runs a full-repo gix status walk once per `.git/index` mtime, caches the result in a process-global `RwLock<HashMap<RepoRoot, CachedStatus>>`, and slices it by `dir`. Uses `gix::Repository::status().into_iter()` which emits `TreeIndex` items (staged changes) and `IndexWorktree` items (worktree changes). The watcher invalidates the snapshot whenever `.git/*` changes.
 - **`watcher.rs`**: `GitWatcherRegistry` – per-repo notify-rs debouncer. `subscribe(app, root)` returns the current `RepoInfo` synchronously and emits `git-state-changed` on relevant `.git/*` mutations. 200 ms debounce. Also calls `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listings on the local volume
-- **`friendly.rs`**: `FriendlyGitError`, `FriendlyGitErrorKind` – ten variants including `BlobTooLarge`, `ShallowBoundary`, `MissingObject`, `GitDirPermissionDenied`. Active-voice copy, no "error" / "failed". `to_friendly_error()` builds a `volume::FriendlyError` for `ErrorPane`. The volume hooks wrap a `FriendlyGitError` directly inside the typed `VolumeError::FriendlyGit` variant so the streaming pipeline carries the structured payload end-to-end without string parsing
+- **`friendly.rs`**: `FriendlyGitError`, `FriendlyGitErrorKind` – ten variants including `BlobTooLarge`, `ShallowBoundary`, `MissingObject`, `GitDirPermissionDenied`. Word-free classification only: `kind.category()` maps each variant to an `ErrorCategory`, `raw_detail()` builds the technical-details string (kind token + path/raw). The user-facing copy lives on the frontend (`src/lib/errors/git-error-messages.ts`); the writing-rules checks moved there too (`friendly-error-style.test.ts`, every kind × rendered output). The volume hooks wrap a `FriendlyGitError` directly inside the typed `VolumeError::FriendlyGit` variant so the streaming pipeline carries the structured payload end-to-end without string parsing; the listing classifier ships the kind as the `Git` reason
 - **`column_meta.rs`**: Per-row column-population helpers shared across `virtual_listing`, `log`, `tree`, etc.: `ahead_behind_for_branch`, `commit_meta`, `files_changed_count`, `recursive_tree_size`, plus newest-of-set helpers for category-level Modified dates (count + noun formatting goes through `crate::pluralize`)
 - **`tests.rs`**: Discover, repo_info, status, friendly errors
 - **`portal_tests.rs`**: Classify, list_branches/tags/root, list_tree, blob-read parity with `git show`, cross-volume copy round-trip
@@ -199,10 +199,10 @@ inside the host's `.git`).
 
 **Decision**: Typed `VolumeError::FriendlyGit(FriendlyGitError)` variant
 **Why**: The volume hooks return `Result<_, VolumeError>` and the
-streaming pipeline calls `friendly_error_from_volume_error` to compute
+streaming pipeline calls `listing_error_from_volume_error` to compute
 the `ErrorPane` payload. We carry the structured payload through a
 typed enum variant so the path from "git layer detected something" to
-"frontend renders FriendlyError pane" is type-checked end-to-end. Don't
+"frontend renders the git error pane" is type-checked end-to-end. Don't
 revert to stuffing a sentinel-tagged string into `VolumeError::IoError::message`
 and parsing it in the friendly mapper – that's string-shaped data inside a
 typed enum, a maintenance hazard, and violates the no-error-string-match rule.

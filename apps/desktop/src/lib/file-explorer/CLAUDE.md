@@ -35,7 +35,9 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
   flips volume between `listing-start` and `listing-complete`. Both mechanisms live in `pane/navigate.ts`; if you add a
   virtual-volume namespace with a non-filesystem prefix, extend the explicit prefix branch in `commitPathFromListing`.
   Full contract in [DETAILS.md](DETAILS.md) § Gotchas and [`pane/CLAUDE.md`](pane/CLAUDE.md).
-- **Error/provider wording lives in Rust** (`file_system/volume/friendly_error.rs`), not in `ErrorPane.svelte`. The
-  frontend renders the `FriendlyError` struct it's handed; to change wording or add a state/provider, edit the Rust.
+- **Error/provider WORDS live on the FE** (`$lib/errors/`), error CLASSIFICATION in Rust. Rust ships a typed, word-free
+  `ListingError` (reason + params + category + provider); the FE factories render the copy. To change wording, edit
+  `$lib/errors/` (and keep the parity test green); to add a reason/provider, change both sides. See
+  [`$lib/errors/CLAUDE.md`](../errors/CLAUDE.md).
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

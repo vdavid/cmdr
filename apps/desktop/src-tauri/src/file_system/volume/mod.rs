@@ -267,11 +267,11 @@ pub enum VolumeError {
     /// Structured git-layer failure.
     ///
     /// Carries the full `FriendlyGitError` (kind + path + optional raw detail)
-    /// so the listing pipeline's `friendly_error_from_volume_error` can hand
-    /// `ErrorPane` a fully-shaped `FriendlyError` (title, explanation,
-    /// suggestion, category) without parsing strings. Built by the volume
-    /// hooks in `file_system::git::mod` (`try_route_listing`,
-    /// `try_route_metadata`, `try_open_blob_stream`).
+    /// so the listing pipeline's `listing_error_from_volume_error` ships the
+    /// typed git kind to `ErrorPane` as the `Git` reason (category from the
+    /// kind, no baked prose) without parsing strings; the FE renders the
+    /// git-specific copy. Built by the volume hooks in `file_system::git::mod`
+    /// (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`).
     FriendlyGit(crate::file_system::git::friendly::FriendlyGitError),
 }
 
