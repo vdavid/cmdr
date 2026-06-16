@@ -285,13 +285,10 @@ pub(super) async fn move_volumes_with_progress(
     };
 
     // Per-source state shared with the driver's closures via interior
-    // mutability. The transfer closure captures the originating
-    // `(VolumeError, path)` on error so the post-loop branch can rebuild a
-    // provider-enriched `FriendlyError`. The conflict resolver's
-    // apply-to-all latch lives in a cell so the closure stays `Fn`-shaped
-    // (the driver's `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send +
-    // 'a>>` bound rejects `&mut` captures of outer-fn locals).
-    let failure_ctx_cell: Arc<std::sync::Mutex<Option<(VolumeError, PathBuf)>>> = Arc::new(std::sync::Mutex::new(None));
+    // mutability. The conflict resolver's apply-to-all latch lives in a cell so
+    // the closure stays `Fn`-shaped (the driver's `for<'a> FnMut(...) ->
+    // Pin<Box<dyn Future + Send + 'a>>` bound rejects `&mut` captures of
+    // outer-fn locals).
     let apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>> = Arc::new(std::sync::Mutex::new(ApplyToAll::default()));
 
     // Closure captures: `config` and `operation_id` clone cheaply; `events`
@@ -405,7 +402,6 @@ pub(super) async fn move_volumes_with_progress(
             let progress_interval = state.progress_interval;
             let state = Arc::clone(state);
             let events = Arc::clone(&events);
-            let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
             let source_hints = Arc::clone(&source_hints);
             let operation_id = operation_id_owned.clone();
             let config_for_merge = config_owned.clone();
@@ -416,7 +412,6 @@ pub(super) async fn move_volumes_with_progress(
                 let dest_volume = Arc::clone(&dest_volume);
                 let state = Arc::clone(&state);
                 let events = Arc::clone(&events);
-                let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
                 let source_hints = Arc::clone(&source_hints);
                 let operation_id = operation_id.clone();
                 let config_for_merge = config_for_merge.clone();
@@ -500,9 +495,7 @@ pub(super) async fn move_volumes_with_progress(
                                 dest_item_path.display(),
                                 e
                             );
-                            let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
-                            *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
-                            return Err(mapped);
+                            return Err(map_volume_error(&source_path.display().to_string(), e));
                         }
                     };
 
@@ -524,9 +517,7 @@ pub(super) async fn move_volumes_with_progress(
                                 source_path.display(),
                                 e
                             );
-                            let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
-                            *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
-                            return Err(mapped);
+                            return Err(map_volume_error(&source_path.display().to_string(), e));
                         }
 
                     // Delete source. `Volume::delete` is contractually for
@@ -546,9 +537,7 @@ pub(super) async fn move_volumes_with_progress(
                             source_path.display(),
                             e
                         );
-                        let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
-                        *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
-                        return Err(mapped);
+                        return Err(map_volume_error(&source_path.display().to_string(), e));
                     }
 
                     // Per-file milestone emit (bumped `files_done = N`,
@@ -564,7 +553,6 @@ pub(super) async fn move_volumes_with_progress(
     )
     .await;
 
-    let copy_failure_ctx: Option<(VolumeError, PathBuf)> = failure_ctx_cell.lock_ignore_poison().take();
     let files_done = outcome.files_done;
     let bytes_done = outcome.bytes_done;
     let files_skipped = outcome.files_skipped;
@@ -604,18 +592,8 @@ pub(super) async fn move_volumes_with_progress(
             }))
         }
         PostLoopIntent::Failed(err) => {
-            // Rebuild a `WriteFailure` with volume context if the transfer
-            // closure populated it (so the FE gets a provider-enriched
-            // `FriendlyError`); otherwise fall back to synthetic
-            // (conflict-resolution errors and other non-`VolumeError`
-            // paths).
-            Err(match copy_failure_ctx {
-                Some((volume_err, path)) => WriteFailure {
-                    error: err,
-                    volume_ctx: Some((volume_err, path)),
-                },
-                None => WriteFailure::synthetic(err),
-            })
+            // `err` is already the typed `WriteOperationError` the FE renders from.
+            Err(WriteFailure::synthetic(err))
         }
     }
 }

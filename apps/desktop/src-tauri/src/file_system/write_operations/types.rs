@@ -155,12 +155,10 @@ pub struct WriteCompleteEvent {
 
 /// Error event payload.
 ///
-/// `error` is the typed variant for programmatic FE handling and tests; `friendly`
-/// is the rendered user-facing copy (title + explanation + suggestion + category)
-/// produced by the same `friendly_error_from_volume_error` + `enrich_with_provider`
-/// pipeline the listing-error path uses. When `friendly` is `None`, the FE falls
-/// back to variant-based messages (`transfer-error-messages.ts`). That branch
-/// stays in place for local-FS error paths that bypass `VolumeError`.
+/// `error` is the typed `WriteOperationError` variant. The FE renders all
+/// user-facing copy (title, explanation, suggestion) plus the category/retry
+/// classification from this typed variant via `transfer-error-messages.ts`.
+/// No rendered prose crosses IPC.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 #[tauri_specta(event_name = "write-error")]
@@ -168,8 +166,6 @@ pub struct WriteErrorEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
     pub error: WriteOperationError,
-    #[serde(default)]
-    pub friendly: Option<crate::file_system::volume::friendly_error::FriendlyError>,
 }
 
 /// Emitted when all files belonging to a top-level source item have been processed.

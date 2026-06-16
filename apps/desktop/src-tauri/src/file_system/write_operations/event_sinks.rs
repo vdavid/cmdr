@@ -6,7 +6,6 @@
 //! provides `TauriEventSink` (calls `app.emit`), tests use `CollectorEventSink`
 //! (stores events in a `Vec` for assertions).
 
-use std::path::Path;
 use tauri_specta::Event;
 
 #[cfg(test)]
@@ -82,47 +81,14 @@ impl WriteProgressEvent {
 }
 
 impl WriteErrorEvent {
-    /// Construct a `WriteErrorEvent`, automatically deriving the `FriendlyError`
-    /// payload from the typed `error` variant via `friendly_from_write_error`.
-    /// Every emit site goes through here by default, so every `write-error` event
-    /// the FE receives carries a `friendly` payload it can render directly.
+    /// Construct a `WriteErrorEvent` from the typed `error`. The FE renders all
+    /// user-facing copy and the category/retry classification from the typed
+    /// variant; no rendered prose crosses IPC.
     pub fn new(operation_id: String, operation_type: WriteOperationType, error: WriteOperationError) -> Self {
-        let friendly = Some(crate::file_system::volume::friendly_error::friendly_from_write_error(
-            &error,
-        ));
         Self {
             operation_id,
             operation_type,
             error,
-            friendly,
-        }
-    }
-
-    /// Construct a `WriteErrorEvent` with the `FriendlyError` derived from the
-    /// originating `VolumeError + path` via the richer
-    /// `friendly_error_from_volume_error` + `enrich_with_provider` pipeline (the
-    /// same one the listing-error path uses). Picks up provider-specific
-    /// suggestions like "This folder is managed by **MacDroid**…" that the
-    /// `WriteOperationError`-shaped `friendly_from_write_error` can't reach.
-    ///
-    /// Use this from volume-aware emit paths that still have the original
-    /// `VolumeError + path` in scope (`volume_move`, `volume_copy`). When that
-    /// context isn't available, fall back to `new`.
-    pub fn with_friendly(
-        operation_id: String,
-        operation_type: WriteOperationType,
-        error: WriteOperationError,
-        volume_error: &crate::file_system::volume::VolumeError,
-        path: &Path,
-    ) -> Self {
-        use crate::file_system::volume::friendly_error::{enrich_with_provider, friendly_error_from_volume_error};
-        let mut friendly = friendly_error_from_volume_error(volume_error, path);
-        enrich_with_provider(&mut friendly, path);
-        Self {
-            operation_id,
-            operation_type,
-            error,
-            friendly: Some(friendly),
         }
     }
 }

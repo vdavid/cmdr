@@ -1,13 +1,14 @@
 //! Friendly error mapping: turns raw errors + path into user-facing error info.
 //!
-//! Three sources produce a `FriendlyError`, each in its own sibling module:
+//! Sources that produce a `FriendlyError`, each in its own sibling module:
 //! - `volume_error`: `VolumeError` (used by listing-error path; richest, dispatches to errno on raw
 //!   `IoError`)
-//! - `write_error`: `WriteOperationError` (used by `write-error` events; mirror of `volume_error`
-//!   for the post-`map_volume_error` shape)
 //! - `errno`: raw macOS errnos with a non-macOS fallback (called from `volume_error` when an
 //!   `IoError` carries a `raw_os_error`)
 //! - `empty_root`: TCC-restricted volume root hint (a single special case)
+//!
+//! The write-error path (`write-error` events) ships only the typed
+//! `WriteOperationError`; the frontend renders its copy and classification.
 //!
 //! `enrich_with_provider` (in submodule `provider`) layers provider-specific
 //! suggestions on top: that's the second pass that turns "Couldn't read this
@@ -19,7 +20,6 @@ mod kinds;
 mod markdown;
 mod provider;
 mod volume_error;
-mod write_error;
 
 use serde::{Deserialize, Serialize};
 
@@ -28,7 +28,6 @@ use serde::{Deserialize, Serialize};
 pub use empty_root::friendly_error_for_restricted_empty_root;
 pub use markdown::{Markdown, MarkdownArg};
 pub use volume_error::friendly_error_from_volume_error;
-pub use write_error::friendly_from_write_error;
 
 pub use provider::enrich_with_provider;
 
@@ -116,8 +115,7 @@ mod tests {
         // ── Every macOS errno arm ──
         for errno in [
             4, 12, 16, 35, 50, 52, 53, 54, 60, 64, 70, 77, 89, // transient
-            1, 2, 13, 17, 18, 20, 21, 28, 30, 45, 51, 61, 62, 63, 65, 66, 69, 80, 81, 82,
-            93, // needs-action
+            1, 2, 13, 17, 18, 20, 21, 28, 30, 45, 51, 61, 62, 63, 65, 66, 69, 80, 81, 82, 93, // needs-action
             5, 22, 83,   // serious
             9999, // unknown
         ] {
@@ -133,7 +131,11 @@ mod tests {
         let plain_path = Path::new("/some/plain/folder/_x_*y");
         let typed: Vec<(&str, VolumeError, &Path)> = vec![
             ("NotFound", VolumeError::NotFound("x".into()), path),
-            ("PermissionDenied:plain", VolumeError::PermissionDenied("x".into()), plain_path),
+            (
+                "PermissionDenied:plain",
+                VolumeError::PermissionDenied("x".into()),
+                plain_path,
+            ),
             ("PermissionDenied:tcc", VolumeError::PermissionDenied("x".into()), path),
             ("AlreadyExists", VolumeError::AlreadyExists("x".into()), path),
             ("NotSupported", VolumeError::NotSupported, path),

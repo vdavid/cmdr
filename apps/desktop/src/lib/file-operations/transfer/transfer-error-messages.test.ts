@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getUserFriendlyMessage, getTechnicalDetails } from './transfer-error-messages'
+import { getUserFriendlyMessage, getTechnicalDetails, getErrorDisplayMeta } from './transfer-error-messages'
 import type { WriteOperationError } from '$lib/file-explorer/types'
 
 // Mock navigator to control isMacOS() behavior
@@ -513,4 +513,46 @@ describe('error messages are volume-agnostic', () => {
       expect(allText).not.toContain('smb')
     }
   })
+})
+
+describe('getErrorDisplayMeta', () => {
+  // Mirrors the category + retryHint the Rust `friendly_from_write_error` mapper
+  // assigned per `WriteOperationError` variant (now derived on the FE).
+  const cases: Array<{ error: WriteOperationError; category: string; retryHint: boolean }> = [
+    { error: { type: 'source_not_found', path: '/p' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'same_location', path: '/p' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'destination_exists', path: '/p' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'permission_denied', path: '/p', message: 'm' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'cancelled', message: 'm' }, category: 'transient', retryHint: true },
+    { error: { type: 'device_disconnected', path: '/p' }, category: 'needs_action', retryHint: true },
+    { error: { type: 'connection_interrupted', path: '/p' }, category: 'transient', retryHint: true },
+    {
+      error: { type: 'insufficient_space', required: 1, available: 0, volumeName: null },
+      category: 'needs_action',
+      retryHint: false,
+    },
+    {
+      error: { type: 'destination_inside_source', source: '/a', destination: '/a/b' },
+      category: 'needs_action',
+      retryHint: false,
+    },
+    { error: { type: 'symlink_loop', path: '/p' }, category: 'serious', retryHint: false },
+    { error: { type: 'read_only_device', path: '/p', deviceName: null }, category: 'needs_action', retryHint: false },
+    { error: { type: 'file_locked', path: '/p' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'trash_not_supported', path: '/p' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'read_error', path: '/p', message: 'm' }, category: 'serious', retryHint: true },
+    { error: { type: 'write_error', path: '/p', message: 'm' }, category: 'serious', retryHint: true },
+    { error: { type: 'name_too_long', path: '/p' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'invalid_name', path: '/p', message: 'm' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'delete_pending', path: '/p' }, category: 'transient', retryHint: true },
+    { error: { type: 'io_error', path: '/p', message: 'm' }, category: 'serious', retryHint: true },
+  ]
+
+  for (const { error, category, retryHint } of cases) {
+    it(`maps ${error.type} → ${category}, retryHint=${String(retryHint)}`, () => {
+      const meta = getErrorDisplayMeta(error)
+      expect(meta.category).toBe(category)
+      expect(meta.retryHint).toBe(retryHint)
+    })
+  }
 })

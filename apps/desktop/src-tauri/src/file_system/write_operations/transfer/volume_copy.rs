@@ -1163,8 +1163,6 @@ pub(crate) async fn copy_volumes_with_progress(
         // `AsyncFnMut` semantics; the driver bounds the closures as plain
         // `FnMut` returning `Pin<Box<dyn Future + Send>>`).
         let last_dest_cell: Arc<std::sync::Mutex<Option<PathBuf>>> = Arc::new(std::sync::Mutex::new(None));
-        let failure_ctx_cell: Arc<std::sync::Mutex<Option<(VolumeError, PathBuf)>>> =
-            Arc::new(std::sync::Mutex::new(None));
         // Reuse the op-wide latch cell created above; the serial driver and the
         // deep merge share it so a "…all" choice propagates across both.
         let apply_to_all_cell = Arc::clone(&apply_to_all_cell);
@@ -1291,7 +1289,6 @@ pub(crate) async fn copy_volumes_with_progress(
                 let state = Arc::clone(state);
                 let events = Arc::clone(&events);
                 let last_dest_cell = Arc::clone(&last_dest_cell);
-                let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
                 let copied_paths = Arc::clone(&copied_paths_for_closure);
                 let created_dirs = Arc::clone(&created_dirs_for_closure);
                 let source_hints = Arc::clone(&source_hints_arc);
@@ -1304,7 +1301,6 @@ pub(crate) async fn copy_volumes_with_progress(
                     let state = Arc::clone(&state);
                     let events = Arc::clone(&events);
                     let last_dest_cell = Arc::clone(&last_dest_cell);
-                    let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
                     let copied_paths = Arc::clone(&copied_paths);
                     let created_dirs = Arc::clone(&created_dirs);
                     let source_hints = Arc::clone(&source_hints);
@@ -1409,10 +1405,7 @@ pub(crate) async fn copy_volumes_with_progress(
                                         )
                                         .await
                                         {
-                                            let mapped =
-                                                map_volume_error(&source_path.display().to_string(), e.clone());
-                                            *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
-                                            return Err(mapped);
+                                            return Err(map_volume_error(&source_path.display().to_string(), e));
                                         }
                                         orig
                                     }
@@ -1462,9 +1455,7 @@ pub(crate) async fn copy_volumes_with_progress(
                                     copied_paths.lock_ignore_poison().extend(files);
                                     created_dirs.lock_ignore_poison().extend(dirs);
                                 }
-                                let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
-                                *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
-                                Err(mapped)
+                                Err(map_volume_error(&source_path.display().to_string(), e))
                             }
                         }
                     })
@@ -1488,7 +1479,6 @@ pub(crate) async fn copy_volumes_with_progress(
         if let Some(p) = last_dest_cell.lock_ignore_poison().take() {
             last_dest_path = Some(p);
         }
-        let copy_failure_ctx: Option<(VolumeError, PathBuf)> = failure_ctx_cell.lock_ignore_poison().take();
         let _ = source_hints_arc;
 
         files_done = outcome.files_done;
@@ -1502,18 +1492,8 @@ pub(crate) async fn copy_volumes_with_progress(
                 // and off `copy_error.is_none()` for the success arm.
             }
             PostLoopIntent::Failed(err) => {
-                // Rebuild a `WriteFailure` with volume context if the
-                // `copy_single_path` arm populated it (so the FE gets a
-                // provider-enriched `FriendlyError`); otherwise fall back to
-                // synthetic (conflict-resolution errors, which don't carry
-                // a `VolumeError`).
-                copy_error = Some(match copy_failure_ctx {
-                    Some((volume_err, path)) => WriteFailure {
-                        error: err,
-                        volume_ctx: Some((volume_err, path)),
-                    },
-                    None => WriteFailure::synthetic(err),
-                });
+                // `err` is already the typed `WriteOperationError` the FE renders from.
+                copy_error = Some(WriteFailure::synthetic(err));
             }
         }
     }
@@ -1858,67 +1838,48 @@ pub(super) async fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path:
     volume.delete(path).await
 }
 
-/// A write-operation failure carrying the typed `WriteOperationError` for FE rendering plus,
-/// when available, the originating `(VolumeError, path)` so the outer emit can build a
-/// provider-enriched `FriendlyError` via `WriteErrorEvent::with_friendly`. `volume_ctx` is
-/// `None` for failures that didn't start as a `VolumeError` (cancellation, validation,
-/// synthetic IoError).
+/// A write-operation failure carrying the typed `WriteOperationError` the FE renders
+/// from. The two volume-aware constructors map an originating `VolumeError + path`
+/// into the typed error; `synthetic` wraps an already-typed error (cancellation,
+/// validation, synthetic IoError).
 #[derive(Debug, Clone)]
 pub(crate) struct WriteFailure {
     pub error: WriteOperationError,
-    pub volume_ctx: Option<(VolumeError, PathBuf)>,
 }
 
 impl WriteFailure {
-    /// Construct a `WriteFailure` from an originating `VolumeError + path`. Maps the error
-    /// to a `WriteOperationError` and retains the volume context for friendly rendering.
-    /// One spot to clone, one spot to map, replacing the per-call-site `e.clone()` boilerplate.
+    /// Construct a `WriteFailure` from an originating `VolumeError + path`, mapping it
+    /// to a `WriteOperationError`. One spot to map, replacing per-call-site boilerplate.
     pub(super) fn from_volume(path: &Path, e: VolumeError) -> Self {
-        let error = map_volume_error(&path.display().to_string(), e.clone());
-        Self {
-            error,
-            volume_ctx: Some((e, path.to_path_buf())),
-        }
+        let error = map_volume_error(&path.display().to_string(), e);
+        Self { error }
     }
 
     /// Construct a `WriteFailure` from a synthetic `WriteOperationError` (no volume
-    /// context. Used for cancellation, validation errors, etc.
+    /// context). Used for cancellation, validation errors, etc.
     pub(super) fn synthetic(error: WriteOperationError) -> Self {
-        Self {
-            error,
-            volume_ctx: None,
-        }
+        Self { error }
     }
 }
 
-/// Convenience: take a captured `(VolumeError, PathBuf)` and build the `WriteFailure` from
-/// it. Used inside loops where we cloned the path for logging and want to surface the
-/// volume context out alongside the typed write error.
+/// Convenience: take a captured `(VolumeError, PathBuf)` and build the `WriteFailure`
+/// from it. Used inside loops where we cloned the path for logging.
 impl From<(VolumeError, PathBuf)> for WriteFailure {
     fn from(ctx: (VolumeError, PathBuf)) -> Self {
         let (volume_error, path) = ctx;
-        let error = map_volume_error(&path.display().to_string(), volume_error.clone());
-        Self {
-            error,
-            volume_ctx: Some((volume_error, path)),
-        }
+        let error = map_volume_error(&path.display().to_string(), volume_error);
+        Self { error }
     }
 }
 
-/// Builds a `WriteErrorEvent` from a `WriteFailure`. When the failure carries the originating
-/// `VolumeError + path`, uses `with_friendly` for provider-enriched suggestions; otherwise
-/// falls back to the variant-derived `new`. Shared by `volume_move` and `volume_copy`.
+/// Builds a `WriteErrorEvent` from a `WriteFailure`. The FE renders all copy and
+/// classification from the typed `error`. Shared by `volume_move` and `volume_copy`.
 pub(super) fn write_error_event_from(
     operation_id: String,
     operation_type: WriteOperationType,
     failure: WriteFailure,
 ) -> WriteErrorEvent {
-    match failure.volume_ctx {
-        Some((volume_error, path)) => {
-            WriteErrorEvent::with_friendly(operation_id, operation_type, failure.error, &volume_error, &path)
-        }
-        None => WriteErrorEvent::new(operation_id, operation_type, failure.error),
-    }
+    WriteErrorEvent::new(operation_id, operation_type, failure.error)
 }
 
 /// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks

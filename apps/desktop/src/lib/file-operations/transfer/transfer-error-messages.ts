@@ -7,7 +7,7 @@
  * No string parsing needed.
  */
 
-import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
+import type { WriteOperationError, TransferOperationType, FriendlyError } from '$lib/file-explorer/types'
 import { formatBytes } from '$lib/tauri-commands'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
@@ -119,6 +119,49 @@ const simpleMessageFactories: Partial<
   }),
 }
 
+/** Drives the dialog's icon, container tint, and Retry-button visibility. */
+export interface ErrorDisplayMeta {
+  category: FriendlyError['category']
+  retryHint: boolean
+}
+
+/**
+ * Per-variant category + retryHint, mirrored verbatim from the values the Rust
+ * write-error mapper assigned per `WriteOperationError` variant. The backend
+ * ships only the typed variant; this is the FE side of that classification. The
+ * dialog renders a Retry button when the category is `transient` or `retryHint`
+ * is true. A `Record` keyed by every variant makes adding a variant a compile
+ * error here, keeping the table exhaustive.
+ *
+ * `device_disconnected` keeps `retryHint: true` for the operation dialog (retry
+ * the move/copy after reconnecting), unlike the listing path which shows no Retry.
+ */
+const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta> = {
+  cancelled: { category: 'transient', retryHint: true },
+  connection_interrupted: { category: 'transient', retryHint: true },
+  delete_pending: { category: 'transient', retryHint: true },
+  device_disconnected: { category: 'needs_action', retryHint: true },
+  read_error: { category: 'serious', retryHint: true },
+  write_error: { category: 'serious', retryHint: true },
+  io_error: { category: 'serious', retryHint: true },
+  symlink_loop: { category: 'serious', retryHint: false },
+  source_not_found: { category: 'needs_action', retryHint: false },
+  same_location: { category: 'needs_action', retryHint: false },
+  destination_exists: { category: 'needs_action', retryHint: false },
+  permission_denied: { category: 'needs_action', retryHint: false },
+  insufficient_space: { category: 'needs_action', retryHint: false },
+  destination_inside_source: { category: 'needs_action', retryHint: false },
+  read_only_device: { category: 'needs_action', retryHint: false },
+  file_locked: { category: 'needs_action', retryHint: false },
+  trash_not_supported: { category: 'needs_action', retryHint: false },
+  name_too_long: { category: 'needs_action', retryHint: false },
+  invalid_name: { category: 'needs_action', retryHint: false },
+}
+
+export function getErrorDisplayMeta(error: WriteOperationError): ErrorDisplayMeta {
+  return errorDisplayMetaMap[error.type]
+}
+
 /**
  * Returns a user-friendly message for a transfer operation error.
  * Volume-agnostic: doesn't mention MTP, SMB, etc. directly.
@@ -176,7 +219,7 @@ export function getUserFriendlyMessage(
       return {
         title: 'File is being removed',
         message:
-          "This file is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.",
+          'This file is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.',
         suggestion:
           'Wait a moment and try again. Once the last handle closes, the file disappears. If it sticks around, close any other apps that might have it open.',
       }

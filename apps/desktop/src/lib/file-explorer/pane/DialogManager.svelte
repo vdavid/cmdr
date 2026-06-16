@@ -180,7 +180,6 @@
     <TransferErrorDialog
         operationType={transferErrorProps.operationType}
         error={transferErrorProps.error}
-        friendlyError={transferErrorProps.friendly}
         onClose={onTransferErrorClose}
     />
 {/if}

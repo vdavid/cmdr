@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { WriteOperationError, TransferOperationType, FriendlyError } from '$lib/file-explorer/types'
-    import { getUserFriendlyMessage, getTechnicalDetails } from './transfer-error-messages'
-    import FriendlyErrorContent from './FriendlyErrorContent.svelte'
+    import { getUserFriendlyMessage, getTechnicalDetails, getErrorDisplayMeta } from './transfer-error-messages'
     import FallbackErrorContent from './FallbackErrorContent.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -10,24 +9,23 @@
     interface Props {
         operationType: TransferOperationType
         error: WriteOperationError
-        /** Backend-supplied friendly error info; preferred over the FE-derived copy when present. */
-        friendlyError?: FriendlyError
         onClose: () => void
         onRetry?: () => void
     }
 
-    const { operationType, error, friendlyError, onClose, onRetry }: Props = $props()
+    const { operationType, error, onClose, onRetry }: Props = $props()
 
     let showDetails = $state(false)
 
-    /** Title: backend-supplied friendly title preferred, FE-derived fallback otherwise. */
-    const titleText = $derived(friendlyError?.title ?? getUserFriendlyMessage(error, operationType).title)
+    /** Title, explanation, and suggestion all come from the typed error. */
+    const titleText = $derived(getUserFriendlyMessage(error, operationType).title)
 
-    /** Category drives icon and container colors. Fallback path is always treated as `serious`. */
-    const category = $derived<FriendlyError['category']>(friendlyError?.category ?? 'serious')
+    /** Category (tint + icon) and Retry visibility derive from the typed error. */
+    const displayMeta = $derived(getErrorDisplayMeta(error))
+    const category = $derived<FriendlyError['category']>(displayMeta.category)
 
     /** Retry button visibility: transient kinds always offer retry, others gated on explicit retryHint. */
-    const showRetry = $derived(onRetry !== undefined && (category === 'transient' || friendlyError?.retryHint === true))
+    const showRetry = $derived(onRetry !== undefined && (category === 'transient' || displayMeta.retryHint))
 
     /** Container styling per category. */
     const containerStyle = $derived(
@@ -38,7 +36,7 @@
               : 'width: 420px; max-width: 90vw; background: var(--color-bg-secondary); border-color: var(--color-border-strong)',
     )
 
-    const technicalDetails = $derived(friendlyError?.rawDetail ?? getTechnicalDetails(error))
+    const technicalDetails = $derived(getTechnicalDetails(error))
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
@@ -81,11 +79,7 @@
         </span>
     {/snippet}
 
-    {#if friendlyError}
-        <FriendlyErrorContent friendly={friendlyError} />
-    {:else}
-        <FallbackErrorContent {error} {operationType} />
-    {/if}
+    <FallbackErrorContent {error} {operationType} />
 
     <!-- Technical details (collapsible) -->
     <div class="details-section">

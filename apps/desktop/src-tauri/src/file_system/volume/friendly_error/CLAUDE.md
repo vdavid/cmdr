@@ -12,9 +12,8 @@ Parent: [`volume/CLAUDE.md`](../CLAUDE.md) (trait + manager + capability matrix)
 - `mod.rs`: `FriendlyError`, `ErrorCategory`, `ErrorActionKind` data model + public re-exports.
 - `errno.rs`: raw macOS errno → `FriendlyError` (37 codes), non-macOS fallback.
 - `volume_error.rs`: `VolumeError` → `FriendlyError` (dispatches to `errno` for raw `IoError`s).
-- `write_error.rs`: `WriteOperationError` → `FriendlyError` (post-`map_volume_error` mirror of `volume_error`).
 - `empty_root.rs`: TCC-restricted volume-root hint (single special case).
-- `kinds.rs`: shared failure classification used by both `volume_error` and `write_error`.
+- `kinds.rs`: shared failure classification used by `volume_error`.
 - `markdown.rs`: `Markdown` newtype + `md!` macro (escapes interpolated runtime strings before snarkdown).
 - `provider.rs`: `Provider` enum (18 variants), `detect_provider()`, `provider_suggestion()`, `enrich_with_provider()`.
 

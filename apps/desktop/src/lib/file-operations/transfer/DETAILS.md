@@ -20,12 +20,10 @@ and gotchas live in [CLAUDE.md](CLAUDE.md).
   already-here checks) and `formatSpaceInfo()` (free-of-total line, byte formatter injected). No reactivity, no IPC
 - **`TransferProgressDialog.svelte`**: Execution: dual progress bars, cancel/rollback, conflict dialog, scan-phase body,
   terminal-event handling
-- **`TransferErrorDialog.svelte`**: Modal that renders backend `FriendlyError` or FE fallback, category-colored
+- **`TransferErrorDialog.svelte`**: Modal that renders entirely from the typed `WriteOperationError`, category-colored
   container, optional Retry button
-- **`FriendlyErrorContent.svelte`**: Renders `friendly.explanation` + `friendly.suggestion` markdown; click delegate for
-  `x-apple.systempreferences:` / http(s) URLs
-- **`FallbackErrorContent.svelte`**: Renders the FE-derived message when no backend `FriendlyError` is attached to the
-  `WriteErrorEvent`
+- **`FallbackErrorContent.svelte`**: Renders the FE-derived message (`getUserFriendlyMessage`) for the typed
+  `WriteOperationError`
 - **`ScanPhaseBody.svelte`**: Scan-phase tallies (files/dirs/bytes), throughput readout, current directory, spinner.
   Shared by both scan-phase code paths
 - **`DirectionIndicator.svelte`**: Arrow graphic for source → destination (operation-agnostic, reused by
@@ -118,12 +116,14 @@ and gotchas live in [CLAUDE.md](CLAUDE.md).
      Pinned by `TransferProgressDialog.rollback.test.ts`.
 
 3. **TransferErrorDialog** (error display)
-   - Renders the backend `FriendlyError` payload from `WriteErrorEvent.friendly` when present (via
-     `FriendlyErrorContent`). Falls back to `FallbackErrorContent` when the event has no friendly attached.
-   - Container colors and icon vary by `friendly.category`: error-bg + CircleAlert (`serious`), warning-bg +
-     TriangleAlert (`transient`), neutral secondary-bg + Info (`needs_action`).
-   - "Retry" button shows when `category === 'transient'` or the friendly's `retryHint` is true.
-   - Same shape as the listing-error path's `ErrorPane.svelte`, just adapted to a modal dialog.
+   - Renders entirely from the typed `WriteOperationError` (`WriteErrorEvent` carries no prose): title, message, and
+     suggestion via `getUserFriendlyMessage` / `FallbackErrorContent`; category + retry classification via
+     `getErrorDisplayMeta` (both in `transfer-error-messages.ts`). All words live on the FE.
+   - Container colors and icon vary by category: error-bg + CircleAlert (`serious`), warning-bg + TriangleAlert
+     (`transient`), neutral secondary-bg + Info (`needs_action`).
+   - "Retry" button shows when `category === 'transient'` or the variant's `retryHint` is true.
+   - `getErrorDisplayMeta` mirrors the category/retryHint the Rust write-error mapper assigned per variant; keep the two
+     in step if a `WriteOperationError` variant is added.
 
 ## Key decisions
 

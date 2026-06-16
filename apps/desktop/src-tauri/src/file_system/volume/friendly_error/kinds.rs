@@ -1,20 +1,17 @@
 //! Shared `FriendlyError` constructors keyed by conceptual error kind.
 //!
-//! Both `volume_error::friendly_error_from_volume_error` (listing path) and
-//! `write_error::friendly_from_write_error` (copy/move/delete/trash error path)
-//! map several variants to the same conceptual outcome: "not found",
-//! "permission denied", "device disconnected", and so on. Without a single
-//! source of truth the user could see different titles or suggestions for the
-//! same situation depending on which layer the error originated in.
+//! `volume_error::friendly_error_from_volume_error` (listing path) maps several
+//! `VolumeError` variants to the same conceptual outcome: "not found",
+//! "permission denied", "device disconnected", and so on. Routing them through
+//! one constructor per kind keeps the user-facing copy consistent regardless of
+//! which arm produced the error.
 //!
 //! Each function here returns the canonical `FriendlyError` for one kind. The
-//! caller passes the raw-detail string (formatted differently per source:
-//! `VolumeError::to_string()` vs `format!("{err:?}")`) and any kind-specific
-//! data (the path, error message, etc.).
+//! caller passes the raw-detail string and any kind-specific data (the path,
+//! error message, etc.).
 //!
-//! Variants that don't share semantics across the two sources (e.g.
-//! `WriteOperationError::SymlinkLoop`, `VolumeError::FriendlyGit`) stay inline
-//! in their respective mapper.
+//! Variants that don't share semantics (e.g. `VolumeError::FriendlyGit`) stay
+//! inline in their mapper.
 
 use super::{ErrorActionKind, ErrorCategory, FriendlyError, Markdown};
 use crate::md;

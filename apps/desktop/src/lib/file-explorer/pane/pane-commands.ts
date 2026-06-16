@@ -310,14 +310,18 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     }
   }
 
-  /** Debug only: open the TransferErrorDialog with a synthetic error carrying the given FriendlyError. */
+  /**
+   * Debug only: open the TransferErrorDialog with a synthetic typed error. The
+   * dialog renders entirely from the typed error, so the preview shows the same
+   * copy production does; `friendly.title` only seeds the synthetic raw message.
+   */
   function triggerTransferError(friendly: FriendlyError) {
     const error: WriteOperationError = {
       type: 'io_error',
       path: '/debug/preview',
       message: friendly.title,
     }
-    dialogs.handleTransferError(error, friendly)
+    dialogs.handleTransferError(error)
   }
 
   /** Refresh network hosts in the focused pane (used by ⌘R shortcut). */
