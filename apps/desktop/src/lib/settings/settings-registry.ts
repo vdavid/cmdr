@@ -429,6 +429,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'fileOperations.allowFileExtensionChanges',
     section: ['Behavior', 'File operations'],
+    cardKey: 'settings.fileOperations.card.renaming',
     labelKey: 'settings.fileOperations.allowFileExtensionChanges.label',
     descriptionKey: 'settings.fileOperations.allowFileExtensionChanges.description',
     keywords: ['extension', 'rename', 'file', 'change', 'ask', 'confirm'],
@@ -930,6 +931,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'updates.autoCheck',
     section: ['Updates & privacy'],
+    cardKey: 'settings.updates.card.updates',
     labelKey: 'settings.updates.autoCheck.label',
     descriptionKey: 'settings.updates.autoCheck.description',
     keywords: ['update', 'auto', 'check', 'version', 'background'],
@@ -940,6 +942,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'whatsNew.showOnUpdate',
     section: ['Updates & privacy'],
+    cardKey: 'settings.updates.card.updates',
     labelKey: 'settings.whatsNew.showOnUpdate.label',
     descriptionKey: 'settings.whatsNew.showOnUpdate.description',
     keywords: ['changelog', 'release notes', "what's new", 'update notes'],
@@ -961,6 +964,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'analytics.enabled',
     section: ['Updates & privacy'],
+    cardKey: 'settings.updates.card.privacyAndDataSharing',
     labelKey: 'settings.analytics.enabled.label',
     descriptionKey: 'settings.analytics.enabled.description',
     keywords: ['analytics', 'usage', 'stats', 'privacy', 'telemetry', 'beta', 'tracking', 'opt-out'],
@@ -971,6 +975,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'analytics.email',
     section: ['Updates & privacy'],
+    cardKey: 'settings.updates.card.privacyAndDataSharing',
     labelKey: 'settings.analytics.email.label',
     descriptionKey: 'settings.analytics.email.description',
     keywords: ['email', 'beta', 'contact', 'newsletter', 'updates', 'survey'],
@@ -981,6 +986,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'updates.crashReports',
     section: ['Updates & privacy'],
+    cardKey: 'settings.updates.card.privacyAndDataSharing',
     labelKey: 'settings.updates.crashReports.label',
     descriptionKey: 'settings.updates.crashReports.description',
     keywords: ['crash', 'report', 'privacy', 'telemetry', 'bug', 'error'],
@@ -991,6 +997,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'updates.errorReports',
     section: ['Updates & privacy'],
+    cardKey: 'settings.updates.card.privacyAndDataSharing',
     labelKey: 'settings.updates.errorReports.label',
     descriptionKey: 'settings.updates.errorReports.description',
     keywords: ['error', 'report', 'auto', 'send', 'privacy', 'telemetry', 'bug', 'log', 'snippet', 'diagnostics'],
@@ -1173,6 +1180,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'fileOperations.maxConflictsToShow',
     section: ['Behavior', 'File operations'],
+    cardKey: 'settings.fileOperations.card.conflictsAndProgress',
     labelKey: 'settings.fileOperations.maxConflictsToShow.label',
     descriptionKey: 'settings.fileOperations.maxConflictsToShow.description',
     keywords: ['conflict', 'max', 'limit', 'preview', 'operation'],
@@ -1201,6 +1209,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'fileOperations.progressUpdateInterval',
     section: ['Behavior', 'File operations'],
+    cardKey: 'settings.fileOperations.card.conflictsAndProgress',
     labelKey: 'settings.fileOperations.progressUpdateInterval.label',
     descriptionKey: 'settings.fileOperations.progressUpdateInterval.description',
     keywords: ['progress', 'update', 'interval', 'refresh', 'cpu', 'performance'],

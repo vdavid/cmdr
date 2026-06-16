@@ -18,8 +18,11 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`AppearanceSizesSection.svelte`**: `Appearance > File and folder sizes`: size display, size unit (binary/SI drives
   `kB`↔`KB` label override), file size format, size mismatch warning
 - **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width
-- **`FileOperationsSection.svelte`**: `Behavior > File operations`: extension-change confirms (`maxConflictsToShow` /
-  `progressUpdateInterval` live in Advanced)
+- **`FileOperationsSection.svelte`**: `Behavior > File operations`: two `SectionCard` card groups — Renaming
+  (extension-change confirms) and Conflicts and progress (`maxConflictsToShow` select + `progressUpdateInterval`
+  slider). The latter two are `showInAdvanced` mirrors that ALSO render here (their natural page) so a
+  globally-searchable Advanced doesn't match this page and then paint a blank section; they keep their Advanced
+  presence. Card frames are gated via `anyVisible(shouldShow, ...)` (same pattern as FSW above).
 - **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: four `SectionCard` card groups — Drive
   indexing (toggle + clear-index action, the hidden `indexing.indexSize` search anchor), Downloads notifications
   (4-option ToggleGroup, anchor `settings-downloads-notifications`), Go to latest download (a single on/off `Switch`
@@ -34,8 +37,9 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   land. The hidden `indexing.indexSize` anchor (its `section` equals this page's) makes "index size" a search hit, and
   the index-size action row is gated on `shouldShow('indexing.indexSize')`, so searching it keeps the section visible
   (no blank pane) and shows the Drive-indexing card. See `lib/settings/components/CLAUDE.md` § card groups.
-- **`SearchSection.svelte`**: `Behavior > Search`: auto-apply switch plus mirrored `recentSearches.maxCount` /
-  `recentSelections.maxCount` rows from Advanced
+- **`SearchSection.svelte`**: `Behavior > Search`: one unlabeled `SectionCard` wrapping the auto-apply switch plus the
+  mirrored `recentSearches.maxCount` / `recentSelections.maxCount` rows from Advanced. The card is gated via
+  `anyVisible(shouldShow, ...)` so an all-filtered-out search leaves no empty frame.
 - **`AiSection.svelte`**: `AI` wrapper: provider toggle (Off / Cloud / Local), auto-stops local server on switch-away,
   dispatches to one of the two sub-sections below
 - **`AiCloudSection.svelte`**: Cloud provider config: preset dropdown, per-provider endpoint/model in
@@ -64,10 +68,13 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   snapshot) so the name-search derivation stays reactive to the parent-driven global search prop
 - **`McpServerSection.svelte`**: `Developer > MCP server`
 - **`LoggingSection.svelte`**: `Developer > Logging`
-- **`UpdatesSection.svelte`**: `Updates & privacy`: update checks, the `updates.crashReports` / `updates.errorReports`
-  opt-ins (Flow B auto-send; Flow A consent-on-click is always available), plus the beta analytics opt-out
-  (`analytics.enabled`, default on) and the `analytics.email` contact field with its "never sent with your usage data"
-  note. The email field persists to settings here; the beta-signup network call is wired separately
+- **`UpdatesSection.svelte`**: `Updates & privacy`: two `SectionCard` card groups — Updates (the "Check for updates"
+  action + status, `updates.autoCheck`, `whatsNew.showOnUpdate`) and Privacy and data sharing (the beta analytics
+  opt-out `analytics.enabled` default-on, the `analytics.email` contact field with its "never sent with your usage data"
+  note, and the `updates.crashReports` / `updates.errorReports` opt-ins — Flow B auto-send; Flow A consent-on-click is
+  always available). The report opt-in logic and the beta-signup email flow are unchanged; the cards are presentation
+  only. Frames are gated via `anyVisible(shouldShow, ...)` (same pattern as FSW above). The email field persists to
+  settings here; the beta-signup network call is wired separately
 - **`LicenseSection.svelte`**: `License`: special (non-registry), reads `getLicenseInfo` / `getLicenseStatus`
 - **`AdvancedSection.svelte`**: `Advanced`: auto-generated rows for every registry entry with `showInAdvanced: true`. No
   custom UI per row

@@ -201,3 +201,55 @@ describe('UpdatesSection', () => {
     expect(betaSignupMock).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('UpdatesSection card groups', () => {
+  beforeEach(() => {
+    _resetUpdaterStateForTest()
+  })
+  afterEach(() => {
+    _resetUpdaterStateForTest()
+  })
+
+  function renderWithQuery(searchQuery: string): HTMLDivElement {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(UpdatesSection, { target, props: { searchQuery } })
+    return target
+  }
+
+  function cardLabels(target: HTMLElement): string[] {
+    return Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
+  }
+
+  it('renders both cards with no search', async () => {
+    const target = renderWithQuery('')
+    await tick()
+    expect(cardLabels(target)).toEqual(expect.arrayContaining(['Updates', 'Privacy and data sharing']))
+    target.remove()
+  })
+
+  it('shows only the Updates card when searching an Updates-only term, leaving no empty cards', async () => {
+    // Pre-fix each `SectionCard` drew its frame unconditionally, so a search that
+    // matched only an Updates-card row would still paint the Privacy card as an
+    // empty box. The fix gates each card on `anyVisible(shouldShow, ...memberIds)`,
+    // the SAME predicate the rows use, so an all-filtered-out card hides too.
+    const target = renderWithQuery('what')
+    await tick()
+    const labels = cardLabels(target)
+    expect(labels).toContain('Updates')
+    expect(labels).not.toContain('Privacy and data sharing')
+    // Exactly one card frame stands (the Updates card).
+    expect(target.querySelectorAll('.section-card')).toHaveLength(1)
+    target.remove()
+  })
+
+  it('shows only the Privacy card when searching a privacy-only term', async () => {
+    const target = renderWithQuery('analytics')
+    await tick()
+    const labels = cardLabels(target)
+    expect(labels).toContain('Privacy and data sharing')
+    expect(labels).not.toContain('Updates')
+    expect(target.querySelectorAll('.section-card')).toHaveLength(1)
+    target.remove()
+  })
+})

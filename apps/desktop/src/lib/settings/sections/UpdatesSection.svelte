@@ -4,7 +4,8 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { onSpecificSettingChange } from '$lib/settings/settings-store'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { updateState, checkForUpdates } from '$lib/updates/updater.svelte'
     import { formatUpdateStatus } from '$lib/updates/update-status-text'
@@ -96,97 +97,114 @@
 </script>
 
 <SettingsSection title={tString('settings.section.updatesAndPrivacy')}>
-    <div class="check-row">
-        <Button variant="secondary" size="mini" onclick={handleCheckForUpdates} disabled={buttonDisabled}>
-            {tString('settings.updates.checkForUpdates')}
-        </Button>
-        <div class="status">
-            {#if updateState.error !== null}
-                <span class="error-message">{tString('settings.updates.errorPrefix')} {updateState.error}</span>
-                <button class="link-button" onclick={handleSendErrorReport}
-                    >{tString('settings.updates.sendErrorReport')}</button
+    {#if anyVisible(shouldShow, 'updates.autoCheck', 'whatsNew.showOnUpdate')}
+        <SectionCard label={tString('settings.updates.card.updates')}>
+            <div class="check-row">
+                <Button variant="secondary" size="mini" onclick={handleCheckForUpdates} disabled={buttonDisabled}>
+                    {tString('settings.updates.checkForUpdates')}
+                </Button>
+                <div class="status">
+                    {#if updateState.error !== null}
+                        <span class="error-message"
+                            >{tString('settings.updates.errorPrefix')} {updateState.error}</span
+                        >
+                        <button class="link-button" onclick={handleSendErrorReport}
+                            >{tString('settings.updates.sendErrorReport')}</button
+                        >
+                    {:else if statusText}
+                        <span class="status-text">{statusText}</span>
+                    {/if}
+                </div>
+            </div>
+            {#if shouldShow('updates.autoCheck')}
+                <SettingRow
+                    id="updates.autoCheck"
+                    label={autoCheckDef.label}
+                    description={autoCheckDef.description}
+                    {searchQuery}
                 >
-            {:else if statusText}
-                <span class="status-text">{statusText}</span>
+                    <SettingSwitch id="updates.autoCheck" />
+                </SettingRow>
             {/if}
-        </div>
-    </div>
-    {#if shouldShow('updates.autoCheck')}
-        <SettingRow
-            id="updates.autoCheck"
-            label={autoCheckDef.label}
-            description={autoCheckDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="updates.autoCheck" />
-        </SettingRow>
+            {#if shouldShow('whatsNew.showOnUpdate')}
+                <SettingRow
+                    id="whatsNew.showOnUpdate"
+                    label={whatsNewDef.label}
+                    description={whatsNewDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="whatsNew.showOnUpdate" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
-    {#if shouldShow('whatsNew.showOnUpdate')}
-        <SettingRow
-            id="whatsNew.showOnUpdate"
-            label={whatsNewDef.label}
-            description={whatsNewDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="whatsNew.showOnUpdate" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('analytics.enabled')}
-        <SettingRow
-            id="analytics.enabled"
-            label={analyticsDef.label}
-            description={analyticsDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="analytics.enabled" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('analytics.email')}
-        <SettingRow id="analytics.email" label={emailDef.label} description={emailDef.description} split {searchQuery}>
-            <input
-                type="email"
-                class="email-input"
-                placeholder={tString('settings.updates.emailPlaceholder')}
-                value={email}
-                oninput={handleEmailInput}
-                onblur={handleEmailCommit}
-                onkeydown={handleEmailKeydown}
-                disabled={signupInFlight}
-                aria-label={emailDef.label}
-            />
-        </SettingRow>
-        {#if signupFeedback?.kind === 'success'}
-            <p class="signup-feedback success" role="status">
-                {tString('settings.updates.emailConfirmHint')}
-            </p>
-        {:else if signupFeedback?.kind === 'failure'}
-            <p class="signup-feedback failure" role="status">
-                {tString('settings.updates.emailSignupError')}
-            </p>
-        {/if}
-        <p class="email-note">
-            {tString('settings.updates.emailPrivacyNote')}
-        </p>
-    {/if}
-    {#if shouldShow('updates.crashReports')}
-        <SettingRow
-            id="updates.crashReports"
-            label={crashReportsDef.label}
-            description={crashReportsDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="updates.crashReports" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('updates.errorReports')}
-        <SettingRow
-            id="updates.errorReports"
-            label={errorReportsDef.label}
-            description={errorReportsDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="updates.errorReports" />
-        </SettingRow>
+
+    {#if anyVisible(shouldShow, 'analytics.enabled', 'analytics.email', 'updates.crashReports', 'updates.errorReports')}
+        <SectionCard label={tString('settings.updates.card.privacyAndDataSharing')}>
+            {#if shouldShow('analytics.enabled')}
+                <SettingRow
+                    id="analytics.enabled"
+                    label={analyticsDef.label}
+                    description={analyticsDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="analytics.enabled" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('analytics.email')}
+                <SettingRow
+                    id="analytics.email"
+                    label={emailDef.label}
+                    description={emailDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <input
+                        type="email"
+                        class="email-input"
+                        placeholder={tString('settings.updates.emailPlaceholder')}
+                        value={email}
+                        oninput={handleEmailInput}
+                        onblur={handleEmailCommit}
+                        onkeydown={handleEmailKeydown}
+                        disabled={signupInFlight}
+                        aria-label={emailDef.label}
+                    />
+                </SettingRow>
+                {#if signupFeedback?.kind === 'success'}
+                    <p class="signup-feedback success" role="status">
+                        {tString('settings.updates.emailConfirmHint')}
+                    </p>
+                {:else if signupFeedback?.kind === 'failure'}
+                    <p class="signup-feedback failure" role="status">
+                        {tString('settings.updates.emailSignupError')}
+                    </p>
+                {/if}
+                <p class="email-note">
+                    {tString('settings.updates.emailPrivacyNote')}
+                </p>
+            {/if}
+            {#if shouldShow('updates.crashReports')}
+                <SettingRow
+                    id="updates.crashReports"
+                    label={crashReportsDef.label}
+                    description={crashReportsDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="updates.crashReports" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('updates.errorReports')}
+                <SettingRow
+                    id="updates.errorReports"
+                    label={errorReportsDef.label}
+                    description={errorReportsDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="updates.errorReports" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 </SettingsSection>
 

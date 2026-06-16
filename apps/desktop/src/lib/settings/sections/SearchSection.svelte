@@ -15,8 +15,9 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
@@ -36,38 +37,42 @@
 </script>
 
 <SettingsSection title={tString('settings.section.search')}>
-    {#if shouldShow('search.autoApply')}
-        <SettingRow
-            id="search.autoApply"
-            label={autoApplyDef.label}
-            description={autoApplyDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="search.autoApply" />
-        </SettingRow>
-    {/if}
+    {#if anyVisible(shouldShow, 'search.autoApply', 'search.recentSearches.maxCount', 'selection.recentSelections.maxCount')}
+        <SectionCard>
+            {#if shouldShow('search.autoApply')}
+                <SettingRow
+                    id="search.autoApply"
+                    label={autoApplyDef.label}
+                    description={autoApplyDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="search.autoApply" />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('search.recentSearches.maxCount')}
-        <SettingRow
-            id="search.recentSearches.maxCount"
-            label={recentSearchesMaxDef.label}
-            description={recentSearchesMaxDef.description}
-            split
-            {searchQuery}
-        >
-            <SettingNumberInput id="search.recentSearches.maxCount" />
-        </SettingRow>
-    {/if}
+            {#if shouldShow('search.recentSearches.maxCount')}
+                <SettingRow
+                    id="search.recentSearches.maxCount"
+                    label={recentSearchesMaxDef.label}
+                    description={recentSearchesMaxDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingNumberInput id="search.recentSearches.maxCount" />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('selection.recentSelections.maxCount')}
-        <SettingRow
-            id="selection.recentSelections.maxCount"
-            label={recentSelectionsMaxDef.label}
-            description={recentSelectionsMaxDef.description}
-            split
-            {searchQuery}
-        >
-            <SettingNumberInput id="selection.recentSelections.maxCount" />
-        </SettingRow>
+            {#if shouldShow('selection.recentSelections.maxCount')}
+                <SettingRow
+                    id="selection.recentSelections.maxCount"
+                    label={recentSelectionsMaxDef.label}
+                    description={recentSelectionsMaxDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingNumberInput id="selection.recentSelections.maxCount" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 </SettingsSection>
