@@ -88,10 +88,15 @@ fn is_apfs(path: &Path) -> bool {
         Ok(p) => p,
         Err(_) => return false,
     };
+    // SAFETY: `libc::statfs` is a C struct that's valid fully zeroed; this is the out-buffer.
     let mut stat: libc::statfs = unsafe { std::mem::zeroed() };
+    // SAFETY: `c_path` is a valid NUL-terminated C string from `path`, and `&mut stat` is a valid
+    // pointer to the correctly-typed out-buffer the kernel fills on success.
     if unsafe { libc::statfs(c_path.as_ptr(), &mut stat) } != 0 {
         return false;
     }
+    // SAFETY: `statfs` returned 0, so the kernel initialized `stat.f_fstypename`, a NUL-terminated
+    // `[c_char; 16]`; reading it as a `CStr` is valid for the lifetime of `stat`.
     let fstype = unsafe { std::ffi::CStr::from_ptr(stat.f_fstypename.as_ptr()).to_string_lossy() };
     fstype == "apfs"
 }

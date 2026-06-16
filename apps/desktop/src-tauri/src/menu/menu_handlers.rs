@@ -335,6 +335,10 @@ fn send_native_edit_action(menu_id: &str) {
 
     // sendAction:to:from: with nil `to` sends to the first responder, exactly like
     // PredefinedMenuItems do internally. This lets WKWebView handle text clipboard natively.
+    // SAFETY: `ns_app` is the live `sharedApplication` singleton; `sendAction:to:from:` takes
+    // `(SEL, id, id)` — `selector` is one of the responder-chain editing selectors matched above, and
+    // both `to`/`from` are nil (routes to the first responder). Returns `BOOL`, decoded as `bool`. On
+    // the main thread (the `MainThreadMarker` above asserts it), as AppKit requires.
     unsafe {
         let _: bool = objc2::msg_send![
             &ns_app,

@@ -9,6 +9,9 @@
 #![deny(clippy::print_stdout, clippy::print_stderr, clippy::dbg_macro)]
 // Require justification for all #[allow] attributes
 #![warn(clippy::allow_attributes_without_reason)]
+// Require a `// SAFETY:` comment on every `unsafe {}` block: each site must state the concrete
+// invariant that makes it sound. Rote FFI is documented per-site, never blanket-exempted.
+#![warn(clippy::undocumented_unsafe_blocks)]
 
 //noinspection RsUnusedImport
 // Silence false positives for dev dependencies (used only in benches/, not lib)

@@ -99,6 +99,7 @@ fn find_existing_mount(server: &str, share: &str) -> Option<String> {
 /// Derives the expected GVFS mount path for an SMB share.
 /// GVFS mounts appear at `/run/user/<uid>/gvfs/smb-share:server=<server>,share=<share>`
 fn derive_gvfs_path(server: &str, share: &str) -> String {
+    // SAFETY: `getuid` reads the process's real UID; always safe, no args or pointers.
     let uid = unsafe { libc::getuid() };
     format!(
         "/run/user/{}/gvfs/smb-share:server={},share={}",

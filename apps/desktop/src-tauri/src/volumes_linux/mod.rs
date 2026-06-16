@@ -386,6 +386,7 @@ pub(crate) fn parse_gvfs_smb_dirname(dirname: &str) -> Option<(String, String)> 
 /// becomes a `Network` location. Skips silently if the GVFS directory
 /// doesn't exist (non-GNOME systems).
 fn get_network_mounts() -> Vec<LocationInfo> {
+    // SAFETY: `getuid` reads the process's real UID; always safe, no args or pointers.
     let uid = unsafe { libc::getuid() };
     let gvfs_dir = format!("/run/user/{}/gvfs", uid);
     let gvfs_path = Path::new(&gvfs_dir);
@@ -435,6 +436,9 @@ pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
 
     let c_path = CString::new(path).ok()?;
 
+    // SAFETY: `c_path` is a valid NUL-terminated C string from `path`; `stat` is a zeroed,
+    // correctly-typed `libc::statvfs` out-buffer the kernel fills, and its fields are only read on
+    // the `== 0` (success) branch where the kernel initialized them.
     unsafe {
         let mut stat: libc::statvfs = std::mem::zeroed();
         if libc::statvfs(c_path.as_ptr(), &mut stat) == 0 {

@@ -68,6 +68,10 @@ pub fn write_file_urls_to_clipboard(paths: &[PathBuf]) -> Result<(), String> {
     // so we use msg_send! to pass the array without ProtocolObject generic juggling.
     let url_refs: Vec<&NSURL> = urls.iter().map(|u| &**u).collect();
     let url_array = NSArray::from_slice(&url_refs);
+    // SAFETY: `pasteboard` is the live process-lifetime `generalPasteboard` singleton; `writeObjects:`
+    // takes an `NSArray<id<NSPasteboardWriting>>` and `NSURL` conforms to `NSPasteboardWriting`, so
+    // every element of `url_array` is a valid writer. Returns `BOOL`, decoded as `bool`. Main thread
+    // (module invariant: all callers hop via `run_on_main_thread`).
     let success: bool = unsafe { msg_send![&pasteboard, writeObjects: &*url_array] };
     if !success {
         return Err("NSPasteboard writeObjects returned false".to_string());
@@ -76,6 +80,8 @@ pub fn write_file_urls_to_clipboard(paths: &[PathBuf]) -> Result<(), String> {
     // Also write plain-text paths (newline-separated) so pasting into text editors works
     let text = paths.iter().map(|p| p.to_string_lossy()).collect::<Vec<_>>().join("\n");
     let ns_text = NSString::from_str(&text);
+    // SAFETY: reading the AppKit-exported `NSPasteboardTypeString` global (a `&'static NSString`
+    // constant the framework initializes at load); the deref just borrows that constant.
     let pasteboard_type = unsafe { NSPasteboardTypeString };
     pasteboard.setString_forType(&ns_text, pasteboard_type);
 
@@ -96,8 +102,11 @@ pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
 
     // Build class array containing NSURL's class
     let nsurl_class = NSURL::class();
+    // SAFETY: `+[NSArray arrayWithObject:]` sent to the runtime-resolved `NSArray` class with
+    // `nsurl_class` (NSURL's class object, an Objective-C `id`) as the single element. The selector
+    // returns an autoreleased `NSArray`, decoded into a `Retained` (the +0 autoreleased result is
+    // retained by objc2's return convention).
     let class_array: Retained<NSArray<objc2::runtime::AnyClass>> = unsafe {
-        // NSArray<AnyClass> from a single class pointer
         msg_send![
             objc2::runtime::AnyClass::get(c"NSArray").ok_or("NSArray class not found")?,
             arrayWithObject: nsurl_class,
@@ -105,14 +114,22 @@ pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
     };
 
     // Options: fileURLsOnly = true
+    // SAFETY: reading the AppKit-exported `NSPasteboardURLReadingFileURLsOnlyKey` global (a
+    // `&'static NSPasteboardReadingOptionKey`, i.e. `NSString`, the framework initializes at load).
     let file_urls_only_key = unsafe { NSPasteboardURLReadingFileURLsOnlyKey };
     let yes_value: Retained<AnyObject> = unsafe {
+        // SAFETY: `+[NSNumber numberWithBool:]` on the resolved `NSNumber` class returns an
+        // autoreleased `NSNumber*`; `Retained::retain` claims +1 ownership and null-checks it.
         let cls = objc2::runtime::AnyClass::get(c"NSNumber").ok_or("NSNumber class not found")?;
         let obj: *mut AnyObject = msg_send![cls, numberWithBool: true];
         Retained::retain(obj).ok_or("Couldn't create NSNumber")?
     };
 
     let options: Retained<NSDictionary<NSPasteboardReadingOptionKey, AnyObject>> = unsafe {
+        // SAFETY: `+[NSDictionary dictionaryWithObject:forKey:]` builds a single-entry dictionary
+        // from the live `yes_value` (`NSNumber`) under the `file_urls_only_key` (`NSString`, conforms
+        // to `NSCopying` as the key requires). Returns an autoreleased dictionary, retained into
+        // `Retained` with the matching typed key/value parameters.
         msg_send![
             objc2::runtime::AnyClass::get(c"NSDictionary").ok_or("NSDictionary class not found")?,
             dictionaryWithObject: &*yes_value,
@@ -120,6 +137,9 @@ pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
         ]
     };
 
+    // SAFETY: `class_array` is a live `NSArray<Class>` listing `NSURL`, `options` a live options
+    // dictionary; `readObjectsForClasses:options:` reads matching items off the singleton pasteboard.
+    // Main thread (module invariant).
     let objects = unsafe { pasteboard.readObjectsForClasses_options(&class_array, Some(&options)) };
 
     let Some(objects) = objects else {
@@ -129,7 +149,11 @@ pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
     let count = objects.len();
     let mut paths = Vec::with_capacity(count);
     for i in 0..count {
+        // SAFETY: `i` is in `0..objects.len()`, so `objectAtIndex:` returns a valid borrowed element
+        // of the live `objects` array (an `NSURL`, since we filtered the read by class).
         let obj: &AnyObject = unsafe { msg_send![&objects, objectAtIndex: i] };
+        // SAFETY: `obj` is an `NSURL`; `-path` returns an autoreleased `NSString*` (or nil for a
+        // non-file URL), decoded as `Option<Retained<NSString>>`.
         let path_str: Option<Retained<NSString>> = unsafe { msg_send![obj, path] };
         if let Some(ns_str) = path_str {
             paths.push(PathBuf::from(ns_str.to_string()));
@@ -149,6 +173,8 @@ pub fn read_text_from_clipboard() -> Option<String> {
     }
 
     let pasteboard = NSPasteboard::generalPasteboard();
+    // SAFETY: reading the AppKit-exported `NSPasteboardTypeString` global (a `&'static NSString`
+    // constant the framework initializes at load).
     let pasteboard_type = unsafe { NSPasteboardTypeString };
     pasteboard.stringForType(pasteboard_type).map(|s| s.to_string())
 }

@@ -280,13 +280,21 @@ mod tests {
     fn synthetic_volume_notification(volume_path: &str) -> Retained<NSNotification> {
         let path_ns = NSString::from_str(volume_path);
         let url = NSURL::fileURLWithPath(&path_ns);
+        // SAFETY: (test) `NSWorkspaceVolumeURLKey` is an `extern "C"` `&'static NSString` AppKit
+        // constant, valid for the process lifetime; reading the static requires `unsafe`.
         let key: &NSString = unsafe { NSWorkspaceVolumeURLKey };
 
         let user_info: Retained<NSDictionary<NSString, NSURL>> =
             NSDictionary::from_slices::<NSString>(&[key], &[&*url]);
 
+        // SAFETY: (test) `NSWorkspaceDidMountNotification` is an `extern "C"` `&'static NSString`
+        // AppKit constant, valid for the process lifetime.
         let name = unsafe { NSWorkspaceDidMountNotification };
+        // SAFETY: (test) `user_info` is a live `NSDictionary<NSString, NSURL>`; the cast only erases
+        // the generic value type to the base `NSDictionary` of the same live object.
         let user_info_any: Retained<NSDictionary> = unsafe { Retained::cast_unchecked(user_info) };
+        // SAFETY: (test) `name` and `user_info_any` are live retained AppKit objects; the
+        // initializer copies them, so no aliasing or lifetime concern.
         unsafe { NSNotification::notificationWithName_object_userInfo(name, None, Some(&user_info_any)) }
     }
 
@@ -312,8 +320,11 @@ mod tests {
 
     #[test]
     fn returns_none_when_user_info_missing() {
+        // SAFETY: (test) `NSWorkspaceDidMountNotification` is an `extern "C"` `&'static NSString`
+        // AppKit constant, valid for the process lifetime.
         let name = unsafe { NSWorkspaceDidMountNotification };
         // Notification with no userInfo. Defensive against malformed posts.
+        // SAFETY: (test) `name` is a live retained `NSString`; the initializer copies it.
         let notification = unsafe { NSNotification::notificationWithName_object_userInfo(name, None, None) };
         assert!(volume_path_from_notification(&notification).is_none());
     }
@@ -325,9 +336,15 @@ mod tests {
         let other_value = NSString::from_str("UnrelatedValue");
         let user_info: Retained<NSDictionary<NSString, NSString>> =
             NSDictionary::from_slices::<NSString>(&[&other_key], &[&*other_value]);
+        // SAFETY: (test) `user_info` is a live `NSDictionary<NSString, NSString>`; the cast only
+        // erases the generic value type to the base `NSDictionary` of the same live object.
         let user_info_any: Retained<NSDictionary> = unsafe { Retained::cast_unchecked(user_info) };
 
+        // SAFETY: (test) `NSWorkspaceDidMountNotification` is an `extern "C"` `&'static NSString`
+        // AppKit constant, valid for the process lifetime.
         let name = unsafe { NSWorkspaceDidMountNotification };
+        // SAFETY: (test) `name` and `user_info_any` are live retained AppKit objects; the
+        // initializer copies them.
         let notification =
             unsafe { NSNotification::notificationWithName_object_userInfo(name, None, Some(&user_info_any)) };
         assert!(volume_path_from_notification(&notification).is_none());

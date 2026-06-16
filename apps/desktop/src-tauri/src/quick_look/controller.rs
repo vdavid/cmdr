@@ -140,6 +140,9 @@ impl QuickLookController {
         }
 
         panel.makeKeyAndOrderFront(None);
+        // SAFETY: `panel` is the live `sharedPreviewPanel`; `reloadData` re-queries our just-installed
+        // data source. We hold a `MainThreadMarker` (asserted at fn entry), and `QLPreviewPanel`
+        // requires the main thread.
         unsafe { panel.reloadData() };
         log::debug!(target: "quick_look", "panel opened for {:?}", self.current_url);
     }
@@ -168,6 +171,9 @@ impl QuickLookController {
 
         set_delegate_url(&our_delegate, Some(&path));
         if self.apply_set_path(path) {
+            // SAFETY: `panel` is the live `sharedPreviewPanel` and our delegate is still installed
+            // (checked above); `reloadData` re-reads the URL we just set. Main thread (marker asserted
+            // at fn entry), as `QLPreviewPanel` requires.
             unsafe { panel.reloadData() };
         }
     }

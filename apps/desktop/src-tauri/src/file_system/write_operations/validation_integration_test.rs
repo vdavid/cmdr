@@ -439,6 +439,8 @@ fn test_validate_destination_writable_readonly() {
     use super::validate_destination_writable;
 
     // Skip if running as root (root bypasses permission checks)
+    // SAFETY: (test) `geteuid` takes no arguments, shares no memory, and can't fail — it just
+    // returns the caller's effective uid. We compare the returned integer to 0 to detect root.
     if unsafe { libc::geteuid() } == 0 {
         return;
     }
@@ -619,6 +621,9 @@ fn test_special_file_fifo_skipped() {
 
     // Create a FIFO
     let c_path = std::ffi::CString::new(fifo_path.to_str().unwrap()).unwrap();
+    // SAFETY: (test) `c_path` is a valid NUL-terminated C string held alive across the call, and
+    // `mkfifo` reads it plus a plain mode integer and writes nothing back through the pointer. The
+    // path is under a fresh temp dir this test owns. We assert the return is 0 (success).
     let result = unsafe { libc::mkfifo(c_path.as_ptr(), 0o644) };
     assert_eq!(result, 0, "Failed to create FIFO");
     assert!(fifo_path.exists());

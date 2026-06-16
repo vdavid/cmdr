@@ -24,6 +24,11 @@ use std::path::{Path, PathBuf};
 fn get_uti_for_extension(ext: &str) -> Option<CFString> {
     let tag = CFString::new(ext);
 
+    // SAFETY: `tag` is a live CFString passed by its concrete ref; `kUTTagClassFilenameExtension` is
+    // the framework-exported tag-class constant and the null conforming-UTI arg is accepted.
+    // `UTTypeCreatePreferredIdentifierForTag` follows the Create rule (+1), so we null-check the
+    // result and hand the single owning reference to `wrap_under_create_rule`, which releases it once
+    // on drop.
     unsafe {
         let uti_ref = UTTypeCreatePreferredIdentifierForTag(
             kUTTagClassFilenameExtension,
@@ -41,6 +46,10 @@ fn get_uti_for_extension(ext: &str) -> Option<CFString> {
 
 /// Gets the default application bundle ID for a content type (UTI).
 fn get_default_app_bundle_id(uti: &CFString) -> Option<CFString> {
+    // SAFETY: `uti` is a live CFString passed by its concrete ref; `kLSRolesAll` is the exported
+    // LaunchServices role-mask constant. `LSCopyDefaultRoleHandlerForContentType` is a Copy/Create-rule
+    // call (+1 on the returned bundle-id CFString), so we null-check and pass the owning reference to
+    // `wrap_under_create_rule`, which releases it once on drop.
     unsafe {
         let bundle_id_ref = LSCopyDefaultRoleHandlerForContentType(uti.as_concrete_TypeRef(), kLSRolesAll);
 
@@ -54,6 +63,11 @@ fn get_default_app_bundle_id(uti: &CFString) -> Option<CFString> {
 
 /// Gets the application URL for a bundle identifier.
 fn get_app_url_for_bundle_id(bundle_id: &CFString) -> Option<PathBuf> {
+    // SAFETY: `bundle_id` is a live CFString passed by its concrete ref; the null out-error pointer is
+    // accepted (we don't want the error). `LSCopyApplicationURLsForBundleIdentifier` follows the
+    // Create rule (+1 on the returned CFArray), so we null-check and hand the owning reference to
+    // `CFArray::wrap_under_create_rule`, which releases the array once on drop; the contained CFURLs
+    // are borrowed under the Get rule by `urls.get`.
     unsafe {
         let urls_ref = LSCopyApplicationURLsForBundleIdentifier(bundle_id.as_concrete_TypeRef(), std::ptr::null_mut());
 

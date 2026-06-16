@@ -186,6 +186,9 @@ fn order_ns_window_back(ns_window: *mut objc2::runtime::AnyObject) -> Result<(),
     if ns_window.is_null() {
         return Err("NSWindow pointer is null".into());
     }
+    // SAFETY: `ns_window` is the live, non-null `NSWindow` Tauri owns for this webview (null-checked
+    // above). `-orderBack:` takes an `id` sender; we pass nil. Returns void, so there's no ownership
+    // to manage. This is E2E-only window plumbing (gated by `is_e2e_mode`), never on a user path.
     unsafe {
         let _: () = msg_send![ns_window, orderBack: std::ptr::null_mut::<AnyObject>()];
     }

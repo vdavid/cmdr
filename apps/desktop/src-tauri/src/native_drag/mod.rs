@@ -150,6 +150,13 @@ pub fn start_drag(
         return Err("NSWindow pointer is null".into());
     }
 
+    // SAFETY: runs on the AppKit main thread (`mtm` obtained above). `ns_window_ptr` is the live,
+    // non-null `NSWindow` Tauri owns for this webview; every `msg_send!` below targets it, its
+    // `contentView`, or freshly-allocated AppKit objects (`NSImage`, `NSMutableArray`,
+    // `NSPasteboardItem`, `NSDraggingItem`, `NSEvent`) with selectors and argument/return types
+    // matching their AppKit signatures. Null returns from `alloc`/`init`/`absoluteString` are checked
+    // before use. The promise providers handed in as writers are kept alive by the main-thread
+    // retained store (see [`promises`]).
     unsafe {
         let window: *mut AnyObject = ns_window_ptr;
         let content_view: *mut AnyObject = msg_send![window, contentView];
@@ -297,6 +304,11 @@ unsafe fn apply_item_plan(
     path: &Path,
     types: &PasteboardTypes,
 ) -> Result<(), String> {
+    // SAFETY: the fn's `# Safety` contract guarantees `item` is a valid `NSPasteboardItem`, `types`
+    // holds valid AppKit classes, and we're on the main thread. Each `msg_send!` sends a matching
+    // selector: `+fileURLWithPath:isDirectory:` / `-absoluteString` (null-checked) on `NSURL`,
+    // `setString:forType:` / `setPropertyList:forType:` on the item, and `addObject:` on the
+    // freshly-built `NSMutableArray`. Arg/return types match the AppKit signatures.
     unsafe {
         if let Some(url_path) = plan.file_url.as_deref() {
             let path_ns = NSString::from_str(url_path);

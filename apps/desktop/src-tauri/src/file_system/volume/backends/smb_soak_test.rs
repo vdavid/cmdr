@@ -46,7 +46,12 @@ use crate::file_system::volume::smb_volume_id;
 fn process_peak_rss_mb() -> f64 {
     #[cfg(unix)]
     {
+        // SAFETY: (test) `rusage` is a plain C struct of integers, so all-zeroes is a valid
+        // initial bit pattern; `getrusage` overwrites the fields we read anyway.
         let mut usage: libc::rusage = unsafe { std::mem::zeroed() };
+        // SAFETY: (test) `RUSAGE_SELF` is a valid plain-integer who-selector and `&mut usage` is a
+        // live, fully-sized `rusage` out-param the kernel fills in. We check the return is 0 before
+        // reading `usage.ru_maxrss`.
         let rc = unsafe { libc::getrusage(libc::RUSAGE_SELF, &mut usage) };
         if rc != 0 {
             return 0.0;

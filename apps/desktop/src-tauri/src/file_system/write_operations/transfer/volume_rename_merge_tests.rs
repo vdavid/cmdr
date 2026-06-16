@@ -319,6 +319,8 @@ async fn rename_merge_errored_child_preserves_source_spine() {
     // CI Rust suite runs as root in Docker; skip there (mirrors the geteuid==0
     // guards in the permission-dependent integration tests).
     #[cfg(unix)]
+    // SAFETY: (test) `geteuid` takes no arguments, shares no memory, and can't fail — it just
+    // returns the caller's effective uid. We compare the returned integer to 0 to detect root.
     if unsafe { libc::geteuid() } == 0 {
         return;
     }

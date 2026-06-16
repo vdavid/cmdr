@@ -60,11 +60,14 @@ fn get_fs_type_for_path(path: &Path) -> Option<String> {
     let c_path = CString::new(path.to_string_lossy().as_bytes()).ok()?;
     let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
 
+    // SAFETY: `c_path` is a valid NUL-terminated C string from `path`, and `stat` is an
+    // uninitialized but correctly-typed `libc::statfs` out-buffer the kernel fills on success.
     let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
     if result != 0 {
         return None;
     }
 
+    // SAFETY: `statfs` returned 0, so the kernel fully initialized `stat`.
     let stat = unsafe { stat.assume_init() };
     let name_bytes: Vec<u8> = stat
         .f_fstypename

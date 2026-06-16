@@ -109,6 +109,11 @@ pub fn find_available_port() -> Option<u16> {
 /// on process death regardless of signal. The llama.cpp test suite itself uses SIGKILL.
 pub fn kill_process(pid: u32) {
     #[cfg(unix)]
+    // SAFETY: `kill` takes two plain integers (no pointers): the pid of a llama-server we spawned
+    // (or a stale one we found by matching our own binary path) and `SIGKILL`. No memory is shared
+    // with the call; the worst a reused pid could do is signal another process, which is why every
+    // caller passes a pid we sourced ourselves. The return value is intentionally ignored (the
+    // process may already be gone — fire-and-forget).
     unsafe {
         libc::kill(pid as i32, libc::SIGKILL);
     }
@@ -125,6 +130,10 @@ pub fn kill_process(pid: u32) {
 pub fn kill_and_reap_in_background(pid: u32) {
     kill_process(pid);
     #[cfg(unix)]
+    // SAFETY: `waitpid` reaps the zombie of the llama-server child we just SIGKILLed. The pid is
+    // one we spawned; the args are a plain pid integer, a null status pointer (we don't read the
+    // exit status), and a 0 options flag — no memory is shared with the call. The return value is
+    // ignored: the only outcome we care about is that the zombie is collected.
     std::thread::spawn(move || unsafe {
         libc::waitpid(pid as i32, std::ptr::null_mut(), 0);
     });
@@ -159,6 +168,9 @@ pub fn is_process_alive(pid: u32) -> bool {
     #[cfg(unix)]
     {
         // kill(pid, 0) checks if a process exists without sending a signal
+        // SAFETY: signal-0 liveness probe. `kill` takes two plain integers (the pid and signal 0),
+        // no pointers, so no memory is shared with the call. Signal 0 delivers nothing; it only runs
+        // the kernel's permission/existence check. We read the return: `0` means the process exists.
         let result = unsafe { libc::kill(pid as i32, 0) };
         result == 0
     }

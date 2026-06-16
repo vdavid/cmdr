@@ -111,6 +111,8 @@ pub unsafe fn on_drag_entered(drag_info: &AnyObject) {
     // swizzle caller) and the image to `swap_drag_items_to_image`, satisfying its contract.
     let transparent = unsafe { create_transparent_nsimage() };
     if !transparent.is_null() {
+        // SAFETY: `transparent` is a non-null NSImage (null-checked above) and `drag_info` is the
+        // live NSDraggingInfo from the swizzle caller, satisfying `swap_drag_items_to_image`.
         unsafe { swap_drag_items_to_image(drag_info, transparent) };
     }
 }
@@ -125,6 +127,8 @@ pub unsafe fn on_drag_exited(drag_info: &AnyObject) {
         // caller) and the image to `swap_drag_items_to_image`, satisfying its contract.
         let image = unsafe { load_nsimage_from_path(&path) };
         if !image.is_null() {
+            // SAFETY: `image` is a non-null NSImage (null-checked above) and `drag_info` is the
+            // live NSDraggingInfo from the swizzle caller, satisfying `swap_drag_items_to_image`.
             unsafe { swap_drag_items_to_image(drag_info, image) };
         }
     }
@@ -147,6 +151,10 @@ unsafe fn create_transparent_nsimage() -> *mut AnyObject {
         width: 1.0,
         height: 1.0,
     };
+    // SAFETY: `cls` is the live `NSImage` class. `+alloc` returns a freshly allocated,
+    // uninitialized `NSImage *`; `-initWithSize:` consumes that allocation, takes an `NSSize`, and
+    // returns the initialized (+1, caller-owned) instance, matching the `*mut AnyObject` returns.
+    // The raw pointer is returned for the caller to null-check and pass on.
     unsafe {
         let image: *mut AnyObject = msg_send![cls, alloc];
         msg_send![image, initWithSize: size]
@@ -170,6 +178,12 @@ unsafe fn load_nsimage_from_path(path: &str) -> *mut AnyObject {
     let Ok(c_path) = CString::new(path) else {
         return std::ptr::null_mut();
     };
+    // SAFETY: `nsstring_cls`/`nsimage_cls` are the live `NSString`/`NSImage` classes. `c_path` is a
+    // valid NUL-terminated C string (held alive across the call), so `+stringWithUTF8String:`
+    // returns an autoreleased `NSString *` (null-checked). `+alloc` returns a fresh `NSImage *`,
+    // which `-initWithContentsOfFile:` consumes, taking the `NSString *` path and returning the
+    // initialized instance (or null if the file can't be loaded). Types match the `*mut AnyObject`
+    // bindings; the result is returned for the caller to null-check.
     unsafe {
         let ns_path: *mut AnyObject = msg_send![nsstring_cls, stringWithUTF8String: c_path.as_ptr()];
         if ns_path.is_null() {
@@ -187,9 +201,11 @@ unsafe fn swap_drag_items_to_image(drag_info: &AnyObject, image: *mut AnyObject)
         return;
     }
 
-    // SAFETY: `image` is a non-null NSImage (checked above) responding to `size`, and `drag_info`
-    // is a valid NSDraggingInfo (passed by the swizzle caller) responding to `draggingLocation`.
+    // SAFETY: `image` is a non-null NSImage (checked above); `-size` takes no args and returns an
+    // `NSSize`, matching the binding.
     let image_size: NSSize = unsafe { msg_send![image, size] };
+    // SAFETY: `drag_info` is a live NSDraggingInfo (passed by the swizzle caller); `-draggingLocation`
+    // takes no args and returns an `NSPoint`, matching the binding.
     let location: NSPoint = unsafe { msg_send![drag_info, draggingLocation] };
 
     let frame = NSRect {

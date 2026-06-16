@@ -140,6 +140,10 @@ mod tests {
         let id = COUNTER.fetch_add(1, Ordering::Relaxed);
         let dir = std::env::temp_dir().join(format!("cmdr-api-keys-test-{}-{}", std::process::id(), id));
         std::fs::create_dir_all(&dir).expect("create test data dir");
+        // SAFETY: `std::env::set_var` is unsound only under concurrent env access. Each nextest test
+        // runs in its own process, and `isolate_secrets` is called at the top of each test on that
+        // process's single (main) thread before any code reads these vars (the secret store samples
+        // them once via `LazyLock`), so no other thread can be touching the environment here.
         unsafe {
             std::env::set_var("CMDR_DATA_DIR", &dir);
             std::env::set_var("CMDR_SECRET_STORE", "file");

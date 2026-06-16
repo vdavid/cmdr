@@ -121,6 +121,11 @@ mod imp {
             invalidate_cache();
         });
         // Observer is retained by the notification center for the app's lifetime.
+        // SAFETY: `center` is the live `NSWorkspace` notification center; the two notification-name
+        // arguments are framework-exported `&'static NSString` constants, and `block` is a live
+        // `RcBlock` with the expected `(NonNull<NSNotification>) -> ()` signature. The returned
+        // observer tokens are intentionally dropped: the center retains the block for the app's whole
+        // lifetime (it's never deregistered), so the block and its captures stay alive that long.
         unsafe {
             center.addObserverForName_object_queue_usingBlock(
                 Some(objc2_app_kit::NSWorkspaceDidLaunchApplicationNotification),

@@ -313,8 +313,12 @@ fn emit_session_complete(key: isize, outcomes: &[ItemOutcome]) {
 struct SendQueue(Retained<NSOperationQueue>);
 
 // SAFETY: NSOperationQueue is thread-safe per Apple's docs; we only clone
-// (atomic retain) and return it. No main-thread-only state is touched through it.
+// (atomic retain) and return it. No main-thread-only state is touched through it, so moving the
+// wrapper across threads is sound.
 unsafe impl Send for SendQueue {}
+// SAFETY: As above, NSOperationQueue is thread-safe (enqueue from any thread, atomic
+// retain/release), and `&SendQueue` only ever clones or returns the queue, so shared `&` access
+// from multiple threads is sound.
 unsafe impl Sync for SendQueue {}
 
 // ============================================================================

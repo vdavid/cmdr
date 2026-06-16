@@ -13,6 +13,10 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
   `lock-poison`; see `src/ignore_poison.rs`.
 - ❌ Never build the app with raw `cargo build` (white screen, no embedded frontend). Use `pnpm tauri build` or the
   `tauri-wrapper.js build` wrapper, which runs `beforeBuildCommand`. See [`../scripts/CLAUDE.md`](../scripts/CLAUDE.md).
+- ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the immediately-preceding line, stating
+  the concrete invariant that makes THAT site sound (receiver/pointer validity, selector ABI match, thread, Create-vs-Get
+  ownership, success-gate) — specific, never boilerplate. Enforced by `clippy::undocumented_unsafe_blocks`. Rote FFI is
+  documented per-site; ❌ never blanket-exempt a file with `#[allow(clippy::undocumented_unsafe_blocks)]`.
 
 ## Tauri commands and capabilities
 

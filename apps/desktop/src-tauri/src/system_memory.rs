@@ -60,14 +60,14 @@ fn macos_memory_info() -> SystemMemoryInfo {
         sys.total_memory()
     };
 
+    let page_size: u64;
+    let (wired_pages, compressor_pages, internal_pages, purgeable_pages);
+
     // SAFETY: `vm_info` is zeroed before use, and `count` is set to the struct's size measured in
     // `integer_t` words (`size_of::<vm_statistics64>() / size_of::<integer_t>()`), which is the
     // layout `host_statistics64` with `HOST_VM_INFO64` expects, so it writes only within `vm_info`.
     // `sysconf` and `mach_host_self` take no pointers. We read `vm_info`'s fields only after the
     // call returns `KERN_SUCCESS`.
-    let page_size: u64;
-    let (wired_pages, compressor_pages, internal_pages, purgeable_pages);
-
     unsafe {
         page_size = libc::sysconf(libc::_SC_PAGESIZE) as u64;
 

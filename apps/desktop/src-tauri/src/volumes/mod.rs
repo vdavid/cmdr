@@ -137,10 +137,13 @@ pub fn get_smb_mount_info(mount_path: &str) -> Option<SmbMountInfo> {
 
     let c_path = CString::new(mount_path).ok()?;
     let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
+    // SAFETY: `c_path` is a valid NUL-terminated C string from `mount_path`, and `stat` is an
+    // uninitialized but correctly-typed `libc::statfs` out-buffer the kernel fills on success.
     let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
     if result != 0 {
         return None;
     }
+    // SAFETY: `statfs` returned 0, so the kernel fully initialized `stat`.
     let stat = unsafe { stat.assume_init() };
 
     // Check filesystem type is SMB
@@ -211,8 +214,11 @@ pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
     loop {
         if let Ok(c_path) = CString::new(current.as_str()) {
             let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
+            // SAFETY: `c_path` is a valid NUL-terminated C string from `current`, and `stat` is an
+            // uninitialized but correctly-typed `libc::statfs` out-buffer the kernel fills on success.
             let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
             if result == 0 {
+                // SAFETY: `statfs` returned 0, so the kernel fully initialized `stat`.
                 let stat = unsafe { stat.assume_init() };
 
                 let mount_point: String = stat
@@ -310,11 +316,14 @@ fn get_fs_type(path: &str) -> Option<String> {
     let c_path = CString::new(path).ok()?;
     let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
 
+    // SAFETY: `c_path` is a valid NUL-terminated C string from `path`, and `stat` is an
+    // uninitialized but correctly-typed `libc::statfs` out-buffer the kernel fills on success.
     let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
     if result != 0 {
         return None;
     }
 
+    // SAFETY: `statfs` returned 0, so the kernel fully initialized `stat`.
     let stat = unsafe { stat.assume_init() };
     // f_fstypename is [c_char; 16] on macOS. Convert to &str.
     let name_bytes: Vec<u8> = stat
@@ -739,6 +748,9 @@ fn get_nsurl_resource<T>(
 
     let key = NSString::from_str(key);
     let mut value: Option<Retained<objc2::runtime::AnyObject>> = None;
+    // SAFETY: `url` is a live `NSURL` and `key` a live `NSString`; `getResourceValue:forKey:error:`
+    // writes the looked-up value into `value` (left `None` when the key is absent) and the cached
+    // resource value is autoreleased into the caller's pool. We only read `value` after success.
     let success = unsafe { url.getResourceValue_forKey_error(&mut value, &key) };
 
     if success.is_ok() {

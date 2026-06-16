@@ -130,6 +130,9 @@ pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
 
     let c_path = CString::new(path).ok()?;
 
+    // SAFETY: `c_path` is a valid NUL-terminated C string from `path`; `stat` is a zeroed,
+    // correctly-typed `libc::statvfs` out-buffer the kernel fills, and its fields are only read on
+    // the `== 0` (success) branch where the kernel initialized them.
     unsafe {
         let mut stat: libc::statvfs = std::mem::zeroed();
         if libc::statvfs(c_path.as_ptr(), &mut stat) == 0 {

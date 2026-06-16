@@ -95,6 +95,10 @@ async fn test_streaming_list_populates_cache() {
 
     // Verify complete event
     let collector = events.as_ref() as *const dyn ListingEventSink as *const CollectorListingEventSink;
+    // SAFETY: (test) `events` was constructed just above as `Arc::new(CollectorListingEventSink::new())`,
+    // so the trait object's concrete type is statically known to be `CollectorListingEventSink`. The
+    // pointer comes straight from that live `Arc` (no provenance gap), so the downcast and reborrow are
+    // valid for the borrow's lifetime.
     let collector = unsafe { &*collector };
     let complete = collector.complete.lock().unwrap();
     assert_eq!(complete.len(), 1);

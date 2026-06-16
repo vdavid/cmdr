@@ -87,6 +87,8 @@ pub fn install(app_handle: AppHandle) {
     };
 
     if let Err(e) = webview_window.with_webview(|webview| {
+        // SAFETY: `webview.inner()` is the live native webview pointer Tauri hands the
+        // `with_webview` closure, exactly what `install_swizzles`' contract requires.
         unsafe { install_swizzles(webview.inner()) };
     }) {
         log::warn!(
@@ -111,7 +113,12 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
         return;
     }
 
+    // SAFETY: `obj` is the non-null webview object (checked above). `-class` is a universal
+    // NSObject selector returning the object's `Class`, so the `*const AnyClass` return type
+    // matches the real signature. Runs on the main thread (called from `install` at `Ready`).
     let cls: *const AnyClass = unsafe { msg_send![obj, class] };
+    // SAFETY: `cls` is the class pointer just returned by `-class`; `as_ref` only dereferences
+    // it when non-null, yielding a `&AnyClass` borrowed for the scope below.
     let Some(cls) = (unsafe { cls.as_ref() }) else {
         log::warn!(
             "drag_image_detection: could not get ObjC class from webview, swizzle skipped. \
@@ -203,6 +210,9 @@ fn read_modifiers() -> DragModifiers {
             shift_held: false,
         };
     };
+    // SAFETY: `cls` is the live `NSEvent` class (fetched just above). `+[NSEvent modifierFlags]`
+    // is a class method returning `NSEventModifierFlags` (an `NSUInteger`), so the `usize` return
+    // type matches. Reached only from the drag-callback swizzles, i.e. AppKit's main thread.
     let flags: usize = unsafe { msg_send![cls, modifierFlags] };
     DragModifiers {
         alt_held: flags & NS_EVENT_MODIFIER_FLAG_OPTION != 0,
@@ -240,11 +250,12 @@ fn emit_modifiers_forced() {
 /// Forwards to wry's original `draggingEntered:`. Always safe to call: returns
 /// `NSDragOperation::Copy` if the original wasn't saved (shouldn't happen in practice).
 unsafe fn call_original_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
+    // SAFETY: The original IMP was obtained from `draggingEntered:` which has the ObjC
+    // signature `- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender`, so transmuting it
+    // to `fn(&AnyObject, Sel, &AnyObject) -> usize` matches the C ABI, and `this`/`cmd`/`drag_info`
+    // are the live receiver, selector, and NSDraggingInfo forwarded from the swizzle.
     unsafe {
         if let Some(&original) = ORIGINAL_ENTERED_IMP.get() {
-            // SAFETY: The original IMP was obtained from `draggingEntered:` which has the ObjC
-            // signature `- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender`, matching
-            // the C ABI as `fn(&AnyObject, Sel, &AnyObject) -> usize`.
             let f =
                 std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize>(original);
             f(this, cmd, drag_info)
@@ -256,9 +267,11 @@ unsafe fn call_original_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObjec
 
 /// Forwards to wry's original `draggingUpdated:`. Same fallback as above.
 unsafe fn call_original_updated(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
+    // SAFETY: Same as `call_original_entered`. `draggingUpdated:` has an identical ObjC signature,
+    // so the transmute to `fn(&AnyObject, Sel, &AnyObject) -> usize` matches the C ABI, and
+    // `this`/`cmd`/`drag_info` are the live receiver, selector, and NSDraggingInfo from the swizzle.
     unsafe {
         if let Some(&original) = ORIGINAL_UPDATED_IMP.get() {
-            // SAFETY: Same as call_original_entered. `draggingUpdated:` has an identical signature.
             let f =
                 std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize>(original);
             f(this, cmd, drag_info)
@@ -272,10 +285,11 @@ unsafe fn call_original_updated(this: &AnyObject, cmd: Sel, drag_info: &AnyObjec
 /// If the original wasn't saved, this is a no-op (drag exit still works, wry just won't fire its
 /// handler).
 unsafe fn call_original_exited(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) {
+    // SAFETY: Same as `call_original_entered`, except `draggingExited:` returns void, so the
+    // transmute target is `fn(&AnyObject, Sel, &AnyObject)` (no return) to match that C ABI;
+    // `this`/`cmd`/`drag_info` are the live receiver, selector, and NSDraggingInfo from the swizzle.
     unsafe {
         if let Some(&original) = ORIGINAL_EXITED_IMP.get() {
-            // SAFETY: Same as call_original_entered. `draggingExited:` has the same parameter
-            // signature but returns void instead of NSDragOperation.
             let f = std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject)>(original);
             f(this, cmd, drag_info)
         }
@@ -303,6 +317,9 @@ unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel
     // Wrapped in catch_unwind to prevent any unexpected Rust panic from crossing the FFI boundary
     // and crashing the app mid-drag.
     let result = catch_unwind(AssertUnwindSafe(|| {
+        // SAFETY: `drag_info` is the live `id<NSDraggingInfo>` sender AppKit passed to this
+        // `draggingEntered:` callback, valid for the call, which is what `read_drag_image_size`
+        // requires. AppKit delivers drag-destination callbacks on the main thread.
         let size = unsafe { read_drag_image_size(drag_info) };
 
         if let Some(app_handle) = APP_HANDLE.get() {
@@ -319,6 +336,8 @@ unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel
         // For self-drags, swap the OS drag image to transparent so it's invisible inside the window.
         // The rich PNG (set at drag start) remains as the session image shown outside the window.
         // The DOM overlay handles the visual feedback inside.
+        // SAFETY: same live `id<NSDraggingInfo>` sender; `on_drag_entered` only requires a valid
+        // `NSDraggingInfo`, which it enumerates synchronously within this main-thread call.
         unsafe { drag_image_swap::on_drag_entered(drag_info) };
     }));
 
@@ -335,6 +354,9 @@ unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel
 
     // Forward to wry's original so its event handler still fires, but override the return
     // value with our resolved op for self-drags so the OS-rendered "+" badge matches reality.
+    // SAFETY: `this`, `cmd`, and `drag_info` are the live receiver, selector, and `NSDraggingInfo`
+    // sender AppKit passed to this swizzled callback, the exact arguments `call_original_entered`
+    // forwards to wry's saved original `draggingEntered:` IMP.
     let wry_op = unsafe { call_original_entered(this, cmd, drag_info) };
     self_drag_op_override().unwrap_or(wry_op)
 }
@@ -358,6 +380,9 @@ unsafe extern "C-unwind" fn swizzled_dragging_updated(this: &AnyObject, cmd: Sel
 
     // Forward to wry, then override the return value for self-drags. AppKit re-fires
     // draggingUpdated: on modifier-key changes too, so this keeps the badge in sync.
+    // SAFETY: `this`, `cmd`, and `drag_info` are the live receiver, selector, and `NSDraggingInfo`
+    // sender AppKit passed to this swizzled `draggingUpdated:` callback, the exact arguments
+    // `call_original_updated` forwards to wry's saved original IMP.
     let wry_op = unsafe { call_original_updated(this, cmd, drag_info) };
     self_drag_op_override().unwrap_or(wry_op)
 }
@@ -369,6 +394,9 @@ unsafe extern "C-unwind" fn swizzled_dragging_exited(this: &AnyObject, cmd: Sel,
     // setDraggingFrame:contents: modifications persist globally, so the transparent image
     // from draggingEntered: would remain visible outside without this swap-back.
     let result = catch_unwind(AssertUnwindSafe(|| {
+        // SAFETY: `drag_info` is the live `id<NSDraggingInfo>` sender AppKit passed to this
+        // `draggingExited:` callback, valid for the call, which is all `on_drag_exited` requires.
+        // AppKit delivers this callback on the main thread.
         unsafe { drag_image_swap::on_drag_exited(drag_info) };
     }));
 
@@ -382,12 +410,17 @@ unsafe extern "C-unwind" fn swizzled_dragging_exited(this: &AnyObject, cmd: Sel,
     }
 
     // Always forward to wry's original implementation.
+    // SAFETY: `this`, `cmd`, and `drag_info` are the live receiver, selector, and `NSDraggingInfo`
+    // sender AppKit passed to this swizzled `draggingExited:` callback, the exact arguments
+    // `call_original_exited` forwards to wry's saved original IMP.
     unsafe { call_original_exited(this, cmd, drag_info) }
 }
 
 // --- Drag image size reading ---
 
 unsafe fn read_drag_image_size(drag_info: &AnyObject) -> (f64, f64) {
+    // SAFETY: `drag_info` is the caller's live `NSDraggingInfo` (forwarded from the swizzle on the
+    // main thread), which is all `enumerate_dragging_frames` requires.
     let size = unsafe { enumerate_dragging_frames(drag_info) };
     if size.0 > 0.0 || size.1 > 0.0 {
         return size;
@@ -395,6 +428,8 @@ unsafe fn read_drag_image_size(drag_info: &AnyObject) -> (f64, f64) {
 
     // Fallback: try the deprecated `draggedImage()`, which works for same-process drags.
     // Guard with respondsToSelector: since Apple may remove this deprecated API entirely.
+    // SAFETY: `drag_info` is the live `NSDraggingInfo`; `-respondsToSelector:` is a universal
+    // NSObject method taking a `SEL` and returning `BOOL`, matching the `Sel` arg and `Bool` here.
     let responds: Bool = unsafe { msg_send![drag_info, respondsToSelector: sel!(draggedImage)] };
     if !responds.as_bool() {
         warn_once(
@@ -409,8 +444,13 @@ unsafe fn read_drag_image_size(drag_info: &AnyObject) -> (f64, f64) {
         return (0.0, 0.0);
     }
 
+    // SAFETY: `drag_info` responds to `draggedImage` (verified just above). The deprecated
+    // `-draggedImage` returns an autoreleased `NSImage *` (borrowed, not retained here), so the
+    // `*const AnyObject` return type matches; null-checked before use.
     let image: *const AnyObject = unsafe { msg_send![drag_info, draggedImage] };
     if !image.is_null() {
+        // SAFETY: `image` is the non-null `NSImage` returned above; `-size` takes no args and
+        // returns an `NSSize`, matching the binding's type.
         let ns_size: NSSize = unsafe { msg_send![image, size] };
         if ns_size.width > 0.0 || ns_size.height > 0.0 {
             return (ns_size.width, ns_size.height);
@@ -435,6 +475,9 @@ unsafe fn enumerate_dragging_frames(drag_info: &AnyObject) -> (f64, f64) {
         );
         return (0.0, 0.0);
     };
+    // SAFETY: `nsarray_cls` is the live `NSArray` class and `nsurl_cls` the live `NSURL` class
+    // (both just fetched). `+arrayWithObject:` takes one `id` and returns an autoreleased
+    // `NSArray *` (borrowed here), so the `*const AnyObject` return type matches; null-checked next.
     let class_array: *const AnyObject =
         unsafe { msg_send![nsarray_cls, arrayWithObject: nsurl_cls as *const AnyClass] };
     if class_array.is_null() {
@@ -476,6 +519,12 @@ unsafe fn enumerate_dragging_frames(drag_info: &AnyObject) -> (f64, f64) {
     });
 
     let opts = NSDraggingItemEnumerationOptions(0);
+    // SAFETY: `drag_info` is the live `NSDraggingInfo` responding to
+    // `enumerateDraggingItemsWithOptions:forView:classes:searchOptions:usingBlock:`. `opts.0` is
+    // the raw option mask, `class_array` the non-null `NSArray` built above, `empty_dict` a live
+    // `NSDictionary`, and `block` an `RcBlock` with the expected
+    // `(NonNull<NSDraggingItem>, NSInteger, NonNull<Bool>)` signature, borrowed for the synchronous
+    // call; a null `forView` is accepted. Runs on AppKit's main thread (drag callback).
     unsafe {
         let _: () = msg_send![
             drag_info,

@@ -75,6 +75,8 @@ fn test_delete_directory_files_then_dirs() {
 #[test]
 fn test_delete_permission_error_on_file() {
     // Skip if running as root (root bypasses permission checks)
+    // SAFETY: (test) `geteuid` takes no arguments, shares no memory, and can't fail — it just
+    // returns the caller's effective uid. We compare the returned integer to 0 to detect root.
     if unsafe { libc::geteuid() } == 0 {
         return;
     }
@@ -107,6 +109,8 @@ fn test_delete_permission_error_on_file() {
 #[test]
 fn test_delete_partial_state_on_error() {
     // Skip if running as root (root bypasses permission checks)
+    // SAFETY: (test) `geteuid` takes no arguments, shares no memory, and can't fail — it just
+    // returns the caller's effective uid. We compare the returned integer to 0 to detect root.
     if unsafe { libc::geteuid() } == 0 {
         return;
     }

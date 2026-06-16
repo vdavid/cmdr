@@ -170,6 +170,7 @@ fn get_real_mounts() -> HashMap<String, String> {
 /// Start watching the GVFS directory for SMB share mount/unmount.
 /// Skips silently if `/run/user/<uid>/gvfs/` doesn't exist (non-GNOME systems).
 fn start_gvfs_watcher() {
+    // SAFETY: `getuid` reads the process's real UID; always safe, no args or pointers.
     let uid = unsafe { libc::getuid() };
     let gvfs_dir = format!("/run/user/{}/gvfs", uid);
     let gvfs_path = Path::new(&gvfs_dir);
