@@ -100,19 +100,6 @@ impl IgnoreSet {
         }
     }
 
-    /// Bulk version of [`Self::note_pending`]. Reserved for future call
-    /// sites with a full destination list up front (transfer driver, etc.);
-    /// the per-file path is what hook sites wire today.
-    #[allow(
-        dead_code,
-        reason = "Hook contract surface; per-file note_pending is what's wired today"
-    )]
-    pub fn note_pending_batch(&self, paths: Vec<PathBuf>, ttl: Duration) {
-        for p in paths {
-            self.note_pending(p, ttl);
-        }
-    }
-
     /// Is `path` currently pending (registered and not yet expired)?
     ///
     /// Also performs lazy expiry: any entries already past their deadline
@@ -269,20 +256,4 @@ mod tests {
         assert_eq!(set.len(), 0);
     }
 
-    #[test]
-    fn note_pending_batch_inserts_all_inside() {
-        let root = TempDir::new().unwrap();
-        let set = make(root.path());
-        let inside_a = root.path().join("a");
-        let inside_b = root.path().join("b");
-        let outside = PathBuf::from("/tmp/elsewhere");
-        set.note_pending_batch(
-            vec![inside_a.clone(), inside_b.clone(), outside.clone()],
-            Duration::from_secs(1),
-        );
-        assert!(set.is_pending(&inside_a));
-        assert!(set.is_pending(&inside_b));
-        assert!(!set.is_pending(&outside));
-        assert_eq!(set.len(), 2);
-    }
 }

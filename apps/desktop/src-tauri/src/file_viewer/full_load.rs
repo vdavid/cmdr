@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use super::encoding::{FileEncoding, decode_line, detect, find_newlines};
+use super::encoding::{FileEncoding, decode_line, find_newlines};
 use super::search_matcher::{LineScan, Matcher, scan_line_with_matcher};
 use super::{BackendCapabilities, FileViewerBackend, LineChunk, SearchMatch, SeekTarget, ViewerError};
 
@@ -18,17 +18,18 @@ pub struct FullLoadBackend {
     line_offsets: Vec<u64>,
     total_bytes: u64,
     file_name: String,
-    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
-    encoding: FileEncoding,
 }
 
 impl FullLoadBackend {
     /// Open with auto-detected encoding. Falls back to UTF-8 on detection IO errors
     /// (the subsequent `decode_line` calls then run through `from_utf8_lossy`, which
     /// is what the viewer used to do before encoding-awareness landed).
-    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
+    ///
+    /// Test-only: production always opens through `open_with_encoding` with an
+    /// explicit detected encoding (the session detects once and shares it).
+    #[cfg(test)]
     pub fn open(path: &Path) -> Result<Self, ViewerError> {
-        let encoding = detect(path).unwrap_or(FileEncoding::Utf8);
+        let encoding = super::encoding::detect(path).unwrap_or(FileEncoding::Utf8);
         Self::open_with_encoding(path, encoding)
     }
 
@@ -105,13 +106,7 @@ impl FullLoadBackend {
             line_offsets,
             total_bytes,
             file_name,
-            encoding,
         }
-    }
-
-    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
-    pub fn encoding(&self) -> FileEncoding {
-        self.encoding
     }
 
     /// `extend_to` doesn't apply to FullLoad: the session escalates to

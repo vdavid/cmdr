@@ -67,18 +67,15 @@ impl QuickLookController {
         }
     }
 
-    /// Whether the panel is currently considered open. Used by tests and by
-    /// future state-inspection IPCs.
-    #[allow(
-        dead_code,
-        reason = "Used by unit tests and reserved for future state-inspection IPC"
-    )]
+    /// Whether the panel is currently considered open. Test-only observer of the
+    /// state machine; production reads the `is_open` field directly.
+    #[cfg(test)]
     pub fn is_open(&self) -> bool {
         self.is_open
     }
 
-    /// The URL the panel is currently showing, if any. Used by tests.
-    #[allow(dead_code, reason = "Used by unit tests")]
+    /// The URL the panel is currently showing, if any. Test-only.
+    #[cfg(test)]
     pub fn current_url(&self) -> Option<&Path> {
         self.current_url.as_deref()
     }

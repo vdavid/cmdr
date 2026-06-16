@@ -14,7 +14,7 @@
 //! requires a restart but a mid-session revoke in System Settings is also
 //! possible).
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -223,9 +223,7 @@ pub fn with_watcher<R>(f: impl FnOnce(&DownloadsWatcher) -> R) -> Option<R> {
 ///    inside [`super::IgnoreSet::note_pending`], so call sites invoke
 ///    unconditionally without per-call prefix guards.
 ///
-/// Uses [`DEFAULT_IGNORE_TTL`] (5 s). Use [`note_pending_writes_for_cmdr`]
-/// for bulk registration when the destination set is known up front; it
-/// pays one mutex acquire for the whole batch instead of N.
+/// Uses [`DEFAULT_IGNORE_TTL`] (5 s).
 pub fn note_pending_write_for_cmdr(path: &Path) {
     note_pending_write_for_cmdr_with_ttl(path, DEFAULT_IGNORE_TTL);
 }
@@ -235,24 +233,6 @@ pub fn note_pending_write_for_cmdr(path: &Path) {
 /// default.
 pub fn note_pending_write_for_cmdr_with_ttl(path: &Path, ttl: Duration) {
     with_watcher(|w| w.note_pending_write(path.to_path_buf(), ttl));
-}
-
-/// Bulk version of [`note_pending_write_for_cmdr`]. One mutex acquire for
-/// the whole batch. Reserved for future call sites that know their full
-/// destination list up front; per-file callers are what's wired today.
-#[allow(
-    dead_code,
-    reason = "Hook contract surface; per-file note_pending_write_for_cmdr is what's wired today"
-)]
-pub fn note_pending_writes_for_cmdr<I>(paths: I)
-where
-    I: IntoIterator<Item = PathBuf>,
-{
-    let collected: Vec<PathBuf> = paths.into_iter().collect();
-    if collected.is_empty() {
-        return;
-    }
-    with_watcher(|w| w.note_pending_writes(collected, DEFAULT_IGNORE_TTL));
 }
 
 /// Test-only: install `watcher` as the process-global handle and return a
@@ -344,7 +324,6 @@ mod tests {
         assert!(!is_running(), "precondition: no watcher installed");
 
         note_pending_write_for_cmdr(Path::new("/tmp/anything"));
-        note_pending_writes_for_cmdr(vec![PathBuf::from("/a"), PathBuf::from("/b")]);
         note_pending_write_for_cmdr_with_ttl(Path::new("/tmp/x"), Duration::from_millis(50));
 
         assert!(!is_running(), "helpers must not install a watcher");

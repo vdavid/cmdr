@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::ignore_poison::IgnorePoison;
 use memchr::memchr;
 
-use super::encoding::{FileEncoding, NewlineScanner, decode_line, detect};
+use super::encoding::{FileEncoding, NewlineScanner, decode_line};
 use super::search_matcher::{LineScan, Matcher, scan_line_with_matcher};
 use super::{
     BackendCapabilities, FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, LineChunk, SearchMatch, SeekTarget, ViewerError,
@@ -53,9 +53,12 @@ pub struct LineIndexBackend {
 
 impl LineIndexBackend {
     /// Build the line index by scanning the file. Auto-detects encoding.
-    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
+    ///
+    /// Test-only: production always opens through `open_with_encoding` with an
+    /// explicit detected encoding (the session detects once and shares it).
+    #[cfg(test)]
     pub fn open(path: &Path, cancel: &AtomicBool) -> Result<Self, ViewerError> {
-        let encoding = detect(path).unwrap_or(FileEncoding::Utf8);
+        let encoding = super::encoding::detect(path).unwrap_or(FileEncoding::Utf8);
         Self::open_with_encoding(path, encoding, cancel)
     }
 
@@ -151,11 +154,6 @@ impl LineIndexBackend {
         })
     }
 
-    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
-    pub fn encoding(&self) -> FileEncoding {
-        self.encoding
-    }
-
     /// Returns a fresh backend with checkpoints extended to cover bytes up to
     /// `new_size`. Cancellable; if `cancel` flips, returns `Err(Cancelled)` and
     /// the caller falls back to the prior backend.
@@ -163,7 +161,6 @@ impl LineIndexBackend {
     /// Cost: opens the file, seeks to `self.total_bytes`, scans only the new
     /// range. Memory: the checkpoint vec is cloned (O(checkpoints), cheap — 16
     /// bytes per checkpoint, ~390 K for a 100 M-line file).
-    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     pub fn extend_to(&self, new_size: u64, cancel: &AtomicBool) -> Result<Self, ViewerError> {
         if new_size <= self.total_bytes {
             return Ok(Self {

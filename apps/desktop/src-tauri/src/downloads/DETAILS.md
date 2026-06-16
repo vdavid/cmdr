@@ -20,8 +20,7 @@ the OS watch; the watcher holds no FDA-protected state beyond that, so the close
 ## Cmdr-own-write hook contract
 
 Write operations call `crate::downloads::note_pending_write_for_cmdr(&dest_path)` immediately before each filesystem
-syscall (and `note_pending_writes_for_cmdr(paths)` for transfer-driver paths that know their destination set up front,
-saving N-1 mutex acquires). `note_pending_write_for_cmdr` resolves the watcher via `runtime::with_watcher` and calls
+syscall. `note_pending_write_for_cmdr` resolves the watcher via `runtime::with_watcher` and calls
 `IgnoreSet::note_pending`, whose prefix check silently no-ops for paths outside the watched Downloads root, so call
 sites invoke unconditionally; don't move the filter to the call sites. The end-to-end safety net is
 `downloads::runtime::tests::note_pending_write_for_cmdr_suppresses_watcher_event_end_to_end`. Call sites live across

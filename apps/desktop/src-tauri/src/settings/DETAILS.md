@@ -32,8 +32,6 @@ differs from the field name.
   Local Network prompt has fired).
 - `analytics_enabled: Option<bool>` (from `analytics.enabled`; tri-state consent: None/Some(true) → on, Some(false) →
   opted out; see `analytics/CLAUDE.md`).
-- `analytics_email: Option<String>` (from `analytics.email`; beta contact email, frontend-owned, never sent through
-  analytics).
 
 `early_load_global_go_to_latest_shortcut()` is a third early-load helper returning `Option<(bool, String)>` (enabled +
 shortcut string) for the downloads global shortcut, read before the `AppHandle` is wired in.

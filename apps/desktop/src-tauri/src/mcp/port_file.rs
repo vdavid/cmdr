@@ -26,21 +26,18 @@ use std::process;
 /// Errors that can surface from the port file. Typed so call sites can branch without
 /// substring matching the message (AGENTS.md "no string-matching error classification").
 ///
-/// Today only the writer side ships in this binary (the FE reads `MCP_ACTUAL_PORT` via
-/// IPC). The reader / typed errors are pub so the in-tree port-file consumers we'll wire
-/// in later phases (P3 checker shard rewire; the Bash CLI lives in `scripts/`) share one
-/// vocabulary. Allowed-unused with a reason because the crate root denies `unused`.
+/// Production ships only the writer: the FE reads the live port via the `get_mcp_port`
+/// IPC, and external readers (`scripts/mcp-call.sh`, E2E fixtures) parse the file in
+/// shell. The Rust reader ([`read_port_file`]) and its `InvalidContent` variant are
+/// `#[cfg(test)]` — they verify the write path in unit tests, not in the shipping binary.
 #[derive(Debug)]
-#[allow(
-    dead_code,
-    reason = "reader API used by tests today; phase-3 checker will pick it up"
-)]
 pub enum PortDiscoveryError {
     /// The port file doesn't exist yet (or anymore).
     NotFound,
     /// Filesystem error reading or writing the file.
     Io(std::io::Error),
     /// The file exists but its contents don't parse as `u16` + optional newline.
+    #[cfg(test)]
     InvalidContent(String),
 }
 
@@ -49,6 +46,7 @@ impl std::fmt::Display for PortDiscoveryError {
         match self {
             Self::NotFound => write!(f, "port file not found"),
             Self::Io(err) => write!(f, "port file IO error: {err}"),
+            #[cfg(test)]
             Self::InvalidContent(s) => write!(f, "port file content not a valid u16: {s:?}"),
         }
     }
@@ -127,10 +125,11 @@ pub fn write_secret_file(dir: &Path, name: &str, secret: &str) -> Result<(), Por
 }
 
 /// Read and parse `<dir>/<name>`. Returns `NotFound` if the file isn't there yet.
-#[allow(
-    dead_code,
-    reason = "in-tree reader: tests use it today; phase-3 checker will pick it up"
-)]
+///
+/// Test-only: production never reads the port file from Rust (the FE uses the
+/// `get_mcp_port` IPC; external tooling parses the file in shell). This exists so unit
+/// tests can verify what [`write_port_file`] actually wrote.
+#[cfg(test)]
 pub fn read_port_file(dir: &Path, name: &str) -> Result<u16, PortDiscoveryError> {
     let path = port_file_path(dir, name);
     let raw = fs::read_to_string(&path)?;

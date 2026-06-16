@@ -340,18 +340,6 @@ impl DownloadsWatcher {
         self.ignore_set.note_pending(canonicalize_for_match(&path), ttl);
     }
 
-    /// Bulk version of [`Self::note_pending_write`]. Reserved for future
-    /// call sites with a known full destination list (transfer driver,
-    /// etc.); the per-file [`Self::note_pending_write`] is what's wired today.
-    #[allow(
-        dead_code,
-        reason = "Hook contract surface; per-file note_pending_write is what's wired today"
-    )]
-    pub fn note_pending_writes(&self, paths: Vec<PathBuf>, ttl: Duration) {
-        let canonical: Vec<PathBuf> = paths.iter().map(|p| canonicalize_for_match(p)).collect();
-        self.ignore_set.note_pending_batch(canonical, ttl);
-    }
-
     /// Most-recently observed eligible download, or `None` if the ring is
     /// empty. The "go to latest download" action reads this first; if `None`
     /// it falls back to [`Self::scan_latest_fallback`].
@@ -366,14 +354,6 @@ impl DownloadsWatcher {
         scan_latest(&self.downloads_root)
     }
 
-    /// Resolved Downloads root the watcher was started against.
-    #[allow(
-        dead_code,
-        reason = "Exposed for the Settings pane / debug surfaces; not consumed today"
-    )]
-    pub fn downloads_root(&self) -> &Path {
-        &self.downloads_root
-    }
 }
 
 /// Process a batch of debounced events. Pulled out so the callback closure

@@ -27,10 +27,6 @@ pub struct LatestRing {
     capacity: usize,
 }
 
-#[allow(
-    dead_code,
-    reason = "clear/len are reserved for future ring management; the watcher uses push + latest only"
-)]
 impl LatestRing {
     pub fn new() -> Self {
         Self::with_capacity(DEFAULT_CAPACITY)
@@ -66,11 +62,10 @@ impl LatestRing {
         s.back().map(|(p, _)| p.clone())
     }
 
-    pub fn clear(&self) {
-        let mut s = self.state.lock().expect("LatestRing poisoned");
-        s.clear();
-    }
-
+    /// Test-only observer of the ring's occupancy. Production reads only
+    /// `push` + `latest`; this exists so unit tests can assert the capacity
+    /// cap and dedup invariants.
+    #[cfg(test)]
     pub fn len(&self) -> usize {
         let s = self.state.lock().expect("LatestRing poisoned");
         s.len()
@@ -135,13 +130,4 @@ mod tests {
         assert_eq!(ring.len(), 3, "no duplicates after re-push");
     }
 
-    #[test]
-    fn clear_empties_ring() {
-        let ring = LatestRing::new();
-        ring.push(pb("/d/a"), Instant::now());
-        ring.push(pb("/d/b"), Instant::now());
-        ring.clear();
-        assert_eq!(ring.len(), 0);
-        assert_eq!(ring.latest(), None);
-    }
 }

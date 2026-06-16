@@ -62,10 +62,6 @@ const SAFE_PARENT_DIR_NAMES: &[&str] = &[
 ///
 /// Bare `<dir>` / `<file>` tokens. For salted mode (correlatable hashes within a
 /// bundle), use [`redact_line_salted`].
-#[allow(
-    dead_code,
-    reason = "Public API for the Phase 4 error reporter; exercised by redact tests."
-)]
 pub fn redact_line(line: &str) -> Cow<'_, str> {
     redactor_regex().replace_all(line, |caps: &Captures<'_>| dispatch(caps, None))
 }
@@ -78,20 +74,12 @@ pub fn redact_line(line: &str) -> Cow<'_, str> {
 /// The salt is expected to be ≥ 16 bytes of cryptographic random per bundle. Anything
 /// shorter is accepted (the hash still correlates) but cross-bundle resistance suffers
 /// proportionally.
-#[allow(
-    dead_code,
-    reason = "Public API; wired by the error-report bundle builder once it generates per-bundle salts."
-)]
 pub fn redact_line_salted<'a>(line: &'a str, salt: &[u8]) -> Cow<'a, str> {
     redactor_regex().replace_all(line, |caps: &Captures<'_>| dispatch(caps, Some(salt)))
 }
 
 /// Redact a multi-line text blob. Splits on `\n` and redacts each line independently
 /// so regex anchors behave predictably.
-#[allow(
-    dead_code,
-    reason = "Public API for the Phase 4 error reporter; exercised by redact tests."
-)]
 pub fn redact_text(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     for line in text.split_inclusive('\n') {

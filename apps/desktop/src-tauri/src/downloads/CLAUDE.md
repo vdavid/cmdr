@@ -29,7 +29,7 @@ Full lifecycle, scope rationale, and v1 limits: [DETAILS.md](DETAILS.md).
   (recovers from a stale focus-event read). The watcher holds no FDA-protected state, so the closed-gate side is a pure
   no-op.
 - **Cmdr-own-write hook: call `crate::downloads::note_pending_write_for_cmdr(&dest_path)` immediately before each write
-  syscall** (batches: `note_pending_writes_for_cmdr(paths)`). It silently no-ops for paths outside the watched
+  syscall**. It silently no-ops for paths outside the watched
   Downloads root (the prefix check lives in `IgnoreSet::note_pending`), so call sites invoke unconditionally. Don't move
   the filter to the call sites. Key on the **final** path: a browser rename `foo.zip.crdownload` → `foo.zip` arrives as
   `RenameMode::Both` and the watcher checks both halves; Cmdr never writes `.crdownload`, so always register the final

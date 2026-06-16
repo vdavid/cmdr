@@ -31,9 +31,9 @@
 //!
 //! ## Cmdr-own-write ignore set
 //!
-//! Write operations call [`DownloadsWatcher::note_pending_write`] (or
-//! `note_pending_writes` for batches) just before issuing the syscall. The
-//! default TTL is [`watcher::DEFAULT_IGNORE_TTL`] (5 s). Call sites can
+//! Write operations call [`DownloadsWatcher::note_pending_write`] just before
+//! issuing the syscall. The default TTL is [`watcher::DEFAULT_IGNORE_TTL`]
+//! (5 s). Call sites can
 //! invoke unconditionally: the ignore set silently no-ops for paths
 //! outside the resolved Downloads root (locked-in scoping; don't move the
 //! filter to the call sites). Key on the **final** path, not the partial —
