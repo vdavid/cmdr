@@ -12,7 +12,7 @@ import {
   type DateSegment,
   type FormattedDate,
 } from '$lib/settings/format-utils'
-import { formatInteger } from '$lib/intl/number-format'
+import { formatInteger, getGroupSeparator } from '$lib/intl/number-format'
 
 // Size tier colors for digit triads (indexed: 0=bytes, 1=kB, 2=MB, 3=GB, 4=TB+)
 export const sizeTierClasses = ['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']
@@ -37,10 +37,14 @@ export function formatSizeTriads(bytes: number): { value: string; tierClass: str
     tierIndex++
   }
 
-  // Add thousand separators between triads (space)
+  // Group separator follows the active locale (so byte triads agree with the
+  // localized counts from `formatNumber`), sourced once from the number-format
+  // layer. We keep the per-triad split + tier coloring (the reason this is
+  // bespoke rather than `Intl.NumberFormat`) and only swap the separator.
+  const separator = getGroupSeparator()
   return triads.map((t, i) => ({
     ...t,
-    value: i < triads.length - 1 ? t.value + '\u2009' : t.value, // thin space separator
+    value: i < triads.length - 1 ? t.value + separator : t.value,
   }))
 }
 

@@ -1,7 +1,7 @@
 /**
  * Tests for selection-info-utils.ts
  */
-import { afterEach, describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect } from 'vitest'
 import {
   formatSizeTriads,
   formatSizeForDisplay,
@@ -38,6 +38,15 @@ function createFileEntry(overrides: Partial<FileEntry> = {}): FileEntry {
 }
 
 describe('formatSizeTriads', () => {
+  // Pin en-US so the separator (now locale-driven, Decision 4) is deterministic
+  // across CI machines. The locale-switch behavior is covered in its own block.
+  beforeEach(() => {
+    _setLocaleForTests('en-US')
+  })
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
   it('formats single digit', () => {
     const result = formatSizeTriads(5)
     expect(result).toHaveLength(1)
@@ -62,7 +71,7 @@ describe('formatSizeTriads', () => {
   it('formats four digits (KB range)', () => {
     const result = formatSizeTriads(1234)
     expect(result).toHaveLength(2)
-    expect(result[0].value).toBe('1\u2009') // with thin space separator
+    expect(result[0].value).toBe('1,') // en-US group separator
     expect(result[0].tierClass).toBe('size-kb')
     expect(result[1].value).toBe('234')
     expect(result[1].tierClass).toBe('size-bytes')
@@ -71,7 +80,7 @@ describe('formatSizeTriads', () => {
   it('formats six digits', () => {
     const result = formatSizeTriads(123456)
     expect(result).toHaveLength(2)
-    expect(result[0].value).toBe('123\u2009')
+    expect(result[0].value).toBe('123,')
     expect(result[0].tierClass).toBe('size-kb')
     expect(result[1].value).toBe('456')
     expect(result[1].tierClass).toBe('size-bytes')
@@ -80,9 +89,9 @@ describe('formatSizeTriads', () => {
   it('formats seven digits (MB range)', () => {
     const result = formatSizeTriads(1234567)
     expect(result).toHaveLength(3)
-    expect(result[0].value).toBe('1\u2009')
+    expect(result[0].value).toBe('1,')
     expect(result[0].tierClass).toBe('size-mb')
-    expect(result[1].value).toBe('234\u2009')
+    expect(result[1].value).toBe('234,')
     expect(result[1].tierClass).toBe('size-kb')
     expect(result[2].value).toBe('567')
     expect(result[2].tierClass).toBe('size-bytes')
@@ -117,6 +126,38 @@ describe('formatSizeTriads', () => {
     expect(result).toHaveLength(1)
     expect(result[0].value).toBe('0')
     expect(result[0].tierClass).toBe('size-bytes')
+  })
+})
+
+describe('formatSizeTriads: locale-aware group separator (Decision 4)', () => {
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  it('en-US uses the comma group separator', () => {
+    _setLocaleForTests('en-US')
+    const result = formatSizeTriads(1234567)
+    expect(result.map((t) => t.value)).toEqual(['1,', '234,', '567'])
+    // Tier coloring is unchanged: leading triad highest, trailing lowest.
+    expect(result.map((t) => t.tierClass)).toEqual(['size-mb', 'size-kb', 'size-bytes'])
+  })
+
+  it('de-DE uses the period group separator', () => {
+    _setLocaleForTests('de-DE')
+    const result = formatSizeTriads(1234567)
+    expect(result.map((t) => t.value)).toEqual(['1.', '234.', '567'])
+    expect(result.map((t) => t.tierClass)).toEqual(['size-mb', 'size-kb', 'size-bytes'])
+  })
+
+  it('appends the separator to every triad but the last', () => {
+    _setLocaleForTests('de-DE')
+    const result = formatSizeTriads(1073208)
+    expect(result.map((t) => t.value)).toEqual(['1.', '073.', '208'])
+  })
+
+  it('a single triad carries no separator regardless of locale', () => {
+    _setLocaleForTests('de-DE')
+    expect(formatSizeTriads(512).map((t) => t.value)).toEqual(['512'])
   })
 })
 
@@ -345,6 +386,15 @@ describe('colorizeSizeString', () => {
 })
 
 describe('formatSizeForDisplay', () => {
+  // The raw-bytes path's group separator follows the locale (Decision 4); pin
+  // en-US so the joined string is deterministic across CI machines.
+  beforeEach(() => {
+    _setLocaleForTests('en-US')
+  })
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
   describe("bytes mode (unit: 'bytes')", () => {
     it('delegates to formatSizeTriads for small values', () => {
       const result = formatSizeForDisplay(512, { unit: 'bytes', format: 'binary' })
@@ -354,8 +404,8 @@ describe('formatSizeForDisplay', () => {
     it('delegates to formatSizeTriads for large values', () => {
       const result = formatSizeForDisplay(1_073_208, { unit: 'bytes', format: 'binary' })
       expect(result).toEqual(formatSizeTriads(1_073_208))
-      // Sanity-check: matches user's example "1 073 208" (with thin spaces)
-      expect(result.map((t) => t.value).join('')).toBe('1 073 208')
+      // Sanity-check: en-US groups the triads with commas ("1,073,208").
+      expect(result.map((t) => t.value).join('')).toBe('1,073,208')
     })
 
     it('ignores the format option in bytes mode', () => {
