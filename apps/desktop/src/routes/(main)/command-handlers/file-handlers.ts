@@ -23,6 +23,7 @@ import {
 } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { addToast } from '$lib/ui/toast'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
+import { tString } from '$lib/intl/messages.svelte'
 import type { CommandArgs } from '$lib/commands'
 import type { CommandHandlerContext, CommandHandlerRecord } from './types'
 
@@ -146,7 +147,7 @@ export const fileHandlers = {
       try {
         await cloudMakeAvailableOffline(entry.path)
       } catch (e) {
-        addToast(`Couldn't download from cloud. ${String(e)}`, { level: 'error' })
+        addToast(tString('commands.handler.cloudDownloadFailed', { detail: String(e) }), { level: 'error' })
       }
     }),
 
@@ -155,7 +156,7 @@ export const fileHandlers = {
       try {
         await cloudRemoveDownload(entry.path)
       } catch (e) {
-        addToast(`Couldn't remove the download. ${String(e)}`, { level: 'error' })
+        addToast(tString('commands.handler.cloudRemoveDownloadFailed', { detail: String(e) }), { level: 'error' })
       }
     }),
 } satisfies Partial<CommandHandlerRecord>

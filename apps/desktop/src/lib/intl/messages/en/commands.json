@@ -671,5 +671,80 @@
   "commands.paletteClose.label": "Close palette",
   "@commands.paletteClose.label": {
     "description": "Command name for closing the command palette. Shown only in the keyboard-shortcuts list (not the palette itself)."
+  },
+
+  "commands.handler.favoriteAdded": "Added \"{name}\" to favorites",
+  "@commands.handler.favoriteAdded": {
+    "description": "Success toast after adding the current folder to favorites (via the command palette, menu, or shortcut). The folder name is shown in straight double quotes.",
+    "placeholders": {
+      "name": "the folder's name (its last path segment), e.g. \"Documents\""
+    }
+  },
+
+  "commands.handler.favoriteAddFailed": "Couldn't add that folder to favorites. Try again?",
+  "@commands.handler.favoriteAddFailed": {
+    "description": "Error toast shown when adding a folder to favorites didn't go through. Friendly and reassuring; ends with an offer to retry. Uses a contraction (\"Couldn't\")."
+  },
+
+  "commands.handler.tabLimitReached": "Tab limit reached",
+  "@commands.handler.tabLimitReached": {
+    "description": "Warning toast shown when the user tries to open or reopen a tab but the per-pane tab limit is already reached. Terse. Shown for both new-tab and reopen-tab attempts."
+  },
+
+  "commands.handler.noRecentlyClosedTabs": "No recently closed tabs in this pane.",
+  "@commands.handler.noRecentlyClosedTabs": {
+    "description": "Warning toast shown when the user tries to reopen a recently closed tab but the pane has no closed-tab history."
+  },
+
+  "commands.handler.cloudDownloadFailed": "Couldn't download from cloud. {detail}",
+  "@commands.handler.cloudDownloadFailed": {
+    "description": "Error toast when making a cloud file available offline (downloading it) didn't go through. Uses a contraction (\"Couldn't\").",
+    "placeholders": {
+      "detail": "the raw underlying error text appended after the sentence (a technical message, often in English)"
+    }
+  },
+
+  "commands.handler.cloudRemoveDownloadFailed": "Couldn't remove the download. {detail}",
+  "@commands.handler.cloudRemoveDownloadFailed": {
+    "description": "Error toast when removing a cloud file's local download (freeing space) didn't go through. Uses a contraction (\"Couldn't\").",
+    "placeholders": {
+      "detail": "the raw underlying error text appended after the sentence (a technical message, often in English)"
+    }
+  },
+
+  "commands.handler.zoomResetHintShortcut": "You can reset the zoom level to 100% by {shortcut}.",
+  "@commands.handler.zoomResetHintShortcut": {
+    "description": "Trailing hint appended to the zoom-changed toast, telling the user how to reset zoom when a reset shortcut is bound. \"100%\" is literal.",
+    "placeholders": {
+      "shortcut": "the keyboard shortcut that resets zoom to 100%, e.g. \"⌘0\"; do NOT translate the glyphs or key names"
+    }
+  },
+
+  "commands.handler.zoomResetHintMenu": "You can reset the zoom level to 100% at View > Zoom > 100%.",
+  "@commands.handler.zoomResetHintMenu": {
+    "description": "Trailing hint appended to the zoom-changed toast when no reset shortcut is bound, pointing at the menu path instead. \"View > Zoom > 100%\" is a literal menu path; \"View\" and \"Zoom\" are menu names that match the app's menu bar; \"100%\" is literal."
+  },
+
+  "commands.handler.zoomReset": "Zoom reset to 100%.",
+  "@commands.handler.zoomReset": {
+    "description": "Info toast shown when the user sets the zoom level back to 100%. \"100%\" is literal."
+  },
+
+  "commands.handler.zoomIncreased": "Zoom increased to {size}%. {hint}",
+  "@commands.handler.zoomIncreased": {
+    "description": "Info toast shown when the user increases the zoom level. Ends with a reset hint.",
+    "placeholders": {
+      "size": "the new zoom percentage as a number, e.g. \"125\" (the % sign follows it in the template)",
+      "hint": "a pre-built sentence telling the user how to reset zoom to 100% (already translated separately)"
+    }
+  },
+
+  "commands.handler.zoomDecreased": "Zoom decreased to {size}%. {hint}",
+  "@commands.handler.zoomDecreased": {
+    "description": "Info toast shown when the user decreases the zoom level. Ends with a reset hint.",
+    "placeholders": {
+      "size": "the new zoom percentage as a number, e.g. \"90\" (the % sign follows it in the template)",
+      "hint": "a pre-built sentence telling the user how to reset zoom to 100% (already translated separately)"
+    }
   }
 }

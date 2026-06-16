@@ -10,6 +10,14 @@ This is one half of the friendly-error system. The other half is Rust classifica
 typed `ListingError`), this decides the WORDS. The split realizes "smart backend, thin frontend" and seeds an i18n
 catalog (a single home for all error copy).
 
+The copy/move/delete WRITE-error prose is a sibling of this family but lives outside this directory: the
+`errors.write.*` keys are in `errors.json` alongside ours, yet they're composed by
+[`../file-operations/transfer/transfer-error-messages.ts`](../file-operations/transfer/transfer-error-messages.ts)
+(rendered in `TransferErrorDialog`/`FallbackErrorContent`), not the factories here. Same `getMessage()`-not-ICU rule
+(the values interpolate escaped paths/sizes and verb tokens, so they bypass ICU and use normal apostrophes). They're
+parity-pinned by `transfer/transfer-error-messages.parity.test.ts`, not by our golden fixture. The two paths share the
+`FriendlyErrorMessage` shape and may converge later.
+
 ## Data flow
 
 1. Rust emits a `listing-error` event carrying a typed `ListingError` (category, reason + params, optional provider,
@@ -24,9 +32,6 @@ catalog (a single home for all error copy).
 4. `ErrorPane` renders the result. The explanation / suggestion go through the single `renderErrorMarkdown` → snarkdown
    → `{@html}` site ([`error-pane-utils.ts`](../file-explorer/pane/error-pane-utils.ts)); the title and `raw_detail` are
    plain text.
-
-The write path is a sibling, not this module: `transfer-error-messages.ts` renders `write-error` copy directly from the
-typed `WriteOperationError`. The two share the `FriendlyErrorMessage` shape (see Convergence below).
 
 ## Markdown escaping (the XSS-load-bearing contract)
 

@@ -18,9 +18,9 @@ const svelteTester = new RuleTester({
 // surface (the real dialogs are still excluded until their M2 tranche).
 const TRANSFER_TS = 'src/lib/file-operations/transfer/transfer-complete-toast.ts'
 const TRANSFER_SVELTE = 'src/lib/file-operations/transfer/CompletedTransferBanner.svelte'
-// A still-excluded file inside an enforced area (the one remaining ledger entry,
-// the command-handlers subtree): still-raw copy must NOT flag yet.
-const EXCLUDED_SVELTE = 'src/routes/(main)/command-handlers/favorites-handlers.svelte'
+// The command-handlers subtree is now fully enforced (its ledger exclusion was
+// removed once its toast copy migrated to the catalog): raw copy here MUST flag.
+const COMMAND_HANDLERS_SVELTE = 'src/routes/(main)/command-handlers/favorites-handlers.svelte'
 // A non-enforced area (file-explorer's migration is still finishing on its
 // branch): identical raw strings here must NOT flag yet.
 const OTHER_SVELTE = 'src/lib/file-explorer/pane/FilePane.svelte'
@@ -82,11 +82,6 @@ svelteTester.run('no-raw-user-facing-string (svelte sinks)', rule, {
       code: `<button class="primary"><Icon name="x" /></button>`,
       filename: TRANSFER_SVELTE,
     },
-    // A still-excluded file (the command-handlers ledger entry): raw copy must NOT flag.
-    {
-      code: `<button title="Cancel transfer"><Icon name="x" /></button>`,
-      filename: EXCLUDED_SVELTE,
-    },
     // CSS inside a `<style>` block is code, not copy: the parser emits it as a
     // SvelteText node, so the rule must skip it (it was flagging stylesheets).
     {
@@ -128,6 +123,12 @@ svelteTester.run('no-raw-user-facing-string (svelte sinks)', rule, {
     {
       code: `<p>Transfer complete</p>`,
       filename: TRANSFER_SVELTE,
+      errors: [{ messageId: 'rawUserFacingString' }],
+    },
+    // The command-handlers subtree is fully enforced now: raw copy there flags.
+    {
+      code: `<button title="Cancel transfer"><Icon name="x" /></button>`,
+      filename: COMMAND_HANDLERS_SVELTE,
       errors: [{ messageId: 'rawUserFacingString' }],
     },
   ],

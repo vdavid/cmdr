@@ -5,6 +5,14 @@
  * Error classification happens on the backend: each WriteOperationError variant
  * carries structured data, so the frontend just maps variant → user-facing text.
  * No string parsing needed.
+ *
+ * The literal English lives in the `errors.write.*` message catalog and is pulled
+ * via `getMessage()` (a RAW catalog lookup, never ICU `t()`): these strings carry
+ * interpolated paths/sizes/HTML escaping and bypass ICU's brace/apostrophe
+ * grammar (so the catalog values use normal apostrophes, not doubled). This
+ * file keeps the COMPOSITION (verb selection, escaping, size colorizing,
+ * platform branches) and substitutes `{verb}`/`{Verb}`/`{gerund}` and the
+ * per-variant tokens into the catalog templates. See `$lib/intl`'s docs.
  */
 
 import type { WriteOperationError, TransferOperationType, FriendlyError } from '$lib/file-explorer/types'
@@ -13,6 +21,23 @@ import { isMacOS } from '$lib/shortcuts/key-capture'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
 import { escapeHtml } from '$lib/tooltip/tooltip'
+import { getMessage } from '$lib/intl/messages.svelte'
+import type { MessageKey } from '$lib/intl/keys.gen'
+
+/** Substitutes `{token}` placeholders in a catalog value with runtime strings. */
+function interpolate(template: string, params: Record<string, string> = {}): string {
+  let out = template
+  for (const [name, value] of Object.entries(params)) {
+    out = out.replaceAll(`{${name}}`, value)
+  }
+  return out
+}
+
+/** Raw catalog lookup for an `errors.write.*` key (no ICU). */
+function w(key: string, params?: Record<string, string>): string {
+  const value = getMessage(`errors.write.${key}` as MessageKey)
+  return params ? interpolate(value, params) : value
+}
 
 export interface FriendlyErrorMessage {
   /** Short title for the error */
@@ -41,39 +66,39 @@ const simpleMessageFactories: Partial<
   Record<WriteOperationError['type'], (v: OperationVerbs) => FriendlyErrorMessage>
 > = {
   source_not_found: ({ verb }) => ({
-    title: "Couldn't find the file",
-    message: `The file or folder you tried to ${verb} no longer exists.`,
-    suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
+    title: w('sourceNotFound.title'),
+    message: w('sourceNotFound.message', { verb }),
+    suggestion: w('sourceNotFound.suggestion'),
   }),
   destination_exists: () => ({
-    title: 'File already exists',
-    message: "There's already a file with this name at the destination.",
-    suggestion: 'Choose a different name or location, or delete the existing file first.',
+    title: w('destinationExists.title'),
+    message: w('destinationExists.message'),
+    suggestion: w('destinationExists.suggestion'),
   }),
   same_location: ({ verb }) => ({
-    title: `Can't ${verb} to the same location`,
-    message: 'The source and destination are the same.',
-    suggestion: 'Choose a different destination folder.',
+    title: w('sameLocation.title', { verb }),
+    message: w('sameLocation.message'),
+    suggestion: w('sameLocation.suggestion'),
   }),
   destination_inside_source: ({ verb, gerund }) => ({
-    title: `Can't ${verb} a folder into itself`,
-    message: `You're trying to ${verb} a folder into one of its own subfolders.`,
-    suggestion: `Choose a destination outside of the folder you are ${gerund}.`,
+    title: w('destinationInsideSource.title', { verb }),
+    message: w('destinationInsideSource.message', { verb }),
+    suggestion: w('destinationInsideSource.suggestion', { gerund }),
   }),
   symlink_loop: () => ({
-    title: 'Link loop detected',
-    message: 'This folder contains symbolic links that create an infinite loop.',
-    suggestion: 'The folder structure contains circular references. You may need to remove some symbolic links.',
+    title: w('symlinkLoop.title'),
+    message: w('symlinkLoop.message'),
+    suggestion: w('symlinkLoop.suggestion'),
   }),
   cancelled: ({ verb, Verb }) => ({
-    title: `${Verb} cancelled`,
-    message: `The ${verb} operation was cancelled.`,
-    suggestion: 'You can try again when ready.',
+    title: w('cancelled.title', { Verb }),
+    message: w('cancelled.message', { verb }),
+    suggestion: w('cancelled.suggestion'),
   }),
   device_disconnected: ({ verb }) => ({
-    title: 'Device disconnected',
-    message: `The device was disconnected during the ${verb}.`,
-    suggestion: 'Make sure the device is properly connected and try again.',
+    title: w('deviceDisconnected.title'),
+    message: w('deviceDisconnected.message', { verb }),
+    suggestion: w('deviceDisconnected.suggestion'),
   }),
   trash_not_supported: () => {
     // Interpolate the live `file.deletePermanently` binding (platform-formatted)
@@ -81,41 +106,40 @@ const simpleMessageFactories: Partial<
     // string isn't a live-updating surface. Falls back to the default if unbound.
     const deletePermanentlyKey = getEffectiveShortcuts('file.deletePermanently')[0] ?? (isMacOS() ? '⇧F8' : 'Shift+F8')
     return {
-      title: 'Trash not supported',
-      message: "This volume doesn't support trash.",
-      suggestion: `Use ${deletePermanentlyKey} to delete permanently instead.`,
+      title: w('trashNotSupported.title'),
+      message: w('trashNotSupported.message'),
+      suggestion: w('trashNotSupported.suggestion', { deletePermanentlyKey }),
     }
   },
   connection_interrupted: () => ({
-    title: 'Connection interrupted',
-    message: 'The connection was interrupted.',
-    suggestion:
-      'Check your connection and try again. If copying to a network location, ensure the server is reachable.',
+    title: w('connectionInterrupted.title'),
+    message: w('connectionInterrupted.message'),
+    suggestion: w('connectionInterrupted.suggestion'),
   }),
   read_error: ({ Verb }) => ({
-    title: `${Verb} failed`,
-    message: "Couldn't read from the source.",
-    suggestion: 'Try again. If the problem persists, check the technical details below.',
+    title: w('readError.title', { Verb }),
+    message: w('readError.message'),
+    suggestion: w('readError.suggestion'),
   }),
   write_error: ({ Verb }) => ({
-    title: `${Verb} failed`,
-    message: "Couldn't write to the destination.",
-    suggestion: 'Try again. If the problem persists, check the technical details below.',
+    title: w('writeError.title', { Verb }),
+    message: w('writeError.message'),
+    suggestion: w('writeError.suggestion'),
   }),
   name_too_long: () => ({
-    title: 'Name too long',
-    message: 'The file name is too long for the destination.',
-    suggestion: 'Try renaming the file to use a shorter name.',
+    title: w('nameTooLong.title'),
+    message: w('nameTooLong.message'),
+    suggestion: w('nameTooLong.suggestion'),
   }),
   invalid_name: () => ({
-    title: 'Invalid file name',
-    message: 'The file name contains characters not allowed at the destination.',
-    suggestion: 'Try renaming the file to remove special characters.',
+    title: w('invalidName.title'),
+    message: w('invalidName.message'),
+    suggestion: w('invalidName.suggestion'),
   }),
   io_error: ({ verb, Verb }) => ({
-    title: `${Verb} failed`,
-    message: `Couldn't ${verb} the file.`,
-    suggestion: 'Try again. If the problem persists, check the technical details below.',
+    title: w('ioError.title', { Verb }),
+    message: w('ioError.message', { verb }),
+    suggestion: w('ioError.suggestion'),
   }),
 }
 
@@ -181,53 +205,53 @@ export function getUserFriendlyMessage(
     case 'permission_denied': {
       const isDeleteOp = operationType === 'delete' || operationType === 'trash'
       return {
-        title: "Couldn't access this location",
+        title: w('permissionDenied.title'),
         // allowed-pluralize-noun: `verb` is an action name (copy/move/delete), not a count.
-        message: `You don't have permission to ${verb} files here.`,
+        message: w('permissionDenied.message', { verb }),
         suggestion: isDeleteOp
           ? isMacOS()
-            ? 'Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.'
-            : 'Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.'
-          : 'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
+            ? w('permissionDenied.suggestion.deleteMac')
+            : w('permissionDenied.suggestion.deleteOther')
+          : w('permissionDenied.suggestion.default'),
       }
     }
     case 'insufficient_space':
       return {
-        title: 'Not enough space',
-        message: `The destination needs ${colorizeSizeString(formatBytes(error.required))} but only has ${colorizeSizeString(formatBytes(error.available))} available.`,
-        suggestion:
-          'Free up some space on the destination by deleting unnecessary files, or choose a different location.',
+        title: w('insufficientSpace.title'),
+        message: w('insufficientSpace.message', {
+          required: colorizeSizeString(formatBytes(error.required)),
+          available: colorizeSizeString(formatBytes(error.available)),
+        }),
+        suggestion: w('insufficientSpace.suggestion'),
       }
     case 'read_only_device':
       return {
-        title: 'Read-only device',
-        message: `${escapeHtml(error.deviceName ?? 'The target device')} is read-only. You can copy files from it, but not to it.`,
-        suggestion: 'Choose a different destination that supports writing.',
+        title: w('readOnlyDevice.title'),
+        message: w('readOnlyDevice.message', {
+          deviceName: escapeHtml(error.deviceName ?? w('readOnlyDevice.fallbackName')),
+        }),
+        suggestion: w('readOnlyDevice.suggestion'),
       }
     case 'file_locked':
       return {
-        title: 'File is locked',
-        message: "The file is locked and can't be deleted.",
-        suggestion: isMacOS()
-          ? 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
-          : 'The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.',
+        title: w('fileLocked.title'),
+        message: w('fileLocked.message'),
+        suggestion: isMacOS() ? w('fileLocked.suggestion.mac') : w('fileLocked.suggestion.other'),
       }
     case 'delete_pending':
       // STATUS_DELETE_PENDING: the file is marked for deletion on the server but
       // an open handle is keeping it alive. Transient: retry-after-a-moment.
       // Mirrors the prose the Rust write_error path produced (kinds::delete_pending).
       return {
-        title: 'File is being removed',
-        message:
-          'This file is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.',
-        suggestion:
-          'Wait a moment and try again. Once the last handle closes, the file disappears. If it sticks around, close any other apps that might have it open.',
+        title: w('deletePending.title'),
+        message: w('deletePending.message'),
+        suggestion: w('deletePending.suggestion'),
       }
     default:
       return {
-        title: `${Verb} failed`,
-        message: `An unexpected error occurred while ${gerund}.`,
-        suggestion: 'Try again, or check the technical details below for more information.',
+        title: w('fallback.title', { Verb }),
+        message: w('fallback.message', { gerund }),
+        suggestion: w('fallback.suggestion'),
       }
   }
 }

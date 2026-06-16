@@ -4,6 +4,7 @@
  * awaits the window close after a lazy `@tauri-apps/api/window` import).
  */
 import { addToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 import type { CommandArgs } from '$lib/commands'
 import type { CommandHandlerRecord } from './types'
 
@@ -11,7 +12,7 @@ export const tabHandlers = {
   'tab.new': ({ explorerRef }) => {
     const success = explorerRef?.newTab()
     if (success === false) {
-      addToast('Tab limit reached', { level: 'warn' })
+      addToast(tString('commands.handler.tabLimitReached'), { level: 'warn' })
     }
   },
 
@@ -26,9 +27,9 @@ export const tabHandlers = {
   'tab.reopen': ({ explorerRef }) => {
     const result = explorerRef?.reopenLastClosedTab()
     if (result === 'empty') {
-      addToast('No recently closed tabs in this pane.', { level: 'warn' })
+      addToast(tString('commands.handler.noRecentlyClosedTabs'), { level: 'warn' })
     } else if (result === 'cap') {
-      addToast('Tab limit reached', { level: 'warn' })
+      addToast(tString('commands.handler.tabLimitReached'), { level: 'warn' })
     }
   },
 

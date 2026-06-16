@@ -7,6 +7,7 @@ import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getSetting, setSetting } from '$lib/settings'
 import { syncMenuShowHidden } from '$lib/tauri-commands'
+import { tString } from '$lib/intl/messages.svelte'
 import type { CommandArgs } from '$lib/commands'
 import type { CommandHandlerRecord } from './types'
 
@@ -20,16 +21,16 @@ function showZoomToast(oldSize: number, newSize: number): void {
 
   const resetShortcut = getEffectiveShortcuts('view.zoom.set100')[0]
   const resetHint = resetShortcut
-    ? `You can reset the zoom level to 100% by ${resetShortcut}.`
-    : 'You can reset the zoom level to 100% at View > Zoom > 100%.'
+    ? tString('commands.handler.zoomResetHintShortcut', { shortcut: resetShortcut })
+    : tString('commands.handler.zoomResetHintMenu')
 
   let message: string
   if (newSize === 100) {
-    message = 'Zoom reset to 100%.'
+    message = tString('commands.handler.zoomReset')
   } else if (newSize > oldSize) {
-    message = `Zoom increased to ${String(newSize)}%. ${resetHint}`
+    message = tString('commands.handler.zoomIncreased', { size: String(newSize), hint: resetHint })
   } else {
-    message = `Zoom decreased to ${String(newSize)}%. ${resetHint}`
+    message = tString('commands.handler.zoomDecreased', { size: String(newSize), hint: resetHint })
   }
 
   addToast(message, { level: 'info', id: 'zoom-change' })

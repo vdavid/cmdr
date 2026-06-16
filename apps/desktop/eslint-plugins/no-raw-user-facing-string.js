@@ -76,12 +76,7 @@ const enforcedAreaPathFragments = [
 // to avoid flooding the build with known-pending violations. Each M2 tranche
 // deletes its entries here as it migrates the file's copy. When this list is
 // empty for an area, that area is fully enforced.
-const excludedUnmigratedFiles = [
-  // The `(main)` route's command-handlers subtree is its own pending tranche: it
-  // still has raw toast copy (favorites, tabs, cloud, zoom). The rest of
-  // `/routes/(main)/` is migrated and enforced.
-  '/routes/(main)/command-handlers/',
-]
+const excludedUnmigratedFiles = []
 
 // Element/component attributes that carry user-facing copy.
 const userFacingAttributes = new Set(['title', 'label', 'placeholder', 'aria-label'])

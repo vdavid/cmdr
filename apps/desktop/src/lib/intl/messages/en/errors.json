@@ -1028,5 +1028,337 @@
   },
   "@errors.provider.appBased.serious": {
     "description": "Shared template for app-backed cloud providers, serious problem. Markdown bullet list. Do-not-translate placeholders: `{name}` (display name, bold) and `{app}` (desktop app name), both substituted at runtime. Keep both; reorder to fit your grammar."
+  },
+
+  "errors.write.sourceNotFound.title": "Couldn't find the file",
+  "errors.write.sourceNotFound.message": "The file or folder you tried to {verb} no longer exists.",
+  "errors.write.sourceNotFound.suggestion": "It may have been moved, renamed, or deleted. Try refreshing the file list.",
+  "@errors.write.sourceNotFound.title": {
+    "description": "Title of the copy/move/delete error dialog when the source item is gone. Plain text. Uses a contraction (\"Couldn't\")."
+  },
+  "@errors.write.sourceNotFound.message": {
+    "description": "Body of the copy/move/delete error dialog when the source item is gone. Plain text.",
+    "placeholders": {
+      "verb": "the action being attempted, lowercase: \"copy\", \"move\", \"delete\", or \"move to trash\""
+    }
+  },
+  "@errors.write.sourceNotFound.suggestion": {
+    "description": "Recovery suggestion when the source item is gone, shown in the copy/move/delete error dialog. Plain text."
+  },
+
+  "errors.write.destinationExists.title": "File already exists",
+  "errors.write.destinationExists.message": "There's already a file with this name at the destination.",
+  "errors.write.destinationExists.suggestion": "Choose a different name or location, or delete the existing file first.",
+  "@errors.write.destinationExists.title": {
+    "description": "Title of the copy/move error dialog when a file with the same name already exists at the destination. Plain text."
+  },
+  "@errors.write.destinationExists.message": {
+    "description": "Body of the copy/move error dialog when a same-named file already exists at the destination. Plain text. Uses a contraction (\"There's\")."
+  },
+  "@errors.write.destinationExists.suggestion": {
+    "description": "Recovery suggestion when a same-named file already exists at the destination. Plain text."
+  },
+
+  "errors.write.sameLocation.title": "Can't {verb} to the same location",
+  "errors.write.sameLocation.message": "The source and destination are the same.",
+  "errors.write.sameLocation.suggestion": "Choose a different destination folder.",
+  "@errors.write.sameLocation.title": {
+    "description": "Title of the copy/move error dialog when source and destination are identical. Plain text. Uses a contraction (\"Can't\").",
+    "placeholders": {
+      "verb": "the action being attempted, lowercase: \"copy\", \"move\", \"delete\", or \"move to trash\""
+    }
+  },
+  "@errors.write.sameLocation.message": {
+    "description": "Body of the copy/move error dialog when source and destination are identical. Plain text."
+  },
+  "@errors.write.sameLocation.suggestion": {
+    "description": "Recovery suggestion when source and destination are identical. Plain text."
+  },
+
+  "errors.write.destinationInsideSource.title": "Can't {verb} a folder into itself",
+  "errors.write.destinationInsideSource.message": "You're trying to {verb} a folder into one of its own subfolders.",
+  "errors.write.destinationInsideSource.suggestion": "Choose a destination outside of the folder you are {gerund}.",
+  "@errors.write.destinationInsideSource.title": {
+    "description": "Title of the copy/move error dialog when the destination is inside the folder being copied/moved. Plain text. Uses a contraction (\"Can't\").",
+    "placeholders": {
+      "verb": "the action being attempted, lowercase: \"copy\" or \"move\""
+    }
+  },
+  "@errors.write.destinationInsideSource.message": {
+    "description": "Body of the copy/move error dialog when the destination is inside the source folder. Plain text. Uses a contraction (\"You're\").",
+    "placeholders": {
+      "verb": "the action being attempted, lowercase: \"copy\" or \"move\""
+    }
+  },
+  "@errors.write.destinationInsideSource.suggestion": {
+    "description": "Recovery suggestion when the destination is inside the source folder. Plain text.",
+    "placeholders": {
+      "gerund": "the -ing form of the action: \"copying\" or \"moving\""
+    }
+  },
+
+  "errors.write.symlinkLoop.title": "Link loop detected",
+  "errors.write.symlinkLoop.message": "This folder contains symbolic links that create an infinite loop.",
+  "errors.write.symlinkLoop.suggestion": "The folder structure contains circular references. You may need to remove some symbolic links.",
+  "@errors.write.symlinkLoop.title": {
+    "description": "Title of the copy/move error dialog when symbolic links form an infinite loop. Plain text."
+  },
+  "@errors.write.symlinkLoop.message": {
+    "description": "Body of the copy/move error dialog when symbolic links form an infinite loop. Plain text."
+  },
+  "@errors.write.symlinkLoop.suggestion": {
+    "description": "Recovery suggestion when symbolic links form an infinite loop. Plain text."
+  },
+
+  "errors.write.cancelled.title": "{Verb} cancelled",
+  "errors.write.cancelled.message": "The {verb} operation was cancelled.",
+  "errors.write.cancelled.suggestion": "You can try again when ready.",
+  "@errors.write.cancelled.title": {
+    "description": "Title of the copy/move/delete error dialog when the user cancelled the operation. Plain text.",
+    "placeholders": {
+      "Verb": "the action being attempted, capitalized: \"Copy\", \"Move\", \"Delete\", or \"Move to trash\""
+    }
+  },
+  "@errors.write.cancelled.message": {
+    "description": "Body of the copy/move/delete error dialog when the operation was cancelled. Plain text.",
+    "placeholders": {
+      "verb": "the action being attempted, lowercase: \"copy\", \"move\", \"delete\", or \"move to trash\""
+    }
+  },
+  "@errors.write.cancelled.suggestion": {
+    "description": "Recovery suggestion when the operation was cancelled. Plain text."
+  },
+
+  "errors.write.deviceDisconnected.title": "Device disconnected",
+  "errors.write.deviceDisconnected.message": "The device was disconnected during the {verb}.",
+  "errors.write.deviceDisconnected.suggestion": "Make sure the device is properly connected and try again.",
+  "@errors.write.deviceDisconnected.title": {
+    "description": "Title of the copy/move/delete error dialog when the device disconnected mid-operation. Plain text."
+  },
+  "@errors.write.deviceDisconnected.message": {
+    "description": "Body of the copy/move/delete error dialog when the device disconnected mid-operation. Plain text.",
+    "placeholders": {
+      "verb": "the action being attempted, lowercase: \"copy\", \"move\", \"delete\", or \"move to trash\" (used as a noun here, e.g. \"during the copy\")"
+    }
+  },
+  "@errors.write.deviceDisconnected.suggestion": {
+    "description": "Recovery suggestion when the device disconnected mid-operation. Plain text."
+  },
+
+  "errors.write.trashNotSupported.title": "Trash not supported",
+  "errors.write.trashNotSupported.message": "This volume doesn't support trash.",
+  "errors.write.trashNotSupported.suggestion": "Use {deletePermanentlyKey} to delete permanently instead.",
+  "@errors.write.trashNotSupported.title": {
+    "description": "Title of the delete error dialog when a volume doesn't support moving files to the trash. Plain text. \"Trash\" is the macOS feature name."
+  },
+  "@errors.write.trashNotSupported.message": {
+    "description": "Body of the delete error dialog when a volume doesn't support the trash. Plain text. Uses a contraction (\"doesn't\")."
+  },
+  "@errors.write.trashNotSupported.suggestion": {
+    "description": "Recovery suggestion when a volume doesn't support the trash, pointing at the delete-permanently shortcut. Plain text.",
+    "placeholders": {
+      "deletePermanentlyKey": "the keyboard shortcut for deleting permanently, e.g. \"⇧F8\" on macOS or \"Shift+F8\" elsewhere; do NOT translate the glyphs or key names"
+    }
+  },
+
+  "errors.write.connectionInterrupted.title": "Connection interrupted",
+  "errors.write.connectionInterrupted.message": "The connection was interrupted.",
+  "errors.write.connectionInterrupted.suggestion": "Check your connection and try again. If copying to a network location, ensure the server is reachable.",
+  "@errors.write.connectionInterrupted.title": {
+    "description": "Title of the copy/move error dialog when a network connection dropped mid-operation. Plain text."
+  },
+  "@errors.write.connectionInterrupted.message": {
+    "description": "Body of the copy/move error dialog when a network connection dropped mid-operation. Plain text."
+  },
+  "@errors.write.connectionInterrupted.suggestion": {
+    "description": "Recovery suggestion when a network connection dropped mid-operation. Plain text."
+  },
+
+  "errors.write.readError.title": "{Verb} failed",
+  "errors.write.readError.message": "Couldn't read from the source.",
+  "errors.write.readError.suggestion": "Try again. If the problem persists, check the technical details below.",
+  "@errors.write.readError.title": {
+    "description": "Title of the copy/move/delete error dialog when reading the source item itself failed. Plain text.",
+    "placeholders": {
+      "Verb": "the action being attempted, capitalized: \"Copy\", \"Move\", \"Delete\", or \"Move to trash\""
+    }
+  },
+  "@errors.write.readError.message": {
+    "description": "Body of the copy/move/delete error dialog when reading the source failed. Plain text. Uses a contraction (\"Couldn't\")."
+  },
+  "@errors.write.readError.suggestion": {
+    "description": "Recovery suggestion when reading the source failed. Plain text. \"technical details below\" refers to an expandable section in the same dialog."
+  },
+
+  "errors.write.writeError.title": "{Verb} failed",
+  "errors.write.writeError.message": "Couldn't write to the destination.",
+  "errors.write.writeError.suggestion": "Try again. If the problem persists, check the technical details below.",
+  "@errors.write.writeError.title": {
+    "description": "Title of the copy/move/delete error dialog when writing to the destination failed. Plain text.",
+    "placeholders": {
+      "Verb": "the action being attempted, capitalized: \"Copy\", \"Move\", \"Delete\", or \"Move to trash\""
+    }
+  },
+  "@errors.write.writeError.message": {
+    "description": "Body of the copy/move/delete error dialog when writing to the destination failed. Plain text. Uses a contraction (\"Couldn't\")."
+  },
+  "@errors.write.writeError.suggestion": {
+    "description": "Recovery suggestion when writing to the destination failed. Plain text. \"technical details below\" refers to an expandable section in the same dialog."
+  },
+
+  "errors.write.nameTooLong.title": "Name too long",
+  "errors.write.nameTooLong.message": "The file name is too long for the destination.",
+  "errors.write.nameTooLong.suggestion": "Try renaming the file to use a shorter name.",
+  "@errors.write.nameTooLong.title": {
+    "description": "Title of the copy/move error dialog when the file name exceeds the destination's length limit. Plain text."
+  },
+  "@errors.write.nameTooLong.message": {
+    "description": "Body of the copy/move error dialog when the file name is too long for the destination. Plain text."
+  },
+  "@errors.write.nameTooLong.suggestion": {
+    "description": "Recovery suggestion when the file name is too long for the destination. Plain text."
+  },
+
+  "errors.write.invalidName.title": "Invalid file name",
+  "errors.write.invalidName.message": "The file name contains characters not allowed at the destination.",
+  "errors.write.invalidName.suggestion": "Try renaming the file to remove special characters.",
+  "@errors.write.invalidName.title": {
+    "description": "Title of the copy/move error dialog when the file name has characters the destination file system rejects. Plain text."
+  },
+  "@errors.write.invalidName.message": {
+    "description": "Body of the copy/move error dialog when the file name has disallowed characters. Plain text."
+  },
+  "@errors.write.invalidName.suggestion": {
+    "description": "Recovery suggestion when the file name has disallowed characters. Plain text."
+  },
+
+  "errors.write.ioError.title": "{Verb} failed",
+  "errors.write.ioError.message": "Couldn't {verb} the file.",
+  "errors.write.ioError.suggestion": "Try again. If the problem persists, check the technical details below.",
+  "@errors.write.ioError.title": {
+    "description": "Title of the copy/move/delete error dialog for a generic I/O failure with a recognized variant. Plain text.",
+    "placeholders": {
+      "Verb": "the action being attempted, capitalized: \"Copy\", \"Move\", \"Delete\", or \"Move to trash\""
+    }
+  },
+  "@errors.write.ioError.message": {
+    "description": "Body of the copy/move/delete error dialog for a generic I/O failure with a recognized variant. Plain text. Uses a contraction (\"Couldn't\").",
+    "placeholders": {
+      "verb": "the action being attempted, lowercase: \"copy\", \"move\", \"delete\", or \"move to trash\""
+    }
+  },
+  "@errors.write.ioError.suggestion": {
+    "description": "Recovery suggestion for a generic I/O failure. Plain text. \"technical details below\" refers to an expandable section in the same dialog."
+  },
+
+  "errors.write.permissionDenied.title": "Couldn't access this location",
+  "errors.write.permissionDenied.message": "You don't have permission to {verb} files here.",
+  "errors.write.permissionDenied.suggestion.deleteMac": "Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.",
+  "errors.write.permissionDenied.suggestion.deleteOther": "Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.",
+  "errors.write.permissionDenied.suggestion.default": "Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.",
+  "@errors.write.permissionDenied.title": {
+    "description": "Title of the copy/move/delete error dialog when the user lacks permission at the target location. Plain text. Uses a contraction (\"Couldn't\")."
+  },
+  "@errors.write.permissionDenied.message": {
+    "description": "Body of the copy/move/delete error dialog when the user lacks permission. Plain text. Uses a contraction (\"don't\").",
+    "placeholders": {
+      "verb": "the action being attempted, lowercase: \"copy\", \"move\", \"delete\", or \"move to trash\""
+    }
+  },
+  "@errors.write.permissionDenied.suggestion.deleteMac": {
+    "description": "Recovery suggestion for a permission failure during delete/trash on macOS. Plain text. \"Finder\" and \"Get Info\" are macOS feature names; the menu path \"Get Info > uncheck Locked\" is literal; do NOT translate them."
+  },
+  "@errors.write.permissionDenied.suggestion.deleteOther": {
+    "description": "Recovery suggestion for a permission failure during delete/trash on non-macOS. Plain text. \"chmod\" is a command name; do NOT translate it."
+  },
+  "@errors.write.permissionDenied.suggestion.default": {
+    "description": "Recovery suggestion for a permission failure during copy/move (the non-delete case). Plain text."
+  },
+
+  "errors.write.insufficientSpace.title": "Not enough space",
+  "errors.write.insufficientSpace.message": "The destination needs {required} but only has {available} available.",
+  "errors.write.insufficientSpace.suggestion": "Free up some space on the destination by deleting unnecessary files, or choose a different location.",
+  "@errors.write.insufficientSpace.title": {
+    "description": "Title of the copy/move error dialog when the destination volume is out of space. Plain text."
+  },
+  "@errors.write.insufficientSpace.message": {
+    "description": "Body of the copy/move error dialog when the destination is out of space. Plain text.",
+    "placeholders": {
+      "required": "the formatted size needed, colorized HTML markup (e.g. a span wrapping \"1.0 GB\"); do NOT translate the markup or the size",
+      "available": "the formatted size currently free, colorized HTML markup (e.g. a span wrapping \"512.0 MB\"); do NOT translate the markup or the size"
+    }
+  },
+  "@errors.write.insufficientSpace.suggestion": {
+    "description": "Recovery suggestion when the destination is out of space. Plain text."
+  },
+
+  "errors.write.readOnlyDevice.title": "Read-only device",
+  "errors.write.readOnlyDevice.message": "{deviceName} is read-only. You can copy files from it, but not to it.",
+  "errors.write.readOnlyDevice.suggestion": "Choose a different destination that supports writing.",
+  "@errors.write.readOnlyDevice.title": {
+    "description": "Title of the copy/move error dialog when the destination device is read-only. Plain text."
+  },
+  "@errors.write.readOnlyDevice.message": {
+    "description": "Body of the copy/move error dialog when the destination device is read-only. Plain text.",
+    "placeholders": {
+      "deviceName": "the device's name (HTML-escaped), or a fallback phrase like \"The target device\" when the name is unknown; leads the sentence"
+    }
+  },
+  "@errors.write.readOnlyDevice.suggestion": {
+    "description": "Recovery suggestion when the destination device is read-only. Plain text."
+  },
+
+  "errors.write.readOnlyDevice.fallbackName": "The target device",
+  "@errors.write.readOnlyDevice.fallbackName": {
+    "description": "Fallback for the device name in the read-only-device message when the actual name is unknown. Plain text, used as the subject of \"is read-only\"."
+  },
+
+  "errors.write.fileLocked.title": "File is locked",
+  "errors.write.fileLocked.message": "The file is locked and can't be deleted.",
+  "errors.write.fileLocked.suggestion.mac": "Unlock it in Finder (Get Info > uncheck Locked) and try again.",
+  "errors.write.fileLocked.suggestion.other": "The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.",
+  "@errors.write.fileLocked.title": {
+    "description": "Title of the delete error dialog when the file is locked. Plain text."
+  },
+  "@errors.write.fileLocked.message": {
+    "description": "Body of the delete error dialog when the file is locked. Plain text. Uses a contraction (\"can't\")."
+  },
+  "@errors.write.fileLocked.suggestion.mac": {
+    "description": "Recovery suggestion for a locked file on macOS. Plain text. \"Finder\" and \"Get Info\" are macOS feature names; the menu path \"Get Info > uncheck Locked\" is literal; do NOT translate them."
+  },
+  "@errors.write.fileLocked.suggestion.other": {
+    "description": "Recovery suggestion for a locked file on non-macOS. Plain text. \"chmod\" is a command name; do NOT translate it."
+  },
+
+  "errors.write.deletePending.title": "File is being removed",
+  "errors.write.deletePending.message": "This file is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.",
+  "errors.write.deletePending.suggestion": "Wait a moment and try again. Once the last handle closes, the file disappears. If it sticks around, close any other apps that might have it open.",
+  "@errors.write.deletePending.title": {
+    "description": "Title of the delete error dialog when a file is marked for deletion on the server but still held open. Plain text."
+  },
+  "@errors.write.deletePending.message": {
+    "description": "Body of the delete error dialog when a file is marked for deletion but a handle is keeping it alive. Plain text."
+  },
+  "@errors.write.deletePending.suggestion": {
+    "description": "Recovery suggestion when a file is marked for deletion but still held open. Plain text."
+  },
+
+  "errors.write.fallback.title": "{Verb} failed",
+  "errors.write.fallback.message": "An unexpected error occurred while {gerund}.",
+  "errors.write.fallback.suggestion": "Try again, or check the technical details below for more information.",
+  "@errors.write.fallback.title": {
+    "description": "Title of the copy/move/delete error dialog for an unrecognized failure (the catch-all). Plain text.",
+    "placeholders": {
+      "Verb": "the action being attempted, capitalized: \"Copy\", \"Move\", \"Delete\", or \"Move to trash\""
+    }
+  },
+  "@errors.write.fallback.message": {
+    "description": "Body of the copy/move/delete error dialog for an unrecognized failure. Plain text. \"error occurred\" is internal-ish but kept for the catch-all.",
+    "placeholders": {
+      "gerund": "the -ing form of the action: \"copying\", \"moving\", \"deleting\", or \"moving to trash\""
+    }
+  },
+  "@errors.write.fallback.suggestion": {
+    "description": "Recovery suggestion for an unrecognized failure. Plain text. \"technical details below\" refers to an expandable section in the same dialog."
   }
 }

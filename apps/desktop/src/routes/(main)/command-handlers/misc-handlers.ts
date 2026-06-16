@@ -12,6 +12,7 @@ import { goToLatestDownload } from '$lib/downloads/go-to-latest'
 import { addFavorite } from '$lib/tauri-commands'
 import { getFocusedPanePath } from '$lib/file-explorer/pane/focused-pane-reads'
 import { addToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 import type { CommandArgs } from '$lib/commands'
 import type { CommandHandlerRecord } from './types'
 
@@ -35,9 +36,9 @@ export const miscHandlers = {
     if (!path) return
     try {
       await addFavorite(path, null)
-      addToast(`Added "${lastSegment(path)}" to favorites`, { level: 'success' })
+      addToast(tString('commands.handler.favoriteAdded', { name: lastSegment(path) }), { level: 'success' })
     } catch {
-      addToast("Couldn't add that folder to favorites. Try again?", { level: 'error' })
+      addToast(tString('commands.handler.favoriteAddFailed'), { level: 'error' })
     }
   },
 
