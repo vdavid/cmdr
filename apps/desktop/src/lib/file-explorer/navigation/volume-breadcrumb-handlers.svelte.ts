@@ -1,3 +1,4 @@
+import { tString } from '$lib/intl/messages.svelte'
 import type { SmbConnectionState, VolumeInfo } from '../types'
 
 /** Owns the keyboard-vs-mouse mode toggle for the dropdown. Mouse moves >5px exit
@@ -105,8 +106,8 @@ export function createBreadcrumbPopupController() {
 /** Tooltip text for the SMB connection indicator. */
 export function getConnectionTooltip(state: SmbConnectionState): string {
   return state === 'direct'
-    ? 'Connected directly for fast file operations'
-    : 'Using system connection. Use the "Connect directly for faster access" menu item for faster access.'
+    ? tString('fileExplorer.navigation.connectionTooltipDirect')
+    : tString('fileExplorer.navigation.connectionTooltipSystem')
 }
 
 /** Whether a volume should show the active checkmark.

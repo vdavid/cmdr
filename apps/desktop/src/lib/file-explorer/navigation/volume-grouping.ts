@@ -1,3 +1,5 @@
+import { tString } from '$lib/intl/messages.svelte'
+import type { MessageKey } from '$lib/intl/keys.gen'
 import type { VolumeInfo, LocationCategory } from '../types'
 
 export interface VolumeGroup {
@@ -6,13 +8,15 @@ export interface VolumeGroup {
   items: VolumeInfo[]
 }
 
-const categoryOrder: { category: LocationCategory; label: string }[] = [
-  { category: 'favorite', label: 'Favorites' },
-  { category: 'main_volume', label: 'Volumes' },
-  { category: 'attached_volume', label: '' }, // No label, continues main volumes
-  { category: 'cloud_drive', label: 'Cloud' },
-  { category: 'mobile_device', label: 'Mobile' },
-  { category: 'network', label: 'Network' },
+// Labels are resolved lazily (per call) so they track the active locale; the
+// caller invokes `groupByCategory` from a reactive `$derived`.
+const categoryOrder: { category: LocationCategory; labelKey: MessageKey | null }[] = [
+  { category: 'favorite', labelKey: 'fileExplorer.navigation.groupFavorites' },
+  { category: 'main_volume', labelKey: 'fileExplorer.navigation.groupVolumes' },
+  { category: 'attached_volume', labelKey: null }, // No label, continues main volumes
+  { category: 'cloud_drive', labelKey: 'fileExplorer.navigation.groupCloud' },
+  { category: 'mobile_device', labelKey: 'fileExplorer.navigation.groupMobile' },
+  { category: 'network', labelKey: 'fileExplorer.navigation.groupNetwork' },
 ]
 
 export interface GroupingOptions {
@@ -26,7 +30,8 @@ export function groupByCategory(
 ): VolumeGroup[] {
   const groups: VolumeGroup[] = []
 
-  for (const { category, label } of categoryOrder) {
+  for (const { category, labelKey } of categoryOrder) {
+    const label = labelKey ? tString(labelKey) : ''
     if (category === 'favorite') {
       // The Favorites group always renders, even when empty: an emptied list is a real
       // user state (they can remove every favorite), and the switcher shows a disabled
@@ -49,7 +54,9 @@ export function groupByCategory(
 
       const networkItem: VolumeInfo = {
         id: 'network',
-        name: options.networkEnabled ? 'Network' : 'Network (disabled)',
+        name: options.networkEnabled
+          ? tString('fileExplorer.navigation.networkVolume')
+          : tString('fileExplorer.navigation.networkVolumeDisabled'),
         path: 'smb://', // Virtual path
         category: 'network' as const,
         icon: undefined, // Will use placeholder

@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { tString } from '$lib/intl/messages.svelte'
+
     /**
      * Tooltip-like overlay that surfaces the user's in-flight type-to-jump buffer
      * in the bottom-right of the pane. Pure presentational: all state lives in
@@ -24,9 +26,9 @@
         class:is-stale={stale}
         role="status"
         aria-live="polite"
-        aria-label="Jump to {buffer}"
+        aria-label={tString('fileExplorer.typeToJump.ariaLabel', { buffer })}
     >
-        Jump: <span class="buffer">{buffer}</span>
+        {tString('fileExplorer.typeToJump.prefix')}<span class="buffer">{buffer}</span>
     </div>
 {/if}
 

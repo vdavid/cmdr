@@ -11,6 +11,7 @@
     } from '../drag/drag-auto-scroll'
     import { startClickToRename, cancelClickToRename } from '../rename/rename-activation'
     import SortableHeader from '../selection/SortableHeader.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
     import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
     import {
@@ -40,7 +41,6 @@
     import { onDebouncedScaleChange } from '$lib/text-size.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { formatNumber } from '../selection/selection-info-utils'
-    import { pluralize } from '$lib/utils/pluralize'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
@@ -771,7 +771,6 @@
             indexing,
             formatFileSize,
             formatNumber,
-            pluralize,
         )
         if (!base) return undefined
 
@@ -810,11 +809,11 @@
 
 <div class="brief-list-container" class:is-focused={isFocused}>
     <!-- Header row with sort options -->
-    <div class="header-row" role="toolbar" aria-label="Sort columns">
+    <div class="header-row" role="toolbar" aria-label={tString('fileExplorer.list.sortColumnsAriaLabel')}>
         <SortableHeader
             column="name"
             {isFocused}
-            label="Name"
+            label={tString('fileExplorer.columns.name')}
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
             onClick={(col: SortColumn) => onSortChange?.(col)}
@@ -822,7 +821,7 @@
         <SortableHeader
             column="extension"
             {isFocused}
-            label="Ext"
+            label={tString('fileExplorer.columns.ext')}
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
             onClick={(col: SortColumn) => onSortChange?.(col)}
@@ -830,7 +829,7 @@
         <SortableHeader
             column="size"
             {isFocused}
-            label="Size"
+            label={tString('fileExplorer.columns.size')}
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
             onClick={(col: SortColumn) => onSortChange?.(col)}
@@ -838,7 +837,7 @@
         <SortableHeader
             column="modified"
             {isFocused}
-            label="Modified"
+            label={tString('fileExplorer.columns.modified')}
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
             onClick={(col: SortColumn) => onSortChange?.(col)}
@@ -846,7 +845,7 @@
         <SortableHeader
             column="created"
             {isFocused}
-            label="Created"
+            label={tString('fileExplorer.columns.created')}
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
             onClick={(col: SortColumn) => onSortChange?.(col)}
@@ -862,7 +861,7 @@
         onscroll={handleScroll}
         tabindex="-1"
         role="listbox"
-        aria-label="File list"
+        aria-label={tString('fileExplorer.list.fileListAriaLabel')}
         aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
     >
         <!-- Spacer div provides accurate scrollbar for full list width -->
@@ -938,7 +937,7 @@
         </div>
     </div>
     {#if (hasParent ? totalCount - 1 : totalCount) === 0}
-        <div class="empty-folder-overlay">Empty folder</div>
+        <div class="empty-folder-overlay">{tString('fileExplorer.list.empty')}</div>
     {/if}
 </div>
 

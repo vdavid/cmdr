@@ -7,6 +7,7 @@
     import Button from '$lib/ui/Button.svelte'
     import { renderErrorMarkdown } from './error-pane-utils'
     import { systemStrings } from '$lib/system-strings.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         friendly: FriendlyError
@@ -56,12 +57,12 @@
 
     function formatRelativeTime(timestampMs: number, currentMs: number): string {
         const seconds = Math.round((currentMs - timestampMs) / 1000)
-        if (seconds < 5) return 'a moment ago'
-        if (seconds < 60) return `${String(seconds)}s ago`
+        if (seconds < 5) return tString('fileExplorer.errorPane.aMomentAgo')
+        if (seconds < 60) return tString('fileExplorer.errorPane.secondsAgo', { seconds })
         const minutes = Math.round(seconds / 60)
-        if (minutes < 60) return `${String(minutes)}m ago`
+        if (minutes < 60) return tString('fileExplorer.errorPane.minutesAgo', { minutes })
         const hours = Math.round(minutes / 60)
-        return `${String(hours)}h ago`
+        return tString('fileExplorer.errorPane.hoursAgo', { hours })
     }
 
     const isPermissionDenied = $derived(friendly.actionKind === 'open_privacy_settings')
@@ -108,24 +109,35 @@
 
         {#if showRetryButton}
             <div class="cta">
-                <Button variant="primary" onclick={handleRetry}>Try again</Button>
+                <Button variant="primary" onclick={handleRetry}>{tString('fileExplorer.errorPane.tryAgain')}</Button>
             </div>
         {/if}
 
         {#if isPermissionDenied && isMacOS()}
             <div class="cta">
-                <Button variant="primary" onclick={() => openPrivacySettings()}>Open {systemStrings.systemSettings}</Button>
+                <Button variant="primary" onclick={() => openPrivacySettings()}
+                    >{tString('fileExplorer.errorPane.openSystemSettings', {
+                        systemSettings: systemStrings.systemSettings,
+                    })}</Button
+                >
             </div>
         {/if}
 
         <details class="technical-details">
-            <summary>Technical details</summary>
+            <summary>{tString('fileExplorer.errorPane.technicalDetails')}</summary>
             <pre class="raw-detail">{friendly.rawDetail}</pre>
             {#if retryInfo}
                 <p class="retry-info">
-                    Retry #{retryInfo.count} · first try {retryInfo.firstAgo}{retryInfo.lastAgo
-                        ? ` · last try ${retryInfo.lastAgo}`
-                        : ''}
+                    {retryInfo.lastAgo
+                        ? tString('fileExplorer.errorPane.retryInfoWithLast', {
+                              count: retryInfo.count,
+                              firstAgo: retryInfo.firstAgo,
+                              lastAgo: retryInfo.lastAgo,
+                          })
+                        : tString('fileExplorer.errorPane.retryInfo', {
+                              count: retryInfo.count,
+                              firstAgo: retryInfo.firstAgo,
+                          })}
                 </p>
             {/if}
         </details>

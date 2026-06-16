@@ -3,6 +3,7 @@
     import Button from '$lib/ui/Button.svelte'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import DateLabel from '$lib/ui/DateLabel.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import type { ConflictFileInfo, RenameConflictResolution } from './rename-operations'
 
     interface Props {
@@ -42,22 +43,22 @@
     }}
     containerStyle="min-width: 440px; max-width: 520px"
 >
-    {#snippet title()}A file with this name already exists{/snippet}
+    {#snippet title()}{tString('fileExplorer.renameConflict.title')}{/snippet}
 
     <p id="rename-conflict-description" class="description">
-        "{existingFile.name}" already exists in this folder. What would you like to do?
+        {tString('fileExplorer.renameConflict.description', { name: existingFile.name })}
     </p>
 
     <div class="file-comparison">
         <div class="file-card">
-            <div class="file-card-header">{renamedFile.name} (yours)</div>
+            <div class="file-card-header">{tString('fileExplorer.renameConflict.yours', { name: renamedFile.name })}</div>
             <div class="file-card-body">
                 <div class="file-meta">
-                    <span class="meta-label">Size</span>
+                    <span class="meta-label">{tString('fileExplorer.renameConflict.size')}</span>
                     <span class="meta-value" class:newer={renamedIsLarger}>{formatFileSize(renamedFile.size)}</span>
                 </div>
                 <div class="file-meta">
-                    <span class="meta-label">Modified</span>
+                    <span class="meta-label">{tString('fileExplorer.renameConflict.modified')}</span>
                     <span class="meta-value" class:newer={renamedIsNewer}>
                         <DateLabel modifiedAt={renamedFile.modifiedAt} />
                     </span>
@@ -65,16 +66,16 @@
             </div>
         </div>
         <div class="file-card">
-            <div class="file-card-header">{existingFile.name} (existing)</div>
+            <div class="file-card-header">{tString('fileExplorer.renameConflict.existing', { name: existingFile.name })}</div>
             <div class="file-card-body">
                 <div class="file-meta">
-                    <span class="meta-label">Size</span>
+                    <span class="meta-label">{tString('fileExplorer.renameConflict.size')}</span>
                     <span class="meta-value" class:newer={!renamedIsLarger && renamedFile.size !== existingFile.size}
                         >{formatFileSize(existingFile.size)}</span
                     >
                 </div>
                 <div class="file-meta">
-                    <span class="meta-label">Modified</span>
+                    <span class="meta-label">{tString('fileExplorer.renameConflict.modified')}</span>
                     <span
                         class="meta-value"
                         class:newer={!renamedIsNewer &&
@@ -93,13 +94,13 @@
             variant="primary"
             onclick={() => {
                 onResolve('overwrite-trash')
-            }}>Overwrite and trash old file</Button
+            }}>{tString('fileExplorer.renameConflict.overwriteTrash')}</Button
         >
         <Button
             variant="danger"
             onclick={() => {
                 onResolve('overwrite-delete')
-            }}>Overwrite and delete old file</Button
+            }}>{tString('fileExplorer.renameConflict.overwriteDelete')}</Button
         >
     </div>
     <div class="button-row secondary-row">
@@ -107,13 +108,13 @@
             variant="secondary"
             onclick={() => {
                 onResolve('cancel')
-            }}>Cancel</Button
+            }}>{tString('fileExplorer.renameConflict.cancel')}</Button
         >
         <Button
             variant="secondary"
             onclick={() => {
                 onResolve('continue')
-            }}>Continue renaming</Button
+            }}>{tString('fileExplorer.renameConflict.continueRenaming')}</Button
         >
     </div>
 </ModalDialog>

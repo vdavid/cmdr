@@ -29,6 +29,7 @@
     import { describeUsbSpeed, type VolumeInfo } from '../types'
     import { isVolumeEjectable } from './eject-predicate'
     import { buildFavoriteTooltip } from './favorite-tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
 
     const favoriteTooltip = (volume: VolumeInfo): string => buildFavoriteTooltip(volume.path, isMacOS())
 
@@ -37,7 +38,7 @@
         if (!volume?.usbSpeed) return ''
         const { label, maxMBps } = describeUsbSpeed(volume.usbSpeed)
         const mbps = maxMBps >= 10 ? String(Math.round(maxMBps)) : maxMBps.toFixed(1)
-        return `${label} (Max. ${mbps} MB/s)`
+        return tString('fileExplorer.navigation.usbSpeed', { label, mbps })
     }
 
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
@@ -52,7 +53,7 @@
     import { isVolumeBusy } from '$lib/stores/volume-busy-store.svelte'
 
     /** Tooltip shown on a disabled Eject control while a transfer touches the volume. */
-    const EJECT_BUSY_TOOLTIP = "Can't eject while operations are in progress on this device"
+    const EJECT_BUSY_TOOLTIP = $derived(tString('fileExplorer.navigation.ejectBusyTooltip'))
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import { createFavoritesController } from './favorites-controller.svelte'
@@ -128,7 +129,7 @@
     // For MTP volumes, look up by volumeId directly; for filesystem volumes, use containingVolumeId
     const currentVolume = $derived(
         volumeId === 'network'
-            ? { id: 'network', name: 'Network', path: 'smb://', category: 'network' as const, isEjectable: false }
+            ? { id: 'network', name: tString('fileExplorer.navigation.networkVolume'), path: 'smb://', category: 'network' as const, isEjectable: false }
             : volumeId === 'search-results'
               ? {
                     // R3 B6: the volume selector reads "Search results", a
@@ -136,7 +137,7 @@
                     // search-specific label (the AI title / pattern) moved to
                     // the path slot in `FilePane.svelte::breadcrumbDisplayPath`.
                     id: 'search-results',
-                    name: 'Search results',
+                    name: tString('fileExplorer.navigation.searchResultsVolume'),
                     path: 'search-results://',
                     category: 'network' as const,
                     isEjectable: false,
@@ -154,7 +155,7 @@
      * carries the QUERY-specific label. Don't invert these (label in the
      * volume slot, empty path).
      */
-    const currentVolumeName = $derived(currentVolume?.name ?? 'Volume')
+    const currentVolumeName = $derived(currentVolume?.name ?? tString('fileExplorer.navigation.volumeFallback'))
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
 
     // Generic macOS folder icon used as fallback when a volume has no icon (for example,
@@ -462,14 +463,14 @@
         // mDNS discovery for the rest of the network UI.
         triggerNetworkDiscovery()
 
-        const connectingToastId = addToast('Connecting directly...', { dismissal: 'persistent' })
+        const connectingToastId = addToast(tString('fileExplorer.navigation.connectingDirectly'), { dismissal: 'persistent' })
 
         try {
             const result = await upgradeToSmbVolume(vid)
             dismissToast(connectingToastId)
 
             if (result.status === 'success') {
-                addToast('Connected directly for faster access', { level: 'success' })
+                addToast(tString('fileExplorer.pane.connectedDirectlyToast'), { level: 'success' })
                 requestVolumeRefresh()
             } else if (result.status === 'credentialsNeeded') {
                 // Before asking the user to type a password, see if macOS/Finder already
@@ -477,11 +478,11 @@
                 if (await tryUseSavedPassword(vid, result.displayName)) return
                 onSmbUpgradeLogin?.(result, vid)
             } else {
-                addToast(`Direct connection failed: ${result.message}`, { level: 'error' })
+                addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: result.message }), { level: 'error' })
             }
         } catch (e) {
             dismissToast(connectingToastId)
-            addToast(`Direct connection failed: ${String(e)}`, { level: 'error' })
+            addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: String(e) }), { level: 'error' })
         }
     }
 
@@ -497,18 +498,20 @@
     async function tryUseSavedPassword(vid: string, displayName: string): Promise<boolean> {
         if (!(await systemHasSavedSmbPassword(vid))) return false
 
-        const useSaved = await ask(
-            `Cmdr can reuse the password macOS already saved for "${displayName}". You'll see a system prompt asking to allow Keychain access — that's expected; click Allow.`,
-            { title: 'Use the saved password?', kind: 'info', okLabel: 'Use saved password', cancelLabel: 'Enter it instead' },
-        )
+        const useSaved = await ask(tString('fileExplorer.navigation.useSavedPasswordMessage', { displayName }), {
+            title: tString('fileExplorer.navigation.useSavedPasswordTitle'),
+            kind: 'info',
+            okLabel: tString('fileExplorer.navigation.useSavedPasswordConfirm'),
+            cancelLabel: tString('fileExplorer.navigation.useSavedPasswordCancel'),
+        })
         if (!useSaved) return false
 
-        const savedToastId = addToast('Connecting with the saved password...', { dismissal: 'persistent' })
+        const savedToastId = addToast(tString('fileExplorer.navigation.connectingWithSavedPassword'), { dismissal: 'persistent' })
         try {
             const r = await upgradeToSmbVolumeUsingSavedPassword(vid)
             dismissToast(savedToastId)
             if (r.status === 'success') {
-                addToast('Connected directly for faster access', { level: 'success' })
+                addToast(tString('fileExplorer.pane.connectedDirectlyToast'), { level: 'success' })
                 requestVolumeRefresh()
                 return true
             }
@@ -517,11 +520,11 @@
                 onSmbUpgradeLogin?.(r, vid)
                 return true
             }
-            addToast(`Direct connection failed: ${r.message}`, { level: 'error' })
+            addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: r.message }), { level: 'error' })
             return true
         } catch (e) {
             dismissToast(savedToastId)
-            addToast(`Direct connection failed: ${String(e)}`, { level: 'error' })
+            addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: String(e) }), { level: 'error' })
             return true
         }
     }
@@ -570,7 +573,9 @@
             // `mtp-device-disconnected` (MTP). No toast needed — the change is
             // visible. Panes redirect to root via the existing listeners.
         } catch (e) {
-            addToast(`Couldn't eject ${volume.name}: ${getIpcErrorMessage(e)}`, { level: 'error' })
+            addToast(tString('fileExplorer.pane.ejectFailedToast', { volumeName: volume.name, message: getIpcErrorMessage(e) }), {
+                level: 'error',
+            })
         }
     }
 
@@ -622,14 +627,14 @@
         {/if}
         {currentVolumeName}
         {#if currentVolume?.isReadOnly}
-            <span class="read-only-indicator" use:tooltip={'Read-only'}>🔒</span>
+            <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}>🔒</span>
         {/if}
         <span class="chevron"></span>
     </span>
     {#if currentVolume?.usbSpeed}
         <span
             class="usb-speed-indicator breadcrumb-usb-speed-indicator usb-speed-indicator-{describeUsbSpeed(currentVolume.usbSpeed).tier}"
-            use:tooltip={`${usbSpeedDisplay(currentVolume)}\nNegotiated for this cable, port, and device`}
+            use:tooltip={`${usbSpeedDisplay(currentVolume)}\n${tString('fileExplorer.navigation.usbSpeedNegotiated')}`}
         ></span>
     {/if}
     {#if currentVolume?.smbConnectionState === 'direct'}
@@ -644,7 +649,7 @@
             class="breadcrumb-options-trigger"
             class:is-open={breadcrumbPopup.isOpen}
             bind:this={breadcrumbPopupRef}
-            use:tooltip={breadcrumbPopup.isOpen ? '' : 'Volume options'}
+            use:tooltip={breadcrumbPopup.isOpen ? '' : tString('fileExplorer.navigation.volumeOptionsTooltip')}
             onclick={(e: MouseEvent) => {
                 e.stopPropagation()
                 isOpen = false
@@ -665,7 +670,7 @@
                         void handleSubmenuAction(currentVolume.id)
                     }}
                 >
-                    Connect directly for faster access
+                    {tString('fileExplorer.navigation.connectDirectly')}
                 </div>
             </div>
         {/if}
@@ -674,9 +679,13 @@
         <button
             type="button"
             class="eject-button breadcrumb-eject-button"
-            aria-label={isVolumeBusy(currentVolume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${currentVolume.name}`}
+            aria-label={isVolumeBusy(currentVolume.id)
+                ? EJECT_BUSY_TOOLTIP
+                : tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name: currentVolume.name })}
             disabled={isVolumeBusy(currentVolume.id)}
-            use:tooltip={isVolumeBusy(currentVolume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${currentVolume.name}`}
+            use:tooltip={isVolumeBusy(currentVolume.id)
+                ? EJECT_BUSY_TOOLTIP
+                : tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name: currentVolume.name })}
             onclick={(e: MouseEvent) => { void handleEjectClick(currentVolume, e) }}
         >
             <Icon name="eject" size={14} aria-hidden="true" />
@@ -696,7 +705,7 @@
                 {#if group.category === 'favorite' && group.items.length === 0}
                     <!-- Empty state: the user removed every favorite. A disabled, non-focusable,
                          non-clickable placeholder so the section reads as a real (empty) state. -->
-                    <div class="favorites-empty" aria-disabled="true">(Your favorites will show here)</div>
+                    <div class="favorites-empty" aria-disabled="true">{tString('fileExplorer.navigation.favoritesEmpty')}</div>
                 {/if}
                 {#each group.items as volume (volume.id)}
                     {@const isFavorite = volume.category === 'favorite'}
@@ -768,7 +777,7 @@
                                 onclick={(e: MouseEvent) => { e.stopPropagation() }}
                                 onkeydown={(e: KeyboardEvent) => { fav.handleRenameKeyDown(e, volume) }}
                                 onblur={() => { void fav.commitRename(volume) }}
-                                aria-label="Rename favorite"
+                                aria-label={tString('fileExplorer.navigation.renameFavoriteAriaLabel')}
                             />
                         {:else}
                             <span class="volume-label">{volume.name}</span>
@@ -779,7 +788,7 @@
                             </span>
                         {/if}
                         {#if volume.isReadOnly}
-                            <span class="read-only-indicator" use:tooltip={'Read-only'}>🔒</span>
+                            <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}>🔒</span>
                         {/if}
                         {#if volume.smbConnectionState}
                             <span
@@ -793,16 +802,20 @@
                         {#if volume.usbSpeed}
                             <span
                                 class="usb-speed-indicator usb-speed-indicator-{describeUsbSpeed(volume.usbSpeed).tier}"
-                                use:tooltip={`${usbSpeedDisplay(volume)}\nNegotiated for this cable, port, and device`}
+                                use:tooltip={`${usbSpeedDisplay(volume)}\n${tString('fileExplorer.navigation.usbSpeedNegotiated')}`}
                             ></span>
                         {/if}
                         {#if isVolumeEjectable(volume)}
                             <button
                                 type="button"
                                 class="eject-button"
-                                aria-label={isVolumeBusy(volume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${volume.name}`}
+                                aria-label={isVolumeBusy(volume.id)
+                                    ? EJECT_BUSY_TOOLTIP
+                                    : tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name: volume.name })}
                                 disabled={isVolumeBusy(volume.id)}
-                                use:tooltip={isVolumeBusy(volume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${volume.name}`}
+                                use:tooltip={isVolumeBusy(volume.id)
+                                    ? EJECT_BUSY_TOOLTIP
+                                    : tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name: volume.name })}
                                 onclick={(e: MouseEvent) => { void handleEjectClick(volume, e) }}
                             >
                                 <Icon name="eject" size={14} aria-hidden="true" />
@@ -834,13 +847,15 @@
                         <div
                             class="volume-space-info volume-space-timeout"
                             use:tooltip={spaceAutoRetryingSet.has(volume.id)
-                                ? 'Retrying automatically\u2026'
-                                : 'Retrying\u2026'}
+                                ? tString('fileExplorer.navigation.spaceRetryingAuto')
+                                : tString('fileExplorer.navigation.spaceRetrying')}
                         >
                             <div class="volume-space-bar volume-space-bar-timeout">
                                 <Spinner size="sm" />
                             </div>
-                            <span class="volume-space-text volume-space-text-timeout">Retrying</span>
+                            <span class="volume-space-text volume-space-text-timeout"
+                                >{tString('fileExplorer.navigation.spaceRetryingText')}</span
+                            >
                         </div>
                     {:else if spaceTimedOutSet.has(volume.id)}
                         <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -849,8 +864,8 @@
                             class="volume-space-info volume-space-timeout"
                             class:space-shake={spaceRetryFailedSet.has(volume.id)}
                             use:tooltip={spaceRetryAttemptedSet.has(volume.id)
-                                ? 'Still unavailable \u2014 click to retry'
-                                : "Couldn't fetch disk space \u2014 click to retry"}
+                                ? tString('fileExplorer.navigation.spaceStillUnavailable')
+                                : tString('fileExplorer.navigation.spaceFetchFailed')}
                             onclick={(e: MouseEvent) => {
                                 e.stopPropagation()
                                 spaceManager.retryVolumeSpace(volume)
@@ -859,7 +874,9 @@
                             <div class="volume-space-bar volume-space-bar-timeout">
                                 <span class="volume-space-timeout-icon">?</span>
                             </div>
-                            <span class="volume-space-text volume-space-text-timeout">Unavailable</span>
+                            <span class="volume-space-text volume-space-text-timeout"
+                                >{tString('fileExplorer.navigation.spaceUnavailableText')}</span
+                            >
                         </div>
                     {/if}
                 {/each}
@@ -869,13 +886,13 @@
                 <div class="timeout-warning-row" class:retry-failed={volumeRetryFailed}>
                     <span class="timeout-warning-text"
                         >{volumeRetryFailed
-                            ? 'Still unreachable. Try again later'
-                            : 'Some volumes may be missing'}</span
+                            ? tString('fileExplorer.navigation.volumesStillUnreachable')
+                            : tString('fileExplorer.navigation.volumesMayBeMissing')}</span
                     >
                     <button
                         class="timeout-retry-button"
                         disabled={volumesRefreshing}
-                        use:tooltip={'Refresh volume list'}
+                        use:tooltip={tString('fileExplorer.navigation.refreshVolumeList')}
                         onclick={() => {
                             requestVolumeRefresh()
                         }}
@@ -910,7 +927,7 @@
                         void handleSubmenuAction()
                     }}
                 >
-                    Connect directly for faster access
+                    {tString('fileExplorer.navigation.connectDirectly')}
                 </div>
             </div>
         {/if}
@@ -932,14 +949,14 @@
                         class="row-menu-item"
                         onclick={(e: MouseEvent) => { e.stopPropagation(); const v = rowMenuVolume; closeRowMenu(); fav.startRename(v) }}
                     >
-                        Rename
+                        {tString('fileExplorer.navigation.rename')}
                     </div>
                     <!-- svelte-ignore a11y_click_events_have_key_events -->
                     <div
                         class="row-menu-item"
                         onclick={(e: MouseEvent) => { e.stopPropagation(); const v = rowMenuVolume; closeRowMenu(); void fav.remove(v) }}
                     >
-                        Remove
+                        {tString('fileExplorer.navigation.remove')}
                     </div>
                 {:else}
                     <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -950,8 +967,8 @@
                         onclick={(e: MouseEvent) => { void handleEjectClick(rowMenuVolume, e) }}
                     >
                         {isVolumeBusy(rowMenuVolume.id)
-                            ? `Eject (${rowMenuVolume.name}) (busy)`
-                            : `Eject (${rowMenuVolume.name})`}
+                            ? tString('fileExplorer.navigation.ejectMenuItemBusy', { name: rowMenuVolume.name })
+                            : tString('fileExplorer.navigation.ejectMenuItem', { name: rowMenuVolume.name })}
                     </div>
                 {/if}
             </div>

@@ -7,6 +7,7 @@ import { getSetting } from '$lib/settings/settings-store'
 import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 import type { FileEntry } from '../types'
 import { colorizeSizeString, formatSizeTriads } from '../selection/selection-info-utils'
+import { tString } from '$lib/intl/messages.svelte'
 
 /** Layout constants for Full mode */
 export const FULL_LIST_ROW_HEIGHT = 20
@@ -218,7 +219,10 @@ export interface SizeDisplayPick {
  */
 export function pickSizeDisplay(entry: FileEntry, isRestricted = false): SizeDisplayPick {
   if (isRestricted) {
-    return { override: '<no perms>', tooltip: 'Cmdr lacks permission to read this folder' }
+    return {
+      override: tString('fileExplorer.dirSize.noPerms'),
+      tooltip: tString('fileExplorer.dirSize.noPermsTooltip'),
+    }
   }
   if (entry.displaySize != null) {
     return { override: entry.displaySize, tooltip: entry.displaySizeTooltip ?? undefined }
@@ -293,7 +297,7 @@ export function buildFileSizeTooltip(
   if (logical == null && physical == null) return ''
   if (logical != null && physical != null) {
     return {
-      html: `${sizeLineHtml('Content', logical, formatSize)}<br>${sizeLineHtml('On disk', physical, formatSize)}`,
+      html: `${sizeLineHtml(tString('fileExplorer.dirSize.contentLabel'), logical, formatSize)}<br>${sizeLineHtml(tString('fileExplorer.dirSize.onDiskLabel'), physical, formatSize)}`,
     }
   }
   const size = logical ?? physical
@@ -316,10 +320,17 @@ export function buildSelectionSizeTooltip(
 
   const selLine = (label: string, bytes: number) =>
     `${label}: ${colorizeSizeString(formatSize(bytes))} (${formatBytesHtml(bytes)} bytes)`
-  const lines: string[] = [selLine('Selected', selectedLogical), selLine('Of total', totalLogical)]
+  const selectedLabel = tString('fileExplorer.selectionTooltip.selected')
+  const ofTotalLabel = tString('fileExplorer.selectionTooltip.ofTotal')
+  const lines: string[] = [selLine(selectedLabel, selectedLogical), selLine(ofTotalLabel, totalLogical)]
 
   if (totalPhysical > 0) {
-    lines.push('', 'On disk:', selLine('Selected', selectedPhysical), selLine('Of total', totalPhysical))
+    lines.push(
+      '',
+      tString('fileExplorer.selectionTooltip.onDiskHeader'),
+      selLine(selectedLabel, selectedPhysical),
+      selLine(ofTotalLabel, totalPhysical),
+    )
   }
 
   return { html: lines.join('<br>') }
@@ -369,7 +380,6 @@ export function getDirSizeDisplayState(
  * @param scanning - Whether a scan is currently active.
  * @param formatSize - Function to format bytes as a human-readable string.
  * @param formatNum - Function to format a number with locale separators.
- * @param plural - Function to pick singular/plural form.
  */
 export function buildDirSizeTooltip(
   recursiveSize: number | null | undefined,
@@ -379,15 +389,14 @@ export function buildDirSizeTooltip(
   scanning: boolean,
   formatSize: (bytes: number) => string,
   formatNum: (n: number) => string,
-  plural: (count: number, singular: string, pluralForm: string) => string,
 ): string | { html: string } {
   if (recursiveSize != null) {
     const lines: string[] = []
 
     // Size lines with colored byte triads
     if (recursivePhysicalSize != null) {
-      lines.push(sizeLineHtml('Content', recursiveSize, formatSize))
-      lines.push(sizeLineHtml('On disk', recursivePhysicalSize, formatSize))
+      lines.push(sizeLineHtml(tString('fileExplorer.dirSize.contentLabel'), recursiveSize, formatSize))
+      lines.push(sizeLineHtml(tString('fileExplorer.dirSize.onDiskLabel'), recursivePhysicalSize, formatSize))
     } else {
       lines.push(`${colorizeSizeString(formatSize(recursiveSize))} (${formatBytesHtml(recursiveSize)} bytes)`)
     }
@@ -395,19 +404,25 @@ export function buildDirSizeTooltip(
     // File/folder counts with "no" for zero
     const filesStr =
       recursiveFileCount === 0
-        ? 'No files'
-        : `${formatNum(recursiveFileCount)} ${plural(recursiveFileCount, 'file', 'files')}`
+        ? tString('fileExplorer.dirSize.noFiles')
+        : tString('fileExplorer.dirSize.fileCount', {
+            count: recursiveFileCount,
+            countText: formatNum(recursiveFileCount),
+          })
     const foldersStr =
       recursiveDirCount === 0
-        ? 'no folders'
-        : `${formatNum(recursiveDirCount)} ${plural(recursiveDirCount, 'folder', 'folders')}`
+        ? tString('fileExplorer.dirSize.noFolders')
+        : tString('fileExplorer.dirSize.folderCount', {
+            count: recursiveDirCount,
+            countText: formatNum(recursiveDirCount),
+          })
     lines.push(`${filesStr}, ${foldersStr}`)
 
     if (scanning) {
-      lines.push('Updating index \u2014 size may change.')
+      lines.push(tString('fileExplorer.dirSize.updatingIndexLine'))
     }
 
     return { html: lines.join('<br>') }
   }
-  return scanning ? 'Sizes appear as the scan progresses' : ''
+  return scanning ? tString('fileExplorer.dirSize.scanProgressTooltip') : ''
 }

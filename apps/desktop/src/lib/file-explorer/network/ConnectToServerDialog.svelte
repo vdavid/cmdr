@@ -5,6 +5,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import { connectToServer } from '$lib/tauri-commands'
     import { triggerNetworkDiscovery } from './lazy-trigger'
+    import { tString } from '$lib/intl/messages.svelte'
     import type { NetworkHost } from '../types'
 
     type DialogState = 'idle' | 'connecting' | 'error'
@@ -64,7 +65,7 @@
     onkeydown={handleKeydown}
     containerStyle="width: 400px"
 >
-    {#snippet title()}Connect to server{/snippet}
+    {#snippet title()}{tString('fileExplorer.network.connectDialog.title')}{/snippet}
 
     <div class="dialog-body">
         <div class="input-group">
@@ -74,28 +75,28 @@
                 type="text"
                 class="address-input"
                 class:has-error={dialogState === 'error'}
-                aria-label="Server address"
+                aria-label={tString('fileExplorer.network.connectDialog.addressAriaLabel')}
                 aria-describedby={errorMessage ? 'connect-error' : 'connect-help'}
                 aria-invalid={dialogState === 'error'}
                 spellcheck="false"
                 autocomplete="off"
-                placeholder="hostname, IP address, or smb:// URL"
+                placeholder={tString('fileExplorer.network.connectDialog.addressPlaceholder')}
                 disabled={dialogState === 'connecting'}
             />
-            <p id="connect-help" class="help-text">Examples: mynas.local, 192.168.1.100, smb://server/share</p>
+            <p id="connect-help" class="help-text">{tString('fileExplorer.network.connectDialog.examples')}</p>
             {#if errorMessage}
                 <p id="connect-error" class="error-message" role="alert">{errorMessage}</p>
             {/if}
         </div>
 
         <div class="button-row">
-            <Button variant="secondary" onclick={onClose}>Cancel</Button>
+            <Button variant="secondary" onclick={onClose}>{tString('fileExplorer.network.cancel')}</Button>
             <Button variant="primary" onclick={() => void handleSubmit()} disabled={!canSubmit}>
                 {#if dialogState === 'connecting'}
                     <Spinner size="sm" />
-                    Connecting...
+                    {tString('fileExplorer.network.connecting')}
                 {:else}
-                    Connect
+                    {tString('fileExplorer.network.connect')}
                 {/if}
             </Button>
         </div>

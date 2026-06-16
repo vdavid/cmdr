@@ -25,6 +25,8 @@
     } from '$lib/tauri-commands'
     import { addToast } from '$lib/ui/toast'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
     import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
     import NetworkLoginForm from './NetworkLoginForm.svelte'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
@@ -32,7 +34,7 @@
 
     async function notifyIfUsingFileFallback(): Promise<void> {
         if (await isUsingCredentialFileFallback()) {
-            addToast('Credentials stored locally (no system keyring detected)', {
+            addToast(tString('fileExplorer.network.share.credentialsStoredLocally'), {
                 level: 'info',
                 id: 'credential-file-fallback',
             })
@@ -114,7 +116,9 @@
         if (match) {
             void activateShare(match)
         } else {
-            addToast(`Share '${shareName}' not found on ${host.name}`, { level: 'warn' })
+            addToast(tString('fileExplorer.network.share.notFound', { shareName, hostName: host.name }), {
+                level: 'warn',
+            })
         }
     })
 
@@ -342,12 +346,12 @@
     /** User-facing message for a failed sign-in attempt. */
     function loginErrorMessageFor(shareError: ShareListError): string {
         if (shareError.type === 'auth_failed') {
-            return 'Invalid username or password. Please try again.'
+            return tString('fileExplorer.network.share.invalidCredentials')
         }
         if (shareError.type === 'auth_required' || shareError.type === 'signing_required') {
-            return 'Authentication required. Please enter your credentials.'
+            return tString('fileExplorer.network.share.authRequired')
         }
-        return shareError.message || `Connection failed: ${shareError.type}`
+        return shareError.message || tString('fileExplorer.network.share.connectionFailed', { reason: shareError.type })
     }
 
     function handleConnect(username: string | null, password: string | null, rememberInKeychain: boolean) {
@@ -498,9 +502,9 @@
         try {
             await forgetCredentials(host.name)
             authenticatedCredentials = null
-            addToast(`Forgot saved password for ${host.name}`, { level: 'success' })
+            addToast(tString('fileExplorer.network.forgotPassword', { hostName: host.name }), { level: 'success' })
         } catch {
-            addToast(`Couldn't delete saved password`, { level: 'error' })
+            addToast(tString('fileExplorer.network.deletePasswordFailed'), { level: 'error' })
         }
     }
 
@@ -525,51 +529,62 @@
     {:else if loading}
         <div class="loading-state">
             <Spinner size="md" />
-            Connecting to {host.name}...
+            {tString('fileExplorer.network.share.connecting', { hostName: host.name })}
         </div>
     {:else if error && !showLoginForm}
         <div class="error-state">
             <div class="error-icon">❌</div>
-            <div class="error-title">Couldn't connect to {host.name}</div>
+            <div class="error-title">{tString('fileExplorer.network.share.connectFailedTitle', { hostName: host.name })}</div>
             <div class="error-message">{error.message || error.type}</div>
             {#if error.type === 'missing_dependency' && error.installCommand}
                 <CommandBox command={error.installCommand} />
                 <div class="error-actions">
-                    <Button variant="secondary" onclick={handleRetry}>Retry</Button>
-                    <Button variant="secondary" onclick={onBack}>Back</Button>
+                    <Button variant="secondary" onclick={handleRetry}>{tString('fileExplorer.network.retry')}</Button>
+                    <Button variant="secondary" onclick={onBack}>{tString('fileExplorer.network.back')}</Button>
                 </div>
             {:else}
                 <div class="error-actions">
-                    <Button variant="secondary" onclick={handleRetry}>Retry</Button>
-                    <Button variant="secondary" onclick={() => (showLoginForm = true)}>Sign in</Button>
-                    <Button variant="secondary" onclick={onBack}>Back</Button>
+                    <Button variant="secondary" onclick={handleRetry}>{tString('fileExplorer.network.retry')}</Button>
+                    <Button variant="secondary" onclick={() => (showLoginForm = true)}
+                        >{tString('fileExplorer.network.signIn')}</Button
+                    >
+                    <Button variant="secondary" onclick={onBack}>{tString('fileExplorer.network.back')}</Button>
                 </div>
             {/if}
         </div>
     {:else if sortedShares.length === 0}
         <div class="empty-state">
             <div class="empty-icon">📁</div>
-            <div class="empty-title">No shares available</div>
-            <div class="empty-message">This host has no accessible shares, or authentication is needed.</div>
+            <div class="empty-title">{tString('fileExplorer.network.share.noSharesTitle')}</div>
+            <div class="empty-message">{tString('fileExplorer.network.share.noSharesMessage')}</div>
             <div class="error-actions">
-                <Button variant="secondary" onclick={() => (showLoginForm = true)}>Sign in</Button>
-                <Button variant="secondary" onclick={onBack}>Back</Button>
+                <Button variant="secondary" onclick={() => (showLoginForm = true)}
+                    >{tString('fileExplorer.network.signIn')}</Button
+                >
+                <Button variant="secondary" onclick={onBack}>{tString('fileExplorer.network.back')}</Button>
             </div>
         </div>
     {:else}
         <div class="header-row">
-            <Button variant="secondary" size="mini" onclick={onBack}>← Back</Button>
+            <Button variant="secondary" size="mini" onclick={onBack}
+                >{tString('fileExplorer.network.share.backArrow')}</Button
+            >
             <span class="host-name">{host.name}</span>
             {#if authenticatedCredentials}
                 <button
                     class="forget-password-btn"
                     onclick={handleForgetPassword}
-                    use:tooltip={'Remove saved password from Keychain'}
+                    use:tooltip={tString('fileExplorer.network.share.forgetPasswordTooltip')}
                 >
-                    🔑 Forget saved password
+                    {tString('fileExplorer.network.share.forgetPassword')}
                 </button>
             {/if}
-            <span class="share-count">{sortedShares.length} {sortedShares.length === 1 ? 'share' : 'shares'}</span>
+            <span class="share-count"
+                >{tString('fileExplorer.network.share.shareCount', {
+                    count: sortedShares.length,
+                    countText: formatInteger(sortedShares.length),
+                })}</span
+            >
         </div>
         <div class="share-list" bind:this={listContainer} bind:clientHeight={containerHeight}>
             {#each sortedShares as share, index (share.name)}

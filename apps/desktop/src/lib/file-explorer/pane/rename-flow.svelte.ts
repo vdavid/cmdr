@@ -6,6 +6,7 @@ import { executeRenameSave, performRename, checkPermission, type RenameResult } 
 import { getSetting } from '$lib/settings'
 import type { RenameConflictResolution } from '../rename/rename-operations'
 import { addToast, dismissTransientToasts } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 import type { FileEntry } from '../types'
 import type { createRenameState } from '../rename/rename-state.svelte'
 
@@ -110,7 +111,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     pendingCursorName = newName
 
     if (wasHiddenRename) {
-      addToast("Your file disappeared from view because hidden files aren't shown.", { level: 'info' })
+      addToast(tString('fileExplorer.rename.hiddenAfterRename'), { level: 'info' })
     }
   }
 
@@ -253,10 +254,10 @@ export function createRenameFlow(deps: RenameFlowDeps) {
             })
             .catch((e: unknown) => {
               if (isIpcError(e) && e.timedOut) {
-                addToast(
-                  "Couldn't confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.",
-                  { level: 'warn', dismissal: 'persistent' },
-                )
+                addToast(tString('fileExplorer.pane.trashUnconfirmedToast'), {
+                  level: 'warn',
+                  dismissal: 'persistent',
+                })
                 void refreshListing(deps.getListingId())
               } else {
                 addToast(getIpcErrorMessage(e), { level: 'error' })

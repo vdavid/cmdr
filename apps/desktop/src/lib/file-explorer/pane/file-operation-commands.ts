@@ -1,6 +1,7 @@
 import { DEFAULT_VOLUME_ID, getFileAt, getFilesAtIndices } from '$lib/tauri-commands'
 import { pluralize } from '$lib/utils/pluralize'
 import { addToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 import { getSnapshot } from '$lib/search/snapshot-store.svelte'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { getAppLogger } from '$lib/logging/logger'
@@ -40,7 +41,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const volId = access.getPaneVolumeId(access.getFocusedPane())
     const volumeInfo = getDestinationVolumeInfo(volId, access.getVolumes())
     if (volumeInfo?.isReadOnly) {
-      dialogs.showAlert('Read-only volume', "This is a read-only volume. Renaming isn't possible here.")
+      dialogs.showAlert(tString('fileExplorer.readOnly.volumeTitle'), tString('fileExplorer.readOnly.renameMessage'))
       return
     }
 
@@ -73,7 +74,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // type a name and then hit a backend error. Mirrors `startRename`.
     const volumeInfo = getDestinationVolumeInfo(volumeIdForPane, access.getVolumes())
     if (volumeInfo?.isReadOnly) {
-      dialogs.showAlert('Read-only volume', "This is a read-only volume. Creating folders isn't possible here.")
+      dialogs.showAlert(tString('fileExplorer.readOnly.volumeTitle'), tString('fileExplorer.readOnly.mkdirMessage'))
       return
     }
 
@@ -102,7 +103,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
     const volumeInfo = getDestinationVolumeInfo(volumeIdForPane, access.getVolumes())
     if (volumeInfo?.isReadOnly) {
-      dialogs.showAlert('Read-only volume', "This is a read-only volume. Creating files isn't possible here.")
+      dialogs.showAlert(tString('fileExplorer.readOnly.volumeTitle'), tString('fileExplorer.readOnly.mkfileMessage'))
       return
     }
 
@@ -412,7 +413,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const sourceVolumeIdForCheck = access.getPaneVolumeId(access.getFocusedPane())
     const sourceVolumeInfo = getDestinationVolumeInfo(sourceVolumeIdForCheck, access.getVolumes())
     if (sourceVolumeInfo?.isReadOnly) {
-      dialogs.showAlert('Read-only volume', "This is a read-only volume. Deleting files isn't possible here.")
+      dialogs.showAlert(tString('fileExplorer.readOnly.volumeTitle'), tString('fileExplorer.readOnly.deleteMessage'))
       return
     }
 

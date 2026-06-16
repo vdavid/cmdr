@@ -1,0 +1,1485 @@
+{
+  "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Left} other {Right}} file pane",
+  "@fileExplorer.pane.filePaneAriaLabel": {
+    "description": "Accessibility label for one of the two file-list panes. The app always has a left and a right pane; this names which one.",
+    "placeholders": {
+      "side": "which pane this is: the value is either left or right"
+    }
+  },
+
+  "fileExplorer.pane.diskUsageAriaLabel": "Disk usage",
+  "@fileExplorer.pane.diskUsageAriaLabel": {
+    "description": "Accessibility label for the small disk-usage bar shown under a pane, indicating how full the current volume is."
+  },
+
+  "fileExplorer.pane.resizePanesAriaLabel": "Resize panes",
+  "@fileExplorer.pane.resizePanesAriaLabel": {
+    "description": "Accessibility label for the draggable divider between the two file panes. Dragging it changes how the width is split."
+  },
+
+  "fileExplorer.pane.fileExplorerAriaLabel": "File explorer",
+  "@fileExplorer.pane.fileExplorerAriaLabel": {
+    "description": "Accessibility label for the whole two-pane file explorer region."
+  },
+
+  "fileExplorer.pane.disconnectFailedToast": "Couldn''t disconnect: {message}",
+  "@fileExplorer.pane.disconnectFailedToast": {
+    "description": "Error toast when disconnecting from a network server did not work. {message} is the underlying reason text.",
+    "placeholders": {
+      "message": "the underlying failure reason, already worded for the user"
+    }
+  },
+
+  "fileExplorer.pane.connectedDirectlyToast": "Connected directly for faster access",
+  "@fileExplorer.pane.connectedDirectlyToast": {
+    "description": "Success toast after upgrading a network share to a faster direct connection."
+  },
+
+  "fileExplorer.pane.directConnectionFailedToast": "Direct connection failed: {message}",
+  "@fileExplorer.pane.directConnectionFailedToast": {
+    "description": "Error toast when upgrading a network share to a faster direct connection did not work. {message} is the underlying reason text.",
+    "placeholders": {
+      "message": "the underlying failure reason, already worded for the user"
+    }
+  },
+
+  "fileExplorer.pane.trashUnconfirmedToast": "Couldn''t confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.",
+  "@fileExplorer.pane.trashUnconfirmedToast": {
+    "description": "Persistent warning toast shown when moving a file to the Trash (as part of a rename-overwrite) timed out, so Cmdr can''t confirm it landed. Reassures the user it may have worked and asks them to check. \"Trash\" is the macOS Trash; keep the name."
+  },
+
+  "fileExplorer.pane.ejectFailedToast": "Couldn''t eject {volumeName}: {message}",
+  "@fileExplorer.pane.ejectFailedToast": {
+    "description": "Error toast when ejecting a drive or volume did not work. {volumeName} is the drive''s display name; {message} is the underlying reason text.",
+    "placeholders": {
+      "volumeName": "the display name of the drive or volume being ejected",
+      "message": "the underlying failure reason, already worded for the user"
+    }
+  },
+
+  "fileExplorer.errorPane.tryAgain": "Try again",
+  "@fileExplorer.errorPane.tryAgain": {
+    "description": "Button on the error screen shown in place of a file list when a folder could not be opened. Retries opening it."
+  },
+
+  "fileExplorer.errorPane.openSystemSettings": "Open {systemSettings}",
+  "@fileExplorer.errorPane.openSystemSettings": {
+    "description": "Button on the folder error screen that opens the macOS System Settings app (so the user can grant access). {systemSettings} is the OS name for that app.",
+    "placeholders": {
+      "systemSettings": "the localized OS name of the System Settings app (do not translate; comes from the OS)"
+    }
+  },
+
+  "fileExplorer.errorPane.technicalDetails": "Technical details",
+  "@fileExplorer.errorPane.technicalDetails": {
+    "description": "Label for a collapsible disclosure on the folder error screen that reveals raw diagnostic info."
+  },
+
+  "fileExplorer.errorPane.aMomentAgo": "a moment ago",
+  "@fileExplorer.errorPane.aMomentAgo": {
+    "description": "Relative time shown in the folder error screen''s diagnostic details, for something that happened within the last few seconds."
+  },
+
+  "fileExplorer.errorPane.secondsAgo": "{seconds}s ago",
+  "@fileExplorer.errorPane.secondsAgo": {
+    "description": "Relative time in the folder error diagnostics: how many seconds ago. Shown compactly, e.g. 12s ago.",
+    "placeholders": {
+      "seconds": "number of seconds ago"
+    }
+  },
+
+  "fileExplorer.errorPane.minutesAgo": "{minutes}m ago",
+  "@fileExplorer.errorPane.minutesAgo": {
+    "description": "Relative time in the folder error diagnostics: how many minutes ago. Shown compactly, e.g. 5m ago.",
+    "placeholders": {
+      "minutes": "number of minutes ago"
+    }
+  },
+
+  "fileExplorer.errorPane.hoursAgo": "{hours}h ago",
+  "@fileExplorer.errorPane.hoursAgo": {
+    "description": "Relative time in the folder error diagnostics: how many hours ago. Shown compactly, e.g. 3h ago.",
+    "placeholders": {
+      "hours": "number of hours ago"
+    }
+  },
+
+  "fileExplorer.errorPane.retryInfo": "Retry #{count} · first try {firstAgo}",
+  "@fileExplorer.errorPane.retryInfo": {
+    "description": "Diagnostic line on the folder error screen summarizing repeated failures. The dot (·) is a separator. {firstAgo} is a relative time like \"5m ago\".",
+    "placeholders": {
+      "count": "how many times opening this folder has been retried",
+      "firstAgo": "relative time of the first attempt, e.g. 5m ago"
+    }
+  },
+
+  "fileExplorer.errorPane.retryInfoWithLast": "Retry #{count} · first try {firstAgo} · last try {lastAgo}",
+  "@fileExplorer.errorPane.retryInfoWithLast": {
+    "description": "Same as the retry-info diagnostic line, but also including the most recent attempt''s relative time. The dots (·) are separators.",
+    "placeholders": {
+      "count": "how many times opening this folder has been retried",
+      "firstAgo": "relative time of the first attempt, e.g. 5m ago",
+      "lastAgo": "relative time of the most recent attempt, e.g. 1m ago"
+    }
+  },
+
+  "fileExplorer.functionKeyBar.toolbarAriaLabel": "Function keys",
+  "@fileExplorer.functionKeyBar.toolbarAriaLabel": {
+    "description": "Accessibility label for the bottom toolbar of function-key buttons (the F1-F8 style row of file actions)."
+  },
+
+  "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
+  "@fileExplorer.functionKeyBar.actionWithShortcut": {
+    "description": "Accessibility label for a function-key button, naming the action and the keyboard shortcut that triggers it, e.g. \"Copy (F5)\". The shortcut updates live if the user rebinds the key.",
+    "placeholders": {
+      "action": "the full action name, e.g. Copy, Rename, Delete permanently",
+      "shortcut": "the keyboard shortcut glyphs, e.g. F5 or ⌘C (do not translate; these are key names)"
+    }
+  },
+
+  "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (no shift action)",
+  "@fileExplorer.functionKeyBar.noShiftAction": {
+    "description": "Accessibility label for a disabled function-key slot that has no action while Shift is held. {fnKey} is the key name like F2.",
+    "placeholders": {
+      "fnKey": "the function-key name, e.g. F2 (do not translate; it is a key label)"
+    }
+  },
+
+  "fileExplorer.functionKeyBar.newFileLabel": "New file",
+  "@fileExplorer.functionKeyBar.newFileLabel": {
+    "description": "Short button label on the function-key bar for creating a new file. Space is tight; keep it short."
+  },
+  "fileExplorer.functionKeyBar.newFileAction": "Create new file",
+  "@fileExplorer.functionKeyBar.newFileAction": {
+    "description": "The full spoken action name (for screen readers) of the new-file function-key button. Longer form of the short button label."
+  },
+  "fileExplorer.functionKeyBar.renameLabel": "Rename",
+  "@fileExplorer.functionKeyBar.renameLabel": {
+    "description": "Button label on the function-key bar for renaming the file under the cursor. Space is tight; keep it short."
+  },
+  "fileExplorer.functionKeyBar.renameAction": "Rename",
+  "@fileExplorer.functionKeyBar.renameAction": {
+    "description": "The full spoken action name (for screen readers) of the rename function-key button."
+  },
+  "fileExplorer.functionKeyBar.permanentlyLabel": "Permanently",
+  "@fileExplorer.functionKeyBar.permanentlyLabel": {
+    "description": "Short button label (shown while Shift is held) for permanently deleting the selected files, bypassing the trash. Space is tight; the full action is spoken separately."
+  },
+  "fileExplorer.functionKeyBar.deletePermanentlyAction": "Delete permanently",
+  "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
+    "description": "The full spoken action name (for screen readers) of the permanent-delete function-key button (bypasses the trash)."
+  },
+  "fileExplorer.functionKeyBar.viewLabel": "View",
+  "@fileExplorer.functionKeyBar.viewLabel": {
+    "description": "Short button label on the function-key bar for viewing the file under the cursor in the built-in viewer. Space is tight; keep it short."
+  },
+  "fileExplorer.functionKeyBar.viewAction": "View file",
+  "@fileExplorer.functionKeyBar.viewAction": {
+    "description": "The full spoken action name (for screen readers) of the view-file function-key button."
+  },
+  "fileExplorer.functionKeyBar.editLabel": "Edit",
+  "@fileExplorer.functionKeyBar.editLabel": {
+    "description": "Short button label on the function-key bar for editing the file under the cursor. Space is tight; keep it short."
+  },
+  "fileExplorer.functionKeyBar.editAction": "Edit file",
+  "@fileExplorer.functionKeyBar.editAction": {
+    "description": "The full spoken action name (for screen readers) of the edit-file function-key button."
+  },
+  "fileExplorer.functionKeyBar.copyLabel": "Copy",
+  "@fileExplorer.functionKeyBar.copyLabel": {
+    "description": "Button label on the function-key bar for copying the selected files to the other pane. Space is tight; keep it short."
+  },
+  "fileExplorer.functionKeyBar.copyAction": "Copy",
+  "@fileExplorer.functionKeyBar.copyAction": {
+    "description": "The full spoken action name (for screen readers) of the copy function-key button."
+  },
+  "fileExplorer.functionKeyBar.moveLabel": "Move",
+  "@fileExplorer.functionKeyBar.moveLabel": {
+    "description": "Button label on the function-key bar for moving the selected files to the other pane. Space is tight; keep it short."
+  },
+  "fileExplorer.functionKeyBar.moveAction": "Move",
+  "@fileExplorer.functionKeyBar.moveAction": {
+    "description": "The full spoken action name (for screen readers) of the move function-key button."
+  },
+  "fileExplorer.functionKeyBar.newFolderLabel": "New folder",
+  "@fileExplorer.functionKeyBar.newFolderLabel": {
+    "description": "Button label on the function-key bar for creating a new folder. Space is tight; keep it short."
+  },
+  "fileExplorer.functionKeyBar.newFolderAction": "New folder",
+  "@fileExplorer.functionKeyBar.newFolderAction": {
+    "description": "The full spoken action name (for screen readers) of the new-folder function-key button."
+  },
+  "fileExplorer.functionKeyBar.deleteLabel": "Delete",
+  "@fileExplorer.functionKeyBar.deleteLabel": {
+    "description": "Button label on the function-key bar for deleting the selected files (to the trash). Space is tight; keep it short."
+  },
+  "fileExplorer.functionKeyBar.deleteAction": "Delete",
+  "@fileExplorer.functionKeyBar.deleteAction": {
+    "description": "The full spoken action name (for screen readers) of the delete (to trash) function-key button."
+  },
+
+  "fileExplorer.typeToJump.ariaLabel": "Jump to {buffer}",
+  "@fileExplorer.typeToJump.ariaLabel": {
+    "description": "Accessibility label for the type-to-jump indicator, which shows what the user has typed to jump to a matching file. {buffer} is the typed text so far.",
+    "placeholders": {
+      "buffer": "the characters the user has typed to jump to a file"
+    }
+  },
+  "fileExplorer.typeToJump.prefix": "Jump: ",
+  "@fileExplorer.typeToJump.prefix": {
+    "description": "Visible label before the typed characters in the type-to-jump indicator (the typed text follows in its own styled span). Keep the trailing space."
+  },
+
+  "fileExplorer.searchResults.unavailableTitle": "Search results no longer available",
+  "@fileExplorer.searchResults.unavailableTitle": {
+    "description": "Title of an empty-state message shown when a saved search-results view can no longer be displayed because its data was cleared."
+  },
+  "fileExplorer.searchResults.unavailableBody": "The result set for this search was cleared. Open a new search to start again.",
+  "@fileExplorer.searchResults.unavailableBody": {
+    "description": "Body of the empty-state message shown when a saved search-results view''s data was cleared, telling the user to run a new search."
+  },
+
+  "fileExplorer.network.cancel": "Cancel",
+  "@fileExplorer.network.cancel": {
+    "description": "Button that dismisses a network dialog or form without connecting."
+  },
+  "fileExplorer.network.connect": "Connect",
+  "@fileExplorer.network.connect": {
+    "description": "Button that starts connecting to the entered network server or share."
+  },
+  "fileExplorer.network.connecting": "Connecting...",
+  "@fileExplorer.network.connecting": {
+    "description": "In-progress label shown on the connect button (and in status text) while a network connection is being established."
+  },
+  "fileExplorer.network.back": "Back",
+  "@fileExplorer.network.back": {
+    "description": "Button that returns to the previous network screen (for example from a host''s shares back to the host list)."
+  },
+  "fileExplorer.network.retry": "Retry",
+  "@fileExplorer.network.retry": {
+    "description": "Button that re-attempts a failed network operation, such as connecting to a host."
+  },
+  "fileExplorer.network.signIn": "Sign in",
+  "@fileExplorer.network.signIn": {
+    "description": "Button that opens the credentials form to sign in to a network host or share."
+  },
+  "fileExplorer.network.authFailed": "Authentication failed",
+  "@fileExplorer.network.authFailed": {
+    "description": "Short fallback message shown in the network sign-in form when the server rejected the connection and gave no more specific reason."
+  },
+
+  "fileExplorer.network.connectDialog.title": "Connect to server",
+  "@fileExplorer.network.connectDialog.title": {
+    "description": "Title of the dialog for manually connecting to a network server by typing its address."
+  },
+  "fileExplorer.network.connectDialog.addressAriaLabel": "Server address",
+  "@fileExplorer.network.connectDialog.addressAriaLabel": {
+    "description": "Accessibility label for the text field where the user types a server address in the connect-to-server dialog."
+  },
+  "fileExplorer.network.connectDialog.addressPlaceholder": "hostname, IP address, or smb:// URL",
+  "@fileExplorer.network.connectDialog.addressPlaceholder": {
+    "description": "Placeholder text in the connect-to-server address field, hinting at the accepted formats. \"smb://\" is a literal URL scheme; do not translate it.",
+    "placeholders": {}
+  },
+  "fileExplorer.network.connectDialog.examples": "Examples: mynas.local, 192.168.1.100, smb://server/share",
+  "@fileExplorer.network.connectDialog.examples": {
+    "description": "Help text under the connect-to-server field giving example addresses. The example values (mynas.local, the IP, smb://server/share) are literals; keep them as-is."
+  },
+
+  "fileExplorer.network.browser.colName": "Name",
+  "@fileExplorer.network.browser.colName": {
+    "description": "Column header in the network host list for the host''s display name. Tight column; keep it short."
+  },
+  "fileExplorer.network.browser.colIp": "IP address",
+  "@fileExplorer.network.browser.colIp": {
+    "description": "Column header in the network host list for the host''s IP address. Tight column; keep it short."
+  },
+  "fileExplorer.network.browser.colHostname": "Hostname",
+  "@fileExplorer.network.browser.colHostname": {
+    "description": "Column header in the network host list for the host''s network hostname. Tight column; keep it short."
+  },
+  "fileExplorer.network.browser.colShares": "Shares",
+  "@fileExplorer.network.browser.colShares": {
+    "description": "Column header in the network host list for how many shared folders the host offers. Tight column; keep it short."
+  },
+  "fileExplorer.network.browser.colStatus": "Status",
+  "@fileExplorer.network.browser.colStatus": {
+    "description": "Column header in the network host list for the host''s connection status. Tight column; keep it short."
+  },
+  "fileExplorer.network.browser.fetching": "fetching...",
+  "@fileExplorer.network.browser.fetching": {
+    "description": "Placeholder shown in the network host list''s IP or hostname cell while that value is still being resolved. Lowercase, matching the quiet inline style."
+  },
+  "fileExplorer.network.browser.unknown": "(unknown)",
+  "@fileExplorer.network.browser.unknown": {
+    "description": "Placeholder in the network host list''s Shares cell when the share count could not be determined. Shown in parentheses."
+  },
+  "fileExplorer.network.browser.searching": "Searching...",
+  "@fileExplorer.network.browser.searching": {
+    "description": "Status shown while the app is still discovering network hosts (mDNS browsing in progress)."
+  },
+  "fileExplorer.network.browser.connectToServerRow": "Connect to server...",
+  "@fileExplorer.network.browser.connectToServerRow": {
+    "description": "Label of the always-present last row in the network host list that opens the manual connect-to-server dialog. The trailing ellipsis signals a dialog follows."
+  },
+  "fileExplorer.network.browser.noHostsTitle": "No network hosts found",
+  "@fileExplorer.network.browser.noHostsTitle": {
+    "description": "Empty-state title in the network browser when no SMB hosts were discovered on the network."
+  },
+  "fileExplorer.network.browser.noHostsMessage": "Make sure you''re on a network with SMB-capable devices.",
+  "@fileExplorer.network.browser.noHostsMessage": {
+    "description": "Empty-state body in the network browser advising the user to check their network. \"SMB\" is the file-sharing protocol name; do not translate it."
+  },
+  "fileExplorer.network.browser.refresh": "Refresh",
+  "@fileExplorer.network.browser.refresh": {
+    "description": "Button in the empty network browser that re-scans the network for hosts."
+  },
+  "fileExplorer.network.browser.refreshAriaLabel": "Refresh network hosts",
+  "@fileExplorer.network.browser.refreshAriaLabel": {
+    "description": "Accessibility label for the status-bar button that re-scans the network for hosts."
+  },
+  "fileExplorer.network.browser.refreshHint": "Press <key></key> or click here to refresh",
+  "@fileExplorer.network.browser.refreshHint": {
+    "description": "Hint in the network status bar telling the user how to refresh the host list. The empty <key></key> marks where a keyboard-shortcut chip (showing ⌘R) is rendered inline; keep the tag in the sentence and reorder the surrounding words for natural grammar.",
+    "placeholders": {
+      "key": "marks where the keyboard-shortcut chip is inserted inline (the chip shows the ⌘R key combo); keep the tag, it carries no translatable text"
+    }
+  },
+  "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} host} other {{countText} hosts}}",
+  "@fileExplorer.network.browser.hostCount": {
+    "description": "Status-bar count of discovered network hosts, e.g. \"3 hosts\".",
+    "placeholders": {
+      "countText": "the number of hosts, already formatted for display",
+      "count": "the same number of hosts (drives the singular/plural form)"
+    }
+  },
+
+  "fileExplorer.network.browser.status.resolving": "Resolving...",
+  "@fileExplorer.network.browser.status.resolving": {
+    "description": "Status cell in the network host list while the host''s name and IP are still being resolved."
+  },
+  "fileExplorer.network.browser.status.waitingForNetwork": "Waiting for network...",
+  "@fileExplorer.network.browser.status.waitingForNetwork": {
+    "description": "Status cell shown when a host is known but the network name has not resolved yet."
+  },
+  "fileExplorer.network.browser.status.notChecked": "Not checked",
+  "@fileExplorer.network.browser.status.notChecked": {
+    "description": "Status cell for a host that has not been contacted yet (the user has not tried connecting)."
+  },
+  "fileExplorer.network.browser.status.loggedIn": "🔑 Logged in{infoIcon}",
+  "@fileExplorer.network.browser.status.loggedIn": {
+    "description": "Status cell when stored credentials exist for a host that needs login. The key emoji prefix is part of the status. {infoIcon} is an optional trailing info marker (an emoji or empty).",
+    "placeholders": {
+      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
+    }
+  },
+  "fileExplorer.network.browser.status.loginFailed": "⚠️ Login failed{infoIcon}",
+  "@fileExplorer.network.browser.status.loginFailed": {
+    "description": "Status cell when a login attempt to the host failed. The warning emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
+    "placeholders": {
+      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
+    }
+  },
+  "fileExplorer.network.browser.status.loginNeeded": "🔒 Login needed{infoIcon}",
+  "@fileExplorer.network.browser.status.loginNeeded": {
+    "description": "Status cell when the host requires login and no credentials are stored. The lock emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
+    "placeholders": {
+      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
+    }
+  },
+  "fileExplorer.network.browser.status.timeout": "⏱️ Timeout{infoIcon}",
+  "@fileExplorer.network.browser.status.timeout": {
+    "description": "Status cell when contacting the host timed out. The timer emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
+    "placeholders": {
+      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
+    }
+  },
+  "fileExplorer.network.browser.status.unreachable": "❌ Unreachable{infoIcon}",
+  "@fileExplorer.network.browser.status.unreachable": {
+    "description": "Status cell when the host could not be reached. The cross emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
+    "placeholders": {
+      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
+    }
+  },
+  "fileExplorer.network.browser.status.error": "⚠️ Error{infoIcon}",
+  "@fileExplorer.network.browser.status.error": {
+    "description": "Generic fallback status cell for an unclassified host problem. The warning emoji prefix is part of the status. {infoIcon} is an optional trailing info marker. Avoid the literal word for \"error\" in languages with a friendlier alternative if your style guide prefers it.",
+    "placeholders": {
+      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
+    }
+  },
+  "fileExplorer.network.browser.status.loggedInOk": "✓ Logged in",
+  "@fileExplorer.network.browser.status.loggedInOk": {
+    "description": "Status cell when connected to a host using stored credentials. The check mark prefix is part of the status."
+  },
+  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Logged in 🔄",
+  "@fileExplorer.network.browser.status.loggedInOkStale": {
+    "description": "Same as the logged-in status, but with a refresh emoji showing the share data is stale and being refreshed."
+  },
+  "fileExplorer.network.browser.status.guest": "✓ Guest",
+  "@fileExplorer.network.browser.status.guest": {
+    "description": "Status cell when connected to a host as a guest (no credentials). The check mark prefix is part of the status."
+  },
+  "fileExplorer.network.browser.status.guestStale": "✓ Guest 🔄",
+  "@fileExplorer.network.browser.status.guestStale": {
+    "description": "Same as the guest status, but with a refresh emoji showing the share data is stale and being refreshed."
+  },
+  "fileExplorer.network.browser.status.connected": "✓ Connected",
+  "@fileExplorer.network.browser.status.connected": {
+    "description": "Status cell when connected to a host (generic, neither explicitly credentialed nor guest). The check mark prefix is part of the status."
+  },
+  "fileExplorer.network.browser.status.connectedStale": "✓ Connected 🔄",
+  "@fileExplorer.network.browser.status.connectedStale": {
+    "description": "Same as the connected status, but with a refresh emoji showing the share data is stale and being refreshed."
+  },
+
+  "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address...",
+  "@fileExplorer.network.browser.tooltip.resolving": {
+    "description": "Hover tooltip on a host row explaining that its name and IP are still being resolved."
+  },
+  "fileExplorer.network.browser.tooltip.waitingForNetwork": "Waiting for network name resolution",
+  "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
+    "description": "Hover tooltip on a host row explaining the app is waiting for the network to resolve the host name."
+  },
+  "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Double-click to connect and view shares",
+  "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
+    "description": "Hover tooltip on a not-yet-contacted host row inviting the user to double-click to connect."
+  },
+  "fileExplorer.network.browser.tooltip.credsStored": "Credentials stored. Double-click to connect.",
+  "@fileExplorer.network.browser.tooltip.credsStored": {
+    "description": "Hover tooltip on a host row that needs login but already has stored credentials."
+  },
+  "fileExplorer.network.browser.tooltip.credsRejected": "Stored credentials were rejected. Please log in with updated credentials.",
+  "@fileExplorer.network.browser.tooltip.credsRejected": {
+    "description": "Hover tooltip on a host row whose stored credentials the server rejected, asking the user to update them."
+  },
+  "fileExplorer.network.browser.tooltip.requiresLogin": "This host requires login. Double-click to enter credentials.",
+  "@fileExplorer.network.browser.tooltip.requiresLogin": {
+    "description": "Hover tooltip on a host row that needs login and has no stored credentials."
+  },
+  "fileExplorer.network.browser.tooltip.authFailed": "Authentication failed. Check your credentials and try again.",
+  "@fileExplorer.network.browser.tooltip.authFailed": {
+    "description": "Hover tooltip on a host row whose authentication failed, asking the user to recheck credentials."
+  },
+  "fileExplorer.network.browser.tooltip.errorWithType": "Error: {reason}",
+  "@fileExplorer.network.browser.tooltip.errorWithType": {
+    "description": "Fallback hover tooltip on a host row for an unclassified problem, showing the raw technical error type. {reason} is a short error code. Used only when no friendlier message is available.",
+    "placeholders": {
+      "reason": "a short technical error type/code"
+    }
+  },
+
+  "fileExplorer.network.browser.cannotRemoveDiscovered": "Can''t remove discovered hosts",
+  "@fileExplorer.network.browser.cannotRemoveDiscovered": {
+    "description": "Warning toast when the user tries to remove a host that was auto-discovered (only manually-added hosts can be removed)."
+  },
+  "fileExplorer.network.browser.removeHostConfirm": "Remove {hostName} from the server list?",
+  "@fileExplorer.network.browser.removeHostConfirm": {
+    "description": "Confirmation dialog message before removing a manually-added host from the saved server list.",
+    "placeholders": {
+      "hostName": "the display name of the host being removed"
+    }
+  },
+  "fileExplorer.network.browser.removeHostConfirmButton": "Remove",
+  "@fileExplorer.network.browser.removeHostConfirmButton": {
+    "description": "Confirm button in the remove-host dialog."
+  },
+  "fileExplorer.network.browser.hostRemoved": "Removed {hostName}",
+  "@fileExplorer.network.browser.hostRemoved": {
+    "description": "Success toast after removing a host from the saved server list.",
+    "placeholders": {
+      "hostName": "the display name of the host that was removed"
+    }
+  },
+  "fileExplorer.network.browser.hostRemoveFailed": "Couldn''t remove {hostName}",
+  "@fileExplorer.network.browser.hostRemoveFailed": {
+    "description": "Error toast when removing a host from the saved server list did not work.",
+    "placeholders": {
+      "hostName": "the display name of the host that could not be removed"
+    }
+  },
+  "fileExplorer.network.forgotPassword": "Forgot saved password for {hostName}",
+  "@fileExplorer.network.forgotPassword": {
+    "description": "Success toast after deleting a host''s saved password from the Keychain. \"Keychain\" is the macOS credential store.",
+    "placeholders": {
+      "hostName": "the display name of the host whose password was removed"
+    }
+  },
+  "fileExplorer.network.deletePasswordFailed": "Couldn''t delete saved password",
+  "@fileExplorer.network.deletePasswordFailed": {
+    "description": "Error toast when deleting a host''s saved password from the Keychain did not work."
+  },
+  "fileExplorer.network.browser.disconnected": "Disconnected from {hostName}",
+  "@fileExplorer.network.browser.disconnected": {
+    "description": "Success toast after disconnecting from a network host (its mounted shares were unmounted).",
+    "placeholders": {
+      "hostName": "the display name of the host that was disconnected"
+    }
+  },
+  "fileExplorer.network.browser.noMountedShares": "No mounted shares from {hostName}",
+  "@fileExplorer.network.browser.noMountedShares": {
+    "description": "Info toast when a disconnect was requested but the host had no mounted shares to unmount.",
+    "placeholders": {
+      "hostName": "the display name of the host"
+    }
+  },
+  "fileExplorer.network.browser.disconnectFailed": "Couldn''t disconnect: {message}",
+  "@fileExplorer.network.browser.disconnectFailed": {
+    "description": "Error toast when disconnecting from a host did not work. {message} is the underlying reason text.",
+    "placeholders": {
+      "message": "the underlying failure reason"
+    }
+  },
+
+  "fileExplorer.network.login.title": "Sign in to \"{target}\"",
+  "@fileExplorer.network.login.title": {
+    "description": "Title of the network sign-in card. {target} is the host name, or host/share path, in quotes already.",
+    "placeholders": {
+      "target": "what the user is signing in to: either the host name, or host name slash share name"
+    }
+  },
+  "fileExplorer.network.login.guestNowAuth": "You connected as guest before. You can now sign in for more access.",
+  "@fileExplorer.network.login.guestNowAuth": {
+    "description": "Info note on the sign-in card shown when the user previously connected as a guest but can now authenticate for greater access."
+  },
+  "fileExplorer.network.login.connectionModeLegend": "Connection mode",
+  "@fileExplorer.network.login.connectionModeLegend": {
+    "description": "Screen-reader-only legend for the radio group choosing how to connect (guest vs credentials)."
+  },
+  "fileExplorer.network.login.connectAsGuest": "Connect as guest",
+  "@fileExplorer.network.login.connectAsGuest": {
+    "description": "Radio option to connect to the share without credentials (guest access)."
+  },
+  "fileExplorer.network.login.signInWithCredentials": "Sign in with credentials",
+  "@fileExplorer.network.login.signInWithCredentials": {
+    "description": "Radio option to connect to the share using a username and password."
+  },
+  "fileExplorer.network.login.username": "Username",
+  "@fileExplorer.network.login.username": {
+    "description": "Field label for the username in the network sign-in form."
+  },
+  "fileExplorer.network.login.usernamePlaceholderDefault": "Example: barry",
+  "@fileExplorer.network.login.usernamePlaceholderDefault": {
+    "description": "Default placeholder for the username field when the server gives no hint. \"barry\" is a sample name; swap it for a typical sample name in the target language if appropriate."
+  },
+  "fileExplorer.network.login.password": "Password",
+  "@fileExplorer.network.login.password": {
+    "description": "Field label for the password in the network sign-in form."
+  },
+  "fileExplorer.network.login.passwordPlaceholder": "Enter password",
+  "@fileExplorer.network.login.passwordPlaceholder": {
+    "description": "Placeholder for the password field in the network sign-in form."
+  },
+  "fileExplorer.network.login.rememberInKeychain": "Remember in Keychain",
+  "@fileExplorer.network.login.rememberInKeychain": {
+    "description": "Checkbox label to save the entered password in the macOS Keychain. \"Keychain\" is the macOS credential store; keep that name."
+  },
+
+  "fileExplorer.network.share.credentialsStoredLocally": "Credentials stored locally (no system keyring detected)",
+  "@fileExplorer.network.share.credentialsStoredLocally": {
+    "description": "Info toast shown when no OS keyring is available, so credentials are kept in a local store instead."
+  },
+  "fileExplorer.network.share.notFound": "Share ''{shareName}'' not found on {hostName}",
+  "@fileExplorer.network.share.notFound": {
+    "description": "Warning toast when the requested share name does not exist on the host. The share name is shown in single quotes.",
+    "placeholders": {
+      "shareName": "the name of the share that was not found",
+      "hostName": "the display name of the host"
+    }
+  },
+  "fileExplorer.network.share.invalidCredentials": "Invalid username or password. Please try again.",
+  "@fileExplorer.network.share.invalidCredentials": {
+    "description": "Sign-in error shown when the server rejected the username/password."
+  },
+  "fileExplorer.network.share.authRequired": "Authentication required. Please enter your credentials.",
+  "@fileExplorer.network.share.authRequired": {
+    "description": "Sign-in error shown when the share needs credentials and none were provided."
+  },
+  "fileExplorer.network.share.connectionFailed": "Connection failed: {reason}",
+  "@fileExplorer.network.share.connectionFailed": {
+    "description": "Fallback sign-in error for an unclassified failure. {reason} is a short technical error code.",
+    "placeholders": {
+      "reason": "a short technical error type/code from the connection attempt"
+    }
+  },
+  "fileExplorer.network.share.connecting": "Connecting to {hostName}...",
+  "@fileExplorer.network.share.connecting": {
+    "description": "Loading status while opening a host''s share list.",
+    "placeholders": {
+      "hostName": "the display name of the host being connected to"
+    }
+  },
+  "fileExplorer.network.share.connectFailedTitle": "Couldn''t connect to {hostName}",
+  "@fileExplorer.network.share.connectFailedTitle": {
+    "description": "Error title shown when opening a host''s share list failed.",
+    "placeholders": {
+      "hostName": "the display name of the host"
+    }
+  },
+  "fileExplorer.network.share.noSharesTitle": "No shares available",
+  "@fileExplorer.network.share.noSharesTitle": {
+    "description": "Empty-state title when a host exposes no accessible shares."
+  },
+  "fileExplorer.network.share.noSharesMessage": "This host has no accessible shares, or authentication is needed.",
+  "@fileExplorer.network.share.noSharesMessage": {
+    "description": "Empty-state body when a host exposes no accessible shares, hinting that signing in might help."
+  },
+  "fileExplorer.network.share.backArrow": "← Back",
+  "@fileExplorer.network.share.backArrow": {
+    "description": "Compact back button in the share-list header that returns to the host list. The arrow is decorative; keep it leading the word."
+  },
+  "fileExplorer.network.share.forgetPasswordTooltip": "Remove saved password from Keychain",
+  "@fileExplorer.network.share.forgetPasswordTooltip": {
+    "description": "Hover tooltip for the button that deletes this host''s saved password. \"Keychain\" is the macOS credential store."
+  },
+  "fileExplorer.network.share.forgetPassword": "🔑 Forget saved password",
+  "@fileExplorer.network.share.forgetPassword": {
+    "description": "Button in the share-list header that deletes this host''s saved password from the Keychain. The key emoji prefix is part of the label."
+  },
+  "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} share} other {{countText} shares}}",
+  "@fileExplorer.network.share.shareCount": {
+    "description": "Count of shares shown in the share-list header, e.g. \"4 shares\".",
+    "placeholders": {
+      "countText": "the number of shares, already formatted for display",
+      "count": "the same number of shares (drives the singular/plural form)"
+    }
+  },
+
+  "fileExplorer.network.reconnect.once": "once",
+  "@fileExplorer.network.reconnect.once": {
+    "description": "Word for one reconnection attempt, used inside the reconnect-progress sentences (e.g. \"Retried once\"). Must read naturally where the sentences embed it."
+  },
+  "fileExplorer.network.reconnect.twice": "twice",
+  "@fileExplorer.network.reconnect.twice": {
+    "description": "Word for two reconnection attempts, used inside the reconnect-progress sentences (e.g. \"Retried twice\"). Must read naturally where the sentences embed it."
+  },
+  "fileExplorer.network.reconnect.times": "{count, plural, other {{countText} times}}",
+  "@fileExplorer.network.reconnect.times": {
+    "description": "Count of reconnection attempts for three or more, used inside the reconnect-progress sentences (e.g. \"Retried 3 times\"). Only the plural-or-more case occurs here; one/two have their own words.",
+    "placeholders": {
+      "countText": "the number of attempts, already formatted for display",
+      "count": "the same number of attempts (drives the plural form)"
+    }
+  },
+  "fileExplorer.network.reconnect.finalAttempt": "Retried {retried}, this is the final attempt. Connection drops if it fails.",
+  "@fileExplorer.network.reconnect.finalAttempt": {
+    "description": "Progress message during automatic SMB reconnection, shown on the last attempt. {retried} is a count phrase like \"once\", \"twice\", or \"3 times\".",
+    "placeholders": {
+      "retried": "how many times it has retried so far, as a phrase (once / twice / N times)"
+    }
+  },
+  "fileExplorer.network.reconnect.willTryMore": "Retried {retried}, will try it {remaining} more after this.",
+  "@fileExplorer.network.reconnect.willTryMore": {
+    "description": "Progress message during automatic SMB reconnection, shown when more attempts remain. {retried} and {remaining} are count phrases like \"once\", \"twice\", or \"3 times\".",
+    "placeholders": {
+      "retried": "how many times it has retried so far, as a phrase (once / twice / N times)",
+      "remaining": "how many attempts remain after the current one, as a phrase (once / twice / N times)"
+    }
+  },
+
+  "fileExplorer.mtp.connectTimedOut": "Connection timed out. The device may be slow or unresponsive.",
+  "@fileExplorer.mtp.connectTimedOut": {
+    "description": "Message shown when connecting to a phone or camera (an MTP device) timed out. MTP is the protocol used to browse phones/cameras over USB."
+  },
+  "fileExplorer.mtp.exclusiveAccess": "Another app is using this device. Run the ptpcamerad workaround.",
+  "@fileExplorer.mtp.exclusiveAccess": {
+    "description": "Message when another app holds the phone/camera so Cmdr can''t connect. \"ptpcamerad\" is a macOS process name; keep it as-is (it points to a known fix)."
+  },
+  "fileExplorer.mtp.deviceNotFound": "Device not found. It may have been unplugged.",
+  "@fileExplorer.mtp.deviceNotFound": {
+    "description": "Message when the connected phone/camera can no longer be found (likely unplugged)."
+  },
+  "fileExplorer.mtp.disconnected": "Device was disconnected.",
+  "@fileExplorer.mtp.disconnected": {
+    "description": "Message when the phone/camera was disconnected during use."
+  },
+  "fileExplorer.mtp.deviceBusy": "Device is busy. Please try again.",
+  "@fileExplorer.mtp.deviceBusy": {
+    "description": "Message when the phone/camera is busy and the connection should be retried."
+  },
+  "fileExplorer.mtp.noStorage": "Device has no accessible storage",
+  "@fileExplorer.mtp.noStorage": {
+    "description": "Message when a phone/camera connected but exposes no storage Cmdr can browse."
+  },
+  "fileExplorer.mtp.connecting": "Connecting to device...",
+  "@fileExplorer.mtp.connecting": {
+    "description": "Loading text shown while Cmdr connects to a phone or camera (an MTP device)."
+  },
+  "fileExplorer.mtp.tryAgain": "Try again",
+  "@fileExplorer.mtp.tryAgain": {
+    "description": "Button to retry connecting to the phone/camera after a connection problem."
+  },
+
+  "fileExplorer.networkMount.mounting": "Mounting {target}...",
+  "@fileExplorer.networkMount.mounting": {
+    "description": "Loading text while a network share is being mounted. {target} is the host or share name, or the word \"share\" when the name is unknown.",
+    "placeholders": {
+      "target": "the host/share name being mounted, or a generic word for a share"
+    }
+  },
+  "fileExplorer.networkMount.shareFallback": "share",
+  "@fileExplorer.networkMount.shareFallback": {
+    "description": "Generic word used in the mounting text when the share''s name is not known yet (e.g. \"Mounting share...\")."
+  },
+  "fileExplorer.networkMount.mountFailedTitle": "Couldn''t mount share",
+  "@fileExplorer.networkMount.mountFailedTitle": {
+    "description": "Error title shown when mounting a network share failed."
+  },
+  "fileExplorer.networkMount.tryAgain": "Try again",
+  "@fileExplorer.networkMount.tryAgain": {
+    "description": "Button to retry mounting a network share after a failure."
+  },
+  "fileExplorer.networkMount.back": "Back",
+  "@fileExplorer.networkMount.back": {
+    "description": "Button that returns from the mount-error screen to the share list."
+  },
+
+  "fileExplorer.smbReauth.savedPasswordFailed": "Your saved password didn’t work. Sign in to reconnect.",
+  "@fileExplorer.smbReauth.savedPasswordFailed": {
+    "description": "Message in the SMB re-auth view when the saved password was rejected, prompting the user to sign in again. Uses a typographic apostrophe (’)."
+  },
+  "fileExplorer.smbReauth.passwordFailed": "That didn’t work. Check your password and try again.",
+  "@fileExplorer.smbReauth.passwordFailed": {
+    "description": "Message in the SMB re-auth view after a manual sign-in attempt failed, asking the user to recheck the password. Uses a typographic apostrophe (’)."
+  },
+
+  "fileExplorer.smbReconnect.totalSeconds": "{seconds} seconds",
+  "@fileExplorer.smbReconnect.totalSeconds": {
+    "description": "Total reconnect-cycle duration phrased in seconds, embedded in the \"Will keep trying for a total of …\" sentence.",
+    "placeholders": {
+      "seconds": "the number of seconds"
+    }
+  },
+  "fileExplorer.smbReconnect.totalMinutes": "{minutes} minutes",
+  "@fileExplorer.smbReconnect.totalMinutes": {
+    "description": "Total reconnect-cycle duration phrased in minutes, embedded in the \"Will keep trying for a total of …\" sentence.",
+    "placeholders": {
+      "minutes": "the number of minutes"
+    }
+  },
+  "fileExplorer.smbReconnect.title": "Reconnecting to server…",
+  "@fileExplorer.smbReconnect.title": {
+    "description": "Heading of the screen shown while Cmdr automatically tries to reconnect to a dropped network server. Ends with an ellipsis character (…)."
+  },
+  "fileExplorer.smbReconnect.progressBarAriaLabel": "Time until next reconnect attempt",
+  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
+    "description": "Accessibility label for the countdown progress bar showing how long until the next reconnect attempt."
+  },
+  "fileExplorer.smbReconnect.willKeepTrying": "Will keep trying for a total of {duration}.",
+  "@fileExplorer.smbReconnect.willKeepTrying": {
+    "description": "Reassurance line telling the user how long the auto-reconnect will keep trying. {duration} is a phrase like \"60 seconds\" or \"2 minutes\".",
+    "placeholders": {
+      "duration": "the total duration phrase, e.g. 60 seconds or 2 minutes"
+    }
+  },
+  "fileExplorer.smbReconnect.retryNowTooltip": "Try reconnecting immediately.",
+  "@fileExplorer.smbReconnect.retryNowTooltip": {
+    "description": "Hover tooltip for the button that triggers a reconnect attempt right away instead of waiting."
+  },
+  "fileExplorer.smbReconnect.retryNow": "Retry now",
+  "@fileExplorer.smbReconnect.retryNow": {
+    "description": "Button that triggers a reconnect attempt immediately."
+  },
+  "fileExplorer.smbReconnect.cancelTooltip": "Stop trying for now. The connection stays available. Switch back to retry.",
+  "@fileExplorer.smbReconnect.cancelTooltip": {
+    "description": "Hover tooltip for the button that pauses auto-reconnect while keeping the connection available to resume."
+  },
+  "fileExplorer.smbReconnect.cancel": "Cancel",
+  "@fileExplorer.smbReconnect.cancel": {
+    "description": "Button that pauses the auto-reconnect attempts (the connection stays available)."
+  },
+  "fileExplorer.smbReconnect.disconnectTooltip": "Stop trying and disconnect from the server.",
+  "@fileExplorer.smbReconnect.disconnectTooltip": {
+    "description": "Hover tooltip for the button that stops reconnecting and drops the server connection."
+  },
+  "fileExplorer.smbReconnect.disconnect": "Disconnect",
+  "@fileExplorer.smbReconnect.disconnect": {
+    "description": "Button that stops reconnecting and disconnects from the server."
+  },
+
+  "fileExplorer.unreachable.title": "Couldn''t reach {path}",
+  "@fileExplorer.unreachable.title": {
+    "description": "Banner heading shown when a folder''s volume can''t be reached. {path} is the path the user tried to open.",
+    "placeholders": {
+      "path": "the file-system path that could not be reached"
+    }
+  },
+  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr tried reconnecting several times but the server didn''t come back. The connection stays available for now. Try again, or disconnect to drop it.",
+  "@fileExplorer.unreachable.detailSmbGaveUp": {
+    "description": "Banner detail shown after automatic reconnection to a network server gave up, explaining the options (retry or disconnect)."
+  },
+  "fileExplorer.unreachable.detailTimeout": "The volume for this path didn''t respond in time. It may be a network drive that''s currently unavailable.",
+  "@fileExplorer.unreachable.detailTimeout": {
+    "description": "Banner detail shown when a volume did not respond in time (for example a temporarily-unavailable network drive)."
+  },
+  "fileExplorer.unreachable.retrying": "Retrying...",
+  "@fileExplorer.unreachable.retrying": {
+    "description": "In-progress label on the retry button while a reachability retry is running."
+  },
+  "fileExplorer.unreachable.retry": "Retry",
+  "@fileExplorer.unreachable.retry": {
+    "description": "Button on the unreachable banner that re-attempts reaching the volume."
+  },
+  "fileExplorer.unreachable.disconnect": "Disconnect",
+  "@fileExplorer.unreachable.disconnect": {
+    "description": "Button on the unreachable banner that drops the network connection (shown after auto-reconnect gave up)."
+  },
+  "fileExplorer.unreachable.openHome": "Open home folder",
+  "@fileExplorer.unreachable.openHome": {
+    "description": "Button on the unreachable banner that navigates to the user''s home folder instead."
+  },
+
+  "fileExplorer.clipboard.copied": "Copied {countText} {count, plural, one {item} other {items}}",
+  "@fileExplorer.clipboard.copied": {
+    "description": "Toast confirming files were copied to the system clipboard, e.g. \"Copied 3 items\".",
+    "placeholders": {
+      "countText": "how many items, already formatted for display",
+      "count": "the same number of items (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {item} other {items}} ready to move. Paste to complete.",
+  "@fileExplorer.clipboard.cutReady": {
+    "description": "Toast confirming files were cut to the clipboard and are ready to be moved on paste, e.g. \"3 items ready to move. Paste to complete.\"",
+    "placeholders": {
+      "countText": "how many items, already formatted for display",
+      "count": "the same number of items (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.clipboard.useF5FromMtp": "Use F5 to copy files from MTP devices",
+  "@fileExplorer.clipboard.useF5FromMtp": {
+    "description": "Info toast shown when the user tries to clipboard-copy from a phone/camera. It points them at the F5 copy flow instead. \"F5\" is a key name and \"MTP\" the phone/camera protocol; keep both."
+  },
+  "fileExplorer.clipboard.useF6FromMtp": "Use F6 to move files from MTP devices",
+  "@fileExplorer.clipboard.useF6FromMtp": {
+    "description": "Info toast shown when the user tries to clipboard-cut from a phone/camera. It points them at the F6 move flow instead. \"F6\" is a key name and \"MTP\" the phone/camera protocol; keep both."
+  },
+  "fileExplorer.clipboard.useF5ToMtp": "Use F5 to copy files to MTP devices",
+  "@fileExplorer.clipboard.useF5ToMtp": {
+    "description": "Info toast shown when the user tries to paste onto a phone/camera. It points them at the F5 copy flow instead. \"F5\" is a key name and \"MTP\" the phone/camera protocol; keep both."
+  },
+  "fileExplorer.clipboard.empty": "No files on the clipboard. Copy files first with ⌘C.",
+  "@fileExplorer.clipboard.empty": {
+    "description": "Warning toast when the user pastes but the clipboard has no files. \"⌘C\" is the copy shortcut glyph; keep it."
+  },
+
+  "fileExplorer.tabs.limitReached": "Tab limit reached",
+  "@fileExplorer.tabs.limitReached": {
+    "description": "Warning toast when the user tries to open another tab but the per-pane tab limit is already reached."
+  },
+  "fileExplorer.tabs.closePinnedConfirm": "This tab is pinned. Close it anyway?",
+  "@fileExplorer.tabs.closePinnedConfirm": {
+    "description": "Confirmation dialog message before closing a pinned tab (pinned tabs are meant to stay open)."
+  },
+  "fileExplorer.tabs.closePinnedTitle": "Close pinned tab",
+  "@fileExplorer.tabs.closePinnedTitle": {
+    "description": "Title of the confirmation dialog for closing a pinned tab."
+  },
+
+  "fileExplorer.readOnly.volumeTitle": "Read-only volume",
+  "@fileExplorer.readOnly.volumeTitle": {
+    "description": "Alert dialog title shown when the user tries a write action on a read-only volume."
+  },
+  "fileExplorer.readOnly.renameMessage": "This is a read-only volume. Renaming isn''t possible here.",
+  "@fileExplorer.readOnly.renameMessage": {
+    "description": "Alert body when the user tries to rename a file on a read-only volume."
+  },
+  "fileExplorer.readOnly.mkdirMessage": "This is a read-only volume. Creating folders isn''t possible here.",
+  "@fileExplorer.readOnly.mkdirMessage": {
+    "description": "Alert body when the user tries to create a folder on a read-only volume."
+  },
+  "fileExplorer.readOnly.mkfileMessage": "This is a read-only volume. Creating files isn''t possible here.",
+  "@fileExplorer.readOnly.mkfileMessage": {
+    "description": "Alert body when the user tries to create a file on a read-only volume."
+  },
+  "fileExplorer.readOnly.deleteMessage": "This is a read-only volume. Deleting files isn''t possible here.",
+  "@fileExplorer.readOnly.deleteMessage": {
+    "description": "Alert body when the user tries to delete a file on a read-only volume."
+  },
+  "fileExplorer.readOnly.deviceTitle": "Read-only device",
+  "@fileExplorer.readOnly.deviceTitle": {
+    "description": "Alert title shown when the user tries to copy/move files ONTO a read-only device."
+  },
+  "fileExplorer.readOnly.deviceMessage": "\"{name}\" is read-only. You can copy files from it, but not to it.",
+  "@fileExplorer.readOnly.deviceMessage": {
+    "description": "Alert body explaining a device is read-only, so files can be copied off it but not onto it. {name} is the device''s display name, shown in quotes.",
+    "placeholders": {
+      "name": "the display name of the read-only device"
+    }
+  },
+
+  "fileExplorer.rename.hiddenAfterRename": "Your file disappeared from view because hidden files aren''t shown.",
+  "@fileExplorer.rename.hiddenAfterRename": {
+    "description": "Info toast after renaming a file to a name starting with a dot, which hides it because hidden files aren''t currently shown. Reassures the user the file still exists."
+  },
+
+  "fileExplorer.columns.name": "Name",
+  "@fileExplorer.columns.name": {
+    "description": "File-list column header for the file/folder name. Also measured to size the column; keep it short. Used in both the Full and Brief list views."
+  },
+  "fileExplorer.columns.ext": "Ext",
+  "@fileExplorer.columns.ext": {
+    "description": "File-list column header for the file extension (abbreviation of \"extension\"). Tight column; keep it very short. Its rendered text is also measured to size the column, so the same wording must be used everywhere it appears."
+  },
+  "fileExplorer.columns.size": "Size",
+  "@fileExplorer.columns.size": {
+    "description": "File-list column header for the file size. Its rendered text is also measured to size the column; keep it short and identical wherever it appears."
+  },
+  "fileExplorer.columns.modified": "Modified",
+  "@fileExplorer.columns.modified": {
+    "description": "File-list column header for the last-modified date. Its rendered text is also measured to size the column; keep it short and identical wherever it appears."
+  },
+  "fileExplorer.columns.created": "Created",
+  "@fileExplorer.columns.created": {
+    "description": "File-list column header for the creation date (Brief view). Keep it short."
+  },
+  "fileExplorer.columns.git": "Git",
+  "@fileExplorer.columns.git": {
+    "description": "File-list column header for the per-file git status indicator. \"Git\" is the version-control tool name; keep it as-is."
+  },
+  "fileExplorer.columns.gitTitle": "Git status of each file",
+  "@fileExplorer.columns.gitTitle": {
+    "description": "Hover tooltip on the Git column header explaining it shows each file''s git status. \"Git\" is the version-control tool name; keep it."
+  },
+
+  "fileExplorer.list.empty": "Empty folder",
+  "@fileExplorer.list.empty": {
+    "description": "Placeholder shown in the file list when the current folder has no files."
+  },
+  "fileExplorer.list.fileListAriaLabel": "File list",
+  "@fileExplorer.list.fileListAriaLabel": {
+    "description": "Accessibility label for the scrollable list of files."
+  },
+  "fileExplorer.list.sortColumnsAriaLabel": "Sort columns",
+  "@fileExplorer.list.sortColumnsAriaLabel": {
+    "description": "Accessibility label for the row of sortable column headers in the Brief list view."
+  },
+
+  "fileExplorer.dirSize.updatingIndexTooltip": "Updating index: size may change.",
+  "@fileExplorer.dirSize.updatingIndexTooltip": {
+    "description": "Hover tooltip on a folder''s size while indexing is in progress, warning that the figure may still change. Note the colon."
+  },
+  "fileExplorer.dirSize.scanProgressTooltip": "Sizes appear as the scan progresses",
+  "@fileExplorer.dirSize.scanProgressTooltip": {
+    "description": "Hover tooltip on a folder whose size is not computed yet, telling the user sizes fill in as the background scan runs."
+  },
+  "fileExplorer.dirSize.contentLabel": "Content",
+  "@fileExplorer.dirSize.contentLabel": {
+    "description": "Label in a size tooltip for the logical (content) size of a file or folder, as opposed to the on-disk size. Pairs with the \"On disk\" label."
+  },
+  "fileExplorer.dirSize.onDiskLabel": "On disk",
+  "@fileExplorer.dirSize.onDiskLabel": {
+    "description": "Label in a size tooltip for the physical on-disk size, as opposed to the logical content size. Pairs with the \"Content\" label."
+  },
+  "fileExplorer.dirSize.noPerms": "'<'no perms>",
+  "@fileExplorer.dirSize.noPerms": {
+    "description": "Placeholder shown in the Size column for a folder Cmdr can''t read (no permission). Rendered literally as <no perms> (with the angle brackets). The leading apostrophe-quote ICU-escapes the < so it is not parsed as a markup tag; keep the literal text <no perms> intact."
+  },
+  "fileExplorer.dirSize.noPermsTooltip": "Cmdr lacks permission to read this folder",
+  "@fileExplorer.dirSize.noPermsTooltip": {
+    "description": "Hover tooltip on the no-permission size placeholder, explaining why the folder''s size is unavailable."
+  },
+  "fileExplorer.dirSize.noFiles": "No files",
+  "@fileExplorer.dirSize.noFiles": {
+    "description": "Phrase in a folder''s size tooltip for the file count when the folder contains zero files. Leads the count line, e.g. \"No files, no folders\". Capitalized as the start of the line."
+  },
+  "fileExplorer.dirSize.noFolders": "no folders",
+  "@fileExplorer.dirSize.noFolders": {
+    "description": "Phrase in a folder''s size tooltip for the folder count when there are zero subfolders. Follows the file count, e.g. \"3 files, no folders\". Lowercase since it follows a comma."
+  },
+  "fileExplorer.dirSize.fileCount": "{count, plural, one {{countText} file} other {{countText} files}}",
+  "@fileExplorer.dirSize.fileCount": {
+    "description": "Recursive file count in a folder''s size tooltip, e.g. \"1,234 files\". Combined with the folder count into a line like \"1,234 files, 12 folders\".",
+    "placeholders": {
+      "countText": "the number of files, already formatted for display",
+      "count": "the same number of files (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.dirSize.folderCount": "{count, plural, one {{countText} folder} other {{countText} folders}}",
+  "@fileExplorer.dirSize.folderCount": {
+    "description": "Recursive folder count in a folder''s size tooltip, e.g. \"12 folders\". Combined with the file count into a line like \"1,234 files, 12 folders\".",
+    "placeholders": {
+      "countText": "the number of folders, already formatted for display",
+      "count": "the same number of folders (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.dirSize.updatingIndexLine": "Updating index — size may change.",
+  "@fileExplorer.dirSize.updatingIndexLine": {
+    "description": "Last line of a folder''s size tooltip while indexing, warning the figure may change. Uses an en dash (—) as a separator."
+  },
+  "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
+  "@fileExplorer.dirSize.dirPlaceholder": {
+    "description": "Placeholder shown in the Size column for a folder whose recursive size is not computed yet. Rendered literally as <dir> (with the angle brackets). The leading apostrophe-quote ICU-escapes the < so it is not parsed as a markup tag; keep the literal text <dir> intact."
+  },
+  "fileExplorer.dirSize.mismatchTooltipPrefix": "Content and on-disk sizes differ significantly.",
+  "@fileExplorer.dirSize.mismatchTooltipPrefix": {
+    "description": "First line of the warning tooltip shown when a folder''s logical (content) and physical (on-disk) sizes differ a lot; the detailed size breakdown follows below it."
+  },
+
+  "fileExplorer.selectionTooltip.selected": "Selected",
+  "@fileExplorer.selectionTooltip.selected": {
+    "description": "Label in the selection-summary size tooltip for the size of the selected items. Pairs with \"Of total\"."
+  },
+  "fileExplorer.selectionTooltip.ofTotal": "Of total",
+  "@fileExplorer.selectionTooltip.ofTotal": {
+    "description": "Label in the selection-summary size tooltip for the size of all items, against which the selection is compared. Pairs with \"Selected\"."
+  },
+  "fileExplorer.selectionTooltip.onDiskHeader": "On disk:",
+  "@fileExplorer.selectionTooltip.onDiskHeader": {
+    "description": "Section header in the selection-summary size tooltip introducing the physical on-disk sizes (as opposed to logical content sizes). Note the colon."
+  },
+
+  "fileExplorer.entry.brokenSymlink": "(broken symlink)",
+  "@fileExplorer.entry.brokenSymlink": {
+    "description": "Placeholder shown in the date column for a symlink whose target is missing. Shown in parentheses. A symlink is a file-system shortcut/alias."
+  },
+  "fileExplorer.entry.permissionDenied": "(permission denied)",
+  "@fileExplorer.entry.permissionDenied": {
+    "description": "Placeholder shown in the date column for a file Cmdr can''t read due to permissions. Shown in parentheses."
+  },
+  "fileExplorer.dateTooltip.created": "Created",
+  "@fileExplorer.dateTooltip.created": {
+    "description": "Label in a file''s date tooltip for its creation time."
+  },
+  "fileExplorer.dateTooltip.lastOpened": "Last opened",
+  "@fileExplorer.dateTooltip.lastOpened": {
+    "description": "Label in a file''s date tooltip for when it was last opened."
+  },
+  "fileExplorer.dateTooltip.lastMoved": "Last moved (\"added\")",
+  "@fileExplorer.dateTooltip.lastMoved": {
+    "description": "Label in a file''s date tooltip for when it was last moved into its folder. The parenthetical \"added\" is the macOS Finder term for the same timestamp; keep both."
+  },
+  "fileExplorer.dateTooltip.lastModified": "Last modified",
+  "@fileExplorer.dateTooltip.lastModified": {
+    "description": "Label in a file''s date tooltip for when its contents were last changed."
+  },
+
+  "fileExplorer.selectionInfo.nothingHere": "Nothing in here.",
+  "@fileExplorer.selectionInfo.nothingHere": {
+    "description": "Status-bar text shown below a pane when the current folder is empty."
+  },
+  "fileExplorer.selectionInfo.dir": "DIR",
+  "@fileExplorer.selectionInfo.dir": {
+    "description": "Status-bar marker shown in place of a size for a folder whose recursive size is not computed. Short for \"directory\"; rendered in capitals."
+  },
+  "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Size not ready yet",
+  "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
+    "description": "Accessibility label for the hourglass shown next to a folder size that is still being computed."
+  },
+  "fileExplorer.selectionInfo.sizeUpdatingAriaLabel": "Size updating",
+  "@fileExplorer.selectionInfo.sizeUpdatingAriaLabel": {
+    "description": "Accessibility label for the hourglass shown next to a folder size that may still change while indexing."
+  },
+  "fileExplorer.selectionInfo.indexUpdatingTooltip": "Updating index, size may change.",
+  "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
+    "description": "Hover tooltip on the status-bar hourglass while indexing, warning the size figure may change. Note the comma."
+  },
+  "fileExplorer.selectionInfo.symlinkHint": "This folder contains symlinks. Symlinked content is not counted in the total to avoid double counting.",
+  "@fileExplorer.selectionInfo.symlinkHint": {
+    "description": "Hover tooltip on the info icon next to a folder''s size, explaining that symlinked content is excluded from the total. A symlink is a file-system shortcut/alias."
+  },
+  "fileExplorer.selectionInfo.noSelectionFiles": "{count, plural, one {{countText} file} other {{countText} files}}",
+  "@fileExplorer.selectionInfo.noSelectionFiles": {
+    "description": "File-count fragment of the no-selection status summary, e.g. \"1,234 files\". Combined into the sentence \"No selection, 1,234 files and 12 dirs.\"",
+    "placeholders": {
+      "countText": "the number of files, already formatted for display",
+      "count": "the same number of files (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.selectionInfo.noSelectionDirs": " and {count, plural, one {{countText} dir} other {{countText} dirs}}",
+  "@fileExplorer.selectionInfo.noSelectionDirs": {
+    "description": "Folder-count fragment appended to the no-selection status summary when folders exist, e.g. \" and 12 dirs\". \"dir\" is short for directory/folder. Includes a leading space and the word \"and\".",
+    "placeholders": {
+      "countText": "the number of folders, already formatted for display",
+      "count": "the same number of folders (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.selectionInfo.noSelection": "No selection, {files}{dirs}.",
+  "@fileExplorer.selectionInfo.noSelection": {
+    "description": "Status-bar summary when nothing is selected, e.g. \"No selection, 1,234 files and 12 dirs.\" {files} is the file-count fragment; {dirs} is the optional folder-count fragment (empty when there are no folders).",
+    "placeholders": {
+      "files": "the file-count phrase, e.g. \"1,234 files\"",
+      "dirs": "the folder-count phrase including its leading \" and \", or empty when there are no folders"
+    }
+  },
+
+  "fileExplorer.tabBar.paneTabsAriaLabel": "{paneId} pane tabs",
+  "@fileExplorer.tabBar.paneTabsAriaLabel": {
+    "description": "Accessibility label for one pane''s tab strip. {paneId} is the side, \"left\" or \"right\".",
+    "placeholders": {
+      "paneId": "which pane''s tabs these are: the value is left or right"
+    }
+  },
+  "fileExplorer.tabBar.unreachableAriaLabel": "Unreachable",
+  "@fileExplorer.tabBar.unreachableAriaLabel": {
+    "description": "Accessibility label and tooltip for a tab whose folder/volume can''t currently be reached."
+  },
+  "fileExplorer.tabBar.pinnedAriaLabel": "Pinned",
+  "@fileExplorer.tabBar.pinnedAriaLabel": {
+    "description": "Accessibility label and tooltip for a pinned tab (one kept open deliberately)."
+  },
+  "fileExplorer.tabBar.closeTabTooltip": "Close tab",
+  "@fileExplorer.tabBar.closeTabTooltip": {
+    "description": "Hover tooltip for the small close button on a tab."
+  },
+  "fileExplorer.tabBar.newTabAriaLabel": "New tab",
+  "@fileExplorer.tabBar.newTabAriaLabel": {
+    "description": "Accessibility label and tooltip for the button that opens a new tab."
+  },
+
+  "fileExplorer.summary.fileNoun": "{count, plural, one {file} other {files}}",
+  "@fileExplorer.summary.fileNoun": {
+    "description": "The noun \"file(s)\" used in the status-bar selection summary, e.g. \"3 of 10 files\". A separate count (shown nearby in styled markup) precedes it; this key supplies only the singular/plural noun.",
+    "placeholders": {
+      "count": "the number the noun agrees with (drives singular vs plural)"
+    }
+  },
+  "fileExplorer.summary.dirNoun": "{count, plural, one {dir} other {dirs}}",
+  "@fileExplorer.summary.dirNoun": {
+    "description": "The noun \"dir(s)\" (short for folder) used in the status-bar selection summary, e.g. \"2 of 5 dirs\". A separate count precedes it in styled markup; this key supplies only the singular/plural noun.",
+    "placeholders": {
+      "count": "the number the noun agrees with (drives singular vs plural)"
+    }
+  },
+  "fileExplorer.summary.of": "of",
+  "@fileExplorer.summary.of": {
+    "description": "The connector word between a selected size/count and the total in the status-bar selection summary, e.g. \"5 MB of 20 MB\" or \"3 of 10 files\". Surrounded by spaces in the rendered line."
+  },
+  "fileExplorer.summary.percentSelectedIn": "({percent}%) selected in",
+  "@fileExplorer.summary.percentSelectedIn": {
+    "description": "Mid-sentence fragment of the status-bar selection summary stating the selected percentage of the total size, before the item counts. Example full line: \"5 MB of 20 MB (25%) selected in 3 of 10 files\".",
+    "placeholders": {
+      "percent": "the selected size as a percentage of the total (a whole number)"
+    }
+  },
+  "fileExplorer.summary.and": "and",
+  "@fileExplorer.summary.and": {
+    "description": "The connector word joining the file part and the folder part of the status-bar selection summary, e.g. \"3 of 10 files and 2 of 5 dirs\". Rendered with surrounding spaces."
+  },
+  "fileExplorer.summary.selectedSuffix": "selected",
+  "@fileExplorer.summary.selectedSuffix": {
+    "description": "Word appended in the dirs-only status-bar summary when no size is shown, e.g. \"2 of 5 dirs selected.\" Only used in that no-size branch."
+  },
+
+  "fileExplorer.renameConflict.title": "A file with this name already exists",
+  "@fileExplorer.renameConflict.title": {
+    "description": "Title of the dialog shown when renaming a file to a name that already exists in the folder."
+  },
+  "fileExplorer.renameConflict.description": "\"{name}\" already exists in this folder. What would you like to do?",
+  "@fileExplorer.renameConflict.description": {
+    "description": "Body of the rename-conflict dialog, naming the existing file and asking how to proceed. {name} is the existing file''s name, shown in quotes.",
+    "placeholders": {
+      "name": "the name of the existing file that would be overwritten"
+    }
+  },
+  "fileExplorer.renameConflict.yours": "{name} (yours)",
+  "@fileExplorer.renameConflict.yours": {
+    "description": "Header of the card showing the file the user is renaming (the new one) in the rename-conflict comparison. {name} is the file name; \"(yours)\" marks it as the user''s incoming file.",
+    "placeholders": {
+      "name": "the name of the file being renamed (the user''s file)"
+    }
+  },
+  "fileExplorer.renameConflict.existing": "{name} (existing)",
+  "@fileExplorer.renameConflict.existing": {
+    "description": "Header of the card showing the file already in the folder in the rename-conflict comparison. {name} is the file name; \"(existing)\" marks it as the one already there.",
+    "placeholders": {
+      "name": "the name of the existing file already in the folder"
+    }
+  },
+  "fileExplorer.renameConflict.size": "Size",
+  "@fileExplorer.renameConflict.size": {
+    "description": "Metadata label for a file''s size in the rename-conflict comparison cards."
+  },
+  "fileExplorer.renameConflict.modified": "Modified",
+  "@fileExplorer.renameConflict.modified": {
+    "description": "Metadata label for a file''s last-modified date in the rename-conflict comparison cards."
+  },
+  "fileExplorer.renameConflict.overwriteTrash": "Overwrite and trash old file",
+  "@fileExplorer.renameConflict.overwriteTrash": {
+    "description": "Primary button in the rename-conflict dialog: replace the existing file, moving the old one to the trash (recoverable)."
+  },
+  "fileExplorer.renameConflict.overwriteDelete": "Overwrite and delete old file",
+  "@fileExplorer.renameConflict.overwriteDelete": {
+    "description": "Destructive button in the rename-conflict dialog: replace the existing file, permanently deleting the old one (not recoverable)."
+  },
+  "fileExplorer.renameConflict.cancel": "Cancel",
+  "@fileExplorer.renameConflict.cancel": {
+    "description": "Button in the rename-conflict dialog that abandons the rename entirely."
+  },
+  "fileExplorer.renameConflict.continueRenaming": "Continue renaming",
+  "@fileExplorer.renameConflict.continueRenaming": {
+    "description": "Button in the rename-conflict dialog that returns to editing the name so the user can choose a different one."
+  },
+
+  "fileExplorer.extensionChange.title": "Change file extension?",
+  "@fileExplorer.extensionChange.title": {
+    "description": "Title of the dialog confirming a change to a file''s extension during rename."
+  },
+  "fileExplorer.extensionChange.description": "Are you sure you want to change the extension from \".{oldExt}\" to \".{newExt}\"? Your file may open in a different app next time you open it.",
+  "@fileExplorer.extensionChange.description": {
+    "description": "Body of the extension-change confirmation, warning that changing the extension may change which app opens the file. The leading dots are part of the displayed extensions.",
+    "placeholders": {
+      "oldExt": "the current file extension without the dot (e.g. txt)",
+      "newExt": "the new file extension without the dot (e.g. md)"
+    }
+  },
+  "fileExplorer.extensionChange.alwaysAllow": "Always allow extension changes",
+  "@fileExplorer.extensionChange.alwaysAllow": {
+    "description": "Checkbox in the extension-change dialog to stop asking for confirmation on future extension changes."
+  },
+  "fileExplorer.extensionChange.keepOld": "Keep .{oldExt}",
+  "@fileExplorer.extensionChange.keepOld": {
+    "description": "Button to keep the original extension and not change it. The leading dot is part of the displayed extension.",
+    "placeholders": {
+      "oldExt": "the current file extension without the dot (e.g. txt)"
+    }
+  },
+  "fileExplorer.extensionChange.useNew": "Use .{newExt}",
+  "@fileExplorer.extensionChange.useNew": {
+    "description": "Button to apply the new extension. The leading dot is part of the displayed extension.",
+    "placeholders": {
+      "newExt": "the new file extension without the dot (e.g. md)"
+    }
+  },
+
+  "fileExplorer.quickLookHint.spaceSelects": "In Cmdr, <space></space> selects the file under the cursor by default.",
+  "@fileExplorer.quickLookHint.spaceSelects": {
+    "description": "First line of the educational toast for users coming from Finder. The <space></space> tag wraps an inline keyboard-key chip showing the Space key. \"Cmdr\" is the app name; keep it. Reorder words naturally but keep the chip in the sentence.",
+    "placeholders": {
+      "space": "marks where the Space-key chip is shown inline; carries no translatable text"
+    }
+  },
+  "fileExplorer.quickLookHint.finderComparison": "If you come from Finder, this might be unusual because Finder triggers a \"Quick preview\" action on <space></space>.",
+  "@fileExplorer.quickLookHint.finderComparison": {
+    "description": "Second line of the Finder-convert toast, contrasting Cmdr with Finder. The <space></space> tag wraps an inline Space-key chip. \"Finder\" is the macOS file manager and \"Quick preview\" its feature; keep both. Reorder words naturally but keep the chip.",
+    "placeholders": {
+      "space": "marks where the Space-key chip is shown inline; carries no translatable text"
+    }
+  },
+  "fileExplorer.quickLookHint.quickView": "In Cmdr, you can trigger quick view via <key></key>. (<key></key> works in Finder, too, btw!)",
+  "@fileExplorer.quickLookHint.quickView": {
+    "description": "Third line of the Finder-convert toast, telling the user the Cmdr shortcut for quick view. Each <key></key> tag wraps an inline chip showing the same Quick Look shortcut (it appears twice). \"Cmdr\"/\"Finder\" are app names; \"btw\" is casual for \"by the way\". Keep both chips in the sentence.",
+    "placeholders": {
+      "key": "marks where the Quick Look shortcut chip is shown inline (appears twice, same shortcut); carries no translatable text"
+    }
+  },
+  "fileExplorer.quickLookHint.enterOpens": "You can also use <enter></enter> to open files in the default app.",
+  "@fileExplorer.quickLookHint.enterOpens": {
+    "description": "Fourth line of the Finder-convert toast, noting the Enter key opens files. The <enter></enter> tag wraps an inline Enter-key chip. Reorder words naturally but keep the chip.",
+    "placeholders": {
+      "enter": "marks where the Enter-key chip is shown inline; carries no translatable text"
+    }
+  },
+  "fileExplorer.quickLookHint.configurable": "All of this is configurable in <settingsLink>Settings > Keyboard shortcuts</settingsLink>.",
+  "@fileExplorer.quickLookHint.configurable": {
+    "description": "Last line of the Finder-convert toast, linking to the settings page. The <settingsLink>…</settingsLink> tag wraps the clickable link text, which names the Settings location; keep its label pointing at the Keyboard shortcuts area.",
+    "placeholders": {
+      "settingsLink": "the clickable link wrapping the text \"Settings > Keyboard shortcuts\""
+    }
+  },
+  "fileExplorer.quickLookHint.dontShowAgain": "Don''t show again",
+  "@fileExplorer.quickLookHint.dontShowAgain": {
+    "description": "Button on the Finder-convert toast that permanently dismisses this hint (until re-enabled in Settings)."
+  },
+
+  "fileExplorer.navigation.groupFavorites": "Favorites",
+  "@fileExplorer.navigation.groupFavorites": {
+    "description": "Section heading in the volume switcher dropdown for the user''s pinned favorite folders."
+  },
+  "fileExplorer.navigation.groupVolumes": "Volumes",
+  "@fileExplorer.navigation.groupVolumes": {
+    "description": "Section heading in the volume switcher dropdown for the main and attached disk volumes."
+  },
+  "fileExplorer.navigation.groupCloud": "Cloud",
+  "@fileExplorer.navigation.groupCloud": {
+    "description": "Section heading in the volume switcher dropdown for cloud-storage drives (for example iCloud, Dropbox)."
+  },
+  "fileExplorer.navigation.groupMobile": "Mobile",
+  "@fileExplorer.navigation.groupMobile": {
+    "description": "Section heading in the volume switcher dropdown for connected phones and cameras (MTP devices)."
+  },
+  "fileExplorer.navigation.groupNetwork": "Network",
+  "@fileExplorer.navigation.groupNetwork": {
+    "description": "Section heading in the volume switcher dropdown for network locations (shared servers and mounted shares)."
+  },
+
+  "fileExplorer.navigation.networkVolume": "Network",
+  "@fileExplorer.navigation.networkVolume": {
+    "description": "Name of the virtual Network entry in the volume switcher, which opens the network browser. Also shown as the current volume''s name in the breadcrumb when browsing the network."
+  },
+  "fileExplorer.navigation.networkVolumeDisabled": "Network (disabled)",
+  "@fileExplorer.navigation.networkVolumeDisabled": {
+    "description": "Name of the virtual Network entry in the volume switcher when networking is turned off in Settings; clicking it opens Settings instead of browsing. The \"(disabled)\" note tells the user why it won''t open."
+  },
+  "fileExplorer.navigation.searchResultsVolume": "Search results",
+  "@fileExplorer.navigation.searchResultsVolume": {
+    "description": "The volume-slot label in the breadcrumb when viewing a saved search-results listing. A generic noun matching every other volume''s slot; the search-specific title appears separately in the path."
+  },
+  "fileExplorer.navigation.volumeFallback": "Volume",
+  "@fileExplorer.navigation.volumeFallback": {
+    "description": "Generic fallback shown as the current volume''s name in the breadcrumb when the real volume can''t be determined yet."
+  },
+
+  "fileExplorer.navigation.favoritesEmpty": "(Your favorites will show here)",
+  "@fileExplorer.navigation.favoritesEmpty": {
+    "description": "Placeholder shown in the Favorites section of the volume switcher when the user has no favorites. Shown in parentheses as a disabled, non-clickable hint."
+  },
+  "fileExplorer.navigation.favoriteTooltip": "{path}\nDrag to reorder, or {reorder}. Right-click to rename or remove.",
+  "@fileExplorer.navigation.favoriteTooltip": {
+    "description": "Hover tooltip for a favorite row in the volume switcher. Leads with the folder path so a renamed favorite still reveals where it points, then explains how to reorder, rename, or remove it. The \\n is a real line break. {reorder} is the keyboard reorder shortcut glyphs.",
+    "placeholders": {
+      "path": "the file-system path the favorite points to",
+      "reorder": "the keyboard reorder shortcut, e.g. ⌥↑ / ⌥↓ on macOS (do not translate; these are key names)"
+    }
+  },
+  "fileExplorer.navigation.renameFavoriteAriaLabel": "Rename favorite",
+  "@fileExplorer.navigation.renameFavoriteAriaLabel": {
+    "description": "Accessibility label for the inline text field that appears when renaming a favorite in the volume switcher."
+  },
+  "fileExplorer.navigation.rename": "Rename",
+  "@fileExplorer.navigation.rename": {
+    "description": "Right-click menu item on a favorite row that starts renaming it."
+  },
+  "fileExplorer.navigation.remove": "Remove",
+  "@fileExplorer.navigation.remove": {
+    "description": "Right-click menu item on a favorite row that removes it from the favorites list."
+  },
+
+  "fileExplorer.navigation.removeFavoriteFailed": "Couldn''t remove that favorite. Try again?",
+  "@fileExplorer.navigation.removeFavoriteFailed": {
+    "description": "Error toast when removing a favorite from the list did not work, inviting the user to retry."
+  },
+  "fileExplorer.navigation.renameFavoriteFailed": "Couldn''t rename that favorite. Try again?",
+  "@fileExplorer.navigation.renameFavoriteFailed": {
+    "description": "Error toast when renaming a favorite did not work, inviting the user to retry."
+  },
+  "fileExplorer.navigation.reorderFavoritesFailed": "Couldn''t reorder favorites. Try again?",
+  "@fileExplorer.navigation.reorderFavoritesFailed": {
+    "description": "Error toast when reordering favorites did not work, inviting the user to retry."
+  },
+
+  "fileExplorer.navigation.connectionTooltipDirect": "Connected directly for fast file operations",
+  "@fileExplorer.navigation.connectionTooltipDirect": {
+    "description": "Hover tooltip on the connection indicator of a network volume that is connected directly (the fast path)."
+  },
+  "fileExplorer.navigation.connectionTooltipSystem": "Using system connection. Use the \"Connect directly for faster access\" menu item for faster access.",
+  "@fileExplorer.navigation.connectionTooltipSystem": {
+    "description": "Hover tooltip on the connection indicator of a network volume mounted via the OS (slower path), pointing the user at the menu item that upgrades to a direct connection. The quoted menu item label must match the menu item exactly."
+  },
+  "fileExplorer.navigation.connectDirectly": "Connect directly for faster access",
+  "@fileExplorer.navigation.connectDirectly": {
+    "description": "Menu item (in the breadcrumb popup and the dropdown submenu) that upgrades an OS-mounted network share to a faster direct connection."
+  },
+
+  "fileExplorer.navigation.connectingDirectly": "Connecting directly...",
+  "@fileExplorer.navigation.connectingDirectly": {
+    "description": "Persistent progress toast shown while upgrading a network share to a direct connection."
+  },
+  "fileExplorer.navigation.connectingWithSavedPassword": "Connecting with the saved password...",
+  "@fileExplorer.navigation.connectingWithSavedPassword": {
+    "description": "Persistent progress toast shown while connecting to a network share using the password macOS already saved."
+  },
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr can reuse the password macOS already saved for \"{displayName}\". You''ll see a system prompt asking to allow Keychain access — that''s expected; click Allow.",
+  "@fileExplorer.navigation.useSavedPasswordMessage": {
+    "description": "Body of the confirmation dialog offering to reuse a network share''s saved macOS password. Warns that a macOS Keychain consent prompt (which Cmdr can''t customize) will follow. \"Keychain\" is the macOS credential store and \"Allow\" is the button on that system prompt; keep both. Uses an em-dash-style break (—).",
+    "placeholders": {
+      "displayName": "the display name of the network share whose saved password would be reused"
+    }
+  },
+  "fileExplorer.navigation.useSavedPasswordTitle": "Use the saved password?",
+  "@fileExplorer.navigation.useSavedPasswordTitle": {
+    "description": "Title of the confirmation dialog offering to reuse a network share''s saved macOS password."
+  },
+  "fileExplorer.navigation.useSavedPasswordConfirm": "Use saved password",
+  "@fileExplorer.navigation.useSavedPasswordConfirm": {
+    "description": "Confirm button in the reuse-saved-password dialog: go ahead and use the password macOS saved."
+  },
+  "fileExplorer.navigation.useSavedPasswordCancel": "Enter it instead",
+  "@fileExplorer.navigation.useSavedPasswordCancel": {
+    "description": "Cancel button in the reuse-saved-password dialog: skip the saved password and type one instead."
+  },
+
+  "fileExplorer.navigation.readOnlyTooltip": "Read-only",
+  "@fileExplorer.navigation.readOnlyTooltip": {
+    "description": "Hover tooltip on the lock icon marking a read-only volume in the breadcrumb and volume switcher."
+  },
+  "fileExplorer.navigation.volumeOptionsTooltip": "Volume options",
+  "@fileExplorer.navigation.volumeOptionsTooltip": {
+    "description": "Hover tooltip on the breadcrumb options button (the chevron next to an OS-mounted network volume) that opens the connect-directly popup."
+  },
+  "fileExplorer.navigation.ejectVolumeAriaLabel": "Eject {name}",
+  "@fileExplorer.navigation.ejectVolumeAriaLabel": {
+    "description": "Accessibility label and tooltip for the eject button on a volume in the breadcrumb and switcher. {name} is the volume''s display name.",
+    "placeholders": {
+      "name": "the display name of the volume to eject"
+    }
+  },
+  "fileExplorer.navigation.ejectBusyTooltip": "Can''t eject while operations are in progress on this device",
+  "@fileExplorer.navigation.ejectBusyTooltip": {
+    "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume can''t be ejected because a file operation is running on it."
+  },
+  "fileExplorer.navigation.ejectMenuItem": "Eject ({name})",
+  "@fileExplorer.navigation.ejectMenuItem": {
+    "description": "Right-click menu item that ejects a volume. {name} is the volume''s display name, shown in parentheses.",
+    "placeholders": {
+      "name": "the display name of the volume to eject"
+    }
+  },
+  "fileExplorer.navigation.ejectMenuItemBusy": "Eject ({name}) (busy)",
+  "@fileExplorer.navigation.ejectMenuItemBusy": {
+    "description": "Disabled right-click menu item shown when a volume can''t be ejected because a file operation is running on it. {name} is the volume''s display name; \"(busy)\" marks it as currently unavailable.",
+    "placeholders": {
+      "name": "the display name of the volume that is busy"
+    }
+  },
+
+  "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
+  "@fileExplorer.navigation.usbSpeed": {
+    "description": "First line of the USB-speed tooltip on a volume, naming the negotiated USB standard and its peak throughput, e.g. \"USB 3.2 Gen 2 (Max. 1000 MB/s)\". \"Max.\" is short for maximum and \"MB/s\" is megabytes per second; keep the unit.",
+    "placeholders": {
+      "label": "the negotiated USB standard name, e.g. USB 3.2 Gen 2 (do not translate; it is a spec name)",
+      "mbps": "the peak throughput in megabytes per second, already formatted"
+    }
+  },
+  "fileExplorer.navigation.usbSpeedNegotiated": "Negotiated for this cable, port, and device",
+  "@fileExplorer.navigation.usbSpeedNegotiated": {
+    "description": "Second line of the USB-speed tooltip on a volume, clarifying that the shown speed reflects the specific cable, port, and device combination. Shown below the speed line on its own row."
+  },
+
+  "fileExplorer.navigation.spaceRetryingAuto": "Retrying automatically…",
+  "@fileExplorer.navigation.spaceRetryingAuto": {
+    "description": "Hover tooltip on a volume''s disk-space bar while the app automatically retries fetching its free space. Ends with an ellipsis character (…)."
+  },
+  "fileExplorer.navigation.spaceRetrying": "Retrying…",
+  "@fileExplorer.navigation.spaceRetrying": {
+    "description": "Hover tooltip on a volume''s disk-space bar while a manual retry of fetching its free space is in progress. Ends with an ellipsis character (…)."
+  },
+  "fileExplorer.navigation.spaceRetryingText": "Retrying",
+  "@fileExplorer.navigation.spaceRetryingText": {
+    "description": "Short inline text shown in place of a volume''s disk-space figure while a retry is in progress. Tight space; keep it short."
+  },
+  "fileExplorer.navigation.spaceStillUnavailable": "Still unavailable — click to retry",
+  "@fileExplorer.navigation.spaceStillUnavailable": {
+    "description": "Hover tooltip on a volume''s disk-space bar after a retry to fetch free space also failed, inviting another click to retry. Uses an em-dash-style break (—)."
+  },
+  "fileExplorer.navigation.spaceFetchFailed": "Couldn''t fetch disk space — click to retry",
+  "@fileExplorer.navigation.spaceFetchFailed": {
+    "description": "Hover tooltip on a volume''s disk-space bar when fetching free space failed (first time), inviting a click to retry. Uses an em-dash-style break (—)."
+  },
+  "fileExplorer.navigation.spaceUnavailableText": "Unavailable",
+  "@fileExplorer.navigation.spaceUnavailableText": {
+    "description": "Short inline text shown in place of a volume''s disk-space figure when its free space couldn''t be fetched. Tight space; keep it short."
+  },
+
+  "fileExplorer.navigation.volumesStillUnreachable": "Still unreachable. Try again later",
+  "@fileExplorer.navigation.volumesStillUnreachable": {
+    "description": "Warning row at the bottom of the volume switcher after a retry to load the volume list also failed, suggesting the user try again later."
+  },
+  "fileExplorer.navigation.volumesMayBeMissing": "Some volumes may be missing",
+  "@fileExplorer.navigation.volumesMayBeMissing": {
+    "description": "Warning row at the bottom of the volume switcher when loading the volume list timed out, so the list may be incomplete."
+  },
+  "fileExplorer.navigation.refreshVolumeList": "Refresh volume list",
+  "@fileExplorer.navigation.refreshVolumeList": {
+    "description": "Hover tooltip on the retry button in the volume switcher''s missing-volumes warning row, which reloads the volume list."
+  }
+}

@@ -2,6 +2,7 @@
     import type { TabState, TabId } from './tab-types'
     import Icon from '$lib/ui/Icon.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
     import { deriveTabLabel } from './tab-label'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
@@ -88,7 +89,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="tab-bar" onclick={onPaneFocus} ondblclick={handleTabBarDblClick}>
-    <div class="tab-list" role="tablist" aria-label="{paneId} pane tabs">
+    <div class="tab-list" role="tablist" aria-label={tString('fileExplorer.tabBar.paneTabsAriaLabel', { paneId })}>
         {#each tabs as tab, index (tab.id)}
             {@const isActive = tab.id === activeTabId}
             {@const isAfterActive = index > 0 && tabs[index - 1].id === activeTabId}
@@ -122,11 +123,19 @@
                     <span class="tab-shoulder tab-shoulder-right" aria-hidden="true"></span>
                 {/if}
                 {#if tab.unreachable}
-                    <span class="warning-icon" use:tooltip={'Unreachable'} aria-label="Unreachable">
+                    <span
+                        class="warning-icon"
+                        use:tooltip={tString('fileExplorer.tabBar.unreachableAriaLabel')}
+                        aria-label={tString('fileExplorer.tabBar.unreachableAriaLabel')}
+                    >
                         <Icon name="triangle-alert" size={12} aria-hidden="true" />
                     </span>
                 {:else if tab.pinned}
-                    <span class="pin-icon" use:tooltip={'Pinned'} aria-label="Pinned">
+                    <span
+                        class="pin-icon"
+                        use:tooltip={tString('fileExplorer.tabBar.pinnedAriaLabel')}
+                        aria-label={tString('fileExplorer.tabBar.pinnedAriaLabel')}
+                    >
                         <Icon name="lock" size={13} aria-hidden="true" />
                     </span>
                 {/if}
@@ -137,7 +146,7 @@
                     <span
                         class="close-btn"
                         aria-hidden="true"
-                        use:tooltip={'Close tab'}
+                        use:tooltip={tString('fileExplorer.tabBar.closeTabTooltip')}
                         onclick={(e: MouseEvent) => {
                             handleCloseClick(e, tab.id)
                         }}>&#xd7;</span
@@ -148,8 +157,8 @@
     </div>
     <button
         class="new-tab-btn"
-        aria-label="New tab"
-        use:tooltip={{ text: 'New tab', shortcut: newTabShortcut }}
+        aria-label={tString('fileExplorer.tabBar.newTabAriaLabel')}
+        use:tooltip={{ text: tString('fileExplorer.tabBar.newTabAriaLabel'), shortcut: newTabShortcut }}
         disabled={isAtMax}
         class:disabled={isAtMax}
         onclick={onNewTab}

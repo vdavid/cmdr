@@ -10,7 +10,7 @@
         formatNumber,
         calculatePercentage,
     } from './selection-info-utils'
-    import { pluralize } from '$lib/utils/pluralize'
+    import { tString } from '$lib/intl/messages.svelte'
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import {
         formatFileSize,
@@ -133,7 +133,6 @@
                       dirActive,
                       formatFileSize,
                       formatNumber,
-                      pluralize,
                   ) || undefined
                 : buildFileSizeTooltip(entry.size, entry.physicalSize, formatFileSize)
             : undefined,
@@ -161,8 +160,7 @@
     const showSymlinkHint = $derived(
         entry !== null && isDirectory && entry.recursiveHasSymlinks === true && !isBrokenSymlink && !isPermissionDenied,
     )
-    const symlinkHintTooltip =
-        'This folder contains symlinks. Symlinked content is not counted in the total to avoid double counting.'
+    const symlinkHintTooltip = tString('fileExplorer.selectionInfo.symlinkHint')
     // Calculate date column width using measured text width (same utility as FullList)
     const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
 
@@ -174,10 +172,19 @@
         if (!stats) return ''
         const { totalFiles, totalDirs } = stats
 
-        const filesPart = `${formatNumber(totalFiles)} ${pluralize(totalFiles, 'file')}`
-        const dirsPart = totalDirs > 0 ? ` and ${formatNumber(totalDirs)} ${pluralize(totalDirs, 'dir')}` : ''
+        const filesPart = tString('fileExplorer.selectionInfo.noSelectionFiles', {
+            count: totalFiles,
+            countText: formatNumber(totalFiles),
+        })
+        const dirsPart =
+            totalDirs > 0
+                ? tString('fileExplorer.selectionInfo.noSelectionDirs', {
+                      count: totalDirs,
+                      countText: formatNumber(totalDirs),
+                  })
+                : ''
 
-        return `No selection, ${filesPart}${dirsPart}.`
+        return tString('fileExplorer.selectionInfo.noSelection', { files: filesPart, dirs: dirsPart })
     })
 
     // ========================================================================
@@ -227,7 +234,7 @@
 
 <div class="selection-info">
     {#if displayMode === 'empty'}
-        <span class="summary-text">Nothing in here.</span>
+        <span class="summary-text">{tString('fileExplorer.selectionInfo.nothingHere')}</span>
         {#if volumeSpace}
             <span class="disk-space-text">{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
@@ -236,13 +243,13 @@
         <span class="name" use:tooltip={displayName} use:useShortenMiddle={{ text: displayName, preferBreakAt: '.', startRatio: 0.7 }}></span>
         <span class="size" use:tooltip={sizeTooltip}>
             {#if sizeDisplay === 'DIR'}
-                DIR
+                {tString('fileExplorer.selectionInfo.dir')}
                 {#if dirSizeState === 'scanning'}
                     <span
                         class="stale-indicator stale-icon"
                         role="img"
-                        aria-label="Size not ready yet"
-                        use:tooltip={'Sizes appear as the scan progresses'}
+                        aria-label={tString('fileExplorer.selectionInfo.sizeNotReadyAriaLabel')}
+                        use:tooltip={tString('fileExplorer.dirSize.scanProgressTooltip')}
                     >
                         <Icon name="hourglass" size={12} />
                     </span>
@@ -255,8 +262,8 @@
                     <span
                         class="stale-indicator stale-icon"
                         role="img"
-                        aria-label="Size updating"
-                        use:tooltip={'Updating index, size may change.'}
+                        aria-label={tString('fileExplorer.selectionInfo.sizeUpdatingAriaLabel')}
+                        use:tooltip={tString('fileExplorer.selectionInfo.indexUpdatingTooltip')}
                     >
                         <Icon name="hourglass" size={12} />
                     </span>
@@ -292,29 +299,35 @@
                 <!-- Only dirs, no files -->
                 {#if totalSize > 0}
                     {#each selectedSizeTriads as triad, i (i)}<span class={triad.tierClass}>{triad.value}</span>{/each}
-                    of
+                    {tString('fileExplorer.summary.of')}
                     {#each totalSizeTriads as triad, i (i)}<span class={triad.tierClass}>{triad.value}</span>{/each}
-                    ({sizePercentage}%) selected in
+                    {tString('fileExplorer.summary.percentSelectedIn', { percent: sizePercentage })}
                 {/if}
-                {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
-                {pluralize(totalDirs, 'dir')}{#if totalSize === 0}
-                    selected{/if}.
+                {formatNumber(selectedDirs)} {tString('fileExplorer.summary.of')} {formatNumber(totalDirs)}
+                {tString('fileExplorer.summary.dirNoun', { count: totalDirs })}{#if totalSize === 0}
+                    {tString('fileExplorer.summary.selectedSuffix')}{/if}.
                 {#if showSelectionStale}
-                    <span class="stale-indicator stale-icon" use:tooltip={'Updating index, size may change.'}
+                    <span
+                        class="stale-indicator stale-icon"
+                        use:tooltip={tString('fileExplorer.selectionInfo.indexUpdatingTooltip')}
                         ><Icon name="hourglass" size={12} /></span
                     >
                 {/if}
             {:else if hasFiles}
                 <!-- Has files: show full summary -->
                 {#each selectedSizeTriads as triad, i (i)}<span class={triad.tierClass}>{triad.value}</span>{/each}
-                of
+                {tString('fileExplorer.summary.of')}
                 {#each totalSizeTriads as triad, i (i)}<span class={triad.tierClass}>{triad.value}</span>{/each}
-                ({sizePercentage}%) selected in {formatNumber(selectedFiles)} of {formatNumber(totalFiles)}
-                {pluralize(totalFiles, 'file')}{#if hasDirs}
-                    &nbsp;and {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
-                    {pluralize(totalDirs, 'dir')}{/if}.
+                {tString('fileExplorer.summary.percentSelectedIn', { percent: sizePercentage })}
+                {formatNumber(selectedFiles)} {tString('fileExplorer.summary.of')} {formatNumber(totalFiles)}
+                {tString('fileExplorer.summary.fileNoun', { count: totalFiles })}{#if hasDirs}
+                    &nbsp;{tString('fileExplorer.summary.and')} {formatNumber(selectedDirs)}
+                    {tString('fileExplorer.summary.of')} {formatNumber(totalDirs)}
+                    {tString('fileExplorer.summary.dirNoun', { count: totalDirs })}{/if}.
                 {#if showSelectionStale}
-                    <span class="stale-indicator stale-icon" use:tooltip={'Updating index, size may change.'}
+                    <span
+                        class="stale-indicator stale-icon"
+                        use:tooltip={tString('fileExplorer.selectionInfo.indexUpdatingTooltip')}
                         ><Icon name="hourglass" size={12} /></span
                     >
                 {/if}

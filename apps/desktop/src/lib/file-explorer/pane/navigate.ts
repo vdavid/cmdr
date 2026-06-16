@@ -111,6 +111,7 @@ import {
 } from '../navigation/navigation-history'
 import { isPathOnVolume } from '../navigation/path-navigation'
 import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
+import { tString } from '$lib/intl/messages.svelte'
 
 /** Where a navigation originates. Drives focus + history-push behavior, never the destination. */
 export type NavigateSource = 'user' | 'mcp' | 'history' | 'correction' | 'cancel' | 'fallback' | 'mirror'
@@ -380,7 +381,7 @@ function tryPinnedVolumeFork(
   if (!activeTab.pinned || (target.volumeId === activeTab.volumeId && target.path === activeTab.path)) return false
 
   if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
-    deps.addToast('Tab limit reached', { level: 'warn' })
+    deps.addToast(tString('fileExplorer.tabs.limitReached'), { level: 'warn' })
     return false // fall through to in-place
   }
 
@@ -716,7 +717,7 @@ function commitPinnedPathFork(deps: NavigateDeps, pane: 'left' | 'right', path: 
   if (!activeTab.pinned || path === activeTab.path) return false
 
   if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
-    deps.addToast('Tab limit reached', { level: 'warn' })
+    deps.addToast(tString('fileExplorer.tabs.limitReached'), { level: 'warn' })
     return false // fall through to in-place
   }
 

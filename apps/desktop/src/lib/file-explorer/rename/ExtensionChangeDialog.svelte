@@ -2,6 +2,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { setSetting } from '$lib/settings'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         oldExtension: string
@@ -38,21 +39,20 @@
     onclose={onKeepOld}
     containerStyle="min-width: 380px; max-width: 460px"
 >
-    {#snippet title()}Change file extension?{/snippet}
+    {#snippet title()}{tString('fileExplorer.extensionChange.title')}{/snippet}
 
     <p id="extension-change-description" class="description">
-        Are you sure you want to change the extension from ".{oldExtension}" to ".{newExtension}"? Your file may open in
-        a different app next time you open it.
+        {tString('fileExplorer.extensionChange.description', { oldExt: oldExtension, newExt: newExtension })}
     </p>
 
     <label class="always-allow">
         <input type="checkbox" bind:checked={alwaysAllow} />
-        <span>Always allow extension changes</span>
+        <span>{tString('fileExplorer.extensionChange.alwaysAllow')}</span>
     </label>
 
     <div class="button-row">
-        <Button variant="secondary" onclick={onKeepOld}>Keep .{oldExtension}</Button>
-        <Button variant="primary" onclick={handleUseNew}>Use .{newExtension}</Button>
+        <Button variant="secondary" onclick={onKeepOld}>{tString('fileExplorer.extensionChange.keepOld', { oldExt: oldExtension })}</Button>
+        <Button variant="primary" onclick={handleUseNew}>{tString('fileExplorer.extensionChange.useNew', { newExt: newExtension })}</Button>
     </div>
 </ModalDialog>
 

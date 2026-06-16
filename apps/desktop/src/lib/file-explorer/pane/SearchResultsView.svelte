@@ -26,6 +26,7 @@
     import { getSnapshot, getMutationTick, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
     import { capabilitiesForKind } from './volume-capabilities'
     import { showFileContextMenu } from '$lib/tauri-commands'
+    import { tString } from '$lib/intl/messages.svelte'
     import type { SearchResultEntry } from '$lib/ipc/bindings'
     import type { ListViewAPI } from './types'
 
@@ -228,8 +229,8 @@
          under a pane history entry, which the refcount design rules out by construction.
          Render a friendly message rather than throwing so the user can navigate away. -->
     <div class="snapshot-missing">
-        <div class="title">Search results no longer available</div>
-        <div class="body">The result set for this search was cleared. Open a new search to start again.</div>
+        <div class="title">{tString('fileExplorer.searchResults.unavailableTitle')}</div>
+        <div class="body">{tString('fileExplorer.searchResults.unavailableBody')}</div>
     </div>
 {/if}
 

@@ -1,6 +1,7 @@
 <script lang="ts">
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         originalPath: string
@@ -31,26 +32,27 @@
     <div class="banner-content">
         <div class="banner-header">
             <span class="warning-icon"><Icon name="triangle-alert" size={16} aria-hidden="true" /></span>
-            <span class="banner-message">Couldn't reach {originalPath}</span>
+            <span class="banner-message">{tString('fileExplorer.unreachable.title', { path: originalPath })}</span>
         </div>
         <p class="banner-detail">
             {#if smbGaveUp}
-                Cmdr tried reconnecting several times but the server didn't come back. The connection stays available
-                for now. Try again, or disconnect to drop it.
+                {tString('fileExplorer.unreachable.detailSmbGaveUp')}
             {:else}
-                The volume for this path didn't respond in time. It may be a network drive that's currently unavailable.
+                {tString('fileExplorer.unreachable.detailTimeout')}
             {/if}
         </p>
         <div class="banner-actions">
             <Button size="mini" onclick={onRetry} disabled={retrying}>
-                {retrying ? 'Retrying...' : 'Retry'}
+                {retrying
+                    ? tString('fileExplorer.unreachable.retrying')
+                    : tString('fileExplorer.unreachable.retry')}
             </Button>
             {#if smbGaveUp}
                 {#if onDisconnect}
-                    <Button size="mini" onclick={onDisconnect}>Disconnect</Button>
+                    <Button size="mini" onclick={onDisconnect}>{tString('fileExplorer.unreachable.disconnect')}</Button>
                 {/if}
             {:else if onOpenHome}
-                <Button size="mini" onclick={onOpenHome}>Open home folder</Button>
+                <Button size="mini" onclick={onOpenHome}>{tString('fileExplorer.unreachable.openHome')}</Button>
             {/if}
         </div>
     </div>

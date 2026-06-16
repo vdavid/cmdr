@@ -9,6 +9,7 @@
      * and surface any error.
      */
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import type { NetworkHost } from '../types'
     import { reconnectSmbVolumeWithCredentials } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
@@ -25,7 +26,7 @@
     const log = getAppLogger('smbReconnect')
 
     let isConnecting = $state(false)
-    let errorMessage = $state<string | undefined>('Your saved password didn’t work. Sign in to reconnect.')
+    let errorMessage = $state<string | undefined>(tString('fileExplorer.smbReauth.savedPasswordFailed'))
 
     // `NetworkLoginForm` is host-shaped; synthesize a minimal host from the volume. The
     // reauth path only needs the display name (title) and the credential fields — there's
@@ -51,7 +52,7 @@
             await reconnectSmbVolumeWithCredentials(volumeId, username, password)
             // Success flows back as a `direct` event → reconnect manager → pane reload.
         } catch (e) {
-            errorMessage = 'That didn’t work. Check your password and try again.'
+            errorMessage = tString('fileExplorer.smbReauth.passwordFailed')
             log.info('Reauth reconnect failed for {volumeId}: {error}', { volumeId, error: String(e) })
         } finally {
             isConnecting = false

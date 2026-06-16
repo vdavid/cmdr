@@ -22,6 +22,7 @@ import { createHistory } from '../navigation/navigation-history'
 import { DEFAULT_SORT_BY, defaultSortOrders, type SortColumn } from '../types'
 import { getAppLogger } from '$lib/logging/logger'
 import { addToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 import type { FilePaneAPI } from './types'
 
 const log = getAppLogger('fileExplorer')
@@ -100,7 +101,10 @@ export async function handleTabClose(
   const mgr = getTabMgr(pane)
   const tab = getAllTabs(mgr).find((t) => t.id === tabId)
   if (tab?.pinned) {
-    const ok = await confirmDialog('This tab is pinned. Close it anyway?', 'Close pinned tab')
+    const ok = await confirmDialog(
+      tString('fileExplorer.tabs.closePinnedConfirm'),
+      tString('fileExplorer.tabs.closePinnedTitle'),
+    )
     if (!ok) return
   }
   closeTabRecording(mgr, tabId, getClosedTabsCap())
@@ -260,7 +264,10 @@ export async function closeActiveTabWithConfirmation(
 
   // Pinned tab: confirm before closing
   if (activeTab.pinned) {
-    const ok = await confirmDialog('This tab is pinned. Close it anyway?', 'Close pinned tab')
+    const ok = await confirmDialog(
+      tString('fileExplorer.tabs.closePinnedConfirm'),
+      tString('fileExplorer.tabs.closePinnedTitle'),
+    )
     if (!ok) return 'cancelled'
   }
 
@@ -367,7 +374,7 @@ export function handleNewTab(
   setFocusedPane(pane)
   const success = newTabFn()
   if (!success) {
-    addToast('Tab limit reached', { level: 'warn' })
+    addToast(tString('fileExplorer.tabs.limitReached'), { level: 'warn' })
   }
   setFocusedPane(focusedPane === pane ? pane : focusedPane)
 }

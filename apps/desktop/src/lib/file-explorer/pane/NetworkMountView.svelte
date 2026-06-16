@@ -11,6 +11,7 @@
     import ConnectToServerDialog from '../network/ConnectToServerDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('fileExplorer')
 
@@ -286,7 +287,11 @@
 {#if isMounting}
     <div class="mounting-state">
         <Spinner size="md" />
-        <span class="mounting-text">Mounting {currentNetworkHost?.name ?? 'share'}...</span>
+        <span class="mounting-text"
+            >{tString('fileExplorer.networkMount.mounting', {
+                target: currentNetworkHost?.name ?? tString('fileExplorer.networkMount.shareFallback'),
+            })}</span
+        >
     </div>
 {:else if showMountLoginForm && currentNetworkHost}
     <NetworkLoginForm
@@ -301,11 +306,11 @@
 {:else if mountError}
     <div class="mount-error-state">
         <div class="error-icon">&#x274C;</div>
-        <div class="error-title">Couldn't mount share</div>
+        <div class="error-title">{tString('fileExplorer.networkMount.mountFailedTitle')}</div>
         <div class="error-message">{mountError.message}</div>
         <div class="error-actions">
-            <Button variant="secondary" onclick={handleMountRetry}>Try again</Button>
-            <Button variant="secondary" onclick={handleMountErrorBack}>Back</Button>
+            <Button variant="secondary" onclick={handleMountRetry}>{tString('fileExplorer.networkMount.tryAgain')}</Button>
+            <Button variant="secondary" onclick={handleMountErrorBack}>{tString('fileExplorer.networkMount.back')}</Button>
         </div>
     </div>
 {:else if currentNetworkHost}

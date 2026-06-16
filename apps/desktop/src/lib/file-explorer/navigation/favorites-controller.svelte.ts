@@ -1,6 +1,7 @@
 import { tick } from 'svelte'
 import { removeFavorite, renameFavorite, reorderFavorites, stripFavoritePrefix } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 import { moveItem, clampedReorderTarget, pointerReorderTarget, pointerInsertionSlot } from './favorites-reorder'
 import type { VolumeInfo } from '../types'
 
@@ -79,7 +80,7 @@ export function createFavoritesController(deps: FavoritesControllerDeps): Favori
     try {
       await removeFavorite(stripFavoritePrefix(volume.id))
     } catch {
-      addToast("Couldn't remove that favorite. Try again?", { level: 'error' })
+      addToast(tString('fileExplorer.navigation.removeFavoriteFailed'), { level: 'error' })
     }
   }
 
@@ -106,7 +107,7 @@ export function createFavoritesController(deps: FavoritesControllerDeps): Favori
     try {
       await renameFavorite(stripFavoritePrefix(id), trimmed)
     } catch {
-      addToast("Couldn't rename that favorite. Try again?", { level: 'error' })
+      addToast(tString('fileExplorer.navigation.renameFavoriteFailed'), { level: 'error' })
     }
   }
 
@@ -219,7 +220,7 @@ export function createFavoritesController(deps: FavoritesControllerDeps): Favori
   function persistOrder(orderedLocationIds: string[]) {
     optimisticFavoriteIds = orderedLocationIds
     void reorderFavorites(orderedLocationIds.map(stripFavoritePrefix)).catch(() => {
-      addToast("Couldn't reorder favorites. Try again?", { level: 'error' })
+      addToast(tString('fileExplorer.navigation.reorderFavoritesFailed'), { level: 'error' })
       optimisticFavoriteIds = null
     })
   }

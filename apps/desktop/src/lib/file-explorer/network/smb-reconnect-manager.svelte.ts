@@ -26,6 +26,8 @@ import { SvelteMap } from 'svelte/reactivity'
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { reconnectSmbVolume, onSmbConnectionChanged } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import { tString } from '$lib/intl/messages.svelte'
+import { formatInteger } from '$lib/intl/number-format'
 
 const log = getAppLogger('smbReconnect')
 
@@ -341,9 +343,9 @@ export const smbReconnectManager = new SmbReconnectManager()
 
 /** "1 → once", "2 → twice", "n → n times". */
 export function ordinalCount(n: number): string {
-  if (n === 1) return 'once'
-  if (n === 2) return 'twice'
-  return `${String(n)} times`
+  if (n === 1) return tString('fileExplorer.network.reconnect.once')
+  if (n === 2) return tString('fileExplorer.network.reconnect.twice')
+  return tString('fileExplorer.network.reconnect.times', { count: n, countText: formatInteger(n) })
 }
 
 /**
@@ -364,7 +366,7 @@ export function reconnectProgressMessage(attemptIndex: number): string | null {
   // Attempts AFTER it = TOTAL_ATTEMPTS - 1 - attemptIndex.
   const remaining = TOTAL_ATTEMPTS - 1 - attemptIndex
   if (remaining <= 0) {
-    return `Retried ${retried}, this is the final attempt. Connection drops if it fails.`
+    return tString('fileExplorer.network.reconnect.finalAttempt', { retried })
   }
-  return `Retried ${retried}, will try it ${ordinalCount(remaining)} more after this.`
+  return tString('fileExplorer.network.reconnect.willTryMore', { retried, remaining: ordinalCount(remaining) })
 }

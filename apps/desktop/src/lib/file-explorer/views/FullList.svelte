@@ -29,7 +29,6 @@
     } from './file-list-utils'
     import { getDirStatsBatch } from '$lib/tauri-commands'
     import { formatSizeForDisplay, formatNumber } from '../selection/selection-info-utils'
-    import { pluralize } from '$lib/utils/pluralize'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
@@ -63,6 +62,7 @@
     import { iconCacheCleared } from '$lib/icon-cache'
     import { onDebouncedScaleChange, getEffectiveScale } from '$lib/text-size.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { RenameState } from '../rename/rename-state.svelte'
 
@@ -811,7 +811,7 @@
                     <SortableHeader
                         column="name"
                         {isFocused}
-                        label="Name"
+                        label={tString('fileExplorer.columns.name')}
                         currentSortColumn={sortBy}
                         currentSortOrder={sortOrder}
                         onClick={onSortChange ?? (() => {})}
@@ -819,7 +819,7 @@
                     <SortableHeader
                         column="extension"
                         {isFocused}
-                        label="Ext"
+                        label={tString('fileExplorer.columns.ext')}
                         align="right"
                         currentSortColumn={sortBy}
                         currentSortOrder={sortOrder}
@@ -830,20 +830,20 @@
                 <SortableHeader
                     column="name"
                     {isFocused}
-                    label="Name"
+                    label={tString('fileExplorer.columns.name')}
                     currentSortColumn={sortBy}
                     currentSortOrder={sortOrder}
                     onClick={onSortChange ?? (() => {})}
                 />
             {/if}
             {#if gitColumnVisible}
-                <span class="header-git" title="Git status of each file">Git</span>
+                <span class="header-git" title={tString('fileExplorer.columns.gitTitle')}>{tString('fileExplorer.columns.git')}</span>
             {/if}
             {#if !showExtensionInName}
                 <SortableHeader
                     column="extension"
                     {isFocused}
-                    label="Ext"
+                    label={tString('fileExplorer.columns.ext')}
                     currentSortColumn={sortBy}
                     currentSortOrder={sortOrder}
                     onClick={onSortChange ?? (() => {})}
@@ -852,7 +852,7 @@
             <SortableHeader
                 column="size"
                 {isFocused}
-                label="Size"
+                label={tString('fileExplorer.columns.size')}
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}
                 onClick={onSortChange ?? (() => {})}
@@ -860,7 +860,7 @@
             <SortableHeader
                 column="modified"
                 {isFocused}
-                label="Modified"
+                label={tString('fileExplorer.columns.modified')}
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}
                 onClick={onSortChange ?? (() => {})}
@@ -869,7 +869,7 @@
         <div
             class="listbox-region"
             role="listbox"
-            aria-label="File list"
+            aria-label={tString('fileExplorer.list.fileListAriaLabel')}
             aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
             tabindex="-1"
         >
@@ -985,7 +985,6 @@
                                         indexing || (file.recursiveSizePending ?? false),
                                         formatFileSize,
                                         formatNumber,
-                                        pluralize,
                                     )
                                   : buildFileSizeTooltip(file.size, file.physicalSize, formatFileSize)}
                         >
@@ -1004,7 +1003,7 @@
                                             >{/each}</span
                                     >
                                     {#if dirSizeState === 'size-stale'}
-                                        <span class="size-stale icon-indicator" use:tooltip={'Updating index: size may change.'}
+                                        <span class="size-stale icon-indicator" use:tooltip={tString('fileExplorer.dirSize.updatingIndexTooltip')}
                                             ><Icon name="hourglass" size={12} /></span
                                         >
                                     {/if}
@@ -1017,7 +1016,6 @@
                                             dirSizeState === 'size-stale',
                                             formatFileSize,
                                             formatNumber,
-                                            pluralize,
                                         )}
                                         {@const dirTooltipHtml =
                                             typeof dirTooltip === 'object' ? dirTooltip.html : dirTooltip}
@@ -1025,24 +1023,23 @@
                                             class="size-mismatch icon-indicator"
                                             use:tooltip={{
                                                 html:
-                                                    'Content and on-disk sizes differ significantly.<br><br>' +
-                                                    dirTooltipHtml,
+                                                    tString('fileExplorer.dirSize.mismatchTooltipPrefix') + '<br><br>' + dirTooltipHtml,
                                             }}
                                         >
                                             <Icon name="circle-alert" size={12} />
                                         </span>
                                     {/if}
                                 {:else if dirSizeState === 'scanning'}
-                                    <span class="size-dir">&lt;dir&gt;</span>
+                                    <span class="size-dir">{tString('fileExplorer.dirSize.dirPlaceholder')}</span>
                                     <span
                                         class="size-stale icon-indicator"
                                         role="img"
-                                        aria-label="Size not ready yet"
-                                        use:tooltip={'Sizes appear as the scan progresses'}
+                                        aria-label={tString('fileExplorer.selectionInfo.sizeNotReadyAriaLabel')}
+                                        use:tooltip={tString('fileExplorer.dirSize.scanProgressTooltip')}
                                         ><Icon name="hourglass" size={12} /></span
                                     >
                                 {:else}
-                                    <span class="size-dir">&lt;dir&gt;</span>
+                                    <span class="size-dir">{tString('fileExplorer.dirSize.dirPlaceholder')}</span>
                                 {/if}
                             {:else if fileDisplaySize != null}
                                 <span class="size-text"
@@ -1062,7 +1059,7 @@
             </div>
         </div>
         {#if (hasParent ? totalCount - 1 : totalCount) === 0}
-            <div class="empty-folder-message">Empty folder</div>
+            <div class="empty-folder-message">{tString('fileExplorer.list.empty')}</div>
         {/if}
         </div>
     </div>

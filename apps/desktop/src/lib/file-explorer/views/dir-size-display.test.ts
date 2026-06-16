@@ -3,7 +3,8 @@
  * Covers the display states and tooltip building for directories
  * with/without index data and scanning status.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { _setLocaleForTests } from '$lib/intl/locale'
 import {
   getDirSizeDisplayState,
   buildDirSizeTooltip,
@@ -17,10 +18,18 @@ vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn(() => 20),
 }))
 
+// The tooltip labels/counts now resolve through the i18n catalog; pin en-US so
+// the asserted English strings (file/files, No files, Content:, On disk:) hold.
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
+
 // Test helpers
 const formatSize = (bytes: number): string => `${String(bytes)} bytes`
 const formatNum = (n: number): string => String(n)
-const plural = (count: number, singular: string, pluralForm: string): string => (count === 1 ? singular : pluralForm)
 
 /** Extracts the html from a tooltip result, or returns the string as-is */
 function tooltipHtml(result: string | { html: string }): string {
@@ -89,17 +98,17 @@ describe('getDirSizeDisplayState', () => {
 
 describe('buildDirSizeTooltip', () => {
   it('returns empty string when no data and not scanning', () => {
-    expect(buildDirSizeTooltip(undefined, undefined, 0, 0, false, formatSize, formatNum, plural)).toBe('')
+    expect(buildDirSizeTooltip(undefined, undefined, 0, 0, false, formatSize, formatNum)).toBe('')
   })
 
   it('returns the size-readiness hint when no data and scanning is active', () => {
-    expect(buildDirSizeTooltip(undefined, undefined, 0, 0, true, formatSize, formatNum, plural)).toBe(
+    expect(buildDirSizeTooltip(undefined, undefined, 0, 0, true, formatSize, formatNum)).toBe(
       'Sizes appear as the scan progresses',
     )
   })
 
   it('returns HTML tooltip with size and counts when recursive size is available', () => {
-    const result = buildDirSizeTooltip(1234, undefined, 10, 3, false, formatSize, formatNum, plural)
+    const result = buildDirSizeTooltip(1234, undefined, 10, 3, false, formatSize, formatNum)
     const html = tooltipHtml(result)
     expect(html).toContain('1234 bytes')
     expect(html).toContain('10 files')
@@ -108,7 +117,7 @@ describe('buildDirSizeTooltip', () => {
   })
 
   it('appends stale warning when scanning with existing data', () => {
-    const result = buildDirSizeTooltip(1234, undefined, 10, 3, true, formatSize, formatNum, plural)
+    const result = buildDirSizeTooltip(1234, undefined, 10, 3, true, formatSize, formatNum)
     const html = tooltipHtml(result)
     expect(html).toContain('1234 bytes')
     expect(html).toContain('10 files')
@@ -116,40 +125,38 @@ describe('buildDirSizeTooltip', () => {
   })
 
   it('uses singular form for 1 file', () => {
-    const html = tooltipHtml(buildDirSizeTooltip(100, undefined, 1, 5, false, formatSize, formatNum, plural))
+    const html = tooltipHtml(buildDirSizeTooltip(100, undefined, 1, 5, false, formatSize, formatNum))
     expect(html).toContain('1 file')
     expect(html).not.toContain('1 files')
   })
 
   it('uses singular form for 1 folder', () => {
-    const html = tooltipHtml(buildDirSizeTooltip(100, undefined, 5, 1, false, formatSize, formatNum, plural))
+    const html = tooltipHtml(buildDirSizeTooltip(100, undefined, 5, 1, false, formatSize, formatNum))
     expect(html).toContain('1 folder')
     expect(html).not.toContain('1 folders')
   })
 
   it('uses "No files" and "no folders" for zero counts', () => {
-    const html = tooltipHtml(buildDirSizeTooltip(100, undefined, 0, 0, false, formatSize, formatNum, plural))
+    const html = tooltipHtml(buildDirSizeTooltip(100, undefined, 0, 0, false, formatSize, formatNum))
     expect(html).toContain('No files')
     expect(html).toContain('no folders')
   })
 
   it('handles zero-size directory correctly', () => {
-    const html = tooltipHtml(buildDirSizeTooltip(0, undefined, 0, 0, false, formatSize, formatNum, plural))
+    const html = tooltipHtml(buildDirSizeTooltip(0, undefined, 0, 0, false, formatSize, formatNum))
     expect(html).toContain('0 bytes')
     expect(html).toContain('No files')
     expect(html).toContain('no folders')
   })
 
   it('handles zero-size directory while scanning', () => {
-    const html = tooltipHtml(buildDirSizeTooltip(0, undefined, 0, 0, true, formatSize, formatNum, plural))
+    const html = tooltipHtml(buildDirSizeTooltip(0, undefined, 0, 0, true, formatSize, formatNum))
     expect(html).toContain('0 bytes')
     expect(html).toContain('Updating index')
   })
 
   it('handles large file and folder counts', () => {
-    const html = tooltipHtml(
-      buildDirSizeTooltip(1_000_000_000, undefined, 50000, 1200, false, formatSize, formatNum, plural),
-    )
+    const html = tooltipHtml(buildDirSizeTooltip(1_000_000_000, undefined, 50000, 1200, false, formatSize, formatNum))
     expect(html).toContain('1000000000 bytes')
     expect(html).toContain('50000 files')
     expect(html).toContain('1200 folders')
@@ -157,12 +164,12 @@ describe('buildDirSizeTooltip', () => {
 
   it('uses provided formatSize function', () => {
     const customFormat = (bytes: number): string => `${(bytes / 1024).toFixed(1)} KB`
-    const html = tooltipHtml(buildDirSizeTooltip(2048, undefined, 3, 1, false, customFormat, formatNum, plural))
+    const html = tooltipHtml(buildDirSizeTooltip(2048, undefined, 3, 1, false, customFormat, formatNum))
     expect(html).toContain('2.0 KB')
   })
 
   it('always shows both sizes when physical is available', () => {
-    const result = buildDirSizeTooltip(1000000, 1000005, 10, 3, false, formatSize, formatNum, plural)
+    const result = buildDirSizeTooltip(1000000, 1000005, 10, 3, false, formatSize, formatNum)
     const html = tooltipHtml(result)
     expect(html).toContain('Content:')
     expect(html).toContain('1000000 bytes')
@@ -171,7 +178,7 @@ describe('buildDirSizeTooltip', () => {
   })
 
   it('shows both sizes when physical differs significantly', () => {
-    const result = buildDirSizeTooltip(1000000, 800000, 10, 3, false, formatSize, formatNum, plural)
+    const result = buildDirSizeTooltip(1000000, 800000, 10, 3, false, formatSize, formatNum)
     const html = tooltipHtml(result)
     expect(html).toContain('Content:')
     expect(html).toContain('1000000 bytes')
@@ -181,14 +188,14 @@ describe('buildDirSizeTooltip', () => {
   })
 
   it('shows single size when physical is unavailable', () => {
-    const html = tooltipHtml(buildDirSizeTooltip(1000000, undefined, 10, 3, false, formatSize, formatNum, plural))
+    const html = tooltipHtml(buildDirSizeTooltip(1000000, undefined, 10, 3, false, formatSize, formatNum))
     expect(html).toContain('1000000 bytes')
     expect(html).not.toContain('Content:')
     expect(html).not.toContain('On disk:')
   })
 
   it('includes colored triad spans in HTML output', () => {
-    const html = tooltipHtml(buildDirSizeTooltip(1234567, undefined, 5, 2, false, formatSize, formatNum, plural))
+    const html = tooltipHtml(buildDirSizeTooltip(1234567, undefined, 5, 2, false, formatSize, formatNum))
     expect(html).toContain('class="size-')
   })
 })

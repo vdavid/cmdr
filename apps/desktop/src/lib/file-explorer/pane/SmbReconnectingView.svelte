@@ -4,6 +4,7 @@
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
     import {
         smbReconnectManager,
         TOTAL_DURATION_MS,
@@ -73,9 +74,9 @@
     /** Total cycle duration as a human sentence ("60 seconds", "2 minutes"). */
     function formatTotalDuration(ms: number): string {
         const seconds = Math.round(ms / 1000)
-        if (seconds < 90) return `${String(seconds)} seconds`
+        if (seconds < 90) return tString('fileExplorer.smbReconnect.totalSeconds', { seconds })
         const minutes = Math.round(seconds / 60)
-        return `${String(minutes)} minutes`
+        return tString('fileExplorer.smbReconnect.totalMinutes', { minutes })
     }
 
     const totalDurationLabel = $derived(formatTotalDuration(TOTAL_DURATION_MS))
@@ -86,7 +87,7 @@
 <div class="reconnect-pane" role="status" aria-live="polite">
     <div class="reconnect-content">
         <div class="share-context">{shareName}</div>
-        <h2 class="title">Reconnecting to server…</h2>
+        <h2 class="title">{tString('fileExplorer.smbReconnect.title')}</h2>
 
         <div class="spinner-row">
             <Spinner size="md" />
@@ -94,29 +95,35 @@
 
         <div class="progress-row">
             {#if cycleState.status === 'waiting'}
-                <ProgressBar value={progress} ariaLabel="Time until next reconnect attempt" />
+                <ProgressBar value={progress} ariaLabel={tString('fileExplorer.smbReconnect.progressBarAriaLabel')} />
             {:else}
                 <!-- Hide the bar during `attempting`/`gave-up`; spinner carries the motion. -->
                 <div class="progress-placeholder"></div>
             {/if}
         </div>
 
-        <p class="body-line-1">Will keep trying for a total of {totalDurationLabel}.</p>
+        <p class="body-line-1">
+            {tString('fileExplorer.smbReconnect.willKeepTrying', { duration: totalDurationLabel })}
+        </p>
         {#if bodyLine2}
             <p class="body-line-2">{bodyLine2}</p>
         {/if}
 
         <div class="actions">
-            <span use:tooltip={'Try reconnecting immediately.'}>
+            <span use:tooltip={tString('fileExplorer.smbReconnect.retryNowTooltip')}>
                 <Button variant="primary" size="mini" onclick={handleRetryNow} disabled={isAttempting}>
-                    Retry now
+                    {tString('fileExplorer.smbReconnect.retryNow')}
                 </Button>
             </span>
-            <span use:tooltip={'Stop trying for now. The connection stays available. Switch back to retry.'}>
-                <Button variant="secondary" size="mini" onclick={onCancel}>Cancel</Button>
+            <span use:tooltip={tString('fileExplorer.smbReconnect.cancelTooltip')}>
+                <Button variant="secondary" size="mini" onclick={onCancel}
+                    >{tString('fileExplorer.smbReconnect.cancel')}</Button
+                >
             </span>
-            <span use:tooltip={'Stop trying and disconnect from the server.'}>
-                <Button variant="secondary" size="mini" onclick={onDisconnect}>Disconnect</Button>
+            <span use:tooltip={tString('fileExplorer.smbReconnect.disconnectTooltip')}>
+                <Button variant="secondary" size="mini" onclick={onDisconnect}
+                    >{tString('fileExplorer.smbReconnect.disconnect')}</Button
+                >
             </span>
         </div>
     </div>

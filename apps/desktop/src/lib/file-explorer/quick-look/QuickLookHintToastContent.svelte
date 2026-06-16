@@ -13,10 +13,13 @@
      *   Settings > Advanced.
      */
 
+    import type { Snippet } from 'svelte'
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import { setSetting } from '$lib/settings'
     import { getEffectiveShortcuts } from '$lib/shortcuts'
     import { openShortcutCustomization } from '$lib/settings/settings-window'
@@ -43,28 +46,33 @@
     }
 </script>
 
+<!-- Inline-chip/link snippets for the <Trans> lines. The tag names (space, key,
+     enter, settingsLink) intentionally differ from any interpolation param. -->
+{#snippet spaceChip(_children: Snippet)}<ShortcutChip key="Space" />{/snippet}
+{#snippet quickLookChip(_children: Snippet)}<ShortcutChip key={quickLookKey} />{/snippet}
+{#snippet enterChip(_children: Snippet)}<ShortcutChip key="Enter" />{/snippet}
+{#snippet settingsLink(children: Snippet)}<LinkButton onclick={handleOpenSettings}>{@render children()}</LinkButton>{/snippet}
+
 <div class="content">
     <p>
-        In Cmdr, <ShortcutChip key="Space" /> selects the file under the cursor by default.
+        <Trans key="fileExplorer.quickLookHint.spaceSelects" snippets={{ space: spaceChip }} />
     </p>
     <p>
-        If you come from Finder, this might be unusual because Finder triggers a "Quick preview" action on
-        <ShortcutChip key="Space" />.
+        <Trans key="fileExplorer.quickLookHint.finderComparison" snippets={{ space: spaceChip }} />
     </p>
     <p>
-        In Cmdr, you can trigger quick view via <ShortcutChip key={quickLookKey} />. (<ShortcutChip
-            key={quickLookKey}
-        /> works in Finder, too, btw!)
+        <Trans key="fileExplorer.quickLookHint.quickView" snippets={{ key: quickLookChip }} />
     </p>
     <p>
-        You can also use <ShortcutChip key="Enter" /> to open files in the default app.
+        <Trans key="fileExplorer.quickLookHint.enterOpens" snippets={{ enter: enterChip }} />
     </p>
     <p class="settings-line">
-        All of this is configurable in
-        <LinkButton onclick={handleOpenSettings}>Settings &gt; Keyboard shortcuts</LinkButton>.
+        <Trans key="fileExplorer.quickLookHint.configurable" snippets={{ settingsLink }} />
     </p>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleDontShowAgain}>Don't show again</Button>
+        <Button size="mini" variant="secondary" onclick={handleDontShowAgain}
+            >{tString('fileExplorer.quickLookHint.dontShowAgain')}</Button
+        >
     </div>
 </div>
 

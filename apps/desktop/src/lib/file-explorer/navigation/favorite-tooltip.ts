@@ -1,8 +1,10 @@
 /**
- * Pure builder for a favorite row's hover tooltip in the volume switcher. Kept
+ * Builder for a favorite row's hover tooltip in the volume switcher. Kept
  * out of `VolumeBreadcrumb.svelte` so the path-first ordering and the
  * platform-forked reorder hint are unit-testable without a DOM.
  */
+
+import { tString } from '$lib/intl/messages.svelte'
 
 /**
  * Tooltip for a favorite row. Leads with the PATH so a renamed favorite
@@ -15,5 +17,5 @@
  */
 export function buildFavoriteTooltip(path: string, isMac: boolean): string {
   const reorder = isMac ? '⌥↑ / ⌥↓' : 'Alt+↑ / Alt+↓'
-  return `${path}\nDrag to reorder, or ${reorder}. Right-click to rename or remove.`
+  return tString('fileExplorer.navigation.favoriteTooltip', { path, reorder })
 }

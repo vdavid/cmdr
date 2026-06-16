@@ -85,9 +85,15 @@ const typeAwareRulesOff = Object.fromEntries(typeAwareRuleNames.map((name) => [n
 // strictTypeChecked when running type-aware rules.
 const tsBaseConfigs = noTypecheck ? tseslint.configs.strict : tseslint.configs.strictTypeChecked
 
+// Underscore-prefixed names are an intentional "deliberately unused" marker
+// (e.g. a Svelte `<Trans>` snippet that ignores its `_children` because a chip
+// replaces the tag's content). Honor the convention everywhere `no-unused-vars`
+// runs.
+const unusedVarsRule = ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }]
+
 // Shared non-type-aware rules used across TS and Svelte-runes file sections.
 const sharedNonTypeAwareRules = {
-  '@typescript-eslint/no-unused-vars': 'error',
+  '@typescript-eslint/no-unused-vars': unusedVarsRule,
   '@typescript-eslint/no-explicit-any': 'error',
   'no-console': 'warn',
   complexity: ['error', { max: 15 }],
@@ -202,7 +208,7 @@ export default tseslint.config(
       },
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-unused-vars': unusedVarsRule,
       'no-console': 'warn',
       complexity: ['error', { max: 15 }],
     },

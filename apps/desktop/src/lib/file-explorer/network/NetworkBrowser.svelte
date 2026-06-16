@@ -39,6 +39,9 @@
     import { addToast } from '$lib/ui/toast'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { triggerNetworkDiscovery } from './lazy-trigger'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
 
     /** Row height for host list (matches Full list) */
     const HOST_ROW_HEIGHT = 20
@@ -337,13 +340,13 @@
     // Helper to get display text for IP/hostname column
     function getIpDisplay(host: NetworkHost): string {
         if (host.ipAddress) return host.ipAddress
-        if (isHostResolving(host.id)) return 'fetching...'
+        if (isHostResolving(host.id)) return tString('fileExplorer.network.browser.fetching')
         return '—'
     }
 
     function getHostnameDisplay(host: NetworkHost): string {
         if (host.hostname) return host.hostname
-        if (isHostResolving(host.id)) return 'fetching...'
+        if (isHostResolving(host.id)) return tString('fileExplorer.network.browser.fetching')
         return '—'
     }
 
@@ -355,7 +358,7 @@
             return isStale ? `${String(count)}?` : String(count)
         }
         if (isListingShares(host.id)) return '...'
-        return '(unknown)'
+        return tString('fileExplorer.network.browser.unknown')
     }
 
     // Check if share data needs refresh indicator
@@ -368,14 +371,15 @@
         // Auth required - check if we have stored credentials
         if (errorType === 'auth_required' || errorType === 'signing_required') {
             const credStatus = getCredentialStatus(hostName)
-            if (credStatus === 'has_creds') return `🔑 Logged in${infoIcon}`
-            if (credStatus === 'failed') return `⚠️ Login failed${infoIcon}`
-            return `🔒 Login needed${infoIcon}`
+            if (credStatus === 'has_creds') return tString('fileExplorer.network.browser.status.loggedIn', { infoIcon })
+            if (credStatus === 'failed') return tString('fileExplorer.network.browser.status.loginFailed', { infoIcon })
+            return tString('fileExplorer.network.browser.status.loginNeeded', { infoIcon })
         }
-        if (errorType === 'auth_failed') return `⚠️ Login failed${infoIcon}`
-        if (errorType === 'timeout') return `⏱️ Timeout${infoIcon}`
-        if (errorType === 'host_unreachable') return `❌ Unreachable${infoIcon}`
-        return `⚠️ Error${infoIcon}`
+        if (errorType === 'auth_failed') return tString('fileExplorer.network.browser.status.loginFailed', { infoIcon })
+        if (errorType === 'timeout') return tString('fileExplorer.network.browser.status.timeout', { infoIcon })
+        if (errorType === 'host_unreachable')
+            return tString('fileExplorer.network.browser.status.unreachable', { infoIcon })
+        return tString('fileExplorer.network.browser.status.error', { infoIcon })
     }
 
     // Helper to get status display - shows credential-aware status
@@ -384,12 +388,12 @@
 
         // No state yet - show helpful status
         if (!state) {
-            if (isHostResolving(host.id)) return 'Resolving...'
-            if (!host.hostname) return 'Waiting for network...'
-            return 'Not checked'
+            if (isHostResolving(host.id)) return tString('fileExplorer.network.browser.status.resolving')
+            if (!host.hostname) return tString('fileExplorer.network.browser.status.waitingForNetwork')
+            return tString('fileExplorer.network.browser.status.notChecked')
         }
 
-        if (state.status === 'loading') return 'Connecting...'
+        if (state.status === 'loading') return tString('fileExplorer.network.connecting')
 
         if (state.status === 'error') {
             const hasTooltip = !!getStatusTooltip(host)
@@ -403,14 +407,20 @@
 
         // If we have credentials stored, show "Logged in" regardless of auth mode
         if (credStatus === 'has_creds') {
-            return stale ? '✓ Logged in 🔄' : '✓ Logged in'
+            return stale
+                ? tString('fileExplorer.network.browser.status.loggedInOkStale')
+                : tString('fileExplorer.network.browser.status.loggedInOk')
         }
 
         // Guest access (no stored credentials)
         if (state.result.authMode === 'guest_allowed') {
-            return stale ? '✓ Guest 🔄' : '✓ Guest'
+            return stale
+                ? tString('fileExplorer.network.browser.status.guestStale')
+                : tString('fileExplorer.network.browser.status.guest')
         }
-        return stale ? '✓ Connected 🔄' : '✓ Connected'
+        return stale
+            ? tString('fileExplorer.network.browser.status.connectedStale')
+            : tString('fileExplorer.network.browser.status.connected')
     }
 
     // Helper to check if status should be styled as an error
@@ -435,9 +445,9 @@
 
         // No state - explain what's happening
         if (!state) {
-            if (isHostResolving(host.id)) return 'Resolving hostname and IP address...'
-            if (!host.hostname) return 'Waiting for network name resolution'
-            return 'Double-click to connect and view shares'
+            if (isHostResolving(host.id)) return tString('fileExplorer.network.browser.tooltip.resolving')
+            if (!host.hostname) return tString('fileExplorer.network.browser.tooltip.waitingForNetwork')
+            return tString('fileExplorer.network.browser.tooltip.doubleClickToConnect')
         }
 
         if (state.status === 'error') {
@@ -445,17 +455,17 @@
             if (state.error.type === 'auth_required' || state.error.type === 'signing_required') {
                 const credStatus = getCredentialStatus(host.name)
                 if (credStatus === 'has_creds') {
-                    return 'Credentials stored. Double-click to connect.'
+                    return tString('fileExplorer.network.browser.tooltip.credsStored')
                 }
                 if (credStatus === 'failed') {
-                    return 'Stored credentials were rejected. Please log in with updated credentials.'
+                    return tString('fileExplorer.network.browser.tooltip.credsRejected')
                 }
-                return 'This host requires login. Double-click to enter credentials.'
+                return tString('fileExplorer.network.browser.tooltip.requiresLogin')
             }
             if (state.error.type === 'auth_failed') {
-                return 'Authentication failed. Check your credentials and try again.'
+                return tString('fileExplorer.network.browser.tooltip.authFailed')
             }
-            return state.error.message || `Error: ${state.error.type}`
+            return state.error.message || tString('fileExplorer.network.browser.tooltip.errorWithType', { reason: state.error.type })
         }
         return undefined
     }
@@ -463,18 +473,23 @@
     /** Remove a manual host after confirmation. For discovered hosts, show a toast. */
     async function handleRemoveHost(host: NetworkHost) {
         if (host.source !== 'manual') {
-            addToast(`Can't remove discovered hosts`, { level: 'warn' })
+            addToast(tString('fileExplorer.network.browser.cannotRemoveDiscovered'), { level: 'warn' })
             return
         }
 
-        const confirmed = await confirmDialog(`Remove ${host.name} from the server list?`, 'Remove')
+        const confirmed = await confirmDialog(
+            tString('fileExplorer.network.browser.removeHostConfirm', { hostName: host.name }),
+            tString('fileExplorer.network.browser.removeHostConfirmButton'),
+        )
         if (!confirmed) return
 
         try {
             await removeManualServer(host.id)
-            addToast(`Removed ${host.name}`, { level: 'success' })
+            addToast(tString('fileExplorer.network.browser.hostRemoved', { hostName: host.name }), { level: 'success' })
         } catch {
-            addToast(`Couldn't remove ${host.name}`, { level: 'error' })
+            addToast(tString('fileExplorer.network.browser.hostRemoveFailed', { hostName: host.name }), {
+                level: 'error',
+            })
         }
     }
 
@@ -505,9 +520,11 @@
             case 'forget-password': {
                 try {
                     await forgetCredentials(payload.hostName)
-                    addToast(`Forgot saved password for ${payload.hostName}`, { level: 'success' })
+                    addToast(tString('fileExplorer.network.forgotPassword', { hostName: payload.hostName }), {
+                        level: 'success',
+                    })
                 } catch {
-                    addToast(`Couldn't delete saved password`, { level: 'error' })
+                    addToast(tString('fileExplorer.network.deletePasswordFailed'), { level: 'error' })
                 }
                 break
             }
@@ -517,12 +534,16 @@
                 try {
                     const unmounted = await disconnectNetworkHost(host.id, host.name, host.ipAddress)
                     if (unmounted.length > 0) {
-                        addToast(`Disconnected from ${payload.hostName}`, { level: 'success' })
+                        addToast(tString('fileExplorer.network.browser.disconnected', { hostName: payload.hostName }), {
+                            level: 'success',
+                        })
                     } else {
-                        addToast(`No mounted shares from ${payload.hostName}`)
+                        addToast(tString('fileExplorer.network.browser.noMountedShares', { hostName: payload.hostName }))
                     }
                 } catch (e) {
-                    addToast(`Couldn't disconnect: ${String(e)}`, { level: 'error' })
+                    addToast(tString('fileExplorer.network.browser.disconnectFailed', { message: String(e) }), {
+                        level: 'error',
+                    })
                 }
                 break
             }
@@ -541,15 +562,22 @@
             }
         }
     }
+
+    // The keyboard-shortcut chip rendered inline in the refresh hint (`<key>` tag).
+    // The chip key is a fixed combo, not translatable, so the snippet ignores the
+    // (empty) inner content and renders the chip itself.
+    const snippets = { key: refreshKeyChip }
 </script>
+
+{#snippet refreshKeyChip(_children: import('svelte').Snippet)}<ShortcutChip key="⌘R" size="sm" />{/snippet}
 
 <div class="network-browser" class:is-focused={isFocused}>
     <div class="header-row">
-        <span class="col-name">Name</span>
-        <span class="col-ip">IP address</span>
-        <span class="col-hostname">Hostname</span>
-        <span class="col-shares">Shares</span>
-        <span class="col-status">Status</span>
+        <span class="col-name">{tString('fileExplorer.network.browser.colName')}</span>
+        <span class="col-ip">{tString('fileExplorer.network.browser.colIp')}</span>
+        <span class="col-hostname">{tString('fileExplorer.network.browser.colHostname')}</span>
+        <span class="col-shares">{tString('fileExplorer.network.browser.colShares')}</span>
+        <span class="col-status">{tString('fileExplorer.network.browser.colStatus')}</span>
     </div>
     <div class="host-list" bind:this={listContainer} bind:clientHeight={containerHeight}>
         {#each hosts as host, index (host.id)}
@@ -597,7 +625,7 @@
         {#if isSearching}
             <div class="searching-indicator">
                 <Spinner size="sm" />
-                Searching...
+                {tString('fileExplorer.network.browser.searching')}
             </div>
         {/if}
 
@@ -614,24 +642,35 @@
         >
             <span class="col-name connect-label">
                 <span class="connect-icon">+</span>
-                <span>Connect to server...</span>
+                <span>{tString('fileExplorer.network.browser.connectToServerRow')}</span>
             </span>
         </div>
 
         {#if !isSearching && hosts.length === 0}
             <div class="empty-state">
                 <img class="empty-icon" src="/icons/network-no-hosts.svg" alt="" />
-                <div class="empty-title">No network hosts found</div>
-                <div class="empty-message">Make sure you're on a network with SMB-capable devices.</div>
-                <Button variant="secondary" onclick={handleRefreshClick}>Refresh</Button>
+                <div class="empty-title">{tString('fileExplorer.network.browser.noHostsTitle')}</div>
+                <div class="empty-message">{tString('fileExplorer.network.browser.noHostsMessage')}</div>
+                <Button variant="secondary" onclick={handleRefreshClick}
+                    >{tString('fileExplorer.network.browser.refresh')}</Button
+                >
             </div>
         {/if}
     </div>
 
     {#if hosts.length > 0}
-        <button class="network-status-bar" onclick={handleRefreshClick} aria-label="Refresh network hosts">
-            <span class="status-text">{hosts.length} {hosts.length === 1 ? 'host' : 'hosts'}</span>
-            <span class="refresh-hint">Press <ShortcutChip key="⌘R" size="sm" /> or click here to refresh</span>
+        <button
+            class="network-status-bar"
+            onclick={handleRefreshClick}
+            aria-label={tString('fileExplorer.network.browser.refreshAriaLabel')}
+        >
+            <span class="status-text"
+                >{tString('fileExplorer.network.browser.hostCount', {
+                    count: hosts.length,
+                    countText: formatInteger(hosts.length),
+                })}</span
+            >
+            <span class="refresh-hint"><Trans key="fileExplorer.network.browser.refreshHint" {snippets} /></span>
         </button>
     {/if}
 </div>

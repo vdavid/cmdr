@@ -19,6 +19,7 @@ import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 import { findVolumeIdForPath } from '../drag/drop-operation'
 import { getCommonParentPath, getDestinationVolumeInfo } from './transfer-operations'
 import { capabilitiesFor } from './volume-capabilities'
+import { tString } from '$lib/intl/messages.svelte'
 import type { PathVolumeResolution } from '$lib/tauri-commands'
 import type { VolumeInfo } from '../types'
 
@@ -72,8 +73,8 @@ export function checkTransferDestinationGuard(destVolumeId: string, volumes: Vol
     return {
       ok: false,
       alert: {
-        title: 'Read-only device',
-        message: `"${destVolume.name}" is read-only. You can copy files from it, but not to it.`,
+        title: tString('fileExplorer.readOnly.deviceTitle'),
+        message: tString('fileExplorer.readOnly.deviceMessage', { name: destVolume.name }),
       },
     }
   }

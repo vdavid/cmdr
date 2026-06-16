@@ -21,10 +21,10 @@ const TRANSFER_SVELTE = 'src/lib/file-operations/transfer/CompletedTransferBanne
 // The command-handlers subtree is now fully enforced (its ledger exclusion was
 // removed once its toast copy migrated to the catalog): raw copy here MUST flag.
 const COMMAND_HANDLERS_SVELTE = 'src/routes/(main)/command-handlers/favorites-handlers.svelte'
-// A non-enforced area (file-explorer's migration is still finishing on its
-// branch): identical raw strings here must NOT flag yet.
-const OTHER_SVELTE = 'src/lib/file-explorer/pane/FilePane.svelte'
-const OTHER_TS = 'src/lib/file-explorer/pane/clipboard-operations.ts'
+// A non-enforced area (dev-only catalog / pure infrastructure with no user
+// copy): identical raw strings here must NOT flag.
+const OTHER_SVELTE = 'src/routes/dev/components/sections/ButtonsSection.svelte'
+const OTHER_TS = 'src/lib/path/normalize.ts'
 
 tsTester.run('no-raw-user-facing-string (ts sinks)', rule, {
   valid: [

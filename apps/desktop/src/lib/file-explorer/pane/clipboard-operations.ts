@@ -11,6 +11,7 @@ import { addToast } from '$lib/ui/toast'
 import { resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
+import { tString } from '$lib/intl/messages.svelte'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
 import { checkTransferDestinationGuard } from './transfer-entry'
@@ -120,7 +121,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     if (snapshotClip) {
       try {
         const count = await copyPathsToClipboard(snapshotClip.paths)
-        addToast(`Copied ${formatNumber(count)} ${count === 1 ? 'item' : 'items'}`, { level: 'info' })
+        addToast(tString('fileExplorer.clipboard.copied', { countText: formatNumber(count), count }), { level: 'info' })
       } catch (error) {
         log.error('Clipboard copy from snapshot failed: {error}', { error })
       }
@@ -131,7 +132,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     if (!state) return
 
     if (isMtpClipboardRefusal(state.volumeId)) {
-      addToast('Use F5 to copy files from MTP devices', { level: 'info' })
+      addToast(tString('fileExplorer.clipboard.useF5FromMtp'), { level: 'info' })
       return
     }
 
@@ -143,7 +144,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
         state.hasParent,
         access.getShowHiddenFiles(),
       )
-      addToast(`Copied ${formatNumber(count)} ${count === 1 ? 'item' : 'items'}`, { level: 'info' })
+      addToast(tString('fileExplorer.clipboard.copied', { countText: formatNumber(count), count }), { level: 'info' })
     } catch (error) {
       log.error('Clipboard copy failed: {error}', { error })
     }
@@ -155,7 +156,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     if (snapshotClip) {
       try {
         const count = await cutPathsToClipboard(snapshotClip.paths)
-        addToast(`${formatNumber(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`, {
+        addToast(tString('fileExplorer.clipboard.cutReady', { countText: formatNumber(count), count }), {
           level: 'info',
         })
       } catch (error) {
@@ -168,7 +169,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     if (!state) return
 
     if (isMtpClipboardRefusal(state.volumeId)) {
-      addToast('Use F6 to move files from MTP devices', { level: 'info' })
+      addToast(tString('fileExplorer.clipboard.useF6FromMtp'), { level: 'info' })
       return
     }
 
@@ -180,7 +181,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
         state.hasParent,
         access.getShowHiddenFiles(),
       )
-      addToast(`${formatNumber(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`, {
+      addToast(tString('fileExplorer.clipboard.cutReady', { countText: formatNumber(count), count }), {
         level: 'info',
       })
     } catch (error) {
@@ -198,7 +199,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       // because it points the user at the F5/F6 flow MTP paste lacks.
       const volumeId = access.getPaneVolumeId(access.getFocusedPane())
       if (isMtpClipboardRefusal(volumeId)) {
-        addToast('Use F5 to copy files to MTP devices', { level: 'info' })
+        addToast(tString('fileExplorer.clipboard.useF5ToMtp'), { level: 'info' })
         return
       }
 
@@ -216,7 +217,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       const result = await readClipboardFiles()
 
       if (result.paths.length === 0) {
-        addToast('No files on the clipboard. Copy files first with ⌘C.', { level: 'warn' })
+        addToast(tString('fileExplorer.clipboard.empty'), { level: 'warn' })
         return
       }
 

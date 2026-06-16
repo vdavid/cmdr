@@ -18,6 +18,7 @@ import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte
 
 import type { DirStats } from './file-list-utils'
 import { getDirSizeDisplayState, getDisplayExtension, getDisplaySize, hasSizeMismatch } from './full-list-utils'
+import { tString } from '$lib/intl/messages.svelte'
 
 export interface ColumnWidths {
   ext: number
@@ -200,7 +201,7 @@ function sizeTextForEntry(
   // the indexer recorded after a denied scan. Keep this BEFORE the
   // `entry.displaySize` check: restricted state takes priority over virtual
   // git display strings (which wouldn't apply to favorites anyway).
-  if (isRestricted) return '<no perms>'
+  if (isRestricted) return tString('fileExplorer.dirSize.noPerms')
   // Virtual git entries override the Size cell with a short string
   // (`+12 / -3`, `5 files`, …); measure that instead of the byte format.
   if (entry.displaySize != null) {
@@ -212,7 +213,7 @@ function sizeTextForEntry(
     // Mirror FullList's render decision (same `getDirSizeDisplayState`): both the
     // scanning and dir states render the `<dir>` placeholder text (the scanning
     // state adds an hourglass on top, reserved separately in `sizeIconSuffixForEntry`).
-    return '<dir>'
+    return tString('fileExplorer.dirSize.dirPlaceholder')
   }
   const s = getDisplaySize(entry.size, entry.physicalSize, sizeDisplayMode)
   return s !== undefined ? sizeCellText(s, sizeFormatOpts) : ''
@@ -299,9 +300,9 @@ export function computeFullListColumnWidths(args: {
   const chromeFor = (column: SortColumn): number => (sortBy === column ? HEADER_CHROME_ACTIVE : HEADER_CHROME_INACTIVE)
 
   // Start with header widths (the column must fit its header regardless of data).
-  let extMax = measure('Ext') + chromeFor('extension')
-  let sizeMax = measure('Size') + chromeFor('size')
-  let dateMax = measure('Modified') + chromeFor('modified')
+  let extMax = measure(tString('fileExplorer.columns.ext')) + chromeFor('extension')
+  let sizeMax = measure(tString('fileExplorer.columns.size')) + chromeFor('size')
+  let dateMax = measure(tString('fileExplorer.columns.modified')) + chromeFor('modified')
 
   // Cap on per-row Ext text width so a single pathological extension can't
   // push the rest of the row off-screen. Compared against the row's text-only

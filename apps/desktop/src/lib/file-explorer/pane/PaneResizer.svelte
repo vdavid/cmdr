@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { tString } from '$lib/intl/messages.svelte'
+
     interface Props {
         onResize: (widthPercent: number) => void
         onResizeEnd: () => void
@@ -48,7 +50,7 @@
     ondblclick={onReset}
     role="separator"
     aria-orientation="vertical"
-    aria-label="Resize panes"
+    aria-label={tString('fileExplorer.pane.resizePanesAriaLabel')}
 >
     <div class="handle"></div>
 </div>

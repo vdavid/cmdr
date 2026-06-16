@@ -329,7 +329,11 @@ These patterns emerged during the volume picker implementation and should be fol
 
 ## `volume-grouping.ts`
 
-Pure logic for organizing volumes into display groups. No reactive state.
+Logic for organizing volumes into display groups. No own reactive state, but group LABELS and the synthetic Network
+entry's NAME are resolved from the message catalog
+(`tString('fileExplorer.navigation.group*' / '.networkVolume[Disabled]')`), which reads the active locale.
+`VolumeBreadcrumb` calls `groupByCategory` from a `$derived`, so the labels track a locale switch. To change a section
+heading or the Network entry's name, edit the catalog, not this file.
 
 `groupByCategory(vols)`: groups volumes by category in display order:
 
@@ -338,10 +342,10 @@ Pure logic for organizing volumes into display groups. No reactive state.
 3. Cloud drives
 4. Mobile (MTP) devices: filtered from unified volume list (`category === 'mobile_device'`)
 5. Network: always includes a synthetic `'network'` entry (`smb://`) plus any mounted SMB shares. The synthetic entry's
-   name flips to `"Network (disabled)"` when `options.networkEnabled === false`. `VolumeBreadcrumb` reads
-   `getNetworkEnabled()` from reactive settings to set the option, and intercepts clicks on the disabled entry to open
-   Settings → File systems → SMB/Network shares (via `openSettingsWindow(['File systems', 'SMB/Network shares'])`)
-   instead of navigating.
+   name flips from the `networkVolume` catalog key to `networkVolumeDisabled` ("Network (disabled)") when
+   `options.networkEnabled === false`. `VolumeBreadcrumb` reads `getNetworkEnabled()` from reactive settings to set the
+   option, and intercepts clicks on the disabled entry to open Settings → File systems → SMB/Network shares (via
+   `openSettingsWindow(['File systems', 'SMB/Network shares'])`) instead of navigating.
 
 `getIconForVolume(volume)`: returns the appropriate icon path for a volume based on its category.
 

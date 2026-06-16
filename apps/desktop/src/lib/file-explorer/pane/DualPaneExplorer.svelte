@@ -117,6 +117,7 @@
     import { setReopenClosedTabEnabled } from '$lib/tauri-commands'
     import DragOverlay from '../drag/DragOverlay.svelte'
     import { addToast } from '$lib/ui/toast'
+    import { tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('fileExplorer')
 
@@ -918,7 +919,13 @@
                 try {
                     await ejectVolume(payload.volumeId)
                 } catch (e) {
-                    addToast(`Couldn't eject ${payload.volumeName}: ${getIpcErrorMessage(e)}`, { level: 'error' })
+                    addToast(
+                        tString('fileExplorer.pane.ejectFailedToast', {
+                            volumeName: payload.volumeName,
+                            message: getIpcErrorMessage(e),
+                        }),
+                        { level: 'error' },
+                    )
                 }
             })()
         })
@@ -1908,7 +1915,7 @@
     onkeyup={handleKeyUp}
     tabindex="0"
     role="application"
-    aria-label="File explorer"
+    aria-label={tString('fileExplorer.pane.fileExplorerAriaLabel')}
     data-app-ready="false"
 >
     {#if initialized}

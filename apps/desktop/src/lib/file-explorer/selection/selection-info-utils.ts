@@ -13,6 +13,7 @@ import {
   type FormattedDate,
 } from '$lib/settings/format-utils'
 import { formatInteger, getGroupSeparator } from '$lib/intl/number-format'
+import { tString } from '$lib/intl/messages.svelte'
 
 // Size tier colors for digit triads (indexed: 0=bytes, 1=kB, 2=MB, 3=GB, 4=TB+)
 export const sizeTierClasses = ['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']
@@ -157,10 +158,10 @@ export function buildDateTooltip(
     lines.push(`${label}: ${renderSegments(d.segments)}`)
   }
   // `!= null` because IPC payloads serialize `Option::None` as JSON `null`.
-  if (e.createdAt != null) line('Created', e.createdAt)
-  if (e.openedAt != null) line('Last opened', e.openedAt)
-  if (e.addedAt != null) line('Last moved ("added")', e.addedAt)
-  if (e.modifiedAt != null) line('Last modified', e.modifiedAt)
+  if (e.createdAt != null) line(tString('fileExplorer.dateTooltip.created'), e.createdAt)
+  if (e.openedAt != null) line(tString('fileExplorer.dateTooltip.lastOpened'), e.openedAt)
+  if (e.addedAt != null) line(tString('fileExplorer.dateTooltip.lastMoved'), e.addedAt)
+  if (e.modifiedAt != null) line(tString('fileExplorer.dateTooltip.lastModified'), e.modifiedAt)
   return { html: lines.join('<br>') }
 }
 
@@ -190,8 +191,8 @@ export function getDateDisplay(
   currentDirModifiedAt?: number,
 ): string {
   if (!entry) return ''
-  if (isBrokenSymlink) return '(broken symlink)'
-  if (isPermissionDenied) return '(permission denied)'
+  if (isBrokenSymlink) return tString('fileExplorer.entry.brokenSymlink')
+  if (isPermissionDenied) return tString('fileExplorer.entry.permissionDenied')
   // For ".." entry, use the current directory's modified time
   const timestamp = entry.name === '..' ? currentDirModifiedAt : entry.modifiedAt
   return formatDate(timestamp)

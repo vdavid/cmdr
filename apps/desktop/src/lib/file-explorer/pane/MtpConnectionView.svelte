@@ -4,6 +4,7 @@
     import { getAppLogger } from '$lib/logging/logger'
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('mtpConnection')
 
@@ -38,15 +39,15 @@
     function getMessageForType(errType: string | undefined): string | undefined {
         switch (errType) {
             case 'timeout':
-                return 'Connection timed out. The device may be slow or unresponsive.'
+                return tString('fileExplorer.mtp.connectTimedOut')
             case 'exclusiveAccess':
-                return 'Another app is using this device. Run the ptpcamerad workaround.'
+                return tString('fileExplorer.mtp.exclusiveAccess')
             case 'deviceNotFound':
-                return 'Device not found. It may have been unplugged.'
+                return tString('fileExplorer.mtp.deviceNotFound')
             case 'disconnected':
-                return 'Device was disconnected.'
+                return tString('fileExplorer.mtp.disconnected')
             case 'deviceBusy':
-                return 'Device is busy. Please try again.'
+                return tString('fileExplorer.mtp.deviceBusy')
             default:
                 return undefined
         }
@@ -103,7 +104,7 @@
                             log.warn('onVolumeChange callback not provided!')
                         }
                     } else {
-                        mtpConnectionError = 'Device has no accessible storage'
+                        mtpConnectionError = tString('fileExplorer.mtp.noStorage')
                         log.warn('Device has no storages')
                     }
                 })
@@ -162,13 +163,13 @@
         {#if mtpConnecting}
             <div class="connecting-spinner">
                 <Spinner size="md" />
-                <span>Connecting to device...</span>
+                <span>{tString('fileExplorer.mtp.connecting')}</span>
             </div>
         {:else if mtpConnectionError}
             <div class="mtp-error">
                 <span class="error-icon">⚠</span>
                 <span class="error-message">{mtpConnectionError}</span>
-                <Button variant="secondary" onclick={handleRetry}>Try again</Button>
+                <Button variant="secondary" onclick={handleRetry}>{tString('fileExplorer.mtp.tryAgain')}</Button>
             </div>
         {/if}
     </div>

@@ -4,6 +4,7 @@
     import { capabilitiesFor } from './volume-capabilities'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { fnKeyToCommand } from './function-key-commands'
+    import { tString } from '$lib/intl/messages.svelte'
     import type { CommandId } from '$lib/commands'
 
     interface Props {
@@ -98,7 +99,7 @@
         onclick={() => onCommand?.(id)}
         disabled={!enabled}
         tabindex={-1}
-        aria-label={shortcut ? `${action} (${shortcut})` : action}
+        aria-label={shortcut ? tString('fileExplorer.functionKeyBar.actionWithShortcut', { action, shortcut }) : action}
     >
         {#if shortcut}<kbd>{shortcut}</kbd>{/if}<span>{label}</span>
     </button>
@@ -106,7 +107,7 @@
 
 <!-- A fixed F-key slot with no Shift action. Presentational only (not a command). -->
 {#snippet emptySlot(fnKey: string)}
-    <button disabled tabindex={-1} aria-label="{fnKey} (no shift action)">
+    <button disabled tabindex={-1} aria-label={tString('fileExplorer.functionKeyBar.noShiftAction', { fnKey })}>
         <kbd>{fnKey}</kbd>
     </button>
 {/snippet}
@@ -115,7 +116,7 @@
     <div
         class="function-key-bar"
         role="toolbar"
-        aria-label="Function keys"
+        aria-label={tString('fileExplorer.functionKeyBar.toolbarAriaLabel')}
         onmousedown={(e) => {
             e.preventDefault()
         }}
@@ -124,24 +125,69 @@
         {#if shiftHeld}
             {@render emptySlot('F2')}
             {@render emptySlot('F3')}
-            {@render commandButton(fnKeyToCommand.newFile, 'New file', 'Create new file', canMkfile)}
+            {@render commandButton(
+                fnKeyToCommand.newFile,
+                tString('fileExplorer.functionKeyBar.newFileLabel'),
+                tString('fileExplorer.functionKeyBar.newFileAction'),
+                canMkfile,
+            )}
             {@render emptySlot('F5')}
-            {@render commandButton(fnKeyToCommand.rename, 'Rename', 'Rename', canRename)}
+            {@render commandButton(
+                fnKeyToCommand.rename,
+                tString('fileExplorer.functionKeyBar.renameLabel'),
+                tString('fileExplorer.functionKeyBar.renameAction'),
+                canRename,
+            )}
             {@render emptySlot('F7')}
             {@render commandButton(
                 fnKeyToCommand.deletePermanently,
-                'Permanently',
-                'Delete permanently',
+                tString('fileExplorer.functionKeyBar.permanentlyLabel'),
+                tString('fileExplorer.functionKeyBar.deletePermanentlyAction'),
                 canSourceOps,
             )}
         {:else}
-            {@render commandButton(fnKeyToCommand.rename, 'Rename', 'Rename', canRename)}
-            {@render commandButton(fnKeyToCommand.view, 'View', 'View file', true)}
-            {@render commandButton(fnKeyToCommand.edit, 'Edit', 'Edit file', true)}
-            {@render commandButton(fnKeyToCommand.copy, 'Copy', 'Copy', canSourceOps)}
-            {@render commandButton(fnKeyToCommand.move, 'Move', 'Move', canSourceOps)}
-            {@render commandButton(fnKeyToCommand.newFolder, 'New folder', 'New folder', canMkdir)}
-            {@render commandButton(fnKeyToCommand.delete, 'Delete', 'Delete', canSourceOps)}
+            {@render commandButton(
+                fnKeyToCommand.rename,
+                tString('fileExplorer.functionKeyBar.renameLabel'),
+                tString('fileExplorer.functionKeyBar.renameAction'),
+                canRename,
+            )}
+            {@render commandButton(
+                fnKeyToCommand.view,
+                tString('fileExplorer.functionKeyBar.viewLabel'),
+                tString('fileExplorer.functionKeyBar.viewAction'),
+                true,
+            )}
+            {@render commandButton(
+                fnKeyToCommand.edit,
+                tString('fileExplorer.functionKeyBar.editLabel'),
+                tString('fileExplorer.functionKeyBar.editAction'),
+                true,
+            )}
+            {@render commandButton(
+                fnKeyToCommand.copy,
+                tString('fileExplorer.functionKeyBar.copyLabel'),
+                tString('fileExplorer.functionKeyBar.copyAction'),
+                canSourceOps,
+            )}
+            {@render commandButton(
+                fnKeyToCommand.move,
+                tString('fileExplorer.functionKeyBar.moveLabel'),
+                tString('fileExplorer.functionKeyBar.moveAction'),
+                canSourceOps,
+            )}
+            {@render commandButton(
+                fnKeyToCommand.newFolder,
+                tString('fileExplorer.functionKeyBar.newFolderLabel'),
+                tString('fileExplorer.functionKeyBar.newFolderAction'),
+                canMkdir,
+            )}
+            {@render commandButton(
+                fnKeyToCommand.delete,
+                tString('fileExplorer.functionKeyBar.deleteLabel'),
+                tString('fileExplorer.functionKeyBar.deleteAction'),
+                canSourceOps,
+            )}
         {/if}
         <!-- eslint-enable @typescript-eslint/no-confusing-void-expression -->
     </div>

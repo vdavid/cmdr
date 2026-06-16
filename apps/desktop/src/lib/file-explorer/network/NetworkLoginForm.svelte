@@ -8,6 +8,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import type { AuthMode, ConnectionMode, KnownNetworkShare, NetworkHost } from '../types'
     import { getUsernameHints, getKnownShareByName } from '$lib/tauri-commands'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** The network host we're connecting to */
@@ -97,7 +98,11 @@
     })
 
     // Computed display values
-    const title = $derived(shareName ? `Sign in to "${host.name}/${shareName}"` : `Sign in to "${host.name}"`)
+    const title = $derived(
+        tString('fileExplorer.network.login.title', {
+            target: shareName ? `${host.name}/${shareName}` : host.name,
+        }),
+    )
     const showGuestOption = $derived(authMode === 'guest_allowed')
     const canSubmit = $derived(connectionMode === 'guest' || username.trim() !== '')
 
@@ -146,7 +151,7 @@
             <div class="auth-changed-message">
                 {#if authOptionsChanged() === 'guest_can_now_auth'}
                     <span class="info-icon">ℹ️</span>
-                    You connected as guest before. You can now sign in for more access.
+                    {tString('fileExplorer.network.login.guestNowAuth')}
                 {/if}
             </div>
         {/if}
@@ -161,7 +166,7 @@
         <form onsubmit={handleSubmit}>
             {#if showGuestOption}
                 <fieldset class="connection-mode">
-                    <legend class="sr-only">Connection mode</legend>
+                    <legend class="sr-only">{tString('fileExplorer.network.login.connectionModeLegend')}</legend>
 
                     <label class="radio-option">
                         <input
@@ -171,7 +176,7 @@
                             bind:group={connectionMode}
                             disabled={isConnecting}
                         />
-                        <span class="radio-label">Connect as guest</span>
+                        <span class="radio-label">{tString('fileExplorer.network.login.connectAsGuest')}</span>
                     </label>
 
                     <label class="radio-option">
@@ -182,21 +187,21 @@
                             bind:group={connectionMode}
                             disabled={isConnecting}
                         />
-                        <span class="radio-label">Sign in with credentials</span>
+                        <span class="radio-label">{tString('fileExplorer.network.login.signInWithCredentials')}</span>
                     </label>
                 </fieldset>
             {/if}
 
             <div class="credentials-fields" class:disabled={connectionMode === 'guest'}>
                 <div class="field">
-                    <label for="username" class="field-label">Username</label>
+                    <label for="username" class="field-label">{tString('fileExplorer.network.login.username')}</label>
                     <input
                         id="username"
                         type="text"
                         class="field-input"
                         bind:value={username}
                         disabled={connectionMode === 'guest' || isConnecting}
-                        placeholder={usernameHint ?? 'Example: barry'}
+                        placeholder={usernameHint ?? tString('fileExplorer.network.login.usernamePlaceholderDefault')}
                         autocomplete="username"
                         autocapitalize="off"
                         spellcheck="false"
@@ -204,14 +209,14 @@
                 </div>
 
                 <div class="field">
-                    <label for="password" class="field-label">Password</label>
+                    <label for="password" class="field-label">{tString('fileExplorer.network.login.password')}</label>
                     <input
                         id="password"
                         type="password"
                         class="field-input"
                         bind:value={password}
                         disabled={connectionMode === 'guest' || isConnecting}
-                        placeholder="Enter password"
+                        placeholder={tString('fileExplorer.network.login.passwordPlaceholder')}
                         autocomplete="current-password"
                     />
                 </div>
@@ -222,19 +227,21 @@
                         bind:checked={rememberInKeychain}
                         disabled={connectionMode === 'guest' || isConnecting}
                     />
-                    <span class="checkbox-label">Remember in Keychain</span>
+                    <span class="checkbox-label">{tString('fileExplorer.network.login.rememberInKeychain')}</span>
                 </label>
             </div>
 
             <div class="button-row">
-                <Button variant="secondary" onclick={onCancel} disabled={isConnecting}>Cancel</Button>
+                <Button variant="secondary" onclick={onCancel} disabled={isConnecting}
+                    >{tString('fileExplorer.network.cancel')}</Button
+                >
                 <Button variant="primary" type="submit" disabled={!canSubmit || isConnecting}>
                     <span class="btn-content">
                         {#if isConnecting}
                             <Spinner size="sm" />
-                            Connecting...
+                            {tString('fileExplorer.network.connecting')}
                         {:else}
-                            Connect
+                            {tString('fileExplorer.network.connect')}
                         {/if}
                     </span>
                 </Button>

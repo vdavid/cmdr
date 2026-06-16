@@ -68,8 +68,8 @@ const enforcedAreaPathFragments = [
   '/lib/updates/',
   '/lib/whats-new/',
   '/lib/errors/',
-  '/routes/(main)/', // top-level app chrome (command-handlers excluded below)
-  // NOT YET ENFORCED: '/lib/file-explorer/' — its migration is finishing on a separate branch.
+  '/routes/(main)/', // top-level app chrome
+  '/lib/file-explorer/',
 ]
 
 // Files inside an enforced area that aren't migrated yet, so the rule skips them

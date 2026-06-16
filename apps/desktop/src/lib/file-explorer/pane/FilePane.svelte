@@ -88,6 +88,7 @@
     import { cancelClickToRename } from '../rename/rename-activation'
     import { type DirectorySortMode } from '$lib/settings'
     import { addToast, dismissTransientToasts } from '$lib/ui/toast'
+    import { tString } from '$lib/intl/messages.svelte'
     import { maybeShowQuickLookHint } from '../quick-look/quick-look-hint'
     import { createRenameFlow } from './rename-flow.svelte'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
@@ -550,7 +551,7 @@
         void disconnectSmbVolume(targetVolumeId).catch((e: unknown) => {
             const message = getIpcErrorMessage(e)
             log.warn('Disconnect SMB volume {volumeId} failed: {error}', { volumeId: targetVolumeId, error: message })
-            addToast(`Couldn't disconnect: ${message}`, { level: 'error' })
+            addToast(tString('fileExplorer.pane.disconnectFailedToast', { message }), { level: 'error' })
         })
         void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
             navigateToFallback(validPath)
@@ -2255,20 +2256,24 @@
             if (result.status === 'success') {
                 smbUpgradeLogin = null
                 requestVolumeRefresh()
-                addToast('Connected directly for faster access', { level: 'success' })
+                addToast(tString('fileExplorer.pane.connectedDirectlyToast'), { level: 'success' })
             } else if (result.status === 'credentialsNeeded') {
                 smbUpgradeLogin = {
                     ...smbUpgradeLogin,
                     isConnecting: false,
-                    errorMessage: result.message ?? 'Authentication failed',
+                    errorMessage: result.message ?? tString('fileExplorer.network.authFailed'),
                 }
             } else {
                 smbUpgradeLogin = null
-                addToast(`Direct connection failed: ${result.message}`, { level: 'error' })
+                addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: result.message }), {
+                    level: 'error',
+                })
             }
         } catch (e) {
             smbUpgradeLogin = null
-            addToast(`Direct connection failed: ${String(e)}`, { level: 'error' })
+            addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: String(e) }), {
+                level: 'error',
+            })
         }
     }
 
@@ -2695,7 +2700,7 @@
     onclick={handlePaneClick}
     onkeydown={() => {}}
     role="region"
-    aria-label="{paneId === 'left' ? 'Left' : 'Right'} file pane"
+    aria-label={tString('fileExplorer.pane.filePaneAriaLabel', { side: paneId })}
     style={paneTintBg ? `--color-pane-bg: ${paneTintBg}` : undefined}
     data-pane-tint={paneTintName ?? undefined}
 >
@@ -2892,7 +2897,7 @@
             <div
                 class="disk-usage-bar"
                 role="meter"
-                aria-label="Disk usage"
+                aria-label={tString('fileExplorer.pane.diskUsageAriaLabel')}
                 aria-valuenow={volumeSpace ? getUsedPercent(volumeSpace) : 0}
                 aria-valuemin={0}
                 aria-valuemax={100}
