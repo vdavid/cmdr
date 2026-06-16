@@ -316,7 +316,7 @@ describe('formatFileSizeWithFormat: locale-aware decimal', () => {
     // compose the string ourselves.
     expect(out.split(' ')).toHaveLength(2)
     // No exotic space code points: U+00A0 NBSP, U+202F NNBSP, U+2009 thin space.
-    expect([...out].some((c) => [0x00a0, 0x202f, 0x2009].includes(c.charCodeAt(0)))).toBe(false)
+    expect(out).not.toMatch(/[\u00a0\u202f\u2009]/)
   })
 
   it('does NOT group the integer part of large forced-unit values', () => {

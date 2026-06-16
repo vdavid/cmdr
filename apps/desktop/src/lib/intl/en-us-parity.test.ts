@@ -19,8 +19,12 @@ import { formatDateForDisplay, formatFileSizeWithFormat } from '$lib/settings/fo
 import { formatNumber, formatSizeTriads } from '$lib/file-explorer/selection/selection-info-utils'
 
 describe('en-US parity: counts (formatNumber)', () => {
-  beforeEach(() => _setLocaleForTests('en-US'))
-  afterEach(() => _setLocaleForTests(null))
+  beforeEach(() => {
+    _setLocaleForTests('en-US')
+  })
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
 
   it('groups thousands with a comma, exactly as before', () => {
     expect(formatNumber(0)).toBe('0')
@@ -35,8 +39,12 @@ describe('en-US parity: counts (formatNumber)', () => {
 })
 
 describe('en-US parity: raw-byte triads (formatSizeTriads)', () => {
-  beforeEach(() => _setLocaleForTests('en-US'))
-  afterEach(() => _setLocaleForTests(null))
+  beforeEach(() => {
+    _setLocaleForTests('en-US')
+  })
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
 
   // The triad separator is the en-US group character. Pre-change this was the
   // hardcoded U+2009 thin space; en-US's Intl group separator is the ASCII
@@ -68,8 +76,12 @@ describe('en-US parity: human-friendly sizes (formatFileSizeWithFormat)', () => 
   // produced these literals regardless of locale. Post-change it reads
   // `getLocale()`; en-US must reproduce these EXACT strings (no grouping on the
   // 1073.21 / 1000000.00 cases, `.` decimal).
-  beforeEach(() => _setLocaleForTests('en-US'))
-  afterEach(() => _setLocaleForTests(null))
+  beforeEach(() => {
+    _setLocaleForTests('en-US')
+  })
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
 
   it('binary, dynamic unit', () => {
     expect(formatFileSizeWithFormat(0, 'binary')).toBe('0 bytes')
@@ -99,8 +111,12 @@ describe('en-US parity: human-friendly sizes (formatFileSizeWithFormat)', () => 
 })
 
 describe('en-US parity: system date', () => {
-  beforeEach(() => _setLocaleForTests('en-US'))
-  afterEach(() => _setLocaleForTests(null))
+  beforeEach(() => {
+    _setLocaleForTests('en-US')
+  })
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
 
   // The `system` date follows the locale by design. The invariant: under en-US
   // it equals what an en-US `Intl.DateTimeFormat` with the same fixed-width
