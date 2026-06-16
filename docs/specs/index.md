@@ -46,6 +46,8 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 - [x] 2026-06-15 doc-context-diet-plan.md - Shrank the resident agent-doc bundle (9.5k → 2k words): re-homed desktop
       content, ratcheted CLAUDE.md toward 600, mandated sibling DETAILS.md, dieted the rules to path-scoped homes,
       enforced with checks (details-sibling, resident-doc-budget, dead-links)
+- [ ] 2026-06-16 settings-card-groups-plan.md - Third settings grouping level: rows grouped into `SectionCard`s per
+      page, empty cards auto-hidden, search-grouping kept in sync (fixes empty-card and blank-page search bugs)
 
 ## Later
 
