@@ -36,6 +36,10 @@ Registry-based user settings for Cmdr: defined once in `settings-registry.ts`, a
 - **Date display has one source of truth:** `formatDateForDisplay()` (pure) → `formattedDate()` (reactive) →
   `<DateLabel>` (render). Per-component coloring lives only in `age-tier-utils.ts`. Add new date consumers through
   these, not a fresh formatter. Text-size compounding lives only in `text-size.ts`'s `computeAndApply()`.
+- **The `'system'` date and file-size decimals/grouping read the locale from `$lib/intl`'s `getLocale()`** (the single
+  source), and `format-utils.ts` caches its `Intl` formatters keyed on it. The iso/short/custom date modes and the ISO
+  `formatDate` helper stay locale-independent by design. Don't hardcode a locale here; see
+  [`$lib/intl/CLAUDE.md`](../intl/CLAUDE.md).
 - **AI hot-apply is wired in `settings-applier.ts`**, which routes `ai.provider` / `ai.cloudProvider` /
   `ai.cloudProviderConfigs` to `ai-config.ts::pushConfigToBackend()`. That helper re-reads every setting fresh, so
   callers MUST NOT pass cached values. Sections and the wizard just call `setSetting(...)`.

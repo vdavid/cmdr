@@ -4,8 +4,9 @@ Depth for the status-bar / header components. `CLAUDE.md` holds the must-knows.
 
 ## `selection-info-utils.ts` exports
 
-- `formatSizeTriads(bytes)`: splits a byte count into digit triads, each tagged with a `tierClass`. Uses U+2009 thin
-  space between triads.
+- `formatSizeTriads(bytes)`: splits a byte count into digit triads, each tagged with a `tierClass`. The inter-triad
+  separator follows the active locale (`getGroupSeparator` from `$lib/intl`), so byte grouping matches localized counts;
+  see [`$lib/intl/DETAILS.md`](../../intl/DETAILS.md) (Decision 4, the en-US comma vs old thin-space change).
 - `formatSizeForDisplay(bytes, { unit, format })`: single entry point used by views and the status bar. `unit: 'bytes'`
   delegates to `formatSizeTriads`; `unit: 'dynamic'` picks the friendliest unit per value ("1.02 MB");
   `unit: 'kB' | 'MB' | 'GB'` forces a fixed unit so a mixed-size directory reads apples-to-apples. Returns one
@@ -23,7 +24,8 @@ Depth for the status-bar / header components. `CLAUDE.md` holds the must-knows.
 - `getDateDisplay(entry, ...)`: returns the formatted date or `'(broken symlink)'` / `'(permission denied)'`.
 - `isBrokenSymlink(entry)`: `entry.isSymlink && entry.iconId === 'symlink-broken'` (not filesystem flags).
 - `isPermissionDenied(entry)`: `!isSymlink && permissions === 0 && size === undefined`.
-- `formatNumber`, `calculatePercentage`: selection summary helpers. Count + noun formatting goes through
+- `formatNumber`, `calculatePercentage`: selection summary helpers. `formatNumber` delegates to `formatInteger`
+  (`$lib/intl`), so counts group per the active locale. Count + noun formatting goes through
   [`$lib/utils/pluralize`](../../utils/pluralize.ts).
 - `sizeTierClasses`: `['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']`. CSS rules for these live in the
   consuming view, not here.

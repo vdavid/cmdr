@@ -37,6 +37,8 @@ All under `apps/desktop/src/lib/`.
 - `file-operations/mkfile/`: Shift+F4 new-file dialog
 - `file-viewer/`: Read-only file viewer (separate window, virtual scrolling)
 - `settings/`: Settings UI + registry-based architecture, reactive state
+- `intl/`: The single locale source (`getLocale`) + memoized locale-aware number/size formatters; counts, file sizes,
+  and the `'system'` date all read it (dates formatted in `settings/format-utils.ts`)
 - `shortcuts/`: Keyboard shortcut customization, scope hierarchy, conflict detection, plus the read-only Help > Keyboard
   shortcuts window (`shortcuts-window.ts` + `ShortcutsList.svelte` + pure `shortcut-diff.ts`, route at
   `routes/shortcuts/`)
