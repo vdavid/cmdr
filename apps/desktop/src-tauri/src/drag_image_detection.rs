@@ -123,6 +123,9 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
     // Swizzle draggingEntered:
     if let Some(method) = cls.instance_method(sel!(draggingEntered:)) {
         ORIGINAL_ENTERED_IMP.set(method.implementation()).ok();
+        // SAFETY: inverse of the `call_original_entered` transmute. `swizzled_dragging_entered` is
+        // `unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize`, matching the ObjC
+        // `- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender` ABI that `Imp` expects.
         unsafe {
             method.set_implementation(std::mem::transmute::<*const (), Imp>(
                 swizzled_dragging_entered as *const (),
@@ -140,6 +143,9 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
     // Swizzle draggingUpdated:
     if let Some(method) = cls.instance_method(sel!(draggingUpdated:)) {
         ORIGINAL_UPDATED_IMP.set(method.implementation()).ok();
+        // SAFETY: inverse of the `call_original_updated` transmute. `swizzled_dragging_updated` is
+        // `unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize`, matching the ObjC
+        // `- (NSDragOperation)draggingUpdated:(id<NSDraggingInfo>)sender` ABI that `Imp` expects.
         unsafe {
             method.set_implementation(std::mem::transmute::<*const (), Imp>(
                 swizzled_dragging_updated as *const (),
@@ -157,6 +163,9 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
     // Swizzle draggingExited: for self-drag image swapping (transparent → rich on window exit)
     if let Some(method) = cls.instance_method(sel!(draggingExited:)) {
         ORIGINAL_EXITED_IMP.set(method.implementation()).ok();
+        // SAFETY: inverse of the `call_original_exited` transmute. `swizzled_dragging_exited` is
+        // `unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject)`, matching the ObjC
+        // `- (void)draggingExited:(id<NSDraggingInfo>)sender` ABI that `Imp` expects.
         unsafe {
             method.set_implementation(std::mem::transmute::<*const (), Imp>(
                 swizzled_dragging_exited as *const (),
@@ -442,6 +451,8 @@ unsafe fn enumerate_dragging_frames(drag_info: &AnyObject) -> (f64, f64) {
     let found = std::cell::Cell::new(false);
 
     let block = block2::RcBlock::new(|item: NonNull<NSDraggingItem>, _idx: NSInteger, _stop: NonNull<Bool>| {
+        // SAFETY: AppKit's `enumerateDraggingItemsWithOptions:` invokes this block with a valid,
+        // live `NSDraggingItem` in `item` for the duration of the call, so the borrow is sound.
         let frame: NSRect = unsafe { item.as_ref() }.draggingFrame();
 
         found.set(true);

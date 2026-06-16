@@ -268,6 +268,9 @@ mod signal_handler {
             }
         };
 
+        // SAFETY: `path_cstr` is a valid, NUL-terminated C string (built above and held
+        // alive across the call). `open` returns a fresh fd or a negative value on failure,
+        // which we check below before storing it.
         let fd = unsafe {
             libc::open(
                 path_cstr.as_ptr(),
@@ -283,6 +286,10 @@ mod signal_handler {
 
         // Register signal handlers for SIGSEGV, SIGBUS, SIGABRT
         for sig in [libc::SIGSEGV, libc::SIGBUS, libc::SIGABRT] {
+            // SAFETY: `action` is zeroed before use, so every field starts in a valid state;
+            // `sigemptyset` then empties `sa_mask`. `sa_sigaction` points at `signal_handler`,
+            // a valid `extern "C"` SA_SIGINFO handler with the matching signature. `&action` is
+            // a live, fully-initialized `sigaction`, and the null `oldact` pointer is allowed.
             unsafe {
                 let mut action: libc::sigaction = std::mem::zeroed();
                 action.sa_sigaction = signal_handler as *const () as usize;
@@ -297,10 +304,15 @@ mod signal_handler {
     extern "C" fn signal_handler(sig: libc::c_int, _info: *mut libc::siginfo_t, _ctx: *mut libc::c_void) {
         let fd = RAW_FD.load(Ordering::SeqCst);
         if fd < 0 {
+            // SAFETY: `_exit` is async-signal-safe and never returns; no allocation or
+            // locking on this path. Reached only when no fd was opened, so there's nothing
+            // to write.
             unsafe { libc::_exit(128 + sig) };
         }
 
-        // Seek to beginning and truncate
+        // Seek to beginning and truncate.
+        // SAFETY: `fd` was checked non-negative above and is the pre-opened crash-file fd.
+        // `lseek`/`ftruncate` are async-signal-safe; no allocation or locking on this path.
         unsafe {
             libc::lseek(fd, 0, libc::SEEK_SET);
             libc::ftruncate(fd, 0);
@@ -308,6 +320,9 @@ mod signal_handler {
 
         // Capture raw instruction pointer addresses
         let mut frames: [*mut libc::c_void; MAX_FRAMES] = [std::ptr::null_mut(); MAX_FRAMES];
+        // SAFETY: `frames` is a stack array of exactly `MAX_FRAMES` valid slots, and we pass
+        // that same count, so `backtrace` writes within bounds. `backtrace` is async-signal-safe
+        // on macOS (Linux glibc is safe in practice); no allocation or locking on this path.
         let frame_count = unsafe { backtrace(frames.as_mut_ptr(), MAX_FRAMES as libc::c_int) };
         let frame_count = if frame_count < 0 { 0 } else { frame_count as u32 };
 
@@ -331,6 +346,8 @@ mod signal_handler {
         write_bytes(fd, &version_buf);
 
         // Close and re-raise to get the default behavior (core dump, etc.)
+        // SAFETY: `fd` is the valid pre-opened crash-file fd (checked non-negative above);
+        // `close` and `raise` are async-signal-safe, with no allocation or locking on this path.
         unsafe {
             libc::close(fd);
             libc::raise(sig);
@@ -341,6 +358,9 @@ mod signal_handler {
     fn write_bytes(fd: RawFd, buf: &[u8]) {
         let mut written = 0;
         while written < buf.len() {
+            // SAFETY: `buf[written..]` is an in-bounds subslice (`written < buf.len()`), so the
+            // pointer and length (`buf.len() - written`) describe valid initialized bytes.
+            // `write` is async-signal-safe; no allocation or locking on this path.
             let n = unsafe { libc::write(fd, buf[written..].as_ptr().cast(), buf.len() - written) };
             if n <= 0 {
                 break;
@@ -533,6 +553,11 @@ fn current_thread_count() -> usize {
         unsafe extern "C" {
             fn mach_task_self() -> libc::mach_port_t;
         }
+        // SAFETY: `thread_list` and `thread_count` are live locals whose addresses are valid
+        // out-params for `task_threads`. On `KERN_SUCCESS` the kernel hands back an allocated
+        // array of `thread_count` ports in `thread_list`; we hand that exact array and its byte
+        // size (`thread_count * size_of::<mach_port_t>()`) back to `vm_deallocate`, freeing it
+        // exactly once. We deallocate only on `KERN_SUCCESS`, where the out-params are valid.
         unsafe {
             let mut thread_list: libc::mach_port_t = 0;
             let mut thread_count: u32 = 0;

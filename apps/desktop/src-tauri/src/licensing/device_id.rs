@@ -47,6 +47,12 @@ fn read_platform_uuid() -> Option<String> {
         fn IOObjectRelease(object: u32) -> i32;
     }
 
+    // SAFETY: `c"IOPlatformExpertDevice"` is a valid NUL-terminated C string. The matching dict
+    // from `IOServiceMatching` is consumed by `IOServiceGetMatchingService` (it takes ownership),
+    // so we must NOT release it ourselves. The returned `service` registry-entry handle is balanced
+    // by `IOObjectRelease`. `IORegistryEntryCreateCFProperty` returns the value under the Create
+    // rule, null-checked, then handed to `wrap_under_create_rule`, which takes that single ownership
+    // and releases it once on drop. `key` is a live CFString for the call.
     unsafe {
         let matching = IOServiceMatching(c"IOPlatformExpertDevice".as_ptr());
         if matching.is_null() {

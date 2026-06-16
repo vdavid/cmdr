@@ -174,6 +174,11 @@ fn install_did_become_active_observer() {
     let block = RcBlock::new(move |_n: NonNull<NSNotification>| {
         reprobe_all_async();
     });
+    // SAFETY: `NSApplicationDidBecomeActiveNotification` is a valid notification name and `block`
+    // is a live `RcBlock` with the expected `(NonNull<NSNotification>) -> ()` signature. The
+    // returned observer token is intentionally dropped: the observer is registered for the app's
+    // entire lifetime and never deregistered, so the block (and its captures) must stay alive that
+    // long, which holding no token achieves (the center retains it).
     unsafe {
         center.addObserverForName_object_queue_usingBlock(
             // NSApplication notification (posted on the app itself, not NSWorkspace).

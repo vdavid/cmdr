@@ -77,7 +77,7 @@ pub fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
         }
     });
 
-    // Safety: NSSystemColorsDidChangeNotification is a valid notification name constant.
+    // SAFETY: NSSystemColorsDidChangeNotification is a valid notification name constant.
     // The observer is retained by NSNotificationCenter for the lifetime of the app.
     // We intentionally never remove it because we want updates for the entire session.
     unsafe {

@@ -105,7 +105,7 @@ fn try_open_path(path: &Path) -> std::io::Result<()> {
 fn try_mmap_byte(path: &Path) -> std::io::Result<()> {
     let cpath =
         CString::new(path.as_os_str().as_bytes()).map_err(|e| std::io::Error::new(ErrorKind::InvalidInput, e))?;
-    // Safety: passing valid pointers, validating return values, calling
+    // SAFETY: passing valid pointers, validating return values, calling
     // the matching `munmap`/`close` on every path out.
     unsafe {
         let fd = libc::open(cpath.as_ptr(), libc::O_RDONLY);
@@ -405,7 +405,7 @@ mod tests {
         // Save + restore so we don't leak state into other tests in this process.
         let saved = std::env::var("CMDR_MOCK_FDA").ok();
 
-        // Safety: tests in this module touch the same var serially; no other thread reads
+        // SAFETY: tests in this module touch the same var serially; no other thread reads
         // it concurrently within this single test.
         unsafe {
             std::env::set_var("CMDR_MOCK_FDA", "granted");

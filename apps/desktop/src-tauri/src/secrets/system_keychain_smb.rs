@@ -108,6 +108,11 @@ pub fn read_password(candidates: &[String]) -> Option<SmbSavedCredentials> {
 /// Builds a mutable query dict for an SMB internet-password on `server`. Caller adds the
 /// return-mode + limit keys and owns releasing the returned dict.
 fn base_query(server: &str) -> CFMutableDictionaryRef {
+    // SAFETY: `CFDictionaryCreateMutable` with the null allocator and kCFType key/value callbacks
+    // returns an owning (+1) dictionary whose callbacks retain every key/value on `SetValue`. The
+    // `kSec*` constants are static CFType refs, and `server_cf` is a live CFString held across its
+    // `SetValue` call, so the dictionary's retain keeps the server value alive after it drops.
+    // Ownership of the +1 dictionary transfers to the caller, who must `CFRelease` it.
     unsafe {
         let dict = CFDictionaryCreateMutable(
             ptr::null(),
@@ -132,6 +137,11 @@ fn base_query(server: &str) -> CFMutableDictionaryRef {
 
 /// Attribute-only lookup of the account for an SMB item on `server`. No consent.
 fn account_for_server(server: &str) -> Option<String> {
+    // SAFETY: `base_query` returns a +1 dictionary; we add return-mode/limit keys (static CFType
+    // refs) and pass it to `SecItemCopyMatching`, then `CFRelease` the query dict on every exit
+    // path. `result` is a valid out-param; we deref it only when `status == 0 && !result.is_null()`.
+    // The CFArray and per-item CFDictionary/CFString are borrowed under the Get rule (no extra
+    // retain, so no extra release), and the +1 `result` array is released once via `CFRelease`.
     unsafe {
         let dict = base_query(server);
         CFDictionarySetValue(
@@ -174,6 +184,11 @@ fn account_for_server(server: &str) -> Option<String> {
 
 /// Consent-gated data read of the password for a specific `server` + `account`.
 fn password_for(server: &str, account: &str) -> Option<String> {
+    // SAFETY: `base_query` returns a +1 dictionary; `account_cf` is a live CFString held across its
+    // `SetValue`, and the query dict is `CFRelease`d on every exit path. `result` is a valid
+    // out-param, deref'd only when `status == 0 && !result.is_null()`. `SecItemCopyMatching` returns
+    // the CFData under the Create rule, so `wrap_under_create_rule` takes that single ownership and
+    // releases it once on drop.
     unsafe {
         let dict = base_query(server);
         let account_cf = CFString::new(account);

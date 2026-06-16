@@ -117,6 +117,10 @@ fn get_resident_memory() -> Option<u64> {
     let info_count = (size_of::<MachTaskBasicInfo>() / size_of::<libc::c_int>()) as u32;
 
     #[allow(deprecated, reason = "mach_task_self is deprecated in libc but works fine")]
+    // SAFETY: `info` is zeroed before use, and `count` is set to the struct's size measured in
+    // `c_int` (natural_t) words, the count layout `task_info` with `MACH_TASK_BASIC_INFO` expects;
+    // `MachTaskBasicInfo` is `#[repr(C)]` and matches the `mach_task_basic_info` layout, so the
+    // kernel writes only within `info`. We read `info.resident_size` only when `result == 0`.
     unsafe {
         let mut info: MachTaskBasicInfo = std::mem::zeroed();
         let mut count = info_count;

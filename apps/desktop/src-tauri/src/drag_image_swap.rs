@@ -106,6 +106,9 @@ pub unsafe fn on_drag_entered(drag_info: &AnyObject) {
     if !SELF_DRAG_ACTIVE.load(Ordering::Relaxed) {
         return;
     }
+    // SAFETY: `create_transparent_nsimage` takes no inputs and returns a freshly allocated
+    // NSImage or null. We null-check it, then pass `drag_info` (a valid NSDraggingInfo from the
+    // swizzle caller) and the image to `swap_drag_items_to_image`, satisfying its contract.
     let transparent = unsafe { create_transparent_nsimage() };
     if !transparent.is_null() {
         unsafe { swap_drag_items_to_image(drag_info, transparent) };
@@ -117,6 +120,9 @@ pub unsafe fn on_drag_entered(drag_info: &AnyObject) {
 pub unsafe fn on_drag_exited(drag_info: &AnyObject) {
     let rich_path = SELF_DRAG_RICH_PATH.lock().ok().and_then(|g| g.as_ref().cloned());
     if let Some(path) = rich_path {
+        // SAFETY: `load_nsimage_from_path` takes a `&str` and returns a freshly allocated NSImage
+        // or null. We null-check it, then pass `drag_info` (a valid NSDraggingInfo from the swizzle
+        // caller) and the image to `swap_drag_items_to_image`, satisfying its contract.
         let image = unsafe { load_nsimage_from_path(&path) };
         if !image.is_null() {
             unsafe { swap_drag_items_to_image(drag_info, image) };
@@ -181,6 +187,8 @@ unsafe fn swap_drag_items_to_image(drag_info: &AnyObject, image: *mut AnyObject)
         return;
     }
 
+    // SAFETY: `image` is a non-null NSImage (checked above) responding to `size`, and `drag_info`
+    // is a valid NSDraggingInfo (passed by the swizzle caller) responding to `draggingLocation`.
     let image_size: NSSize = unsafe { msg_send![image, size] };
     let location: NSPoint = unsafe { msg_send![drag_info, draggingLocation] };
 
@@ -198,6 +206,8 @@ unsafe fn swap_drag_items_to_image(drag_info: &AnyObject, image: *mut AnyObject)
     let Some(nsarray_cls) = AnyClass::get(c"NSArray") else {
         return;
     };
+    // SAFETY: `nsarray_cls` is the live `NSArray` class and `nsurl_cls` a live `NSURL` class, so
+    // `arrayWithObject:` returns a valid (autoreleased) array or null, which we check.
     let class_array: *const AnyObject =
         unsafe { msg_send![nsarray_cls, arrayWithObject: nsurl_cls as *const AnyClass] };
     if class_array.is_null() {
@@ -209,11 +219,18 @@ unsafe fn swap_drag_items_to_image(drag_info: &AnyObject, image: *mut AnyObject)
 
     let block = block2::RcBlock::new(
         move |item: NonNull<NSDraggingItem>, _idx: NSInteger, _stop: NonNull<Bool>| unsafe {
+            // SAFETY: AppKit invokes this block with a valid, live `NSDraggingItem` in `item` for
+            // the duration of the call; `frame` and `image` are valid for the enumeration.
             let _: () = msg_send![item.as_ptr(), setDraggingFrame: frame, contents: image];
         },
     );
 
     let opts = NSDraggingItemEnumerationOptions(0);
+    // SAFETY: `drag_info` is a valid NSDraggingInfo responding to
+    // `enumerateDraggingItemsWithOptions:forView:classes:searchOptions:usingBlock:`. `class_array`
+    // is the non-null NSArray built above, `empty_dict` a live NSDictionary, and `block` a live
+    // RcBlock with the expected `(NonNull<NSDraggingItem>, NSInteger, NonNull<Bool>)` signature; a
+    // null `forView` is accepted.
     unsafe {
         let _: () = msg_send![
             drag_info,

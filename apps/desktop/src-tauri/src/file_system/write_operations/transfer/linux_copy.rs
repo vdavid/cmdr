@@ -52,8 +52,11 @@ pub fn copy_single_file_linux(
     }
     .map_err(|e| map_io_error(e, source, destination))?;
 
-    // Pre-allocate space to avoid fragmentation
+    // Pre-allocate space to avoid fragmentation.
     if total_size > 0 {
+        // SAFETY: `dst_file` is a live, open `File` whose fd stays valid for this call (and the
+        // rest of the function), and offset 0 with length `total_size` is a valid range.
+        // `posix_fallocate` returns an errno without touching memory; we ignore it (best-effort).
         let _ = unsafe { libc::posix_fallocate(dst_file.as_raw_fd(), 0, total_size as libc::off_t) };
     }
 

@@ -234,6 +234,10 @@ pub fn mount_share_sync(
 
     // Create URL from string using CFURLCreateWithString
     let cf_url_string = CFString::new(&url_string);
+    // SAFETY: `cf_url_string` is a live CFString passed by its concrete ref; the null
+    // allocator and null base URL are accepted by `CFURLCreateWithString`. The call follows
+    // the Create rule (returns +1), so we null-check the result and hand the owning reference
+    // to `wrap_under_create_rule`, which takes that single ownership and releases it once on drop.
     let cf_url = unsafe {
         let url_ref =
             core_foundation::url::CFURLCreateWithString(ptr::null(), cf_url_string.as_concrete_TypeRef(), ptr::null());
@@ -264,6 +268,11 @@ pub fn mount_share_sync(
     let want_guest = cf_user.is_none() && cf_pass.is_none();
     let want_force_new_session = explicit_mount_path.is_some();
     let entries = open_option_entries(want_guest, want_force_new_session);
+    // SAFETY: `CFDictionaryCreateMutable` with the null allocator and the kCFType key/value
+    // callbacks returns an owning (+1) dictionary whose callbacks retain every key and value
+    // on `CFDictionarySetValue`. Each `cf_key`/`cf_value` CFString and `kCFBooleanTrue` is a
+    // live CFType for the duration of its `SetValue` call, so the dictionary's retain keeps
+    // them alive after the temporaries drop. The +1 dictionary is released below via `CFRelease`.
     let open_options = unsafe {
         let dict = core_foundation::dictionary::CFDictionaryCreateMutable(
             ptr::null(),
@@ -302,6 +311,10 @@ pub fn mount_share_sync(
     // With `ForceNewSession`, NetFS treats this as a separate server and picks
     // a disambiguated name (public-1, public-2, etc.) automatically.
     // With `Guest`, NetFS authenticates as guest without consulting Keychain.
+    // SAFETY: `cf_url` and `open_options` are live CF objects for the call. `cf_user`/`cf_pass`
+    // are passed as borrowed CFString refs or null (a guest mount), both accepted. `mountpoints`
+    // is a valid out-param; on success NetFS writes a +1 CFArray there, which `extract_mount_path`
+    // releases. The two null pointers (mount path, mount options) are accepted defaults.
     let result = unsafe {
         NetFSMountURLSync(
             cf_url.as_concrete_TypeRef() as *const c_void,
@@ -322,6 +335,8 @@ pub fn mount_share_sync(
 
     // Release open options dictionary if we created one
     if !open_options.is_null() {
+        // SAFETY: guarded non-null, `open_options` is the +1 dictionary created above and not
+        // yet released, so this balances its single Create-rule retain exactly once.
         unsafe { core_foundation::base::CFRelease(open_options) };
     }
 
@@ -391,6 +406,12 @@ fn extract_mount_path(mountpoints: *const c_void) -> Option<String> {
     if mountpoints.is_null() {
         return None;
     }
+    // SAFETY: `mountpoints` is the non-null +1 CFArray NetFS wrote (Create rule), valid for this
+    // call. `CFArrayGetCount`/`CFArrayGetValueAtIndex` borrow it without transferring ownership,
+    // and the element at index 0 is a CFString we wrap with the Get rule (no +1, so we don't
+    // release it). We then release the array itself once via `CFRelease`, balancing its Create-rule
+    // +1. Keeping the array's Create-rule release distinct from the element's Get-rule borrow is
+    // what makes the ownership sound.
     unsafe {
         let array = mountpoints as core_foundation::array::CFArrayRef;
         let result = if core_foundation::array::CFArrayGetCount(array) > 0 {

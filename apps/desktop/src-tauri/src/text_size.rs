@@ -110,7 +110,7 @@ pub fn observe_system_text_size_changes<R: Runtime>(app_handle: AppHandle<R>) {
         }
     });
 
-    // Safety: name is a valid NSString. The center retains the observer for the
+    // SAFETY: name is a valid NSString. The center retains the observer for the
     // app lifetime; we never deregister.
     unsafe {
         center.addObserverForName_object_queue_usingBlock(Some(&name), None, None, &block);

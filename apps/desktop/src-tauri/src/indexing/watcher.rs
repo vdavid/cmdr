@@ -483,7 +483,7 @@ fn parse_fsevent(event: &Event) -> FsChangeEvent {
 /// Returns `0` on non-macOS platforms (no event ID concept).
 #[cfg(target_os = "macos")]
 pub fn current_event_id() -> u64 {
-    // Safety: FSEventsGetCurrentEventId is a simple read of the global counter
+    // SAFETY: FSEventsGetCurrentEventId is a simple read of the global counter
     unsafe { cmdr_fsevent_stream::ffi::FSEventsGetCurrentEventId() }
 }
 

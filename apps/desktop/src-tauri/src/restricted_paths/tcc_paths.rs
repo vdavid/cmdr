@@ -126,10 +126,12 @@ fn fs_type_is_network(path: &Path) -> bool {
         return false;
     };
     let mut buf: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
+    // SAFETY: `cpath` is a valid null-terminated C string, and `buf` is a writable `statfs` slot.
     let rc = unsafe { libc::statfs(cpath.as_ptr(), buf.as_mut_ptr()) };
     if rc != 0 {
         return false;
     }
+    // SAFETY: statfs succeeded (`rc == 0`), so `buf` is initialized.
     let s = unsafe { buf.assume_init() };
     let name_bytes: Vec<u8> = s
         .f_fstypename

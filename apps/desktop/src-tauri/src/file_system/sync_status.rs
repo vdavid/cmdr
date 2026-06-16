@@ -96,6 +96,9 @@ fn get_ubiquitous_bool(path: &Path, key: &str) -> Option<bool> {
 
         let key = NSString::from_str(key);
         let mut value: Option<Retained<objc2::runtime::AnyObject>> = None;
+        // SAFETY: `url` is a valid NSURL, `key` a valid NSString, and `&mut value` a valid
+        // `&mut Option<Retained<_>>` out-param. On success objc2 stores an already-retained
+        // object there per its out-param convention, so the `Retained` owns one reference.
         let success = unsafe { url.getResourceValue_forKey_error(&mut value, &key) };
 
         if success.is_ok() {

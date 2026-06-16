@@ -50,7 +50,7 @@ fn install_observers() {
     let center = workspace.notificationCenter();
 
     let mount_block = RcBlock::new(|n: NonNull<NSNotification>| {
-        // Safety: NSNotificationCenter delivers a valid notification pointer.
+        // SAFETY: NSNotificationCenter delivers a valid notification pointer.
         let notification = unsafe { n.as_ref() };
         if let Some(path) = volume_path_from_notification(notification) {
             handle_volume_mounted(&path);
@@ -60,6 +60,7 @@ fn install_observers() {
     });
 
     let unmount_block = RcBlock::new(|n: NonNull<NSNotification>| {
+        // SAFETY: NSNotificationCenter delivers a valid notification pointer.
         let notification = unsafe { n.as_ref() };
         if let Some(path) = volume_path_from_notification(notification) {
             handle_volume_unmounted(&path);
@@ -68,7 +69,7 @@ fn install_observers() {
         }
     });
 
-    // Safety: the notification name constants are valid AppKit globals, and
+    // SAFETY: the notification name constants are valid AppKit globals, and
     // `addObserverForName:object:queue:usingBlock:` retains the block for the
     // lifetime of the observer registration. We never remove the observer
     // (mirrors the pattern in `file_system/open_with.rs`), so the block lives
@@ -101,14 +102,14 @@ fn install_observers() {
 pub(crate) fn volume_path_from_notification(notification: &NSNotification) -> Option<String> {
     let user_info = notification.userInfo()?;
 
-    // The notification's userInfo is `NSDictionary<NSString *, id>` per Apple
-    // docs. We narrow the value type to `NSURL` so `objectForKey` returns the
-    // URL directly. Every observed mount/unmount notification carries an
-    // `NSURL` under this key.
+    // SAFETY: the notification's `userInfo` is `NSDictionary<NSString *, id>` per Apple docs, and
+    // every observed mount/unmount notification carries an `NSURL` under `NSWorkspaceVolumeURLKey`.
+    // We narrow the value type to `NSURL` so `objectForKey` returns the URL directly; the cast only
+    // refines the generic value type of the same live dictionary, not its identity.
     let typed: Retained<NSDictionary<NSString, NSURL>> = unsafe { Retained::cast_unchecked(user_info) };
 
-    // `NSWorkspaceVolumeURLKey` is a `&'static NSString` constant from AppKit
-    // (`extern "C"` static, accessing it requires `unsafe`).
+    // SAFETY: `NSWorkspaceVolumeURLKey` is a `&'static NSString` constant from AppKit (an
+    // `extern "C"` static, so reading it requires `unsafe`).
     let key: &NSString = unsafe { NSWorkspaceVolumeURLKey };
     let url = typed.objectForKey(key)?;
 

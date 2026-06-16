@@ -161,8 +161,11 @@ extern "C" fn copy_progress_callback(
         // File copy started
         (COPYFILE_RECURSE_FILE, COPYFILE_START) | (COPYFILE_COPY_DATA, COPYFILE_START) => {
             if let Some(ref callback) = context.on_file_start {
-                // Get source filename from state
+                // Get source filename from state.
                 let mut src_ptr: *const i8 = std::ptr::null();
+                // SAFETY: `state` is the live handle copyfile passes to this callback. For the
+                // `COPYFILE_STATE_SRC_FILENAME` flag, copyfile expects a `*mut *const char` out
+                // slot, which `&mut src_ptr` provides; copyfile writes a pointer it owns into it.
                 unsafe {
                     copyfile_state_get(
                         state,
@@ -171,6 +174,8 @@ extern "C" fn copy_progress_callback(
                     );
                 }
                 if !src_ptr.is_null() {
+                    // SAFETY: `src_ptr` is non-null (checked) and points at a NUL-terminated C
+                    // string owned by the copyfile state, valid for the duration of this callback.
                     let src_cstr = unsafe { std::ffi::CStr::from_ptr(src_ptr) };
                     if let Ok(src_str) = src_cstr.to_str() {
                         callback(src_str);
@@ -183,6 +188,9 @@ extern "C" fn copy_progress_callback(
         (COPYFILE_COPY_DATA, COPYFILE_PROGRESS) => {
             if let Some(ref callback) = context.on_progress {
                 let mut bytes_copied: i64 = 0;
+                // SAFETY: `state` is the live handle copyfile passes to this callback. The
+                // `COPYFILE_STATE_COPIED` flag writes an `off_t` (i64) into the slot `&mut
+                // bytes_copied` provides, which is correctly sized for that field.
                 unsafe {
                     copyfile_state_get(state, COPYFILE_STATE_COPIED, &mut bytes_copied as *mut _ as *mut c_void);
                 }
@@ -196,6 +204,10 @@ extern "C" fn copy_progress_callback(
                 // Get destination filename and bytes copied
                 let mut dst_ptr: *const i8 = std::ptr::null();
                 let mut bytes_copied: i64 = 0;
+                // SAFETY: `state` is the live handle copyfile passes to this callback.
+                // `COPYFILE_STATE_DST_FILENAME` writes a `*const char` into `&mut dst_ptr`, and
+                // `COPYFILE_STATE_COPIED` writes an `off_t` (i64) into `&mut bytes_copied`; each
+                // out slot matches the flag's expected type.
                 unsafe {
                     copyfile_state_get(
                         state,
@@ -205,6 +217,8 @@ extern "C" fn copy_progress_callback(
                     copyfile_state_get(state, COPYFILE_STATE_COPIED, &mut bytes_copied as *mut _ as *mut c_void);
                 }
                 if !dst_ptr.is_null() {
+                    // SAFETY: `dst_ptr` is non-null (checked) and points at a NUL-terminated C
+                    // string owned by the copyfile state, valid for the duration of this callback.
                     let dst_cstr = unsafe { std::ffi::CStr::from_ptr(dst_ptr) };
                     if let Ok(dst_str) = dst_cstr.to_str() {
                         callback(dst_str, bytes_copied as u64);
@@ -302,7 +316,9 @@ pub fn copy_file_native(
         }
     }
 
-    // Set up state for progress callbacks if context provided
+    // Set up state for progress callbacks if context provided.
+    // SAFETY: `copyfile_state_alloc` takes no inputs and returns a fresh state handle or null.
+    // We null-check it below, and free it exactly once via `copyfile_state_free` before returning.
     let state = unsafe { copyfile_state_alloc() };
     if state.is_null() {
         return Err(WriteOperationError::IoError {
@@ -313,6 +329,11 @@ pub fn copy_file_native(
 
     // Set up progress callback if context provided
     if let Some(ctx) = context {
+        // SAFETY: `state` is the live, non-null handle allocated above. `callback_ptr` is
+        // `copy_progress_callback`, a valid `extern "C"` function whose signature matches the
+        // `CopyfileCallback` ABI copyfile invokes. `ctx_ptr` borrows `ctx`, which outlives the
+        // `copyfile` call below (it returns before this function does), so the callback's
+        // back-cast to `&CopyProgressContext` stays valid for every callback.
         unsafe {
             // Set callback function
             let callback_ptr = copy_progress_callback as CopyfileCallback as *const c_void;
@@ -331,10 +352,14 @@ pub fn copy_file_native(
         destination.display(),
         flags
     );
+    // SAFETY: `src_cstring`/`dst_cstring` are live, NUL-terminated C strings held across the call;
+    // `state` is the live, non-null handle (callback + ctx set above, ctx outlives this call); and
+    // `flags` is a valid copyfile flag set.
     let result = unsafe { copyfile(src_cstring.as_ptr(), dst_cstring.as_ptr(), state, flags) };
     log::debug!("copyfile: completed with result={}", result);
 
-    // Free state
+    // Free state.
+    // SAFETY: `state` is the live handle from `copyfile_state_alloc`, not yet freed, freed once here.
     unsafe {
         copyfile_state_free(state);
     }
