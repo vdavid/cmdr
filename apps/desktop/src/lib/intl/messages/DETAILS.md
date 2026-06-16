@@ -13,9 +13,12 @@ translate-a-locale job globs ~12 predictable files. Key prefix ↔ filename is 1
 window just by getting its own area key; shared strings live in `common.*`, and the moment one site needs different copy
 it gets its own area key (never a positional "window" argument).
 
-The catalog areas are a closed set, enforced by `desktop-message-key-naming`'s `messageKeyKnownAreas`. The planned full
-set (Decision 4): `common`, `transfer`, `settings`, `errors`, `search`, `viewer`, `menu`, `commands`, `onboarding`.
-Adding one means adding both the `<area>.json` file and the area to that check.
+The catalog areas are a closed set, enforced by `desktop-message-key-naming`'s `messageKeyKnownAreas`, and they mirror
+the `lib/` feature directories (lowerCamel): `common`, `transfer`, `settings`, `errors`, `fileExplorer`,
+`fileOperations`, `queryUi`, `search`, `viewer`, `onboarding`, `licensing`, `downloads`, `ai`, `goToPath`, `mtp`, `ui`,
+`updates`, `whatsNew`, `commandPalette`, `commands`, `shortcuts`, `crashReporter`, `errorReporter`, `feedback`, `menu`,
+`indexing`, `lowDiskSpace`, `notifications`, `main`. Adding one means adding both the `<area>.json` file and the area to
+that check.
 
 ## Message value format
 
@@ -48,16 +51,37 @@ codegen ever sees it:
 {
   "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to trash",
   "@transfer.trash": {
-    "description": "Toast after moving items to the system trash. {countText} preformatted count; {count} raw integer for plural selection.",
+    "description": "Toast confirming items were moved to the macOS Trash. Shown briefly after a delete-to-trash (F8).",
+    "placeholders": {
+      "countText": "how many files, already formatted for display (e.g. 1,234)",
+      "count": "the same number of files (drives the singular/plural form of the noun)"
+    },
     "screenshot": "transfer-complete-toast.png",
   },
 }
 ```
 
-- `description`: a translator-facing note — what the string is, what each placeholder means, any agreement/plural
-  nuance.
+- `description`: a free-form, translator-facing note. Optimize it to set a translator (human or agent) up to do
+  EXCELLENT work without seeing the running app. Cover what's string-SPECIFIC: (1) where and when it appears (the
+  surface and the trigger — "status-bar toast after a copy", "label in the Settings > Appearance section", "button in
+  the delete-confirm dialog"); (2) the tone or intent if it's not obvious (reassuring, a warning, a terse control
+  label); (3) any constraint that shapes the translation (a tight button/column that can't grow much, a term that must
+  match a sibling string, a literal token that must NOT be translated — brand names like "Finder"/"GitHub", format
+  tokens like `YYYY`/`MM`, shortcut glyphs). Keep it natural language, not a rigid schema. Do NOT explain the ICU
+  plumbing (the translator already knows to preserve placeholder/`plural`/`select` syntax and apply their language's
+  plural categories — that's a one-time instruction in the translator-agent prompt, not per-string noise).
+- `placeholders`: an ARB-style map giving each placeholder a PLAIN-LANGUAGE meaning plus an example value, in the
+  translator's terms ("number of files", "the folder name") — never the ICU mechanics ("raw integer for plural
+  selection"). Include it whenever a message has placeholders; omit it for static strings. This is what lets a
+  translator reorder placeholders correctly for their grammar.
 - `screenshot`: a filename in `screenshots/` showing the string in context. One screenshot may serve many keys; many
-  keys can name the same file. Screenshots are optional during migration.
+  keys can name the same file. Screenshots are optional during migration, and a screenshot REPLACES the need to describe
+  layout in prose.
+
+The guiding test for every `@key`: "Could a competent translator who has never run Cmdr render this perfectly into any
+language, given this note plus a per-language style guide plus (optionally) the screenshot?" If not, the note is missing
+context, a placeholder meaning, or a constraint. Tone/voice/formality are NOT per-string — they live in the per-language
+style guide, so don't repeat them on every key.
 
 Keep the `@key` twin's name in lockstep with its message key on a rename. `desktop-message-key-naming` validates the
 twin too (it strips the leading `@` and checks the underlying key), so a metadata entry for a misnamed key also fails.
