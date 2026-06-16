@@ -94,11 +94,10 @@ conversational and actionable and never use the words "error" or "failed". The w
 ## Checking
 
 Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.); it's cache-aware. Cadence: `--fast`
-while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping. Pass **`-q`** by default in agent
-runs: it collapses passing checks to a one-line count while still streaming warns, failures, skips, and file-changing
-passes in full. Scope by name (`pnpm check clippy`), tech (`rust` / `svelte` / `go`), or app (`desktop` / `website` /
-...). Full docs: [`scripts/check/CLAUDE.md`](scripts/check/CLAUDE.md). **Finish every unit of work by running the right
-checks.**
+while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping. Agents: pass **`-q`** (collapses
+passes to a one-line count; still streams warns/failures). Scope by name (`pnpm check clippy`), tech
+(`rust` / `svelte` / `go`), or app (`desktop` / `website` / ...). Full docs:
+[`scripts/check/CLAUDE.md`](scripts/check/CLAUDE.md). **Finish every unit of work by running the right checks.**
 
 ## Testing
 

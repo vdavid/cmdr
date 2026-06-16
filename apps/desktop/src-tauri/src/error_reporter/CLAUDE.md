@@ -44,4 +44,4 @@ Builds a privacy-redacted zip bundle of recent log files plus a JSON manifest, t
 - **The compressed-size counter is a lower bound** (the deflater buffers ~64 KB unflushed). Budget conservatively; don't
   read the buffer's `len()` via `ZipWriter::get_mut()` (unsafe, desyncs seek state).
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -49,4 +49,4 @@ Frontend counterpart: [`apps/desktop/src/lib/ai/CLAUDE.md`](../../../src/lib/ai/
 `AVAILABLE_MODELS` in `mod.rs` (with `kv_bytes_per_token` and `base_overhead_bytes`). 4. Update `DEFAULT_MODEL_ID` if it
 should be the default.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

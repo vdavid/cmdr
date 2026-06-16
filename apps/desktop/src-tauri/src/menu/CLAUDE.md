@@ -55,4 +55,4 @@ labels with user-customized shortcuts, and enables/disables items based on windo
   suppression (⌘G dialog-open is idempotency-guarded, ⌘J re-reveal is idempotent). Expect two log lines per ⌘J press.
 - **`menu_id_to_command` and `command_id_to_menu_id` are exhaustive match statements kept in sync manually.**
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

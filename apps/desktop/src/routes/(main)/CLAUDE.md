@@ -60,4 +60,4 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
   - **`view.showHidden` is local-first**: ❌ don't route the `explorerRef.toggleHiddenFiles()` toggle through Rust; the
     extra hop flaked the E2E.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

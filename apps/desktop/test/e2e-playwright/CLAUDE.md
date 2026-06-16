@@ -50,4 +50,4 @@ run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ri
   instance redirects to isolated data. A persisted-UI-state spec passing in CI but failing locally usually means a stale
   value in your real store.
 
-Read [DETAILS.md](DETAILS.md) in whole before structural changes here.
+Read [DETAILS.md](DETAILS.md) before any non-trivial work here: editing, planning, reorganizing, or advising.

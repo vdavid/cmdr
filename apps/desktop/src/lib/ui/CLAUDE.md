@@ -1,8 +1,8 @@
 # UI primitives
 
 Reusable components used across the desktop app. Almost every frontend session touches here, so only silent-breakage
-rules live in this file; catalogs, prop tables, and decisions sit in [DETAILS.md](DETAILS.md) (read before structural
-changes).
+rules live in this file; catalogs, prop tables, and decisions sit in [DETAILS.md](DETAILS.md). Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.
 
 ## Module map
 

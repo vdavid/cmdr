@@ -54,4 +54,4 @@ Pick the right category file (or create one and register it in `mod.rs::execute_
 and round-trips, follow the must-knows above. A pane-state mutator prefers `AckSignal::GenerationAdvanced` routed
 through `PaneStateStore` (or `update_pane_tabs`).
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

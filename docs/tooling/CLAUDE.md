@@ -6,4 +6,4 @@ base URLs). Generic service access docs are maintained separately and are not in
 When writing new tooling docs here, document only what's specific to Cmdr: zone IDs, project IDs, container names,
 deploy commands, gotchas. Don't repeat generic API usage patterns.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

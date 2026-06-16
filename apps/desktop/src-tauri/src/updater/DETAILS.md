@@ -1,6 +1,6 @@
 # Updater module — details
 
-Read before structural changes. `CLAUDE.md` holds the must-knows that prevent silent breakage; this is the depth.
+Read this before any non-trivial work here: editing, planning, reorganizing, or advising. `CLAUDE.md` holds the must-knows that prevent silent breakage; this is the depth.
 
 ## Key decisions
 

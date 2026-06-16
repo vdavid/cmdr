@@ -43,4 +43,4 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
   so a bare-key Tier 1 binding (Tab → switch pane) doesn't fire mid-typing. No chorded shortcuts; modifier-only combos
   are rejected.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

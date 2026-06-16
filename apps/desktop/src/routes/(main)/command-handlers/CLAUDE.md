@@ -35,4 +35,4 @@ Add the handler to the right family module. A missing one is a COMPILE error (th
 `Exclude<CommandId, DispatchExemptId>`). An intentionally handlerless command goes in `DISPATCH_EXEMPT_IDS` with a
 documented reason. `command-handler-record.test.ts` set-equality fails if the id is in neither.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

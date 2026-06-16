@@ -1,6 +1,6 @@
 # Updates module — details
 
-Read this before structural changes. `CLAUDE.md` is the always-loaded must-knows; this is the depth.
+Read this before any non-trivial work here: editing, planning, reorganizing, or advising. `CLAUDE.md` is the always-loaded must-knows; this is the depth.
 
 ## Lifecycle
 

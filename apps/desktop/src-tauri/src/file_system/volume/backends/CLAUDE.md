@@ -42,4 +42,4 @@ The trait shape, capability matrix, streaming patterns, and "Building a new volu
 - **SMB auto-upgrade is gated on `network.directSmbConnection`** and is a no-op when no SMB mounts are present (so it
   fires no macOS Local Network prompt). See [DETAILS.md](DETAILS.md) § "SMB auto-upgrade lifecycle".
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

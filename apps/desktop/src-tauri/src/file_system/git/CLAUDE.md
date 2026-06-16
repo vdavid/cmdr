@@ -45,4 +45,4 @@ for the breadcrumb chip, status column, and the live `RepoInfo` store.
 - **Ref names render flat**: `feature/foo` is one entry, not nested. The classifier greedy-matches known refs
   longest-first. See [DETAILS.md](DETAILS.md) § "Ref-name flat rendering".
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

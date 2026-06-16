@@ -11,4 +11,4 @@ Before touching `cmdr.rb`, read [`docs/guides/homebrew-cask.md`](../../../../doc
 the non-obvious constraints (why the `url` must not be a `github.com` one, how the tap bump works, how to test in a
 throwaway tap) and the resubmission process.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

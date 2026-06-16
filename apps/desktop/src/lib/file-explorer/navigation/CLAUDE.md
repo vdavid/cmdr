@@ -54,4 +54,4 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   persist the FULL order via `reorderFavorites(bareIds)` in the background. Don't reintroduce HTML5 drag; don't await
   the IPC before updating the UI. Full mechanism in [DETAILS.md](DETAILS.md) § Editable favorites.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

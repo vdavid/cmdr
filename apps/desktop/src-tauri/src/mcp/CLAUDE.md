@@ -49,4 +49,4 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
 - **JSON-RPC error codes are spec-defined** (`INVALID_PARAMS = -32602`, etc.). Don't change them.
 - **MCP state stores are runtime-only, no `_schemaVersion`**; on a format change, just restart.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

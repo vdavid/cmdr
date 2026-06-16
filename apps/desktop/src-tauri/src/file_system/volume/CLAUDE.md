@@ -48,4 +48,4 @@ volume root**.
   `get_metadata`, `open_read_stream`); mutation methods reject virtual paths via `git::is_virtual`. The hook order
   (`resolve()` then `try_route_*`) is fixed. See [DETAILS.md](DETAILS.md) § "Git delegation hooks".
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

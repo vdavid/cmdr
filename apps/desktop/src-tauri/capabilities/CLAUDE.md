@@ -59,4 +59,4 @@ and the gotcha that window-creation perms are checked against the *calling* wind
   feature is enabled, so listing it in `default.json` breaks normal builds (Tauri rejects unknown permissions).
   `build.rs` generates a separate `playwright.json` only when the feature is active and removes it otherwise.
 
-See the `tauri-apis` rule in `.claude/rules/` for the higher-level callout. Full details: [DETAILS.md](DETAILS.md).
+See the `tauri-apis` rule in `.claude/rules/` for the higher-level callout. Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

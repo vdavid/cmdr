@@ -21,4 +21,4 @@ shortcut, virtual-volume URL).
   `''`. The pane-level `canonicalPath` `$derived` returns `null` while it's empty, so reactive callers must guard on
   `canonicalPath !== null` rather than catch the throw.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

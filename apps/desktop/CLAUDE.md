@@ -32,4 +32,4 @@ directory's colocated `CLAUDE.md`.
 - `scripts/`: dev/build scripts, mainly `tauri-wrapper.js`; see its [CLAUDE.md](scripts/CLAUDE.md).
 - `test/`: Vitest unit tests, plus `test/e2e-playwright/`, `test/e2e-linux/`, and `test/smb-servers/` fixtures.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

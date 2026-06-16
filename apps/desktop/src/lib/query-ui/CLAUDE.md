@@ -55,4 +55,4 @@ Consumer-specific decisions: [`lib/search/CLAUDE.md`](../search/CLAUDE.md),
   run's filter leaks). `applyTypeFromAi` writes only on non-null `isDirectory`, so AI silence keeps the user's choice;
   callers must NOT pre-reset `typeFilter`. Contract in `apply-ai-filters.ts`.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

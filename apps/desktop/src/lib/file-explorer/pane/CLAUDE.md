@@ -55,4 +55,4 @@ tinting, and navigation primitives. Up: [`../CLAUDE.md`](../CLAUDE.md). Full fil
 - **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Don't drop the reactive
   `mediaTick`, or dark-mode / contrast swaps won't repaint the tint.
 
-Read [DETAILS.md](DETAILS.md) before structural changes here.
+Read [DETAILS.md](DETAILS.md) before any non-trivial work here: editing, planning, reorganizing, or advising.

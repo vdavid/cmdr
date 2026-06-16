@@ -54,4 +54,4 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
   flag) from async JS after `startDrag`; only `endSelfDragSession()` on drop/leave clears it. Temp PNGs survive the
   whole session (`pendingImageCleanup`).
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

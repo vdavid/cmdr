@@ -52,4 +52,4 @@ size aggregates so listings can show directory sizes.
 - **FSEvents `item_removed` must be stat-verified before deleting** (atomic swaps and coalesced events deliver false
   removals); upsert instead when the path exists.
 
-Flows, decisions, and gotchas: [DETAILS.md](DETAILS.md). Read it whole before structural changes.
+Flows, decisions, and gotchas: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

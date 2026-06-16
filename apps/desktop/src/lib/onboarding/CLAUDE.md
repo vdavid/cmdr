@@ -47,4 +47,4 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
 - **`CMDR_FORCE_ONBOARDING=1`** forces the wizard regardless of persisted state;
   `CMDR_MOCK_FDA=granted|denied|notgranted` overrides the TCC probe for testing all banner branches.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

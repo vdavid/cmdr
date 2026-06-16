@@ -48,4 +48,4 @@ for the new reason (in `listing-error-messages.ts`, or `git-error-messages.ts` f
 param with `esc(...)`. Add the reason to the parity + style test matrices. Full recipe + the convergence note:
 [DETAILS.md](DETAILS.md).
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

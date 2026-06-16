@@ -22,4 +22,4 @@ Backend: `create_directory` lives directly under
   `file-operations.spec.ts › Create folder round-trip › cursor lands on the newly created folder`.
 - **`moveCursorToNewFolder` is shared with `mkfile`**: cursor positioning is entry-type-agnostic, so don't fork it.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -55,4 +55,4 @@ These cut across modules; all existing commands follow them, so apply them to ne
 - **Never use rayon for calls into macOS frameworks** (NSURL/FileProvider/NSWorkspace): the synchronous XPC round-trips
   can blow rayon's 2 MB worker stack. Use dedicated 8 MB-stack OS threads. See `file_system/CLAUDE.md` for the pattern.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -42,4 +42,4 @@ translation) lives in [`src-tauri/src/selection/`](../../../src-tauri/src/select
   `applyIndices(hasParent=true)` already skips index 0, the dialog's preview has to match). The wrapper's
   `dropParentIndex` helper handles this. Pinned by the "drops the synthetic `..` parent" test.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

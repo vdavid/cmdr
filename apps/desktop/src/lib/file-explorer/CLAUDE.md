@@ -40,4 +40,4 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
   `$lib/errors/` (and keep the parity test green); to add a reason/provider, change both sides. See
   [`$lib/errors/CLAUDE.md`](../errors/CLAUDE.md).
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -48,4 +48,4 @@ second. Backend: `src-tauri/src/search/` + `src-tauri/src/commands/search.rs`.
 - **AI mode never auto-applies** (cost); only Enter / `⌘Enter` / the ⏎ button / chip clicks fire it. Don't add a
   per-consumer catch that swallows AI errors: QueryDialog surfaces them once for both consumers.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

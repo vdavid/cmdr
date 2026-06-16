@@ -28,4 +28,4 @@ These rules apply to all frontend code under here.
 - When adding code that loads remote content (`fetch`, `iframe`), ask whether to disable it in dev mode:
   `withGlobalTauri: true` is on in dev, which makes remote content a security risk.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

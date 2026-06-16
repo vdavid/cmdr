@@ -28,4 +28,4 @@ Per-stub behavior is cataloged in [DETAILS.md](DETAILS.md).
 - **❌ Don't add logic here.** Stubs stay trivial; real functionality belongs in the platform-specific subsystem
   modules. `libc` (`volumes.rs` `statvfs`) and `dirs` (`volumes.rs` `home_dir`) are the only non-Tauri deps.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

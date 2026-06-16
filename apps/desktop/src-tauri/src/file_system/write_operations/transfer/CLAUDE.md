@@ -59,4 +59,4 @@ frontend in [`src/lib/file-operations/transfer/CLAUDE.md`](../../../../../src/li
 - **`drive_transfer_serial_async` bounds closures as explicit `Pin<Box<dyn Future + Send>>`, not `AsyncFnMut`** (the
   latter isn't provably `Send` across the `tokio::spawn` boundary).
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -51,4 +51,4 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 - **Cancellation is per-read / per-search, never session-wide**: `read_range` and `search` check the cancel flag inside
   the per-line loop (not just between chunks), so concurrent reads don't race a shared flag.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

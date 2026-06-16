@@ -1,6 +1,6 @@
 # Analytics dashboard — details
 
-Read this before structural changes. `CLAUDE.md` is the always-loaded summary; this is the depth.
+Read this before any non-trivial work here: editing, planning, reorganizing, or advising. `CLAUDE.md` is the always-loaded summary; this is the depth.
 
 ## Multi-page structure
 

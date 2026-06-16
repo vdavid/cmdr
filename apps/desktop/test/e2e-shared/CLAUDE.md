@@ -65,4 +65,4 @@ left/                         right/  (empty)
 - [`apps/desktop/src-tauri/src/mcp/port_file.rs`](../../src-tauri/src/mcp/port_file.rs): the Rust side of the port-file
   protocol.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

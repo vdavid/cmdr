@@ -41,4 +41,4 @@ Recipe (Rust side; FE side is in [`src/lib/errors/CLAUDE.md`](../../../../../src
 choosing the `category`/`retry_hint`/`action_kind`, and add a typed-mapping test in `mod.rs`. Full recipe + the
 provider-detection strategy table: [DETAILS.md](DETAILS.md).
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

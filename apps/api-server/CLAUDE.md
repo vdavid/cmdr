@@ -52,4 +52,4 @@ env-var/binding tables, data flows, runbooks, and decisions: [DETAILS.md](DETAIL
   install is retained if it has any heartbeat in `[X+7d, X+8d)`; cohorts younger than 8 days report `null`, not 0.
   (DETAILS § funnel.)
 
-Read [DETAILS.md](DETAILS.md) before structural changes here.
+Read [DETAILS.md](DETAILS.md) before any non-trivial work here: editing, planning, reorganizing, or advising.

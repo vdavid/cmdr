@@ -56,4 +56,4 @@ Each line is a break-if-ignored invariant; the named [DETAILS.md](DETAILS.md) se
   else rough-scroll + a converge loop).** Don't collapse them into an unconditional rough-scroll: that flings an
   on-screen match to its line top on every Enter. (§ "Scroll-to-match")
 
-Read [DETAILS.md](DETAILS.md) in whole before structural changes here.
+Read [DETAILS.md](DETAILS.md) before any non-trivial work here: editing, planning, reorganizing, or advising.

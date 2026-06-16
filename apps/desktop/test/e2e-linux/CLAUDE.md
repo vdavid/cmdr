@@ -56,4 +56,4 @@ pnpm test:e2e:linux:vnc                # VNC mode with hot reload (pnpm dev)
 Base-image tar persistence and build-volume bind-mounts: DETAILS.md § Build caching. David's UTM Ubuntu VM for fast
 Linux-only iteration (setup, SSH loop, disk cleanup, the half-configured-D-Bus gotcha): DETAILS.md § Ubuntu test VM.
 
-Full details: [DETAILS.md](DETAILS.md).
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

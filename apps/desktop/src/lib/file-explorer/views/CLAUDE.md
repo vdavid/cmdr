@@ -47,4 +47,4 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
   clickable, each showing its caret when active. The split lives inside the `1fr` Name track, so the measurer needs no
   Ext width for it. Sort-by-extension also stays reachable via the `sort.byExtension` command/shortcut.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

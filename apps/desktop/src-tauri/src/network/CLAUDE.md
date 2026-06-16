@@ -51,4 +51,4 @@ Auth-flow background: `docs/notes/smb-auth-flow-redesign.md`.
   re-acquire.
 - **mDNS service type needs the trailing dot**: `mdns-sd` needs `"_smb._tcp.local."` or `browse()` fails silently.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in full before structural changes here.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
