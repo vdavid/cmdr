@@ -11,6 +11,7 @@
 
 <script lang="ts">
     import { onMount, tick } from 'svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** Viewport-relative coordinates of the right-click. */
@@ -90,7 +91,7 @@
 <div
     bind:this={menuRef}
     role="menu"
-    aria-label="Viewer actions"
+    aria-label={tString('viewer.contextMenu.ariaLabel')}
     class="viewer-context-menu"
     style="left: {x}px; top: {y}px"
 >
@@ -102,7 +103,8 @@
         disabled={!hasSelection}
         onclick={chooseCopy}
     >
-        Copy
+        {tString('viewer.contextMenu.copy')}
+        <!-- eslint-disable-next-line cmdr/no-raw-user-facing-string -- keyboard-shortcut glyph, not translatable copy -->
         <span class="shortcut">⌘C</span>
     </button>
     <button
@@ -112,7 +114,8 @@
         class="menu-item"
         onclick={chooseSelectAll}
     >
-        Select all
+        {tString('viewer.contextMenu.selectAll')}
+        <!-- eslint-disable-next-line cmdr/no-raw-user-facing-string -- keyboard-shortcut glyph, not translatable copy -->
         <span class="shortcut">⌘A</span>
     </button>
 </div>

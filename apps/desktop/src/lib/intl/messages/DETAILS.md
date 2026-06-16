@@ -54,7 +54,7 @@ codegen ever sees it:
     "description": "Toast confirming items were moved to the macOS Trash. Shown briefly after a delete-to-trash (F8).",
     "placeholders": {
       "countText": "how many files, already formatted for display (e.g. 1,234)",
-      "count": "the same number of files (drives the singular/plural form of the noun)"
+      "count": "the same number of files (drives the singular/plural form of the noun)",
     },
     "screenshot": "transfer-complete-toast.png",
   },

@@ -11,6 +11,8 @@
     import FilterPopover from '$lib/ui/FilterPopover.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
     import './filter-popover.css'
 
     interface Props {
@@ -58,31 +60,43 @@
     }: Props = $props()
 </script>
 
+<!--
+  One code-styled span per `<tag>` in the scope-hint message. Each renders the
+  fixed literal character (''!'', ''*'', ''?'') in a code style, not the tag''s inner
+  content; the characters also live in the message so translators see them in
+  context. `children` is intentionally ignored.
+-->
+{#snippet bangCode()}<code>!</code>{/snippet}
+{#snippet starCode()}<code>*</code>{/snippet}
+{#snippet questionCode()}<code>?</code>{/snippet}
+
 <!-- Scope ("Search in") popover -->
 <FilterPopover
     {anchor}
     {open}
     {onClose}
-    label="Search in"
+    label={tString('queryUi.scope.popover.label')}
     labelFor="popover-scope"
-    ariaLabel="Search in folders"
+    ariaLabel={tString('queryUi.scope.popover.aria')}
     sectionClass="scope-popover"
 >
         <textarea
             id="popover-scope"
             class="popover-textarea"
-            placeholder="All folders"
+            placeholder={tString('queryUi.scope.placeholder')}
             value={scope}
             oninput={onInput(onSetScope)}
-            aria-label="Scope folders"
+            aria-label={tString('queryUi.scope.textareaAria')}
             spellcheck="false"
             autocomplete="off"
             autocapitalize="off"
             rows="3"
         ></textarea>
         <div class="scope-hint">
-            Comma-separated paths. Prefix with <code>!</code> to exclude. Wildcards
-            <code>*</code> and <code>?</code> work.
+            <Trans
+                key="queryUi.scope.hint"
+                snippets={{ bang: bangCode, star: starCode, question: questionCode }}
+            />
         </div>
         <div class="popover-row scope-toggles">
             <label class="popover-checkbox">
@@ -92,13 +106,13 @@
                     onchange={() => {
                         onToggleExcludeSystemDirs()
                     }}
-                    aria-label="Hide boring folders"
+                    aria-label={tString('queryUi.scope.toggle.hideBoring')}
                 />
                 <!-- "Hide boring folders" (the label is intentional, not "Hide
                      system folders"). Tooltip lists EVERY exclude (built by the
                      parent from the `get_system_dir_excludes` IPC); no
                      "+30 more" truncation. -->
-                <span use:tooltip={{ html: systemDirExcludeTooltip }}>Hide boring folders</span>
+                <span use:tooltip={{ html: systemDirExcludeTooltip }}>{tString('queryUi.scope.toggle.hideBoring')}</span>
             </label>
             <label class="popover-checkbox">
                 <input
@@ -107,9 +121,9 @@
                     onchange={() => {
                         onToggleCaseSensitive()
                     }}
-                    aria-label="Case-sensitive matching"
+                    aria-label={tString('queryUi.scope.toggle.caseSensitiveAria')}
                 />
-                <span>Case-sensitive</span>
+                <span>{tString('queryUi.scope.toggle.caseSensitive')}</span>
             </label>
         </div>
         <!-- D9: scope shortcuts moved inside the popover. ⌥C "Use current
@@ -132,7 +146,7 @@
                     scheduleSearch()
                 }}
             >
-                Use current folder
+                {tString('queryUi.scope.useCurrentFolder')}
                 <ShortcutChip key="⌥C" size="sm" />
             </button>
             <button
@@ -143,7 +157,7 @@
                     scheduleSearch()
                 }}
             >
-                All folders
+                {tString('queryUi.scope.allFolders')}
                 <ShortcutChip key="⌥V" size="sm" />
             </button>
         </div>

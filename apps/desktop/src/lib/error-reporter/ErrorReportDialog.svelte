@@ -27,7 +27,7 @@
     import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
     import { getSetting, setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
-    import { pluralize } from '$lib/utils/pluralize'
+    import { t, tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('errorReportDialog')
 
@@ -128,7 +128,7 @@
             closeErrorReportDialog()
         } catch (e) {
             log.warn('Sending error report returned an error: {error}', { error: String(e) })
-            addToast(`Couldn't send error report: ${String(e)}`, { level: 'error' })
+            addToast(tString('errorReporter.dialog.sendFailedToast', { error: String(e) }), { level: 'error' })
         } finally {
             sending = false
         }
@@ -144,7 +144,7 @@
                 dismissal: 'persistent',
             })
         } catch (e) {
-            addToast(`Couldn't save bundle: ${String(e)}`, { level: 'error' })
+            addToast(tString('errorReporter.dialog.saveFailedToast', { error: String(e) }), { level: 'error' })
         }
     }
 
@@ -178,30 +178,31 @@
     ariaDescribedby="error-report-body"
     containerStyle="width: 540px"
 >
-    {#snippet title()}Send error report{/snippet}
+    {#snippet title()}{tString('errorReporter.dialog.title')}{/snippet}
 
     <div class="body">
         <p id="error-report-body" class="description">
-            This sends Cmdr's recent log files to the team so we can fix what went wrong. The logs
-            are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before
-            sending.
+            {tString('errorReporter.dialog.description')}
         </p>
 
         {#if preview}
             <div class="id-row">
-                <span class="id-label">Reference ID:</span>
+                <span class="id-label">{tString('errorReporter.dialog.referenceIdLabel')}</span>
                 <span class="id-badge">{preview.id}</span>
                 <button class="link-button" onclick={() => void handleCopyId()}>
-                    {copiedId ? 'Copied' : 'Copy'}
+                    {copiedId ? tString('errorReporter.dialog.copied') : tString('errorReporter.dialog.copy')}
                 </button>
             </div>
         {/if}
 
         <label class="note-label" for="error-report-note">
-            <span>Add a note (optional)</span>
+            <span>{tString('errorReporter.dialog.noteLabel')}</span>
             {#if showCounter}
                 <span class="note-counter" class:over={noteOverLimit}>
-                    {formatInteger(noteLength)} / {formatInteger(MAX_NOTE_CHARS)}
+                    {t('errorReporter.dialog.counter', {
+                        currentText: formatInteger(noteLength),
+                        maxText: formatInteger(MAX_NOTE_CHARS),
+                    })}
                 </span>
             {/if}
         </label>
@@ -211,19 +212,19 @@
             bind:value={userNote}
             class="note-textarea"
             class:invalid={noteOverLimit}
-            placeholder="What were you trying to do? What did you expect to happen?"
+            placeholder={tString('errorReporter.dialog.notePlaceholder')}
             rows="4"
         ></textarea>
         {#if noteOverLimit}
             <p class="helper-text">
-                Note is too long. Maximum is {formatInteger(MAX_NOTE_CHARS)} characters.
+                {t('errorReporter.dialog.noteTooLong', { maxText: formatInteger(MAX_NOTE_CHARS) })}
             </p>
         {/if}
 
         {#if contactEmail}
             <label class="attach-email">
                 <input type="checkbox" bind:checked={attachEmail} />
-                <span>Attach my email ({contactEmail}) so we can reply</span>
+                <span>{t('errorReporter.dialog.attachEmail', { email: contactEmail })}</span>
             </label>
         {/if}
 
@@ -233,7 +234,7 @@
             aria-expanded={detailsExpanded}
         >
             <span class="toggle-arrow" class:expanded={detailsExpanded}>&#x25B8;</span>
-            What's about to be sent
+            {tString('errorReporter.dialog.detailsToggle')}
             {#if preview}
                 <span class="size-hint">(<Size bytes={preview.sizeBytes} />)</span>
             {/if}
@@ -241,48 +242,54 @@
 
         {#if detailsExpanded && preview}
             <div class="details-container">
-                <h3 class="details-heading">Manifest</h3>
+                <h3 class="details-heading">{tString('errorReporter.dialog.manifestHeading')}</h3>
                 <pre class="details-block">{JSON.stringify(displayedManifest, null, 2)}</pre>
 
                 <h3 class="details-heading">
-                    Sample of first {preview.sampleFirst.length} {pluralize(preview.sampleFirst.length, 'line')}
+                    {t('errorReporter.dialog.sampleFirstHeading', { count: preview.sampleFirst.length })}
                 </h3>
                 <pre class="details-block sample-block">{preview.sampleFirst.join('\n') ||
-                        '(no log lines available)'}</pre>
+                        tString('errorReporter.dialog.noLogLines')}</pre>
 
                 <h3 class="details-heading">
-                    Sample of last {preview.sampleLast.length} {pluralize(preview.sampleLast.length, 'line')}
+                    {t('errorReporter.dialog.sampleLastHeading', { count: preview.sampleLast.length })}
                 </h3>
                 <pre class="details-block sample-block">{preview.sampleLast.join('\n') ||
-                        '(no log lines available)'}</pre>
+                        tString('errorReporter.dialog.noLogLines')}</pre>
 
                 <p class="meta-line">
-                    Total log lines (after redaction): {formatInteger(preview.totalRedactedLines)}
+                    {t('errorReporter.dialog.totalLines', {
+                        countText: formatInteger(preview.totalRedactedLines),
+                    })}
                 </p>
             </div>
         {/if}
 
         {#if preparing && !preview}
-            <p class="status">Preparing preview…</p>
+            <p class="status">{tString('errorReporter.dialog.preparing')}</p>
         {/if}
         {#if preparingError}
-            <p class="status status-error">Couldn't prepare preview: {preparingError}</p>
+            <p class="status status-error">
+                {t('errorReporter.dialog.prepareFailed', { error: preparingError })}
+            </p>
         {/if}
 
         <div class="button-row">
             {#if isDev}
                 <Button variant="secondary" onclick={() => void handleSaveToDisk()} disabled={sending}>
-                    Save bundle to disk (debug)
+                    {tString('errorReporter.dialog.saveToDisk')}
                 </Button>
             {/if}
             <span class="spacer"></span>
-            <Button variant="secondary" onclick={handleClose} disabled={sending}>Cancel</Button>
+            <Button variant="secondary" onclick={handleClose} disabled={sending}
+                >{tString('errorReporter.dialog.cancel')}</Button
+            >
             <Button
                 variant="primary"
                 onclick={() => void handleSend()}
                 disabled={sending || noteOverLimit || preparing}
             >
-                {sending ? 'Sending…' : 'Send report'}
+                {sending ? tString('errorReporter.dialog.sending') : tString('errorReporter.dialog.send')}
             </Button>
         </div>
     </div>

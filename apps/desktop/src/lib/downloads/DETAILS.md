@@ -104,3 +104,13 @@ is independent; stop after the ones that cover your change.
     rebind). The `↩` reset returns it to `⌃⌥⌘J`.
 14. Revoke FDA in System Settings → both sub-groups grey out with the shared FDA hint, the global hotkey unregisters,
     and pressing `⌘J` shows the FDA INFO toast (stable dedup id so spamming `⌘J` doesn't stack toasts).
+
+## i18n
+
+All user-facing copy in this area lives in `$lib/intl/messages/en/downloads.json` (prefix `downloads.*`), resolved via
+`tString()` / `<Trans>` from `$lib/intl`; `cmdr/no-raw-user-facing-string` is enforced on `lib/downloads/`. Don't
+hardcode copy. The download-toast sentences with inline `ShortcutChip`s / `<code>` / `<em>` use `<Trans>` (snippet per
+tag; the chip snippets discard the tag's inner text and render a literal chip from the snapshotted binding). The
+keyboard-animation SVG's key-cap labels are NOT copy (the lint skips SVG `<text>`). `GlobalShortcutRow`'s status line
+carries a typed `statusIsWarn` flag for the warn styling (not a substring match on the localized status text). Base-en
+output is parity-pinned by `downloads-i18n-parity.test.ts`.

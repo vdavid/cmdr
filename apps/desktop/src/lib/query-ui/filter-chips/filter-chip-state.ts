@@ -8,6 +8,7 @@
 
 import type { SizeFilter, SizeUnit, DateFilter } from '../query-filter-state.svelte'
 import type { FileSizeFormat } from '$lib/settings/types'
+import { tString } from '$lib/intl/messages.svelte'
 
 /** Display state of a single filter chip. */
 export interface FilterChipState {
@@ -58,19 +59,43 @@ export function deriveSizeChip(
   const prefix = singleBoundPrefix[sizeFilter]
   if (prefix !== undefined) {
     if (!minOk) return { configured: false, summary: '' }
-    return { configured: true, summary: `${prefix} ${sizeValue.trim()} ${unitLabel}` }
+    return {
+      configured: true,
+      summary: tString('queryUi.filters.size.summary.single', { prefix, valueText: sizeValue.trim(), unit: unitLabel }),
+    }
   }
 
   // between
   const maxNumeric = parseFloat(sizeValueMax)
   const maxOk = !isNaN(maxNumeric) && maxNumeric >= 0
   if (!minOk && !maxOk) return { configured: false, summary: '' }
-  if (minOk && !maxOk) return { configured: true, summary: `> ${sizeValue.trim()} ${unitLabel}` }
-  if (!minOk && maxOk) return { configured: true, summary: `< ${sizeValueMax.trim()} ${unitMaxLabel}` }
+  if (minOk && !maxOk)
+    return {
+      configured: true,
+      summary: tString('queryUi.filters.size.summary.single', {
+        prefix: '>',
+        valueText: sizeValue.trim(),
+        unit: unitLabel,
+      }),
+    }
+  if (!minOk && maxOk)
+    return {
+      configured: true,
+      summary: tString('queryUi.filters.size.summary.single', {
+        prefix: '<',
+        valueText: sizeValueMax.trim(),
+        unit: unitMaxLabel,
+      }),
+    }
   // en dash for ranges (style guide: en dashes for ranges, never em).
   return {
     configured: true,
-    summary: `${sizeValue.trim()} ${unitLabel} – ${sizeValueMax.trim()} ${unitMaxLabel}`,
+    summary: tString('queryUi.filters.size.summary.range', {
+      minText: sizeValue.trim(),
+      minUnit: unitLabel,
+      maxText: sizeValueMax.trim(),
+      maxUnit: unitMaxLabel,
+    }),
   }
 }
 
@@ -79,17 +104,22 @@ export function deriveDateChip(dateFilter: DateFilter, dateValue: string, dateVa
   if (dateFilter === 'any') return { configured: false, summary: '' }
   if (dateFilter === 'after') {
     if (!dateValue) return { configured: false, summary: '' }
-    return { configured: true, summary: `after ${dateValue}` }
+    return { configured: true, summary: tString('queryUi.filters.date.summary.after', { date: dateValue }) }
   }
   if (dateFilter === 'before') {
     if (!dateValue) return { configured: false, summary: '' }
-    return { configured: true, summary: `before ${dateValue}` }
+    return { configured: true, summary: tString('queryUi.filters.date.summary.before', { date: dateValue }) }
   }
   // between
   if (!dateValue && !dateValueMax) return { configured: false, summary: '' }
-  if (dateValue && !dateValueMax) return { configured: true, summary: `after ${dateValue}` }
-  if (!dateValue && dateValueMax) return { configured: true, summary: `before ${dateValueMax}` }
-  return { configured: true, summary: `${dateValue} – ${dateValueMax}` }
+  if (dateValue && !dateValueMax)
+    return { configured: true, summary: tString('queryUi.filters.date.summary.after', { date: dateValue }) }
+  if (!dateValue && dateValueMax)
+    return { configured: true, summary: tString('queryUi.filters.date.summary.before', { date: dateValueMax }) }
+  return {
+    configured: true,
+    summary: tString('queryUi.filters.date.summary.range', { after: dateValue, before: dateValueMax }),
+  }
 }
 
 /**
@@ -120,7 +150,7 @@ export function deriveScopeChip(scope: string, excludeSystemDirs: boolean): Filt
   if (!trimmed) {
     // Even with no scope text, the chip is "configured" if the user disabled the system-dirs
     // hide toggle, because that's a non-default state worth visualizing.
-    if (!excludeSystemDirs) return { configured: true, summary: 'includes system folders' }
+    if (!excludeSystemDirs) return { configured: true, summary: tString('queryUi.filters.scope.includesSystemFolders') }
     return { configured: false, summary: '' }
   }
   // Truncate long scope text for chip display. Keep the rest reachable via the popover.

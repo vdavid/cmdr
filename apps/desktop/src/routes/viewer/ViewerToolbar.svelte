@@ -18,6 +18,7 @@
     import ViewModePicker from './ViewModePicker.svelte'
     import type { EncodingChoice, FileEncoding, ViewerContentKind } from '$lib/ipc/bindings'
     import { isMediaKind } from './media-view'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** File name shown in the flexible middle of the bar. */
@@ -90,15 +91,15 @@
             class:active={tailMode}
             role="switch"
             aria-checked={tailMode}
-            aria-label="Tail mode: follow file changes"
+            aria-label={tString('viewer.toolbar.tail.ariaLabel')}
             disabled={isMedia}
             onclick={onToggleTail}
-            use:tooltip={{ text: 'Auto-follow file changes', shortcut: 'F' }}
+            use:tooltip={{ text: tString('viewer.toolbar.tail.tooltip'), shortcut: 'F' }}
         >
-            Tail
+            {tString('viewer.toolbar.tail.label')}
         </button>
         {#if isIndexing}
-            <span class="viewer-toolbar-indexing" role="status" aria-live="polite">Reindexing…</span>
+            <span class="viewer-toolbar-indexing" role="status" aria-live="polite">{tString('viewer.toolbar.reindexing')}</span>
         {/if}
     </div>
 </header>

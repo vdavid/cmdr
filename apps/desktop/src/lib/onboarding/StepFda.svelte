@@ -15,6 +15,9 @@
     import { getAppLogger } from '$lib/logging/logger'
     import { systemStrings } from '$lib/system-strings.svelte'
     import { isMacOS } from '$lib/shortcuts/key-capture'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import type { Snippet } from 'svelte'
     import {
         getOnboardingState,
         setStep1Restart,
@@ -172,89 +175,81 @@
     const renderable = isMacOS()
 </script>
 
+{#snippet strong(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
+{#snippet em(children: Snippet)}<em>{@render children()}</em>{/snippet}
+{#snippet deny(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
+{#snippet restart(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
+{#snippet sourceLink(children: Snippet)}<LinkButton
+        href="https://github.com/vdavid/cmdr"
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={(event: MouseEvent) => {
+            event.preventDefault()
+            void openExternalUrl('https://github.com/vdavid/cmdr')
+        }}>{@render children()}</LinkButton
+    >{/snippet}
+
 {#if renderable}
     <OnboardingStepShell>
         {#if onboardingState.step1Granted}
-            <h2 class="welcome">You granted full disk access!</h2>
-            <p>Nice, that's all Cmdr needs. Restart it now to start using everything.</p>
-            <p class="success-hint">
-                Cmdr picks up the new permission on the next launch. Your spot in onboarding is saved, so you'll land
-                right back here.
-            </p>
+            <h2 class="welcome">{tString('onboarding.stepFda.granted.title')}</h2>
+            <p>{tString('onboarding.stepFda.granted.body')}</p>
+            <p class="success-hint">{tString('onboarding.stepFda.granted.hint')}</p>
         {:else if onboardingState.step1Variant === 'already-granted'}
-            <h2 class="welcome">Cmdr currently has full disk access</h2>
-            <p>You can revoke it any time in {systemStrings.systemSettings}.</p>
+            <h2 class="welcome">{tString('onboarding.stepFda.alreadyGranted.title')}</h2>
+            <p>{tString('onboarding.stepFda.alreadyGranted.body', { systemSettings: systemStrings.systemSettings })}</p>
         {:else}
-            <h2 class="welcome">Welcome to Cmdr!</h2>
+            <h2 class="welcome">{tString('onboarding.stepFda.welcome.title')}</h2>
 
             {#if onboardingState.step1Variant === 'revoked'}
-                <p>It looks like you accepted full disk access before but then revoked it.</p>
-                <p><strong>The app currently has no full disk access.</strong></p>
-                <p>
-                    If that was intentional, click <strong>Deny</strong> and the app won't bother you again.
-                </p>
-                <p>If it <em>wasn't</em> intentional, consider allowing full disk access again. Here are the pros and cons:</p>
+                <p>{tString('onboarding.stepFda.revoked.intro')}</p>
+                <p><strong>{tString('onboarding.stepFda.revoked.noAccess')}</strong></p>
+                <p><Trans key="onboarding.stepFda.revoked.ifIntentional" snippets={{ deny }} /></p>
+                <p><Trans key="onboarding.stepFda.revoked.ifNot" snippets={{ em }} /></p>
             {:else}
-                <p><strong>You probably just want to start using the app.</strong> Sorry to bother you with this first, but it's needed.</p>
-                <p>
-                    You see, Cmdr is a file manager, and it needs to access your disk to see all your files. macOS doesn't
-                    automatically grant permission to this.
-                </p>
-                <p>Would you like to give this app full disk access? Here's what that means:</p>
+                <p><Trans key="onboarding.stepFda.firstAsk.lede" snippets={{ strong }} /></p>
+                <p>{tString('onboarding.stepFda.firstAsk.explain')}</p>
+                <p>{tString('onboarding.stepFda.firstAsk.askPermission')}</p>
             {/if}
 
             <ul class="bullets">
-                <li>
-                    <strong>Pro:</strong> The app will access your entire disk without nagging you for permissions to each folder
-                    like Downloads, Documents, and Desktop.
-                </li>
-                <li>
-                    <strong>Con:</strong> Full disk access is pretty powerful. It lets the app read any file on your Mac. Only
-                    grant this if you trust Cmdr. Cmdr uses this right respectfully, and is
-                    <LinkButton
-                        href="https://github.com/vdavid/cmdr"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onclick={(event: MouseEvent) => {
-                            event.preventDefault()
-                            void openExternalUrl('https://github.com/vdavid/cmdr')
-                        }}
-                    >
-                        source-available
-                    </LinkButton>
-                    if you feel unsure.
-                </li>
+                <li><Trans key="onboarding.stepFda.pro" snippets={{ strong }} /></li>
+                <li><Trans key="onboarding.stepFda.con" snippets={{ strong, sourceLink }} /></li>
             </ul>
 
-            <p>If you decide to allow:</p>
+            <p>{tString('onboarding.stepFda.ifAllow')}</p>
 
             <ol class="steps">
-                <li>Click <strong>Open {systemStrings.systemSettings}</strong> below</li>
+                <li>
+                    <Trans
+                        key="onboarding.stepFda.step1"
+                        snippets={{ strong }}
+                        params={{ systemSettings: systemStrings.systemSettings }}
+                    />
+                </li>
                 <li>
                     {#if isVenturaOrNewer}
-                        Find <strong>Cmdr</strong> in the list and toggle it on
+                        <Trans key="onboarding.stepFda.step2.ventura" snippets={{ strong }} />
                     {:else}
-                        Find <strong>Cmdr</strong> at the end of the list and toggle it on
+                        <Trans key="onboarding.stepFda.step2.older" snippets={{ strong }} />
                     {/if}
-                    <p class="step-tip">
-                        Tip: Is Cmdr not in the list? Click the "+" button at the bottom, and choose <strong>Cmdr</strong> from your
-                        <strong>Applications</strong> folder.
-                    </p>
+                    <p class="step-tip"><Trans key="onboarding.stepFda.step2.tip" snippets={{ strong }} /></p>
                 </li>
-                <li>Confirm and click <strong>Quit & Reopen</strong></li>
+                <li><Trans key="onboarding.stepFda.step3" snippets={{ strong }} /></li>
             </ol>
 
             <div class="buttons">
-                <Button variant="primary" onclick={handleAllow}>Open {systemStrings.systemSettings}</Button>
-                <Button variant="danger" onclick={handleDeny}>Deny</Button>
+                <Button variant="primary" onclick={handleAllow}
+                    >{tString('onboarding.stepFda.openSettings', {
+                        systemSettings: systemStrings.systemSettings,
+                    })}</Button
+                >
+                <Button variant="danger" onclick={handleDeny}>{tString('onboarding.stepFda.deny')}</Button>
             </div>
             {#if hasClickedOpenSettings && onboardingState.step1FooterMode === 'restart'}
                 <div class="post-action">
-                    <p>Cmdr needs to restart so the new permission takes effect.</p>
-                    <p>
-                        When you're ready, click <strong>Restart Cmdr</strong> below. If you change your mind, click
-                        <strong>Deny</strong> above instead.
-                    </p>
+                    <p>{tString('onboarding.stepFda.postAction.intro')}</p>
+                    <p><Trans key="onboarding.stepFda.postAction.body" snippets={{ restart, deny }} /></p>
                 </div>
             {/if}
         {/if}

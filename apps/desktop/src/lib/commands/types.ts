@@ -4,6 +4,7 @@
 
 import type { ViewMode } from '$lib/app-status-store'
 import type { BadgeStatus } from '$lib/feature-status'
+import type { MessageKey } from '$lib/intl/keys.gen'
 import type { CommandId } from './command-ids'
 
 export type { CommandId } from './command-ids'
@@ -166,6 +167,23 @@ export interface Command {
    * highlights: matches landing in keyword text are dropped (see `fuzzy-search.ts`).
    */
   keywords?: string[]
+}
+
+/**
+ * Authored form of a command, as written in `command-registry.ts`. Holds i18n
+ * message KEYS (`nameKey` / `descriptionKey`) instead of English; `resolveCommand`
+ * turns each source into a `Command` whose `name` / `description` are getters that
+ * resolve the catalog string through `t()` at READ time. So every `command.name`
+ * consumer (palette, fuzzy haystack, shortcuts list, menus) gets a rendered
+ * string and reactivity works in markup, while the copy lives in
+ * `messages/en/commands.json`. The id and all behavioral flags carry through
+ * unchanged.
+ */
+export type CommandSource = Omit<Command, 'name' | 'description'> & {
+  /** Message key for the command's display name (`commands.<idish>.label`). */
+  nameKey: MessageKey
+  /** Optional message key for the longer palette help text. */
+  descriptionKey?: MessageKey
 }
 
 /** Result of a fuzzy search match */

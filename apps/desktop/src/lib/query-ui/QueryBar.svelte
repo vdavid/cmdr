@@ -20,6 +20,7 @@
      *   - ⌘1/⌘2/⌘3 switch modes (numbering changes when AI is off).
      */
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import type { SearchMode } from './query-filter-state.svelte'
@@ -66,19 +67,19 @@
 
     /** Placeholder text per mode. Filenames are the workhorse, so we name the wildcards there. */
     const placeholder = $derived.by(() => {
-        if (mode === 'ai') return "Describe what you're looking for"
-        if (mode === 'regex') return 'Regular expression pattern'
-        return 'Filename pattern (use * and ? as wildcards)'
+        if (mode === 'ai') return tString('queryUi.bar.placeholder.ai')
+        if (mode === 'regex') return tString('queryUi.bar.placeholder.regex')
+        return tString('queryUi.bar.placeholder.filename')
     })
 
     const ariaLabel = $derived.by(() => {
-        if (mode === 'ai') return 'Natural language search query'
-        if (mode === 'regex') return 'Regex search pattern'
-        return 'Filename search pattern'
+        if (mode === 'ai') return tString('queryUi.bar.aria.ai')
+        if (mode === 'regex') return tString('queryUi.bar.aria.regex')
+        return tString('queryUi.bar.aria.filename')
     })
 
     /** AI mode runs only on explicit Enter / ⌘Enter / Run-button click. Show the hint title to match. */
-    const runTitle = $derived(mode === 'ai' ? 'Run AI search' : 'Run search')
+    const runTitle = $derived(mode === 'ai' ? tString('queryUi.bar.runTitle.ai') : tString('queryUi.bar.runTitle.default'))
 </script>
 
 <div class="search-bar" class:is-disabled={disabled}>
@@ -106,7 +107,7 @@
         autocapitalize="off"
     />
     {#if showRunHint}
-        <span class="run-hint" aria-hidden="true">Press Enter to search</span>
+        <span class="run-hint" aria-hidden="true">{tString('queryUi.bar.runHint')}</span>
     {/if}
     <!-- Button reads "Search ⏎" when ⏎ owns the run action; just "Search" when the
          footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint. The
@@ -120,7 +121,7 @@
         use:tooltip={{ text: runTitle, shortcut: '⏎' }}
         aria-label={runTitle}
     >
-        <span class="run-label">Search</span>
+        <span class="run-label">{tString('queryUi.bar.runLabel')}</span>
         {#if showEnterHint}<ShortcutChip key="⏎" size="sm" />{/if}
     </button>
 </div>

@@ -22,6 +22,7 @@
      */
     import { onDestroy, tick } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
     import { createPretextMeasure } from '$lib/utils/shorten-middle'
     import {
         computePathPillsLayout,
@@ -229,7 +230,9 @@
                 type="button"
                 class="pill pill-ellipsis"
                 tabindex="-1"
-                aria-label={`Hidden path segments: ${layout.collapsed.map((s) => s.label).join(', ')}`}
+                aria-label={tString('queryUi.pathPills.hiddenAria', {
+                    segments: layout.collapsed.map((s) => s.label).join(', '),
+                })}
                 use:tooltip={{ html: collapsedTooltipHtml }}
                 onclick={(e) => {
                     e.stopPropagation()

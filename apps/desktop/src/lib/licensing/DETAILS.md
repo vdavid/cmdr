@@ -25,6 +25,25 @@ is consumed by layout-level code that reads `cachedStatus` and `shouldShowModal`
 would add reactivity overhead for state that only changes on explicit user actions (activate, dismiss). The About window
 and modals read the cached value on mount.
 
+## i18n migration
+
+All licensing copy moved into `messages/en/licensing.json` (keys `licensing.about.*`, `licensing.commercialReminder.*`,
+`licensing.expiration.*`, `licensing.dialog.*`, `licensing.error.*`, `licensing.section.*`), resolved through
+`$lib/intl` (`tString` for plain/interpolated strings, `<Trans>` for sentences with inline components). It's a
+behavior-preserving move: en output is byte-identical, pinned by `licensing-i18n-parity.test.ts`.
+
+- **The About window keeps David's first-person voice** (the beta note "Tell me on GitHub. I read every report!").
+  Translators are told to preserve that warmth via the `@key` description, not a positional flag.
+- **Prices and proper names stay literal in the base string.** `$59/year/user`, `Falcon-H1R-7B`, `TII`, brand names, and
+  the `CMDR-XXXX-XXXX-XXXX` format example are flagged do-not-translate in their `@key` descriptions; there is no price
+  param (the amount is copy, not data).
+- **Dates are formatted at the call site, then passed in as preformatted `{date}` STRING params** (the same
+  single-source rule as `$lib/intl`), never via ICU `{date, date}`. Each component keeps its local `formatDate` helper.
+- **Inline-component sentences use `<Trans>` with a tag snippet whose name differs from any param** to avoid the
+  handler-overwrites-param collision: the contact-email lines use a `<supportEmail>` tag wrapping the `{email}` param
+  (tag `supportEmail`, snippet bound `supportEmail={email}`), the expiration modal uses `<strong>`, the dismiss button a
+  `<break>` line break, and the About/enter-key prompts a `<github>` / `<getLicense>` link tag.
+
 ## Activation outcomes (`handleActivate`)
 
 `handleActivate` calls `verifyLicense()` first (nothing stored), then `validateLicenseWithServer(transactionId)` passing

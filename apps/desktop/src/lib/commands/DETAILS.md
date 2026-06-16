@@ -83,12 +83,32 @@ filter exported; `commands` (the full array) is exported too, for shortcut docum
 (`Get info`, `Quick look`, `Show in Finder` only make sense on macOS), keeping the palette and shortcut systems
 platform-aware without platform checks scattered through the UI.
 
+### i18n: keys, not English
+
+Each entry is authored as a `CommandSource` (`Omit<Command, 'name' | 'description'>` plus `nameKey: MessageKey` and an
+optional `descriptionKey`). `resolveCommand` maps each source to a `Command` whose `name` / `description` are getters
+calling `tString()` against `messages/en/commands.json`, mirroring the settings-registry pattern. Reading `command.name`
+resolves the current catalog string, so the palette, the fuzzy haystack (rebuilt per search from `c.name`), the
+shortcuts list, and the menus all stay unchanged and reactive; the per-key base-en parity net is
+`command-registry.parity.test.ts`. Key shape is `commands.<idish>.label` / `.description` (the command id flattened to a
+lowerCamel leaf, e.g. `view.zoom.set75` → `commands.viewZoomSet75.label`); the command IDS themselves never change.
+
+Two special cases:
+
+- **The three `isMacOS()` commands** (`file.showInFinder` / `file.getInfo` / `file.quickLook`) pick one of two keys at
+  module load (`.mac.label` vs `.other.label`), so each platform's wording is a distinct, separately-translatable key.
+- **`app.licenseKey`** has no fixed label: its `name` getter reads the module-level `hasExistingLicense` flag and
+  resolves `commands.appLicenseKey.seeDetails.label` or `…enterKey.label`. `updateLicenseCommandName(hasLicense)` flips
+  the flag (it no longer rewrites English in place), keeping the palette label in step with the native menu.
+
 ## Adding a command (full steps)
 
 1. Add the id to `COMMAND_IDS` in `command-ids.ts`. Skipping this makes the registry entry a compile error (`Command.id`
    is `CommandId`).
-2. Add an entry to the `commands` array in `command-registry.ts`. Skipping this fails the set-equality test in
-   `command-registry.test.ts`.
+2. Add a `CommandSource` entry to `commandSources` in `command-registry.ts` (with a `nameKey`, and a `descriptionKey` if
+   it needs help text), and add the matching `commands.<idish>.label` / `.description` to `messages/en/commands.json`
+   with a `@key` description, then run `pnpm intl:keys`. Skipping the entry fails the set-equality test in
+   `command-registry.test.ts`; a `nameKey` with no catalog entry fails the key-gen build.
 3. If the command carries a REQUIRED dispatch payload, declare its shape in `CommandArgsOverrides` in `types.ts`; if the
    payload is OPTIONAL (dispatched both arg-less and with a payload, like the MCP `file.copy`/`move`/`delete` tools),
    use `CommandArgsOptionalOverrides` so `CommandDispatchArgs` resolves to `[args?]`. Arg-less commands skip both. The

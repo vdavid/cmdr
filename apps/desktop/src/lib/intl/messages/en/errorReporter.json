@@ -1,0 +1,212 @@
+{
+  "errorReporter.dialog.title": "Send error report",
+  "@errorReporter.dialog.title": {
+    "description": "Title of the dialog for sending a redacted log bundle to the team. Opened from the Help menu and from a link on error toasts.",
+    "screenshot": "error-report-dialog.png"
+  },
+
+  "errorReporter.dialog.description": "This sends Cmdr''s recent log files to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.",
+  "@errorReporter.dialog.description": {
+    "description": "Main explanation in the error-report dialog: what is sent and that it is redacted for privacy first. Reassuring. \"Cmdr\" is the product name; \"IPs\" means IP addresses (do not translate \"Cmdr\").",
+    "screenshot": "error-report-dialog.png"
+  },
+
+  "errorReporter.dialog.referenceIdLabel": "Reference ID:",
+  "@errorReporter.dialog.referenceIdLabel": {
+    "description": "Label before the report's reference identifier in the dialog. The identifier itself follows in a badge and is not part of this string.",
+    "screenshot": "error-report-dialog.png"
+  },
+
+  "errorReporter.dialog.copy": "Copy",
+  "@errorReporter.dialog.copy": {
+    "description": "Button that copies the reference ID to the clipboard. Swaps to the \"copied\" confirmation for two seconds after a click. Keep it short (a tight button)."
+  },
+
+  "errorReporter.dialog.copied": "Copied",
+  "@errorReporter.dialog.copied": {
+    "description": "Confirmation shown for two seconds on the copy button right after the reference ID is copied. Keep it short (a tight button)."
+  },
+
+  "errorReporter.dialog.noteLabel": "Add a note (optional)",
+  "@errorReporter.dialog.noteLabel": {
+    "description": "Label above the optional free-text box where the user can describe what happened.",
+    "screenshot": "error-report-dialog.png"
+  },
+
+  "errorReporter.dialog.counter": "{currentText} / {maxText}",
+  "@errorReporter.dialog.counter": {
+    "description": "Character counter for the note box, shown once the note gets long. Both values are already-formatted numbers; render them as a fraction (typed so far over the maximum).",
+    "placeholders": {
+      "currentText": "number of characters typed so far, already formatted for display (e.g. 52,000)",
+      "maxText": "the maximum allowed character count, already formatted (e.g. 100,000)"
+    }
+  },
+
+  "errorReporter.dialog.notePlaceholder": "What were you trying to do? What did you expect to happen?",
+  "@errorReporter.dialog.notePlaceholder": {
+    "description": "Placeholder text inside the empty note box, prompting the user for useful detail.",
+    "screenshot": "error-report-dialog.png"
+  },
+
+  "errorReporter.dialog.noteTooLong": "Note is too long. Maximum is {maxText} characters.",
+  "@errorReporter.dialog.noteTooLong": {
+    "description": "Warning shown below the note box when the note exceeds the maximum length.",
+    "placeholders": {
+      "maxText": "the maximum allowed character count, already formatted (e.g. 100,000)"
+    }
+  },
+
+  "errorReporter.dialog.attachEmail": "Attach my email ({email}) so we can reply",
+  "@errorReporter.dialog.attachEmail": {
+    "description": "Label for an opt-in checkbox to include the user's email so the team can reply. Shown only when the user has an email on file; their actual address is shown in the parentheses.",
+    "placeholders": {
+      "email": "the user's email address on file (e.g. alex@example.com)"
+    }
+  },
+
+  "errorReporter.dialog.detailsToggle": "What''s about to be sent",
+  "@errorReporter.dialog.detailsToggle": {
+    "description": "Toggle that expands a panel previewing exactly what will be uploaded (manifest and sample log lines). Preceded by a disclosure triangle; followed by the bundle size in parentheses.",
+    "screenshot": "error-report-dialog.png"
+  },
+
+  "errorReporter.dialog.manifestHeading": "Manifest",
+  "@errorReporter.dialog.manifestHeading": {
+    "description": "Heading above the JSON manifest in the expanded preview panel. A manifest is the metadata describing the report."
+  },
+
+  "errorReporter.dialog.sampleFirstHeading": "Sample of first {count, plural, one {# line} other {# lines}}",
+  "@errorReporter.dialog.sampleFirstHeading": {
+    "description": "Heading above a preview of the first few redacted log lines. The number is shown inline (the # is replaced by the count).",
+    "placeholders": {
+      "count": "how many log lines are shown in this sample"
+    }
+  },
+
+  "errorReporter.dialog.sampleLastHeading": "Sample of last {count, plural, one {# line} other {# lines}}",
+  "@errorReporter.dialog.sampleLastHeading": {
+    "description": "Heading above a preview of the last few redacted log lines. The number is shown inline (the # is replaced by the count).",
+    "placeholders": {
+      "count": "how many log lines are shown in this sample"
+    }
+  },
+
+  "errorReporter.dialog.noLogLines": "(no log lines available)",
+  "@errorReporter.dialog.noLogLines": {
+    "description": "Placeholder shown in a log-sample preview box when there are no log lines to show. Shown in parentheses."
+  },
+
+  "errorReporter.dialog.totalLines": "Total log lines (after redaction): {countText}",
+  "@errorReporter.dialog.totalLines": {
+    "description": "Summary line under the log samples giving the total number of log lines that will be sent, after privacy redaction.",
+    "placeholders": {
+      "countText": "the total number of log lines, already formatted for display (e.g. 1,234)"
+    }
+  },
+
+  "errorReporter.dialog.preparing": "Preparing preview…",
+  "@errorReporter.dialog.preparing": {
+    "description": "Status line shown while the report preview is still being built. Ends with a single-character ellipsis (…)."
+  },
+
+  "errorReporter.dialog.prepareFailed": "Couldn''t prepare preview: {error}",
+  "@errorReporter.dialog.prepareFailed": {
+    "description": "Status line shown when building the preview didn't work. The reason follows the colon. Avoid the words \"error\" and \"failed\" in the translated wording (the variable text may contain technical detail).",
+    "placeholders": {
+      "error": "the technical reason the preview couldn't be built (not translated)"
+    }
+  },
+
+  "errorReporter.dialog.saveToDisk": "Save bundle to disk (debug)",
+  "@errorReporter.dialog.saveToDisk": {
+    "description": "Developer-only button (visible in dev builds) that writes the report bundle to disk for inspection. \"debug\" marks it as a developer feature."
+  },
+
+  "errorReporter.dialog.cancel": "Cancel",
+  "@errorReporter.dialog.cancel": {
+    "description": "Button that closes the error-report dialog without sending. Keep it short (a tight button).",
+    "screenshot": "error-report-dialog.png"
+  },
+
+  "errorReporter.dialog.send": "Send report",
+  "@errorReporter.dialog.send": {
+    "description": "Primary button that sends the error report. Keep it short (a tight button).",
+    "screenshot": "error-report-dialog.png"
+  },
+
+  "errorReporter.dialog.sending": "Sending…",
+  "@errorReporter.dialog.sending": {
+    "description": "Label on the send button while the report is being sent (button is disabled meanwhile). Ends with a single-character ellipsis (…). Keep it short."
+  },
+
+  "errorReporter.dialog.sendFailedToast": "Couldn''t send error report: {error}",
+  "@errorReporter.dialog.sendFailedToast": {
+    "description": "Toast shown when sending the report didn't work. The reason follows the colon. Avoid the words \"error\" and \"failed\" in the translated wording.",
+    "placeholders": {
+      "error": "the technical reason the send didn't work (not translated)"
+    }
+  },
+
+  "errorReporter.dialog.saveFailedToast": "Couldn''t save bundle: {error}",
+  "@errorReporter.dialog.saveFailedToast": {
+    "description": "Developer-only toast shown when saving the bundle to disk didn't work. The reason follows the colon. Avoid the words \"error\" and \"failed\" in the translated wording.",
+    "placeholders": {
+      "error": "the technical reason the save didn't work (not translated)"
+    }
+  },
+
+  "errorReporter.sentToast.message": "Error report sent. Your reference ID is",
+  "@errorReporter.sentToast.message": {
+    "description": "Lead text of the toast confirming the report was sent. The reference ID itself follows immediately in a badge, so this string ends right before it (no trailing punctuation)."
+  },
+
+  "errorReporter.sentToast.dismiss": "Dismiss",
+  "@errorReporter.sentToast.dismiss": {
+    "description": "Button that dismisses the report-sent toast. Keep it short (a tight button)."
+  },
+
+  "errorReporter.sentToast.copyId": "Copy ID",
+  "@errorReporter.sentToast.copyId": {
+    "description": "Button on the report-sent toast that copies the reference ID. Swaps to the \"copied\" confirmation for two seconds. Keep it short (a tight button)."
+  },
+
+  "errorReporter.sentToast.copied": "Copied",
+  "@errorReporter.sentToast.copied": {
+    "description": "Confirmation shown for two seconds on the copy button after the reference ID is copied. Keep it short (a tight button)."
+  },
+
+  "errorReporter.bundleSavedToast.message": "Saved bundle to disk",
+  "@errorReporter.bundleSavedToast.message": {
+    "description": "Developer-only toast confirming the report bundle was written to disk. The file path is shown below it."
+  },
+
+  "errorReporter.bundleSavedToast.dismiss": "Dismiss",
+  "@errorReporter.bundleSavedToast.dismiss": {
+    "description": "Button that dismisses the bundle-saved toast. Keep it short (a tight button)."
+  },
+
+  "errorReporter.bundleSavedToast.reveal": "Reveal in Finder",
+  "@errorReporter.bundleSavedToast.reveal": {
+    "description": "Button that opens the saved bundle's folder in the macOS file browser. \"Finder\" is the name of Apple's file browser (do not translate)."
+  },
+
+  "errorReporter.autoSentToast.title": "Error report sent",
+  "@errorReporter.autoSentToast.title": {
+    "description": "Title of the toast shown after a report was sent automatically (the user opted into auto-send). The reference ID is shown below."
+  },
+
+  "errorReporter.autoSentToast.referenceIdLabel": "Reference ID:",
+  "@errorReporter.autoSentToast.referenceIdLabel": {
+    "description": "Label before the reference identifier in the auto-sent toast. The identifier itself follows in a badge and is not part of this string."
+  },
+
+  "errorReporter.autoSentToast.changeSettings": "Change settings",
+  "@errorReporter.autoSentToast.changeSettings": {
+    "description": "Button on the auto-sent toast that opens the app's Settings (where auto-send can be turned off). Keep it short (a tight button)."
+  },
+
+  "errorReporter.autoSentToast.view": "View",
+  "@errorReporter.autoSentToast.view": {
+    "description": "Button on the auto-sent toast that opens a preview of what was just sent. Keep it short (a tight button)."
+  }
+}

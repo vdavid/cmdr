@@ -3,6 +3,15 @@
 Pull-tier docs for `lib/search/`: architecture, flows, and decision rationale. Must-know invariants and gotchas live in
 [CLAUDE.md](CLAUDE.md).
 
+## i18n
+
+User-facing copy born in this area lives in the `search.*` catalog (`$lib/intl/messages/en/search.json`), resolved via
+`tString()` (the `SearchDialogConfig` title/actions/tooltips, the recent-search aria label, the system-dir-exclude
+tooltip, snapshot labels). `cmdr/no-raw-user-facing-string` is enforced on `/lib/search/`. Most of the dialog's
+on-screen copy is owned by the shared `lib/query-ui/` primitives (the `queryUi.*` catalog), not here.
+`SEARCH_RESULTS_NOT_A_FOLDER_TOAST` stays a string const (resolved from the catalog at module load) because out-of-scope
+consumers (`command-dispatch.ts`, `transfer-entry.ts`) import it by name. Parity net: `search-i18n-parity.test.ts`.
+
 Backend: `src-tauri/src/search/` (index, engine, query, AI pipeline), `src-tauri/src/commands/search.rs` (thin IPC
 wrappers).
 

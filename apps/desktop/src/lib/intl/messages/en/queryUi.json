@@ -1,0 +1,751 @@
+{
+  "queryUi.bar.placeholder.ai": "Describe what you''re looking for",
+  "@queryUi.bar.placeholder.ai": {
+    "description": "Placeholder text in the search input while AI mode is active. Invites the user to type a natural-language request (for example 'big PDFs from last week')."
+  },
+  "queryUi.bar.placeholder.regex": "Regular expression pattern",
+  "@queryUi.bar.placeholder.regex": {
+    "description": "Placeholder text in the search input while Regex mode is active. The user types a regular expression to match filenames."
+  },
+  "queryUi.bar.placeholder.filename": "Filename pattern (use * and ? as wildcards)",
+  "@queryUi.bar.placeholder.filename": {
+    "description": "Placeholder text in the search input while Filename mode is active. The user types a filename pattern. The '*' and '?' are wildcard characters and must stay literal, not translated."
+  },
+  "queryUi.bar.aria.ai": "Natural language search query",
+  "@queryUi.bar.aria.ai": {
+    "description": "Accessibility label for the search input in AI mode, read by screen readers."
+  },
+  "queryUi.bar.aria.regex": "Regex search pattern",
+  "@queryUi.bar.aria.regex": {
+    "description": "Accessibility label for the search input in Regex mode, read by screen readers."
+  },
+  "queryUi.bar.aria.filename": "Filename search pattern",
+  "@queryUi.bar.aria.filename": {
+    "description": "Accessibility label for the search input in Filename mode, read by screen readers."
+  },
+  "queryUi.bar.runTitle.ai": "Run AI search",
+  "@queryUi.bar.runTitle.ai": {
+    "description": "Tooltip and accessibility label for the run button next to the search input in AI mode. AI searches run only on an explicit click or Enter."
+  },
+  "queryUi.bar.runTitle.default": "Run search",
+  "@queryUi.bar.runTitle.default": {
+    "description": "Tooltip and accessibility label for the run button next to the search input in filename and regex modes."
+  },
+  "queryUi.bar.runHint": "Press Enter to search",
+  "@queryUi.bar.runHint": {
+    "description": "Subtle hint shown in the right gutter of the search input when auto-apply is off and the query has changed since the last run, prompting the user to press Enter."
+  },
+  "queryUi.bar.runLabel": "Search",
+  "@queryUi.bar.runLabel": {
+    "description": "Label on the run button at the right edge of the search input. A keyboard-shortcut glyph may appear next to it. Tight control: keep it short."
+  },
+
+  "queryUi.mode.ai.label": "Ask anything",
+  "@queryUi.mode.ai.label": {
+    "description": "Label of the AI mode chip in the search dialog's mode row. The chip switches the dialog into natural-language AI search. Carries a small 'AI' badge and the Alt+A shortcut. Tight chip: keep it short."
+  },
+  "queryUi.mode.ai.aria": "AI mode: ask anything (Alt+A)",
+  "@queryUi.mode.ai.aria": {
+    "description": "Accessibility label for the AI mode chip, read by screen readers. Names the mode and its keyboard shortcut. 'Alt' is the keyboard modifier key name."
+  },
+  "queryUi.mode.filename.label": "Filename",
+  "@queryUi.mode.filename.label": {
+    "description": "Label of the Filename mode chip in the search dialog's mode row. Switches to matching files by filename pattern. Tight chip: keep it short."
+  },
+  "queryUi.mode.filename.aria": "Filename mode (Alt+F)",
+  "@queryUi.mode.filename.aria": {
+    "description": "Accessibility label for the Filename mode chip, naming the mode and its keyboard shortcut. 'Alt' is the keyboard modifier key name."
+  },
+  "queryUi.mode.content.label": "Content",
+  "@queryUi.mode.content.label": {
+    "description": "Label of the Content mode chip in the search dialog's mode row. This chip is visible but disabled: it previews a not-yet-available full-text search feature. Tight chip: keep it short."
+  },
+  "queryUi.mode.content.tooltip": "Coming soon: full-text search inside files",
+  "@queryUi.mode.content.tooltip": {
+    "description": "Tooltip on the disabled Content mode chip, explaining it will later search the text inside files."
+  },
+  "queryUi.mode.content.aria": "Content mode (coming soon)",
+  "@queryUi.mode.content.aria": {
+    "description": "Accessibility label for the disabled Content mode chip, noting it is not yet available."
+  },
+  "queryUi.mode.regex.label": "Regex",
+  "@queryUi.mode.regex.label": {
+    "description": "Label of the Regex mode chip in the search dialog's mode row. Switches to matching filenames with a regular expression. 'Regex' is short for regular expression; keep it short, it's a tight chip."
+  },
+  "queryUi.mode.regex.aria": "Regex mode (Alt+R)",
+  "@queryUi.mode.regex.aria": {
+    "description": "Accessibility label for the Regex mode chip, naming the mode and its keyboard shortcut. 'Alt' is the keyboard modifier key name."
+  },
+  "queryUi.mode.groupAria": "Search mode",
+  "@queryUi.mode.groupAria": {
+    "description": "Accessibility label for the whole mode-chip row (the group of mode chips), read by screen readers."
+  },
+
+  "queryUi.empty.tryLine": "Try…",
+  "@queryUi.empty.tryLine": {
+    "description": "Small heading above the example-query chips in the search dialog's empty state, before the user has searched. Invites the user to try one of the example queries below it. Ends with an ellipsis."
+  },
+  "queryUi.empty.tip": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘H</historyKey> shows recent searches.",
+  "@queryUi.empty.tip": {
+    "description": "Keyboard tip at the bottom of the search dialog's empty state, when AI search is off. The <newKey> and <historyKey> tags wrap keyboard-shortcut glyphs (rendered as small key badges); keep them around the shortcut text and keep the surrounding sentence reading naturally. The glyphs ⌘N and ⌘H are macOS shortcuts and must stay as-is."
+  },
+  "queryUi.empty.tipAi": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘H</historyKey> shows recent searches, <aiKey>⌘Enter</aiKey> runs an AI search.",
+  "@queryUi.empty.tipAi": {
+    "description": "Keyboard tip at the bottom of the search dialog's empty state, when AI search is on (adds the AI-run shortcut). The tags wrap keyboard-shortcut glyphs (rendered as small key badges). The glyphs ⌘N, ⌘H, and ⌘Enter are macOS shortcuts and must stay as-is."
+  },
+
+  "queryUi.empty.indexReady": "Index ready · {countText} {count, plural, one {entry} other {entries}}",
+  "@queryUi.empty.indexReady": {
+    "description": "Muted status line in the search dialog's empty state, telling the user the search index finished loading and how many files it holds. The '·' is a middle-dot separator.",
+    "placeholders": {
+      "countText": "the number of indexed entries, already formatted for display (for example 1,234,567)",
+      "count": "the same number of entries (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "queryUi.ai.lead": "Here''s what the agent did:",
+  "@queryUi.ai.lead": {
+    "description": "Lead-in line of the AI transparency strip, shown after an AI search has run. Introduces a plain-language summary of the filters the AI set. First-person 'agent' voice is intentional here (a sanctioned exception to the no-first-person rule): the product's model is an AI agent acting for the user. Keep it warm and honest."
+  },
+  "queryUi.ai.empty": "Nothing to filter on yet. Try rephrasing?",
+  "@queryUi.ai.empty": {
+    "description": "Shown in the AI transparency strip when the AI produced no pattern and no filters from the user's prompt. Gently suggests rewording the request."
+  },
+  "queryUi.ai.refine": "Refine…",
+  "@queryUi.ai.refine": {
+    "description": "Label on a visible-but-disabled button in the AI transparency strip, previewing a future 'chat back to refine' feature. Ends with an ellipsis."
+  },
+  "queryUi.ai.refineAria": "Refine the AI search (coming soon)",
+  "@queryUi.ai.refineAria": {
+    "description": "Accessibility label for the disabled 'Refine' button in the AI transparency strip, noting it is not yet available."
+  },
+  "queryUi.ai.refineTooltip": "Coming soon: chat back to the agent",
+  "@queryUi.ai.refineTooltip": {
+    "description": "Tooltip on the disabled 'Refine' button in the AI transparency strip. First-person 'agent' voice is intentional (see queryUi.ai.lead)."
+  },
+  "queryUi.ai.stripAria": "What the agent did with your last AI search",
+  "@queryUi.ai.stripAria": {
+    "description": "Accessibility label for the whole AI transparency strip region, read by screen readers."
+  },
+  "queryUi.ai.patternLabel.glob": "Glob",
+  "@queryUi.ai.patternLabel.glob": {
+    "description": "Row label in the AI transparency strip naming the produced pattern as a glob (a filename wildcard pattern). 'Glob' is a technical term for wildcard patterns; keep it if your language has no common equivalent."
+  },
+  "queryUi.ai.patternLabel.regex": "Regex",
+  "@queryUi.ai.patternLabel.regex": {
+    "description": "Row label in the AI transparency strip naming the produced pattern as a regular expression. 'Regex' is short for regular expression."
+  },
+  "queryUi.ai.patternLabel.generic": "Pattern",
+  "@queryUi.ai.patternLabel.generic": {
+    "description": "Row label in the AI transparency strip naming the produced match pattern when its kind (glob vs regex) is unknown."
+  },
+  "queryUi.ai.filter.size": "Size",
+  "@queryUi.ai.filter.size": {
+    "description": "Label for the size filter line in the AI transparency strip, before the size summary value. Also reused as a filter facet name."
+  },
+  "queryUi.ai.filter.modified": "Modified",
+  "@queryUi.ai.filter.modified": {
+    "description": "Label for the modified-date filter line in the AI transparency strip, before the date summary value."
+  },
+  "queryUi.ai.filter.type": "Type",
+  "@queryUi.ai.filter.type": {
+    "description": "Label for the file-type filter line in the AI transparency strip, before the type summary value (Files only / Folders only)."
+  },
+  "queryUi.ai.typeSummary.filesOnly": "Files only",
+  "@queryUi.ai.typeSummary.filesOnly": {
+    "description": "Value of the Type filter line in the AI transparency strip when the AI limited results to files (not folders)."
+  },
+  "queryUi.ai.typeSummary.foldersOnly": "Folders only",
+  "@queryUi.ai.typeSummary.foldersOnly": {
+    "description": "Value of the Type filter line in the AI transparency strip when the AI limited results to folders (not files)."
+  },
+
+  "queryUi.results.col.name": "Name",
+  "@queryUi.results.col.name": {
+    "description": "Column header for the filename column in the search results table."
+  },
+  "queryUi.results.col.path": "Path",
+  "@queryUi.results.col.path": {
+    "description": "Column header for the parent-folder path column in the search results table."
+  },
+  "queryUi.results.col.size": "Size",
+  "@queryUi.results.col.size": {
+    "description": "Column header for the file-size column in the search results table. Right-aligned."
+  },
+  "queryUi.results.col.modified": "Modified",
+  "@queryUi.results.col.modified": {
+    "description": "Column header for the last-modified-date column in the search results table. Right-aligned."
+  },
+  "queryUi.results.col.actions": "Actions",
+  "@queryUi.results.col.actions": {
+    "description": "Column header for the per-row actions menu column in the search results table. Right-aligned."
+  },
+  "queryUi.results.listboxAria": "Search results",
+  "@queryUi.results.listboxAria": {
+    "description": "Accessibility label for the search results list, read by screen readers."
+  },
+
+  "queryUi.results.scanningWithCount": "Scanning in progress ({countText} entries)...",
+  "@queryUi.results.scanningWithCount": {
+    "description": "Status-bar text shown while the drive index is still being built, reporting roughly how many files have been scanned so far. Ends with '...' (three dots). Note: this count uses a compact short form, not the locale-grouped form.",
+    "placeholders": {
+      "countText": "the number of entries scanned so far, in a compact form (for example 12.3K or 1.2M)"
+    }
+  },
+  "queryUi.results.scanning": "Scan in progress...",
+  "@queryUi.results.scanning": {
+    "description": "Status-bar text shown while the drive index is being built and no count is available yet. Ends with '...' (three dots)."
+  },
+  "queryUi.results.indexUnavailable": "Drive index not available",
+  "@queryUi.results.indexUnavailable": {
+    "description": "Status-bar text shown when the drive index can't be used (indexing is off, not started, or the backend is unreachable), so search isn't available."
+  },
+  "queryUi.results.indexReadyStatus": "Index ready ({countText} entries)",
+  "@queryUi.results.indexReadyStatus": {
+    "description": "Status-bar text shown when the drive index is ready and no search has run yet, reporting how many files it holds. Note: this count uses a compact short form, not the locale-grouped form.",
+    "placeholders": {
+      "countText": "the number of indexed entries, in a compact form (for example 12.3K or 1.2M)"
+    }
+  },
+  "queryUi.results.resultCount": "{shownText} of {totalText} results",
+  "@queryUi.results.resultCount": {
+    "description": "Status-bar text after a search runs, showing how many results are displayed out of the total found (the list is capped, so fewer may be shown than found).",
+    "placeholders": {
+      "shownText": "the number of results currently shown, already formatted for display",
+      "totalText": "the total number of matches found, already formatted for display (for example 1,234)"
+    }
+  },
+  "queryUi.results.criteria.query": "Query: {query}",
+  "@queryUi.results.criteria.query": {
+    "description": "One bullet in the 'No files match these criteria' list, echoing the search text the user typed. Shown when a search returns nothing.",
+    "placeholders": {
+      "query": "the user's search text, shown verbatim and not translated"
+    }
+  },
+  "queryUi.results.criteria.size": "Size filter active",
+  "@queryUi.results.criteria.size": {
+    "description": "One bullet in the 'No files match these criteria' list, noting that a size filter was applied. Shown when a search returns nothing."
+  },
+  "queryUi.results.criteria.modified": "Modified filter active",
+  "@queryUi.results.criteria.modified": {
+    "description": "One bullet in the 'No files match these criteria' list, noting that a modified-date filter was applied. Shown when a search returns nothing."
+  },
+  "queryUi.results.indexNotReady": "Drive index not ready. Search is available after the initial scan completes.",
+  "@queryUi.results.indexNotReady": {
+    "description": "Message in the results area when the drive index hasn't finished its first build, so search can't run yet."
+  },
+  "queryUi.results.scanProgressWithCount": "Scan in progress ({countText} entries)...",
+  "@queryUi.results.scanProgressWithCount": {
+    "description": "Sub-line under the 'Drive index not ready' message, reporting roughly how many files have been scanned so far. Ends with '...' (three dots). Note: this count uses a compact short form, not the locale-grouped form.",
+    "placeholders": {
+      "countText": "the number of entries scanned so far, in a compact form (for example 12.3K or 1.2M)"
+    }
+  },
+  "queryUi.results.scanProgress": "Scan in progress...",
+  "@queryUi.results.scanProgress": {
+    "description": "Sub-line under the 'Drive index not ready' message when no scan count is available yet. Ends with '...' (three dots)."
+  },
+  "queryUi.results.loadingIndex": "Loading drive index...",
+  "@queryUi.results.loadingIndex": {
+    "description": "Label under a spinner shown while the drive index is being loaded into memory before a search. Ends with '...' (three dots)."
+  },
+  "queryUi.results.searching": "Searching...",
+  "@queryUi.results.searching": {
+    "description": "Label under a spinner shown while a search is running. Ends with '...' (three dots)."
+  },
+  "queryUi.results.noMatchHeading": "No files match these criteria:",
+  "@queryUi.results.noMatchHeading": {
+    "description": "Heading shown when a search returns no results, above a bulleted list of the active search criteria. Ends with a colon."
+  },
+  "queryUi.results.rowMenuAria": "More actions",
+  "@queryUi.results.rowMenuAria": {
+    "description": "Accessibility label and tooltip for the '…' menu button on each search result row, which opens that file's context menu."
+  },
+
+  "queryUi.pathPills.hiddenAria": "Hidden path segments: {segments}",
+  "@queryUi.pathPills.hiddenAria": {
+    "description": "Accessibility label for the '…' collapse pill in a result row's path, listing the folder names hidden behind it.",
+    "placeholders": {
+      "segments": "the hidden folder names, comma-separated, shown verbatim and not translated"
+    }
+  },
+
+  "queryUi.recent.leadingLabel": "Recent searches:",
+  "@queryUi.recent.leadingLabel": {
+    "description": "Label at the left of the recent-searches strip at the bottom of the search dialog, before the recent-search chips. Ends with a colon."
+  },
+  "queryUi.recent.trailingLabel": "All searches…",
+  "@queryUi.recent.trailingLabel": {
+    "description": "Label on the trailing button of the recent-searches strip; opens a popover listing the full search history. A keyboard-shortcut glyph appears next to it. Ends with an ellipsis."
+  },
+  "queryUi.recent.trailingTooltip": "Show all recent searches",
+  "@queryUi.recent.trailingTooltip": {
+    "description": "Tooltip on the 'All searches…' button at the right of the recent-searches strip."
+  },
+  "queryUi.recent.regionAria": "Recent searches",
+  "@queryUi.recent.regionAria": {
+    "description": "Accessibility label for the recent-searches strip region, read by screen readers."
+  },
+  "queryUi.recent.allButtonAria": "All recent searches",
+  "@queryUi.recent.allButtonAria": {
+    "description": "Accessibility label for the 'All searches…' button, read by screen readers."
+  },
+  "queryUi.recent.filterPlaceholder": "Filter recent searches",
+  "@queryUi.recent.filterPlaceholder": {
+    "description": "Placeholder and accessibility label for the filter input at the top of the recent-searches popover, which fuzzy-filters the search history as the user types."
+  },
+  "queryUi.recent.emptyMessage": "No recent searches match that filter.",
+  "@queryUi.recent.emptyMessage": {
+    "description": "Shown in the recent-searches popover when the filter text matches none of the history entries."
+  },
+  "queryUi.recent.popoverAria": "All recent searches",
+  "@queryUi.recent.popoverAria": {
+    "description": "Accessibility label for the recent-searches popover wrapper, read by screen readers."
+  },
+  "queryUi.recent.listboxAria": "Recent searches",
+  "@queryUi.recent.listboxAria": {
+    "description": "Accessibility label for the list of entries inside the recent-searches popover, read by screen readers."
+  },
+
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> to move · <runKey>Enter</runKey> to run · right-click to remove",
+  "@queryUi.recent.popoverHint": {
+    "description": "Footer hint at the bottom of the recent-searches popover, explaining the keyboard and mouse controls. The <moveKey> and <runKey> tags wrap keyboard-shortcut glyphs (rendered as small key badges); keep them around the shortcut text. The '·' are middle-dot separators. '↑↓' and 'Enter' are key names; keep them as-is."
+  },
+
+  "queryUi.recent.mode.ai": "AI",
+  "@queryUi.recent.mode.ai": {
+    "description": "Friendly name of the AI search mode, used in recent-search chip tooltips and accessibility labels. 'AI' is a brand-like term; keep it as-is in most languages."
+  },
+  "queryUi.recent.mode.regex": "Regex",
+  "@queryUi.recent.mode.regex": {
+    "description": "Friendly name of the Regex search mode, used in recent-search chip tooltips. 'Regex' is short for regular expression."
+  },
+  "queryUi.recent.mode.filename": "Filename",
+  "@queryUi.recent.mode.filename": {
+    "description": "Friendly name of the Filename search mode, used in recent-search chip tooltips."
+  },
+
+  "queryUi.age.justNow": "just now",
+  "@queryUi.age.justNow": {
+    "description": "Relative-time label in a recent-search chip tooltip for an action that happened less than a minute ago."
+  },
+  "queryUi.age.minutes": "{count}m ago",
+  "@queryUi.age.minutes": {
+    "description": "Relative-time label in a recent-search chip tooltip, in minutes ago. The 'm' abbreviates minutes; keep it terse. If your language can't abbreviate this way, a short '{count} min ago' form is fine.",
+    "placeholders": {
+      "count": "the number of minutes ago"
+    }
+  },
+  "queryUi.age.hours": "{count}h ago",
+  "@queryUi.age.hours": {
+    "description": "Relative-time label in a recent-search chip tooltip, in hours ago. The 'h' abbreviates hours; keep it terse.",
+    "placeholders": {
+      "count": "the number of hours ago"
+    }
+  },
+  "queryUi.age.days": "{count}d ago",
+  "@queryUi.age.days": {
+    "description": "Relative-time label in a recent-search chip tooltip, in days ago. The 'd' abbreviates days; keep it terse.",
+    "placeholders": {
+      "count": "the number of days ago"
+    }
+  },
+  "queryUi.age.weeks": "{count}w ago",
+  "@queryUi.age.weeks": {
+    "description": "Relative-time label in a recent-search chip tooltip, in weeks ago. The 'w' abbreviates weeks; keep it terse.",
+    "placeholders": {
+      "count": "the number of weeks ago"
+    }
+  },
+  "queryUi.age.months": "{count}mo ago",
+  "@queryUi.age.months": {
+    "description": "Relative-time label in a recent-search chip tooltip, in months ago. The 'mo' abbreviates months; keep it terse.",
+    "placeholders": {
+      "count": "the number of months ago"
+    }
+  },
+  "queryUi.age.years": "{count}y ago",
+  "@queryUi.age.years": {
+    "description": "Relative-time label in a recent-search chip tooltip, in years ago. The 'y' abbreviates years; keep it terse.",
+    "placeholders": {
+      "count": "the number of years ago"
+    }
+  },
+  "queryUi.recent.scopeSummary": "scope: {scope}",
+  "@queryUi.recent.scopeSummary": {
+    "description": "Part of a recent-search chip's hover tooltip. States which folder scope the past search was limited to. Lowercase because it joins a comma-separated list of filter facts inside the tooltip.",
+    "placeholders": {
+      "scope": "the folder scope expression of the past search, shown verbatim and not translated"
+    }
+  },
+  "queryUi.recent.caseSensitive": "case-sensitive",
+  "@queryUi.recent.caseSensitive": {
+    "description": "Part of a recent-search chip's hover tooltip. Notes that the past search matched letter case exactly. Lowercase because it joins a comma-separated list of filter facts."
+  },
+  "queryUi.recent.systemDirsIncluded": "system dirs included",
+  "@queryUi.recent.systemDirsIncluded": {
+    "description": "Part of a recent-search chip's hover tooltip. Notes that the past search did NOT hide the usual system and build folders. Lowercase because it joins a comma-separated list of filter facts. 'dirs' is short for directories (folders)."
+  },
+  "queryUi.recent.resultCount": "{countText} results last time",
+  "@queryUi.recent.resultCount": {
+    "description": "Last line of a recent-search chip's hover tooltip. Reminds the user how many matches that past search returned when it last ran. This line only renders when the count is at least 1, but it reads 'results' regardless of count.",
+    "placeholders": {
+      "countText": "the number of results, shown as a plain integer (no grouping)"
+    }
+  },
+  "queryUi.recent.sizeRange": "size {minText}–{maxText}",
+  "@queryUi.recent.sizeRange": {
+    "description": "Part of a recent-search chip's hover tooltip: the size filter when both a lower and upper bound were set. The dash is an en dash for the range. Lowercase because it joins a comma-separated list of filter facts.",
+    "placeholders": {
+      "minText": "the lower size bound, already formatted with its unit (for example 1.5 GB)",
+      "maxText": "the upper size bound, already formatted with its unit (for example 200.0 MB)"
+    }
+  },
+  "queryUi.recent.sizeMin": "size > {minText}",
+  "@queryUi.recent.sizeMin": {
+    "description": "Part of a recent-search chip's hover tooltip: the size filter when only a lower bound was set (files larger than this). The '>' is the greater-than sign. Lowercase because it joins a comma-separated list.",
+    "placeholders": {
+      "minText": "the lower size bound, already formatted with its unit (for example 1.5 GB)"
+    }
+  },
+  "queryUi.recent.sizeMax": "size < {maxText}",
+  "@queryUi.recent.sizeMax": {
+    "description": "Part of a recent-search chip's hover tooltip: the size filter when only an upper bound was set (files smaller than this). The '<' is the less-than sign. Lowercase because it joins a comma-separated list.",
+    "placeholders": {
+      "maxText": "the upper size bound, already formatted with its unit (for example 200.0 MB)"
+    }
+  },
+  "queryUi.recent.modifiedRange": "modified {after}…{before}",
+  "@queryUi.recent.modifiedRange": {
+    "description": "Part of a recent-search chip's hover tooltip: the modified-date filter when both an after and a before date were set. The '…' is an ellipsis joining the two ISO dates. Lowercase because it joins a comma-separated list.",
+    "placeholders": {
+      "after": "the start date in ISO format (YYYY-MM-DD), not translated",
+      "before": "the end date in ISO format (YYYY-MM-DD), not translated"
+    }
+  },
+  "queryUi.recent.modifiedAfter": "after {after}",
+  "@queryUi.recent.modifiedAfter": {
+    "description": "Part of a recent-search chip's hover tooltip: the modified-date filter when only an 'after' date was set (modified on or after this date). Lowercase because it joins a comma-separated list.",
+    "placeholders": {
+      "after": "the date in ISO format (YYYY-MM-DD), not translated"
+    }
+  },
+  "queryUi.recent.modifiedBefore": "before {before}",
+  "@queryUi.recent.modifiedBefore": {
+    "description": "Part of a recent-search chip's hover tooltip: the modified-date filter when only a 'before' date was set (modified on or before this date). Lowercase because it joins a comma-separated list.",
+    "placeholders": {
+      "before": "the date in ISO format (YYYY-MM-DD), not translated"
+    }
+  },
+
+  "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
+  "@queryUi.recent.chipTooltipHeader": {
+    "description": "First line of a recent-search chip's hover tooltip: the search mode and how long ago it ran, joined by a middle-dot. Both parts are already translated.",
+    "placeholders": {
+      "mode": "the search mode name, already translated (AI, Regex, or Filename)",
+      "age": "the relative time, already translated (for example '3d ago')"
+    }
+  },
+
+  "queryUi.dialog.actionsAria": "Dialog actions",
+  "@queryUi.dialog.actionsAria": {
+    "description": "Accessibility label for the group of primary/secondary buttons in the search dialog footer, read by screen readers."
+  },
+  "queryUi.dialog.aiTranslateFailedToast": "Couldn''t run the AI search just now. Try again?",
+  "@queryUi.dialog.aiTranslateFailedToast": {
+    "description": "Toast shown when an AI search couldn't be translated for an unknown reason. Reassuring and actionable, inviting a retry. Per app style, avoid the words 'error' and 'failed'."
+  },
+
+  "queryUi.filters.toolbarAria": "Search filters",
+  "@queryUi.filters.toolbarAria": {
+    "description": "Accessibility label for the filter-chip strip (type toggle plus Pattern, Size, Modified, and Search-in chips), read by screen readers."
+  },
+  "queryUi.filters.type.both": "Both",
+  "@queryUi.filters.type.both": {
+    "description": "Option in the file-type toggle at the start of the filter strip: match both files and folders. The default. Tight toggle cell: keep it short."
+  },
+  "queryUi.filters.type.files": "Files",
+  "@queryUi.filters.type.files": {
+    "description": "Option in the file-type toggle: match files only. Tight toggle cell: keep it short."
+  },
+  "queryUi.filters.type.folders": "Folders",
+  "@queryUi.filters.type.folders": {
+    "description": "Option in the file-type toggle: match folders only. Tight toggle cell: keep it short."
+  },
+  "queryUi.filters.type.aria": "Filter by type",
+  "@queryUi.filters.type.aria": {
+    "description": "Accessibility label for the file-type toggle (Both / Files / Folders), read by screen readers."
+  },
+  "queryUi.filters.chip.pattern": "Pattern",
+  "@queryUi.filters.chip.pattern": {
+    "description": "Label of the Pattern filter chip, which surfaces the active filename, regex, or AI-produced match pattern. Tight chip: keep it short."
+  },
+  "queryUi.filters.chip.size": "Size",
+  "@queryUi.filters.chip.size": {
+    "description": "Label of the Size filter chip, which opens a popover to filter results by file size. Tight chip: keep it short."
+  },
+  "queryUi.filters.chip.modified": "Modified",
+  "@queryUi.filters.chip.modified": {
+    "description": "Label of the Modified filter chip, which opens a popover to filter results by last-modified date. Tight chip: keep it short."
+  },
+  "queryUi.filters.chip.scope": "Search in",
+  "@queryUi.filters.chip.scope": {
+    "description": "Label of the scope filter chip, which opens a popover to limit search to specific folders. Tight chip: keep it short."
+  },
+
+  "queryUi.filters.scope.includesSystemFolders": "includes system folders",
+  "@queryUi.filters.scope.includesSystemFolders": {
+    "description": "Summary shown on the Search-in chip when the user has turned off the default 'hide boring folders' option, so system and build folders are now searched too. Lowercase, reads as a chip value."
+  },
+
+  "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
+  "@queryUi.filters.size.summary.single": {
+    "description": "Summary shown on the Size chip for a one-sided size filter (greater-than, less-than, or equals). For example '> 100 MB'.",
+    "placeholders": {
+      "prefix": "the comparison glyph: '>', '<', or '=', not translated",
+      "valueText": "the size number the user entered, shown verbatim (for example 100)",
+      "unit": "the size unit, already formatted (for example MB, kB), not translated"
+    }
+  },
+  "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
+  "@queryUi.filters.size.summary.range": {
+    "description": "Summary shown on the Size chip for a between-two-sizes filter. The dash is an en dash for the range.",
+    "placeholders": {
+      "minText": "the lower size number, shown verbatim",
+      "minUnit": "the lower-bound unit, already formatted (for example MB), not translated",
+      "maxText": "the upper size number, shown verbatim",
+      "maxUnit": "the upper-bound unit, already formatted (for example GB), not translated"
+    }
+  },
+
+  "queryUi.filters.date.summary.after": "after {date}",
+  "@queryUi.filters.date.summary.after": {
+    "description": "Summary shown on the Modified chip for a 'modified after' filter (on or after this date).",
+    "placeholders": {
+      "date": "the date in ISO format (YYYY-MM-DD), not translated"
+    }
+  },
+  "queryUi.filters.date.summary.before": "before {date}",
+  "@queryUi.filters.date.summary.before": {
+    "description": "Summary shown on the Modified chip for a 'modified before' filter (on or before this date).",
+    "placeholders": {
+      "date": "the date in ISO format (YYYY-MM-DD), not translated"
+    }
+  },
+  "queryUi.filters.date.summary.range": "{after} – {before}",
+  "@queryUi.filters.date.summary.range": {
+    "description": "Summary shown on the Modified chip for a between-two-dates filter. The dash is an en dash for the range.",
+    "placeholders": {
+      "after": "the start date in ISO format (YYYY-MM-DD), not translated",
+      "before": "the end date in ISO format (YYYY-MM-DD), not translated"
+    }
+  },
+
+  "queryUi.size.comparator.any": "any",
+  "@queryUi.size.comparator.any": {
+    "description": "First option in the Size popover's comparator column: no size limit. Lowercase; reads as a cell in a list of choices."
+  },
+  "queryUi.size.comparator.between": "between",
+  "@queryUi.size.comparator.between": {
+    "description": "Option in the Size popover's comparator column: size is between a lower and an upper bound. Lowercase; reads as a cell in a list of choices. (The other comparators are math glyphs and aren't translated.)"
+  },
+  "queryUi.size.unit.byte": "byte",
+  "@queryUi.size.unit.byte": {
+    "description": "Singular byte unit label in the Size popover's unit column, shown when the chosen value is exactly 1. The full word, not the 'B' abbreviation."
+  },
+  "queryUi.size.unit.bytes": "bytes",
+  "@queryUi.size.unit.bytes": {
+    "description": "Plural byte unit label in the Size popover's unit column, shown for any value other than 1. The full word, not the 'B' abbreviation."
+  },
+  "queryUi.size.customCell": "custom…",
+  "@queryUi.size.customCell": {
+    "description": "Cell in the Size popover's value column that, when clicked, reveals a free-form number input. Lowercase with an ellipsis."
+  },
+  "queryUi.size.customInputPlaceholder": "custom",
+  "@queryUi.size.customInputPlaceholder": {
+    "description": "Placeholder in the free-form number input that appears after clicking the 'custom…' cell in the Size popover."
+  },
+  "queryUi.size.popover.label": "Size",
+  "@queryUi.size.popover.label": {
+    "description": "Header label of the Size filter popover."
+  },
+  "queryUi.size.popover.aria": "Size filter options",
+  "@queryUi.size.popover.aria": {
+    "description": "Accessibility label for the Size filter popover and its option grid, read by screen readers."
+  },
+  "queryUi.size.aria.comparator": "Comparator",
+  "@queryUi.size.aria.comparator": {
+    "description": "Accessibility label for the comparator column (any / ≥ / ≤ / = / between) in the Size popover. A comparator is the kind of size comparison being made."
+  },
+  "queryUi.size.aria.minValue": "Minimum size value",
+  "@queryUi.size.aria.minValue": {
+    "description": "Accessibility label for the lower-bound value column in the Size popover."
+  },
+  "queryUi.size.aria.minUnit": "Minimum size unit",
+  "@queryUi.size.aria.minUnit": {
+    "description": "Accessibility label for the lower-bound unit column in the Size popover."
+  },
+  "queryUi.size.aria.maxValue": "Maximum size value",
+  "@queryUi.size.aria.maxValue": {
+    "description": "Accessibility label for the upper-bound value column in the Size popover (shown for the 'between' comparator)."
+  },
+  "queryUi.size.aria.maxUnit": "Maximum size unit",
+  "@queryUi.size.aria.maxUnit": {
+    "description": "Accessibility label for the upper-bound unit column in the Size popover (shown for the 'between' comparator)."
+  },
+  "queryUi.size.aria.customMin": "Custom minimum size value",
+  "@queryUi.size.aria.customMin": {
+    "description": "Accessibility label for the free-form lower-bound size number input in the Size popover."
+  },
+  "queryUi.size.aria.customMax": "Custom maximum size value",
+  "@queryUi.size.aria.customMax": {
+    "description": "Accessibility label for the free-form upper-bound size number input in the Size popover."
+  },
+
+  "queryUi.date.comparator.any": "any",
+  "@queryUi.date.comparator.any": {
+    "description": "First option in the Modified popover's comparator column: no date limit. Lowercase; reads as a cell in a list of choices."
+  },
+  "queryUi.date.comparator.after": "after",
+  "@queryUi.date.comparator.after": {
+    "description": "Option in the Modified popover's comparator column: modified on or after a date. Lowercase; reads as a cell in a list of choices."
+  },
+  "queryUi.date.comparator.before": "before",
+  "@queryUi.date.comparator.before": {
+    "description": "Option in the Modified popover's comparator column: modified on or before a date. Lowercase; reads as a cell in a list of choices."
+  },
+  "queryUi.date.comparator.between": "between",
+  "@queryUi.date.comparator.between": {
+    "description": "Option in the Modified popover's comparator column: modified between two dates. Lowercase; reads as a cell in a list of choices."
+  },
+  "queryUi.date.customCell": "custom…",
+  "@queryUi.date.customCell": {
+    "description": "Cell in the Modified popover's value column that, when clicked, reveals a free-form date picker. Lowercase with an ellipsis."
+  },
+  "queryUi.date.popover.label": "Modified",
+  "@queryUi.date.popover.label": {
+    "description": "Header label of the Modified-date filter popover."
+  },
+  "queryUi.date.popover.aria": "Modified filter options",
+  "@queryUi.date.popover.aria": {
+    "description": "Accessibility label for the Modified filter popover and its option grid, read by screen readers."
+  },
+  "queryUi.date.aria.comparator": "Comparator",
+  "@queryUi.date.aria.comparator": {
+    "description": "Accessibility label for the comparator column (any / after / before / between) in the Modified popover."
+  },
+  "queryUi.date.aria.value": "Date value",
+  "@queryUi.date.aria.value": {
+    "description": "Accessibility label for the lower-bound date column in the Modified popover."
+  },
+  "queryUi.date.aria.maxValue": "Maximum date value",
+  "@queryUi.date.aria.maxValue": {
+    "description": "Accessibility label for the upper-bound date column in the Modified popover (shown for the 'between' comparator)."
+  },
+  "queryUi.date.aria.custom": "Custom date value",
+  "@queryUi.date.aria.custom": {
+    "description": "Accessibility label for the free-form lower-bound date picker in the Modified popover."
+  },
+  "queryUi.date.aria.customMax": "Custom maximum date value",
+  "@queryUi.date.aria.customMax": {
+    "description": "Accessibility label for the free-form upper-bound date picker in the Modified popover."
+  },
+
+  "queryUi.date.preset.today": "today {time}",
+  "@queryUi.date.preset.today": {
+    "description": "Preset cell in the Modified popover meaning 'since the start of today'. The time is shown so the user knows it means midnight.",
+    "placeholders": {
+      "time": "the start-of-day time, here always '0:00' (midnight)"
+    }
+  },
+  "queryUi.date.preset.yesterday": "yesterday {time}",
+  "@queryUi.date.preset.yesterday": {
+    "description": "Preset cell in the Modified popover meaning 'since the start of yesterday'.",
+    "placeholders": {
+      "time": "the start-of-day time, here always '0:00' (midnight)"
+    }
+  },
+  "queryUi.date.preset.thisWeek": "this {weekday} {time}",
+  "@queryUi.date.preset.thisWeek": {
+    "description": "Preset cell in the Modified popover meaning 'since the start of this week'. The weekday is the user's first day of week (Monday in most locales, Sunday in the US).",
+    "placeholders": {
+      "weekday": "the localized first-day-of-week name (for example Monday)",
+      "time": "the start-of-day time, here always '0:00' (midnight)"
+    }
+  },
+  "queryUi.date.preset.lastWeek": "last {weekday} {time}",
+  "@queryUi.date.preset.lastWeek": {
+    "description": "Preset cell in the Modified popover meaning 'since the start of last week'.",
+    "placeholders": {
+      "weekday": "the localized first-day-of-week name (for example Monday)",
+      "time": "the start-of-day time, here always '0:00' (midnight)"
+    }
+  },
+  "queryUi.date.preset.thisMonth": "1st of {month} {time}",
+  "@queryUi.date.preset.thisMonth": {
+    "description": "Preset cell in the Modified popover meaning 'since the 1st of the current month'. The year is omitted because it's the current year. '1st' is an ordinal (first day); adapt the ordinal form to your language.",
+    "placeholders": {
+      "month": "the localized current month name (for example May)",
+      "time": "the start-of-day time, here always '0:00' (midnight)"
+    }
+  },
+  "queryUi.date.preset.lastMonth": "1st of {month}, {year}, {time}",
+  "@queryUi.date.preset.lastMonth": {
+    "description": "Preset cell in the Modified popover meaning 'since the 1st of last month'. The year is always included so a reader in January isn't confused about which December is meant. '1st' is an ordinal (first day).",
+    "placeholders": {
+      "month": "the localized previous-month name (for example April)",
+      "year": "the four-digit year of that month (for example 2026)",
+      "time": "the start-of-day time, here always '0:00' (midnight)"
+    }
+  },
+  "queryUi.date.preset.yearStart": "1st of January, {year}, {time}",
+  "@queryUi.date.preset.yearStart": {
+    "description": "Preset cell in the Modified popover meaning 'since the 1st of January this year'. Shown only when it doesn't coincide with the this-month or last-month preset. 'January' here is fixed (the month never varies for this preset).",
+    "placeholders": {
+      "year": "the four-digit current year (for example 2026)",
+      "time": "the start-of-day time, here always '0:00' (midnight)"
+    }
+  },
+
+  "queryUi.scope.popover.label": "Search in",
+  "@queryUi.scope.popover.label": {
+    "description": "Header label of the scope ('Search in') filter popover, which limits search to specific folders."
+  },
+  "queryUi.scope.popover.aria": "Search in folders",
+  "@queryUi.scope.popover.aria": {
+    "description": "Accessibility label for the scope filter popover, read by screen readers."
+  },
+  "queryUi.scope.placeholder": "All folders",
+  "@queryUi.scope.placeholder": {
+    "description": "Placeholder in the scope popover's folder textarea, shown when no folders are entered (so the search covers everything)."
+  },
+  "queryUi.scope.hint": "Comma-separated paths. Prefix with <bang>!</bang> to exclude. Wildcards <star>*</star> and <question>?</question> work.",
+  "@queryUi.scope.hint": {
+    "description": "Help text under the folder textarea in the scope popover, explaining the syntax for limiting search to folders. The <bang>, <star>, and <question> tags wrap literal characters ('!', '*', '?') shown in a code style; keep those characters as-is and keep the tags around them. 'Comma-separated' means the user separates multiple paths with commas."
+  },
+
+  "queryUi.scope.textareaAria": "Scope folders",
+  "@queryUi.scope.textareaAria": {
+    "description": "Accessibility label for the folder-list textarea in the scope popover, read by screen readers."
+  },
+  "queryUi.scope.toggle.hideBoring": "Hide boring folders",
+  "@queryUi.scope.toggle.hideBoring": {
+    "description": "Checkbox label in the scope popover that, when on, skips common system and build folders. The casual word 'boring' is intentional product voice; keep that friendly, slightly playful tone rather than a literal 'system folders'."
+  },
+  "queryUi.scope.toggle.caseSensitive": "Case-sensitive",
+  "@queryUi.scope.toggle.caseSensitive": {
+    "description": "Checkbox label in the scope popover that, when on, makes filename matching distinguish upper- and lower-case letters."
+  },
+  "queryUi.scope.toggle.caseSensitiveAria": "Case-sensitive matching",
+  "@queryUi.scope.toggle.caseSensitiveAria": {
+    "description": "Accessibility label for the case-sensitive checkbox in the scope popover."
+  },
+  "queryUi.scope.useCurrentFolder": "Use current folder",
+  "@queryUi.scope.useCurrentFolder": {
+    "description": "Footer button in the scope popover that sets the search scope to the folder currently open in the active pane. A keyboard-shortcut glyph appears next to it."
+  },
+  "queryUi.scope.allFolders": "All folders",
+  "@queryUi.scope.allFolders": {
+    "description": "Footer button in the scope popover that clears the scope so search covers all folders. A keyboard-shortcut glyph appears next to it."
+  }
+}

@@ -7,9 +7,11 @@
  * The binding arrives in the user-facing macOS-symbol form (`'⌃⌥⌘J'`), which
  * is also what we want to show — no translation needed.
  */
+import { tString } from '$lib/intl/messages.svelte'
+
 export function globalGoToLatestDescription(binding: string): string {
   if (!binding) {
-    return 'Jump to your most recent download from any app.'
+    return tString('downloads.toggleDescription.unbound')
   }
-  return `Press ${binding} from any app to jump to your most recent download.`
+  return tString('downloads.toggleDescription.bound', { binding })
 }

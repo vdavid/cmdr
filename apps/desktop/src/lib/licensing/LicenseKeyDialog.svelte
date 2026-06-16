@@ -22,6 +22,8 @@
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
 
     interface Props {
@@ -66,8 +68,8 @@
     }
 
     function getLicenseTypeLabel(licenseType: string | null | undefined): string | null {
-        if (licenseType === 'commercial_perpetual') return 'Commercial perpetual'
-        if (licenseType === 'commercial_subscription') return 'Commercial subscription'
+        if (licenseType === 'commercial_perpetual') return tString('licensing.dialog.typeCommercialPerpetual')
+        if (licenseType === 'commercial_subscription') return tString('licensing.dialog.typeCommercialSubscription')
         return null
     }
 
@@ -76,15 +78,19 @@
 
     function getValidityText(s: LicenseStatus | null, pending: boolean): string | null {
         if (pending && s?.type === 'commercial') {
-            return 'Not yet verified'
+            return tString('licensing.dialog.validityNotYetVerified')
         }
         if (s?.type === 'commercial') {
             if (s.licenseType === 'commercial_perpetual') {
-                return s.expiresAt ? `Perpetual — updates until ${formatDate(s.expiresAt)}` : 'Perpetual'
+                return s.expiresAt
+                    ? tString('licensing.dialog.validityPerpetualUntil', { date: formatDate(s.expiresAt) })
+                    : tString('licensing.dialog.validityPerpetual')
             }
-            return s.expiresAt ? `Valid until ${formatDate(s.expiresAt)}` : 'Active'
+            return s.expiresAt
+                ? tString('licensing.dialog.validityValidUntil', { date: formatDate(s.expiresAt) })
+                : tString('licensing.dialog.validityActive')
         }
-        if (s?.type === 'expired') return `Expired on ${formatDate(s.expiredAt)}`
+        if (s?.type === 'expired') return tString('licensing.dialog.validityExpiredOn', { date: formatDate(s.expiredAt) })
         return null
     }
 
@@ -100,35 +106,35 @@
         switch (parsed?.code) {
             case 'badSignature':
                 return {
-                    error: "This license key failed our signature verification, meaning that it doesn't look like a valid key.",
-                    hint: 'Please double-check for typos and try pasting it again from your purchase email.',
+                    error: tString('licensing.error.badSignature'),
+                    hint: tString('licensing.error.badSignatureHint'),
                 }
             case 'invalidFormat':
             case 'badEncoding':
             case 'badPayload':
                 return {
-                    error: 'Our license key format is different from this.',
-                    hint: 'License keys are either a short code (CMDR-XXXX-XXXX-XXXX) or a longer cryptographic key from your purchase email.',
+                    error: tString('licensing.error.badFormat'),
+                    hint: tString('licensing.error.badFormatHint'),
                 }
             case 'shortCodeNotFound':
                 return {
-                    error: "This license looks good, but we looked hard and couldn't find it in our database.",
-                    hint: 'Please verify that you pasted the correct key from your purchase email.',
+                    error: tString('licensing.error.shortCodeNotFound'),
+                    hint: tString('licensing.error.shortCodeNotFoundHint'),
                 }
             case 'networkError':
                 return {
-                    error: "Ouch, we couldn't reach the license server this time.",
-                    hint: 'Please check your internet connection and try again.',
+                    error: tString('licensing.error.network'),
+                    hint: tString('licensing.error.networkHint'),
                 }
             case 'serverError':
                 return {
-                    error: "Hmm, the license server responded with something weird. We're sorry about that.",
-                    hint: 'Please try again later.',
+                    error: tString('licensing.error.server'),
+                    hint: tString('licensing.error.serverHint'),
                 }
             default:
                 return {
-                    error: 'Something went wrong when activating this key.',
-                    hint: "Please try again. If the problem persists, email us and we'll help.",
+                    error: tString('licensing.error.generic'),
+                    hint: tString('licensing.error.genericHint'),
                 }
         }
     }
@@ -151,8 +157,8 @@
     function showActivationToast(info: LicenseInfo): void {
         const name = info.organizationName
         const message = name
-            ? `Welcome aboard, ${name}! Thanks for your support. ❤️`
-            : 'License activated. Thanks for your support! ❤️'
+            ? tString('licensing.dialog.activatedToastNamed', { org: name })
+            : tString('licensing.dialog.activatedToast')
         addToast(message, { level: 'success' })
     }
 
@@ -180,14 +186,14 @@
             showActivationToast(licenseInfo)
             onSuccess()
         } else {
-            error = "Couldn't verify your license with the server. Please try again later."
+            error = tString('licensing.dialog.networkFallbackError')
             hasError = true
         }
     }
 
     function buildMailtoUrl(key: string): string {
-        const subject = encodeURIComponent('License key issue')
-        const body = encodeURIComponent(`Hi,\n\nI'm having trouble activating my license key:\n${key}\n\n`)
+        const subject = encodeURIComponent(tString('licensing.dialog.mailtoSubject'))
+        const body = encodeURIComponent(tString('licensing.dialog.mailtoBody', { key }))
         return `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`
     }
 
@@ -200,7 +206,7 @@
 
     async function handleActivate() {
         if (!cleanedKey) {
-            error = 'Please enter a license key'
+            error = tString('licensing.dialog.emptyKeyError')
             hasError = true
             return
         }
@@ -240,16 +246,15 @@
                 await commitLicense(verifyResult.fullKey, verifyResult.shortCode)
                 setCachedStatus(newStatus)
                 isServerInvalidError = false
-                error = `This license expired on ${formatDate(newStatus.expiredAt)}.`
-                errorHelpHint = 'You can renew your subscription or purchase a new license at getcmdr.com.'
+                error = tString('licensing.dialog.expiredOnError', { date: formatDate(newStatus.expiredAt) })
+                errorHelpHint = tString('licensing.dialog.expiredOnHelp')
                 hasError = true
             } else if (newStatus?.type === 'personal') {
                 // Server checked with Paddle and this transaction is unknown.
                 // DON'T commit. Nothing is stored, no cleanup needed.
                 serverInvalidRetryCount++
                 isServerInvalidError = true
-                error =
-                    "We know this key but when we checked it with our payment provider, it didn't recognize it. This can happen if the purchase was refunded or not cleared."
+                error = tString('licensing.dialog.serverInvalidError')
                 hasError = true
             } else {
                 // Network error (newStatus is null): key is crypto-valid, commit optimistically
@@ -302,6 +307,20 @@
     }
 </script>
 
+{#snippet email(children: import('svelte').Snippet)}
+    <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}>{@render children()}</LinkButton>
+{/snippet}
+
+{#snippet getLicense(children: import('svelte').Snippet)}
+    <LinkButton
+        href="https://getcmdr.com/pricing"
+        onclick={(event: MouseEvent) => {
+            event.preventDefault()
+            void openExternalUrl('https://getcmdr.com/pricing')
+        }}>{@render children()}</LinkButton
+    >
+{/snippet}
+
 <ModalDialog
     titleId="dialog-title"
     onkeydown={handleKeydown}
@@ -312,11 +331,11 @@
 >
     {#snippet title()}
         {#if isLoading}
-            Loading...
+            {tString('licensing.dialog.loading')}
         {:else if hasExistingLicense}
-            License details
+            {tString('licensing.dialog.detailsTitle')}
         {:else}
-            Enter license key
+            {tString('licensing.dialog.enterTitle')}
         {/if}
     {/snippet}
 
@@ -325,10 +344,11 @@
             {#if isServerInvalid}
                 <div class="warning-banner">
                     <span class="warning-text">
-                        This key couldn't be verified with the server. Please try a different key or email us at
-                        <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
-                            >{SUPPORT_EMAIL}</LinkButton
-                        >.
+                        <Trans
+                            key="licensing.dialog.serverInvalidBanner"
+                            params={{ email: SUPPORT_EMAIL }}
+                            snippets={{ email }}
+                        />
                     </span>
                 </div>
             {/if}
@@ -336,19 +356,19 @@
             <div class="info-box">
                 {#if licenseTypeLabel}
                     <div class="info-row">
-                        <span class="info-label">License type</span>
+                        <span class="info-label">{tString('licensing.dialog.labelType')}</span>
                         <span class="info-value">{licenseTypeLabel}</span>
                     </div>
                 {/if}
                 {#if orgName}
                     <div class="info-row">
-                        <span class="info-label">Organization</span>
+                        <span class="info-label">{tString('licensing.dialog.labelOrganization')}</span>
                         <span class="info-value">{orgName}</span>
                     </div>
                 {/if}
                 {#if validityText}
                     <div class="info-row">
-                        <span class="info-label">Validity</span>
+                        <span class="info-label">{tString('licensing.dialog.labelValidity')}</span>
                         <span
                             class="info-value validity-value"
                             class:validity-pending={pendingVerification}
@@ -358,42 +378,37 @@
                     {#if pendingVerification}
                         <div class="info-row-sub">
                             <span class="info-hint">
-                                <!-- // allowed-pluralize-noun: validationIntervalDays is the const 7. -->
-                                We'll verify with the server automatically within {validationIntervalDays} days.
+                                {tString('licensing.dialog.pendingHint', { days: validationIntervalDays })}
                             </span>
                         </div>
                     {/if}
                 {/if}
                 {#if shortCode}
                     <div class="info-row">
-                        <span class="info-label">License key</span>
+                        <span class="info-label">{tString('licensing.dialog.labelKey')}</span>
                         <span class="info-value mono">{shortCode}</span>
                     </div>
                 {/if}
             </div>
 
             <div class="button-row details-buttons">
-                <Button variant="secondary" onclick={() => (isConfirmingReset = true)}>Use a different key</Button>
-                <Button variant="primary" onclick={onClose}>Close</Button>
+                <Button variant="secondary" onclick={() => (isConfirmingReset = true)}
+                    >{tString('licensing.dialog.useDifferentKey')}</Button
+                >
+                <Button variant="primary" onclick={onClose}>{tString('licensing.dialog.close')}</Button>
             </div>
         {:else if !isLoading && isConfirmingReset}
-            <p class="description">
-                This will deactivate your current license on this device. You can reactivate anytime with a valid key.
-            </p>
+            <p class="description">{tString('licensing.dialog.resetConfirm')}</p>
 
             <div class="button-row">
-                <Button variant="secondary" onclick={() => (isConfirmingReset = false)}>Cancel</Button>
-                <Button variant="primary" onclick={handleResetConfirm}>Continue</Button>
+                <Button variant="secondary" onclick={() => (isConfirmingReset = false)}
+                    >{tString('licensing.dialog.cancel')}</Button
+                >
+                <Button variant="primary" onclick={handleResetConfirm}>{tString('licensing.dialog.continue')}</Button>
             </div>
         {:else if !isLoading}
             <p class="description">
-                Paste your license key from the email you received after purchase. Don't have one yet? <LinkButton
-                    href="https://getcmdr.com/pricing"
-                    onclick={(event: MouseEvent) => {
-                        event.preventDefault()
-                        void openExternalUrl('https://getcmdr.com/pricing')
-                    }}>Get a license</LinkButton
-                >.
+                <Trans key="licensing.dialog.enterPrompt" snippets={{ getLicense }} />
             </p>
 
             <div class="input-group">
@@ -403,7 +418,7 @@
                     type="text"
                     class="license-input"
                     class:has-error={error}
-                    placeholder="Example: CMDR-ABCD-EFGH-1234"
+                    placeholder={tString('licensing.dialog.inputPlaceholder')}
                     spellcheck="false"
                     autocomplete="off"
                     autocapitalize="off"
@@ -419,42 +434,47 @@
                 {/if}
                 <p class="help-text">
                     {#if isServerInvalidError && serverInvalidRetryCount >= 3}
-                        <!-- // allowed-pluralize-noun: only shown when serverInvalidRetryCount >= 3. -->
-                        We've tried {serverInvalidRetryCount} times and it didn't work. We're sorry for the trouble. Please
-                        drop us a message at
-                        <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
-                            >{SUPPORT_EMAIL}</LinkButton
-                        >
-
-                        and we'll sort it out.
+                        <Trans
+                            key="licensing.dialog.retryExhausted"
+                            params={{ count: serverInvalidRetryCount, email: SUPPORT_EMAIL }}
+                            snippets={{ supportEmail: email }}
+                        />
                     {:else if isServerInvalidError}
-                        If you believe this is a mistake, email us at
-                        <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
-                            >{SUPPORT_EMAIL}</LinkButton
-                        >
-
-                        and we'll sort it out.
+                        <Trans
+                            key="licensing.dialog.serverInvalidHelp"
+                            params={{ email: SUPPORT_EMAIL }}
+                            snippets={{ supportEmail: email }}
+                        />
                     {:else}
-                        If you need help, contact us at
-                        <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
-                            >{SUPPORT_EMAIL}</LinkButton
-                        >.
+                        <Trans
+                            key="licensing.dialog.genericHelp"
+                            params={{ email: SUPPORT_EMAIL }}
+                            snippets={{ supportEmail: email }}
+                        />
                     {/if}
                 </p>
             {/if}
 
             <div class="button-row">
                 {#if isServerInvalidError}
-                    <Button variant="secondary" onclick={handleCancelAfterInvalid}>Cancel</Button>
+                    <Button variant="secondary" onclick={handleCancelAfterInvalid}
+                        >{tString('licensing.dialog.cancelButton')}</Button
+                    >
                     <Button variant="primary" onclick={handleActivate} disabled={isActivating}>
                         {#if isActivating}<Spinner size="sm" />{/if}
-                        {isActivating ? 'Checking...' : 'Try again'}
+                        {isActivating ? tString('licensing.dialog.checking') : tString('licensing.dialog.tryAgain')}
                     </Button>
                 {:else}
-                    <Button variant="secondary" onclick={handleClose}>Cancel</Button>
+                    <Button variant="secondary" onclick={handleClose}
+                        >{tString('licensing.dialog.cancelButton')}</Button
+                    >
                     <Button variant="primary" onclick={handleActivate} disabled={isActivating || !cleanedKey}>
                         {#if isActivating}<Spinner size="sm" />{/if}
-                        {isActivating ? 'Activating...' : hasError ? 'Try again' : 'Activate'}
+                        {isActivating
+                            ? tString('licensing.dialog.activating')
+                            : hasError
+                              ? tString('licensing.dialog.tryAgain')
+                              : tString('licensing.dialog.activate')}
                     </Button>
                 {/if}
             </div>

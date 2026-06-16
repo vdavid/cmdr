@@ -5,6 +5,9 @@
     import CommandBox from '$lib/ui/CommandBox.svelte'
     import Button from '$lib/ui/Button.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import type { Snippet } from 'svelte'
 
     interface Props {
         /** The process name that's blocking (like "pid 45145, ptpcamerad"). */
@@ -30,6 +33,10 @@
     }
 </script>
 
+{#snippet processName(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
+{#snippet codeTag(children: Snippet)}<code>{@render children()}</code>{/snippet}
+{#snippet ctrlCChip(children: Snippet)}<ShortcutChip key="Ctrl+C" />{@render children()}{/snippet}
+
 <ModalDialog
     titleId="dialog-title"
     onkeydown={handleKeydown}
@@ -38,20 +45,23 @@
     onclose={onClose}
     containerStyle="min-width: 480px; max-width: 560px"
 >
-    {#snippet title()}Can't connect to MTP device{/snippet}
+    {#snippet title()}{tString('mtp.ptpcameradDialog.title')}{/snippet}
 
     <div class="dialog-body">
         <p class="description">
             {#if blockingProcess}
-                The device is in use by <strong>{blockingProcess}</strong>.
+                <Trans
+                    key="mtp.ptpcameradDialog.inUseBy"
+                    snippets={{ process: processName }}
+                    params={{ process: blockingProcess }}
+                />
             {:else}
-                Another process has exclusive access to the device.
+                {tString('mtp.ptpcameradDialog.inUseGeneric')}
             {/if}
         </p>
 
         <p class="explanation">
-            On macOS, the system daemon <code>ptpcamerad</code> automatically claims Android devices. To work around this,
-            run the following command in Terminal (keep it running while using Cmdr):
+            <Trans key="mtp.ptpcameradDialog.explanation" snippets={{ code: codeTag }} />
         </p>
 
         <div class="command-wrapper">
@@ -61,13 +71,12 @@
         </div>
 
         <p class="help-text">
-            This command continuously stops ptpcamerad while running. Press <ShortcutChip key="Ctrl+C" /> in Terminal to
-            stop it when done.
+            <Trans key="mtp.ptpcameradDialog.helpText" snippets={{ key: ctrlCChip }} />
         </p>
 
         <div class="actions">
-            <Button variant="secondary" onclick={onClose}>Close</Button>
-            <Button variant="primary" onclick={onRetry}>Retry connection</Button>
+            <Button variant="secondary" onclick={onClose}>{tString('mtp.ptpcameradDialog.close')}</Button>
+            <Button variant="primary" onclick={onRetry}>{tString('mtp.ptpcameradDialog.retry')}</Button>
         </div>
     </div>
 </ModalDialog>

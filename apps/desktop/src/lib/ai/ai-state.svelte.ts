@@ -16,6 +16,7 @@ import {
 } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings'
 import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
+import { tString } from '$lib/intl/messages.svelte'
 
 /**
  * The AI toast's lifecycle now only tracks the runtime install pipeline: download → install →
@@ -142,12 +143,17 @@ function updateNotificationFromStatus(status: AiStatus): void {
 }
 
 function formatProgressText(progress: AiDownloadProgress): string {
-  if (progress.totalBytes === 0) return 'Starting download...'
+  if (progress.totalBytes === 0) return tString('ai.toast.startingDownload')
   const percent = Math.round((progress.bytesDownloaded / progress.totalBytes) * 100)
   const downloaded = colorizeSizeString(formatBytes(progress.bytesDownloaded))
   const total = colorizeSizeString(formatBytes(progress.totalBytes))
   const speed = colorizeSizeString(formatBytes(progress.speed))
   const eta = progress.etaSeconds > 0 ? formatDuration(progress.etaSeconds) : ''
-  const etaPart = eta ? ` · ${eta} remaining` : ''
-  return `${String(percent)}% · ${downloaded} / ${total} · ${speed}/s${etaPart}`
+  return tString('ai.toast.progress', {
+    percentText: `${String(percent)}%`,
+    downloaded,
+    total,
+    speed,
+    eta: eta || 'none',
+  })
 }

@@ -19,6 +19,7 @@
      * lives in `ToggleGroup`; this component just declares the option set.
      */
     import ToggleGroup, { type ToggleGroupOption } from '$lib/ui/ToggleGroup.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import type { SearchMode } from './query-filter-state.svelte'
 
     interface Props {
@@ -40,21 +41,31 @@
         if (aiEnabled) {
             list.push({
                 value: 'ai',
-                label: 'Ask anything',
+                label: tString('queryUi.mode.ai.label'),
                 badge: 'AI',
                 hint: '⌥A',
-                ariaLabel: 'AI mode: ask anything (Alt+A)',
+                ariaLabel: tString('queryUi.mode.ai.aria'),
             })
         }
-        list.push({ value: 'filename', label: 'Filename', hint: '⌥F', ariaLabel: 'Filename mode (Alt+F)' })
+        list.push({
+            value: 'filename',
+            label: tString('queryUi.mode.filename.label'),
+            hint: '⌥F',
+            ariaLabel: tString('queryUi.mode.filename.aria'),
+        })
         list.push({
             value: 'content',
-            label: 'Content',
+            label: tString('queryUi.mode.content.label'),
             disabled: true,
-            tooltip: 'Coming soon: full-text search inside files',
-            ariaLabel: 'Content mode (coming soon)',
+            tooltip: tString('queryUi.mode.content.tooltip'),
+            ariaLabel: tString('queryUi.mode.content.aria'),
         })
-        list.push({ value: 'regex', label: 'Regex', hint: '⌥R', ariaLabel: 'Regex mode (Alt+R)' })
+        list.push({
+            value: 'regex',
+            label: tString('queryUi.mode.regex.label'),
+            hint: '⌥R',
+            ariaLabel: tString('queryUi.mode.regex.aria'),
+        })
         return list
     })
 
@@ -73,7 +84,7 @@
         value={mode}
         {options}
         onChange={handleChange}
-        ariaLabel="Search mode"
+        ariaLabel={tString('queryUi.mode.groupAria')}
         {disabled}
     />
 </div>

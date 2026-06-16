@@ -12,6 +12,7 @@
      * wrapped here so the parent only threads `anchor` / `open` / `onClose`.
      */
     import FilterPopover from '$lib/ui/FilterPopover.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import type { SizeFilter, SizeUnit } from '../query-filter-state.svelte'
     import { SIZE_PRESETS, byteUnitLabel, kiloByteLabel, isSizeRangeDisabled, showsUpperBound } from './filter-popover-helpers'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
@@ -60,13 +61,13 @@
      * The comparator column (col 1) of the Size popover. The `≥` and `≤` use
      * the math glyphs so the rendered cell reads cleanly rather than the ASCII soup.
      */
-    const SIZE_COMPARATORS: ReadonlyArray<{ value: SizeFilter; label: string }> = [
-        { value: 'any', label: 'any' },
+    const SIZE_COMPARATORS = $derived<ReadonlyArray<{ value: SizeFilter; label: string }>>([
+        { value: 'any', label: tString('queryUi.size.comparator.any') },
         { value: 'gte', label: '≥' },
         { value: 'lte', label: '≤' },
         { value: 'eq', label: '=' },
-        { value: 'between', label: 'between' },
-    ]
+        { value: 'between', label: tString('queryUi.size.comparator.between') },
+    ])
 
     /**
      * Whether the user has flipped the value column into "Custom…" mode for the
@@ -132,15 +133,22 @@
      `Custom...`). Col 3 = unit (`bytes` / `KB` / `MB` / `GB`). When col 1 =
      `between`, cols 4 + 5 mirror cols 2 + 3 for the upper bound. Cols 2-5 render
      disabled when col 1 = `any` (no range to apply). -->
-<FilterPopover {anchor} {open} {onClose} label="Size" ariaLabel="Size filter options" sectionClass="size-grid-section">
+<FilterPopover
+    {anchor}
+    {open}
+    {onClose}
+    label={tString('queryUi.size.popover.label')}
+    ariaLabel={tString('queryUi.size.popover.aria')}
+    sectionClass="size-grid-section"
+>
         <div
             class="list-grid"
             class:has-upper={showsUpperBound(sizeFilter)}
             role="group"
-            aria-label="Size filter options"
+            aria-label={tString('queryUi.size.popover.aria')}
         >
             <!-- Col 1: comparator -->
-            <div class="list-col" role="radiogroup" aria-label="Comparator">
+            <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.comparator')}>
                 {#each SIZE_COMPARATORS as opt (opt.value)}
                     <button
                         type="button"
@@ -163,7 +171,7 @@
                  `gte` and applies the chosen value. The Custom <input>
                  renders INSIDE the Custom cell so one click both selects
                  it AND focuses the input. -->
-            <div class="list-col" role="radiogroup" aria-label="Minimum size value">
+            <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.minValue')}>
                 {#each SIZE_PRESETS as preset (preset)}
                     <button
                         type="button"
@@ -211,19 +219,19 @@
                             onclick={(e) => {
                                 e.stopPropagation()
                             }}
-                            aria-label="Custom minimum size value"
+                            aria-label={tString('queryUi.size.aria.customMin')}
                             min="0"
                             step="any"
-                            placeholder="custom"
+                            placeholder={tString('queryUi.size.customInputPlaceholder')}
                         />
                     {:else}
-                        custom…
+                        {tString('queryUi.size.customCell')}
                     {/if}
                 </button>
             </div>
 
             <!-- Col 3: lower-bound unit -->
-            <div class="list-col" role="radiogroup" aria-label="Minimum size unit">
+            <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.minUnit')}>
                 <button
                     type="button"
                     class="list-cell"
@@ -269,7 +277,7 @@
 
             {#if showsUpperBound(sizeFilter)}
                 <!-- Col 4: upper-bound value. Custom input is inline. -->
-                <div class="list-col" role="radiogroup" aria-label="Maximum size value">
+                <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.maxValue')}>
                     {#each SIZE_PRESETS as preset (preset)}
                         <button
                             type="button"
@@ -310,19 +318,19 @@
                                 onclick={(e) => {
                                     e.stopPropagation()
                                 }}
-                                aria-label="Custom maximum size value"
+                                aria-label={tString('queryUi.size.aria.customMax')}
                                 min="0"
                                 step="any"
-                                placeholder="custom"
+                                placeholder={tString('queryUi.size.customInputPlaceholder')}
                             />
                         {:else}
-                            custom…
+                            {tString('queryUi.size.customCell')}
                         {/if}
                     </button>
                 </div>
 
                 <!-- Col 5: upper-bound unit -->
-                <div class="list-col" role="radiogroup" aria-label="Maximum size unit">
+                <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.maxUnit')}>
                     <button
                         type="button"
                         class="list-cell"

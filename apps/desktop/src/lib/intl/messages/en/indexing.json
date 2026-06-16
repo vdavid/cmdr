@@ -1,0 +1,137 @@
+{
+  "indexing.status.ariaLabel": "Drive indexing status",
+  "@indexing.status.ariaLabel": {
+    "description": "Accessibility label for the small hourglass icon in the top-right corner that shows while Cmdr is indexing a drive. Read aloud by screen readers; the live progress is in its tooltip."
+  },
+
+  "indexing.scan.label": "Scanning your drive...",
+  "@indexing.scan.label": {
+    "description": "Tooltip heading shown while Cmdr scans a drive to build its index. This is a repeat scan (a prior scan exists, so progress is calibrated). The trailing '...' signals ongoing work; keep it."
+  },
+
+  "indexing.scan.labelFirst": "Scanning your drive (first scan)...",
+  "@indexing.scan.labelFirst": {
+    "description": "Tooltip heading shown while Cmdr scans a drive for the very FIRST time (no prior scan, so progress is only a rough estimate). The trailing '...' signals ongoing work; keep it."
+  },
+
+  "indexing.scan.counters": "{entriesText} entries, {dirsText} dirs",
+  "@indexing.scan.counters": {
+    "description": "Running tally appended to the scan tooltip heading, e.g. '12,345 entries, 678 dirs'. Has a leading space in the source so it joins the heading; 'dirs' is short for directories/folders (keep it terse, this is a compact status line).",
+    "placeholders": {
+      "entriesText": "number of files and folders scanned so far, already formatted (e.g. 12,345)",
+      "dirsText": "number of folders found so far, already formatted (e.g. 678)"
+    }
+  },
+
+  "indexing.scan.etaRough": "roughly {eta}",
+  "@indexing.scan.etaRough": {
+    "description": "Wraps the estimated time remaining during a rough first scan to flag it as approximate, e.g. 'roughly 2m left'. {eta} is an already-formatted time-left phrase; don't translate inside it.",
+    "placeholders": {
+      "eta": "the formatted time-remaining phrase, e.g. '2m left'"
+    }
+  },
+
+  "indexing.aggregation.savingEntries": "Saving entries...",
+  "@indexing.aggregation.savingEntries": {
+    "description": "Tooltip heading while Cmdr saves scanned entries to its index database. Trailing '...' signals ongoing work; keep it."
+  },
+
+  "indexing.aggregation.loading": "Loading directories...",
+  "@indexing.aggregation.loading": {
+    "description": "Tooltip heading while Cmdr loads directories to compute folder sizes. Trailing '...' signals ongoing work; keep it."
+  },
+
+  "indexing.aggregation.sorting": "Sorting directories...",
+  "@indexing.aggregation.sorting": {
+    "description": "Tooltip heading while Cmdr sorts directories before computing folder sizes. Trailing '...' signals ongoing work; keep it."
+  },
+
+  "indexing.aggregation.computing": "Computing directory sizes...",
+  "@indexing.aggregation.computing": {
+    "description": "Tooltip heading while Cmdr computes folder sizes from the index. Also the fallback heading for any unrecognized aggregation phase. Trailing '...' signals ongoing work; keep it."
+  },
+
+  "indexing.aggregation.writing": "Saving directory sizes...",
+  "@indexing.aggregation.writing": {
+    "description": "Tooltip heading while Cmdr writes computed folder sizes back to its index. Trailing '...' signals ongoing work; keep it."
+  },
+
+  "indexing.replay.label": "Updating index...",
+  "@indexing.replay.label": {
+    "description": "Tooltip heading while Cmdr replays recorded filesystem changes to bring its index up to date (a lighter operation than a full scan). Trailing '...' signals ongoing work; keep it."
+  },
+
+  "indexing.replay.detail": "{eventsText} events processed",
+  "@indexing.replay.detail": {
+    "description": "Tooltip detail line under the 'Updating index' heading, e.g. '1,234 events processed'. 'events' means recorded filesystem changes.",
+    "placeholders": {
+      "eventsText": "number of change events processed so far, already formatted (e.g. 1,234)"
+    }
+  },
+
+  "indexing.eta.almostDone": "Almost done",
+  "@indexing.eta.almostDone": {
+    "description": "Time-remaining phrase shown when an indexing operation has under two seconds left (a precise countdown there would be noise). Reassuring and terse."
+  },
+
+  "indexing.eta.secondsLeft": "{secondsText}s left",
+  "@indexing.eta.secondsLeft": {
+    "description": "Estimated time remaining under a minute, e.g. '45s left'. The 's' is the abbreviation for seconds; keep this very short (it sits in a compact tooltip).",
+    "placeholders": {
+      "secondsText": "whole seconds remaining, already formatted (e.g. 45)"
+    }
+  },
+
+  "indexing.eta.minutesLeft": "{minutesText}m left",
+  "@indexing.eta.minutesLeft": {
+    "description": "Estimated time remaining of a minute or more, e.g. '3m left'. The 'm' is the abbreviation for minutes; keep this very short (it sits in a compact tooltip).",
+    "placeholders": {
+      "minutesText": "whole minutes remaining, already formatted (e.g. 3)"
+    }
+  },
+
+  "indexing.rescan.staleIndex": "Your drive index is outdated. It looks like the app hasn''t run for a while. Running a fresh scan to catch up.",
+  "@indexing.rescan.staleIndex": {
+    "description": "Info toast explaining why Cmdr is rescanning the drive: the index went stale because the app wasn't open for a while. Calm and explanatory."
+  },
+
+  "indexing.rescan.journalGap": "The system''s file change log doesn''t go back far enough. Running a fresh scan to rebuild the index.",
+  "@indexing.rescan.journalGap": {
+    "description": "Info toast explaining why Cmdr is rescanning: the macOS file-change journal no longer covers the gap since last run. Calm and explanatory."
+  },
+
+  "indexing.rescan.replayOverflow": "A lot of file changes happened since last run. Running a fresh scan instead of replaying them one by one.",
+  "@indexing.rescan.replayOverflow": {
+    "description": "Info toast explaining why Cmdr is doing a full rescan rather than replaying changes: too many changes accumulated since last run. Calm and explanatory."
+  },
+
+  "indexing.rescan.tooManySubdirRescans": "Many directories changed significantly since last run. Running a fresh scan to get everything up to date.",
+  "@indexing.rescan.tooManySubdirRescans": {
+    "description": "Info toast explaining why Cmdr is rescanning: too many folders changed a lot since last run. Calm and explanatory."
+  },
+
+  "indexing.rescan.watcherStartFailed": "Couldn''t start the file change watcher. Running a fresh scan to get the index up to date.",
+  "@indexing.rescan.watcherStartFailed": {
+    "description": "Info toast explaining why Cmdr is rescanning: the live file-change watcher couldn't start, so it falls back to a full scan. Calm and explanatory; avoid the words 'error' and 'failed'."
+  },
+
+  "indexing.rescan.reconcilerBufferOverflow": "Heavy filesystem activity overwhelmed the event buffer. Running a fresh scan to stay accurate.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "description": "Info toast explaining why Cmdr is rescanning: a burst of filesystem activity overflowed an internal buffer. Calm and explanatory."
+  },
+
+  "indexing.rescan.incompletePreviousScan": "The previous scan didn''t finish (the app may have been closed). Restarting the scan from scratch.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "description": "Info toast explaining why Cmdr is rescanning: the last scan didn't complete (the app likely closed mid-scan). Calm and explanatory."
+  },
+
+  "indexing.rescan.watcherChannelOverflow": "A burst of filesystem activity overflowed the watcher channel. Running a fresh scan to stay accurate.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "description": "Info toast explaining why Cmdr is rescanning: a burst of filesystem activity overflowed the watcher's internal channel. Calm and explanatory."
+  },
+
+  "indexing.rescan.fallback": "Running a fresh drive scan to keep the index accurate.",
+  "@indexing.rescan.fallback": {
+    "description": "Generic fallback info toast shown when Cmdr rescans the drive for a reason not covered by the specific messages. Calm and explanatory."
+  }
+}

@@ -14,7 +14,8 @@
      * not ready" surface and we don't want to compete with it.
      */
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
-    import { pluralize } from '$lib/utils/pluralize'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import type { SearchMode } from './query-filter-state.svelte'
 
@@ -70,8 +71,18 @@
     const formattedCount = $derived(formatNumber(indexEntryCount))
 </script>
 
+<!--
+  One ShortcutChip per `<tag>` in the keyboard-tip message. The chip renders the
+  fixed key glyph (`key=`), not the tag''s inner content, so the rendered chip is a
+  literal-mode key chip regardless of the message text; the glyph also lives in the
+  message so translators see it in context. `children` is intentionally ignored.
+-->
+{#snippet newChip()}<ShortcutChip key="⌘N" />{/snippet}
+{#snippet historyChip()}<ShortcutChip key="⌘H" />{/snippet}
+{#snippet aiChip()}<ShortcutChip key="⌘Enter" />{/snippet}
+
 <div class="empty-state">
-    <p class="try-line">Try…</p>
+    <p class="try-line">{tString('queryUi.empty.tryLine')}</p>
     <div class="example-row">
         {#each examples as chip (chip.label)}
             <button
@@ -87,12 +98,19 @@
         {/each}
     </div>
     {#if indexEntryCount > 0}
-        <p class="index-status">Index ready · {formattedCount} {pluralize(indexEntryCount, 'entry', 'entries')}</p>
+        <p class="index-status">
+            {tString('queryUi.empty.indexReady', { countText: formattedCount, count: indexEntryCount })}
+        </p>
     {/if}
     <p class="tip">
-        Tip: <ShortcutChip key="⌘N" /> starts fresh, <ShortcutChip key="⌘H" /> shows recent searches{#if aiEnabled}, <ShortcutChip
-                key="⌘Enter"
-            /> runs an AI search{/if}.
+        {#if aiEnabled}
+            <Trans
+                key="queryUi.empty.tipAi"
+                snippets={{ newKey: newChip, historyKey: historyChip, aiKey: aiChip }}
+            />
+        {:else}
+            <Trans key="queryUi.empty.tip" snippets={{ newKey: newChip, historyKey: historyChip }} />
+        {/if}
     </p>
 </div>
 

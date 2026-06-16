@@ -39,3 +39,13 @@ reconfigure is ordered ahead of the wizard's `onComplete()`. The wizard's step 2
 - AI debug logging: `pnpm dev:ai-debug`.
 - llama-server update: `apps/desktop/scripts/download-llama-server.go` (version + SHA256). Binaries are extracted and
   signed at build time, bundled as individual files in `resources/ai/`.
+
+## i18n
+
+AI copy lives in the `ai.*` catalog (`$lib/intl/messages/en/ai.json`), resolved via `tString()` / `t()`;
+`cmdr/no-raw-user-facing-string` is enforced on `lib/ai/`. The cloud/local AI settings sections
+(`settings/sections/Ai{Cloud,Local}Section.svelte`) own their section-specific copy in `ai.cloud.*` / `ai.local.*`, and
+reuse the registry settings keys (`settings.ai.*`) for rows that ARE registry settings (Service, Context window). The
+download progress line is one ICU message (`ai.toast.progress`) with a `select` on `eta` (`'none'` discriminator when no
+estimate) and preformatted size/speed STRING params. `translate-error-toast.ts` maps each `kind` to a `title`/`body`
+pair of catalog keys, kept in lockstep with the Rust enum. Runtime rules: [`$lib/intl/CLAUDE.md`](../intl/CLAUDE.md).

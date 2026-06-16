@@ -3,6 +3,8 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { t, tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         sourceFolderPath: string
@@ -29,7 +31,7 @@
 
 <!-- Source path -->
 <div class="source-path">
-    <span class="source-path-label">From:</span>
+    <span class="source-path-label">{tString('fileOperations.scanPhase.fromLabel')}</span>
     <span class="source-path-value" use:useShortenMiddle={{ text: sourceFolderPath, preferBreakAt: '/' }}></span>
 </div>
 
@@ -41,12 +43,12 @@
     <span class="scan-divider">/</span>
     <div class="scan-stat">
         <span class="scan-value">{formatNumber(scanFilesFound)}</span>
-        <span class="scan-label">{scanFilesFound === 1 ? 'file' : 'files'}</span>
+        <span class="scan-label">{t('fileOperations.scanPhase.scanFile', { count: scanFilesFound })}</span>
     </div>
     <span class="scan-divider">/</span>
     <div class="scan-stat">
         <span class="scan-value">{formatNumber(scanDirsFound)}</span>
-        <span class="scan-label">{scanDirsFound === 1 ? 'dir' : 'dirs'}</span>
+        <span class="scan-label">{t('fileOperations.scanPhase.scanDir', { count: scanDirsFound })}</span>
     </div>
     <Spinner size="sm" />
 </div>
@@ -54,10 +56,14 @@
 <!-- Throughput -->
 {#if scanFilesPerSec !== null && scanFilesPerSec > 0}
     <div class="scan-throughput">
-        <span class="scan-throughput-value">{formatNumber(Math.round(scanFilesPerSec))} files/s</span>
+        <span class="scan-throughput-value"
+            >{tString('fileOperations.scanPhase.throughputFiles', {
+                rateText: formatNumber(Math.round(scanFilesPerSec)),
+            })}</span
+        >
         {#if scanBytesPerSec !== null && scanBytesPerSec > 0}
             <span class="scan-throughput-sep">·</span>
-            <span class="scan-throughput-value"><Size bytes={scanBytesPerSec} />/s</span>
+            <span class="scan-throughput-value"><Trans key="fileOperations.shared.byteRate" snippets={{ size }} /></span>
         {/if}
     </div>
 {/if}
@@ -69,6 +75,8 @@
 {#if currentFile}
     <div class="current-file" use:useShortenMiddle={{ text: currentFile, preferBreakAt: '/' }}></div>
 {/if}
+
+{#snippet size(children: import('svelte').Snippet)}<Size bytes={scanBytesPerSec ?? 0} />{@render children()}{/snippet}
 
 <style>
     .source-path {

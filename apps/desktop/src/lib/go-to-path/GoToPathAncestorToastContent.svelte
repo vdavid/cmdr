@@ -9,7 +9,9 @@
      * the user reading it doesn't mutate the displayed hint mid-flight.
      */
 
+    import type { Snippet } from 'svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
 
     interface Props {
         /** The path the user typed, which doesn't exist. */
@@ -26,12 +28,25 @@
     const { requested, landed, backShortcut }: Props = $props()
 </script>
 
+{#snippet pathCode(children: Snippet)}
+    <code class="path">{@render children()}</code>
+{/snippet}
+{#snippet backChip(children: Snippet)}
+    <!-- The <chip></chip> tag has no inner text, so `children` renders nothing;
+         it's rendered anyway to keep the snippet's tag-handler signature. -->
+    {@render children()}<ShortcutChip key={backShortcut} />
+{/snippet}
+
 <div class="content">
     <span class="message">
-        <code class="path">{requested}</code> doesn't exist, so we took you to <code class="path">{landed}</code>.
+        <Trans
+            key="goToPath.toast.landedOnAncestor"
+            snippets={{ req: pathCode, land: pathCode }}
+            params={{ requested, landed }}
+        />
     </span>
     {#if backShortcut}
-        <span class="hint">Press <ShortcutChip key={backShortcut} /> to go back.</span>
+        <span class="hint"><Trans key="goToPath.toast.pressToGoBack" snippets={{ chip: backChip }} /></span>
     {/if}
 </div>
 

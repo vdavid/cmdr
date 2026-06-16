@@ -7,6 +7,7 @@
      */
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** Dedup id of this toast; lets the component self-dismiss on action. */
@@ -33,10 +34,12 @@
 </script>
 
 <div class="content">
-    <span class="message">Your Downloads folder is empty. Go there anyway?</span>
+    <span class="message">{tString('downloads.empty.message')}</span>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
-        <Button size="mini" variant="primary" onclick={handleGoToDownloads}>Go to Downloads</Button>
+        <Button size="mini" variant="secondary" onclick={handleDismiss}>{tString('downloads.empty.dismiss')}</Button>
+        <Button size="mini" variant="primary" onclick={handleGoToDownloads}
+            >{tString('downloads.empty.goToDownloads')}</Button
+        >
     </div>
 </div>
 

@@ -12,6 +12,7 @@
     import Size from '$lib/ui/Size.svelte'
     import type { MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
     import { isMediaKind, mediaKindLabel, formatMediaDimensions } from './media-view'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** File name shown at the start of the bar. */
@@ -50,7 +51,7 @@
     const dimensionsText = $derived(formatMediaDimensions(mediaDimensions))
 </script>
 
-<div class="status-bar" aria-label="File information">
+<div class="status-bar" aria-label={tString('viewer.statusBar.ariaLabel')}>
     <span>{fileName}</span>
     {#if isMedia}
         <span class="backend-badge">{mediaKindLabel(kind)}</span>
@@ -60,43 +61,43 @@
         <span><Size bytes={totalBytes} /></span>
     {:else}
         {#if totalLines !== null}
-            <span>{totalLines} {totalLines === 1 ? 'line' : 'lines'}</span>
+            <span>{tString('viewer.statusBar.lineCount', { count: totalLines })}</span>
         {/if}
         <span><Size bytes={totalBytes} /></span>
         {#if currentMode === 'fullLoad'}
         <span
             class="backend-badge"
-            use:tooltip={'You have the file entirely in memory. You can quickly scroll to any line.'}
-            >in memory</span
+            use:tooltip={tString('viewer.statusBar.badge.inMemoryTooltip')}
+            >{tString('viewer.statusBar.badge.inMemory')}</span
         >
     {:else if currentMode === 'lineIndex'}
         <span
             class="backend-badge"
-            use:tooltip={'You have the file indexed, so the line numbers are accurate, and you can quickly scroll to any point.'}
-            >indexed</span
+            use:tooltip={tString('viewer.statusBar.badge.indexedTooltip')}
+            >{tString('viewer.statusBar.badge.indexed')}</span
         >
     {:else if isIndexing}
         <span
             class="backend-badge"
-            use:tooltip={`This is a large file in streaming mode. We're building an index in background (max ${String(indexingTimeoutSecs)} sec)... Line numbers are currently approximate.`}
-            >streaming, indexing...</span
+            use:tooltip={tString('viewer.statusBar.badge.streamingIndexingTooltip', { seconds: indexingTimeoutSecs })}
+            >{tString('viewer.statusBar.badge.streamingIndexing')}</span
         >
         {:else}
             <span
                 class="backend-badge"
-                use:tooltip={`This is a large file in streaming mode. Indexing would've taken longer than ${String(indexingTimeoutSecs)} sec, so we didn't do it. The line numbers are estimates.`}
-                >streaming</span
+                use:tooltip={tString('viewer.statusBar.badge.streamingTooltip', { seconds: indexingTimeoutSecs })}
+                >{tString('viewer.statusBar.badge.streaming')}</span
             >
         {/if}
         {#if wordWrap}
-            <span class="backend-badge" use:tooltip={{ text: 'Lines wrap at the window edge', shortcut: 'W' }}>wrap</span
+            <span class="backend-badge" use:tooltip={{ text: tString('viewer.statusBar.badge.wrapTooltip'), shortcut: 'W' }}>{tString('viewer.statusBar.badge.wrap')}</span
             >
         {/if}
     {/if}
     {#if kind === 'image'}
-        <span class="shortcut-hint">Click 100% / fit &middot; Scroll zoom &middot; Drag pan</span>
+        <span class="shortcut-hint">{tString('viewer.statusBar.hint.image')}</span>
     {:else if kind === 'text'}
-        <span class="shortcut-hint">W wrap &middot; F tail &middot; ⌘F search</span>
+        <span class="shortcut-hint">{tString('viewer.statusBar.hint.text')}</span>
     {/if}
 </div>
 

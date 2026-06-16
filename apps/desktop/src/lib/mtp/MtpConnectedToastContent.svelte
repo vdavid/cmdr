@@ -4,6 +4,7 @@
     import { setSetting } from '$lib/settings'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { getLastConnectedDeviceName } from './mtp-connected-toast-state.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     const toastId = 'mtp-connected'
     let dontShowAgain = $state(false)
@@ -25,22 +26,21 @@
 </script>
 
 <div class="mtp-toast">
-    <p class="title">Connected to {getLastConnectedDeviceName()}</p>
+    <p class="title">{tString('mtp.connectedToast.title', { deviceName: getLastConnectedDeviceName() })}</p>
     <p class="body">
         {#if isMacOS()}
-            Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable
-            MTP support in settings.
+            {tString('mtp.connectedToast.bodyMac')}
         {:else}
-            To use this device in another app, disable MTP support in settings.
+            {tString('mtp.connectedToast.bodyOther')}
         {/if}
     </p>
     <label class="dont-show-again">
         <input type="checkbox" bind:checked={dontShowAgain} />
-        Don't show again
+        {tString('mtp.connectedToast.dontShowAgain')}
     </label>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleDisableMtp}>Disable MTP...</Button>
-        <Button size="mini" variant="primary" onclick={handleOk}>OK</Button>
+        <Button size="mini" variant="secondary" onclick={handleDisableMtp}>{tString('mtp.connectedToast.disableMtp')}</Button>
+        <Button size="mini" variant="primary" onclick={handleOk}>{tString('mtp.connectedToast.ok')}</Button>
     </div>
 </div>
 

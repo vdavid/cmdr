@@ -29,6 +29,9 @@
     import { setDownloadsToastCollapsed } from './downloads-toast-collapsed'
     import { buildShortcutSummary } from './download-toast-shortcuts'
     import GlobalShortcutAnimation from './GlobalShortcutAnimation.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import type { Snippet } from 'svelte'
     import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
     /**
@@ -150,6 +153,32 @@
 </script>
 
 <!--
+    `<Trans>` snippets for the inline components in the catalog sentences.
+    `fileChip` wraps the filename (the tag's inner text) in monospace. The chip
+    snippets render a literal `ShortcutChip` from the snapshotted binding and
+    discard the tag's inner text (the key glyph, present so the ICU tag has a
+    body and to document the key for translators) via `{void children}`.
+-->
+{#snippet fileChip(children: Snippet)}
+    <code class="file">{@render children()}</code>
+{/snippet}
+{#snippet inAppChip(children: Snippet)}
+    {void children}<ShortcutChip key={shortcutHint} />
+{/snippet}
+{#snippet globalChip(children: Snippet)}
+    {void children}<ShortcutChip key={globalBinding} />
+{/snippet}
+{#snippet summaryInAppChip(children: Snippet)}
+    {void children}<ShortcutChip key={summary.inApp ?? ''} />
+{/snippet}
+{#snippet summaryGlobalChip(children: Snippet)}
+    {void children}<ShortcutChip key={summary.global ?? ''} />
+{/snippet}
+{#snippet emphasis(children: Snippet)}
+    <em>{@render children()}</em>
+{/snippet}
+
+<!--
     The outer container is the click surface for "Jump to file". It is
     intentionally NOT focusable: keyboard users reach the two buttons
     independently, and a third focusable surface (the div) would be a
@@ -159,7 +188,11 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="toast-body" onclick={handleBodyClick}>
     <span class="title">
-        Downloaded <code class="file">{event.fileName}</code>
+        <Trans
+            key="downloads.toast.downloaded"
+            snippets={{ file: fileChip }}
+            params={{ fileName: event.fileName }}
+        />
         {#if event.sizeBytes != null}
             <span class="size"><Size bytes={event.sizeBytes} /></span>
         {/if}
@@ -167,19 +200,30 @@
 
     {#if collapsed}
         <span class="hint summary">
-            Jump with
             {#if summary.inApp && summary.global}
-                <ShortcutChip key={summary.inApp} /> in-app, <ShortcutChip key={summary.global} /> globally.
+                <Trans
+                    key="downloads.toast.summaryBoth"
+                    snippets={{ inApp: summaryInAppChip, global: summaryGlobalChip }}
+                    params={{ inAppKey: summary.inApp, globalKey: summary.global }}
+                />
             {:else if summary.inApp}
-                <ShortcutChip key={summary.inApp} /> in-app.
+                <Trans
+                    key="downloads.toast.summaryInApp"
+                    snippets={{ inApp: summaryInAppChip }}
+                    params={{ inAppKey: summary.inApp }}
+                />
             {:else if summary.global}
-                <ShortcutChip key={summary.global} /> globally.
+                <Trans
+                    key="downloads.toast.summaryGlobal"
+                    snippets={{ global: summaryGlobalChip }}
+                    params={{ globalKey: summary.global }}
+                />
             {/if}
             <button
                 type="button"
                 class="collapse-toggle inline"
-                aria-label="Show the shortcut tip"
-                use:tooltip={'Show the shortcut tip'}
+                aria-label={tString('downloads.toast.expandTip')}
+                use:tooltip={tString('downloads.toast.expandTip')}
                 onclick={toggleCollapsed}
             >
                 <Icon name="chevron-down" size={14} />
@@ -187,16 +231,28 @@
         </span>
     {:else}
         {#if subdirLabel}
-            <span class="subdir">in {subdirLabel}</span>
+            <span class="subdir">{tString('downloads.toast.inSubdir', { subdir: subdirLabel })}</span>
         {/if}
         {#if shortcutHint || globalBinding}
             <div class="learn">
-                <strong class="learn-intro">Something cool to learn about jumping to downloads</strong>
+                <strong class="learn-intro">{tString('downloads.toast.learnIntro')}</strong>
                 {#if shortcutHint}
-                    <span class="hint">In-app: Press <ShortcutChip key={shortcutHint} /> to jump here</span>
+                    <span class="hint"
+                        ><Trans
+                            key="downloads.toast.inAppHint"
+                            snippets={{ chip: inAppChip }}
+                            params={{ key: shortcutHint }}
+                        /></span
+                    >
                 {/if}
                 {#if globalBinding}
-                    <span class="hint">In <em>any</em> app (global shortcut), press <ShortcutChip key={globalBinding} /></span>
+                    <span class="hint"
+                        ><Trans
+                            key="downloads.toast.globalHint"
+                            snippets={{ em: emphasis, chip: globalChip }}
+                            params={{ key: globalBinding }}
+                        /></span
+                    >
                     {#if showShortcutAnimation}
                         <div class="shortcut-animation">
                             <GlobalShortcutAnimation />
@@ -206,8 +262,8 @@
                 <button
                     type="button"
                     class="collapse-toggle"
-                    aria-label="Make this notification more compact"
-                    use:tooltip={'Make this notification more compact'}
+                    aria-label={tString('downloads.toast.collapseTip')}
+                    use:tooltip={tString('downloads.toast.collapseTip')}
                     onclick={toggleCollapsed}
                 >
                     <Icon name="chevron-up" size={14} />
@@ -217,8 +273,10 @@
     {/if}
 
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleStopShowing}>Stop showing these</Button>
-        <Button size="mini" variant="primary" onclick={handleJumpButton}>Jump to file</Button>
+        <Button size="mini" variant="secondary" onclick={handleStopShowing}
+            >{tString('downloads.toast.stopShowing')}</Button
+        >
+        <Button size="mini" variant="primary" onclick={handleJumpButton}>{tString('downloads.toast.jumpToFile')}</Button>
     </div>
 </div>
 

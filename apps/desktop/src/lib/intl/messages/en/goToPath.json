@@ -1,0 +1,59 @@
+{
+  "goToPath.dialog.title": "Go to path",
+  "@goToPath.dialog.title": {
+    "description": "Title of the \"Go to path\" dialog (opened with Command-G), which jumps a pane to a typed filesystem location. \"Path\" means a filesystem location like ~/Documents."
+  },
+
+  "goToPath.dialog.inputAriaLabel": "Path to go to",
+  "@goToPath.dialog.inputAriaLabel": {
+    "description": "Accessibility label (read by screen readers) for the path input in the \"Go to path\" dialog."
+  },
+
+  "goToPath.dialog.inputPlaceholder": "Type or paste a path, e.g. ~/Documents",
+  "@goToPath.dialog.inputPlaceholder": {
+    "description": "Placeholder in the \"Go to path\" dialog's input. \"~/Documents\" is an example filesystem path; keep it literally as a sample."
+  },
+
+  "goToPath.dialog.recentsAriaLabel": "Recent paths",
+  "@goToPath.dialog.recentsAriaLabel": {
+    "description": "Accessibility label (read by screen readers) for the list of recently visited paths in the \"Go to path\" dialog."
+  },
+
+  "goToPath.dialog.removeFromList": "Remove from list",
+  "@goToPath.dialog.removeFromList": {
+    "description": "Tooltip and accessibility label for the button that removes one entry from the recent-paths list. A short label."
+  },
+
+  "goToPath.dialog.cancel": "Cancel",
+  "@goToPath.dialog.cancel": {
+    "description": "Button that closes the \"Go to path\" dialog without navigating. A short button label."
+  },
+
+  "goToPath.dialog.confirm": "Go to path",
+  "@goToPath.dialog.confirm": {
+    "description": "Primary button in the \"Go to path\" dialog that navigates to the typed path. A short button label."
+  },
+
+  "goToPath.dialog.ancestorHint": "This path doesn''t exist. The closest place to go is {dir}.",
+  "@goToPath.dialog.ancestorHint": {
+    "description": "Inline warning under the input when the typed path doesn't exist; tells the user the nearest existing folder it would go to instead.",
+    "placeholders": {
+      "dir": "the nearest existing parent folder's path (e.g. /Users/me)"
+    }
+  },
+
+  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> doesn''t exist, so we took you to <land>{landed}</land>.",
+  "@goToPath.toast.landedOnAncestor": {
+    "description": "Toast shown after \"Go to path\" navigated to the nearest existing folder because the typed path was missing. Both paths are wrapped in tags (<req></req> and <land></land>) that render them in a monospace font; keep the tags around each path placeholder.",
+    "placeholders": {
+      "requested": "the path the user typed, which doesn't exist (e.g. /tmp/nope)",
+      "landed": "the nearest existing folder we navigated to instead (e.g. /tmp)"
+    }
+  },
+
+  "goToPath.toast.pressToGoBack": "Press <chip></chip> to go back.",
+  "@goToPath.toast.pressToGoBack": {
+    "description": "Second line of the nearest-ancestor toast, telling the user which shortcut returns to the previous location. The <chip></chip> tag is replaced by a key-combination chip (e.g. ⌘[); keep the empty tag where the chip should appear.",
+    "placeholders": {}
+  }
+}

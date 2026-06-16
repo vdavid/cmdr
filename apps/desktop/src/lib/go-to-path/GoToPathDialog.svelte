@@ -30,6 +30,7 @@
         removeRecentPath as removeRecentPathFromState,
     } from './recent-paths-state.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** The focused pane's current path; relative input resolves against it. */
@@ -79,7 +80,7 @@
         if (value !== inputValue) return
         ancestorHint =
             resolution?.kind === 'nearestAncestor'
-                ? `This path doesn't exist. The closest place to go is ${resolution.ancestorDir}.`
+                ? tString('goToPath.dialog.ancestorHint', { dir: resolution.ancestorDir })
                 : ''
     }
 
@@ -195,7 +196,7 @@
     onclose={onCancel}
     containerStyle="width: 440px"
 >
-    {#snippet title()}Go to path{/snippet}
+    {#snippet title()}{tString('goToPath.dialog.title')}{/snippet}
 
     <div class="dialog-body">
         <div class="input-group">
@@ -205,12 +206,12 @@
                 type="text"
                 class="path-input"
                 class:has-warning={!!ancestorHint}
-                aria-label="Path to go to"
+                aria-label={tString('goToPath.dialog.inputAriaLabel')}
                 aria-describedby={ancestorHint ? 'go-to-path-warning' : undefined}
                 spellcheck="false"
                 autocomplete="off"
                 autocapitalize="off"
-                placeholder="Type or paste a path, e.g. ~/Documents"
+                placeholder={tString('goToPath.dialog.inputPlaceholder')}
                 onkeydown={handleInputKeydown}
                 oninput={handleInput}
             />
@@ -220,7 +221,7 @@
         </div>
 
         {#if recents.length > 0}
-            <ul class="recents" aria-label="Recent paths">
+            <ul class="recents" aria-label={tString('goToPath.dialog.recentsAriaLabel')}>
                 {#each recents as recent, index (recent.id)}
                     <li class="recent-row">
                         <!-- Row body is out of the tab order on purpose: the digit
@@ -247,8 +248,8 @@
                         <button
                             type="button"
                             class="remove-button"
-                            aria-label="Remove from list"
-                            use:tooltip={'Remove from list'}
+                            aria-label={tString('goToPath.dialog.removeFromList')}
+                            use:tooltip={tString('goToPath.dialog.removeFromList')}
                             onclick={(event) => void handleRemoveRecent(event, recent.id)}
                         >
                             <Icon name="x" size={14} />
@@ -259,8 +260,10 @@
         {/if}
 
         <div class="button-row">
-            <Button variant="secondary" onclick={onCancel}>Cancel</Button>
-            <Button variant="primary" onclick={() => void confirmGo()} disabled={!canGo || isGoing}>Go to path</Button>
+            <Button variant="secondary" onclick={onCancel}>{tString('goToPath.dialog.cancel')}</Button>
+            <Button variant="primary" onclick={() => void confirmGo()} disabled={!canGo || isGoing}
+                >{tString('goToPath.dialog.confirm')}</Button
+            >
         </div>
     </div>
 </ModalDialog>

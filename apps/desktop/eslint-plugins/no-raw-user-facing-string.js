@@ -43,8 +43,33 @@
 // tranche starts migrating that area (M2). Keep this list and the catalog areas
 // in step; an area isn't "done" until its excluded files (below) are all gone.
 const enforcedAreaPathFragments = [
-  '/lib/file-operations/transfer/', // the `transfer` area (M0/M1 pilot)
-  '/lib/settings/', // the `settings` area (M2 tranche 2)
+  '/lib/file-operations/', // transfer + delete/mkdir/mkfile dialog chrome
+  '/lib/settings/', // settings registry + section chrome
+  '/lib/downloads/',
+  '/lib/low-disk-space/',
+  '/lib/notifications/',
+  '/lib/indexing/',
+  '/lib/onboarding/',
+  '/lib/query-ui/',
+  '/lib/search/',
+  '/lib/file-viewer/',
+  '/routes/viewer/',
+  '/lib/licensing/',
+  '/lib/crash-reporter/',
+  '/lib/error-reporter/',
+  '/lib/feedback/',
+  '/lib/commands/',
+  '/lib/command-palette/',
+  '/lib/shortcuts/',
+  '/lib/go-to-path/',
+  '/lib/ai/',
+  '/lib/ui/',
+  '/lib/mtp/',
+  '/lib/updates/',
+  '/lib/whats-new/',
+  '/lib/errors/',
+  '/routes/(main)/', // top-level app chrome (command-handlers excluded below)
+  // NOT YET ENFORCED: '/lib/file-explorer/' — its migration is finishing on a separate branch.
 ]
 
 // Files inside an enforced area that aren't migrated yet, so the rule skips them
@@ -52,28 +77,10 @@ const enforcedAreaPathFragments = [
 // deletes its entries here as it migrates the file's copy. When this list is
 // empty for an area, that area is fully enforced.
 const excludedUnmigratedFiles = [
-  // The transfer dialogs: a later M2 tranche. `TransferErrorDialog` +
-  // `FallbackErrorContent` overlap the errors pipeline (the trickiest tranche).
-  '/lib/file-operations/transfer/TransferDialog.svelte',
-  '/lib/file-operations/transfer/TransferProgressDialog.svelte',
-  '/lib/file-operations/transfer/TransferErrorDialog.svelte',
-  '/lib/file-operations/transfer/FallbackErrorContent.svelte',
-  '/lib/file-operations/transfer/ScanPhaseBody.svelte',
-  '/lib/file-operations/transfer/DirectionIndicator.svelte',
-
-  // Settings area: the registry-driven settings core + section chrome IS
-  // migrated and enforced. These four files render copy owned by ADJACENT
-  // subsystems (their strings aren't in the settings registry) and migrate with
-  // those subsystems' tranches, not this one:
-  //   - the cloud/local AI provider config UIs (API-key flows, model picker,
-  //     RAM gauge, download progress) belong with the AI tranche,
-  //   - keyboard-shortcuts renders command names from the command registry (the
-  //     `commands` tranche) plus its own conflict-banner chrome,
-  //   - license renders license-API display copy (the licensing surface).
-  '/lib/settings/sections/AiCloudSection.svelte',
-  '/lib/settings/sections/AiLocalSection.svelte',
-  '/lib/settings/sections/KeyboardShortcutsSection.svelte',
-  '/lib/settings/sections/LicenseSection.svelte',
+  // The `(main)` route's command-handlers subtree is its own pending tranche: it
+  // still has raw toast copy (favorites, tabs, cloud, zoom). The rest of
+  // `/routes/(main)/` is migrated and enforced.
+  '/routes/(main)/command-handlers/',
 ]
 
 // Element/component attributes that carry user-facing copy.
@@ -94,6 +101,19 @@ const NON_COPY_ELEMENT_TYPES = new Set(['SvelteStyleElement', 'SvelteScriptEleme
 /** Whether a `SvelteText` node sits directly inside a `<style>`/`<script>`. */
 function isInNonCopyElement(node) {
   return node.parent ? NON_COPY_ELEMENT_TYPES.has(node.parent.type) : false
+}
+
+/**
+ * Whether a `SvelteText` node sits anywhere inside an `<svg>`. SVG `<text>` is
+ * geometry-positioned glyph content in a fixed coordinate space (key-cap labels,
+ * axis ticks), not a localizable UI string sink — like `<style>`/`<script>`
+ * text, it's not copy. Walks ancestors since the text is nested under `<g>`/etc.
+ */
+function isInSvg(node) {
+  for (let p = node.parent; p; p = p.parent) {
+    if (p.type === 'SvelteElement' && p.name && p.name.name === 'svg') return true
+  }
+  return false
 }
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -159,6 +179,7 @@ export default {
       // so a localized `{t('...')}` doesn't reach here.
       SvelteText(node) {
         if (isInNonCopyElement(node)) return
+        if (isInSvg(node)) return
         reportLiteral(node, node.value)
       },
     }

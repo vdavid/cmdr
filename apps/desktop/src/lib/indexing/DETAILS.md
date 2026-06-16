@@ -81,3 +81,12 @@ has samples. Tier 2's ETA is prefixed "roughly".
 
 The reactive event-driven glue in `index-state.svelte.ts` is allowlisted in `coverage-allowlist.json`. Manual end-to-end
 testing runs the Rust indexer via `pnpm dev`.
+
+## i18n
+
+All user-facing copy here lives in `$lib/intl/messages/en/indexing.json` (prefix `indexing.*`), resolved via `tString()`
+from `$lib/intl`; `cmdr/no-raw-user-facing-string` is enforced on `lib/indexing/`. Don't hardcode copy. The backend's
+typed rescan-reason and aggregation-phase discriminators map to catalog KEYS (`rescanReasonToMessageKey` /
+`phaseToLabelKey`), resolved at render time — branch on the typed enum, never on wording. The `'bytes'` / `'entries'`
+scan-unit tags and `'scan'`/`'aggregation'`/`'replay'` mode strings are internal discriminators, not copy. Base-en
+output is parity-pinned by `indexing-i18n-parity.test.ts`.

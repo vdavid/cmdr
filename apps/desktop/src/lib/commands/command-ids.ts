@@ -7,12 +7,13 @@
  *
  * ## Why a separate tuple instead of `commands.map(c => c.id)`
  *
- * The registry array is a mutable `Command[]` — `updateLicenseCommandName`
- * rewrites an entry's `.name` in place, and `getPaletteCommands()` plus the
- * shortcuts conflict-detector consume it as a mutable `Command[]`. Putting
- * `as const satisfies readonly Command[]` on the array to derive ids would make
- * every element property `readonly` at the type level and break those writers.
- * So the id union comes from this standalone `as const` tuple instead.
+ * The registry array is a getter-backed `Command[]` (its `name` / `description`
+ * resolve i18n catalog keys at read time), built by mapping a `CommandSource[]`,
+ * and `getPaletteCommands()` plus the shortcuts conflict-detector consume it as a
+ * mutable `Command[]`. Putting `as const satisfies readonly Command[]` on a
+ * source array to derive ids would make every element property `readonly` at the
+ * type level and fight that mutable-array consumer surface. So the id union comes
+ * from this standalone `as const` tuple instead.
  *
  * ## Keeping the tuple and the registry in sync
  *

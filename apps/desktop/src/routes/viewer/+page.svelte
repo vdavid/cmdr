@@ -52,9 +52,11 @@
     import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
     import type { RangeEnd } from '$lib/tauri-commands'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
-    import { categorizeForViewerWarning } from '$lib/file-viewer/binary-warning'
+    import { categorizeForViewerWarning, viewerWarningLabel } from '$lib/file-viewer/binary-warning'
     import { isMediaKind } from './media-view'
     import { createViewerMedia } from './viewer-media.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
 
     const log = getAppLogger('viewer')
 
@@ -234,7 +236,7 @@
         getEstimatedLines: () => estimatedLines,
         getBackendType: () => backendType,
         onTimeoutError: () => {
-            error = "Couldn't load the file. The volume may be slow or unresponsive."
+            error = tString('viewer.error.timeout')
             errorIsTimeout = true
         },
         getAllLines: () => {
@@ -638,7 +640,7 @@
 
         await initAppMode()
         getCurrentWindow()
-            .setTitle(decorateChildWindowTitle(`${result.fileName} | Viewer`))
+            .setTitle(decorateChildWindowTitle(tString('viewer.window.titleSuffix', { fileName: result.fileName })))
             .catch(() => {})
 
         await setupMcpListeners(path)
@@ -683,10 +685,10 @@
             await openViewerSession(filePath)
         } catch (e) {
             if (isIpcError(e) && e.timedOut) {
-                error = "Couldn't load the file. The volume may be slow or unresponsive."
+                error = tString('viewer.error.timeout')
                 errorIsTimeout = true
             } else {
-                error = typeof e === 'string' ? e : isIpcError(e) ? e.message : 'Failed to read file'
+                error = typeof e === 'string' ? e : isIpcError(e) ? e.message : tString('viewer.error.readFailed')
                 errorIsTimeout = false
             }
             log.error('Retry failed: {error}', { error: String(e) })
@@ -732,7 +734,7 @@
                 viewerClose(oldSessionId).catch(() => {})
             }
         } catch (e) {
-            error = typeof e === 'string' ? e : isIpcError(e) ? e.message : 'Failed to read file'
+            error = typeof e === 'string' ? e : isIpcError(e) ? e.message : tString('viewer.error.readFailed')
             errorIsTimeout = isIpcError(e) && e.timedOut
             log.error('{label} failed: {error}', { label: logLabel, error: String(e) })
         } finally {
@@ -775,7 +777,7 @@
         const pathParam = params.get('path')
 
         if (!pathParam) {
-            error = 'No file path specified'
+            error = tString('viewer.error.noPath')
             errorIsTimeout = false
             loading = false
             return
@@ -787,10 +789,10 @@
             await openViewerSession(pathParam)
         } catch (e) {
             if (isIpcError(e) && e.timedOut) {
-                error = "Couldn't load the file. The volume may be slow or unresponsive."
+                error = tString('viewer.error.timeout')
                 errorIsTimeout = true
             } else {
-                error = typeof e === 'string' ? e : isIpcError(e) ? e.message : 'Failed to read file'
+                error = typeof e === 'string' ? e : isIpcError(e) ? e.message : tString('viewer.error.readFailed')
                 errorIsTimeout = false
             }
             log.error('Failed to open file: {error}', { error: String(e) })
@@ -850,7 +852,7 @@
         void copyFlow.handleCopy()
     }}
 >
-    <h1 class="sr-only">File viewer</h1>
+    <h1 class="sr-only">{tString('viewer.srHeading')}</h1>
     <ViewerToolbar
         {fileName}
         kind={media.kind}
@@ -887,14 +889,23 @@
         -->
         <aside class="binary-warning" role="note">
             <p class="binary-warning-text">
-                This is the raw view of the file. You might want to view the actual <strong>{warning.label}</strong>
-                instead. To do that, close this window and press <ShortcutChip key="⇧Space" /> to open the quick view, or
-                press <ShortcutChip key="Enter" /> (or double-click the file) to open it in the associated app.
+                {#snippet kindSnippet(children: import('svelte').Snippet)}<strong>{@render children()}</strong>{/snippet}
+                {#snippet quickLookKey(children: import('svelte').Snippet)}<ShortcutChip
+                        key="⇧Space"
+                    />{@render children()}{/snippet}
+                {#snippet openKey(children: import('svelte').Snippet)}<ShortcutChip key="Enter" />{@render children()}{/snippet}
+                <Trans
+                    key="viewer.binaryWarning.body"
+                    params={{ kind: viewerWarningLabel(warning) }}
+                    snippets={{ kind: kindSnippet, quickLookKey, openKey }}
+                />
             </p>
             <div class="binary-warning-actions">
-                <button type="button" class="binary-warning-action" onclick={dismissBanner}>Close</button>
+                <button type="button" class="binary-warning-action" onclick={dismissBanner}
+                    >{tString('viewer.binaryWarning.dismiss')}</button
+                >
                 <button type="button" class="binary-warning-action" onclick={suppressBannerForever}
-                    >Never show this warning again</button
+                    >{tString('viewer.binaryWarning.suppressForever')}</button
                 >
             </div>
         </aside>
@@ -905,8 +916,8 @@
                 bind:this={search.searchInputRef}
                 bind:value={search.searchQuery}
                 type="text"
-                placeholder="Find in file..."
-                aria-label="Search text"
+                placeholder={tString('viewer.search.placeholder')}
+                aria-label={tString('viewer.search.ariaLabel')}
                 class="search-input"
                 autocomplete="off"
                 autocapitalize="off"
@@ -917,20 +928,21 @@
                 class="search-toggle"
                 class:active={search.caseSensitive}
                 aria-pressed={search.caseSensitive}
-                aria-label="Case sensitive"
+                aria-label={tString('viewer.search.caseSensitive')}
                 onclick={() => { search.toggleCaseSensitive(); }}
-                use:tooltip={{ text: 'Case sensitive', shortcut: '⌘⌥C' }}
+                use:tooltip={{ text: tString('viewer.search.caseSensitive'), shortcut: '⌘⌥C' }}
             >
-                Aa
+                <!-- eslint-disable-next-line cmdr/no-raw-user-facing-string -- typographic glyph for the case-sensitive toggle, not copy (the a11y label + tooltip carry the copy) -->
+                <span>Aa</span>
             </button>
             <button
                 type="button"
                 class="search-toggle"
                 class:active={search.useRegex}
                 aria-pressed={search.useRegex}
-                aria-label="Regex"
+                aria-label={tString('viewer.search.regex')}
                 onclick={() => { search.toggleUseRegex(); }}
-                use:tooltip={{ text: 'Regex', shortcut: '⌘⌥R' }}
+                use:tooltip={{ text: tString('viewer.search.regex'), shortcut: '⌘⌥R' }}
             >
                 .*
             </button>
@@ -940,22 +952,28 @@
                 {:else if search.searchStatus === 'running'}
                     <span class="search-spinner"><Spinner size="sm" /></span>
                     {#if search.searchMatches.length > 0}
-                        {search.currentMatchIndex + 1} of {search.searchMatches.length}{search.searchLimitReached
-                            ? '+'
-                            : ''}
+                        {tString('viewer.search.matchPosition', {
+                            current: search.currentMatchIndex + 1,
+                            total: search.searchMatches.length,
+                            more: search.searchLimitReached ? 'yes' : 'no',
+                        })}
                         &middot; {Math.round(search.searchProgress * 100)}%
                     {:else}
-                        Searching... {Math.round(search.searchProgress * 100)}%
+                        {tString('viewer.search.searching')} {Math.round(search.searchProgress * 100)}%
                     {/if}
                 {:else if search.searchMatches.length > 0}
-                    {search.currentMatchIndex + 1} of {search.searchMatches.length}{search.searchLimitReached
-                        ? '+'
-                        : ''}
+                    {tString('viewer.search.matchPosition', {
+                        current: search.currentMatchIndex + 1,
+                        total: search.searchMatches.length,
+                        more: search.searchLimitReached ? 'yes' : 'no',
+                    })}
                     {#if search.searchStatus === 'cancelled'}
-                        (partial)
+                        {tString('viewer.search.partial')}
                     {/if}
                 {:else if search.searchQuery && (search.searchStatus === 'done' || search.searchStatus === 'cancelled')}
-                    No matches{search.searchStatus === 'cancelled' ? ' (partial)' : ''}
+                    {tString('viewer.search.noMatches')}{search.searchStatus === 'cancelled'
+                        ? ' ' + tString('viewer.search.partial')
+                        : ''}
                 {/if}
             </span>
             {#if search.searchStatus === 'running'}
@@ -963,8 +981,8 @@
                     onclick={() => {
                         search.stopSearch()
                     }}
-                    aria-label="Stop searching"
-                    use:tooltip={'Stop scanning and keep results'}>&#x25A0;</button
+                    aria-label={tString('viewer.search.stop')}
+                    use:tooltip={tString('viewer.search.stopTooltip')}>&#x25A0;</button
                 >
             {/if}
             <button
@@ -972,23 +990,23 @@
                     search.findPrev()
                 }}
                 disabled={search.searchMatches.length === 0}
-                aria-label="Previous match"
-                use:tooltip={{ text: 'Previous match', shortcut: '⇧Enter' }}>&#x25B2;</button
+                aria-label={tString('viewer.search.previous')}
+                use:tooltip={{ text: tString('viewer.search.previous'), shortcut: '⇧Enter' }}>&#x25B2;</button
             >
             <button
                 onclick={() => {
                     search.findNext()
                 }}
                 disabled={search.searchMatches.length === 0}
-                aria-label="Next match"
-                use:tooltip={{ text: 'Next match', shortcut: 'Enter' }}>&#x25BC;</button
+                aria-label={tString('viewer.search.next')}
+                use:tooltip={{ text: tString('viewer.search.next'), shortcut: 'Enter' }}>&#x25BC;</button
             >
             <button
                 onclick={() => {
                     search.closeSearch()
                 }}
-                aria-label="Close search"
-                use:tooltip={{ text: 'Close', shortcut: 'Esc' }}>&#x2715;</button
+                aria-label={tString('viewer.search.close')}
+                use:tooltip={{ text: tString('viewer.search.closeTooltip'), shortcut: 'Esc' }}>&#x2715;</button
             >
             {#if search.searchStatus === 'running'}
                 <div
@@ -1005,13 +1023,15 @@
     {/if}
 
     {#if loading}
-        <div class="status-message">Loading...</div>
+        <div class="status-message">{tString('viewer.loading')}</div>
     {:else if error && errorIsTimeout}
         <div class="status-message timeout-error" role="alert">
             <p class="timeout-error-message">{error}</p>
             <div class="timeout-error-actions">
-                <button class="viewer-action-btn" onclick={() => void retryOpen()}>Retry</button>
-                <button class="viewer-action-btn viewer-action-secondary" onclick={closeWindow}>Cancel</button>
+                <button class="viewer-action-btn" onclick={() => void retryOpen()}>{tString('viewer.error.retry')}</button>
+                <button class="viewer-action-btn viewer-action-secondary" onclick={closeWindow}
+                    >{tString('viewer.error.cancel')}</button
+                >
             </div>
         </div>
     {:else if error}
@@ -1026,7 +1046,7 @@
             class:word-wrap={scroll.wordWrap}
             role="document"
             tabindex="0"
-            aria-label="File content: {fileName}"
+            aria-label={tString('viewer.content.ariaLabel', { fileName })}
             bind:this={scroll.contentRef}
             onscroll={scroll.handleScroll}
             onpointerdown={pointerDrag.handlePointerDown}

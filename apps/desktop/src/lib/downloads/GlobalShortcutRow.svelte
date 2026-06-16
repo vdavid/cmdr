@@ -32,6 +32,8 @@
     } from './global-shortcut-setting'
     import { toAccelerator, DEFAULT_GLOBAL_GO_TO_LATEST_BINDING } from './global-shortcut-binding'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
 
     const log = getAppLogger('downloads')
 
@@ -40,6 +42,12 @@
     let pendingKey = $state('')
     /** Registration feedback. Empty string hides the indicator. */
     let statusText = $state('')
+    /**
+     * Whether the current `statusText` is a warning (vs a neutral confirmation),
+     * driving the warn styling. A typed flag set alongside the text, NOT a
+     * substring match on the (localized) status copy.
+     */
+    let statusIsWarn = $state(false)
 
     const isModified = $derived(binding !== DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
 
@@ -53,11 +61,18 @@
         const enabled = getSetting(GLOBAL_GO_TO_LATEST_ENABLED_KEY)
         const result = await commands.setGlobalGoToLatestShortcut(enabled, next)
         if (result.status === 'ok') {
-            statusText = result.data.status === 'registered' ? 'Registered' : 'Not registered'
+            statusText = tString(
+                result.data.status === 'registered'
+                    ? 'downloads.shortcutRow.registered'
+                    : 'downloads.shortcutRow.notRegistered',
+            )
+            statusIsWarn = false
         } else if (result.error.kind === 'invalidBinding') {
-            statusText = `Couldn't register: invalid combo`
+            statusText = tString('downloads.shortcutRow.invalidCombo')
+            statusIsWarn = true
         } else {
-            statusText = `Couldn't register: ${result.error.message}`
+            statusText = tString('downloads.shortcutRow.registerFailed', { reason: result.error.message })
+            statusIsWarn = true
             log.warn('setGlobalGoToLatestShortcut failed: {error}', { error: JSON.stringify(result.error) })
         }
     }
@@ -66,6 +81,7 @@
         editing = true
         pendingKey = ''
         statusText = ''
+        statusIsWarn = false
     }
 
     function cancelEditing(): void {
@@ -94,7 +110,8 @@
         // Global shortcuts always need a modifier; `toAccelerator` returns null
         // for a modifier-less combo. Reject it and keep recording.
         if (toAccelerator(combo) === null) {
-            statusText = 'Add a modifier (⌘, ⌃, ⌥, or ⇧)'
+            statusText = tString('downloads.shortcutRow.addModifier')
+            statusIsWarn = true
             return
         }
         pendingKey = combo
@@ -125,14 +142,20 @@
     })
 </script>
 
+{#snippet globalMarker(children: import('svelte').Snippet)}
+    <span class="global-marker">{@render children()}</span>
+{/snippet}
+
 <div class="scope-group">
-    <h3 class="scope-title">Global</h3>
+    <h3 class="scope-title">{tString('downloads.shortcutRow.scopeTitle')}</h3>
     <div class="command-row">
         <div class="command-info">
             {#if isModified}
-                <span class="modified-dot" use:tooltip={'Modified from default'}></span>
+                <span class="modified-dot" use:tooltip={tString('downloads.shortcutRow.modifiedTooltip')}></span>
             {/if}
-            <span class="command-name">Go to latest download <span class="global-marker">(global)</span></span>
+            <span class="command-name"
+                ><Trans key="downloads.shortcutRow.commandName" snippets={{ marker: globalMarker }} /></span
+            >
         </div>
         <div class="command-shortcuts">
             <button
@@ -145,7 +168,7 @@
                 }}
             >
                 {#if editing}
-                    {pendingKey || 'Press keys...'}
+                    {pendingKey || tString('downloads.shortcutRow.pressKeys')}
                 {:else}
                     {binding}
                 {/if}
@@ -153,17 +176,15 @@
             {#if isModified}
                 <button
                     class="reset-shortcut"
-                    aria-label="Reset to default"
-                    use:tooltip={'Reset to default'}
+                    aria-label={tString('downloads.shortcutRow.resetTooltip')}
+                    use:tooltip={tString('downloads.shortcutRow.resetTooltip')}
                     onclick={handleReset}
                 >
                     ↩
                 </button>
             {/if}
             {#if statusText}
-                <span class="shortcut-status" class:warn={statusText.includes("Couldn't") || statusText.includes('Add')}
-                    >{statusText}</span
-                >
+                <span class="shortcut-status" class:warn={statusIsWarn}>{statusText}</span>
             {/if}
         </div>
     </div>

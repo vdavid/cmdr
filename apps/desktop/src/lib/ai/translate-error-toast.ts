@@ -13,6 +13,7 @@
 
 import type { AiTranslateErrorKind } from '$lib/ipc/bindings'
 import { addToast, type ToastLevel } from '$lib/ui/toast/toast-store.svelte'
+import { tString } from '$lib/intl/messages.svelte'
 
 /** A thrown AI-translation failure: a real `Error` that also carries the typed `kind`. */
 export type AiTranslateThrown = Error & { kind: AiTranslateErrorKind }
@@ -59,62 +60,62 @@ export function aiTranslateErrorToast(kind: AiTranslateErrorKind): AiTranslateTo
   switch (kind) {
     case 'off':
       return {
-        title: 'AI is turned off',
-        body: 'Turn on a provider in Settings > AI to use AI search.',
+        title: tString('ai.translateError.off.title'),
+        body: tString('ai.translateError.off.body'),
         level: 'warn',
       }
     case 'notConfigured':
       return {
-        title: 'AI needs a bit more setup',
-        body: 'Finish your provider setup in Settings > AI, then try again.',
+        title: tString('ai.translateError.notConfigured.title'),
+        body: tString('ai.translateError.notConfigured.body'),
         level: 'warn',
       }
     case 'authFailed':
       return {
-        title: 'That API key got turned down',
-        body: 'Check your key in Settings > AI - it might be wrong or revoked.',
+        title: tString('ai.translateError.authFailed.title'),
+        body: tString('ai.translateError.authFailed.body'),
         level: 'error',
       }
     case 'rateLimited':
       return {
-        title: 'Your AI provider is out of room',
-        body: "It's rate-limiting requests or your plan is out of quota. Check your plan and billing, then try again.",
+        title: tString('ai.translateError.rateLimited.title'),
+        body: tString('ai.translateError.rateLimited.body'),
         level: 'warn',
       }
     case 'timeout':
       return {
-        title: 'The AI took too long',
-        body: 'The request timed out. Give it another go in a moment.',
+        title: tString('ai.translateError.timeout.title'),
+        body: tString('ai.translateError.timeout.body'),
         level: 'warn',
       }
     case 'unavailable':
       return {
-        title: "Can't reach your AI provider",
-        body: "Check your internet or the provider's status, then try again.",
+        title: tString('ai.translateError.unavailable.title'),
+        body: tString('ai.translateError.unavailable.body'),
         level: 'warn',
       }
     case 'emptyResponse':
       return {
-        title: 'The AI came back empty',
-        body: 'Your model may need a bigger budget for this. Try a faster model like gpt-4.1-mini in Settings > AI.',
+        title: tString('ai.translateError.emptyResponse.title'),
+        body: tString('ai.translateError.emptyResponse.body'),
         level: 'warn',
       }
     case 'serverError':
       return {
-        title: 'Your AI provider hit a snag',
-        body: 'It returned something unexpected. Try again in a moment.',
+        title: tString('ai.translateError.serverError.title'),
+        body: tString('ai.translateError.serverError.body'),
         level: 'warn',
       }
     case 'parseError':
       return {
-        title: "Couldn't read the AI's answer",
-        body: 'Try again, or pick a different model in Settings > AI.',
+        title: tString('ai.translateError.parseError.title'),
+        body: tString('ai.translateError.parseError.body'),
         level: 'warn',
       }
     case 'unknownProvider':
       return {
-        title: "That AI provider isn't recognized",
-        body: 'Pick a provider in Settings > AI.',
+        title: tString('ai.translateError.unknownProvider.title'),
+        body: tString('ai.translateError.unknownProvider.body'),
         level: 'warn',
       }
   }

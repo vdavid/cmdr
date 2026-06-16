@@ -15,6 +15,7 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
+    import { tString } from '$lib/intl/messages.svelte'
 
     /** How many shortcut chips a palette row shows (power users discover alternates). */
     const MAX_SHORTCUTS_SHOWN = 3
@@ -199,9 +200,9 @@
             bind:this={inputElement}
             type="text"
             class="search-input"
-            placeholder="Search commands..."
+            placeholder={tString('commandPalette.searchPlaceholder')}
             bind:value={query}
-            aria-label="Search commands"
+            aria-label={tString('commandPalette.searchAriaLabel')}
             id="palette-title"
             spellcheck="false"
             autocomplete="off"
@@ -214,23 +215,23 @@
         />
 
         {#if results.length === 0 && query.trim()}
-            <div class="no-results">No commands found</div>
+            <div class="no-results">{tString('commandPalette.noResults')}</div>
         {:else}
             <div
                 id="palette-listbox"
                 class="results-container"
                 bind:this={resultsContainer}
                 role="listbox"
-                aria-label="Commands"
+                aria-label={tString('commandPalette.resultsAriaLabel')}
                 tabindex="-1"
             >
                 {#each results as match, index (match.command.id)}
                     {@const shortcuts = getEffectiveShortcutsReactive(match.command.id).slice(0, MAX_SHORTCUTS_SHOWN)}
                     {#if recentCount > 0 && index === 0}
-                        <div class="group-heading">Recent</div>
+                        <div class="group-heading">{tString('commandPalette.groupRecent')}</div>
                     {/if}
                     {#if recentCount > 0 && index === recentCount}
-                        <div class="group-heading">All commands</div>
+                        <div class="group-heading">{tString('commandPalette.groupAll')}</div>
                     {/if}
                     <div
                         class="result-item"

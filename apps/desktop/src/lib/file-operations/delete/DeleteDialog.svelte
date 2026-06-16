@@ -27,6 +27,8 @@
     import { getAppLogger } from '$lib/logging/logger'
     import { ScanThroughput } from '../scan-throughput'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { t, tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('deleteDialog')
 
@@ -77,7 +79,11 @@
     const visibleItems = $derived(sourceItems.slice(0, MAX_VISIBLE_ITEMS))
     const overflowCount = $derived(Math.max(0, sourceItems.length - MAX_VISIBLE_ITEMS))
 
-    const confirmLabel = $derived(isPermanent ? 'Delete permanently' : 'Move to trash')
+    const confirmLabel = $derived(
+        isPermanent
+            ? tString('fileOperations.delete.confirmDeletePermanently')
+            : tString('fileOperations.delete.confirmMoveToTrash'),
+    )
     const confirmVariant = $derived<'primary' | 'danger'>(isPermanent ? 'danger' : 'primary')
     const dialogRole = $derived<'dialog' | 'alertdialog'>(isPermanent ? 'alertdialog' : 'dialog')
 
@@ -219,7 +225,7 @@
         if (!item.isDirectory) return ''
         const fileCount = item.recursiveFileCount
         if (fileCount == null) return ''
-        return `${formatNumber(fileCount)} ${fileCount === 1 ? 'file' : 'files'}`
+        return `${formatNumber(fileCount)} ${tString('fileOperations.delete.scanFile', { count: fileCount })}`
     }
 </script>
 
@@ -236,7 +242,7 @@
 
     <!-- Source path -->
     <div class="source-path">
-        From: {abbreviatedPath}
+        {tString('fileOperations.delete.fromPath', { path: abbreviatedPath })}
     </div>
 
     <!-- No-trash warning banner -->
@@ -246,7 +252,9 @@
                 <Icon name="triangle-alert" size={18} />
             </span>
             <p id="delete-warning-text">
-                <strong>This volume doesn't support trash.</strong> Files will be permanently deleted.
+                <strong>{tString('fileOperations.delete.noTrashWarningStrong')}</strong> {tString(
+                    'fileOperations.delete.noTrashWarningRest',
+                )}
             </p>
         </div>
     {/if}
@@ -254,15 +262,13 @@
     <!-- Trash/Delete toggle -->
     {#if supportsTrash}
         <div class="operation-toggle">
-            <button
-                class="toggle-option"
-                class:active={!isPermanent}
-                onclick={() => (isPermanent = false)}>Trash</button
+            <button class="toggle-option" class:active={!isPermanent} onclick={() => (isPermanent = false)}
+                >{tString('fileOperations.delete.toggleTrash')}</button
             >
             <button
                 class="toggle-option toggle-option-danger"
                 class:active={isPermanent}
-                onclick={() => (isPermanent = true)}>Delete</button
+                onclick={() => (isPermanent = true)}>{tString('fileOperations.delete.toggleDelete')}</button
             >
         </div>
     {/if}
@@ -282,7 +288,10 @@
             {/each}
             {#if overflowCount > 0}
                 <div class="file-list-overflow" role="listitem">
-                    ... and {formatNumber(overflowCount)} more {overflowCount === 1 ? 'item' : 'items'}
+                    {t('fileOperations.delete.overflowMore', {
+                        countText: formatNumber(overflowCount),
+                        count: overflowCount,
+                    })}
                 </div>
             {/if}
         </div>
@@ -306,12 +315,12 @@
         <span class="scan-divider">/</span>
         <div class="scan-stat">
             <span class="scan-value">{formatNumber(filesFound)}</span>
-            <span class="scan-label">{filesFound === 1 ? 'file' : 'files'}</span>
+            <span class="scan-label">{t('fileOperations.delete.scanFile', { count: filesFound })}</span>
         </div>
         <span class="scan-divider">/</span>
         <div class="scan-stat">
             <span class="scan-value">{formatNumber(dirsFound)}</span>
-            <span class="scan-label">{dirsFound === 1 ? 'dir' : 'dirs'}</span>
+            <span class="scan-label">{t('fileOperations.delete.scanDir', { count: dirsFound })}</span>
         </div>
         {#if isScanning}
             <Spinner size="sm" />
@@ -323,10 +332,14 @@
     <!-- Throughput -->
     {#if isScanning && filesPerSec !== null && filesPerSec > 0}
         <div class="scan-throughput">
-            <span class="scan-throughput-value">{formatNumber(Math.round(filesPerSec))} files/s</span>
+            <span class="scan-throughput-value"
+                >{tString('fileOperations.delete.throughputFiles', {
+                    rateText: formatNumber(Math.round(filesPerSec)),
+                })}</span
+            >
             {#if bytesPerSec !== null && bytesPerSec > 0}
                 <span class="scan-throughput-sep">·</span>
-                <span class="scan-throughput-value"><Size bytes={bytesPerSec} />/s</span>
+                <span class="scan-throughput-value"><Trans key="fileOperations.shared.byteRate" snippets={{ size }} /></span>
             {/if}
         </div>
     {/if}
@@ -338,10 +351,12 @@
 
     <!-- Buttons -->
     <div class="button-row">
-        <Button variant="secondary" onclick={handleCancel}>Cancel</Button>
+        <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
         <Button variant={confirmVariant} onclick={handleConfirm}>{confirmLabel}</Button>
     </div>
 </ModalDialog>
+
+{#snippet size(children: import('svelte').Snippet)}<Size bytes={bytesPerSec ?? 0} />{@render children()}{/snippet}
 
 <style>
     .source-path {

@@ -1,0 +1,11 @@
+{
+  "main.upgradeNudge.mac": "We''ve added new onboarding options. Open Cmdr > Onboarding… to review them.",
+  "@main.upgradeNudge.mac": {
+    "description": "Info toast (macOS) shown once to existing users after an update, pointing them at the new onboarding options. \"Cmdr > Onboarding…\" is a menu path the user follows; \"Cmdr\" is the brand name and \"Onboarding…\" is the menu item label (keep its trailing ellipsis). Paired with main.upgradeNudge.other for non-macOS."
+  },
+
+  "main.upgradeNudge.other": "We''ve added new onboarding options. Open the command palette and run Onboarding… to review them.",
+  "@main.upgradeNudge.other": {
+    "description": "Info toast (non-macOS) shown once to existing users after an update, pointing them at the new onboarding options. \"Command palette\" and \"Onboarding…\" match the names used elsewhere in the app (keep the trailing ellipsis on \"Onboarding…\"). Paired with main.upgradeNudge.mac for macOS."
+  }
+}

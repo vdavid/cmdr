@@ -20,6 +20,7 @@ import {
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
+import { tString } from '$lib/intl/messages.svelte'
 
 const logger = getAppLogger('mtp')
 
@@ -326,7 +327,6 @@ export async function initialize(): Promise<void> {
 
   unlistenExclusiveAccess = await onMtpExclusiveAccessError((event) => {
     const existing = state.devices.get(event.deviceId)
-    const blockingInfo = event.blockingProcess ? ` (blocked by ${event.blockingProcess})` : ''
     const device = existing?.device ?? {
       id: event.deviceId,
       locationId: 0,
@@ -338,7 +338,7 @@ export async function initialize(): Promise<void> {
       connectionState: 'error',
       storages: [],
       displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
-      error: `Another process has exclusive access${blockingInfo}`,
+      error: tString('mtp.error.exclusiveAccess', { blocking: event.blockingProcess || 'none' }),
     })
   })
 
@@ -355,7 +355,7 @@ export async function initialize(): Promise<void> {
       connectionState: 'error',
       storages: [],
       displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
-      error: 'USB permission denied. Install udev rules and reconnect',
+      error: tString('mtp.error.permissionDenied'),
     })
   })
 

@@ -8,6 +8,7 @@
 
 import type { TransferOperationType } from '$lib/file-explorer/types'
 import type { VolumeSpaceInfo } from '$lib/tauri-commands'
+import { tString } from '$lib/intl/messages.svelte'
 
 /**
  * Checks whether the destination path is invalid relative to the source paths.
@@ -34,7 +35,7 @@ export function getPathValidationError(
     const normSource = source.replace(/\/+$/, '')
     if (normDest === normSource || normDest.startsWith(normSource + '/')) {
       const folderName = normSource.split('/').pop() ?? normSource
-      return `Can't ${verb} "${folderName}" into its own subfolder`
+      return tString('fileOperations.transferDialog.pathErrorSubfolder', { verb, name: folderName })
     }
   }
 
@@ -43,7 +44,7 @@ export function getPathValidationError(
     const sourceParent = normSource.substring(0, normSource.lastIndexOf('/'))
     if (normDest === sourceParent) {
       const fileName = normSource.split('/').pop() ?? normSource
-      return `"${fileName}" is already in this location`
+      return tString('fileOperations.transferDialog.pathErrorAlreadyThere', { name: fileName })
     }
   }
 
@@ -62,5 +63,5 @@ export function formatSpaceInfo(space: VolumeSpaceInfo | null, formatBytes: (byt
   if (!space) return ''
   const free = formatBytes(space.availableBytes)
   const total = formatBytes(space.totalBytes)
-  return `${free} free of ${total}`
+  return tString('fileOperations.transferDialog.spaceInfo', { free, total })
 }

@@ -187,6 +187,18 @@ means the whole line is rendered):
 **Guardrail:** don't collapse the two into an unconditional rough-scroll: rough-scrolling a match whose line is already
 on screen flings the view to the line top on every Enter.
 
+## User-facing copy (i18n)
+
+Every user-facing viewer string lives in the `viewer.*` message catalog
+([`messages/en/viewer.json`](../../lib/intl/messages/en/viewer.json)), resolved through `$lib/intl` (`t()` / `tString()`
+/ `getMessage()`, and `<Trans>` for the inline-component binary-warning banner). The base-en output is a
+parity-protected MOVE of the original copy; `viewer-i18n-parity.test.ts` asserts byte-identical en rendering.
+`cmdr/no-raw-user-facing-string` is enforced for `lib/file-viewer/` and `routes/viewer/`, so a new hardcoded string in a
+known sink (text node, `title`/`label`/`placeholder`/`aria-label`, `addToast` first arg) fails lint: add a catalog key
+instead. Two literals are deliberately not copy and carry an eslint-disable: the `Aa` and `⌘C`/`⌘A` typographic/shortcut
+glyphs (the a11y labels and tooltips carry the real copy). The runtime works in the capability-restricted viewer window
+(pure `Intl` + static-imported JSON, no IPC).
+
 ## Gotchas
 
 - `$state(false)` in `.svelte.ts` triggers `@typescript-eslint/no-unnecessary-condition` because the linter doesn't know

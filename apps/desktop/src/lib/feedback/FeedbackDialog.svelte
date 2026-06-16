@@ -13,6 +13,8 @@
     import { addToast } from '$lib/ui/toast'
     import { sendFeedback, openExternalUrl } from '$lib/tauri-commands'
     import { formatInteger } from '$lib/intl/number-format'
+    import { t, tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
     import { closeFeedbackDialog } from './feedback-flow.svelte'
     import { getSetting, setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
@@ -54,14 +56,14 @@
             }
             const result = await sendFeedback(feedbackText, emailToAttach)
             if (result.kind === 'sent') {
-                addToast('Thanks for the feedback! We read every note.', { level: 'success' })
+                addToast(tString('feedback.sentToast'), { level: 'success' })
                 feedbackText = ''
                 closeFeedbackDialog()
             } else if (result.kind === 'invalid') {
                 // Both empty and over-cap are blocked above, so this is a backstop.
-                sendFailedMessage = "That note didn't go through. Shorten it and try again?"
+                sendFailedMessage = tString('feedback.dialog.invalid')
             } else {
-                sendFailedMessage = "Sorry, we couldn't send your feedback right now. Try again?"
+                sendFailedMessage = tString('feedback.dialog.softFailure')
             }
         } finally {
             sending = false
@@ -96,6 +98,25 @@
     }
 </script>
 
+{#snippet githubLink(children: import('svelte').Snippet)}
+    <LinkButton
+        href={GITHUB_ISSUES_URL}
+        onclick={(e: MouseEvent) => {
+            e.preventDefault()
+            void handleOpenLink(GITHUB_ISSUES_URL)
+        }}>{@render children()}</LinkButton
+    >
+{/snippet}
+{#snippet callLink(children: import('svelte').Snippet)}
+    <LinkButton
+        href={BOOK_A_CALL_URL}
+        onclick={(e: MouseEvent) => {
+            e.preventDefault()
+            void handleOpenLink(BOOK_A_CALL_URL)
+        }}>{@render children()}</LinkButton
+    >
+{/snippet}
+
 <ModalDialog
     titleId="feedback-dialog-title"
     onkeydown={handleKeydown}
@@ -105,18 +126,21 @@
     ariaDescribedby="feedback-dialog-body"
     containerStyle="width: 480px"
 >
-    {#snippet title()}Send feedback{/snippet}
+    {#snippet title()}{tString('feedback.dialog.title')}{/snippet}
 
     <div class="body">
         <p id="feedback-dialog-body" class="description">
-            What's working? What's missing? Your note goes straight to the maker of Cmdr.
+            {tString('feedback.dialog.description')}
         </p>
 
         <label class="feedback-label" for="feedback-text">
-            <span>Your feedback</span>
+            <span>{tString('feedback.dialog.label')}</span>
             {#if showCounter}
                 <span class="counter" class:over={overLimit}>
-                    {formatInteger(textLength)} / {formatInteger(MAX_FEEDBACK_CHARS)}
+                    {t('feedback.dialog.counter', {
+                        currentText: formatInteger(textLength),
+                        maxText: formatInteger(MAX_FEEDBACK_CHARS),
+                    })}
                 </span>
             {/if}
         </label>
@@ -126,36 +150,24 @@
             bind:value={feedbackText}
             class="feedback-textarea"
             class:invalid={overLimit}
-            placeholder="Example: I'd love a shortcut for jumping between tabs."
+            placeholder={tString('feedback.dialog.placeholder')}
             rows="5"
         ></textarea>
         {#if overLimit}
             <p class="helper-text">
-                Sorry, that's too long. Maximum is {formatInteger(MAX_FEEDBACK_CHARS)} characters.
+                {t('feedback.dialog.tooLong', { maxText: formatInteger(MAX_FEEDBACK_CHARS) })}
             </p>
         {/if}
 
         {#if contactEmail}
             <label class="attach-email">
                 <input type="checkbox" bind:checked={attachEmail} />
-                <span>Attach my email ({contactEmail}) so we can reply</span>
+                <span>{t('feedback.dialog.attachEmail', { email: contactEmail })}</span>
             </label>
         {/if}
 
         <p class="more-ways">
-            You can also <LinkButton
-                href={GITHUB_ISSUES_URL}
-                onclick={(e: MouseEvent) => {
-                    e.preventDefault()
-                    void handleOpenLink(GITHUB_ISSUES_URL)
-                }}>browse and vote on GitHub</LinkButton
-            > or <LinkButton
-                href={BOOK_A_CALL_URL}
-                onclick={(e: MouseEvent) => {
-                    e.preventDefault()
-                    void handleOpenLink(BOOK_A_CALL_URL)
-                }}>book a call</LinkButton
-            > with David.
+            <Trans key="feedback.dialog.moreWays" snippets={{ github: githubLink, call: callLink }} />
         </p>
 
         {#if sendFailedMessage}
@@ -164,13 +176,15 @@
 
         <div class="button-row">
             <span class="spacer"></span>
-            <Button variant="secondary" onclick={handleClose} disabled={sending}>Cancel</Button>
+            <Button variant="secondary" onclick={handleClose} disabled={sending}
+                >{tString('feedback.dialog.cancel')}</Button
+            >
             <Button
                 variant="primary"
                 onclick={() => void handleSend()}
                 disabled={sending || isEmpty || overLimit}
             >
-                {sending ? 'Sending…' : 'Send feedback'}
+                {sending ? tString('feedback.dialog.sending') : tString('feedback.dialog.send')}
             </Button>
         </div>
     </div>

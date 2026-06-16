@@ -2,6 +2,7 @@
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { openPrivacySettings } from '$lib/tauri-commands'
+    import { tString } from '$lib/intl/messages.svelte'
     import { LATEST_DOWNLOAD_FDA_TOAST_ID } from './go-to-latest-ids'
 
     async function handleOpenSystemSettings() {
@@ -15,10 +16,12 @@
 </script>
 
 <div class="content">
-    <span class="message">Cmdr needs Full Disk Access to watch your Downloads folder.</span>
+    <span class="message">{tString('downloads.fda.message')}</span>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
-        <Button size="mini" variant="primary" onclick={handleOpenSystemSettings}>Open System Settings</Button>
+        <Button size="mini" variant="secondary" onclick={handleDismiss}>{tString('downloads.fda.dismiss')}</Button>
+        <Button size="mini" variant="primary" onclick={handleOpenSystemSettings}
+            >{tString('downloads.fda.openSystemSettings')}</Button
+        >
     </div>
 </div>
 

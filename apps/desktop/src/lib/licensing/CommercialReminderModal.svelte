@@ -2,6 +2,8 @@
     import { markCommercialReminderDismissed, openExternalUrl } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         onClose: () => void
@@ -19,6 +21,8 @@
     }
 </script>
 
+{#snippet lineBreak(children: import('svelte').Snippet)}<br />{@render children()}{/snippet}
+
 <ModalDialog
     titleId="modal-title"
     blur
@@ -28,19 +32,21 @@
     }}
     containerStyle="max-width: 600px; background: var(--color-bg-primary); border-color: var(--color-border)"
 >
-    {#snippet title()}Thanks for using Cmdr!{/snippet}
+    {#snippet title()}{tString('licensing.commercialReminder.title')}{/snippet}
 
     <div class="modal-body">
-        <p class="message">You're using a Personal license.</p>
-        <p class="message">If you're using Cmdr at work, please get a Commercial license to stay compliant.</p>
+        <p class="message">{tString('licensing.commercialReminder.usingPersonal')}</p>
+        <p class="message">{tString('licensing.commercialReminder.askCommercial')}</p>
 
-        <p class="info">Commercial licenses are $59/year/user and support continued development.</p>
+        <p class="info">{tString('licensing.commercialReminder.priceInfo')}</p>
 
         <div class="actions">
             <Button variant="secondary" onclick={handleDismiss}>
-                I only use Cmdr<br />for personal purposes
+                <Trans key="licensing.commercialReminder.declinePersonal" snippets={{ break: lineBreak }} />
             </Button>
-            <Button variant="primary" onclick={handleGetCommercial}>Get commercial license</Button>
+            <Button variant="primary" onclick={handleGetCommercial}
+                >{tString('licensing.commercialReminder.getCommercial')}</Button
+            >
         </div>
     </div>
 </ModalDialog>

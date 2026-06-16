@@ -1,6 +1,7 @@
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import { getLastSentReportId } from './error-report-toast-state.svelte'
 
     const toastId = 'error-report-sent'
@@ -19,13 +20,15 @@
 
 <div class="content">
     <span class="message">
-        Error report sent. Your reference ID is
+        {tString('errorReporter.sentToast.message')}
         <span class="id-badge">{getLastSentReportId()}</span>
     </span>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
+        <Button size="mini" variant="secondary" onclick={handleDismiss}
+            >{tString('errorReporter.sentToast.dismiss')}</Button
+        >
         <Button size="mini" variant="primary" onclick={() => void handleCopy()}>
-            {copied ? 'Copied' : 'Copy ID'}
+            {copied ? tString('errorReporter.sentToast.copied') : tString('errorReporter.sentToast.copyId')}
         </Button>
     </div>
 </div>

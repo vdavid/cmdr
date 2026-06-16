@@ -33,6 +33,8 @@
     import { getAppLogger } from '$lib/logging/logger'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { t, tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('transferDialog')
 
@@ -219,7 +221,11 @@
         }),
     )
 
-    const confirmLabel = $derived(activeOperationType === 'copy' ? 'Copy' : 'Move')
+    const confirmLabel = $derived(
+        activeOperationType === 'copy'
+            ? tString('fileOperations.transferDialog.confirmCopy')
+            : tString('fileOperations.transferDialog.confirmMove'),
+    )
 
     /** Counting state for the tallies element, exposed as `data-scan-state` so
      *  E2E tests can wait race-free for the scan to settle before asserting the
@@ -413,12 +419,12 @@
         <button
             class="toggle-option"
             class:active={activeOperationType === 'copy'}
-            onclick={() => (activeOperationType = 'copy')}>Copy</button
+            onclick={() => (activeOperationType = 'copy')}>{tString('fileOperations.transferDialog.toggleCopy')}</button
         >
         <button
             class="toggle-option"
             class:active={activeOperationType === 'move'}
-            onclick={() => (activeOperationType = 'move')}>Move</button
+            onclick={() => (activeOperationType = 'move')}>{tString('fileOperations.transferDialog.toggleMove')}</button
         >
     </div>
 
@@ -437,7 +443,7 @@
             <Select
                 items={volumeItems}
                 value={selectedVolumeId}
-                ariaLabel="Destination volume"
+                ariaLabel={tString('fileOperations.transferDialog.destVolumeAria')}
                 onChange={(id: string) => {
                     selectedVolumeId = id
                 }}
@@ -450,8 +456,7 @@
 
     {#if selectedVolume?.smbConnectionState === 'os_mount'}
         <p class="smb-native-note">
-            This share uses the system connection. Cancellation may be delayed.
-            Use "Connect directly" in the volume picker for faster transfers and reliable cancel.
+            {tString('fileOperations.transferDialog.smbNativeNote')}
         </p>
     {/if}
 
@@ -463,7 +468,7 @@
             type="text"
             class="path-input"
             class:has-error={!!pathError}
-            aria-label="Destination path"
+            aria-label={tString('fileOperations.transferDialog.destPathAria')}
             aria-describedby={pathError ? 'transfer-path-error' : undefined}
             aria-invalid={!!pathError}
             spellcheck="false"
@@ -483,12 +488,12 @@
         <span class="scan-divider">/</span>
         <div class="scan-stat">
             <span class="scan-value">{formatNumber(filesFound)}</span>
-            <span class="scan-label">{filesFound === 1 ? 'file' : 'files'}</span>
+            <span class="scan-label">{t('fileOperations.transferDialog.scanFile', { count: filesFound })}</span>
         </div>
         <span class="scan-divider">/</span>
         <div class="scan-stat">
             <span class="scan-value">{formatNumber(dirsFound)}</span>
-            <span class="scan-label">{dirsFound === 1 ? 'dir' : 'dirs'}</span>
+            <span class="scan-label">{t('fileOperations.transferDialog.scanDir', { count: dirsFound })}</span>
         </div>
         {#if isScanning}
             <Spinner size="sm" />
@@ -503,9 +508,7 @@
          a same-filesystem move renames in place and writes nothing. -->
     {#if showHardlinkNote}
         <p class="hardlink-note">
-            <Size bytes={bytesFound} /> will be written. The source is
-            <Size bytes={dedupBytesFound} /> on disk &ndash; the extra is hardlinked files, which can't
-            stay linked across drives.
+            <Trans key="fileOperations.transferDialog.hardlinkNote" snippets={{ written, ondisk }} />
         </p>
     {/if}
 
@@ -513,7 +516,7 @@
     {#if isCheckingConflicts}
         <div class="conflicts-checking">
             <Spinner size="sm" />
-            <span class="conflicts-checking-text">Checking for conflicts...</span>
+            <span class="conflicts-checking-text">{tString('fileOperations.transferDialog.checkingConflicts')}</span>
         </div>
     {:else if totalConflictCount > 0 || mergeFolderCount > 0}
         <div class="conflicts-section">
@@ -523,14 +526,18 @@
             {#if mergeFolderCount > 0}
                 <p class="merge-info">
                     {mergeFolderCount === 1
-                        ? '1 folder will merge with an existing folder'
-                        : `${formatNumber(mergeFolderCount)} folders will merge with existing folders`}
+                        ? tString('fileOperations.transferDialog.mergeInfoSingle')
+                        : tString('fileOperations.transferDialog.mergeInfoMany', {
+                              countText: formatNumber(mergeFolderCount),
+                          })}
                 </p>
             {/if}
             {#if totalConflictCount > 0}
                 <p class="conflicts-summary">
-                    {totalConflictCount}
-                    {totalConflictCount === 1 ? 'file already exists' : 'files already exist'}
+                    {t('fileOperations.transferDialog.conflictsSummary', {
+                        countText: String(totalConflictCount),
+                        count: totalConflictCount,
+                    })}
                 </p>
             {/if}
             <!-- The file policy radios show whenever there's a file conflict OR
@@ -539,23 +546,24 @@
             <div class="conflict-policy">
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="skip" />
-                    <span>{totalConflictCount === 1 ? 'Skip' : 'Skip all'}</span>
+                    <span>{t('fileOperations.transferDialog.policySkip', { count: totalConflictCount })}</span>
                 </label>
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="overwrite" />
-                    <span>{totalConflictCount === 1 ? 'Overwrite' : 'Overwrite all'}</span>
+                    <span>{t('fileOperations.transferDialog.policyOverwrite', { count: totalConflictCount })}</span>
                 </label>
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="overwrite_smaller" />
-                    <span>{totalConflictCount === 1 ? 'Overwrite if smaller' : 'Overwrite all smaller'}</span>
+                    <span>{t('fileOperations.transferDialog.policyOverwriteSmaller', { count: totalConflictCount })}</span
+                    >
                 </label>
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="overwrite_older" />
-                    <span>{totalConflictCount === 1 ? 'Overwrite if older' : 'Overwrite all older'}</span>
+                    <span>{t('fileOperations.transferDialog.policyOverwriteOlder', { count: totalConflictCount })}</span>
                 </label>
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="stop" />
-                    <span>{totalConflictCount === 1 ? 'Ask later' : 'Ask for each'}</span>
+                    <span>{t('fileOperations.transferDialog.policyStop', { count: totalConflictCount })}</span>
                 </label>
             </div>
 
@@ -569,8 +577,7 @@
                         <Icon name="triangle-alert" size={16} />
                     </span>
                     <span>
-                        Some clashes mix a file and a folder by the same name. Overwriting will replace items of a
-                        different type, including the entire contents of a folder.
+                        {tString('fileOperations.transferDialog.typeMismatchWarning')}
                     </span>
                 </p>
             {/if}
@@ -579,10 +586,13 @@
 
     <!-- Buttons (centered) -->
     <div class="button-row">
-        <Button variant="secondary" onclick={handleCancel}>Cancel</Button>
+        <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
         <Button variant="primary" onclick={handleConfirm} disabled={!!pathError}>{confirmLabel}</Button>
     </div>
 </ModalDialog>
+
+{#snippet written(children: import('svelte').Snippet)}<Size bytes={bytesFound} />{@render children()}{/snippet}
+{#snippet ondisk(children: import('svelte').Snippet)}<Size bytes={dedupBytesFound} />{@render children()}{/snippet}
 
 <style>
     .volume-selector {

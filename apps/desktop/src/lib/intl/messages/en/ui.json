@@ -1,0 +1,100 @@
+{
+  "ui.alertDialog.defaultButton": "OK",
+  "@ui.alertDialog.defaultButton": {
+    "description": "Default label for the single dismiss button in a generic alert dialog, used when the caller passes no custom button text. A confirmation/acknowledgement, like the standard OK button."
+  },
+
+  "ui.modalDialog.close": "Close",
+  "@ui.modalDialog.close": {
+    "description": "aria-label for the small × close button in the top-right corner of any modal dialog. Screen-reader-only; the visible glyph is ×."
+  },
+
+  "ui.popover.defaultAriaLabel": "Options",
+  "@ui.popover.defaultAriaLabel": {
+    "description": "Default aria-label naming a popover region when the caller passes none. Generic fallback meaning a small floating panel of choices."
+  },
+
+  "ui.select.placeholder": "Select...",
+  "@ui.select.placeholder": {
+    "description": "Default placeholder shown in a dropdown (select) trigger before the user has picked an option."
+  },
+
+  "ui.combobox.emptyText": "No matches. Keep typing to use your own value.",
+  "@ui.combobox.emptyText": {
+    "description": "Shown in a combobox (text field with suggestions) popup when nothing matches what the user typed. Reassures them they can still enter a custom value that isn't in the suggestion list."
+  },
+  "ui.combobox.loadingSuggestions": "Loading suggestions",
+  "@ui.combobox.loadingSuggestions": {
+    "description": "aria-label for the in-field loading spinner while a combobox fetches its suggestion list."
+  },
+  "ui.combobox.showSuggestions": "Show suggestions",
+  "@ui.combobox.showSuggestions": {
+    "description": "aria-label for the chevron button that opens a combobox's suggestion dropdown."
+  },
+
+  "ui.commandBox.copyAria": "Copy command to clipboard",
+  "@ui.commandBox.copyAria": {
+    "description": "aria-label for the copy button next to a shown terminal command. Copies the command text to the clipboard."
+  },
+  "ui.commandBox.copy": "Copy",
+  "@ui.commandBox.copy": {
+    "description": "Resting label of the copy button next to a shown terminal command. Tight button; keep short."
+  },
+  "ui.commandBox.copied": "Copied!",
+  "@ui.commandBox.copied": {
+    "description": "Brief confirmation shown on the copy button right after the command was copied, replacing the word Copy for a couple of seconds. Tight button; keep short."
+  },
+
+  "ui.shortcutChip.customizeAria": "Customize the {commandName} shortcut",
+  "@ui.shortcutChip.customizeAria": {
+    "description": "aria-label for a clickable keyboard-shortcut pill that opens shortcut customization for one command.",
+    "placeholders": {
+      "commandName": "the name of the command whose shortcut this pill shows (for example Copy, Rename)"
+    }
+  },
+  "ui.shortcutChip.customizeTooltip": "Customize this shortcut",
+  "@ui.shortcutChip.customizeTooltip": {
+    "description": "Tooltip on hovering a clickable keyboard-shortcut pill, hinting that clicking it opens shortcut customization."
+  },
+
+  "ui.toast.sendErrorReport": "Send error report…",
+  "@ui.toast.sendErrorReport": {
+    "description": "Button on an error toast that opens the error-report flow. Ends with an ellipsis to signal a follow-up dialog opens."
+  },
+  "ui.toast.dismissAria": "Dismiss notification",
+  "@ui.toast.dismissAria": {
+    "description": "aria-label for the × button that closes (dismisses) a toast notification."
+  },
+
+  "ui.loadingIcon.finalizing": "All {countText} {count, plural, one {file} other {files}} loaded. Sorting your files, preparing view...",
+  "@ui.loadingIcon.finalizing": {
+    "description": "Loading message shown after all entries arrive, while the list is being sorted and laid out. Appears centered in a pane during a slow directory open.",
+    "placeholders": {
+      "countText": "how many files, already formatted for display (for example 1,234)",
+      "count": "the same number of files (drives the singular/plural form of the noun)"
+    }
+  },
+  "ui.loadingIcon.loaded": "Loaded {countText} {count, plural, one {file} other {files}}...",
+  "@ui.loadingIcon.loaded": {
+    "description": "Progress message shown while a directory is still loading, reporting how many entries have arrived so far. Appears centered in a pane.",
+    "placeholders": {
+      "countText": "how many files have loaded so far, already formatted for display (for example 1,234)",
+      "count": "the same number of files (drives the singular/plural form of the noun)"
+    }
+  },
+  "ui.loadingIcon.openingFolder": "Opening folder...",
+  "@ui.loadingIcon.openingFolder": {
+    "description": "Loading message shown briefly while a folder is being opened, before its entries start arriving."
+  },
+  "ui.loadingIcon.loading": "Loading...",
+  "@ui.loadingIcon.loading": {
+    "description": "Generic loading message shown centered in a pane while content is being fetched."
+  },
+  "ui.loadingIcon.cancelHint": "Press <key></key> to cancel and go back",
+  "@ui.loadingIcon.cancelHint": {
+    "description": "Hint under the loading spinner telling the user how to abort a slow load. The empty <key></key> tag is where the app inserts a keyboard-key pill showing the Escape key (a styled chip); keep the tag, it has no text of its own.",
+    "placeholders": {
+      "key": "position of the inline Esc key pill (a styled chip the app fills in); keep the empty wrapper tag"
+    }
+  }
+}

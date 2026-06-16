@@ -10,10 +10,13 @@ backend strategies, session lifecycle, and background search. The viewer route s
 ## Key files
 
 - `open-viewer.ts`: `openFileViewer(filePath)` creates a new `WebviewWindow` with a unique label.
-- `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` that classifies a file as `image` / `document` /
-  `<EXT-uppercased>` (or "don't warn" for text/source/unknown). The viewer route renders a red banner whenever
-  `shouldWarn`. Suppressible per-instance (banner **Close**) or forever (**Never show this warning again**, flips
-  `fileViewer.suppressBinaryWarning` in Settings > Advanced).
+- `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` classifies a file into a `category` (`image` /
+  `document` / `binary`, or `null` = "don't warn" for text/source/unknown) plus an uppercased `ext` for the `binary`
+  case. The displayed word is NOT in that result: `viewerWarningLabel(warning)` resolves it (translatable
+  `viewer.binaryWarning.kind.*` for image/document, the raw `ext` otherwise), keeping the classifier locale-free and
+  trivially testable. The viewer route renders a red banner whenever `shouldWarn`. Suppressible per-instance (banner
+  **Close**) or forever (**Never show this warning again**, flips `fileViewer.suppressBinaryWarning` in Settings >
+  Advanced).
 - Route: `src/routes/viewer/+page.svelte`: viewer UI with virtual scrolling, search bar, status bar.
 
 **Don't trim the image set in `binary-warning.ts` to suppress rendered formats.** Rendered media is suppressed by the

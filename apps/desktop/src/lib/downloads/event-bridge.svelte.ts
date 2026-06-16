@@ -34,6 +34,7 @@ import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
 import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
+import { tString } from '$lib/intl/messages.svelte'
 import { getDownloadsNotificationsMode, type DownloadsNotificationsMode } from './notifications-mode'
 import { getGlobalGoToLatestEnabled, getGlobalGoToLatestBinding } from './global-shortcut-setting'
 import { getDownloadsToastCollapsed } from './downloads-toast-collapsed'
@@ -149,8 +150,10 @@ async function dispatchMacosNotification(payload: DownloadDetectedEvent): Promis
   const ok = await ensureMacosNotificationPermission()
   if (!ok) return
 
-  const title = `Downloaded ${payload.fileName}`
-  const body = payload.inSubdir ? `in ${relativeSubdir(payload.parentDir)}` : ''
+  const title = tString('downloads.notification.title', { fileName: payload.fileName })
+  const body = payload.inSubdir
+    ? tString('downloads.toast.inSubdir', { subdir: relativeSubdir(payload.parentDir) })
+    : ''
   try {
     sendNotification({ title, body })
   } catch (err) {

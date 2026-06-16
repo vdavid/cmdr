@@ -1,7 +1,8 @@
 /**
  * Tests for transfer dialog utility functions
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { _setLocaleForTests } from '$lib/intl/locale'
 import {
   deriveTransferLabel,
   generateTitle,
@@ -11,6 +12,15 @@ import {
   toBackendCursorIndex,
   toVolumeRelativePath,
 } from './transfer-dialog-utils'
+
+// Pin the base locale so `generateTitle`'s catalog-resolved copy is the
+// deterministic en parity net.
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
 
 describe('generateTitle', () => {
   describe('copy operation', () => {

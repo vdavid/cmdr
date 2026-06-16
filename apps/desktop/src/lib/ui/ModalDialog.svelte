@@ -4,6 +4,7 @@
     import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
     import { trapFocus } from './focus-trap'
     import type { SoftDialogId } from './dialog-registry'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         titleId: string
@@ -139,7 +140,7 @@
                 this, Tab from the overlay lands on × first, which surprises keyboard users
                 expecting the primary or first action to be the entry point.
             -->
-            <button class="modal-close-button" onclick={onclose} aria-label="Close" tabindex="-1">×</button>
+            <button class="modal-close-button" onclick={onclose} aria-label={tString('ui.modalDialog.close')} tabindex="-1">×</button>
         {/if}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="dialog-title-bar" class:draggable onmousedown={handleTitleMouseDown}>

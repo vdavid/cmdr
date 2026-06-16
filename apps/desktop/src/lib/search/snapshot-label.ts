@@ -15,6 +15,7 @@
  */
 
 import type { SearchSnapshotMode } from './snapshot-store.svelte'
+import { tString } from '$lib/intl/messages.svelte'
 
 /** Soft cap on AI prompt labels. Long natural-language prompts get truncated with an ellipsis. */
 const AI_LABEL_MAX_CHARS = 40
@@ -45,14 +46,14 @@ export function buildSnapshotLabel(input: SnapshotLabelInput): string {
     const llmLabel = input.aiLabel?.trim()
     if (llmLabel) return truncate(llmLabel, AI_LABEL_MAX_CHARS)
     const prompt = (input.aiPrompt ?? trimmedQuery).trim()
-    if (!prompt) return 'Search'
+    if (!prompt) return tString('search.snapshot.defaultLabel')
     return truncate(prompt, AI_LABEL_MAX_CHARS)
   }
   if (input.mode === 'regex') {
     return `/${trimmedQuery}/`
   }
   // filename
-  return trimmedQuery || 'Search'
+  return trimmedQuery || tString('search.snapshot.defaultLabel')
 }
 
 /** Truncates `text` to `max` chars, appending a single-char ellipsis when it cuts. */

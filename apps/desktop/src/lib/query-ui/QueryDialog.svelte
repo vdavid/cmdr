@@ -51,6 +51,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import { showAiTranslateErrorToast } from '$lib/ai/translate-error-toast'
 
     interface Props {
@@ -448,7 +449,7 @@
             // falls through to a generic toast.
             config.state.setIsSearching(false)
             if (!showAiTranslateErrorToast(err)) {
-                addToast("Couldn't run the AI search just now. Try again?", { level: 'warn', dismissal: 'transient' })
+                addToast(tString('queryUi.dialog.aiTranslateFailedToast'), { level: 'warn', dismissal: 'transient' })
             }
             return
         }
@@ -892,7 +893,7 @@
             </div>
             <div class="footer-right">
                 {#if config.secondaryAction || config.primaryAction}
-                    <div class="query-dialog__actions" role="group" aria-label="Dialog actions">
+                    <div class="query-dialog__actions" role="group" aria-label={tString('queryUi.dialog.actionsAria')}>
                         {#if config.secondaryAction}
                             <Button
                                 variant="secondary"

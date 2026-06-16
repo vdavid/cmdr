@@ -18,6 +18,8 @@
      * Keyboard: ↑/↓ moves the cursor, Enter activates, Esc closes (via the popover wrapper).
      */
     import uFuzzy from '@leeoniya/ufuzzy'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
     import Popover from '$lib/ui/Popover.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { modeBadge } from './recent-items-utils'
@@ -50,10 +52,10 @@
         onClose,
         onPick,
         onRemove,
-        filterPlaceholder = 'Filter recent searches',
-        emptyMessage = 'No recent searches match that filter.',
-        ariaLabel = 'All recent searches',
-        ariaListboxLabel = 'Recent searches',
+        filterPlaceholder = tString('queryUi.recent.filterPlaceholder'),
+        emptyMessage = tString('queryUi.recent.emptyMessage'),
+        ariaLabel = tString('queryUi.recent.popoverAria'),
+        ariaListboxLabel = tString('queryUi.recent.listboxAria'),
     }: Props = $props()
 
     // Tuned the same way as the command palette's fuzzy search.
@@ -148,6 +150,15 @@
     }
 </script>
 
+<!--
+  One ShortcutChip per `<tag>` in the popover-hint message. Each renders the fixed
+  key glyph (`key=`), not the tag''s inner content, so the chip is a literal-mode key
+  chip regardless of the message text; the glyph also lives in the message so
+  translators see it in context. `children` is intentionally ignored.
+-->
+{#snippet moveChip()}<ShortcutChip key="↑↓" size="sm" />{/snippet}
+{#snippet runChip()}<ShortcutChip key="Enter" size="sm" />{/snippet}
+
 <Popover {anchor} {open} {onClose} {ariaLabel}>
     <div class="recent-popover" onkeydown={handleKeydown} role="search">
         <input
@@ -197,8 +208,7 @@
             {/if}
         </div>
         <div class="hint">
-            <ShortcutChip key="↑↓" size="sm" /> to move · <ShortcutChip key="Enter" size="sm" /> to run · right-click to
-            remove
+            <Trans key="queryUi.recent.popoverHint" snippets={{ moveKey: moveChip, runKey: runChip }} />
         </div>
     </div>
 </Popover>

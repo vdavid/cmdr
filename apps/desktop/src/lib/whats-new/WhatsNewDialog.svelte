@@ -17,6 +17,7 @@
     import { setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
     import { whatsNewState, closeWhatsNew } from './whats-new-trigger.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('whatsNewDialog')
 
@@ -49,7 +50,7 @@
     function handleOptOut() {
         setSetting('whatsNew.showOnUpdate', false)
         closeWhatsNew()
-        addToast('Got it, no more update notes. Re-enable them anytime in Settings > Updates & privacy.', {
+        addToast(tString('whatsNew.optOutToast'), {
             level: 'default',
         })
     }
@@ -63,12 +64,12 @@
     ariaDescribedby="whats-new-body"
     containerStyle="width: 560px; max-width: calc(100vw - 2 * var(--spacing-xl))"
 >
-    {#snippet title()}What’s new in Cmdr{/snippet}
+    {#snippet title()}{tString('whatsNew.dialog.title')}{/snippet}
 
     <div class="body" id="whats-new-body">
         <div class="scroll-area">
             {#if isEmpty}
-                <p class="empty">Nothing to see here yet. New changes will show up here after an update.</p>
+                <p class="empty">{tString('whatsNew.dialog.empty')}</p>
             {:else}
                 {#each releases as release (release.version)}
                     <section class="release">
@@ -100,14 +101,14 @@
                     onclick={(e: MouseEvent) => {
                         e.preventDefault()
                         void handleOpenChangelog()
-                    }}>See full changelog</LinkButton
+                    }}>{tString('whatsNew.dialog.seeFullChangelog')}</LinkButton
                 >
             </p>
         </div>
 
         <div class="footer">
-            <Button variant="secondary" onclick={handleOptOut}>Not interested in changelogs</Button>
-            <Button variant="primary" onclick={handleClose}>Close</Button>
+            <Button variant="secondary" onclick={handleOptOut}>{tString('whatsNew.dialog.optOut')}</Button>
+            <Button variant="primary" onclick={handleClose}>{tString('whatsNew.dialog.close')}</Button>
         </div>
     </div>
 </ModalDialog>

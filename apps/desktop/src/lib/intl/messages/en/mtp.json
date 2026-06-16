@@ -1,0 +1,106 @@
+{
+  "mtp.connectedToast.title": "Connected to {deviceName}",
+  "@mtp.connectedToast.title": {
+    "description": "Title of the toast shown when an Android/Kindle/camera device connects over USB.",
+    "placeholders": {
+      "deviceName": "the connected device's display name (for example Pixel 7), or a generic fallback"
+    }
+  },
+  "mtp.connectedToast.bodyMac": "Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.",
+  "@mtp.connectedToast.bodyMac": {
+    "description": "Body of the device-connected toast on macOS, explaining that Cmdr paused the system camera daemon and how to release the device. ptpcamerad is a macOS system process name; keep it literal. MTP is a device-transfer protocol acronym; keep it.",
+    "screenshot": "mtp-connected-toast.png"
+  },
+  "mtp.connectedToast.bodyOther": "To use this device in another app, disable MTP support in settings.",
+  "@mtp.connectedToast.bodyOther": {
+    "description": "Body of the device-connected toast on non-macOS platforms, telling the user how to release the device for other apps. MTP is a device-transfer protocol acronym; keep it."
+  },
+  "mtp.connectedToast.dontShowAgain": "Don''t show again",
+  "@mtp.connectedToast.dontShowAgain": {
+    "description": "Checkbox label that suppresses the device-connected toast for future connections."
+  },
+  "mtp.connectedToast.disableMtp": "Disable MTP...",
+  "@mtp.connectedToast.disableMtp": {
+    "description": "Button that turns off MTP device support entirely. The ellipsis hints further confirmation/settings. MTP is a protocol acronym; keep it. Tight mini button."
+  },
+  "mtp.connectedToast.ok": "OK",
+  "@mtp.connectedToast.ok": {
+    "description": "Button that acknowledges and dismisses the device-connected toast. Tight mini button."
+  },
+
+  "mtp.permissionDialog.title": "Can''t access USB device",
+  "@mtp.permissionDialog.title": {
+    "description": "Title of the Linux dialog shown when Cmdr lacks permission to access a connected USB (MTP) device."
+  },
+  "mtp.permissionDialog.description": "Cmdr doesn''t have permission to access this device. Linux needs udev rules to grant MTP device access.",
+  "@mtp.permissionDialog.description": {
+    "description": "Main explanation in the Linux USB-permission dialog. udev is a Linux device-management term and MTP a protocol acronym; keep both literal."
+  },
+  "mtp.permissionDialog.explanation": "Run this command in your terminal to install the rules and reload them:",
+  "@mtp.permissionDialog.explanation": {
+    "description": "Instruction above the copyable terminal command in the Linux USB-permission dialog."
+  },
+  "mtp.permissionDialog.helpText": "After running the command, unplug and replug the device, then retry.",
+  "@mtp.permissionDialog.helpText": {
+    "description": "Follow-up instruction below the command in the Linux USB-permission dialog, telling the user to reconnect the device and retry."
+  },
+  "mtp.permissionDialog.close": "Close",
+  "@mtp.permissionDialog.close": {
+    "description": "Button that closes the Linux USB-permission dialog without retrying."
+  },
+  "mtp.permissionDialog.retry": "Retry connection",
+  "@mtp.permissionDialog.retry": {
+    "description": "Button that retries connecting to the USB device after the user installed the udev rules."
+  },
+
+  "mtp.ptpcameradDialog.title": "Can''t connect to MTP device",
+  "@mtp.ptpcameradDialog.title": {
+    "description": "Title of the macOS dialog shown when another process holds exclusive access to a connected MTP device. MTP is a protocol acronym; keep it."
+  },
+  "mtp.ptpcameradDialog.inUseBy": "The device is in use by <process>{process}</process>.",
+  "@mtp.ptpcameradDialog.inUseBy": {
+    "description": "Sentence naming which process currently holds the device. <process> wraps the process name and renders it emphasized (bold).",
+    "placeholders": {
+      "process": "the blocking process description (for example pid 45145, ptpcamerad)"
+    }
+  },
+  "mtp.ptpcameradDialog.inUseGeneric": "Another process has exclusive access to the device.",
+  "@mtp.ptpcameradDialog.inUseGeneric": {
+    "description": "Fallback sentence shown when the blocking process can't be named, in the macOS MTP-conflict dialog."
+  },
+  "mtp.ptpcameradDialog.explanation": "On macOS, the system daemon <code>ptpcamerad</code> automatically claims Android devices. To work around this, run the following command in Terminal (keep it running while using Cmdr):",
+  "@mtp.ptpcameradDialog.explanation": {
+    "description": "Explanation in the macOS MTP-conflict dialog: the system camera daemon grabs Android devices, so a workaround command must run. <code> wraps the process name in monospace styling. ptpcamerad is a macOS process name and Terminal the macOS app; keep both literal."
+  },
+  "mtp.ptpcameradDialog.helpText": "This command continuously stops ptpcamerad while running. Press <key>Ctrl+C</key> in Terminal to stop it when done.",
+  "@mtp.ptpcameradDialog.helpText": {
+    "description": "Help text under the workaround command in the macOS MTP-conflict dialog, explaining how to stop it. <key> wraps the keyboard-key pill for Ctrl+C (a styled chip). ptpcamerad is a process name and Terminal the macOS app; keep both literal.",
+    "placeholders": {
+      "key": "wraps the inline Ctrl+C key pill; keep the wrapper, the key glyph is filled in by the app"
+    }
+  },
+  "mtp.ptpcameradDialog.close": "Close",
+  "@mtp.ptpcameradDialog.close": {
+    "description": "Button that closes the macOS MTP-conflict dialog without retrying."
+  },
+  "mtp.ptpcameradDialog.retry": "Retry connection",
+  "@mtp.ptpcameradDialog.retry": {
+    "description": "Button that retries connecting to the MTP device after the user ran the workaround command."
+  },
+
+  "mtp.deviceFallbackName": "MTP device",
+  "@mtp.deviceFallbackName": {
+    "description": "Generic fallback name for a connected MTP device when its real display name isn't known yet. MTP is a protocol acronym; keep it."
+  },
+  "mtp.error.exclusiveAccess": "Another process has exclusive access{blocking, select, none {} other { (blocked by {blocking})}}",
+  "@mtp.error.exclusiveAccess": {
+    "description": "Error stored on an MTP device entry when another process holds it exclusively, optionally naming that process. Shown in the device's error state.",
+    "placeholders": {
+      "blocking": "the blocking process name, or the literal none when it isn't known"
+    }
+  },
+  "mtp.error.permissionDenied": "USB permission denied. Install udev rules and reconnect",
+  "@mtp.error.permissionDenied": {
+    "description": "Error stored on an MTP device entry when USB access was denied (Linux). udev is a Linux device-management term; keep it literal."
+  }
+}

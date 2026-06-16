@@ -1,33 +1,28 @@
 /**
- * Utility functions for the transfer (copy/move) dialog
+ * Utility functions for the transfer (copy/move) dialog. User-facing copy
+ * resolves through the i18n catalog (`fileOperations.transferDialog.*`).
  */
 
 import type { TransferOperationType } from '$lib/file-explorer/types'
-
-const operationLabelMap: Record<TransferOperationType, string> = {
-  copy: 'Copy',
-  move: 'Move',
-  delete: 'Delete',
-  trash: 'Move to trash',
-}
+import { tString } from '$lib/intl/messages.svelte'
 
 /**
  * Generates a dialog title with proper pluralization for files and folders.
  * @returns Formatted title string like "Copy 1 file", "Move 2 files and 3 folders"
  */
 export function generateTitle(operationType: TransferOperationType, files: number, folders: number): string {
-  const verb = operationLabelMap[operationType]
   const parts: string[] = []
   if (files > 0) {
-    parts.push(`${String(files)} ${files === 1 ? 'file' : 'files'}`)
+    parts.push(tString('fileOperations.transferDialog.filesPart', { countText: String(files), count: files }))
   }
   if (folders > 0) {
-    parts.push(`${String(folders)} ${folders === 1 ? 'folder' : 'folders'}`)
+    parts.push(tString('fileOperations.transferDialog.foldersPart', { countText: String(folders), count: folders }))
   }
   if (parts.length === 0) {
-    return verb
+    return tString('fileOperations.transferDialog.titleVerbOnly', { verb: operationType })
   }
-  return `${verb} ${parts.join(' and ')}`
+  const phrase = parts.length === 2 ? tString('fileOperations.shared.andJoin', { a: parts[0], b: parts[1] }) : parts[0]
+  return tString('fileOperations.transferDialog.titleWithCounts', { verb: operationType, phrase })
 }
 
 /**

@@ -18,6 +18,7 @@
     import { tick } from 'svelte'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import { formatInteger } from '$lib/intl/number-format'
+    import { tString } from '$lib/intl/messages.svelte'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import Size from '$lib/ui/Size.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
@@ -125,10 +126,10 @@
     function getStatusText(): string {
         if (!isIndexAvailable) {
             if (scanning && entriesScanned > 0) {
-                return `Scanning in progress (${formatEntryCount(entriesScanned)} entries)...`
+                return tString('queryUi.results.scanningWithCount', { countText: formatEntryCount(entriesScanned) })
             }
-            if (scanning) return 'Scan in progress...'
-            return 'Drive index not available'
+            if (scanning) return tString('queryUi.results.scanning')
+            return tString('queryUi.results.indexUnavailable')
         }
         if (isIndexReady) {
             // D3: status bar stays empty while the content area shows the spinner.
@@ -136,10 +137,13 @@
             // Both states surface their info in the content; no duplication here.
             if (isSearching) return ''
             if (!hasSearched || (!query.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
-                return `Index ready (${formatEntryCount(indexEntryCount)} entries)`
+                return tString('queryUi.results.indexReadyStatus', { countText: formatEntryCount(indexEntryCount) })
             }
             if (totalCount === 0) return ''
-            return `${String(results.length)} of ${formatInteger(totalCount)} results`
+            return tString('queryUi.results.resultCount', {
+                shownText: String(results.length),
+                totalText: formatInteger(totalCount),
+            })
         }
         // Index loading: the content area shows the "Loading drive index..." spinner,
         // so the status bar stays empty to avoid duplication. (R4: same rule as D3 / D4
@@ -155,9 +159,9 @@
     function buildCriteria(): string[] {
         const out: string[] = []
         const q = query.trim()
-        if (q) out.push(`Query: ${q}`)
-        if (sizeFilter !== 'any') out.push(`Size filter active`)
-        if (dateFilter !== 'any') out.push(`Modified filter active`)
+        if (q) out.push(tString('queryUi.results.criteria.query', { query: q }))
+        if (sizeFilter !== 'any') out.push(tString('queryUi.results.criteria.size'))
+        if (dateFilter !== 'any') out.push(tString('queryUi.results.criteria.modified'))
         return out
     }
 
@@ -182,11 +186,11 @@
      cells use the same grid template as the rows so columns line up. -->
 <div class="column-header" class:no-path={!showPathColumn}>
     <span class="col-label col-icon" aria-hidden="true"></span>
-    <span class="col-label">Name</span>
-    {#if showPathColumn}<span class="col-label">Path</span>{/if}
-    <span class="col-label col-right">Size</span>
-    <span class="col-label col-right">Modified</span>
-    <span class="col-label col-actions">Actions</span>
+    <span class="col-label">{tString('queryUi.results.col.name')}</span>
+    {#if showPathColumn}<span class="col-label">{tString('queryUi.results.col.path')}</span>{/if}
+    <span class="col-label col-right">{tString('queryUi.results.col.size')}</span>
+    <span class="col-label col-right">{tString('queryUi.results.col.modified')}</span>
+    <span class="col-label col-actions">{tString('queryUi.results.col.actions')}</span>
 </div>
 
 <!-- Results list. `role="listbox"` only applies when option rows are rendered; empty/loading/
@@ -195,23 +199,27 @@
     class="results-container"
     bind:this={resultsContainer}
     role={showingRows ? 'listbox' : undefined}
-    aria-label={showingRows ? 'Search results' : undefined}
+    aria-label={showingRows ? tString('queryUi.results.listboxAria') : undefined}
 >
     {#if !isIndexAvailable}
         <div class="index-unavailable">
             <p class="unavailable-message">
-                Drive index not ready. Search is available after the initial scan completes.
+                {tString('queryUi.results.indexNotReady')}
             </p>
             {#if scanning}
                 <p class="unavailable-progress">
-                    Scan in progress{entriesScanned > 0 ? ` (${formatEntryCount(entriesScanned)} entries)` : ''}...
+                    {entriesScanned > 0
+                        ? tString('queryUi.results.scanProgressWithCount', {
+                              countText: formatEntryCount(entriesScanned),
+                          })
+                        : tString('queryUi.results.scanProgress')}
                 </p>
             {/if}
         </div>
     {:else if !isIndexReady && hasSearched}
         <div class="loading-state">
             <Spinner size="md" />
-            <div class="loading-label">Loading drive index...</div>
+            <div class="loading-label">{tString('queryUi.results.loadingIndex')}</div>
         </div>
     {:else if isSearching}
         <!-- D1/D2: full result list area is replaced by the standard spinner +
@@ -220,12 +228,12 @@
              query/filter state. -->
         <div class="loading-state">
             <Spinner size="md" />
-            <div class="loading-label">Searching...</div>
+            <div class="loading-label">{tString('queryUi.results.searching')}</div>
         </div>
     {:else if results.length === 0 && hasSearched && !isSearching && (query.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
         <!-- D4: structured no-results state. Heading + bulleted criteria list. -->
         <div class="no-results">
-            <p class="no-results-heading">No files match these criteria:</p>
+            <p class="no-results-heading">{tString('queryUi.results.noMatchHeading')}</p>
             <ul class="no-results-criteria">
                 {#each buildCriteria() as item (item)}
                     <li>{item}</li>

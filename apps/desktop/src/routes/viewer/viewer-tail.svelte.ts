@@ -14,6 +14,7 @@
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 
 import { addToast, dismissToast } from '$lib/ui/toast/toast-store.svelte'
+import { tString } from '$lib/intl/messages.svelte'
 import ViewerReloadToast, { setReloadToastContext as setReloadToastContextRaw } from './ViewerReloadToast.svelte'
 
 // `setReloadToastContext` is exported from a `.svelte` module block; the
@@ -62,7 +63,7 @@ function showReloadToast(sessionId: string, kind: FileChangedKind): void {
     id,
     level: 'info',
     dismissal: 'persistent',
-    closeTooltip: 'Dismiss without reloading',
+    closeTooltip: tString('viewer.reloadToast.dismissTooltip'),
   })
 }
 

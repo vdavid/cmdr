@@ -12,6 +12,7 @@
 
 import type { FileSizeFormat } from '$lib/settings/types'
 import { getLocale } from '$lib/intl/locale'
+import { tString } from '$lib/intl/messages.svelte'
 
 // ── Size column 2: numeric presets ────────────────────────────────────────────────────────
 //
@@ -32,7 +33,7 @@ export const CUSTOM_VALUE = '__custom__'
  * Used for the col-3 "byte(s)" cell. Other unit labels (MB, GB) stay constant.
  */
 export function byteUnitLabel(value: string): string {
-  return value === '1' ? 'byte' : 'bytes'
+  return value === '1' ? tString('queryUi.size.unit.byte') : tString('queryUi.size.unit.bytes')
 }
 
 export function kiloByteLabel(format: FileSizeFormat): 'KB' | 'kB' {
@@ -204,21 +205,41 @@ export function buildDatePresets(now: Date = new Date(), language?: string): Dyn
   const thisMonthMonth = monthName(thisMonthFirst.getMonth(), lang)
   const lastMonthMonth = monthName(lastMonthFirst.getMonth(), lang)
 
+  // Start-of-day time shown on every preset label. Fixed at midnight today; passed
+  // as a param so it's single-sourced and translators don't hardcode it.
+  const time = '0:00'
+
   const presets: DynamicDatePreset[] = [
-    { key: 'today', label: 'today 0:00', resolved: isoLocalDate(today) },
-    { key: 'yesterday', label: 'yesterday 0:00', resolved: isoLocalDate(new Date(today.getTime() - ms)) },
-    { key: 'thisWeek', label: `this ${weekdayLabel} 0:00`, resolved: isoLocalDate(thisWeekStart) },
-    { key: 'lastWeek', label: `last ${weekdayLabel} 0:00`, resolved: isoLocalDate(lastWeekStart) },
+    { key: 'today', label: tString('queryUi.date.preset.today', { time }), resolved: isoLocalDate(today) },
+    {
+      key: 'yesterday',
+      label: tString('queryUi.date.preset.yesterday', { time }),
+      resolved: isoLocalDate(new Date(today.getTime() - ms)),
+    },
+    {
+      key: 'thisWeek',
+      label: tString('queryUi.date.preset.thisWeek', { weekday: weekdayLabel, time }),
+      resolved: isoLocalDate(thisWeekStart),
+    },
+    {
+      key: 'lastWeek',
+      label: tString('queryUi.date.preset.lastWeek', { weekday: weekdayLabel, time }),
+      resolved: isoLocalDate(lastWeekStart),
+    },
     {
       key: 'thisMonth',
-      label: `1st of ${thisMonthMonth} 0:00`,
+      label: tString('queryUi.date.preset.thisMonth', { month: thisMonthMonth, time }),
       resolved: isoLocalDate(thisMonthFirst),
     },
     {
       key: 'lastMonth',
       // Last month always carries the year, so a "1st of December, 2025" read
       // in January doesn't get confused for "1st of December, 2026".
-      label: `1st of ${lastMonthMonth}, ${String(lastMonthFirst.getFullYear())}, 0:00`,
+      label: tString('queryUi.date.preset.lastMonth', {
+        month: lastMonthMonth,
+        year: String(lastMonthFirst.getFullYear()),
+        time,
+      }),
       resolved: isoLocalDate(lastMonthFirst),
     },
   ]
@@ -231,7 +252,7 @@ export function buildDatePresets(now: Date = new Date(), language?: string): Dyn
   if (!currentIsJan && !lastIsJan) {
     presets.push({
       key: 'yearStart',
-      label: `1st of January, ${String(yearStartFirst.getFullYear())}, 0:00`,
+      label: tString('queryUi.date.preset.yearStart', { year: String(yearStartFirst.getFullYear()), time }),
       resolved: isoLocalDate(yearStartFirst),
     })
   }

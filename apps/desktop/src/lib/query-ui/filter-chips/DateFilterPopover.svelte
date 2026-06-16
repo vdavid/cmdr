@@ -11,6 +11,7 @@
      * local custom-input flags.
      */
     import FilterPopover from '$lib/ui/FilterPopover.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import type { DateFilter } from '../query-filter-state.svelte'
     import { isDateRangeDisabled, showsDateUpperBound, buildDatePresets, type DynamicDatePreset } from './filter-popover-helpers'
     import './filter-popover.css'
@@ -49,12 +50,12 @@
     /**
      * The comparator column of the Modified popover.
      */
-    const DATE_COMPARATORS: ReadonlyArray<{ value: DateFilter; label: string }> = [
-        { value: 'any', label: 'any' },
-        { value: 'after', label: 'after' },
-        { value: 'before', label: 'before' },
-        { value: 'between', label: 'between' },
-    ]
+    const DATE_COMPARATORS = $derived<ReadonlyArray<{ value: DateFilter; label: string }>>([
+        { value: 'any', label: tString('queryUi.date.comparator.any') },
+        { value: 'after', label: tString('queryUi.date.comparator.after') },
+        { value: 'before', label: tString('queryUi.date.comparator.before') },
+        { value: 'between', label: tString('queryUi.date.comparator.between') },
+    ])
 
     let dateIsCustomLower = $state(false)
     let dateIsCustomUpper = $state(false)
@@ -133,15 +134,22 @@
      comparator (`any` / `after` / `before` / `between`). Col 2 = preset dates
      (`today`, `yesterday`, `this week`, ..., `Custom…`). Cols 3 + 4 appear when
      col 1 = `between` for the upper bound. No unit column. -->
-<FilterPopover {anchor} {open} {onClose} label="Modified" ariaLabel="Modified filter options" sectionClass="size-grid-section">
+<FilterPopover
+    {anchor}
+    {open}
+    {onClose}
+    label={tString('queryUi.date.popover.label')}
+    ariaLabel={tString('queryUi.date.popover.aria')}
+    sectionClass="size-grid-section"
+>
         <div
             class="list-grid date-grid"
             class:has-upper={showsDateUpperBound(dateFilter)}
             role="group"
-            aria-label="Modified filter options"
+            aria-label={tString('queryUi.date.popover.aria')}
         >
             <!-- Col 1: comparator -->
-            <div class="list-col" role="radiogroup" aria-label="Comparator">
+            <div class="list-col" role="radiogroup" aria-label={tString('queryUi.date.aria.comparator')}>
                 {#each DATE_COMPARATORS as opt (opt.value)}
                     <button
                         type="button"
@@ -166,7 +174,7 @@
                  selected only when the user explicitly clicked it (or the AI
                  / history loaded a custom value); the `$effect` above keeps
                  `dateIsCustomLower` in sync. -->
-            <div class="list-col" role="radiogroup" aria-label="Date value">
+            <div class="list-col" role="radiogroup" aria-label={tString('queryUi.date.aria.value')}>
                 {#each datePresets as preset (preset.key)}
                     <button
                         type="button"
@@ -206,17 +214,17 @@
                             onclick={(e) => {
                                 e.stopPropagation()
                             }}
-                            aria-label="Custom date value"
+                            aria-label={tString('queryUi.date.aria.custom')}
                         />
                     {:else}
-                        custom…
+                        {tString('queryUi.date.customCell')}
                     {/if}
                 </button>
             </div>
 
             {#if showsDateUpperBound(dateFilter)}
                 <!-- Col 3: upper-bound preset (same shape as col 2). -->
-                <div class="list-col" role="radiogroup" aria-label="Maximum date value">
+                <div class="list-col" role="radiogroup" aria-label={tString('queryUi.date.aria.maxValue')}>
                     {#each datePresets as preset (preset.key)}
                         <button
                             type="button"
@@ -256,10 +264,10 @@
                                 onclick={(e) => {
                                     e.stopPropagation()
                                 }}
-                                aria-label="Custom maximum date value"
+                                aria-label={tString('queryUi.date.aria.customMax')}
                             />
                         {:else}
-                            custom…
+                            {tString('queryUi.date.customCell')}
                         {/if}
                     </button>
                 </div>

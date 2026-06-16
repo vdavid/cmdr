@@ -19,6 +19,9 @@
     import Combobox, { type ComboboxItem } from '$lib/ui/Combobox.svelte'
     import { describeSecretError, type SecretErrorMessage } from '$lib/settings/sections/ai-secret-error'
     import { getAppLogger } from '$lib/logging/logger'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import type { Snippet } from 'svelte'
 
     /**
      * Per-provider tutorial in the onboarding wizard's step 2 right column.
@@ -186,7 +189,7 @@
         } catch (e) {
             if (idAtStart !== activeProviderId) return
             connectionStatus = 'error'
-            connectionError = e instanceof Error ? e.message : 'Something went wrong'
+            connectionError = e instanceof Error ? e.message : tString('onboarding.cloudSetup.status.genericError')
         }
     }
 
@@ -275,7 +278,11 @@
     const apiKeyChecked = $derived(connectionStatus === 'connected' || connectionStatus === 'connected-no-models')
     const modelChecked = $derived(currentModel.trim() !== '')
     const modelComboboxItems = $derived<ComboboxItem[]>(availableModels.map((m) => ({ value: m, label: m })))
-    const modelPlaceholder = $derived(preset?.defaultModel ? `Example: ${preset.defaultModel}` : 'Model name')
+    const modelPlaceholder = $derived(
+        preset?.defaultModel
+            ? tString('onboarding.cloudSetup.modelPlaceholderExample', { model: preset.defaultModel })
+            : tString('onboarding.cloudSetup.modelPlaceholder'),
+    )
 
     // Per-provider sign-up and API-key console URLs. Kept inline because they're tied
     // to provider names a registry would just mirror; one source of truth per row.
@@ -318,17 +325,36 @@
     const links = $derived(providerLinksById[activeProviderId] ?? { signup: '', apiKeys: '' })
     const apiKeyPlaceholder = $derived(
         activeProviderId === 'openai'
-            ? 'Example: sk-abc123...'
+            ? tString('onboarding.cloudSetup.apiKeyPlaceholder.openai')
             : activeProviderId === 'anthropic'
-              ? 'Example: sk-ant-abc123...'
-              : 'API key',
+              ? tString('onboarding.cloudSetup.apiKeyPlaceholder.anthropic')
+              : tString('onboarding.cloudSetup.apiKeyPlaceholder.generic'),
     )
 </script>
+
+{#snippet signupLink(children: Snippet)}<LinkButton
+        href={links.signup}
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={(event: MouseEvent) => {
+            event.preventDefault()
+            openProviderUrl(links.signup)
+        }}>{@render children()}</LinkButton
+    >{/snippet}
+{#snippet keyLink(children: Snippet)}<LinkButton
+        href={links.apiKeys}
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={(event: MouseEvent) => {
+            event.preventDefault()
+            openProviderUrl(links.apiKeys)
+        }}>{@render children()}</LinkButton
+    >{/snippet}
 
 <div class="setup-panel" data-provider-id={activeProviderId}>
     {#if preset}
         <header class="provider-header">
-            <h3 class="provider-title">Set up {preset.name}</h3>
+            <h3 class="provider-title">{tString('onboarding.cloudSetup.title', { provider: preset.name })}</h3>
             {#if preset.description}
                 <p class="provider-description">{preset.description}</p>
             {/if}
@@ -342,19 +368,11 @@
                     </span>
                     <div class="step-body">
                         <span class="step-label">
-                            Sign up at
-                            <LinkButton
-                                href={links.signup}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onclick={(event: MouseEvent) => {
-                                    event.preventDefault()
-                                    openProviderUrl(links.signup)
-                                }}
-                            >
-                                {preset.name}
-                            </LinkButton>
-                            (if you don't have an account)
+                            <Trans
+                                key="onboarding.cloudSetup.step.signup"
+                                snippets={{ signupLink }}
+                                params={{ provider: preset.name }}
+                            />
                         </span>
                     </div>
                 </li>
@@ -367,18 +385,7 @@
                     </span>
                     <div class="step-body">
                         <span class="step-label">
-                            Create an API key
-                            <LinkButton
-                                href={links.apiKeys}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onclick={(event: MouseEvent) => {
-                                    event.preventDefault()
-                                    openProviderUrl(links.apiKeys)
-                                }}
-                            >
-                                here
-                            </LinkButton>
+                            <Trans key="onboarding.cloudSetup.step.createKey" snippets={{ keyLink }} />
                         </span>
                     </div>
                 </li>
@@ -392,7 +399,9 @@
                         {/if}
                     </span>
                     <div class="step-body">
-                        <label class="step-label" for="onboarding-cloud-base-url">Endpoint URL</label>
+                        <label class="step-label" for="onboarding-cloud-base-url"
+                            >{tString('onboarding.cloudSetup.step.endpoint')}</label
+                        >
                         <input
                             id="onboarding-cloud-base-url"
                             class="text-input"
@@ -402,7 +411,7 @@
                                 const target = event.currentTarget as HTMLInputElement
                                 saveBaseUrl(target.value)
                             }}
-                            placeholder="Example: https://api.example.com/v1"
+                            placeholder={tString('onboarding.cloudSetup.step.endpointPlaceholder')}
                             autocomplete="off"
                             spellcheck="false"
                         />
@@ -418,28 +427,34 @@
                         {/if}
                     </span>
                     <div class="step-body">
-                        <label class="step-label" for="onboarding-cloud-api-key">Paste your API key</label>
+                        <label class="step-label" for="onboarding-cloud-api-key"
+                            >{tString('onboarding.cloudSetup.step.pasteKey')}</label
+                        >
                         <SettingPasswordInput
                             id="ai.cloudProviderConfigs"
                             placeholder={apiKeyPlaceholder}
-                            ariaLabel="API key"
+                            ariaLabel={tString('onboarding.cloudSetup.apiKeyAria')}
                             value={currentApiKey}
                             onchange={handleApiKeyChange}
                         />
                         {#if secretError}
                             <p class="status status-error" role="alert">{secretError.title}</p>
                         {:else if connectionStatus === 'checking'}
-                            <p class="status status-checking">Checking your key…</p>
+                            <p class="status status-checking">{tString('onboarding.cloudSetup.status.checking')}</p>
                         {:else if connectionStatus === 'auth-error'}
-                            <p class="status status-error">{connectionError ?? "That key didn't work"}</p>
+                            <p class="status status-error">
+                                {connectionError ?? tString('onboarding.cloudSetup.status.authError')}
+                            </p>
                         {:else if connectionStatus === 'connection-error'}
                             <p class="status status-error">
-                                {connectionError ?? "Can't reach the service right now"}
+                                {connectionError ?? tString('onboarding.cloudSetup.status.connectionError')}
                             </p>
                         {:else if connectionStatus === 'error'}
-                            <p class="status status-error">{connectionError ?? 'Something went wrong'}</p>
+                            <p class="status status-error">
+                                {connectionError ?? tString('onboarding.cloudSetup.status.genericError')}
+                            </p>
                         {:else if apiKeyChecked}
-                            <p class="status status-ok">Connected!</p>
+                            <p class="status status-ok">{tString('onboarding.cloudSetup.status.connected')}</p>
                         {/if}
                     </div>
                 </li>
@@ -452,14 +467,14 @@
                     {/if}
                 </span>
                 <div class="step-body">
-                    <span class="step-label">Pick a model</span>
+                    <span class="step-label">{tString('onboarding.cloudSetup.step.pickModel')}</span>
                     <Combobox
                         items={modelComboboxItems}
                         inputValue={currentModel}
                         onInputValueChange={saveModel}
                         loading={connectionStatus === 'checking'}
                         placeholder={modelPlaceholder}
-                        ariaLabel="Model"
+                        ariaLabel={tString('onboarding.cloudSetup.modelAria')}
                     />
                 </div>
             </li>

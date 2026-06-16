@@ -24,6 +24,7 @@
      */
     import { onMount, onDestroy, tick, type Snippet } from 'svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** The trigger element. Used for positioning and as the focus-return target. */
@@ -37,7 +38,8 @@
         children: Snippet
     }
 
-    const { anchor, open, onClose, ariaLabel = 'Options', children }: Props = $props()
+    const { anchor, open, onClose, ariaLabel, children }: Props = $props()
+    const resolvedAriaLabel = $derived(ariaLabel ?? tString('ui.popover.defaultAriaLabel'))
 
     let popoverEl: HTMLDivElement | undefined = $state()
     let position = $state<{ left: number; top: number; flipped: boolean }>({ left: 0, top: 0, flipped: false })
@@ -147,7 +149,7 @@
         bind:this={popoverEl}
         class="ui-popover"
         role="dialog"
-        aria-label={ariaLabel}
+        aria-label={resolvedAriaLabel}
         data-flipped={position.flipped}
         style:left="{position.left}px"
         style:top="{position.top}px"

@@ -14,6 +14,14 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 
 ## Must-knows
 
+- **Dialog copy lives in the i18n catalog, not in the components.** Every user-facing string in the copy/move, delete,
+  new-file, and new-folder dialogs (titles, buttons, phase labels, conflict-policy labels, scan-stat nouns, notices)
+  resolves from `messages/en/fileOperations.json` via `t()`/`tString()`/`<Trans>` (`$lib/intl`). Don't hardcode copy
+  here, enforced by `cmdr/no-raw-user-facing-string` on `transfer/`, `delete/`, `mkdir/`, `mkfile/`. The transfer
+  ERROR-MESSAGE prose (`transfer-error-messages.ts`, rendered in `TransferErrorDialog`/`FallbackErrorContent`) is the
+  one exception: it belongs to the `lib/errors` pipeline and migrates with the `errors` tranche, NOT here. en output is
+  parity-pinned (`file-operations-i18n-parity.test.ts` + the count-phrase unit tests); a copy edit lands in the catalog
+  AND the test together. See [`$lib/intl/messages/CLAUDE.md`](../intl/messages/CLAUDE.md).
 - **`scan-throughput.ts` covers the scan phase only.** The backend `EtaEstimator` covers write phases, so `DeleteDialog`
   and `TransferProgressDialog` use `ScanThroughput` to show `filesPerSecond` / `bytesPerSecond` during the scan. It
   returns nulls until two samples land, clamps negative deltas to zero, and must be `reset()` between scans. Pure, no

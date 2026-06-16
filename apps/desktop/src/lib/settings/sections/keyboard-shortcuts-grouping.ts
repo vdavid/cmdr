@@ -14,6 +14,8 @@
  */
 import type { Command } from '$lib/commands/types'
 import type { CommandScope } from '$lib/commands/types'
+import type { MessageKey } from '$lib/intl/keys.gen'
+import { tString } from '$lib/intl/messages.svelte'
 
 /** A titled group of commands sharing one scope, ready to render. */
 export interface ShortcutGroup {
@@ -25,26 +27,28 @@ export interface ShortcutGroup {
 }
 
 /**
- * Display order + heading for each scope. Reads top-down the way a user scans:
- * global app commands first, then the main window and its inner contexts (file
- * list is the workhorse, so it leads), then the auxiliary windows.
+ * Display order + heading KEY for each scope. Reads top-down the way a user
+ * scans: global app commands first, then the main window and its inner contexts
+ * (file list is the workhorse, so it leads), then the auxiliary windows. The
+ * heading copy lives in `messages/en/shortcuts.json` (`shortcuts.scope.*`) and
+ * resolves through `tString()` in `groupCommandsByScope`.
  *
  * Keep this in sync with `CommandScope` in `lib/commands/types.ts`: the
  * exhaustiveness test (`union of grouped commands === all registry commands`)
  * fails if a new scope is added without an entry here.
  */
-const scopeOrder: readonly { scope: CommandScope; title: string }[] = [
-  { scope: 'App', title: 'App' },
-  { scope: 'Main window', title: 'Main window' },
-  { scope: 'Main window/File list', title: 'File list' },
-  { scope: 'Main window/Brief mode', title: 'Brief mode' },
-  { scope: 'Main window/Full mode', title: 'Full mode' },
-  { scope: 'Main window/Volume chooser', title: 'Volume chooser' },
-  { scope: 'Main window/Network', title: 'Network' },
-  { scope: 'Main window/Share browser', title: 'Share browser' },
-  { scope: 'Command palette', title: 'Command palette' },
-  { scope: 'About window', title: 'About window' },
-  { scope: 'Onboarding', title: 'Onboarding' },
+const scopeOrder: readonly { scope: CommandScope; titleKey: MessageKey }[] = [
+  { scope: 'App', titleKey: 'shortcuts.scope.app' },
+  { scope: 'Main window', titleKey: 'shortcuts.scope.mainWindow' },
+  { scope: 'Main window/File list', titleKey: 'shortcuts.scope.fileList' },
+  { scope: 'Main window/Brief mode', titleKey: 'shortcuts.scope.briefMode' },
+  { scope: 'Main window/Full mode', titleKey: 'shortcuts.scope.fullMode' },
+  { scope: 'Main window/Volume chooser', titleKey: 'shortcuts.scope.volumeChooser' },
+  { scope: 'Main window/Network', titleKey: 'shortcuts.scope.network' },
+  { scope: 'Main window/Share browser', titleKey: 'shortcuts.scope.shareBrowser' },
+  { scope: 'Command palette', titleKey: 'shortcuts.scope.commandPalette' },
+  { scope: 'About window', titleKey: 'shortcuts.scope.aboutWindow' },
+  { scope: 'Onboarding', titleKey: 'shortcuts.scope.onboarding' },
 ]
 
 /**
@@ -56,10 +60,10 @@ const scopeOrder: readonly { scope: CommandScope; title: string }[] = [
  */
 export function groupCommandsByScope(commands: Command[]): ShortcutGroup[] {
   const groups: ShortcutGroup[] = []
-  for (const { scope, title } of scopeOrder) {
+  for (const { scope, titleKey } of scopeOrder) {
     const scopeCommands = commands.filter((c) => c.scope === scope)
     if (scopeCommands.length > 0) {
-      groups.push({ scope, title, commands: scopeCommands })
+      groups.push({ scope, title: tString(titleKey), commands: scopeCommands })
     }
   }
   return groups

@@ -18,6 +18,9 @@
     } from '$lib/beta-links'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import type { Snippet } from 'svelte'
 
     /**
      * Step 3: Open beta disclosure.
@@ -87,7 +90,7 @@
         void advanceBusy
         setFooterOverride([
             {
-                label: 'Start using Cmdr!',
+                label: tString('onboarding.stepBeta.footer.start'),
                 variant: 'secondary',
                 disabled: advanceBusy,
                 onclick: () => {
@@ -95,7 +98,7 @@
                 },
             },
             {
-                label: 'One more optional setup step',
+                label: tString('onboarding.stepBeta.footer.continue'),
                 variant: 'primary',
                 disabled: advanceBusy,
                 onclick: () => {
@@ -169,105 +172,94 @@
     }
 </script>
 
+{#snippet david(children: Snippet)}<LinkButton
+        href={ABOUT_DAVID_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={openLink(ABOUT_DAVID_URL)}>{@render children()}</LinkButton
+    >{/snippet}
+{#snippet alpha(children: Snippet)}<StatusBadge status="alpha" />{@render children()}{/snippet}
+{#snippet chip(children: Snippet)}<ShortcutChip commandId="app.commandPalette" clickable={false} />{@render children()}{/snippet}
+{#snippet strong(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
+{#snippet code(children: Snippet)}<code>{@render children()}</code>{/snippet}
+{#snippet github(children: Snippet)}<LinkButton
+        href={GITHUB_ISSUES_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={openLink(GITHUB_ISSUES_URL)}>{@render children()}</LinkButton
+    >{/snippet}
+{#snippet discord(children: Snippet)}<LinkButton
+        href={DISCORD_INVITE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={openLink(DISCORD_INVITE_URL)}>{@render children()}</LinkButton
+    >{/snippet}
+{#snippet call(children: Snippet)}<LinkButton
+        href={BOOK_A_CALL_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={openLink(BOOK_A_CALL_URL)}>{@render children()}</LinkButton
+    >{/snippet}
+{#snippet repoLink(children: Snippet)}<LinkButton
+        href={GITHUB_REPO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={openLink(GITHUB_REPO_URL)}>{@render children()}</LinkButton
+    >{/snippet}
+
 <OnboardingStepShell>
-    <h2 class="step-title">Help improve Cmdr!</h2>
-    <p class="lede">
-        Hi, I'm <LinkButton
-            href={ABOUT_DAVID_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onclick={openLink(ABOUT_DAVID_URL)}>David</LinkButton
-        >! I build Cmdr, and you're one of the very first people using it. Thanks for your trust! ❤️
-    </p>
-    <p class="lede">
-        Cmdr is in open beta, which means it's overall solid and usable, but some parts are still rough. See any
-        <StatusBadge status="alpha" /> badges marking the most work-in-progress areas.
-    </p>
-    <p class="lede">Your feedback helps me spot bugs and prioritize features. Here is how you can engage:</p>
+    <h2 class="step-title">{tString('onboarding.stepBeta.title')}</h2>
+    <p class="lede"><Trans key="onboarding.stepBeta.greeting" snippets={{ david }} /></p>
+    <p class="lede"><Trans key="onboarding.stepBeta.openBeta" snippets={{ alpha }} /></p>
+    <p class="lede">{tString('onboarding.stepBeta.feedbackIntro')}</p>
     <ol class="feedback-list">
         <li>
-            <strong>In-app:</strong> See <strong>Help &gt; Send feedback…</strong> in the menu{#if commandPaletteShortcut}, or
-            find it in the command palette with <ShortcutChip commandId="app.commandPalette" clickable={false} />{:else}, or
-            find it in the command palette{/if}.
+            {#if commandPaletteShortcut}
+                <Trans key="onboarding.stepBeta.feedback.inAppBound" snippets={{ strong, chip }} />
+            {:else}
+                <Trans key="onboarding.stepBeta.feedback.inAppUnbound" snippets={{ strong }} />
+            {/if}
         </li>
-        <li>
-            <LinkButton
-                href={GITHUB_ISSUES_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onclick={openLink(GITHUB_ISSUES_URL)}>GitHub</LinkButton
-            >: Add issues, vote on issues.
-        </li>
-        <li>
-            <LinkButton
-                href={DISCORD_INVITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onclick={openLink(DISCORD_INVITE_URL)}>Discord</LinkButton
-            >: Click the link, hop on to the server, meet me and others.
-        </li>
-        <li>
-            <LinkButton
-                href={BOOK_A_CALL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onclick={openLink(BOOK_A_CALL_URL)}>Schedule a call with me</LinkButton
-            >: I won't be doing this for very long, but while Cmdr is an open beta, I'd love to talk to you about your
-            files!
-        </li>
+        <li><Trans key="onboarding.stepBeta.feedback.github" snippets={{ github }} /></li>
+        <li><Trans key="onboarding.stepBeta.feedback.discord" snippets={{ discord }} /></li>
+        <li><Trans key="onboarding.stepBeta.feedback.call" snippets={{ call }} /></li>
     </ol>
-    <p class="lede">
-        And one more very important way you can help in one minute: star, watch, and fork the repo
-        <LinkButton
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onclick={openLink(GITHUB_REPO_URL)}>here on GitHub</LinkButton
-        >. Homebrew wants me to present 225 stars, 50 forks, and 50 watches to enable <code>brew install cmdr</code>.
-    </p>
+    <p class="lede"><Trans key="onboarding.stepBeta.star" snippets={{ github: repoLink, code }} /></p>
 
-    <p class="lede analytics-lede">
-        To learn what's working and what isn't, during the open beta Cmdr sends anonymous usage stats: which features
-        get used and how often, never anything from your files. It's on now, and you can turn it off anytime.
-    </p>
+    <p class="lede analytics-lede">{tString('onboarding.stepBeta.analyticsLede')}</p>
 
     <section class="toggle-block" aria-labelledby="toggle-analytics-title">
         <header class="toggle-header">
             <div class="toggle-text">
-                <h3 id="toggle-analytics-title" class="toggle-title">Send anonymous usage stats</h3>
+                <h3 id="toggle-analytics-title" class="toggle-title">{tString('onboarding.stepBeta.analyticsTitle')}</h3>
                 <p class="toggle-desc">{analyticsDef.description}</p>
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="analytics.enabled" />
-                <p class="toggle-caption">Note that it's ON by default to encourage people to send me data during the Beta. You can change this any time in Settings.</p>
+                <p class="toggle-caption">{tString('onboarding.stepBeta.analyticsCaption')}</p>
             </div>
         </header>
     </section>
 
     <section class="email-block" aria-labelledby="beta-email-title">
-        <h3 id="beta-email-title" class="toggle-title">Stay in touch (optional)</h3>
+        <h3 id="beta-email-title" class="toggle-title">{tString('onboarding.stepBeta.emailTitle')}</h3>
         <input
             type="email"
             class="email-input"
-            placeholder="you@example.com"
+            placeholder={tString('onboarding.stepBeta.emailPlaceholder')}
             value={email}
             oninput={handleEmailInput}
             onblur={handleEmailCommit}
             onkeydown={handleEmailKeydown}
             disabled={signupInFlight}
-            aria-label="Stay in touch (optional)"
+            aria-label={tString('onboarding.stepBeta.emailTitle')}
         />
         {#if signupFeedback?.kind === 'success'}
-            <p class="signup-feedback success" role="status">
-                Check your inbox to confirm your email. Thanks for helping out!
-            </p>
+            <p class="signup-feedback success" role="status">{tString('onboarding.stepBeta.signup.success')}</p>
         {:else if signupFeedback?.kind === 'failure'}
-            <p class="signup-feedback failure" role="status">Sorry, we couldn't sign you up right now. Try again?</p>
+            <p class="signup-feedback failure" role="status">{tString('onboarding.stepBeta.signup.failure')}</p>
         {/if}
-        <p class="email-note">
-            Drop your email and I'll reach out with the occasional question or update. The email address you enter here is stored only on your Mac and
-            it's never connected to your usage stats, the two are intentionally two separate subsystems.
-        </p>
+        <p class="email-note">{tString('onboarding.stepBeta.emailNote')}</p>
     </section>
 </OnboardingStepShell>
 

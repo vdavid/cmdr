@@ -1,0 +1,71 @@
+{
+  "search.dialog.title": "Search",
+  "@search.dialog.title": {
+    "description": "Title shown at the top of the whole-drive file Search dialog. Single word naming the feature."
+  },
+
+  "search.runHint": "Press Enter to search",
+  "@search.runHint": {
+    "description": "Subtle hint in the right side of the search input, shown when auto-apply is off and the typed query hasn't run yet. Tells the user the search runs on Enter."
+  },
+
+  "search.action.showAll.label": "Show all in main window",
+  "@search.action.showAll.label": {
+    "description": "Primary footer button in the Search dialog. Promotes the current search results into the active file pane so the user can browse them like a folder. Activated by the keyboard shortcut shown next to it."
+  },
+  "search.action.showAll.tooltip": "Open the search results in the active pane",
+  "@search.action.showAll.tooltip": {
+    "description": "Hover tooltip for the 'Show all in main window' button in the Search dialog."
+  },
+
+  "search.action.goToFile.label": "Go to file",
+  "@search.action.goToFile.label": {
+    "description": "Secondary footer button in the Search dialog. Opens the file under the cursor by navigating the active pane to it. Activated by the Enter key shown next to it."
+  },
+  "search.action.goToFile.tooltip": "Open the file in the active pane",
+  "@search.action.goToFile.tooltip": {
+    "description": "Hover tooltip for the 'Go to file' button in the Search dialog."
+  },
+
+  "search.recent.runAria": "Run recent {mode} search: {query}",
+  "@search.recent.runAria": {
+    "description": "Accessibility label for a recent-search chip in the Search dialog. Read aloud by screen readers; activating the chip re-runs that past search.",
+    "placeholders": {
+      "mode": "the search mode of the past search, already translated (for example AI, Regex, or Filename)",
+      "query": "the text the user searched for, shown verbatim and not translated"
+    }
+  },
+
+  "search.systemDirExclude.default": "Excludes common system and build folders",
+  "@search.systemDirExclude.default": {
+    "description": "Placeholder tooltip on the 'Hide boring folders' option in the Search dialog's scope popover, shown briefly before the full folder list loads. 'build folders' are folders like node_modules that hold generated or downloaded code."
+  },
+  "search.systemDirExclude.heading": "These folders are hidden:",
+  "@search.systemDirExclude.heading": {
+    "description": "Heading inside the 'Hide boring folders' tooltip in the Search dialog's scope popover. Introduces the list of folder names that the search skips. The folder names themselves are not translated."
+  },
+
+  "search.notAFolderToast": "Search results aren''t a folder. Paste into a real folder instead.",
+  "@search.notAFolderToast": {
+    "description": "Toast shown when the user tries a paste, new-folder, or rename action while a pane is showing search results. Search results are a read-only view, not a real folder, so those actions can't apply there."
+  },
+
+  "search.searchableFolder.disabledTooltip": "Current folder is search results, which isn''t searchable. Open a real folder first.",
+  "@search.searchableFolder.disabledTooltip": {
+    "description": "Tooltip on the disabled 'Use current folder' button in the Search dialog's scope popover. Explains that the active pane is showing search results (a read-only view), so there's no real folder to search inside."
+  },
+
+  "search.snapshot.defaultLabel": "Search",
+  "@search.snapshot.defaultLabel": {
+    "description": "Fallback breadcrumb and tab title for a saved search-results view when there's no query text to name it. Same word as the dialog title."
+  },
+  "search.snapshot.cappedLabel": "{label} (first {capText} of {totalText})",
+  "@search.snapshot.cappedLabel": {
+    "description": "Breadcrumb and tab title for a saved search-results view when the result set was too large to keep entirely, so only the first N of the total M matches are shown. The base label is the original search name.",
+    "placeholders": {
+      "label": "the base search label (the query or AI summary), shown verbatim",
+      "capText": "how many matches are kept, already formatted for display (for example 1,000)",
+      "totalText": "the total number of matches found, already formatted for display (for example 5,432)"
+    }
+  }
+}

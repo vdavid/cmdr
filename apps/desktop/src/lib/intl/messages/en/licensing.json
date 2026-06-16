@@ -1,0 +1,548 @@
+{
+  "licensing.about.srTitle": "About Cmdr",
+  "@licensing.about.srTitle": {
+    "description": "Visually-hidden accessible title of the About dialog, read by screen readers. The dialog has no visible title; the app name below serves as the visual heading. 'Cmdr' is the product name and must NOT be translated."
+  },
+
+  "licensing.about.appName": "Cmdr",
+  "@licensing.about.appName": {
+    "description": "The product name, shown large as the visual heading of the About dialog. A brand name; do NOT translate."
+  },
+
+  "licensing.about.tagline": "Keyboard-driven file manager",
+  "@licensing.about.tagline": {
+    "description": "One-line product tagline under the app name in the About dialog."
+  },
+
+  "licensing.about.version": "Version {version} (open beta)",
+  "@licensing.about.version": {
+    "description": "Version line in the About dialog. '(open beta)' flags the current release stage.",
+    "placeholders": {
+      "version": "the app version string, e.g. 1.4.2"
+    }
+  },
+
+  "licensing.about.betaNote": "Found something bad? Tell me on <github>GitHub</github>. I read every report!",
+  "@licensing.about.betaNote": {
+    "description": "Friendly first-person beta note in the About dialog inviting bug reports. Spoken as David (the author), so keep it warm and personal. <github> wraps the inline link to the GitHub issues page; 'GitHub' is a brand name and must NOT be translated."
+  },
+
+  "licensing.about.noLicense": "No license – only personal use allowed",
+  "@licensing.about.noLicense": {
+    "description": "License-status line in the About dialog for a personal/free or expired install. Neutral, non-judgmental tone. The dash is an en dash (–)."
+  },
+
+  "licensing.about.perpetual": "Perpetual commercial license for {org}",
+  "@licensing.about.perpetual": {
+    "description": "License-status line in the About dialog for a perpetual (one-time) commercial license.",
+    "placeholders": {
+      "org": "the licensed organization name, or a fallback phrase like 'your organization'"
+    }
+  },
+
+  "licensing.about.commercial": "Commercial license for {org}",
+  "@licensing.about.commercial": {
+    "description": "License-status line in the About dialog for a commercial subscription with no known expiry date.",
+    "placeholders": {
+      "org": "the licensed organization name, or a fallback phrase like 'your organization'"
+    }
+  },
+
+  "licensing.about.commercialUntil": "Commercial license for {org}, valid until {date}",
+  "@licensing.about.commercialUntil": {
+    "description": "License-status line in the About dialog for a commercial subscription with a known expiry date.",
+    "placeholders": {
+      "org": "the licensed organization name, or a fallback phrase like 'your organization'",
+      "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
+    }
+  },
+
+  "licensing.about.fallbackOrg": "your organization",
+  "@licensing.about.fallbackOrg": {
+    "description": "Fallback used in place of the organization name when none is recorded, e.g. 'Commercial license for your organization'. Must read naturally where '{org}' is substituted in the other About license lines."
+  },
+
+  "licensing.about.aiAttribution": "AI powered by Falcon-H1R-7B by Technology Innovation Institute (TII)",
+  "@licensing.about.aiAttribution": {
+    "description": "Attribution line crediting the bundled AI model. 'Falcon-H1R-7B', 'Technology Innovation Institute', and 'TII' are proper names and must NOT be translated; only the 'AI powered by' framing is translatable."
+  },
+
+  "licensing.about.linkWebsite": "Website",
+  "@licensing.about.linkWebsite": {
+    "description": "Footer link label in the About dialog pointing to the product website."
+  },
+
+  "licensing.about.linkGetLicense": "Get a license",
+  "@licensing.about.linkGetLicense": {
+    "description": "Footer link label in the About dialog pointing to the pricing page. Shown only for personal/expired installs."
+  },
+
+  "licensing.about.linkGithub": "GitHub",
+  "@licensing.about.linkGithub": {
+    "description": "Footer link label in the About dialog pointing to the source repository. 'GitHub' is a brand name and must NOT be translated."
+  },
+
+  "licensing.about.linkDiscord": "Discord",
+  "@licensing.about.linkDiscord": {
+    "description": "Footer link label in the About dialog pointing to the community chat. 'Discord' is a brand name and must NOT be translated."
+  },
+
+  "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
+  "@licensing.about.copyright": {
+    "description": "Copyright line at the foot of the About dialog. 'David Veszelovszki' is a personal name; the year range stays literal."
+  },
+
+  "licensing.commercialReminder.title": "Thanks for using Cmdr!",
+  "@licensing.commercialReminder.title": {
+    "description": "Title of the periodic reminder modal shown to personal-license users. Warm and grateful, not nagging. 'Cmdr' is the product name; do NOT translate."
+  },
+
+  "licensing.commercialReminder.usingPersonal": "You''re using a Personal license.",
+  "@licensing.commercialReminder.usingPersonal": {
+    "description": "First line of the commercial-reminder modal stating the current license tier. 'Personal' is a license tier name; keep it capitalized and consistent with the other license labels."
+  },
+
+  "licensing.commercialReminder.askCommercial": "If you''re using Cmdr at work, please get a Commercial license to stay compliant.",
+  "@licensing.commercialReminder.askCommercial": {
+    "description": "Body of the commercial-reminder modal politely asking work users to buy a commercial license. 'Cmdr' is the product name; 'Commercial' is a license tier name."
+  },
+
+  "licensing.commercialReminder.priceInfo": "Commercial licenses are $59/year/user and support continued development.",
+  "@licensing.commercialReminder.priceInfo": {
+    "description": "Supporting line in the commercial-reminder modal giving the price and framing it as support for development. Keep the price '$59/year/user' literal (currency and amount must not change)."
+  },
+
+  "licensing.commercialReminder.declinePersonal": "I only use Cmdr<break></break>for personal purposes",
+  "@licensing.commercialReminder.declinePersonal": {
+    "description": "Secondary (dismiss) button in the commercial-reminder modal, for users who only use the app personally. <break> is an inline line break for two-line layout in a narrow button; place it at a sensible wrap point for the target language. 'Cmdr' is the product name."
+  },
+
+  "licensing.commercialReminder.getCommercial": "Get commercial license",
+  "@licensing.commercialReminder.getCommercial": {
+    "description": "Primary button in the commercial-reminder modal that opens the pricing page. Keep it short (a button)."
+  },
+
+  "licensing.expiration.title": "Your commercial license has expired",
+  "@licensing.expiration.title": {
+    "description": "Title of the modal shown once when a commercial subscription has expired."
+  },
+
+  "licensing.expiration.orgName": "License for: <strong>{org}</strong>",
+  "@licensing.expiration.orgName": {
+    "description": "Line in the expiration modal naming the organization the expired license belonged to. <strong> emphasizes the organization name.",
+    "placeholders": {
+      "org": "the licensed organization name"
+    }
+  },
+
+  "licensing.expiration.message": "Your commercial subscription expired on <strong>{date}</strong>.",
+  "@licensing.expiration.message": {
+    "description": "Main line of the expiration modal stating when the subscription lapsed. <strong> emphasizes the date.",
+    "placeholders": {
+      "date": "the expiry date, already formatted for the user's locale (e.g. March 1, 2026)"
+    }
+  },
+
+  "licensing.expiration.info": "Cmdr is now running in personal use mode. If you''re still using it for work, please renew your license.",
+  "@licensing.expiration.info": {
+    "description": "Reassuring follow-up in the expiration modal explaining the app keeps working (now in personal mode) and inviting renewal. 'Cmdr' is the product name; do NOT translate."
+  },
+
+  "licensing.expiration.renew": "Renew license",
+  "@licensing.expiration.renew": {
+    "description": "Primary button in the expiration modal that opens the renewal page. Keep it short (a button)."
+  },
+
+  "licensing.expiration.continue": "Continue in personal mode",
+  "@licensing.expiration.continue": {
+    "description": "Secondary button in the expiration modal that dismisses it and keeps the app in personal mode. Keep it short (a button)."
+  },
+
+  "licensing.dialog.loading": "Loading...",
+  "@licensing.dialog.loading": {
+    "description": "Title of the license dialog while it loads the current license info. A trailing-ellipsis loading state."
+  },
+
+  "licensing.dialog.detailsTitle": "License details",
+  "@licensing.dialog.detailsTitle": {
+    "description": "Title of the license dialog when an existing license is present (shows its details)."
+  },
+
+  "licensing.dialog.enterTitle": "Enter license key",
+  "@licensing.dialog.enterTitle": {
+    "description": "Title of the license dialog when no license is present (the key-entry form)."
+  },
+
+  "licensing.dialog.serverInvalidBanner": "This key couldn''t be verified with the server. Please try a different key or email us at <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.serverInvalidBanner": {
+    "description": "Warning banner in the license-details view shown when a stored key was later rejected by the server during re-validation. <supportEmail> wraps the inline support-email link.",
+    "placeholders": {
+      "email": "the support email address (shown as the link text), e.g. hello@getcmdr.com"
+    }
+  },
+
+  "licensing.dialog.labelType": "License type",
+  "@licensing.dialog.labelType": {
+    "description": "Row label in the license-details view for the license type. Pairs with the type value (e.g. 'Commercial subscription')."
+  },
+
+  "licensing.dialog.labelOrganization": "Organization",
+  "@licensing.dialog.labelOrganization": {
+    "description": "Row label in the license-details view for the licensed organization name."
+  },
+
+  "licensing.dialog.labelValidity": "Validity",
+  "@licensing.dialog.labelValidity": {
+    "description": "Row label in the license-details view for the license validity/expiry status."
+  },
+
+  "licensing.dialog.labelKey": "License key",
+  "@licensing.dialog.labelKey": {
+    "description": "Row label in the license-details view for the short license-key code."
+  },
+
+  "licensing.dialog.typeCommercialPerpetual": "Commercial perpetual",
+  "@licensing.dialog.typeCommercialPerpetual": {
+    "description": "License-type value shown in the details view for a one-time perpetual commercial license. 'Commercial' is a license tier name."
+  },
+
+  "licensing.dialog.typeCommercialSubscription": "Commercial subscription",
+  "@licensing.dialog.typeCommercialSubscription": {
+    "description": "License-type value shown in the details view for a recurring commercial subscription. 'Commercial' is a license tier name."
+  },
+
+  "licensing.dialog.validityNotYetVerified": "Not yet verified",
+  "@licensing.dialog.validityNotYetVerified": {
+    "description": "Validity value shown (in yellow) for a commercial license whose server check hasn't completed yet. Paired with the hint about verifying within a few days."
+  },
+
+  "licensing.dialog.validityPerpetualUntil": "Perpetual — updates until {date}",
+  "@licensing.dialog.validityPerpetualUntil": {
+    "description": "Validity value for a perpetual license that includes updates until a given date. The em-style dash separates 'Perpetual' from the updates clause; keep a similar separator.",
+    "placeholders": {
+      "date": "the updates-cutoff date, already formatted for the user's locale (e.g. June 15, 2026)"
+    }
+  },
+
+  "licensing.dialog.validityPerpetual": "Perpetual",
+  "@licensing.dialog.validityPerpetual": {
+    "description": "Validity value for a perpetual license with no known updates-cutoff date."
+  },
+
+  "licensing.dialog.validityValidUntil": "Valid until {date}",
+  "@licensing.dialog.validityValidUntil": {
+    "description": "Validity value for a commercial subscription valid until a given date.",
+    "placeholders": {
+      "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
+    }
+  },
+
+  "licensing.dialog.validityActive": "Active",
+  "@licensing.dialog.validityActive": {
+    "description": "Validity value for a commercial license that is active with no specific expiry date shown."
+  },
+
+  "licensing.dialog.validityExpiredOn": "Expired on {date}",
+  "@licensing.dialog.validityExpiredOn": {
+    "description": "Validity value (in red) for a license that has expired.",
+    "placeholders": {
+      "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
+    }
+  },
+
+  "licensing.dialog.pendingHint": "We''ll verify with the server automatically within {days} days.",
+  "@licensing.dialog.pendingHint": {
+    "description": "Hint under the 'Not yet verified' validity row reassuring the user the app will re-check automatically soon. Always 2 or more days in practice, so plain plural is fine.",
+    "placeholders": {
+      "days": "the number of days until automatic re-verification (currently 7)"
+    }
+  },
+
+  "licensing.dialog.useDifferentKey": "Use a different key",
+  "@licensing.dialog.useDifferentKey": {
+    "description": "Secondary button in the license-details view that starts the deactivate/re-enter flow. Keep it short (a button)."
+  },
+
+  "licensing.dialog.close": "Close",
+  "@licensing.dialog.close": {
+    "description": "Primary button that closes the license dialog. Keep it short (a button)."
+  },
+
+  "licensing.dialog.resetConfirm": "This will deactivate your current license on this device. You can reactivate anytime with a valid key.",
+  "@licensing.dialog.resetConfirm": {
+    "description": "Confirmation copy shown before deactivating the current license. Reassures the user it's reversible."
+  },
+
+  "licensing.dialog.cancel": "Cancel",
+  "@licensing.dialog.cancel": {
+    "description": "Secondary button that backs out of an action in the license dialog (reset confirmation, key entry). Keep it short (a button)."
+  },
+
+  "licensing.dialog.continue": "Continue",
+  "@licensing.dialog.continue": {
+    "description": "Primary button confirming the license-deactivation step. Keep it short (a button)."
+  },
+
+  "licensing.dialog.enterPrompt": "Paste your license key from the email you received after purchase. Don''t have one yet? <getLicense>Get a license</getLicense>.",
+  "@licensing.dialog.enterPrompt": {
+    "description": "Instruction above the key-entry field telling the user where to find their key. <getLicense> wraps the inline link to the pricing page."
+  },
+
+  "licensing.dialog.inputPlaceholder": "Example: CMDR-ABCD-EFGH-1234",
+  "@licensing.dialog.inputPlaceholder": {
+    "description": "Placeholder text inside the license-key input showing the short-code format. 'CMDR-ABCD-EFGH-1234' is a format example and must NOT be translated; only the 'Example:' label is translatable."
+  },
+
+  "licensing.dialog.retryExhausted": "We''ve tried {count} times and it didn''t work. We''re sorry for the trouble. Please drop us a message at <supportEmail>{email}</supportEmail> and we''ll sort it out.",
+  "@licensing.dialog.retryExhausted": {
+    "description": "Help text shown after several failed activation attempts (3 or more) against a server-rejected key, apologizing and pointing to support. Warm and apologetic. <supportEmail> wraps the inline support-email link.",
+    "placeholders": {
+      "count": "how many times activation was attempted (always 3 or more here)",
+      "email": "the support email address (shown as the link text), e.g. hello@getcmdr.com"
+    }
+  },
+
+  "licensing.dialog.serverInvalidHelp": "If you believe this is a mistake, email us at <supportEmail>{email}</supportEmail> and we''ll sort it out.",
+  "@licensing.dialog.serverInvalidHelp": {
+    "description": "Help text shown after a server-rejected key (fewer than 3 attempts) inviting the user to contact support. <supportEmail> wraps the inline support-email link.",
+    "placeholders": {
+      "email": "the support email address (shown as the link text), e.g. hello@getcmdr.com"
+    }
+  },
+
+  "licensing.dialog.genericHelp": "If you need help, contact us at <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.genericHelp": {
+    "description": "Generic help text shown under an activation error inviting the user to contact support. <supportEmail> wraps the inline support-email link.",
+    "placeholders": {
+      "email": "the support email address (shown as the link text), e.g. hello@getcmdr.com"
+    }
+  },
+
+  "licensing.dialog.cancelButton": "Cancel",
+  "@licensing.dialog.cancelButton": {
+    "description": "Secondary button in the key-entry form that cancels and closes the dialog. Keep it short (a button)."
+  },
+
+  "licensing.dialog.checking": "Checking...",
+  "@licensing.dialog.checking": {
+    "description": "Primary-button label while re-checking a previously server-rejected key. A transient progress state with a trailing ellipsis."
+  },
+
+  "licensing.dialog.tryAgain": "Try again",
+  "@licensing.dialog.tryAgain": {
+    "description": "Primary-button label to retry activation after a failure. Keep it short (a button)."
+  },
+
+  "licensing.dialog.activating": "Activating...",
+  "@licensing.dialog.activating": {
+    "description": "Primary-button label while a license key is being activated. A transient progress state with a trailing ellipsis."
+  },
+
+  "licensing.dialog.activate": "Activate",
+  "@licensing.dialog.activate": {
+    "description": "Primary-button label that submits the entered license key for activation. Keep it short (a button)."
+  },
+
+  "licensing.dialog.activatedToast": "License activated. Thanks for your support! ❤️",
+  "@licensing.dialog.activatedToast": {
+    "description": "Success toast shown after activating a license when no organization name is known. Warm and grateful; keep the heart emoji."
+  },
+
+  "licensing.dialog.activatedToastNamed": "Welcome aboard, {org}! Thanks for your support. ❤️",
+  "@licensing.dialog.activatedToastNamed": {
+    "description": "Success toast shown after activating a license when an organization name is known. Warm and welcoming; keep the heart emoji.",
+    "placeholders": {
+      "org": "the licensed organization name"
+    }
+  },
+
+  "licensing.dialog.networkFallbackError": "Couldn''t verify your license with the server. Please try again later.",
+  "@licensing.dialog.networkFallbackError": {
+    "description": "Error shown when the server can't be reached and the license type doesn't allow an optimistic fallback. Conversational; never use the words 'error' or 'failed'."
+  },
+
+  "licensing.dialog.expiredOnError": "This license expired on {date}.",
+  "@licensing.dialog.expiredOnError": {
+    "description": "Inline error shown when the entered key is valid but the subscription has expired.",
+    "placeholders": {
+      "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
+    }
+  },
+
+  "licensing.dialog.expiredOnHelp": "You can renew your subscription or purchase a new license at getcmdr.com.",
+  "@licensing.dialog.expiredOnHelp": {
+    "description": "Help text under the expired-key error pointing to the website to renew or buy. 'getcmdr.com' is a domain and must NOT be translated."
+  },
+
+  "licensing.dialog.serverInvalidError": "We know this key but when we checked it with our payment provider, it didn''t recognize it. This can happen if the purchase was refunded or not cleared.",
+  "@licensing.dialog.serverInvalidError": {
+    "description": "Inline error shown when a key is cryptographically valid but the payment provider doesn't recognize the transaction (e.g. refunded). Conversational and non-blaming; never use the words 'error' or 'failed'."
+  },
+
+  "licensing.dialog.emptyKeyError": "Please enter a license key",
+  "@licensing.dialog.emptyKeyError": {
+    "description": "Inline error shown when the user tries to activate with an empty key field."
+  },
+
+  "licensing.dialog.mailtoSubject": "License key issue",
+  "@licensing.dialog.mailtoSubject": {
+    "description": "Prefilled subject line of the support email opened from the license dialog's contact links."
+  },
+
+  "licensing.dialog.mailtoBody": "Hi,\n\nI''m having trouble activating my license key:\n{key}\n\n",
+  "@licensing.dialog.mailtoBody": {
+    "description": "Prefilled body of the support email opened from the license dialog's contact links. Keep the literal newline escapes (\\n) for line breaks; {key} is filled in with the user's license key.",
+    "placeholders": {
+      "key": "the license key the user entered (or their stored short code)"
+    }
+  },
+
+  "licensing.error.badSignature": "This license key failed our signature verification, meaning that it doesn''t look like a valid key.",
+  "@licensing.error.badSignature": {
+    "description": "Activation-error message when the key fails Ed25519 signature verification. Paired with its help hint. Conversational; never use the words 'error' or 'failed' ('failed our signature verification' here describes the check result, kept from the original copy)."
+  },
+
+  "licensing.error.badSignatureHint": "Please double-check for typos and try pasting it again from your purchase email.",
+  "@licensing.error.badSignatureHint": {
+    "description": "Help hint paired with the bad-signature activation error, suggesting a re-paste from the purchase email."
+  },
+
+  "licensing.error.badFormat": "Our license key format is different from this.",
+  "@licensing.error.badFormat": {
+    "description": "Activation-error message when the entered text doesn't match any known key format. Paired with its help hint."
+  },
+
+  "licensing.error.badFormatHint": "License keys are either a short code (CMDR-XXXX-XXXX-XXXX) or a longer cryptographic key from your purchase email.",
+  "@licensing.error.badFormatHint": {
+    "description": "Help hint paired with the bad-format activation error, describing the two valid key shapes. 'CMDR-XXXX-XXXX-XXXX' is a format example and must NOT be translated."
+  },
+
+  "licensing.error.shortCodeNotFound": "This license looks good, but we looked hard and couldn''t find it in our database.",
+  "@licensing.error.shortCodeNotFound": {
+    "description": "Activation-error message when a well-formed short code isn't found server-side. Friendly and slightly apologetic. Paired with its help hint."
+  },
+
+  "licensing.error.shortCodeNotFoundHint": "Please verify that you pasted the correct key from your purchase email.",
+  "@licensing.error.shortCodeNotFoundHint": {
+    "description": "Help hint paired with the short-code-not-found error, asking the user to re-check the pasted key."
+  },
+
+  "licensing.error.network": "Ouch, we couldn''t reach the license server this time.",
+  "@licensing.error.network": {
+    "description": "Activation-error message when the license server is unreachable. Light, friendly tone ('Ouch'). Paired with its help hint; never use the words 'error' or 'failed'."
+  },
+
+  "licensing.error.networkHint": "Please check your internet connection and try again.",
+  "@licensing.error.networkHint": {
+    "description": "Help hint paired with the network activation error, suggesting a connection check and retry."
+  },
+
+  "licensing.error.server": "Hmm, the license server responded with something weird. We''re sorry about that.",
+  "@licensing.error.server": {
+    "description": "Activation-error message when the license server returns an unexpected response. Casual and apologetic ('Hmm'). Paired with its help hint."
+  },
+
+  "licensing.error.serverHint": "Please try again later.",
+  "@licensing.error.serverHint": {
+    "description": "Help hint paired with the server activation error, suggesting a later retry."
+  },
+
+  "licensing.error.generic": "Something went wrong when activating this key.",
+  "@licensing.error.generic": {
+    "description": "Fallback activation-error message for an unclassified failure. Conversational; never use the words 'error' or 'failed'."
+  },
+
+  "licensing.error.genericHint": "Please try again. If the problem persists, email us and we''ll help.",
+  "@licensing.error.genericHint": {
+    "description": "Help hint paired with the generic activation error, suggesting a retry and offering email support."
+  },
+
+  "licensing.section.title": "License",
+  "@licensing.section.title": {
+    "description": "Heading of the License section in the settings window."
+  },
+
+  "licensing.section.loading": "Loading...",
+  "@licensing.section.loading": {
+    "description": "Placeholder shown in the settings License section while the license info loads. A trailing-ellipsis loading state."
+  },
+
+  "licensing.section.labelType": "License type",
+  "@licensing.section.labelType": {
+    "description": "Row label in the settings License section for the license type."
+  },
+
+  "licensing.section.labelOrganization": "Organization",
+  "@licensing.section.labelOrganization": {
+    "description": "Row label in the settings License section for the licensed organization name."
+  },
+
+  "licensing.section.labelStatus": "Status",
+  "@licensing.section.labelStatus": {
+    "description": "Row label in the settings License section for the license status/validity."
+  },
+
+  "licensing.section.labelKey": "License key",
+  "@licensing.section.labelKey": {
+    "description": "Row label in the settings License section for the short license-key code."
+  },
+
+  "licensing.section.manageKey": "Manage license key",
+  "@licensing.section.manageKey": {
+    "description": "Button in the settings License section (shown when a license exists) that opens the license dialog. Keep it short (a button)."
+  },
+
+  "licensing.section.enterKey": "Enter license key",
+  "@licensing.section.enterKey": {
+    "description": "Button in the settings License section (shown when no license exists) that opens the key-entry dialog. Keep it short (a button)."
+  },
+
+  "licensing.section.getLicense": "Get a license",
+  "@licensing.section.getLicense": {
+    "description": "Button in the settings License section (shown when no license exists) that opens the pricing page. Keep it short (a button)."
+  },
+
+  "licensing.section.typePersonal": "Personal (free)",
+  "@licensing.section.typePersonal": {
+    "description": "License-type value in the settings License section for a free personal install. 'Personal' is a license tier name; keep the '(free)' parenthetical."
+  },
+
+  "licensing.section.typeCommercialPerpetual": "Commercial perpetual",
+  "@licensing.section.typeCommercialPerpetual": {
+    "description": "License-type value in the settings License section for a one-time perpetual commercial license. 'Commercial' is a license tier name."
+  },
+
+  "licensing.section.typeCommercialSubscription": "Commercial subscription",
+  "@licensing.section.typeCommercialSubscription": {
+    "description": "License-type value in the settings License section for a recurring commercial subscription. 'Commercial' is a license tier name."
+  },
+
+  "licensing.section.statusExpiredOn": "Expired on {date}",
+  "@licensing.section.statusExpiredOn": {
+    "description": "Status value (in red) in the settings License section for an expired license.",
+    "placeholders": {
+      "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
+    }
+  },
+
+  "licensing.section.statusUpdatesUntil": "Updates until {date}",
+  "@licensing.section.statusUpdatesUntil": {
+    "description": "Status value in the settings License section for a perpetual license with an updates cutoff.",
+    "placeholders": {
+      "date": "the updates-cutoff date, already formatted for the user's locale (e.g. June 15, 2026)"
+    }
+  },
+
+  "licensing.section.statusValidUntil": "Valid until {date}",
+  "@licensing.section.statusValidUntil": {
+    "description": "Status value in the settings License section for a subscription valid until a given date.",
+    "placeholders": {
+      "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
+    }
+  },
+
+  "licensing.section.statusActive": "Active",
+  "@licensing.section.statusActive": {
+    "description": "Status value in the settings License section for an active license with no specific date shown."
+  }
+}

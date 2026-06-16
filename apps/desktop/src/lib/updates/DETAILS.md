@@ -96,3 +96,11 @@ When a gate opens, the helper re-attempts the toast; if the download finished du
 - `@tauri-apps/plugin-process` `relaunch()`; `@tauri-apps/api/app` `getVersion()`.
 - `$lib/settings/settings-store` (`getSetting`, `onSpecificSettingChange`); `$lib/settings-store` (`loadSettings`,
   `saveSettings` for `isOnboarded`); `$lib/logging/logger` (`getAppLogger`).
+
+## i18n
+
+Updates copy lives in the `updates.*` catalog (`$lib/intl/messages/en/updates.json`), resolved via `tString()` / `t()`;
+`cmdr/no-raw-user-facing-string` is enforced on `lib/updates/`. `formatUpdateStatus()` (`update-status-text.ts`) returns
+catalog-resolved strings with `{next}` / `{prev}` / `{version}` interpolation per status; it's a plain `.ts` so the
+`t()` calls are snapshots (the component re-derives reactively, which is correct for this transient status). Runtime
+rules: [`$lib/intl/CLAUDE.md`](../intl/CLAUDE.md).

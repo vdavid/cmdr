@@ -46,6 +46,7 @@
     import { getSetting, setSetting } from '$lib/settings'
     import { getShowFunctionKeyBar } from '$lib/settings/reactive-settings.svelte'
     import { addToast } from '$lib/ui/toast'
+    import { tString } from '$lib/intl/messages.svelte'
     import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
     import { startGlobalShortcutBridge } from '$lib/downloads/global-shortcut-bridge.svelte'
     import { startLowDiskSpaceEventBridge } from '$lib/low-disk-space/event-bridge.svelte'
@@ -304,9 +305,7 @@
     function maybeFireUpgradeNudge(): void {
         if (getAppMode() === 'e2e') return
         if (getSetting('onboarding.upgradeNudgeShown')) return
-        const message = isMacOS()
-            ? "We've added new onboarding options. Open Cmdr > Onboarding… to review them."
-            : "We've added new onboarding options. Open the command palette and run Onboarding… to review them."
+        const message = isMacOS() ? tString('main.upgradeNudge.mac') : tString('main.upgradeNudge.other')
         addToast(message, { level: 'info' })
         setSetting('onboarding.upgradeNudgeShown', true)
     }
@@ -716,12 +715,14 @@
                  (mousedown target) — without it on the span, mousedowns on
                  the title text don't initiate a window drag. -->
             <span class="title-text" data-tauri-drag-region>
+                <!-- eslint-disable-next-line cmdr/no-raw-user-facing-string -- dev/E2E-only title-bar markers, not shipped user copy; they only render under non-default app modes. -->
                 {#if appMode === 'dev'}DEV MODE - {windowTitle} - DEV MODE{:else if appMode === 'e2e'}E2E MODE - {windowTitle} - E2E MODE{:else}{windowTitle}{/if}
             </span>
         </header>
     {/if}
 
     <main class="main-content">
+        <!-- eslint-disable-next-line cmdr/no-raw-user-facing-string -- "Cmdr" is the brand name, never translated (style guide); a screen-reader-only app heading. -->
         <h1 class="sr-only">Cmdr</h1>
         {#if showAboutWindow}
             <AboutWindow onClose={handleAboutClose} />

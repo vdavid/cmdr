@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { _setLocaleForTests } from '$lib/intl/locale'
 import {
   generateDeleteTitle,
   abbreviatePath,
@@ -7,6 +8,15 @@ import {
   MAX_VISIBLE_ITEMS,
   type DeleteSourceItem,
 } from './delete-dialog-utils'
+
+// Pin the base locale so the catalog-resolved copy these helpers return is the
+// deterministic en parity net (these assertions ARE the delete-dialog parity net).
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
 
 function makeItem(overrides: Partial<DeleteSourceItem> = {}): DeleteSourceItem {
   return { name: 'file.txt', size: 1024, isDirectory: false, isSymlink: false, ...overrides }

@@ -13,6 +13,7 @@
    */
   import Spinner from '$lib/ui/Spinner.svelte'
   import { clampZoom, nextClickZoom, type ImageViewMode } from './media-view'
+  import { tString } from '$lib/intl/messages.svelte'
 
   type Props = {
     /** `cmdr-media://localhost/<token>` URL for the image bytes. */
@@ -178,12 +179,12 @@
   {#if loadState === 'loading'}
     <div class="media-status" role="status">
       <Spinner size="lg" />
-      <span class="sr-only">Loading image</span>
+      <span class="sr-only">{tString('viewer.image.loading')}</span>
     </div>
   {/if}
   {#if loadState === 'error'}
     <div class="media-status media-error" role="alert">
-      <p>Sorry, we couldn't show this image. The file may be damaged or in a format we can't display.</p>
+      <p>{tString('viewer.image.error')}</p>
     </div>
   {/if}
   <!--

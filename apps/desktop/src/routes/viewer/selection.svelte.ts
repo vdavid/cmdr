@@ -18,6 +18,8 @@
  * lastLineLength }` so the last character is included.
  */
 
+import { tString } from '$lib/intl/messages.svelte'
+
 export interface LineOffset {
   /** Zero-based line number. */
   line: number
@@ -184,7 +186,7 @@ export function describeSelectionForAt(sel: Selection | null, getLineLength: (li
 
   const lineSpan = end.line - start.line
   if (lineSpan > MAX_ANNOUNCE_LINES) {
-    return `Selected from line ${String(start.line + 1)} to the end of the file`
+    return tString('viewer.selection.toEndOfFile', { line: String(start.line + 1) })
   }
 
   let totalChars: number
@@ -201,9 +203,16 @@ export function describeSelectionForAt(sel: Selection | null, getLineLength: (li
   }
 
   if (start.line === end.line) {
-    return `Selected ${String(totalChars)} characters on line ${String(start.line + 1)}`
+    return tString('viewer.selection.singleLine', {
+      chars: String(totalChars),
+      line: String(start.line + 1),
+    })
   }
-  return `Selected lines ${String(start.line + 1)} to ${String(end.line + 1)}, ${String(totalChars)} characters`
+  return tString('viewer.selection.multiLine', {
+    startLine: String(start.line + 1),
+    endLine: String(end.line + 1),
+    chars: String(totalChars),
+  })
 }
 
 /**

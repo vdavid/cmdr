@@ -16,6 +16,8 @@ import {
   type UnlistenFn,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
+import type { MessageKey } from '$lib/intl/keys.gen'
 
 // Scan state
 let scanning = $state(false)
@@ -139,21 +141,18 @@ function resetReplay() {
   replayStartedAt = 0
 }
 
-const rescanReasonToMessage: Record<string, string> = {
-  stale_index:
-    "Your drive index is outdated. It looks like the app hasn't run for a while. Running a fresh scan to catch up.",
-  journal_gap: "The system's file change log doesn't go back far enough. Running a fresh scan to rebuild the index.",
-  replay_overflow:
-    'A lot of file changes happened since last run. Running a fresh scan instead of replaying them one by one.',
-  too_many_subdir_rescans:
-    'Many directories changed significantly since last run. Running a fresh scan to get everything up to date.',
-  watcher_start_failed: "Couldn't start the file change watcher. Running a fresh scan to get the index up to date.",
-  reconciler_buffer_overflow:
-    'Heavy filesystem activity overwhelmed the event buffer. Running a fresh scan to stay accurate.',
-  incomplete_previous_scan:
-    "The previous scan didn't finish (the app may have been closed). Restarting the scan from scratch.",
-  watcher_channel_overflow:
-    'A burst of filesystem activity overflowed the watcher channel. Running a fresh scan to stay accurate.',
+// Maps the backend's typed rescan-reason discriminator to its catalog message
+// key (resolved via `tString` at toast time). Branching on the typed `reason`
+// enum, not on message wording — copy lives in `messages/en/indexing.json`.
+const rescanReasonToMessageKey: Record<string, MessageKey> = {
+  stale_index: 'indexing.rescan.staleIndex',
+  journal_gap: 'indexing.rescan.journalGap',
+  replay_overflow: 'indexing.rescan.replayOverflow',
+  too_many_subdir_rescans: 'indexing.rescan.tooManySubdirRescans',
+  watcher_start_failed: 'indexing.rescan.watcherStartFailed',
+  reconciler_buffer_overflow: 'indexing.rescan.reconcilerBufferOverflow',
+  incomplete_previous_scan: 'indexing.rescan.incompletePreviousScan',
+  watcher_channel_overflow: 'indexing.rescan.watcherChannelOverflow',
 }
 
 // Event listener cleanup handles
@@ -209,8 +208,8 @@ export async function initIndexState(): Promise<void> {
   unlistenHandles.push(unlistenAggComplete)
 
   const unlistenRescan = await onIndexRescanNotification((payload) => {
-    const message = rescanReasonToMessage[payload.reason] ?? 'Running a fresh drive scan to keep the index accurate.'
-    addToast(message, { level: 'info', timeoutMs: 8000, id: 'index-rescan' })
+    const messageKey = rescanReasonToMessageKey[payload.reason] ?? 'indexing.rescan.fallback'
+    addToast(tString(messageKey), { level: 'info', timeoutMs: 8000, id: 'index-rescan' })
   })
   unlistenHandles.push(unlistenRescan)
 

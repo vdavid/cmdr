@@ -1,0 +1,36 @@
+{
+  "lowDiskSpace.toast.message": "Your startup disk is running low on space: {freeText} free ({percentText}%).",
+  "@lowDiskSpace.toast.message": {
+    "description": "Body of the persistent in-app warning toast when the startup (boot) disk is low on free space, e.g. 'Your startup disk is running low on space: 4.2 GB free (3.1%).'. 'startup disk' is the macOS term for the boot volume.",
+    "placeholders": {
+      "freeText": "amount of free space, already formatted with its unit (e.g. 4.2 GB)",
+      "percentText": "free space as a percentage, already formatted to one decimal (e.g. 3.1)"
+    },
+    "screenshot": "low-disk-space-toast.png"
+  },
+
+  "lowDiskSpace.toast.disable": "Disable these notifications",
+  "@lowDiskSpace.toast.disable": {
+    "description": "Button on the low-disk-space warning toast that turns the warning off and opens its settings. A short button label.",
+    "screenshot": "low-disk-space-toast.png"
+  },
+
+  "lowDiskSpace.toast.closeTooltip": "Dismiss",
+  "@lowDiskSpace.toast.closeTooltip": {
+    "description": "Tooltip on the small close (x) button of the low-disk-space warning toast. A short verb."
+  },
+
+  "lowDiskSpace.notification.title": "Low disk space",
+  "@lowDiskSpace.notification.title": {
+    "description": "Title of the macOS system notification warning that the startup disk is low on space. A short headline."
+  },
+
+  "lowDiskSpace.notification.body": "{freeText} free ({percentText}%) on your startup disk.",
+  "@lowDiskSpace.notification.body": {
+    "description": "Body of the macOS system notification warning of low disk space, e.g. '4.2 GB free (3.1%) on your startup disk.'. 'startup disk' is the macOS term for the boot volume.",
+    "placeholders": {
+      "freeText": "amount of free space, already formatted with its unit (e.g. 4.2 GB)",
+      "percentText": "free space as a percentage, already formatted to one decimal (e.g. 3.1)"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import AiToastContent from './AiToastContent.svelte'
 import { getAiState, markDownloadToastDismissed } from './ai-state.svelte'
 import { addToast, dismissToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 
 export function initAiToastSync(): void {
   $effect(() => {
@@ -21,7 +22,7 @@ export function initAiToastSync(): void {
       addToast(AiToastContent, {
         id: 'ai',
         dismissal: 'persistent',
-        closeTooltip: 'Close this notification — the download will continue in the background',
+        closeTooltip: tString('ai.toast.downloadCloseTooltip'),
         onDismiss: markDownloadToastDismissed,
       })
       return

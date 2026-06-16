@@ -5,6 +5,7 @@
     import { sendCrashReport, dismissCrashReport } from '$lib/tauri-commands'
     import { getSetting, setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
+    import { t, tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('crashReportDialog')
 
@@ -81,34 +82,34 @@
     ariaDescribedby="crash-report-body"
     containerStyle="width: 440px"
 >
-    {#snippet title()}Send crash report?{/snippet}
+    {#snippet title()}{tString('crashReporter.dialog.title')}{/snippet}
 
     <div class="body">
         <p id="crash-report-body" class="description">
-            Cmdr quit unexpectedly last time. Here's a crash report with details that can help fix this.
+            {tString('crashReporter.dialog.body')}
         </p>
         <p class="description privacy-note">
-            It includes the app version, macOS version, and which part of the code crashed. No file names or personal
-            data.
+            {tString('crashReporter.dialog.privacyNote')}
         </p>
 
         {#if report.shortId}
             <p class="description short-id-line">
-                Report ID: <code class="short-id">{report.shortId}</code>
-                <span class="short-id-help">Mention this if you reach out about the issue.</span>
+                {tString('crashReporter.dialog.reportIdLabel')}
+                <code class="short-id">{report.shortId}</code>
+                <span class="short-id-help">{tString('crashReporter.dialog.reportIdHelp')}</span>
             </p>
         {/if}
 
         <!-- Expandable details -->
         <button class="details-toggle" onclick={() => (detailsExpanded = !detailsExpanded)}>
             <span class="toggle-arrow" class:expanded={detailsExpanded}>&#x25B8;</span>
-            Show report details
+            {tString('crashReporter.dialog.showDetails')}
         </button>
 
         {#if detailsExpanded}
             <div class="details-container">
                 <button class="copy-button" onclick={() => void handleCopy()}>
-                    {copied ? 'Copied' : 'Copy'}
+                    {copied ? tString('crashReporter.dialog.copied') : tString('crashReporter.dialog.copy')}
                 </button>
                 <pre class="details-json" style="user-select: text">{reportJson}</pre>
             </div>
@@ -117,22 +118,24 @@
         <!-- Always send checkbox -->
         <label class="always-send">
             <input type="checkbox" bind:checked={alwaysSend} />
-            <span>Always send crash reports</span>
+            <span>{tString('crashReporter.dialog.alwaysSend')}</span>
         </label>
 
         <!-- Attach-email checkbox, shown only when a beta contact email is on file -->
         {#if contactEmail}
             <label class="always-send">
                 <input type="checkbox" bind:checked={attachEmail} />
-                <span>Attach my email ({contactEmail}) so we can reply</span>
+                <span>{t('crashReporter.dialog.attachEmail', { email: contactEmail })}</span>
             </label>
         {/if}
 
         <!-- Actions -->
         <div class="button-row">
-            <Button variant="secondary" onclick={handleDismiss} disabled={sending}>Dismiss</Button>
+            <Button variant="secondary" onclick={handleDismiss} disabled={sending}
+                >{tString('crashReporter.dialog.dismiss')}</Button
+            >
             <Button variant="primary" onclick={() => void handleSend()} disabled={sending}>
-                {sending ? 'Sending...' : 'Send report'}
+                {sending ? tString('crashReporter.dialog.sending') : tString('crashReporter.dialog.send')}
             </Button>
         </div>
     </div>

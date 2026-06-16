@@ -21,6 +21,9 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import type { Snippet } from 'svelte'
 
     /**
      * Step 2: AI provider picker.
@@ -192,7 +195,7 @@
         void advanceBusy
         setFooterOverride([
             {
-                label: 'Next',
+                label: tString('onboarding.wizard.next'),
                 variant: 'primary' as const,
                 disabled: advanceBusy,
                 onclick: () => void handleGoToBeta(),
@@ -211,38 +214,40 @@
         nextStep()
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Banner copy. See `lib/onboarding/CLAUDE.md` § "Step 2 (AI provider)" for the three FDA-outcome modes.
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    const bannerTitleByMode = {
-        granted: 'Full disk access granted',
-        denied: 'No full disk access',
-        stuck: "Cmdr doesn't seem to have full disk access yet",
-        linux: '',
-    } as const
-
-    const localTooltip = 'Local LLM requires Apple Silicon. Cloud works on Intel.'
+    // Banner copy lives in the catalog (`onboarding.stepAi.bannerTitle.*` / `bannerBody.*`);
+    // see `lib/onboarding/CLAUDE.md` § "Step 2 (AI provider)" for the three FDA-outcome modes.
+    const localTooltip = $derived(tString('onboarding.stepAi.localTooltip'))
 </script>
+
+{#snippet em(children: Snippet)}<em>{@render children()}</em>{/snippet}
+{#snippet code(children: Snippet)}<code>{@render children()}</code>{/snippet}
+{#snippet chip(children: Snippet)}<ShortcutChip commandId="selection.selectFiles" clickable={false} />{@render children()}{/snippet}
+{#snippet settingsLink(children: Snippet)}<LinkButton
+        onclick={() => {
+            void openPrivacySettings().catch((error: unknown) => {
+                log.warn('openPrivacySettings() failed: {error}', { error })
+            })
+        }}>{@render children()}</LinkButton
+    >{/snippet}
 
 <OnboardingStepShell>
     {#if onboardingState.stepTwoBanner === 'granted'}
         <section class="banner banner-ok" role="status">
             <span class="banner-icon"><Icon name="shield-check" size={20} /></span>
             <div class="banner-body">
-                <p class="banner-title">{bannerTitleByMode.granted}</p>
-                <p>Thanks for granting full disk access! Now, the app can access your disk. Great!</p>
+                <p class="banner-title">{tString('onboarding.stepAi.bannerTitle.granted')}</p>
+                <p>{tString('onboarding.stepAi.bannerBody.granted')}</p>
             </div>
         </section>
     {:else if onboardingState.stepTwoBanner === 'denied'}
         <section class="banner banner-info" role="status">
             <span class="banner-icon"><Icon name="shield-off" size={20} /></span>
             <div class="banner-body">
-                <p class="banner-title">{bannerTitleByMode.denied}</p>
+                <p class="banner-title">{tString('onboarding.stepAi.bannerTitle.denied')}</p>
                 <p>
-                    You chose not to enable full disk access. We respect that. You'll then shortly get a few permission
-                    requests from macOS for Cmdr to access your Desktop, Downloads, and similar folders. Accept or reject
-                    these at will. You can change all of this later in your {systemStrings.systemSettings}.
+                    {tString('onboarding.stepAi.bannerBody.denied', {
+                        systemSettings: systemStrings.systemSettings,
+                    })}
                 </p>
             </div>
         </section>
@@ -250,67 +255,55 @@
         <section class="banner banner-warn" role="status">
             <span class="banner-icon"><Icon name="triangle-alert" size={20} /></span>
             <div class="banner-body">
-                <p class="banner-title">{bannerTitleByMode.stuck}</p>
+                <p class="banner-title">{tString('onboarding.stepAi.bannerTitle.stuck')}</p>
                 <p>
-                    You said you wanted to enable full disk access, but Cmdr doesn't seem to have gotten it. You might
-                    need to restart the app (do it now, we'll continue from here!), or go to your
-                    <LinkButton
-                        onclick={() => {
-                            void openPrivacySettings().catch((error: unknown) => {
-                                log.warn('openPrivacySettings() failed: {error}', { error })
-                            })
-                        }}
-                    >
-                        {systemStrings.systemSettings} &gt; Privacy &amp; Security &gt; Full Disk Access
-                    </LinkButton>
-                    and find Cmdr, or manually add it with the little "+" button at the bottom.
+                    <Trans
+                        key="onboarding.stepAi.bannerBody.stuck"
+                        snippets={{ settingsLink }}
+                        params={{ systemSettings: systemStrings.systemSettings }}
+                    />
                 </p>
             </div>
         </section>
     {/if}
 
     {#if onboardingState.stepTwoBanner === 'linux'}
-        <h2 class="step-title">Welcome to Cmdr!</h2>
-        <p class="step-subtitle">Let's set up AI.</p>
+        <h2 class="step-title">{tString('onboarding.stepAi.welcomeLinux.title')}</h2>
+        <p class="step-subtitle">{tString('onboarding.stepAi.welcomeLinux.subtitle')}</p>
     {:else}
-        <h2 class="step-title">Now, let's talk AI</h2>
+        <h2 class="step-title">{tString('onboarding.stepAi.title')}</h2>
     {/if}
 
-    <p>
-        Cmdr has a bunch of AI features that you <em>may</em> want and may not want. AI is a controversial topic these
-        days.
-    </p>
+    <p><Trans key="onboarding.stepAi.intro" snippets={{ em }} /></p>
 
-    <p>Here is how you do common actions with and without AI:</p>
+    <p>{tString('onboarding.stepAi.comparisonIntro')}</p>
 
     <table class="comparison">
         <thead>
             <tr>
-                <th scope="col">Feature</th>
-                <th scope="col">Without AI</th>
+                <th scope="col">{tString('onboarding.stepAi.table.colFeature')}</th>
+                <th scope="col">{tString('onboarding.stepAi.table.colWithout')}</th>
                 <th scope="col" class="with-ai">
                     <span class="with-ai-head">
                         <Icon name="sparkles" size={14} />
-                        With AI
+                        {tString('onboarding.stepAi.table.colWith')}
                     </span>
                 </th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <th scope="row">Search</th>
-                <td>You type something like <code>*fish*.ppt</code>, and select the "after 1st of this month" filter.</td>
-                <td class="with-ai">You say "my recent fish-related presentations", agent sets your filters.</td>
+                <th scope="row">{tString('onboarding.stepAi.table.rowSearch')}</th>
+                <td><Trans key="onboarding.stepAi.table.searchWithout" snippets={{ code }} /></td>
+                <td class="with-ai">{tString('onboarding.stepAi.table.searchWith')}</td>
             </tr>
             <tr>
-                <th scope="row">Mass-rename</th>
-                <td>You use the batch rename UI to manually set the rename pattern, review and apply.</td>
-                <td class="with-ai">
-                    You say "add ISO date prefix", agent sets your rename pattern, you review and apply at will.
-                </td>
+                <th scope="row">{tString('onboarding.stepAi.table.rowRename')}</th>
+                <td>{tString('onboarding.stepAi.table.renameWithout')}</td>
+                <td class="with-ai">{tString('onboarding.stepAi.table.renameWith')}</td>
             </tr>
             <tr>
-                <th scope="row">Select</th>
+                <th scope="row">{tString('onboarding.stepAi.table.rowSelect')}</th>
                 <td>
                     <!-- The chip reads the real `selection.selectFiles` binding (bare `+`),
                          not a hardcoded combo. Non-clickable: this is onboarding prose, and
@@ -319,24 +312,22 @@
                          when the command is unbound, so the sentence falls back to naming the
                          action instead of leaving a gap where the key would sit. -->
                     {#if selectFilesShortcut}
-                        You press the <ShortcutChip commandId="selection.selectFiles" clickable={false} /> key and type
-                        something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.
+                        <Trans key="onboarding.stepAi.table.selectWithoutBound" snippets={{ chip, code }} />
                     {:else}
-                        You open "Select files…" and type something like
-                        <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.
+                        <Trans key="onboarding.stepAi.table.selectWithoutUnbound" snippets={{ code }} />
                     {/if}
                 </td>
-                <td class="with-ai">You say "select all image files", agent suggests a selection, you review and apply at will.</td>
+                <td class="with-ai">{tString('onboarding.stepAi.table.selectWith')}</td>
             </tr>
         </tbody>
     </table>
 
     {#if showResumeCue}
-        <p class="resume-cue">You picked this last time. Confirm or change below.</p>
+        <p class="resume-cue">{tString('onboarding.stepAi.resumeCue')}</p>
     {/if}
 
-    <fieldset class="choices" role="radiogroup" aria-label="AI choice">
-        <legend class="sr-only">Based on this, do you want AI or not?</legend>
+    <fieldset class="choices" role="radiogroup" aria-label={tString('onboarding.stepAi.choiceGroupAria')}>
+        <legend class="sr-only">{tString('onboarding.stepAi.choiceLegend')}</legend>
 
         <label class="choice" class:active={choice === 'cloud'}>
             <input
@@ -349,18 +340,16 @@
                 }}
             />
             <span class="choice-label">
-                <strong>Yes, I want AI</strong>
-                <span class="choice-recommended">(recommended)</span>
+                <strong>{tString('onboarding.stepAi.cloud.label')}</strong>
+                <span class="choice-recommended">{tString('onboarding.stepAi.cloud.recommended')}</span>
             </span>
-            <span class="choice-help">
-                Use any cloud provider with your own API key. Fast, high-quality models. Pick a provider below.
-            </span>
+            <span class="choice-help">{tString('onboarding.stepAi.cloud.help')}</span>
         </label>
 
         {#if choice === 'cloud'}
             <div class="cloud-grid">
                 <div class="cloud-grid-picker">
-                    <h3 class="picker-title">Select a provider</h3>
+                    <h3 class="picker-title">{tString('onboarding.stepAi.cloud.pickerTitle')}</h3>
                     <CloudProviderPicker
                         value={cloudProviderId}
                         onChange={(id: string) => {
@@ -394,20 +383,13 @@
                 class="choice-label"
                 use:tooltip={!localAiSupported ? localTooltip : undefined}
             >
-                <strong>Yes, I want AI, but I want to be super private</strong>
+                <strong>{tString('onboarding.stepAi.local.label')}</strong>
             </span>
-            <span class="choice-help">
-                A bit dumber model that takes up about 2 GB of space and a bit of CPU at every use. Still an okay
-                solution. No data leaves your machine. Cmdr tries to deliver updates for the best small local model
-                available.
-            </span>
+            <span class="choice-help">{tString('onboarding.stepAi.local.help')}</span>
         </label>
 
         {#if choice === 'local' && didStartLocalDownload}
-            <p class="local-note">
-                Started downloading the local model in the background. You can finish onboarding now; the toast in the
-                corner will keep you posted.
-            </p>
+            <p class="local-note">{tString('onboarding.stepAi.local.note')}</p>
         {/if}
 
         <label class="choice" class:active={choice === 'off'}>
@@ -420,10 +402,8 @@
                     handleChoiceChange('off')
                 }}
             />
-            <span class="choice-label"><strong>Thanks but no thanks, no AI for me</strong></span>
-            <span class="choice-help">
-                Cmdr works fully without AI. You can turn it on later in Settings.
-            </span>
+            <span class="choice-label"><strong>{tString('onboarding.stepAi.off.label')}</strong></span>
+            <span class="choice-help">{tString('onboarding.stepAi.off.help')}</span>
         </label>
     </fieldset>
 </OnboardingStepShell>

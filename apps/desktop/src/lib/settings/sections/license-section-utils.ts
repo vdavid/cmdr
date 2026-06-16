@@ -1,10 +1,12 @@
 import type { LicenseInfo, LicenseStatus } from '$lib/tauri-commands'
+import { tString } from '$lib/intl/messages.svelte'
 
 export function getLicenseTypeLabel(licenseInfo: LicenseInfo | null): string {
-  if (!licenseInfo) return 'Personal (free)'
-  if (licenseInfo.licenseType === 'commercial_perpetual') return 'Commercial perpetual'
-  if (licenseInfo.licenseType === 'commercial_subscription') return 'Commercial subscription'
-  return 'Personal (free)'
+  if (!licenseInfo) return tString('licensing.section.typePersonal')
+  if (licenseInfo.licenseType === 'commercial_perpetual') return tString('licensing.section.typeCommercialPerpetual')
+  if (licenseInfo.licenseType === 'commercial_subscription')
+    return tString('licensing.section.typeCommercialSubscription')
+  return tString('licensing.section.typePersonal')
 }
 
 export function formatLicenseDate(dateStr: string | null | undefined): string {
@@ -22,12 +24,17 @@ export function formatLicenseDate(dateStr: string | null | undefined): string {
 
 export function getStatusText(licenseStatus: LicenseStatus | null): string | null {
   if (!licenseStatus) return null
-  if (licenseStatus.type === 'expired') return `Expired on ${formatLicenseDate(licenseStatus.expiredAt)}`
+  if (licenseStatus.type === 'expired')
+    return tString('licensing.section.statusExpiredOn', { date: formatLicenseDate(licenseStatus.expiredAt) })
   if (licenseStatus.type === 'commercial') {
     if (licenseStatus.licenseType === 'commercial_perpetual') {
-      return licenseStatus.expiresAt ? `Updates until ${formatLicenseDate(licenseStatus.expiresAt)}` : 'Active'
+      return licenseStatus.expiresAt
+        ? tString('licensing.section.statusUpdatesUntil', { date: formatLicenseDate(licenseStatus.expiresAt) })
+        : tString('licensing.section.statusActive')
     }
-    return licenseStatus.expiresAt ? `Valid until ${formatLicenseDate(licenseStatus.expiresAt)}` : 'Active'
+    return licenseStatus.expiresAt
+      ? tString('licensing.section.statusValidUntil', { date: formatLicenseDate(licenseStatus.expiresAt) })
+      : tString('licensing.section.statusActive')
   }
   return null
 }

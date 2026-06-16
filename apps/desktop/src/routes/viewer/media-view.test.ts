@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect } from 'vitest'
+import { afterEach, beforeAll, afterAll, describe, it, expect } from 'vitest'
 
 import {
   mediaUrl,
@@ -12,6 +12,15 @@ import {
   MEDIA_MAX_ZOOM,
 } from './media-view'
 import { _setLocaleForTests } from '$lib/intl/locale'
+
+// The label helpers resolve through the en catalog; pin the locale so the
+// expected English strings are deterministic.
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
 
 describe('mediaUrl', () => {
   it('builds the cmdr-media URL from a token', () => {

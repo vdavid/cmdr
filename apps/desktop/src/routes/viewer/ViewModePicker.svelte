@@ -14,6 +14,7 @@
   import Select, { type SelectItem } from '$lib/ui/Select.svelte'
   import type { ViewerContentKind } from '$lib/ipc/bindings'
   import { mediaKindLabel, isMediaKind, viewAsMediaLabel } from './media-view'
+  import { tString } from '$lib/intl/messages.svelte'
 
   // The switch items use sentinel values distinct from the three content kinds.
   const VIEW_AS_TEXT = 'viewAsText'
@@ -42,14 +43,14 @@
     isMediaKind(kind)
       ? [
           { value: kind, label: mediaKindLabel(kind) },
-          { value: VIEW_AS_TEXT, label: 'View as text' },
+          { value: VIEW_AS_TEXT, label: tString('viewer.toolbar.viewMode.viewAsText') },
         ]
       : isTextOfMedia && lastMediaKind !== null
         ? [
-            { value: 'text', label: 'Text' },
+            { value: 'text', label: tString('viewer.toolbar.viewMode.text') },
             { value: VIEW_AS_MEDIA, label: viewAsMediaLabel(lastMediaKind) },
           ]
-        : [{ value: 'text', label: 'Text' }],
+        : [{ value: 'text', label: tString('viewer.toolbar.viewMode.text') }],
   )
 
   // A genuine text file has only one option, so the picker is inert (matches the
@@ -63,4 +64,4 @@
   }
 </script>
 
-<Select {items} value={kind} {disabled} ariaLabel="View mode" onChange={handleChange} />
+<Select {items} value={kind} {disabled} ariaLabel={tString('viewer.toolbar.viewMode.ariaLabel')} onChange={handleChange} />

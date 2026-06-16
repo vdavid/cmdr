@@ -1,0 +1,217 @@
+{
+  "downloads.toast.downloaded": "Downloaded <file>{fileName}</file>",
+  "@downloads.toast.downloaded": {
+    "description": "Title of the in-app toast that appears when Cmdr detects a new file in the Downloads folder, e.g. 'Downloaded report.pdf'. <file> wraps the filename, shown in a monospace style. The file size may be shown separately after it.",
+    "placeholders": {
+      "fileName": "the downloaded file's name (e.g. report.pdf)"
+    },
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.toast.inSubdir": "in {subdir}",
+  "@downloads.toast.inSubdir": {
+    "description": "Small line under the download toast title naming the subfolder a file landed in, e.g. 'in Downloads/Chrome/'. Only shown when the file is in a subfolder of Downloads.",
+    "placeholders": {
+      "subdir": "the folder path relative to Downloads, with a trailing slash (e.g. Downloads/Chrome/)"
+    },
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.toast.learnIntro": "Something cool to learn about jumping to downloads",
+  "@downloads.toast.learnIntro": {
+    "description": "Friendly lead-in heading above the keyboard-shortcut tips in the expanded download toast. Upbeat, teaching tone.",
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.toast.inAppHint": "In-app: Press <chip>{key}</chip> to jump here",
+  "@downloads.toast.inAppHint": {
+    "description": "Tip in the download toast teaching the in-app shortcut to jump to the latest download. <chip> wraps the shortcut key, shown as a styled key cap; do not translate the key glyphs themselves. 'In-app' means while Cmdr is the active app.",
+    "placeholders": {
+      "key": "the shortcut keys to show in the chip (e.g. ⌘J)"
+    },
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.toast.globalHint": "In <em>any</em> app (global shortcut), press <chip>{key}</chip>",
+  "@downloads.toast.globalHint": {
+    "description": "Tip in the download toast teaching the system-wide (global) shortcut that jumps to the latest download from any app. <em> emphasizes 'any'; <chip> wraps the shortcut key as a styled key cap (don't translate the key glyphs). 'global shortcut' is the macOS term for a system-wide hotkey.",
+    "placeholders": {
+      "key": "the shortcut keys to show in the chip (e.g. ⌃⌥⌘J)"
+    },
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.toast.summaryBoth": "Jump with <inApp>{inAppKey}</inApp> in-app, <global>{globalKey}</global> globally.",
+  "@downloads.toast.summaryBoth": {
+    "description": "One-line summary in the collapsed download toast when both shortcuts are set: 'Jump with X in-app, Y globally.' <inApp> and <global> wrap the two shortcut key caps (don't translate the key glyphs). 'in-app' = while Cmdr is active; 'globally' = from any app.",
+    "placeholders": {
+      "inAppKey": "the in-app shortcut keys (e.g. ⌘J)",
+      "globalKey": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
+    },
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.toast.summaryInApp": "Jump with <inApp>{inAppKey}</inApp> in-app.",
+  "@downloads.toast.summaryInApp": {
+    "description": "One-line summary in the collapsed download toast when only the in-app shortcut is set. <inApp> wraps the shortcut key cap (don't translate the key glyphs). 'in-app' means while Cmdr is the active app.",
+    "placeholders": {
+      "inAppKey": "the in-app shortcut keys (e.g. ⌘J)"
+    },
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.toast.summaryGlobal": "Jump with <global>{globalKey}</global> globally.",
+  "@downloads.toast.summaryGlobal": {
+    "description": "One-line summary in the collapsed download toast when only the system-wide shortcut is set. <global> wraps the shortcut key cap (don't translate the key glyphs). 'globally' means from any app.",
+    "placeholders": {
+      "globalKey": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
+    },
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.toast.expandTip": "Show the shortcut tip",
+  "@downloads.toast.expandTip": {
+    "description": "Accessibility label and tooltip for the chevron button that expands the collapsed download toast back to its full shortcut tip. A short action phrase."
+  },
+
+  "downloads.toast.collapseTip": "Make this notification more compact",
+  "@downloads.toast.collapseTip": {
+    "description": "Accessibility label and tooltip for the chevron button that collapses the expanded download toast to a compact one-liner. A short action phrase."
+  },
+
+  "downloads.toast.stopShowing": "Stop showing these",
+  "@downloads.toast.stopShowing": {
+    "description": "Button on the download toast that turns these download notifications off and opens their settings. A short button label.",
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.toast.jumpToFile": "Jump to file",
+  "@downloads.toast.jumpToFile": {
+    "description": "Primary button on the download toast that reveals the downloaded file in Cmdr. A short button label.",
+    "screenshot": "download-toast.png"
+  },
+
+  "downloads.notification.title": "Downloaded {fileName}",
+  "@downloads.notification.title": {
+    "description": "Title of the macOS system notification when Cmdr detects a new download, e.g. 'Downloaded report.pdf'.",
+    "placeholders": {
+      "fileName": "the downloaded file's name (e.g. report.pdf)"
+    }
+  },
+
+  "downloads.empty.message": "Your Downloads folder is empty. Go there anyway?",
+  "@downloads.empty.message": {
+    "description": "Info toast shown when the user asks to jump to their latest download but no eligible download was found. Offers to open the Downloads folder anyway."
+  },
+
+  "downloads.empty.dismiss": "Dismiss",
+  "@downloads.empty.dismiss": {
+    "description": "Button on the empty-downloads toast that closes it without doing anything. A short verb."
+  },
+
+  "downloads.empty.goToDownloads": "Go to Downloads",
+  "@downloads.empty.goToDownloads": {
+    "description": "Primary button on the empty-downloads toast that opens the Downloads folder. 'Downloads' is the folder name; keep it capitalized."
+  },
+
+  "downloads.fda.message": "Cmdr needs Full Disk Access to watch your Downloads folder.",
+  "@downloads.fda.message": {
+    "description": "Info toast shown when jumping to the latest download fails because Cmdr lacks Full Disk Access. 'Full Disk Access' is the exact macOS permission name; keep it as-is.",
+    "screenshot": "latest-download-fda-toast.png"
+  },
+
+  "downloads.fda.dismiss": "Dismiss",
+  "@downloads.fda.dismiss": {
+    "description": "Button on the Full-Disk-Access download toast that closes it without doing anything. A short verb."
+  },
+
+  "downloads.fda.openSystemSettings": "Open System Settings",
+  "@downloads.fda.openSystemSettings": {
+    "description": "Primary button on the Full-Disk-Access download toast that opens macOS System Settings to the Full Disk Access pane. 'System Settings' is the macOS app name; keep it as-is."
+  },
+
+  "downloads.warnToast.message": "The {binding} shortcut jumps to your latest download from anywhere. Keep it on?",
+  "@downloads.warnToast.message": {
+    "description": "First-time warning toast shown the first time the user presses the global go-to-latest-download hotkey, confirming they want this system-wide shortcut active. {binding} is the shortcut keys; don't translate the key glyphs. 'from anywhere' means from any app.",
+    "placeholders": {
+      "binding": "the system-wide shortcut keys the user just pressed (e.g. ⌃⌥⌘J)"
+    }
+  },
+
+  "downloads.warnToast.turnOff": "Turn it off",
+  "@downloads.warnToast.turnOff": {
+    "description": "Button on the global-shortcut warning toast that disables the system-wide go-to-latest-download hotkey. A short action phrase."
+  },
+
+  "downloads.warnToast.keepOn": "Keep it on",
+  "@downloads.warnToast.keepOn": {
+    "description": "Primary button on the global-shortcut warning toast that keeps the system-wide hotkey enabled. A short action phrase."
+  },
+
+  "downloads.shortcutRow.scopeTitle": "Global",
+  "@downloads.shortcutRow.scopeTitle": {
+    "description": "Section heading in the Keyboard shortcuts settings for system-wide (global) shortcuts, above the go-to-latest-download row. Shown in uppercase by styling. 'global' = works from any app."
+  },
+
+  "downloads.shortcutRow.commandName": "Go to latest download <marker>(global)</marker>",
+  "@downloads.shortcutRow.commandName": {
+    "description": "Name of the editable system-wide shortcut row in Keyboard shortcuts settings. <marker> wraps the '(global)' tag (shown dimmed) that signals this hotkey fires from any app. Keep the parentheses around 'global'.",
+    "screenshot": "keyboard-shortcuts-global.png"
+  },
+
+  "downloads.shortcutRow.modifiedTooltip": "Modified from default",
+  "@downloads.shortcutRow.modifiedTooltip": {
+    "description": "Tooltip on the small dot next to a shortcut that has been changed from its default binding. A short status phrase."
+  },
+
+  "downloads.shortcutRow.resetTooltip": "Reset to default",
+  "@downloads.shortcutRow.resetTooltip": {
+    "description": "Accessibility label and tooltip for the button that resets a changed shortcut to its default binding. A short action phrase."
+  },
+
+  "downloads.shortcutRow.pressKeys": "Press keys...",
+  "@downloads.shortcutRow.pressKeys": {
+    "description": "Placeholder shown in the shortcut-editing pill while waiting for the user to press a key combination. Trailing '...' signals it's waiting; keep it."
+  },
+
+  "downloads.shortcutRow.registered": "Registered",
+  "@downloads.shortcutRow.registered": {
+    "description": "Status shown briefly after the system-wide shortcut was successfully claimed from macOS. A short confirmation."
+  },
+
+  "downloads.shortcutRow.notRegistered": "Not registered",
+  "@downloads.shortcutRow.notRegistered": {
+    "description": "Status shown when the system-wide shortcut was saved but macOS did not actually claim the hotkey (e.g. another app holds it). A short status phrase."
+  },
+
+  "downloads.shortcutRow.invalidCombo": "Couldn''t register: invalid combo",
+  "@downloads.shortcutRow.invalidCombo": {
+    "description": "Warning status shown when the chosen system-wide shortcut can't be registered because the key combination is invalid. 'combo' = key combination. Avoid the words 'error' and 'failed'."
+  },
+
+  "downloads.shortcutRow.registerFailed": "Couldn''t register: {reason}",
+  "@downloads.shortcutRow.registerFailed": {
+    "description": "Warning status shown when the system-wide shortcut can't be registered, with a reason from the system appended. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "reason": "a short reason describing why registration didn't work (from the system)"
+    }
+  },
+
+  "downloads.shortcutRow.addModifier": "Add a modifier (⌘, ⌃, ⌥, or ⇧)",
+  "@downloads.shortcutRow.addModifier": {
+    "description": "Warning status prompting the user to include a modifier key, because a system-wide shortcut needs at least one. The glyphs in parentheses are the Command, Control, Option, and Shift keys; keep them as-is, don't translate them."
+  },
+
+  "downloads.toggleDescription.bound": "Press {binding} from any app to jump to your most recent download.",
+  "@downloads.toggleDescription.bound": {
+    "description": "Helper text under the 'Go to latest download' toggle in File system watching settings, when a system-wide shortcut is set. {binding} is the shortcut keys; don't translate the key glyphs.",
+    "placeholders": {
+      "binding": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
+    }
+  },
+
+  "downloads.toggleDescription.unbound": "Jump to your most recent download from any app.",
+  "@downloads.toggleDescription.unbound": {
+    "description": "Helper text under the 'Go to latest download' toggle in File system watching settings, when no system-wide shortcut is set yet."
+  }
+}

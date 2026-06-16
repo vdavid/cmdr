@@ -18,6 +18,7 @@
      */
     import { onDestroy, tick } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Chip from '$lib/ui/Chip.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
@@ -59,12 +60,12 @@
         onPick,
         onRemove,
         onOpenAll,
-        leadingLabel = 'Recent searches:',
-        trailingLabel = 'All searches…',
-        trailingTooltipText = 'Show all recent searches',
+        leadingLabel = tString('queryUi.recent.leadingLabel'),
+        trailingLabel = tString('queryUi.recent.trailingLabel'),
+        trailingTooltipText = tString('queryUi.recent.trailingTooltip'),
         trailingShortcut = '⌘H',
-        ariaRegionLabel = 'Recent searches',
-        ariaAllButtonLabel = 'All recent searches',
+        ariaRegionLabel = tString('queryUi.recent.regionAria'),
+        ariaAllButtonLabel = tString('queryUi.recent.allButtonAria'),
     }: Props = $props()
 
     /**

@@ -15,6 +15,8 @@
  *   (Remove-from-other / Keep-both / Cancel).
  */
 import type { Command } from '$lib/commands/types'
+import type { MessageKey } from '$lib/intl/keys.gen'
+import { tString } from '$lib/intl/messages.svelte'
 
 /** A native conflict: the combo is reserved by macOS and can't reach Cmdr. */
 export interface NativeConflict {
@@ -62,7 +64,7 @@ export function classifyConflict(conflicts: Command[]): ConflictKind | null {
  * `combo` is shown in the current platform's display form (what the user pressed).
  */
 export function reservedByMacOsMessage(combo: string, nativeCommand: Command): string {
-  return `${combo} is reserved by macOS (${nativeCommand.name}) and won't reach Cmdr. Pick a different combo.`
+  return tString('shortcuts.conflict.reservedByMacOs', { combo, command: nativeCommand.name })
 }
 
 /**
@@ -70,7 +72,7 @@ export function reservedByMacOsMessage(combo: string, nativeCommand: Command): s
  * `↑ is a fixed key in Cmdr (Select previous file). Pick a different combo.`
  */
 export function fixedKeyMessage(combo: string, fixedCommand: Command): string {
-  return `${combo} is a fixed key in Cmdr (${fixedCommand.name}) and can't be reassigned. Pick a different combo.`
+  return tString('shortcuts.conflict.fixedKey', { combo, command: fixedCommand.name })
 }
 
 /** A system conflict: macOS itself usually owns the combo (Spotlight, Mission Control, …). */
@@ -87,32 +89,32 @@ export interface SystemConflict {
  * refusing. Keys only ever match on macOS — other platforms capture
  * `Ctrl+…`-style strings.
  */
-const macSystemShortcutToFeatureMap: Record<string, string> = {
-  '⌘Space': 'Spotlight',
-  '⌥⌘Space': 'Finder search window',
-  '⌃⌘Space': 'Character Viewer',
-  '⌃Space': 'input source switching',
-  '⌘Tab': 'the app switcher',
-  '⌃↑': 'Mission Control',
-  '⌃↓': 'App windows',
-  '⌃←': 'Spaces',
-  '⌃→': 'Spaces',
-  '⌘⇧3': 'screenshots',
-  '⌘⇧4': 'screenshots',
-  '⌘⇧5': 'screen recording',
-  '⌘⇧Q': 'logging out',
-  '⌃⌘Q': 'locking the screen',
-  '⌥⌘⎋': 'Force Quit',
+const macSystemShortcutToFeatureKey: Partial<Record<string, MessageKey>> = {
+  '⌘Space': 'shortcuts.system.spotlight',
+  '⌥⌘Space': 'shortcuts.system.finderSearch',
+  '⌃⌘Space': 'shortcuts.system.characterViewer',
+  '⌃Space': 'shortcuts.system.inputSourceSwitching',
+  '⌘Tab': 'shortcuts.system.appSwitcher',
+  '⌃↑': 'shortcuts.system.missionControl',
+  '⌃↓': 'shortcuts.system.appWindows',
+  '⌃←': 'shortcuts.system.spaces',
+  '⌃→': 'shortcuts.system.spaces',
+  '⌘⇧3': 'shortcuts.system.screenshots',
+  '⌘⇧4': 'shortcuts.system.screenshots',
+  '⌘⇧5': 'shortcuts.system.screenRecording',
+  '⌘⇧Q': 'shortcuts.system.loggingOut',
+  '⌃⌘Q': 'shortcuts.system.lockingScreen',
+  '⌥⌘⎋': 'shortcuts.system.forceQuit',
 }
 
 /**
  * Classify a combo against the macOS system-shortcut list. Checked only when
  * there's no in-app conflict (those banners take priority); a match produces a
- * soft warning, not a refusal.
+ * soft warning, not a refusal. `label` is the resolved (rendered) feature name.
  */
 export function classifySystemShortcut(combo: string): SystemConflict | null {
-  const label = macSystemShortcutToFeatureMap[combo]
-  return label ? { kind: 'system', label } : null
+  const labelKey = macSystemShortcutToFeatureKey[combo]
+  return labelKey ? { kind: 'system', label: tString(labelKey) } : null
 }
 
 /**
@@ -120,5 +122,5 @@ export function classifySystemShortcut(combo: string): SystemConflict | null {
  * `⌘Space is usually taken by macOS (Spotlight), so it may never reach Cmdr.`
  */
 export function systemShortcutMessage(combo: string, label: string): string {
-  return `${combo} is usually taken by macOS (${label}), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.`
+  return tString('shortcuts.conflict.systemShortcut', { combo, label })
 }

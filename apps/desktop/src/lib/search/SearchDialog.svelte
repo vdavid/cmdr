@@ -46,6 +46,7 @@
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { tString } from '$lib/intl/messages.svelte'
     import { isScanning, getEntriesScanned } from '$lib/indexing'
     import {
         searchQueryState,
@@ -141,7 +142,7 @@
     let unlistenReady: UnlistenFn | undefined
 
     // System-dir exclude tooltip (populated async on mount; renders the full exclude list).
-    let systemDirExcludeTooltip = $state('Excludes common system and build folders')
+    let systemDirExcludeTooltip = $state(tString('search.systemDirExclude.default'))
 
     // Live mirror of the AI provider setting. Drives `aiEnabled` reactively so toggling
     // in the settings window flips the AI chip in real time without reopening the dialog.
@@ -170,7 +171,7 @@
         tooltip: chipTooltip(entry),
         mode: entry.mode,
         ageLabel: formatAge(entry.timestamp),
-        ariaLabel: `Run recent ${modeName(entry.mode)} search: ${entry.query}`,
+        ariaLabel: tString('search.recent.runAria', { mode: modeName(entry.mode), query: entry.query }),
     })
     const searchRecentKey: RecentItemKey<HistoryEntry> = (entry) => entry.id
 
@@ -498,7 +499,7 @@
                     .join('')
                 systemDirExcludeTooltip =
                     '<div style="max-width:360px;max-height:60vh;overflow-y:auto;">' +
-                    '<div style="font-weight:600;margin-bottom:4px">These folders are hidden:</div>' +
+                    `<div style="font-weight:600;margin-bottom:4px">${escapeHtml(tString('search.systemDirExclude.heading'))}</div>` +
                     items +
                     '</div>'
             })
@@ -548,7 +549,7 @@
     })
 
     const config: QueryDialogConfig<HistoryEntry> = $derived({
-        title: 'Search',
+        title: tString('search.dialog.title'),
         badge: getBadgeStatus('search'),
         dialogType: 'search',
         maxWidth: 'min(1080px, 80vw)',
@@ -561,7 +562,7 @@
         visibleChips: { size: true, date: true, scope: true, pattern: true },
         showPathColumn: true,
 
-        runHintCopy: 'Press Enter to search',
+        runHintCopy: tString('search.runHint'),
 
         historyStore: recentSearchesStore,
         recentItems: {
@@ -591,17 +592,17 @@
         translateAi,
 
         primaryAction: {
-            label: 'Show all in main window',
+            label: tString('search.action.showAll.label'),
             shortcutHint: '⌥⏎',
-            tooltip: 'Open the search results in the active pane',
-            ariaLabel: 'Show all in main window',
+            tooltip: tString('search.action.showAll.tooltip'),
+            ariaLabel: tString('search.action.showAll.label'),
             handler: showAllInMainWindow,
         },
         secondaryAction: {
-            label: 'Go to file',
+            label: tString('search.action.goToFile.label'),
             shortcutHint: '⏎',
-            tooltip: 'Open the file in the active pane',
-            ariaLabel: 'Go to file',
+            tooltip: tString('search.action.goToFile.tooltip'),
+            ariaLabel: tString('search.action.goToFile.label'),
             handler: goToCursorFile,
         },
 

@@ -11,6 +11,7 @@
         type LicenseStatus,
     } from '$lib/tauri-commands'
     import Button from '$lib/ui/Button.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import { getLicenseTypeLabel, getStatusText } from './license-section-utils'
 
     let licenseInfo = $state<LicenseInfo | null>(null)
@@ -46,24 +47,24 @@
     }
 </script>
 
-<SettingsSection title="License">
+<SettingsSection title={tString('licensing.section.title')}>
     {#if isLoading}
-        <p class="loading-text">Loading...</p>
+        <p class="loading-text">{tString('licensing.section.loading')}</p>
     {:else}
         <div class="license-info">
             <div class="info-row">
-                <span class="info-label">License type</span>
+                <span class="info-label">{tString('licensing.section.labelType')}</span>
                 <span class="info-value">{getLicenseTypeLabel(licenseInfo)}</span>
             </div>
             {#if licenseInfo?.organizationName}
                 <div class="info-row">
-                    <span class="info-label">Organization</span>
+                    <span class="info-label">{tString('licensing.section.labelOrganization')}</span>
                     <span class="info-value">{licenseInfo.organizationName}</span>
                 </div>
             {/if}
             {#if statusText}
                 <div class="info-row">
-                    <span class="info-label">Status</span>
+                    <span class="info-label">{tString('licensing.section.labelStatus')}</span>
                     <span
                         class="info-value"
                         class:status-expired={licenseStatus?.type === 'expired'}
@@ -73,7 +74,7 @@
             {/if}
             {#if licenseInfo?.shortCode}
                 <div class="info-row">
-                    <span class="info-label">License key</span>
+                    <span class="info-label">{tString('licensing.section.labelKey')}</span>
                     <span class="info-value mono">{licenseInfo.shortCode}</span>
                 </div>
             {/if}
@@ -81,10 +82,14 @@
 
         <div class="actions">
             {#if hasLicense}
-                <Button variant="secondary" onclick={handleManageLicense}>Manage license key</Button>
+                <Button variant="secondary" onclick={handleManageLicense}
+                    >{tString('licensing.section.manageKey')}</Button
+                >
             {:else}
-                <Button variant="secondary" onclick={handleManageLicense}>Enter license key</Button>
-                <Button variant="secondary" onclick={handleBuyLicense}>Get a license</Button>
+                <Button variant="secondary" onclick={handleManageLicense}
+                    >{tString('licensing.section.enterKey')}</Button
+                >
+                <Button variant="secondary" onclick={handleBuyLicense}>{tString('licensing.section.getLicense')}</Button>
             {/if}
         </div>
     {/if}

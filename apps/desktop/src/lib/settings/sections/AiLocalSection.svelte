@@ -30,6 +30,7 @@
     import { computeGaugeSegments } from './ram-gauge-utils'
     import { getAppLogger } from '$lib/logging/logger'
     import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
+    import { t, tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         searchQuery: string
@@ -269,18 +270,17 @@
     })
 
     const warningTooltip = $derived.by(() => {
-        if (warningLevel === 'danger')
-            return 'This exceeds your available memory. Your system may slow down significantly.'
-        if (warningLevel === 'caution') return 'This uses most of your available memory. Other apps may slow down.'
+        if (warningLevel === 'danger') return tString('ai.local.warningDanger')
+        if (warningLevel === 'caution') return tString('ai.local.warningCaution')
         return ''
     })
 
     // Server status text
     const serverStatusText = $derived.by(() => {
-        if (isRestarting) return 'Restarting...'
-        if (serverStarting) return 'Starting...'
-        if (serverRunning) return 'Running'
-        return 'Stopped'
+        if (isRestarting) return tString('ai.local.statusRestarting')
+        if (serverStarting) return tString('ai.local.statusStarting')
+        if (serverRunning) return tString('ai.local.statusRunning')
+        return tString('ai.local.statusStopped')
     })
 
     const serverStatusDetail = $derived.by(() => {
@@ -298,7 +298,7 @@
     )
     const downloadProgressText = $derived.by(() => {
         if (!downloadProgress) return ''
-        if (downloadProgress.totalBytes === 0) return 'Starting download...'
+        if (downloadProgress.totalBytes === 0) return tString('ai.local.startingDownload')
         const downloaded = colorizeSizeString(formatBytes(downloadProgress.bytesDownloaded))
         const total = colorizeSizeString(formatBytes(downloadProgress.totalBytes))
         const speed = colorizeSizeString(formatBytes(downloadProgress.speed))
@@ -312,13 +312,13 @@
     const installStepLabel = $derived.by(() => {
         switch (installStep) {
             case 'extracting':
-                return 'Step 1 of 4: Extracting runtime...'
+                return tString('ai.local.installStepExtracting')
             case 'downloading':
-                return 'Step 2 of 4: Downloading model...'
+                return tString('ai.local.installStepDownloading')
             case 'verifying':
-                return 'Step 3 of 4: Verifying download...'
+                return tString('ai.local.installStepVerifying')
             case 'starting':
-                return 'Step 4 of 4: Starting server...'
+                return tString('ai.local.installStepStarting')
             default:
                 return ''
         }
@@ -329,9 +329,9 @@
 
     function formatEta(seconds: number): string {
         if (seconds <= 0) return ''
-        if (seconds < 60) return `~${String(Math.ceil(seconds))} sec left`
-        if (seconds < 3600) return `~${String(Math.ceil(seconds / 60))} min left`
-        return `~${String(Math.round(seconds / 3600))} hr left`
+        if (seconds < 60) return tString('ai.local.etaSeconds', { value: String(Math.ceil(seconds)) })
+        if (seconds < 3600) return tString('ai.local.etaMinutes', { value: String(Math.ceil(seconds / 60)) })
+        return tString('ai.local.etaHours', { value: String(Math.round(seconds / 3600)) })
     }
 
     function formatMemoryEstimate(bytes: number): string {
@@ -358,13 +358,14 @@
         {/if}
     {:else if modelInstalled}
         <div class="status-row">
-            <span class="status-label">Model</span>
+            <span class="status-label">{tString('ai.local.modelLabel')}</span>
             <span class="status-value"
-                >{status?.modelName ?? 'Unknown'} ({status?.modelSizeFormatted ?? '?'})</span
+                >{status?.modelName ?? tString('ai.local.modelUnknown')} ({status?.modelSizeFormatted ??
+                    tString('ai.local.modelSizeUnknown')})</span
             >
         </div>
         <div class="status-row">
-            <span class="status-label">Server</span>
+            <span class="status-label">{tString('ai.local.serverLabel')}</span>
             <span
                 class="status-value"
                 class:status-running={serverRunning && !isRestarting && !serverStarting}
@@ -376,8 +377,10 @@
         </div>
     {:else}
         <p class="not-installed-text">
-            Not installed. The local model ({status?.modelName ?? 'Ministral 3B'}, {status?.modelSizeFormatted ??
-                '2.0 GB'}) runs entirely on your device for maximum privacy. Requires Apple Silicon.
+            {t('ai.local.notInstalled', {
+                modelName: status?.modelName ?? 'Ministral 3B',
+                modelSize: status?.modelSizeFormatted ?? '2.0 GB',
+            })}
         </p>
     {/if}
 </div>
@@ -386,8 +389,8 @@
 {#if modelInstalled && shouldShow('ai.localContextSize')}
     <SettingRow
         id="ai.localContextSize"
-        label="Context window"
-        description="Number of tokens the local model can process at once. Larger values use more memory."
+        label={tString('settings.ai.localContextSize.label')}
+        description={tString('settings.ai.localContextSize.description')}
         split
         {searchQuery}
     >
@@ -399,7 +402,7 @@
                         <span
                             class="warning-icon warning-caution"
                             use:tooltip={warningTooltip}
-                            aria-label="Memory warning"
+                            aria-label={tString('ai.local.memoryWarningAria')}
                         >
                             &#x26A0;
                         </span>
@@ -407,7 +410,7 @@
                         <span
                             class="warning-icon warning-danger"
                             use:tooltip={warningTooltip}
-                            aria-label="Memory warning"
+                            aria-label={tString('ai.local.memoryWarningAria')}
                         >
                             &#x26A0;
                         </span>
@@ -418,7 +421,7 @@
                         disabled={actionsDisabled}
                         onclick={() => void handleApplyContextSize()}
                     >
-                        Apply
+                        {tString('ai.local.applyContextSize')}
                     </Button>
                 </div>
             {/if}
@@ -427,7 +430,7 @@
 
     <!-- RAM gauge -->
     {#if systemMemory && systemMemory.totalBytes > 0 && gaugeSegments}
-        <div class="ram-gauge-container" aria-label="Memory usage gauge">
+        <div class="ram-gauge-container" aria-label={tString('ai.local.ramGaugeAria')}>
             <div class="ram-gauge-bar">
                 <div
                     class="ram-segment ram-system"
@@ -456,32 +459,34 @@
             </div>
             <div class="ram-legend">
                 <span class="ram-legend-item"
-                    ><span class="ram-legend-swatch ram-system"></span>System {formatMemoryGb(
-                        gaugeSegments.systemBytes,
-                    )}</span
+                    ><span class="ram-legend-swatch ram-system"></span>{t('ai.local.ramLegendSystem', {
+                        size: formatMemoryGb(gaugeSegments.systemBytes),
+                    })}</span
                 >
                 <span class="ram-legend-item"
-                    ><span class="ram-legend-swatch ram-other-apps"></span>Apps {formatMemoryGb(
-                        gaugeSegments.otherAppsBytes,
-                    )}</span
+                    ><span class="ram-legend-swatch ram-other-apps"></span>{t('ai.local.ramLegendApps', {
+                        size: formatMemoryGb(gaugeSegments.otherAppsBytes),
+                    })}</span
                 >
                 <span class="ram-legend-item"
-                    ><span class="ram-legend-swatch ram-current-ai"></span>Cmdr AI {projectedMemoryFormatted}</span
+                    ><span class="ram-legend-swatch ram-current-ai"></span>{t('ai.local.ramLegendCmdrAi', {
+                        size: projectedMemoryFormatted,
+                    })}</span
                 >
                 {#if gaugeSegments.addedPercent > 0}
                     <span class="ram-legend-item"
-                        ><span class="ram-legend-swatch ram-projected"></span>Projected</span
+                        ><span class="ram-legend-swatch ram-projected"></span>{tString('ai.local.ramLegendProjected')}</span
                     >
                 {/if}
                 {#if gaugeSegments.freedPercent > 0}
                     <span class="ram-legend-item"
-                        ><span class="ram-legend-swatch ram-freed"></span>Freed</span
+                        ><span class="ram-legend-swatch ram-freed"></span>{tString('ai.local.ramLegendFreed')}</span
                     >
                 {/if}
                 <span class="ram-legend-item"
-                    ><span class="ram-legend-swatch ram-free-space"></span>Free {formatMemoryGb(
-                        gaugeSegments.freeBytes,
-                    )}</span
+                    ><span class="ram-legend-swatch ram-free-space"></span>{t('ai.local.ramLegendFree', {
+                        size: formatMemoryGb(gaugeSegments.freeBytes),
+                    })}</span
                 >
             </div>
         </div>
@@ -491,24 +496,24 @@
 <!-- Actions -->
 <div class="actions">
     {#if installStep === 'extracting' || installStep === 'downloading'}
-        <Button variant="secondary" onclick={() => void handleCancelDownload()}>Cancel</Button>
+        <Button variant="secondary" onclick={() => void handleCancelDownload()}>{tString('ai.local.cancel')}</Button>
     {:else if installStep !== null}
         <!-- Verifying/starting: can't cancel after download completes -->
     {:else if modelInstalled}
         {#if serverRunning}
             <Button variant="secondary" disabled={actionsDisabled} onclick={() => void handleStopServer()}
-                >Stop server</Button
+                >{tString('ai.local.stopServer')}</Button
             >
         {:else}
             <Button variant="secondary" disabled={actionsDisabled} onclick={() => void handleStartServer()}
-                >Start server</Button
+                >{tString('ai.local.startServer')}</Button
             >
         {/if}
         <Button variant="danger" disabled={actionsDisabled} onclick={() => (showDeleteConfirm = true)}
-            >Delete model</Button
+            >{tString('ai.local.deleteModel')}</Button
         >
     {:else}
-        <Button variant="secondary" onclick={() => void handleDownloadModel()}>Download model</Button>
+        <Button variant="secondary" onclick={() => void handleDownloadModel()}>{tString('ai.local.downloadModel')}</Button>
     {/if}
 </div>
 
@@ -528,25 +533,26 @@
             }
         }}
     >
-        {#snippet title()}{isDeleting ? 'Deleting model...' : 'Delete AI model?'}{/snippet}
+        {#snippet title()}{isDeleting
+                ? tString('ai.local.deleteDialogTitleDeleting')
+                : tString('ai.local.deleteDialogTitle')}{/snippet}
         <div class="confirm-body">
             {#if isDeleting}
                 <div class="deleting-status">
                     <Spinner size="sm" />
-                    <span>Stopping server and removing files...</span>
+                    <span>{tString('ai.local.deletingStatus')}</span>
                 </div>
             {:else}
                 <p class="confirm-message">
-                    This frees up {status?.modelSizeFormatted ?? '2.0 GB'} of disk space. You'll need to re-download it to
-                    use local AI again.
+                    {t('ai.local.deleteConfirmMessage', { modelSize: status?.modelSizeFormatted ?? '2.0 GB' })}
                 </p>
             {/if}
             <div class="confirm-buttons">
                 <Button variant="secondary" disabled={isDeleting} onclick={() => (showDeleteConfirm = false)}
-                    >Cancel</Button
+                    >{tString('ai.local.cancel')}</Button
                 >
                 <Button variant="danger" disabled={isDeleting} onclick={() => void handleDeleteModel()}>
-                    {isDeleting ? 'Deleting...' : 'Delete'}
+                    {isDeleting ? tString('ai.local.deleteButtonDeleting') : tString('ai.local.deleteButton')}
                 </Button>
             </div>
         </div>

@@ -2,6 +2,8 @@
     import { markExpirationModalShown, openExternalUrl } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         organizationName: string | null
@@ -30,6 +32,8 @@
     }
 </script>
 
+{#snippet strong(children: import('svelte').Snippet)}<strong>{@render children()}</strong>{/snippet}
+
 <ModalDialog
     titleId="modal-title"
     blur
@@ -39,24 +43,24 @@
     }}
     containerStyle="max-width: 420px; background: var(--color-bg-primary); border-color: var(--color-border)"
 >
-    {#snippet title()}Your commercial license has expired{/snippet}
+    {#snippet title()}{tString('licensing.expiration.title')}{/snippet}
 
     <div class="modal-body">
         {#if organizationName}
-            <p class="org-name">License for: <strong>{organizationName}</strong></p>
+            <p class="org-name">
+                <Trans key="licensing.expiration.orgName" params={{ org: organizationName }} snippets={{ strong }} />
+            </p>
         {/if}
 
         <p class="message">
-            Your commercial subscription expired on <strong>{formatDate(expiredAt)}</strong>.
+            <Trans key="licensing.expiration.message" params={{ date: formatDate(expiredAt) }} snippets={{ strong }} />
         </p>
 
-        <p class="info">
-            Cmdr is now running in personal use mode. If you're still using it for work, please renew your license.
-        </p>
+        <p class="info">{tString('licensing.expiration.info')}</p>
 
         <div class="actions">
-            <Button variant="primary" onclick={handleRenew}>Renew license</Button>
-            <Button variant="secondary" onclick={handleDismiss}>Continue in personal mode</Button>
+            <Button variant="primary" onclick={handleRenew}>{tString('licensing.expiration.renew')}</Button>
+            <Button variant="secondary" onclick={handleDismiss}>{tString('licensing.expiration.continue')}</Button>
         </div>
     </div>
 </ModalDialog>

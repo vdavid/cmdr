@@ -1,0 +1,6 @@
+{
+  "notifications.permissionDenied": "macOS notifications are off. Open System Settings to allow them.",
+  "@notifications.permissionDenied": {
+    "description": "Info toast shown once when the user has denied Cmdr permission to send macOS notifications, so a notification couldn't be shown. Points them to System Settings to re-enable. 'System Settings' is the macOS app name; keep it as-is."
+  }
+}

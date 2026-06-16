@@ -31,6 +31,7 @@
      */
     import { Select, createListCollection, type SelectValueChangeDetails } from '@ark-ui/svelte/select'
     import Icon from '$lib/ui/Icon.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         items: SelectItem[]
@@ -52,10 +53,12 @@
         onChange,
         onHighlightChange,
         disabled = false,
-        placeholder = 'Select...',
+        placeholder,
         ariaLabel,
         contentClass = '',
     }: Props = $props()
+
+    const resolvedPlaceholder = $derived(placeholder ?? tString('ui.select.placeholder'))
 
     const collection = $derived(
         createListCollection({
@@ -99,7 +102,7 @@
 >
     <Select.Control>
         <Select.Trigger class="select-trigger" aria-label={ariaLabel}>
-            <Select.ValueText {placeholder} />
+            <Select.ValueText placeholder={resolvedPlaceholder} />
             <span class="select-indicator"><Icon name="chevron-down" size={16} /></span>
         </Select.Trigger>
     </Select.Control>

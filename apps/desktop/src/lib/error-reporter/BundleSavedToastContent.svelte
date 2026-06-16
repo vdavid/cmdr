@@ -2,6 +2,7 @@
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { showInFinder } from '$lib/tauri-commands'
+    import { tString } from '$lib/intl/messages.svelte'
     import { getLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
 
     const toastId = 'error-report-bundle-saved'
@@ -19,11 +20,15 @@
 </script>
 
 <div class="content">
-    <span class="message">Saved bundle to disk</span>
+    <span class="message">{tString('errorReporter.bundleSavedToast.message')}</span>
     <span class="path" title={getLastSavedBundlePath()}>{getLastSavedBundlePath()}</span>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
-        <Button size="mini" variant="primary" onclick={handleReveal}>Reveal in Finder</Button>
+        <Button size="mini" variant="secondary" onclick={handleDismiss}
+            >{tString('errorReporter.bundleSavedToast.dismiss')}</Button
+        >
+        <Button size="mini" variant="primary" onclick={handleReveal}
+            >{tString('errorReporter.bundleSavedToast.reveal')}</Button
+        >
     </div>
 </div>
 

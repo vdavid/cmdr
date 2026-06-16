@@ -3,6 +3,9 @@
     import OnboardingStepShell from './OnboardingStepShell.svelte'
     import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
     import { setFooterOverride, requestWizardComplete } from './onboarding-state.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import type { Snippet } from 'svelte'
 
     /**
      * Step 3: Optional setup.
@@ -30,7 +33,7 @@
         // functions only), so register once on mount rather than re-running an `$effect`.
         setFooterOverride([
             {
-                label: 'Start using Cmdr',
+                label: tString('onboarding.stepOptional.footer.start'),
                 variant: 'primary',
                 onclick: () => {
                     requestWizardComplete()
@@ -47,27 +50,23 @@
     })
 </script>
 
+{#snippet em(children: Snippet)}<em>{@render children()}</em>{/snippet}
+{#snippet strong(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
+{#snippet code(children: Snippet)}<code>{@render children()}</code>{/snippet}
+
 <OnboardingStepShell>
-    <h2 class="step-title">You're almost ready</h2>
-    <p class="lede">
-        You chose to walk through a detailed setup, so here are a few easy choices. If you don't care too much, just
-        click the button below. These are all options, and the defaults are picked for your benefit.
-    </p>
+    <h2 class="step-title">{tString('onboarding.stepOptional.title')}</h2>
+    <p class="lede">{tString('onboarding.stepOptional.lede')}</p>
 
     <section class="toggle-block" aria-labelledby="toggle-networking-title">
         <header class="toggle-header">
             <div class="toggle-text">
-                <h3 id="toggle-networking-title" class="toggle-title">Networking</h3>
-                <p class="toggle-desc">
-                    Having this <em>on</em> means you can connect to SMB servers like company network shares, a home
-                    NAS, and the like. The only cost is a macOS permission dialog that pops up and asks you to allow
-                    "Local network access", and one for "Accepting incoming connections". Both dialogs are harmless,
-                    but if you don't know what these are, they might be scary or annoying.
-                </p>
+                <h3 id="toggle-networking-title" class="toggle-title">{tString('onboarding.stepOptional.networking.title')}</h3>
+                <p class="toggle-desc"><Trans key="onboarding.stepOptional.networking.desc" snippets={{ em }} /></p>
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="network.enabled" />
-                <p class="toggle-caption">Recommended: on. You can change this any time in Settings.</p>
+                <p class="toggle-caption">{tString('onboarding.stepOptional.recommendedOn')}</p>
             </div>
         </header>
     </section>
@@ -75,26 +74,17 @@
     <section class="toggle-block" aria-labelledby="toggle-indexing-title">
         <header class="toggle-header">
             <div class="toggle-text">
-                <h3 id="toggle-indexing-title" class="toggle-title">Drive indexing</h3>
-                <p class="toggle-desc">
-                    Drive indexing is totally cool! Gives you two main things:
-                </p>
+                <h3 id="toggle-indexing-title" class="toggle-title">{tString('onboarding.stepOptional.indexing.title')}</h3>
+                <p class="toggle-desc">{tString('onboarding.stepOptional.indexing.descIntro')}</p>
                 <ol class="toggle-list">
-                    <li>Instant search of your whole drive. Think Spotlight, but even faster.</li>
-                    <li>
-                        Real-time folder sizes for your whole drive. You always know how much stuff you have in each
-                        folder.
-                    </li>
+                    <li>{tString('onboarding.stepOptional.indexing.benefit1')}</li>
+                    <li>{tString('onboarding.stepOptional.indexing.benefit2')}</li>
                 </ol>
-                <p class="toggle-desc">
-                    If you turn this off, you only get <code>&lt;DIR&gt;</code> for the sizes. The cost is a 300 MB
-                    index on your drive, but no extra CPU or memory use after the first 2&ndash;3 minutes of you first
-                    starting the app, or starting it after a long time. It's a cheap feature considering the benefits.
-                </p>
+                <p class="toggle-desc"><Trans key="onboarding.stepOptional.indexing.descCost" snippets={{ code }} /></p>
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="indexing.enabled" />
-                <p class="toggle-caption">Recommended: on. You can change this any time in Settings.</p>
+                <p class="toggle-caption">{tString('onboarding.stepOptional.recommendedOn')}</p>
             </div>
         </header>
     </section>
@@ -102,17 +92,12 @@
     <section class="toggle-block" aria-labelledby="toggle-updates-title">
         <header class="toggle-header">
             <div class="toggle-text">
-                <h3 id="toggle-updates-title" class="toggle-title">Automatic updates</h3>
-                <p class="toggle-desc">
-                    If you enable this, Cmdr makes a tiny network request to a central license server at each app
-                    start plus once every 24 hours, and you always get the latest updates. If disabled, you'll keep
-                    your current version, and zero automated network requests (except for periodic license checks, if
-                    you have a commercial license).
-                </p>
+                <h3 id="toggle-updates-title" class="toggle-title">{tString('onboarding.stepOptional.updates.title')}</h3>
+                <p class="toggle-desc">{tString('onboarding.stepOptional.updates.desc')}</p>
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="updates.autoCheck" />
-                <p class="toggle-caption">Recommended: on. You can change this any time in Settings.</p>
+                <p class="toggle-caption">{tString('onboarding.stepOptional.recommendedOn')}</p>
             </div>
         </header>
     </section>
@@ -120,18 +105,12 @@
     <section class="toggle-block" aria-labelledby="toggle-mtp-title">
         <header class="toggle-header">
             <div class="toggle-text">
-                <h3 id="toggle-mtp-title" class="toggle-title">MTP (Android phones, Kindles, cameras)</h3>
-                <p class="toggle-desc">
-                    If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some
-                    music players, and any other device that supports the protocols called MTP or PTP. The cost is
-                    that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can't
-                    just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process
-                    while it's running. When you quit Cmdr, this is politely restored. But it's a bit of a cost, so:
-                </p>
+                <h3 id="toggle-mtp-title" class="toggle-title">{tString('onboarding.stepOptional.mtp.title')}</h3>
+                <p class="toggle-desc"><Trans key="onboarding.stepOptional.mtp.desc" snippets={{ strong, em }} /></p>
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="fileOperations.mtpEnabled" />
-                <p class="toggle-caption">Recommended: on. You can change this any time in Settings.</p>
+                <p class="toggle-caption">{tString('onboarding.stepOptional.recommendedOn')}</p>
             </div>
         </header>
     </section>

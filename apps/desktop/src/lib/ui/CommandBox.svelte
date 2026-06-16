@@ -5,6 +5,7 @@
      */
     import { copyToClipboard } from '$lib/tauri-commands'
     import Button from './Button.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** The command to display and copy. */
@@ -30,8 +31,8 @@
 
 <div class="command-box">
     <code class="command">{command}</code>
-    <Button variant="secondary" size="mini" onclick={handleCopy} aria-label="Copy command to clipboard">
-        {copied ? 'Copied!' : 'Copy'}
+    <Button variant="secondary" size="mini" onclick={handleCopy} aria-label={tString('ui.commandBox.copyAria')}>
+        {copied ? tString('ui.commandBox.copied') : tString('ui.commandBox.copy')}
     </Button>
 </div>
 

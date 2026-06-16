@@ -15,6 +15,8 @@
     import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** The directory in which to create the new folder */
@@ -85,9 +87,9 @@
             if (index !== null) {
                 const entry = await getFileAt(listingId, index, showHiddenFiles)
                 if (entry?.isDirectory) {
-                    errorMessage = 'There is already a folder by this name in this folder.'
+                    errorMessage = tString('fileOperations.shared.conflictExistsFolder')
                 } else {
-                    errorMessage = 'There is already a file by this name in this folder.'
+                    errorMessage = tString('fileOperations.shared.conflictExistsFile')
                 }
             } else {
                 errorMessage = ''
@@ -230,10 +232,12 @@
     onclose={onCancel}
     containerStyle="width: 400px"
 >
-    {#snippet title()}New folder{/snippet}
+    {#snippet title()}{tString('fileOperations.mkdir.title')}{/snippet}
 
     <div class="dialog-body">
-        <p class="subtitle">Create folder in <span class="dir-name">{currentDirName}</span></p>
+        <p class="subtitle">
+            <Trans key="fileOperations.mkdir.createIn" params={{ name: currentDirName }} snippets={{ dir }} />
+        </p>
 
         <div class="input-group">
             <input
@@ -242,12 +246,12 @@
                 type="text"
                 class="name-input"
                 class:has-error={!!errorMessage}
-                aria-label="Folder name"
+                aria-label={tString('fileOperations.mkdir.nameAria')}
                 aria-describedby={errorMessage ? 'new-folder-error' : undefined}
                 aria-invalid={!!errorMessage}
                 spellcheck="false"
                 autocomplete="off"
-                placeholder="Example: my-project"
+                placeholder={tString('fileOperations.mkdir.placeholder')}
                 onkeydown={handleInputKeydown}
                 oninput={handleInput}
             />
@@ -259,19 +263,22 @@
         {#if timeoutError}
             <div class="timeout-warning" role="alert">
                 <p class="timeout-message">
-                    Couldn't confirm the folder was created. The volume may be slow — the folder may still have been
-                    created.
+                    {tString('fileOperations.mkdir.timeoutMessage')}
                 </p>
                 <div class="timeout-actions">
-                    <Button size="mini" onclick={handleRefreshListing}>Refresh listing</Button>
-                    <Button size="mini" onclick={handleTimeoutDismiss}>Dismiss</Button>
+                    <Button size="mini" onclick={handleRefreshListing}
+                        >{tString('fileOperations.mkdir.timeoutRefresh')}</Button
+                    >
+                    <Button size="mini" onclick={handleTimeoutDismiss}
+                        >{tString('fileOperations.mkdir.timeoutDismiss')}</Button
+                    >
                 </div>
             </div>
         {/if}
 
         {#if aiAvailable !== false}
-            <div class="ai-suggestions" aria-label="AI suggestions">
-                <span class="ai-suggestions-header">AI suggestions:</span>
+            <div class="ai-suggestions" aria-label={tString('fileOperations.mkdir.aiSuggestionsAria')}>
+                <span class="ai-suggestions-header">{tString('fileOperations.mkdir.aiSuggestionsHeader')}</span>
                 {#if aiSuggestions.length > 0}
                     <ul role="list" aria-live="polite" aria-relevant="additions">
                         {#each aiSuggestions as suggestion (suggestion)}
@@ -300,11 +307,15 @@
         {/if}
 
         <div class="button-row">
-            <Button variant="secondary" onclick={onCancel}>Cancel</Button>
-            <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}>OK</Button>
+            <Button variant="secondary" onclick={onCancel}>{tString('fileOperations.button.cancel')}</Button>
+            <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}
+                >{tString('fileOperations.button.ok')}</Button
+            >
         </div>
     </div>
 </ModalDialog>
+
+{#snippet dir(children: import('svelte').Snippet)}<span class="dir-name">{@render children()}</span>{/snippet}
 
 <style>
     .dialog-body {

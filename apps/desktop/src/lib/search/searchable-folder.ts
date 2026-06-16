@@ -9,6 +9,8 @@
  * history paths (newest first or arbitrary order — we filter, no ordering assumption beyond
  * "most recent at the end" matches `NavigationHistory.stack`).
  */
+import { tString } from '$lib/intl/messages.svelte'
+
 const SEARCH_RESULTS_PREFIX = 'search-results://'
 
 export interface SearchableFolderInput {
@@ -36,9 +38,6 @@ export interface SearchableFolderResult {
   disabledReason: string
 }
 
-const SEARCH_RESULTS_DISABLED_TOOLTIP =
-  "Current folder is search results, which isn't searchable. Open a real folder first."
-
 /**
  * Picks the best "current folder" path for the dialog. Three cases:
  *   1. The focused pane is on a real folder: use it as-is. Enabled.
@@ -58,5 +57,5 @@ export function resolveSearchableFolder({ currentPath, history }: SearchableFold
       return { path: entry, disabled: false, disabledReason: '' }
     }
   }
-  return { path: null, disabled: true, disabledReason: SEARCH_RESULTS_DISABLED_TOOLTIP }
+  return { path: null, disabled: true, disabledReason: tString('search.searchableFolder.disabledTooltip') }
 }

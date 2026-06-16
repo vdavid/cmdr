@@ -13,6 +13,7 @@
 import type { SizeFilter, SizeUnit, DateFilter, TypeFilter } from './query-filter-state.svelte'
 import { deriveSizeChip, deriveDateChip } from './filter-chips/filter-chip-state'
 import type { FileSizeFormat } from '$lib/settings/types'
+import { tString } from '$lib/intl/messages.svelte'
 
 /** One named filter line shown in the strip ("Size", "Modified", "Type" + its value). */
 export interface AiSummaryFilter {
@@ -48,8 +49,8 @@ export interface AiSummaryInput {
 
 /** Plain-language label for the type toggle. `both` is the default, so it's omitted from the strip. */
 function typeFilterSummary(typeFilter: TypeFilter): string | null {
-  if (typeFilter === 'file') return 'Files only'
-  if (typeFilter === 'folder') return 'Folders only'
+  if (typeFilter === 'file') return tString('queryUi.ai.typeSummary.filesOnly')
+  if (typeFilter === 'folder') return tString('queryUi.ai.typeSummary.foldersOnly')
   return null
 }
 
@@ -68,13 +69,13 @@ export function buildAiSummary(input: AiSummaryInput): AiSummary {
     input.sizeUnitMax,
     input.fileSizeFormat ?? 'binary',
   )
-  if (size.configured) filters.push({ label: 'Size', value: size.summary })
+  if (size.configured) filters.push({ label: tString('queryUi.ai.filter.size'), value: size.summary })
 
   const date = deriveDateChip(input.dateFilter, input.dateValue, input.dateValueMax)
-  if (date.configured) filters.push({ label: 'Modified', value: date.summary })
+  if (date.configured) filters.push({ label: tString('queryUi.ai.filter.modified'), value: date.summary })
 
   const typeSummary = typeFilterSummary(input.typeFilter)
-  if (typeSummary) filters.push({ label: 'Type', value: typeSummary })
+  if (typeSummary) filters.push({ label: tString('queryUi.ai.filter.type'), value: typeSummary })
 
   const pattern = input.pattern?.trim() ? input.pattern.trim() : null
 
@@ -87,7 +88,7 @@ export function buildAiSummary(input: AiSummaryInput): AiSummary {
 
 /** The label for the pattern row: names the flavor when known, falls back to "Pattern". */
 export function patternRowLabel(patternKind: 'glob' | 'regex' | null): string {
-  if (patternKind === 'regex') return 'Regex'
-  if (patternKind === 'glob') return 'Glob'
-  return 'Pattern'
+  if (patternKind === 'regex') return tString('queryUi.ai.patternLabel.regex')
+  if (patternKind === 'glob') return tString('queryUi.ai.patternLabel.glob')
+  return tString('queryUi.ai.patternLabel.generic')
 }

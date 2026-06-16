@@ -27,6 +27,7 @@
  */
 
 import type { SearchResultEntry } from '$lib/ipc/bindings'
+import { tString } from '$lib/intl/messages.svelte'
 
 /** Maximum entries we keep in a single snapshot. Excess matches are truncated. */
 export const SNAPSHOT_ENTRIES_CAP = 10_000
@@ -119,7 +120,11 @@ export function getOrCreate(id: string, snapshot: SearchSnapshot): SearchSnapsho
     snapshot.entries.length > SNAPSHOT_ENTRIES_CAP ? snapshot.entries.slice(0, SNAPSHOT_ENTRIES_CAP) : snapshot.entries
   const label =
     snapshot.entries.length > SNAPSHOT_ENTRIES_CAP
-      ? `${snapshot.label} (first ${String(SNAPSHOT_ENTRIES_CAP)} of ${String(total)})`
+      ? tString('search.snapshot.cappedLabel', {
+          label: snapshot.label,
+          capText: String(SNAPSHOT_ENTRIES_CAP),
+          totalText: String(total),
+        })
       : snapshot.label
   const entry: StoreEntry = {
     ...snapshot,

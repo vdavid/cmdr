@@ -2,6 +2,9 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { formatInteger } from '$lib/intl/number-format'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import type { Snippet } from 'svelte'
 
     interface Props {
         openingFolder?: boolean
@@ -15,22 +18,27 @@
     const formatNumber = formatInteger
 </script>
 
+{#snippet escKeyChip(children: Snippet)}<ShortcutChip key="Esc" />{@render children()}{/snippet}
+
 <div class="loading-container">
     <Spinner size="lg" />
     {#if finalizingCount !== undefined}
         <div class="loading-text">
-            All {formatNumber(finalizingCount)}
-            {finalizingCount === 1 ? 'file' : 'files'} loaded. Sorting your files, preparing view...
+            {tString('ui.loadingIcon.finalizing', { countText: formatNumber(finalizingCount), count: finalizingCount })}
         </div>
     {:else if loadedCount !== undefined}
-        <div class="loading-text">Loaded {formatNumber(loadedCount)} {loadedCount === 1 ? 'file' : 'files'}...</div>
+        <div class="loading-text">
+            {tString('ui.loadingIcon.loaded', { countText: formatNumber(loadedCount), count: loadedCount })}
+        </div>
     {:else if openingFolder}
-        <div class="loading-text">Opening folder...</div>
+        <div class="loading-text">{tString('ui.loadingIcon.openingFolder')}</div>
     {:else}
-        <div class="loading-text">Loading...</div>
+        <div class="loading-text">{tString('ui.loadingIcon.loading')}</div>
     {/if}
     {#if showCancelHint}
-        <div class="cancel-hint">Press <ShortcutChip key="Esc" /> to cancel and go back</div>
+        <div class="cancel-hint">
+            <Trans key="ui.loadingIcon.cancelHint" snippets={{ key: escKeyChip }} />
+        </div>
     {/if}
 </div>
 

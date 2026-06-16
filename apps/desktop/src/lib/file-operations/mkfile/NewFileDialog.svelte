@@ -4,6 +4,8 @@
     import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** The directory in which to create the new file */
@@ -67,9 +69,9 @@
             if (index !== null) {
                 const entry = await getFileAt(listingId, index, showHiddenFiles)
                 if (entry?.isDirectory) {
-                    errorMessage = 'There is already a folder by this name in this folder.'
+                    errorMessage = tString('fileOperations.shared.conflictExistsFolder')
                 } else {
-                    errorMessage = 'There is already a file by this name in this folder.'
+                    errorMessage = tString('fileOperations.shared.conflictExistsFile')
                 }
             } else {
                 errorMessage = ''
@@ -149,10 +151,12 @@
     onclose={onCancel}
     containerStyle="width: 400px"
 >
-    {#snippet title()}New file{/snippet}
+    {#snippet title()}{tString('fileOperations.mkfile.title')}{/snippet}
 
     <div class="dialog-body">
-        <p class="subtitle">Create file in <span class="dir-name">{currentDirName}</span></p>
+        <p class="subtitle">
+            <Trans key="fileOperations.mkfile.createIn" params={{ name: currentDirName }} snippets={{ dir }} />
+        </p>
 
         <div class="input-group">
             <input
@@ -161,12 +165,12 @@
                 type="text"
                 class="name-input"
                 class:has-error={!!errorMessage}
-                aria-label="File name"
+                aria-label={tString('fileOperations.mkfile.nameAria')}
                 aria-describedby={errorMessage ? 'new-file-error' : undefined}
                 aria-invalid={!!errorMessage}
                 spellcheck="false"
                 autocomplete="off"
-                placeholder="Example: notes.txt"
+                placeholder={tString('fileOperations.mkfile.placeholder')}
                 onkeydown={handleInputKeydown}
                 oninput={handleInput}
             />
@@ -176,11 +180,15 @@
         </div>
 
         <div class="button-row">
-            <Button variant="secondary" onclick={onCancel}>Cancel</Button>
-            <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}>OK</Button>
+            <Button variant="secondary" onclick={onCancel}>{tString('fileOperations.button.cancel')}</Button>
+            <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}
+                >{tString('fileOperations.button.ok')}</Button
+            >
         </div>
     </div>
 </ModalDialog>
+
+{#snippet dir(children: import('svelte').Snippet)}<span class="dir-name">{@render children()}</span>{/snippet}
 
 <style>
     .dialog-body {

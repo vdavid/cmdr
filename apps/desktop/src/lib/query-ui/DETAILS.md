@@ -3,6 +3,17 @@
 Pull-tier docs for `lib/query-ui/`: architecture, flows, and decision rationale. Must-know invariants and gotchas live
 in [CLAUDE.md](CLAUDE.md).
 
+## i18n
+
+All user-facing copy in this area lives in the `queryUi.*` message catalog (`$lib/intl/messages/en/queryUi.json`),
+resolved through `tString()` / `t()` (and `<Trans>` for the keyboard-tip, recent-popover-hint, and scope-hint sentences
+that interleave key-cap chips / `<code>` glyphs). `cmdr/no-raw-user-facing-string` is enforced on `/lib/query-ui/`, so
+add new copy as a catalog key, not a literal. Pure helpers that compose chip/tooltip strings (`filter-chip-state.ts`,
+`filter-popover-helpers.ts`, `recent-items/recent-items-utils.ts`, `ai-summary.ts`) call `tString()` directly; counts
+are passed in as preformatted `*Text` params (with a raw integer alongside only to drive plural selection). Symbol-like
+mode badges (`AI` / `.*` / `Aa` in `modeBadge`), unit abbreviations (`kB` / `KB` / `MB` / `GB`), and the regex
+slash-wrap are typography, not copy, and stay literal. Parity net: `queryui-i18n-parity.test.ts`.
+
 Home for primitives shared between the Search dialog (`lib/search/`) and the Selection dialog (`lib/selection-dialog/`).
 Owns the unified query bar, mode chips, AI prompt strip, filter chips strip (size, modified, scope, pattern),
 virtualized results table with path pills and per-row menus, recent-items footer + popover, and the cross-consumer

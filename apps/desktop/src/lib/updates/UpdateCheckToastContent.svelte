@@ -3,6 +3,7 @@
     import { formatUpdateStatus } from './update-status-text'
     import Button from '$lib/ui/Button.svelte'
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
+    import { t, tString } from '$lib/intl/messages.svelte'
 
     const statusText = $derived(formatUpdateStatus(updateState))
 
@@ -13,9 +14,11 @@
 
 <div class="content">
     {#if updateState.error !== null}
-        <span class="message">Error: {updateState.error}</span>
+        <span class="message">{t('updates.checkToast.errorPrefix', { message: updateState.error })}</span>
         <div class="actions">
-            <Button size="mini" variant="secondary" onclick={handleSendErrorReport}>Send error report</Button>
+            <Button size="mini" variant="secondary" onclick={handleSendErrorReport}
+                >{tString('updates.checkToast.sendErrorReport')}</Button
+            >
         </div>
     {:else}
         <span class="message">{statusText}</span>

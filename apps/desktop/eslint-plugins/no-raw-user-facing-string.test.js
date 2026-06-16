@@ -100,6 +100,13 @@ svelteTester.run('no-raw-user-facing-string (svelte sinks)', rule, {
       code: `<p>{t('settings.control.resetToDefault')}</p>`,
       filename: 'src/lib/settings/components/SettingRow.svelte',
     },
+    // SVG `<text>` is geometry-positioned glyph content (key-cap labels), not a
+    // localizable UI string sink: the rule must skip it even in an enforced area
+    // (the downloads keyboard-animation SVG would otherwise flag every key cap).
+    {
+      code: `<svg aria-hidden="true"><g><text x="6" y="46">tab</text></g></svg>`,
+      filename: 'src/lib/downloads/GlobalShortcutAnimation.svelte',
+    },
   ],
   invalid: [
     // Raw `title` attribute in an enforced area.

@@ -31,6 +31,8 @@
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { tooltip } from '$lib/tooltip/tooltip'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
+    import type { MessageKey } from '$lib/intl/keys.gen'
 
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
@@ -55,9 +57,15 @@
     // indicator carries all three states without two components fighting for the corner.
     const visible = $derived(scanning || aggregating || replaying)
 
+    // Leading space joins the counters onto the scan label; the catalog value
+    // carries no leading space (it's a join concern, not copy).
     const scanCounters = $derived(
         entriesScanned > 0
-            ? ` ${formatNumber(entriesScanned)} entries, ${formatNumber(dirsFound)} dirs`
+            ? ' ' +
+                  tString('indexing.scan.counters', {
+                      entriesText: formatNumber(entriesScanned),
+                      dirsText: formatNumber(dirsFound),
+                  })
             : '',
     )
 
@@ -72,7 +80,7 @@
     // The scan label names the tier so the rough first-scan reads as approximate. The counters
     // ride along on both. "..." matches the indicator's three-ASCII-dots convention.
     const scanLabel = $derived(
-        (scanRough ? 'Scanning your drive (first scan)...' : 'Scanning your drive...') + scanCounters,
+        tString(scanRough ? 'indexing.scan.labelFirst' : 'indexing.scan.label') + scanCounters,
     )
 
     // The ETA unit must match the progress tier: entries for tier 1, bytes for tier 2. The
@@ -132,15 +140,17 @@
         return null
     })
 
-    const phaseToLabel: Record<string, string> = {
-        saving_entries: 'Saving entries...',
-        loading: 'Loading directories...',
-        sorting: 'Sorting directories...',
-        computing: 'Computing directory sizes...',
-        writing: 'Saving directory sizes...',
+    // Backend aggregation-phase discriminator → its catalog message key. Branch
+    // on the typed phase, not on wording; copy lives in `messages/en/indexing.json`.
+    const phaseToLabelKey: Record<string, MessageKey> = {
+        saving_entries: 'indexing.aggregation.savingEntries',
+        loading: 'indexing.aggregation.loading',
+        sorting: 'indexing.aggregation.sorting',
+        computing: 'indexing.aggregation.computing',
+        writing: 'indexing.aggregation.writing',
     }
 
-    const aggLabel = $derived(phaseToLabel[aggPhase] ?? 'Computing directory sizes...')
+    const aggLabel = $derived(tString(phaseToLabelKey[aggPhase] ?? 'indexing.aggregation.computing'))
 
     const aggHasProgress = $derived(
         aggPhase === 'saving_entries' || aggPhase === 'computing' || aggPhase === 'writing',
@@ -176,12 +186,12 @@
     })
 
     const replayProgress = $derived(estimatedTotal > 0 ? Math.min(1, eventsProcessed / estimatedTotal) : 0)
-    const replayDetail = $derived(`${formatNumber(eventsProcessed)} events processed`)
+    const replayDetail = $derived(tString('indexing.replay.detail', { eventsText: formatNumber(eventsProcessed) }))
 
     const replayEta = $derived.by(() => {
         if (!replaying || eventsProcessed === 0 || estimatedTotal === 0 || replayStartedAt === 0) return null
         const remaining = estimatedTotal - eventsProcessed
-        if (remaining <= 0) return 'Almost done'
+        if (remaining <= 0) return tString('indexing.eta.almostDone')
 
         const elapsedSec = (Date.now() - replayStartedAt) / 1000
         const totalBasedEta = computeElapsedEta(elapsedSec, eventsProcessed, remaining)
@@ -195,12 +205,17 @@
     const mode = $derived<Mode>(aggregating ? 'aggregation' : scanning ? 'scan' : 'replay')
 
     // Tier 2 wraps its ETA in "roughly" since the bytes-vs-used-bytes denominator is approximate.
-    // "Almost done" is already a terminal phrase, so it stays unprefixed (not "roughly Almost done").
+    // The terminal "almost done" phrase stays unprefixed (not "roughly Almost done"); compare
+    // against the resolved catalog string so a copy edit can't silently break the guard.
     const scanEtaDisplay = $derived(
-        scanEta != null && scanRough && scanEta !== 'Almost done' ? `roughly ${scanEta}` : scanEta,
+        scanEta != null && scanRough && scanEta !== tString('indexing.eta.almostDone')
+            ? tString('indexing.scan.etaRough', { eta: scanEta })
+            : scanEta,
     )
 
-    const label = $derived(mode === 'aggregation' ? aggLabel : mode === 'scan' ? scanLabel : 'Updating index...')
+    const label = $derived(
+        mode === 'aggregation' ? aggLabel : mode === 'scan' ? scanLabel : tString('indexing.replay.label'),
+    )
     const detail = $derived(mode === 'replay' ? replayDetail : null)
     const progress = $derived(mode === 'aggregation' ? aggProgress : mode === 'scan' ? scanProgress : replayProgress)
     const eta = $derived(mode === 'aggregation' ? aggEta : mode === 'scan' ? scanEtaDisplay : replayEta)
@@ -218,7 +233,7 @@
         class="indexing-status"
         tabindex="0"
         role="img"
-        aria-label="Drive indexing status"
+        aria-label={tString('indexing.status.ariaLabel')}
         use:tooltip={{ contentEl: tooltipContent }}
     >
         <Icon name="hourglass" size={14} />

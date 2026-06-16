@@ -2,6 +2,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import CommandBox from '$lib/ui/CommandBox.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** Called when the dialog is closed. */
@@ -29,24 +30,24 @@
     onclose={onClose}
     containerStyle="min-width: 480px; max-width: 560px"
 >
-    {#snippet title()}Can't access USB device{/snippet}
+    {#snippet title()}{tString('mtp.permissionDialog.title')}{/snippet}
 
     <div class="dialog-body">
         <p class="description">
-            Cmdr doesn't have permission to access this device. Linux needs udev rules to grant MTP device access.
+            {tString('mtp.permissionDialog.description')}
         </p>
 
-        <p class="explanation">Run this command in your terminal to install the rules and reload them:</p>
+        <p class="explanation">{tString('mtp.permissionDialog.explanation')}</p>
 
         <div class="command-wrapper">
             <CommandBox command={installCommand} />
         </div>
 
-        <p class="help-text">After running the command, unplug and replug the device, then retry.</p>
+        <p class="help-text">{tString('mtp.permissionDialog.helpText')}</p>
 
         <div class="actions">
-            <Button variant="secondary" onclick={onClose}>Close</Button>
-            <Button variant="primary" onclick={onRetry}>Retry connection</Button>
+            <Button variant="secondary" onclick={onClose}>{tString('mtp.permissionDialog.close')}</Button>
+            <Button variant="primary" onclick={onRetry}>{tString('mtp.permissionDialog.retry')}</Button>
         </div>
     </div>
 </ModalDialog>

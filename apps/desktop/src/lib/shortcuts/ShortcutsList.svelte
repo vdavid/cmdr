@@ -18,6 +18,7 @@
     import { commands } from '$lib/commands/command-registry'
     import { getDefaultShortcuts, getEffectiveShortcuts, onShortcutChange } from '$lib/shortcuts'
     import { groupCommandsByScope } from '$lib/settings/sections/keyboard-shortcuts-grouping'
+    import { tString } from '$lib/intl/messages.svelte'
     import { diffShortcuts } from './shortcut-diff'
 
     interface Props {
@@ -52,13 +53,13 @@
                 <span class="name">{command.name}</span>
                 <div class="chips">
                     {#if chips.length === 0}
-                        <span class="none">No shortcut</span>
+                        <span class="none">{tString('shortcuts.list.noShortcut')}</span>
                     {:else}
                         {#each chips as chip (chip.key + chip.status)}
                             {#if chip.status === 'added'}
-                                <kbd class="chip added" use:tooltip={'Added'}>{chip.key}</kbd>
+                                <kbd class="chip added" use:tooltip={tString('shortcuts.list.addedTooltip')}>{chip.key}</kbd>
                             {:else if chip.status === 'disabled'}
-                                <kbd class="chip disabled" use:tooltip={'Disabled'}>{chip.key}</kbd>
+                                <kbd class="chip disabled" use:tooltip={tString('shortcuts.list.disabledTooltip')}>{chip.key}</kbd>
                             {:else}
                                 <kbd class="chip">{chip.key}</kbd>
                             {/if}

@@ -2,6 +2,7 @@
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
+    import { tString } from '$lib/intl/messages.svelte'
     import { openErrorReportDialog } from './error-report-flow.svelte'
     import { getLastAutoSentReportId } from './auto-send-toast-state.svelte'
 
@@ -22,14 +23,18 @@
 </script>
 
 <div class="content">
-    <div class="title">Error report sent</div>
+    <div class="title">{tString('errorReporter.autoSentToast.title')}</div>
     <div class="body">
-        Reference ID:
+        {tString('errorReporter.autoSentToast.referenceIdLabel')}
         <span class="id-badge">{getLastAutoSentReportId()}</span>
     </div>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleChangeSettings}>Change settings</Button>
-        <Button size="mini" variant="primary" onclick={handleView}>View</Button>
+        <Button size="mini" variant="secondary" onclick={handleChangeSettings}
+            >{tString('errorReporter.autoSentToast.changeSettings')}</Button
+        >
+        <Button size="mini" variant="primary" onclick={handleView}
+            >{tString('errorReporter.autoSentToast.view')}</Button
+        >
     </div>
 </div>
 

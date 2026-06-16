@@ -1,0 +1,1032 @@
+{
+  "errors.listing.interrupted.title": "Interrupted",
+  "errors.listing.interrupted.explanation": "A system operation was interrupted before it could finish. This is almost always a one-off, caused by a signal or background process momentarily getting in the way.",
+  "errors.listing.interrupted.suggestion": "Navigate here again to retry. This kind of interruption almost never happens twice in a row.",
+  "@errors.listing.interrupted.title": {
+    "description": "Title of the folder-listing error panel shown when reading a folder was interrupted by the OS. Plain text, not markdown. Surface: the error pane that replaces a file list when a folder can't be read."
+  },
+  "@errors.listing.interrupted.explanation": {
+    "description": "Body of the listing error panel for an interrupted read. Markdown (rendered via a tiny markdown parser). Surface: the error pane that replaces a file list."
+  },
+  "@errors.listing.interrupted.suggestion": {
+    "description": "Recovery suggestion in the listing error panel for an interrupted read. Markdown. Surface: the error pane that replaces a file list."
+  },
+
+  "errors.listing.notEnoughMemory.title": "Not enough memory",
+  "errors.listing.notEnoughMemory.explanation": "The system ran out of available memory (RAM) while reading this folder. This can happen when many apps are open at once, or when a folder contains a very large number of files.",
+  "errors.listing.notEnoughMemory.suggestion": "Here's what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Activity Monitor** (search for it in Spotlight)\n- Navigate here again to retry",
+  "@errors.listing.notEnoughMemory.title": {
+    "description": "Title of the listing error panel shown when the OS ran out of memory while reading a folder. Plain text."
+  },
+  "@errors.listing.notEnoughMemory.explanation": {
+    "description": "Body of the listing error panel for an out-of-memory read. Markdown."
+  },
+  "@errors.listing.notEnoughMemory.suggestion": {
+    "description": "Recovery suggestion for an out-of-memory listing error. Markdown with a bullet list. \"Activity Monitor\" and \"Spotlight\" are macOS feature names that must NOT be translated."
+  },
+
+  "errors.listing.resourceBusy.title": "Resource busy",
+  "errors.listing.resourceBusy.explanation": "Cmdr couldn't access `{path}` because another app or process is currently using it exclusively. This is usually temporary.",
+  "errors.listing.resourceBusy.suggestion": "Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in Terminal, run `lsof +D <folder-path>` to see which processes are using this folder).",
+  "@errors.listing.resourceBusy.title": {
+    "description": "Title of the listing error panel when a folder couldn't be read because another process holds it exclusively. Plain text."
+  },
+  "@errors.listing.resourceBusy.explanation": {
+    "description": "Body of the listing error panel for a busy resource. Markdown. The literal token `{path}` is a do-not-translate placeholder; it's replaced at runtime with the folder path (already escaped) wrapped in backticks by the surrounding code. \"Cmdr\" is the app name and must NOT be translated."
+  },
+  "@errors.listing.resourceBusy.suggestion": {
+    "description": "Recovery suggestion for a busy resource. Markdown. \"Terminal\" is a macOS app name; the backtick-quoted command and `<folder-path>` are literal and must NOT be translated."
+  },
+
+  "errors.listing.temporarilyUnavailable.title": "Temporarily unavailable",
+  "errors.listing.temporarilyUnavailable.explanation": "The system is momentarily too busy to handle this request. This is a transient condition that typically clears up on its own within seconds.",
+  "errors.listing.temporarilyUnavailable.suggestion": "Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Activity Monitor** for apps consuming a lot of resources.",
+  "@errors.listing.temporarilyUnavailable.title": {
+    "description": "Title of the listing error panel when the OS was momentarily too busy to read the folder. Plain text."
+  },
+  "@errors.listing.temporarilyUnavailable.explanation": {
+    "description": "Body of the listing error panel for a temporarily-unavailable system. Markdown."
+  },
+  "@errors.listing.temporarilyUnavailable.suggestion": {
+    "description": "Recovery suggestion for a temporarily-unavailable system. Markdown. \"Activity Monitor\" is a macOS app name; do NOT translate."
+  },
+
+  "errors.listing.networkDown.title": "Network is down",
+  "errors.listing.networkDown.explanation": "Your Mac's network connection is down, so Cmdr can't reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.",
+  "errors.listing.networkDown.suggestion": "Here's what to try:\n- Check Wi-Fi or Ethernet status in **{system_settings} > Network**\n- If you're on Wi-Fi, try turning it off and on again\n- In Terminal, run `ping google.com` to test your connection\n- Navigate here again once you're back online",
+  "@errors.listing.networkDown.title": {
+    "description": "Title of the listing error panel when the Mac's network is down. Plain text."
+  },
+  "@errors.listing.networkDown.explanation": {
+    "description": "Body of the listing error panel for a down network. Markdown. \"Cmdr\", \"Mac\", \"Wi-Fi\", and \"Ethernet\" are proper names; do NOT translate."
+  },
+  "@errors.listing.networkDown.suggestion": {
+    "description": "Recovery suggestion for a down network. Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the OS-localized \"System Settings\" pane name. \"Network\", \"Terminal\", and the backtick command are literal and must NOT be translated."
+  },
+
+  "errors.listing.networkConnectionDropped.title": "Network connection dropped",
+  "errors.listing.networkConnectionDropped.explanation": "The network connection was unexpectedly reset while Cmdr was reading this folder. This can happen when a router restarts, a VPN reconnects, or the network is temporarily unstable.",
+  "errors.listing.networkConnectionDropped.suggestion": "Here's what to try:\n- Check your network connection\n- If you're on a VPN, make sure it's still connected\n- Navigate here again to retry",
+  "@errors.listing.networkConnectionDropped.title": {
+    "description": "Title of the listing error panel when the network connection dropped mid-read. Plain text."
+  },
+  "@errors.listing.networkConnectionDropped.explanation": {
+    "description": "Body of the listing error panel for a dropped network connection. Markdown. \"Cmdr\", \"VPN\" are proper terms; do NOT translate."
+  },
+  "@errors.listing.networkConnectionDropped.suggestion": {
+    "description": "Recovery suggestion for a dropped network connection. Markdown bullet list."
+  },
+
+  "errors.listing.connectionDropped.title": "Connection dropped",
+  "errors.listing.connectionDropped.explanation": "The connection was dropped by the server or the network before Cmdr could finish reading. This often means the server is overloaded or restarting.",
+  "errors.listing.connectionDropped.suggestion": "Here's what to try:\n- Check that the server is running and responsive\n- Check your network connection\n- Navigate here again to retry",
+  "@errors.listing.connectionDropped.title": {
+    "description": "Title of the listing error panel when the connection to a server was dropped. Plain text."
+  },
+  "@errors.listing.connectionDropped.explanation": {
+    "description": "Body of the listing error panel for a dropped connection. Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.connectionDropped.suggestion": {
+    "description": "Recovery suggestion for a dropped connection. Markdown bullet list."
+  },
+
+  "errors.listing.connectionReset.title": "Connection reset",
+  "errors.listing.connectionReset.explanation": "The remote server closed the connection unexpectedly. This can happen when the server restarts, hits a timeout, or runs into an internal problem.",
+  "errors.listing.connectionReset.suggestion": "Here's what to try:\n- Check that the server is running\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry",
+  "@errors.listing.connectionReset.title": {
+    "description": "Title of the listing error panel when a remote server reset the connection. Plain text."
+  },
+  "@errors.listing.connectionReset.explanation": {
+    "description": "Body of the listing error panel for a reset connection. Markdown."
+  },
+  "@errors.listing.connectionReset.suggestion": {
+    "description": "Recovery suggestion for a reset connection. Markdown bullet list. \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate."
+  },
+
+  "errors.listing.connectionTimedOutErrno.title": "Connection timed out",
+  "errors.listing.connectionTimedOutErrno.explanation": "Cmdr tried to read this folder but the connection didn't respond in time. This usually means the server or device is slow, unreachable, or the network between you and it is congested.",
+  "errors.listing.connectionTimedOutErrno.suggestion": "Here's what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry",
+  "@errors.listing.connectionTimedOutErrno.title": {
+    "description": "Title of the listing error panel when the connection timed out while reading a folder (errno path). Plain text."
+  },
+  "@errors.listing.connectionTimedOutErrno.explanation": {
+    "description": "Body of the listing error panel for a timed-out connection (errno path). Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.connectionTimedOutErrno.suggestion": {
+    "description": "Recovery suggestion for a timed-out connection (errno path). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate."
+  },
+
+  "errors.listing.hostDown.title": "Host is down",
+  "errors.listing.hostDown.explanation": "The remote host (the computer or server hosting this volume) isn't responding. It may be powered off, sleeping, or temporarily unreachable.",
+  "errors.listing.hostDown.suggestion": "Here's what to try:\n- Check that the host is powered on and connected to the network\n- In Terminal, try `ping <hostname>` to test if it's reachable\n- If it's a NAS or server, check its management interface\n- Navigate here again once the host is back",
+  "@errors.listing.hostDown.title": {
+    "description": "Title of the listing error panel when the host serving a volume is down. Plain text."
+  },
+  "@errors.listing.hostDown.explanation": {
+    "description": "Body of the listing error panel for a down host. Markdown."
+  },
+  "@errors.listing.hostDown.suggestion": {
+    "description": "Recovery suggestion for a down host. Markdown bullet list. \"Terminal\", the backtick command, `<hostname>`, and \"NAS\" are literal; do NOT translate."
+  },
+
+  "errors.listing.staleConnection.title": "Stale connection",
+  "errors.listing.staleConnection.explanation": "Cmdr is trying to access this folder using an old reference that the server no longer recognizes. This commonly happens with network drives (NFS, SMB) after the server restarts, the share is remounted, or the connection was interrupted.",
+  "errors.listing.staleConnection.suggestion": "Here's what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in Finder\n- Check that the server hosting this folder is running\n- In Terminal, run `mount` to see currently mounted volumes",
+  "@errors.listing.staleConnection.title": {
+    "description": "Title of the listing error panel when a network drive reference is stale. Plain text."
+  },
+  "@errors.listing.staleConnection.explanation": {
+    "description": "Body of the listing error panel for a stale connection. Markdown. \"Cmdr\", \"NFS\", \"SMB\" are proper names; do NOT translate."
+  },
+  "@errors.listing.staleConnection.suggestion": {
+    "description": "Recovery suggestion for a stale connection. Markdown bullet list. \"Finder\", \"Terminal\", and the backtick command are literal; do NOT translate."
+  },
+
+  "errors.listing.lockUnavailable.title": "Lock unavailable",
+  "errors.listing.lockUnavailable.explanation": "The system ran out of file locks. File locks are how apps coordinate access to shared files (preventing two apps from writing to the same file at once). Running out usually means too many apps are accessing files simultaneously.",
+  "errors.listing.lockUnavailable.suggestion": "Here's what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In Terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in Terminal\n- Navigate here again to retry",
+  "@errors.listing.lockUnavailable.title": {
+    "description": "Title of the listing error panel when the OS ran out of file locks. Plain text."
+  },
+  "@errors.listing.lockUnavailable.explanation": {
+    "description": "Body of the listing error panel for exhausted file locks. Markdown."
+  },
+  "@errors.listing.lockUnavailable.suggestion": {
+    "description": "Recovery suggestion for exhausted file locks. Markdown bullet list. \"Terminal\", \"IDEs\", and the backtick commands are literal; do NOT translate."
+  },
+
+  "errors.listing.cancelledErrno.title": "Cancelled",
+  "errors.listing.cancelledErrno.explanation": "The operation was cancelled before it could finish.",
+  "errors.listing.cancelledErrno.suggestion": "Navigate here again whenever you're ready to retry.",
+  "@errors.listing.cancelledErrno.title": {
+    "description": "Title of the listing error panel when a folder read was cancelled (errno path). Plain text."
+  },
+  "@errors.listing.cancelledErrno.explanation": {
+    "description": "Body of the listing error panel for a cancelled read (errno path). Markdown."
+  },
+  "@errors.listing.cancelledErrno.suggestion": {
+    "description": "Recovery suggestion for a cancelled read (errno path). Markdown."
+  },
+
+  "errors.listing.notPermitted.title": "Not permitted",
+  "errors.listing.notPermitted.explanation": "macOS blocked Cmdr from accessing `{path}`. This usually means the folder is protected by macOS security policies, or Cmdr hasn't been granted the right permissions yet.",
+  "errors.listing.notPermitted.suggestion": "Here's what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- If this is a system-protected folder (like system directories), you may need to grant Cmdr **{full_disk_access}** under {privacy_and_security}\n- In Terminal, run `ls -la` on this path to check ownership and permissions",
+  "@errors.listing.notPermitted.title": {
+    "description": "Title of the listing error panel when macOS blocked access to a folder (operation not permitted). Plain text."
+  },
+  "@errors.listing.notPermitted.explanation": {
+    "description": "Body of the listing error panel for a not-permitted access. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder path. \"macOS\", \"Cmdr\" are proper names; do NOT translate."
+  },
+  "@errors.listing.notPermitted.suggestion": {
+    "description": "Recovery suggestion for a not-permitted access. Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}`, and `{full_disk_access}` are do-not-translate placeholders replaced at runtime with the OS-localized System Settings pane names. \"Cmdr\", \"Terminal\", and the backtick command are literal; do NOT translate."
+  },
+
+  "errors.listing.pathNotFoundErrno.title": "Path not found",
+  "errors.listing.pathNotFoundErrno.explanation": "Cmdr couldn't find `{path}`. It may have been moved, renamed, or deleted while Cmdr was trying to access it.",
+  "errors.listing.pathNotFoundErrno.suggestion": "Here's what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it's connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `ls -la` on the parent folder to see what's there",
+  "@errors.listing.pathNotFoundErrno.title": {
+    "description": "Title of the listing error panel when a path wasn't found (errno path). Plain text."
+  },
+  "@errors.listing.pathNotFoundErrno.explanation": {
+    "description": "Body of the listing error panel for a not-found path (errno path). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.pathNotFoundErrno.suggestion": {
+    "description": "Recovery suggestion for a not-found path (errno path). Markdown bullet list. \"Terminal\" and the backtick command are literal; do NOT translate."
+  },
+
+  "errors.listing.noPermissionErrno.title": "No permission",
+  "errors.listing.noPermissionErrno.explanation": "Cmdr doesn't have permission to access `{path}`. macOS controls which apps can access which folders, and Cmdr hasn't been granted access to this one yet.",
+  "errors.listing.noPermissionErrno.suggestion": "Here's what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- Check the folder's permissions in Finder: right-click it, choose Get Info, and look under Sharing & Permissions\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `ls -la` on this path to see the current permissions",
+  "@errors.listing.noPermissionErrno.title": {
+    "description": "Title of the listing error panel when Cmdr lacks permission to read a folder (errno path). Plain text."
+  },
+  "@errors.listing.noPermissionErrno.explanation": {
+    "description": "Body of the listing error panel for a no-permission read (errno path). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder path. \"Cmdr\", \"macOS\" are proper names; do NOT translate."
+  },
+  "@errors.listing.noPermissionErrno.suggestion": {
+    "description": "Recovery suggestion for a no-permission read (errno path). Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. \"Finder\", \"Get Info\", \"Sharing & Permissions\", \"Terminal\", and the backtick command are literal; do NOT translate."
+  },
+
+  "errors.listing.alreadyExistsErrno.title": "Already exists",
+  "errors.listing.alreadyExistsErrno.explanation": "A file or folder already exists at `{path}`, so Cmdr can't create a new one there.",
+  "errors.listing.alreadyExistsErrno.suggestion": "Rename the existing item or choose a different name for the new one.",
+  "@errors.listing.alreadyExistsErrno.title": {
+    "description": "Title of the listing error panel when an item already exists at the target path (errno path). Plain text."
+  },
+  "@errors.listing.alreadyExistsErrno.explanation": {
+    "description": "Body of the listing error panel for an already-existing item (errno path). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.alreadyExistsErrno.suggestion": {
+    "description": "Recovery suggestion for an already-existing item (errno path). Markdown."
+  },
+
+  "errors.listing.crossDeviceOperation.title": "Cross-device operation",
+  "errors.listing.crossDeviceOperation.explanation": "Cmdr can't move this item directly because the source and destination are on different volumes (for example, an internal drive and a USB stick). Moving across volumes requires copying the data and then removing the original.",
+  "errors.listing.crossDeviceOperation.suggestion": "Copy the item to the destination instead of moving it. Cmdr will handle the copy automatically.",
+  "@errors.listing.crossDeviceOperation.title": {
+    "description": "Title of the listing error panel when a move spans two volumes. Plain text."
+  },
+  "@errors.listing.crossDeviceOperation.explanation": {
+    "description": "Body of the listing error panel for a cross-device move. Markdown. \"Cmdr\", \"USB\" are proper terms; do NOT translate."
+  },
+  "@errors.listing.crossDeviceOperation.suggestion": {
+    "description": "Recovery suggestion for a cross-device move. Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+
+  "errors.listing.notAFolder.title": "Not a folder",
+  "errors.listing.notAFolder.explanation": "Cmdr expected `{path}` to be a folder, but it's a file. This can happen if something was recently renamed or replaced.",
+  "errors.listing.notAFolder.suggestion": "Check the path and make sure it points to a folder, not a file.",
+  "@errors.listing.notAFolder.title": {
+    "description": "Title of the listing error panel when a path expected to be a folder is a file. Plain text."
+  },
+  "@errors.listing.notAFolder.explanation": {
+    "description": "Body of the listing error panel for a not-a-folder path. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.notAFolder.suggestion": {
+    "description": "Recovery suggestion for a not-a-folder path. Markdown."
+  },
+
+  "errors.listing.isAFolderErrno.title": "Is a folder",
+  "errors.listing.isAFolderErrno.explanation": "Cmdr expected `{path}` to be a file, but it's a folder. This can happen if something was recently renamed or replaced.",
+  "errors.listing.isAFolderErrno.suggestion": "Check the path and make sure it points to a file, not a folder.",
+  "@errors.listing.isAFolderErrno.title": {
+    "description": "Title of the listing error panel when a path expected to be a file is a folder (errno path). Plain text."
+  },
+  "@errors.listing.isAFolderErrno.explanation": {
+    "description": "Body of the listing error panel for an is-a-folder path (errno path). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.isAFolderErrno.suggestion": {
+    "description": "Recovery suggestion for an is-a-folder path (errno path). Markdown."
+  },
+
+  "errors.listing.diskFullErrno.title": "Disk is full",
+  "errors.listing.diskFullErrno.explanation": "There isn't enough free space on this volume to complete the operation.",
+  "errors.listing.diskFullErrno.suggestion": "Here's what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash (right-click the Trash icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume\n- Check **{system_settings} > General > Storage** for a breakdown of what's using space",
+  "@errors.listing.diskFullErrno.title": {
+    "description": "Title of the listing error panel when the volume is out of space (errno path). Plain text."
+  },
+  "@errors.listing.diskFullErrno.explanation": {
+    "description": "Body of the listing error panel for a full disk (errno path). Markdown."
+  },
+  "@errors.listing.diskFullErrno.suggestion": {
+    "description": "Recovery suggestion for a full disk (errno path). Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the OS-localized System Settings pane name. \"Trash\", \"Dock\", \"Terminal\", \"General\", \"Storage\", and the backtick command are literal; do NOT translate."
+  },
+
+  "errors.listing.readOnlyVolumeErrno.title": "Read-only volume",
+  "errors.listing.readOnlyVolumeErrno.explanation": "This volume is mounted as read-only, so Cmdr can't make changes to it. This could be because the device has a physical write-protection switch, the disk image was mounted read-only, or the file system doesn't support writing.",
+  "errors.listing.readOnlyVolumeErrno.suggestion": "Here's what to try:\n- If the device has a physical write-protection switch (common on SD cards), flip it off\n- If this is a disk image, remount it with write access\n- Otherwise, copy the files to a writable location first",
+  "@errors.listing.readOnlyVolumeErrno.title": {
+    "description": "Title of the listing error panel when the volume is read-only (errno path). Plain text."
+  },
+  "@errors.listing.readOnlyVolumeErrno.explanation": {
+    "description": "Body of the listing error panel for a read-only volume (errno path). Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.readOnlyVolumeErrno.suggestion": {
+    "description": "Recovery suggestion for a read-only volume (errno path). Markdown bullet list. \"SD\" is a card type; do NOT translate."
+  },
+
+  "errors.listing.notSupportedErrno.title": "Not supported",
+  "errors.listing.notSupportedErrno.explanation": "This operation isn't supported on this file system. Different file systems (like FAT32, NTFS, or network shares) support different features, and this one doesn't support what Cmdr is trying to do.",
+  "errors.listing.notSupportedErrno.suggestion": "Try a different approach, or use Finder for this operation. If you're working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can't store files larger than 4 GB).",
+  "@errors.listing.notSupportedErrno.title": {
+    "description": "Title of the listing error panel when the operation isn't supported by the file system (errno path). Plain text."
+  },
+  "@errors.listing.notSupportedErrno.explanation": {
+    "description": "Body of the listing error panel for an unsupported operation (errno path). Markdown. \"FAT32\", \"NTFS\", \"Cmdr\" are proper names; do NOT translate."
+  },
+  "@errors.listing.notSupportedErrno.suggestion": {
+    "description": "Recovery suggestion for an unsupported operation (errno path). Markdown. \"Finder\", \"FAT32\", and the size \"4 GB\" are literal; do NOT translate."
+  },
+
+  "errors.listing.networkUnreachable.title": "Network unreachable",
+  "errors.listing.networkUnreachable.explanation": "Cmdr can't reach the network this volume is on. This often means you're not connected to the right network, or a VPN isn't active.",
+  "errors.listing.networkUnreachable.suggestion": "Here's what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you're on the right network (for example, your office Wi-Fi or VPN)\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you're connected",
+  "@errors.listing.networkUnreachable.title": {
+    "description": "Title of the listing error panel when the network hosting a volume is unreachable. Plain text."
+  },
+  "@errors.listing.networkUnreachable.explanation": {
+    "description": "Body of the listing error panel for an unreachable network. Markdown. \"Cmdr\", \"VPN\" are proper terms; do NOT translate."
+  },
+  "@errors.listing.networkUnreachable.suggestion": {
+    "description": "Recovery suggestion for an unreachable network. Markdown bullet list. \"Wi-Fi\", \"Ethernet\", \"VPN\", \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate."
+  },
+
+  "errors.listing.connectionRefused.title": "Connection refused",
+  "errors.listing.connectionRefused.explanation": "The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn't running, or it's configured to reject connections from this Mac.",
+  "errors.listing.connectionRefused.suggestion": "Here's what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In Terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry",
+  "@errors.listing.connectionRefused.title": {
+    "description": "Title of the listing error panel when a server refused the connection. Plain text."
+  },
+  "@errors.listing.connectionRefused.explanation": {
+    "description": "Body of the listing error panel for a refused connection. Markdown. \"SMB\", \"NFS\", \"Mac\" are proper names; do NOT translate."
+  },
+  "@errors.listing.connectionRefused.suggestion": {
+    "description": "Recovery suggestion for a refused connection. Markdown bullet list. \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate."
+  },
+
+  "errors.listing.symlinkLoopErrno.title": "Symlink loop",
+  "errors.listing.symlinkLoopErrno.explanation": "Cmdr found a circular chain of symbolic links (shortcuts that point to other shortcuts) at `{path}`. Following these links leads in a circle, so Cmdr can't reach the actual file or folder.",
+  "errors.listing.symlinkLoopErrno.suggestion": "Here's what to try:\n- In Terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you're not sure which link is the problem, follow them one by one with `readlink <path>`",
+  "@errors.listing.symlinkLoopErrno.title": {
+    "description": "Title of the listing error panel when symbolic links form a loop (errno path). Plain text."
+  },
+  "@errors.listing.symlinkLoopErrno.explanation": {
+    "description": "Body of the listing error panel for a symlink loop (errno path). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.symlinkLoopErrno.suggestion": {
+    "description": "Recovery suggestion for a symlink loop (errno path). Markdown bullet list. \"Terminal\", the backtick commands, and `<path>` are literal; do NOT translate."
+  },
+
+  "errors.listing.nameTooLongErrno.title": "Name too long",
+  "errors.listing.nameTooLongErrno.explanation": "The file or folder name exceeds the system's limit (255 characters on most Mac volumes). This can also happen when the full path (all folders combined) exceeds the system's maximum path length.",
+  "errors.listing.nameTooLongErrno.suggestion": "Rename the item to use a shorter name. If the name looks reasonable, the full path (including all parent folders) might be too long. Try moving it to a shorter path.",
+  "@errors.listing.nameTooLongErrno.title": {
+    "description": "Title of the listing error panel when a name or path is too long (errno path). Plain text."
+  },
+  "@errors.listing.nameTooLongErrno.explanation": {
+    "description": "Body of the listing error panel for a too-long name (errno path). Markdown. \"Mac\" is a proper name; the number 255 is a literal limit; do NOT translate them."
+  },
+  "@errors.listing.nameTooLongErrno.suggestion": {
+    "description": "Recovery suggestion for a too-long name (errno path). Markdown."
+  },
+
+  "errors.listing.hostUnreachable.title": "Host unreachable",
+  "errors.listing.hostUnreachable.explanation": "Cmdr can't find a network route to the host this volume is on. This usually means the host is on a different network, behind a firewall, or the routing configuration needs updating.",
+  "errors.listing.hostUnreachable.suggestion": "Here's what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable",
+  "@errors.listing.hostUnreachable.title": {
+    "description": "Title of the listing error panel when there's no network route to the host. Plain text."
+  },
+  "@errors.listing.hostUnreachable.explanation": {
+    "description": "Body of the listing error panel for an unreachable host. Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.hostUnreachable.suggestion": {
+    "description": "Recovery suggestion for an unreachable host. Markdown bullet list. \"VPN\", \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate."
+  },
+
+  "errors.listing.folderNotEmpty.title": "Folder not empty",
+  "errors.listing.folderNotEmpty.explanation": "Cmdr can't remove `{path}` because it still contains files or subfolders. The system requires a folder to be empty before it can be removed this way.",
+  "errors.listing.folderNotEmpty.suggestion": "Delete the contents of the folder first, then try removing the folder again.",
+  "@errors.listing.folderNotEmpty.title": {
+    "description": "Title of the listing error panel when removing a non-empty folder. Plain text."
+  },
+  "@errors.listing.folderNotEmpty.explanation": {
+    "description": "Body of the listing error panel for a non-empty folder. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.folderNotEmpty.suggestion": {
+    "description": "Recovery suggestion for a non-empty folder. Markdown."
+  },
+
+  "errors.listing.quotaExceeded.title": "Quota exceeded",
+  "errors.listing.quotaExceeded.explanation": "You've reached your disk quota (the maximum amount of space allocated to your user account) on this volume. This is common on shared servers and network drives where an administrator sets per-user limits.",
+  "errors.listing.quotaExceeded.suggestion": "Here's what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In Terminal, run `quota` to see your current usage and limit",
+  "@errors.listing.quotaExceeded.title": {
+    "description": "Title of the listing error panel when the user's disk quota is exceeded. Plain text."
+  },
+  "@errors.listing.quotaExceeded.explanation": {
+    "description": "Body of the listing error panel for an exceeded quota. Markdown."
+  },
+  "@errors.listing.quotaExceeded.suggestion": {
+    "description": "Recovery suggestion for an exceeded quota. Markdown bullet list. \"Terminal\" and the backtick command are literal; do NOT translate."
+  },
+
+  "errors.listing.authRequiredEauth.title": "Authentication required",
+  "errors.listing.authRequiredEauth.explanation": "Cmdr couldn't authenticate with this volume. Your saved credentials may have expired, or the server is rejecting the current login.",
+  "errors.listing.authRequiredEauth.suggestion": "Here's what to try:\n- Disconnect and reconnect the volume, and enter your username and password again\n- Check that your password hasn't changed or expired\n- If this is a company server, check with your IT team",
+  "@errors.listing.authRequiredEauth.title": {
+    "description": "Title of the listing error panel when authentication with a volume failed (saved credentials rejected). Plain text."
+  },
+  "@errors.listing.authRequiredEauth.explanation": {
+    "description": "Body of the listing error panel for an auth-rejected volume. Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.authRequiredEauth.suggestion": {
+    "description": "Recovery suggestion for an auth-rejected volume. Markdown bullet list. \"IT\" is a common abbreviation; translate naturally."
+  },
+
+  "errors.listing.authRequiredEneedauth.title": "Authentication required",
+  "errors.listing.authRequiredEneedauth.explanation": "This volume requires you to log in, but no credentials have been provided yet.",
+  "errors.listing.authRequiredEneedauth.suggestion": "Here's what to try:\n- Disconnect and reconnect the volume in Finder\n- Enter your username and password when prompted\n- If you're not sure about the credentials, check with the server's administrator",
+  "@errors.listing.authRequiredEneedauth.title": {
+    "description": "Title of the listing error panel when a volume needs login credentials that haven't been provided. Plain text."
+  },
+  "@errors.listing.authRequiredEneedauth.explanation": {
+    "description": "Body of the listing error panel for a volume needing credentials. Markdown."
+  },
+  "@errors.listing.authRequiredEneedauth.suggestion": {
+    "description": "Recovery suggestion for a volume needing credentials. Markdown bullet list. \"Finder\" is a macOS app name; do NOT translate."
+  },
+
+  "errors.listing.devicePoweredOff.title": "Device powered off",
+  "errors.listing.devicePoweredOff.explanation": "The device is powered off or in a deep sleep state, so Cmdr can't communicate with it.",
+  "errors.listing.devicePoweredOff.suggestion": "Turn on the device, wait for it to fully start up, then navigate here again.",
+  "@errors.listing.devicePoweredOff.title": {
+    "description": "Title of the listing error panel when the device holding a volume is powered off. Plain text."
+  },
+  "@errors.listing.devicePoweredOff.explanation": {
+    "description": "Body of the listing error panel for a powered-off device. Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.devicePoweredOff.suggestion": {
+    "description": "Recovery suggestion for a powered-off device. Markdown."
+  },
+
+  "errors.listing.attributeNotFound.title": "Attribute not found",
+  "errors.listing.attributeNotFound.explanation": "Cmdr tried to read a file attribute (extra metadata like tags or permissions) that doesn't exist on this item. This can happen when the file system doesn't support extended attributes, or when the attribute was removed.",
+  "errors.listing.attributeNotFound.suggestion": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your Mac's internal drive first.",
+  "@errors.listing.attributeNotFound.title": {
+    "description": "Title of the listing error panel when a file attribute couldn't be read. Plain text."
+  },
+  "@errors.listing.attributeNotFound.explanation": {
+    "description": "Body of the listing error panel for a missing file attribute. Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.attributeNotFound.suggestion": {
+    "description": "Recovery suggestion for a missing file attribute. Markdown. \"Cmdr\", \"Mac\" are proper names; do NOT translate."
+  },
+
+  "errors.listing.diskReadProblem.title": "Disk read problem",
+  "errors.listing.diskReadProblem.explanation": "Cmdr hit a hardware-level read problem at `{path}`. This means the disk or device had trouble reading the data, which could be a temporary glitch or a sign of a failing disk.",
+  "errors.listing.diskReadProblem.suggestion": "Here's what to try:\n- Check that the disk or device is still properly connected\n- Open **Disk Utility** (search for it in Spotlight) and run **First Aid** on this volume\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.",
+  "@errors.listing.diskReadProblem.title": {
+    "description": "Title of the listing error panel for a hardware-level disk read problem (serious). Plain text."
+  },
+  "@errors.listing.diskReadProblem.explanation": {
+    "description": "Body of the listing error panel for a disk read problem. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.diskReadProblem.suggestion": {
+    "description": "Recovery suggestion for a disk read problem. Markdown bullet list. \"Disk Utility\", \"Spotlight\", \"First Aid\" are macOS feature names; do NOT translate."
+  },
+
+  "errors.listing.unexpectedSystemResponse.title": "Unexpected system response",
+  "errors.listing.unexpectedSystemResponse.explanation": "The system returned an unexpected response for this operation. This can happen when a volume's file system has inconsistencies, or when the volume is in an unusual state.",
+  "errors.listing.unexpectedSystemResponse.suggestion": "Here's what to try:\n- Navigate here again to retry\n- If this keeps happening, open **Disk Utility** (search for it in Spotlight) and run **First Aid** on this volume to check for file system problems",
+  "@errors.listing.unexpectedSystemResponse.title": {
+    "description": "Title of the listing error panel when the OS returned an unexpected response (serious). Plain text."
+  },
+  "@errors.listing.unexpectedSystemResponse.explanation": {
+    "description": "Body of the listing error panel for an unexpected system response. Markdown."
+  },
+  "@errors.listing.unexpectedSystemResponse.suggestion": {
+    "description": "Recovery suggestion for an unexpected system response. Markdown bullet list. \"Disk Utility\", \"Spotlight\", \"First Aid\" are macOS feature names; do NOT translate."
+  },
+
+  "errors.listing.deviceProblem.title": "Device problem",
+  "errors.listing.deviceProblem.explanation": "The device reported a hardware-level problem. This could be a loose connection, a worn-out cable, or an issue with the device itself.",
+  "errors.listing.deviceProblem.suggestion": "Here's what to try:\n- Disconnect and reconnect the device\n- Try a different USB port or cable\n- If it's an external drive, try connecting it to a different computer to see if the problem follows the device\n- If this keeps happening, the device may need repair or replacement",
+  "@errors.listing.deviceProblem.title": {
+    "description": "Title of the listing error panel for a hardware-level device problem (serious). Plain text."
+  },
+  "@errors.listing.deviceProblem.explanation": {
+    "description": "Body of the listing error panel for a device problem. Markdown."
+  },
+  "@errors.listing.deviceProblem.suggestion": {
+    "description": "Recovery suggestion for a device problem. Markdown bullet list. \"USB\" is a port type; do NOT translate."
+  },
+
+  "errors.listing.couldntReadUnknown.title": "Couldn't read this folder",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr ran into an unexpected problem reading `{path}`. Check the technical details below for the specific system code, which can help with troubleshooting.",
+  "errors.listing.couldntReadUnknown.suggestion": "Here's what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, open **Disk Utility** and run **First Aid** on this volume",
+  "@errors.listing.couldntReadUnknown.title": {
+    "description": "Title of the listing error panel for an unclassified read problem (serious). Plain text. Uses a contraction (\"Couldn't\")."
+  },
+  "@errors.listing.couldntReadUnknown.explanation": {
+    "description": "Body of the listing error panel for an unknown read problem. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.couldntReadUnknown.suggestion": {
+    "description": "Recovery suggestion for an unknown read problem. Markdown bullet list. \"Disk Utility\", \"First Aid\" are macOS feature names; do NOT translate."
+  },
+
+  "errors.listing.notFound.title": "Path not found",
+  "errors.listing.notFound.explanation": "Cmdr couldn't find `{path}`. It may have been moved, renamed, or deleted while Cmdr was trying to access it.",
+  "errors.listing.notFound.suggestion": "Here's what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it's connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `ls -la` on the parent folder to see what's there",
+  "@errors.listing.notFound.title": {
+    "description": "Title of the listing error panel when a path wasn't found (typed VolumeError variant). Plain text."
+  },
+  "@errors.listing.notFound.explanation": {
+    "description": "Body of the listing error panel for a not-found path (typed variant). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.notFound.suggestion": {
+    "description": "Recovery suggestion for a not-found path (typed variant). Markdown bullet list. \"Terminal\" and the backtick command are literal; do NOT translate."
+  },
+
+  "errors.listing.tccRestricted.title": "This folder is restricted by macOS",
+  "errors.listing.tccRestricted.explanation": "Cmdr can't read `{path}` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+  "errors.listing.tccRestricted.suggestion": "Two ways to fix:\n- Grant Cmdr **{full_disk_access}** in **{system_settings} → {privacy_and_security} → {full_disk_access}** to remove all such limits at once.\n- Or grant per-folder access for just this folder in **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr**.",
+  "@errors.listing.tccRestricted.title": {
+    "description": "Title of the listing error panel when macOS privacy controls (TCC) block a folder. Plain text. \"macOS\" is a proper name; do NOT translate."
+  },
+  "@errors.listing.tccRestricted.explanation": {
+    "description": "Body of the listing error panel for a TCC-restricted folder. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\", \"macOS\" are proper names; do NOT translate."
+  },
+  "@errors.listing.tccRestricted.suggestion": {
+    "description": "Recovery suggestion for a TCC-restricted folder. Markdown bullet list. `{full_disk_access}`, `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. \"Cmdr\" and the arrow → separators are literal; do NOT translate."
+  },
+
+  "errors.listing.permissionDenied.title": "No permission",
+  "errors.listing.permissionDenied.explanation": "Cmdr doesn't have permission to access `{path}`. macOS controls which apps can access which folders, and Cmdr hasn't been granted access to this one yet.",
+  "errors.listing.permissionDenied.suggestion": "Here's what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- Check the folder's permissions in Finder: right-click the folder, choose Get Info, and look under Sharing & Permissions\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `ls -la` on the path to see the current permissions",
+  "@errors.listing.permissionDenied.title": {
+    "description": "Title of the listing error panel when Cmdr lacks permission to read a folder (typed VolumeError variant). Plain text."
+  },
+  "@errors.listing.permissionDenied.explanation": {
+    "description": "Body of the listing error panel for a no-permission read (typed variant). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\", \"macOS\" are proper names; do NOT translate."
+  },
+  "@errors.listing.permissionDenied.suggestion": {
+    "description": "Recovery suggestion for a no-permission read (typed variant). Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. \"Finder\", \"Get Info\", \"Sharing & Permissions\", \"Terminal\", and the backtick command are literal; do NOT translate."
+  },
+
+  "errors.listing.alreadyExists.title": "Already exists",
+  "errors.listing.alreadyExists.explanation": "A file or folder already exists at `{path}`, so Cmdr can't create a new one there.",
+  "errors.listing.alreadyExists.suggestion": "Rename the existing item or choose a different name for the new one.",
+  "@errors.listing.alreadyExists.title": {
+    "description": "Title of the listing error panel when an item already exists at the target path (typed VolumeError variant). Plain text."
+  },
+  "@errors.listing.alreadyExists.explanation": {
+    "description": "Body of the listing error panel for an already-existing item (typed variant). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.alreadyExists.suggestion": {
+    "description": "Recovery suggestion for an already-existing item (typed variant). Markdown."
+  },
+
+  "errors.listing.cancelled.title": "Cancelled",
+  "errors.listing.cancelled.explanation": "The operation was cancelled before it could finish.",
+  "errors.listing.cancelled.suggestion": "Navigate here again whenever you're ready to retry.",
+  "@errors.listing.cancelled.title": {
+    "description": "Title of the listing error panel when a folder read was cancelled (typed VolumeError variant). Plain text."
+  },
+  "@errors.listing.cancelled.explanation": {
+    "description": "Body of the listing error panel for a cancelled read (typed variant). Markdown."
+  },
+  "@errors.listing.cancelled.suggestion": {
+    "description": "Recovery suggestion for a cancelled read (typed variant). Markdown."
+  },
+
+  "errors.listing.deviceDisconnected.title": "Device disconnected",
+  "errors.listing.deviceDisconnected.explanation": "The device holding `{path}` was disconnected during the operation. This can happen if a USB cable comes loose, a phone goes to sleep, or a network drive drops its connection.",
+  "errors.listing.deviceDisconnected.suggestion": "Here's what to try:\n- Reconnect the device and make sure the cable is secure\n- If it's a phone, unlock it and make sure file transfer mode is active\n- Navigate here again once the device is back",
+  "@errors.listing.deviceDisconnected.title": {
+    "description": "Title of the listing error panel when the device holding a volume was disconnected. Plain text."
+  },
+  "@errors.listing.deviceDisconnected.explanation": {
+    "description": "Body of the listing error panel for a disconnected device. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"USB\" is a cable type; do NOT translate."
+  },
+  "@errors.listing.deviceDisconnected.suggestion": {
+    "description": "Recovery suggestion for a disconnected device. Markdown bullet list."
+  },
+
+  "errors.listing.readOnly.title": "Read-only",
+  "errors.listing.readOnly.explanation": "This volume is read-only, so Cmdr can't make changes to it. This could be because the device has a physical write-protection switch, the disk image was mounted as read-only, or the file system doesn't support writing.",
+  "errors.listing.readOnly.suggestion": "Here's what to try:\n- If the device has a physical write-protection switch (common on SD cards), flip it off\n- If this is a disk image, remount it with write access\n- Otherwise, copy the files to a writable location first",
+  "@errors.listing.readOnly.title": {
+    "description": "Title of the listing error panel when the volume is read-only (typed VolumeError variant). Plain text."
+  },
+  "@errors.listing.readOnly.explanation": {
+    "description": "Body of the listing error panel for a read-only volume (typed variant). Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.readOnly.suggestion": {
+    "description": "Recovery suggestion for a read-only volume (typed variant). Markdown bullet list. \"SD\" is a card type; do NOT translate."
+  },
+
+  "errors.listing.storageFull.title": "Disk is full",
+  "errors.listing.storageFull.explanation": "There isn't enough free space on this volume to complete the operation.",
+  "errors.listing.storageFull.suggestion": "Here's what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash (right-click the Trash icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume",
+  "@errors.listing.storageFull.title": {
+    "description": "Title of the listing error panel when the volume is out of space (typed VolumeError variant). Plain text."
+  },
+  "@errors.listing.storageFull.explanation": {
+    "description": "Body of the listing error panel for a full disk (typed variant). Markdown."
+  },
+  "@errors.listing.storageFull.suggestion": {
+    "description": "Recovery suggestion for a full disk (typed variant). Markdown bullet list. \"Trash\", \"Dock\", \"Terminal\", and the backtick command are literal; do NOT translate."
+  },
+
+  "errors.listing.connectionTimedOut.title": "Connection timed out",
+  "errors.listing.connectionTimedOut.explanation": "Cmdr tried to access this resource but the connection didn't respond in time. This usually means the server or device is slow to respond, or the network connection is unstable.",
+  "errors.listing.connectionTimedOut.suggestion": "Here's what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Try again",
+  "@errors.listing.connectionTimedOut.title": {
+    "description": "Title of the listing error panel when the connection timed out (typed VolumeError variant). Plain text."
+  },
+  "@errors.listing.connectionTimedOut.explanation": {
+    "description": "Body of the listing error panel for a timed-out connection (typed variant). Markdown. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.connectionTimedOut.suggestion": {
+    "description": "Recovery suggestion for a timed-out connection (typed variant). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate."
+  },
+
+  "errors.listing.notSupported.title": "Not supported",
+  "errors.listing.notSupported.explanation": "This operation isn't supported on this type of volume. Some volumes (like phone storage or certain network drives) don't support all operations.",
+  "errors.listing.notSupported.suggestion": "Try a different approach, or use Finder for this operation.",
+  "@errors.listing.notSupported.title": {
+    "description": "Title of the listing error panel when the operation isn't supported on this volume type (typed VolumeError variant). Plain text."
+  },
+  "@errors.listing.notSupported.explanation": {
+    "description": "Body of the listing error panel for an unsupported operation (typed variant). Markdown."
+  },
+  "@errors.listing.notSupported.suggestion": {
+    "description": "Recovery suggestion for an unsupported operation (typed variant). Markdown. \"Finder\" is a macOS app name; do NOT translate."
+  },
+
+  "errors.listing.deletePending.title": "File is being removed",
+  "errors.listing.deletePending.explanation": "`{path}` is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.",
+  "errors.listing.deletePending.suggestion": "Here's what to try:\n- Wait a moment and try again — once the last handle closes, the file disappears\n- Close any other apps that might have this file open\n- If it sticks around, restart Cmdr to drop any handles it might still hold",
+  "@errors.listing.deletePending.title": {
+    "description": "Title of the listing error panel when a file is marked for deletion but still held open. Plain text."
+  },
+  "@errors.listing.deletePending.explanation": {
+    "description": "Body of the listing error panel for a delete-pending file. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path; here it leads the sentence inside backticks."
+  },
+  "@errors.listing.deletePending.suggestion": {
+    "description": "Recovery suggestion for a delete-pending file. Markdown bullet list. \"Cmdr\" is the app name; the en-dash → is part of the copy; do NOT translate \"Cmdr\"."
+  },
+
+  "errors.listing.ioSerious.title": "Couldn't read this folder",
+  "errors.listing.ioSerious.explanation": "Cmdr ran into a problem with `{path}`: {osMessage}. This could be a temporary glitch or a sign that the disk or device needs attention.",
+  "errors.listing.ioSerious.suggestion": "Here's what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, try running **Disk Utility > First Aid** on this volume",
+  "@errors.listing.ioSerious.title": {
+    "description": "Title of the listing error panel for a serious I/O problem with an OS-supplied detail. Plain text. Uses a contraction (\"Couldn't\")."
+  },
+  "@errors.listing.ioSerious.explanation": {
+    "description": "Body of the listing error panel for a serious I/O problem. Markdown. Two literal placeholders: `{path}` (the folder path, in backticks) and `{osMessage}` (the OS-supplied error detail). Both are do-not-translate placeholders substituted at runtime; keep the colon and surrounding text. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.ioSerious.suggestion": {
+    "description": "Recovery suggestion for a serious I/O problem. Markdown bullet list. \"Disk Utility\", \"First Aid\" are macOS feature names; do NOT translate."
+  },
+
+  "errors.listing.isADirectory.title": "This is a folder, not a file",
+  "errors.listing.isADirectory.explanation": "Cmdr tried to open `{path}` as a file, but it's a folder.",
+  "errors.listing.isADirectory.suggestion": "Navigate into the folder instead of opening it as a file.",
+  "@errors.listing.isADirectory.title": {
+    "description": "Title of the listing error panel when a folder was opened as if it were a file. Plain text."
+  },
+  "@errors.listing.isADirectory.explanation": {
+    "description": "Body of the listing error panel for opening a folder as a file. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate."
+  },
+  "@errors.listing.isADirectory.suggestion": {
+    "description": "Recovery suggestion for opening a folder as a file. Markdown."
+  },
+
+  "errors.listing.emptyRootICloud.title": "iCloud Drive looks empty",
+  "errors.listing.emptyRootICloud.explanation": "Cmdr opened iCloud Drive but it came back with no files. macOS hides iCloud Drive contents from apps that don't have **{full_disk_access}**, so granting Cmdr that permission is the most likely fix.\n\nIf your iCloud Drive really is empty, you can ignore this hint.",
+  "errors.listing.emptyRootICloud.suggestion": "Here's what to try:\n- Open [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) and pick **{full_disk_access}**\n- Add Cmdr (use the **+** button) and toggle it on\n- Quit and reopen Cmdr\n- Come back here to retry",
+  "@errors.listing.emptyRootICloud.title": {
+    "description": "Title of the hint shown when iCloud Drive opens but returns no files (likely a Full Disk Access gate). Plain text. \"iCloud Drive\" is a proper name; do NOT translate."
+  },
+  "@errors.listing.emptyRootICloud.explanation": {
+    "description": "Body of the empty-iCloud-Drive hint. Markdown with a blank-line paragraph break. `{full_disk_access}` is a do-not-translate placeholder replaced at runtime with the OS-localized pane name. \"Cmdr\", \"iCloud Drive\", \"macOS\" are proper names; do NOT translate."
+  },
+  "@errors.listing.emptyRootICloud.suggestion": {
+    "description": "Recovery suggestion for the empty-iCloud-Drive hint. Markdown bullet list with a link. `{system_settings}`, `{privacy_and_security}`, `{full_disk_access}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. The `x-apple.systempreferences:...` URL inside the markdown link and the **+** button glyph are literal; do NOT translate. \"Cmdr\" is the app name; do NOT translate."
+  },
+
+  "errors.git.notARepo.title": "No git repo here",
+  "errors.git.notARepo.message": "Cmdr looked up the folder tree and didn't find a `.git` here.",
+  "errors.git.notARepo.suggestion": "Open a folder inside a git clone to see the repo chip.",
+  "@errors.git.notARepo.title": {
+    "description": "Title of the git error panel when no git repository was found in the folder tree. Plain text. \"git\" is the tool name; do NOT translate."
+  },
+  "@errors.git.notARepo.message": {
+    "description": "Body of the git error panel when no repo was found. Markdown. \"Cmdr\", \"git\", and the literal `.git` (in backticks) are proper names; do NOT translate."
+  },
+  "@errors.git.notARepo.suggestion": {
+    "description": "Recovery suggestion when no git repo was found. Markdown. \"git\" and \"repo chip\" (a Cmdr UI element) are terms; do NOT translate \"git\"."
+  },
+
+  "errors.git.orphanedWorktree.title": "This worktree is orphaned",
+  "errors.git.orphanedWorktree.message": "This is a linked worktree but its main repo is missing, so git can't follow the link.",
+  "errors.git.orphanedWorktree.suggestion": "Try opening the main repo, or remove the orphan with `git worktree prune`.",
+  "@errors.git.orphanedWorktree.title": {
+    "description": "Title of the git error panel for an orphaned linked worktree. Plain text. \"worktree\" is a git term; do NOT translate."
+  },
+  "@errors.git.orphanedWorktree.message": {
+    "description": "Body of the git error panel for an orphaned worktree. Markdown. \"git\", \"worktree\", \"repo\" are git terms; do NOT translate \"git\"."
+  },
+  "@errors.git.orphanedWorktree.suggestion": {
+    "description": "Recovery suggestion for an orphaned worktree. Markdown. The backtick command `git worktree prune` is literal; do NOT translate."
+  },
+
+  "errors.git.corruptRepo.title": "This repo looks damaged",
+  "errors.git.corruptRepo.message": "Some of the on-disk repo data is unreadable. The folder might have been edited outside git.",
+  "errors.git.corruptRepo.suggestion": "Run `git fsck` to inspect the repo. A fresh clone often clears it up.",
+  "@errors.git.corruptRepo.title": {
+    "description": "Title of the git error panel when the repository data looks corrupted. Plain text. \"repo\" is short for repository."
+  },
+  "@errors.git.corruptRepo.message": {
+    "description": "Body of the git error panel for a damaged repo. Markdown. \"git\", \"repo\" are git terms; do NOT translate \"git\"."
+  },
+  "@errors.git.corruptRepo.suggestion": {
+    "description": "Recovery suggestion for a damaged repo. Markdown. The backtick command `git fsck` is literal; do NOT translate."
+  },
+
+  "errors.git.indexLocked.title": "Another git is mid-write",
+  "errors.git.indexLocked.message": "Git's index is locked, which usually means another git command is still running.",
+  "errors.git.indexLocked.suggestion": "Wait for the running git command to finish, then navigate here again.",
+  "@errors.git.indexLocked.title": {
+    "description": "Title of the git error panel when the git index is locked by another command. Plain text. \"git\" is the tool name; do NOT translate."
+  },
+  "@errors.git.indexLocked.message": {
+    "description": "Body of the git error panel for a locked index. Markdown. \"Git\", \"index\" are git terms; do NOT translate \"Git\"."
+  },
+  "@errors.git.indexLocked.suggestion": {
+    "description": "Recovery suggestion for a locked index. Markdown. \"git\" is the tool name; do NOT translate."
+  },
+
+  "errors.git.permissionDenied.title": "Cmdr can't read this repo",
+  "errors.git.permissionDenied.message": "The OS won't let Cmdr open the `.git` folder, so git info isn't available.",
+  "errors.git.permissionDenied.suggestion": "Open **System Settings > Privacy & Security > Files and Folders** and grant Cmdr access to the folder.",
+  "@errors.git.permissionDenied.title": {
+    "description": "Title of the git error panel when the OS denies access to the repo. Plain text. \"Cmdr\", \"repo\" are terms; do NOT translate \"Cmdr\". Uses a contraction (\"can't\")."
+  },
+  "@errors.git.permissionDenied.message": {
+    "description": "Body of the git error panel for a permission-denied repo. Markdown. \"Cmdr\", \"git\", and the literal `.git` (in backticks) are proper names; do NOT translate."
+  },
+  "@errors.git.permissionDenied.suggestion": {
+    "description": "Recovery suggestion for a permission-denied repo. Markdown. NOTE: this git suggestion names the System Settings panes as plain English literals (\"System Settings\", \"Privacy & Security\", \"Files and Folders\"), NOT via placeholders, matching the original git copy. \"Cmdr\" is the app name; do NOT translate."
+  },
+
+  "errors.git.bareRepo.title": "Bare repos aren't supported yet",
+  "errors.git.bareRepo.message": "Bare repos don't have a working tree, and the git browser is built around one.",
+  "errors.git.bareRepo.suggestion": "Clone the repo into a working directory to use the git browser.",
+  "@errors.git.bareRepo.title": {
+    "description": "Title of the git error panel for an unsupported bare repository. Plain text. \"Bare repos\" is a git term; do NOT translate \"repos\" beyond your language's natural form."
+  },
+  "@errors.git.bareRepo.message": {
+    "description": "Body of the git error panel for a bare repo. Markdown. \"git browser\" is a Cmdr UI feature; \"working tree\" is a git term; do NOT translate \"git\"."
+  },
+  "@errors.git.bareRepo.suggestion": {
+    "description": "Recovery suggestion for a bare repo. Markdown. \"git browser\" is a Cmdr UI feature; do NOT translate \"git\"."
+  },
+
+  "errors.git.blobTooLarge.title": "This file's too big to load from history",
+  "errors.git.blobTooLarge.message": "Cmdr reads git blobs whole-file at a time, and this one's over the safety cap.",
+  "errors.git.blobTooLarge.suggestion": "Check out the file from a working tree if you want to read it.",
+  "@errors.git.blobTooLarge.title": {
+    "description": "Title of the git error panel when a git blob is too large to load. Plain text. Uses a contraction (\"file's\")."
+  },
+  "@errors.git.blobTooLarge.message": {
+    "description": "Body of the git error panel for an oversized blob. Markdown. \"Cmdr\", \"git\", \"blobs\" are terms; do NOT translate \"Cmdr\"/\"git\". Uses a contraction (\"one's\")."
+  },
+  "@errors.git.blobTooLarge.suggestion": {
+    "description": "Recovery suggestion for an oversized blob. Markdown. \"Check out\" and \"working tree\" are git terms."
+  },
+
+  "errors.git.shallowBoundary.title": "Beyond the shallow-clone boundary",
+  "errors.git.shallowBoundary.message": "This commit lives past the boundary of your shallow clone, so its data isn't on disk.",
+  "errors.git.shallowBoundary.suggestion": "Run `git fetch --unshallow` (or `--depth=N`) to bring more history into the clone.",
+  "@errors.git.shallowBoundary.title": {
+    "description": "Title of the git error panel when a commit is beyond a shallow clone's boundary. Plain text. \"shallow-clone\" is a git term."
+  },
+  "@errors.git.shallowBoundary.message": {
+    "description": "Body of the git error panel for a shallow-clone boundary. Markdown. \"commit\", \"shallow clone\" are git terms."
+  },
+  "@errors.git.shallowBoundary.suggestion": {
+    "description": "Recovery suggestion for a shallow-clone boundary. Markdown. The backtick command `git fetch --unshallow`, `--depth=N`, and \"clone\" are literal git terms; do NOT translate."
+  },
+
+  "errors.git.missingObject.title": "A git object is missing",
+  "errors.git.missingObject.message": "Git is looking for an object that's no longer in the pack files. The repo might be partially fetched or damaged.",
+  "errors.git.missingObject.suggestion": "Try `git fetch` to repopulate the missing object, or `git fsck` to inspect the damage.",
+  "@errors.git.missingObject.title": {
+    "description": "Title of the git error panel when a git object is missing from the pack files. Plain text. \"git object\" is a git term; do NOT translate \"git\"."
+  },
+  "@errors.git.missingObject.message": {
+    "description": "Body of the git error panel for a missing object. Markdown. \"Git\", \"object\", \"pack files\", \"repo\" are git terms; do NOT translate \"Git\". Uses a contraction (\"that's\")."
+  },
+  "@errors.git.missingObject.suggestion": {
+    "description": "Recovery suggestion for a missing object. Markdown. The backtick commands `git fetch` and `git fsck` are literal; do NOT translate."
+  },
+
+  "errors.git.gitDirPermissionDenied.title": "Cmdr can't open the `.git` folder",
+  "errors.git.gitDirPermissionDenied.message": "The OS denied access to the `.git` folder, even though the working tree is readable.",
+  "errors.git.gitDirPermissionDenied.suggestion": "Open **System Settings > Privacy & Security > Files and Folders** and grant Cmdr access. In Terminal, `ls -la .git` shows the current owner and mode.",
+  "@errors.git.gitDirPermissionDenied.title": {
+    "description": "Title of the git error panel when the OS denies access to the .git folder specifically. Plain text. \"Cmdr\" and the literal `.git` (in backticks) are proper names; do NOT translate. Uses a contraction (\"can't\")."
+  },
+  "@errors.git.gitDirPermissionDenied.message": {
+    "description": "Body of the git error panel for a .git-folder permission denial. Markdown. The literal `.git` (in backticks) and \"working tree\" are git terms; do NOT translate \".git\"."
+  },
+  "@errors.git.gitDirPermissionDenied.suggestion": {
+    "description": "Recovery suggestion for a .git-folder permission denial. Markdown. The pane names (\"System Settings\", \"Privacy & Security\", \"Files and Folders\") are plain English literals matching the original git copy, NOT placeholders. \"Cmdr\", \"Terminal\", the backtick command, and `.git` are literal; do NOT translate."
+  },
+
+  "errors.provider.dropbox.displayName": "Dropbox",
+  "errors.provider.dropbox.appName": "Dropbox",
+  "errors.provider.googleDrive.displayName": "Google Drive",
+  "errors.provider.googleDrive.appName": "Google Drive",
+  "errors.provider.oneDrive.displayName": "OneDrive",
+  "errors.provider.oneDrive.appName": "OneDrive",
+  "errors.provider.box.displayName": "Box",
+  "errors.provider.box.appName": "Box Drive",
+  "errors.provider.pCloud.displayName": "pCloud",
+  "errors.provider.pCloud.appName": "pCloud Drive",
+  "errors.provider.nextcloud.displayName": "Nextcloud",
+  "errors.provider.nextcloud.appName": "Nextcloud",
+  "errors.provider.synologyDrive.displayName": "Synology Drive",
+  "errors.provider.synologyDrive.appName": "Synology Drive",
+  "errors.provider.tresorit.displayName": "Tresorit",
+  "errors.provider.tresorit.appName": "Tresorit",
+  "errors.provider.protonDrive.displayName": "Proton Drive",
+  "errors.provider.protonDrive.appName": "Proton Drive",
+  "errors.provider.sync.displayName": "Sync.com",
+  "errors.provider.sync.appName": "Sync.com",
+  "errors.provider.egnyte.displayName": "Egnyte",
+  "errors.provider.egnyte.appName": "Egnyte Connect",
+  "errors.provider.macDroid.displayName": "MacDroid",
+  "errors.provider.macDroid.appName": "MacDroid",
+  "errors.provider.iCloud.displayName": "iCloud Drive",
+  "errors.provider.pCloudFuse.displayName": "pCloud",
+  "errors.provider.pCloudFuse.appName": "pCloud Drive",
+  "errors.provider.macFuse.displayName": "macFUSE",
+  "errors.provider.veraCrypt.displayName": "VeraCrypt",
+  "errors.provider.veraCrypt.appName": "VeraCrypt",
+  "errors.provider.cmVolumes.displayName": "Cloud mount",
+  "errors.provider.genericCloudStorage.displayName": "your cloud provider",
+  "@errors.provider.dropbox.displayName": {
+    "description": "Display name for the Dropbox cloud-storage provider, shown in bold inside an error suggestion (\"This folder is managed by **Dropbox**\"). A brand name; do NOT translate."
+  },
+  "@errors.provider.dropbox.appName": {
+    "description": "App name for Dropbox, used in error suggestions (\"Open Dropbox and make sure it's running\"). A brand name; do NOT translate."
+  },
+  "@errors.provider.googleDrive.displayName": {
+    "description": "Display name for the Google Drive provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.googleDrive.appName": {
+    "description": "App name for Google Drive, used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.oneDrive.displayName": {
+    "description": "Display name for the OneDrive provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.oneDrive.appName": {
+    "description": "App name for OneDrive, used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.box.displayName": {
+    "description": "Display name for the Box provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.box.appName": {
+    "description": "App name for Box (the desktop client is \"Box Drive\"), used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.pCloud.displayName": {
+    "description": "Display name for the pCloud provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.pCloud.appName": {
+    "description": "App name for pCloud (the desktop client is \"pCloud Drive\"), used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.nextcloud.displayName": {
+    "description": "Display name for the Nextcloud provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.nextcloud.appName": {
+    "description": "App name for Nextcloud, used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.synologyDrive.displayName": {
+    "description": "Display name for the Synology Drive provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.synologyDrive.appName": {
+    "description": "App name for Synology Drive, used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.tresorit.displayName": {
+    "description": "Display name for the Tresorit provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.tresorit.appName": {
+    "description": "App name for Tresorit, used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.protonDrive.displayName": {
+    "description": "Display name for the Proton Drive provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.protonDrive.appName": {
+    "description": "App name for Proton Drive, used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.sync.displayName": {
+    "description": "Display name for the Sync.com provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.sync.appName": {
+    "description": "App name for Sync.com, used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.egnyte.displayName": {
+    "description": "Display name for the Egnyte provider, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.egnyte.appName": {
+    "description": "App name for Egnyte (the desktop client is \"Egnyte Connect\"), used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.macDroid.displayName": {
+    "description": "Display name for the MacDroid provider (Android phone access), shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.macDroid.appName": {
+    "description": "App name for MacDroid, used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.iCloud.displayName": {
+    "description": "Display name for the iCloud Drive provider, shown in bold in an error suggestion. A brand name; do NOT translate. (iCloud has no separate app name; suggestions reference System Settings directly.)"
+  },
+  "@errors.provider.pCloudFuse.displayName": {
+    "description": "Display name for pCloud when accessed via its FUSE virtual drive, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.pCloudFuse.appName": {
+    "description": "App name for pCloud's FUSE virtual drive (the client is \"pCloud Drive\"), used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.macFuse.displayName": {
+    "description": "Display name for a macFUSE mount, shown in bold in an error suggestion. A brand name; do NOT translate. (macFUSE has no separate app name.)"
+  },
+  "@errors.provider.veraCrypt.displayName": {
+    "description": "Display name for a VeraCrypt encrypted volume, shown in bold in an error suggestion. A brand name; do NOT translate."
+  },
+  "@errors.provider.veraCrypt.appName": {
+    "description": "App name for VeraCrypt, used in error suggestions. A brand name; do NOT translate."
+  },
+  "@errors.provider.cmVolumes.displayName": {
+    "description": "Display name for a generic cloud mount (CloudMounter, Mountain Duck, etc.). Shown in error suggestions. Translate \"Cloud mount\" as a descriptive label, not a brand."
+  },
+  "@errors.provider.genericCloudStorage.displayName": {
+    "description": "Display name fallback for an unrecognized cloud provider, used mid-sentence (\"managed by **your cloud provider**\"). A descriptive phrase; translate naturally to fit mid-sentence."
+  },
+
+  "errors.provider.macDroid.transient": "This folder is managed by **MacDroid**. Here's what to try:\n- Open MacDroid and check that your phone is connected\n- Make sure your phone is unlocked and set to file transfer mode\n- Unplug and replug the USB cable, then navigate here again",
+  "errors.provider.macDroid.needsAction": "This folder is managed by **MacDroid**. Here's what to try:\n- Open MacDroid and check that your phone is connected\n- Make sure your phone is unlocked with the screen on\n- Check that USB file transfer mode is enabled on your phone",
+  "errors.provider.macDroid.serious": "This folder is managed by **MacDroid**. Here's what to try:\n- Unplug and replug the USB cable\n- Restart MacDroid\n- Try a different USB port or cable",
+  "@errors.provider.macDroid.transient": {
+    "description": "Provider-specific recovery suggestion that REPLACES the base error suggestion when a folder is detected as a MacDroid (Android phone) mount and the underlying problem is transient. Markdown bullet list. \"MacDroid\" (brand) and \"USB\" (cable type) are literal; do NOT translate."
+  },
+  "@errors.provider.macDroid.needsAction": {
+    "description": "MacDroid provider suggestion shown when the problem needs user action. Markdown bullet list. \"MacDroid\" (brand) and \"USB\" are literal; do NOT translate."
+  },
+  "@errors.provider.macDroid.serious": {
+    "description": "MacDroid provider suggestion shown for a serious/hardware problem. Markdown bullet list. \"MacDroid\" (brand) and \"USB\" are literal; do NOT translate."
+  },
+
+  "errors.provider.iCloud.transient": "This folder is managed by **{name}**. Here's what to try:\n- Check your internet connection\n- Make sure you're signed in to iCloud in System Settings\n- Navigate here again to retry",
+  "errors.provider.iCloud.needsAction": "This folder is managed by **{name}**. Here's what to try:\n- Check that iCloud Drive is enabled in **System Settings > Apple Account > iCloud**\n- Make sure you're signed in to the right Apple account\n- Check your iCloud storage isn't full",
+  "errors.provider.iCloud.serious": "This folder is managed by **{name}**. Here's what to try:\n- Sign out and back in to iCloud in System Settings\n- Check Apple's [system status page](https://www.apple.com/support/systemstatus/)",
+  "@errors.provider.iCloud.transient": {
+    "description": "iCloud Drive provider suggestion for a transient problem. Markdown bullet list. The literal `{name}` placeholder is replaced at runtime with the provider display name (\"iCloud Drive\") and must NOT be translated. \"iCloud\", \"System Settings\", \"Apple\" are proper names; do NOT translate."
+  },
+  "@errors.provider.iCloud.needsAction": {
+    "description": "iCloud Drive provider suggestion for a needs-action problem. Markdown bullet list. The literal `{name}` placeholder is replaced at runtime with the display name; do NOT translate it. \"iCloud Drive\", \"System Settings\", \"Apple Account\", \"iCloud\" are proper names; do NOT translate."
+  },
+  "@errors.provider.iCloud.serious": {
+    "description": "iCloud Drive provider suggestion for a serious problem. Markdown bullet list with an Apple status-page link. The literal `{name}` placeholder is replaced at runtime with the display name; do NOT translate it. The URL and \"Apple\", \"iCloud\", \"System Settings\" are literal; do NOT translate."
+  },
+
+  "errors.provider.macFuse.transient": "This is a **macFUSE** mount. The remote server may be slow or unreachable. Here's what to try:\n- Check your network connection\n- Check that the remote server is running\n- Navigate here again to retry",
+  "errors.provider.macFuse.needsAction": "This is a **macFUSE** mount. Here's what to try:\n- Check that the FUSE process backing this mount is still running\n- Force-unmount and remount the volume if needed\n- Make sure macFUSE is up to date in **System Settings > General > Login Items & Extensions**",
+  "errors.provider.macFuse.serious": "This is a **macFUSE** mount. The FUSE process backing it has likely crashed or disconnected. Here's what to try:\n- Force-unmount the volume: run `umount -f /Volumes/<name>` in Terminal\n- Remount using the original mount command\n- If this keeps happening, check that macFUSE is up to date",
+  "@errors.provider.macFuse.transient": {
+    "description": "macFUSE mount provider suggestion for a transient problem. Markdown bullet list. \"macFUSE\", \"FUSE\" are proper names; do NOT translate."
+  },
+  "@errors.provider.macFuse.needsAction": {
+    "description": "macFUSE mount provider suggestion for a needs-action problem. Markdown bullet list. \"macFUSE\", \"FUSE\", \"System Settings\", \"General\", \"Login Items & Extensions\" are literal; do NOT translate."
+  },
+  "@errors.provider.macFuse.serious": {
+    "description": "macFUSE mount provider suggestion for a serious problem. Markdown bullet list. \"macFUSE\", \"FUSE\", \"Terminal\", and the backtick command (including `/Volumes/<name>`) are literal; do NOT translate."
+  },
+
+  "errors.provider.pCloudFuse.transient": "This folder is on **pCloud**'s virtual drive. Here's what to try:\n- Check your internet connection\n- Make sure the pCloud app is running\n- Navigate here again to retry",
+  "errors.provider.pCloudFuse.needsAction": "This folder is on **pCloud**'s virtual drive. Here's what to try:\n- Make sure the pCloud app is running and you're signed in\n- Check your internet connection\n- After a macOS update, re-approve pCloud's system extension in **System Settings > General > Login Items & Extensions**",
+  "errors.provider.pCloudFuse.serious": "This folder is on **pCloud**'s virtual drive. The pCloud FUSE process may have crashed. Here's what to try:\n- Quit and reopen the pCloud app\n- If the drive doesn't reappear, force-unmount it: run `umount -f /Volumes/pCloudDrive` in Terminal\n- After a macOS update, re-approve pCloud's system extension in **System Settings > General > Login Items & Extensions**",
+  "@errors.provider.pCloudFuse.transient": {
+    "description": "pCloud virtual-drive provider suggestion for a transient problem. Markdown bullet list. \"pCloud\" is a brand name; do NOT translate."
+  },
+  "@errors.provider.pCloudFuse.needsAction": {
+    "description": "pCloud virtual-drive provider suggestion for a needs-action problem. Markdown bullet list. \"pCloud\", \"macOS\", \"System Settings\", \"General\", \"Login Items & Extensions\" are literal; do NOT translate."
+  },
+  "@errors.provider.pCloudFuse.serious": {
+    "description": "pCloud virtual-drive provider suggestion for a serious problem. Markdown bullet list. \"pCloud\", \"FUSE\", \"macOS\", \"Terminal\", the backtick command (including `/Volumes/pCloudDrive`), \"System Settings\", \"General\", \"Login Items & Extensions\" are literal; do NOT translate."
+  },
+
+  "errors.provider.veraCrypt.transient": "This is a **{name}** encrypted volume. Here's what to try:\n- Check that the VeraCrypt volume is still mounted\n- Navigate here again to retry",
+  "errors.provider.veraCrypt.needsAction": "This is a **{name}** encrypted volume. Here's what to try:\n- Open VeraCrypt and check that this volume is mounted\n- Dismount and remount the volume if needed",
+  "errors.provider.veraCrypt.serious": "This is a **{name}** encrypted volume. Here's what to try:\n- Dismount and remount the volume in VeraCrypt\n- If the volume keeps having issues, check it with VeraCrypt's repair tools",
+  "@errors.provider.veraCrypt.transient": {
+    "description": "VeraCrypt encrypted-volume provider suggestion for a transient problem. Markdown bullet list. The literal `{name}` placeholder is replaced at runtime with the display name (\"VeraCrypt\") and must NOT be translated. \"VeraCrypt\" is a brand name; do NOT translate."
+  },
+  "@errors.provider.veraCrypt.needsAction": {
+    "description": "VeraCrypt encrypted-volume provider suggestion for a needs-action problem. Markdown bullet list. The literal `{name}` placeholder is replaced at runtime; do NOT translate it. \"VeraCrypt\" is a brand name; do NOT translate."
+  },
+  "@errors.provider.veraCrypt.serious": {
+    "description": "VeraCrypt encrypted-volume provider suggestion for a serious problem. Markdown bullet list. The literal `{name}` placeholder is replaced at runtime; do NOT translate it. \"VeraCrypt\" is a brand name; do NOT translate."
+  },
+
+  "errors.provider.cmVolumes.transient": "This is a cloud mount. Here's what to try:\n- Check your internet connection\n- Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n- Navigate here again to retry",
+  "errors.provider.cmVolumes.nonTransient": "This is a cloud mount. Here's what to try:\n- Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n- Disconnect and reconnect the mount\n- Check your credentials haven't expired",
+  "@errors.provider.cmVolumes.transient": {
+    "description": "Generic cloud-mount (CloudMounter/Mountain Duck) provider suggestion for a transient problem. Markdown bullet list. \"CloudMounter\", \"Mountain Duck\" are brand names; do NOT translate."
+  },
+  "@errors.provider.cmVolumes.nonTransient": {
+    "description": "Generic cloud-mount provider suggestion shown for BOTH the needs-action and serious cases (this provider collapses them into one message). Markdown bullet list. \"CloudMounter\", \"Mountain Duck\" are brand names; do NOT translate."
+  },
+
+  "errors.provider.genericCloudStorage.transient": "This folder is managed by a cloud provider. Here's what to try:\n- Check your internet connection\n- Check that the sync app is running\n- Navigate here again to retry",
+  "errors.provider.genericCloudStorage.nonTransient": "This folder is managed by a cloud provider. Here's what to try:\n- Check that the sync app is running\n- Sign out and back in to the cloud app\n- Check your internet connection",
+  "@errors.provider.genericCloudStorage.transient": {
+    "description": "Fallback provider suggestion for an unrecognized cloud provider, transient problem. Markdown bullet list."
+  },
+  "@errors.provider.genericCloudStorage.nonTransient": {
+    "description": "Fallback provider suggestion for an unrecognized cloud provider, shown for BOTH the needs-action and serious cases (collapsed into one message). Markdown bullet list."
+  },
+
+  "errors.provider.appBased.transient": "This folder is managed by **{name}**. Here's what to try:\n- Check your internet connection\n- Open {app} and make sure it's running and synced\n- Navigate here again to retry",
+  "errors.provider.appBased.needsAction": "This folder is managed by **{name}**. Here's what to try:\n- Open {app} and check your sync status\n- Make sure you're signed in to {app}\n- Check that you have access to this folder in {name}",
+  "errors.provider.appBased.serious": "This folder is managed by **{name}**. Here's what to try:\n- Quit and reopen {app}\n- Sign out and back in to {app}\n- Check {name}'s status page for outages",
+  "@errors.provider.appBased.transient": {
+    "description": "Shared template for app-backed cloud providers (Dropbox, Google Drive, OneDrive, Box, pCloud, Nextcloud, Synology Drive, Tresorit, Proton Drive, Sync.com, Egnyte), transient problem. Markdown bullet list. Two do-not-translate placeholders replaced at runtime: `{name}` (the provider's display name, shown in bold) and `{app}` (the provider's desktop app name). They may be the same word. Keep both placeholders; reorder them to fit your grammar."
+  },
+  "@errors.provider.appBased.needsAction": {
+    "description": "Shared template for app-backed cloud providers, needs-action problem. Markdown bullet list. Do-not-translate placeholders: `{name}` (display name, bold) and `{app}` (desktop app name), both substituted at runtime. Keep both; reorder to fit your grammar."
+  },
+  "@errors.provider.appBased.serious": {
+    "description": "Shared template for app-backed cloud providers, serious problem. Markdown bullet list. Do-not-translate placeholders: `{name}` (display name, bold) and `{app}` (desktop app name), both substituted at runtime. Keep both; reorder to fit your grammar."
+  }
+}

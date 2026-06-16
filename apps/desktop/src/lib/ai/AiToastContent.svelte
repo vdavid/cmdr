@@ -1,13 +1,14 @@
 <script lang="ts">
     import Button from '$lib/ui/Button.svelte'
     import { getAiState, handleCancel, handleGotIt } from './ai-state.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     const aiState = getAiState()
 </script>
 
 {#if aiState.notificationState === 'downloading'}
     <div class="ai-content">
-        <span class="ai-title">Downloading AI model...</span>
+        <span class="ai-title">{tString('ai.toast.downloadingTitle')}</span>
         {#if aiState.downloadProgress && aiState.downloadProgress.totalBytes > 0}
             <div class="progress-bar-container">
                 <div
@@ -22,21 +23,21 @@
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- progressText is built from typed numbers via formatBytes + tier classes; no user input. -->
             <span class="ai-progress-text">{@html aiState.progressText}</span>
         {:else}
-            <span class="ai-progress-text">Starting download...</span>
+            <span class="ai-progress-text">{tString('ai.toast.startingDownload')}</span>
         {/if}
     </div>
     <div class="ai-actions">
-        <Button variant="secondary" size="mini" onclick={() => void handleCancel()}>Cancel</Button>
+        <Button variant="secondary" size="mini" onclick={() => void handleCancel()}>{tString('ai.toast.cancel')}</Button>
     </div>
 {:else if aiState.notificationState === 'installing'}
     <div class="ai-content">
-        <span class="ai-title">Setting up AI...</span>
-        <span class="ai-description">Starting server</span>
+        <span class="ai-title">{tString('ai.toast.installingTitle')}</span>
+        <span class="ai-description">{tString('ai.toast.installingDescription')}</span>
     </div>
 {:else if aiState.notificationState === 'ready'}
     <div class="ai-content">
-        <span class="ai-title">AI ready</span>
-        <span class="ai-description">Try creating a new folder (F7) to see AI-powered name suggestions.</span>
+        <span class="ai-title">{tString('ai.toast.readyTitle')}</span>
+        <span class="ai-description">{tString('ai.toast.readyDescription')}</span>
     </div>
     <div class="ai-actions">
         <Button
@@ -44,13 +45,13 @@
             size="mini"
             onclick={() => {
                 handleGotIt()
-            }}>Got it</Button
+            }}>{tString('ai.toast.gotIt')}</Button
         >
     </div>
 {:else if aiState.notificationState === 'starting'}
     <div class="ai-content">
-        <span class="ai-title">AI starting...</span>
-        <span class="ai-description">Loading the model, this takes a few seconds</span>
+        <span class="ai-title">{tString('ai.toast.startingTitle')}</span>
+        <span class="ai-description">{tString('ai.toast.startingDescription')}</span>
     </div>
 {/if}
 

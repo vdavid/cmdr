@@ -5,6 +5,8 @@
  * Returns `null` for the error case; callers render their own error UI (with a follow-up
  * "Send error report" link) and read `state.error` directly.
  */
+import { tString } from '$lib/intl/messages.svelte'
+
 export interface UpdateStatusReadable {
   status: 'idle' | 'checking' | 'downloading' | 'installing' | 'ready'
   error: string | null
@@ -23,16 +25,16 @@ export function formatUpdateStatus(state: UpdateStatusReadable): string | null {
       // Two sub-cases share idle. If we just finished a successful check (we have a previousVersion
       // and no nextVersion), say "no updates found". Before any check has run, say nothing.
       if (state.previousVersion !== null && state.nextVersion === null) {
-        return `No updates found. Current version: v${prev}`
+        return tString('updates.status.noUpdates', { version: prev })
       }
       return ''
     case 'checking':
-      return 'Checking…'
+      return tString('updates.status.checking')
     case 'downloading':
-      return `Update found, downloading v${next} (current: v${prev})…`
+      return tString('updates.status.downloading', { next, prev })
     case 'installing':
-      return `Installing v${next} (current: v${prev})…`
+      return tString('updates.status.installing', { next, prev })
     case 'ready':
-      return `Update v${next} ready. Restart to apply.`
+      return tString('updates.status.ready', { next })
   }
 }

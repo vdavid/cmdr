@@ -5,6 +5,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         operationType: TransferOperationType
@@ -87,7 +88,7 @@
             <span class="toggle-icon" class:expanded={showDetails}>
                 <Icon name="chevron-right" size={12} />
             </span>
-            Technical details
+            {tString('fileOperations.errorDialog.technicalDetails')}
         </button>
         {#if showDetails}
             <div class="details-content">
@@ -95,7 +96,7 @@
                     class="details-text"
                     readonly
                     rows={technicalDetails.split('\n').length}
-                    aria-label="Technical error details">{technicalDetails}</textarea
+                    aria-label={tString('fileOperations.errorDialog.technicalDetailsAria')}>{technicalDetails}</textarea
                 >
             </div>
         {/if}
@@ -103,9 +104,9 @@
 
     <div class="button-row">
         {#if onRetry && showRetry}
-            <Button variant="secondary" onclick={onRetry}>Retry</Button>
+            <Button variant="secondary" onclick={onRetry}>{tString('fileOperations.errorDialog.retry')}</Button>
         {/if}
-        <Button variant="primary" onclick={onClose}>Close</Button>
+        <Button variant="primary" onclick={onClose}>{tString('fileOperations.errorDialog.close')}</Button>
     </div>
 </ModalDialog>
 

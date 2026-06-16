@@ -18,6 +18,7 @@
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
     import { setLowDiskSpaceNotificationsMode, openSettingsToLowDiskSpace } from './notifications-mode'
     import { getAppLogger } from '$lib/logging/logger'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         toastId: string
@@ -44,10 +45,12 @@
 
 <div class="content">
     <span class="message">
-        Your startup disk is running low on space: {freeText} free ({percentText}%).
+        {tString('lowDiskSpace.toast.message', { freeText, percentText })}
     </span>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={() => void handleDisable()}>Disable these notifications</Button>
+        <Button size="mini" variant="secondary" onclick={() => void handleDisable()}
+            >{tString('lowDiskSpace.toast.disable')}</Button
+        >
     </div>
 </div>
 

@@ -18,8 +18,9 @@ catalog (a single home for all error copy).
    factory (`getListingErrorMessage`) — or the git factory (`getGitErrorMessage`) for the `git` reason — then, when a
    `provider` is present, replaces the base suggestion with `getProviderSuggestion(provider, category)`. This reproduces
    the old Rust `enrich_with_provider` override exactly.
-3. The factory composes each string from a trusted template literal plus runtime params escaped with `esc(...)`, and
-   substitutes localized macOS pane labels via `expandSystemStrings(...)`.
+3. The factory pulls each string from the `errors.*` message catalog via `getMessage()` (a RAW catalog lookup, never ICU
+   `t()` — see the catalog boundary below), substitutes its escaped runtime params (`{path}` / `{osMessage}` tokens),
+   and substitutes localized macOS pane labels via `expandSystemStrings(...)`.
 4. `ErrorPane` renders the result. The explanation / suggestion go through the single `renderErrorMarkdown` → snarkdown
    → `{@html}` site ([`error-pane-utils.ts`](../file-explorer/pane/error-pane-utils.ts)); the title and `raw_detail` are
    plain text.
@@ -49,6 +50,33 @@ Suggestions that name localized macOS panes (e.g. "Full Disk Access") use placeh
 `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}`, `{local_network}`, `{appearance}`) in the
 templates; `expandSystemStrings` substitutes the live localized labels from `lib/system-strings.svelte.ts` (the
 `get_localized_system_strings` backend snapshot). This mirrors the Rust `system_strings::expand`.
+
+## Message-catalog boundary (`getMessage`, not ICU `t()`)
+
+The literal English lives in [`../intl/messages/en/errors.json`](../intl/messages/en/errors.json) under `errors.*`, and
+the factories resolve it via `getMessage(key)` — a raw catalog lookup with no ICU parsing. This is deliberate: error
+values carry markdown plus `{system_settings}`-style `expandSystemStrings` tokens and `esc()` HTML entities, all of
+which collide with ICU MessageFormat's brace/apostrophe grammar. Routing them through `t()`/`format()` would mangle
+them. So errors are the one tranche that bypasses ICU (see the i18n plan's Decision 2 and the errors tranche note). A
+corollary: `errors.json` values do NOT double apostrophes — the ICU `''` rule does not apply to non-ICU strings.
+
+Key shape: `errors.listing.<reason>.{title,explanation,suggestion}`, `errors.git.<kind>.{title,message,suggestion}`, and
+the provider keys. Param tokens (`{path}`, `{osMessage}`) are substituted by `interpolate(...)` in
+`listing-error-messages.ts` AFTER `esc(...)`, on a token set disjoint from `expandSystemStrings`' so the two compose in
+any order. The keys are built dynamically from the reason/kind/provider discriminant; TypeScript still proves each
+resolves to a valid `MessageKey` (the catalog covers every discriminant). The cost is that the codegen's static usage
+scan can't see them, so all `errors.*` keys show in the (non-fatal) dead-key report.
+
+### Provider suggestion catalog layout
+
+Most cloud providers share ONE template, `errors.provider.appBased.{transient,needsAction,serious}`, with `{name}` (the
+bold display name) and `{app}` (the desktop-app name) tokens that `getProviderSuggestion` fills (provider names are
+trusted, so unescaped). Bespoke providers (`macDroid`, `iCloud`, `macFuse`, `pCloudFuse`, `veraCrypt`, plus the two
+collapsed ones) have their own per-category keys; `cmVolumes` and `genericCloudStorage` collapse needs_action + serious
+into a single `nonTransient` key (they rendered identical copy for both). The `needs_action` category maps to the
+`needsAction` catalog leaf (the key-naming check requires lowerCamel leaves). Display/app names live in
+`errors.provider.<provider>.displayName` / `.appName`; the four providers without a distinct app (`macFuse`, `iCloud`,
+`cmVolumes`, `genericCloudStorage`) have no `appName` key.
 
 ## Test strategy
 

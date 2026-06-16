@@ -7,7 +7,9 @@
  * Lives in a `.svelte.ts` module so its types resolve across imports; a
  * `.svelte` module export is seen as `any`.
  */
-let lastConnectedDeviceName = $state('MTP device')
+import { tString } from '$lib/intl/messages.svelte'
+
+let lastConnectedDeviceName = $state(tString('mtp.deviceFallbackName'))
 
 export function setLastConnectedDeviceName(name: string): void {
   lastConnectedDeviceName = name

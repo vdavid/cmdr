@@ -1,0 +1,699 @@
+{
+  "fileOperations.button.cancel": "Cancel",
+  "@fileOperations.button.cancel": {
+    "description": "Button that closes a copy/move/delete/new-file/new-folder dialog without taking the action. Short control label."
+  },
+
+  "fileOperations.button.ok": "OK",
+  "@fileOperations.button.ok": {
+    "description": "Confirm button in the new-file and new-folder dialogs. Short control label; this is the affirmative OK, not a status word."
+  },
+
+  "fileOperations.delete.fromPath": "From: {path}",
+  "@fileOperations.delete.fromPath": {
+    "description": "Header line in the delete-confirm dialog showing the folder the items are deleted from. The path is abbreviated (home shown as ~).",
+    "placeholders": {
+      "path": "the source folder path, e.g. ~/Documents"
+    }
+  },
+
+  "fileOperations.delete.noTrashWarningStrong": "This volume doesn''t support trash.",
+  "@fileOperations.delete.noTrashWarningStrong": {
+    "description": "Bold lead of a warning banner in the delete dialog, shown on volumes (FAT32, SMB, etc.) that have no trash. Followed by fileOperations.delete.noTrashWarningRest in the same sentence."
+  },
+
+  "fileOperations.delete.noTrashWarningRest": "Files will be permanently deleted.",
+  "@fileOperations.delete.noTrashWarningRest": {
+    "description": "Second half of the no-trash warning banner, following fileOperations.delete.noTrashWarningStrong. Tells the user the delete is permanent on this volume."
+  },
+
+  "fileOperations.delete.toggleTrash": "Trash",
+  "@fileOperations.delete.toggleTrash": {
+    "description": "Label of the segmented-control option that moves items to the system trash (recoverable). Short control label, sits next to the Delete option."
+  },
+
+  "fileOperations.delete.toggleDelete": "Delete",
+  "@fileOperations.delete.toggleDelete": {
+    "description": "Label of the segmented-control option that permanently deletes items. Short control label, sits next to the Trash option."
+  },
+
+  "fileOperations.delete.overflowMore": "... and {countText} more {count, plural, one {item} other {items}}",
+  "@fileOperations.delete.overflowMore": {
+    "description": "Trailing line of the delete dialog's file list when more items are selected than the list shows. Keep the leading ellipsis '...'.",
+    "placeholders": {
+      "countText": "how many extra items, formatted for display (e.g. 1,234)",
+      "count": "the same number of extra items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.delete.scanFile": "{count, plural, one {file} other {files}}",
+  "@fileOperations.delete.scanFile": {
+    "description": "Unit noun shown after the live file tally in the delete dialog's scan stats (e.g. '123 files'). The number is rendered separately; this is only the noun.",
+    "placeholders": {
+      "count": "the file count (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.delete.scanDir": "{count, plural, one {dir} other {dirs}}",
+  "@fileOperations.delete.scanDir": {
+    "description": "Unit noun shown after the live directory tally in the delete dialog's scan stats (e.g. '4 dirs'). 'dir' is the abbreviation of directory/folder. The number is rendered separately.",
+    "placeholders": {
+      "count": "the directory count (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.delete.throughputFiles": "{rateText} files/s",
+  "@fileOperations.delete.throughputFiles": {
+    "description": "Live scan throughput in the delete dialog: files processed per second. '/s' means per second.",
+    "placeholders": {
+      "rateText": "the files-per-second rate, formatted for display (e.g. 1,200)"
+    }
+  },
+
+  "fileOperations.delete.confirmDeletePermanently": "Delete permanently",
+  "@fileOperations.delete.confirmDeletePermanently": {
+    "description": "Primary (destructive) confirm button in the delete dialog when permanent delete is selected. Control label."
+  },
+
+  "fileOperations.delete.confirmMoveToTrash": "Move to trash",
+  "@fileOperations.delete.confirmMoveToTrash": {
+    "description": "Primary confirm button in the delete dialog when the trash option is selected. Control label."
+  },
+
+  "fileOperations.delete.titleCursorFile": "Delete 1 file under cursor",
+  "@fileOperations.delete.titleCursorFile": {
+    "description": "Delete dialog title when deleting the single file the cursor is on (nothing multi-selected). 'under cursor' means the highlighted row."
+  },
+
+  "fileOperations.delete.titleCursorFolder": "Delete 1 folder under cursor",
+  "@fileOperations.delete.titleCursorFolder": {
+    "description": "Delete dialog title when deleting the single folder the cursor is on (nothing multi-selected)."
+  },
+
+  "fileOperations.delete.titleFallback": "Delete",
+  "@fileOperations.delete.titleFallback": {
+    "description": "Delete dialog title used when there is nothing to count (empty selection). Just the verb."
+  },
+
+  "fileOperations.delete.titleSelected": "Delete {phrase}",
+  "@fileOperations.delete.titleSelected": {
+    "description": "Delete dialog title for a multi-item selection. {phrase} is the already-built count phrase (e.g. '3 selected files and 1 folder').",
+    "placeholders": {
+      "phrase": "the pre-rendered counts phrase, e.g. '3 selected files and 1 folder'"
+    }
+  },
+
+  "fileOperations.delete.selectedFilesPart": "{countText} selected {count, plural, one {file} other {files}}",
+  "@fileOperations.delete.selectedFilesPart": {
+    "description": "The files part of the delete-dialog count phrase, e.g. '3 selected files'. Combined with the folders part by fileOperations.shared.andJoin.",
+    "placeholders": {
+      "countText": "how many files (plain number, not grouped)",
+      "count": "the same number of files (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.delete.foldersPart": "{countText} {count, plural, one {folder} other {folders}}",
+  "@fileOperations.delete.foldersPart": {
+    "description": "The folders part of the delete-dialog count phrase, e.g. '1 folder' or '2 folders'. Combined with the files part by fileOperations.shared.andJoin.",
+    "placeholders": {
+      "countText": "how many folders (plain number, not grouped)",
+      "count": "the same number of folders (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.delete.symlinkNoticeSingle": "This item is a symlink. Only the link will be deleted, not its target.",
+  "@fileOperations.delete.symlinkNoticeSingle": {
+    "description": "Notice in the delete dialog when the only selected item is a symbolic link. Reassures that the link is removed, not the file it points to. 'symlink'/'target' are filesystem terms."
+  },
+
+  "fileOperations.delete.symlinkNoticeMany": "Your selection includes {countText} {count, plural, one {symlink} other {symlinks}}. Only the links themselves will be deleted, not their targets.",
+  "@fileOperations.delete.symlinkNoticeMany": {
+    "description": "Notice in the delete dialog when the selection contains one or more symbolic links among other items. Reassures that only the links are removed. 'symlink'/'target' are filesystem terms.",
+    "placeholders": {
+      "countText": "how many symlinks (plain number, not grouped)",
+      "count": "the same number of symlinks (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.mkfile.title": "New file",
+  "@fileOperations.mkfile.title": {
+    "description": "Title of the dialog that creates a new empty file (Shift+F4)."
+  },
+
+  "fileOperations.mkfile.createIn": "Create file in <dir>{name}</dir>",
+  "@fileOperations.mkfile.createIn": {
+    "description": "Subtitle of the new-file dialog naming the destination folder. <dir> wraps the folder name, which is styled (bold). Keep the sentence; only the folder name is highlighted.",
+    "placeholders": {
+      "name": "the destination folder's name"
+    }
+  },
+
+  "fileOperations.mkfile.nameAria": "File name",
+  "@fileOperations.mkfile.nameAria": {
+    "description": "Accessibility label for the new file's name text field (screen-reader only)."
+  },
+
+  "fileOperations.mkfile.placeholder": "Example: notes.txt",
+  "@fileOperations.mkfile.placeholder": {
+    "description": "Placeholder text inside the new-file name field, showing an example filename. 'notes.txt' is an example file name; translate 'Example' but keep a plausible example filename."
+  },
+
+  "fileOperations.mkdir.title": "New folder",
+  "@fileOperations.mkdir.title": {
+    "description": "Title of the dialog that creates a new folder (F7)."
+  },
+
+  "fileOperations.mkdir.createIn": "Create folder in <dir>{name}</dir>",
+  "@fileOperations.mkdir.createIn": {
+    "description": "Subtitle of the new-folder dialog naming the parent folder. <dir> wraps the folder name, which is styled (bold). Keep the sentence; only the folder name is highlighted.",
+    "placeholders": {
+      "name": "the parent folder's name"
+    }
+  },
+
+  "fileOperations.mkdir.nameAria": "Folder name",
+  "@fileOperations.mkdir.nameAria": {
+    "description": "Accessibility label for the new folder's name text field (screen-reader only)."
+  },
+
+  "fileOperations.mkdir.placeholder": "Example: my-project",
+  "@fileOperations.mkdir.placeholder": {
+    "description": "Placeholder text inside the new-folder name field, showing an example folder name. 'my-project' is an example; translate 'Example' but keep a plausible example folder name."
+  },
+
+  "fileOperations.mkdir.timeoutMessage": "Couldn''t confirm the folder was created. The volume may be slow — the folder may still have been created.",
+  "@fileOperations.mkdir.timeoutMessage": {
+    "description": "Warning in the new-folder dialog when the create command did not confirm in time (slow volume). Reassures the folder may still exist. Conversational, not alarming."
+  },
+
+  "fileOperations.mkdir.timeoutRefresh": "Refresh listing",
+  "@fileOperations.mkdir.timeoutRefresh": {
+    "description": "Button in the new-folder timeout warning that reloads the current folder's file list to check whether the folder appeared. Control label."
+  },
+
+  "fileOperations.mkdir.timeoutDismiss": "Dismiss",
+  "@fileOperations.mkdir.timeoutDismiss": {
+    "description": "Button in the new-folder timeout warning that closes the warning without refreshing. Control label."
+  },
+
+  "fileOperations.mkdir.aiSuggestionsAria": "AI suggestions",
+  "@fileOperations.mkdir.aiSuggestionsAria": {
+    "description": "Accessibility label for the region listing AI-generated folder-name suggestions (screen-reader only). 'AI' is the common abbreviation."
+  },
+
+  "fileOperations.mkdir.aiSuggestionsHeader": "AI suggestions:",
+  "@fileOperations.mkdir.aiSuggestionsHeader": {
+    "description": "Heading shown above the AI-generated folder-name suggestion chips in the new-folder dialog. 'AI' is the common abbreviation."
+  },
+
+  "fileOperations.shared.conflictExistsFolder": "There is already a folder by this name in this folder.",
+  "@fileOperations.shared.conflictExistsFolder": {
+    "description": "Inline validation error in the new-file and new-folder dialogs when the typed name matches an existing folder in the current directory."
+  },
+
+  "fileOperations.shared.conflictExistsFile": "There is already a file by this name in this folder.",
+  "@fileOperations.shared.conflictExistsFile": {
+    "description": "Inline validation error in the new-file and new-folder dialogs when the typed name matches an existing file in the current directory."
+  },
+
+  "fileOperations.shared.byteRate": "<size></size>/s",
+  "@fileOperations.shared.byteRate": {
+    "description": "Data-transfer speed shown next to a scan or copy/move bar, e.g. '1.2 MB/s'. <size> renders the formatted size (a widget, no inner text); '/s' means per second. Keep the per-second marker adjacent to the size."
+  },
+
+  "fileOperations.shared.andJoin": "{a} and {b}",
+  "@fileOperations.shared.andJoin": {
+    "description": "Joins two count parts into one phrase, e.g. '3 files' and '1 folder' become '3 files and 1 folder'. Used in delete and transfer dialog titles. Reorder the parts if your language needs it.",
+    "placeholders": {
+      "a": "the first part (the files count phrase)",
+      "b": "the second part (the folders count phrase)"
+    }
+  },
+
+  "fileOperations.transferDialog.toggleCopy": "Copy",
+  "@fileOperations.transferDialog.toggleCopy": {
+    "description": "Label of the segmented-control option that sets the operation to copy. Short control label, sits next to Move."
+  },
+
+  "fileOperations.transferDialog.toggleMove": "Move",
+  "@fileOperations.transferDialog.toggleMove": {
+    "description": "Label of the segmented-control option that sets the operation to move. Short control label, sits next to Copy."
+  },
+
+  "fileOperations.transferDialog.destVolumeAria": "Destination volume",
+  "@fileOperations.transferDialog.destVolumeAria": {
+    "description": "Accessibility label for the dropdown that picks which volume (disk/device) the files go to (screen-reader only)."
+  },
+
+  "fileOperations.transferDialog.destPathAria": "Destination path",
+  "@fileOperations.transferDialog.destPathAria": {
+    "description": "Accessibility label for the text field holding the destination folder path (screen-reader only)."
+  },
+
+  "fileOperations.transferDialog.spaceInfo": "{free} free of {total}",
+  "@fileOperations.transferDialog.spaceInfo": {
+    "description": "Free-space line next to the destination-volume picker, e.g. '12 GB free of 500 GB'. Both values are already formatted sizes.",
+    "placeholders": {
+      "free": "available space, already formatted (e.g. 12 GB)",
+      "total": "total volume size, already formatted (e.g. 500 GB)"
+    }
+  },
+
+  "fileOperations.transferDialog.smbNativeNote": "This share uses the system connection. Cancellation may be delayed. Use \"Connect directly\" in the volume picker for faster transfers and reliable cancel.",
+  "@fileOperations.transferDialog.smbNativeNote": {
+    "description": "Note shown when the destination is an SMB share mounted by the operating system rather than connected directly by Cmdr. Warns that cancelling a transfer may lag. Keep the quoted \"Connect directly\" matching that picker action's label."
+  },
+
+  "fileOperations.transferDialog.scanFile": "{count, plural, one {file} other {files}}",
+  "@fileOperations.transferDialog.scanFile": {
+    "description": "Unit noun after the live file tally in the transfer dialog's scan stats (e.g. '123 files'). The number is rendered separately.",
+    "placeholders": {
+      "count": "the file count (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.transferDialog.scanDir": "{count, plural, one {dir} other {dirs}}",
+  "@fileOperations.transferDialog.scanDir": {
+    "description": "Unit noun after the live directory tally in the transfer dialog's scan stats (e.g. '4 dirs'). 'dir' abbreviates directory/folder. The number is rendered separately.",
+    "placeholders": {
+      "count": "the directory count (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.transferDialog.hardlinkNote": "<written></written> will be written. The source is <ondisk></ondisk> on disk – the extra is hardlinked files, which can''t stay linked across drives.",
+  "@fileOperations.transferDialog.hardlinkNote": {
+    "description": "Note explaining why the bytes a copy will write exceed the source's on-disk size: hardlinked files become separate copies on another drive. <written> renders the to-be-written size and <ondisk> renders the source's on-disk size, both as inline size widgets (no inner text to translate). 'hardlinked' is a filesystem term. The dash is an en dash."
+  },
+
+  "fileOperations.transferDialog.checkingConflicts": "Checking for conflicts...",
+  "@fileOperations.transferDialog.checkingConflicts": {
+    "description": "Status shown while the transfer dialog scans the destination for name clashes before the copy/move. Keep the trailing ellipsis."
+  },
+
+  "fileOperations.transferDialog.mergeInfoSingle": "1 folder will merge with an existing folder",
+  "@fileOperations.transferDialog.mergeInfoSingle": {
+    "description": "Informational line in the transfer dialog when exactly one same-named folder exists at the destination and will be merged (not replaced). Neutral, not a warning."
+  },
+
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} folders will merge with existing folders",
+  "@fileOperations.transferDialog.mergeInfoMany": {
+    "description": "Informational line in the transfer dialog when several same-named folders exist at the destination and will be merged. Neutral, not a warning.",
+    "placeholders": {
+      "countText": "how many folders will merge, formatted for display (e.g. 1,234)"
+    }
+  },
+
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {file already exists} other {files already exist}}",
+  "@fileOperations.transferDialog.conflictsSummary": {
+    "description": "Summary in the transfer dialog of how many destination files clash with the ones being transferred. The whole verb phrase agrees with the count ('1 file already exists' / '3 files already exist').",
+    "placeholders": {
+      "countText": "how many clashing files, formatted for display (e.g. 1,234)",
+      "count": "the same number (drives the singular/plural verb phrase)"
+    }
+  },
+
+  "fileOperations.transferDialog.policySkip": "{count, plural, one {Skip} other {Skip all}}",
+  "@fileOperations.transferDialog.policySkip": {
+    "description": "Radio option: leave clashing files untouched. Wording is 'Skip' for a single clash, 'Skip all' when there are several. Short control label.",
+    "placeholders": {
+      "count": "number of clashing files (selects the single vs. 'all' wording)"
+    }
+  },
+
+  "fileOperations.transferDialog.policyOverwrite": "{count, plural, one {Overwrite} other {Overwrite all}}",
+  "@fileOperations.transferDialog.policyOverwrite": {
+    "description": "Radio option: replace clashing files with the ones being transferred. 'Overwrite' for one clash, 'Overwrite all' for several. Short control label.",
+    "placeholders": {
+      "count": "number of clashing files (selects the single vs. 'all' wording)"
+    }
+  },
+
+  "fileOperations.transferDialog.policyOverwriteSmaller": "{count, plural, one {Overwrite if smaller} other {Overwrite all smaller}}",
+  "@fileOperations.transferDialog.policyOverwriteSmaller": {
+    "description": "Radio option: replace a clashing file only when the existing one is smaller. 'Overwrite if smaller' for one clash, 'Overwrite all smaller' for several. Control label.",
+    "placeholders": {
+      "count": "number of clashing files (selects the single vs. 'all' wording)"
+    }
+  },
+
+  "fileOperations.transferDialog.policyOverwriteOlder": "{count, plural, one {Overwrite if older} other {Overwrite all older}}",
+  "@fileOperations.transferDialog.policyOverwriteOlder": {
+    "description": "Radio option: replace a clashing file only when the existing one is older. 'Overwrite if older' for one clash, 'Overwrite all older' for several. Control label.",
+    "placeholders": {
+      "count": "number of clashing files (selects the single vs. 'all' wording)"
+    }
+  },
+
+  "fileOperations.transferDialog.policyStop": "{count, plural, one {Ask later} other {Ask for each}}",
+  "@fileOperations.transferDialog.policyStop": {
+    "description": "Radio option: decide per clash during the transfer instead of choosing now. 'Ask later' for one clash, 'Ask for each' for several. Control label.",
+    "placeholders": {
+      "count": "number of clashing files (selects the single vs. 'each' wording)"
+    }
+  },
+
+  "fileOperations.transferDialog.typeMismatchWarning": "Some clashes mix a file and a folder by the same name. Overwriting will replace items of a different type, including the entire contents of a folder.",
+  "@fileOperations.transferDialog.typeMismatchWarning": {
+    "description": "Red warning in the transfer dialog when 'Overwrite all' is chosen and at least one clash pairs a file with a same-named folder. Stresses the destructive swap. Keep it firm."
+  },
+
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copy} move {Move} delete {Delete} other {Move to trash}}",
+  "@fileOperations.transferDialog.titleVerbOnly": {
+    "description": "Transfer/delete dialog title verb alone, used when there is nothing to count. 'Move to trash' is the trash variant. Matches the operation chosen.",
+    "placeholders": {
+      "verb": "the operation: copy, move, delete, or trash"
+    }
+  },
+
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Copy} move {Move} delete {Delete} other {Move to trash}} {phrase}",
+  "@fileOperations.transferDialog.titleWithCounts": {
+    "description": "Transfer/delete dialog title combining the operation verb with a counts phrase, e.g. 'Copy 2 files and 3 folders'. {phrase} is already built.",
+    "placeholders": {
+      "verb": "the operation: copy, move, delete, or trash",
+      "phrase": "the pre-rendered counts phrase, e.g. '2 files and 3 folders'"
+    }
+  },
+
+  "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {file} other {files}}",
+  "@fileOperations.transferDialog.filesPart": {
+    "description": "The files part of a transfer-dialog title phrase, e.g. '2 files'. Combined with the folders part by fileOperations.shared.andJoin.",
+    "placeholders": {
+      "countText": "how many files (plain number, not grouped)",
+      "count": "the same number of files (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.transferDialog.foldersPart": "{countText} {count, plural, one {folder} other {folders}}",
+  "@fileOperations.transferDialog.foldersPart": {
+    "description": "The folders part of a transfer-dialog title phrase, e.g. '3 folders'. Combined with the files part by fileOperations.shared.andJoin.",
+    "placeholders": {
+      "countText": "how many folders (plain number, not grouped)",
+      "count": "the same number of folders (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.transferDialog.pathErrorSubfolder": "Can''t {verb, select, copy {copy} other {move}} \"{name}\" into its own subfolder",
+  "@fileOperations.transferDialog.pathErrorSubfolder": {
+    "description": "Validation error under the destination-path field when the chosen destination is inside the item being transferred. The verb matches the operation (copy/move). The name is the source folder/file name, kept in straight double quotes.",
+    "placeholders": {
+      "verb": "the operation: copy or move",
+      "name": "the source folder or file name"
+    }
+  },
+
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "\"{name}\" is already in this location",
+  "@fileOperations.transferDialog.pathErrorAlreadyThere": {
+    "description": "Validation error under the destination-path field when the destination is the item's current parent folder, so the transfer would be a no-op. The name is kept in straight double quotes.",
+    "placeholders": {
+      "name": "the source folder or file name"
+    }
+  },
+
+  "fileOperations.transferDialog.confirmCopy": "Copy",
+  "@fileOperations.transferDialog.confirmCopy": {
+    "description": "Primary confirm button in the transfer dialog when the operation is copy. Control label."
+  },
+
+  "fileOperations.transferDialog.confirmMove": "Move",
+  "@fileOperations.transferDialog.confirmMove": {
+    "description": "Primary confirm button in the transfer dialog when the operation is move. Control label."
+  },
+
+  "fileOperations.scanPhase.fromLabel": "From:",
+  "@fileOperations.scanPhase.fromLabel": {
+    "description": "Label before the source path shown during the scan phase of a transfer, e.g. 'From: /Users/...'. Keep the trailing colon."
+  },
+
+  "fileOperations.scanPhase.scanFile": "{count, plural, one {file} other {files}}",
+  "@fileOperations.scanPhase.scanFile": {
+    "description": "Unit noun after the live file tally during a transfer's scan phase (e.g. '123 files'). The number is rendered separately.",
+    "placeholders": {
+      "count": "the file count (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.scanPhase.scanDir": "{count, plural, one {dir} other {dirs}}",
+  "@fileOperations.scanPhase.scanDir": {
+    "description": "Unit noun after the live directory tally during a transfer's scan phase (e.g. '4 dirs'). 'dir' abbreviates directory/folder. The number is rendered separately.",
+    "placeholders": {
+      "count": "the directory count (drives the singular/plural noun)"
+    }
+  },
+
+  "fileOperations.scanPhase.throughputFiles": "{rateText} files/s",
+  "@fileOperations.scanPhase.throughputFiles": {
+    "description": "Live scan throughput during a transfer: files processed per second. '/s' means per second.",
+    "placeholders": {
+      "rateText": "the files-per-second rate, formatted for display (e.g. 1,200)"
+    }
+  },
+
+  "fileOperations.transferProgress.scanTitleCopy": "Verifying before copy...",
+  "@fileOperations.transferProgress.scanTitleCopy": {
+    "description": "Progress-dialog title while counting files before a copy, so the user knows why the app is walking the folder tree. Keep the trailing ellipsis."
+  },
+
+  "fileOperations.transferProgress.scanTitleMove": "Verifying before move...",
+  "@fileOperations.transferProgress.scanTitleMove": {
+    "description": "Progress-dialog title while counting files before a move. Keep the trailing ellipsis."
+  },
+
+  "fileOperations.transferProgress.scanTitleDelete": "Counting items to delete...",
+  "@fileOperations.transferProgress.scanTitleDelete": {
+    "description": "Progress-dialog title while counting items before a permanent delete. Keep the trailing ellipsis."
+  },
+
+  "fileOperations.transferProgress.scanTitleTrash": "Counting items to trash...",
+  "@fileOperations.transferProgress.scanTitleTrash": {
+    "description": "Progress-dialog title while counting items before moving them to trash. Keep the trailing ellipsis."
+  },
+
+  "fileOperations.transferProgress.rollbackUnavailableTooltip": "Rollback is not available for same-volume moves",
+  "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
+    "description": "Tooltip on the disabled Rollback button. A move within one disk/device renames in place and can't be undone step by step. 'Rollback' means undoing the operation so far."
+  },
+
+  "fileOperations.transferProgress.titleRollingBack": "Rolling back...",
+  "@fileOperations.transferProgress.titleRollingBack": {
+    "description": "Progress-dialog title while undoing a cancelled copy/move (deleting the partial files it created). Keep the trailing ellipsis."
+  },
+
+  "fileOperations.transferProgress.titleCancelling": "Cancelling...",
+  "@fileOperations.transferProgress.titleCancelling": {
+    "description": "Progress-dialog title right after the user cancels, while the operation stops. Keep the trailing ellipsis."
+  },
+
+  "fileOperations.transferProgress.titleCancellingSlow": "Cancelling... (finishing USB transfers)",
+  "@fileOperations.transferProgress.titleCancellingSlow": {
+    "description": "Progress-dialog title shown when cancellation takes a moment because an in-flight USB transfer must finish first. Keep the trailing ellipsis on the first part. 'USB' is the connection type."
+  },
+
+  "fileOperations.transferProgress.titleConflict": "File already exists",
+  "@fileOperations.transferProgress.titleConflict": {
+    "description": "Progress-dialog title when a name clash needs the user to decide what to do. Deliberately plain; the destructive detail is spelled out in the body."
+  },
+
+  "fileOperations.transferProgress.titleFlushing": "Writing the last piece...",
+  "@fileOperations.transferProgress.titleFlushing": {
+    "description": "Progress-dialog title during the final flush to disk after the bytes are copied (a real pause on slow media). Reassures the user it isn't stuck. Keep the trailing ellipsis."
+  },
+
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} delete {Deleting} other {Moving to trash}}...",
+  "@fileOperations.transferProgress.titleActive": {
+    "description": "Progress-dialog title during the operation itself, in the -ing form of the verb. 'Moving to trash' is the trash variant. Keep the trailing ellipsis.",
+    "placeholders": {
+      "gerund": "the operation: copy, move, delete, or trash"
+    }
+  },
+
+  "fileOperations.transferProgress.stageScanning": "Scanning",
+  "@fileOperations.transferProgress.stageScanning": {
+    "description": "Label of the first step chip in the progress dialog's two-step indicator: counting files. Short status label."
+  },
+
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copying} move {Moving} delete {Deleting} other {Moving to trash}}",
+  "@fileOperations.transferProgress.stageActive": {
+    "description": "Label of the second step chip in the progress dialog's two-step indicator: the operation in progress, in the -ing form. No trailing ellipsis (this is a step chip, not the title).",
+    "placeholders": {
+      "gerund": "the operation: copy, move, delete, or trash"
+    }
+  },
+
+  "fileOperations.transferProgress.warningFileOverFolder": "The target exists and is a <strong>folder</strong>. You''re about to overwrite it with a <strong>file</strong> by the same name. All contents of the target folder would be deleted and replaced by the file. What to do?",
+  "@fileOperations.transferProgress.warningFileOverFolder": {
+    "description": "Red warning shown in the conflict step when a file would replace a same-named folder, deleting the folder's contents. <strong> wraps the emphasized words 'folder' and 'file'. Keep it stark; this is a destructive action."
+  },
+
+  "fileOperations.transferProgress.existingFolderLabel": "Existing (folder):",
+  "@fileOperations.transferProgress.existingFolderLabel": {
+    "description": "Row label in the conflict comparison for the item already at the destination, when it is a folder. Keep the trailing colon."
+  },
+
+  "fileOperations.transferProgress.existingFileLabel": "Existing (file):",
+  "@fileOperations.transferProgress.existingFileLabel": {
+    "description": "Row label in the conflict comparison for the item already at the destination, when it is a file (and the incoming item is a folder). Keep the trailing colon."
+  },
+
+  "fileOperations.transferProgress.existingLabel": "Existing:",
+  "@fileOperations.transferProgress.existingLabel": {
+    "description": "Row label in the conflict comparison for the item already at the destination, when both items are the same type. Keep the trailing colon."
+  },
+
+  "fileOperations.transferProgress.newFolderLabel": "New (folder):",
+  "@fileOperations.transferProgress.newFolderLabel": {
+    "description": "Row label in the conflict comparison for the incoming item, when it is a folder. Keep the trailing colon."
+  },
+
+  "fileOperations.transferProgress.newFileLabel": "New (file):",
+  "@fileOperations.transferProgress.newFileLabel": {
+    "description": "Row label in the conflict comparison for the incoming item, when it is a file (and the existing item is a folder). Keep the trailing colon."
+  },
+
+  "fileOperations.transferProgress.newLabel": "New:",
+  "@fileOperations.transferProgress.newLabel": {
+    "description": "Row label in the conflict comparison for the incoming item, when both items are the same type. Keep the trailing colon."
+  },
+
+  "fileOperations.transferProgress.sizeUnknown": "(unknown)",
+  "@fileOperations.transferProgress.sizeUnknown": {
+    "description": "Placeholder shown in the conflict comparison where a size would go but the app couldn't determine it (e.g. a folder's size with no index). Keep the parentheses."
+  },
+
+  "fileOperations.transferProgress.annotationLarger": "(larger)",
+  "@fileOperations.transferProgress.annotationLarger": {
+    "description": "Annotation next to whichever item in the conflict comparison is bigger. Keep the parentheses; it sits inline after a size."
+  },
+
+  "fileOperations.transferProgress.annotationNewer": "(newer)",
+  "@fileOperations.transferProgress.annotationNewer": {
+    "description": "Annotation next to whichever item in the conflict comparison was modified more recently. Keep the parentheses; it sits inline after a date."
+  },
+
+  "fileOperations.transferProgress.smallerDisabledTooltip": "Can''t compare — target folder size is unknown.",
+  "@fileOperations.transferProgress.smallerDisabledTooltip": {
+    "description": "Tooltip on the disabled 'Overwrite all smaller' button when the destination is a folder whose size is unknown, so a size comparison isn't possible. The dash is an en dash."
+  },
+
+  "fileOperations.transferProgress.conflictSkip": "Skip",
+  "@fileOperations.transferProgress.conflictSkip": {
+    "description": "Conflict button: leave this one clashing item untouched. Short control label."
+  },
+
+  "fileOperations.transferProgress.conflictSkipAll": "Skip all",
+  "@fileOperations.transferProgress.conflictSkipAll": {
+    "description": "Conflict button: leave every remaining clashing item untouched. Short control label."
+  },
+
+  "fileOperations.transferProgress.conflictRename": "Rename",
+  "@fileOperations.transferProgress.conflictRename": {
+    "description": "Conflict button: keep both by giving this incoming item a new name. Short control label."
+  },
+
+  "fileOperations.transferProgress.conflictRenameAll": "Rename all",
+  "@fileOperations.transferProgress.conflictRenameAll": {
+    "description": "Conflict button: keep both for every remaining clash by renaming the incoming items. Short control label."
+  },
+
+  "fileOperations.transferProgress.conflictOverwrite": "Overwrite",
+  "@fileOperations.transferProgress.conflictOverwrite": {
+    "description": "Conflict button: replace this one existing item with the incoming one. Short control label."
+  },
+
+  "fileOperations.transferProgress.conflictOverwriteAll": "Overwrite all",
+  "@fileOperations.transferProgress.conflictOverwriteAll": {
+    "description": "Conflict button: replace every remaining clashing item with the incoming ones. Short control label."
+  },
+
+  "fileOperations.transferProgress.conflictOverwriteFolderWithFile": "Overwrite folder with file",
+  "@fileOperations.transferProgress.conflictOverwriteFolderWithFile": {
+    "description": "Conflict button for a file-over-folder clash: replace this existing folder (and its contents) with the incoming file. Destructive; the label spells out the swap."
+  },
+
+  "fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": "Overwrite folders with files",
+  "@fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": {
+    "description": "Conflict button for file-over-folder clashes: replace every clashing folder with the incoming file of the same name. Destructive; the label spells out the swap."
+  },
+
+  "fileOperations.transferProgress.conflictOverwriteAllSmaller": "Overwrite all smaller",
+  "@fileOperations.transferProgress.conflictOverwriteAllSmaller": {
+    "description": "Conflict button: replace existing items only where the existing one is smaller than the incoming one. Control label."
+  },
+
+  "fileOperations.transferProgress.conflictOverwriteAllOlder": "Overwrite all older",
+  "@fileOperations.transferProgress.conflictOverwriteAllOlder": {
+    "description": "Conflict button: replace existing items only where the existing one is older than the incoming one. Control label."
+  },
+
+  "fileOperations.transferProgress.conflictCancel": "Cancel",
+  "@fileOperations.transferProgress.conflictCancel": {
+    "description": "Button in the conflict step that stops the whole operation. Short control label."
+  },
+
+  "fileOperations.transferProgress.conflictRollback": "Rollback",
+  "@fileOperations.transferProgress.conflictRollback": {
+    "description": "Button in the conflict step that stops and undoes the operation so far (deletes the partial files it created). 'Rollback' means undoing the work done so far."
+  },
+
+  "fileOperations.transferProgress.progressSize": "Size",
+  "@fileOperations.transferProgress.progressSize": {
+    "description": "Label for the byte-progress bar in the progress dialog (how many bytes done out of total). Short label."
+  },
+
+  "fileOperations.transferProgress.progressItems": "Items",
+  "@fileOperations.transferProgress.progressItems": {
+    "description": "Label for the count-progress bar during a trash operation, where the unit is mixed items. Short label."
+  },
+
+  "fileOperations.transferProgress.progressFiles": "Files",
+  "@fileOperations.transferProgress.progressFiles": {
+    "description": "Label for the count-progress bar during copy/move/delete, where the unit is files. Short label."
+  },
+
+  "fileOperations.transferProgress.sizeProgressAria": "Size progress",
+  "@fileOperations.transferProgress.sizeProgressAria": {
+    "description": "Accessibility label for the byte-progress bar (screen-reader only)."
+  },
+
+  "fileOperations.transferProgress.fileProgressAria": "File progress",
+  "@fileOperations.transferProgress.fileProgressAria": {
+    "description": "Accessibility label for the count-progress bar (screen-reader only)."
+  },
+
+  "fileOperations.transferProgress.etaRemaining": "~{duration} remaining",
+  "@fileOperations.transferProgress.etaRemaining": {
+    "description": "Estimated time left, shown next to the progress bar, e.g. '~2m 30s remaining'. The ~ marks it as an estimate; the duration is already formatted.",
+    "placeholders": {
+      "duration": "the estimated time left, already formatted (e.g. 2m 30s)"
+    }
+  },
+
+  "fileOperations.transferProgress.smbNativeNote": "This share uses the system connection. Cancel and rollback may be delayed.",
+  "@fileOperations.transferProgress.smbNativeNote": {
+    "description": "Note during a transfer to an operating-system-mounted SMB share, warning that cancel and rollback may lag. 'Rollback' means undoing the work so far."
+  },
+
+  "fileOperations.transferProgress.rollbackTooltip": "Cancel and delete any partial target files created",
+  "@fileOperations.transferProgress.rollbackTooltip": {
+    "description": "Tooltip on the Rollback button explaining it stops the operation and removes the half-written files it created so far."
+  },
+
+  "fileOperations.errorDialog.technicalDetails": "Technical details",
+  "@fileOperations.errorDialog.technicalDetails": {
+    "description": "Toggle that expands raw, developer-facing details (paths, error codes) below a friendly transfer-error message. Control label."
+  },
+
+  "fileOperations.errorDialog.technicalDetailsAria": "Technical error details",
+  "@fileOperations.errorDialog.technicalDetailsAria": {
+    "description": "Accessibility label for the read-only text box holding the raw technical error details (screen-reader only)."
+  },
+
+  "fileOperations.errorDialog.retry": "Retry",
+  "@fileOperations.errorDialog.retry": {
+    "description": "Button that re-attempts a failed copy/move/delete. Shown for errors worth trying again. Short control label."
+  },
+
+  "fileOperations.errorDialog.close": "Close",
+  "@fileOperations.errorDialog.close": {
+    "description": "Button that dismisses the transfer-error dialog. Short control label."
+  }
+}

@@ -1,6 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { _setLocaleForTests } from '$lib/intl/locale'
 import { getLicenseTypeLabel, formatLicenseDate, getStatusText } from './license-section-utils'
 import type { LicenseInfo, LicenseStatus } from '$lib/tauri-commands'
+
+// The type/status labels resolve through the i18n catalog (`tString`); pin the
+// base locale so the asserted en copy is deterministic.
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
 
 function makeLicenseInfo(overrides: Partial<LicenseInfo> = {}): LicenseInfo {
   return {

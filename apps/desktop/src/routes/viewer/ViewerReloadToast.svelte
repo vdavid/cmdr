@@ -25,13 +25,14 @@
     import { commands } from '$lib/ipc/bindings'
     import { dismissToast } from '$lib/ui/toast/toast-store.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import { tString } from '$lib/intl/messages.svelte'
 
     const log = getAppLogger('viewer-tail')
 
     const message = $derived(
         ctx.kind === 'rotated'
-            ? 'File replaced on disk. Reload to see the new content.'
-            : 'File changed on disk. Reload?',
+            ? tString('viewer.reloadToast.rotated')
+            : tString('viewer.reloadToast.grew'),
     )
 
     async function reload(): Promise<void> {
@@ -59,7 +60,7 @@
             void reload()
         }}
     >
-        Reload
+        {tString('viewer.reloadToast.reload')}
     </button>
 </div>
 

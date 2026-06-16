@@ -1,0 +1,26 @@
+{
+  "whatsNew.dialog.title": "What’s new in Cmdr",
+  "@whatsNew.dialog.title": {
+    "description": "Title of the post-update dialog that summarizes recent changelog entries. The apostrophe is a curly typographic apostrophe (U+2019), not a straight one. Cmdr is the app name; keep it."
+  },
+  "whatsNew.dialog.empty": "Nothing to see here yet. New changes will show up here after an update.",
+  "@whatsNew.dialog.empty": {
+    "description": "Empty-state message in the What's new dialog when there are no changelog entries to show (reachable only via manual reopen)."
+  },
+  "whatsNew.dialog.seeFullChangelog": "See full changelog",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "description": "Link in the What's new dialog that opens the full online changelog in the browser."
+  },
+  "whatsNew.dialog.optOut": "Not interested in changelogs",
+  "@whatsNew.dialog.optOut": {
+    "description": "Button in the What's new dialog that turns off the post-update changelog popup for good."
+  },
+  "whatsNew.dialog.close": "Close",
+  "@whatsNew.dialog.close": {
+    "description": "Button that closes the What's new dialog."
+  },
+  "whatsNew.optOutToast": "Got it, no more update notes. Re-enable them anytime in Settings > Updates & privacy.",
+  "@whatsNew.optOutToast": {
+    "description": "Confirmation toast after the user opts out of the post-update changelog popup, noting where to turn it back on. Settings > Updates & privacy is a navigation path; keep the menu/section names as shown."
+  }
+}

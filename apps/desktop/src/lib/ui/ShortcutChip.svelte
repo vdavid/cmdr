@@ -24,6 +24,7 @@
     import { commands, type CommandId } from '$lib/commands'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /**
@@ -76,9 +77,9 @@
             type="button"
             class="shortcut-chip clickable"
             class:sm={size === 'sm'}
-            aria-label="Customize the {commandName} shortcut"
+            aria-label={tString('ui.shortcutChip.customizeAria', { commandName })}
             onclick={handleClick}
-            use:tooltip={'Customize this shortcut'}
+            use:tooltip={tString('ui.shortcutChip.customizeTooltip')}
         >
             <kbd>{value}</kbd>
         </button>

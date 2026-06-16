@@ -2,6 +2,7 @@
     import { relaunch } from '@tauri-apps/plugin-process'
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     function handleRestart() {
         void relaunch()
@@ -12,10 +13,10 @@
     }
 </script>
 
-<span class="update-text">New version available. Restart to update.</span>
+<span class="update-text">{tString('updates.toast.available')}</span>
 <div class="update-actions">
-    <Button variant="secondary" size="mini" onclick={handleDismiss}>Later</Button>
-    <Button variant="primary" size="mini" onclick={handleRestart}>Restart</Button>
+    <Button variant="secondary" size="mini" onclick={handleDismiss}>{tString('updates.toast.later')}</Button>
+    <Button variant="primary" size="mini" onclick={handleRestart}>{tString('updates.toast.restart')}</Button>
 </div>
 
 <style>

@@ -6,6 +6,8 @@
  * thresholds and blending without mounting a component.
  */
 
+import { tString } from '$lib/intl/messages.svelte'
+
 /** A point sample of replay progress, used by the sliding-window rate estimate. */
 export interface EtaSnapshot {
   timestamp: number
@@ -21,9 +23,9 @@ export interface EtaSnapshot {
 export function formatEta(seconds: number): string {
   // Non-finite guard: every planned caller null-gates before reaching here, but the scan
   // branch is a new caller and a future edit dropping that gate would surface "Infinitym left".
-  if (!Number.isFinite(seconds) || seconds < 2) return 'Almost done'
-  if (seconds < 60) return `${String(Math.round(seconds))}s left`
-  return `${String(Math.round(seconds / 60))}m left`
+  if (!Number.isFinite(seconds) || seconds < 2) return tString('indexing.eta.almostDone')
+  if (seconds < 60) return tString('indexing.eta.secondsLeft', { secondsText: String(Math.round(seconds)) })
+  return tString('indexing.eta.minutesLeft', { minutesText: String(Math.round(seconds / 60)) })
 }
 
 /**

@@ -25,6 +25,7 @@
      * chat-back feature without overpromising. No keyboard shortcut is wired.
      */
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
     import { patternRowLabel, type AiSummary } from './ai-summary'
 
     interface Props {
@@ -41,11 +42,11 @@
     const hasSummary = $derived(summary.pattern !== null || summary.filters.length > 0)
 </script>
 
-<div class="ai-transparency-strip" aria-label="What the agent did with your last AI search">
+<div class="ai-transparency-strip" aria-label={tString('queryUi.ai.stripAria')}>
     <div class="strip-text">
         <p class="ai-prompt">{aiPrompt}</p>
         <div class="ai-summary">
-            <span class="ai-summary-lead">Here's what the agent did:</span>
+            <span class="ai-summary-lead">{tString('queryUi.ai.lead')}</span>
             {#if hasSummary}
                 <ul class="ai-summary-list">
                     {#if summary.pattern !== null}
@@ -62,7 +63,7 @@
                     {/each}
                 </ul>
             {:else}
-                <span class="ai-summary-empty">Nothing to filter on yet. Try rephrasing?</span>
+                <span class="ai-summary-empty">{tString('queryUi.ai.empty')}</span>
             {/if}
         </div>
         {#if caveat}
@@ -73,10 +74,10 @@
         type="button"
         class="refine-button"
         disabled
-        aria-label="Refine the AI search (coming soon)"
-        use:tooltip={'Coming soon: chat back to the agent'}
+        aria-label={tString('queryUi.ai.refineAria')}
+        use:tooltip={tString('queryUi.ai.refineTooltip')}
     >
-        Refine…
+        {tString('queryUi.ai.refine')}
     </button>
 </div>
 

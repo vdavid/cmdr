@@ -1,6 +1,7 @@
 <script lang="ts">
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         title: string
@@ -9,7 +10,8 @@
         onClose: () => void
     }
 
-    const { title: dialogTitle, message, buttonText = 'OK', onClose }: Props = $props()
+    const { title: dialogTitle, message, buttonText, onClose }: Props = $props()
+    const resolvedButtonText = $derived(buttonText ?? tString('ui.alertDialog.defaultButton'))
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
@@ -32,7 +34,7 @@
     <div class="alert-body">
         <p id="alert-dialog-message" class="message">{message}</p>
         <div class="button-row">
-            <Button variant="primary" onclick={onClose}>{buttonText}</Button>
+            <Button variant="primary" onclick={onClose}>{resolvedButtonText}</Button>
         </div>
     </div>
 </ModalDialog>

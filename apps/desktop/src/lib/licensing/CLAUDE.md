@@ -21,6 +21,12 @@ values via IPC.
 
 ## Must-knows
 
+- **All user-facing copy here lives in `messages/en/licensing.json`, resolved via `t`/`tString`/`<Trans>`**
+  (`$lib/intl`), not hardcoded. `cmdr/no-raw-user-facing-string` is enforced on `lib/licensing/` (and on
+  `LicenseSection.svelte`). Apostrophes in catalog values are doubled (`''`); inline-component sentences (the
+  GitHub/email links, the `<strong>` org/date emphasis, the dismiss-button line break) go through `<Trans>` with a tag
+  snippet. Dates stay locale-formatted at the call site and are passed to messages as preformatted `{date}` STRING
+  params. Parity net: `licensing-i18n-parity.test.ts`.
 - **Activation uses the verify/commit split.** `handleActivate` calls `verifyLicense()` (nothing stored), then
   `validateLicenseWithServer(transactionId)` (transaction ID passed explicitly because the key isn't stored yet), then
   decides whether to `commitLicense()`. Four outcomes: active → commit + onSuccess; expired → commit + inline expiry

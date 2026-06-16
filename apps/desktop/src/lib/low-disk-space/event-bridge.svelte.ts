@@ -24,6 +24,7 @@ import { ensureMacosNotificationPermission } from '$lib/notifications/macos-noti
 import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
 import { onLowDiskSpace } from '$lib/tauri-commands'
+import { tString } from '$lib/intl/messages.svelte'
 import type { LowDiskSpacePayload } from '$lib/ipc/bindings'
 import { getLowDiskSpaceNotificationsMode } from './notifications-mode'
 import LowDiskSpaceToastContent from './LowDiskSpaceToastContent.svelte'
@@ -68,7 +69,7 @@ function dispatchToast(payload: LowDiskSpacePayload): void {
     dismissal: 'persistent',
     // Per-volume dedup: a re-fire replaces the visible toast in place.
     id: `low-disk-space:${payload.volumeId}`,
-    closeTooltip: 'Dismiss',
+    closeTooltip: tString('lowDiskSpace.toast.closeTooltip'),
     props: {
       availableBytes: payload.availableBytes,
       freePercent: payload.freePercent,
@@ -84,8 +85,8 @@ async function dispatchMacosNotification(payload: LowDiskSpacePayload): Promise<
   const percentText = payload.freePercent.toFixed(1)
   try {
     sendNotification({
-      title: 'Low disk space',
-      body: `${freeText} free (${percentText}%) on your startup disk.`,
+      title: tString('lowDiskSpace.notification.title'),
+      body: tString('lowDiskSpace.notification.body', { freeText, percentText }),
     })
   } catch (err) {
     log.warn('Failed to send macOS notification: {err}', { err: String(err) })

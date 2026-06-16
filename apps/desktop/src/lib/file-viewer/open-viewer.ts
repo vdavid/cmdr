@@ -1,6 +1,7 @@
 import { LogicalPosition } from '@tauri-apps/api/dpi'
 
 import { cascadeFromMain, clampToMonitor, nearestMonitor, readMainRect, readMonitors } from '$lib/window-positioning'
+import { getMessage } from '$lib/intl/messages.svelte'
 
 const VIEWER_WIDTH = 800
 const VIEWER_HEIGHT = 600
@@ -38,7 +39,7 @@ export async function openFileViewer(filePath: string): Promise<void> {
 
   const win = new WebviewWindow(label, {
     url: `/viewer?path=${encodedPath}`,
-    title: decorateChildWindowTitle(filePath.split('/').pop() ?? 'Viewer'),
+    title: decorateChildWindowTitle(filePath.split('/').pop() ?? getMessage('viewer.window.fallbackTitle')),
     width: VIEWER_WIDTH,
     height: VIEWER_HEIGHT,
     minWidth: 400,

@@ -5,6 +5,7 @@
    * area and surface a brief loading spinner.
    */
   import Spinner from '$lib/ui/Spinner.svelte'
+  import { tString } from '$lib/intl/messages.svelte'
 
   type Props = {
     /** `cmdr-media://localhost/<token>` URL for the PDF bytes. */
@@ -38,7 +39,7 @@
   {#if !loaded}
     <div class="media-status" role="status">
       <Spinner size="lg" />
-      <span class="sr-only">Loading PDF</span>
+      <span class="sr-only">{tString('viewer.pdf.loading')}</span>
     </div>
   {/if}
   <embed class="media-pdf" type="application/pdf" {src} title={fileName} aria-label={fileName} onload={handleLoad} />

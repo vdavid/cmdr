@@ -2,6 +2,7 @@
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
+    import { tString } from '$lib/intl/messages.svelte'
 
     function handleOpenSettings() {
         dismissToast('crash-report-sent')
@@ -10,9 +11,11 @@
 </script>
 
 <div class="content">
-    <span class="message">Crash report sent. Thanks for helping improve Cmdr.</span>
+    <span class="message">{tString('crashReporter.sentToast.message')}</span>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleOpenSettings}>Change in Settings &gt; Updates</Button>
+        <Button size="mini" variant="secondary" onclick={handleOpenSettings}
+            >{tString('crashReporter.sentToast.changeSettings')}</Button
+        >
     </div>
 </div>
 

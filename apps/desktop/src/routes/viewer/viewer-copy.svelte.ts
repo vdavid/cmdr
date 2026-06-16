@@ -24,6 +24,7 @@ import { save as showSavePanel } from '@tauri-apps/plugin-dialog'
 
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
+import { tString } from '$lib/intl/messages.svelte'
 
 import { selectCopyAction, type CopyAction } from './viewer-copy'
 
@@ -218,10 +219,10 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
   async function handleSilentCopy(text: string, bytes: number): Promise<void> {
     const ok = await writeToClipboard(text)
     if (!ok) {
-      addToast("Couldn't reach the clipboard. Try again?", { level: 'warn' })
+      addToast(tString('viewer.copy.clipboardUnreachable'), { level: 'warn' })
       return
     }
-    addToast(`${formatBytes(bytes)} on your clipboard`, { level: 'info' })
+    addToast(tString('viewer.copy.onClipboard', { size: formatBytes(bytes) }), { level: 'info' })
   }
 
   async function handleCopy(): Promise<void> {
@@ -240,9 +241,9 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
           error: outcome.error ? JSON.stringify(outcome.error) : 'none',
         })
         if (outcome.reason === 'timedOut') {
-          addToast('The read took too long. Try a smaller selection?', { level: 'warn' })
+          addToast(tString('viewer.copy.readTooLong'), { level: 'warn' })
         } else {
-          addToast("Couldn't copy the selection. Try again?", { level: 'warn' })
+          addToast(tString('viewer.copy.copyFailed'), { level: 'warn' })
         }
         return
       case 'confirm':
@@ -255,9 +256,9 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
           } else if (res.reason === 'cancelled') {
             // User pressed Escape; no toast.
           } else if (res.reason === 'timedOut') {
-            addToast('The read took too long. Try a smaller selection?', { level: 'warn' })
+            addToast(tString('viewer.copy.readTooLong'), { level: 'warn' })
           } else {
-            addToast("Couldn't read the selection. Try again?", { level: 'warn' })
+            addToast(tString('viewer.copy.readFailed'), { level: 'warn' })
           }
         }
         return
@@ -302,13 +303,13 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
    */
   async function handleSaveAs(): Promise<void> {
     const fileName = deps.getFileName()
-    const defaultName = `${fileName.replace(/\.[^.]*$/, '') || 'selection'}.selection.txt`
+    const defaultName = `${fileName.replace(/\.[^.]*$/, '') || tString('viewer.saveAs.defaultName')}.selection.txt`
     let chosen: string | null
     try {
-      chosen = await showSavePanel({ defaultPath: defaultName, title: 'Save selection' })
+      chosen = await showSavePanel({ defaultPath: defaultName, title: tString('viewer.saveAs.title') })
     } catch (e) {
       log.warn('Save panel rejected: {error}', { error: String(e) })
-      addToast("Couldn't open the save panel. Try again?", { level: 'warn' })
+      addToast(tString('viewer.saveAs.panelFailed'), { level: 'warn' })
       return
     }
     if (chosen === null) return // user cancelled
@@ -320,13 +321,13 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
 
     const res = await copy.saveAs(chosen)
     if (res.ok) {
-      addToast(`Selection saved to ${chosen.split('/').pop() ?? chosen}`, { level: 'info' })
+      addToast(tString('viewer.saveAs.saved', { name: chosen.split('/').pop() ?? chosen }), { level: 'info' })
     } else if (res.reason === 'cancelled') {
       // No toast; the user pressed Escape.
     } else if (res.reason === 'timedOut') {
-      addToast('Saving took too long. Try a smaller selection?', { level: 'warn' })
+      addToast(tString('viewer.saveAs.tooLong'), { level: 'warn' })
     } else {
-      addToast("Couldn't save the selection. Try again?", { level: 'warn' })
+      addToast(tString('viewer.saveAs.saveFailed'), { level: 'warn' })
     }
   }
 

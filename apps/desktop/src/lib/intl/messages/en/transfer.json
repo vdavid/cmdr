@@ -1,61 +1,109 @@
 {
   "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to trash",
   "@transfer.trash": {
-    "description": "Toast after moving items to the system trash. {countText} is the preformatted file count (locale-grouped); {count} is the raw integer for plural selection.",
+    "description": "Brief status toast shown right after the user sends files to the macOS Trash (the F8 shortcut). Confirms the move succeeded. \"trash\" here means the macOS Trash, so translate it to whatever your platform calls the recoverable wastebasket.",
+    "placeholders": {
+      "countText": "number of files moved to trash, ready to drop into the sentence (e.g. 1,234)",
+      "count": "the same number of files (decides whether the noun is singular or plural)"
+    },
     "screenshot": "transfer-complete-toast.png"
   },
 
   "transfer.delete": "Delete complete: {countText} {count, plural, one {file} other {files}}",
   "@transfer.delete": {
-    "description": "Toast after a permanent delete. {countText} preformatted count, {count} raw integer for plural selection.",
+    "description": "Brief status toast shown right after the user permanently deletes files (Shift+F8), bypassing the Trash. Confirms how many were removed.",
+    "placeholders": {
+      "countText": "number of files deleted, ready to drop into the sentence (e.g. 1,234)",
+      "count": "the same number of files (decides whether the noun is singular or plural)"
+    },
     "screenshot": "transfer-complete-toast.png"
   },
 
   "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {file} other {files}} and {foldersText} {folders, plural, one {folder} other {folders}}} foldersOnly {{foldersText} {folders, plural, one {folder} other {folders}}} other {{filesText} {files, plural, one {file} other {files}}}}",
   "@transfer.movedPhrase": {
-    "description": "The 'N files and M folders' phrase, omitting the zero part. {kind} discriminates both/filesOnly/foldersOnly so independent plural branches never emit a dangling ' and '. *Text params are preformatted counts; raw {files}/{folders} drive plural selection only.",
+    "description": "A reusable sentence fragment, not a full sentence: the \"2 files and 1 folder\" part of a copy/move success toast. Another message wraps it with a verb (\"Copied …\", \"Moved …\"). When only files or only folders were transferred, just that side appears, so the phrase never reads \"0 files and 3 folders\". Build the wording so each branch stands alone grammatically in your language.",
+    "placeholders": {
+      "kind": "which parts are present: \"both\" (files and folders), \"foldersOnly\" (folders, no files), or anything else for files only",
+      "filesText": "number of files, ready to drop into the sentence (e.g. 1,234)",
+      "files": "the same number of files (decides whether \"file\" is singular or plural)",
+      "foldersText": "number of folders, ready to drop into the sentence (e.g. 12)",
+      "folders": "the same number of folders (decides whether \"folder\" is singular or plural)"
+    },
     "screenshot": "transfer-complete-toast.png"
   },
 
   "transfer.split.clean": "{verb, select, copy {Copied} other {Moved}} {phrase}.",
   "@transfer.split.clean": {
-    "description": "Copy/move success with a per-type split and no skips. {phrase} is the already-rendered transfer.movedPhrase result.",
+    "description": "Success toast after a copy or move where everything went through and nothing was skipped. Used when Cmdr knows the file-vs-folder breakdown, so it can say \"Copied 2 files and 1 folder.\" The breakdown text comes in ready-made via {phrase}.",
+    "placeholders": {
+      "verb": "the action that just finished: \"copy\" picks the copy wording, anything else picks the move wording",
+      "phrase": "the already-built \"2 files and 1 folder\" fragment (from transfer.movedPhrase); insert it as-is"
+    },
     "screenshot": "transfer-complete-toast.png"
   },
 
   "transfer.split.skipped": "{verb, select, copy {Copied} other {Moved}} {phrase}, skipped {skippedText} {skipped, plural, one {file} other {files}} (already at the target).",
   "@transfer.split.skipped": {
-    "description": "Copy/move success with a per-type split plus a skipped-files suffix. {phrase} is transfer.movedPhrase; {skippedText} preformatted, {skipped} raw for plural.",
+    "description": "Success toast after a copy or move where some files were skipped because an identical copy was already at the destination. Used when Cmdr knows the file-vs-folder breakdown. \"the target\" means the destination folder the user was copying or moving into.",
+    "placeholders": {
+      "verb": "the action that just finished: \"copy\" picks the copy wording, anything else picks the move wording",
+      "phrase": "the already-built \"2 files and 1 folder\" fragment (from transfer.movedPhrase) for the items that DID transfer; insert it as-is",
+      "skippedText": "number of files skipped, ready to drop into the sentence (e.g. 1,234)",
+      "skipped": "the same number of skipped files (decides whether the noun is singular or plural)"
+    },
     "screenshot": "transfer-complete-toast.png"
   },
 
   "transfer.fileOnly.allDone": "{verb, select, copy {Copy} other {Move}} complete: {verb, select, copy {copied} other {moved}} {transferredText} {transferred, plural, one {file} other {files}}.",
   "@transfer.fileOnly.allDone": {
-    "description": "File-count-only wording (clipboard paste, no per-type split), everything transferred, nothing skipped.",
+    "description": "Success toast after a copy or move where everything went through and nothing was skipped, used when Cmdr only has a flat file count (a clipboard paste, with no folder breakdown). Counts everything as files. {verb} appears twice: once capitalized to open the sentence (\"Copy complete\") and once lowercase inside it (\"copied\"); keep both natural in your language.",
+    "placeholders": {
+      "verb": "the action that just finished: \"copy\" picks the copy wording, anything else picks the move wording",
+      "transferredText": "number of files transferred, ready to drop into the sentence (e.g. 1,234)",
+      "transferred": "the same number of files (decides whether the noun is singular or plural)"
+    },
     "screenshot": "transfer-complete-toast.png"
   },
 
   "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Copy} other {Move}} complete: file already at the target, not {verb, select, copy {copied} other {moved}}.",
   "@transfer.fileOnly.allSkippedSingle": {
-    "description": "File-count-only wording, a single file that was already at the target (nothing transferred).",
+    "description": "Success toast after a copy or move of a single file that was skipped because an identical copy was already at the destination, so nothing actually transferred. Flat-file-count wording (clipboard paste, no folder breakdown). \"the target\" means the destination folder.",
+    "placeholders": {
+      "verb": "the action that just finished: \"copy\" picks the copy wording, anything else picks the move wording"
+    },
     "screenshot": "transfer-complete-toast.png"
   },
 
   "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copy} other {Move}} complete: skipped all {skippedText} files (already at the target), nothing was {verb, select, copy {copied} other {moved}}.",
   "@transfer.fileOnly.allSkippedMany": {
-    "description": "File-count-only wording, every file (2+) was already at the target (nothing transferred).",
+    "description": "Success toast after a copy or move where every selected file (two or more) was skipped because identical copies were already at the destination, so nothing actually transferred. Flat-file-count wording (clipboard paste, no folder breakdown). \"the target\" means the destination folder.",
+    "placeholders": {
+      "verb": "the action that just finished: \"copy\" picks the copy wording, anything else picks the move wording",
+      "skippedText": "number of files skipped, ready to drop into the sentence (e.g. 1,234). This branch only runs for two or more, so the noun stays plural"
+    },
     "screenshot": "transfer-complete-toast.png"
   },
 
   "transfer.fileOnly.mixedCopy": "Copy complete: copied {transferredText}, skipped {skippedText}. All {processedText} of your selected {processed, plural, one {file} other {files}} are now at the target.",
   "@transfer.fileOnly.mixedCopy": {
-    "description": "File-count-only copy wording, some copied and some skipped. Copy phrasing reassures all selected files are now present.",
+    "description": "Success toast after a copy where some files copied and some were skipped (identical copies already at the destination). Flat-file-count wording (clipboard paste, no folder breakdown). The closing line reassures the user that every file they picked is now present at the destination, whether freshly copied or already there. \"the target\" means the destination folder.",
+    "placeholders": {
+      "transferredText": "number of files actually copied, ready to drop into the sentence (e.g. 1,234)",
+      "skippedText": "number of files skipped, ready to drop into the sentence (e.g. 1,234)",
+      "processedText": "total number of files the user selected (copied plus skipped), ready to drop into the sentence (e.g. 1,234)",
+      "processed": "the same total number of files (decides whether the noun is singular or plural)"
+    },
     "screenshot": "transfer-complete-toast.png"
   },
 
   "transfer.fileOnly.mixedMove": "Move complete: moved {transferredText}, skipped {skippedText}. {skippedText} {skipped, plural, one {file} other {files}} {skipped, plural, one {was} other {were}} already at the target.",
   "@transfer.fileOnly.mixedMove": {
-    "description": "File-count-only move wording, some moved and some skipped. Move phrasing reports the skipped files were already at the target, with was/were agreement.",
+    "description": "Success toast after a move where some files moved and some were skipped (identical copies already at the destination). Flat-file-count wording (clipboard paste, no folder breakdown). The closing line explains the skipped files were already at the destination. \"the target\" means the destination folder.",
+    "placeholders": {
+      "transferredText": "number of files actually moved, ready to drop into the sentence (e.g. 1,234)",
+      "skippedText": "number of files skipped, ready to drop into the sentence (e.g. 1,234)",
+      "skipped": "the same number of skipped files (decides both the noun's singular/plural and the verb's was/were agreement)"
+    },
     "screenshot": "transfer-complete-toast.png"
   }
 }

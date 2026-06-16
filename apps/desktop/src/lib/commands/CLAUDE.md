@@ -18,8 +18,10 @@ Centralized command registry and fuzzy search engine for the command palette.
 
 ## Must-knows (invariants and guardrails)
 
-- **The registry array stays a mutable `Command[]`**, not `as const`: `updateLicenseCommandName` rewrites an entry's
-  `.name` in place, and `getPaletteCommands()` plus the shortcuts conflict detector consume a mutable `Command[]`.
+- **Entries hold i18n message KEYS, not English** (`CommandSource.nameKey` / `descriptionKey`); copy lives in
+  `messages/en/commands.json`, resolved via getter-backed `name` / `description`. Don't hardcode a label
+  (`cmdr/no-raw-user-facing-string` is enforced here); IDS stay untouched. `updateLicenseCommandName` flips a flag, not
+  the text. The array stays a getter-backed mutable `Command[]`. Details: [DETAILS.md](DETAILS.md) § i18n.
 - **Two set-equality guards keep tuple and registry in sync.** `Command.id: CommandId` enforces tuple ⊇ registry at
   compile time; `command-registry.test.ts` enforces registry ⊇ tuple. Adding to one without the other fails the build or
   the test.
@@ -34,21 +36,19 @@ Centralized command registry and fuzzy search engine for the command palette.
 - **Native macOS commands (quit, hide, hide others, show all) carry `nativeShortcut: true` and `showInPalette: false`.**
   AppKit owns both the behavior and the accelerator via `PredefinedMenuItems`; including them in JS shortcut dispatch
   would double-execute. `nativeShortcut: true` (set on exactly `NATIVE_SHORTCUT_COMMAND_IDS`) is the single source of
-  truth that makes the shortcuts editor render them read-only and the store mutators refuse to write them.
-  `DISPATCH_EXEMPT_IDS` sources its native-menu family from the same list, so the fact lives in one place.
-- **`scope` is documentation-only, not runtime-enforced.** Keyboard routing is each UI component's job; scope exists for
-  conflict detection and Settings display.
-- **The uFuzzy instance is a module-level singleton** (config compiles regex once at import). `info.ranges` is a flat
-  `[start, end, start, end, …]` array (`end` exclusive), unpacked into per-char `matchedIndices`; understand this layout
-  before changing highlighting.
+  truth that makes the shortcuts editor render them read-only and the store mutators refuse to write them
+  (`DISPATCH_EXEMPT_IDS` sources its native-menu family from the same list).
+- **`scope` is documentation-only, not runtime-enforced** (keyboard routing is each UI component's job; scope drives
+  conflict detection and Settings display).
+- **The uFuzzy instance is a module-level singleton**; `info.ranges` is a flat `[start, end, …]` array (`end`
+  exclusive), unpacked into per-char `matchedIndices`. Understand this before changing highlighting (see DETAILS.md).
 
 ## Gotchas
 
 - **`handleCommandExecute` intercepts `edit.copy` and `selection.selectAll` BEFORE logging when the selection is in an
   opt-in text region** (`.error-pane` or `[data-text-region]`). The native Edit menu's ⌘C / ⌘A fire through this
-  dispatcher even for plain text in the ErrorPane; without the early bail, every text copy would log a user action and
-  trigger file-scope side effects (file copy, file select-all), polluting the rollback log. See
-  `handleTextRegionShortcut` in `command-dispatch.ts`.
+  dispatcher even for plain text in the ErrorPane; without the early bail, every text copy would trigger file-scope side
+  effects and pollute the rollback log. See `handleTextRegionShortcut` in `command-dispatch.ts`.
 - **Adding a command with a menu item touches four places**, and missing any one fails silently (shortcut works but menu
   doesn't, or vice versa): (1) `command-registry.ts`, (2) the handler in `routes/(main)/command-handlers/`, (3)
   `src-tauri/src/menu/mod.rs` id mappings (`menu_id_to_command` + `command_id_to_menu_id`) plus the matching

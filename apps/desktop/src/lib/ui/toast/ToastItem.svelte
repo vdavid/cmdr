@@ -6,6 +6,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         id: string
@@ -163,7 +164,7 @@
             {#if showSendErrorReport}
                 <div class="toast-actions">
                     <Button size="mini" variant="secondary" onclick={handleSendErrorReport}>
-                        Send error report&hellip;
+                        {tString('ui.toast.sendErrorReport')}
                     </Button>
                 </div>
             {/if}
@@ -186,7 +187,7 @@
             onUserDismiss(id)
         }}
         use:tooltip={closeTooltip}
-        aria-label="Dismiss notification"
+        aria-label={tString('ui.toast.dismissAria')}
     >
         <Icon name="x" size={10} />
     </button>

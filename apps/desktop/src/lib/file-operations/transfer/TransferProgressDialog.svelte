@@ -57,6 +57,9 @@
     import { ScanThroughput } from '../scan-throughput'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
+    import type { MessageKey } from '$lib/intl/keys.gen'
 
     /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
     function getSizeColorClass(bytes: number): string {
@@ -121,33 +124,30 @@
         onError,
     }: Props = $props()
 
+    // English operation words for LOG lines only (not user-facing copy; user
+    // copy resolves through the i18n catalog via `t()` in markup).
     const operationLabelMap: Record<TransferOperationType, string> = {
         copy: 'Copy',
         move: 'Move',
         delete: 'Delete',
         trash: 'Trash',
     }
-    const operationGerundMap: Record<TransferOperationType, string> = {
-        copy: 'Copying',
-        move: 'Moving',
-        delete: 'Deleting',
-        trash: 'Moving to trash',
-    }
     const operationLabel = $derived(operationLabelMap[operationType])
-    const operationGerund = $derived(operationGerundMap[operationType])
+    /** The select discriminator the catalog''s gerund/verb messages key on. */
+    const gerundKind = $derived(operationType)
     const isDeleteOrTrash = $derived(operationType === 'delete' || operationType === 'trash')
     const isCopy = $derived(operationType === 'copy')
     const isMove = $derived(operationType === 'move')
 
     /** Title for the scanning phase: names the upcoming action so the user
      *  knows why we're walking the tree, not just "scanning for fun". */
-    const scanTitleMap: Record<TransferOperationType, string> = {
-        copy: 'Verifying before copy...',
-        move: 'Verifying before move...',
-        delete: 'Counting items to delete...',
-        trash: 'Counting items to trash...',
+    const scanTitleMap: Record<TransferOperationType, MessageKey> = {
+        copy: 'fileOperations.transferProgress.scanTitleCopy',
+        move: 'fileOperations.transferProgress.scanTitleMove',
+        delete: 'fileOperations.transferProgress.scanTitleDelete',
+        trash: 'fileOperations.transferProgress.scanTitleTrash',
     }
-    const scanTitle = $derived(scanTitleMap[operationType])
+    const scanTitle = $derived(tString(scanTitleMap[operationType]))
     const volumes = $derived(getVolumes())
     const destUsesNativeSmb = $derived(
         volumes.find((v) => v.id === destVolumeId)?.smbConnectionState === 'os_mount',
@@ -183,7 +183,9 @@
             sourceVolumeId === (destVolumeId ?? sourceVolumeId),
     )
 
-    const ROLLBACK_UNAVAILABLE_TOOLTIP = 'Rollback is not available for same-volume moves'
+    const ROLLBACK_UNAVAILABLE_TOOLTIP = $derived(
+        tString('fileOperations.transferProgress.rollbackUnavailableTooltip'),
+    )
 
     /** Minimum display time (ms) to prevent jarring one-frame flash. */
     const MIN_DISPLAY_MS = 400
@@ -336,8 +338,8 @@
         operationType === 'delete' ? 'deleting' : operationType === 'trash' ? 'trashing' : 'copying',
     )
     const stages = $derived<{ id: WriteOperationPhase; label: string }[]>([
-        { id: 'scanning', label: 'Scanning' },
-        { id: activePhaseId, label: operationGerund },
+        { id: 'scanning', label: tString('fileOperations.transferProgress.stageScanning') },
+        { id: activePhaseId, label: tString('fileOperations.transferProgress.stageActive', { gerund: gerundKind }) },
     ])
 
     function getStageStatus(stageId: WriteOperationPhase): 'done' | 'active' | 'pending' {
@@ -1000,19 +1002,19 @@
         {#if waitingForScan}
             {scanTitle}
         {:else if isRollingBack}
-            Rolling back...
+            {tString('fileOperations.transferProgress.titleRollingBack')}
         {:else if isCancelling || cancelEventReceived}
             {#if settleSlow}
-                Cancelling... (finishing USB transfers)
+                {tString('fileOperations.transferProgress.titleCancellingSlow')}
             {:else}
-                Cancelling...
+                {tString('fileOperations.transferProgress.titleCancelling')}
             {/if}
         {:else if conflictEvent}
-            File already exists
+            {tString('fileOperations.transferProgress.titleConflict')}
         {:else if phase === 'flushing'}
-            Writing the last piece...
+            {tString('fileOperations.transferProgress.titleFlushing')}
         {:else}
-            {operationGerund}...
+            {tString('fileOperations.transferProgress.titleActive', { gerund: gerundKind })}
         {/if}
     {/snippet}
 
@@ -1046,7 +1048,7 @@
                 variant="secondary"
                 onclick={() => {
                     void handleCancel(false)
-                }}>Cancel</Button
+                }}>{tString('fileOperations.button.cancel')}</Button
             >
         </div>
     {:else if !isDeleteOrTrash && conflictEvent}
@@ -1065,16 +1067,28 @@
         {@const destIsDir = conflictEvent.destinationIsDirectory}
         {@const isTypeMismatch = sourceIsDir !== destIsDir}
         {@const isFileOverFolder = isTypeMismatch && destIsDir}
-        {@const existingLabel = destIsDir ? 'Existing (folder):' : sourceIsDir ? 'Existing (file):' : 'Existing:'}
-        {@const newLabel = sourceIsDir ? 'New (folder):' : isFileOverFolder ? 'New (file):' : 'New:'}
-        {@const overwriteLabel = isFileOverFolder ? 'Overwrite folder with file' : 'Overwrite'}
-        {@const overwriteAllLabel = isFileOverFolder ? 'Overwrite folders with files' : 'Overwrite all'}
+        {@const existingLabel = destIsDir
+            ? tString('fileOperations.transferProgress.existingFolderLabel')
+            : sourceIsDir
+              ? tString('fileOperations.transferProgress.existingFileLabel')
+              : tString('fileOperations.transferProgress.existingLabel')}
+        {@const newLabel = sourceIsDir
+            ? tString('fileOperations.transferProgress.newFolderLabel')
+            : isFileOverFolder
+              ? tString('fileOperations.transferProgress.newFileLabel')
+              : tString('fileOperations.transferProgress.newLabel')}
+        {@const overwriteLabel = isFileOverFolder
+            ? tString('fileOperations.transferProgress.conflictOverwriteFolderWithFile')
+            : tString('fileOperations.transferProgress.conflictOverwrite')}
+        {@const overwriteAllLabel = isFileOverFolder
+            ? tString('fileOperations.transferProgress.conflictOverwriteFoldersWithFiles')
+            : tString('fileOperations.transferProgress.conflictOverwriteAll')}
         {@const destSize = conflictEvent.destinationSize}
         {@const destSizeUnknown = destSize === null}
         {@const srcSize = conflictEvent.sourceSize}
         {@const srcSizeUnknown = srcSize === null}
         {@const smallerDisabledTooltip = destSizeUnknown
-            ? "Can't compare — target folder size is unknown."
+            ? tString('fileOperations.transferProgress.smallerDisabledTooltip')
             : undefined}
         <div class="conflict-section">
             {#if isFileOverFolder}
@@ -1086,9 +1100,7 @@
                         <Icon name="triangle-alert" size={16} />
                     </span>
                     <span>
-                        The target exists and is a <strong>folder</strong>. You're about to overwrite it with a
-                        <strong>file</strong> by the same name. All contents of the target folder would be deleted and
-                        replaced by the file. What to do?
+                        <Trans key="fileOperations.transferProgress.warningFileOverFolder" snippets={{ strong }} />
                     </span>
                 </p>
             {/if}
@@ -1107,34 +1119,46 @@
                 <div class="conflict-file">
                     <span class="conflict-file-label">{existingLabel}</span>
                     {#if destSizeUnknown}
-                        <span class="conflict-file-size unknown">(unknown)</span>
+                        <span class="conflict-file-size unknown"
+                            >{tString('fileOperations.transferProgress.sizeUnknown')}</span
+                        >
                     {:else}
                         <span class="conflict-file-size {getSizeColorClass(destSize)}"
                             >{formatFileSize(destSize)}</span
                         >
                     {/if}
-                    {#if existingIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
+                    {#if existingIsLarger}<span class="conflict-annotation larger"
+                            >{tString('fileOperations.transferProgress.annotationLarger')}</span
+                        >{/if}
                     <span class="conflict-file-date"
                         >{conflictEvent.destinationModified
                             ? formatDate(conflictEvent.destinationModified)
                             : ''}</span
                     >
-                    {#if existingIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
+                    {#if existingIsNewer}<span class="conflict-annotation newer"
+                            >{tString('fileOperations.transferProgress.annotationNewer')}</span
+                        >{/if}
                 </div>
                 <div class="conflict-file">
                     <span class="conflict-file-label">{newLabel}</span>
                     {#if srcSizeUnknown}
-                        <span class="conflict-file-size unknown">(unknown)</span>
+                        <span class="conflict-file-size unknown"
+                            >{tString('fileOperations.transferProgress.sizeUnknown')}</span
+                        >
                     {:else}
                         <span class="conflict-file-size {getSizeColorClass(srcSize)}"
                             >{formatFileSize(srcSize)}</span
                         >
                     {/if}
-                    {#if newIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
+                    {#if newIsLarger}<span class="conflict-annotation larger"
+                            >{tString('fileOperations.transferProgress.annotationLarger')}</span
+                        >{/if}
                     <span class="conflict-file-date"
                         >{conflictEvent.sourceModified ? formatDate(conflictEvent.sourceModified) : ''}</span
                     >
-                    {#if newIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
+                    {#if newIsNewer}<span class="conflict-annotation newer"
+                            >{tString('fileOperations.transferProgress.annotationNewer')}</span
+                        >{/if}
                 </div>
             </div>
 
@@ -1151,14 +1175,14 @@
                         onclick={() => handleConflictResolution('skip', false)}
                         disabled={isResolvingConflict}
                     >
-                        Skip
+                        {tString('fileOperations.transferProgress.conflictSkip')}
                     </Button>
                     <Button
                         variant="secondary"
                         onclick={() => handleConflictResolution('skip', true)}
                         disabled={isResolvingConflict}
                     >
-                        Skip all
+                        {tString('fileOperations.transferProgress.conflictSkipAll')}
                     </Button>
                 </div>
                 <div class="conflict-buttons-row">
@@ -1167,14 +1191,14 @@
                         onclick={() => handleConflictResolution('rename', false)}
                         disabled={isResolvingConflict}
                     >
-                        Rename
+                        {tString('fileOperations.transferProgress.conflictRename')}
                     </Button>
                     <Button
                         variant="secondary"
                         onclick={() => handleConflictResolution('rename', true)}
                         disabled={isResolvingConflict}
                     >
-                        Rename all
+                        {tString('fileOperations.transferProgress.conflictRenameAll')}
                     </Button>
                 </div>
                 <div class="conflict-buttons-row">
@@ -1200,7 +1224,7 @@
                             onclick={() => handleConflictResolution('overwrite_smaller', true)}
                             disabled={isResolvingConflict || destSizeUnknown}
                         >
-                            Overwrite all smaller
+                            {tString('fileOperations.transferProgress.conflictOverwriteAllSmaller')}
                         </Button>
                     </span>
                     <Button
@@ -1208,7 +1232,7 @@
                         onclick={() => handleConflictResolution('overwrite_older', true)}
                         disabled={isResolvingConflict}
                     >
-                        Overwrite all older
+                        {tString('fileOperations.transferProgress.conflictOverwriteAllOlder')}
                     </Button>
                 </div>
             </div>
@@ -1223,10 +1247,12 @@
                         onclick={() => handleCancel(false)}
                         disabled={isCancelling || isResolvingConflict}
                     >
-                        Cancel
+                        {tString('fileOperations.transferProgress.conflictCancel')}
                     </button>
                     <span use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP} class="disabled-button-wrap">
-                        <button class="danger-text" disabled>Rollback</button>
+                        <button class="danger-text" disabled
+                            >{tString('fileOperations.transferProgress.conflictRollback')}</button
+                        >
                     </span>
                 {:else if isCopy || isMove}
                     <button
@@ -1234,7 +1260,7 @@
                         onclick={() => handleCancel(true)}
                         disabled={isCancelling || isResolvingConflict}
                     >
-                        Rollback
+                        {tString('fileOperations.transferProgress.conflictRollback')}
                     </button>
                 {:else}
                     <button
@@ -1242,7 +1268,7 @@
                         onclick={() => handleCancel(false)}
                         disabled={isCancelling || isResolvingConflict}
                     >
-                        Cancel
+                        {tString('fileOperations.transferProgress.conflictCancel')}
                     </button>
                 {/if}
             </div>
@@ -1299,21 +1325,33 @@
             <!-- Dual progress bars (size + count) for the active phase. -->
             <div class="progress-grid">
                 {#if bytesTotal > 0}
-                    <span class="progress-label">Size</span>
-                    <ProgressBar value={bytesDone / bytesTotal} ariaLabel="Size progress" />
+                    <span class="progress-label">{tString('fileOperations.transferProgress.progressSize')}</span>
+                    <ProgressBar
+                        value={bytesDone / bytesTotal}
+                        ariaLabel={tString('fileOperations.transferProgress.sizeProgressAria')}
+                    />
                     <span class="progress-detail">
                         <Size bytes={bytesDone} /> / <Size bytes={bytesTotal} />
                         ({Math.round((bytesDone / bytesTotal) * 100)}%)
                     </span>
                 {/if}
 
-                <span class="progress-label">{operationType === 'trash' ? 'Items' : 'Files'}</span>
-                <ProgressBar value={filesTotal > 0 ? filesDone / filesTotal : 0} ariaLabel="File progress" />
+                <span class="progress-label"
+                    >{operationType === 'trash'
+                        ? tString('fileOperations.transferProgress.progressItems')
+                        : tString('fileOperations.transferProgress.progressFiles')}</span
+                >
+                <ProgressBar
+                    value={filesTotal > 0 ? filesDone / filesTotal : 0}
+                    ariaLabel={tString('fileOperations.transferProgress.fileProgressAria')}
+                />
                 <span class="progress-detail">{formatNumber(filesDone)} / {formatNumber(filesTotal)}</span>
                 <div class="progress-meta">
                     <span class="progress-speeds">
                         {#if bytesPerSecond !== null && bytesPerSecond > 0}
-                            <span class="progress-speed"><Size bytes={bytesPerSecond} />/s</span>
+                            <span class="progress-speed"
+                                ><Trans key="fileOperations.shared.byteRate" snippets={{ size: byteRateSize }} /></span
+                            >
                         {/if}
                         {#if filesPerSecond !== null}
                             {@const filesPerSecLabel = formatFilesPerSecond(filesPerSecond)}
@@ -1323,7 +1361,11 @@
                         {/if}
                     </span>
                     {#if etaSecondsDisplay !== null}
-                        <span class="progress-eta">~{formatDuration(etaSecondsDisplay)} remaining</span>
+                        <span class="progress-eta"
+                            >{tString('fileOperations.transferProgress.etaRemaining', {
+                                duration: formatDuration(etaSecondsDisplay),
+                            })}</span
+                        >
                     {/if}
                 </div>
             </div>
@@ -1337,7 +1379,7 @@
 
         {#if destUsesNativeSmb}
             <p class="smb-native-note">
-                This share uses the system connection. Cancel and rollback may be delayed.
+                {tString('fileOperations.transferProgress.smbNativeNote')}
             </p>
         {/if}
 
@@ -1350,24 +1392,28 @@
             <Button
                 variant="secondary"
                 onclick={() => handleCancel(false)}
-                disabled={isCancelling || operationSettled}>Cancel</Button
+                disabled={isCancelling || operationSettled}>{tString('fileOperations.button.cancel')}</Button
             >
             {#if isCopy || isMove}
                 {#if isRollingBack}
-                    <Button variant="danger" disabled>Rolling back...</Button>
+                    <Button variant="danger" disabled>{tString('fileOperations.transferProgress.titleRollingBack')}</Button
+                    >
                 {:else if isSameVolumeMove}
                     <!-- Same-volume volume moves have no backend rollback; the
                          button is disabled with an explanatory tooltip. Plain
                          Cancel above stays reachable. -->
                     <span use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP}>
-                        <Button variant="danger" disabled>Rollback</Button>
+                        <Button variant="danger" disabled
+                            >{tString('fileOperations.transferProgress.conflictRollback')}</Button
+                        >
                     </span>
                 {:else}
-                    <span use:tooltip={'Cancel and delete any partial target files created'}>
+                    <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
                         <Button
                             variant="danger"
                             onclick={() => handleCancel(true)}
-                            disabled={isCancelling || operationSettled}>Rollback</Button
+                            disabled={isCancelling || operationSettled}
+                            >{tString('fileOperations.transferProgress.conflictRollback')}</Button
                         >
                     </span>
                 {/if}
@@ -1375,6 +1421,9 @@
         </div>
     {/if}
 </ModalDialog>
+
+{#snippet strong(children: import('svelte').Snippet)}<strong>{@render children()}</strong>{/snippet}
+{#snippet byteRateSize(children: import('svelte').Snippet)}<Size bytes={bytesPerSecond ?? 0} />{@render children()}{/snippet}
 
 <style>
     /* Scan wait section (wraps the ScanPhaseBody child during the scan phases) */

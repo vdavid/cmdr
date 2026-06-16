@@ -784,3 +784,12 @@ keeping the same slot in the stack. Replacing in place avoids the visual flicker
 
 - `$lib/tauri-commands`: `notifyDialogOpened`, `notifyDialogClosed`
 - `apps/desktop/src/app.css`: all CSS variables used here must be defined there
+
+## i18n
+
+User-facing copy in these primitives lives in the `ui.*` catalog (`$lib/intl/messages/en/ui.json`), resolved through
+`tString()` / `<Trans>`; `cmdr/no-raw-user-facing-string` is enforced on `lib/ui/`. Defaulted copy props (`AlertDialog`
+`buttonText`, `Select` `placeholder`, `Popover` `ariaLabel`, `Combobox` `emptyText`) keep the prop optional and fall
+back to the catalog value via a `$derived`, so a consumer can still override. `LoadingIcon`'s cancel hint is a `<Trans>`
+with an empty `<key></key>` tag: the snippet renders `<ShortcutChip key="Esc" />` and ignores (renders) its children.
+Runtime + key rules: [`$lib/intl/CLAUDE.md`](../intl/CLAUDE.md).

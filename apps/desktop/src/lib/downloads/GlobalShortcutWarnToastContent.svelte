@@ -18,6 +18,7 @@
     import { commands } from '$lib/ipc/bindings'
     import { setGlobalGoToLatestEnabled } from './global-shortcut-setting'
     import { getAppLogger } from '$lib/logging/logger'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         toastId: string
@@ -53,10 +54,10 @@
 </script>
 
 <div class="content">
-    <span class="message">The {binding} shortcut jumps to your latest download from anywhere. Keep it on?</span>
+    <span class="message">{tString('downloads.warnToast.message', { binding })}</span>
     <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleTurnOff}>Turn it off</Button>
-        <Button size="mini" variant="primary" onclick={handleKeepOn}>Keep it on</Button>
+        <Button size="mini" variant="secondary" onclick={handleTurnOff}>{tString('downloads.warnToast.turnOff')}</Button>
+        <Button size="mini" variant="primary" onclick={handleKeepOn}>{tString('downloads.warnToast.keepOn')}</Button>
     </div>
 </div>
 

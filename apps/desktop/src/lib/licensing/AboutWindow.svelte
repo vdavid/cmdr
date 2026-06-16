@@ -4,6 +4,8 @@
     import { openExternalUrl } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import { GITHUB_ISSUES_URL } from '$lib/beta-links'
 
     interface Props {
@@ -44,20 +46,23 @@
     // Get descriptive license text
     function getLicenseDescription(): string {
         if (!status) {
-            return 'No license – only personal use allowed'
+            return tString('licensing.about.noLicense')
         }
         switch (status.type) {
-            case 'commercial':
+            case 'commercial': {
+                const org = status.organizationName || tString('licensing.about.fallbackOrg')
                 if (status.licenseType === 'commercial_perpetual') {
-                    return `Perpetual commercial license for ${status.organizationName || 'your organization'}`
-                } else {
-                    const expiresAt = formatDate(status.expiresAt)
-                    return `Commercial license for ${status.organizationName || 'your organization'}${expiresAt ? `, valid until ${expiresAt}` : ''}`
+                    return tString('licensing.about.perpetual', { org })
                 }
+                const expiresAt = formatDate(status.expiresAt)
+                return expiresAt
+                    ? tString('licensing.about.commercialUntil', { org, date: expiresAt })
+                    : tString('licensing.about.commercial', { org })
+            }
             case 'expired': // Fallthrough, no shaming needed for the expired license
             case 'personal':
             default:
-                return 'No license – only personal use allowed'
+                return tString('licensing.about.noLicense')
         }
     }
 
@@ -77,6 +82,15 @@
     }
 </script>
 
+{#snippet github(children: import('svelte').Snippet)}
+    <LinkButton
+        href={GITHUB_ISSUES_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick={handleLinkClick(GITHUB_ISSUES_URL)}>{@render children()}</LinkButton
+    >
+{/snippet}
+
 <ModalDialog
     titleId="about-title"
     blur
@@ -86,7 +100,7 @@
 >
     {#snippet title()}
         <!-- Title is visually hidden, app name serves as the visual title -->
-        <span class="sr-only">About Cmdr</span>
+        <span class="sr-only">{tString('licensing.about.srTitle')}</span>
     {/snippet}
 
     <div class="about-body">
@@ -95,19 +109,13 @@
                 <span class="icon-text">⌘</span>
             </div>
 
-            <p class="app-name">Cmdr</p>
-            <p class="app-tagline">Keyboard-driven file manager</p>
+            <p class="app-name">{tString('licensing.about.appName')}</p>
+            <p class="app-tagline">{tString('licensing.about.tagline')}</p>
 
             <div class="version-info">
-                <span class="version">Version {version} (open beta)</span>
+                <span class="version">{tString('licensing.about.version', { version })}</span>
                 <p class="beta-note">
-                    Found something bad? Tell me on
-                    <LinkButton
-                        href={GITHUB_ISSUES_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onclick={handleLinkClick(GITHUB_ISSUES_URL)}>GitHub</LinkButton
-                    >. I read every report!
+                    <Trans key="licensing.about.betaNote" snippets={{ github }} />
                 </p>
             </div>
 
@@ -115,27 +123,29 @@
                 <p class="license-description">{getLicenseDescription()}</p>
             </div>
 
-            <p class="ai-attribution">AI powered by Falcon-H1R-7B by Technology Innovation Institute (TII)</p>
+            <p class="ai-attribution">{tString('licensing.about.aiAttribution')}</p>
 
             <div class="links">
-                <a href="https://getcmdr.com" onclick={handleLinkClick('https://getcmdr.com')}>Website</a>
+                <a href="https://getcmdr.com" onclick={handleLinkClick('https://getcmdr.com')}
+                    >{tString('licensing.about.linkWebsite')}</a
+                >
                 {#if shouldShowLicenseLink()}
                     <span class="separator">•</span>
                     <a href="https://getcmdr.com/pricing" onclick={handleLinkClick('https://getcmdr.com/pricing')}
-                        >Get a license</a
+                        >{tString('licensing.about.linkGetLicense')}</a
                     >
                 {/if}
                 <span class="separator">•</span>
                 <a href="https://github.com/vdavid/cmdr" onclick={handleLinkClick('https://github.com/vdavid/cmdr')}
-                    >GitHub</a
+                    >{tString('licensing.about.linkGithub')}</a
                 >
                 <span class="separator">•</span>
                 <a href="https://discord.gg/4BVafBneKJ" onclick={handleLinkClick('https://discord.gg/4BVafBneKJ')}
-                    >Discord</a
+                    >{tString('licensing.about.linkDiscord')}</a
                 >
             </div>
 
-            <p class="copyright">© 2024-2026 David Veszelovszki</p>
+            <p class="copyright">{tString('licensing.about.copyright')}</p>
         </div>
     </div>
 </ModalDialog>

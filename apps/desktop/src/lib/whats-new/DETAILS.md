@@ -40,3 +40,12 @@ emit.
 2. Click "Not interested in changelogs": the dialog closes, a toast fires, `whatsNew.showOnUpdate` flips to `false`.
    Relaunch with an old `lastSeenVersion`: no popup (silent stamp).
 3. `CMDR_SIMULATE_UPDATE_FROM=0.20.0 pnpm dev`: the popup shows on every relaunch and never stamps.
+
+## i18n
+
+The dialog's own chrome (title, empty state, links, footer, opt-out toast) lives in the `whatsNew.*` catalog
+(`$lib/intl/messages/en/whatsNew.json`), resolved via `tString()`; `cmdr/no-raw-user-facing-string` is enforced on
+`lib/whats-new/`. The release CONTENT (lead, section titles, entries) is NOT catalog copy: it's the committed
+`CHANGELOG.md` parsed backend-side and rendered through `snarkdown`, so changelog wording is fixed in `CHANGELOG.md`,
+not here. The title's apostrophe is the curly U+2019, kept byte-identical in the catalog value. Runtime rules:
+[`$lib/intl/CLAUDE.md`](../intl/CLAUDE.md).

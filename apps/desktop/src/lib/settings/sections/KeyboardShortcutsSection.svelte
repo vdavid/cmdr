@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte'
+    import { onMount, type Snippet } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import SettingsSection from '../components/SettingsSection.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -20,6 +20,8 @@
         unregisterShortcutFilterReset,
     } from '$lib/settings/pending-shortcut-highlight.svelte'
     import { createKeyboardShortcutsController } from './KeyboardShortcutsSection.controller.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
 
     interface Props {
         searchQuery: string
@@ -91,13 +93,13 @@
     })
 </script>
 
-<SettingsSection title="Keyboard shortcuts">
+<SettingsSection title={tString('shortcuts.section.title')}>
     <div class="shortcuts-header">
         <div class="search-fields">
             <input
                 type="text"
                 class="search-input"
-                placeholder="Search by action name..."
+                placeholder={tString('shortcuts.section.searchByNamePlaceholder')}
                 value={searchQuery.trim() ? searchQuery : controller.localNameSearchQuery}
                 oninput={(e) => {
                     const target = e.target
@@ -112,7 +114,7 @@
                 <input
                     type="text"
                     class="search-input key-search"
-                    placeholder="Filter by keys..."
+                    placeholder={tString('shortcuts.section.filterByKeysPlaceholder')}
                     bind:value={controller.keySearchQuery}
                     bind:this={keyFilterInput}
                     onkeydown={controller.handleKeyFilterKeyDown}
@@ -121,7 +123,9 @@
                     autocapitalize="off"
                     spellcheck="false"
                 />
-                <span class="key-search-hint" class:visible={!!controller.keySearchQuery}>Press ESC to clear</span>
+                <span class="key-search-hint" class:visible={!!controller.keySearchQuery}
+                    >{tString('shortcuts.section.pressEscToClear')}</span
+                >
             </div>
         </div>
 
@@ -131,21 +135,21 @@
                 class:active={controller.activeFilter === 'all'}
                 onclick={() => (controller.activeFilter = 'all')}
             >
-                All
+                {tString('shortcuts.section.filterAll')}
             </button>
             <button
                 class="filter-chip"
                 class:active={controller.activeFilter === 'modified'}
                 onclick={() => (controller.activeFilter = 'modified')}
             >
-                Modified
+                {tString('shortcuts.section.filterModified')}
             </button>
             <button
                 class="filter-chip"
                 class:active={controller.activeFilter === 'conflicts'}
                 onclick={() => (controller.activeFilter = 'conflicts')}
             >
-                Conflicts
+                {tString('shortcuts.section.filterConflicts')}
                 {#if controller.conflictCount > 0}
                     <span class="conflict-badge">{controller.conflictCount}</span>
                 {/if}
@@ -167,7 +171,9 @@
                     {reservedByMacOsMessage(conflictWarning.shortcut, conflict.command)}
                 </span>
                 <div class="warning-actions">
-                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}>Cancel</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}
+                        >{tString('shortcuts.section.cancel')}</Button
+                    >
                 </div>
             {:else if conflict.kind === 'system'}
                 <!-- macOS usually intercepts this combo before Cmdr sees it, but the user
@@ -176,8 +182,12 @@
                     {systemShortcutMessage(conflictWarning.shortcut, conflict.label)}
                 </span>
                 <div class="warning-actions">
-                    <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}>Use anyway</Button>
-                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}>Cancel</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}
+                        >{tString('shortcuts.section.useAnyway')}</Button
+                    >
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}
+                        >{tString('shortcuts.section.cancel')}</Button
+                    >
                 </div>
             {:else if conflict.kind === 'fixed'}
                 <!-- The combo is hardcoded in a component: it can't be removed there and
@@ -186,18 +196,31 @@
                     {fixedKeyMessage(conflictWarning.shortcut, conflict.command)}
                 </span>
                 <div class="warning-actions">
-                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}>Cancel</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}
+                        >{tString('shortcuts.section.cancel')}</Button
+                    >
                 </div>
             {:else if conflict.kind === 'normal'}
+                {#snippet comboStrong(children: Snippet)}
+                    <strong>{@render children()}</strong>
+                {/snippet}
                 <span class="warning-text">
-                    <strong>{conflictWarning.shortcut}</strong> is already bound to "{conflict.command.name}"
+                    <Trans
+                        key="shortcuts.section.alreadyBound"
+                        snippets={{ b: comboStrong }}
+                        params={{ combo: conflictWarning.shortcut, command: conflict.command.name }}
+                    />
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={controller.handleRemoveFromOther}
-                        >Remove from other</Button
+                        >{tString('shortcuts.section.removeFromOther')}</Button
                     >
-                    <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}>Keep both</Button>
-                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}>Cancel</Button>
+                    <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}
+                        >{tString('shortcuts.section.keepBoth')}</Button
+                    >
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}
+                        >{tString('shortcuts.section.cancel')}</Button
+                    >
                 </div>
             {/if}
         </div>
@@ -225,10 +248,13 @@
                     >
                         <div class="command-info">
                             {#if isModified}
-                                <span class="modified-dot" use:tooltip={'Modified from default'}></span>
+                                <span class="modified-dot" use:tooltip={tString('shortcuts.section.modifiedTooltip')}
+                                ></span>
                             {/if}
                             {#if hasConflicts}
-                                <span class="conflict-icon" use:tooltip={'Has conflicting shortcuts'}>⚠️</span>
+                                <span class="conflict-icon" use:tooltip={tString('shortcuts.section.hasConflictsTooltip')}
+                                    >⚠️</span
+                                >
                             {/if}
                             <span class="command-name">{command.name}</span>
                         </div>
@@ -245,17 +271,15 @@
                                         <span class="shortcut-pill static">{shortcut}</span>
                                     {/each}
                                 {:else}
-                                    <span class="no-shortcut">(none)</span>
+                                    <span class="no-shortcut">{tString('shortcuts.section.noneShortcut')}</span>
                                 {/if}
                                 {#if isNative}
-                                    <span
-                                        class="readonly-badge"
-                                        use:tooltip={"macOS handles this shortcut. Cmdr can't change it."}>macOS</span
+                                    <span class="readonly-badge" use:tooltip={tString('shortcuts.section.macOsTooltip')}
+                                        >{tString('shortcuts.section.macOsBadge')}</span
                                     >
                                 {:else}
-                                    <span
-                                        class="readonly-badge"
-                                        use:tooltip={"This key is built into Cmdr and can't be changed."}>Fixed</span
+                                    <span class="readonly-badge" use:tooltip={tString('shortcuts.section.fixedTooltip')}
+                                        >{tString('shortcuts.section.fixedBadge')}</span
                                     >
                                 {/if}
                             {:else}
@@ -275,12 +299,12 @@
                                         }}
                                     >
                                         {#if isEditing}
-                                            {controller.pendingKey || 'Press keys...'}
+                                            {controller.pendingKey || tString('shortcuts.section.pressKeys')}
                                         {:else if shortcut}
                                             {shortcut}
                                             <span
                                                 class="remove-shortcut"
-                                                use:tooltip={'Remove shortcut'}
+                                                use:tooltip={tString('shortcuts.section.removeShortcutTooltip')}
                                                 role="button"
                                                 tabindex="-1"
                                                 onclick={(e) => {
@@ -295,12 +319,12 @@
                                                 }}>×</span
                                             >
                                         {:else}
-                                            (none)
+                                            {tString('shortcuts.section.noneShortcut')}
                                         {/if}
                                     </button>
                                 {/each}
                             {:else if !isAddingHere}
-                                <span class="no-shortcut">(none)</span>
+                                <span class="no-shortcut">{tString('shortcuts.section.noneShortcut')}</span>
                             {/if}
                             {#if isAddingHere}
                                 <!-- Synthetic add-slot pill: UI-only until a key is captured and
@@ -313,13 +337,13 @@
                                         controller.resetPendingCapture()
                                     }}
                                 >
-                                    {controller.pendingKey || 'Press keys...'}
+                                    {controller.pendingKey || tString('shortcuts.section.pressKeys')}
                                 </button>
                             {/if}
                             <button
                                 class="add-shortcut"
-                                aria-label="Add shortcut"
-                                use:tooltip={'Add shortcut'}
+                                aria-label={tString('shortcuts.section.addShortcutTooltip')}
+                                use:tooltip={tString('shortcuts.section.addShortcutTooltip')}
                                 onclick={() => {
                                     controller.handleAddShortcut(command.id)
                                 }}
@@ -329,8 +353,8 @@
                             {#if isModified}
                                 <button
                                     class="reset-shortcut"
-                                    aria-label="Reset to default"
-                                    use:tooltip={'Reset to default'}
+                                    aria-label={tString('shortcuts.section.resetToDefaultTooltip')}
+                                    use:tooltip={tString('shortcuts.section.resetToDefaultTooltip')}
                                     onclick={(e) => {
                                         e.stopPropagation()
                                         controller.handleResetShortcut(command.id)
@@ -351,7 +375,9 @@
     </div>
 
     <div class="shortcuts-footer">
-        <Button variant="secondary" size="mini" onclick={controller.handleResetAll}>Reset all to defaults</Button>
+        <Button variant="secondary" size="mini" onclick={controller.handleResetAll}
+            >{tString('shortcuts.section.resetAll')}</Button
+        >
     </div>
 </SettingsSection>
 

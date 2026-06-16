@@ -16,6 +16,7 @@
      */
     import Icon from '$lib/ui/Icon.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /** Opens the context menu. Called on click (left or keyboard). */
@@ -28,9 +29,9 @@
 <button
     type="button"
     class="row-menu-btn"
-    aria-label="More actions"
+    aria-label={tString('queryUi.results.rowMenuAria')}
     tabindex="-1"
-    use:tooltip={'More actions'}
+    use:tooltip={tString('queryUi.results.rowMenuAria')}
     onclick={(e) => {
         e.stopPropagation()
         onOpen()

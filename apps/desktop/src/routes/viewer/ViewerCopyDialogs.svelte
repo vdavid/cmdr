@@ -10,6 +10,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { formatBytes } from '$lib/tauri-commands'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         /**
@@ -44,18 +45,18 @@
         {#snippet title()}
             <h2 id="viewer-copy-confirm-title" class="copy-dialog-title">
                 {#if bytes === -1}
-                    Copy this selection to the clipboard?
+                    {tString('viewer.copyDialog.confirmTitleUnknown')}
                 {:else}
-                    Copy {formatBytes(bytes)} to the clipboard?
+                    {tString('viewer.copyDialog.confirmTitleKnown', { size: formatBytes(bytes) })}
                 {/if}
             </h2>
         {/snippet}
         <div class="copy-dialog-body-wrap">
-            <p class="copy-dialog-body">Large pastes can slow down other apps. Try search (⌘F) to narrow it down.</p>
+            <p class="copy-dialog-body">{tString('viewer.copyDialog.confirmBody')}</p>
             <div class="copy-dialog-actions">
-                <Button variant="secondary" onclick={onCancelConfirm}>Cancel</Button>
-                <Button variant="secondary" onclick={onSaveAs}>Save as file…</Button>
-                <Button variant="primary" autoFocus onclick={onProceedConfirm}>Copy</Button>
+                <Button variant="secondary" onclick={onCancelConfirm}>{tString('viewer.copyDialog.cancel')}</Button>
+                <Button variant="secondary" onclick={onSaveAs}>{tString('viewer.copyDialog.saveAsFile')}</Button>
+                <Button variant="primary" autoFocus onclick={onProceedConfirm}>{tString('viewer.copyDialog.copy')}</Button>
             </div>
         </div>
     </ModalDialog>
@@ -71,17 +72,16 @@
     >
         {#snippet title()}
             <h2 id="viewer-copy-refuse-title" class="copy-dialog-title">
-                Copy {formatBytes(bytes)} to the clipboard?
+                {tString('viewer.copyDialog.confirmTitleKnown', { size: formatBytes(bytes) })}
             </h2>
         {/snippet}
         <div class="copy-dialog-body-wrap">
             <p class="copy-dialog-body">
-                That's larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the
-                selection as a file.
+                {tString('viewer.copyDialog.refuseBody')}
             </p>
             <div class="copy-dialog-actions">
-                <Button variant="secondary" onclick={onDismissRefuse}>Cancel</Button>
-                <Button variant="primary" autoFocus onclick={onSaveAs}>Save as file…</Button>
+                <Button variant="secondary" onclick={onDismissRefuse}>{tString('viewer.copyDialog.cancel')}</Button>
+                <Button variant="primary" autoFocus onclick={onSaveAs}>{tString('viewer.copyDialog.saveAsFile')}</Button>
             </div>
         </div>
     </ModalDialog>

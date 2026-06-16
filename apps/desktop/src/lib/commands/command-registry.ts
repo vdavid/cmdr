@@ -6,10 +6,18 @@
  * - Keyboard shortcut documentation
  * - Future MCP server commands
  * - Settings pane shortcut configuration
+ *
+ * Each entry is authored as a `CommandSource` holding i18n message KEYS
+ * (`nameKey` / `descriptionKey`), not English. `resolveCommand` turns each source
+ * into a `Command` whose `name` / `description` resolve the catalog string through
+ * `t()` at read time, so the whole `command.name` consumer surface (palette,
+ * fuzzy haystack, shortcuts list, menus) is unchanged while the copy lives in
+ * `messages/en/commands.json`. The command IDS stay untouched.
  */
 
-import type { Command } from './types'
+import type { Command, CommandSource } from './types'
 import { getBadgeStatus } from '$lib/feature-status'
+import { tString } from '$lib/intl/messages.svelte'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 
 /**
@@ -55,13 +63,20 @@ export const FIXED_KEY_COMMAND_IDS = [
   'file.contextMenu',
 ] as const
 
-// `Command.id` is the `CommandId` union derived from `COMMAND_IDS` in
+/**
+ * Whether the user already has a license, driving the `app.licenseKey` command's
+ * name (`See license details` vs `Enter license key`). The label depends on
+ * runtime license state, so it can't be a single static key. `updateLicenseCommandName`
+ * flips this; the resolved command's `name` getter reads it live. Kept in sync
+ * with the native menu's license item.
+ */
+let hasExistingLicense = true
+
+// `CommandSource.id` is the `CommandId` union derived from `COMMAND_IDS` in
 // `command-ids.ts`. Adding an entry here whose id isn't in that tuple is a
 // compile error; a tuple id with no entry here is caught by the set-equality
-// test in `command-registry.test.ts`. The array stays a mutable `Command[]`
-// (not `as const`) so `updateLicenseCommandName` can rewrite `.name` in place
-// and `getPaletteCommands()` / the conflict detector keep a mutable `Command[]`.
-export const commands: Command[] = [
+// test in `command-registry.test.ts`.
+const commandSources: CommandSource[] = [
   // ============================================================================
   // App scope (work everywhere, regardless of window/modal state)
   // ============================================================================
@@ -69,74 +84,103 @@ export const commands: Command[] = [
   // unhideAllApplications:, terminate:). showInPalette: false keeps them out of the JS shortcut
   // dispatch map; the native menu accelerators handle the keyboard shortcuts directly. `nativeShortcut`
   // makes the editor read-only and the store refuse to rebind them (NATIVE_SHORTCUT_COMMAND_IDS above).
-  { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘Q'], nativeShortcut: true },
-  { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘H'], nativeShortcut: true },
+  {
+    id: 'app.quit',
+    nameKey: 'commands.appQuit.label',
+    scope: 'App',
+    showInPalette: false,
+    shortcuts: ['⌘Q'],
+    nativeShortcut: true,
+  },
+  {
+    id: 'app.hide',
+    nameKey: 'commands.appHide.label',
+    scope: 'App',
+    showInPalette: false,
+    shortcuts: ['⌘H'],
+    nativeShortcut: true,
+  },
   {
     id: 'app.hideOthers',
-    name: 'Hide others',
+    nameKey: 'commands.appHideOthers.label',
     scope: 'App',
     showInPalette: false,
     shortcuts: ['⌥⌘H'],
     nativeShortcut: true,
   },
-  { id: 'app.showAll', name: 'Show all', scope: 'App', showInPalette: false, shortcuts: [], nativeShortcut: true },
-  { id: 'app.about', name: 'About Cmdr', scope: 'App', showInPalette: true, shortcuts: [] },
-  { id: 'app.licenseKey', name: 'See license details', scope: 'App', showInPalette: true, shortcuts: [] },
+  {
+    id: 'app.showAll',
+    nameKey: 'commands.appShowAll.label',
+    scope: 'App',
+    showInPalette: false,
+    shortcuts: [],
+    nativeShortcut: true,
+  },
+  { id: 'app.about', nameKey: 'commands.appAbout.label', scope: 'App', showInPalette: true, shortcuts: [] },
+  // `app.licenseKey` resolves its name from one of two keys via the license-state
+  // getter below (see `resolveCommand`), so it carries no `nameKey` here.
+  {
+    id: 'app.licenseKey',
+    nameKey: 'commands.appLicenseKey.seeDetails.label',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+  },
   {
     id: 'app.commandPalette',
-    name: 'Open command palette',
+    nameKey: 'commands.appCommandPalette.label',
     scope: 'App',
     showInPalette: false, // Don't show the palette in itself
     shortcuts: ['⌘⇧P'],
   },
-  { id: 'app.settings', name: 'Open settings', scope: 'App', showInPalette: true, shortcuts: ['⌘,'] },
+  { id: 'app.settings', nameKey: 'commands.appSettings.label', scope: 'App', showInPalette: true, shortcuts: ['⌘,'] },
   {
     id: 'app.checkForUpdates',
-    name: 'Check for updates…',
+    nameKey: 'commands.appCheckForUpdates.label',
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
-    description: 'Check whether a newer version of Cmdr is available, and download it if so',
+    descriptionKey: 'commands.appCheckForUpdates.description',
   },
   {
     id: 'cmdr.openOnboarding',
-    name: 'Onboarding…',
+    nameKey: 'commands.cmdrOpenOnboarding.label',
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
-    description: 'Reopen the onboarding wizard to review or change first-launch setup options',
+    descriptionKey: 'commands.cmdrOpenOnboarding.description',
   },
   {
     id: 'help.openShortcuts',
-    name: 'Keyboard shortcuts',
+    nameKey: 'commands.helpOpenShortcuts.label',
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
-    description: 'Open a read-only window listing every keyboard shortcut, live-synced with your customizations',
+    descriptionKey: 'commands.helpOpenShortcuts.description',
   },
   {
     id: 'help.sendErrorReport',
-    name: 'Send error report…',
+    nameKey: 'commands.helpSendErrorReport.label',
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
-    description: 'Send Cmdr logs to the team to help fix something that went wrong',
+    descriptionKey: 'commands.helpSendErrorReport.description',
   },
   {
     id: 'help.whatsNew',
-    name: "What's new",
+    nameKey: 'commands.helpWhatsNew.label',
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
-    description: 'See what changed in the latest releases of Cmdr',
+    descriptionKey: 'commands.helpWhatsNew.description',
   },
   {
     id: 'feedback.send',
-    name: 'Send feedback',
+    nameKey: 'commands.feedbackSend.label',
     scope: 'App',
     showInPalette: true,
     shortcuts: [],
-    description: 'Tell the maker of Cmdr what you think: ideas, wishes, anything',
+    descriptionKey: 'commands.feedbackSend.description',
   },
 
   // ============================================================================
@@ -144,7 +188,7 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'search.open',
-    name: 'Search files',
+    nameKey: 'commands.searchOpen.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘F', '⌥F7'],
@@ -156,11 +200,11 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'nav.goToPath',
-    name: 'Go to path…',
+    nameKey: 'commands.navGoToPath.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘G'],
-    description: 'Jump the focused pane to a typed, pasted, or recent path.',
+    descriptionKey: 'commands.navGoToPath.description',
     keywords: ['jump', 'navigate', 'goto'],
   },
 
@@ -169,13 +213,13 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'favorites.add',
-    name: 'Add to favorites',
+    nameKey: 'commands.favoritesAdd.label',
     scope: 'Main window',
     showInPalette: true,
     // No default shortcut: adding a favorite is infrequent, so it doesn't earn a global key by
     // default. Stays in the command palette and is assignable in Settings > Keyboard shortcuts.
     shortcuts: [],
-    description: "Add the focused pane's current folder to the switcher's Favorites.",
+    descriptionKey: 'commands.favoritesAdd.description',
     keywords: ['bookmark', 'favorite', 'pin', 'shortcut'],
   },
 
@@ -184,11 +228,11 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'downloads.goToLatest',
-    name: 'Go to latest download',
+    nameKey: 'commands.downloadsGoToLatest.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘J'],
-    description: 'Open ~/Downloads and select the most recent file.',
+    descriptionKey: 'commands.downloadsGoToLatest.description',
     keywords: ['jump', 'navigate', 'goto'],
   },
 
@@ -197,21 +241,21 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'view.showHidden',
-    name: 'Toggle hidden files',
+    nameKey: 'commands.viewShowHidden.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘⇧.'],
   },
   {
     id: 'view.briefMode',
-    name: 'Switch to Brief view',
+    nameKey: 'commands.viewBriefMode.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘2'],
   },
   {
     id: 'view.fullMode',
-    name: 'Switch to Full view',
+    nameKey: 'commands.viewFullMode.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘1'],
@@ -223,7 +267,7 @@ export const commands: Command[] = [
     // `view.briefMode` / `view.fullMode` are the user-facing entries; this one
     // exists so an inactive-pane menu click sets that pane without stealing focus.
     id: 'view.setMode',
-    name: 'Set pane view mode',
+    nameKey: 'commands.viewSetMode.label',
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
@@ -232,110 +276,198 @@ export const commands: Command[] = [
   // ============================================================================
   // Main window - Zoom (text size) commands
   // ============================================================================
-  { id: 'view.zoom.set75', name: 'Zoom to 75%', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  {
+    id: 'view.zoom.set75',
+    nameKey: 'commands.viewZoomSet75.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
   {
     id: 'view.zoom.set100',
-    name: 'Zoom to 100%',
+    nameKey: 'commands.viewZoomSet100.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘0'],
   },
-  { id: 'view.zoom.set125', name: 'Zoom to 125%', scope: 'Main window', showInPalette: true, shortcuts: [] },
-  { id: 'view.zoom.set150', name: 'Zoom to 150%', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  {
+    id: 'view.zoom.set125',
+    nameKey: 'commands.viewZoomSet125.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'view.zoom.set150',
+    nameKey: 'commands.viewZoomSet150.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
   {
     id: 'view.zoom.in',
-    name: 'Zoom in',
+    nameKey: 'commands.viewZoomIn.label',
     scope: 'Main window',
     // ⌘+ is the native menu accelerator (Cmd+Plus on macOS = Cmd+Shift+=);
     // ⌘= is included so the unshifted `=` key fires zoom-in too.
     shortcuts: ['⌘+', '⌘='],
     showInPalette: true,
   },
-  { id: 'view.zoom.out', name: 'Zoom out', scope: 'Main window', showInPalette: true, shortcuts: ['⌘-'] },
+  {
+    id: 'view.zoom.out',
+    nameKey: 'commands.viewZoomOut.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘-'],
+  },
 
   // ============================================================================
   // Main window - Sort commands (also accessible via menu)
   // ============================================================================
-  { id: 'sort.byName', name: 'Sort by name', scope: 'Main window', showInPalette: true, shortcuts: ['⌘3', '⌘F3'] },
+  {
+    id: 'sort.byName',
+    nameKey: 'commands.sortByName.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘3', '⌘F3'],
+  },
   {
     id: 'sort.byExtension',
-    name: 'Sort by extension',
+    nameKey: 'commands.sortByExtension.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘4', '⌘F4'],
   },
   {
     id: 'sort.byModified',
-    name: 'Sort by date modified',
+    nameKey: 'commands.sortByModified.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘5', '⌘F5'],
   },
-  { id: 'sort.bySize', name: 'Sort by size', scope: 'Main window', showInPalette: true, shortcuts: ['⌘6', '⌘F6'] },
-  { id: 'sort.byCreated', name: 'Sort by date created', scope: 'Main window', showInPalette: true, shortcuts: [] },
-  { id: 'sort.ascending', name: 'Sort ascending', scope: 'Main window', showInPalette: true, shortcuts: [] },
-  { id: 'sort.descending', name: 'Sort descending', scope: 'Main window', showInPalette: true, shortcuts: [] },
-  { id: 'sort.toggleOrder', name: 'Toggle sort order', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  {
+    id: 'sort.bySize',
+    nameKey: 'commands.sortBySize.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘6', '⌘F6'],
+  },
+  {
+    id: 'sort.byCreated',
+    nameKey: 'commands.sortByCreated.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'sort.ascending',
+    nameKey: 'commands.sortAscending.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'sort.descending',
+    nameKey: 'commands.sortDescending.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'sort.toggleOrder',
+    nameKey: 'commands.sortToggleOrder.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
   // Per-pane sort carrying `{ pane, column, order }`, dispatched by the MCP `sort`
   // tool. Hidden from the palette: the `sort.by*` commands are the user-facing
   // entries; this one targets a specific pane with an explicit order.
-  { id: 'sort.set', name: 'Set pane sort', scope: 'Main window', showInPalette: false, shortcuts: [] },
+  { id: 'sort.set', nameKey: 'commands.sortSet.label', scope: 'Main window', showInPalette: false, shortcuts: [] },
 
   // ============================================================================
   // Main window - Pane commands
   // ============================================================================
-  { id: 'pane.switch', name: 'Switch pane', scope: 'Main window', showInPalette: true, shortcuts: ['Tab'] },
-  { id: 'pane.swap', name: 'Swap panes', scope: 'Main window', showInPalette: true, shortcuts: ['⌘U'] },
+  {
+    id: 'pane.switch',
+    nameKey: 'commands.paneSwitch.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['Tab'],
+  },
+  { id: 'pane.swap', nameKey: 'commands.paneSwap.label', scope: 'Main window', showInPalette: true, shortcuts: ['⌘U'] },
   {
     id: 'pane.leftVolumeChooser',
-    name: 'Open left volume chooser',
+    nameKey: 'commands.paneLeftVolumeChooser.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌥F1'],
   },
   {
     id: 'pane.rightVolumeChooser',
-    name: 'Open right volume chooser',
+    nameKey: 'commands.paneRightVolumeChooser.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌥F2'],
   },
   {
     id: 'pane.copyPathLeftToRight',
-    name: 'Copy path from left to right pane',
+    nameKey: 'commands.paneCopyPathLeftToRight.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘→'],
-    description:
-      'Open the left pane’s location on the right. When the left pane is focused and the cursor is on a folder, that folder opens on the right instead.',
+    descriptionKey: 'commands.paneCopyPathLeftToRight.description',
   },
   {
     id: 'pane.copyPathRightToLeft',
-    name: 'Copy path from right to left pane',
+    nameKey: 'commands.paneCopyPathRightToLeft.label',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘←'],
-    description:
-      'Open the right pane’s location on the left. When the right pane is focused and the cursor is on a folder, that folder opens on the left instead.',
+    descriptionKey: 'commands.paneCopyPathRightToLeft.description',
   },
 
   // ============================================================================
   // Main window - Tab commands
   // ============================================================================
-  { id: 'tab.new', name: 'New tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘T'] },
-  { id: 'tab.close', name: 'Close tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘W'] },
-  { id: 'tab.reopen', name: 'Reopen closed tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘⇧T'] },
-  { id: 'tab.next', name: 'Next tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃Tab'] },
-  { id: 'tab.prev', name: 'Previous tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃⇧Tab'] },
-  { id: 'tab.togglePin', name: 'Toggle pin tab', scope: 'Main window', showInPalette: true, shortcuts: [] },
-  { id: 'tab.closeOthers', name: 'Close other tabs', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'tab.new', nameKey: 'commands.tabNew.label', scope: 'Main window', showInPalette: true, shortcuts: ['⌘T'] },
+  { id: 'tab.close', nameKey: 'commands.tabClose.label', scope: 'Main window', showInPalette: true, shortcuts: ['⌘W'] },
+  {
+    id: 'tab.reopen',
+    nameKey: 'commands.tabReopen.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘⇧T'],
+  },
+  { id: 'tab.next', nameKey: 'commands.tabNext.label', scope: 'Main window', showInPalette: true, shortcuts: ['⌃Tab'] },
+  {
+    id: 'tab.prev',
+    nameKey: 'commands.tabPrev.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌃⇧Tab'],
+  },
+  {
+    id: 'tab.togglePin',
+    nameKey: 'commands.tabTogglePin.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'tab.closeOthers',
+    nameKey: 'commands.tabCloseOthers.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
 
   // ============================================================================
   // File list - Navigation commands
   // ============================================================================
   {
     id: 'nav.up',
-    name: 'Select previous file',
+    nameKey: 'commands.navUp.label',
     scope: 'Main window/File list',
     showInPalette: false, // Too basic for palette
     shortcuts: ['↑'],
@@ -343,7 +475,7 @@ export const commands: Command[] = [
   },
   {
     id: 'nav.down',
-    name: 'Select next file',
+    nameKey: 'commands.navDown.label',
     scope: 'Main window/File list',
     showInPalette: false,
     shortcuts: ['↓'],
@@ -351,55 +483,67 @@ export const commands: Command[] = [
   },
   {
     id: 'nav.open',
-    name: 'Open file or folder',
+    nameKey: 'commands.navOpen.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['Enter'],
   },
   {
     id: 'nav.parent',
-    name: 'Go to parent folder',
+    nameKey: 'commands.navParent.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['Backspace', '⌘↑'],
   },
   {
     id: 'nav.home',
-    name: 'Go to first file',
+    nameKey: 'commands.navHome.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌥↑', 'Home'],
   },
   {
     id: 'nav.end',
-    name: 'Go to last file',
+    nameKey: 'commands.navEnd.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌥↓', 'End'],
   },
   {
     id: 'nav.pageUp',
-    name: 'Page up',
+    nameKey: 'commands.navPageUp.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['PageUp'],
   },
   {
     id: 'nav.pageDown',
-    name: 'Page down',
+    nameKey: 'commands.navPageDown.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['PageDown'],
   },
-  { id: 'nav.back', name: 'Go back', scope: 'Main window/File list', showInPalette: true, shortcuts: ['⌘['] },
-  { id: 'nav.forward', name: 'Go forward', scope: 'Main window/File list', showInPalette: true, shortcuts: ['⌘]'] },
+  {
+    id: 'nav.back',
+    nameKey: 'commands.navBack.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘['],
+  },
+  {
+    id: 'nav.forward',
+    nameKey: 'commands.navForward.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘]'],
+  },
 
   // ============================================================================
   // Brief mode specific
   // ============================================================================
   {
     id: 'nav.left',
-    name: 'Move to left column',
+    nameKey: 'commands.navLeft.label',
     scope: 'Main window/Brief mode',
     showInPalette: false,
     shortcuts: ['←'],
@@ -407,7 +551,7 @@ export const commands: Command[] = [
   },
   {
     id: 'nav.right',
-    name: 'Move to right column',
+    nameKey: 'commands.navRight.label',
     scope: 'Main window/Brief mode',
     showInPalette: false,
     shortcuts: ['→'],
@@ -419,7 +563,7 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'nav.firstInFull',
-    name: 'Jump to first file',
+    nameKey: 'commands.navFirstInFull.label',
     scope: 'Main window/Full mode',
     showInPalette: false,
     shortcuts: ['←'],
@@ -427,7 +571,7 @@ export const commands: Command[] = [
   },
   {
     id: 'nav.lastInFull',
-    name: 'Jump to last file',
+    nameKey: 'commands.navLastInFull.label',
     scope: 'Main window/Full mode',
     showInPalette: false,
     shortcuts: ['→'],
@@ -439,123 +583,141 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'file.rename',
-    name: 'Rename',
+    nameKey: 'commands.fileRename.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['F2', '⇧F6'],
   },
-  { id: 'file.view', name: 'View', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F3'] },
+  {
+    id: 'file.view',
+    nameKey: 'commands.fileView.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['F3'],
+  },
   {
     id: 'file.edit',
-    name: 'Edit in default editor',
+    nameKey: 'commands.fileEdit.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['F4'],
   },
-  { id: 'file.copy', name: 'Copy', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F5'] },
-  { id: 'file.move', name: 'Move', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F6'] },
+  {
+    id: 'file.copy',
+    nameKey: 'commands.fileCopy.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['F5'],
+  },
+  {
+    id: 'file.move',
+    nameKey: 'commands.fileMove.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['F6'],
+  },
 
   // ============================================================================
   // File list - Edit commands (clipboard operations)
   // ============================================================================
   {
     id: 'edit.copy',
-    name: 'Copy to clipboard',
+    nameKey: 'commands.editCopy.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌘C'],
-    description: 'Copy selected files to clipboard for pasting',
+    descriptionKey: 'commands.editCopy.description',
   },
   {
     id: 'edit.cut',
-    name: 'Cut to clipboard',
+    nameKey: 'commands.editCut.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌘X'],
-    description: 'Cut selected files (paste will move them)',
+    descriptionKey: 'commands.editCut.description',
   },
   {
     id: 'edit.paste',
-    name: 'Paste',
+    nameKey: 'commands.editPaste.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌘V'],
-    description: 'Paste files from clipboard into current folder',
+    descriptionKey: 'commands.editPaste.description',
   },
   {
     id: 'edit.pasteAsMove',
-    name: 'Move here',
+    nameKey: 'commands.editPasteAsMove.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌥⌘V'],
-    description: 'Paste files from clipboard as a move',
+    descriptionKey: 'commands.editPasteAsMove.description',
   },
   {
     id: 'file.newFolder',
-    name: 'New folder',
+    nameKey: 'commands.fileNewFolder.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['F7'],
   },
   {
     id: 'file.newFile',
-    name: 'Create new file',
+    nameKey: 'commands.fileNewFile.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⇧F4'],
   },
   {
     id: 'file.delete',
-    name: 'Delete',
+    nameKey: 'commands.fileDelete.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['F8'],
   },
   {
     id: 'file.deletePermanently',
-    name: 'Delete permanently',
+    nameKey: 'commands.fileDeletePermanently.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⇧F8'],
   },
   {
     id: 'file.showInFinder',
-    name: isMacOS() ? 'Show in Finder' : 'Show in file manager',
+    nameKey: isMacOS() ? 'commands.fileShowInFinder.mac.label' : 'commands.fileShowInFinder.other.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌥⌘O'],
   },
   {
     id: 'file.copyPath',
-    name: 'Copy path to clipboard',
+    nameKey: 'commands.fileCopyPath.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌃⌘C'],
   },
   {
     id: 'file.copyCurrentDirectoryPath',
-    name: 'Copy current directory path',
+    nameKey: 'commands.fileCopyCurrentDirectoryPath.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: [],
   },
   {
     id: 'file.copyFilename',
-    name: 'Copy filename',
+    nameKey: 'commands.fileCopyFilename.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: [],
   },
   {
     id: 'file.getInfo',
-    name: isMacOS() ? 'Get info' : 'File properties',
+    nameKey: isMacOS() ? 'commands.fileGetInfo.mac.label' : 'commands.fileGetInfo.other.label',
     scope: 'Main window/File list',
     showInPalette: isMacOS(),
     shortcuts: isMacOS() ? ['⌘I'] : [],
   },
   {
     id: 'file.quickLook',
-    name: isMacOS() ? 'Quick look' : 'Preview',
+    nameKey: isMacOS() ? 'commands.fileQuickLook.mac.label' : 'commands.fileQuickLook.other.label',
     scope: 'Main window/File list',
     showInPalette: isMacOS(),
     // ⇧Space matches the menu accelerator. key-capture.ts maps `' '` → 'Space',
@@ -565,28 +727,28 @@ export const commands: Command[] = [
   },
   {
     id: 'file.contextMenu',
-    name: 'Open context menu',
+    nameKey: 'commands.fileContextMenu.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: [],
     fixedKey: true,
-    description: 'Opens the context menu for the file under the cursor',
+    descriptionKey: 'commands.fileContextMenu.description',
   },
   {
     id: 'cloud.makeOffline',
-    name: 'Make available offline',
+    nameKey: 'commands.cloudMakeOffline.label',
     scope: 'Main window/File list',
     showInPalette: isMacOS(),
     shortcuts: [],
-    description: 'Downloads a cloud-stored file so it stays available without an internet connection',
+    descriptionKey: 'commands.cloudMakeOffline.description',
   },
   {
     id: 'cloud.removeDownload',
-    name: 'Remove download',
+    nameKey: 'commands.cloudRemoveDownload.label',
     scope: 'Main window/File list',
     showInPalette: isMacOS(),
     shortcuts: [],
-    description: 'Removes the local copy of a cloud file, leaving it available online only',
+    descriptionKey: 'commands.cloudRemoveDownload.description',
   },
 
   // ============================================================================
@@ -594,50 +756,50 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'selection.toggle',
-    name: 'Toggle selection',
+    nameKey: 'commands.selectionToggle.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['Space'],
   },
   {
     id: 'selection.toggleAndDown',
-    name: 'Toggle selection and move down',
+    nameKey: 'commands.selectionToggleAndDown.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['Insert'],
-    description: 'Selects or deselects the file under the cursor, then moves down (Total Commander style)',
+    descriptionKey: 'commands.selectionToggleAndDown.description',
   },
   {
     id: 'selection.selectAll',
-    name: 'Select all',
+    nameKey: 'commands.selectionSelectAll.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌘A'],
   },
   {
     id: 'selection.deselectAll',
-    name: 'Deselect all',
+    nameKey: 'commands.selectionDeselectAll.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌘⇧A'],
   },
   {
     id: 'selection.selectFiles',
-    name: 'Select files…',
+    nameKey: 'commands.selectionSelectFiles.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['+'],
     status: getBadgeStatus('select-files'),
-    description: 'Opens the Select files dialog to add matching files to the selection',
+    descriptionKey: 'commands.selectionSelectFiles.description',
   },
   {
     id: 'selection.deselectFiles',
-    name: 'Deselect files…',
+    nameKey: 'commands.selectionDeselectFiles.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['-'],
     status: getBadgeStatus('select-files'),
-    description: 'Opens the Deselect files dialog to remove matching files from the selection',
+    descriptionKey: 'commands.selectionDeselectFiles.description',
   },
 
   // ============================================================================
@@ -645,7 +807,7 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'network.selectHost',
-    name: 'Select network host',
+    nameKey: 'commands.networkSelectHost.label',
     scope: 'Main window/Network',
     showInPalette: false,
     shortcuts: ['Enter'],
@@ -653,7 +815,7 @@ export const commands: Command[] = [
   },
   {
     id: 'network.refresh',
-    name: 'Refresh network hosts',
+    nameKey: 'commands.networkRefresh.label',
     scope: 'Main window/Network',
     showInPalette: true,
     shortcuts: ['⌘R'],
@@ -664,7 +826,7 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'share.back',
-    name: 'Back to host list',
+    nameKey: 'commands.shareBack.label',
     scope: 'Main window/Share browser',
     showInPalette: true,
     shortcuts: ['Backspace', 'Escape'],
@@ -672,7 +834,7 @@ export const commands: Command[] = [
   },
   {
     id: 'share.selectShare',
-    name: 'Connect to share',
+    nameKey: 'commands.shareSelectShare.label',
     scope: 'Main window/Share browser',
     showInPalette: true,
     shortcuts: ['Enter'],
@@ -684,7 +846,7 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'volume.select',
-    name: 'Select volume',
+    nameKey: 'commands.volumeSelect.label',
     scope: 'Main window/Volume chooser',
     showInPalette: false,
     shortcuts: ['Enter'],
@@ -692,7 +854,7 @@ export const commands: Command[] = [
   },
   {
     id: 'volume.close',
-    name: 'Close volume chooser',
+    nameKey: 'commands.volumeClose.label',
     scope: 'Main window/Volume chooser',
     showInPalette: false,
     shortcuts: ['Escape'],
@@ -707,58 +869,88 @@ export const commands: Command[] = [
   // `showInPalette: false` (no user-facing palette entry) with no shortcut.
   {
     id: 'volume.selectByName',
-    name: 'Select pane volume by name',
+    nameKey: 'commands.volumeSelectByName.label',
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
   },
   {
     id: 'selection.mcpSelect',
-    name: 'Select range in pane',
+    nameKey: 'commands.selectionMcpSelect.label',
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
   },
   {
     id: 'selection.mcpSelectByNames',
-    name: 'Select files by name in pane',
+    nameKey: 'commands.selectionMcpSelectByNames.label',
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
   },
-  { id: 'cursor.moveTo', name: 'Move pane cursor', scope: 'Main window', showInPalette: false, shortcuts: [] },
-  { id: 'cursor.scrollTo', name: 'Scroll pane to index', scope: 'Main window', showInPalette: false, shortcuts: [] },
-  { id: 'pane.refresh', name: 'Refresh pane', scope: 'Main window', showInPalette: false, shortcuts: [] },
+  {
+    id: 'cursor.moveTo',
+    nameKey: 'commands.cursorMoveTo.label',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
+  {
+    id: 'cursor.scrollTo',
+    nameKey: 'commands.cursorScrollTo.label',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
+  {
+    id: 'pane.refresh',
+    nameKey: 'commands.paneRefresh.label',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
   {
     id: 'nav.openUnderCursor',
-    name: 'Open item under cursor',
+    nameKey: 'commands.navOpenUnderCursor.label',
     scope: 'Main window',
     showInPalette: false,
     shortcuts: [],
   },
-  { id: 'tab.mcpAction', name: 'Pane tab action', scope: 'Main window', showInPalette: false, shortcuts: [] },
-  { id: 'dialog.confirm', name: 'Confirm open dialog', scope: 'Main window', showInPalette: false, shortcuts: [] },
+  {
+    id: 'tab.mcpAction',
+    nameKey: 'commands.tabMcpAction.label',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
+  {
+    id: 'dialog.confirm',
+    nameKey: 'commands.dialogConfirm.label',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
 
   // ============================================================================
   // About window
   // ============================================================================
   {
     id: 'about.openWebsite',
-    name: 'Open website',
+    nameKey: 'commands.aboutOpenWebsite.label',
     scope: 'About window',
     showInPalette: true,
     shortcuts: [],
   },
   {
     id: 'about.openUpgrade',
-    name: 'Open upgrade page',
+    nameKey: 'commands.aboutOpenUpgrade.label',
     scope: 'About window',
     showInPalette: true,
     shortcuts: [],
   },
   {
     id: 'about.close',
-    name: 'Close About window',
+    nameKey: 'commands.aboutClose.label',
     scope: 'About window',
     showInPalette: true,
     shortcuts: ['Escape'],
@@ -769,7 +961,7 @@ export const commands: Command[] = [
   // ============================================================================
   {
     id: 'palette.up',
-    name: 'Previous result',
+    nameKey: 'commands.paletteUp.label',
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['↑'],
@@ -777,7 +969,7 @@ export const commands: Command[] = [
   },
   {
     id: 'palette.down',
-    name: 'Next result',
+    nameKey: 'commands.paletteDown.label',
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['↓'],
@@ -785,7 +977,7 @@ export const commands: Command[] = [
   },
   {
     id: 'palette.execute',
-    name: 'Execute command',
+    nameKey: 'commands.paletteExecute.label',
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['Enter'],
@@ -793,7 +985,7 @@ export const commands: Command[] = [
   },
   {
     id: 'palette.close',
-    name: 'Close palette',
+    nameKey: 'commands.paletteClose.label',
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['Escape'],
@@ -801,15 +993,52 @@ export const commands: Command[] = [
   },
 ]
 
+/**
+ * Resolves an authored `CommandSource` into a `Command` whose `name` (and, where
+ * present, `description`) are getters that read the catalog through `t()` at
+ * access time, so palette/menu/shortcut consumers stay unchanged and reactivity
+ * holds in markup. `app.licenseKey` resolves its name from one of two keys based
+ * on the live `hasExistingLicense` flag (`updateLicenseCommandName` flips it).
+ */
+function resolveCommand(src: CommandSource): Command {
+  const { nameKey, descriptionKey, ...rest } = src
+  const cmd = {
+    ...rest,
+    get name(): string {
+      if (rest.id === 'app.licenseKey') {
+        return tString(
+          hasExistingLicense ? 'commands.appLicenseKey.seeDetails.label' : 'commands.appLicenseKey.enterKey.label',
+        )
+      }
+      return tString(nameKey)
+    },
+  } as Command
+  if (descriptionKey !== undefined) {
+    Object.defineProperty(cmd, 'description', { enumerable: true, get: () => tString(descriptionKey) })
+  }
+  return cmd
+}
+
+/**
+ * Every command, with copy resolved through the catalog. A getter-backed
+ * `Command[]` (not `as const`), so `getPaletteCommands()` and the shortcuts
+ * conflict detector keep a mutable `Command[]`; the names themselves come from
+ * the catalog, so there's nothing to mutate in place anymore (the license name
+ * is driven by `hasExistingLicense` via `updateLicenseCommandName`).
+ */
+export const commands: Command[] = commandSources.map(resolveCommand)
+
 /** Get all commands that should appear in the command palette */
 export function getPaletteCommands(): Command[] {
   return commands.filter((c) => c.showInPalette)
 }
 
-/** Update the license command name based on whether a license exists. Keeps the command palette in sync with the native menu label. */
-export function updateLicenseCommandName(hasExistingLicense: boolean): void {
-  const cmd = commands.find((c) => c.id === 'app.licenseKey')
-  if (cmd) {
-    cmd.name = hasExistingLicense ? 'See license details' : 'Enter license key'
-  }
+/**
+ * Update the license command name based on whether a license exists. Keeps the
+ * command palette in sync with the native menu label. The `app.licenseKey`
+ * command's `name` getter reads `hasExistingLicense` live, so flipping this flag
+ * re-resolves the catalog label on the next read.
+ */
+export function updateLicenseCommandName(hasLicense: boolean): void {
+  hasExistingLicense = hasLicense
 }

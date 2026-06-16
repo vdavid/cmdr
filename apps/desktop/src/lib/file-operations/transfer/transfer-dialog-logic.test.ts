@@ -3,9 +3,19 @@
  * free-space formatting). No reactivity, no IPC — these are the testable
  * branches lifted out of `TransferDialog.svelte`.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { _setLocaleForTests } from '$lib/intl/locale'
 import { getPathValidationError, formatSpaceInfo } from './transfer-dialog-logic'
 import type { VolumeSpaceInfo } from '$lib/tauri-commands'
+
+// Pin the base locale so the catalog-resolved validation/space copy is the
+// deterministic en parity net.
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
 
 describe('getPathValidationError', () => {
   it('returns null when the destination is unrelated to the sources', () => {

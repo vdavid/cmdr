@@ -308,6 +308,30 @@ Two env vars (mirror `CMDR_MOCK_LICENSE`):
 
 Run with both: `CMDR_FORCE_ONBOARDING=1 CMDR_MOCK_FDA=notgranted pnpm dev`.
 
+## i18n (message catalog)
+
+All user-facing onboarding copy lives in `$lib/intl/messages/en/onboarding.json` (keys `onboarding.<step>.<leaf>`),
+resolved through the `$lib/intl` runtime: `tString()` for static and `{var}`-interpolated strings, `<Trans>` for the
+many inline-component sentences (David's warm beta copy is dense with `<strong>`/`<em>`/`<LinkButton>` runs). The
+base-en output is byte-identical to the pre-migration copy (a behavior-preserving MOVE), pinned by
+`onboarding-i18n-parity.test.ts`.
+
+Conventions specific to this area:
+
+- **Inline-component sentences use `<Trans key=… snippets={{…}} />`.** Each component renders a same-named local snippet
+  (`{#snippet strong(children)}<strong>{@render children()}</strong>{/snippet}`, etc.). The link snippets close over the
+  component's own click handlers (`openLink(url)`, `openPrivacySettings()`, the GitHub source link), so the catalog
+  holds ONLY the wrapped text, never a URL.
+- **Empty-tag markers** (`<chip></chip>` for a `ShortcutChip`, `<alpha></alpha>` for a `StatusBadge`) are snippets that
+  render the component and then `{@render children()}` (the children are empty; the render is a no-op that keeps the arg
+  used, since the lint has no `argsIgnorePattern`).
+- **Shared strings stay with their owners.** `systemStrings.*` (the localized macOS pane names) is passed in as a
+  `{systemSettings}` placeholder, not copied into the catalog. `analyticsDef.description` (Step 3) and the cloud
+  provider `preset.name` / `preset.description` (CloudProviderSetup) render from the settings/AI registries and are NOT
+  in `onboarding.json` — they migrate with those areas.
+- **Banner titles / footer labels moved out of the JS objects** (`bannerTitleByMode`, the `setFooterOverride([{label}])`
+  arrays) into `tString()` calls so they translate too.
+
 ## Key decisions
 
 **Decision**: Three-state setting (`notAskedYet` / `allow` / `deny`) instead of a boolean. **Why**: The app needs to

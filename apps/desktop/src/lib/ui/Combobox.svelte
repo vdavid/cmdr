@@ -32,6 +32,7 @@
     import { Combobox, createListCollection } from '@ark-ui/svelte/combobox'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         items: ComboboxItem[]
@@ -55,8 +56,10 @@
         disabled = false,
         placeholder,
         ariaLabel,
-        emptyText = 'No matches. Keep typing to use your own value.',
+        emptyText,
     }: Props = $props()
+
+    const resolvedEmptyText = $derived(emptyText ?? tString('ui.combobox.emptyText'))
 
     const collection = $derived(
         createListCollection({
@@ -86,10 +89,10 @@
             <Combobox.Input class="combobox-input" {placeholder} aria-label={ariaLabel} />
             {#if loading}
                 <span class="combobox-spinner">
-                    <Spinner size="sm" label="Loading suggestions" />
+                    <Spinner size="sm" label={tString('ui.combobox.loadingSuggestions')} />
                 </span>
             {/if}
-            <Combobox.Trigger class="combobox-trigger" aria-label="Show suggestions">
+            <Combobox.Trigger class="combobox-trigger" aria-label={tString('ui.combobox.showSuggestions')}>
                 <span class="combobox-indicator"><Icon name="chevron-down" size={16} /></span>
             </Combobox.Trigger>
         </Combobox.Control>
@@ -113,7 +116,7 @@
                          `aria-required-children` on a cold-start / no-match empty list, instead of an
                          empty listbox (axe flags that even when hidden). Reads as a "no matches" row. -->
                     <div class="combobox-empty" role="option" aria-disabled="true" aria-selected="false">
-                        {emptyText}
+                        {resolvedEmptyText}
                     </div>
                 {/if}
             </Combobox.Content>

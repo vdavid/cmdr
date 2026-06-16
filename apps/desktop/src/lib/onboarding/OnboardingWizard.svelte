@@ -7,6 +7,7 @@
     import { trapFocus } from '$lib/ui/focus-trap'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
+    import { tString } from '$lib/intl/messages.svelte'
     import {
         getOnboardingState,
         ONBOARDING_STEP_COUNT,
@@ -153,18 +154,20 @@
         if (step === null) return []
         if (step === 1) {
             if (onboardingState.step1FooterMode === 'restart') {
-                return [{ label: 'Restart Cmdr', onclick: () => void handleRestart(), variant: 'primary' }]
+                return [
+                    { label: tString('onboarding.wizard.restart'), onclick: () => void handleRestart(), variant: 'primary' },
+                ]
             }
             if (onboardingState.step1Variant === 'already-granted') {
-                return [{ label: 'Next', onclick: handleNext, variant: 'primary' }]
+                return [{ label: tString('onboarding.wizard.next'), onclick: handleNext, variant: 'primary' }]
             }
             // Step 1 decide mode: Allow + Deny live in the body; footer primary is hidden.
             return []
         }
         if (isAtLastStep()) {
-            return [{ label: 'Finish', onclick: handleNext, variant: 'primary' }]
+            return [{ label: tString('onboarding.wizard.finish'), onclick: handleNext, variant: 'primary' }]
         }
-        return [{ label: 'Next', onclick: handleNext, variant: 'primary' }]
+        return [{ label: tString('onboarding.wizard.next'), onclick: handleNext, variant: 'primary' }]
     }
 
     /**
@@ -190,8 +193,8 @@
         onkeydown={handleKeydown}
     >
         <header class="wizard-header">
-            <h2 id="onboarding-wizard-title" class="sr-only">Cmdr onboarding</h2>
-            <ol class="step-dots" aria-label="Onboarding progress">
+            <h2 id="onboarding-wizard-title" class="sr-only">{tString('onboarding.wizard.title')}</h2>
+            <ol class="step-dots" aria-label={tString('onboarding.wizard.progressLabel')}>
                 {#each stepDots as dot (dot.index)}
                     <li
                         class="step-dot"
@@ -200,7 +203,11 @@
                         aria-current={onboardingState.currentStep === dot.index ? 'step' : undefined}
                     >
                         <span class="sr-only">
-                            Step {dot.index} of {ONBOARDING_STEP_COUNT}{dot.isOptional ? ' (optional)' : ''}
+                            {tString('onboarding.wizard.stepProgress', {
+                                step: dot.index,
+                                total: ONBOARDING_STEP_COUNT,
+                                isOptional: dot.isOptional,
+                            })}
                         </span>
                     </li>
                 {/each}
@@ -226,8 +233,8 @@
                         type="button"
                         class="back-button"
                         onclick={handleBack}
-                        aria-label="Go to previous step"
-                        use:tooltip={'Back'}
+                        aria-label={tString('onboarding.wizard.backAria')}
+                        use:tooltip={tString('onboarding.wizard.back')}
                     >
                         <Icon name="arrow-left" size={16} />
                     </button>

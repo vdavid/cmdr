@@ -29,6 +29,7 @@
     import DateFilterPopover from './DateFilterPopover.svelte'
     import ScopeFilterPopover from './ScopeFilterPopover.svelte'
     import ToggleGroup, { type ToggleGroupOption } from '$lib/ui/ToggleGroup.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import { deriveSizeChip, deriveDateChip, deriveScopeChip, derivePatternChip } from './filter-chip-state'
     import type { QueryFilterState, SizeFilter, SizeUnit, DateFilter, TypeFilter } from '../query-filter-state.svelte'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
@@ -159,11 +160,11 @@
 
     // Type toggle: one-click `Both | Files | Folders`. Lives in the core state (both
     // dialogs show it), leading the chip strip so it reads "show [files] where size > …".
-    const TYPE_FILTER_OPTIONS: ToggleGroupOption[] = [
-        { value: 'both', label: 'Both' },
-        { value: 'file', label: 'Files' },
-        { value: 'folder', label: 'Folders' },
-    ]
+    const TYPE_FILTER_OPTIONS = $derived<ToggleGroupOption[]>([
+        { value: 'both', label: tString('queryUi.filters.type.both') },
+        { value: 'file', label: tString('queryUi.filters.type.files') },
+        { value: 'folder', label: tString('queryUi.filters.type.folders') },
+    ])
     function onTypeFilterChange(value: string): void {
         filterState.setTypeFilter(value as TypeFilter)
         scheduleSearch()
@@ -308,7 +309,7 @@
      from the bar in filename / regex mode and from the AI-produced pattern in AI mode, so the
      user sees the actual pattern being applied across every mode. See `lib/query-ui/CLAUDE.md`
      for the rationale. -->
-<div class="filter-chip-strip" role="toolbar" aria-label="Search filters">
+<div class="filter-chip-strip" role="toolbar" aria-label={tString('queryUi.filters.toolbarAria')}>
     <!-- The flash wrapper mirrors the chips' `is-highlighted` treatment for the AI handoff:
          the AI may set the type, so we briefly tint the toggle when it does. ToggleGroup
          has no `highlighted` prop, so the wrapper carries the flash. -->
@@ -318,14 +319,14 @@
             value={typeFilter}
             options={TYPE_FILTER_OPTIONS}
             onChange={onTypeFilterChange}
-            ariaLabel="Filter by type"
+            ariaLabel={tString('queryUi.filters.type.aria')}
             {disabled}
         />
     </span>
     {#if patternChipVisible}
         <Chip
             bind:chipElement={patternChipEl}
-            label="Pattern"
+            label={tString('queryUi.filters.chip.pattern')}
             value={patternState.summary}
             configured={patternState.configured}
             isOpen={false}
@@ -341,7 +342,7 @@
         {#if key === 'size'}
             <Chip
                 bind:chipElement={sizeChipEl}
-                label="Size"
+                label={tString('queryUi.filters.chip.size')}
                 value={sizeState.summary}
                 configured={sizeState.configured}
                 isOpen={openChip === 'size'}
@@ -355,7 +356,7 @@
         {:else if key === 'date'}
             <Chip
                 bind:chipElement={dateChipEl}
-                label="Modified"
+                label={tString('queryUi.filters.chip.modified')}
                 value={dateState.summary}
                 configured={dateState.configured}
                 isOpen={openChip === 'date'}
@@ -369,7 +370,7 @@
         {:else if key === 'scope'}
             <Chip
                 bind:chipElement={scopeChipEl}
-                label="Search in"
+                label={tString('queryUi.filters.chip.scope')}
                 value={scopeState.summary}
                 configured={scopeState.configured}
                 isOpen={openChip === 'scope'}

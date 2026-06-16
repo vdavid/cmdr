@@ -1,6 +1,7 @@
 <script lang="ts">
     import { tick } from 'svelte'
     import { cloudProviderPresets } from '$lib/settings'
+    import { tString } from '$lib/intl/messages.svelte'
 
     /**
      * Scrollable provider picker for the onboarding wizard's step 2.
@@ -128,7 +129,7 @@
     bind:this={listEl}
     class="provider-list"
     role="listbox"
-    aria-label="Cloud AI providers"
+    aria-label={tString('onboarding.cloudPicker.listAria')}
     tabindex="0"
     aria-activedescendant={activeOptionId}
     onkeydown={handleKeydown}

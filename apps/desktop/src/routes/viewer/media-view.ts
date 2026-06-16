@@ -9,6 +9,7 @@
 
 import type { MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
 import { formatInteger } from '$lib/intl/number-format'
+import { getMessage, tString } from '$lib/intl/messages.svelte'
 
 /**
  * Builds the URL the `<img>` / `<embed>` loads for a media session.
@@ -30,35 +31,38 @@ export function isMediaKind(kind: ViewerContentKind): boolean {
 export function mediaKindLabel(kind: ViewerContentKind): string {
   switch (kind) {
     case 'image':
-      return 'Image'
+      return getMessage('viewer.kind.image')
     case 'pdf':
-      return 'PDF'
+      return getMessage('viewer.kind.pdf')
     case 'text':
-      return 'Text'
+      return getMessage('viewer.kind.text')
   }
 }
 
 /**
  * The picker's reverse-switch label for a media kind: "View as image" / "View as
- * PDF". Lowercases "image" (sentence case) but keeps "PDF" uppercase. `text` has
- * no media render to switch to, so it falls back to a plain "View as text"-shaped
- * string (never shown: callers only use this for a remembered media kind).
+ * PDF". `text` has no media render to switch to, so it falls back to a plain
+ * "View as text"-shaped string (never shown: callers only use this for a
+ * remembered media kind).
  */
 export function viewAsMediaLabel(kind: ViewerContentKind): string {
   switch (kind) {
     case 'image':
-      return 'View as image'
+      return getMessage('viewer.toolbar.viewMode.viewAsImage')
     case 'pdf':
-      return 'View as PDF'
+      return getMessage('viewer.toolbar.viewMode.viewAsPdf')
     case 'text':
-      return 'View as text'
+      return getMessage('viewer.toolbar.viewMode.viewAsText')
   }
 }
 
 /** Formats pixel dimensions for the status bar (en-US `1,920 × 1,080`, de-DE `1.920 × 1.080`), or null when absent. */
 export function formatMediaDimensions(dimensions: MediaDimensions | null): string | null {
   if (dimensions === null) return null
-  return `${formatInteger(dimensions.width)} × ${formatInteger(dimensions.height)}`
+  return tString('viewer.media.dimensions', {
+    width: formatInteger(dimensions.width),
+    height: formatInteger(dimensions.height),
+  })
 }
 
 export const MEDIA_MIN_ZOOM = 0.1

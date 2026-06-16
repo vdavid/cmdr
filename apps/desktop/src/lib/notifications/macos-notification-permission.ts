@@ -16,6 +16,7 @@
 import { isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification'
 import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
+import { tString } from '$lib/intl/messages.svelte'
 
 const log = getAppLogger('notifications')
 
@@ -70,7 +71,7 @@ export async function ensureMacosNotificationPermission(): Promise<boolean> {
 function surfaceDeniedToast(): void {
   // INFO level with a dedup id so repeated denials only stack one toast.
   // No retries — the user can flip the setting back when they're ready.
-  addToast('macOS notifications are off. Open System Settings to allow them.', {
+  addToast(tString('notifications.permissionDenied'), {
     id: PERMISSION_DENIED_TOAST_ID,
     level: 'info',
   })

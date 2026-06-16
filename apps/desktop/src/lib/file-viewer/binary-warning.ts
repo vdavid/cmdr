@@ -14,6 +14,8 @@
  * over-warn on legitimate text files.
  */
 
+import { getMessage } from '$lib/intl/messages.svelte'
+
 const IMAGE_EXTS = new Set([
   'jpg',
   'jpeg',
@@ -118,15 +120,23 @@ const OTHER_BINARY_EXTS = new Set([
 ])
 
 /**
- * The category we surface in the banner copy. `''` means "don't warn" — the
- * file looks like something the raw view can plausibly show (text, source
- * code, no extension, etc.). For the rare in-between case (SVG, JSON, CSV),
- * the answer is also "don't warn" because the raw bytes ARE useful there.
+ * The structural result of classifying a file for the raw-view banner.
+ * `shouldWarn: false` means the file looks like something the raw view can
+ * plausibly show (text, source code, no extension, etc.); for the rare
+ * in-between case (SVG, JSON, CSV), the answer is also "don't warn" because the
+ * raw bytes ARE useful there.
+ *
+ * The display word the banner shows is NOT here: it's the translatable
+ * "image"/"document" copy (catalog `viewer.kind.*`) or the uppercased extension
+ * for the generic-binary case. Keep this function pure and locale-free so it
+ * stays trivially testable; resolve the display word with `viewerWarningLabel`.
  */
 export interface ViewerWarning {
   shouldWarn: boolean
-  /** Phrase that fits "view the actual <label> instead" — for example, "image", "document", "EXE", "ZIP". */
-  label: string
+  /** The kind bucket the file falls in. `null` when `shouldWarn` is false. */
+  category: 'image' | 'document' | 'binary' | null
+  /** Uppercased extension (e.g. "ZIP"), only set for the `binary` category. */
+  ext: string
 }
 
 function getExtension(fileName: string): string {
@@ -139,9 +149,28 @@ function getExtension(fileName: string): string {
 
 export function categorizeForViewerWarning(fileName: string): ViewerWarning {
   const ext = getExtension(fileName)
-  if (!ext) return { shouldWarn: false, label: '' }
-  if (IMAGE_EXTS.has(ext)) return { shouldWarn: true, label: 'image' }
-  if (DOCUMENT_EXTS.has(ext)) return { shouldWarn: true, label: 'document' }
-  if (OTHER_BINARY_EXTS.has(ext)) return { shouldWarn: true, label: ext.toUpperCase() }
-  return { shouldWarn: false, label: '' }
+  if (!ext) return { shouldWarn: false, category: null, ext: '' }
+  if (IMAGE_EXTS.has(ext)) return { shouldWarn: true, category: 'image', ext: '' }
+  if (DOCUMENT_EXTS.has(ext)) return { shouldWarn: true, category: 'document', ext: '' }
+  if (OTHER_BINARY_EXTS.has(ext)) return { shouldWarn: true, category: 'binary', ext: ext.toUpperCase() }
+  return { shouldWarn: false, category: null, ext: '' }
+}
+
+/**
+ * The display word the banner drops into "view the actual <label> instead":
+ * the translatable lowercase "image"/"document" copy, or the uppercased
+ * extension (e.g. "ZIP") for the generic-binary case. Empty for a non-warning
+ * result (never rendered).
+ */
+export function viewerWarningLabel(warning: ViewerWarning): string {
+  switch (warning.category) {
+    case 'image':
+      return getMessage('viewer.binaryWarning.kind.image')
+    case 'document':
+      return getMessage('viewer.binaryWarning.kind.document')
+    case 'binary':
+      return warning.ext
+    case null:
+      return ''
+  }
 }

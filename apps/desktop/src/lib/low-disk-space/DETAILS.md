@@ -33,3 +33,9 @@ command updates the poller's atomics, re-arms the hysteresis, and registers or r
 Props-only (`toastId`, `availableBytes`, `freePercent`), snapshotted at event arrival. "Disable these notifications"
 flips the mode to `'off'` (the applier pushes the disable to the backend), dismisses the toast, and deep-links to the
 Settings sub-group so the user sees where to re-enable it.
+
+## i18n
+
+All user-facing copy here lives in `$lib/intl/messages/en/lowDiskSpace.json` (prefix `lowDiskSpace.*`), resolved via
+`tString()` from `$lib/intl`; `cmdr/no-raw-user-facing-string` is enforced on `lib/low-disk-space/`. Don't hardcode
+copy. Base-en output is parity-pinned by `low-disk-space-i18n-parity.test.ts`.
