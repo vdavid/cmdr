@@ -6,8 +6,9 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import SettingSlider from '../components/SettingSlider.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSetting, getSettingDefinition, onSpecificSettingChange, type BriefColumnWidthMode } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import { onMount } from 'svelte'
 
     interface Props {
@@ -37,60 +38,69 @@
 </script>
 
 <SettingsSection title={tString('settings.section.listing')}>
-    {#if shouldShow('appearance.useAppIconsForDocuments')}
-        <SettingRow
-            id="appearance.useAppIconsForDocuments"
-            label={appIconsDef.label}
-            description={appIconsDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="appearance.useAppIconsForDocuments" />
-        </SettingRow>
+    {#if anyVisible(shouldShow, 'appearance.useAppIconsForDocuments', 'appearance.showFunctionKeyBar', 'listing.directorySortMode', 'listing.showExtensionInName')}
+        <SectionCard label={tString('settings.appearance.card.namesAndIcons')}>
+            {#if shouldShow('appearance.useAppIconsForDocuments')}
+                <SettingRow
+                    id="appearance.useAppIconsForDocuments"
+                    label={appIconsDef.label}
+                    description={appIconsDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="appearance.useAppIconsForDocuments" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('appearance.showFunctionKeyBar')}
+                <SettingRow
+                    id="appearance.showFunctionKeyBar"
+                    label={fnKeyBarDef.label}
+                    description={fnKeyBarDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="appearance.showFunctionKeyBar" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('listing.directorySortMode')}
+                <SettingRow
+                    id="listing.directorySortMode"
+                    label={dirSortDef.label}
+                    description={dirSortDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id="listing.directorySortMode" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('listing.showExtensionInName')}
+                <SettingRow
+                    id="listing.showExtensionInName"
+                    label={showExtInNameDef.label}
+                    description={showExtInNameDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="listing.showExtensionInName" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
-    {#if shouldShow('appearance.showFunctionKeyBar')}
-        <SettingRow
-            id="appearance.showFunctionKeyBar"
-            label={fnKeyBarDef.label}
-            description={fnKeyBarDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="appearance.showFunctionKeyBar" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('listing.directorySortMode')}
-        <SettingRow
-            id="listing.directorySortMode"
-            label={dirSortDef.label}
-            description={dirSortDef.description}
-            {searchQuery}
-        >
-            <SettingToggleGroup id="listing.directorySortMode" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('listing.showExtensionInName')}
-        <SettingRow
-            id="listing.showExtensionInName"
-            label={showExtInNameDef.label}
-            description={showExtInNameDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="listing.showExtensionInName" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('listing.briefColumnWidthMode')}
-        <SettingRow
-            id="listing.briefColumnWidthMode"
-            label={briefWidthModeDef.label}
-            description={briefWidthModeDef.description}
-            {searchQuery}
-        >
-            <div class="brief-width-control">
-                <SettingRadioGroup id="listing.briefColumnWidthMode" />
-                <div class="slider-row" class:is-disabled={sliderDisabled}>
-                    <SettingSlider id="listing.briefColumnWidthMaxPx" unit="px" disabled={sliderDisabled} />
-                </div>
-            </div>
-        </SettingRow>
+
+    {#if anyVisible(shouldShow, 'listing.briefColumnWidthMode', 'listing.briefColumnWidthMaxPx')}
+        <SectionCard label={tString('settings.appearance.card.briefMode')}>
+            {#if shouldShow('listing.briefColumnWidthMode') || shouldShow('listing.briefColumnWidthMaxPx')}
+                <SettingRow
+                    id="listing.briefColumnWidthMode"
+                    label={briefWidthModeDef.label}
+                    description={briefWidthModeDef.description}
+                    {searchQuery}
+                >
+                    <div class="brief-width-control">
+                        <SettingRadioGroup id="listing.briefColumnWidthMode" />
+                        <div class="slider-row" class:is-disabled={sliderDisabled}>
+                            <SettingSlider id="listing.briefColumnWidthMaxPx" unit="px" disabled={sliderDisabled} />
+                        </div>
+                    </div>
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 </SettingsSection>
 

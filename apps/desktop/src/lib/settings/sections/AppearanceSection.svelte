@@ -6,9 +6,10 @@
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import SettingColorSwatchPicker from '../components/SettingColorSwatchPicker.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import { getSettingDefinition, getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import { openAppearanceSettings } from '$lib/tauri-commands'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { systemStrings } from '$lib/system-strings.svelte'
@@ -88,14 +89,21 @@
 </script>
 
 <SettingsSection title={tString('settings.section.colorsAndFormats')}>
-    {#if shouldShow('theme.mode')}
-        <SettingRow id="theme.mode" label={themeModeDef.label} description={themeModeDef.description} {searchQuery}>
-            <SettingToggleGroup id="theme.mode" />
-        </SettingRow>
-    {/if}
+    {#if anyVisible(shouldShow, 'theme.mode', 'appearance.appColor')}
+        <SectionCard label={tString('settings.appearance.card.theme')}>
+            {#if shouldShow('theme.mode')}
+                <SettingRow
+                    id="theme.mode"
+                    label={themeModeDef.label}
+                    description={themeModeDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id="theme.mode" />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('appearance.appColor')}
-        <SettingRow id="appearance.appColor" label={appColorDef.label} description="" split {searchQuery}>
+            {#if shouldShow('appearance.appColor')}
+                <SettingRow id="appearance.appColor" label={appColorDef.label} description="" split {searchQuery}>
             {#snippet descriptionContent()}
                 {tString('settings.appearance.appColorHintPrefix')}
                 <LinkButton onclick={() => void openAppearanceSettings()}
@@ -154,40 +162,59 @@
                     <span class="app-color-label">{tString('settings.appearance.appColor.opt.cmdrGold')}</span>
                 </label>
             </div>
-        </SettingRow>
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 
-    {#if shouldShow('appearance.sizeColors')}
-        <SettingRow
-            id="appearance.sizeColors"
-            label={sizeColorsDef.label}
-            description={sizeColorsDef.description}
-            {searchQuery}
-        >
-            <SettingToggleGroup id="appearance.sizeColors" />
-        </SettingRow>
+    {#if anyVisible(shouldShow, 'appearance.sizeColors', 'appearance.dateColors', 'listing.stripedRows')}
+        <SectionCard label={tString('settings.appearance.card.listColoring')}>
+            {#if shouldShow('appearance.sizeColors')}
+                <SettingRow
+                    id="appearance.sizeColors"
+                    label={sizeColorsDef.label}
+                    description={sizeColorsDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id="appearance.sizeColors" />
+                </SettingRow>
+            {/if}
+
+            {#if shouldShow('appearance.dateColors')}
+                <SettingRow
+                    id="appearance.dateColors"
+                    label={dateColorsDef.label}
+                    description={dateColorsDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id="appearance.dateColors" />
+                </SettingRow>
+            {/if}
+
+            {#if shouldShow('listing.stripedRows')}
+                <SettingRow
+                    id="listing.stripedRows"
+                    label={stripedRowsDef.label}
+                    description={stripedRowsDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="listing.stripedRows" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 
-    {#if shouldShow('appearance.dateColors')}
-        <SettingRow
-            id="appearance.dateColors"
-            label={dateColorsDef.label}
-            description={dateColorsDef.description}
-            {searchQuery}
-        >
-            <SettingToggleGroup id="appearance.dateColors" />
-        </SettingRow>
-    {/if}
-
-    {#if shouldShow('appearance.dateTimeFormat')}
-        <SettingRow
-            id="appearance.dateTimeFormat"
-            label={dateTimeDef.label}
-            description={dateTimeDef.description}
-            split
-            {searchQuery}
-        >
-            <div class="date-time-setting">
+    {#if anyVisible(shouldShow, 'appearance.dateTimeFormat', 'appearance.customDateTimeFormat')}
+        <SectionCard label={tString('settings.appearance.card.dateAndTime')}>
+            {#if shouldShow('appearance.dateTimeFormat') || shouldShow('appearance.customDateTimeFormat')}
+                <SettingRow
+                    id="appearance.dateTimeFormat"
+                    label={dateTimeDef.label}
+                    description={dateTimeDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <div class="date-time-setting">
                 <SettingRadioGroup id="appearance.dateTimeFormat">
                     {#snippet customContent(value)}
                         {#if value === 'custom'}
@@ -223,27 +250,15 @@
                             </div>
                         {/if}
                     {/snippet}
-                </SettingRadioGroup>
-            </div>
-        </SettingRow>
+                        </SettingRadioGroup>
+                    </div>
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 
-    {#if shouldShow('listing.stripedRows')}
-        <SettingRow
-            id="listing.stripedRows"
-            label={stripedRowsDef.label}
-            description={stripedRowsDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="listing.stripedRows" />
-        </SettingRow>
-    {/if}
-
-    {#if shouldShow('appearance.tintLocal') || shouldShow('appearance.tintSmb') || shouldShow('appearance.tintMtp')}
-        <div class="tint-group" role="group" aria-labelledby="tint-group-heading">
-            <h3 id="tint-group-heading" class="tint-group-heading">
-                {tString('settings.appearance.tintGroupHeading')}
-            </h3>
+    {#if anyVisible(shouldShow, 'appearance.tintLocal', 'appearance.tintSmb', 'appearance.tintMtp')}
+        <SectionCard label={tString('settings.appearance.card.paneTints')}>
             <p class="tint-group-description">
                 {tString('settings.appearance.tintGroupDescription')}
             </p>
@@ -280,7 +295,7 @@
                     <SettingColorSwatchPicker id="appearance.tintMtp" label={tintMtpDef.label} />
                 </SettingRow>
             {/if}
-        </div>
+        </SectionCard>
     {/if}
 </SettingsSection>
 
@@ -417,23 +432,9 @@
         font-family: var(--font-mono);
     }
 
-    .tint-group {
-        margin-top: var(--spacing-md);
-        padding-top: var(--spacing-md);
-        /* `border-top` removed — the preceding `.setting-row` already
-           paints its own `border-bottom`, so a `border-top` here renders
-           a doubled separator between "Striped rows" and "Tint volume
-           types". The `padding-top` + `margin-top` give the group
-           breathing room without an extra hairline. */
-    }
-
-    .tint-group-heading {
-        font-size: var(--font-size-md);
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-xxs);
-    }
-
+    /* Intro line above the tint pickers, inside the "Pane tints" card.
+       The card's `<h3>` (from `SectionCard`) supplies the group heading; this
+       `<p>` is the explanatory sub-line. No top margin so it hugs the heading. */
     .tint-group-description {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);

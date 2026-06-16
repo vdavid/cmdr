@@ -4,8 +4,9 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSlider from '../components/SettingSlider.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
@@ -20,26 +21,30 @@
 </script>
 
 <SettingsSection title={tString('settings.section.zoomAndDensity')}>
-    {#if shouldShow('appearance.textSize')}
-        <SettingRow
-            id="appearance.textSize"
-            label={textSizeDef.label}
-            description={textSizeDef.description}
-            split
-            {searchQuery}
-        >
-            <SettingSlider id="appearance.textSize" unit="%" />
-        </SettingRow>
-    {/if}
+    {#if anyVisible(shouldShow, 'appearance.textSize', 'appearance.uiDensity')}
+        <SectionCard>
+            {#if shouldShow('appearance.textSize')}
+                <SettingRow
+                    id="appearance.textSize"
+                    label={textSizeDef.label}
+                    description={textSizeDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingSlider id="appearance.textSize" unit="%" />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('appearance.uiDensity')}
-        <SettingRow
-            id="appearance.uiDensity"
-            label={uiDensityDef.label}
-            description={uiDensityDef.description}
-            {searchQuery}
-        >
-            <SettingToggleGroup id="appearance.uiDensity" />
-        </SettingRow>
+            {#if shouldShow('appearance.uiDensity')}
+                <SettingRow
+                    id="appearance.uiDensity"
+                    label={uiDensityDef.label}
+                    description={uiDensityDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id="appearance.uiDensity" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 </SettingsSection>

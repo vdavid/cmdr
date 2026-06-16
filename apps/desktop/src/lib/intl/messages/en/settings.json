@@ -1259,13 +1259,9 @@
   "@settings.appearance.formatHelpSecond": {
     "description": "Meaning of the ss date token. \"00-59\" is a literal example range; keep the numerals. \"2-digit\" is the digit count."
   },
-  "settings.appearance.tintGroupHeading": "Tint volume types",
-  "@settings.appearance.tintGroupHeading": {
-    "description": "Heading for the group of three pane-tint pickers (local, SMB, MTP). \"Tint\" = a faint background color; \"volume types\" = kinds of drives/storage."
-  },
   "settings.appearance.tintGroupDescription": "Adds a faint background tint to panes so you can tell volume types apart at a glance.",
   "@settings.appearance.tintGroupDescription": {
-    "description": "Help text under the \"Tint volume types\" group heading. \"pane\" is one of the two file lists; \"at a glance\" is an idiom meaning instantly/without effort."
+    "description": "Help text under the \"Pane tints\" card heading in Settings > Appearance > Colors and formats. \"pane\" is one of the two file lists; \"at a glance\" is an idiom meaning instantly/without effort."
   },
   "settings.appearance.tintSwatchAria": "Choose a tint color for {label}",
   "@settings.appearance.tintSwatchAria": {
@@ -1343,6 +1339,30 @@
   "settings.fileSystemWatching.cardLowDiskSpace": "Low disk space",
   "@settings.fileSystemWatching.cardLowDiskSpace": {
     "description": "Heading of the low-disk-space card in Settings > Behavior > File system watching."
+  },
+  "settings.appearance.card.theme": "Theme",
+  "@settings.appearance.card.theme": {
+    "description": "Heading of the Theme card (theme mode + app accent color) in Settings > Appearance > Colors and formats."
+  },
+  "settings.appearance.card.listColoring": "List coloring",
+  "@settings.appearance.card.listColoring": {
+    "description": "Heading of the list-coloring card (size colors, date colors, striped rows) in Settings > Appearance > Colors and formats."
+  },
+  "settings.appearance.card.dateAndTime": "Date and time",
+  "@settings.appearance.card.dateAndTime": {
+    "description": "Heading of the date-and-time card (date/time format + custom format) in Settings > Appearance > Colors and formats."
+  },
+  "settings.appearance.card.paneTints": "Pane tints",
+  "@settings.appearance.card.paneTints": {
+    "description": "Heading of the pane-tints card (local, SMB, and MTP volume tints) in Settings > Appearance > Colors and formats."
+  },
+  "settings.appearance.card.namesAndIcons": "Names and icons",
+  "@settings.appearance.card.namesAndIcons": {
+    "description": "Heading of the names-and-icons card (document icons, extensions, directory sort, function key bar) in Settings > Appearance > Listing."
+  },
+  "settings.appearance.card.briefMode": "Brief mode",
+  "@settings.appearance.card.briefMode": {
+    "description": "Heading of the brief-mode card (brief column width mode and max width) in Settings > Appearance > Listing."
   },
   "settings.fileSystemWatching.globalShortcutHint": "Change the shortcut under Keyboard shortcuts → Go to latest download (global).",
   "@settings.fileSystemWatching.globalShortcutHint": {

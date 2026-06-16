@@ -5,8 +5,9 @@
     import SettingSelect from '../components/SettingSelect.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSetting, getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import { onMount } from 'svelte'
     import type { FileSizeFormat } from '$lib/settings/types'
 
@@ -48,59 +49,63 @@
 </script>
 
 <SettingsSection title={tString('settings.section.fileAndFolderSizes')}>
-    {#if shouldShow('listing.sizeDisplay')}
-        <SettingRow
-            id="listing.sizeDisplay"
-            label={sizeDisplayDef.label}
-            description={sizeDisplayDef.description}
-            {searchQuery}
-        >
-            <SettingToggleGroup id="listing.sizeDisplay" />
-        </SettingRow>
-    {/if}
+    {#if anyVisible(shouldShow, 'listing.sizeDisplay', 'listing.sizeUnit', 'appearance.fileSizeFormat', 'listing.sizeMismatchWarning', 'appearance.sizeColors')}
+        <SectionCard>
+            {#if shouldShow('listing.sizeDisplay')}
+                <SettingRow
+                    id="listing.sizeDisplay"
+                    label={sizeDisplayDef.label}
+                    description={sizeDisplayDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id="listing.sizeDisplay" />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('listing.sizeUnit')}
-        <SettingRow
-            id="listing.sizeUnit"
-            label={sizeUnitDef.label}
-            description={sizeUnitDef.description}
-            {searchQuery}
-        >
-            <SettingToggleGroup id="listing.sizeUnit" labelOverrides={sizeUnitLabelOverrides} />
-        </SettingRow>
-    {/if}
+            {#if shouldShow('listing.sizeUnit')}
+                <SettingRow
+                    id="listing.sizeUnit"
+                    label={sizeUnitDef.label}
+                    description={sizeUnitDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id="listing.sizeUnit" labelOverrides={sizeUnitLabelOverrides} />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('appearance.fileSizeFormat')}
-        <SettingRow
-            id="appearance.fileSizeFormat"
-            label={fileSizeDef.label}
-            description={fileSizeDef.description}
-            split
-            {searchQuery}
-        >
-            <SettingSelect id="appearance.fileSizeFormat" />
-        </SettingRow>
-    {/if}
+            {#if shouldShow('appearance.fileSizeFormat')}
+                <SettingRow
+                    id="appearance.fileSizeFormat"
+                    label={fileSizeDef.label}
+                    description={fileSizeDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingSelect id="appearance.fileSizeFormat" />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('listing.sizeMismatchWarning')}
-        <SettingRow
-            id="listing.sizeMismatchWarning"
-            label={sizeMismatchDef.label}
-            description={sizeMismatchDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="listing.sizeMismatchWarning" />
-        </SettingRow>
-    {/if}
+            {#if shouldShow('listing.sizeMismatchWarning')}
+                <SettingRow
+                    id="listing.sizeMismatchWarning"
+                    label={sizeMismatchDef.label}
+                    description={sizeMismatchDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="listing.sizeMismatchWarning" />
+                </SettingRow>
+            {/if}
 
-    {#if shouldShow('appearance.sizeColors')}
-        <SettingRow
-            id="appearance.sizeColors"
-            label={sizeColorsDef.label}
-            description={sizeColorsDef.description}
-            {searchQuery}
-        >
-            <SettingToggleGroup id="appearance.sizeColors" />
-        </SettingRow>
+            {#if shouldShow('appearance.sizeColors')}
+                <SettingRow
+                    id="appearance.sizeColors"
+                    label={sizeColorsDef.label}
+                    description={sizeColorsDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id="appearance.sizeColors" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
     {/if}
 </SettingsSection>
