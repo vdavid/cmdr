@@ -13,9 +13,9 @@ dates and with the OS, behind one seam a catalog tool can later own.
 
 After this change:
 
-- There is ONE locale source (a tiny `getLocale()` chokepoint). Every numeric/size/date formatter reads it. No
-  formatter hardcodes a locale (`'en-US'` disappears) and no user-facing formatting calls `toLocaleString` / constructs
-  an `Intl.*` formatter outside the central utils.
+- There is ONE locale source (a tiny `getLocale()` chokepoint). Every numeric/size/date formatter reads it. No formatter
+  hardcodes a locale (`'en-US'` disappears) and no user-facing formatting calls `toLocaleString` / constructs an
+  `Intl.*` formatter outside the central utils.
 - Counts, file sizes (the decimal in `"1.02 MB"`, the grouping in raw-byte triads), and the `'system'` date format all
   follow the active locale. An `en-US`-region runtime renders byte-identical to today; other regions now get their
   native separators (the intended improvement).
@@ -124,18 +124,18 @@ hand-off, don't silently pick.
 
 ### Decision 5: dates — route the existing `'system'` formatter through the chokepoint
 
-`getSystemLocaleFormatter()` currently passes `undefined` as the locale (runtime default). Change it to
-`getLocale()` so there is one locale source. Behavior is identical today (the chokepoint returns the same runtime
-default), but the seam is now single. Leave the cached-formatter pattern (one instance, rebuilt only on change) exactly
-as it is, since hot virtualized re-renders depend on it. Do NOT touch iso/short/custom or the ISO `formatDate` helper.
+`getSystemLocaleFormatter()` currently passes `undefined` as the locale (runtime default). Change it to `getLocale()` so
+there is one locale source. Behavior is identical today (the chokepoint returns the same runtime default), but the seam
+is now single. Leave the cached-formatter pattern (one instance, rebuilt only on change) exactly as it is, since hot
+virtualized re-renders depend on it. Do NOT touch iso/short/custom or the ISO `formatDate` helper.
 
 ### Decision 6: formatter caching (perf must, not optional)
 
 `Intl.NumberFormat` construction is ~10× a format call (the date code already documents this for `DateTimeFormat`). The
 size and count formatters run per-visible-entry in render AND again in the measurement fold over the prefetch buffer, so
 constructing per call would regress scroll/measure performance on large directories. Memoize each `Intl.NumberFormat`
-instance by (locale, options); rebuild only when `getLocale()` changes. Mirror the existing
-`getSystemLocaleFormatter()` lazy-singleton shape.
+instance by (locale, options); rebuild only when `getLocale()` changes. Mirror the existing `getSystemLocaleFormatter()`
+lazy-singleton shape.
 
 ## Things to watch (David's explicit call-outs)
 
@@ -159,15 +159,15 @@ instance by (locale, options); rebuild only when `getLocale()` changes. Mirror t
   reviewer trusts "current users see no change".
 - **Locale behavior tests.** With `getLocale()` stubbed to `de-DE` (comma decimal, `.`/space grouping), assert
   `formatNumber`, the human-friendly size decimal, the byte-triad group separator, and the `'system'` date all switch.
-  Inject the locale via the chokepoint (export a test seam, e.g. `_setLocaleForTests`, mirroring
-  `_setMeasureForTests`), don't reach into `Intl` globals.
+  Inject the locale via the chokepoint (export a test seam, e.g. `_setLocaleForTests`, mirroring `_setMeasureForTests`),
+  don't reach into `Intl` globals.
 - **colorize regression.** `colorizeSizeString("1,02 MB")` (German) → correct `size-mb` tier span.
 - **measure-column-widths.** Existing tests green; add a comma-decimal-locale case asserting consistent widths.
 - **No-bypass check.** Grep-style test or a code-review checklist item: no user-facing `toLocaleString(`,
-  `new Intl.NumberFormat`, or `new Intl.DateTimeFormat` outside `lib/intl/` and the central format utils. (If a Go
-  check is cheap to add, propose it; otherwise leave a note. Do not block on it.)
-- **Performance.** A test (or a benchmark note) confirming formatter instances are reused across many format calls
-  (e.g. spy on the cached factory, assert one construction per locale).
+  `new Intl.NumberFormat`, or `new Intl.DateTimeFormat` outside `lib/intl/` and the central format utils. (If a Go check
+  is cheap to add, propose it; otherwise leave a note. Do not block on it.)
+- **Performance.** A test (or a benchmark note) confirming formatter instances are reused across many format calls (e.g.
+  spy on the cached factory, assert one construction per locale).
 
 ## Implementation sequence
 
@@ -189,8 +189,8 @@ Each step compiles and passes `pnpm check --fast` before the next.
 8. **Column-measurement verification.** Run `measure-column-widths.test.ts`; add the comma-decimal case.
 9. **Docs.** Update `selection/CLAUDE.md` (thin-space note → "group separator from locale via the formatter layer"),
    `settings/CLAUDE.md` date-source note (now via `getLocale()`), and add a one-line module note for `lib/intl/`. Touch
-   `docs/architecture.md` only if a one-line pointer is warranted (it is a map). Add the `lib/intl/` `DETAILS.md` sibling
-   per the doc-system contract.
+   `docs/architecture.md` only if a one-line pointer is warranted (it is a map). Add the `lib/intl/` `DETAILS.md`
+   sibling per the doc-system contract.
 
 ## Files in scope (verify before editing)
 
