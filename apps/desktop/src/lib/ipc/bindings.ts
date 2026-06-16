@@ -2243,7 +2243,13 @@ export const commands = {
    *  user takes a network action.
    */
   setNetworkEnabled: (enabled: boolean) => __TAURI_INVOKE<void>('set_network_enabled', { enabled }),
-  // Tauri command: returns the current macOS accent color as a hex string.
+  /**
+   *  Tauri command: returns the current macOS accent color as a hex string.
+   *
+   *  `NSColor` is main-thread-only, so we hop to the AppKit main thread via
+   *  `run_on_main_thread` and read there, mirroring the clipboard commands.
+   *  Returns the brand fallback if the main-thread hop or channel fails.
+   */
   getAccentColor: () => __TAURI_INVOKE<string>('get_accent_color'),
   // Tauri command: returns the current system text-size multiplier.
   getSystemTextSizeMultiplier: () => __TAURI_INVOKE<number>('get_system_text_size_multiplier'),

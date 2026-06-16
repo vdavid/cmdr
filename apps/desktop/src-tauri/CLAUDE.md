@@ -21,6 +21,11 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
   the concrete invariant that makes THAT site sound (receiver/pointer validity, selector ABI match, thread, Create-vs-Get
   ownership, success-gate) — specific, never boilerplate. Enforced by `clippy::undocumented_unsafe_blocks`. Rote FFI is
   documented per-site; ❌ never blanket-exempt a file with `#[allow(clippy::undocumented_unsafe_blocks)]`.
+- ❌ AppKit/Cocoa main-thread-only calls (NSWindow, NSColor, NSPasteboard, NSApplication, drag) must take or assert an
+  `objc2::MainThreadMarker` (proof you're on-main). A sync `#[tauri::command]` must NOT touch AppKit: hop via
+  `app.run_on_main_thread()` and return through an `mpsc` channel (pattern: `accent_color.rs`, `commands/clipboard.rs`).
+  Thread-safe Apple APIs (NSURL resource values, NSFileManager, NSUserDefaults, LaunchServices, Keychain, IOKit, Mach)
+  are exempt.
 
 ## Tauri commands and capabilities
 

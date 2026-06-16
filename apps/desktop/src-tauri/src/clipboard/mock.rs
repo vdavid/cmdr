@@ -12,10 +12,12 @@
 
 use std::path::PathBuf;
 
+use objc2::MainThreadMarker;
+
 use super::store;
 
 /// Stores file URLs in the in-process clipboard mock instead of NSPasteboard.
-pub fn write_file_urls_to_clipboard(paths: &[PathBuf]) -> Result<(), String> {
+pub fn write_file_urls_to_clipboard(_mtm: MainThreadMarker, paths: &[PathBuf]) -> Result<(), String> {
     if paths.is_empty() {
         return Err("No paths to write to clipboard".to_string());
     }
@@ -25,11 +27,11 @@ pub fn write_file_urls_to_clipboard(paths: &[PathBuf]) -> Result<(), String> {
 }
 
 /// Returns the most recently written file URLs, or an empty Vec when the store is empty.
-pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
+pub fn read_file_urls_from_clipboard(_mtm: MainThreadMarker) -> Result<Vec<PathBuf>, String> {
     Ok(store::read_paths())
 }
 
 /// Returns the most recently written newline-joined paths as text.
-pub fn read_text_from_clipboard() -> Option<String> {
+pub fn read_text_from_clipboard(_mtm: MainThreadMarker) -> Option<String> {
     store::read_text()
 }

@@ -6,6 +6,9 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 
 #[cfg(target_os = "macos")]
+use objc2::MainThreadMarker;
+
+#[cfg(target_os = "macos")]
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 
 use crate::clipboard;
@@ -48,7 +51,8 @@ pub async fn copy_files_to_clipboard(
     // Write to pasteboard on the main thread (NSPasteboard requires it)
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
-        let result = clipboard::write_file_urls_to_clipboard(&paths);
+        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
+        let result = clipboard::write_file_urls_to_clipboard(mtm, &paths);
         let _ = tx.send(result);
     })
     .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
@@ -80,7 +84,8 @@ pub async fn copy_paths_to_clipboard(app: tauri::AppHandle, paths: Vec<String>) 
 
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
-        let result = clipboard::write_file_urls_to_clipboard(&paths);
+        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
+        let result = clipboard::write_file_urls_to_clipboard(mtm, &paths);
         let _ = tx.send(result);
     })
     .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
@@ -110,7 +115,8 @@ pub async fn cut_paths_to_clipboard(app: tauri::AppHandle, paths: Vec<String>) -
 
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
-        let result = clipboard::write_file_urls_to_clipboard(&paths);
+        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
+        let result = clipboard::write_file_urls_to_clipboard(mtm, &paths);
         let _ = tx.send(result);
     })
     .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
@@ -149,7 +155,8 @@ pub async fn cut_files_to_clipboard(
     // Write to pasteboard on the main thread
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
-        let result = clipboard::write_file_urls_to_clipboard(&paths);
+        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
+        let result = clipboard::write_file_urls_to_clipboard(mtm, &paths);
         let _ = tx.send(result);
     })
     .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
@@ -173,7 +180,8 @@ pub async fn read_clipboard_files(app: tauri::AppHandle) -> Result<ClipboardRead
     // Read from pasteboard on the main thread
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
-        let result = clipboard::read_file_urls_from_clipboard();
+        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
+        let result = clipboard::read_file_urls_from_clipboard(mtm);
         let _ = tx.send(result);
     })
     .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
@@ -230,7 +238,8 @@ pub async fn read_clipboard_files(app: tauri::AppHandle) -> Result<ClipboardRead
 pub async fn read_clipboard_text(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
-        let text = clipboard::read_text_from_clipboard();
+        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
+        let text = clipboard::read_text_from_clipboard(mtm);
         let _ = tx.send(text);
     })
     .map_err(|e| format!("Couldn't run on main thread: {e}"))?;

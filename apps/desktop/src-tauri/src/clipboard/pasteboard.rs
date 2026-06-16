@@ -1,7 +1,8 @@
 //! macOS NSPasteboard FFI for file URL clipboard operations.
 //!
-//! All functions assume they are called on the main thread. Callers must use
-//! `app.run_on_main_thread()` when invoking from async Tauri commands.
+//! NSPasteboard is main-thread-only. Every public function takes a
+//! `MainThreadMarker` as compile-time proof: callers obtain it inside an
+//! `app.run_on_main_thread()` closure, so an off-main call won't compile.
 //!
 //! Runtime opt-out: setting `CMDR_CLIPBOARD_BACKEND=mock` at process start
 //! makes every call delegate to the shared in-process store in `super::store`
@@ -16,6 +17,7 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 
 use objc2::ClassType;
+use objc2::MainThreadMarker;
 use objc2::msg_send;
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
@@ -39,7 +41,7 @@ fn use_mock() -> bool {
 ///
 /// Places both file URL items (for Finder-compatible paste) and plain-text
 /// newline-separated paths (for pasting into text editors).
-pub fn write_file_urls_to_clipboard(paths: &[PathBuf]) -> Result<(), String> {
+pub fn write_file_urls_to_clipboard(_mtm: MainThreadMarker, paths: &[PathBuf]) -> Result<(), String> {
     if paths.is_empty() {
         return Err("No paths to write to clipboard".to_string());
     }
@@ -71,7 +73,7 @@ pub fn write_file_urls_to_clipboard(paths: &[PathBuf]) -> Result<(), String> {
     // SAFETY: `pasteboard` is the live process-lifetime `generalPasteboard` singleton; `writeObjects:`
     // takes an `NSArray<id<NSPasteboardWriting>>` and `NSURL` conforms to `NSPasteboardWriting`, so
     // every element of `url_array` is a valid writer. Returns `BOOL`, decoded as `bool`. Main thread
-    // (module invariant: all callers hop via `run_on_main_thread`).
+    // proven by the `MainThreadMarker` parameter.
     let success: bool = unsafe { msg_send![&pasteboard, writeObjects: &*url_array] };
     if !success {
         return Err("NSPasteboard writeObjects returned false".to_string());
@@ -93,7 +95,7 @@ pub fn write_file_urls_to_clipboard(paths: &[PathBuf]) -> Result<(), String> {
 ///
 /// Uses `readObjectsForClasses:options:` with `NSURL` and `fileURLsOnly` to retrieve
 /// only local file URLs (not remote HTTP URLs).
-pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
+pub fn read_file_urls_from_clipboard(_mtm: MainThreadMarker) -> Result<Vec<PathBuf>, String> {
     if use_mock() {
         return Ok(store::read_paths());
     }
@@ -139,7 +141,7 @@ pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
 
     // SAFETY: `class_array` is a live `NSArray<Class>` listing `NSURL`, `options` a live options
     // dictionary; `readObjectsForClasses:options:` reads matching items off the singleton pasteboard.
-    // Main thread (module invariant).
+    // Main thread proven by the `MainThreadMarker` parameter.
     let objects = unsafe { pasteboard.readObjectsForClasses_options(&class_array, Some(&options)) };
 
     let Some(objects) = objects else {
@@ -167,7 +169,7 @@ pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
 ///
 /// Used by the frontend to paste text into input fields without triggering
 /// WebKit's clipboard permission popup (which `navigator.clipboard.readText()` causes).
-pub fn read_text_from_clipboard() -> Option<String> {
+pub fn read_text_from_clipboard(_mtm: MainThreadMarker) -> Option<String> {
     if use_mock() {
         return store::read_text();
     }
