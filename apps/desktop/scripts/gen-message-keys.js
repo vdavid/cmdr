@@ -19,7 +19,13 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { collectCatalogKeys, extractUsedKeys, diffKeys, emitKeysModule } from './gen-message-keys-lib.js'
+import {
+  collectCatalogKeys,
+  extractUsedKeys,
+  findCatalogKeyMentions,
+  diffKeys,
+  emitKeysModule,
+} from './gen-message-keys-lib.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const desktopDir = join(here, '..')
@@ -60,22 +66,27 @@ function readCatalogFiles() {
 }
 
 /**
- * Recursively collects every key referenced via `t()`/`tString()`/
- * `getMessage()`/`<Trans>` across the frontend source tree. The generated
- * `keys.gen.ts` itself is skipped (it lists the catalog keys, not usages).
+ * Recursively collects, across the frontend source tree: keys referenced via
+ * `t()`/`tString()`/`getMessage()`/`<Trans>`/`*Key:` props (into `acc`, drives
+ * missing detection) and catalog keys whose literal appears anywhere (into
+ * `mentioned`, suppresses false dead warnings for indirection). The generated
+ * `keys.gen.ts` is skipped (it lists the catalog keys, not usages).
  * @param {string} dir
- * @param {Set<string>} acc
+ * @param {Set<string>} acc keys from direct references
+ * @param {Set<string>} mentioned catalog keys whose literal appears in source
+ * @param {string[]} catalogKeys the catalog key list to scan for mentions
  */
-function scanUsedKeys(dir, acc) {
+function scanUsedKeys(dir, acc, mentioned, catalogKeys) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
-      if (!SKIP_DIRS.has(entry.name)) scanUsedKeys(join(dir, entry.name), acc)
+      if (!SKIP_DIRS.has(entry.name)) scanUsedKeys(join(dir, entry.name), acc, mentioned, catalogKeys)
       continue
     }
     if (!SCANNED_EXTS.has(extname(entry.name))) continue
     if (entry.name === 'keys.gen.ts' || isScanExcluded(entry.name)) continue
     const source = readFileSync(join(dir, entry.name), 'utf8')
     for (const key of extractUsedKeys(source)) acc.add(key)
+    for (const key of findCatalogKeyMentions(source, catalogKeys)) mentioned.add(key)
   }
 }
 
@@ -84,8 +95,10 @@ writeFileSync(outFile, emitKeysModule(catalogKeys))
 
 /** @type {Set<string>} */
 const usedKeys = new Set()
-scanUsedKeys(srcDir, usedKeys)
-const { missing, dead } = diffKeys({ catalogKeys, usedKeys })
+/** @type {Set<string>} Catalog keys whose literal text appears in source, for dead-key suppression. */
+const literalKeys = new Set()
+scanUsedKeys(srcDir, usedKeys, literalKeys, catalogKeys)
+const { missing, dead } = diffKeys({ catalogKeys, usedKeys, literalKeys })
 
 console.log(`Wrote ${String(catalogKeys.length)} message keys to keys.gen.ts`)
 

@@ -1,5 +1,6 @@
 <script lang="ts">
     import SettingsSection from '../components/SettingsSection.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import { getSettingDefinition } from '$lib/settings'
@@ -17,7 +18,7 @@
     const extensionChangesDef = getSettingDefinition('fileOperations.allowFileExtensionChanges') ?? defaultDef
 </script>
 
-<SettingsSection title="File operations">
+<SettingsSection title={tString('settings.section.fileOperations')}>
     {#if shouldShow('fileOperations.allowFileExtensionChanges')}
         <SettingRow
             id="fileOperations.allowFileExtensionChanges"

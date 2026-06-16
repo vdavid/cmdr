@@ -9,6 +9,7 @@
         type SettingsValues,
     } from '$lib/settings'
     import { onMount } from 'svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         id: SettingId
@@ -43,11 +44,11 @@
 <div class="number-input-wrapper">
     <NumberInput.Root value={String(value)} onValueChange={handleChange} {min} {max} {step} {disabled}>
         <NumberInput.Control class="number-control">
-            <NumberInput.DecrementTrigger class="number-btn" aria-label="Decrease {label}"
+            <NumberInput.DecrementTrigger class="number-btn" aria-label={tString('settings.control.decrease', { label })}
                 >−</NumberInput.DecrementTrigger
             >
             <NumberInput.Input class="number-input" aria-label={label} />
-            <NumberInput.IncrementTrigger class="number-btn" aria-label="Increase {label}"
+            <NumberInput.IncrementTrigger class="number-btn" aria-label={tString('settings.control.increase', { label })}
                 >+</NumberInput.IncrementTrigger
             >
         </NumberInput.Control>

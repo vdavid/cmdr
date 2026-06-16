@@ -30,6 +30,7 @@ import {
   applyRecentSelectionsMaxCount,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
+import { tString } from '$lib/intl/messages.svelte'
 import { pushConfigToBackend } from './ai-config'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
 import { applyAutoCheckEnabled } from '$lib/updates/updater.svelte'
@@ -235,7 +236,7 @@ function applyMaxLogStorageMb(newValue: number): void {
   lastMaxLogStorageMb = newValue
   void setMaxLogStorageMb(newValue)
   if (oldValue !== undefined && (oldValue === 0) !== (newValue === 0)) {
-    addToast('Restart Cmdr to apply the log storage change.', {
+    addToast(tString('settings.applier.logStorageRestart'), {
       level: 'info',
       dismissal: 'transient',
       id: 'max-log-storage-restart',

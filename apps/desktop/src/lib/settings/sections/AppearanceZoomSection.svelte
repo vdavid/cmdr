@@ -1,5 +1,6 @@
 <script lang="ts">
     import SettingsSection from '../components/SettingsSection.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSlider from '../components/SettingSlider.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
@@ -18,7 +19,7 @@
     const uiDensityDef = getSettingDefinition('appearance.uiDensity') ?? { label: '', description: '' }
 </script>
 
-<SettingsSection title="Zoom and density">
+<SettingsSection title={tString('settings.section.zoomAndDensity')}>
     {#if shouldShow('appearance.textSize')}
         <SettingRow
             id="appearance.textSize"

@@ -5,6 +5,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import Icon from '$lib/ui/Icon.svelte'
     import { onMount } from 'svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         id: SettingId
@@ -68,9 +69,9 @@
             {#if modified}
                 <button
                     class="reset-button"
-                    use:tooltip={'Reset to default'}
+                    use:tooltip={tString('settings.control.resetToDefault')}
                     onclick={handleReset}
-                    aria-label="Reset to default"
+                    aria-label={tString('settings.control.resetToDefault')}
                 >
                     <Icon name="rotate-ccw" size={14} aria-hidden="true" />
                 </button>
@@ -79,7 +80,7 @@
                 <span class="disabled-badge">{disabledReason}</span>
             {/if}
             {#if requiresRestart}
-                <span class="restart-badge">Restart required</span>
+                <span class="restart-badge">{tString('settings.control.restartRequired')}</span>
             {/if}
         </div>
         <div class="setting-control">

@@ -10,6 +10,7 @@
     import type { EnumOption } from '$lib/settings/types'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import { onMount } from 'svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         id: SettingId
@@ -77,10 +78,13 @@
             description: option.description,
         }))
         if (allowCustom && isCustomValue) {
-            items.push({ value: String(value), label: `Custom: ${String(value)}` })
+            items.push({
+                value: String(value),
+                label: tString('settings.control.customPrefix', { value: String(value) }),
+            })
         }
         if (allowCustom) {
-            items.push({ value: CUSTOM_VALUE, label: 'Custom...' })
+            items.push({ value: CUSTOM_VALUE, label: tString('settings.control.customOption') })
         }
         return items
     })
@@ -147,7 +151,7 @@
                 onkeydown={(e) => {
                     if (e.key === 'Enter') handleCustomSubmit()
                 }}
-                placeholder="Enter custom value"
+                placeholder={tString('settings.control.customValuePlaceholder')}
                 min={definition?.constraints?.customMin}
                 max={definition?.constraints?.customMax}
                 {disabled}

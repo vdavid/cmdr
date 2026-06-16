@@ -40,6 +40,8 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import { getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import Size from '$lib/ui/Size.svelte'
@@ -219,8 +221,12 @@
     })
 </script>
 
-<SettingsSection title="File system watching">
-    <SectionCard label="Drive indexing">
+{#snippet settingsLink(children: import('svelte').Snippet)}
+    <LinkButton onclick={handleOpenSystemSettings}>{@render children()}</LinkButton>
+{/snippet}
+
+<SettingsSection title={tString('settings.section.fileSystemWatching')}>
+    <SectionCard label={tString('settings.indexing.enabled.label')}>
         {#if shouldShow('indexing.enabled')}
             <SettingRow
                 id="indexing.enabled"
@@ -234,25 +240,27 @@
 
         <div class="index-info">
             <div class="index-row">
-                <span class="info-label">Index size</span>
+                <span class="info-label">{tString('settings.fileSystemWatching.indexSize')}</span>
                 <div class="index-controls">
                     {#if dbFileSize != null || clearing}
                         <Button variant="secondary" size="mini" onclick={handleClearIndex} disabled={clearing}>
-                            {clearing ? 'Clearing...' : 'Clear index'}
+                            {clearing
+                                ? tString('settings.fileSystemWatching.clearing')
+                                : tString('settings.fileSystemWatching.clearIndex')}
                         </Button>
                     {/if}
                     <span class="info-value">
                         {#if dbFileSize != null}
                             <Size bytes={dbFileSize} />
                         {:else}
-                            No index
+                            {tString('settings.fileSystemWatching.noIndex')}
                         {/if}
                     </span>
                 </div>
             </div>
 
             <p class="clear-description">
-                Deletes the index database. A fresh scan starts next time indexing is enabled.
+                {tString('settings.fileSystemWatching.clearIndexDescription')}
             </p>
 
             {#if clearError}
@@ -263,13 +271,12 @@
 
     {#if downloadsGated}
         <p class="fda-hint">
-            Cmdr needs Full Disk Access to watch your Downloads folder.
-            <LinkButton onclick={handleOpenSystemSettings}>Open System Settings</LinkButton>
+            <Trans key="common.downloadsFdaHint" snippets={{ settingsLink }} />
         </p>
     {/if}
 
     <div id={DOWNLOADS_NOTIFICATIONS_ANCHOR_ID} data-gated={downloadsGated ? 'true' : 'false'}>
-        <SectionCard label="Downloads notifications">
+        <SectionCard label={tString('settings.fileSystemWatching.cardDownloads')}>
             {#if shouldShow(DOWNLOADS_NOTIFICATIONS_SETTING_KEY)}
                 <SettingRow
                     id={DOWNLOADS_NOTIFICATIONS_SETTING_KEY}
@@ -284,7 +291,7 @@
     </div>
 
     <div data-gated={downloadsGated ? 'true' : 'false'}>
-        <SectionCard label="Go to latest download">
+        <SectionCard label={tString('settings.fileSystemWatching.cardGoToLatest')}>
             {#if shouldShow(GLOBAL_GO_TO_LATEST_ENABLED_KEY)}
                 <SettingRow
                     id={GLOBAL_GO_TO_LATEST_ENABLED_KEY}
@@ -305,14 +312,14 @@
                     </Switch.Root>
                 </SettingRow>
                 <p class="shortcut-hint">
-                    Change the shortcut under Keyboard shortcuts → Go to latest download (global).
+                    {tString('settings.fileSystemWatching.globalShortcutHint')}
                 </p>
             {/if}
         </SectionCard>
     </div>
 
     <div id={LOW_DISK_SPACE_ANCHOR_ID}>
-        <SectionCard label="Low disk space">
+        <SectionCard label={tString('settings.fileSystemWatching.cardLowDiskSpace')}>
             {#if shouldShow(LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY)}
                 <SettingRow
                     id={LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY}

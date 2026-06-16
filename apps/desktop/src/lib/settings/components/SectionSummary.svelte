@@ -1,5 +1,8 @@
 <script lang="ts">
     import { buildSectionTree, type SettingsSection } from '$lib/settings'
+    import { tString } from '$lib/intl/messages.svelte'
+    import { sectionTitle } from '$lib/settings/section-i18n'
+    import type { MessageKey } from '$lib/intl/keys.gen'
 
     interface Props {
         sectionName: string
@@ -15,30 +18,31 @@
         return sectionTree.find((s) => s.name === sectionName)
     })
 
-    // Get description for each subsection
+    // Subsection name (English structural identity) → its summary-blurb catalog
+    // key. A name without a blurb falls back to the generic "Configure …" line.
+    const SUMMARY_KEY: Partial<Record<string, MessageKey>> = {
+        'Colors and formats': 'settings.summary.colorsAndFormats',
+        'Zoom and density': 'settings.summary.zoomAndDensity',
+        'File and folder sizes': 'settings.summary.fileAndFolderSizes',
+        Listing: 'settings.summary.listing',
+        'File operations': 'settings.summary.fileOperations',
+        'File system watching': 'settings.summary.fileSystemWatching',
+        Search: 'settings.summary.search',
+        'SMB/Network shares': 'settings.summary.smbNetworkShares',
+        'MTP (Android/Kindle/cameras)': 'settings.summary.mtp',
+        Git: 'settings.summary.git',
+        'MCP server': 'settings.summary.mcpServer',
+        Logging: 'settings.summary.logging',
+    }
+
     function getSubsectionDescription(subsection: SettingsSection): string {
-        // Return a brief description based on the subsection name
-        const descriptions: Record<string, string> = {
-            'Colors and formats': 'Theme, app color, date and size coloring, and date/time format.',
-            'Zoom and density': 'Text size and UI density for the whole app.',
-            'File and folder sizes': 'How sizes are shown in the file list and warnings about size mismatches.',
-            Listing: 'Document icons, directory sorting, and Brief mode column width.',
-            'File operations': 'Behavior when renaming files (e.g. extension changes).',
-            'File system watching':
-                'Drive indexing, Downloads notifications, and the global go-to-latest-download shortcut. Needs Full Disk Access.',
-            Search: 'Live-applied filename and regex searches, and the recent-searches cap.',
-            'SMB/Network shares': 'Enable networking, direct SMB connections, share cache, and timeouts.',
-            'MTP (Android/Kindle/cameras)': 'Detect Android, Kindle, and camera devices over USB.',
-            Git: 'Repository chip, per-file status column, and the virtual `.git` portal.',
-            'MCP server': 'Configure the Model Context Protocol server for AI integrations.',
-            Logging: 'Verbose console output, log file access, and diagnostic info.',
-        }
-        return descriptions[subsection.name] ?? `Configure ${subsection.name.toLowerCase()} settings.`
+        const key = SUMMARY_KEY[subsection.name]
+        return key ? tString(key) : `Configure ${subsection.name.toLowerCase()} settings.`
     }
 </script>
 
 <div class="section-summary">
-    <h2 class="summary-title">{sectionName}</h2>
+    <h2 class="summary-title">{sectionTitle(sectionName)}</h2>
 
     {#if section && section.subsections.length > 0}
         <div class="subsection-grid">
@@ -49,13 +53,13 @@
                         onNavigate(subsection.path)
                     }}
                 >
-                    <h3 class="subsection-name">{subsection.name}</h3>
+                    <h3 class="subsection-name">{sectionTitle(subsection.name)}</h3>
                     <p class="subsection-description">{getSubsectionDescription(subsection)}</p>
                 </button>
             {/each}
         </div>
     {:else}
-        <p class="no-subsections">This section has no subsections.</p>
+        <p class="no-subsections">{tString('settings.summary.noSubsections')}</p>
     {/if}
 </div>
 

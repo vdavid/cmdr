@@ -1,5 +1,6 @@
 <script lang="ts">
     import SettingsSection from '../components/SettingsSection.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingCheckbox from '../components/SettingCheckbox.svelte'
@@ -19,7 +20,7 @@
     const mtpWarningDef = getSettingDefinition('fileOperations.mtpConnectionWarning') ?? defaultDef
 </script>
 
-<SettingsSection title="MTP (Android/Kindle/cameras)">
+<SettingsSection title={tString('settings.section.mtp')}>
     {#if shouldShow('fileOperations.mtpEnabled')}
         <SettingRow
             id="fileOperations.mtpEnabled"

@@ -9,6 +9,7 @@
     import { revealItemInDir } from '@tauri-apps/plugin-opener'
     import { appLogDir } from '@tauri-apps/api/path'
     import { getVersion } from '@tauri-apps/api/app'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         searchQuery: string
@@ -59,7 +60,7 @@ Timestamp: ${info.timestamp}
     }
 </script>
 
-<SettingsSection title="Logging">
+<SettingsSection title={tString('settings.section.logging')}>
     {#if shouldShow('developer.verboseLogging')}
         <SettingRow
             id="developer.verboseLogging"
@@ -72,9 +73,9 @@ Timestamp: ${info.timestamp}
     {/if}
 
     <div class="logging-actions">
-        <Button variant="secondary" size="mini" onclick={openLogFile}>Open log file</Button>
+        <Button variant="secondary" size="mini" onclick={openLogFile}>{tString('settings.logging.openLogFile')}</Button>
         <Button variant="secondary" size="mini" onclick={copyDiagnosticInfo}>
-            {copyFeedback ? 'Copied!' : 'Copy diagnostic info'}
+            {copyFeedback ? tString('settings.logging.copied') : tString('settings.logging.copyDiagnostics')}
         </Button>
     </div>
 </SettingsSection>

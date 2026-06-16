@@ -84,6 +84,22 @@ svelteTester.run('no-raw-user-facing-string (svelte sinks)', rule, {
       code: `<button title="Cancel transfer"><Icon name="x" /></button>`,
       filename: EXCLUDED_TRANSFER_SVELTE,
     },
+    // CSS inside a `<style>` block is code, not copy: the parser emits it as a
+    // SvelteText node, so the rule must skip it (it was flagging stylesheets).
+    {
+      code: `<button class="x"></button>\n<style>\n  .x { color: red; }\n</style>`,
+      filename: TRANSFER_SVELTE,
+    },
+    // JS inside an extra `<script>` (module context) is likewise not copy.
+    {
+      code: `<script module>\n  export const id = 'thing'\n</script>\n<button class="x"></button>`,
+      filename: TRANSFER_SVELTE,
+    },
+    // A settings file (enforced area) with a localized text node is the path.
+    {
+      code: `<p>{t('settings.control.resetToDefault')}</p>`,
+      filename: 'src/lib/settings/components/SettingRow.svelte',
+    },
   ],
   invalid: [
     // Raw `title` attribute in an enforced area.

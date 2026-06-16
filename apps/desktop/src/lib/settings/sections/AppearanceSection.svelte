@@ -12,6 +12,7 @@
     import { openAppearanceSettings } from '$lib/tauri-commands'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { systemStrings } from '$lib/system-strings.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         searchQuery: string
@@ -41,6 +42,24 @@
         })
     })
 
+    // Fixed date-format token example, locale-independent (matches the registry
+    // default). Not user copy, so it isn't catalogued; the lint keys on literal
+    // `placeholder` attributes, so it lives in a named const here instead.
+    const DATE_FORMAT_PLACEHOLDER = 'YYYY-MM-DD HH:mm'
+
+    // Format-help rows: the TOKEN is a fixed, locale-independent code literal
+    // (not copy, so it stays here, not in the catalog); only the human-readable
+    // hint after it is translated. Keeping tokens in script also keeps them out
+    // of the no-raw-string lint's text-node scan.
+    const FORMAT_HELP_ROWS = [
+        { token: 'YYYY', descKey: 'settings.appearance.formatHelpYear' },
+        { token: 'MM', descKey: 'settings.appearance.formatHelpMonth' },
+        { token: 'DD', descKey: 'settings.appearance.formatHelpDay' },
+        { token: 'HH', descKey: 'settings.appearance.formatHelpHour' },
+        { token: 'mm', descKey: 'settings.appearance.formatHelpMinute' },
+        { token: 'ss', descKey: 'settings.appearance.formatHelpSecond' },
+    ] as const
+
     // Custom date format state
     let customFormat = $state(getSetting('appearance.customDateTimeFormat'))
     let showFormatHelp = $state(false)
@@ -57,7 +76,7 @@
                 .replace('mm', String(now.getMinutes()).padStart(2, '0'))
                 .replace('ss', String(now.getSeconds()).padStart(2, '0'))
         } catch {
-            return 'Invalid format'
+            return tString('settings.appearance.dateInvalidFormat')
         }
     }
 
@@ -68,7 +87,7 @@
     }
 </script>
 
-<SettingsSection title="Colors and formats">
+<SettingsSection title={tString('settings.section.colorsAndFormats')}>
     {#if shouldShow('theme.mode')}
         <SettingRow id="theme.mode" label={themeModeDef.label} description={themeModeDef.description} {searchQuery}>
             <SettingToggleGroup id="theme.mode" />
@@ -78,11 +97,14 @@
     {#if shouldShow('appearance.appColor')}
         <SettingRow id="appearance.appColor" label={appColorDef.label} description="" split {searchQuery}>
             {#snippet descriptionContent()}
-                To change your system theme color, go to
+                {tString('settings.appearance.appColorHintPrefix')}
                 <LinkButton onclick={() => void openAppearanceSettings()}
                     >{isMacOS()
-                        ? `${systemStrings.systemSettings} > ${systemStrings.appearance}`
-                        : 'your system appearance settings'}</LinkButton
+                        ? tString('settings.appearance.appColorHintLinkMac', {
+                              systemSettings: systemStrings.systemSettings,
+                              appearance: systemStrings.appearance,
+                          })
+                        : tString('settings.appearance.appColorHintLinkOther')}</LinkButton
                 >.
             {/snippet}
             <div class="app-color-options">
@@ -107,7 +129,7 @@
                         class="color-swatch system-swatch"
                         role="button"
                         tabindex="-1"
-                        aria-label="Open System Settings to change the system theme color"
+                        aria-label={tString('settings.appearance.themeColorSwatchAria')}
                         onclick={(e: MouseEvent) => {
                             e.preventDefault()
                             e.stopPropagation()
@@ -115,7 +137,7 @@
                         }}
                         onkeydown={() => {}}
                     ></span>
-                    <span class="app-color-label">System theme color</span>
+                    <span class="app-color-label">{tString('settings.appearance.appColor.opt.system')}</span>
                 </label>
                 <label class="app-color-option">
                     <input
@@ -129,7 +151,7 @@
                         }}
                     />
                     <span class="color-swatch gold-swatch"></span>
-                    <span class="app-color-label">Cmdr gold</span>
+                    <span class="app-color-label">{tString('settings.appearance.appColor.opt.cmdrGold')}</span>
                 </label>
             </div>
         </SettingRow>
@@ -175,26 +197,26 @@
                                     class="format-input"
                                     value={customFormat}
                                     oninput={handleCustomFormatChange}
-                                    placeholder="YYYY-MM-DD HH:mm"
+                                    placeholder={DATE_FORMAT_PLACEHOLDER}
                                 />
                                 <div class="format-preview">
-                                    Preview: <strong>{formatPreview(customFormat)}</strong>
+                                    {tString('settings.appearance.datePreviewLabel')}
+                                    <strong>{formatPreview(customFormat)}</strong>
                                 </div>
                                 <span class="help-toggle-wrapper">
                                     <LinkButton onclick={() => (showFormatHelp = !showFormatHelp)}>
-                                        {showFormatHelp ? 'Hide format help' : 'Show format help'}
+                                        {showFormatHelp
+                                            ? tString('settings.appearance.hideFormatHelp')
+                                            : tString('settings.appearance.showFormatHelp')}
                                     </LinkButton>
                                 </span>
                                 {#if showFormatHelp}
                                     <div class="format-help">
-                                        <h4>Format placeholders</h4>
+                                        <h4>{tString('settings.appearance.formatPlaceholdersTitle')}</h4>
                                         <ul>
-                                            <li><code>YYYY</code>: 4-digit year (2025)</li>
-                                            <li><code>MM</code>: 2-digit month (01-12)</li>
-                                            <li><code>DD</code>: 2-digit day (01-31)</li>
-                                            <li><code>HH</code>: 2-digit hour (00-23)</li>
-                                            <li><code>mm</code>: 2-digit minute (00-59)</li>
-                                            <li><code>ss</code>: 2-digit second (00-59)</li>
+                                            {#each FORMAT_HELP_ROWS as row (row.token)}
+                                                <li><code>{row.token}</code>: {tString(row.descKey)}</li>
+                                            {/each}
                                         </ul>
                                     </div>
                                 {/if}
@@ -219,9 +241,11 @@
 
     {#if shouldShow('appearance.tintLocal') || shouldShow('appearance.tintSmb') || shouldShow('appearance.tintMtp')}
         <div class="tint-group" role="group" aria-labelledby="tint-group-heading">
-            <h3 id="tint-group-heading" class="tint-group-heading">Tint volume types</h3>
+            <h3 id="tint-group-heading" class="tint-group-heading">
+                {tString('settings.appearance.tintGroupHeading')}
+            </h3>
             <p class="tint-group-description">
-                Adds a faint background tint to panes so you can tell volume types apart at a glance.
+                {tString('settings.appearance.tintGroupDescription')}
             </p>
             {#if shouldShow('appearance.tintLocal')}
                 <SettingRow

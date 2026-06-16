@@ -11,6 +11,11 @@ Registry-based user settings for Cmdr: defined once in `settings-registry.ts`, a
 
 ## Must-knows
 
+- **The registry stores i18n message KEYS, not English** (`labelKey` / `descriptionKey`, enum options `labelKey`); copy
+  lives in `messages/en/settings.json`. `getSettingDefinition(id).label` / `.description` resolve via getters, so
+  consumers are unchanged. `section: string[]` stays English (routing/tree/search identity); titles render via
+  `sectionTitle()` (`section-i18n.ts`). Don't hardcode copy — `cmdr/no-raw-user-facing-string` is enforced on
+  `lib/settings/`. Decision, key shape, ledger-excluded files: [DETAILS.md](DETAILS.md) § i18n.
 - **A registry entry alone does NOT render.** Most sections hand-render each row, so adding a setting takes two steps:
   the `settings-registry.ts` entry AND a `SettingRow` in its `sections/*Section.svelte` component (only
   `AdvancedSection` auto-renders, for `showInAdvanced` settings). Miss step two and the setting persists and is

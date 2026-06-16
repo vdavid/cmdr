@@ -11,6 +11,7 @@
      * highlighting and full-text search remain canonical-only by design.
      */
     import SettingsSection from '../components/SettingsSection.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
@@ -34,7 +35,7 @@
     const recentSelectionsMaxDef = getSettingDefinition('selection.recentSelections.maxCount') ?? defaultDef
 </script>
 
-<SettingsSection title="Search">
+<SettingsSection title={tString('settings.section.search')}>
     {#if shouldShow('search.autoApply')}
         <SettingRow
             id="search.autoApply"

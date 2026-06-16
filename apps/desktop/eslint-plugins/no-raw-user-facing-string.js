@@ -44,6 +44,7 @@
 // in step; an area isn't "done" until its excluded files (below) are all gone.
 const enforcedAreaPathFragments = [
   '/lib/file-operations/transfer/', // the `transfer` area (M0/M1 pilot)
+  '/lib/settings/', // the `settings` area (M2 tranche 2)
 ]
 
 // Files inside an enforced area that aren't migrated yet, so the rule skips them
@@ -59,6 +60,20 @@ const excludedUnmigratedFiles = [
   '/lib/file-operations/transfer/FallbackErrorContent.svelte',
   '/lib/file-operations/transfer/ScanPhaseBody.svelte',
   '/lib/file-operations/transfer/DirectionIndicator.svelte',
+
+  // Settings area: the registry-driven settings core + section chrome IS
+  // migrated and enforced. These four files render copy owned by ADJACENT
+  // subsystems (their strings aren't in the settings registry) and migrate with
+  // those subsystems' tranches, not this one:
+  //   - the cloud/local AI provider config UIs (API-key flows, model picker,
+  //     RAM gauge, download progress) belong with the AI tranche,
+  //   - keyboard-shortcuts renders command names from the command registry (the
+  //     `commands` tranche) plus its own conflict-banner chrome,
+  //   - license renders license-API display copy (the licensing surface).
+  '/lib/settings/sections/AiCloudSection.svelte',
+  '/lib/settings/sections/AiLocalSection.svelte',
+  '/lib/settings/sections/KeyboardShortcutsSection.svelte',
+  '/lib/settings/sections/LicenseSection.svelte',
 ]
 
 // Element/component attributes that carry user-facing copy.
@@ -68,6 +83,17 @@ const userFacingAttributes = new Set(['title', 'label', 'placeholder', 'aria-lab
 // flagging (a separator, a space). Require at least one letter.
 function looksLikeCopy(text) {
   return /[A-Za-z]/.test(text)
+}
+
+// Elements whose text content is code, not user copy: a `<style>` block holds
+// CSS and `<script>` holds JS. The svelte-eslint parser emits the raw CSS/JS as
+// a `SvelteText` child of a dedicated `SvelteStyleElement`/`SvelteScriptElement`
+// wrapper, so without this guard the rule flags every stylesheet.
+const NON_COPY_ELEMENT_TYPES = new Set(['SvelteStyleElement', 'SvelteScriptElement'])
+
+/** Whether a `SvelteText` node sits directly inside a `<style>`/`<script>`. */
+function isInNonCopyElement(node) {
+  return node.parent ? NON_COPY_ELEMENT_TYPES.has(node.parent.type) : false
 }
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -132,6 +158,7 @@ export default {
       // `SvelteText` node; `{expr}` interpolation is a separate mustache node,
       // so a localized `{t('...')}` doesn't reach here.
       SvelteText(node) {
+        if (isInNonCopyElement(node)) return
         reportLiteral(node, node.value)
       },
     }

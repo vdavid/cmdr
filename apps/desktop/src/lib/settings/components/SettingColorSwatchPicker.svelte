@@ -10,6 +10,7 @@
     } from '$lib/settings'
     import { nextSwatchIndex } from './swatch-keyboard'
     import { trapFocus } from '$lib/ui/focus-trap'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         id: SettingId
@@ -30,7 +31,7 @@
     })
 
     function colorLabel(c: VolumeTintColor): string {
-        return c === 'none' ? 'No tint' : c.charAt(0).toUpperCase() + c.slice(1)
+        return tString(`settings.tint.${c}`)
     }
 
     function openPopover() {
@@ -98,7 +99,9 @@
         return () => { document.removeEventListener('pointerdown', handleDocumentPointerDown, true); }
     })
 
-    const triggerLabel = $derived(`${label} (currently: ${colorLabel(value)})`)
+    const triggerLabel = $derived(
+        tString('settings.appearance.tintTriggerAria', { label, colorName: colorLabel(value) }),
+    )
 </script>
 
 <div class="picker-wrapper">
@@ -122,17 +125,17 @@
         <div
             bind:this={popoverEl}
             role="dialog"
-            aria-label="Choose a tint color for {label}"
+            aria-label={tString('settings.appearance.tintSwatchAria', { label })}
             class="popover"
             onkeydown={handlePopoverKeydown}
             use:trapFocus={{ onEscape: () => { closePopover(); } }}
         >
-            <div class="swatch-grid" role="listbox" aria-label="Tint colors">
+            <div class="swatch-grid" role="listbox" aria-label={tString('settings.appearance.tintColorsAria')}>
                 <button
                     type="button"
                     role="option"
                     aria-selected={value === 'none'}
-                    aria-label="No tint"
+                    aria-label={tString('settings.tint.none')}
                     data-selected={value === 'none'}
                     class="swatch is-none"
                     onclick={() => { selectColor('none'); }}

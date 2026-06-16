@@ -1,5 +1,6 @@
 <script lang="ts">
     import SettingsSection from '../components/SettingsSection.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
@@ -46,7 +47,7 @@
     })
 </script>
 
-<SettingsSection title="File and folder sizes">
+<SettingsSection title={tString('settings.section.fileAndFolderSizes')}>
     {#if shouldShow('listing.sizeDisplay')}
         <SettingRow
             id="listing.sizeDisplay"

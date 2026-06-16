@@ -2,6 +2,8 @@
  * Settings system type definitions.
  */
 
+import type { MessageKey } from '$lib/intl/keys.gen'
+
 // ============================================================================
 // Core Types
 // ============================================================================
@@ -14,6 +16,46 @@ export interface EnumOption {
   value: string | number
   label: string
   description?: string
+}
+
+// ============================================================================
+// Registry authoring shape (carries i18n message KEYS)
+//
+// The registry's single source of truth stores message KEYS, not English. The
+// runtime resolves them through `t()` at read time (see `settings-registry.ts`
+// `resolveDefinition`), so every `getSettingDefinition(...).label` consumer keeps
+// receiving a rendered string with no call-site change. Keys are typed
+// `MessageKey` so a typo is a compile error and `keys.gen.ts` stays the contract.
+// ============================================================================
+
+/** An enum option as authored in the registry: a value plus message keys. */
+export interface EnumOptionSource {
+  value: string | number
+  labelKey: MessageKey
+  descriptionKey?: MessageKey
+}
+
+/**
+ * Constraints as authored in the registry. Options carry a message KEY
+ * (`EnumOptionSource`) by default; a few carry a literal `label` (`EnumOption`)
+ * when the text is NOT translatable copy (brand names from the provider table,
+ * plain numerals), and pass through `resolveOption` unchanged.
+ */
+export interface SettingConstraintsSource extends Omit<SettingConstraints, 'options'> {
+  options?: (EnumOptionSource | EnumOption)[]
+}
+
+/**
+ * A setting as authored in the registry: identity, behavior, and message KEYS
+ * for everything user-facing. `resolveDefinition` turns this into a
+ * `SettingDefinition` whose `label`/`description`/option labels are resolved
+ * (getter-backed) strings.
+ */
+export interface SettingDefinitionSource extends Omit<SettingDefinition, 'label' | 'description' | 'constraints'> {
+  labelKey: MessageKey
+  /** Omitted for settings with no description (rendered as an empty string). */
+  descriptionKey?: MessageKey
+  constraints?: SettingConstraintsSource
 }
 
 export interface SettingConstraints {

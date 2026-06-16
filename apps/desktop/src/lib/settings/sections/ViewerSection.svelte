@@ -1,5 +1,6 @@
 <script lang="ts">
     import SettingsSection from '../components/SettingsSection.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import { getSettingDefinition } from '$lib/settings'
@@ -16,7 +17,7 @@
     const wordWrapDef = getSettingDefinition('viewer.wordWrap') ?? { label: '', description: '' }
 </script>
 
-<SettingsSection title="Viewer">
+<SettingsSection title={tString('settings.section.viewer')}>
     {#if shouldShow('viewer.wordWrap')}
         <SettingRow
             id="viewer.wordWrap"

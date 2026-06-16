@@ -1,5 +1,6 @@
 <script lang="ts">
     import SettingsSection from '../components/SettingsSection.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
@@ -35,7 +36,7 @@
     const sliderDisabled = $derived(briefWidthMode !== 'limited')
 </script>
 
-<SettingsSection title="Listing">
+<SettingsSection title={tString('settings.section.listing')}>
     {#if shouldShow('appearance.useAppIconsForDocuments')}
         <SettingRow
             id="appearance.useAppIconsForDocuments"

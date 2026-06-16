@@ -1,0 +1,464 @@
+{
+  "settings.theme.mode.label": "Theme mode",
+  "settings.theme.mode.description": "Choose between light, dark, or system-based theme.",
+  "settings.theme.mode.opt.light": "☀️ Light",
+  "settings.theme.mode.opt.dark": "🌙 Dark",
+  "settings.theme.mode.opt.system": "💻 System",
+
+  "settings.appearance.appColor.label": "App color",
+  "settings.appearance.appColor.description": "To change your system theme color, go to System Settings > Appearance.",
+  "settings.appearance.appColor.opt.system": "System theme color",
+  "settings.appearance.appColor.opt.cmdrGold": "Cmdr gold",
+
+  "settings.appearance.sizeColors.label": "Size colors",
+  "settings.appearance.sizeColors.description": "Color file sizes in the file list by tier. Rainbow uses green/yellow/orange/red/purple. App uses shades of the app color.",
+  "settings.appearance.sizeColors.opt.none": "None",
+  "settings.appearance.sizeColors.opt.app": "App",
+  "settings.appearance.sizeColors.opt.rainbow": "Rainbow",
+
+  "settings.appearance.dateColors.label": "Date colors",
+  "settings.appearance.dateColors.description": "Color modified dates in the file list by age. App fades older dates toward the default text color. Wilting goes green for fresh files, yellow for aging, and brown for old.",
+  "settings.appearance.dateColors.opt.none": "None",
+  "settings.appearance.dateColors.opt.app": "App",
+  "settings.appearance.dateColors.opt.wilting": "Wilting",
+
+  "settings.appearance.dateTimeFormat.label": "Date and time format",
+  "settings.appearance.dateTimeFormat.description": "How to display dates and times in the file list.",
+  "settings.appearance.dateTimeFormat.opt.system": "System default",
+  "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
+  "settings.appearance.dateTimeFormat.optDesc.iso": "e.g., 2025-01-25 14:30",
+  "settings.appearance.dateTimeFormat.opt.short": "Short",
+  "settings.appearance.dateTimeFormat.optDesc.short": "e.g., 01/25 14:30",
+  "settings.appearance.dateTimeFormat.opt.custom": "Custom...",
+
+  "settings.appearance.customDateTimeFormat.label": "Custom date/time format",
+  "settings.appearance.customDateTimeFormat.description": "Format string for custom date/time display. Use placeholders like YYYY, MM, DD, HH, mm, ss.",
+
+  "settings.listing.stripedRows.label": "Striped rows",
+  "settings.listing.stripedRows.description": "Alternate row shading for easier line tracking. Applies to both Full and Brief view modes.",
+
+  "settings.appearance.tintLocal.label": "Tint local-volume panes",
+  "settings.appearance.tintLocal.description": "Background tint applied to panes showing a local drive.",
+  "settings.appearance.tintSmb.label": "Tint SMB/network panes",
+  "settings.appearance.tintSmb.description": "Background tint applied to panes showing an SMB or network share.",
+  "settings.appearance.tintMtp.label": "Tint MTP panes",
+  "settings.appearance.tintMtp.description": "Background tint applied to panes showing an Android, Kindle, or camera device.",
+
+  "settings.appearance.textSize.label": "Text size",
+  "settings.appearance.textSize.description": "Scales text and UI throughout the app. Compounds with the macOS Accessibility text size — 100% means \"exactly the system size\".",
+
+  "settings.appearance.uiDensity.label": "UI density",
+  "settings.appearance.uiDensity.description": "Controls the spacing and size of UI elements throughout the app.",
+  "settings.appearance.uiDensity.opt.compact": "Compact",
+  "settings.appearance.uiDensity.opt.comfortable": "Comfortable",
+  "settings.appearance.uiDensity.opt.spacious": "Spacious",
+
+  "settings.listing.sizeDisplay.label": "Size display",
+  "settings.listing.sizeDisplay.description": "Smart shows the smaller of content and on-disk size. This helps with disk images and compressed files where the two differ.",
+  "settings.listing.sizeDisplay.opt.smart": "Smart",
+  "settings.listing.sizeDisplay.opt.logical": "Content",
+  "settings.listing.sizeDisplay.opt.physical": "On disk",
+
+  "settings.listing.sizeUnit.label": "Size unit",
+  "settings.listing.sizeUnit.description": "Dynamic picks the friendliest unit per file (1.02 MB). Fixed units make sizes apples-to-apples across the list. Bytes shows the exact count for precise comparison.",
+  "settings.listing.sizeUnit.opt.dynamic": "Dynamic",
+  "settings.listing.sizeUnit.opt.bytes": "Bytes",
+  "settings.listing.sizeUnit.opt.kB": "kB",
+  "settings.listing.sizeUnit.opt.mB": "MB",
+  "settings.listing.sizeUnit.opt.gB": "GB",
+
+  "settings.appearance.fileSizeFormat.label": "File size format",
+  "settings.appearance.fileSizeFormat.description": "How to display file sizes in the file list.",
+  "settings.appearance.fileSizeFormat.opt.binary": "Binary (KiB, MiB, GiB)",
+  "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 bytes",
+  "settings.appearance.fileSizeFormat.opt.si": "SI decimal (KB, MB, GB)",
+  "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 bytes",
+
+  "settings.listing.sizeMismatchWarning.label": "Size mismatch warning",
+  "settings.listing.sizeMismatchWarning.description": "Shows a warning icon on folders where content and on-disk sizes differ by more than 50% and 200 MB.",
+
+  "settings.appearance.useAppIconsForDocuments.label": "Use app icons for documents",
+  "settings.appearance.useAppIconsForDocuments.description": "Show the app''s icon for documents instead of generic file type icons. More colorful but slightly slower.",
+
+  "settings.appearance.showFunctionKeyBar.label": "Show function key bar",
+  "settings.appearance.showFunctionKeyBar.description": "Show the row of F-key command buttons (Rename, View, Copy, and so on) at the bottom of the window.",
+
+  "settings.listing.showExtensionInName.label": "Show file extensions in the name column",
+  "settings.listing.showExtensionInName.description": "Show the full filename (like launch.json) in the Name column and hide the separate Ext column. Affects Full view only.",
+
+  "settings.listing.directorySortMode.label": "Sort directories",
+  "settings.listing.directorySortMode.description": "How directories are sorted when changing the sort column.",
+  "settings.listing.directorySortMode.opt.likeFiles": "Like files",
+  "settings.listing.directorySortMode.opt.alwaysByName": "Always by name",
+
+  "settings.listing.briefColumnWidthMode.label": "Maximum column width in Brief mode",
+  "settings.listing.briefColumnWidthMode.description": "Limits how wide Brief mode columns can grow to fit long filenames. Columns are always capped at the pane width regardless; the chosen limit only kicks in when it would be smaller than the pane.",
+  "settings.listing.briefColumnWidthMode.opt.paneWidth": "Pane width (no limit)",
+  "settings.listing.briefColumnWidthMode.opt.limited": "Limit to",
+
+  "settings.listing.briefColumnWidthMaxPx.label": "Brief column width limit",
+
+  "settings.fileOperations.allowFileExtensionChanges.label": "Allow file extension changes",
+  "settings.fileOperations.allowFileExtensionChanges.description": "What to do when you rename a file and the extension changes.",
+  "settings.fileOperations.allowFileExtensionChanges.opt.yes": "Always allow",
+  "settings.fileOperations.allowFileExtensionChanges.opt.no": "Never allow",
+  "settings.fileOperations.allowFileExtensionChanges.opt.ask": "Always ask",
+
+  "settings.indexing.enabled.label": "Drive indexing",
+  "settings.indexing.enabled.description": "Index your drive in the background for instant directory sizes.",
+
+  "settings.behavior.fileSystemWatching.downloadsNotifications.label": "Notify on downloads",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.description": "How to surface new files arriving in your Downloads folder.",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": "In-app",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS notifications",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Both",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": "Neither",
+
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Go to latest download",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Press ⌃⌥⌘J from any app to jump to your most recent download. Requires Full Disk Access.",
+
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": "Global go-to-latest-download binding",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "The system-wide combo that triggers go-to-latest-download. Edited under Keyboard shortcuts.",
+
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Global go-to-latest-download warn-toast acknowledged",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Internal. Suppresses the first-trigger warning toast.",
+
+  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": "Downloads toast collapsed",
+  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.description": "Internal. Remembers whether the downloads toast was last collapsed.",
+
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "Low disk space warning",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "How to warn you when your startup disk runs low on free space.",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "In-app",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS notification",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Off",
+
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "Warning threshold",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "Warn when free space drops below this percent of your startup disk.",
+
+  "settings.search.autoApply.label": "Auto-apply searches",
+  "settings.search.autoApply.description": "Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter — they cost money. When off, press Enter or click the run button to search.",
+
+  "settings.ai.provider.label": "Provider",
+  "settings.ai.provider.description": "Choose how AI features are powered.",
+  "settings.ai.provider.opt.off": "Off",
+  "settings.ai.provider.opt.cloud": "Cloud AI",
+  "settings.ai.provider.opt.local": "Local LLM",
+
+  "settings.ai.cloudProvider.label": "Service",
+  "settings.ai.cloudProvider.description": "Which cloud AI service to use.",
+
+  "settings.ai.cloudProviderConfigs.label": "Provider configurations",
+  "settings.ai.cloudProviderConfigs.description": "Per-provider API keys and model settings.",
+
+  "settings.ai.localContextSize.label": "Context window",
+  "settings.ai.localContextSize.description": "Number of tokens the local model can process at once. Larger values use more memory.",
+
+  "settings.network.enabled.label": "Enable networking",
+  "settings.network.enabled.description": "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won''t ask macOS for Local Network access.",
+
+  "settings.network.firstTriggerDone.label": "Network discovery started",
+  "settings.network.firstTriggerDone.description": "Internal: tracks whether discovery has been triggered at least once. Hidden from the UI.",
+
+  "settings.network.directSmbConnection.label": "Connect directly to SMB shares",
+  "settings.network.directSmbConnection.description": "When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for Finder and other apps.",
+
+  "settings.network.shareCacheDuration.label": "Share cache duration",
+  "settings.network.shareCacheDuration.description": "How long to cache the list of available shares on a server before refreshing.",
+  "settings.network.shareCacheDuration.opt.s30": "30 seconds",
+  "settings.network.shareCacheDuration.opt.min5": "5 minutes",
+  "settings.network.shareCacheDuration.opt.hour1": "1 hour",
+  "settings.network.shareCacheDuration.opt.day1": "1 day",
+  "settings.network.shareCacheDuration.opt.days30": "30 days",
+
+  "settings.network.timeoutMode.label": "Network timeout mode",
+  "settings.network.timeoutMode.description": "How long to wait when connecting to network shares.",
+  "settings.network.timeoutMode.opt.normal": "Normal",
+  "settings.network.timeoutMode.optDesc.normal": "For typical local networks (15s timeout)",
+  "settings.network.timeoutMode.opt.slow": "Slow network",
+  "settings.network.timeoutMode.optDesc.slow": "For VPNs or high-latency connections (45s timeout)",
+  "settings.network.timeoutMode.opt.custom": "Custom",
+
+  "settings.network.customTimeout.label": "Custom timeout",
+  "settings.network.customTimeout.description": "Custom timeout in seconds for network operations.",
+
+  "settings.network.smbConcurrency.label": "Concurrent operations per SMB connection",
+  "settings.network.smbConcurrency.description": "How many file transfers Cmdr runs in parallel on a single SMB connection. Higher values speed up batch copies of many files (especially many small files) but use more server resources. Default 10 is safe for most home NAS hardware. Changes apply on the next batch copy.",
+
+  "settings.fileOperations.mtpEnabled.label": "Android/Kindle/camera support (PTP and MTP)",
+  "settings.fileOperations.mtpEnabled.description": "Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you''ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to \"File transfer\", \"Android Auto\", or similar. (Varies by device.)",
+
+  "settings.fileOperations.mtpConnectionWarning.label": "Warn when a device connects",
+  "settings.fileOperations.mtpConnectionWarning.description": "Show a notification when an Android or camera device connects over USB.",
+
+  "settings.fileExplorer.git.showRepoChip.label": "Show repository chip",
+  "settings.fileExplorer.git.showRepoChip.description": "Display the current branch, ahead/behind, and dirty state above the file list when inside a git repository.",
+
+  "settings.fileExplorer.git.showStatusColumn.label": "Show git status column",
+  "settings.fileExplorer.git.showStatusColumn.description": "Add a column showing per-file git status (modified, untracked, etc.) in Full mode.",
+
+  "settings.fileExplorer.git.showVirtualGitPortal.label": "Show virtual git portal",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "When entering `.git`, show branches, tags, commits, and worktrees as browsable virtual folders. Disable to see the raw `.git` contents instead.",
+
+  "settings.viewer.wordWrap.label": "Word wrap",
+  "settings.viewer.wordWrap.description": "Wrap long lines at the window edge in the file viewer instead of scrolling horizontally.",
+
+  "settings.developer.mcpEnabled.label": "Enable MCP server",
+  "settings.developer.mcpEnabled.description": "Start a Model Context Protocol server for AI assistant integration.",
+
+  "settings.developer.mcpPort.label": "Port",
+  "settings.developer.mcpPort.description": "Preferred port for the MCP server. Leave at 0 to let the OS pick an ephemeral port (recommended; the actual port is shown below when running). Pin a specific port if external tooling needs it.",
+
+  "settings.developer.verboseLogging.label": "Verbose console output (developer)",
+  "settings.developer.verboseLogging.description": "Bumps the dev terminal and browser devtools console to debug level. The on-disk log file always captures debug detail regardless, so error reports are unaffected by this toggle. RUST_LOG always wins for the terminal.",
+
+  "settings.updates.autoCheck.label": "Automatically check for updates",
+  "settings.updates.autoCheck.description": "Periodically check for new versions in the background.",
+
+  "settings.whatsNew.showOnUpdate.label": "Show what’s new after updates",
+  "settings.whatsNew.showOnUpdate.description": "After Cmdr updates itself, show a quick summary of what changed.",
+
+  "settings.whatsNew.lastSeenVersion.label": "Last seen changelog version",
+  "settings.whatsNew.lastSeenVersion.description": "Internal: the version we last showed in the \"What’s new\" popup. Advances silently on every launch so re-enabling the popup never replays a months-deep backlog. Hidden from the UI.",
+
+  "settings.analytics.enabled.label": "Send anonymous usage stats",
+  "settings.analytics.enabled.description": "Helps us see which features matter during the open beta. Never includes file names, paths, search terms, or prompts. Turn it off and Cmdr stops sending anything.",
+
+  "settings.analytics.email.label": "Beta contact email",
+  "settings.analytics.email.description": "Example: you@example.com",
+
+  "settings.updates.crashReports.label": "Send crash reports",
+  "settings.updates.crashReports.description": "Automatically send crash reports when Cmdr quits unexpectedly. Includes app version, macOS version, and crash location. Never file names or personal data.",
+
+  "settings.updates.errorReports.label": "Send error reports automatically",
+  "settings.updates.errorReports.description": "Send a small log snippet to the developer when an error occurs. Helps fix bugs faster. Off by default. You can always send a manual report from the Help menu.",
+
+  "settings.updates.attachEmailToReports.label": "Attach my email to reports by default",
+  "settings.updates.attachEmailToReports.description": "When you send a crash or error report, include your beta contact email so we can reply. You can change this per report.",
+
+  "settings.advanced.prefetchBufferSize.label": "Prefetch buffer size",
+  "settings.advanced.prefetchBufferSize.description": "Number of items to prefetch around the visible range for smoother scrolling.",
+
+  "settings.advanced.virtualizationBufferRows.label": "Virtualization buffer (rows)",
+  "settings.advanced.virtualizationBufferRows.description": "Extra rows to render above and below the visible area.",
+
+  "settings.advanced.virtualizationBufferColumns.label": "Virtualization buffer (columns)",
+  "settings.advanced.virtualizationBufferColumns.description": "Extra columns to render in brief view.",
+
+  "settings.advanced.fileWatcherDebounce.label": "File watcher debounce",
+  "settings.advanced.fileWatcherDebounce.description": "Delay after file system changes before refreshing.",
+
+  "settings.advanced.diskSpaceChangeThreshold.label": "Disk space change threshold (MB)",
+  "settings.advanced.diskSpaceChangeThreshold.description": "Minimum change in available disk space before updating the status bar. The status bar polls disk space every few seconds; small changes below this threshold are ignored to reduce visual noise.",
+
+  "settings.fileViewer.suppressBinaryWarning.label": "Suppress the raw-view warning for binary files",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 opens Cmdr''s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click ''Never show this warning again'' in the banner) to suppress the warning for good.",
+
+  "settings.fileExplorer.suppressQuickLookHint.label": "Suppress the Space-key Quick Look hint",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr uses Space to toggle file selection and ⇧Space for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click ''Don''t show again'' in the toast) to suppress the reminder for good.",
+
+  "settings.fileExplorer.tabs.closedTabHistorySize.label": "Number of closed tabs to remember per pane",
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "How many recently closed tabs to keep per pane for \"Reopen closed tab\" (⌘⇧T). Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.",
+
+  "settings.advanced.dragThreshold.label": "Drag threshold",
+  "settings.advanced.dragThreshold.description": "Minimum distance in pixels before a drag operation starts.",
+
+  "settings.fileExplorer.typeToJump.resetDelay.label": "Type-to-jump reset delay",
+  "settings.fileExplorer.typeToJump.resetDelay.description": "How long the type-to-jump buffer stays alive after the last keystroke. Lower values reset faster between searches; higher values are more forgiving for slow typists.",
+
+  "settings.fileOperations.maxConflictsToShow.label": "Maximum conflicts to show",
+  "settings.fileOperations.maxConflictsToShow.description": "Maximum number of file conflicts to display in the preview before an operation.",
+
+  "settings.fileOperations.progressUpdateInterval.label": "Progress update interval",
+  "settings.fileOperations.progressUpdateInterval.description": "How often to refresh progress during file operations. Lower values feel more responsive but use more CPU.",
+
+  "settings.advanced.maxLogStorageMb.label": "Maximum disk space for log files (MB)",
+  "settings.advanced.maxLogStorageMb.description": "Maximum disk space for log files. Set to 0 to disable log storage; error reports cannot be sent without logs. Changes to a non-zero value take effect on next app launch.",
+
+  "settings.advanced.mountTimeout.label": "Mount timeout",
+  "settings.advanced.mountTimeout.description": "Timeout for mounting network shares.",
+
+  "settings.advanced.filterSafeSaveArtifacts.label": "Filter safe-save artifacts on SMB",
+  "settings.advanced.filterSafeSaveArtifacts.description": "Hide temporary files created by macOS safe-save (like \".sb-\" files from TextEdit) in the SMB file watcher. These are transient and normally invisible.",
+
+  "settings.advanced.serviceResolveTimeout.label": "Service resolve timeout",
+  "settings.advanced.serviceResolveTimeout.description": "Timeout for resolving network services via Bonjour.",
+
+  "settings.search.recentSearches.maxCount.label": "Recent searches to remember",
+  "settings.search.recentSearches.maxCount.description": "How many recent searches to keep for the in-dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).",
+
+  "settings.selection.recentSelections.maxCount.label": "Recent selections to remember",
+  "settings.selection.recentSelections.maxCount.description": "How many recent selections to keep for the Select / Deselect files dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).",
+
+  "settings.onboarding.upgradeNudgeShown.label": "Onboarding upgrade nudge shown",
+  "settings.onboarding.upgradeNudgeShown.description": "Internal: tracks whether the one-time \"the Onboarding menu item now exists\" toast has fired for an existing user after the wizard revamp. Hidden from the UI.",
+
+  "settings.advanced.updateCheckInterval.label": "Update check interval",
+  "settings.advanced.updateCheckInterval.description": "How often to check for updates in the background.",
+
+  "settings.tint.none": "No tint",
+  "settings.tint.red": "Red",
+  "settings.tint.orange": "Orange",
+  "settings.tint.amber": "Amber",
+  "settings.tint.lime": "Lime",
+  "settings.tint.green": "Green",
+  "settings.tint.teal": "Teal",
+  "settings.tint.cyan": "Cyan",
+  "settings.tint.blue": "Blue",
+  "settings.tint.indigo": "Indigo",
+  "settings.tint.purple": "Purple",
+  "settings.tint.pink": "Pink",
+  "settings.tint.brown": "Brown",
+
+  "settings.section.appearance": "Appearance",
+  "settings.section.colorsAndFormats": "Colors and formats",
+  "settings.section.zoomAndDensity": "Zoom and density",
+  "settings.section.fileAndFolderSizes": "File and folder sizes",
+  "settings.section.listing": "Listing",
+  "settings.section.behavior": "Behavior",
+  "settings.section.fileOperations": "File operations",
+  "settings.section.fileSystemWatching": "File system watching",
+  "settings.section.search": "Search",
+  "settings.section.ai": "AI",
+  "settings.section.fileSystems": "File systems",
+  "settings.section.smbNetworkShares": "SMB/Network shares",
+  "settings.section.mtp": "MTP (Android/Kindle/cameras)",
+  "settings.section.git": "Git",
+  "settings.section.viewer": "Viewer",
+  "settings.section.developer": "Developer",
+  "settings.section.mcpServer": "MCP server",
+  "settings.section.logging": "Logging",
+  "settings.section.updatesAndPrivacy": "Updates & privacy",
+  "settings.section.advanced": "Advanced",
+  "settings.section.keyboardShortcuts": "Keyboard shortcuts",
+  "settings.section.license": "License",
+
+  "settings.summary.colorsAndFormats": "Theme, app color, date and size coloring, and date/time format.",
+  "settings.summary.zoomAndDensity": "Text size and UI density for the whole app.",
+  "settings.summary.fileAndFolderSizes": "How sizes are shown in the file list and warnings about size mismatches.",
+  "settings.summary.listing": "Document icons, directory sorting, and Brief mode column width.",
+  "settings.summary.fileOperations": "Behavior when renaming files (e.g. extension changes).",
+  "settings.summary.fileSystemWatching": "Drive indexing, Downloads notifications, and the global go-to-latest-download shortcut. Needs Full Disk Access.",
+  "settings.summary.search": "Live-applied filename and regex searches, and the recent-searches cap.",
+  "settings.summary.smbNetworkShares": "Enable networking, direct SMB connections, share cache, and timeouts.",
+  "settings.summary.mtp": "Detect Android, Kindle, and camera devices over USB.",
+  "settings.summary.git": "Repository chip, per-file status column, and the virtual `.git` portal.",
+  "settings.summary.mcpServer": "Configure the Model Context Protocol server for AI integrations.",
+  "settings.summary.logging": "Verbose console output, log file access, and diagnostic info.",
+  "settings.summary.noSubsections": "This section has no subsections.",
+
+  "settings.control.resetToDefault": "Reset to default",
+  "settings.control.restartRequired": "Restart required",
+  "settings.control.decrease": "Decrease {label}",
+  "@settings.control.decrease": {
+    "description": "aria-label for a number input's decrement button. {label} is the resolved setting label."
+  },
+  "settings.control.increase": "Increase {label}",
+  "@settings.control.increase": {
+    "description": "aria-label for a number input's increment button. {label} is the resolved setting label."
+  },
+  "settings.control.customValuePlaceholder": "Enter custom value",
+  "settings.control.customOption": "Custom...",
+  "settings.control.customPrefix": "Custom: {value}",
+
+  "settings.sidebar.searchPlaceholder": "Search settings...",
+  "settings.sidebar.clearSearch": "Clear search",
+  "settings.sidebar.sections": "Settings sections",
+
+  "settings.appearance.themeColorSwatchAria": "Open System Settings to change the system theme color",
+  "settings.appearance.appColorHintPrefix": "To change your system theme color, go to",
+  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
+  "@settings.appearance.appColorHintLinkMac": {
+    "description": "macOS variant of the app-color hint link text. Both placeholders are OS-localized labels from system-strings."
+  },
+  "settings.appearance.appColorHintLinkOther": "your system appearance settings",
+  "settings.appearance.datePreviewLabel": "Preview:",
+  "settings.appearance.dateInvalidFormat": "Invalid format",
+  "settings.appearance.hideFormatHelp": "Hide format help",
+  "settings.appearance.showFormatHelp": "Show format help",
+  "settings.appearance.formatPlaceholdersTitle": "Format placeholders",
+  "settings.appearance.formatHelpYear": "4-digit year (2025)",
+  "settings.appearance.formatHelpMonth": "2-digit month (01-12)",
+  "settings.appearance.formatHelpDay": "2-digit day (01-31)",
+  "settings.appearance.formatHelpHour": "2-digit hour (00-23)",
+  "settings.appearance.formatHelpMinute": "2-digit minute (00-59)",
+  "settings.appearance.formatHelpSecond": "2-digit second (00-59)",
+  "settings.appearance.tintGroupHeading": "Tint volume types",
+  "settings.appearance.tintGroupDescription": "Adds a faint background tint to panes so you can tell volume types apart at a glance.",
+  "settings.appearance.tintSwatchAria": "Choose a tint color for {label}",
+  "@settings.appearance.tintSwatchAria": {
+    "description": "aria-label for the tint-color picker dialog. {label} is the pane-tint setting label."
+  },
+  "settings.appearance.tintColorsAria": "Tint colors",
+  "settings.appearance.tintTriggerAria": "{label} (currently: {colorName})",
+  "@settings.appearance.tintTriggerAria": {
+    "description": "aria-label for the tint swatch trigger. {label} is the setting label; {colorName} the current color name."
+  },
+
+  "settings.ai.providerAria": "AI provider",
+  "settings.ai.loading": "Loading...",
+  "settings.ai.tooltipOff": "AI features are turned off. Cmdr works fully without AI — suggestions and smart features are simply hidden.",
+  "settings.ai.tooltipCloud": "Bring your own API key for fast, high-quality AI. Works with OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, or any local server you''re running (Ollama, LM Studio, etc.). Requires an internet connection (unless using a local server). No disk space or memory used by Cmdr.",
+  "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy — nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple Silicon (M1+).",
+  "settings.ai.tooltipLocalDisabled": "Local AI requires Apple Silicon (M1 or later). Use Cloud AI instead.",
+
+  "settings.fileSystemWatching.indexSize": "Index size",
+  "settings.fileSystemWatching.clearing": "Clearing...",
+  "settings.fileSystemWatching.clearIndex": "Clear index",
+  "settings.fileSystemWatching.noIndex": "No index",
+  "settings.fileSystemWatching.clearIndexDescription": "Deletes the index database. A fresh scan starts next time indexing is enabled.",
+  "settings.fileSystemWatching.cardDownloads": "Downloads notifications",
+  "settings.fileSystemWatching.cardGoToLatest": "Go to latest download",
+  "settings.fileSystemWatching.cardLowDiskSpace": "Low disk space",
+  "settings.fileSystemWatching.globalShortcutHint": "Change the shortcut under Keyboard shortcuts → Go to latest download (global).",
+
+  "settings.network.localNetworkAccessLabel": "{localNetwork} access",
+  "@settings.network.localNetworkAccessLabel": {
+    "description": "Heading for the Local Network permission box. {localNetwork} is the OS-localized 'Local Network' label from system-strings."
+  },
+  "settings.network.permissionIntroPrefix": "Cmdr needs {localNetwork} to find SMB servers, list available shares, and connect directly for faster file transfers. The first time you open Network or use ",
+  "@settings.network.permissionIntroPrefix": {
+    "description": "First half of the permission explainer; ends mid-sentence before an inline <strong> 'Connect to server…' chip, then permissionIntroSuffix. {localNetwork} is the OS label."
+  },
+  "settings.network.permissionIntroConnectLink": "Connect to server…",
+  "settings.network.permissionIntroSuffix": ", macOS will ask. Say yes.",
+  "settings.network.manageAnytimePrefix": "Manage this anytime in",
+  "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
+  "@settings.network.permissionPath": {
+    "description": "The clickable System Settings path to the Local Network toggle. All three placeholders are OS-localized labels from system-strings."
+  },
+  "settings.network.permissionWithout": "Without it, Cmdr can still read and write files on shares that are already mounted, but you can''t discover new servers or use our faster direct connection.",
+  "settings.network.customTimeoutUnit": "seconds",
+
+  "settings.updates.emailPlaceholder": "you@example.com",
+  "settings.updates.checkForUpdates": "Check for updates",
+  "settings.updates.errorPrefix": "Error:",
+  "settings.updates.sendErrorReport": "Send error report",
+  "settings.updates.emailConfirmHint": "Check your inbox to confirm your email. Thanks for helping out!",
+  "settings.updates.emailSignupError": "Sorry, we couldn''t sign you up right now. Try again?",
+  "settings.updates.emailPrivacyNote": "Stored only on your Mac. We never send it together with your anonymous usage data, so your stats can''t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.",
+
+  "settings.logging.openLogFile": "Open log file",
+  "settings.logging.copied": "Copied!",
+  "settings.logging.copyDiagnostics": "Copy diagnostic info",
+
+  "settings.mcp.checkPort": "Check port",
+  "settings.mcp.runningOnPort": "Server is running on port {runningPort}",
+  "@settings.mcp.runningOnPort": {
+    "description": "MCP status line. {runningPort} is the actual bound port number."
+  },
+  "settings.mcp.ephemeral": "(ephemeral)",
+  "settings.mcp.portInUseFallback": "(port {port} was in use)",
+  "settings.mcp.checkingPort": "Checking port availability...",
+  "settings.mcp.portAvailable": "Port {port} is available",
+  "settings.mcp.portInUseStillRunning": "Port {port} is in use, still running on port {runningPort}",
+  "settings.mcp.portInUse": "Port {port} is in use",
+  "settings.mcp.usePortInstead": "Use port {suggestedPort} instead",
+
+  "settings.advanced.warningBanner": "These settings are for advanced users. Incorrect values may cause performance issues or unexpected behavior.",
+  "settings.advanced.resetAll": "Reset all to defaults",
+  "settings.advanced.resetAllConfirm": "Reset all advanced settings to their defaults? This cannot be undone.",
+  "settings.advanced.resetAllConfirmTitle": "Reset advanced settings",
+  "settings.advanced.defaultPrefix": "Default:",
+
+  "settings.applier.logStorageRestart": "Restart Cmdr to apply the log storage change."
+}

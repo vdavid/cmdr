@@ -10,6 +10,7 @@
     import { formatUpdateStatus } from '$lib/updates/update-status-text'
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
     import { betaSignup } from '$lib/tauri-commands'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         searchQuery: string
@@ -94,15 +95,17 @@
     }
 </script>
 
-<SettingsSection title="Updates & privacy">
+<SettingsSection title={tString('settings.section.updatesAndPrivacy')}>
     <div class="check-row">
         <Button variant="secondary" size="mini" onclick={handleCheckForUpdates} disabled={buttonDisabled}>
-            Check for updates
+            {tString('settings.updates.checkForUpdates')}
         </Button>
         <div class="status">
             {#if updateState.error !== null}
-                <span class="error-message">Error: {updateState.error}</span>
-                <button class="link-button" onclick={handleSendErrorReport}>Send error report</button>
+                <span class="error-message">{tString('settings.updates.errorPrefix')} {updateState.error}</span>
+                <button class="link-button" onclick={handleSendErrorReport}
+                    >{tString('settings.updates.sendErrorReport')}</button
+                >
             {:else if statusText}
                 <span class="status-text">{statusText}</span>
             {/if}
@@ -143,7 +146,7 @@
             <input
                 type="email"
                 class="email-input"
-                placeholder="you@example.com"
+                placeholder={tString('settings.updates.emailPlaceholder')}
                 value={email}
                 oninput={handleEmailInput}
                 onblur={handleEmailCommit}
@@ -154,17 +157,15 @@
         </SettingRow>
         {#if signupFeedback?.kind === 'success'}
             <p class="signup-feedback success" role="status">
-                Check your inbox to confirm your email. Thanks for helping out!
+                {tString('settings.updates.emailConfirmHint')}
             </p>
         {:else if signupFeedback?.kind === 'failure'}
             <p class="signup-feedback failure" role="status">
-                Sorry, we couldn't sign you up right now. Try again?
+                {tString('settings.updates.emailSignupError')}
             </p>
         {/if}
         <p class="email-note">
-            Stored only on your Mac. We never send it together with your anonymous usage data, so your stats can't be
-            tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting
-            emails, use the unsubscribe link in any message we send.
+            {tString('settings.updates.emailPrivacyNote')}
         </p>
     {/if}
     {#if shouldShow('updates.crashReports')}

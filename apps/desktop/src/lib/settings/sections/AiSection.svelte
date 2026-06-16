@@ -19,6 +19,7 @@
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import AiCloudSection from './AiCloudSection.svelte'
     import AiLocalSection from './AiLocalSection.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         searchQuery?: string
@@ -90,11 +91,10 @@
     const localAiSupported = $derived(status?.localAiSupported ?? true)
 
     const providerTooltips: Record<string, string> = {
-        off: 'AI features are turned off. Cmdr works fully without AI \u2014 suggestions and smart features are simply hidden.',
-        'cloud':
-            "Bring your own API key for fast, high-quality AI. Works with OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, or any local server you're running (Ollama, LM Studio, etc.). Requires an internet connection (unless using a local server). No disk space or memory used by Cmdr.",
-        local: 'Runs a small language model entirely on your device. Maximum privacy \u2014 nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple Silicon (M1+).',
-        'local-disabled': 'Local AI requires Apple Silicon (M1 or later). Use Cloud AI instead.',
+        off: tString('settings.ai.tooltipOff'),
+        'cloud': tString('settings.ai.tooltipCloud'),
+        local: tString('settings.ai.tooltipLocal'),
+        'local-disabled': tString('settings.ai.tooltipLocalDisabled'),
     }
 
     function getProviderTooltip(value: string): string {
@@ -109,19 +109,19 @@
     }
 </script>
 
-<SettingsSection title="AI">
+<SettingsSection title={tString('settings.section.ai')}>
     {#if isLoading}
-        <p class="loading-text">Loading...</p>
+        <p class="loading-text">{tString('settings.ai.loading')}</p>
     {:else}
         <!-- Provider toggle with per-option tooltips -->
         {#if shouldShow('ai.provider')}
             <SettingRow
                 id="ai.provider"
-                label="Provider"
-                description="Choose how AI features are powered."
+                label={tString('settings.ai.provider.label')}
+                description={tString('settings.ai.provider.description')}
                 {searchQuery}
             >
-                <div class="provider-toggle" role="radiogroup" aria-label="AI provider">
+                <div class="provider-toggle" role="radiogroup" aria-label={tString('settings.ai.providerAria')}>
                     <button
                         class="provider-option"
                         class:selected={provider === 'off'}
@@ -132,7 +132,7 @@
                         role="radio"
                         aria-checked={provider === 'off'}
                     >
-                        Off
+                        {tString('settings.ai.provider.opt.off')}
                     </button>
                     <button
                         class="provider-option"
@@ -144,7 +144,7 @@
                         role="radio"
                         aria-checked={provider === 'cloud'}
                     >
-                        Cloud AI
+                        {tString('settings.ai.provider.opt.cloud')}
                     </button>
                     <button
                         class="provider-option"
@@ -157,7 +157,7 @@
                         role="radio"
                         aria-checked={provider === 'local'}
                     >
-                        Local LLM
+                        {tString('settings.ai.provider.opt.local')}
                     </button>
                 </div>
             </SettingRow>

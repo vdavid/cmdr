@@ -53,6 +53,12 @@ const KEY_REFERENCE_RE =
   // t('x') | tString("x") | getMessage(`x`)
   /\b(?:t|tString|getMessage)\(\s*(['"`])([a-zA-Z0-9_.]+)\1/g
 const TRANS_KEY_RE = /<Trans\b[^>]*?\bkey=(['"])([a-zA-Z0-9_.]+)\1/g
+// `labelKey: 'x'` / `descriptionKey: "x"`: a key STORED in a `*Key`/`*Keys`
+// property and resolved later through `t(variable)` (the settings registry
+// pattern). The key is "used" at its literal definition site even though the
+// `t()` call takes a variable. Conservative: only matches a dotted lowerCamel
+// path value, so it can't catch arbitrary strings.
+const KEY_PROPERTY_RE = /\b[a-zA-Z]*[Kk]eys?\s*:\s*(['"])([a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)+)\1/g
 
 /**
  * Extracts every statically-resolvable message key referenced in a source
@@ -64,7 +70,7 @@ const TRANS_KEY_RE = /<Trans\b[^>]*?\bkey=(['"])([a-zA-Z0-9_.]+)\1/g
 export function extractUsedKeys(source) {
   /** @type {Set<string>} */
   const used = new Set()
-  for (const re of [KEY_REFERENCE_RE, TRANS_KEY_RE]) {
+  for (const re of [KEY_REFERENCE_RE, TRANS_KEY_RE, KEY_PROPERTY_RE]) {
     re.lastIndex = 0
     let match
     while ((match = re.exec(source)) !== null) {
@@ -75,16 +81,40 @@ export function extractUsedKeys(source) {
 }
 
 /**
+ * Of the given catalog keys, returns those whose exact text appears anywhere in
+ * `source`. Used ONLY for dead-key suppression: a key reached through a Record
+ * map or other indirection (the section-title / tint-color maps, the registry's
+ * `labelKey` fields) still has its literal in source, so a substring hit marks
+ * it "not dead" even when `extractUsedKeys` (strict, for missing detection) saw
+ * no direct reference. Scoped to the catalog (a substring scan over real keys),
+ * so it never produces a phantom "missing key"; it only narrows `dead`.
+ * @param {string} source
+ * @param {string[]} catalogKeys
+ * @returns {Set<string>}
+ */
+export function findCatalogKeyMentions(source, catalogKeys) {
+  /** @type {Set<string>} */
+  const mentioned = new Set()
+  for (const key of catalogKeys) {
+    if (source.includes(key)) mentioned.add(key)
+  }
+  return mentioned
+}
+
+/**
  * Diffs the catalog keys against the keys referenced in code.
- * @param {{ catalogKeys: string[], usedKeys: Set<string> }} args
+ * @param {{ catalogKeys: string[], usedKeys: Set<string>, literalKeys?: Set<string> }} args
+ *   `usedKeys`: keys from direct reference forms (drives missing detection).
+ *   `literalKeys` (optional): keys whose exact literal appears anywhere in
+ *   source; suppresses the dead warning for keys reached through indirection.
  * @returns {{ missing: string[], dead: string[] }} `missing`: used in code,
  *   absent from the catalog (a build failure). `dead`: in the catalog, never
  *   referenced in code (a warning).
  */
-export function diffKeys({ catalogKeys, usedKeys }) {
+export function diffKeys({ catalogKeys, usedKeys, literalKeys }) {
   const catalogSet = new Set(catalogKeys)
   const missing = [...usedKeys].filter((key) => !catalogSet.has(key)).sort()
-  const dead = catalogKeys.filter((key) => !usedKeys.has(key)).sort()
+  const dead = catalogKeys.filter((key) => !usedKeys.has(key) && !(literalKeys?.has(key) ?? false)).sort()
   return { missing, dead }
 }
 

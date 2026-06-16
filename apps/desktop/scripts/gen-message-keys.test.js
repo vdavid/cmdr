@@ -13,6 +13,7 @@ import {
   collectCatalogKeys,
   stripMetadataKeys,
   extractUsedKeys,
+  findCatalogKeyMentions,
   diffKeys,
   emitKeysModule,
 } from './gen-message-keys-lib.js'
@@ -52,6 +53,20 @@ describe('extractUsedKeys', () => {
     )
   })
 
+  it('finds keys passed indirectly via a `*Key`/`*Keys` property (the settings registry pattern)', () => {
+    // The settings registry stores message KEYS in `labelKey`/`descriptionKey`
+    // fields and resolves them through `t(variable)` (not a literal), so the
+    // scan must recognize the key at its literal definition site.
+    const src = [
+      `labelKey: 'settings.theme.mode.label',`,
+      `descriptionKey: "settings.theme.mode.description",`,
+      `{ value: 'light', labelKey: 'settings.theme.mode.opt.light' },`,
+    ].join('\n')
+    expect(extractUsedKeys(src)).toEqual(
+      new Set(['settings.theme.mode.label', 'settings.theme.mode.description', 'settings.theme.mode.opt.light']),
+    )
+  })
+
   it('ignores non-message calls and dynamic (non-literal) keys', () => {
     const src = [
       `translate(key)`, // dynamic
@@ -63,7 +78,50 @@ describe('extractUsedKeys', () => {
   })
 })
 
+describe('findCatalogKeyMentions', () => {
+  it('finds catalog keys mentioned via a Record map (dead-key suppression of indirection)', () => {
+    const src = `const M = { Appearance: 'settings.section.appearance', red: 'settings.tint.red' }`
+    const mentioned = findCatalogKeyMentions(src, [
+      'settings.section.appearance',
+      'settings.tint.red',
+      'settings.tint.blue',
+    ])
+    expect(mentioned.has('settings.section.appearance')).toBe(true)
+    expect(mentioned.has('settings.tint.red')).toBe(true)
+    expect(mentioned.has('settings.tint.blue')).toBe(false) // not mentioned
+  })
+
+  it('is robust to apostrophes in nearby backtick strings (substring scan, not quote parsing)', () => {
+    const src = "const e = `Invalid '${x}'`; const M = { red: 'settings.tint.red' }"
+    expect(findCatalogKeyMentions(src, ['settings.tint.red']).has('settings.tint.red')).toBe(true)
+  })
+})
+
 describe('diffKeys', () => {
+  it('suppresses the dead warning for a catalog key reached only via a literal (indirection)', () => {
+    // The key is never directly referenced (no t('x')), but its literal appears
+    // in a Record map, so it must NOT be reported dead.
+    const result = diffKeys({
+      catalogKeys: ['settings.section.appearance'],
+      usedKeys: new Set(),
+      literalKeys: new Set(['settings.section.appearance']),
+    })
+    expect(result.dead).toEqual([])
+    expect(result.missing).toEqual([])
+  })
+
+  it('a literal that is not a direct reference never becomes a missing key', () => {
+    // `literalKeys` must not feed missing detection: a non-catalog dotted
+    // literal (e.g. a setting id) stays out of `missing`.
+    const result = diffKeys({
+      catalogKeys: ['settings.theme.mode.label'],
+      usedKeys: new Set(['settings.theme.mode.label']),
+      literalKeys: new Set(['developer.mcpPort', 'settings.theme.mode.label']),
+    })
+    expect(result.missing).toEqual([])
+    expect(result.dead).toEqual([])
+  })
+
   it('reports keys used in code but missing from the catalog', () => {
     const result = diffKeys({
       catalogKeys: ['transfer.trash'],

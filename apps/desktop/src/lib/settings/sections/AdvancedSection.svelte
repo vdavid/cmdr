@@ -17,6 +17,7 @@
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
     import { searchAdvancedSettings, getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         searchQuery: string
@@ -49,8 +50,8 @@
 
     async function handleResetAll() {
         const confirmed = await confirmDialog(
-            'Reset all advanced settings to their defaults? This cannot be undone.',
-            'Reset advanced settings',
+            tString('settings.advanced.resetAllConfirm'),
+            tString('settings.advanced.resetAllConfirmTitle'),
         )
         if (confirmed) {
             for (const setting of allAdvancedSettings) {
@@ -99,16 +100,16 @@
     }
 </script>
 
-<SettingsSection title="Advanced">
+<SettingsSection title={tString('settings.section.advanced')}>
     <div class="warning-banner">
         <span class="warning-icon">⚠️</span>
         <span>
-            These settings are for advanced users. Incorrect values may cause performance issues or unexpected behavior.
+            {tString('settings.advanced.warningBanner')}
         </span>
     </div>
 
     <div class="header-actions">
-        <Button variant="secondary" size="mini" onclick={handleResetAll}>Reset all to defaults</Button>
+        <Button variant="secondary" size="mini" onclick={handleResetAll}>{tString('settings.advanced.resetAll')}</Button>
     </div>
 
     <div class="advanced-settings">
@@ -127,7 +128,8 @@
                     </div>
                     <div class="setting-description">{setting.description}</div>
                     <div class="setting-default">
-                        Default: {setting.type === 'duration'
+                        {tString('settings.advanced.defaultPrefix')}
+                        {setting.type === 'duration'
                             ? formatDuration(Number(setting.default))
                             : String(setting.default)}
                         {#if modified}
@@ -135,7 +137,7 @@
                                 class="reset-link"
                                 onclick={() => {
                                     handleReset(id)
-                                }}>Reset to default</button
+                                }}>{tString('settings.control.resetToDefault')}</button
                             >
                         {/if}
                     </div>
@@ -174,11 +176,15 @@
                             step={setting.constraints?.step ?? 1}
                         >
                             <NumberInput.Control class="number-control">
-                                <NumberInput.DecrementTrigger class="number-btn" aria-label="Decrease {setting.label}"
+                                <NumberInput.DecrementTrigger
+                                    class="number-btn"
+                                    aria-label={tString('settings.control.decrease', { label: setting.label })}
                                     >−</NumberInput.DecrementTrigger
                                 >
                                 <NumberInput.Input class="number-input" aria-label={setting.label} />
-                                <NumberInput.IncrementTrigger class="number-btn" aria-label="Increase {setting.label}"
+                                <NumberInput.IncrementTrigger
+                                    class="number-btn"
+                                    aria-label={tString('settings.control.increase', { label: setting.label })}
                                     >+</NumberInput.IncrementTrigger
                                 >
                             </NumberInput.Control>

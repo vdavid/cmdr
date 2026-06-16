@@ -9,6 +9,7 @@
     import { createShouldShow } from '$lib/settings/settings-search'
     import { openSystemSettingsUrl } from '$lib/tauri-commands'
     import { systemStrings } from '$lib/system-strings.svelte'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         searchQuery: string
@@ -30,10 +31,10 @@
     }
 
     // allowed-pluralize-noun: "access" is a singular noun, not a count-driven plural; the interpolation is the localized pane label, not a count.
-    const localNetworkAccessLabel = $derived(`${systemStrings.localNetwork} access`)
+    const localNetworkAccessLabel = $derived(tString('settings.network.localNetworkAccessLabel', { localNetwork: systemStrings.localNetwork }))
 </script>
 
-<SettingsSection title="SMB/Network shares">
+<SettingsSection title={tString('settings.section.smbNetworkShares')}>
     {#if shouldShow('network.enabled')}
         <SettingRow
             id="network.enabled"
@@ -47,18 +48,23 @@
         <div class="local-network-info">
             <h3>{localNetworkAccessLabel}</h3>
             <p>
-                Cmdr needs {localNetworkAccessLabel} to find SMB servers, list available shares, and connect directly for
-                faster file transfers. The first time you open Network or use <strong>Connect to server…</strong>, macOS
-                will ask. Say yes.
+                {tString('settings.network.permissionIntroPrefix', {
+                    localNetwork: systemStrings.localNetwork,
+                })}<strong>{tString('settings.network.permissionIntroConnectLink')}</strong
+                >{tString('settings.network.permissionIntroSuffix')}
             </p>
             <p>
-                Manage this anytime in <button type="button" class="link-button" onclick={handlePrivacyLinkClick}
-                    >{systemStrings.systemSettings} &gt; {systemStrings.privacyAndSecurity} &gt; {systemStrings.localNetwork}</button
+                {tString('settings.network.manageAnytimePrefix')}
+                <button type="button" class="link-button" onclick={handlePrivacyLinkClick}
+                    >{tString('settings.network.permissionPath', {
+                        systemSettings: systemStrings.systemSettings,
+                        privacyAndSecurity: systemStrings.privacyAndSecurity,
+                        localNetwork: systemStrings.localNetwork,
+                    })}</button
                 >.
             </p>
             <p class="muted">
-                Without it, Cmdr can still read and write files on shares that are already mounted, but you can't
-                discover new servers or use our faster direct connection.
+                {tString('settings.network.permissionWithout')}
             </p>
         </div>
     {/if}
@@ -99,7 +105,10 @@
                     {#snippet customContent(value)}
                         {#if value === 'custom'}
                             <div class="custom-timeout">
-                                <SettingNumberInput id="network.customTimeout" unit="seconds" />
+                                <SettingNumberInput
+                                    id="network.customTimeout"
+                                    unit={tString('settings.network.customTimeoutUnit')}
+                                />
                             </div>
                         {/if}
                     {/snippet}

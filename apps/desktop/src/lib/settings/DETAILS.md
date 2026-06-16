@@ -23,14 +23,48 @@ defined once in `settings-registry.ts` and accessed uniformly by both UI and MCP
 
 ### Registry (`settings-registry.ts`)
 
-Single source of truth for all settings. Each `SettingDefinition` contains:
+Single source of truth for all settings. Each entry is authored as a `SettingDefinitionSource` (in `types.ts`) carrying:
 
 - `id`: Unique key (e.g., `appearance.uiDensity`)
-- `section`: Path in settings tree (e.g., `['Appearance', 'Colors and formats']`)
+- `section`: Path in settings tree (e.g., `['Appearance', 'Colors and formats']`) — stays English (see i18n below)
+- `labelKey` / `descriptionKey`: i18n message KEYS, not English (see i18n below)
 - `type`: boolean, number, string, enum, duration
 - `default`: Default value
-- `constraints`: Type-specific validation (min/max, enum options, etc.)
+- `constraints`: Type-specific validation (min/max, enum options, etc.); enum options carry `labelKey` (or a literal
+  `label` for non-copy values like brand names and numerals)
 - `component`: UI hint (switch, select, slider, etc.)
+
+### i18n: the registry stores message KEYS, resolved through `t()` (M2 decision)
+
+**Decision / why.** Settings copy is translation-ready: `settings-registry.ts` stores message KEYS, and the rendered
+text lives in `messages/en/settings.json` (the i18n catalog), not inline. `resolveDefinition` turns each authored
+`SettingDefinitionSource` into a `SettingDefinition` whose `label`, `description`, and enum-option `label`s are
+**getter-backed**: reading `getSettingDefinition(id).label` calls `tString(labelKey)` at read time. This was the
+cleanest shape because it leaves the entire `getSettingDefinition(...).label` / `.description` consumer surface (the
+section components, the search index in `settings-search.ts`, the MCP YAML bridge in `mcp-main-bridge.ts`,
+`AdvancedSection`) unchanged — zero call-site churn — while moving the copy into the catalog. Getters also give the
+right reactivity semantics for free: a `t()` read in markup re-renders on a locale change, and a read in plain `.ts` is
+a snapshot (the same semantics the transfer pilot uses). An empty description (no `descriptionKey`) resolves to `''`.
+
+**Why `section` stays English.** The `section: string[]` array is a STRUCTURAL identity used for routing
+(`SettingsContent`), the section tree (`buildSectionTree`), section matching (`getSettingsInSection`), and the search
+haystack — not a render path. Translating it would couple identity to copy. The rendered section TITLES are separate:
+the section components and `SectionSummary` resolve them through `sectionTitle(name)` in `section-i18n.ts` (the single
+English-name → title-key map), and `SettingsSidebar` does the same for the nav list.
+
+**Catalog key shape.** `settings.<id>.label` / `.description` (the setting id's dots preserved),
+`settings.<id>.opt.<value>` / `.optDesc.<value>` for enum options, `settings.section.*` / `settings.summary.*` for
+section titles and summary blurbs, `settings.control.*` for shared row microcopy (reset, restart-required,
+decrease/increase aria-labels), and `settings.<feature>.*` for section-component-specific copy. The downloads FDA hint
+reuses the shared `<Trans>` message `common.downloadsFdaHint` (an inline `<settingsLink>`), so don't duplicate it.
+Apostrophes in catalog values are doubled (`''`, the ICU rule). Full i18n runtime design:
+[`$lib/intl/DETAILS.md`](../intl/DETAILS.md).
+
+**Scope of the M2 settings tranche.** The registry-driven settings core and the section chrome are migrated and the
+`cmdr/no-raw-user-facing-string` lint is enforced on `lib/settings/`. Four files render copy owned by ADJACENT
+subsystems (not the settings registry) and are excluded in that lint's ledger until their own tranches: `AiCloudSection`
+/ `AiLocalSection` (AI provider config UIs), `KeyboardShortcutsSection` (command names from the command registry +
+conflict-banner chrome), and `LicenseSection` (license-API display copy).
 
 ### Store (`settings-store.ts`)
 

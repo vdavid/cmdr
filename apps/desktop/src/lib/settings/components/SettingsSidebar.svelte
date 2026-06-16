@@ -2,6 +2,8 @@
     import Icon from '$lib/ui/Icon.svelte'
     import { buildSectionTree, type SettingsSection } from '$lib/settings'
     import { sectionHasMatches } from '$lib/settings/settings-search'
+    import { tString } from '$lib/intl/messages.svelte'
+    import { sectionTitle } from '$lib/settings/section-i18n'
 
     interface Props {
         searchQuery: string
@@ -182,7 +184,7 @@
             bind:this={searchInput}
             type="text"
             class="search-input"
-            placeholder="Search settings..."
+            placeholder={tString('settings.sidebar.searchPlaceholder')}
             value={searchQuery}
             oninput={handleSearchInput}
             onkeydown={handleSearchKeydown}
@@ -191,11 +193,19 @@
             spellcheck="false"
         />
         {#if searchQuery}
-            <button class="search-clear" onclick={clearSearch} aria-label="Clear search"> × </button>
+            <button class="search-clear" onclick={clearSearch} aria-label={tString('settings.sidebar.clearSearch')}>
+                ×
+            </button>
         {/if}
     </div>
 
-    <div class="section-tree" tabindex="0" onkeydown={handleNavKeydown} role="listbox" aria-label="Settings sections">
+    <div
+        class="section-tree"
+        tabindex="0"
+        onkeydown={handleNavKeydown}
+        role="listbox"
+        aria-label={tString('settings.sidebar.sections')}
+    >
         {#each orderedEntries as entry (entry.kind === 'tree' ? entry.node.name : entry.name)}
             {#if entry.kind === 'tree'}
                 {#if shouldShowSection(entry.node)}
@@ -210,7 +220,7 @@
                             aria-selected={isSelected(entry.node.path)}
                             tabindex="-1"
                         >
-                            {entry.node.name}
+                            {sectionTitle(entry.node.name)}
                         </button>
                         {#if entry.node.subsections.length > 0}
                             <div class="subsections">
@@ -226,7 +236,7 @@
                                             aria-selected={isSelected(subsection.path)}
                                             tabindex="-1"
                                         >
-                                            {subsection.name}
+                                            {sectionTitle(subsection.name)}
                                         </button>
                                     {/if}
                                 {/each}
@@ -246,7 +256,7 @@
                         aria-selected={isSelected(entry.path)}
                         tabindex="-1"
                     >
-                        {entry.name}
+                        {sectionTitle(entry.name)}
                     </button>
                 </div>
             {/if}
