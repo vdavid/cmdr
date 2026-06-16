@@ -60,7 +60,7 @@ function buildAllSettingsYaml(): string {
   for (const [sectionKey, settings] of sectionMap) {
     lines.push(`  # ${sectionKey}`)
     for (const def of settings) {
-      const id = def.id as SettingId
+      const id = def.id
       const value = getSetting(id)
       const modified = isModified(id)
       const sensitive = isSensitive(def)

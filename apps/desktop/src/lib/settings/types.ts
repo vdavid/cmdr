@@ -37,7 +37,11 @@ export interface SettingConstraints {
 
 export interface SettingDefinition {
   // Identity
-  id: string
+  // Typed as SettingId (not string) so a registry entry whose id is missing from
+  // SettingsValues fails to compile here, right at the entry. Closes the drift where
+  // a registered key absent from the SettingsValues interface forced an `as any` at
+  // every getSetting/setSetting call site.
+  id: SettingId
   section: string[]
 
   // Display

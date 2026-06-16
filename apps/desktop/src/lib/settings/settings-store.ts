@@ -483,7 +483,7 @@ async function saveToStore(): Promise<void> {
     let removedCount = 0
 
     for (const def of settingsRegistry) {
-      const id = def.id as SettingId
+      const id = def.id
       const value = settingsCache[id]
       const defaultValue = def.default
 

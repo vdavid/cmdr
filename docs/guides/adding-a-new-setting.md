@@ -17,6 +17,11 @@ Add an entry to `settings-registry.ts`. Name the id after the UI vocabulary (`wh
 - `hidden: true` for internal state with no UI (for example a "last seen version" stamp). Hidden settings live in the
   same store and sync across windows but never render, so **skip step 2 for them**.
 
+Also add the key and its value type to the `SettingsValues` interface in `types.ts`. This isn't optional bookkeeping:
+`SettingDefinition.id` is typed as `SettingId` (= `keyof SettingsValues`), so a registry entry whose id is missing from
+`SettingsValues` fails `svelte-check` right at the registry entry. That compile error is the prompt to add the key (it's
+what makes `getSetting`/`setSetting` type-safe for the new id, no cast needed).
+
 ## 2. Render it in the section component (the step that's easy to miss)
 
 `components/SettingsContent.svelte` routes each sidebar entry to one `sections/*Section.svelte` by

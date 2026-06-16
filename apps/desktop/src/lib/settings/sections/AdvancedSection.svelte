@@ -25,7 +25,6 @@
     const { searchQuery }: Props = $props()
 
     const allAdvancedSettings = getAdvancedSettings()
-    const toSettingId = (id: string) => id as SettingId
 
     // Reactivity trigger for settings changes
     let settingsChangeCounter = $state(0)
@@ -55,7 +54,7 @@
         )
         if (confirmed) {
             for (const setting of allAdvancedSettings) {
-                resetSetting(setting.id as SettingId)
+                resetSetting(setting.id)
             }
         }
     }
@@ -114,7 +113,7 @@
 
     <div class="advanced-settings">
         {#each filteredSettings as setting (`${setting.id}-${String(settingsChangeCounter)}`)}
-            {@const id = toSettingId(setting.id)}
+            {@const id = setting.id}
             {@const modified = isModified(id)}
             <div class="advanced-setting-row">
                 <div class="setting-info">
