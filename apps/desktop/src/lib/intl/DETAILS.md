@@ -1,11 +1,11 @@
 # Locale-aware formatting + message runtime details
 
-Depth behind `CLAUDE.md`. Two efforts live here: step 3 (the locale-aware FORMATTING layer, below) and step 2 (the
-message RUNTIME, next). Together they make the app translation-ready: copy resolves from a JSON catalog through one
-typed `t()` formatted with a real ICU engine, and numbers/sizes/dates format per the OS region the way a native macOS
-app does. Step 1 (error-text-to-frontend) shipped earlier.
+Depth behind `CLAUDE.md`. Two efforts live here: the locale-aware FORMATTING layer (below) and the message RUNTIME
+(next). Together they make the app translation-ready: copy resolves from a JSON catalog through one typed `t()`
+formatted with a real ICU engine, and numbers/sizes/dates format per the OS region the way a native macOS app does. The
+earlier error-text-to-frontend work shipped before these.
 
-## The message runtime (step 2)
+## The message runtime
 
 `messages.svelte.ts` is a thin (~180-line) runtime over `intl-messageformat` (ICU MessageFormat 1, BSD-3-Clause). It
 resolves user-facing text from JSON catalogs under `messages/<locale>/`, reading the locale from `getLocale()`.
@@ -50,10 +50,10 @@ server/build-rendered; the catalog merge (a `import.meta.glob` over `messages/en
 
 ### The ICU-vs-`$lib/intl` formatting split
 
-Numbers/sizes/dates format through `$lib/intl` + `format-utils` (step 3, below), NOT through ICU `number`/`date`
-skeletons. `t()` embeds ALREADY-formatted count STRINGS as `*Text` params (e.g. `transfer.movedPhrase`'s `filesText`),
-keeping formatting single-sourced. The raw integer is passed alongside ONLY to drive ICU `plural` selection (noun +
-was/were agreement), never for display. Don't reformat inside messages with ICU `{n, number}`.
+Numbers/sizes/dates format through `$lib/intl` + `format-utils` (the formatting layer, below), NOT through ICU
+`number`/`date` skeletons. `t()` embeds ALREADY-formatted count STRINGS as `*Text` params (e.g. `transfer.movedPhrase`'s
+`filesText`), keeping formatting single-sourced. The raw integer is passed alongside ONLY to drive ICU `plural`
+selection (noun + was/were agreement), never for display. Don't reformat inside messages with ICU `{n, number}`.
 
 ### Generated keys, codegen, checks
 
@@ -64,10 +64,10 @@ a typecheck error. It also reports keys used-in-code-but-missing (exit 1, a buil
 checks guard the rest: `desktop-message-keys-fresh` (regenerate-and-diff `keys.gen.ts`, fail if stale) and
 `desktop-message-key-naming` (the `area.feature.leaf` shape + a known first-segment area).
 `cmdr/no-raw-user-facing-string` (ESLint) stops new hardcoded copy in migrated areas (a closed sink set: `addToast`
-content, `title`/`label`/`placeholder`/ `aria-label` props, `.svelte` text nodes; an area allowlist widened per M2
-tranche).
+content, `title`/`label`/`placeholder`/ `aria-label` props, `.svelte` text nodes; an area allowlist widened per migrated
+area).
 
-## The locale-aware formatting layer (step 3)
+## The locale-aware formatting layer
 
 ## What this layer owns vs. doesn't
 
@@ -76,7 +76,7 @@ lives in `$lib/settings/format-utils.ts` (`formatDateForDisplay` + the cached `g
 carry per-component age-tier coloring that belongs with the date-color settings; it reads `getLocale()` from here, so
 the locale source is still single.
 
-Doesn't own (deliberately out of scope for step 3):
+Doesn't own (deliberately out of scope for the formatting layer):
 
 - Pluralization and sentence assembly (`pluralize.ts`, `${n} ${pluralize(...)}` sites, the fragment-concatenated
   transfer toasts). Locale-correct plurals (`Intl.PluralRules`, 6 categories) and whole-template messages belong to step

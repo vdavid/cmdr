@@ -62,8 +62,8 @@ The literal English lives in [`../intl/messages/en/errors.json`](../intl/message
 the factories resolve it via `getMessage(key)` — a raw catalog lookup with no ICU parsing. This is deliberate: error
 values carry markdown plus `{system_settings}`-style `expandSystemStrings` tokens and `esc()` HTML entities, all of
 which collide with ICU MessageFormat's brace/apostrophe grammar. Routing them through `t()`/`format()` would mangle
-them. So errors are the one tranche that bypasses ICU (see the i18n plan's Decision 2 and the errors tranche note). A
-corollary: `errors.json` values do NOT double apostrophes — the ICU `''` rule does not apply to non-ICU strings.
+them. So errors are the one area that bypasses ICU (see the i18n plan's Decision 2 and its errors note). A corollary:
+`errors.json` values do NOT double apostrophes — the ICU `''` rule does not apply to non-ICU strings.
 
 Key shape: `errors.listing.<reason>.{title,explanation,suggestion}`, `errors.git.<kind>.{title,message,suggestion}`, and
 the provider keys. Param tokens (`{path}`, `{osMessage}`) are substituted by `interpolate(...)` in

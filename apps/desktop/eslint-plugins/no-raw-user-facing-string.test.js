@@ -12,10 +12,9 @@ const svelteTester = new RuleTester({
   languageOptions: { parser: svelteParser, ecmaVersion: 'latest', sourceType: 'module' },
 })
 
-// The rule is scoped to an enforced area (the `transfer` dir in M1) MINUS the
-// not-yet-migrated dialog files. The migrated pilot composer is enforced; a
-// hypothetical migrated transfer component stands in for the enforced `.svelte`
-// surface (the real dialogs are still excluded until their M2 tranche).
+// The rule is scoped to an enforced area (the `transfer` dir) MINUS any
+// not-yet-migrated files. The migrated composer is enforced; a migrated
+// transfer component stands in for the enforced `.svelte` surface.
 const TRANSFER_TS = 'src/lib/file-operations/transfer/transfer-complete-toast.ts'
 const TRANSFER_SVELTE = 'src/lib/file-operations/transfer/CompletedTransferBanner.svelte'
 // The command-handlers subtree is now fully enforced (its ledger exclusion was

@@ -17,22 +17,16 @@
  *
  * Everything else is left alone. A missed user-facing string in an
  * unrecognized position can slip through; this rule is a strong ratchet, not a
- * completeness proof (see the M1/M3 honesty caveat in the plan).
+ * completeness proof (see the honesty caveat in the plan).
  *
  * ## Scope: an AREA allowlist, widened per migrated tranche
  *
- * The full ~1,000-string migration lands by area (M2). Enforcing the rule
+ * The full ~1,000-string migration lands by area. Enforcing the rule
  * everywhere at once would flood every un-migrated component. So the rule fires
  * only for files whose path matches an enforced fragment, MINUS an explicit
- * exclusion list of files in an enforced area that aren't migrated yet. Each M2
+ * exclusion list of files in an enforced area that aren't migrated yet. Each area
  * tranche adds an area fragment AND removes that area's files from the exclusion
- * list as it migrates them (then adds `settings`, `errors`, …).
- *
- * M1 enforces the `transfer` area, with its still-raw DIALOG files excluded: the
- * migrated pilot (`transfer-complete-toast.ts`) is enforced, while the transfer
- * dialogs (~57 raw strings, plus `TransferErrorDialog` which overlaps the errors
- * pipeline) stay excluded until their M2 tranche. The exclusion list IS the
- * remaining-work ledger for the transfer area.
+ * list as it migrates them.
  *
  * Opt out per-line for a genuinely non-copy literal in an enforced area:
  *
@@ -40,7 +34,7 @@
  */
 
 // Path fragments of areas where the rule is enforced. Add a fragment when a
-// tranche starts migrating that area (M2). Keep this list and the catalog areas
+// tranche starts migrating that area. Keep this list and the catalog areas
 // in step; an area isn't "done" until its excluded files (below) are all gone.
 const enforcedAreaPathFragments = [
   '/lib/file-operations/', // transfer + delete/mkdir/mkfile dialog chrome
@@ -73,7 +67,7 @@ const enforcedAreaPathFragments = [
 ]
 
 // Files inside an enforced area that aren't migrated yet, so the rule skips them
-// to avoid flooding the build with known-pending violations. Each M2 tranche
+// to avoid flooding the build with known-pending violations. Each area tranche
 // deletes its entries here as it migrates the file's copy. When this list is
 // empty for an area, that area is fully enforced.
 const excludedUnmigratedFiles = []

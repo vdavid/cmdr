@@ -1,5 +1,5 @@
 /**
- * Proof tests for `<Trans>` (Milestone 0, exit criterion (b)): a catalog
+ * Proof tests for `<Trans>`: a catalog
  * sentence with an inline `<tag>` renders as text nodes plus a REAL interactive
  * Svelte component, in the locale's word order, with no `{@html}` (XSS-safe by
  * construction).

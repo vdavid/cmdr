@@ -7,7 +7,7 @@
  *
  * Run: `node scripts/extract-user-facing-strings.js` (from `apps/desktop/`).
  * Writes a Markdown report to `docs/notes/i18n-extraction-dryrun.md` and prints
- * a summary. Re-run any time to refresh the M2 planning numbers; the output is a
+ * a summary. Re-run any time to refresh the migration planning numbers; the output is a
  * working artifact, NOT a shipped catalog.
  *
  * HONESTY: this is a regex heuristic over a closed sink set, so it UNDERCOUNTS.
@@ -146,7 +146,7 @@ const entries = [...byArea.entries()].sort((a, b) => a[0].localeCompare(b[0]))
 let total = 0
 for (const [, list] of entries) total += list.length
 
-let md = `# i18n extraction dry-run (M1 analysis artifact)\n\n`
+let md = `# i18n extraction dry-run (analysis artifact)\n\n`
 md += `> One-shot heuristic scan, NOT a shipped catalog. Regenerate with \`node apps/desktop/scripts/extract-user-facing-strings.js\`.\n\n`
 md += `Candidate user-facing string literals found in the closed sink set (\`addToast\` content, \`title\`/\`aria-label\`/\`label\`/\`placeholder\` props, \`.svelte\` text nodes). This is a LOWER BOUND on the real string count (see "What this misses").\n\n`
 md += `## Total: ${String(total)} candidate strings across ${String(entries.length)} areas\n\n`
@@ -154,7 +154,7 @@ md += `Candidates per area (a 2-column table would trip \`docs-table-hygiene\`, 
 for (const [area, list] of entries) md += `- \`${area}\`: ${String(list.length)}\n`
 
 md += `\n## What this heuristic MISSES (so the total isn't over-claimed)\n\n`
-md += `- **Dynamic / concatenated strings** (\`'Copied ' + n + ' files'\`) and **template literals with expressions** (\`\\\`Moved \${n}\\\`\`): not captured. These are exactly the multi-variable cases that need ICU \`plural\`/\`select\` — they must be found by reading each area during its M2 tranche, not by this scan.\n`
+md += `- **Dynamic / concatenated strings** (\`'Copied ' + n + ' files'\`) and **template literals with expressions** (\`\\\`Moved \${n}\\\`\`): not captured. These are exactly the multi-variable cases that need ICU \`plural\`/\`select\` — they must be found by reading each area during its migration, not by this scan.\n`
 md += `- **Imperatively-set copy**: \`element.title = ...\`, \`setAttribute('aria-label', ...)\`, document/window \`<title>\`s.\n`
 md += `- **Composed strings returned from helpers** (the transfer toast was one): the literal is born in a function, far from its \`addToast\` display site.\n`
 md += `- **Native menu labels** built in Rust (\`muda\`): not frontend literals at all (deferred surface, Open decision 5).\n`

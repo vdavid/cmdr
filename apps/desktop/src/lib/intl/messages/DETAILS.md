@@ -98,8 +98,8 @@ job.
 
 The codegen's dead-key warning lists catalog keys never referenced in code. The usage scan only sees STATICALLY-written
 keys (`t('literal')`, `<Trans key="literal">`), so a dynamically-built key reads as dead. Verify a key is truly unused
-before deleting it on this warning alone. `common.downloadsFdaHint` is a current known dead key: it's the M0 `<Trans>`
-proof, with a real call site (the Downloads FDA hint) coming in an M2 tranche.
+before deleting it on this warning alone. `common.downloadsFdaHint` originated as the `<Trans>` proof and now has its
+real call site (the Downloads FDA hint in `FileSystemWatchingSection.svelte`).
 
 ## Principle 6 note (humans review human-facing copy)
 

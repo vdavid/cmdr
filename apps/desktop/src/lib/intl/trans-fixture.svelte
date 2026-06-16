@@ -1,5 +1,5 @@
 <!--
-  Test-only host for the `<Trans>` proof (Milestone 0): renders the FDA-hint
+  Test-only host for the `<Trans>` proof: renders the FDA-hint
   message with its `<settingsLink>` tag mapped to a real interactive
   `LinkButton`, exactly as a real call site would. The parent test asserts the
   text + component render in order and that the click handler fires.

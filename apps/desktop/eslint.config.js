@@ -269,8 +269,8 @@ export default tseslint.config(
       'cmdr/no-raw-locale-format': 'error',
       // No hardcoded user-facing strings in migrated areas: route copy through
       // the i18n catalog (`t()`/`<Trans>`). Scoped to a closed sink set AND an
-      // area allowlist inside the rule (M1 enforces `transfer` only; each M2
-      // tranche widens it). Turned OFF for `*.test.ts` below (tests use literal
+      // area allowlist inside the rule (each migrated area widens it). Turned
+      // OFF for `*.test.ts` below (tests use literal
       // copy for fixtures/assertions).
       'cmdr/no-raw-user-facing-string': 'error',
       'cmdr/dialog-needs-focus-trap': 'error',
