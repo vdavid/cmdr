@@ -37,7 +37,7 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
       switcher
 - [ ] 2026-06-14 viewer-media-plan.md - Render images (incl. HEIC, SVG) and PDFs inline in the File viewer via
       WKWebView, no Rust decoder
-- [ ] 2026-06-16 friendly-error-text-to-frontend-plan.md - Move all user-facing error prose from Rust to the frontend
+- [x] 2026-06-16 friendly-error-text-to-frontend-plan.md - Move all user-facing error prose from Rust to the frontend
       (typed reason + params over IPC), keeping classification in Rust; step 1 of i18n-readiness
 - [x] 2026-06-15 doc-context-diet-plan.md - Shrank the resident agent-doc bundle (9.5k → 2k words): re-homed desktop
       content, ratcheted CLAUDE.md toward 600, mandated sibling DETAILS.md, dieted the rules to path-scoped homes,
