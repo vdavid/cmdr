@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect } from 'vitest'
 import {
   formatDateForDisplay,
   formatFileSizeWithFormat,
@@ -8,6 +8,7 @@ import {
   unitLabel,
   type DateSegment,
 } from './format-utils'
+import { _setLocaleForTests } from '$lib/intl/locale'
 
 // Fixed timestamp: March 15, 2024 14:30:45 local (local date to avoid timezone flakiness).
 const fixedDate = new Date(2024, 2, 15, 14, 30, 45)
@@ -252,6 +253,51 @@ describe('formatFileSizeWithFormat', () => {
       const tenGB = 10 * 1000 ** 3
       expect(formatFileSizeWithFormat(tenGB, 'si', 'MB')).toBe('10000.00 MB')
     })
+  })
+})
+
+describe('formatFileSizeWithFormat: locale-aware decimal', () => {
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  it('de-DE uses a comma decimal in the dynamic path', () => {
+    _setLocaleForTests('de-DE')
+    expect(formatFileSizeWithFormat(1024, 'binary')).toBe('1,00 KB')
+    expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1,50 KB')
+    expect(formatFileSizeWithFormat(1024, 'si')).toBe('1,02 kB')
+  })
+
+  it('de-DE uses a comma decimal in the forced-unit path', () => {
+    _setLocaleForTests('de-DE')
+    expect(formatFileSizeWithFormat(1_073_208, 'binary', 'MB')).toBe('1,02 MB')
+    expect(formatFileSizeWithFormat(512, 'si', 'kB')).toBe('0,51 kB')
+  })
+
+  it('keeps the value and unit separated by a plain ASCII space (never NNBSP)', () => {
+    _setLocaleForTests('de-DE')
+    const out = formatFileSizeWithFormat(1024, 'binary')
+    // Exactly one separator, and it's a regular space (U+0020): the
+    // colorizeSizeString last-space parse and the size-tier coloring depend on
+    // it. Intl's `style: 'unit'` would inject a NNBSP here, which is why we
+    // compose the string ourselves.
+    expect(out.split(' ')).toHaveLength(2)
+    // No exotic space code points: U+00A0 NBSP, U+202F NNBSP, U+2009 thin space.
+    expect([...out].some((c) => [0x00a0, 0x202f, 0x2009].includes(c.charCodeAt(0)))).toBe(false)
+  })
+
+  it('does NOT group the integer part of large forced-unit values', () => {
+    // Pre-change `toFixed(2)` never grouped; en-US parity depends on this.
+    _setLocaleForTests('de-DE')
+    // de-DE groups with `.` and decimals with `,`; the integer part must stay
+    // ungrouped so the value reads "10000,00", not "10.000,00".
+    expect(formatFileSizeWithFormat(10 * 1000 ** 3, 'si', 'MB')).toBe('10000,00 MB')
+  })
+
+  it('does NOT group the bytes-as-integer dynamic value', () => {
+    _setLocaleForTests('de-DE')
+    // 1000 bytes in binary stays sub-base, rendered as a bare integer; no grouping.
+    expect(formatFileSizeWithFormat(1000, 'binary')).toBe('1000 bytes')
   })
 })
 

@@ -5,6 +5,7 @@
 
 import type { DateTimeFormat, FileSizeFormat, FileSizeUnit } from './types'
 import { tierForYear, tierForMonth, tierForDay, tierForTime, type AgeTierClass } from './age-tier-utils'
+import { getNumberFormatter } from '$lib/intl/number-format'
 
 /**
  * One rendered fragment of a formatted date. Components carry the age-tier
@@ -299,7 +300,7 @@ export function formatFileSizeWithFormat(
   if (forceUnit) {
     const power = forceUnit === 'kB' ? 1 : forceUnit === 'MB' ? 2 : 3
     const value = bytes / base ** power
-    return `${value.toFixed(2)} ${unitLabel(forceUnit, format)}`
+    return `${formatSizeDecimal(value)} ${unitLabel(forceUnit, format)}`
   }
 
   let value = bytes
@@ -309,8 +310,31 @@ export function formatFileSizeWithFormat(
     unitIndex++
   }
 
-  const valueStr = unitIndex === 0 ? String(value) : value.toFixed(2)
+  // Sub-base values render as a bare integer (matching the old `String(value)`);
+  // anything scaled into kB+ shows two fraction digits.
+  const valueStr = unitIndex === 0 ? formatSizeInteger(value) : formatSizeDecimal(value)
   return `${valueStr} ${units[unitIndex]}`
+}
+
+/**
+ * Format the NUMERIC part of a human-friendly size with the active locale's
+ * decimal separator (en-US `1.02`, de-DE `1,02`), two fraction digits, and NO
+ * grouping. Grouping is suppressed so en-US stays byte-identical to the old
+ * `toFixed(2)` (which never grouped); a forced-unit value like `10000.00 MB`
+ * must not become `10,000.00 MB`. The value↔unit ASCII space is added by the
+ * caller, never by Intl, so `colorizeSizeString`'s last-space parse survives.
+ */
+function formatSizeDecimal(value: number): string {
+  return getNumberFormatter({
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: false,
+  }).format(value)
+}
+
+/** Format an integer size value (bytes mode) with no grouping, matching the old `String(value)`. */
+function formatSizeInteger(value: number): string {
+  return getNumberFormatter({ maximumFractionDigits: 0, useGrouping: false }).format(value)
 }
 
 /**

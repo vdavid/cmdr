@@ -15,6 +15,7 @@ import {
   sizeTierClasses,
   formatNumber,
   calculatePercentage,
+  colorizeSizeString,
 } from './selection-info-utils'
 import { formatDateForDisplay } from '$lib/settings/format-utils'
 import { _setLocaleForTests } from '$lib/intl/locale'
@@ -326,6 +327,20 @@ describe('tierClassForUnit', () => {
   it('maps TB and PB to size-tb (capped)', () => {
     expect(tierClassForUnit('TB')).toBe('size-tb')
     expect(tierClassForUnit('PB')).toBe('size-tb')
+  })
+})
+
+describe('colorizeSizeString', () => {
+  it('tiers a plain en-US value by its unit suffix', () => {
+    expect(colorizeSizeString('1.02 MB')).toBe('<span class="size-mb">1.02 MB</span>')
+    expect(colorizeSizeString('512 bytes')).toBe('<span class="size-bytes">512 bytes</span>')
+  })
+
+  it('still tiers a localized (comma-decimal) value correctly', () => {
+    // The last-space parse must survive a German decimal comma in the value:
+    // the unit is still the last ASCII-space-separated token.
+    expect(colorizeSizeString('1,02 MB')).toBe('<span class="size-mb">1,02 MB</span>')
+    expect(colorizeSizeString('1.234,56 GB')).toBe('<span class="size-gb">1.234,56 GB</span>')
   })
 })
 
