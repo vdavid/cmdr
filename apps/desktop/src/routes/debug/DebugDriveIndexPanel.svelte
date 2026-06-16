@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
 
     interface IndexStatusMeta {
         schemaVersion: string | null
@@ -126,7 +127,7 @@
 
     function formatCount(n: number | null | undefined): string {
         if (n === null || n === undefined) return 'N/A'
-        return n.toLocaleString('en-US')
+        return formatInteger(n)
     }
 
     function formatTimestamp(unixStr: string | null): string {
@@ -193,12 +194,12 @@
         const unique = map.get('unique_events')
         const dedup = map.get('dedup_pct')
         if (raw && unique && dedup) {
-            return `${Number(raw).toLocaleString('en-US')} raw → ${Number(unique).toLocaleString('en-US')} unique (${dedup}% dedup)`
+            return `${formatInteger(Number(raw))} raw → ${formatInteger(Number(unique))} unique (${dedup}% dedup)`
         }
         const entries = map.get('total_entries')
         const dirs = map.get('total_dirs')
         if (entries && dirs) {
-            return `${Number(entries).toLocaleString('en-US')} entries, ${Number(dirs).toLocaleString('en-US')} dirs`
+            return `${formatInteger(Number(entries))} entries, ${formatInteger(Number(dirs))} dirs`
         }
         if (stats.length === 0) return ''
         return stats.map(([k, v]) => `${k}: ${v}`).join(', ')

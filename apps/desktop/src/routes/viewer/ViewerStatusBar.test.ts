@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 
 import ViewerStatusBar from './ViewerStatusBar.svelte'
 import type { MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
+import { _setLocaleForTests } from '$lib/intl/locale'
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getFileSizeFormat: () => 'binary',
@@ -10,6 +11,12 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
 
 beforeEach(() => {
   document.body.innerHTML = ''
+  // Pin the locale so the dimension thousands separator is deterministic.
+  _setLocaleForTests('en-US')
+})
+
+afterEach(() => {
+  _setLocaleForTests(null)
 })
 
 interface MountOpts {

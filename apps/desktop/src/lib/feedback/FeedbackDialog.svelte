@@ -12,6 +12,7 @@
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import { addToast } from '$lib/ui/toast'
     import { sendFeedback, openExternalUrl } from '$lib/tauri-commands'
+    import { formatInteger } from '$lib/intl/number-format'
     import { closeFeedbackDialog } from './feedback-flow.svelte'
     import { getSetting, setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
@@ -115,9 +116,7 @@
             <span>Your feedback</span>
             {#if showCounter}
                 <span class="counter" class:over={overLimit}>
-                    {textLength.toLocaleString('en-US')} / {MAX_FEEDBACK_CHARS.toLocaleString(
-                        'en-US',
-                    )}
+                    {formatInteger(textLength)} / {formatInteger(MAX_FEEDBACK_CHARS)}
                 </span>
             {/if}
         </label>
@@ -132,7 +131,7 @@
         ></textarea>
         {#if overLimit}
             <p class="helper-text">
-                Sorry, that's too long. Maximum is {MAX_FEEDBACK_CHARS.toLocaleString('en-US')} characters.
+                Sorry, that's too long. Maximum is {formatInteger(MAX_FEEDBACK_CHARS)} characters.
             </p>
         {/if}
 

@@ -33,6 +33,7 @@ import noRawTauriInvoke from './eslint-plugins/no-raw-tauri-invoke.js'
 import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
 import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
+import noRawLocaleFormat from './eslint-plugins/no-raw-locale-format.js'
 import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
 import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
 
@@ -241,6 +242,7 @@ export default tseslint.config(
           'no-explorer-state-writes': noExplorerStateWrites,
           'no-raw-command-dispatch': noRawCommandDispatch,
           'no-raw-lucide-import': noRawLucideImport,
+          'no-raw-locale-format': noRawLocaleFormat,
           'dialog-needs-focus-trap': dialogNeedsFocusTrap,
         },
       },
@@ -251,6 +253,12 @@ export default tseslint.config(
       'cmdr/no-explorer-state-writes': 'error',
       'cmdr/no-raw-command-dispatch': 'error',
       'cmdr/no-raw-lucide-import': 'error',
+      // One locale source, one formatting layer: feature code routes every
+      // user-facing number/size/date through `$lib/intl` and the central format
+      // utils, never a raw `.toLocaleString(...)` or a hand-built `Intl.*`
+      // formatter. Turned OFF for `*.test.ts` below (tests legitimately
+      // construct `Intl.NumberFormat`/`DateTimeFormat` to compute expecteds).
+      'cmdr/no-raw-locale-format': 'error',
       'cmdr/dialog-needs-focus-trap': 'error',
     },
   },
@@ -286,6 +294,8 @@ export default tseslint.config(
       'no-console': 'off',
       '@typescript-eslint/only-throw-error': 'off',
       '@typescript-eslint/no-dynamic-delete': 'off',
+      // Tests construct `Intl.*` formatters to compute expected values, on purpose.
+      'cmdr/no-raw-locale-format': 'off',
     },
   },
 )

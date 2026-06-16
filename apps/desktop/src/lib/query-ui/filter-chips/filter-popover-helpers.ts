@@ -11,6 +11,7 @@
  */
 
 import type { FileSizeFormat } from '$lib/settings/types'
+import { getLocale } from '$lib/intl/locale'
 
 // ── Size column 2: numeric presets ────────────────────────────────────────────────────────
 //
@@ -178,7 +179,9 @@ export interface DynamicDatePreset {
 }
 
 export function buildDatePresets(now: Date = new Date(), language?: string): DynamicDatePreset[] {
-  const lang = language ?? (typeof navigator !== 'undefined' ? navigator.language : undefined)
+  // Default to the single locale source so the calendar names match the rest of
+  // the app; an explicit `language` arg still overrides (tests pass one).
+  const lang = language ?? getLocale()
   const firstDay = resolveFirstDayOfWeek(lang)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const ms = 24 * 60 * 60 * 1000

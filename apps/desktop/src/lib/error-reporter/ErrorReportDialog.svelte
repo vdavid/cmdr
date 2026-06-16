@@ -10,6 +10,7 @@
     import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
     import Size from '$lib/ui/Size.svelte'
     import { addToast } from '$lib/ui/toast'
     import {
@@ -200,7 +201,7 @@
             <span>Add a note (optional)</span>
             {#if showCounter}
                 <span class="note-counter" class:over={noteOverLimit}>
-                    {noteLength.toLocaleString('en-US')} / {MAX_NOTE_CHARS.toLocaleString('en-US')}
+                    {formatInteger(noteLength)} / {formatInteger(MAX_NOTE_CHARS)}
                 </span>
             {/if}
         </label>
@@ -215,7 +216,7 @@
         ></textarea>
         {#if noteOverLimit}
             <p class="helper-text">
-                Note is too long. Maximum is {MAX_NOTE_CHARS.toLocaleString('en-US')} characters.
+                Note is too long. Maximum is {formatInteger(MAX_NOTE_CHARS)} characters.
             </p>
         {/if}
 
@@ -256,9 +257,7 @@
                         '(no log lines available)'}</pre>
 
                 <p class="meta-line">
-                    Total log lines (after redaction): {preview.totalRedactedLines.toLocaleString(
-                        'en-US',
-                    )}
+                    Total log lines (after redaction): {formatInteger(preview.totalRedactedLines)}
                 </p>
             </div>
         {/if}

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect } from 'vitest'
 
 import {
   mediaUrl,
@@ -11,6 +11,7 @@ import {
   MEDIA_MIN_ZOOM,
   MEDIA_MAX_ZOOM,
 } from './media-view'
+import { _setLocaleForTests } from '$lib/intl/locale'
 
 describe('mediaUrl', () => {
   it('builds the cmdr-media URL from a token', () => {
@@ -47,8 +48,15 @@ describe('viewAsMediaLabel', () => {
 })
 
 describe('formatMediaDimensions', () => {
-  it('formats dimensions with a multiplication sign and thousands separators', () => {
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  it('formats dimensions with a multiplication sign and locale thousands separators', () => {
+    _setLocaleForTests('en-US')
     expect(formatMediaDimensions({ width: 1920, height: 1080 })).toBe('1,920 × 1,080')
+    _setLocaleForTests('de-DE')
+    expect(formatMediaDimensions({ width: 1920, height: 1080 })).toBe('1.920 × 1.080')
   })
 
   it('returns null when dimensions are absent', () => {

@@ -8,6 +8,7 @@
 // image fit/zoom math.
 
 import type { MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
+import { formatInteger } from '$lib/intl/number-format'
 
 /**
  * Builds the URL the `<img>` / `<embed>` loads for a media session.
@@ -54,11 +55,10 @@ export function viewAsMediaLabel(kind: ViewerContentKind): string {
   }
 }
 
-/** Formats pixel dimensions for the status bar (`1,920 × 1,080`), or null when absent. */
+/** Formats pixel dimensions for the status bar (en-US `1,920 × 1,080`, de-DE `1.920 × 1.080`), or null when absent. */
 export function formatMediaDimensions(dimensions: MediaDimensions | null): string | null {
   if (dimensions === null) return null
-  const formatNumber = (n: number): string => n.toLocaleString('en-US')
-  return `${formatNumber(dimensions.width)} × ${formatNumber(dimensions.height)}`
+  return `${formatInteger(dimensions.width)} × ${formatInteger(dimensions.height)}`
 }
 
 export const MEDIA_MIN_ZOOM = 0.1

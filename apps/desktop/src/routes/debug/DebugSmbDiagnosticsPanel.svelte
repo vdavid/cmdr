@@ -3,6 +3,7 @@
     import { commands, type SmbDiagnosticsDto, type SmbVolumeRef } from '$lib/ipc/bindings'
     import { tooltip } from '$lib/tooltip/tooltip'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
 
     type Loadable = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -126,7 +127,7 @@
     }
 
     function fmtNum(n: number): string {
-        return n.toLocaleString('en-US')
+        return formatInteger(n)
     }
 
     function fmtRtt(ms: number | null | undefined): string {

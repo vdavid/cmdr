@@ -17,6 +17,7 @@
      */
     import { tick } from 'svelte'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
+    import { formatInteger } from '$lib/intl/number-format'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import Size from '$lib/ui/Size.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
@@ -138,7 +139,7 @@
                 return `Index ready (${formatEntryCount(indexEntryCount)} entries)`
             }
             if (totalCount === 0) return ''
-            return `${String(results.length)} of ${totalCount.toLocaleString()} results`
+            return `${String(results.length)} of ${formatInteger(totalCount)} results`
         }
         // Index loading: the content area shows the "Loading drive index..." spinner,
         // so the status bar stays empty to avoid duplication. (R4: same rule as D3 / D4
