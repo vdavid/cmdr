@@ -353,7 +353,6 @@ impl DownloadsWatcher {
     pub fn scan_latest_fallback(&self) -> Option<PathBuf> {
         scan_latest(&self.downloads_root)
     }
-
 }
 
 /// Process a batch of debounced events. Pulled out so the callback closure

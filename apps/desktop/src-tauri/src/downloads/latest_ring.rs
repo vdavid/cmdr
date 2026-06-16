@@ -129,5 +129,4 @@ mod tests {
         assert_eq!(ring.latest(), Some(a));
         assert_eq!(ring.len(), 3, "no duplicates after re-push");
     }
-
 }

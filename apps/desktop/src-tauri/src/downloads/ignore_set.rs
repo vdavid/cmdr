@@ -255,5 +255,4 @@ mod tests {
         // `len` itself performs lazy expiry.
         assert_eq!(set.len(), 0);
     }
-
 }
