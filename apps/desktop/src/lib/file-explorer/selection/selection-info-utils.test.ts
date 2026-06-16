@@ -1,7 +1,7 @@
 /**
  * Tests for selection-info-utils.ts
  */
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect } from 'vitest'
 import {
   formatSizeTriads,
   formatSizeForDisplay,
@@ -17,6 +17,7 @@ import {
   calculatePercentage,
 } from './selection-info-utils'
 import { formatDateForDisplay } from '$lib/settings/format-utils'
+import { _setLocaleForTests } from '$lib/intl/locale'
 import type { FileEntry } from '../types'
 
 // Helper to create a basic file entry
@@ -459,25 +460,38 @@ describe('formatSizeForDisplay', () => {
 // ============================================================================
 
 describe('formatNumber', () => {
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
   it('formats small numbers without separators', () => {
     expect(formatNumber(0)).toBe('0')
     expect(formatNumber(1)).toBe('1')
     expect(formatNumber(999)).toBe('999')
   })
 
-  it('formats thousands with comma separator', () => {
+  it('formats thousands with comma separator (en-US)', () => {
+    _setLocaleForTests('en-US')
     expect(formatNumber(1000)).toBe('1,000')
     expect(formatNumber(1234)).toBe('1,234')
     expect(formatNumber(9999)).toBe('9,999')
   })
 
-  it('formats millions with multiple comma separators', () => {
+  it('formats millions with multiple comma separators (en-US)', () => {
+    _setLocaleForTests('en-US')
     expect(formatNumber(1000000)).toBe('1,000,000')
     expect(formatNumber(1234567)).toBe('1,234,567')
   })
 
-  it('formats large numbers correctly', () => {
+  it('formats large numbers correctly (en-US)', () => {
+    _setLocaleForTests('en-US')
     expect(formatNumber(1234567890)).toBe('1,234,567,890')
+  })
+
+  it('follows the active locale: de-DE groups with a period', () => {
+    _setLocaleForTests('de-DE')
+    expect(formatNumber(1000)).toBe('1.000')
+    expect(formatNumber(1234567)).toBe('1.234.567')
   })
 })
 

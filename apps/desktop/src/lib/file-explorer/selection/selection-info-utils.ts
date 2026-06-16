@@ -12,6 +12,7 @@ import {
   type DateSegment,
   type FormattedDate,
 } from '$lib/settings/format-utils'
+import { formatInteger } from '$lib/intl/number-format'
 
 // Size tier colors for digit triads (indexed: 0=bytes, 1=kB, 2=MB, 3=GB, 4=TB+)
 export const sizeTierClasses = ['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']
@@ -206,9 +207,9 @@ export function isPermissionDenied(entry: FileEntry | null): boolean {
 // Selection summary utilities
 // ============================================================================
 
-/** Formats a number with thousands separators using en-US locale */
+/** Formats a count with the active locale's thousands grouping (en-US `1,234`, de-DE `1.234`). */
 export function formatNumber(n: number): string {
-  return n.toLocaleString('en-US')
+  return formatInteger(n)
 }
 
 /** Calculates percentage, rounded to nearest integer */

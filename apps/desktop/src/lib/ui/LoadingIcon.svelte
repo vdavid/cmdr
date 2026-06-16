@@ -1,6 +1,7 @@
 <script lang="ts">
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
 
     interface Props {
         openingFolder?: boolean
@@ -11,9 +12,7 @@
 
     const { openingFolder = false, loadedCount, finalizingCount, showCancelHint = false }: Props = $props()
 
-    function formatNumber(n: number): string {
-        return n.toLocaleString()
-    }
+    const formatNumber = formatInteger
 </script>
 
 <div class="loading-container">
