@@ -8,6 +8,7 @@ import {
   validateSettingValue,
   buildSectionTree,
 } from './settings-registry'
+import { searchSettings, clearSearchIndex } from './settings-search'
 
 describe('settingsRegistry', () => {
   it('should have at least one setting defined', () => {
@@ -323,5 +324,46 @@ describe('analytics settings', () => {
     expect(getSettingDefinition('analytics.email')?.section).toEqual(['Updates & privacy'])
     // The pre-existing Updates settings moved into the renamed section too.
     expect(getSettingDefinition('updates.autoCheck')?.section).toEqual(['Updates & privacy'])
+  })
+})
+
+describe('cardKey resolution (resolveDefinition)', () => {
+  it('resolves a setting`s cardKey to a `card` getter (the in-page SectionCard title)', () => {
+    // The downloads setting carries cardKey `settings.fileSystemWatching.cardDownloads`.
+    const def = getSettingDefinition('behavior.fileSystemWatching.downloadsNotifications')
+    expect(def?.card).toBe('Downloads notifications')
+  })
+
+  it('leaves `card` undefined when a setting has no cardKey', () => {
+    // A setting from an unrelated page that doesn`t group into cards in M1.
+    const def = getSettingDefinition('appearance.uiDensity')
+    expect(def?.card).toBeUndefined()
+  })
+})
+
+describe('indexing.indexSize hidden search anchor', () => {
+  it('is a fully-modeled, hidden boolean under the File system watching page', () => {
+    const def = getSettingDefinition('indexing.indexSize')
+    expect(def).toBeDefined()
+    expect(def?.hidden).toBe(true)
+    expect(def?.type).toBe('boolean')
+    expect(getDefaultValue('indexing.indexSize')).toBe(false)
+    // Guardrail: section MUST equal the hosting page`s, or the blank-page fix breaks.
+    expect(def?.section).toEqual(['Behavior', 'File system watching'])
+    expect(def?.component).toBeUndefined()
+  })
+
+  it('is excluded from the nav section tree (it is hidden)', () => {
+    const tree = buildSectionTree()
+    const behavior = tree.find((s) => s.name === 'Behavior')
+    const fsw = behavior?.subsections.find((s) => s.name === 'File system watching')
+    expect(fsw).toBeDefined()
+    expect(fsw?.settings.some((s) => s.id === 'indexing.indexSize')).toBe(false)
+  })
+
+  it('is included in the search index (hidden is searchable; only showInAdvanced is filtered)', () => {
+    clearSearchIndex()
+    const ids = searchSettings('').map((r) => r.setting.id)
+    expect(ids).toContain('indexing.indexSize')
   })
 })

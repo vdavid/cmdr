@@ -51,9 +51,15 @@ function buildSearchIndex(): SearchIndexEntry[] {
  * - Label
  * - Description
  * - Keywords
+ * - Card-group title (resolved from `cardKey`), so searching a card title surfaces its rows
+ *
+ * The resolved `card` MUST stay LAST. `getMatchIndicesForLabel` reconstructs label-highlight
+ * offsets assuming `section › … + ' ' + label` at the front; inserting `card` earlier would
+ * silently mis-highlight labels. Appending is offset-safe.
  */
 function buildSearchableText(setting: SettingDefinition): string {
   const parts = [setting.section.join(' › '), setting.label, setting.description, ...setting.keywords]
+  if (setting.card !== undefined) parts.push(setting.card)
   return parts.join(' ').toLowerCase()
 }
 

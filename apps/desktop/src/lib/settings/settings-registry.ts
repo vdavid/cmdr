@@ -438,16 +438,38 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.indexing.enabled.label',
     descriptionKey: 'settings.indexing.enabled.description',
+    // The Drive-indexing card has no dedicated `card*` key; it reuses this row-label key
+    // as its title (FileSystemWatchingSection.svelte). Same key as `indexing.indexSize`.
+    cardKey: 'settings.indexing.enabled.label',
     keywords: ['index', 'drive', 'scan', 'size', 'directory', 'folder', 'background'],
     type: 'boolean',
     default: true,
     component: 'switch',
   },
   {
+    // Hidden search anchor (not a control). The "Index size / Clear index" action row is
+    // hand-rendered in FileSystemWatchingSection.svelte with no registry entry of its own,
+    // so search couldn't reach it and its card couldn't know to show. This anchor gives it
+    // a searchable identity: `buildSearchIndex` keeps hidden entries, `buildSectionTree`
+    // skips them, so it never adds a nav row. Never read or written. Its `section` MUST
+    // equal the hosting page's, or the blank-page fix breaks (the anchor must land in that
+    // page's section-scoped match set). Reuses the existing `indexSize` label key (no new
+    // string). Additive key, so no SCHEMA_VERSION bump (defaults rebuild from the registry).
+    id: 'indexing.indexSize',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.fileSystemWatching.indexSize',
+    cardKey: 'settings.indexing.enabled.label',
+    keywords: ['clear index', 'index database'],
+    type: 'boolean',
+    default: false,
+    hidden: true,
+  },
+  {
     id: 'behavior.fileSystemWatching.downloadsNotifications',
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.behavior.fileSystemWatching.downloadsNotifications.label',
     descriptionKey: 'settings.behavior.fileSystemWatching.downloadsNotifications.description',
+    cardKey: 'settings.fileSystemWatching.cardDownloads',
     keywords: ['download', 'downloads', 'notification', 'toast', 'notify', 'macos'],
     type: 'enum',
     default: 'in-app',
@@ -466,6 +488,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label',
     descriptionKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description',
+    cardKey: 'settings.fileSystemWatching.cardGoToLatest',
     keywords: ['shortcut', 'hotkey', 'global', 'download', 'downloads', 'jump', 'go to', 'goto'],
     type: 'boolean',
     default: true,
@@ -519,6 +542,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label',
     descriptionKey: 'settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description',
+    cardKey: 'settings.fileSystemWatching.cardLowDiskSpace',
     keywords: ['disk', 'space', 'low', 'free', 'storage', 'full', 'warning', 'notification', 'boot', 'startup'],
     type: 'enum',
     default: 'in-app',
@@ -536,6 +560,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label',
     descriptionKey: 'settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description',
+    cardKey: 'settings.fileSystemWatching.cardLowDiskSpace',
     keywords: ['disk', 'space', 'threshold', 'percent', 'low', 'free', 'warning'],
     type: 'number',
     default: 5,
@@ -1331,7 +1356,7 @@ function resolveConstraints(c: SettingConstraintsSource | undefined): SettingCon
 
 /** Turns an authored source into a `SettingDefinition` with resolved copy. */
 function resolveDefinition(src: SettingDefinitionSource): SettingDefinition {
-  const { labelKey, descriptionKey, constraints, ...rest } = src
+  const { labelKey, descriptionKey, cardKey, constraints, ...rest } = src
   const def = {
     ...rest,
     constraints: resolveConstraints(constraints),
@@ -1340,6 +1365,9 @@ function resolveDefinition(src: SettingDefinitionSource): SettingDefinition {
     },
     get description() {
       return descriptionKey === undefined ? '' : tString(descriptionKey)
+    },
+    get card() {
+      return cardKey === undefined ? undefined : tString(cardKey)
     },
   } as SettingDefinition
   return def

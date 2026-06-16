@@ -16,6 +16,15 @@ Add an entry to `settings-registry.ts`. Name the id after the UI vocabulary (`wh
   `color`, `text-input`)
 - `hidden: true` for internal state with no UI (for example a "last seen version" stamp). Hidden settings live in the
   same store and sync across windows but never render, so **skip step 2 for them**.
+- `cardKey` when the page groups its rows into `SectionCard`s: set it to the SAME catalog key the card's title displays,
+  so searching the card title surfaces the row. It's metadata only — it never decides whether the card renders (the
+  section owns that via `visible`). See `lib/settings/DETAILS.md` § Card groups.
+
+**Searchable non-setting rows (hidden anchor).** A hand-rendered action row that isn't a real control (for example
+"Index size / Clear index") can't be a search hit on its own, so its card can't know to show. Give it a `hidden: true`
+registry anchor whose `section` EQUALS the hosting page's section, reusing the row's existing label key. It's searchable
+(`buildSearchIndex` keeps hidden entries) but adds no nav row (`buildSectionTree` skips them). `indexing.indexSize` is
+the reference example.
 
 Also add the key and its value type to the `SettingsValues` interface in `types.ts`. This isn't optional bookkeeping:
 `SettingDefinition.id` is typed as `SettingId` (= `keyof SettingsValues`), so a registry entry whose id is missing from

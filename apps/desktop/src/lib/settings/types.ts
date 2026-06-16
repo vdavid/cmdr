@@ -51,10 +51,15 @@ export interface SettingConstraintsSource extends Omit<SettingConstraints, 'opti
  * `SettingDefinition` whose `label`/`description`/option labels are resolved
  * (getter-backed) strings.
  */
-export interface SettingDefinitionSource extends Omit<SettingDefinition, 'label' | 'description' | 'constraints'> {
+export interface SettingDefinitionSource extends Omit<
+  SettingDefinition,
+  'label' | 'description' | 'constraints' | 'card'
+> {
   labelKey: MessageKey
   /** Omitted for settings with no description (rendered as an empty string). */
   descriptionKey?: MessageKey
+  /** i18n KEY for the in-page SectionCard group title this setting belongs to. Resolved to `card`. */
+  cardKey?: MessageKey
   constraints?: SettingConstraintsSource
 }
 
@@ -90,6 +95,14 @@ export interface SettingDefinition {
   label: string
   description: string
   keywords: string[]
+  /**
+   * Resolved in-page SectionCard group title this setting belongs to (from `cardKey`).
+   * Descriptive/searchable only: it feeds the search index so a card title is findable,
+   * and documents card membership. It is NEVER read to decide whether a card renders —
+   * card visibility is owned by the section (computed from the same `shouldShow` as the
+   * rows). Distinct from `section` (the nav tree / routing identity).
+   */
+  card?: string
 
   // Type and constraints
   type: SettingType
@@ -244,6 +257,12 @@ export interface SettingsValues {
 
   // Indexing
   'indexing.enabled': boolean
+  /**
+   * Hidden search anchor for the "Index size / Clear index" action row, which is
+   * hand-rendered (not a real control). Never read or written; exists only so the
+   * row is searchable ("index size") and its card can show. See settings-registry.ts.
+   */
+  'indexing.indexSize': boolean
 
   // File system watching - downloads notifications + global go-to-latest shortcut.
   'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode

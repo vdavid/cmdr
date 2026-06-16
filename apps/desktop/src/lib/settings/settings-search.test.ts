@@ -6,7 +6,9 @@ import {
   sectionHasMatches,
   highlightMatches,
   clearSearchIndex,
+  getMatchIndicesForLabel,
 } from './settings-search'
+import { getSettingDefinition } from './settings-registry'
 
 describe('searchSettings', () => {
   beforeEach(() => {
@@ -116,5 +118,65 @@ describe('highlightMatches', () => {
     expect(segments.length).toBeGreaterThan(1)
     // Check that matched characters are marked
     expect(segments.some((s) => s.matched && s.text === 'a')).toBe(true)
+  })
+})
+
+describe('card title indexing', () => {
+  beforeEach(() => {
+    clearSearchIndex()
+  })
+
+  it('appends a setting`s resolved card title to its searchable text', () => {
+    const results = searchSettings('')
+    const downloads = results.find((r) => r.setting.id === 'behavior.fileSystemWatching.downloadsNotifications')
+    // The card title resolves to "Downloads notifications" (settings.fileSystemWatching.cardDownloads).
+    expect(downloads?.searchableText).toContain('downloads notifications')
+    // It MUST be appended last (after keywords), so label highlight offsets stay correct.
+    expect(downloads?.searchableText.endsWith('downloads notifications')).toBe(true)
+  })
+
+  it('does not append anything for a setting without a cardKey', () => {
+    const results = searchSettings('')
+    const density = results.find((r) => r.setting.id === 'appearance.uiDensity')
+    // The card title was undefined, so searchableText is just section/label/desc/keywords.
+    expect(density?.setting.card).toBeUndefined()
+  })
+
+  it('surfaces a setting when searching its card title', () => {
+    // "Low disk space" is the card title shared by the two low-disk-space settings.
+    const ids = searchSettings('low disk space').map((r) => r.setting.id)
+    expect(ids).toContain('behavior.fileSystemWatching.lowDiskSpaceNotifications')
+    expect(ids).toContain('behavior.fileSystemWatching.lowDiskSpaceThresholdPercent')
+  })
+
+  it('keeps label highlight offsets correct after appending the card title', () => {
+    // Regression guard: card title appended last must not shift label-relative indices.
+    // Search the low-disk-space row by its own label and confirm the highlighted span
+    // lands inside the label, not past it.
+    const def = getSettingDefinition('behavior.fileSystemWatching.lowDiskSpaceNotifications')
+    expect(def).toBeDefined()
+    const label = def?.label ?? ''
+    const indices = getMatchIndicesForLabel('disk', 'behavior.fileSystemWatching.lowDiskSpaceNotifications')
+    expect(indices.length).toBeGreaterThan(0)
+    for (const idx of indices) {
+      expect(idx).toBeGreaterThanOrEqual(0)
+      expect(idx).toBeLessThan(label.length)
+    }
+  })
+})
+
+describe('index-size hidden anchor search', () => {
+  beforeEach(() => {
+    clearSearchIndex()
+  })
+
+  it('returns the indexing.indexSize anchor when searching "index size"', () => {
+    const ids = searchSettings('index size').map((r) => r.setting.id)
+    expect(ids).toContain('indexing.indexSize')
+  })
+
+  it('adds the File system watching section to the sidebar match set for "index size"', () => {
+    const sections = getMatchingSections('index size')
+    expect(sectionHasMatches(['Behavior', 'File system watching'], sections)).toBe(true)
   })
 })

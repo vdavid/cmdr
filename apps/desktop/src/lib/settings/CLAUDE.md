@@ -35,7 +35,11 @@ Registry-based user settings for Cmdr: defined once in `settings-registry.ts`, a
   `log.error`** (an error-level log fires an auto error report on every viewer open). Never grant the viewer store
   permissions; extend the allowlist struct/enum instead.
 - **Increment `SCHEMA_VERSION` and add a `migrateSettings()` case** when changing the settings format, or old files may
-  crash on load.
+  crash on load. Adding a new key is additive (no bump; defaults rebuild from the registry).
+- **`cardKey` is metadata only**: it names the in-page `SectionCard` group a setting belongs to (resolved to `card`) so
+  the card title is searchable. **Card visibility is section-owned**, NEVER re-derived from `card` (that reintroduces
+  the empty-card bug). Card groups and the `indexing.indexSize` hidden search anchor: [DETAILS.md](DETAILS.md) § Card
+  groups.
 - **Reactive settings must live in `reactive-settings.svelte.ts`** (`.svelte.ts`, not `.ts`): `$state()` needs the
   extension.
 - **Date display has one source of truth:** `formatDateForDisplay()` (pure) → `formattedDate()` (reactive) →

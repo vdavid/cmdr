@@ -245,6 +245,47 @@ file map, the 50-50 split-layout rule, and the `SettingPasswordInput` store-driv
 - Platform-specific display strings (macOS: `⌘⇧P`, Windows: `Ctrl+Shift+P`)
 - Scope hierarchy determines conflict detection
 
+## Card groups (in-page SectionCard grouping)
+
+A page (a level-2 nav leaf, e.g. `File system watching`) can group its rows into one or more `SectionCard`s — the macOS
+System Settings look. This is a third, **visual** axis, orthogonal to the two structural levels in `section` (group →
+subsection). The mechanism:
+
+- A setting names its card via **`cardKey?: MessageKey`** on `SettingDefinitionSource`, resolved to a lazy
+  `card?: string` getter on `SettingDefinition` (parallel to `labelKey`→`label`). Reuse the SAME catalog key the card's
+  `<SectionCard label=…>` displays, so the title is findable. `buildSearchableText` appends the resolved `card` LAST in
+  the parts array.
+
+**Decision / why (D0): card titles are catalog keys, not literals.** With the i18n runtime in place,
+`no-raw-user-facing-string` forbids literal UI strings, and `card` must be translation-aware (untranslated `keywords`
+couldn't make a card title findable in another locale). So the field is a `MessageKey`, resolved through `tString` at
+read time — the same shape as `labelKey`. Caveat: the search index snapshots resolved strings at build time and isn't
+invalidated on locale change (`setLocale()` doesn't call `clearSearchIndex()`); harmless today (no in-app locale
+picker), but card titles don't re-translate live in search. Don't claim they do.
+
+**Decision / why (D2): card visibility is section-owned, never registry-derived.** The section keeps hand-rendering its
+rows and owns each row's visibility via `shouldShow(id)`. A card-group wrapper renders its frame only when a `visible`
+boolean — computed from the SAME `shouldShow` predicate (`anyVisible(shouldShow, ...ids)`) — is true, so empty cards
+vanish and the frame can never disagree with its contents. `card` is explicitly NOT read to decide rendering. An earlier
+draft had the wrapper re-derive visibility from `card`; that double-sources visibility and re-creates the empty-card bug
+for non-registry and mirrored rows. (The wrapper component and the FSW migration are M2.)
+
+**Decision / why (D4): non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry
+entry (e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show — searching "index size"
+yielded a blank pane. Fix: a `hidden: true` registry entry (`indexing.indexSize`) reusing the existing
+`settings.fileSystemWatching.indexSize` label key. `buildSearchIndex` filters only `showInAdvanced` (not `hidden`), so a
+hidden entry IS searchable; `buildSectionTree` skips `hidden`, so it adds no nav row. It's a fully-modeled setting (its
+own `SettingsValues` key, `type:'boolean'`, `default:false`) that's never read or written — modeled because
+`SettingId = keyof SettingsValues`. **Guardrail: the anchor's `section` MUST equal its hosting page's section**, or it
+lands outside that page's section-scoped match set and the blank-page fix breaks. Additive key, so no `SCHEMA_VERSION`
+bump. Precedent: the hidden `downloadsToastCollapsed` / `…acknowledged` state rows; the anchor extends that pattern from
+"internal state" to "a searchable UI element that isn't a setting."
+
+**Decision / why (D10): "subsection" stays the level-2 nav term.** The card axis got the new name `cardKey` (not
+`subsection`), because `subsection` already means the level-2 nav entry (`SettingsSection.subsections`, the page you
+click). The terminology group → subsection → card is kept as-is; cards are not a fourth `section[]` element (that would
+spawn a spurious nav level).
+
 ## Key decisions
 
 ### Why hybrid declarative registry with custom UI?
