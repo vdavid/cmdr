@@ -179,16 +179,24 @@ pub fn show_parent_row_context_menu<R: Runtime>(window: Window<R>, parent_path: 
 /// macOS: send the given NSWindow to the back of the window list without focusing
 /// it. `orderBack:` still makes the window visible (just behind everything), so
 /// the webview keeps rendering and the E2E tests can drive it over the socket.
+///
+/// MUST run on the AppKit main thread (AppKit window ordering is main-thread-only).
+/// Callers hop via `run_on_main_thread`; the marker check below enforces it.
 #[cfg(target_os = "macos")]
 fn order_ns_window_back(ns_window: *mut objc2::runtime::AnyObject) -> Result<(), String> {
+    use objc2::MainThreadMarker;
     use objc2::msg_send;
     use objc2::runtime::AnyObject;
+    if MainThreadMarker::new().is_none() {
+        return Err("order_ns_window_back must run on the AppKit main thread".into());
+    }
     if ns_window.is_null() {
         return Err("NSWindow pointer is null".into());
     }
     // SAFETY: `ns_window` is the live, non-null `NSWindow` Tauri owns for this webview (null-checked
-    // above). `-orderBack:` takes an `id` sender; we pass nil. Returns void, so there's no ownership
-    // to manage. This is E2E-only window plumbing (gated by `is_e2e_mode`), never on a user path.
+    // above), and we are on the AppKit main thread (`MainThreadMarker` checked above), as `-orderBack:`
+    // requires. It takes an `id` sender; we pass nil and it returns void, so there's no ownership to
+    // manage. E2E-only window plumbing (gated by `is_e2e_mode`), never on a user path.
     unsafe {
         let _: () = msg_send![ns_window, orderBack: std::ptr::null_mut::<AnyObject>()];
     }
@@ -206,8 +214,20 @@ pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     if crate::test_mode::is_e2e_mode() {
         use objc2::runtime::AnyObject;
-        let ns_window = window.ns_window().map_err(|e| e.to_string())? as *mut AnyObject;
-        return order_ns_window_back(ns_window);
+        // AppKit window ordering must run on the main thread; the raw NSWindow pointer
+        // isn't `Send`, so obtain it INSIDE the main-thread closure rather than capturing it.
+        let window_for_main = window.clone();
+        window
+            .run_on_main_thread(move || match window_for_main.ns_window() {
+                Ok(ptr) => {
+                    if let Err(e) = order_ns_window_back(ptr as *mut AnyObject) {
+                        log::warn!(target: "ui", "show_main_window: order_ns_window_back failed: {e}");
+                    }
+                }
+                Err(e) => log::warn!(target: "ui", "show_main_window: ns_window() failed: {e}"),
+            })
+            .map_err(|e| e.to_string())?;
+        return Ok(());
     }
     window.show().map_err(|e| e.to_string())
 }
@@ -224,11 +244,25 @@ pub fn order_window_to_back<R: Runtime>(app: AppHandle<R>, label: String) -> Res
     #[cfg(target_os = "macos")]
     if crate::test_mode::is_e2e_mode() {
         use objc2::runtime::AnyObject;
-        let window = app
-            .get_webview_window(&label)
-            .ok_or_else(|| format!("no window with label {label}"))?;
-        let ns_window = window.ns_window().map_err(|e| e.to_string())? as *mut AnyObject;
-        return order_ns_window_back(ns_window);
+        // AppKit window ordering must run on the main thread; the raw NSWindow pointer
+        // isn't `Send`, so resolve the window and obtain it INSIDE the main-thread closure.
+        let app_for_main = app.clone();
+        app.run_on_main_thread(move || {
+            let Some(window) = app_for_main.get_webview_window(&label) else {
+                log::warn!(target: "ui", "order_window_to_back: no window with label {label}");
+                return;
+            };
+            match window.ns_window() {
+                Ok(ptr) => {
+                    if let Err(e) = order_ns_window_back(ptr as *mut AnyObject) {
+                        log::warn!(target: "ui", "order_window_to_back: order_ns_window_back failed: {e}");
+                    }
+                }
+                Err(e) => log::warn!(target: "ui", "order_window_to_back: ns_window() failed: {e}"),
+            }
+        })
+        .map_err(|e| e.to_string())?;
+        return Ok(());
     }
     #[cfg(not(target_os = "macos"))]
     let _ = (app, label);
