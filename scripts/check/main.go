@@ -48,6 +48,7 @@ type cliFlags struct {
 	fast            bool
 	failFast        bool
 	noLog           bool
+	quiet           bool // collapse passing checks into a one-line count; stream only warns, failures, skips, and changes
 	fresh           bool // bypass the input-fingerprint cache: run everything selected, then refresh its entries
 	onlyFreestyle   bool
 	preferFreestyle bool
@@ -143,14 +144,14 @@ func main() {
 	plan := planSelectedChecks(ctx, flags, checksToRun)
 	checksToRun = plan.toRun
 
-	ensurePnpmIfNeeded(ctx, checksToRun)
+	ensurePnpmIfNeeded(ctx, checksToRun, flags.quiet)
 
 	smb = setupSmbOrchestratorIfNeeded(rootDir, checksToRun)
 	if smb != nil {
 		defer smb.Stop()
 	}
 
-	runChecks(ctx, checksToRun, plan, flags.failFast, flags.noLog)
+	runChecks(ctx, checksToRun, plan, flags.failFast, flags.noLog, flags.quiet)
 }
 
 // planSelectedChecks runs cache planning over the lane-filtered set and exits
@@ -170,9 +171,9 @@ func planSelectedChecks(ctx *checks.CheckContext, flags *cliFlags, checksToRun [
 }
 
 // ensurePnpmIfNeeded installs pnpm deps when any selected check needs them.
-func ensurePnpmIfNeeded(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition) {
+func ensurePnpmIfNeeded(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, quiet bool) {
 	if needsPnpmInstall(checksToRun) {
-		if err := ensurePnpmDependencies(ctx); err != nil {
+		if err := ensurePnpmDependencies(ctx, quiet); err != nil {
 			printError("Error: %v", err)
 			os.Exit(1)
 		}
@@ -296,6 +297,8 @@ func parseFlags(args []string) (*cliFlags, error) {
 		fast            = fs.Bool("fast", false, "Run only the curated fast pre-commit check set")
 		failFast        = fs.Bool("fail-fast", false, "Stop on first failure")
 		noLog           = fs.Bool("no-log", false, "Disable CSV stats logging")
+		quiet           = fs.Bool("quiet", false, "Collapse passing checks into a one-line count; stream only warns, failures, skips, and changes")
+		q               = fs.Bool("q", false, "Collapse passing checks into a one-line count; stream only warns, failures, skips, and changes")
 		fresh           = fs.Bool("fresh", false, "Bypass the input-fingerprint cache: run everything selected, then refresh the cache")
 		onlyFreestyle   = fs.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
 		preferFreestyle = fs.Bool("prefer-freestyle", false, "Run freestyle-compatible checks on VM + the rest locally in parallel")
@@ -332,6 +335,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		fast:            *fast,
 		failFast:        *failFast,
 		noLog:           *noLog || *ciMode,
+		quiet:           *quiet || *q,
 		fresh:           *fresh,
 		onlyFreestyle:   *onlyFreestyle,
 		preferFreestyle: *preferFreestyle,
@@ -500,49 +504,109 @@ func selectChecksByApp(appName string) ([]checks.CheckDefinition, error) {
 
 // runChecks executes the cache-miss checks, replays cache hits, records this
 // run's passes into the cache, and prints the summary.
-func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, plan *cachePlan, failFast, noLog bool) {
-	total := len(checksToRun) + len(plan.cached)
-	if len(plan.cached) > 0 {
-		fmt.Printf("🔍 Running %d %s (%d cached)...\n\n", total, checks.Pluralize(total, "check", "checks"), len(plan.cached))
-	} else {
-		fmt.Printf("🔍 Running %d %s...\n\n", total, checks.Pluralize(total, "check", "checks"))
+func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, plan *cachePlan, failFast, noLog, quiet bool) {
+	if !quiet {
+		total := len(checksToRun) + len(plan.cached)
+		if len(plan.cached) > 0 {
+			fmt.Printf("🔍 Running %d %s (%d cached)...\n\n", total, checks.Pluralize(total, "check", "checks"), len(plan.cached))
+		} else {
+			fmt.Printf("🔍 Running %d %s...\n\n", total, checks.Pluralize(total, "check", "checks"))
+		}
 	}
 
 	startTime := time.Now()
-	runner := NewRunner(ctx, checksToRun, plan.cached, failFast, noLog)
+	runner := NewRunner(ctx, checksToRun, plan.cached, failFast, noLog, quiet)
 	failed, failedChecks := runner.Run()
 
 	// Record this run's passing fingerprints (no-op when caching is disabled).
 	plan.recordRun(ctx.RootDir, runner.RunStates())
 
 	totalDuration := time.Since(startTime)
-	fmt.Println()
-	fmt.Printf("%s⏱️  Total runtime: %s%s\n", colorYellow, formatDuration(totalDuration), colorReset)
 
 	if failed {
-		printFailure(failedChecks)
+		if quiet {
+			fmt.Printf("%s❌ Some checks failed.%s %s(%s)%s\n", colorRed, colorReset, colorDim, formatDuration(totalDuration), colorReset)
+			printRerunHint(failedChecks, false)
+		} else {
+			fmt.Println()
+			fmt.Printf("%s⏱️  Total runtime: %s%s\n", colorYellow, formatDuration(totalDuration), colorReset)
+			printFailure(failedChecks)
+		}
 		os.Exit(1)
 	}
-
-	if runner.CachedCount() > 0 {
-		fmt.Printf("%s✅ All checks passed!%s %s(%d ran, %d cached)%s\n",
-			colorGreen, colorReset, colorDim, runner.RanCount(), runner.CachedCount(), colorReset)
-	} else {
-		fmt.Printf("%s✅ All checks passed!%s\n", colorGreen, colorReset)
-	}
+	printSuccess(quiet, runner, totalDuration)
 }
 
-// printFailure prints the failure message with rerun instructions.
+// printSuccess prints the all-passed summary. In quiet mode the passing checks
+// (already collapsed during the run) become a single count line; warns and skips
+// that rode alongside the pass are tallied so nothing silently disappears.
+func printSuccess(quiet bool, runner *Runner, d time.Duration) {
+	if !quiet {
+		fmt.Println()
+		fmt.Printf("%s⏱️  Total runtime: %s%s\n", colorYellow, formatDuration(d), colorReset)
+		if runner.CachedCount() > 0 {
+			fmt.Printf("%s✅ All checks passed!%s %s(%d ran, %d cached)%s\n",
+				colorGreen, colorReset, colorDim, runner.RanCount(), runner.CachedCount(), colorReset)
+		} else {
+			fmt.Printf("%s✅ All checks passed!%s\n", colorGreen, colorReset)
+		}
+		return
+	}
+
+	ok, warn, skipped := summarizeRun(runner)
+	fmt.Printf("%s✅ %d %s OK%s", colorGreen, ok, checks.Pluralize(ok, "check", "checks"), colorReset)
+	if warn > 0 {
+		fmt.Printf("%s, %d warn%s", colorYellow, warn, colorReset)
+	}
+	if skipped > 0 {
+		fmt.Printf(", %d skipped", skipped)
+	}
+	fmt.Printf(" %s(%s)%s\n", colorDim, formatDuration(d), colorReset)
+}
+
+// summarizeRun tallies the run's outcomes for the quiet summary line. Cache hits
+// are OK by construction (only passing checks are cached).
+func summarizeRun(runner *Runner) (ok, warn, skipped int) {
+	ok = runner.CachedCount()
+	for _, state := range runner.RunStates() {
+		switch state.Status {
+		case StatusCompleted:
+			if state.Result.Code == checks.ResultWarning {
+				warn++
+			} else {
+				ok++
+			}
+		case StatusSkipped:
+			skipped++
+		}
+	}
+	return ok, warn, skipped
+}
+
+// printFailure prints the failure banner with rerun instructions. Runtime-free
+// so freestyle.go can reuse it under its own "Local checks runtime" line; the
+// failed checks' output already streamed verbatim (quiet mode never suppresses
+// it).
 func printFailure(failedChecks []string) {
 	fmt.Printf("%s❌ Some checks failed.%s\n", colorRed, colorReset)
-	if len(failedChecks) > 0 {
-		fmt.Println()
-		checkWord := "check"
-		if len(failedChecks) > 1 {
-			checkWord = "checks"
-		}
-		fmt.Printf("To rerun the failed %s: pnpm check %s\n", checkWord, strings.Join(failedChecks, " "))
+	printRerunHint(failedChecks, true)
+}
+
+// printRerunHint prints the "rerun the failed checks" line, if any failed.
+// blankBefore adds a separating blank line (the verbose layout wants it; the
+// quiet one-liner doesn't).
+func printRerunHint(failedChecks []string, blankBefore bool) {
+	if len(failedChecks) == 0 {
+		return
 	}
+	if blankBefore {
+		fmt.Println()
+	}
+	checkWord := "check"
+	if len(failedChecks) > 1 {
+		checkWord = "checks"
+	}
+	fmt.Printf("To rerun the failed %s: pnpm check %s\n", checkWord, strings.Join(failedChecks, " "))
 }
 
 // needsPnpmInstall returns true if any of the checks require pnpm dependencies.
@@ -557,17 +621,25 @@ func needsPnpmInstall(checksToRun []checks.CheckDefinition) bool {
 	return false
 }
 
-// ensurePnpmDependencies runs pnpm install before checks.
-func ensurePnpmDependencies(ctx *checks.CheckContext) error {
-	fmt.Print("📦 Ensuring pnpm dependencies are installed... ")
+// ensurePnpmDependencies runs pnpm install before checks. In quiet mode it stays
+// silent on success (the failure is surfaced by the caller either way).
+func ensurePnpmDependencies(ctx *checks.CheckContext, quiet bool) error {
+	if !quiet {
+		fmt.Print("📦 Ensuring pnpm dependencies are installed... ")
+	}
 	startTime := time.Now()
 
 	skipped, err := checks.EnsurePnpmDependencies(ctx)
 	if err != nil {
-		fmt.Printf("%sFAILED%s\n", colorRed, colorReset)
+		if !quiet {
+			fmt.Printf("%sFAILED%s\n", colorRed, colorReset)
+		}
 		return err
 	}
 
+	if quiet {
+		return nil
+	}
 	duration := time.Since(startTime)
 	if skipped {
 		fmt.Printf("%sOK%s (skipped, lockfile unchanged)\n\n", colorGreen, colorReset)
@@ -605,6 +677,7 @@ func showUsage() {
 	fmt.Println("    --fresh                  Bypass the input-fingerprint cache: run everything selected, then refresh it")
 	fmt.Println("    --fail-fast              Stop on first failure")
 	fmt.Println("    --no-log                 Disable CSV stats logging (~/cmdr-check-log.csv)")
+	fmt.Println("    -q, --quiet              Collapse passing checks into a one-line count; stream only warns, failures, skips, and changes")
 	fmt.Println("    --graph                  Render the check dependency graph (weights + lanes) and exit")
 	fmt.Println("    --graph-format FORMAT    Graph output format: tree (default) | mermaid | dot")
 	fmt.Println("    --docs-graph             Render the doc-discoverability tree (rooted at AGENTS.md) and exit")

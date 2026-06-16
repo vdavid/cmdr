@@ -45,6 +45,7 @@ type Runner struct {
 	checkMap    map[string]*CheckState
 	failFast    bool
 	noLog       bool
+	quiet       bool // collapse silent passes: print only warns, failures, skips, blocks, and change-making passes
 	hasFailed   bool
 	mu          sync.Mutex
 	outputMu    sync.Mutex
@@ -59,13 +60,14 @@ type Runner struct {
 // NewRunner creates a new check runner. cached are checks resolved from the
 // input-fingerprint cache (inputs unchanged since their last pass); they're
 // reported up front and never run, but are logged and counted like real passes.
-func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, cached []cachedHit, failFast, noLog bool) *Runner {
+func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, cached []cachedHit, failFast, noLog, quiet bool) *Runner {
 	r := &Runner{
 		ctx:         ctx,
 		checks:      make([]*CheckState, 0, len(defs)),
 		checkMap:    make(map[string]*CheckState),
 		failFast:    failFast,
 		noLog:       noLog,
+		quiet:       quiet,
 		capacity:    runtime.NumCPU(),
 		completedCh: make(chan *CheckState, len(defs)),
 		isTTY:       term.IsTerminal(int(os.Stdout.Fd())),
@@ -301,8 +303,27 @@ func (r *Runner) runCheck(state *CheckState) {
 	}
 }
 
+// suppressedInQuiet reports whether quiet mode hides this result's per-check
+// line. Only silent passes are hidden: clean OK results and cache hits. Warns,
+// failures, skips, blocks, and passes that changed files (e.g. a formatter
+// rewriting the tree) always print, since the agent needs to act on them.
+func (r *Runner) suppressedInQuiet(state *CheckState) bool {
+	switch state.Status {
+	case StatusCached:
+		return true
+	case StatusCompleted:
+		return state.Result.Code != checks.ResultWarning && !state.Result.MadeChanges
+	default:
+		return false
+	}
+}
+
 // printResult outputs the result of a check.
 func (r *Runner) printResult(state *CheckState) {
+	if r.quiet && r.suppressedInQuiet(state) {
+		return
+	}
+
 	r.outputMu.Lock()
 	defer r.outputMu.Unlock()
 
@@ -392,9 +413,10 @@ func (r *Runner) updateStatusLine(stop chan struct{}) {
 	}
 }
 
-// printStatusLine prints the current running checks (only in TTY mode).
+// printStatusLine prints the current running checks (only in TTY mode, and not
+// in quiet mode, which shows nothing until the final summary).
 func (r *Runner) printStatusLine() {
-	if !r.isTTY {
+	if !r.isTTY || r.quiet {
 		return
 	}
 

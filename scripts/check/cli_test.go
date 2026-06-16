@@ -5,6 +5,8 @@ import (
 	"flag"
 	"slices"
 	"testing"
+
+	"cmdr/scripts/check/checks"
 )
 
 func TestParseFlags_PositionalCheckNames(t *testing.T) {
@@ -64,6 +66,56 @@ func TestParseFlags_FlagsAfterPositionals(t *testing.T) {
 	want := []string{"clippy", "oxfmt"}
 	if !slices.Equal(flags.checkNames, want) {
 		t.Errorf("checkNames = %v, want %v", flags.checkNames, want)
+	}
+}
+
+func TestParseFlags_Quiet(t *testing.T) {
+	for _, arg := range []string{"--quiet", "-q"} {
+		flags, err := parseFlags([]string{arg, "clippy"})
+		if err != nil {
+			t.Fatalf("parseFlags(%q) returned error: %v", arg, err)
+		}
+		if !flags.quiet {
+			t.Errorf("parseFlags(%q): quiet = false, want true", arg)
+		}
+	}
+
+	flags, err := parseFlags([]string{"clippy"})
+	if err != nil {
+		t.Fatalf("parseFlags() returned error: %v", err)
+	}
+	if flags.quiet {
+		t.Error("quiet should default to false without --quiet/-q")
+	}
+}
+
+func TestSummarizeRun(t *testing.T) {
+	mk := func(status CheckStatus, code checks.ResultCode) *CheckState {
+		return &CheckState{Status: status, Result: checks.CheckResult{Code: code}}
+	}
+	r := &Runner{
+		checks: []*CheckState{
+			mk(StatusCompleted, checks.ResultSuccess), // OK
+			mk(StatusCompleted, checks.ResultSuccess), // OK (a change-making pass still counts as OK)
+			mk(StatusCompleted, checks.ResultWarning), // warn
+			mk(StatusSkipped, checks.ResultSkipped),   // skipped
+			mk(StatusFailed, checks.ResultSuccess),    // failed: counted in none
+		},
+		cached: []*CheckState{
+			mk(StatusCached, checks.ResultSuccess),
+			mk(StatusCached, checks.ResultSuccess),
+		},
+	}
+
+	ok, warn, skipped := summarizeRun(r)
+	if ok != 4 { // 2 completed-OK + 2 cached
+		t.Errorf("ok = %d, want 4", ok)
+	}
+	if warn != 1 {
+		t.Errorf("warn = %d, want 1", warn)
+	}
+	if skipped != 1 {
+		t.Errorf("skipped = %d, want 1", skipped)
 	}
 }
 

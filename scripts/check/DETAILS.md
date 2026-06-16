@@ -61,6 +61,7 @@ nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main
 - **`--prefer-freestyle`**: Run compat checks on VM + the rest locally in parallel
 - **`--fail-fast`**: Stop on first failure
 - **`--no-log`**: Disable CSV stats logging
+- **`-q`, `--quiet`**: Collapse passing checks into a one-line count, for low-token agent runs (details below)
 - **`--graph`**: Render the check dependency graph (weights + lanes + median wall-time) and exit
 - **`--graph-format`**: Graph output: `tree` (default, colored terminal), `mermaid`, `dot`
 - **`-h`, `--help`**: Show help message
@@ -72,6 +73,15 @@ dashboard — pairing the CPU-weight (how heavy) with the typical duration (how 
 target. Missing log (CI / `--no-log` / fresh machine) just omits the times. `mermaid` output pastes into a Markdown
 ```mermaid block or https://mermaid.live; `dot` pipes to Graphviz (`pnpm check --graph --graph-format dot | dot -Tpng -o
 checks.png`).
+
+**Quiet mode (`-q` / `--quiet`)** trims the output for agents, which only ever see the final captured stdout anyway (the
+live "Waiting for:" status line is already TTY-only). It drops the `📦 pnpm` and `🔍 Running N checks` headers and
+collapses every silent pass (clean OK results and cache hits) into one summary line: `✅ 41 checks OK, 1 warn (4.4s)`.
+What still streams verbatim, because the agent must act on it: warns, failures, skips (a skip didn't verify anything),
+and passes that changed files (a formatter rewriting the tree, flagged by `MadeChanges`). The warn/skip counts ride into
+the summary so a collapsed warn is never silently lost. Implementation: `Runner.suppressedInQuiet` (which per-check
+lines to hide) and `printSuccess` / `summarizeRun` in `main.go` (the summary line). Caching, logging, and exit codes are
+unchanged. Suppression is output-only.
 
 ## Architecture
 

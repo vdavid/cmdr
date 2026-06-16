@@ -96,7 +96,7 @@ func preferFreestyleRun(rootDir string, args []string, flags *cliFlags) int {
 		fmt.Printf("\n🏠 Running %d local-only checks (freestyle-incompatible)...\n\n", len(localChecks))
 
 		if needsPnpmInstall(localChecks) {
-			if err := ensurePnpmDependencies(ctx); err != nil {
+			if err := ensurePnpmDependencies(ctx, false); err != nil {
 				printError("Error: %v", err)
 				localFailed = true
 			}
@@ -106,7 +106,7 @@ func preferFreestyleRun(rootDir string, args []string, flags *cliFlags) int {
 			startTime := time.Now()
 			// Freestyle's parallel "run everything" mode is intentionally
 			// cache-unaware: no cached hits passed.
-			runner := NewRunner(ctx, localChecks, nil, flags.failFast, flags.noLog)
+			runner := NewRunner(ctx, localChecks, nil, flags.failFast, flags.noLog, false)
 			failed, failedChecks := runner.Run()
 
 			totalDuration := time.Since(startTime)
