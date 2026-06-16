@@ -36,14 +36,15 @@ the UI changes you re-run and the screenshots + couplings refresh — no manual 
 - **Not a visual-regression / pseudolocale-overflow tool.** That's a separate future effort; this only couples context
   screenshots. (Note the overlap for later: the same driver could later drive a pseudolocale for overflow testing.)
 
-## Resume from the stashed spike (don't rebuild)
+## Resume from the spike WIP (don't rebuild)
 
-A prior spike's harness is in `git stash@{0}` ("i18n screenshot capture harness WIP"), visible from this worktree
-(shared `.git`). It contains: `apps/desktop/scripts/i18n-capture.js`, `apps/desktop/scripts/couple-screenshots.js`,
-`apps/desktop/test/e2e-playwright/i18n-capture.spec.ts`, plus instrumentation edits to `messages.svelte.ts` /
-`messages.svelte.test.ts`, and `package.json` + `playwright.config.ts`. It was mid-flight, never proven end-to-end.
-**First execution step: `git stash apply stash@{0}` here, read what's there, validate/finish it** rather than starting
-clean. Keep the stash until the work is committed and confirmed (`git stash drop` only at the end).
+The prior spike's harness is already committed on this branch (`i18n/screenshots`) as `99f9fd07` ("WIP: i18n screenshot
+capture harness (from spike, unverified)") and present in the worktree — no stash to pop. It contains:
+`apps/desktop/scripts/i18n-capture.js`, `apps/desktop/scripts/couple-screenshots.js`,
+`apps/desktop/test/e2e-playwright/i18n-capture.spec.ts`, plus the dev capture-mode instrumentation in
+`messages.svelte.ts` / `messages.svelte.test.ts`, and `package.json` + `playwright.config.ts` wiring. It was mid-flight,
+**never proven end-to-end**. **First execution step: read those files, validate/finish them against the design below**
+rather than starting clean — then prove the loop (M0 gate).
 
 ## Design decisions
 
