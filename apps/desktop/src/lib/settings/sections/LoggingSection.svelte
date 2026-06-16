@@ -8,6 +8,7 @@
     import { getAppLogger } from '$lib/logging/logger'
     import { revealItemInDir } from '@tauri-apps/plugin-opener'
     import { appLogDir } from '@tauri-apps/api/path'
+    import { getVersion } from '@tauri-apps/api/app'
 
     interface Props {
         searchQuery: string
@@ -32,20 +33,20 @@
     }
 
     async function copyDiagnosticInfo() {
-        const info = {
-            appVersion: '0.3.2', // Could be fetched from package.json
-            userAgent: navigator.userAgent,
-            timestamp: new Date().toISOString(),
-        }
+        try {
+            const info = {
+                appVersion: await getVersion(),
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+            }
 
-        const text = `Cmdr Diagnostic Info
+            const text = `Cmdr Diagnostic Info
 ====================
 Version: ${info.appVersion}
 User Agent: ${info.userAgent}
 Timestamp: ${info.timestamp}
 `
 
-        try {
             await navigator.clipboard.writeText(text)
             copyFeedback = true
             setTimeout(() => {
