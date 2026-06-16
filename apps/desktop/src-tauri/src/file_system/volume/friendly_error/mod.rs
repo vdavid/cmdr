@@ -94,6 +94,155 @@ mod tests {
     use crate::file_system::volume::VolumeError;
     use std::path::Path;
 
+    // ── TEMPORARY golden parity snapshot ────────────────────────────────
+    //
+    // Records the current rendered title/explanation/suggestion for a
+    // representative input matrix to `friendly_error_golden.json`. The TS
+    // parity test (`apps/desktop/test/.../friendly-error-parity.test.ts`)
+    // asserts the FE factories reproduce these exact strings. This whole
+    // module is removed in step 7 once the TS parity test is green.
+    #[cfg(target_os = "macos")]
+    #[test]
+    #[ignore = "side-effect: writes friendly_error_golden.json; run with --run-ignored=ignored-only"]
+    fn write_golden_parity_snapshot() {
+        use crate::file_system::git::friendly::{FriendlyGitError, FriendlyGitErrorKind};
+        use serde_json::{Map, Value, json};
+
+        // A path with markdown specials so escaping is exercised in the golden.
+        let path = Path::new("/Volumes/share/_todo_*pics/photo.jpg");
+
+        let mut entries: Vec<(String, FriendlyError)> = Vec::new();
+
+        // ── Every macOS errno arm ──
+        for errno in [
+            4, 12, 16, 35, 50, 52, 53, 54, 60, 64, 70, 77, 89, // transient
+            1, 2, 13, 17, 18, 20, 21, 28, 30, 45, 51, 61, 62, 63, 65, 66, 69, 80, 81, 82,
+            93, // needs-action
+            5, 22, 83,   // serious
+            9999, // unknown
+        ] {
+            let err = VolumeError::IoError {
+                message: "Protocol error: STATUS_DELETE_PENDING during Create".into(),
+                raw_os_error: Some(errno),
+            };
+            entries.push((format!("errno:{errno}"), friendly_error_from_volume_error(&err, path)));
+        }
+
+        // ── Every typed VolumeError variant (non-errno) ──
+        // PermissionDenied on a non-TCC path → generic permission_denied.
+        let plain_path = Path::new("/some/plain/folder/_x_*y");
+        let typed: Vec<(&str, VolumeError, &Path)> = vec![
+            ("NotFound", VolumeError::NotFound("x".into()), path),
+            ("PermissionDenied:plain", VolumeError::PermissionDenied("x".into()), plain_path),
+            ("PermissionDenied:tcc", VolumeError::PermissionDenied("x".into()), path),
+            ("AlreadyExists", VolumeError::AlreadyExists("x".into()), path),
+            ("NotSupported", VolumeError::NotSupported, path),
+            ("DeviceDisconnected", VolumeError::DeviceDisconnected("x".into()), path),
+            ("ReadOnly", VolumeError::ReadOnly("x".into()), path),
+            ("StorageFull", VolumeError::StorageFull { message: "x".into() }, path),
+            ("ConnectionTimeout", VolumeError::ConnectionTimeout("x".into()), path),
+            ("Cancelled", VolumeError::Cancelled("x".into()), path),
+            ("DeletePending", VolumeError::DeletePending("x".into()), path),
+            ("IsADirectory", VolumeError::IsADirectory("x".into()), path),
+            (
+                "IoError:none",
+                VolumeError::IoError {
+                    message: "Protocol error: STATUS_DELETE_PENDING during Create".into(),
+                    raw_os_error: None,
+                },
+                path,
+            ),
+        ];
+        for (label, err, p) in typed {
+            entries.push((label.to_string(), friendly_error_from_volume_error(&err, p)));
+        }
+
+        // ── Every git kind ──
+        for kind in [
+            FriendlyGitErrorKind::NotARepo,
+            FriendlyGitErrorKind::OrphanedWorktree,
+            FriendlyGitErrorKind::CorruptRepo,
+            FriendlyGitErrorKind::IndexLocked,
+            FriendlyGitErrorKind::PermissionDenied,
+            FriendlyGitErrorKind::BareRepo,
+            FriendlyGitErrorKind::BlobTooLarge,
+            FriendlyGitErrorKind::ShallowBoundary,
+            FriendlyGitErrorKind::MissingObject,
+            FriendlyGitErrorKind::GitDirPermissionDenied,
+        ] {
+            let err = VolumeError::FriendlyGit(FriendlyGitError::new(kind, "/some/repo/.git"));
+            entries.push((format!("git:{kind:?}"), friendly_error_from_volume_error(&err, path)));
+        }
+
+        // ── Empty-root iCloud hint ──
+        let icloud_path = Path::new("/Users/test/Library/Mobile Documents/com~apple~CloudDocs");
+        if let Some(f) = friendly_error_for_restricted_empty_root("cloud-icloud", icloud_path) {
+            entries.push(("emptyRoot:icloud".to_string(), f));
+        }
+
+        // ── Provider × category overlay ──
+        // Build a base error of each category, then enrich at a provider path.
+        let provider_paths: Vec<(&str, std::path::PathBuf)> = {
+            let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/Users/test"));
+            vec![
+                ("Dropbox", home.join("Library/CloudStorage/Dropbox/_f_*x")),
+                ("GoogleDrive", home.join("Library/CloudStorage/GoogleDrive-x/_f")),
+                ("OneDrive", home.join("Library/CloudStorage/OneDrive-x/_f")),
+                ("Box", home.join("Library/CloudStorage/Box-x/_f")),
+                ("PCloud", home.join("Library/CloudStorage/pCloud/_f")),
+                ("Nextcloud", home.join("Library/CloudStorage/Nextcloud-x/_f")),
+                ("SynologyDrive", home.join("Library/CloudStorage/SynologyDrive-x/_f")),
+                ("Tresorit", home.join("Library/CloudStorage/Tresorit/_f")),
+                ("ProtonDrive", home.join("Library/CloudStorage/ProtonDrive-x/_f")),
+                ("Sync", home.join("Library/CloudStorage/Sync-x/_f")),
+                ("Egnyte", home.join("Library/CloudStorage/Egnyte-x/_f")),
+                ("MacDroid", home.join("Library/CloudStorage/MacDroid-x/_f")),
+                ("GenericCloudStorage", home.join("Library/CloudStorage/Unknown-x/_f")),
+                ("ICloud", home.join("Library/Mobile Documents/com~apple~CloudDocs/_f")),
+                ("PCloudFuse", std::path::PathBuf::from("/Volumes/pCloudDrive/_f")),
+                ("VeraCrypt", std::path::PathBuf::from("/Volumes/veracrypt1/_f")),
+                ("CmVolumes", home.join(".CMVolumes/MyMount/_f")),
+            ]
+        };
+        // Drive each category via a VolumeError whose base category matches.
+        let category_drivers: Vec<(&str, VolumeError)> = vec![
+            ("transient", VolumeError::ConnectionTimeout("x".into())),
+            ("needs_action", VolumeError::PermissionDenied("x".into())),
+            (
+                "serious",
+                VolumeError::IoError {
+                    message: "x".into(),
+                    raw_os_error: None,
+                },
+            ),
+        ];
+        for (pname, ppath) in &provider_paths {
+            for (cat, driver) in &category_drivers {
+                let mut f = friendly_error_from_volume_error(driver, ppath);
+                enrich_with_provider(&mut f, ppath);
+                entries.push((format!("provider:{pname}:{cat}"), f));
+            }
+        }
+
+        let mut out = Map::new();
+        for (key, f) in entries {
+            out.insert(
+                key,
+                json!({
+                    "category": serde_json::to_value(f.category).unwrap(),
+                    "title": f.title,
+                    "explanation": f.explanation.as_str(),
+                    "suggestion": f.suggestion.as_str(),
+                    "retryHint": f.retry_hint,
+                    "actionKind": serde_json::to_value(f.action_kind).unwrap(),
+                }),
+            );
+        }
+        let value = Value::Object(out);
+        let path_out = concat!(env!("CARGO_MANIFEST_DIR"), "/friendly_error_golden.json");
+        std::fs::write(path_out, serde_json::to_string_pretty(&value).unwrap()).expect("write golden");
+    }
+
     // ── Errno category tests ────────────────────────────────────────────
 
     #[cfg(target_os = "macos")]
