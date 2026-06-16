@@ -2,3 +2,7 @@
 # Complexity threshold of 15 matches ESLint's complexity rule for consistency across Rust and TypeScript
 cognitive-complexity-threshold = 15
 
+# Tests legitimately `.unwrap()` everywhere (`clippy::unwrap_used` is enabled in lib.rs);
+# this exempts unwraps inside `#[test]` fns. Helper fns in `#[cfg(test)] mod`s aren't covered,
+# so those use the sanctioned `.expect("…")` form.
+allow-unwrap-in-tests = true

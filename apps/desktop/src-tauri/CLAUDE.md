@@ -11,6 +11,10 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
 - ❌ No bare `.lock()` / `.read()` / `.write().unwrap()` on a std `Mutex` / `RwLock`: a poisoned lock aborts the whole
   app. Use `*_ignore_poison()` (recover) or `.expect("…poison…<why aborting is correct>")` (abort). Enforced by
   `lock-poison`; see `src/ignore_poison.rs`.
+- ❌ No bare `.unwrap()` in production: it's a silent panic. Handle the error (`?` / `ok_or` / `match`) where the value
+  can genuinely be absent, or use `.expect("<concrete why it can't fail>")` for a true invariant (the sanctioned form,
+  per the lock-poison rule). Enforced by `clippy::unwrap_used`; `#[test]` fns are exempt (`clippy.toml`
+  `allow-unwrap-in-tests`), but test *helper* fns outside `#[test]` aren't, so they use `.expect("…")` too.
 - ❌ Never build the app with raw `cargo build` (white screen, no embedded frontend). Use `pnpm tauri build` or the
   `tauri-wrapper.js build` wrapper, which runs `beforeBuildCommand`. See [`../scripts/CLAUDE.md`](../scripts/CLAUDE.md).
 - ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the immediately-preceding line, stating

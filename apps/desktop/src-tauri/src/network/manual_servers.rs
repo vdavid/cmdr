@@ -172,8 +172,13 @@ fn extract_protocol(input: &str) -> Option<String> {
 
 /// Parses an `smb://` URL.
 fn parse_smb_url(input: &str) -> Result<ParsedAddress, ParseError> {
-    // Strip the scheme
-    let after_scheme = &input[input.find("://").unwrap() + 3..];
+    // Strip the scheme. The caller only routes here after `extract_protocol`
+    // matched a `smb://` prefix, so `://` is present; fall back to a Malformed
+    // error rather than panicking if that ever stops holding.
+    let scheme_end = input.find("://").ok_or_else(|| {
+        ParseError::Malformed("Couldn't parse this address. Try a hostname, IP, or smb:// URL.".to_string())
+    })?;
+    let after_scheme = &input[scheme_end + 3..];
 
     if after_scheme.is_empty() {
         return Err(ParseError::Malformed(

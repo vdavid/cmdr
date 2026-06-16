@@ -61,7 +61,10 @@ impl ReadPool {
                 let conn = IndexStore::open_read_connection(&self.db_path).map_err(|e| format!("{e}"))?;
                 *slot = Some((self.db_path.clone(), current_gen, conn));
             }
-            Ok(f(&slot.as_ref().unwrap().2))
+            Ok(f(&slot
+                .as_ref()
+                .expect("slot is Some: needs_reopen is true whenever it was None, and we just set it")
+                .2))
         })
     }
 }

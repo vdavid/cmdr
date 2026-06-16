@@ -707,7 +707,10 @@ async fn process_request<R: Runtime>(
 
             let caps = ServerCapabilities::default();
             (
-                McpResponse::success(request.id, serde_json::to_value(caps).unwrap()),
+                McpResponse::success(
+                    request.id,
+                    serde_json::to_value(caps).expect("ServerCapabilities is a plain serde struct that always serializes"),
+                ),
                 Some(session_id),
             )
         }

@@ -12,6 +12,9 @@
 // Require a `// SAFETY:` comment on every `unsafe {}` block: each site must state the concrete
 // invariant that makes it sound. Rote FFI is documented per-site, never blanket-exempted.
 #![warn(clippy::undocumented_unsafe_blocks)]
+// No silent `.unwrap()` in production: each must be a handled error or a documented `.expect("why")`.
+// Extends the lock-poison discipline to all unwraps. Tests are exempt via clippy.toml.
+#![warn(clippy::unwrap_used)]
 
 //noinspection RsUnusedImport
 // Silence false positives for dev dependencies (used only in benches/, not lib)

@@ -125,7 +125,7 @@ impl Volume for LocalPosixVolume {
                 list_directory_core(&abs_path).map_err(VolumeError::from)
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking listing closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -150,7 +150,7 @@ impl Volume for LocalPosixVolume {
                 get_single_entry(&abs_path).map_err(VolumeError::from)
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking metadata closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -161,7 +161,7 @@ impl Volume for LocalPosixVolume {
         Box::pin(async move {
             spawn_blocking(move || std::fs::symlink_metadata(abs_path).is_ok())
                 .await
-                .unwrap()
+                .expect("spawn_blocking symlink_metadata closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -176,7 +176,7 @@ impl Volume for LocalPosixVolume {
                 Ok(metadata.is_dir())
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking is_directory closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -304,7 +304,7 @@ impl Volume for LocalPosixVolume {
                 Ok(())
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking create_file closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -322,7 +322,7 @@ impl Volume for LocalPosixVolume {
                 Ok(())
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking create_dir closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -364,7 +364,7 @@ impl Volume for LocalPosixVolume {
                 Ok(())
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking delete closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -388,7 +388,7 @@ impl Volume for LocalPosixVolume {
                 Ok(())
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking rename closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -468,7 +468,7 @@ impl Volume for LocalPosixVolume {
                 })
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking scan_for_copy closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -513,7 +513,7 @@ impl Volume for LocalPosixVolume {
                 }) as Box<dyn VolumeReadStream>)
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking open_read_stream closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -534,7 +534,7 @@ impl Volume for LocalPosixVolume {
                 let parent = parent.to_path_buf();
                 spawn_blocking(move || std::fs::create_dir_all(&parent))
                     .await
-                    .unwrap()
+                    .expect("spawn_blocking create_dir_all closure doesn't panic and the task is uncancelable")
                     .map_err(VolumeError::from)?;
             }
 
@@ -542,7 +542,7 @@ impl Volume for LocalPosixVolume {
             let dest_for_open = dest_abs.clone();
             let mut file = spawn_blocking(move || std::fs::File::create(&dest_for_open))
                 .await
-                .unwrap()
+                .expect("spawn_blocking File::create closure doesn't panic and the task is uncancelable")
                 .map_err(VolumeError::from)?;
 
             let mut bytes_written = 0u64;
@@ -560,7 +560,7 @@ impl Volume for LocalPosixVolume {
                     (file, res)
                 })
                 .await
-                .unwrap();
+                .expect("spawn_blocking write_all closure doesn't panic and the task is uncancelable");
                 file = file_ret;
                 write_res.map_err(VolumeError::from)?;
 
@@ -609,7 +609,7 @@ impl Volume for LocalPosixVolume {
                 file
             })
             .await
-            .unwrap();
+            .expect("spawn_blocking sync_data closure doesn't panic and the task is uncancelable");
             drop(file);
 
             // Best-effort: fsync the parent directory so the new file's
@@ -674,13 +674,17 @@ impl Volume for LocalPosixVolume {
                 Ok(conflicts)
             })
             .await
-            .unwrap()
+            .expect("spawn_blocking scan_for_conflicts closure doesn't panic and the task is uncancelable")
         })
     }
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
         let root = self.root.clone();
-        Box::pin(async move { spawn_blocking(move || get_space_info_for_path(&root)).await.unwrap() })
+        Box::pin(async move {
+            spawn_blocking(move || get_space_info_for_path(&root))
+                .await
+                .expect("spawn_blocking get_space_info closure doesn't panic and the task is uncancelable")
+        })
     }
 
     fn scanner(&self) -> Option<Box<dyn VolumeScanner>> {
@@ -761,7 +765,7 @@ impl VolumeReadStream for LocalPosixReadStream {
                 (file, Ok(buf))
             })
             .await
-            .unwrap();
+            .expect("spawn_blocking read-chunk closure doesn't panic and the task is uncancelable");
 
             match result {
                 Ok(buf) if buf.is_empty() => {

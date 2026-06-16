@@ -433,7 +433,7 @@ fn ns_string_to_key(s: &NSString) -> String {
     let first = chars.next();
     let only_one = first.is_some() && chars.next().is_none();
     if only_one {
-        let ch = first.unwrap();
+        let ch = first.expect("only_one is true only when first.is_some()");
         return match ch as u32 {
             0xF700 => "ArrowUp".to_string(),
             0xF701 => "ArrowDown".to_string(),

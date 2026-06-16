@@ -216,7 +216,12 @@ fn upsert_update_existing(
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
     let (logical_size, physical_size) = if should_dedup
-        && IndexStore::has_sized_entry_for_inode(conn, inode.unwrap(), Some(existing_id)).unwrap_or(false)
+        && IndexStore::has_sized_entry_for_inode(
+            conn,
+            inode.expect("should_dedup is true only when inode.is_some()"),
+            Some(existing_id),
+        )
+        .unwrap_or(false)
     {
         (None, None)
     } else {
@@ -268,7 +273,14 @@ fn upsert_insert_new(
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
     let (logical_size, physical_size) =
-        if should_dedup && IndexStore::has_sized_entry_for_inode(conn, inode.unwrap(), None).unwrap_or(false) {
+        if should_dedup
+            && IndexStore::has_sized_entry_for_inode(
+                conn,
+                inode.expect("should_dedup is true only when inode.is_some()"),
+                None,
+            )
+            .unwrap_or(false)
+        {
             (None, None)
         } else {
             (logical_size, physical_size)
