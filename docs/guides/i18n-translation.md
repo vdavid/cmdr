@@ -17,7 +17,9 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
    `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` metadata schema.
 2. **Per-language style guide** — you write this once per language: tone, voice, formality (T/V distinction if the
    language has one), terminology and glossary, how brand words are handled in this language. NOT per-string; never
-   repeat tone on every key. It lives wherever you keep translation working notes (it's not committed to the catalog).
+   repeat tone on every key. It lives at `docs/i18n/<tag>-style.md` (start from
+   [`/docs/i18n/_template-style.md`](../i18n/_template-style.md); see [`/docs/i18n/README.md`](../i18n/README.md)).
+   These are working notes, not catalog data: the app never loads them.
 3. **One ICU instruction** — given once in the agent system prompt, not per string (see the block below).
 
 ## Add a new language
