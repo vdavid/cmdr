@@ -12,6 +12,8 @@
     "build:dashboard": "pnpm --filter @cmdr/analytics-dashboard build",
     "dev:api-server": "pnpm --filter @cmdr/api-server dev",
     "deploy:api-server": "pnpm --filter @cmdr/api-server deploy",
+    "i18n:capture": "pnpm --filter @cmdr/desktop i18n:capture",
+    "i18n:couple": "pnpm --filter @cmdr/desktop i18n:couple",
     "check": "./scripts/check.sh"
   },
   "devDependencies": {

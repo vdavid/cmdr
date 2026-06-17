@@ -26,14 +26,17 @@
  */
 
 import { spawn, spawnSync, execSync } from 'node:child_process'
-import { existsSync, mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import net from 'node:net'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const desktopDir = join(here, '..')
+// The Cargo workspace root is the REPO root, so the built binary lands in
+// `<repo-root>/target/<triple>/release/Cmdr`, NOT under `apps/desktop/src-tauri`.
+// This matches `desktop-svelte-e2e-playwright.go`'s binary resolution.
+const repoRoot = join(desktopDir, '..', '..')
 const wantBuild = process.argv.includes('--build')
 const SOCKET = process.env.CMDR_PLAYWRIGHT_SOCKET ?? '/tmp/tauri-playwright.sock'
 
@@ -113,16 +116,17 @@ async function main() {
   }
 
   const triple = hostTriple()
-  const binary = join(desktopDir, 'src-tauri', 'target', triple, 'release', 'Cmdr')
+  const binary = join(repoRoot, 'target', triple, 'release', 'Cmdr')
   if (!existsSync(binary)) {
     throw new Error(`E2E binary not found at ${binary}.\nRun with --build first (\`pnpm i18n:capture --build\`).`)
   }
 
   // Fresh fixtures so the panes have predictable content for the screenshot.
-  const fixtureRoot = mkdtempSync(join(tmpdir(), 'cmdr-i18n-capture-'))
+  // This imports a `.ts` module, so the script runs under `tsx` (see the
+  // `i18n:capture` package script), matching `check:type-drift`'s convention.
   const { createFixtures } = await import('../test/e2e-shared/fixtures.js')
   const startPath = createFixtures()
-  console.log(`[i18n-capture] fixtures at ${startPath} (scratch ${fixtureRoot})`)
+  console.log(`[i18n-capture] fixtures at ${startPath}`)
 
   // Make sure no stale app holds the socket.
   killApp()
@@ -145,15 +149,12 @@ async function main() {
   await waitForSocket(SOCKET, 60000)
   console.log('[i18n-capture] socket ready; running capture spec…')
 
-  run('npx', [
-    'playwright',
-    'test',
-    '--config',
-    'test/e2e-playwright/playwright.config.ts',
-    '--project',
-    'tauri',
-    'test/e2e-playwright/i18n-capture.spec.ts',
-  ], {
+  // Don't pass `--project tauri` AND a positional spec path: Playwright treats
+  // the positional as a project filter when `--project` is set, failing with
+  // "Project(s) ... not found". The `i18n-capture` shard's `testMatch` already
+  // restricts the run to the capture spec, and the config has only the `tauri`
+  // project, so it runs by default. (See the suite CLAUDE.md note on this clash.)
+  run('npx', ['playwright', 'test', '--config', 'test/e2e-playwright/playwright.config.ts'], {
     env: { ...process.env, CMDR_E2E_START_PATH: startPath, CMDR_E2E_SHARD_KIND: 'i18n-capture' },
   })
 
