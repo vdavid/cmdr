@@ -191,70 +191,86 @@
 
   "settings.appearance.textSize.label": "Text size",
   "@settings.appearance.textSize.label": {
-    "description": "Label for the text-size slider in Settings > Appearance > Zoom and density."
+    "description": "Label for the text-size slider in Settings > Appearance > Zoom and density.",
+    "screenshot": "settings-appearance-zoom.png"
   },
   "settings.appearance.textSize.description": "Scales text and UI throughout the app. Compounds with the macOS Accessibility text size — 100% means \"exactly the system size\".",
   "@settings.appearance.textSize.description": {
-    "description": "Help text for the text-size slider. Notes it multiplies with the macOS Accessibility text-size setting, so 100% equals the current system size. \"100%\" is a literal value; keep the percent sign."
+    "description": "Help text for the text-size slider. Notes it multiplies with the macOS Accessibility text-size setting, so 100% equals the current system size. \"100%\" is a literal value; keep the percent sign.",
+    "screenshot": "settings-appearance-zoom.png"
   },
 
   "settings.appearance.uiDensity.label": "UI density",
   "@settings.appearance.uiDensity.label": {
-    "description": "Label for the UI-density picker in Settings > Appearance > Zoom and density. \"UI\" = user interface; density means how tightly elements are packed."
+    "description": "Label for the UI-density picker in Settings > Appearance > Zoom and density. \"UI\" = user interface; density means how tightly elements are packed.",
+    "screenshot": "settings-appearance-zoom.png"
   },
   "settings.appearance.uiDensity.description": "Controls the spacing and size of UI elements throughout the app.",
   "@settings.appearance.uiDensity.description": {
-    "description": "Help text for the UI-density setting."
+    "description": "Help text for the UI-density setting.",
+    "screenshot": "settings-appearance-zoom.png"
   },
   "settings.appearance.uiDensity.opt.compact": "Compact",
   "@settings.appearance.uiDensity.opt.compact": {
-    "description": "UI-density option: tightest spacing, smallest elements. Short toggle-button label."
+    "description": "UI-density option: tightest spacing, smallest elements. Short toggle-button label.",
+    "screenshot": "settings-appearance-zoom.png"
   },
   "settings.appearance.uiDensity.opt.comfortable": "Comfortable",
   "@settings.appearance.uiDensity.opt.comfortable": {
-    "description": "UI-density option: the balanced default spacing. Short toggle-button label."
+    "description": "UI-density option: the balanced default spacing. Short toggle-button label.",
+    "screenshot": "settings-appearance-zoom.png"
   },
   "settings.appearance.uiDensity.opt.spacious": "Spacious",
   "@settings.appearance.uiDensity.opt.spacious": {
-    "description": "UI-density option: loosest spacing, most breathing room. Short toggle-button label."
+    "description": "UI-density option: loosest spacing, most breathing room. Short toggle-button label.",
+    "screenshot": "settings-appearance-zoom.png"
   },
 
   "settings.listing.sizeDisplay.label": "Size display",
   "@settings.listing.sizeDisplay.label": {
-    "description": "Label for the which-size-to-show picker in Settings > Appearance > File and folder sizes."
+    "description": "Label for the which-size-to-show picker in Settings > Appearance > File and folder sizes.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeDisplay.description": "Smart shows the smaller of content and on-disk size. This helps with disk images and compressed files where the two differ.",
   "@settings.listing.sizeDisplay.description": {
-    "description": "Help text for the size-display setting. \"Smart\" is this setting's own option name (see opt.smart); keep it consistent. \"content\" and \"on-disk\" refer to the Content and On disk options below it."
+    "description": "Help text for the size-display setting. \"Smart\" is this setting's own option name (see opt.smart); keep it consistent. \"content\" and \"on-disk\" refer to the Content and On disk options below it.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeDisplay.opt.smart": "Smart",
   "@settings.listing.sizeDisplay.opt.smart": {
-    "description": "Size-display option: show whichever is smaller of content size and on-disk size. Short toggle-button label."
+    "description": "Size-display option: show whichever is smaller of content size and on-disk size. Short toggle-button label.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeDisplay.opt.logical": "Content",
   "@settings.listing.sizeDisplay.opt.logical": {
-    "description": "Size-display option: show the logical content size (the bytes the file holds). Short toggle-button label."
+    "description": "Size-display option: show the logical content size (the bytes the file holds). Short toggle-button label.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeDisplay.opt.physical": "On disk",
   "@settings.listing.sizeDisplay.opt.physical": {
-    "description": "Size-display option: show the physical on-disk size (space actually used on the drive). Short toggle-button label."
+    "description": "Size-display option: show the physical on-disk size (space actually used on the drive). Short toggle-button label.",
+    "screenshot": "settings-appearance-sizes.png"
   },
 
   "settings.listing.sizeUnit.label": "Size unit",
   "@settings.listing.sizeUnit.label": {
-    "description": "Label for the size-unit picker in Settings > Appearance > File and folder sizes (how file sizes are unit-formatted)."
+    "description": "Label for the size-unit picker in Settings > Appearance > File and folder sizes (how file sizes are unit-formatted).",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeUnit.description": "Dynamic picks the friendliest unit per file (1.02 MB). Fixed units make sizes apples-to-apples across the list. Bytes shows the exact count for precise comparison.",
   "@settings.listing.sizeUnit.description": {
-    "description": "Help text for the size-unit setting. \"Dynamic\" and \"Bytes\" are this setting's own option names; keep consistent. \"apples-to-apples\" is an idiom meaning a fair like-for-like comparison; render the meaning, not the literal fruit. \"1.02 MB\" is a literal example; \"MB\" is a unit symbol, keep it."
+    "description": "Help text for the size-unit setting. \"Dynamic\" and \"Bytes\" are this setting's own option names; keep consistent. \"apples-to-apples\" is an idiom meaning a fair like-for-like comparison; render the meaning, not the literal fruit. \"1.02 MB\" is a literal example; \"MB\" is a unit symbol, keep it.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeUnit.opt.dynamic": "Dynamic",
   "@settings.listing.sizeUnit.opt.dynamic": {
-    "description": "Size-unit option: pick the most readable unit per file automatically. Short toggle-button label."
+    "description": "Size-unit option: pick the most readable unit per file automatically. Short toggle-button label.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeUnit.opt.bytes": "Bytes",
   "@settings.listing.sizeUnit.opt.bytes": {
-    "description": "Size-unit option: always show the exact byte count. Short toggle-button label."
+    "description": "Size-unit option: always show the exact byte count. Short toggle-button label.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
@@ -262,106 +278,130 @@
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "description": "Size-unit option: always show sizes in megabytes. \"MB\" is a unit symbol; keep it as-is."
+    "description": "Size-unit option: always show sizes in megabytes. \"MB\" is a unit symbol; keep it as-is.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "description": "Size-unit option: always show sizes in gigabytes. \"GB\" is a unit symbol; keep it as-is."
+    "description": "Size-unit option: always show sizes in gigabytes. \"GB\" is a unit symbol; keep it as-is.",
+    "screenshot": "settings-appearance-sizes.png"
   },
 
   "settings.appearance.fileSizeFormat.label": "File size format",
   "@settings.appearance.fileSizeFormat.label": {
-    "description": "Label for the binary-vs-decimal size-base picker in Settings > Appearance > File and folder sizes."
+    "description": "Label for the binary-vs-decimal size-base picker in Settings > Appearance > File and folder sizes.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.appearance.fileSizeFormat.description": "How to display file sizes in the file list.",
   "@settings.appearance.fileSizeFormat.description": {
-    "description": "Help text for the file-size-format setting (whether a kilobyte means 1024 or 1000 bytes)."
+    "description": "Help text for the file-size-format setting (whether a kilobyte means 1024 or 1000 bytes).",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Binary (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
-    "description": "File-size-format option: binary base (powers of 1024). The unit symbols \"KiB, MiB, GiB\" in parentheses are standards-defined; keep them as-is. \"Binary\" may be translated."
+    "description": "File-size-format option: binary base (powers of 1024). The unit symbols \"KiB, MiB, GiB\" in parentheses are standards-defined; keep them as-is. \"Binary\" may be translated.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 bytes",
   "@settings.appearance.fileSizeFormat.optDesc.binary": {
-    "description": "Sub-text under the Binary option. \"KiB\" is a unit symbol and the numbers are literal; keep \"1 KiB = 1024\" exact. Only \"bytes\" is translatable."
+    "description": "Sub-text under the Binary option. \"KiB\" is a unit symbol and the numbers are literal; keep \"1 KiB = 1024\" exact. Only \"bytes\" is translatable.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.appearance.fileSizeFormat.opt.si": "SI decimal (KB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
-    "description": "File-size-format option: SI decimal base (powers of 1000). \"SI\" is the metric-standard abbreviation and \"KB, MB, GB\" are unit symbols; keep them as-is. \"decimal\" may be translated."
+    "description": "File-size-format option: SI decimal base (powers of 1000). \"SI\" is the metric-standard abbreviation and \"KB, MB, GB\" are unit symbols; keep them as-is. \"decimal\" may be translated.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 bytes",
   "@settings.appearance.fileSizeFormat.optDesc.si": {
-    "description": "Sub-text under the SI decimal option. \"KB\" is a unit symbol and the numbers are literal; keep \"1 KB = 1000\" exact. Only \"bytes\" is translatable."
+    "description": "Sub-text under the SI decimal option. \"KB\" is a unit symbol and the numbers are literal; keep \"1 KB = 1000\" exact. Only \"bytes\" is translatable.",
+    "screenshot": "settings-appearance-sizes.png"
   },
 
   "settings.listing.sizeMismatchWarning.label": "Size mismatch warning",
   "@settings.listing.sizeMismatchWarning.label": {
-    "description": "Label for the toggle that warns when a folder's content and on-disk sizes diverge. In Settings > Appearance > File and folder sizes."
+    "description": "Label for the toggle that warns when a folder's content and on-disk sizes diverge. In Settings > Appearance > File and folder sizes.",
+    "screenshot": "settings-appearance-sizes.png"
   },
   "settings.listing.sizeMismatchWarning.description": "Shows a warning icon on folders where content and on-disk sizes differ by more than 50% and 200 MB.",
   "@settings.listing.sizeMismatchWarning.description": {
-    "description": "Help text for the size-mismatch-warning toggle. \"50%\" and \"200 MB\" are literal thresholds; keep the percent sign and the unit symbol \"MB\"."
+    "description": "Help text for the size-mismatch-warning toggle. \"50%\" and \"200 MB\" are literal thresholds; keep the percent sign and the unit symbol \"MB\".",
+    "screenshot": "settings-appearance-sizes.png"
   },
 
   "settings.appearance.useAppIconsForDocuments.label": "Use app icons for documents",
   "@settings.appearance.useAppIconsForDocuments.label": {
-    "description": "Label for the toggle that uses each document's owning-app icon instead of generic file-type icons. In Settings > Appearance > Listing."
+    "description": "Label for the toggle that uses each document's owning-app icon instead of generic file-type icons. In Settings > Appearance > Listing.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.appearance.useAppIconsForDocuments.description": "Show the app''s icon for documents instead of generic file type icons. More colorful but slightly slower.",
   "@settings.appearance.useAppIconsForDocuments.description": {
-    "description": "Help text for the app-icons-for-documents toggle. \"app\" here means the application that opens a given document."
+    "description": "Help text for the app-icons-for-documents toggle. \"app\" here means the application that opens a given document.",
+    "screenshot": "settings-appearance-listing.png"
   },
 
   "settings.appearance.showFunctionKeyBar.label": "Show function key bar",
   "@settings.appearance.showFunctionKeyBar.label": {
-    "description": "Label for the toggle that shows the row of F-key command buttons at the bottom of the window. In Settings > Appearance > Listing."
+    "description": "Label for the toggle that shows the row of F-key command buttons at the bottom of the window. In Settings > Appearance > Listing.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.appearance.showFunctionKeyBar.description": "Show the row of F-key command buttons (Rename, View, Copy, and so on) at the bottom of the window.",
   "@settings.appearance.showFunctionKeyBar.description": {
-    "description": "Help text for the function-key-bar toggle. \"F-key\" means a keyboard function key (F1-F12). \"Rename\", \"View\", and \"Copy\" are Cmdr command names; translate them consistently with those commands elsewhere."
+    "description": "Help text for the function-key-bar toggle. \"F-key\" means a keyboard function key (F1-F12). \"Rename\", \"View\", and \"Copy\" are Cmdr command names; translate them consistently with those commands elsewhere.",
+    "screenshot": "settings-appearance-listing.png"
   },
 
   "settings.listing.showExtensionInName.label": "Show file extensions in the name column",
   "@settings.listing.showExtensionInName.label": {
-    "description": "Label for the toggle that keeps the file extension in the Name column instead of a separate Ext column. In Settings > Appearance > Listing."
+    "description": "Label for the toggle that keeps the file extension in the Name column instead of a separate Ext column. In Settings > Appearance > Listing.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.showExtensionInName.description": "Show the full filename (like launch.json) in the Name column and hide the separate Ext column. Affects Full view only.",
   "@settings.listing.showExtensionInName.description": {
-    "description": "Help text for the show-extension-in-name toggle. \"launch.json\" is a literal example filename; keep it. \"Name\", \"Ext\", and \"Full\" are Cmdr column/view names; translate consistently with their use elsewhere."
+    "description": "Help text for the show-extension-in-name toggle. \"launch.json\" is a literal example filename; keep it. \"Name\", \"Ext\", and \"Full\" are Cmdr column/view names; translate consistently with their use elsewhere.",
+    "screenshot": "settings-appearance-listing.png"
   },
 
   "settings.listing.directorySortMode.label": "Sort directories",
   "@settings.listing.directorySortMode.label": {
-    "description": "Label for the picker controlling how folders sort relative to files. In Settings > Appearance > Listing."
+    "description": "Label for the picker controlling how folders sort relative to files. In Settings > Appearance > Listing.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.directorySortMode.description": "How directories are sorted when changing the sort column.",
   "@settings.listing.directorySortMode.description": {
-    "description": "Help text for the directory-sort-mode setting. \"directories\" = folders."
+    "description": "Help text for the directory-sort-mode setting. \"directories\" = folders.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.directorySortMode.opt.likeFiles": "Like files",
   "@settings.listing.directorySortMode.opt.likeFiles": {
-    "description": "Directory-sort option: sort folders by the same column as files (size, date, etc.). Short toggle-button label."
+    "description": "Directory-sort option: sort folders by the same column as files (size, date, etc.). Short toggle-button label.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.directorySortMode.opt.alwaysByName": "Always by name",
   "@settings.listing.directorySortMode.opt.alwaysByName": {
-    "description": "Directory-sort option: always sort folders by name regardless of the active column. Short toggle-button label."
+    "description": "Directory-sort option: always sort folders by name regardless of the active column. Short toggle-button label.",
+    "screenshot": "settings-appearance-listing.png"
   },
 
   "settings.listing.briefColumnWidthMode.label": "Maximum column width in Brief mode",
   "@settings.listing.briefColumnWidthMode.label": {
-    "description": "Label for the picker limiting column width in Brief view. \"Brief\" is a Cmdr view-mode name; translate consistently. In Settings > Appearance > Listing."
+    "description": "Label for the picker limiting column width in Brief view. \"Brief\" is a Cmdr view-mode name; translate consistently. In Settings > Appearance > Listing.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.briefColumnWidthMode.description": "Limits how wide Brief mode columns can grow to fit long filenames. Columns are always capped at the pane width regardless; the chosen limit only kicks in when it would be smaller than the pane.",
   "@settings.listing.briefColumnWidthMode.description": {
-    "description": "Help text for the Brief-column-width-mode setting. \"Brief\" is a view-mode name; a pane is one of the two file lists. \"kicks in\" is an idiom meaning takes effect; render the meaning."
+    "description": "Help text for the Brief-column-width-mode setting. \"Brief\" is a view-mode name; a pane is one of the two file lists. \"kicks in\" is an idiom meaning takes effect; render the meaning.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.briefColumnWidthMode.opt.paneWidth": "Pane width (no limit)",
   "@settings.listing.briefColumnWidthMode.opt.paneWidth": {
-    "description": "Brief-column-width option: no extra limit, columns may grow up to the full pane width. Radio-button label."
+    "description": "Brief-column-width option: no extra limit, columns may grow up to the full pane width. Radio-button label.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.briefColumnWidthMode.opt.limited": "Limit to",
   "@settings.listing.briefColumnWidthMode.opt.limited": {
-    "description": "Brief-column-width option: cap columns at a chosen pixel width. This label reads as a sentence lead-in immediately followed by a numeric width control, so phrase it to flow into \"Limit to [N px]\". Radio-button label."
+    "description": "Brief-column-width option: cap columns at a chosen pixel width. This label reads as a sentence lead-in immediately followed by a numeric width control, so phrase it to flow into \"Limit to [N px]\". Radio-button label.",
+    "screenshot": "settings-appearance-listing.png"
   },
 
   "settings.listing.briefColumnWidthMaxPx.label": "Brief column width limit",
@@ -371,57 +411,70 @@
 
   "settings.fileOperations.allowFileExtensionChanges.label": "Allow file extension changes",
   "@settings.fileOperations.allowFileExtensionChanges.label": {
-    "description": "Label for the picker controlling what happens when a rename changes a file's extension. In Settings > Behavior > File operations."
+    "description": "Label for the picker controlling what happens when a rename changes a file's extension. In Settings > Behavior > File operations.",
+    "screenshot": "settings-behavior-file-operations.png"
   },
   "settings.fileOperations.allowFileExtensionChanges.description": "What to do when you rename a file and the extension changes.",
   "@settings.fileOperations.allowFileExtensionChanges.description": {
-    "description": "Help text for the allow-extension-changes setting. \"extension\" = the suffix after a filename's dot (.txt, .jpg)."
+    "description": "Help text for the allow-extension-changes setting. \"extension\" = the suffix after a filename's dot (.txt, .jpg).",
+    "screenshot": "settings-behavior-file-operations.png"
   },
   "settings.fileOperations.allowFileExtensionChanges.opt.yes": "Always allow",
   "@settings.fileOperations.allowFileExtensionChanges.opt.yes": {
-    "description": "Extension-change option: always permit the extension to change without asking. Radio-button label."
+    "description": "Extension-change option: always permit the extension to change without asking. Radio-button label.",
+    "screenshot": "settings-behavior-file-operations.png"
   },
   "settings.fileOperations.allowFileExtensionChanges.opt.no": "Never allow",
   "@settings.fileOperations.allowFileExtensionChanges.opt.no": {
-    "description": "Extension-change option: never permit the extension to change. Radio-button label."
+    "description": "Extension-change option: never permit the extension to change. Radio-button label.",
+    "screenshot": "settings-behavior-file-operations.png"
   },
   "settings.fileOperations.allowFileExtensionChanges.opt.ask": "Always ask",
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
-    "description": "Extension-change option: prompt for confirmation each time the extension would change. Radio-button label."
+    "description": "Extension-change option: prompt for confirmation each time the extension would change. Radio-button label.",
+    "screenshot": "settings-behavior-file-operations.png"
   },
 
   "settings.indexing.enabled.label": "Drive indexing",
   "@settings.indexing.enabled.label": {
-    "description": "Label for the background drive-indexing toggle. In Settings > Behavior > File system watching."
+    "description": "Label for the background drive-indexing toggle. In Settings > Behavior > File system watching.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.indexing.enabled.description": "Index your drive in the background for instant directory sizes.",
   "@settings.indexing.enabled.description": {
-    "description": "Help text for the drive-indexing toggle. \"directory sizes\" = folder sizes; indexing precomputes them so they show instantly."
+    "description": "Help text for the drive-indexing toggle. \"directory sizes\" = folder sizes; indexing precomputes them so they show instantly.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
 
   "settings.behavior.fileSystemWatching.downloadsNotifications.label": "Notify on downloads",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.label": {
-    "description": "Label for the picker controlling how new downloads are announced. In Settings > Behavior > File system watching, on the \"Downloads notifications\" card."
+    "description": "Label for the picker controlling how new downloads are announced. In Settings > Behavior > File system watching, on the \"Downloads notifications\" card.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.description": "How to surface new files arriving in your Downloads folder.",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.description": {
-    "description": "Help text for the downloads-notifications setting. \"Downloads\" is the macOS folder name; use the OS's localized folder name. \"surface\" here means show/announce."
+    "description": "Help text for the downloads-notifications setting. \"Downloads\" is the macOS folder name; use the OS's localized folder name. \"surface\" here means show/announce.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": "In-app",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
-    "description": "Downloads-notification option: show notifications inside Cmdr only. Short toggle-button label."
+    "description": "Downloads-notification option: show notifications inside Cmdr only. Short toggle-button label.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS notifications",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "description": "Downloads-notification option: use macOS system notifications. \"macOS\" is a brand name; keep it. Short toggle-button label."
+    "description": "Downloads-notification option: use macOS system notifications. \"macOS\" is a brand name; keep it. Short toggle-button label.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Both",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
-    "description": "Downloads-notification option: use both in-app and macOS notifications. Short toggle-button label."
+    "description": "Downloads-notification option: use both in-app and macOS notifications. Short toggle-button label.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": "Neither",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
-    "description": "Downloads-notification option: no download notifications at all. Short toggle-button label."
+    "description": "Downloads-notification option: no download notifications at all. Short toggle-button label.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
 
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Go to latest download",
@@ -462,62 +515,76 @@
 
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "Low disk space warning",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
-    "description": "Label for the picker controlling how a low-free-space warning is shown. On the \"Low disk space\" card in Settings > Behavior > File system watching."
+    "description": "Label for the picker controlling how a low-free-space warning is shown. On the \"Low disk space\" card in Settings > Behavior > File system watching.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "How to warn you when your startup disk runs low on free space.",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
-    "description": "Help text for the low-disk-space setting. \"startup disk\" is the macOS term for the boot drive; use the OS's localized term."
+    "description": "Help text for the low-disk-space setting. \"startup disk\" is the macOS term for the boot drive; use the OS's localized term.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "In-app",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
-    "description": "Low-disk-space option: warn inside Cmdr only. Short toggle-button label."
+    "description": "Low-disk-space option: warn inside Cmdr only. Short toggle-button label.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS notification",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "description": "Low-disk-space option: use a macOS system notification. \"macOS\" is a brand name; keep it. Short toggle-button label."
+    "description": "Low-disk-space option: use a macOS system notification. \"macOS\" is a brand name; keep it. Short toggle-button label.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Off",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
-    "description": "Low-disk-space option: no warning. Short toggle-button label."
+    "description": "Low-disk-space option: no warning. Short toggle-button label.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
 
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "Warning threshold",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
-    "description": "Label for the number input setting the free-space percentage that triggers the low-disk warning. On the \"Low disk space\" card."
+    "description": "Label for the number input setting the free-space percentage that triggers the low-disk warning. On the \"Low disk space\" card.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "Warn when free space drops below this percent of your startup disk.",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
-    "description": "Help text for the low-disk-space threshold. \"startup disk\" is the macOS boot-drive term; use the OS's localized term."
+    "description": "Help text for the low-disk-space threshold. \"startup disk\" is the macOS boot-drive term; use the OS's localized term.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
 
   "settings.search.autoApply.label": "Auto-apply searches",
   "@settings.search.autoApply.label": {
-    "description": "Label for the toggle that runs searches automatically as you type. In Settings > Behavior > Search."
+    "description": "Label for the toggle that runs searches automatically as you type. In Settings > Behavior > Search.",
+    "screenshot": "settings-behavior-search.png"
   },
   "settings.search.autoApply.description": "Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter — they cost money. When off, press Enter or click the run button to search.",
   "@settings.search.autoApply.description": {
-    "description": "Help text for the auto-apply-searches toggle. \"regex\" = regular-expression search; keep the term or use the locale's standard equivalent. \"AI\" = artificial intelligence. \"Enter\" is the keyboard key name; use the locale's key name. \"1 second\" is a literal delay."
+    "description": "Help text for the auto-apply-searches toggle. \"regex\" = regular-expression search; keep the term or use the locale's standard equivalent. \"AI\" = artificial intelligence. \"Enter\" is the keyboard key name; use the locale's key name. \"1 second\" is a literal delay.",
+    "screenshot": "settings-behavior-search.png"
   },
 
   "settings.ai.provider.label": "Provider",
   "@settings.ai.provider.label": {
-    "description": "Label for the AI provider picker (off / cloud / local). In the Settings > AI section. Short label."
+    "description": "Label for the AI provider picker (off / cloud / local). In the Settings > AI section. Short label.",
+    "screenshot": "settings-ai.png"
   },
   "settings.ai.provider.description": "Choose how AI features are powered.",
   "@settings.ai.provider.description": {
-    "description": "Help text for the AI provider setting. \"AI\" = artificial intelligence."
+    "description": "Help text for the AI provider setting. \"AI\" = artificial intelligence.",
+    "screenshot": "settings-ai.png"
   },
   "settings.ai.provider.opt.off": "Off",
   "@settings.ai.provider.opt.off": {
-    "description": "AI provider option: AI features disabled. Short toggle-button label."
+    "description": "AI provider option: AI features disabled. Short toggle-button label.",
+    "screenshot": "settings-ai.png"
   },
   "settings.ai.provider.opt.cloud": "Cloud AI",
   "@settings.ai.provider.opt.cloud": {
-    "description": "AI provider option: use a cloud AI service via the user's own API key. \"AI\" = artificial intelligence. Short toggle-button label."
+    "description": "AI provider option: use a cloud AI service via the user's own API key. \"AI\" = artificial intelligence. Short toggle-button label.",
+    "screenshot": "settings-ai.png"
   },
   "settings.ai.provider.opt.local": "Local LLM",
   "@settings.ai.provider.opt.local": {
-    "description": "AI provider option: run a model locally on-device. \"LLM\" = large language model; keep the abbreviation or use the locale's standard equivalent. Short toggle-button label."
+    "description": "AI provider option: run a model locally on-device. \"LLM\" = large language model; keep the abbreviation or use the locale's standard equivalent. Short toggle-button label.",
+    "screenshot": "settings-ai.png"
   },
 
   "settings.ai.cloudProvider.label": "Service",
@@ -549,11 +616,13 @@
 
   "settings.network.enabled.label": "Enable networking",
   "@settings.network.enabled.label": {
-    "description": "Label for the master networking toggle (SMB discovery and connection). In Settings > File systems > SMB/Network shares."
+    "description": "Label for the master networking toggle (SMB discovery and connection). In Settings > File systems > SMB/Network shares.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.enabled.description": "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won''t ask macOS for Local Network access.",
   "@settings.network.enabled.description": {
-    "description": "Help text for the enable-networking toggle. \"SMB\" is a protocol name (keep it); \"Cmdr\" is the product name (keep it); \"macOS\" is a brand name (keep it). \"Local Network\" is the macOS permission name; use the OS's localized name. \"mounted shares\" = network folders already attached to the system."
+    "description": "Help text for the enable-networking toggle. \"SMB\" is a protocol name (keep it); \"Cmdr\" is the product name (keep it); \"macOS\" is a brand name (keep it). \"Local Network\" is the macOS permission name; use the OS's localized name. \"mounted shares\" = network folders already attached to the system.",
+    "screenshot": "settings-file-systems-smb.png"
   },
 
   "settings.network.firstTriggerDone.label": "Network discovery started",
@@ -567,69 +636,85 @@
 
   "settings.network.directSmbConnection.label": "Connect directly to SMB shares",
   "@settings.network.directSmbConnection.label": {
-    "description": "Label for the toggle enabling Cmdr's own direct SMB connection (faster than the system mount). \"SMB\" is a protocol name; keep it. In Settings > File systems > SMB/Network shares."
+    "description": "Label for the toggle enabling Cmdr's own direct SMB connection (faster than the system mount). \"SMB\" is a protocol name; keep it. In Settings > File systems > SMB/Network shares.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.directSmbConnection.description": "When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for Finder and other apps.",
   "@settings.network.directSmbConnection.description": {
-    "description": "Help text for the direct-SMB toggle. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both); \"Finder\" is the macOS file-manager name; use the OS's localized name. \"mount\" = the system-attached network share."
+    "description": "Help text for the direct-SMB toggle. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both); \"Finder\" is the macOS file-manager name; use the OS's localized name. \"mount\" = the system-attached network share.",
+    "screenshot": "settings-file-systems-smb.png"
   },
 
   "settings.network.shareCacheDuration.label": "Share cache duration",
   "@settings.network.shareCacheDuration.label": {
-    "description": "Label for the picker controlling how long the list of a server's shares is cached. In Settings > File systems > SMB/Network shares."
+    "description": "Label for the picker controlling how long the list of a server's shares is cached. In Settings > File systems > SMB/Network shares.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.shareCacheDuration.description": "How long to cache the list of available shares on a server before refreshing.",
   "@settings.network.shareCacheDuration.description": {
-    "description": "Help text for the share-cache-duration setting. \"shares\" = the folders a network server exposes."
+    "description": "Help text for the share-cache-duration setting. \"shares\" = the folders a network server exposes.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.shareCacheDuration.opt.s30": "30 seconds",
   "@settings.network.shareCacheDuration.opt.s30": {
-    "description": "Share-cache-duration option: 30 seconds. \"30\" is literal."
+    "description": "Share-cache-duration option: 30 seconds. \"30\" is literal.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.shareCacheDuration.opt.min5": "5 minutes",
   "@settings.network.shareCacheDuration.opt.min5": {
-    "description": "Share-cache-duration option: 5 minutes. \"5\" is literal."
+    "description": "Share-cache-duration option: 5 minutes. \"5\" is literal.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.shareCacheDuration.opt.hour1": "1 hour",
   "@settings.network.shareCacheDuration.opt.hour1": {
-    "description": "Share-cache-duration option: 1 hour. \"1\" is literal."
+    "description": "Share-cache-duration option: 1 hour. \"1\" is literal.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.shareCacheDuration.opt.day1": "1 day",
   "@settings.network.shareCacheDuration.opt.day1": {
-    "description": "Share-cache-duration option: 1 day. \"1\" is literal."
+    "description": "Share-cache-duration option: 1 day. \"1\" is literal.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.shareCacheDuration.opt.days30": "30 days",
   "@settings.network.shareCacheDuration.opt.days30": {
-    "description": "Share-cache-duration option: 30 days. \"30\" is literal."
+    "description": "Share-cache-duration option: 30 days. \"30\" is literal.",
+    "screenshot": "settings-file-systems-smb.png"
   },
 
   "settings.network.timeoutMode.label": "Network timeout mode",
   "@settings.network.timeoutMode.label": {
-    "description": "Label for the network-timeout preset picker. In Settings > File systems > SMB/Network shares."
+    "description": "Label for the network-timeout preset picker. In Settings > File systems > SMB/Network shares.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.timeoutMode.description": "How long to wait when connecting to network shares.",
   "@settings.network.timeoutMode.description": {
-    "description": "Help text for the network-timeout-mode setting."
+    "description": "Help text for the network-timeout-mode setting.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.timeoutMode.opt.normal": "Normal",
   "@settings.network.timeoutMode.opt.normal": {
-    "description": "Network-timeout option: standard timeout for typical local networks. Radio-button label."
+    "description": "Network-timeout option: standard timeout for typical local networks. Radio-button label.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.timeoutMode.optDesc.normal": "For typical local networks (15s timeout)",
   "@settings.network.timeoutMode.optDesc.normal": {
-    "description": "Sub-text under the Normal timeout option. \"15s\" is a literal value (15 seconds); keep the number and the \"s\" unit."
+    "description": "Sub-text under the Normal timeout option. \"15s\" is a literal value (15 seconds); keep the number and the \"s\" unit.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.timeoutMode.opt.slow": "Slow network",
   "@settings.network.timeoutMode.opt.slow": {
-    "description": "Network-timeout option: longer timeout for slow or high-latency networks. Radio-button label."
+    "description": "Network-timeout option: longer timeout for slow or high-latency networks. Radio-button label.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.timeoutMode.optDesc.slow": "For VPNs or high-latency connections (45s timeout)",
   "@settings.network.timeoutMode.optDesc.slow": {
-    "description": "Sub-text under the Slow network timeout option. \"VPN\" = virtual private network (keep the abbreviation or use the locale's standard form). \"45s\" is a literal value (45 seconds); keep the number and the \"s\" unit."
+    "description": "Sub-text under the Slow network timeout option. \"VPN\" = virtual private network (keep the abbreviation or use the locale's standard form). \"45s\" is a literal value (45 seconds); keep the number and the \"s\" unit.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.timeoutMode.opt.custom": "Custom",
   "@settings.network.timeoutMode.opt.custom": {
-    "description": "Network-timeout option: user-defined timeout (reveals the custom-timeout field). Radio-button label."
+    "description": "Network-timeout option: user-defined timeout (reveals the custom-timeout field). Radio-button label.",
+    "screenshot": "settings-file-systems-smb.png"
   },
 
   "settings.network.customTimeout.label": "Custom timeout",
@@ -643,110 +728,134 @@
 
   "settings.network.smbConcurrency.label": "Concurrent operations per SMB connection",
   "@settings.network.smbConcurrency.label": {
-    "description": "Label for the number input setting how many transfers run in parallel on one SMB connection. \"SMB\" is a protocol name; keep it. Also appears in the Advanced section."
+    "description": "Label for the number input setting how many transfers run in parallel on one SMB connection. \"SMB\" is a protocol name; keep it. Also appears in the Advanced section.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.smbConcurrency.description": "How many file transfers Cmdr runs in parallel on a single SMB connection. Higher values speed up batch copies of many files (especially many small files) but use more server resources. Default 10 is safe for most home NAS hardware. Changes apply on the next batch copy.",
   "@settings.network.smbConcurrency.description": {
-    "description": "Help text for the SMB-concurrency setting. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both). \"NAS\" = network-attached storage; keep the abbreviation. \"10\" is a literal default value."
+    "description": "Help text for the SMB-concurrency setting. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both). \"NAS\" = network-attached storage; keep the abbreviation. \"10\" is a literal default value.",
+    "screenshot": "settings-file-systems-smb.png"
   },
 
   "settings.fileOperations.mtpEnabled.label": "Android/Kindle/camera support (PTP and MTP)",
   "@settings.fileOperations.mtpEnabled.label": {
-    "description": "Label for the toggle enabling USB device support. \"Kindle\" is a product name; \"PTP\" and \"MTP\" are USB device protocol abbreviations; keep all three as-is. In Settings > File systems > MTP."
+    "description": "Label for the toggle enabling USB device support. \"Kindle\" is a product name; \"PTP\" and \"MTP\" are USB device protocol abbreviations; keep all three as-is. In Settings > File systems > MTP.",
+    "screenshot": "settings-file-systems-mtp.png"
   },
   "settings.fileOperations.mtpEnabled.description": "Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you''ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to \"File transfer\", \"Android Auto\", or similar. (Varies by device.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "description": "Help text for the MTP toggle. \"Android\" and \"Android Auto\" are product names; keep them. \"Settings > USB Preferences\", \"File transfer\", and \"Android Auto\" are on-phone Android menu labels quoted as examples; translate the descriptive parts but note these vary by device. \"USB\" is a connector name; keep it."
+    "description": "Help text for the MTP toggle. \"Android\" and \"Android Auto\" are product names; keep them. \"Settings > USB Preferences\", \"File transfer\", and \"Android Auto\" are on-phone Android menu labels quoted as examples; translate the descriptive parts but note these vary by device. \"USB\" is a connector name; keep it.",
+    "screenshot": "settings-file-systems-mtp.png"
   },
 
   "settings.fileOperations.mtpConnectionWarning.label": "Warn when a device connects",
   "@settings.fileOperations.mtpConnectionWarning.label": {
-    "description": "Label for the toggle that shows a notification when a USB device connects. In Settings > File systems > MTP."
+    "description": "Label for the toggle that shows a notification when a USB device connects. In Settings > File systems > MTP.",
+    "screenshot": "settings-file-systems-mtp.png"
   },
   "settings.fileOperations.mtpConnectionWarning.description": "Show a notification when an Android or camera device connects over USB.",
   "@settings.fileOperations.mtpConnectionWarning.description": {
-    "description": "Help text for the device-connect-warning toggle. \"Android\" is a product name (keep it); \"USB\" is a connector name (keep it)."
+    "description": "Help text for the device-connect-warning toggle. \"Android\" is a product name (keep it); \"USB\" is a connector name (keep it).",
+    "screenshot": "settings-file-systems-mtp.png"
   },
 
   "settings.fileExplorer.git.showRepoChip.label": "Show repository chip",
   "@settings.fileExplorer.git.showRepoChip.label": {
-    "description": "Label for the toggle showing a git repository status badge above the file list. \"chip\" = a small badge/pill UI element. In Settings > File systems > Git."
+    "description": "Label for the toggle showing a git repository status badge above the file list. \"chip\" = a small badge/pill UI element. In Settings > File systems > Git.",
+    "screenshot": "settings-file-systems-git.png"
   },
   "settings.fileExplorer.git.showRepoChip.description": "Display the current branch, ahead/behind, and dirty state above the file list when inside a git repository.",
   "@settings.fileExplorer.git.showRepoChip.description": {
-    "description": "Help text for the repo-chip toggle. \"git\", \"branch\", \"ahead/behind\", and \"dirty state\" are git version-control terms; use the locale's standard git terminology. \"dirty\" means having uncommitted changes."
+    "description": "Help text for the repo-chip toggle. \"git\", \"branch\", \"ahead/behind\", and \"dirty state\" are git version-control terms; use the locale's standard git terminology. \"dirty\" means having uncommitted changes.",
+    "screenshot": "settings-file-systems-git.png"
   },
 
   "settings.fileExplorer.git.showStatusColumn.label": "Show git status column",
   "@settings.fileExplorer.git.showStatusColumn.label": {
-    "description": "Label for the toggle adding a per-file git status column. \"git\" is the version-control tool name; keep it. In Settings > File systems > Git."
+    "description": "Label for the toggle adding a per-file git status column. \"git\" is the version-control tool name; keep it. In Settings > File systems > Git.",
+    "screenshot": "settings-file-systems-git.png"
   },
   "settings.fileExplorer.git.showStatusColumn.description": "Add a column showing per-file git status (modified, untracked, etc.) in Full mode.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "description": "Help text for the git-status-column toggle. \"git\", \"modified\", and \"untracked\" are git terms; use standard git terminology. \"Full\" is a Cmdr view-mode name; translate consistently."
+    "description": "Help text for the git-status-column toggle. \"git\", \"modified\", and \"untracked\" are git terms; use standard git terminology. \"Full\" is a Cmdr view-mode name; translate consistently.",
+    "screenshot": "settings-file-systems-git.png"
   },
 
   "settings.fileExplorer.git.showVirtualGitPortal.label": "Show virtual git portal",
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
-    "description": "Label for the toggle that turns the .git folder into browsable virtual folders. \"git\" is the version-control tool name; keep it. \"portal\" here is Cmdr's name for the virtual-folder view. In Settings > File systems > Git."
+    "description": "Label for the toggle that turns the .git folder into browsable virtual folders. \"git\" is the version-control tool name; keep it. \"portal\" here is Cmdr's name for the virtual-folder view. In Settings > File systems > Git.",
+    "screenshot": "settings-file-systems-git.png"
   },
   "settings.fileExplorer.git.showVirtualGitPortal.description": "When entering `.git`, show branches, tags, commits, and worktrees as browsable virtual folders. Disable to see the raw `.git` contents instead.",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
-    "description": "Help text for the virtual-git-portal toggle. \"`.git`\" is a literal folder name; keep it exactly (it stays in backticks in the source). \"branches\", \"tags\", \"commits\", and \"worktrees\" are git terms; use standard git terminology."
+    "description": "Help text for the virtual-git-portal toggle. \"`.git`\" is a literal folder name; keep it exactly (it stays in backticks in the source). \"branches\", \"tags\", \"commits\", and \"worktrees\" are git terms; use standard git terminology.",
+    "screenshot": "settings-file-systems-git.png"
   },
 
   "settings.viewer.wordWrap.label": "Word wrap",
   "@settings.viewer.wordWrap.label": {
-    "description": "Label for the word-wrap toggle in the file viewer. In Settings > Viewer."
+    "description": "Label for the word-wrap toggle in the file viewer. In Settings > Viewer.",
+    "screenshot": "settings-viewer.png"
   },
   "settings.viewer.wordWrap.description": "Wrap long lines at the window edge in the file viewer instead of scrolling horizontally.",
   "@settings.viewer.wordWrap.description": {
-    "description": "Help text for the viewer word-wrap toggle."
+    "description": "Help text for the viewer word-wrap toggle.",
+    "screenshot": "settings-viewer.png"
   },
 
   "settings.developer.mcpEnabled.label": "Enable MCP server",
   "@settings.developer.mcpEnabled.label": {
-    "description": "Label for the toggle starting the MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. In Settings > Developer > MCP server."
+    "description": "Label for the toggle starting the MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. In Settings > Developer > MCP server.",
+    "screenshot": "settings-developer-mcp-server.png"
   },
   "settings.developer.mcpEnabled.description": "Start a Model Context Protocol server for AI assistant integration.",
   "@settings.developer.mcpEnabled.description": {
-    "description": "Help text for the MCP-server toggle. \"Model Context Protocol\" is a standard name; keep it (it is what MCP abbreviates). \"AI\" = artificial intelligence."
+    "description": "Help text for the MCP-server toggle. \"Model Context Protocol\" is a standard name; keep it (it is what MCP abbreviates). \"AI\" = artificial intelligence.",
+    "screenshot": "settings-developer-mcp-server.png"
   },
 
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
-    "description": "Label for the MCP-server network port number input. \"Port\" is a networking term. In Settings > Developer > MCP server. Short label."
+    "description": "Label for the MCP-server network port number input. \"Port\" is a networking term. In Settings > Developer > MCP server. Short label.",
+    "screenshot": "settings-developer-mcp-server.png"
   },
   "settings.developer.mcpPort.description": "Preferred port for the MCP server. Leave at 0 to let the OS pick an ephemeral port (recommended; the actual port is shown below when running). Pin a specific port if external tooling needs it.",
   "@settings.developer.mcpPort.description": {
-    "description": "Help text for the MCP-port input. \"MCP\" = Model Context Protocol (keep it). \"port\" and \"ephemeral port\" are networking terms; \"0\" is a literal value meaning auto-pick. \"OS\" = operating system."
+    "description": "Help text for the MCP-port input. \"MCP\" = Model Context Protocol (keep it). \"port\" and \"ephemeral port\" are networking terms; \"0\" is a literal value meaning auto-pick. \"OS\" = operating system.",
+    "screenshot": "settings-developer-mcp-server.png"
   },
 
   "settings.developer.verboseLogging.label": "Verbose console output (developer)",
   "@settings.developer.verboseLogging.label": {
-    "description": "Label for the verbose-logging toggle. \"console\" = the developer log output; \"(developer)\" marks it as an advanced/dev option. In Settings > Developer > Logging."
+    "description": "Label for the verbose-logging toggle. \"console\" = the developer log output; \"(developer)\" marks it as an advanced/dev option. In Settings > Developer > Logging.",
+    "screenshot": "settings-developer-logging.png"
   },
   "settings.developer.verboseLogging.description": "Bumps the dev terminal and browser devtools console to debug level. The on-disk log file always captures debug detail regardless, so error reports are unaffected by this toggle. RUST_LOG always wins for the terminal.",
   "@settings.developer.verboseLogging.description": {
-    "description": "Help text for the verbose-logging toggle, aimed at developers. \"RUST_LOG\" is a literal environment-variable name; keep it exactly. \"devtools\", \"debug level\", and \"terminal\" are developer terms. \"wins\" here means takes precedence over this toggle."
+    "description": "Help text for the verbose-logging toggle, aimed at developers. \"RUST_LOG\" is a literal environment-variable name; keep it exactly. \"devtools\", \"debug level\", and \"terminal\" are developer terms. \"wins\" here means takes precedence over this toggle.",
+    "screenshot": "settings-developer-logging.png"
   },
 
   "settings.updates.autoCheck.label": "Automatically check for updates",
   "@settings.updates.autoCheck.label": {
-    "description": "Label for the toggle that periodically checks for app updates. In Settings > Updates & privacy."
+    "description": "Label for the toggle that periodically checks for app updates. In Settings > Updates & privacy.",
+    "screenshot": "settings-updates.png"
   },
   "settings.updates.autoCheck.description": "Periodically check for new versions in the background.",
   "@settings.updates.autoCheck.description": {
-    "description": "Help text for the auto-update-check toggle."
+    "description": "Help text for the auto-update-check toggle.",
+    "screenshot": "settings-updates.png"
   },
 
   "settings.whatsNew.showOnUpdate.label": "Show what’s new after updates",
   "@settings.whatsNew.showOnUpdate.label": {
-    "description": "Label for the toggle that shows a changelog summary after the app updates. In Settings > Updates & privacy. The apostrophe in \"what’s\" is a curly typographic apostrophe (U+2019); match the locale's preferred apostrophe style."
+    "description": "Label for the toggle that shows a changelog summary after the app updates. In Settings > Updates & privacy. The apostrophe in \"what’s\" is a curly typographic apostrophe (U+2019); match the locale's preferred apostrophe style.",
+    "screenshot": "settings-updates.png"
   },
   "settings.whatsNew.showOnUpdate.description": "After Cmdr updates itself, show a quick summary of what changed.",
   "@settings.whatsNew.showOnUpdate.description": {
-    "description": "Help text for the what's-new toggle. \"Cmdr\" is the product name; keep it."
+    "description": "Help text for the what's-new toggle. \"Cmdr\" is the product name; keep it.",
+    "screenshot": "settings-updates.png"
   },
 
   "settings.whatsNew.lastSeenVersion.label": "Last seen changelog version",
@@ -760,209 +869,255 @@
 
   "settings.analytics.enabled.label": "Send anonymous usage stats",
   "@settings.analytics.enabled.label": {
-    "description": "Label for the anonymous-analytics opt-in toggle. In Settings > Updates & privacy. \"stats\" = statistics."
+    "description": "Label for the anonymous-analytics opt-in toggle. In Settings > Updates & privacy. \"stats\" = statistics.",
+    "screenshot": "settings-updates.png"
   },
   "settings.analytics.enabled.description": "Helps us see which features matter during the open beta. Never includes file names, paths, search terms, or prompts. Turn it off and Cmdr stops sending anything.",
   "@settings.analytics.enabled.description": {
-    "description": "Help text for the usage-stats toggle, written in a reassuring privacy-first voice. \"open beta\" = the public testing phase. \"Cmdr\" is the product name; keep it. \"prompts\" = AI prompts."
+    "description": "Help text for the usage-stats toggle, written in a reassuring privacy-first voice. \"open beta\" = the public testing phase. \"Cmdr\" is the product name; keep it. \"prompts\" = AI prompts.",
+    "screenshot": "settings-updates.png"
   },
 
   "settings.analytics.email.label": "Beta contact email",
   "@settings.analytics.email.label": {
-    "description": "Label for the beta-program contact email text field. In Settings > Updates & privacy. \"Beta\" = the testing program."
+    "description": "Label for the beta-program contact email text field. In Settings > Updates & privacy. \"Beta\" = the testing program.",
+    "screenshot": "settings-updates.png"
   },
   "settings.analytics.email.description": "Example: you@example.com",
   "@settings.analytics.email.description": {
-    "description": "Placeholder/help showing the email-field format. \"you@example.com\" is a literal example email address; keep it as-is. Only translate \"Example:\"."
+    "description": "Placeholder/help showing the email-field format. \"you@example.com\" is a literal example email address; keep it as-is. Only translate \"Example:\".",
+    "screenshot": "settings-updates.png"
   },
 
   "settings.updates.crashReports.label": "Send crash reports",
   "@settings.updates.crashReports.label": {
-    "description": "Label for the crash-report opt-in toggle. In Settings > Updates & privacy."
+    "description": "Label for the crash-report opt-in toggle. In Settings > Updates & privacy.",
+    "screenshot": "settings-updates.png"
   },
   "settings.updates.crashReports.description": "Automatically send crash reports when Cmdr quits unexpectedly. Includes app version, macOS version, and crash location. Never file names or personal data.",
   "@settings.updates.crashReports.description": {
-    "description": "Help text for the crash-reports toggle, in a privacy-reassuring voice. \"Cmdr\" is the product name and \"macOS\" a brand name; keep both."
+    "description": "Help text for the crash-reports toggle, in a privacy-reassuring voice. \"Cmdr\" is the product name and \"macOS\" a brand name; keep both.",
+    "screenshot": "settings-updates.png"
   },
 
   "settings.updates.errorReports.label": "Send error reports automatically",
   "@settings.updates.errorReports.label": {
-    "description": "Label for the automatic-error-report opt-in toggle. In Settings > Updates & privacy."
+    "description": "Label for the automatic-error-report opt-in toggle. In Settings > Updates & privacy.",
+    "screenshot": "settings-updates.png"
   },
   "settings.updates.errorReports.description": "Send a small log snippet to the developer when an error occurs. Helps fix bugs faster. Off by default. You can always send a manual report from the Help menu.",
   "@settings.updates.errorReports.description": {
-    "description": "Help text for the error-reports toggle. \"log snippet\" = a short excerpt of the diagnostic log. \"Help menu\" is the macOS app menu name; use the OS's localized menu name."
+    "description": "Help text for the error-reports toggle. \"log snippet\" = a short excerpt of the diagnostic log. \"Help menu\" is the macOS app menu name; use the OS's localized menu name.",
+    "screenshot": "settings-updates.png"
   },
 
   "settings.updates.attachEmailToReports.label": "Attach my email to reports by default",
   "@settings.updates.attachEmailToReports.label": {
-    "description": "Label for the toggle that includes the user's contact email with crash/error reports by default. Appears in the Advanced section."
+    "description": "Label for the toggle that includes the user's contact email with crash/error reports by default. Appears in the Advanced section.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.updates.attachEmailToReports.description": "When you send a crash or error report, include your beta contact email so we can reply. You can change this per report.",
   "@settings.updates.attachEmailToReports.description": {
-    "description": "Help text for the attach-email-to-reports toggle. \"beta contact email\" ties to the analytics.email setting; keep the wording aligned with that label's translation."
+    "description": "Help text for the attach-email-to-reports toggle. \"beta contact email\" ties to the analytics.email setting; keep the wording aligned with that label's translation.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.prefetchBufferSize.label": "Prefetch buffer size",
   "@settings.advanced.prefetchBufferSize.label": {
-    "description": "Advanced-section label for the prefetch buffer size number input. \"Prefetch\" = loading items ahead of time for smooth scrolling."
+    "description": "Advanced-section label for the prefetch buffer size number input. \"Prefetch\" = loading items ahead of time for smooth scrolling.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.prefetchBufferSize.description": "Number of items to prefetch around the visible range for smoother scrolling.",
   "@settings.advanced.prefetchBufferSize.description": {
-    "description": "Help text for the prefetch-buffer-size setting (advanced/performance). \"prefetch\" = load ahead of time."
+    "description": "Help text for the prefetch-buffer-size setting (advanced/performance). \"prefetch\" = load ahead of time.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.virtualizationBufferRows.label": "Virtualization buffer (rows)",
   "@settings.advanced.virtualizationBufferRows.label": {
-    "description": "Advanced-section label for the row-virtualization buffer number input. \"Virtualization\" = rendering only visible rows for performance; \"(rows)\" specifies the unit."
+    "description": "Advanced-section label for the row-virtualization buffer number input. \"Virtualization\" = rendering only visible rows for performance; \"(rows)\" specifies the unit.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.virtualizationBufferRows.description": "Extra rows to render above and below the visible area.",
   "@settings.advanced.virtualizationBufferRows.description": {
-    "description": "Help text for the row-virtualization-buffer setting (advanced/performance)."
+    "description": "Help text for the row-virtualization-buffer setting (advanced/performance).",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.virtualizationBufferColumns.label": "Virtualization buffer (columns)",
   "@settings.advanced.virtualizationBufferColumns.label": {
-    "description": "Advanced-section label for the column-virtualization buffer number input. \"(columns)\" specifies the unit; applies to Brief view's columns."
+    "description": "Advanced-section label for the column-virtualization buffer number input. \"(columns)\" specifies the unit; applies to Brief view's columns.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.virtualizationBufferColumns.description": "Extra columns to render in brief view.",
   "@settings.advanced.virtualizationBufferColumns.description": {
-    "description": "Help text for the column-virtualization-buffer setting (advanced/performance). \"brief view\" is a Cmdr view-mode name; translate consistently."
+    "description": "Help text for the column-virtualization-buffer setting (advanced/performance). \"brief view\" is a Cmdr view-mode name; translate consistently.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.fileWatcherDebounce.label": "File watcher debounce",
   "@settings.advanced.fileWatcherDebounce.label": {
-    "description": "Advanced-section label for the file-watcher debounce-delay control. \"debounce\" = waiting briefly to batch rapid changes; keep or use the locale's standard term."
+    "description": "Advanced-section label for the file-watcher debounce-delay control. \"debounce\" = waiting briefly to batch rapid changes; keep or use the locale's standard term.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.fileWatcherDebounce.description": "Delay after file system changes before refreshing.",
   "@settings.advanced.fileWatcherDebounce.description": {
-    "description": "Help text for the file-watcher-debounce setting (advanced/performance)."
+    "description": "Help text for the file-watcher-debounce setting (advanced/performance).",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.diskSpaceChangeThreshold.label": "Disk space change threshold (MB)",
   "@settings.advanced.diskSpaceChangeThreshold.label": {
-    "description": "Advanced-section label for the disk-space change threshold number input. \"(MB)\" is the unit symbol megabytes; keep it."
+    "description": "Advanced-section label for the disk-space change threshold number input. \"(MB)\" is the unit symbol megabytes; keep it.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.diskSpaceChangeThreshold.description": "Minimum change in available disk space before updating the status bar. The status bar polls disk space every few seconds; small changes below this threshold are ignored to reduce visual noise.",
   "@settings.advanced.diskSpaceChangeThreshold.description": {
-    "description": "Help text for the disk-space-change-threshold setting (advanced/performance). \"status bar\" is the strip at the window bottom showing disk info."
+    "description": "Help text for the disk-space-change-threshold setting (advanced/performance). \"status bar\" is the strip at the window bottom showing disk info.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.fileViewer.suppressBinaryWarning.label": "Suppress the raw-view warning for binary files",
   "@settings.fileViewer.suppressBinaryWarning.label": {
-    "description": "Advanced-section label for the toggle that hides the binary-file warning banner in the viewer. \"binary files\" = non-text files (images, PDFs, archives)."
+    "description": "Advanced-section label for the toggle that hides the binary-file warning banner in the viewer. \"binary files\" = non-text files (images, PDFs, archives).",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 opens Cmdr''s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click ''Never show this warning again'' in the banner) to suppress the warning for good.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "description": "Help text for the suppress-binary-warning toggle. \"F3\", \"⇧Space\" (Shift-Space), and \"Enter\" are keyboard keys/glyphs; keep the glyphs and use the locale's key names. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name (use the OS's localized name). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted 'Never show this warning again' must match the file viewer's actual banner button copy; translate it consistently with that button."
+    "description": "Help text for the suppress-binary-warning toggle. \"F3\", \"⇧Space\" (Shift-Space), and \"Enter\" are keyboard keys/glyphs; keep the glyphs and use the locale's key names. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name (use the OS's localized name). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted 'Never show this warning again' must match the file viewer's actual banner button copy; translate it consistently with that button.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.fileExplorer.suppressQuickLookHint.label": "Suppress the Space-key Quick Look hint",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
-    "description": "Advanced-section label for the toggle that hides the Space-vs-Quick-Look reminder. \"Space-key\" is the keyboard spacebar; \"Quick Look\" is the macOS preview feature (use the OS's localized name)."
+    "description": "Advanced-section label for the toggle that hides the Space-vs-Quick-Look reminder. \"Space-key\" is the keyboard spacebar; \"Quick Look\" is the macOS preview feature (use the OS's localized name).",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr uses Space to toggle file selection and ⇧Space for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click ''Don''t show again'' in the toast) to suppress the reminder for good.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "description": "Help text for the suppress-Quick-Look-hint toggle. \"Space\" and \"⇧Space\" (Shift-Space) are keyboard keys/glyphs; keep glyphs, use the locale's key names. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted 'Don't show again' must match the actual toast button copy; translate it consistently with that button."
+    "description": "Help text for the suppress-Quick-Look-hint toggle. \"Space\" and \"⇧Space\" (Shift-Space) are keyboard keys/glyphs; keep glyphs, use the locale's key names. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted 'Don't show again' must match the actual toast button copy; translate it consistently with that button.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Number of closed tabs to remember per pane",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
-    "description": "Advanced-section label for the number input setting how many recently closed tabs to keep per pane. \"pane\" is one of the two file lists."
+    "description": "Advanced-section label for the number input setting how many recently closed tabs to keep per pane. \"pane\" is one of the two file lists.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.description": "How many recently closed tabs to keep per pane for \"Reopen closed tab\" (⌘⇧T). Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "description": "Help text for the closed-tab-history-size setting. \"Reopen closed tab\" is a Cmdr command name; translate consistently with that command. \"⌘⇧T\" is a macOS shortcut glyph string (Command-Shift-T); keep the glyphs as-is. \"pane\" is one of the two file lists."
+    "description": "Help text for the closed-tab-history-size setting. \"Reopen closed tab\" is a Cmdr command name; translate consistently with that command. \"⌘⇧T\" is a macOS shortcut glyph string (Command-Shift-T); keep the glyphs as-is. \"pane\" is one of the two file lists.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.dragThreshold.label": "Drag threshold",
   "@settings.advanced.dragThreshold.label": {
-    "description": "Advanced-section label for the drag-distance threshold number input (how far the pointer must move before a drag starts)."
+    "description": "Advanced-section label for the drag-distance threshold number input (how far the pointer must move before a drag starts).",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.dragThreshold.description": "Minimum distance in pixels before a drag operation starts.",
   "@settings.advanced.dragThreshold.description": {
-    "description": "Help text for the drag-threshold setting (advanced). \"pixels\" is the unit."
+    "description": "Help text for the drag-threshold setting (advanced). \"pixels\" is the unit.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.fileExplorer.typeToJump.resetDelay.label": "Type-to-jump reset delay",
   "@settings.fileExplorer.typeToJump.resetDelay.label": {
-    "description": "Advanced-section label for the type-to-jump reset-delay control. \"type-to-jump\" = the feature where typing letters jumps to a matching file. \"reset delay\" = how long the typed buffer survives between keystrokes."
+    "description": "Advanced-section label for the type-to-jump reset-delay control. \"type-to-jump\" = the feature where typing letters jumps to a matching file. \"reset delay\" = how long the typed buffer survives between keystrokes.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.typeToJump.resetDelay.description": "How long the type-to-jump buffer stays alive after the last keystroke. Lower values reset faster between searches; higher values are more forgiving for slow typists.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
-    "description": "Help text for the type-to-jump-reset-delay setting (advanced). \"type-to-jump\" is the feature name; \"buffer\" = the accumulated typed characters."
+    "description": "Help text for the type-to-jump-reset-delay setting (advanced). \"type-to-jump\" is the feature name; \"buffer\" = the accumulated typed characters.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.fileOperations.maxConflictsToShow.label": "Maximum conflicts to show",
   "@settings.fileOperations.maxConflictsToShow.label": {
-    "description": "Label for the picker limiting how many file conflicts are previewed before an operation. In Settings > Behavior > File operations (also in Advanced). \"conflicts\" = name clashes at the destination."
+    "description": "Label for the picker limiting how many file conflicts are previewed before an operation. In Settings > Behavior > File operations (also in Advanced). \"conflicts\" = name clashes at the destination.",
+    "screenshot": "settings-behavior-file-operations.png"
   },
   "settings.fileOperations.maxConflictsToShow.description": "Maximum number of file conflicts to display in the preview before an operation.",
   "@settings.fileOperations.maxConflictsToShow.description": {
-    "description": "Help text for the max-conflicts-to-show setting. \"conflicts\" = files that would clash with existing names at the destination."
+    "description": "Help text for the max-conflicts-to-show setting. \"conflicts\" = files that would clash with existing names at the destination.",
+    "screenshot": "settings-behavior-file-operations.png"
   },
 
   "settings.fileOperations.progressUpdateInterval.label": "Progress update interval",
   "@settings.fileOperations.progressUpdateInterval.label": {
-    "description": "Label for the slider setting how often the progress display refreshes during file operations. In Settings > Behavior > File operations (also in Advanced)."
+    "description": "Label for the slider setting how often the progress display refreshes during file operations. In Settings > Behavior > File operations (also in Advanced).",
+    "screenshot": "settings-behavior-file-operations.png"
   },
   "settings.fileOperations.progressUpdateInterval.description": "How often to refresh progress during file operations. Lower values feel more responsive but use more CPU.",
   "@settings.fileOperations.progressUpdateInterval.description": {
-    "description": "Help text for the progress-update-interval setting. \"CPU\" = the processor; keep the abbreviation."
+    "description": "Help text for the progress-update-interval setting. \"CPU\" = the processor; keep the abbreviation.",
+    "screenshot": "settings-behavior-file-operations.png"
   },
 
   "settings.advanced.maxLogStorageMb.label": "Maximum disk space for log files (MB)",
   "@settings.advanced.maxLogStorageMb.label": {
-    "description": "Advanced-section label for the number input capping log-file disk usage. \"(MB)\" is the unit symbol megabytes; keep it."
+    "description": "Advanced-section label for the number input capping log-file disk usage. \"(MB)\" is the unit symbol megabytes; keep it.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.maxLogStorageMb.description": "Maximum disk space for log files. Set to 0 to disable log storage; error reports cannot be sent without logs. Changes to a non-zero value take effect on next app launch.",
   "@settings.advanced.maxLogStorageMb.description": {
-    "description": "Help text for the max-log-storage setting (advanced). \"0\" is a literal value meaning disable. Notes that disabling logs blocks error reports and that increases apply on next launch."
+    "description": "Help text for the max-log-storage setting (advanced). \"0\" is a literal value meaning disable. Notes that disabling logs blocks error reports and that increases apply on next launch.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.mountTimeout.label": "Mount timeout",
   "@settings.advanced.mountTimeout.label": {
-    "description": "Advanced-section label for the network-share mount-timeout control. \"mount\" = attaching a network share to the system."
+    "description": "Advanced-section label for the network-share mount-timeout control. \"mount\" = attaching a network share to the system.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.mountTimeout.description": "Timeout for mounting network shares.",
   "@settings.advanced.mountTimeout.description": {
-    "description": "Help text for the mount-timeout setting (advanced). \"mounting\" = attaching a network share to the system."
+    "description": "Help text for the mount-timeout setting (advanced). \"mounting\" = attaching a network share to the system.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.filterSafeSaveArtifacts.label": "Filter safe-save artifacts on SMB",
   "@settings.advanced.filterSafeSaveArtifacts.label": {
-    "description": "Advanced-section label for the toggle hiding macOS safe-save temp files on SMB shares. \"SMB\" is a protocol name; keep it. \"artifacts\" = leftover temporary files."
+    "description": "Advanced-section label for the toggle hiding macOS safe-save temp files on SMB shares. \"SMB\" is a protocol name; keep it. \"artifacts\" = leftover temporary files.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.filterSafeSaveArtifacts.description": "Hide temporary files created by macOS safe-save (like \".sb-\" files from TextEdit) in the SMB file watcher. These are transient and normally invisible.",
   "@settings.advanced.filterSafeSaveArtifacts.description": {
-    "description": "Help text for the filter-safe-save-artifacts toggle (advanced). \"macOS\" is a brand name and \"TextEdit\" a macOS app name (keep both); \".sb-\" is a literal filename prefix (keep it exactly); \"SMB\" is a protocol name (keep it). \"safe-save\" is the atomic write-then-rename technique."
+    "description": "Help text for the filter-safe-save-artifacts toggle (advanced). \"macOS\" is a brand name and \"TextEdit\" a macOS app name (keep both); \".sb-\" is a literal filename prefix (keep it exactly); \"SMB\" is a protocol name (keep it). \"safe-save\" is the atomic write-then-rename technique.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.serviceResolveTimeout.label": "Service resolve timeout",
   "@settings.advanced.serviceResolveTimeout.label": {
-    "description": "Advanced-section label for the Bonjour service-resolve timeout control. \"resolve\" = looking up a discovered network service's address."
+    "description": "Advanced-section label for the Bonjour service-resolve timeout control. \"resolve\" = looking up a discovered network service's address.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.serviceResolveTimeout.description": "Timeout for resolving network services via Bonjour.",
   "@settings.advanced.serviceResolveTimeout.description": {
-    "description": "Help text for the service-resolve-timeout setting (advanced). \"Bonjour\" is Apple's network service-discovery technology name; keep it. \"resolving\" = looking up the address of a discovered service."
+    "description": "Help text for the service-resolve-timeout setting (advanced). \"Bonjour\" is Apple's network service-discovery technology name; keep it. \"resolving\" = looking up the address of a discovered service.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.search.recentSearches.maxCount.label": "Recent searches to remember",
   "@settings.search.recentSearches.maxCount.label": {
-    "description": "Advanced-section label for the number input capping stored recent searches."
+    "description": "Advanced-section label for the number input capping stored recent searches.",
+    "screenshot": "settings-behavior-search.png"
   },
   "settings.search.recentSearches.maxCount.description": "How many recent searches to keep for the in-dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).",
   "@settings.search.recentSearches.maxCount.description": {
-    "description": "Help text for the recent-searches-max-count setting (advanced). \"0\" is a literal value meaning disable. \"footer\" and \"popover\" are UI element terms; \"roll off\" means the oldest are dropped."
+    "description": "Help text for the recent-searches-max-count setting (advanced). \"0\" is a literal value meaning disable. \"footer\" and \"popover\" are UI element terms; \"roll off\" means the oldest are dropped.",
+    "screenshot": "settings-behavior-search.png"
   },
 
   "settings.selection.recentSelections.maxCount.label": "Recent selections to remember",
   "@settings.selection.recentSelections.maxCount.label": {
-    "description": "Advanced-section label for the number input capping stored recent selections. \"selections\" here are saved file-select patterns from the Select/Deselect dialog."
+    "description": "Advanced-section label for the number input capping stored recent selections. \"selections\" here are saved file-select patterns from the Select/Deselect dialog.",
+    "screenshot": "settings-behavior-search.png"
   },
   "settings.selection.recentSelections.maxCount.description": "How many recent selections to keep for the Select / Deselect files dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).",
   "@settings.selection.recentSelections.maxCount.description": {
-    "description": "Help text for the recent-selections-max-count setting (advanced). \"Select / Deselect files\" is a Cmdr dialog name; translate consistently with that dialog. \"0\" is a literal value meaning disable. \"roll off\" means the oldest are dropped."
+    "description": "Help text for the recent-selections-max-count setting (advanced). \"Select / Deselect files\" is a Cmdr dialog name; translate consistently with that dialog. \"0\" is a literal value meaning disable. \"roll off\" means the oldest are dropped.",
+    "screenshot": "settings-behavior-search.png"
   },
 
   "settings.onboarding.upgradeNudgeShown.label": "Onboarding upgrade nudge shown",
@@ -976,11 +1131,13 @@
 
   "settings.advanced.updateCheckInterval.label": "Update check interval",
   "@settings.advanced.updateCheckInterval.label": {
-    "description": "Advanced-section label for the control setting how often background update checks run."
+    "description": "Advanced-section label for the control setting how often background update checks run.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.updateCheckInterval.description": "How often to check for updates in the background.",
   "@settings.advanced.updateCheckInterval.description": {
-    "description": "Help text for the update-check-interval setting (advanced)."
+    "description": "Help text for the update-check-interval setting (advanced).",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.tint.none": "No tint",
@@ -1217,14 +1374,16 @@
     "description": "aria-label (screen-reader only) for a number input's decrement (minus) button. Reads as an action plus the setting's name.",
     "placeholders": {
       "label": "the name of the setting this button adjusts, e.g. \"Custom timeout\""
-    }
+    },
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.control.increase": "Increase {label}",
   "@settings.control.increase": {
     "description": "aria-label (screen-reader only) for a number input's increment (plus) button. Reads as an action plus the setting's name.",
     "placeholders": {
       "label": "the name of the setting this button adjusts, e.g. \"Custom timeout\""
-    }
+    },
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.control.customValuePlaceholder": "Enter custom value",
   "@settings.control.customValuePlaceholder": {
@@ -1232,7 +1391,8 @@
   },
   "settings.control.customOption": "Custom...",
   "@settings.control.customOption": {
-    "description": "Dropdown option that lets the user enter a custom value. The trailing ellipsis signals further input follows; keep an ellipsis."
+    "description": "Dropdown option that lets the user enter a custom value. The trailing ellipsis signals further input follows; keep an ellipsis.",
+    "screenshot": "settings-behavior-file-operations.png"
   },
   "settings.control.customPrefix": "Custom: {value}",
   "@settings.control.customPrefix": {
@@ -1352,7 +1512,8 @@
 
   "settings.ai.providerAria": "AI provider",
   "@settings.ai.providerAria": {
-    "description": "aria-label for the AI-provider radio group (screen-reader only). \"AI\" = artificial intelligence."
+    "description": "aria-label for the AI-provider radio group (screen-reader only). \"AI\" = artificial intelligence.",
+    "screenshot": "settings-ai.png"
   },
   "settings.ai.loading": "Loading...",
   "@settings.ai.loading": {
@@ -1377,7 +1538,8 @@
 
   "settings.fileSystemWatching.indexSize": "Index size",
   "@settings.fileSystemWatching.indexSize": {
-    "description": "Label for the on-disk size of the drive index, shown on the indexing card in Settings > Behavior > File system watching."
+    "description": "Label for the on-disk size of the drive index, shown on the indexing card in Settings > Behavior > File system watching.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.fileSystemWatching.clearing": "Clearing...",
   "@settings.fileSystemWatching.clearing": {
@@ -1385,7 +1547,8 @@
   },
   "settings.fileSystemWatching.clearIndex": "Clear index",
   "@settings.fileSystemWatching.clearIndex": {
-    "description": "Button text that deletes the drive index. Pairs with the in-progress \"Clearing...\" state."
+    "description": "Button text that deletes the drive index. Pairs with the in-progress \"Clearing...\" state.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.fileSystemWatching.noIndex": "No index",
   "@settings.fileSystemWatching.noIndex": {
@@ -1393,7 +1556,8 @@
   },
   "settings.fileSystemWatching.clearIndexDescription": "Deletes the index database. A fresh scan starts next time indexing is enabled.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "description": "Help text under the Clear index button explaining what clearing does."
+    "description": "Help text under the Clear index button explaining what clearing does.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
@@ -1401,7 +1565,8 @@
   },
   "settings.fileSystemWatching.cardLowDiskSpace": "Low disk space",
   "@settings.fileSystemWatching.cardLowDiskSpace": {
-    "description": "Heading of the low-disk-space card in Settings > Behavior > File system watching."
+    "description": "Heading of the low-disk-space card in Settings > Behavior > File system watching.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.appearance.card.theme": "Theme",
   "@settings.appearance.card.theme": {
@@ -1425,23 +1590,28 @@
   },
   "settings.appearance.card.namesAndIcons": "Names and icons",
   "@settings.appearance.card.namesAndIcons": {
-    "description": "Heading of the names-and-icons card (document icons, extensions, directory sort, function key bar) in Settings > Appearance > Listing."
+    "description": "Heading of the names-and-icons card (document icons, extensions, directory sort, function key bar) in Settings > Appearance > Listing.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.appearance.card.briefMode": "Brief mode",
   "@settings.appearance.card.briefMode": {
-    "description": "Heading of the brief-mode card (brief column width mode and max width) in Settings > Appearance > Listing."
+    "description": "Heading of the brief-mode card (brief column width mode and max width) in Settings > Appearance > Listing.",
+    "screenshot": "settings-appearance-listing.png"
   },
   "settings.fileOperations.card.renaming": "Renaming",
   "@settings.fileOperations.card.renaming": {
-    "description": "Heading of the renaming card (the file-extension-change confirmation setting) in Settings > Behavior > File operations."
+    "description": "Heading of the renaming card (the file-extension-change confirmation setting) in Settings > Behavior > File operations.",
+    "screenshot": "settings-behavior-file-operations.png"
   },
   "settings.network.card.connection": "Connection",
   "@settings.network.card.connection": {
-    "description": "Heading of the connection card (enable networking, direct SMB connection) in Settings > File systems > SMB/Network shares."
+    "description": "Heading of the connection card (enable networking, direct SMB connection) in Settings > File systems > SMB/Network shares.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.card.performanceAndTimeouts": "Performance and timeouts",
   "@settings.network.card.performanceAndTimeouts": {
-    "description": "Heading of the performance-and-timeouts card (share cache duration, network timeout mode, custom timeout, SMB concurrency) in Settings > File systems > SMB/Network shares."
+    "description": "Heading of the performance-and-timeouts card (share cache duration, network timeout mode, custom timeout, SMB concurrency) in Settings > File systems > SMB/Network shares.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.advanced.card.performance": "Performance",
   "@settings.advanced.card.performance": {
@@ -1481,15 +1651,18 @@
   },
   "settings.updates.card.updates": "Updates",
   "@settings.updates.card.updates": {
-    "description": "Heading of the updates card (auto-check for updates, show what''s new on update) in Settings > Updates & privacy."
+    "description": "Heading of the updates card (auto-check for updates, show what''s new on update) in Settings > Updates & privacy.",
+    "screenshot": "settings-updates.png"
   },
   "settings.updates.card.privacyAndDataSharing": "Privacy and data sharing",
   "@settings.updates.card.privacyAndDataSharing": {
-    "description": "Heading of the privacy-and-data-sharing card (analytics opt-in, beta contact email, crash reports, error reports) in Settings > Updates & privacy."
+    "description": "Heading of the privacy-and-data-sharing card (analytics opt-in, beta contact email, crash reports, error reports) in Settings > Updates & privacy.",
+    "screenshot": "settings-updates.png"
   },
   "settings.fileSystemWatching.globalShortcutHint": "Change the shortcut under Keyboard shortcuts → Go to latest download (global).",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "description": "Hint pointing to where the global shortcut is edited. The \"→\" arrow joins a navigation path; keep it. \"Keyboard shortcuts\" is the Cmdr settings section name and \"Go to latest download (global)\" is the shortcut's name there; translate both consistently with their use elsewhere."
+    "description": "Hint pointing to where the global shortcut is edited. The \"→\" arrow joins a navigation path; keep it. \"Keyboard shortcuts\" is the Cmdr settings section name and \"Go to latest download (global)\" is the shortcut's name there; translate both consistently with their use elsewhere.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
 
   "settings.network.localNetworkAccessLabel": "{localNetwork} access",
@@ -1497,26 +1670,31 @@
     "description": "Heading for the Local Network permission box in Settings > File systems > SMB/Network shares. Reads as \"[Local Network] access\".",
     "placeholders": {
       "localNetwork": "the OS-localized macOS \"Local Network\" permission name, injected at runtime"
-    }
+    },
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.permissionIntroPrefix": "Cmdr needs {localNetwork} to find SMB servers, list available shares, and connect directly for faster file transfers. The first time you open Network or use ",
   "@settings.network.permissionIntroPrefix": {
     "description": "First part of the Local Network permission explainer. It ends mid-sentence (note the trailing space) so a clickable \"Connect to server…\" chip and then the suffix follow inline. Keep the trailing space and the unfinished sentence. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both); \"Network\" is the Cmdr section the user opens.",
     "placeholders": {
       "localNetwork": "the OS-localized macOS \"Local Network\" permission name, injected at runtime"
-    }
+    },
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.permissionIntroConnectLink": "Connect to server…",
   "@settings.network.permissionIntroConnectLink": {
-    "description": "The inline chip/link text embedded in the permission explainer; it names the \"Connect to server…\" command. Translate consistently with that command elsewhere. The trailing ellipsis signals it opens a dialog; keep it."
+    "description": "The inline chip/link text embedded in the permission explainer; it names the \"Connect to server…\" command. Translate consistently with that command elsewhere. The trailing ellipsis signals it opens a dialog; keep it.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.permissionIntroSuffix": ", macOS will ask. Say yes.",
   "@settings.network.permissionIntroSuffix": {
-    "description": "The end of the permission explainer sentence, continuing right after the inline \"Connect to server…\" chip (note the leading comma and space, which attach it to the chip). \"macOS\" is a brand name; keep it. Voice is encouraging (\"Say yes.\")."
+    "description": "The end of the permission explainer sentence, continuing right after the inline \"Connect to server…\" chip (note the leading comma and space, which attach it to the chip). \"macOS\" is a brand name; keep it. Voice is encouraging (\"Say yes.\").",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.manageAnytimePrefix": "Manage this anytime in",
   "@settings.network.manageAnytimePrefix": {
-    "description": "Lead-in sentence immediately followed by the clickable System Settings path; phrase it to flow into that path."
+    "description": "Lead-in sentence immediately followed by the clickable System Settings path; phrase it to flow into that path.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
@@ -1525,11 +1703,13 @@
       "systemSettings": "the OS-localized name of the macOS \"System Settings\" app",
       "privacyAndSecurity": "the OS-localized name of the macOS \"Privacy & Security\" pane",
       "localNetwork": "the OS-localized macOS \"Local Network\" permission name"
-    }
+    },
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.permissionWithout": "Without it, Cmdr can still read and write files on shares that are already mounted, but you can''t discover new servers or use our faster direct connection.",
   "@settings.network.permissionWithout": {
-    "description": "Explains what still works without the Local Network permission. \"Cmdr\" is the product name; keep it. \"mounted\" = a share already attached to the system; \"shares\" = network folders."
+    "description": "Explains what still works without the Local Network permission. \"Cmdr\" is the product name; keep it. \"mounted\" = a share already attached to the system; \"shares\" = network folders.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.customTimeoutUnit": "seconds",
   "@settings.network.customTimeoutUnit": {
@@ -1538,11 +1718,13 @@
 
   "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {
-    "description": "Placeholder text in the beta-contact email field. \"you@example.com\" is a literal example email address; keep it exactly."
+    "description": "Placeholder text in the beta-contact email field. \"you@example.com\" is a literal example email address; keep it exactly.",
+    "screenshot": "settings-updates.png"
   },
   "settings.updates.checkForUpdates": "Check for updates",
   "@settings.updates.checkForUpdates": {
-    "description": "Button that manually triggers an update check. In Settings > Updates & privacy."
+    "description": "Button that manually triggers an update check. In Settings > Updates & privacy.",
+    "screenshot": "settings-updates.png"
   },
   "settings.updates.errorPrefix": "Error:",
   "@settings.updates.errorPrefix": {
@@ -1562,12 +1744,14 @@
   },
   "settings.updates.emailPrivacyNote": "Stored only on your Mac. We never send it together with your anonymous usage data, so your stats can''t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.",
   "@settings.updates.emailPrivacyNote": {
-    "description": "Privacy note under the beta-email field, reassuring the user about how the email is stored and used. \"Mac\" is the Apple computer brand name; keep it. \"stats\" = statistics."
+    "description": "Privacy note under the beta-email field, reassuring the user about how the email is stored and used. \"Mac\" is the Apple computer brand name; keep it. \"stats\" = statistics.",
+    "screenshot": "settings-updates.png"
   },
 
   "settings.logging.openLogFile": "Open log file",
   "@settings.logging.openLogFile": {
-    "description": "Button that opens the app's log file. In Settings > Developer > Logging."
+    "description": "Button that opens the app's log file. In Settings > Developer > Logging.",
+    "screenshot": "settings-developer-logging.png"
   },
   "settings.logging.copied": "Copied!",
   "@settings.logging.copied": {
@@ -1575,19 +1759,22 @@
   },
   "settings.logging.copyDiagnostics": "Copy diagnostic info",
   "@settings.logging.copyDiagnostics": {
-    "description": "Button that copies diagnostic information to the clipboard. Briefly becomes \"Copied!\" after use."
+    "description": "Button that copies diagnostic information to the clipboard. Briefly becomes \"Copied!\" after use.",
+    "screenshot": "settings-developer-logging.png"
   },
 
   "settings.mcp.checkPort": "Check port",
   "@settings.mcp.checkPort": {
-    "description": "Button that tests whether the configured MCP server port is available. \"port\" is a networking term. In Settings > Developer > MCP server."
+    "description": "Button that tests whether the configured MCP server port is available. \"port\" is a networking term. In Settings > Developer > MCP server.",
+    "screenshot": "settings-developer-mcp-server.png"
   },
   "settings.mcp.runningOnPort": "Server is running on port {runningPort}",
   "@settings.mcp.runningOnPort": {
     "description": "Status line shown when the MCP server is active, reporting the actual bound port. \"port\" is a networking term.",
     "placeholders": {
       "runningPort": "the actual network port number the server bound to, e.g. \"52341\""
-    }
+    },
+    "screenshot": "settings-developer-mcp-server.png"
   },
   "settings.mcp.ephemeral": "(ephemeral)",
   "@settings.mcp.ephemeral": {
@@ -1636,11 +1823,13 @@
 
   "settings.advanced.warningBanner": "These settings are for advanced users. Incorrect values may cause performance issues or unexpected behavior.",
   "@settings.advanced.warningBanner": {
-    "description": "Cautionary banner at the top of the Advanced settings section, warning that changing these may degrade performance or stability."
+    "description": "Cautionary banner at the top of the Advanced settings section, warning that changing these may degrade performance or stability.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.resetAll": "Reset all to defaults",
   "@settings.advanced.resetAll": {
-    "description": "Button that resets every advanced setting to its default value. In the Advanced section."
+    "description": "Button that resets every advanced setting to its default value. In the Advanced section.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.resetAllConfirm": "Reset all advanced settings to their defaults? This cannot be undone.",
   "@settings.advanced.resetAllConfirm": {
@@ -1652,7 +1841,8 @@
   },
   "settings.advanced.defaultPrefix": "Default:",
   "@settings.advanced.defaultPrefix": {
-    "description": "Label preceding a setting's default value in the Advanced section. Followed by the value. Keep the trailing colon."
+    "description": "Label preceding a setting's default value in the Advanced section. Followed by the value. Keep the trailing colon.",
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.applier.logStorageRestart": "Restart Cmdr to apply the log storage change.",

@@ -1,17 +1,20 @@
 {
   "licensing.about.srTitle": "About Cmdr",
   "@licensing.about.srTitle": {
-    "description": "Visually-hidden accessible title of the About dialog, read by screen readers. The dialog has no visible title; the app name below serves as the visual heading. 'Cmdr' is the product name and must NOT be translated."
+    "description": "Visually-hidden accessible title of the About dialog, read by screen readers. The dialog has no visible title; the app name below serves as the visual heading. 'Cmdr' is the product name and must NOT be translated.",
+    "screenshot": "about.png"
   },
 
   "licensing.about.appName": "Cmdr",
   "@licensing.about.appName": {
-    "description": "The product name, shown large as the visual heading of the About dialog. A brand name; do NOT translate."
+    "description": "The product name, shown large as the visual heading of the About dialog. A brand name; do NOT translate.",
+    "screenshot": "about.png"
   },
 
   "licensing.about.tagline": "Keyboard-driven file manager",
   "@licensing.about.tagline": {
-    "description": "One-line product tagline under the app name in the About dialog."
+    "description": "One-line product tagline under the app name in the About dialog.",
+    "screenshot": "about.png"
   },
 
   "licensing.about.version": "Version {version} (open beta)",
@@ -19,17 +22,20 @@
     "description": "Version line in the About dialog. '(open beta)' flags the current release stage.",
     "placeholders": {
       "version": "the app version string, e.g. 1.4.2"
-    }
+    },
+    "screenshot": "about.png"
   },
 
   "licensing.about.betaNote": "Found something bad? Tell me on <github>GitHub</github>. I read every report!",
   "@licensing.about.betaNote": {
-    "description": "Friendly first-person beta note in the About dialog inviting bug reports. Spoken as David (the author), so keep it warm and personal. <github> wraps the inline link to the GitHub issues page; 'GitHub' is a brand name and must NOT be translated."
+    "description": "Friendly first-person beta note in the About dialog inviting bug reports. Spoken as David (the author), so keep it warm and personal. <github> wraps the inline link to the GitHub issues page; 'GitHub' is a brand name and must NOT be translated.",
+    "screenshot": "about.png"
   },
 
   "licensing.about.noLicense": "No license – only personal use allowed",
   "@licensing.about.noLicense": {
-    "description": "License-status line in the About dialog for a personal/free or expired install. Neutral, non-judgmental tone. The dash is an en dash (–)."
+    "description": "License-status line in the About dialog for a personal/free or expired install. Neutral, non-judgmental tone. The dash is an en dash (–).",
+    "screenshot": "about.png"
   },
 
   "licensing.about.perpetual": "Perpetual commercial license for {org}",
@@ -64,32 +70,38 @@
 
   "licensing.about.aiAttribution": "AI powered by Falcon-H1R-7B by Technology Innovation Institute (TII)",
   "@licensing.about.aiAttribution": {
-    "description": "Attribution line crediting the bundled AI model. 'Falcon-H1R-7B', 'Technology Innovation Institute', and 'TII' are proper names and must NOT be translated; only the 'AI powered by' framing is translatable."
+    "description": "Attribution line crediting the bundled AI model. 'Falcon-H1R-7B', 'Technology Innovation Institute', and 'TII' are proper names and must NOT be translated; only the 'AI powered by' framing is translatable.",
+    "screenshot": "about.png"
   },
 
   "licensing.about.linkWebsite": "Website",
   "@licensing.about.linkWebsite": {
-    "description": "Footer link label in the About dialog pointing to the product website."
+    "description": "Footer link label in the About dialog pointing to the product website.",
+    "screenshot": "about.png"
   },
 
   "licensing.about.linkGetLicense": "Get a license",
   "@licensing.about.linkGetLicense": {
-    "description": "Footer link label in the About dialog pointing to the pricing page. Shown only for personal/expired installs."
+    "description": "Footer link label in the About dialog pointing to the pricing page. Shown only for personal/expired installs.",
+    "screenshot": "about.png"
   },
 
   "licensing.about.linkGithub": "GitHub",
   "@licensing.about.linkGithub": {
-    "description": "Footer link label in the About dialog pointing to the source repository. 'GitHub' is a brand name and must NOT be translated."
+    "description": "Footer link label in the About dialog pointing to the source repository. 'GitHub' is a brand name and must NOT be translated.",
+    "screenshot": "about.png"
   },
 
   "licensing.about.linkDiscord": "Discord",
   "@licensing.about.linkDiscord": {
-    "description": "Footer link label in the About dialog pointing to the community chat. 'Discord' is a brand name and must NOT be translated."
+    "description": "Footer link label in the About dialog pointing to the community chat. 'Discord' is a brand name and must NOT be translated.",
+    "screenshot": "about.png"
   },
 
   "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
   "@licensing.about.copyright": {
-    "description": "Copyright line at the foot of the About dialog. 'David Veszelovszki' is a personal name; the year range stays literal."
+    "description": "Copyright line at the foot of the About dialog. 'David Veszelovszki' is a personal name; the year range stays literal.",
+    "screenshot": "about.png"
   },
 
   "licensing.commercialReminder.title": "Thanks for using Cmdr!",
@@ -459,7 +471,8 @@
 
   "licensing.section.title": "License",
   "@licensing.section.title": {
-    "description": "Heading of the License section in the settings window."
+    "description": "Heading of the License section in the settings window.",
+    "screenshot": "settings-license.png"
   },
 
   "licensing.section.loading": "Loading...",
@@ -469,7 +482,8 @@
 
   "licensing.section.labelType": "License type",
   "@licensing.section.labelType": {
-    "description": "Row label in the settings License section for the license type."
+    "description": "Row label in the settings License section for the license type.",
+    "screenshot": "settings-license.png"
   },
 
   "licensing.section.labelOrganization": "Organization",
@@ -494,17 +508,20 @@
 
   "licensing.section.enterKey": "Enter license key",
   "@licensing.section.enterKey": {
-    "description": "Button in the settings License section (shown when no license exists) that opens the key-entry dialog. Keep it short (a button)."
+    "description": "Button in the settings License section (shown when no license exists) that opens the key-entry dialog. Keep it short (a button).",
+    "screenshot": "settings-license.png"
   },
 
   "licensing.section.getLicense": "Get a license",
   "@licensing.section.getLicense": {
-    "description": "Button in the settings License section (shown when no license exists) that opens the pricing page. Keep it short (a button)."
+    "description": "Button in the settings License section (shown when no license exists) that opens the pricing page. Keep it short (a button).",
+    "screenshot": "settings-license.png"
   },
 
   "licensing.section.typePersonal": "Personal (free)",
   "@licensing.section.typePersonal": {
-    "description": "License-type value in the settings License section for a free personal install. 'Personal' is a license tier name; keep the '(free)' parenthetical."
+    "description": "License-type value in the settings License section for a free personal install. 'Personal' is a license tier name; keep the '(free)' parenthetical.",
+    "screenshot": "settings-license.png"
   },
 
   "licensing.section.typeCommercialPerpetual": "Commercial perpetual",

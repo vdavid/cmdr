@@ -14,7 +14,8 @@
 
   "viewer.srHeading": "File viewer",
   "@viewer.srHeading": {
-    "description": "Screen-reader-only heading (visually hidden) naming the whole viewer window. The name of this feature: a read-only viewer for a single file."
+    "description": "Screen-reader-only heading (visually hidden) naming the whole viewer window. The name of this feature: a read-only viewer for a single file.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.loading": "Loading...",
@@ -52,7 +53,8 @@
     "description": "Accessibility label for the scrollable region that shows the file's text, announced by screen readers. Names which file's content this is.",
     "placeholders": {
       "fileName": "name of the file being viewed (e.g. report.log)"
-    }
+    },
+    "screenshot": "viewer.png"
   },
 
   "viewer.binaryWarning.body": "This is the raw view of the file. You might want to view the actual <kind>{kind}</kind> instead. To do that, close this window and press <quickLookKey></quickLookKey> to open the quick view, or press <openKey></openKey> (or double-click the file) to open it in the associated app.",
@@ -160,12 +162,14 @@
 
   "viewer.toolbar.viewMode.ariaLabel": "View mode",
   "@viewer.toolbar.viewMode.ariaLabel": {
-    "description": "Accessibility label for the toolbar dropdown that switches how the file is shown (rendered image/PDF versus raw text)."
+    "description": "Accessibility label for the toolbar dropdown that switches how the file is shown (rendered image/PDF versus raw text).",
+    "screenshot": "viewer.png"
   },
 
   "viewer.toolbar.viewMode.text": "Text",
   "@viewer.toolbar.viewMode.text": {
-    "description": "Option in the view-mode dropdown for showing the file as plain text. Also the current-mode label when reading a media file as text."
+    "description": "Option in the view-mode dropdown for showing the file as plain text. Also the current-mode label when reading a media file as text.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.toolbar.viewMode.viewAsText": "View as text",
@@ -200,7 +204,8 @@
 
   "viewer.toolbar.encoding.placeholder": "Encoding",
   "@viewer.toolbar.encoding.placeholder": {
-    "description": "Placeholder and accessibility label for the toolbar dropdown that picks the file's text encoding (e.g. UTF-8). Shown when no encoding is selected yet. \"Encoding\" means character encoding."
+    "description": "Placeholder and accessibility label for the toolbar dropdown that picks the file's text encoding (e.g. UTF-8). Shown when no encoding is selected yet. \"Encoding\" means character encoding.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.toolbar.encoding.group.unicode": "Unicode",
@@ -218,22 +223,26 @@
     "description": "An encoding's dropdown label with a marker noting it's the one auto-detected when the file opened, e.g. \"UTF-8 (Detected)\". Translate the \"Detected\" word; keep the encoding name as-is.",
     "placeholders": {
       "label": "the encoding's display name, e.g. \"UTF-8\" (do not translate it)"
-    }
+    },
+    "screenshot": "viewer.png"
   },
 
   "viewer.toolbar.tail.label": "Tail",
   "@viewer.toolbar.tail.label": {
-    "description": "Visible text of the toolbar toggle that makes the viewer auto-follow a file as it grows (like the Unix `tail -f` command, useful for logs). Keep it short. Its tooltip and accessibility label are separate strings."
+    "description": "Visible text of the toolbar toggle that makes the viewer auto-follow a file as it grows (like the Unix `tail -f` command, useful for logs). Keep it short. Its tooltip and accessibility label are separate strings.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.toolbar.tail.ariaLabel": "Tail mode: follow file changes",
   "@viewer.toolbar.tail.ariaLabel": {
-    "description": "Accessibility label for the Tail toggle, spelling out what it does: keep showing new content as the file changes on disk."
+    "description": "Accessibility label for the Tail toggle, spelling out what it does: keep showing new content as the file changes on disk.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.toolbar.tail.tooltip": "Auto-follow file changes",
   "@viewer.toolbar.tail.tooltip": {
-    "description": "Tooltip for the Tail toggle: automatically scroll to follow new content appended to the file."
+    "description": "Tooltip for the Tail toggle: automatically scroll to follow new content appended to the file.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.toolbar.reindexing": "Reindexing…",
@@ -243,7 +252,8 @@
 
   "viewer.statusBar.ariaLabel": "File information",
   "@viewer.statusBar.ariaLabel": {
-    "description": "Accessibility label for the viewer's bottom status bar, which shows the file name, size, line count, and mode."
+    "description": "Accessibility label for the viewer's bottom status bar, which shows the file name, size, line count, and mode.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.statusBar.lineCount": "{count} {count, plural, one {line} other {lines}}",
@@ -251,17 +261,20 @@
     "description": "Line count shown in the status bar, e.g. \"42 lines\" or \"1 line\".",
     "placeholders": {
       "count": "the number of lines in the file (drives the singular/plural form)"
-    }
+    },
+    "screenshot": "viewer.png"
   },
 
   "viewer.statusBar.badge.inMemory": "in memory",
   "@viewer.statusBar.badge.inMemory": {
-    "description": "Small status-bar badge meaning the whole file is loaded in RAM, so jumping to any line is instant. Lowercase, terse badge; its tooltip is a separate string."
+    "description": "Small status-bar badge meaning the whole file is loaded in RAM, so jumping to any line is instant. Lowercase, terse badge; its tooltip is a separate string.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.statusBar.badge.inMemoryTooltip": "You have the file entirely in memory. You can quickly scroll to any line.",
   "@viewer.statusBar.badge.inMemoryTooltip": {
-    "description": "Tooltip for the \"in memory\" status badge, explaining that the entire file is in RAM so scrolling to any line is fast."
+    "description": "Tooltip for the \"in memory\" status badge, explaining that the entire file is in RAM so scrolling to any line is fast.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.statusBar.badge.indexed": "indexed",
@@ -317,7 +330,8 @@
 
   "viewer.statusBar.hint.text": "W wrap · F tail · ⌘F search",
   "@viewer.statusBar.hint.text": {
-    "description": "Status-bar hint listing keyboard shortcuts for text mode: W toggles word wrap, F toggles tail (auto-follow), ⌘F opens search. Keep the key glyphs (W, F, ⌘F) literal; translate only the action words (wrap, tail, search). Middle-dot separators between the three."
+    "description": "Status-bar hint listing keyboard shortcuts for text mode: W toggles word wrap, F toggles tail (auto-follow), ⌘F opens search. Keep the key glyphs (W, F, ⌘F) literal; translate only the action words (wrap, tail, search). Middle-dot separators between the three.",
+    "screenshot": "viewer.png"
   },
 
   "viewer.media.dimensions": "{width} × {height}",

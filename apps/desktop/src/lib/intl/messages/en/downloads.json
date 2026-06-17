@@ -150,13 +150,14 @@
 
   "downloads.shortcutRow.scopeTitle": "Global",
   "@downloads.shortcutRow.scopeTitle": {
-    "description": "Card title in the Keyboard shortcuts settings for system-wide (global) shortcuts, above the go-to-latest-download row. A short section title. 'global' = works from any app."
+    "description": "Card title in the Keyboard shortcuts settings for system-wide (global) shortcuts, above the go-to-latest-download row. A short section title. 'global' = works from any app.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "downloads.shortcutRow.commandName": "Go to latest download <marker>(global)</marker>",
   "@downloads.shortcutRow.commandName": {
     "description": "Name of the editable system-wide shortcut row in Keyboard shortcuts settings. <marker> wraps the '(global)' tag (shown dimmed) that signals this hotkey fires from any app. Keep the parentheses around 'global'.",
-    "screenshot": "keyboard-shortcuts-global.png"
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "downloads.shortcutRow.modifiedTooltip": "Modified from default",
@@ -207,7 +208,8 @@
     "description": "Helper text under the 'Go to latest download' toggle in File system watching settings, when a system-wide shortcut is set. {binding} is the shortcut keys; don't translate the key glyphs.",
     "placeholders": {
       "binding": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
-    }
+    },
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
 
   "downloads.toggleDescription.unbound": "Jump to your most recent download from any app.",

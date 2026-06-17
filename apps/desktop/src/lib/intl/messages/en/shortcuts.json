@@ -16,52 +16,62 @@
 
   "shortcuts.scope.app": "App",
   "@shortcuts.scope.app": {
-    "description": "Group heading in the Keyboard shortcuts list for app-wide commands (those that work anywhere). A short section title."
+    "description": "Group heading in the Keyboard shortcuts list for app-wide commands (those that work anywhere). A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.mainWindow": "Main window",
   "@shortcuts.scope.mainWindow": {
-    "description": "Group heading in the Keyboard shortcuts list for commands scoped to the main window. A short section title."
+    "description": "Group heading in the Keyboard shortcuts list for commands scoped to the main window. A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.fileList": "File list",
   "@shortcuts.scope.fileList": {
-    "description": "Group heading in the Keyboard shortcuts list for commands that act on the file list (the list of files in a pane). A short section title."
+    "description": "Group heading in the Keyboard shortcuts list for commands that act on the file list (the list of files in a pane). A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.briefMode": "Brief mode",
   "@shortcuts.scope.briefMode": {
-    "description": "Group heading in the Keyboard shortcuts list for commands specific to Brief view (a compact, multi-column file layout). \"Brief\" matches the view's name elsewhere in the app."
+    "description": "Group heading in the Keyboard shortcuts list for commands specific to Brief view (a compact, multi-column file layout). \"Brief\" matches the view's name elsewhere in the app.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.fullMode": "Full mode",
   "@shortcuts.scope.fullMode": {
-    "description": "Group heading in the Keyboard shortcuts list for commands specific to Full view (a detailed single-column file layout). \"Full\" matches the view's name elsewhere in the app."
+    "description": "Group heading in the Keyboard shortcuts list for commands specific to Full view (a detailed single-column file layout). \"Full\" matches the view's name elsewhere in the app.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.volumeChooser": "Volume chooser",
   "@shortcuts.scope.volumeChooser": {
-    "description": "Group heading in the Keyboard shortcuts list for commands in the volume chooser (the picker for disks and mounted locations). A short section title."
+    "description": "Group heading in the Keyboard shortcuts list for commands in the volume chooser (the picker for disks and mounted locations). A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.network": "Network",
   "@shortcuts.scope.network": {
-    "description": "Group heading in the Keyboard shortcuts list for commands in the network browser (finding servers on the network). A short section title."
+    "description": "Group heading in the Keyboard shortcuts list for commands in the network browser (finding servers on the network). A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.shareBrowser": "Share browser",
   "@shortcuts.scope.shareBrowser": {
-    "description": "Group heading in the Keyboard shortcuts list for commands in the share browser (the shared folders on a network server). A short section title."
+    "description": "Group heading in the Keyboard shortcuts list for commands in the share browser (the shared folders on a network server). A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.commandPalette": "Command palette",
   "@shortcuts.scope.commandPalette": {
-    "description": "Group heading in the Keyboard shortcuts list for commands inside the command palette. \"Command palette\" matches the name used elsewhere in the app. A short section title."
+    "description": "Group heading in the Keyboard shortcuts list for commands inside the command palette. \"Command palette\" matches the name used elsewhere in the app. A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.aboutWindow": "About window",
   "@shortcuts.scope.aboutWindow": {
-    "description": "Group heading in the Keyboard shortcuts list for commands in the About window. A short section title."
+    "description": "Group heading in the Keyboard shortcuts list for commands in the About window. A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.onboarding": "Onboarding",
@@ -163,37 +173,44 @@
 
   "shortcuts.section.title": "Keyboard shortcuts",
   "@shortcuts.section.title": {
-    "description": "Title of the Keyboard shortcuts section in the Settings window."
+    "description": "Title of the Keyboard shortcuts section in the Settings window.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.searchByNamePlaceholder": "Search by action name...",
   "@shortcuts.section.searchByNamePlaceholder": {
-    "description": "Placeholder in the input that filters the shortcut list by command (action) name. The trailing \"...\" suggests typing; keep it."
+    "description": "Placeholder in the input that filters the shortcut list by command (action) name. The trailing \"...\" suggests typing; keep it.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.filterByKeysPlaceholder": "Filter by keys...",
   "@shortcuts.section.filterByKeysPlaceholder": {
-    "description": "Placeholder in the input that filters the shortcut list by pressing a key combination. The trailing \"...\" suggests typing; keep it."
+    "description": "Placeholder in the input that filters the shortcut list by pressing a key combination. The trailing \"...\" suggests typing; keep it.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.pressEscToClear": "Press ESC to clear",
   "@shortcuts.section.pressEscToClear": {
-    "description": "Hint below the key-filter input telling the user how to clear it. \"ESC\" is the Escape key; keep it as the key name."
+    "description": "Hint below the key-filter input telling the user how to clear it. \"ESC\" is the Escape key; keep it as the key name.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.filterAll": "All",
   "@shortcuts.section.filterAll": {
-    "description": "Filter chip in the Keyboard shortcuts section showing every command. A short toggle label."
+    "description": "Filter chip in the Keyboard shortcuts section showing every command. A short toggle label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.filterModified": "Modified",
   "@shortcuts.section.filterModified": {
-    "description": "Filter chip in the Keyboard shortcuts section showing only commands whose shortcuts the user changed. A short toggle label."
+    "description": "Filter chip in the Keyboard shortcuts section showing only commands whose shortcuts the user changed. A short toggle label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.filterConflicts": "Conflicts",
   "@shortcuts.section.filterConflicts": {
-    "description": "Filter chip in the Keyboard shortcuts section showing only commands with conflicting shortcuts. A count badge may follow it. A short toggle label."
+    "description": "Filter chip in the Keyboard shortcuts section showing only commands with conflicting shortcuts. A count badge may follow it. A short toggle label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.cancel": "Cancel",
@@ -237,27 +254,32 @@
 
   "shortcuts.section.noneShortcut": "(none)",
   "@shortcuts.section.noneShortcut": {
-    "description": "Placeholder shown in a command's shortcut column when no shortcut is assigned. The parentheses signal it's a state, not a value; keep them."
+    "description": "Placeholder shown in a command's shortcut column when no shortcut is assigned. The parentheses signal it's a state, not a value; keep them.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.macOsTooltip": "macOS handles this shortcut. Cmdr can''t change it.",
   "@shortcuts.section.macOsTooltip": {
-    "description": "Tooltip on the \"macOS\" badge of a read-only shortcut row, explaining why it can't be changed. \"macOS\" and \"Cmdr\" are names; do not translate them."
+    "description": "Tooltip on the \"macOS\" badge of a read-only shortcut row, explaining why it can't be changed. \"macOS\" and \"Cmdr\" are names; do not translate them.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.fixedTooltip": "This key is built into Cmdr and can''t be changed.",
   "@shortcuts.section.fixedTooltip": {
-    "description": "Tooltip on the \"Fixed\" badge of a read-only shortcut row, explaining why it can't be changed. \"Cmdr\" is the brand name; do not translate it."
+    "description": "Tooltip on the \"Fixed\" badge of a read-only shortcut row, explaining why it can't be changed. \"Cmdr\" is the brand name; do not translate it.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "description": "Badge on a read-only shortcut row meaning macOS owns this shortcut. \"macOS\" is a name; do not translate it. A short tag."
+    "description": "Badge on a read-only shortcut row meaning macOS owns this shortcut. \"macOS\" is a name; do not translate it. A short tag.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.fixedBadge": "Fixed",
   "@shortcuts.section.fixedBadge": {
-    "description": "Badge on a read-only shortcut row meaning the key is hardcoded in the app and can't be rebound. A short tag."
+    "description": "Badge on a read-only shortcut row meaning the key is hardcoded in the app and can't be rebound. A short tag.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.pressKeys": "Press keys...",
@@ -267,12 +289,14 @@
 
   "shortcuts.section.removeShortcutTooltip": "Remove shortcut",
   "@shortcuts.section.removeShortcutTooltip": {
-    "description": "Tooltip on the × button that removes a single shortcut from a command. A short label."
+    "description": "Tooltip on the × button that removes a single shortcut from a command. A short label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.addShortcutTooltip": "Add shortcut",
   "@shortcuts.section.addShortcutTooltip": {
-    "description": "Tooltip and accessibility label on the + button that adds another shortcut to a command. A short label."
+    "description": "Tooltip and accessibility label on the + button that adds another shortcut to a command. A short label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.section.resetToDefaultTooltip": "Reset to default",
@@ -282,6 +306,7 @@
 
   "shortcuts.section.resetAll": "Reset all to defaults",
   "@shortcuts.section.resetAll": {
-    "description": "Button at the bottom of the Keyboard shortcuts section that restores every command's shortcuts to the shipped defaults."
+    "description": "Button at the bottom of the Keyboard shortcuts section that restores every command's shortcuts to the shipped defaults.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   }
 }

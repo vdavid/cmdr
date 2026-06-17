@@ -17,7 +17,8 @@
 
   "ui.select.placeholder": "Select...",
   "@ui.select.placeholder": {
-    "description": "Default placeholder shown in a dropdown (select) trigger before the user has picked an option."
+    "description": "Default placeholder shown in a dropdown (select) trigger before the user has picked an option.",
+    "screenshot": "settings-appearance-sizes.png"
   },
 
   "ui.combobox.emptyText": "No matches. Keep typing to use your own value.",
