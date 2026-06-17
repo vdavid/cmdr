@@ -26,5 +26,9 @@
   "errors.fixture.suggestion": "Open {system_settings}, then run `lsof <folder-path>`. Here's why.",
   "@errors.fixture.suggestion": {
     "description": "Raw error suggestion; {system_settings} is a substituted system label, <folder-path> is literal."
+  },
+  "fixture.brandLine": "Cmdr needs Full Disk Access on macOS to continue",
+  "@fixture.brandLine": {
+    "description": "Brand line; Cmdr and macOS must not be translated."
   }
 }

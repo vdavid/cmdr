@@ -50,8 +50,22 @@ describe('pluralCoverageDetail — pure classifier', () => {
     expect(r).toMatch(/\{count\} missing plural categories few, many/)
   })
 
-  it('flags an English plural missing the one category', () => {
+  it('flags an English plural missing the one category (no English reference → strict)', () => {
     expect(pluralCoverageDetail('en', '{count, plural, other {# files}}')).toMatch(/\{count\} missing plural category one/)
+  })
+
+  it('does NOT require few/many when the English source is a deliberate other-only plural', () => {
+    // English engaged only `other` (a constrained count domain), so a Polish
+    // translation matching that shape is correct even though pl normally needs few/many.
+    const englishOtherOnly = new Map([['count', new Set(['other'])]])
+    expect(pluralCoverageDetail('pl', '{count, plural, other {# razy}}', englishOtherOnly)).toBeNull()
+  })
+
+  it('still requires the full locale set when English used the full plural', () => {
+    const englishFull = new Map([['count', new Set(['one', 'other'])]])
+    expect(pluralCoverageDetail('pl', '{count, plural, one {# plik} other {# plików}}', englishFull)).toMatch(
+      /\{count\} missing plural categories few, many/,
+    )
   })
 })
 

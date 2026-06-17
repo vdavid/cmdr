@@ -284,6 +284,69 @@ export function sourceHash(englishValue) {
 }
 
 /**
+ * Brand/product/system WORDS that must survive translation verbatim — never
+ * localized, never accented. Curated and explicit (extend deliberately, not by
+ * pattern), derived from the brand glossary (`brand/copy/cmdr-copy.md`,
+ * `docs/guides/branding.md`) and the product's external entities. Single source of
+ * truth, shared by the don't-translate check (which warns when a translation drops
+ * one) AND the pseudolocale generator (which keeps them verbatim so en-XA, a
+ * faithful translation simulation, passes that check). Case-sensitive, whole-word.
+ * @type {readonly string[]}
+ */
+export const BRAND_WORDS = Object.freeze([
+  'Cmdr', // the product name
+  'macOS', // Apple's OS name; never localized
+  'GitHub', // external service
+  'SMB', // protocol acronym
+  'MTP', // protocol acronym
+  'Tauri', // tech name (appears in About/credits)
+  'Rust', // tech name
+  'Svelte', // tech name
+  'Quick Look', // macOS feature name
+])
+
+/**
+ * Substitution TOKENS that must appear verbatim (the raw error pipeline replaces
+ * them by name with `.replaceAll('{token}', value)`). Mirrors
+ * `system-strings.svelte.ts` `ENGLISH_DEFAULTS` in snake_case `{token}` form. Also
+ * guarded structurally by the parity check's raw `{token}` comparison; the
+ * don't-translate check lists them for a clearer, token-specific message.
+ * @type {readonly string[]}
+ */
+export const SYSTEM_TOKENS = Object.freeze([
+  '{system_settings}',
+  '{privacy_and_security}',
+  '{full_disk_access}',
+  '{files_and_folders}',
+  '{local_network}',
+  '{appearance}',
+])
+
+/**
+ * Whether `word` appears as a whole word in `value` (case-sensitive). Word
+ * boundaries use lookarounds against ASCII alphanumerics, so "macOS" inside
+ * "macOSes" doesn't count but "macOS." does. Shared by the don't-translate check
+ * and the pseudolocale generator's brand-word protection.
+ * @param {string} value
+ * @param {string} word
+ * @returns {boolean}
+ */
+export function hasWholeWord(value, word) {
+  return wholeWordRegExp(word).test(value)
+}
+
+/**
+ * A fresh whole-word matcher for `word` (global, so callers can iterate matches).
+ * Regex metacharacters in `word` are escaped (none today, but safe).
+ * @param {string} word
+ * @returns {RegExp}
+ */
+export function wholeWordRegExp(word) {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?<![A-Za-z0-9])${escaped}(?![A-Za-z0-9])`, 'g')
+}
+
+/**
  * Whether a message key renders RAW (no ICU) at runtime. The `errors.*` family
  * is resolved through `getMessage()` (a raw lookup), NOT `t()`/`intl-messageformat`:
  * its `{system_settings}` substitution tokens, literal `<…>` text (e.g.

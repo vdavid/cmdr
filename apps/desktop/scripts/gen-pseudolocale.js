@@ -57,7 +57,15 @@
 import { mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { IntlMessageFormat } from 'intl-messageformat'
-import { isMetadataKey, isRawKey, readLocaleFiles, resolveMessagesRoot, sourceHash } from './i18n-catalog-lib.js'
+import {
+  BRAND_WORDS,
+  isMetadataKey,
+  isRawKey,
+  readLocaleFiles,
+  resolveMessagesRoot,
+  sourceHash,
+  wholeWordRegExp,
+} from './i18n-catalog-lib.js'
 
 // `isRawKey` is the shared raw/ICU split (single source: `i18n-catalog-lib.js`).
 // Re-exported here because it's part of this module's tested surface and reads
@@ -193,16 +201,42 @@ function filler(segment) {
 }
 
 /**
- * Transforms ONE literal text segment: accent it, then append a bracketed,
- * deterministic filler run to expand its length. The brackets wrap only the
- * filler (not the whole segment) so adjacent placeholders stay adjacent to the
- * real (accented) words, which is what overflow testing wants to see. A segment
- * with no visible characters (pure whitespace) is accented only (no brackets),
- * preserving spacing around placeholders.
+ * Splits a literal segment into brand-word spans (kept verbatim) and other spans
+ * (to be accented/expanded). A faithful translation never localizes a brand/system
+ * word (`Cmdr`, `macOS`, …; see `BRAND_WORDS`), and keeping them verbatim is what
+ * lets en-XA pass the don't-translate check. Returns parts in source order, each
+ * tagged `protected` (a brand word) or not.
+ * @param {string} text
+ * @returns {{ text: string, protected: boolean }[]}
+ */
+function splitBrandWords(text) {
+  // One alternation of all brand words, whole-word. Build from each word's matcher
+  // source so escaping/boundaries stay identical to the check's matching.
+  const alternation = BRAND_WORDS.map((w) => wholeWordRegExp(w).source).join('|')
+  const re = new RegExp(alternation, 'g')
+  /** @type {{ text: string, protected: boolean }[]} */
+  const parts = []
+  let last = 0
+  let m
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push({ text: text.slice(last, m.index), protected: false })
+    parts.push({ text: m[0], protected: true })
+    last = m.index + m[0].length
+  }
+  if (last < text.length) parts.push({ text: text.slice(last), protected: false })
+  return parts
+}
+
+/**
+ * Accents one non-brand span and appends a bracketed, deterministic filler run to
+ * expand its length. The brackets wrap only the filler (not the whole span) so
+ * adjacent placeholders stay adjacent to the real (accented) words, which is what
+ * overflow testing wants. A span with no visible characters (pure whitespace) is
+ * accented only (no brackets), preserving spacing around placeholders.
  * @param {string} text
  * @returns {string}
  */
-function transformText(text) {
+function transformSpan(text) {
   const accented = accent(text)
   const pad = filler(text)
   if (pad === '') return accented
@@ -210,6 +244,20 @@ function transformText(text) {
   const trailingWs = /\s+$/.exec(text)?.[0] ?? ''
   const core = trailingWs ? accented.slice(0, accented.length - trailingWs.length) : accented
   return `${core}${OPEN}${pad}${CLOSE}${trailingWs}`
+}
+
+/**
+ * Transforms ONE literal text segment: brand/system words (`BRAND_WORDS`) pass
+ * through verbatim; every other span is accented and length-expanded. So the
+ * pseudolocale reads as a translated, overflow-stressed string while preserving
+ * the don't-translate tokens a real translator would keep.
+ * @param {string} text
+ * @returns {string}
+ */
+function transformText(text) {
+  return splitBrandWords(text)
+    .map((part) => (part.protected ? part.text : transformSpan(part.text)))
+    .join('')
 }
 
 /**

@@ -173,6 +173,28 @@ describe('isRawKey / pseudoValue route by family', () => {
   })
 })
 
+describe('brand-word preservation', () => {
+  it('keeps brand/system words verbatim while accenting surrounding text (ICU)', () => {
+    const out = pseudoIcu('Cmdr runs on macOS')
+    expect(out).toContain('Cmdr')
+    expect(out).toContain('macOS')
+    // The non-brand word "runs" is accented, so the output isn't the input.
+    expect(out).not.toBe('Cmdr runs on macOS')
+    expect(out).toMatch(/Cmdr .*macOS/)
+  })
+
+  it('keeps brand words verbatim on the raw path too', () => {
+    const out = pseudoRaw('Open GitHub to report, see SMB docs')
+    expect(out).toContain('GitHub')
+    expect(out).toContain('SMB')
+  })
+
+  it('only protects whole words (a brand word as a substring is still accented)', () => {
+    // "Rusty" contains "Rust" but isn't the brand word, so it's accented whole.
+    expect(pseudoIcu('Rusty')).not.toContain('Rust')
+  })
+})
+
 describe('determinism', () => {
   it('same input → byte-identical output (ICU)', () => {
     const en = 'Copied {fileText} from {source} to {target}'

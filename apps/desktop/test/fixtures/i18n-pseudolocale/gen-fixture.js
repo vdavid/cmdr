@@ -59,6 +59,12 @@ const en = {
   '@errors.fixture.suggestion': {
     description: 'Raw error suggestion; {system_settings} is a substituted system label, <folder-path> is literal.',
   },
+
+  // Brand/system WORDS (Cmdr, macOS) that must survive translation verbatim — the
+  // generator keeps them un-accented, so this also pins that behavior and gives
+  // the don't-translate check a clean fixture baseline.
+  'fixture.brandLine': 'Cmdr needs Full Disk Access on macOS to continue',
+  '@fixture.brandLine': { description: 'Brand line; Cmdr and macOS must not be translated.' },
 }
 
 const enXa = buildPseudoFile(en)

@@ -16,6 +16,17 @@
  * matches that sit ALONGSIDE the keyword categories, never substitute for them,
  * so they're ignored here (the catalog helper only surfaces keyword categories).
  *
+ * Gated on the ENGLISH source's own plural shape, which encodes the value domain
+ * the message can ever see. A few English plurals are DELIBERATELY degenerate —
+ * `{count, plural, other {…}}` with no `one` — because the count is constrained
+ * by construction (e.g. `fileExplorer.network.reconnect.times` only renders for
+ * three-or-more; one/two have their own words). When English uses only `other`,
+ * `count` is never 1, so a translation matching that shape is correct and we
+ * require only the categories English engaged. When English uses the full plural
+ * (`one`/`other`, the normal case), the whole quantitative range is in play, so a
+ * richer-CLDR locale (Polish: few/many) must cover its full required set. Without
+ * this gate the check would flag English's own deliberate partial plurals.
+ *
  * `select` is NOT checked here — its categories are an arbitrary, message-defined
  * enumeration (covered by placeholder/tag parity, which requires the locale's
  * select branches to match English). Only `plural` args are CLDR-governed, which
@@ -50,23 +61,46 @@ export function requiredPluralCategories(locale) {
 }
 
 /**
- * Checks one locale message's plural args against the locale's required CLDR
- * categories and returns a short coverage detail, or `null` if every plural arg is
- * fully covered (and a parse-failure → null, since the ICU check owns that).
- * Exposed for unit tests.
- * @param {string} locale the BCP-47 tag (drives the required set)
+ * Whether an English plural arg engaged the FULL plural (used a keyword category
+ * beyond `other`), meaning the whole quantitative range is in play. A degenerate
+ * `other`-only English plural restricts the value domain, so its translations need
+ * only `other`.
+ * @param {Set<string>} englishCats the categories English used for this arg
+ * @returns {boolean}
+ */
+function englishUsesFullPlural(englishCats) {
+  return [...englishCats].some((c) => c !== 'other')
+}
+
+/**
+ * Checks one locale message's plural args against the categories required for this
+ * locale, gated on the English source's own plural shape (see the file header).
+ * Returns a short coverage detail, or `null` if every plural arg is covered (a
+ * parse failure → null, since the ICU check owns that). Exposed for unit tests.
+ * @param {string} locale the BCP-47 tag (drives the locale's CLDR set)
  * @param {string} localeValue the locale's message value
+ * @param {Map<string, Set<string>>} [englishPlurals] English's plural categories per
+ *   arg for this key (from `parseMessage(englishValue).pluralCategories`). Absent →
+ *   treat English as engaging the full plural (the strict default for callers that
+ *   don't supply it).
  * @returns {string | null}
  */
-export function pluralCoverageDetail(locale, localeValue) {
+export function pluralCoverageDetail(locale, localeValue, englishPlurals) {
   const parsed = parseMessage(localeValue, locale)
   if (!parsed.ok || parsed.pluralCategories.size === 0) return null
-  const required = requiredPluralCategories(locale)
+  const localeCldr = requiredPluralCategories(locale)
   /** @type {string[]} */
   const parts = []
   for (const [arg, provided] of parsed.pluralCategories) {
+    const englishCats = englishPlurals?.get(arg)
+    // If English engaged the full plural (or we have no English reference), require
+    // the locale's full CLDR set. If English was degenerate (`other`-only), require
+    // only what English engaged.
+    const required = englishCats && !englishUsesFullPlural(englishCats) ? englishCats : localeCldr
     const missing = [...required].filter((c) => !provided.has(c)).sort()
-    if (missing.length > 0) parts.push(`{${arg}} missing plural ${missing.length === 1 ? 'category' : 'categories'} ${missing.join(', ')}`)
+    if (missing.length > 0) {
+      parts.push(`{${arg}} missing plural ${missing.length === 1 ? 'category' : 'categories'} ${missing.join(', ')}`)
+    }
   }
   return parts.length === 0 ? null : parts.join('; ')
 }
@@ -84,9 +118,13 @@ export function runPluralCheck(opts = {}) {
     messagesRoot: opts.messagesRoot,
     write: opts.write,
     summaryLine: (count) => `${String(count)} plural message(s) missing a required CLDR category for this locale:`,
-    inspectLocale: ({ locale, locale_catalog: localeCatalog, findings }) => {
+    inspectLocale: ({ locale, base, locale_catalog: localeCatalog, findings }) => {
       for (const [key, localeValue] of Object.entries(localeCatalog.messages)) {
-        const detail = pluralCoverageDetail(locale, localeValue)
+        const englishValue = base.messages[key]
+        // Parse English to learn its plural shape (degenerate vs full); absent en
+        // key → leave undefined so the strict default applies.
+        const englishPlurals = englishValue === undefined ? undefined : parseMessage(englishValue).pluralCategories
+        const detail = pluralCoverageDetail(locale, localeValue, englishPlurals)
         if (detail !== null) findings.add(key, detail)
       }
     },
