@@ -85,7 +85,9 @@ static SNAPSHOT: LazyLock<LocalizedSystemStrings> = LazyLock::new(build_snapshot
 /// pointer-copy after first call). Placeholder expansion now lives on the
 /// frontend (`src/lib/errors/compose.ts::expandSystemStrings`), which reads the
 /// snapshot via `get_localized_system_strings`; this accessor is test-only.
-#[cfg(test)]
+/// macOS-only: its sole caller is the macOS-gated snapshot test, so on Linux
+/// `#[cfg(test)]` alone would leave it unused and trip `deny(unused)`.
+#[cfg(all(test, target_os = "macos"))]
 pub fn snapshot() -> &'static LocalizedSystemStrings {
     &SNAPSHOT
 }
@@ -284,7 +286,10 @@ fn apple_languages() -> Vec<String> {
     array.iter().map(|s| s.to_string()).collect()
 }
 
-#[cfg(test)]
+// Every test here is macOS-only (they assert macOS system-string resolution), so
+// gate the whole module to macOS — on Linux `#[cfg(test)]` alone leaves `use
+// super::*` (and `snapshot()`) unused and trips `deny(unused)`.
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;
 
