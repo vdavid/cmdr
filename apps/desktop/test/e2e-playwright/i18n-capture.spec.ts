@@ -416,7 +416,11 @@ test.describe('i18n screenshot capture', () => {
           .evaluate<number>('1+1')
           .then((v) => v === 2)
           .catch(() => false),
-        new Promise<boolean>((r) => setTimeout(() => { r(false); }, 3000)),
+        new Promise<boolean>((r) =>
+          setTimeout(() => {
+            r(false)
+          }, 3000),
+        ),
       ])
       if (evalWorks) {
         await focusWindow(shortcuts, 'shortcuts')

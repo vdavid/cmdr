@@ -24,12 +24,7 @@
  */
 
 import { expect } from './fixtures.js'
-import {
-  ensureAppReady,
-  dismissOverlay,
-  dispatchMenuCommand,
-  getFixtureRoot,
-} from './helpers.js'
+import { ensureAppReady, dismissOverlay, dispatchMenuCommand, getFixtureRoot } from './helpers.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { initMcpClient, mcpSelectVolume, mcpAwaitItem } from '../e2e-shared/mcp-client.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'

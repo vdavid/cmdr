@@ -287,7 +287,8 @@ async function launchAndCapture(binary, startPath, extraEnv, passLabel) {
   // A per-pass unique socket: the prior app is stopped, but a fresh socket path
   // avoids any stale-bind races across relaunches. An explicit override wins.
   const socket =
-    SOCKET_OVERRIDE ?? `/tmp/tauri-playwright-i18n-${String(process.pid)}-${passLabel.replace(/[^a-z0-9]+/gi, '-')}.sock`
+    SOCKET_OVERRIDE ??
+    `/tmp/tauri-playwright-i18n-${String(process.pid)}-${passLabel.replace(/[^a-z0-9]+/gi, '-')}.sock`
 
   console.log(`[i18n-capture] launching app (${passLabel})…`)
   appProc = spawn(binary, [], {
