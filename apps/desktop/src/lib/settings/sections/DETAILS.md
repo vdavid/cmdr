@@ -22,19 +22,21 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   extension-change confirmation row (`allowFileExtensionChanges`). The conflict/progress settings live ONLY in Advanced
   now (`maxConflictsToShow`, `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. Card frame gated
   via `anyVisible(shouldShow, ...)` (same pattern as FSW above).
-- **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: four `SectionCard` card groups — Drive
-  indexing (toggle + clear-index action, the hidden `indexing.indexSize` search anchor), Downloads notifications
-  (4-option ToggleGroup, anchor `settings-downloads-notifications`), Go to latest download (a single on/off `Switch`
-  whose description references the live global binding; the combo is edited under Keyboard shortcuts), Low disk space
-  (3-option ToggleGroup + percent number input, anchor `settings-low-disk-space`, NOT FDA-gated — statfs needs no TCC
-  permission). FDA-closed greys cards 2-3 (via `SectionCard`'s `gated` prop) with one shared hint linking to System
-  Settings. **Card-group pattern (the empty-card / blank-page fix):** each `SectionCard` frame is wrapped in
-  `{#if anyVisible(shouldShow, ...memberIds)}` over the card's member setting ids, reading the SAME `shouldShow`
-  (`createShouldShow(searchQuery)`) the rows use, so a card whose rows all filter out under search hides its frame too
-  (no empty cards). No wrapper component; card visibility is section-owned, never re-derived from the registry `card`
-  field. The anchor ids now sit on `SectionCard`'s own `<section id>`, so the `navigate-to-section` deep-links still
-  land. The hidden `indexing.indexSize` anchor (its `section` equals this page's) makes "index size" a search hit, and
-  the index-size action row is gated on `shouldShow('indexing.indexSize')`, so searching it keeps the section visible
+- **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: three `SectionCard` card groups — Drive
+  indexing (toggle + clear-index action, the hidden `indexing.indexSize` search anchor), Downloads (BOTH
+  Downloads-folder features in one card: the 4-option `downloadsNotifications` ToggleGroup, plus the on/off go-to-latest
+  `Switch` whose description references the live global binding — the combo is edited under Keyboard shortcuts; anchor
+  `settings-downloads-notifications`), Low disk space (3-option ToggleGroup + percent number input, anchor
+  `settings-low-disk-space`, NOT FDA-gated — statfs needs no TCC permission). FDA-closed greys the Downloads card (via
+  `SectionCard`'s `gated` prop) with one shared hint linking to System Settings (the shared `<Trans>`
+  `common.downloadsFdaHint`); Drive indexing stays interactive (it operates on whatever paths it can read; the gate is
+  for the downloads watcher). **Card-group pattern (the empty-card / blank-page fix):** each `SectionCard` frame is
+  wrapped in `{#if anyVisible(shouldShow, ...memberIds)}` over the card's member setting ids, reading the SAME
+  `shouldShow` (`createShouldShow(searchQuery)`) the rows use, so a card whose rows all filter out under search hides its
+  frame too (no empty cards). No wrapper component; card visibility is section-owned, never re-derived from the registry
+  `card` field. The anchor ids now sit on `SectionCard`'s own `<section id>`, so the `navigate-to-section` deep-links
+  still land. The hidden `indexing.indexSize` anchor (its `section` equals this page's) makes "index size" a search hit,
+  and the index-size action row is gated on `shouldShow('indexing.indexSize')`, so searching it keeps the section visible
   (no blank pane) and shows the Drive-indexing card. See `lib/settings/components/CLAUDE.md` § card groups.
 - **`SearchSection.svelte`**: `Behavior > Search`: one unlabeled `SectionCard` wrapping only the auto-apply switch. The
   `recentSearches.maxCount` / `recentSelections.maxCount` caps live ONLY in Advanced now, never mirrored here. The card
@@ -185,14 +187,14 @@ home. Don't add a custom row for an Advanced setting elsewhere. `advanced.maxLog
 entirely, non-zero/zero swap or raising the cap needs a restart) and `fileExplorer.typeToJump.resetDelay` (live-applied
 via `getTypeToJumpResetDelay()` on every keystroke) both live here.
 
-Advanced settings are in the GLOBAL search index (no separate `searchAdvancedSettings`), so they're findable from the
-main settings search and the page rides the same `shouldShow` per-row + `anyVisible` per-card pipeline as every other
-section. Advanced is a normal section in `buildSectionTree` (no longer skipped), so the sidebar entry comes from the
-tree via `TOP_LEVEL_ORDER`. A new advanced setting MUST get a `cardKey`, or the set-equality guard in
-`advanced-grouping.test.ts` flags it (it lands in a trailing untitled "Other" card). The five settings consolidated to
-Advanced-only in M8 (`network.smbConcurrency` → "Network and mounts"; `fileOperations.maxConflictsToShow` /
-`progressUpdateInterval` → "File operations"; `search.recentSearches.maxCount` / `selection.recentSelections.maxCount` →
-"History and limits") render ONLY here now, each in exactly one place.
+Advanced settings are in the GLOBAL search index (there's one index, no Advanced-specific one), so they're findable from
+the main settings search and the page rides the same `shouldShow` per-row + `anyVisible` per-card pipeline as every other
+section. Advanced is a normal section in `buildSectionTree`, so its sidebar entry comes from the tree via
+`TOP_LEVEL_ORDER` like any other. A new advanced setting MUST get a `cardKey`, or the set-equality guard in
+`advanced-grouping.test.ts` flags it (it lands in a trailing untitled "Other" card). The Advanced-only settings each
+render here in exactly one place: `network.smbConcurrency` under "Network and mounts"; `fileOperations.maxConflictsToShow`
+/ `progressUpdateInterval` under "File operations"; `search.recentSearches.maxCount` /
+`selection.recentSelections.maxCount` under "History and limits".
 
 ### Cloud AI API keys never go through registry primitives
 
@@ -353,21 +355,24 @@ files; the pieces are load-bearing in this order:
 
 ## Key decisions
 
-### Section renamed from "Drive indexing" to "File system watching"
+### Why "File system watching" is one umbrella section
 
-The umbrella section under `Behavior` was renamed because both the file-system indexer and the downloads watcher are
-file-system watchers, and they share the same FDA gate. One header, one shared FDA hint, three `SectionCard` sub-groups
-(Drive indexing, Downloads notifications, Go to latest download). The indexer setting still carries the label "Drive
-indexing" — that's the per-toggle name and stays accurate; what changed is the umbrella section's name.
+`File system watching` under `Behavior` covers both the file-system indexer and the downloads watcher because both are
+file-system watchers and share the same FDA gate. One header, one shared FDA hint, three `SectionCard` card groups:
+Drive indexing, Downloads, Low disk space. The indexer's own toggle still carries the label "Drive indexing" — that's
+its per-toggle name, distinct from the umbrella section title.
 
-The sub-group sits inside a `<div id="settings-downloads-notifications">` so the downloads-toast "Stop showing these"
-deep-link lands on the right row instead of the section top. `openSettingsWindow(section, anchor)` accepts an optional
-`anchor` arg that the settings page (`routes/settings/+page.svelte`) reads from the URL on cold-open and from the
-`navigate-to-section` event on already-open windows, then `scrollIntoView`s the matching element.
+The Downloads card carries `id={DOWNLOADS_NOTIFICATIONS_ANCHOR_ID}` (on `SectionCard`'s own `<section>`, value
+`settings-downloads-notifications`) so the downloads-toast "Stop showing these" deep-link lands on the card instead of
+the section top; the Low disk space card carries `LOW_DISK_SPACE_ANCHOR_ID` the same way for its warn-toast link.
+`openSettingsWindow(section, anchor)` accepts an optional `anchor` arg that the settings page
+(`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section` event on already-open
+windows, then `scrollIntoView`s the matching element.
 
-### Global go-to-latest hotkey: on/off here, combo edited in Keyboard shortcuts
+### Global go-to-latest hotkey: on/off in the Downloads card, combo edited in Keyboard shortcuts
 
-The "Go to latest download" sub-group is a plain on/off `Switch`. The combo is edited under `Keyboard shortcuts`
+The go-to-latest toggle is a plain on/off `Switch` inside the Downloads card (alongside the downloads-notifications
+ToggleGroup). The combo is edited under `Keyboard shortcuts`
 (`lib/downloads/GlobalShortcutRow.svelte`, marked `(global)`), because that's where users look to rebind keys. We don't
 fold it into the `commands` registry / `shortcuts.json` machinery: the binding's persistent home must stay in
 `settings.json` so the Rust startup/focus refresh can read it before any window loads, and a global Carbon hotkey has no

@@ -392,7 +392,7 @@
 
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Go to latest download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
-    "description": "Label for the toggle enabling a system-wide hotkey that jumps to the newest download. On the \"Go to latest download\" card in Settings > Behavior > File system watching."
+    "description": "Label for the toggle enabling a system-wide hotkey that jumps to the newest download. On the \"Downloads\" card in Settings > Behavior > File system watching."
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Press ⌃⌥⌘J from any app to jump to your most recent download. Requires Full Disk Access.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {

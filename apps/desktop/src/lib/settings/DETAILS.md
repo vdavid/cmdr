@@ -34,7 +34,7 @@ Single source of truth for all settings. Each entry is authored as a `SettingDef
   `label` for non-copy values like brand names and numerals)
 - `component`: UI hint (switch, select, slider, etc.)
 
-### i18n: the registry stores message KEYS, resolved through `t()` (M2 decision)
+### i18n: the registry stores message KEYS, resolved through `t()`
 
 **Decision / why.** Settings copy is translation-ready: `settings-registry.ts` stores message KEYS, and the rendered
 text lives in `messages/en/settings.json` (the i18n catalog), not inline. `resolveDefinition` turns each authored
@@ -60,11 +60,11 @@ reuses the shared `<Trans>` message `common.downloadsFdaHint` (an inline `<setti
 Apostrophes in catalog values are doubled (`''`, the ICU rule). Full i18n runtime design:
 [`$lib/intl/DETAILS.md`](../intl/DETAILS.md).
 
-**Scope of the M2 settings tranche.** The registry-driven settings core and the section chrome are migrated and the
-`cmdr/no-raw-user-facing-string` lint is enforced on `lib/settings/`. Four files render copy owned by ADJACENT
-subsystems (not the settings registry) and are excluded in that lint's ledger until their own tranches: `AiCloudSection`
-/ `AiLocalSection` (AI provider config UIs), `KeyboardShortcutsSection` (command names from the command registry +
-conflict-banner chrome), and `LicenseSection` (license-API display copy).
+**Lint scope.** The registry-driven settings core and the section chrome are i18n-migrated and
+`cmdr/no-raw-user-facing-string` is enforced on `lib/settings/`. Four files render copy owned by ADJACENT subsystems
+(not the settings registry) and are excluded in that lint's ledger: `AiCloudSection` / `AiLocalSection` (AI provider
+config UIs), `KeyboardShortcutsSection` (command names from the command registry + conflict-banner chrome), and
+`LicenseSection` (license-API display copy).
 
 ### Store (`settings-store.ts`)
 
@@ -256,22 +256,22 @@ subsection). The mechanism:
   `<SectionCard label=…>` displays, so the title is findable. `buildSearchableText` appends the resolved `card` LAST in
   the parts array.
 
-**Decision / why (D0): card titles are catalog keys, not literals.** With the i18n runtime in place,
+**Decision / why: card titles are catalog keys, not literals.** With the i18n runtime in place,
 `no-raw-user-facing-string` forbids literal UI strings, and `card` must be translation-aware (untranslated `keywords`
 couldn't make a card title findable in another locale). So the field is a `MessageKey`, resolved through `tString` at
 read time — the same shape as `labelKey`. Caveat: the search index snapshots resolved strings at build time and isn't
 invalidated on locale change (`setLocale()` doesn't call `clearSearchIndex()`); harmless today (no in-app locale
 picker), but card titles don't re-translate live in search. Don't claim they do.
 
-**Decision / why (D2): card visibility is section-owned, never registry-derived.** The section keeps hand-rendering its
+**Decision / why: card visibility is section-owned, never registry-derived.** The section keeps hand-rendering its
 rows and owns each row's visibility via `shouldShow(id)`. There is NO wrapper component: each card is an inline
 `{#if anyVisible(shouldShow, ...ids)}<SectionCard label={tString(cardKey)}>…rows…</SectionCard>`. The frame guard and
 each row's `{#if shouldShow(id)}` read the SAME `shouldShow` predicate, so an all-filtered-out card hides its frame and
-the frame can never disagree with its contents. `card` is explicitly NOT read to decide rendering. An earlier draft had
-a wrapper re-derive visibility from `card`; that double-sources visibility and re-creates the empty-card bug for
-non-registry and mirrored rows.
+the frame can never disagree with its contents. `card` is explicitly NOT read to decide rendering. **Guardrail: don't
+add a wrapper component that re-derives card visibility from `card`** — that double-sources visibility and re-creates the
+empty-card bug for non-registry and mirrored rows.
 
-**Decision / why (D4): non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry
+**Decision / why: non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry
 entry (e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show — searching "index size"
 yielded a blank pane. Fix: a `hidden: true` registry entry (`indexing.indexSize`) reusing the existing
 `settings.fileSystemWatching.indexSize` label key. `buildSearchIndex` indexes the WHOLE registry (it filters nothing,
@@ -282,30 +282,30 @@ section**, or it lands outside that page's section-scoped match set and the blan
 `SCHEMA_VERSION` bump. Precedent: the hidden `downloadsToastCollapsed` / `…acknowledged` state rows; the anchor extends
 that pattern from "internal state" to "a searchable UI element that isn't a setting."
 
-**Decision / why (D10): "subsection" stays the level-2 nav term.** The card axis got the new name `cardKey` (not
-`subsection`), because `subsection` already means the level-2 nav entry (`SettingsSection.subsections`, the page you
-click). The terminology group → subsection → card is kept as-is; cards are not a fourth `section[]` element (that would
-spawn a spurious nav level).
+**Decision / why: "subsection" stays the level-2 nav term.** The card axis is named `cardKey` (not `subsection`),
+because `subsection` already means the level-2 nav entry (`SettingsSection.subsections`, the page you click). The
+terminology group → subsection → card holds; cards are not a fourth `section[]` element (that would spawn a spurious nav
+level).
 
 **The Advanced page rides the same pipeline.** `AdvancedSection` is the one section that auto-renders its rows (from
 `getAdvancedSettings()`, which selects `section[0] === 'Advanced' && !hidden`), and it groups them into `SectionCard`s
 by `cardKey` via the pure `groupAdvancedByCard` (`sections/advanced-grouping.ts`), gating each row with the same
 `shouldShow`/`anyVisible` as the hand-rendered sections. The whole registry is in the search index, so advanced settings
 are findable from the main settings search (searching "prefetch" lights the Advanced sidebar entry and shows its row in
-its card) and the advanced-row label highlight works. Advanced is a normal section in `buildSectionTree` now (no longer
-skipped), so its sidebar entry comes from the tree via `TOP_LEVEL_ORDER`, not a hardcoded special-section list. Every
+its card) and the advanced-row label highlight works. Advanced is a normal section in `buildSectionTree`, so its sidebar
+entry comes from the tree via `TOP_LEVEL_ORDER`, not a hardcoded special-section list. Every
 advanced setting MUST carry a `cardKey`; the set-equality guard in `advanced-grouping.test.ts` flags any that don't
 (they fall into a trailing untitled "Other" card).
 
-**Decision / why (M8): `section` is a setting's single home; `showInAdvanced` is deleted.** A `showInAdvanced` flag on
-top of a real `section` let a setting render in two places (Advanced AND a feature page) — the wrong architecture. Now a
-setting's `section` is its one home: `section: ['Advanced']` means it auto-renders ONLY in Advanced; anything else means
-it hand-renders ONLY on its feature page. Five former two-place settings were consolidated to Advanced-only
-(`network.smbConcurrency`, `fileOperations.maxConflictsToShow`, `fileOperations.progressUpdateInterval`,
-`search.recentSearches.maxCount`, `selection.recentSelections.maxCount`), their feature-page rows removed. This also
-dissolved the Advanced "Performance and timeouts" vs "Performance" card-title duplication (`smbConcurrency` stopped
-dragging its SMB card title into Advanced; it now sits in "Network and mounts"). Registry metadata only, so no
-`SCHEMA_VERSION` bump. See `sections/DETAILS.md` § "Advanced section is auto-generated".
+**Decision / why: `section` is a setting's single home.** A setting's `section` is its ONE home: `section: ['Advanced']`
+means it auto-renders ONLY in Advanced; anything else means it hand-renders ONLY on its feature page. There is no
+`showInAdvanced` flag — a flag that let a setting render in two places (Advanced AND a feature page) is the wrong
+architecture and must not return. **Guardrail: don't surface an Advanced setting on a feature page**, and don't add a
+second `section`-style home; the canonical/mirror pattern (a setting on two FEATURE pages, e.g. `appearance.sizeColors`)
+is a separate, still-valid thing and never a way to reach Advanced. Settings live in Advanced-only homes today
+(`network.smbConcurrency` under "Network and mounts"; `fileOperations.maxConflictsToShow` / `progressUpdateInterval`
+under "File operations"; `search.recentSearches.maxCount` / `selection.recentSelections.maxCount` under "History and
+limits"). See `sections/DETAILS.md` § "Advanced section is auto-generated".
 
 ## Key decisions
 
