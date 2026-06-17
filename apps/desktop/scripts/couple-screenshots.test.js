@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { couplingsFromReport, coupleCatalog, fileForKey } from './couple-screenshots.js'
+import {
+  couplingsFromReport,
+  coupleCatalog,
+  fileForKey,
+  buildCoverageReport,
+  renderCoverageReport,
+  DYNAMIC_KEY_PREFIXES,
+} from './couple-screenshots.js'
 
 // An oxfmt-shaped fixture catalog mirroring the real `messages/en/<area>.json`:
 // 2-space indent, each `@key` twin right after its message key, BLANK LINES
@@ -153,5 +160,53 @@ describe('fileForKey', () => {
   it('maps a key to its area catalog file', () => {
     expect(fileForKey('settings.fsWatch.title')).toBe('settings.json')
     expect(fileForKey('common.ok')).toBe('common.json')
+  })
+})
+
+describe('buildCoverageReport', () => {
+  it('tallies coupled vs uncoupled per area, bucketing uncoupled by reason', () => {
+    const keyToScreenshot = new Map([
+      ['common.ok', 'dialog.png'],
+      ['errors.listing.notFound.title', 'errs.png'], // a dynamic key that WAS captured counts coupled
+    ])
+    const keysByArea = new Map([
+      ['common', ['common.ok', 'common.cancel']], // 1 coupled, 1 not-driven
+      ['errors', ['errors.listing.notFound.title', 'errors.listing.denied.title']], // 1 coupled, 1 dynamic-only
+      ['about', ['about.version']], // 0 coupled, 1 not-driven
+    ])
+    const r = buildCoverageReport(keyToScreenshot, keysByArea)
+
+    expect(r.total).toBe(5)
+    expect(r.coupled).toBe(2)
+    expect(r.dynamicUncoupled).toBe(1) // errors.listing.denied.title
+    expect(r.surfaceUncoupled).toBe(2) // common.cancel + about.version
+
+    // Areas are sorted by name.
+    expect(r.areas.map((a) => a.area)).toEqual(['about', 'common', 'errors'])
+    const errors = r.areas.find((a) => a.area === 'errors')
+    expect(errors).toEqual({ area: 'errors', total: 2, coupled: 1, dynamicUncoupled: 1, surfaceUncoupled: 0 })
+  })
+
+  it('classifies an uncoupled key under a dynamic prefix as dynamic-only', () => {
+    for (const prefix of DYNAMIC_KEY_PREFIXES) {
+      const r = buildCoverageReport(new Map(), new Map([['x', [`${prefix}foo.title`]]]))
+      expect(r.dynamicUncoupled).toBe(1)
+      expect(r.surfaceUncoupled).toBe(0)
+    }
+  })
+})
+
+describe('renderCoverageReport', () => {
+  it('renders a small markdown table with totals and percentages', () => {
+    const report = buildCoverageReport(
+      new Map([['common.ok', 'd.png']]),
+      new Map([['common', ['common.ok', 'common.cancel']]]),
+    )
+    const md = renderCoverageReport(report)
+    expect(md).toContain('# Screenshot coverage')
+    expect(md).toContain('1 / 2 keys coupled (50%)')
+    expect(md).toContain('| common | 1 | 2 | 50% | 0 | 1 |')
+    // It states coverage is partial (no silent gaps).
+    expect(md.toLowerCase()).toContain('partial')
   })
 })

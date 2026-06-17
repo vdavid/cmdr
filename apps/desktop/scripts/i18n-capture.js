@@ -18,8 +18,12 @@
  * Then run `pnpm i18n:couple` to write the `@key.screenshot` couplings.
  *
  * Usage:
+ *   pnpm i18n:shots              # the full re-run: this with --build, then couple
  *   pnpm i18n:capture --build    # build the capture binary, then capture
  *   pnpm i18n:capture            # reuse a binary from a PRIOR --build run
+ *
+ * `pnpm i18n:shots` is the single entry point for a fresh end-to-end refresh
+ * (capture with `--build`, then `i18n:couple`); reach for it after a UI change.
  *
  * ALWAYS use `--build` unless a previous `--build` already produced a capture
  * binary: the capture API is absent from a binary built by the normal E2E lane

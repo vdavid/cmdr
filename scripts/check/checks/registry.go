@@ -233,6 +233,23 @@ var AllChecks = []CheckDefinition{
 		Run:               RunDesktopMessageKeysUnused,
 	},
 	{
+		ID:          "desktop-message-screenshots-fresh",
+		Nickname:    "message-screenshots-fresh",
+		DisplayName: "message-screenshots-fresh",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// Warn-only metric (drift between the capture report and the catalogs'
+		// @key.screenshot couplings): screenshots are an optional translator aid, so
+		// stale couplings never fail the build. Like other warn-only metrics, a CI
+		// step would be noise since it can't fail.
+		NotInCI:           "warn-only metric; it can never fail, so a CI step would be noise",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            svelteInputs,
+		Run:               RunDesktopMessageScreenshotsFresh,
+	},
+	{
 		ID:                "desktop-rust-tests",
 		CpuWeight:         6,
 		Nickname:          "rust-tests",

@@ -366,8 +366,9 @@ Checks by app and tech:
   stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, message-keys-fresh
   (regenerate-and-diff `keys.gen.ts` from the message catalogs), message-key-naming (the `area.feature.leaf` shape +
   known-area first segment), message-keys-unused (catalog keys never referenced in `src/`; error-level, with a closed
-  dynamic-prefix allowlist for runtime-built keys), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow),
-  e2e-playwright (slow)
+  dynamic-prefix allowlist for runtime-built keys), message-screenshots-fresh (warn-only; drift between the committed
+  i18n capture report and the catalogs' `@key.screenshot` couplings — runs the coupler's `--check`, reads no PNGs),
+  knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Website / Astro**: prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e
 - **Website / Docker**: docker-build
 - **API server / TS**: oxfmt, eslint, typecheck, tests

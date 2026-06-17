@@ -8,7 +8,9 @@ boundary: [`../CLAUDE.md`](../CLAUDE.md).
 
 - `en/<area>.json`: messages for one area. The key prefix maps 1:1 to the filename (`settings.fsWatch.title` →
   `settings.json`), so an agent editing one feature touches one file. `common.json` holds truly shared strings.
-- `screenshots/`: PNGs referenced by `@key` metadata; one file may serve many keys (many keys naming the same filename).
+- `screenshots/`: capture artifacts referenced by `@key.screenshot`; one file serves many keys. PNGs are **gitignored**
+  and regenerable; `capture-report.json` + `coverage-report.md` are tracked. Don't hand-edit `@key.screenshot` or commit
+  PNGs — regenerate with `pnpm i18n:shots`. See [DETAILS.md](DETAILS.md) § Screenshots.
 
 ## Must-knows
 

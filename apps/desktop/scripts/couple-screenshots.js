@@ -24,13 +24,21 @@
  * The `@key` metadata (including `screenshot`) is stripped by the runtime and by
  * `gen-message-keys.js`, so this never changes rendered output or the key union.
  *
- * The pure catalog-mutation core is exported (`couplingsFromReport`,
- * `coupleCatalog`, `serializeCatalog`) so it's unit-testable without touching the
- * real catalogs (see `couple-screenshots.test.js`). The CLI shell below is only
- * file I/O around that core, and runs only when invoked as a script.
+ * Alongside coupling, it writes a TRACKED coverage report
+ * (`messages/screenshots/coverage-report.md`): per catalog area, how many keys are
+ * coupled to a screenshot vs not, and for the uncoupled ones a likely-reason
+ * bucket (dynamic-only keys that no static surface can name, vs keys on a surface
+ * the driver doesn't visit yet). Coverage is partial by design until the driver
+ * covers the full inventory (M2), so the report says so rather than implying gaps
+ * are bugs (Decision 4: no silent gaps).
+ *
+ * The pure cores are exported (`couplingsFromReport`, `coupleCatalog`,
+ * `buildCoverageReport`, `fileForKey`) so they're unit-testable without touching
+ * the real catalogs (see `couple-screenshots.test.js`). The CLI shell below is
+ * only file I/O around those cores, and runs only when invoked as a script.
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
@@ -60,6 +68,121 @@ export function couplingsFromReport(report) {
     }
   }
   return keyToScreenshot
+}
+
+/**
+ * Message-key prefixes whose keys are assembled at runtime (a reason variable
+ * spliced into the dotted path), so the static capture report can never name them
+ * individually — the rendered surface records the RESOLVED key only if capture is
+ * active at resolution time. Uncoupled keys under one of these are bucketed as
+ * "dynamic-only" in the coverage report rather than as a missed surface. Mirrors
+ * `unusedKeyDynamicPrefixes` in `scripts/check/checks/desktop-message-keys-unused.go`
+ * (kept in sync by hand; both are small, closed, and tied to live construction
+ * sites in `apps/desktop/src/lib/`).
+ * @type {string[]}
+ */
+export const DYNAMIC_KEY_PREFIXES = ['errors.git.', 'errors.listing.', 'errors.provider.', 'errors.write.']
+
+/**
+ * @typedef {object} AreaCoverage
+ * @property {string} area The catalog area (filename minus `.json`).
+ * @property {number} total Renderable keys in the area.
+ * @property {number} coupled Keys with a screenshot coupling from this run.
+ * @property {number} dynamicUncoupled Uncoupled keys under a dynamic prefix.
+ * @property {number} surfaceUncoupled Uncoupled keys NOT under a dynamic prefix (surface not driven yet).
+ */
+
+/**
+ * @typedef {object} CoverageReport
+ * @property {AreaCoverage[]} areas Per-area coverage rows, sorted by area name.
+ * @property {number} total Renderable keys across all areas.
+ * @property {number} coupled Coupled keys across all areas.
+ * @property {number} dynamicUncoupled Uncoupled dynamic-only keys across all areas.
+ * @property {number} surfaceUncoupled Uncoupled not-yet-driven keys across all areas.
+ */
+
+/**
+ * Pure coverage core: given every renderable catalog key (by area) and the
+ * key→screenshot couplings from this run, tallies per area how many keys are
+ * coupled vs not, splitting the uncoupled into "dynamic-only" (built at runtime,
+ * see DYNAMIC_KEY_PREFIXES) and "surface not driven yet". No filesystem access.
+ * @param {Map<string, string>} keyToScreenshot key → screenshot for coupled keys.
+ * @param {Map<string, string[]>} keysByArea area → its renderable keys.
+ * @param {string[]} [dynamicPrefixes] prefixes whose keys are runtime-assembled.
+ * @returns {CoverageReport}
+ */
+export function buildCoverageReport(keyToScreenshot, keysByArea, dynamicPrefixes = DYNAMIC_KEY_PREFIXES) {
+  /** @type {AreaCoverage[]} */
+  const areas = []
+  let total = 0
+  let coupled = 0
+  let dynamicUncoupled = 0
+  let surfaceUncoupled = 0
+
+  for (const area of [...keysByArea.keys()].sort()) {
+    const keys = keysByArea.get(area) ?? []
+    let areaCoupled = 0
+    let areaDynamic = 0
+    let areaSurface = 0
+    for (const key of keys) {
+      if (keyToScreenshot.has(key)) {
+        areaCoupled++
+      } else if (dynamicPrefixes.some((p) => key.startsWith(p))) {
+        areaDynamic++
+      } else {
+        areaSurface++
+      }
+    }
+    areas.push({
+      area,
+      total: keys.length,
+      coupled: areaCoupled,
+      dynamicUncoupled: areaDynamic,
+      surfaceUncoupled: areaSurface,
+    })
+    total += keys.length
+    coupled += areaCoupled
+    dynamicUncoupled += areaDynamic
+    surfaceUncoupled += areaSurface
+  }
+
+  return { areas, total, coupled, dynamicUncoupled, surfaceUncoupled }
+}
+
+/**
+ * Renders a CoverageReport as Markdown for the tracked artifact. Kept text + small
+ * so its diff stays readable. Pure (no filesystem, no Date — the caller stamps any
+ * timestamp), so it's snapshot-testable.
+ * @param {CoverageReport} report
+ * @returns {string}
+ */
+export function renderCoverageReport(report) {
+  /** @param {number} n @param {number} d @returns {string} */
+  const pct = (n, d) => (d === 0 ? '—' : `${String(Math.round((n / d) * 100))}%`)
+  const lines = [
+    '# Screenshot coverage',
+    '',
+    'Generated by `scripts/couple-screenshots.js` (via `pnpm i18n:shots`). Tracked, regenerable.',
+    '',
+    'Per catalog area: how many renderable keys are coupled to a screenshot vs not. Uncoupled keys split into',
+    '`dynamic-only` (built at runtime, so no static surface can name them — see `DYNAMIC_KEY_PREFIXES`) and `not driven`',
+    '(on a surface the capture driver does not visit yet).',
+    '',
+    `Coverage is PARTIAL until the driver covers the full surface inventory (M2). Low numbers here are expected, not bugs.`,
+    '',
+    `**Total: ${String(report.coupled)} / ${String(report.total)} keys coupled (${pct(report.coupled, report.total)}).** ` +
+      `${String(report.dynamicUncoupled)} dynamic-only and ${String(report.surfaceUncoupled)} not-yet-driven keys remain uncoupled.`,
+    '',
+    '| Area | Coupled | Total | % | Dynamic-only | Not driven |',
+    '| --- | ---: | ---: | ---: | ---: | ---: |',
+  ]
+  for (const a of report.areas) {
+    lines.push(
+      `| ${a.area} | ${String(a.coupled)} | ${String(a.total)} | ${pct(a.coupled, a.total)} | ${String(a.dynamicUncoupled)} | ${String(a.surfaceUncoupled)} |`,
+    )
+  }
+  lines.push('')
+  return lines.join('\n')
 }
 
 /**
@@ -206,6 +329,27 @@ function setTwinScreenshot(text, metaKey, screenshot) {
 
 // ── CLI shell (file I/O only; skipped when imported as a module) ──────────────
 
+/**
+ * Reads every `en/*.json` catalog and returns area → its renderable keys (the
+ * `@key` metadata twins dropped), matching the runtime + codegen's key set. Used
+ * to compute coverage over the WHOLE catalog, not just the captured subset.
+ * @param {string} messagesDir absolute path to `messages/en`
+ * @returns {Map<string, string[]>}
+ */
+function keysByAreaFromCatalogs(messagesDir) {
+  /** @type {Map<string, string[]>} */
+  const byArea = new Map()
+  for (const name of readdirSync(messagesDir)) {
+    if (!name.endsWith('.json')) continue
+    const area = name.slice(0, -'.json'.length)
+    /** @type {Record<string, unknown>} */
+    const json = JSON.parse(readFileSync(join(messagesDir, name), 'utf8'))
+    const keys = Object.keys(json).filter((k) => !k.startsWith('@'))
+    byArea.set(area, keys)
+  }
+  return byArea
+}
+
 function main() {
   const here = dirname(fileURLToPath(import.meta.url))
   const desktopDir = join(here, '..')
@@ -311,6 +455,16 @@ function main() {
       console.warn('oxfmt did not exit cleanly; run `pnpm exec oxfmt` on the changed files manually.')
     }
   }
+
+  // Coverage report (Decision 4: no silent gaps) — a tracked, text artifact that
+  // shows which areas have screenshots and which keys remain uncoupled (+ why).
+  const keysByArea = keysByAreaFromCatalogs(messagesDir)
+  const coverage = buildCoverageReport(keyToScreenshot, keysByArea)
+  const coveragePath = join(messagesRoot, 'screenshots', 'coverage-report.md')
+  writeFileSync(coveragePath, renderCoverageReport(coverage))
+  console.log(
+    `Wrote coverage report: ${String(coverage.coupled)}/${String(coverage.total)} keys coupled → ${coveragePath}`,
+  )
 }
 
 // Run the CLI only when executed directly, not when imported by a test.
