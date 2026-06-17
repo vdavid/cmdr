@@ -85,7 +85,27 @@ async function pressWrapToggle(viewer: TauriPage): Promise<void> {
 
 test.describe('Viewer word-wrap persistence', () => {
   // Three sequential viewer sessions plus two 500 ms-debounced disk writes.
-  test.describe.configure({ timeout: 60000 })
+  // `retries: 1` covers a transient open/debounce hiccup. The real hazard is a
+  // PRIOR run that died before its Session-3 cleanup, leaving `viewer.wordWrap`
+  // on in the isolated settings.json — then Session 1's "default off" assertion
+  // fails (and a retry alone can't recover persisted state). The afterEach below
+  // always resets the key so a failed run can't poison the next.
+  test.describe.configure({ timeout: 60000, retries: 1 })
+
+  // Self-heal: clear the persisted toggle after each attempt (even on failure),
+  // so the next run/retry starts from the default-off baseline this spec asserts.
+  test.afterEach(() => {
+    try {
+      const raw = fs.readFileSync(settingsFilePath, 'utf-8')
+      const parsed: unknown = JSON.parse(raw)
+      if (typeof parsed === 'object' && parsed !== null && 'viewer.wordWrap' in parsed) {
+        delete (parsed as Record<string, unknown>)['viewer.wordWrap']
+        fs.writeFileSync(settingsFilePath, JSON.stringify(parsed, null, 2))
+      }
+    } catch {
+      // No settings file yet, or mid-write: nothing to reset.
+    }
+  })
 
   test('word wrap toggled in one viewer session is on in the next', async ({ tauriPage }) => {
     const mainPage = tauriPage as TauriPage
