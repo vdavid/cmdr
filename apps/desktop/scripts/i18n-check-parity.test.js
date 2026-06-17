@@ -43,7 +43,9 @@ describe('parityDetail — pure comparison', () => {
   })
 
   it('is clean when a raw errors.* value preserves its {token} set', () => {
-    expect(parityDetail('errors.x.suggestion', 'Open {system_settings} <folder>', 'Abrir {system_settings} <folder>')).toBeNull()
+    expect(
+      parityDetail('errors.x.suggestion', 'Open {system_settings} <folder>', 'Abrir {system_settings} <folder>'),
+    ).toBeNull()
   })
 
   it('flags a raw errors.* value that dropped a {token}', () => {

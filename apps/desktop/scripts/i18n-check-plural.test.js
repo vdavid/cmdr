@@ -51,7 +51,9 @@ describe('pluralCoverageDetail — pure classifier', () => {
   })
 
   it('flags an English plural missing the one category (no English reference → strict)', () => {
-    expect(pluralCoverageDetail('en', '{count, plural, other {# files}}')).toMatch(/\{count\} missing plural category one/)
+    expect(pluralCoverageDetail('en', '{count, plural, other {# files}}')).toMatch(
+      /\{count\} missing plural category one/,
+    )
   })
 
   it('does NOT require few/many when the English source is a deliberate other-only plural', () => {

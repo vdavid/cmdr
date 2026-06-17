@@ -50,20 +50,22 @@ plain `.replaceAll('{token}', value)` substitution (see [`../../errors/CLAUDE.md
 runtime [`../CLAUDE.md`](../CLAUDE.md)). The apostrophe-doubling rule above is the OPPOSITE here. So in any `errors.*`
 value:
 
-- **Do NOT double apostrophes.** Write `doesn't`, not `doesn''t` — there's no ICU parser to un-double them, so `''` would
-  render as a literal double apostrophe.
-- **`{token}` is a literal replacement target, not an ICU argument.** `{system_settings}`, `{path}`, `{reason}`, etc. are
-  substituted by name. Keep them verbatim; don't reorder their braces or add ICU formatting (`{count, number}`,
+- **Do NOT double apostrophes.** Write `doesn't`, not `doesn''t` — there's no ICU parser to un-double them, so `''`
+  would render as a literal double apostrophe.
+- **`{token}` is a literal replacement target, not an ICU argument.** `{system_settings}`, `{path}`, `{reason}`, etc.
+  are substituted by name. Keep them verbatim; don't reorder their braces or add ICU formatting (`{count, number}`,
   `{x, plural, …}`) — none of that is parsed, it'd render as literal text.
 - **`<…>` is LITERAL text, not a tag.** `<folder-path>` in an `errors.*` value prints literally; it is NOT an inline
   component. Don't treat `<x>` as ICU/HTML here.
-- **`#`, `**`, backticks are markdown/literal**, passed through untouched.
+- **Markdown is literal.** `#`, bold markers, and backticks pass through untouched (the raw pipeline doesn't strip
+  them).
 
 The unit on which this raw/ICU split is decided is the KEY PREFIX (`errors.`), single-sourced as `isRawKey()` in
 [`../../../../scripts/i18n-catalog-lib.js`](../../../../scripts/i18n-catalog-lib.js). The locale checks honor it: the
 ICU-validity check (`desktop-i18n-icu`) SKIPS `errors.*` (so valid raw copy isn't flagged as invalid ICU), and the
 parity check (`desktop-i18n-parity`) compares the raw `{token}` set instead of an ICU placeholder set for these keys.
-Translator-facing version of this note: [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Error pipeline.
+Translator-facing version of this note: [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Error
+pipeline.
 
 ## `@key` metadata schema
 

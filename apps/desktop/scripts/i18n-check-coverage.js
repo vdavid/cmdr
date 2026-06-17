@@ -48,7 +48,8 @@ export function runCoverageCheck(opts = {}) {
     title: 'Translation coverage',
     messagesRoot: opts.messagesRoot,
     write: opts.write,
-    summaryLine: (count) => `${String(count)} key(s) not translated (missing → English fallback, or identical to English):`,
+    summaryLine: (count) =>
+      `${String(count)} key(s) not translated (missing → English fallback, or identical to English):`,
     inspectLocale: ({ base, locale_catalog: localeCatalog, findings }) => {
       for (const [key, englishValue] of Object.entries(base.messages)) {
         const status = coverageStatus(key, englishValue, localeCatalog.messages)
