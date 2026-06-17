@@ -1,28 +1,34 @@
 {
   "settings.theme.mode.label": "Theme mode",
   "@settings.theme.mode.label": {
-    "description": "Label for the theme picker in Settings > Appearance > Colors and formats. Lets the user choose light, dark, or follow-the-system appearance."
+    "description": "Label for the theme picker in Settings > Appearance > Colors and formats. Lets the user choose light, dark, or follow-the-system appearance.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.theme.mode.description": "Choose between light, dark, or system-based theme.",
   "@settings.theme.mode.description": {
-    "description": "Help text under the theme-mode label in Settings > Appearance. Explains the three choices below it."
+    "description": "Help text under the theme-mode label in Settings > Appearance. Explains the three choices below it.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.theme.mode.opt.light": "☀️ Light",
   "@settings.theme.mode.opt.light": {
-    "description": "Theme-mode option: always-light appearance. The leading ☀️ emoji is decorative; keep it. Short toggle-button label, keep it brief."
+    "description": "Theme-mode option: always-light appearance. The leading ☀️ emoji is decorative; keep it. Short toggle-button label, keep it brief.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.theme.mode.opt.dark": "🌙 Dark",
   "@settings.theme.mode.opt.dark": {
-    "description": "Theme-mode option: always-dark appearance. The leading 🌙 emoji is decorative; keep it. Short toggle-button label, keep it brief."
+    "description": "Theme-mode option: always-dark appearance. The leading 🌙 emoji is decorative; keep it. Short toggle-button label, keep it brief.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.theme.mode.opt.system": "💻 System",
   "@settings.theme.mode.opt.system": {
-    "description": "Theme-mode option: follow the macOS system appearance. The leading 💻 emoji is decorative; keep it. Short toggle-button label, keep it brief."
+    "description": "Theme-mode option: follow the macOS system appearance. The leading 💻 emoji is decorative; keep it. Short toggle-button label, keep it brief.",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.appearance.appColor.label": "App color",
   "@settings.appearance.appColor.label": {
-    "description": "Label for the app accent-color picker in Settings > Appearance > Colors and formats."
+    "description": "Label for the app accent-color picker in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.appColor.description": "To change your system theme color, go to System Settings > Appearance.",
   "@settings.appearance.appColor.description": {
@@ -30,86 +36,106 @@
   },
   "settings.appearance.appColor.opt.system": "System theme color",
   "@settings.appearance.appColor.opt.system": {
-    "description": "App-color option: use the color macOS is set to (System Settings > Appearance accent color). Radio-button label."
+    "description": "App-color option: use the color macOS is set to (System Settings > Appearance accent color). Radio-button label.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.appColor.opt.cmdrGold": "Cmdr gold",
   "@settings.appearance.appColor.opt.cmdrGold": {
-    "description": "App-color option: use Cmdr's own gold brand color. \"Cmdr\" is the product name; do not translate it. Radio-button label."
+    "description": "App-color option: use Cmdr's own gold brand color. \"Cmdr\" is the product name; do not translate it. Radio-button label.",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.appearance.sizeColors.label": "Size colors",
   "@settings.appearance.sizeColors.label": {
-    "description": "Label for the file-size coloring setting in Settings > Appearance > Colors and formats."
+    "description": "Label for the file-size coloring setting in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.sizeColors.description": "Color file sizes in the file list by tier. Rainbow uses green/yellow/orange/red/purple. App uses shades of the app color.",
   "@settings.appearance.sizeColors.description": {
-    "description": "Help text for the size-colors setting. Explains that file sizes in the file list are tinted by size tier, and what the Rainbow and App options do. \"Rainbow\" and \"App\" are this setting's own option names (see its opt.* keys); keep them consistent with those translations."
+    "description": "Help text for the size-colors setting. Explains that file sizes in the file list are tinted by size tier, and what the Rainbow and App options do. \"Rainbow\" and \"App\" are this setting's own option names (see its opt.* keys); keep them consistent with those translations.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.sizeColors.opt.none": "None",
   "@settings.appearance.sizeColors.opt.none": {
-    "description": "Size-colors option: no coloring. Short toggle-button label."
+    "description": "Size-colors option: no coloring. Short toggle-button label.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "description": "Size-colors option: tint sizes in shades of the app color. Short toggle-button label."
+    "description": "Size-colors option: tint sizes in shades of the app color. Short toggle-button label.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.sizeColors.opt.rainbow": "Rainbow",
   "@settings.appearance.sizeColors.opt.rainbow": {
-    "description": "Size-colors option: tint sizes across a green-to-purple rainbow by tier. Short toggle-button label."
+    "description": "Size-colors option: tint sizes across a green-to-purple rainbow by tier. Short toggle-button label.",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.appearance.dateColors.label": "Date colors",
   "@settings.appearance.dateColors.label": {
-    "description": "Label for the modified-date coloring setting in Settings > Appearance > Colors and formats."
+    "description": "Label for the modified-date coloring setting in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateColors.description": "Color modified dates in the file list by age. App fades older dates toward the default text color. Wilting goes green for fresh files, yellow for aging, and brown for old.",
   "@settings.appearance.dateColors.description": {
-    "description": "Help text for the date-colors setting. Explains that modified dates in the file list are tinted by file age, and what the App and Wilting options do. \"App\" and \"Wilting\" are this setting's own option names (see its opt.* keys); keep them consistent with those translations."
+    "description": "Help text for the date-colors setting. Explains that modified dates in the file list are tinted by file age, and what the App and Wilting options do. \"App\" and \"Wilting\" are this setting's own option names (see its opt.* keys); keep them consistent with those translations.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateColors.opt.none": "None",
   "@settings.appearance.dateColors.opt.none": {
-    "description": "Date-colors option: no coloring. Short toggle-button label."
+    "description": "Date-colors option: no coloring. Short toggle-button label.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "description": "Date-colors option: fade older dates toward the default text color. Short toggle-button label."
+    "description": "Date-colors option: fade older dates toward the default text color. Short toggle-button label.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateColors.opt.wilting": "Wilting",
   "@settings.appearance.dateColors.opt.wilting": {
-    "description": "Date-colors option: a plant-wilting metaphor, green for fresh files through brown for old. Short toggle-button label."
+    "description": "Date-colors option: a plant-wilting metaphor, green for fresh files through brown for old. Short toggle-button label.",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.appearance.dateTimeFormat.label": "Date and time format",
   "@settings.appearance.dateTimeFormat.label": {
-    "description": "Label for the date/time display-format picker in Settings > Appearance > Colors and formats."
+    "description": "Label for the date/time display-format picker in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateTimeFormat.description": "How to display dates and times in the file list.",
   "@settings.appearance.dateTimeFormat.description": {
-    "description": "Help text for the date/time format setting. Says it controls how dates and times appear in the file list."
+    "description": "Help text for the date/time format setting. Says it controls how dates and times appear in the file list.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateTimeFormat.opt.system": "System default",
   "@settings.appearance.dateTimeFormat.opt.system": {
-    "description": "Date/time format option: use the macOS system date and time format. Radio-button label."
+    "description": "Date/time format option: use the macOS system date and time format. Radio-button label.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "description": "Date/time format option: the ISO 8601 standard format (year-month-day). \"ISO 8601\" is a standard name; keep it as-is. Radio-button label."
+    "description": "Date/time format option: the ISO 8601 standard format (year-month-day). \"ISO 8601\" is a standard name; keep it as-is. Radio-button label.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "e.g., 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
-    "description": "Example shown under the ISO 8601 option. The date string \"2025-01-25 14:30\" is a literal ISO example and must stay exactly in that digit layout (year-month-day 24-hour time); only translate the \"e.g.,\" lead-in."
+    "description": "Example shown under the ISO 8601 option. The date string \"2025-01-25 14:30\" is a literal ISO example and must stay exactly in that digit layout (year-month-day 24-hour time); only translate the \"e.g.,\" lead-in.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateTimeFormat.opt.short": "Short",
   "@settings.appearance.dateTimeFormat.opt.short": {
-    "description": "Date/time format option: a compact month/day plus time format. Radio-button label."
+    "description": "Date/time format option: a compact month/day plus time format. Radio-button label.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateTimeFormat.optDesc.short": "e.g., 01/25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.short": {
-    "description": "Example shown under the Short option. \"01/25 14:30\" is a literal example (month/day 24-hour time) and must stay in that digit layout; only translate the \"e.g.,\" lead-in."
+    "description": "Example shown under the Short option. \"01/25 14:30\" is a literal example (month/day 24-hour time) and must stay in that digit layout; only translate the \"e.g.,\" lead-in.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.dateTimeFormat.opt.custom": "Custom...",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "description": "Date/time format option: define your own format string (reveals the custom-format text field). The trailing ellipsis signals it opens further input; keep an ellipsis. Radio-button label."
+    "description": "Date/time format option: define your own format string (reveals the custom-format text field). The trailing ellipsis signals it opens further input; keep an ellipsis. Radio-button label.",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.appearance.customDateTimeFormat.label": "Custom date/time format",
@@ -123,36 +149,44 @@
 
   "settings.listing.stripedRows.label": "Striped rows",
   "@settings.listing.stripedRows.label": {
-    "description": "Label for the alternating-row-shading toggle in Settings > Appearance > Colors and formats."
+    "description": "Label for the alternating-row-shading toggle in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.listing.stripedRows.description": "Alternate row shading for easier line tracking. Applies to both Full and Brief view modes.",
   "@settings.listing.stripedRows.description": {
-    "description": "Help text for the striped-rows toggle. \"Full\" and \"Brief\" are Cmdr file-list view-mode names; translate them consistently with how those view modes are named elsewhere in the app."
+    "description": "Help text for the striped-rows toggle. \"Full\" and \"Brief\" are Cmdr file-list view-mode names; translate them consistently with how those view modes are named elsewhere in the app.",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.appearance.tintLocal.label": "Tint local-volume panes",
   "@settings.appearance.tintLocal.label": {
-    "description": "Label for the color-tint picker applied to panes showing a local drive. \"pane\" is one of Cmdr's two side-by-side file lists. Sits in Settings > Appearance > Colors and formats under the \"Tint volume types\" group."
+    "description": "Label for the color-tint picker applied to panes showing a local drive. \"pane\" is one of Cmdr's two side-by-side file lists. Sits in Settings > Appearance > Colors and formats under the \"Tint volume types\" group.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.tintLocal.description": "Background tint applied to panes showing a local drive.",
   "@settings.appearance.tintLocal.description": {
-    "description": "Help text for the local-volume tint. A pane is one of the two file lists; a local drive is internal/external disk storage (not network)."
+    "description": "Help text for the local-volume tint. A pane is one of the two file lists; a local drive is internal/external disk storage (not network).",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.tintSmb.label": "Tint SMB/network panes",
   "@settings.appearance.tintSmb.label": {
-    "description": "Label for the color-tint picker applied to panes showing an SMB or network share. \"SMB\" is the network file-sharing protocol name; keep it as-is."
+    "description": "Label for the color-tint picker applied to panes showing an SMB or network share. \"SMB\" is the network file-sharing protocol name; keep it as-is.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.tintSmb.description": "Background tint applied to panes showing an SMB or network share.",
   "@settings.appearance.tintSmb.description": {
-    "description": "Help text for the SMB/network tint. \"SMB\" is a protocol name; keep it. A pane is one of the two file lists."
+    "description": "Help text for the SMB/network tint. \"SMB\" is a protocol name; keep it. A pane is one of the two file lists.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.tintMtp.label": "Tint MTP panes",
   "@settings.appearance.tintMtp.label": {
-    "description": "Label for the color-tint picker applied to panes showing an MTP device. \"MTP\" is the USB device protocol name (used by Android phones, Kindles, cameras); keep it as-is."
+    "description": "Label for the color-tint picker applied to panes showing an MTP device. \"MTP\" is the USB device protocol name (used by Android phones, Kindles, cameras); keep it as-is.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.tintMtp.description": "Background tint applied to panes showing an Android, Kindle, or camera device.",
   "@settings.appearance.tintMtp.description": {
-    "description": "Help text for the MTP tint. \"Kindle\" is a product name; keep it. These are USB-connected devices shown in a pane."
+    "description": "Help text for the MTP tint. \"Kindle\" is a product name; keep it. These are USB-connected devices shown in a pane.",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.appearance.textSize.label": "Text size",
@@ -951,7 +985,8 @@
 
   "settings.tint.none": "No tint",
   "@settings.tint.none": {
-    "description": "Volume-tint color-picker option meaning no tint. Also the aria-label for the no-tint swatch. \"tint\" = a faint background color."
+    "description": "Volume-tint color-picker option meaning no tint. Also the aria-label for the no-tint swatch. \"tint\" = a faint background color.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.tint.red": "Red",
   "@settings.tint.red": {
@@ -963,7 +998,8 @@
   },
   "settings.tint.amber": "Amber",
   "@settings.tint.amber": {
-    "description": "Volume-tint color name: amber (a warm yellow-orange). Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: amber (a warm yellow-orange). Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.tint.lime": "Lime",
   "@settings.tint.lime": {
@@ -991,7 +1027,8 @@
   },
   "settings.tint.purple": "Purple",
   "@settings.tint.purple": {
-    "description": "Volume-tint color name: purple. Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: purple. Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.tint.pink": "Pink",
   "@settings.tint.pink": {
@@ -1004,91 +1041,113 @@
 
   "settings.section.appearance": "Appearance",
   "@settings.section.appearance": {
-    "description": "Top-level Settings section title: Appearance. Shown in the settings sidebar and as a page heading."
+    "description": "Top-level Settings section title: Appearance. Shown in the settings sidebar and as a page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.colorsAndFormats": "Colors and formats",
   "@settings.section.colorsAndFormats": {
-    "description": "Settings subsection title under Appearance: Colors and formats. Sidebar and page heading."
+    "description": "Settings subsection title under Appearance: Colors and formats. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.zoomAndDensity": "Zoom and density",
   "@settings.section.zoomAndDensity": {
-    "description": "Settings subsection title under Appearance: Zoom and density. Sidebar and page heading."
+    "description": "Settings subsection title under Appearance: Zoom and density. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.fileAndFolderSizes": "File and folder sizes",
   "@settings.section.fileAndFolderSizes": {
-    "description": "Settings subsection title under Appearance: File and folder sizes. Sidebar and page heading."
+    "description": "Settings subsection title under Appearance: File and folder sizes. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.listing": "Listing",
   "@settings.section.listing": {
-    "description": "Settings subsection title under Appearance: Listing (file-list display options). Sidebar and page heading."
+    "description": "Settings subsection title under Appearance: Listing (file-list display options). Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.behavior": "Behavior",
   "@settings.section.behavior": {
-    "description": "Top-level Settings section title: Behavior. Sidebar and page heading."
+    "description": "Top-level Settings section title: Behavior. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.fileOperations": "File operations",
   "@settings.section.fileOperations": {
-    "description": "Settings subsection title under Behavior: File operations (copy, move, rename, delete). Sidebar and page heading."
+    "description": "Settings subsection title under Behavior: File operations (copy, move, rename, delete). Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.fileSystemWatching": "File system watching",
   "@settings.section.fileSystemWatching": {
-    "description": "Settings subsection title under Behavior: File system watching (indexing, downloads, low-disk warnings). Sidebar and page heading."
+    "description": "Settings subsection title under Behavior: File system watching (indexing, downloads, low-disk warnings). Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.search": "Search",
   "@settings.section.search": {
-    "description": "Settings subsection title under Behavior: Search. Sidebar and page heading."
+    "description": "Settings subsection title under Behavior: Search. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
-    "description": "Top-level Settings section title: AI (artificial intelligence). Sidebar and page heading. Keep short."
+    "description": "Top-level Settings section title: AI (artificial intelligence). Sidebar and page heading. Keep short.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.fileSystems": "File systems",
   "@settings.section.fileSystems": {
-    "description": "Top-level Settings section title: File systems (network shares, USB devices, git). Sidebar and page heading."
+    "description": "Top-level Settings section title: File systems (network shares, USB devices, git). Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.smbNetworkShares": "SMB/Network shares",
   "@settings.section.smbNetworkShares": {
-    "description": "Settings subsection title under File systems: SMB/Network shares. \"SMB\" is a protocol name; keep it. Sidebar and page heading."
+    "description": "Settings subsection title under File systems: SMB/Network shares. \"SMB\" is a protocol name; keep it. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.mtp": "MTP (Android/Kindle/cameras)",
   "@settings.section.mtp": {
-    "description": "Settings subsection title under File systems: MTP support for USB devices. \"MTP\" is a protocol abbreviation; \"Android\" and \"Kindle\" are product names; keep all three as-is. Sidebar and page heading."
+    "description": "Settings subsection title under File systems: MTP support for USB devices. \"MTP\" is a protocol abbreviation; \"Android\" and \"Kindle\" are product names; keep all three as-is. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "description": "Settings subsection title under File systems: Git. \"Git\" is the version-control tool name; keep it. Sidebar and page heading."
+    "description": "Settings subsection title under File systems: Git. \"Git\" is the version-control tool name; keep it. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.viewer": "Viewer",
   "@settings.section.viewer": {
-    "description": "Top-level Settings section title: Viewer (the built-in file viewer). Sidebar and page heading."
+    "description": "Top-level Settings section title: Viewer (the built-in file viewer). Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.developer": "Developer",
   "@settings.section.developer": {
-    "description": "Top-level Settings section title: Developer. Sidebar and page heading."
+    "description": "Top-level Settings section title: Developer. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.mcpServer": "MCP server",
   "@settings.section.mcpServer": {
-    "description": "Settings subsection title under Developer: MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. Sidebar and page heading."
+    "description": "Settings subsection title under Developer: MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.logging": "Logging",
   "@settings.section.logging": {
-    "description": "Settings subsection title under Developer: Logging. Sidebar and page heading."
+    "description": "Settings subsection title under Developer: Logging. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.updatesAndPrivacy": "Updates & privacy",
   "@settings.section.updatesAndPrivacy": {
-    "description": "Top-level Settings section title: Updates & privacy. The \"&\" is an ampersand joining the two topics; the locale may use its own word for \"and\". Sidebar and page heading."
+    "description": "Top-level Settings section title: Updates & privacy. The \"&\" is an ampersand joining the two topics; the locale may use its own word for \"and\". Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.advanced": "Advanced",
   "@settings.section.advanced": {
-    "description": "Top-level Settings section title: Advanced (power-user settings). Sidebar and page heading."
+    "description": "Top-level Settings section title: Advanced (power-user settings). Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.keyboardShortcuts": "Keyboard shortcuts",
   "@settings.section.keyboardShortcuts": {
-    "description": "Top-level Settings section title: Keyboard shortcuts. Sidebar and page heading."
+    "description": "Top-level Settings section title: Keyboard shortcuts. Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.section.license": "License",
   "@settings.section.license": {
-    "description": "Top-level Settings section title: License (the app license / activation). Sidebar and page heading."
+    "description": "Top-level Settings section title: License (the app license / activation). Sidebar and page heading.",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.summary.colorsAndFormats": "Theme, app color, date and size coloring, and date/time format.",
@@ -1146,7 +1205,8 @@
 
   "settings.control.resetToDefault": "Reset to default",
   "@settings.control.resetToDefault": {
-    "description": "Tooltip and aria-label for the per-setting reset button, which restores a setting to its default value. Keep concise."
+    "description": "Tooltip and aria-label for the per-setting reset button, which restores a setting to its default value. Keep concise.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.control.restartRequired": "Restart required",
   "@settings.control.restartRequired": {
@@ -1184,7 +1244,8 @@
 
   "settings.sidebar.searchPlaceholder": "Search settings...",
   "@settings.sidebar.searchPlaceholder": {
-    "description": "Placeholder text in the settings sidebar's search box. The trailing ellipsis is stylistic; keep it."
+    "description": "Placeholder text in the settings sidebar's search box. The trailing ellipsis is stylistic; keep it.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.sidebar.clearSearch": "Clear search",
   "@settings.sidebar.clearSearch": {
@@ -1192,16 +1253,19 @@
   },
   "settings.sidebar.sections": "Settings sections",
   "@settings.sidebar.sections": {
-    "description": "aria-label for the settings-sidebar navigation region listing all sections (screen-reader only)."
+    "description": "aria-label for the settings-sidebar navigation region listing all sections (screen-reader only).",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.appearance.themeColorSwatchAria": "Open System Settings to change the system theme color",
   "@settings.appearance.themeColorSwatchAria": {
-    "description": "aria-label for the disabled color swatch that points users to macOS for the system theme color. \"System Settings\" is the macOS app name; use the OS's localized name."
+    "description": "aria-label for the disabled color swatch that points users to macOS for the system theme color. \"System Settings\" is the macOS app name; use the OS's localized name.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.appColorHintPrefix": "To change your system theme color, go to",
   "@settings.appearance.appColorHintPrefix": {
-    "description": "First part of the app-color hint sentence, immediately followed by a clickable link (the System Settings path). End it so it flows into the link without a trailing space issue. Shown in Settings > Appearance."
+    "description": "First part of the app-color hint sentence, immediately followed by a clickable link (the System Settings path). End it so it flows into the link without a trailing space issue. Shown in Settings > Appearance.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
@@ -1209,7 +1273,8 @@
     "placeholders": {
       "systemSettings": "the OS-localized name of the macOS \"System Settings\" app",
       "appearance": "the OS-localized name of the macOS \"Appearance\" settings pane"
-    }
+    },
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.appColorHintLinkOther": "your system appearance settings",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1261,7 +1326,8 @@
   },
   "settings.appearance.tintGroupDescription": "Adds a faint background tint to panes so you can tell volume types apart at a glance.",
   "@settings.appearance.tintGroupDescription": {
-    "description": "Help text under the \"Pane tints\" card heading in Settings > Appearance > Colors and formats. \"pane\" is one of the two file lists; \"at a glance\" is an idiom meaning instantly/without effort."
+    "description": "Help text under the \"Pane tints\" card heading in Settings > Appearance > Colors and formats. \"pane\" is one of the two file lists; \"at a glance\" is an idiom meaning instantly/without effort.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.tintSwatchAria": "Choose a tint color for {label}",
   "@settings.appearance.tintSwatchAria": {
@@ -1280,7 +1346,8 @@
     "placeholders": {
       "label": "the pane-tint setting name, e.g. \"Tint SMB/network panes\"",
       "colorName": "the currently selected color name, e.g. \"Blue\" or \"No tint\""
-    }
+    },
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.ai.providerAria": "AI provider",
@@ -1338,19 +1405,23 @@
   },
   "settings.appearance.card.theme": "Theme",
   "@settings.appearance.card.theme": {
-    "description": "Heading of the Theme card (theme mode + app accent color) in Settings > Appearance > Colors and formats."
+    "description": "Heading of the Theme card (theme mode + app accent color) in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.card.listColoring": "List coloring",
   "@settings.appearance.card.listColoring": {
-    "description": "Heading of the list-coloring card (size colors, date colors, striped rows) in Settings > Appearance > Colors and formats."
+    "description": "Heading of the list-coloring card (size colors, date colors, striped rows) in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.card.dateAndTime": "Date and time",
   "@settings.appearance.card.dateAndTime": {
-    "description": "Heading of the date-and-time card (date/time format + custom format) in Settings > Appearance > Colors and formats."
+    "description": "Heading of the date-and-time card (date/time format + custom format) in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.card.paneTints": "Pane tints",
   "@settings.appearance.card.paneTints": {
-    "description": "Heading of the pane-tints card (local, SMB, and MTP volume tints) in Settings > Appearance > Colors and formats."
+    "description": "Heading of the pane-tints card (local, SMB, and MTP volume tints) in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.card.namesAndIcons": "Names and icons",
   "@settings.appearance.card.namesAndIcons": {

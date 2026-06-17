@@ -4,22 +4,26 @@
     "description": "Accessibility label for one of the two file-list panes. The app always has a left and a right pane; this names which one.",
     "placeholders": {
       "side": "which pane this is: the value is either left or right"
-    }
+    },
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.pane.diskUsageAriaLabel": "Disk usage",
   "@fileExplorer.pane.diskUsageAriaLabel": {
-    "description": "Accessibility label for the small disk-usage bar shown under a pane, indicating how full the current volume is."
+    "description": "Accessibility label for the small disk-usage bar shown under a pane, indicating how full the current volume is.",
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.pane.resizePanesAriaLabel": "Resize panes",
   "@fileExplorer.pane.resizePanesAriaLabel": {
-    "description": "Accessibility label for the draggable divider between the two file panes. Dragging it changes how the width is split."
+    "description": "Accessibility label for the draggable divider between the two file panes. Dragging it changes how the width is split.",
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.pane.fileExplorerAriaLabel": "File explorer",
   "@fileExplorer.pane.fileExplorerAriaLabel": {
-    "description": "Accessibility label for the whole two-pane file explorer region."
+    "description": "Accessibility label for the whole two-pane file explorer region.",
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.pane.disconnectFailedToast": "Couldn''t disconnect: {message}",
@@ -125,7 +129,8 @@
 
   "fileExplorer.functionKeyBar.toolbarAriaLabel": "Function keys",
   "@fileExplorer.functionKeyBar.toolbarAriaLabel": {
-    "description": "Accessibility label for the bottom toolbar of function-key buttons (the F1-F8 style row of file actions)."
+    "description": "Accessibility label for the bottom toolbar of function-key buttons (the F1-F8 style row of file actions).",
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
@@ -134,7 +139,8 @@
     "placeholders": {
       "action": "the full action name, e.g. Copy, Rename, Delete permanently",
       "shortcut": "the keyboard shortcut glyphs, e.g. F5 or ⌘C (do not translate; these are key names)"
-    }
+    },
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (no shift action)",
@@ -155,11 +161,13 @@
   },
   "fileExplorer.functionKeyBar.renameLabel": "Rename",
   "@fileExplorer.functionKeyBar.renameLabel": {
-    "description": "Button label on the function-key bar for renaming the file under the cursor. Space is tight; keep it short."
+    "description": "Button label on the function-key bar for renaming the file under the cursor. Space is tight; keep it short.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.renameAction": "Rename",
   "@fileExplorer.functionKeyBar.renameAction": {
-    "description": "The full spoken action name (for screen readers) of the rename function-key button."
+    "description": "The full spoken action name (for screen readers) of the rename function-key button.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.permanentlyLabel": "Permanently",
   "@fileExplorer.functionKeyBar.permanentlyLabel": {
@@ -171,51 +179,63 @@
   },
   "fileExplorer.functionKeyBar.viewLabel": "View",
   "@fileExplorer.functionKeyBar.viewLabel": {
-    "description": "Short button label on the function-key bar for viewing the file under the cursor in the built-in viewer. Space is tight; keep it short."
+    "description": "Short button label on the function-key bar for viewing the file under the cursor in the built-in viewer. Space is tight; keep it short.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.viewAction": "View file",
   "@fileExplorer.functionKeyBar.viewAction": {
-    "description": "The full spoken action name (for screen readers) of the view-file function-key button."
+    "description": "The full spoken action name (for screen readers) of the view-file function-key button.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.editLabel": "Edit",
   "@fileExplorer.functionKeyBar.editLabel": {
-    "description": "Short button label on the function-key bar for editing the file under the cursor. Space is tight; keep it short."
+    "description": "Short button label on the function-key bar for editing the file under the cursor. Space is tight; keep it short.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.editAction": "Edit file",
   "@fileExplorer.functionKeyBar.editAction": {
-    "description": "The full spoken action name (for screen readers) of the edit-file function-key button."
+    "description": "The full spoken action name (for screen readers) of the edit-file function-key button.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.copyLabel": "Copy",
   "@fileExplorer.functionKeyBar.copyLabel": {
-    "description": "Button label on the function-key bar for copying the selected files to the other pane. Space is tight; keep it short."
+    "description": "Button label on the function-key bar for copying the selected files to the other pane. Space is tight; keep it short.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.copyAction": "Copy",
   "@fileExplorer.functionKeyBar.copyAction": {
-    "description": "The full spoken action name (for screen readers) of the copy function-key button."
+    "description": "The full spoken action name (for screen readers) of the copy function-key button.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.moveLabel": "Move",
   "@fileExplorer.functionKeyBar.moveLabel": {
-    "description": "Button label on the function-key bar for moving the selected files to the other pane. Space is tight; keep it short."
+    "description": "Button label on the function-key bar for moving the selected files to the other pane. Space is tight; keep it short.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.moveAction": "Move",
   "@fileExplorer.functionKeyBar.moveAction": {
-    "description": "The full spoken action name (for screen readers) of the move function-key button."
+    "description": "The full spoken action name (for screen readers) of the move function-key button.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.newFolderLabel": "New folder",
   "@fileExplorer.functionKeyBar.newFolderLabel": {
-    "description": "Button label on the function-key bar for creating a new folder. Space is tight; keep it short."
+    "description": "Button label on the function-key bar for creating a new folder. Space is tight; keep it short.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.newFolderAction": "New folder",
   "@fileExplorer.functionKeyBar.newFolderAction": {
-    "description": "The full spoken action name (for screen readers) of the new-folder function-key button."
+    "description": "The full spoken action name (for screen readers) of the new-folder function-key button.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.deleteLabel": "Delete",
   "@fileExplorer.functionKeyBar.deleteLabel": {
-    "description": "Button label on the function-key bar for deleting the selected files (to the trash). Space is tight; keep it short."
+    "description": "Button label on the function-key bar for deleting the selected files (to the trash). Space is tight; keep it short.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.functionKeyBar.deleteAction": "Delete",
   "@fileExplorer.functionKeyBar.deleteAction": {
-    "description": "The full spoken action name (for screen readers) of the delete (to trash) function-key button."
+    "description": "The full spoken action name (for screen readers) of the delete (to trash) function-key button.",
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.typeToJump.ariaLabel": "Jump to {buffer}",
@@ -914,23 +934,28 @@
 
   "fileExplorer.columns.name": "Name",
   "@fileExplorer.columns.name": {
-    "description": "File-list column header for the file/folder name. Also measured to size the column; keep it short. Used in both the Full and Brief list views."
+    "description": "File-list column header for the file/folder name. Also measured to size the column; keep it short. Used in both the Full and Brief list views.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.columns.ext": "Ext",
   "@fileExplorer.columns.ext": {
-    "description": "File-list column header for the file extension (abbreviation of \"extension\"). Tight column; keep it very short. Its rendered text is also measured to size the column, so the same wording must be used everywhere it appears."
+    "description": "File-list column header for the file extension (abbreviation of \"extension\"). Tight column; keep it very short. Its rendered text is also measured to size the column, so the same wording must be used everywhere it appears.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.columns.size": "Size",
   "@fileExplorer.columns.size": {
-    "description": "File-list column header for the file size. Its rendered text is also measured to size the column; keep it short and identical wherever it appears."
+    "description": "File-list column header for the file size. Its rendered text is also measured to size the column; keep it short and identical wherever it appears.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.columns.modified": "Modified",
   "@fileExplorer.columns.modified": {
-    "description": "File-list column header for the last-modified date. Its rendered text is also measured to size the column; keep it short and identical wherever it appears."
+    "description": "File-list column header for the last-modified date. Its rendered text is also measured to size the column; keep it short and identical wherever it appears.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.columns.created": "Created",
   "@fileExplorer.columns.created": {
-    "description": "File-list column header for the creation date (Brief view). Keep it short."
+    "description": "File-list column header for the creation date (Brief view). Keep it short.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
@@ -943,15 +968,18 @@
 
   "fileExplorer.list.empty": "Empty folder",
   "@fileExplorer.list.empty": {
-    "description": "Placeholder shown in the file list when the current folder has no files."
+    "description": "Placeholder shown in the file list when the current folder has no files.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.list.fileListAriaLabel": "File list",
   "@fileExplorer.list.fileListAriaLabel": {
-    "description": "Accessibility label for the scrollable list of files."
+    "description": "Accessibility label for the scrollable list of files.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.list.sortColumnsAriaLabel": "Sort columns",
   "@fileExplorer.list.sortColumnsAriaLabel": {
-    "description": "Accessibility label for the row of sortable column headers in the Brief list view."
+    "description": "Accessibility label for the row of sortable column headers in the Brief list view.",
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.dirSize.updatingIndexTooltip": "Updating index: size may change.",
@@ -964,11 +992,13 @@
   },
   "fileExplorer.dirSize.contentLabel": "Content",
   "@fileExplorer.dirSize.contentLabel": {
-    "description": "Label in a size tooltip for the logical (content) size of a file or folder, as opposed to the on-disk size. Pairs with the \"On disk\" label."
+    "description": "Label in a size tooltip for the logical (content) size of a file or folder, as opposed to the on-disk size. Pairs with the \"On disk\" label.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.dirSize.onDiskLabel": "On disk",
   "@fileExplorer.dirSize.onDiskLabel": {
-    "description": "Label in a size tooltip for the physical on-disk size, as opposed to the logical content size. Pairs with the \"Content\" label."
+    "description": "Label in a size tooltip for the physical on-disk size, as opposed to the logical content size. Pairs with the \"Content\" label.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.dirSize.noPerms": "'<'no perms>",
   "@fileExplorer.dirSize.noPerms": {
@@ -980,11 +1010,13 @@
   },
   "fileExplorer.dirSize.noFiles": "No files",
   "@fileExplorer.dirSize.noFiles": {
-    "description": "Phrase in a folder''s size tooltip for the file count when the folder contains zero files. Leads the count line, e.g. \"No files, no folders\". Capitalized as the start of the line."
+    "description": "Phrase in a folder''s size tooltip for the file count when the folder contains zero files. Leads the count line, e.g. \"No files, no folders\". Capitalized as the start of the line.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.dirSize.noFolders": "no folders",
   "@fileExplorer.dirSize.noFolders": {
-    "description": "Phrase in a folder''s size tooltip for the folder count when there are zero subfolders. Follows the file count, e.g. \"3 files, no folders\". Lowercase since it follows a comma."
+    "description": "Phrase in a folder''s size tooltip for the folder count when there are zero subfolders. Follows the file count, e.g. \"3 files, no folders\". Lowercase since it follows a comma.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.dirSize.fileCount": "{count, plural, one {{countText} file} other {{countText} files}}",
   "@fileExplorer.dirSize.fileCount": {
@@ -992,7 +1024,8 @@
     "placeholders": {
       "countText": "the number of files, already formatted for display",
       "count": "the same number of files (drives the singular/plural form)"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.dirSize.folderCount": "{count, plural, one {{countText} folder} other {{countText} folders}}",
   "@fileExplorer.dirSize.folderCount": {
@@ -1000,7 +1033,8 @@
     "placeholders": {
       "countText": "the number of folders, already formatted for display",
       "count": "the same number of folders (drives the singular/plural form)"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.dirSize.updatingIndexLine": "Updating index — size may change.",
   "@fileExplorer.dirSize.updatingIndexLine": {
@@ -1055,7 +1089,8 @@
 
   "fileExplorer.selectionInfo.nothingHere": "Nothing in here.",
   "@fileExplorer.selectionInfo.nothingHere": {
-    "description": "Status-bar text shown below a pane when the current folder is empty."
+    "description": "Status-bar text shown below a pane when the current folder is empty.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.selectionInfo.dir": "DIR",
   "@fileExplorer.selectionInfo.dir": {
@@ -1083,7 +1118,8 @@
     "placeholders": {
       "countText": "the number of files, already formatted for display",
       "count": "the same number of files (drives the singular/plural form)"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.selectionInfo.noSelectionDirs": " and {count, plural, one {{countText} dir} other {{countText} dirs}}",
   "@fileExplorer.selectionInfo.noSelectionDirs": {
@@ -1091,7 +1127,8 @@
     "placeholders": {
       "countText": "the number of folders, already formatted for display",
       "count": "the same number of folders (drives the singular/plural form)"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.selectionInfo.noSelection": "No selection, {files}{dirs}.",
   "@fileExplorer.selectionInfo.noSelection": {
@@ -1099,7 +1136,8 @@
     "placeholders": {
       "files": "the file-count phrase, e.g. \"1,234 files\"",
       "dirs": "the folder-count phrase including its leading \" and \", or empty when there are no folders"
-    }
+    },
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.tabBar.paneTabsAriaLabel": "{paneId} pane tabs",
@@ -1107,7 +1145,8 @@
     "description": "Accessibility label for one pane''s tab strip. {paneId} is the side, \"left\" or \"right\".",
     "placeholders": {
       "paneId": "which pane''s tabs these are: the value is left or right"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.tabBar.unreachableAriaLabel": "Unreachable",
   "@fileExplorer.tabBar.unreachableAriaLabel": {
@@ -1115,15 +1154,18 @@
   },
   "fileExplorer.tabBar.pinnedAriaLabel": "Pinned",
   "@fileExplorer.tabBar.pinnedAriaLabel": {
-    "description": "Accessibility label and tooltip for a pinned tab (one kept open deliberately)."
+    "description": "Accessibility label and tooltip for a pinned tab (one kept open deliberately).",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.tabBar.closeTabTooltip": "Close tab",
   "@fileExplorer.tabBar.closeTabTooltip": {
-    "description": "Hover tooltip for the small close button on a tab."
+    "description": "Hover tooltip for the small close button on a tab.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.tabBar.newTabAriaLabel": "New tab",
   "@fileExplorer.tabBar.newTabAriaLabel": {
-    "description": "Accessibility label and tooltip for the button that opens a new tab."
+    "description": "Accessibility label and tooltip for the button that opens a new tab.",
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.summary.fileNoun": "{count, plural, one {file} other {files}}",

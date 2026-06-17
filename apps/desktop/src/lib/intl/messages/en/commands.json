@@ -182,27 +182,32 @@
 
   "commands.sortByName.label": "Sort by name",
   "@commands.sortByName.label": {
-    "description": "Command name that sorts the file list by file name. Appears in the command palette."
+    "description": "Command name that sorts the file list by file name. Appears in the command palette.",
+    "screenshot": "main-window.png"
   },
 
   "commands.sortByExtension.label": "Sort by extension",
   "@commands.sortByExtension.label": {
-    "description": "Command name that sorts the file list by file extension (the part after the last dot, like .txt). Appears in the command palette."
+    "description": "Command name that sorts the file list by file extension (the part after the last dot, like .txt). Appears in the command palette.",
+    "screenshot": "main-window.png"
   },
 
   "commands.sortByModified.label": "Sort by date modified",
   "@commands.sortByModified.label": {
-    "description": "Command name that sorts the file list by last-modified date. Appears in the command palette."
+    "description": "Command name that sorts the file list by last-modified date. Appears in the command palette.",
+    "screenshot": "main-window.png"
   },
 
   "commands.sortBySize.label": "Sort by size",
   "@commands.sortBySize.label": {
-    "description": "Command name that sorts the file list by file size. Appears in the command palette."
+    "description": "Command name that sorts the file list by file size. Appears in the command palette.",
+    "screenshot": "main-window.png"
   },
 
   "commands.sortByCreated.label": "Sort by date created",
   "@commands.sortByCreated.label": {
-    "description": "Command name that sorts the file list by creation date. Appears in the command palette."
+    "description": "Command name that sorts the file list by creation date. Appears in the command palette.",
+    "screenshot": "main-window.png"
   },
 
   "commands.sortAscending.label": "Sort ascending",

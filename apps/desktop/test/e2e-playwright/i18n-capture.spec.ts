@@ -64,22 +64,43 @@ async function keysFor(page: TauriPage, surface: string): Promise<string[]> {
 
 /**
  * Waits for the webview to composite a fresh frame before a native screenshot.
- * The native (CoreGraphics) screenshot grabs the window's last COMPOSITED frame,
- * which lags a just-applied DOM change (a freshly-opened modal, a `rerender()`).
- * Two rAF ticks guarantee the browser has laid out AND painted the pending
- * change, so the capture shows the surface we actually staged. Without this, a
- * modal that's present in the DOM can be missing from the image.
+ * The native (CoreGraphics) capture grabs the window's last COMPOSITED frame,
+ * which lags a just-applied DOM change (a freshly-opened modal), so without this
+ * the modal can be missing from the image.
+ *
+ * Resolves on the next animation frame, BUT races a short timeout: `requestAnimationFrame`
+ * is throttled/paused on a window that isn't foreground (in E2E, child windows
+ * are ordered to the back), where it would otherwise never fire and hang the
+ * eval. The timeout is a safety net, not the primary signal — a foreground window
+ * resolves on the real frame in ~16 ms.
  */
 async function settlePaint(page: TauriPage): Promise<void> {
   await page.evaluate(`new Promise(function(resolve) {
-    requestAnimationFrame(function() { requestAnimationFrame(function() { resolve(true); }); });
+    var done = false;
+    var finish = function() { if (!done) { done = true; resolve(true); } };
+    requestAnimationFrame(function() { requestAnimationFrame(finish); });
+    setTimeout(finish, 500);
   })`)
 }
 
 test.describe('i18n screenshot capture', () => {
+  // This drives three surfaces (main, a dialog, a separate Settings window) with
+  // window open/close, so it legitimately needs longer than the 15s per-test
+  // default. (A normal interaction test should fit in 15s; this is a multi-surface
+  // capture driver, not a normal test.)
   test('captures representative surfaces and writes the coupling report', async ({ tauriPage }) => {
+    test.setTimeout(60000)
     const main = tauriPage as TauriPage
     mkdirSync(screenshotsDir, { recursive: true })
+
+    // The fixture auto-starts a video recorder (15 fps frame capture). It's
+    // useless for this driver and just burns CPU + CoreGraphics work alongside
+    // the screenshots, so stop it up front. Best-effort: never fail the run on it.
+    try {
+      await (main as unknown as { stopRecording: () => Promise<unknown> }).stopRecording()
+    } catch {
+      // Already stopped or unsupported — fine.
+    }
 
     // surface label → { keys, screenshot filename }
     const report: Record<string, { screenshot: string; keys: string[] }> = {}
@@ -97,7 +118,6 @@ test.describe('i18n screenshot capture', () => {
     await captureCall<boolean>(main, 'enable')
     await captureCall(main, 'setSurface', 'main-window')
     await captureCall(main, 'rerender')
-    await settlePaint(main)
     await main.screenshot({ path: join(screenshotsDir, 'main-window.png') })
     report['main-window'] = { screenshot: 'main-window.png', keys: await keysFor(main, 'main-window') }
 
@@ -108,6 +128,9 @@ test.describe('i18n screenshot capture', () => {
     await main.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await captureCall(main, 'setSurface', 'new-folder-dialog')
     await captureCall(main, 'rerender')
+    // The modal renders into the foreground main window; settle one paint so the
+    // native capture includes it (it's absent otherwise — the capture grabs the
+    // pre-modal composited frame).
     await settlePaint(main)
     await main.screenshot({ path: join(screenshotsDir, 'new-folder-dialog.png') })
     report['new-folder-dialog'] = {
@@ -123,11 +146,23 @@ test.describe('i18n screenshot capture', () => {
     // setSurface + rerender + dump all run against the SETTINGS page.
     const settings = await openSettingsWindowViaProd(main)
     await settings.waitForSelector('.settings-window', 5000)
-    await settings.waitForSelector('.settings-sidebar', 5000)
+    // Wait for the actual Appearance CONTENT, not just the window shell: the
+    // window briefly shows "Loading settings..." before the section renders, and
+    // capturing the shell catches that placeholder. The first appearance section
+    // is the readiness signal that real content is on screen.
+    await settings.waitForSelector('[data-section-id="appearance-colors-and-formats"]', 5000)
     await captureCall(settings, 'reset')
     await captureCall<boolean>(settings, 'enable')
     await captureCall(settings, 'setSurface', 'settings-appearance')
     await captureCall(settings, 'rerender')
+    // Bring the Settings window to the front before capturing. In E2E child
+    // windows are ordered to the BACK (so a dev's work isn't disturbed), but macOS
+    // throttles/pauses compositing for an occluded window — so its backing store,
+    // which the native capture reads, stays frozen on the "Loading settings..."
+    // placeholder even after the real content is in the DOM. Focusing it makes it
+    // composite the current frame. (`core:window:allow-set-focus` is granted in
+    // the settings capability.) Then settle one paint before the shot.
+    await settings.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_focus', { label: 'settings' })`)
     await settlePaint(settings)
     await settings.screenshot({ path: join(screenshotsDir, 'settings-appearance.png') })
     report['settings-appearance'] = {

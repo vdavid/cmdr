@@ -108,10 +108,12 @@ exacl = "0.12"
 sysinfo = { version = "0.38.4", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # Playwright E2E testing plugin: socket bridge for direct webview injection (optional, feature-gated).
-# Pinned to the `multi-window` branch of the vdavid fork at https://github.com/vdavid/tauri-playwright
-# until upstream 0.3.0 ships to crates.io. The crate lives in `packages/plugin/` inside that repo;
-# Cargo's git source resolves the workspace member automatically.
-tauri-plugin-playwright = { git = "https://github.com/vdavid/tauri-playwright.git", branch = "multi-window", optional = true }
+# Pinned to the `feat/per-window-native-screenshot` branch of the vdavid fork at
+# https://github.com/vdavid/tauri-playwright until that fix lands upstream and ships to crates.io. It
+# adds label-targeted macOS native screenshots (needed to capture non-frontmost windows like Settings)
+# on top of the already-merged multi-window work. The crate lives in `packages/plugin/` inside that
+# repo; Cargo's git source resolves the workspace member automatically.
+tauri-plugin-playwright = { git = "https://github.com/vdavid/tauri-playwright.git", branch = "feat/per-window-native-screenshot", optional = true }
 # Error reporter: zip the bundle (manifest + redacted log files). `deflate` is the default
 # compression algorithm; we don't need bzip2/zstd/etc. for log text.
 zip = { version = "8.6", default-features = false, features = ["deflate"] }

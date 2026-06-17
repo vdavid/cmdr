@@ -1,12 +1,14 @@
 {
   "fileOperations.button.cancel": "Cancel",
   "@fileOperations.button.cancel": {
-    "description": "Button that closes a copy/move/delete/new-file/new-folder dialog without taking the action. Short control label."
+    "description": "Button that closes a copy/move/delete/new-file/new-folder dialog without taking the action. Short control label.",
+    "screenshot": "new-folder-dialog.png"
   },
 
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
-    "description": "Confirm button in the new-file and new-folder dialogs. Short control label; this is the affirmative OK, not a status word."
+    "description": "Confirm button in the new-file and new-folder dialogs. Short control label; this is the affirmative OK, not a status word.",
+    "screenshot": "new-folder-dialog.png"
   },
 
   "fileOperations.delete.fromPath": "From: {path}",
@@ -160,7 +162,8 @@
 
   "fileOperations.mkdir.title": "New folder",
   "@fileOperations.mkdir.title": {
-    "description": "Title of the dialog that creates a new folder (F7)."
+    "description": "Title of the dialog that creates a new folder (F7).",
+    "screenshot": "new-folder-dialog.png"
   },
 
   "fileOperations.mkdir.createIn": "Create folder in <dir>{name}</dir>",
@@ -168,17 +171,20 @@
     "description": "Subtitle of the new-folder dialog naming the parent folder. <dir> wraps the folder name, which is styled (bold). Keep the sentence; only the folder name is highlighted.",
     "placeholders": {
       "name": "the parent folder's name"
-    }
+    },
+    "screenshot": "new-folder-dialog.png"
   },
 
   "fileOperations.mkdir.nameAria": "Folder name",
   "@fileOperations.mkdir.nameAria": {
-    "description": "Accessibility label for the new folder's name text field (screen-reader only)."
+    "description": "Accessibility label for the new folder's name text field (screen-reader only).",
+    "screenshot": "new-folder-dialog.png"
   },
 
   "fileOperations.mkdir.placeholder": "Example: my-project",
   "@fileOperations.mkdir.placeholder": {
-    "description": "Placeholder text inside the new-folder name field, showing an example folder name. 'my-project' is an example; translate 'Example' but keep a plausible example folder name."
+    "description": "Placeholder text inside the new-folder name field, showing an example folder name. 'my-project' is an example; translate 'Example' but keep a plausible example folder name.",
+    "screenshot": "new-folder-dialog.png"
   },
 
   "fileOperations.mkdir.timeoutMessage": "Couldn''t confirm the folder was created. The volume may be slow — the folder may still have been created.",

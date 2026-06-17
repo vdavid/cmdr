@@ -6,7 +6,8 @@
 
   "ui.modalDialog.close": "Close",
   "@ui.modalDialog.close": {
-    "description": "aria-label for the small × close button in the top-right corner of any modal dialog. Screen-reader-only; the visible glyph is ×."
+    "description": "aria-label for the small × close button in the top-right corner of any modal dialog. Screen-reader-only; the visible glyph is ×.",
+    "screenshot": "new-folder-dialog.png"
   },
 
   "ui.popover.defaultAriaLabel": "Options",
