@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   searchSettings,
-  searchAdvancedSettings,
   getMatchingSections,
   sectionHasMatches,
   highlightMatches,
@@ -9,6 +8,7 @@ import {
   getMatchIndicesForLabel,
   anyVisible,
   createShouldShow,
+  getMatchingSettingIdsInSection,
 } from './settings-search'
 import { getSettingDefinition } from './settings-registry'
 
@@ -56,20 +56,74 @@ describe('searchSettings', () => {
   })
 })
 
-describe('searchAdvancedSettings', () => {
-  it('should return all advanced settings when query is empty', () => {
-    const results = searchAdvancedSettings('')
-    expect(results.length).toBeGreaterThan(0)
-    for (const result of results) {
-      expect(result.setting.showInAdvanced).toBe(true)
+describe('advanced settings in the global search index', () => {
+  beforeEach(() => {
+    clearSearchIndex()
+  })
+
+  // `showInAdvanced` settings used to be excluded from the global index and
+  // searched through a separate `searchAdvancedSettings`. They now ride the
+  // global pipeline (the Advanced page groups them into cards on the same
+  // `shouldShow` predicate), so they MUST be findable in the main settings
+  // search. Pre-fix, these queries returned nothing globally.
+  it('finds an Advanced-only setting in the global search', () => {
+    const ids = searchSettings('prefetch').map((r) => r.setting.id)
+    expect(ids).toContain('advanced.prefetchBufferSize')
+  })
+
+  it('lights the Advanced sidebar entry for an Advanced-only term', () => {
+    const sections = getMatchingSections('prefetch')
+    expect(sectionHasMatches(['Advanced'], sections)).toBe(true)
+  })
+
+  it('finds dragThreshold by label in the global search', () => {
+    const ids = searchSettings('drag threshold').map((r) => r.setting.id)
+    expect(ids).toContain('advanced.dragThreshold')
+  })
+
+  it('surfaces an Advanced setting by its card title', () => {
+    // "Performance" is the shared card title for the three buffer-size rows.
+    const ids = searchSettings('performance').map((r) => r.setting.id)
+    expect(ids).toContain('advanced.prefetchBufferSize')
+    expect(ids).toContain('advanced.virtualizationBufferRows')
+  })
+
+  it('highlights label matches for an Advanced row (was always empty pre-un-exclusion)', () => {
+    // Pre-fix the Advanced rows were absent from the global index, so
+    // `getMatchIndicesForLabel` (which searches that index) returned [] for
+    // them and the advanced-row highlight was always empty. Now it works.
+    const def = getSettingDefinition('advanced.dragThreshold')
+    const label = def?.label ?? ''
+    const indices = getMatchIndicesForLabel('drag', 'advanced.dragThreshold')
+    expect(indices.length).toBeGreaterThan(0)
+    for (const idx of indices) {
+      expect(idx).toBeGreaterThanOrEqual(0)
+      expect(idx).toBeLessThan(label.length)
     }
   })
 
-  it('should find advanced settings by label', () => {
-    const results = searchAdvancedSettings('drag')
-    // Should find dragThreshold
-    const hasDragThreshold = results.some((r) => r.setting.id.includes('dragThreshold'))
-    expect(hasDragThreshold).toBe(true)
+  it('does not surface an Advanced-only setting on an unrelated section page', () => {
+    // The global index now holds Advanced settings, but each carries its own
+    // `section`, so the section-scoped gate keeps them off other pages. An
+    // `['Advanced']`-section setting must not leak into, e.g., the Appearance
+    // listing page's match set.
+    const inListing = getMatchingSettingIdsInSection('prefetch', ['Appearance', 'Listing'])
+    expect(inListing.has('advanced.prefetchBufferSize')).toBe(false)
+  })
+
+  it('a natural-section mirror lights its natural page, not Advanced: "concurrency" → SMB', () => {
+    // `network.smbConcurrency` is a `showInAdvanced` mirror whose registry
+    // `section` is its NATURAL path (SMB), not `['Advanced']`. Searching its
+    // term puts it in the SMB section's match set (so the row shows there, no
+    // blank page) and lights the SMB sidebar entry. It does NOT light Advanced
+    // (sidebar identity follows the setting's own `section`); the Advanced page
+    // still renders the row under its reused card title, it just isn't surfaced
+    // in search from the Advanced sidebar — the mirror's search home is SMB.
+    const inSmb = getMatchingSettingIdsInSection('concurrency', ['File systems', 'SMB/Network shares'])
+    expect(inSmb.has('network.smbConcurrency')).toBe(true)
+    const sections = getMatchingSections('concurrency')
+    expect(sectionHasMatches(['File systems', 'SMB/Network shares'], sections)).toBe(true)
+    expect(sectionHasMatches(['Advanced'], sections)).toBe(false)
   })
 })
 

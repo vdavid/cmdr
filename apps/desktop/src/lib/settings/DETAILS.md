@@ -273,18 +273,28 @@ for non-registry and mirrored rows. (The wrapper component and the FSW migration
 **Decision / why (D4): non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry
 entry (e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show — searching "index size"
 yielded a blank pane. Fix: a `hidden: true` registry entry (`indexing.indexSize`) reusing the existing
-`settings.fileSystemWatching.indexSize` label key. `buildSearchIndex` filters only `showInAdvanced` (not `hidden`), so a
-hidden entry IS searchable; `buildSectionTree` skips `hidden`, so it adds no nav row. It's a fully-modeled setting (its
-own `SettingsValues` key, `type:'boolean'`, `default:false`) that's never read or written — modeled because
-`SettingId = keyof SettingsValues`. **Guardrail: the anchor's `section` MUST equal its hosting page's section**, or it
-lands outside that page's section-scoped match set and the blank-page fix breaks. Additive key, so no `SCHEMA_VERSION`
-bump. Precedent: the hidden `downloadsToastCollapsed` / `…acknowledged` state rows; the anchor extends that pattern from
-"internal state" to "a searchable UI element that isn't a setting."
+`settings.fileSystemWatching.indexSize` label key. `buildSearchIndex` indexes the WHOLE registry (it filters nothing —
+not `showInAdvanced`, not `hidden`), so a hidden entry IS searchable; `buildSectionTree` skips `hidden`, so it adds no
+nav row. It's a fully-modeled setting (its own `SettingsValues` key, `type:'boolean'`, `default:false`) that's never
+read or written — modeled because `SettingId = keyof SettingsValues`. **Guardrail: the anchor's `section` MUST equal its
+hosting page's section**, or it lands outside that page's section-scoped match set and the blank-page fix breaks.
+Additive key, so no `SCHEMA_VERSION` bump. Precedent: the hidden `downloadsToastCollapsed` / `…acknowledged` state rows;
+the anchor extends that pattern from "internal state" to "a searchable UI element that isn't a setting."
 
 **Decision / why (D10): "subsection" stays the level-2 nav term.** The card axis got the new name `cardKey` (not
 `subsection`), because `subsection` already means the level-2 nav entry (`SettingsSection.subsections`, the page you
 click). The terminology group → subsection → card is kept as-is; cards are not a fourth `section[]` element (that would
 spawn a spurious nav level).
+
+**The Advanced page rides the same pipeline.** `AdvancedSection` is the one section that auto-renders its rows (from
+`getAdvancedSettings()`), but it now groups them into `SectionCard`s by `cardKey` via the pure `groupAdvancedByCard`
+(`sections/advanced-grouping.ts`) and gates each row with the same `shouldShow`/`anyVisible` as the hand-rendered
+sections. Two consequences of un-excluding `showInAdvanced` from the index (so the whole registry is searchable):
+advanced settings are now findable from the main settings search (searching "prefetch" lights the Advanced sidebar entry
+and shows its row in its card), and the advanced-row label highlight works (it reads the global index, which previously
+omitted these rows, so the highlight was always empty). Every advanced setting MUST carry a `cardKey`; the set-equality
+guard in `advanced-grouping.test.ts` flags any that don't (they fall into a trailing untitled "Other" card). Mirrors
+keep their natural-page `cardKey` and search home; see `sections/DETAILS.md` § "Advanced section is auto-generated".
 
 ## Key decisions
 
@@ -353,8 +363,10 @@ that have menu items (`view.fullMode`, `view.briefMode`). Most commands don't ne
 
 ### Advanced section is auto-generated
 
-Settings with `showInAdvanced: true` appear in the Advanced section with auto-generated UI. No custom component needed.
-Just add to registry and it works.
+Settings with `showInAdvanced: true` appear in the Advanced section with auto-generated UI, grouped into `SectionCard`s
+by their `cardKey`. No custom component needed — add to the registry WITH a `cardKey` and it works. They're in the
+global search index too (findable from the main search). Details and the mirror rules: § "Card groups" above and
+`sections/DETAILS.md` § "Advanced section is auto-generated".
 
 ### Hidden internal-state settings
 

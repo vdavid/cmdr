@@ -66,7 +66,6 @@ export {
   clearSearchIndex,
   getMatchingSections,
   highlightMatches,
-  searchAdvancedSettings,
   searchSettings,
   sectionHasMatches,
 } from './settings-search'

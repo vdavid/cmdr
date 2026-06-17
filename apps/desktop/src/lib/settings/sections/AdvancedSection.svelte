@@ -12,10 +12,17 @@
     } from '$lib/settings'
     import type { DurationUnit } from '$lib/settings/types'
     import SettingsSection from '../components/SettingsSection.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { Switch } from '@ark-ui/svelte/switch'
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
-    import { searchAdvancedSettings, getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
+    import {
+        createShouldShow,
+        anyVisible,
+        getMatchIndicesForLabel,
+        highlightMatches,
+    } from '$lib/settings/settings-search'
+    import { groupAdvancedByCard } from './advanced-grouping'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -27,6 +34,14 @@
 
     const allAdvancedSettings = getAdvancedSettings()
 
+    // The card grouping is computed once (registry-order, stable). Row
+    // visibility under search is driven per-row by `shouldShow`, NOT by swapping
+    // the settings array, so Advanced rides the SAME search pipeline as every
+    // other section (it's now in the global index).
+    const cardGroups = groupAdvancedByCard(allAdvancedSettings)
+
+    const shouldShow = $derived(createShouldShow(searchQuery))
+
     // Reactivity trigger for settings changes
     let settingsChangeCounter = $state(0)
 
@@ -35,17 +50,6 @@
         return onSettingChange(() => {
             settingsChangeCounter++
         })
-    })
-
-    // Filter by search
-    const filteredSettings = $derived.by(() => {
-        // Depend on change counter to re-evaluate when settings change
-        void settingsChangeCounter
-        if (!searchQuery.trim()) {
-            return allAdvancedSettings
-        }
-        const results = searchAdvancedSettings(searchQuery)
-        return results.map((r) => r.setting)
     })
 
     async function handleResetAll() {
@@ -113,10 +117,15 @@
     </div>
 
     <div class="advanced-settings">
-        {#each filteredSettings as setting (`${setting.id}-${String(settingsChangeCounter)}`)}
-            {@const id = setting.id}
-            {@const modified = isModified(id)}
-            <div class="advanced-setting-row">
+        {#each cardGroups as group (group.title)}
+            {@const memberIds = group.settings.map((s) => s.id)}
+            {#if anyVisible(shouldShow, ...memberIds)}
+                <SectionCard label={group.title || undefined}>
+                    {#each group.settings as setting (`${setting.id}-${String(settingsChangeCounter)}`)}
+                        {#if shouldShow(setting.id)}
+                            {@const id = setting.id}
+                            {@const modified = isModified(id)}
+                            <div class="advanced-setting-row">
                 <div class="setting-info">
                     <div class="setting-name">
                         {#if modified}
@@ -205,8 +214,12 @@
                             </span>
                         {/if}
                     {/if}
-                </div>
-            </div>
+                                </div>
+                            </div>
+                        {/if}
+                    {/each}
+                </SectionCard>
+            {/if}
         {/each}
     </div>
 </SettingsSection>
@@ -238,19 +251,30 @@
     .advanced-settings {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-sm);
-        max-height: 500px;
-        overflow-y: auto;
     }
 
+    /* Rows render inside a `SectionCard` (which owns the background, padding, and
+       border), so each row is transparent and full-bleed within the card. A
+       subtle divider separates stacked rows in the same card; the first row has
+       none (the card's own padding gives the breathing room). */
     .advanced-setting-row {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
         gap: var(--spacing-md);
-        padding: var(--spacing-sm);
-        background: var(--color-bg-secondary);
-        border-radius: var(--radius-md);
+        padding: var(--spacing-md) 0;
+    }
+
+    .advanced-setting-row:first-child {
+        padding-top: 0;
+    }
+
+    .advanced-setting-row:last-child {
+        padding-bottom: 0;
+    }
+
+    .advanced-setting-row:not(:last-child) {
+        border-bottom: 1px solid var(--color-border-subtle);
     }
 
     .setting-info {

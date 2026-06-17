@@ -55,16 +55,19 @@ describe('SearchSection', () => {
     target.remove()
   })
 
-  it('hides the recent-selections row when a search filter is active (mirrors showInAdvanced behavior)', async () => {
+  it('shows the recent-selections mirror row when its own term is searched (now globally indexed)', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    // `selection.recentSelections.maxCount` has `showInAdvanced: true`, so `buildSearchIndex`
-    // excludes it. Any non-empty search query causes `shouldShow` to return false for it — the
-    // mirror is only visible when browsing with no filter active.
+    // `selection.recentSelections.maxCount` is `showInAdvanced` but now lives in the GLOBAL
+    // search index (the Advanced page rides the same `shouldShow` pipeline), so searching its
+    // term makes `shouldShow('selection.recentSelections.maxCount')` true. Mounted in isolation
+    // here, the mirror row renders. On the live Search page the outer section-scoped gate still
+    // hides the whole section for this `['Advanced']`-section term, so the mirror isn't surfaced
+    // in search there — see `lib/settings/CLAUDE.md` § "Mirroring a setting in multiple sections".
     mount(SearchSection, { target, props: { searchQuery: 'selection' } })
     await tick()
     const labels = Array.from(target.querySelectorAll('.setting-label')).map((el) => el.textContent.trim())
-    expect(labels).not.toContain('Recent selections to remember')
+    expect(labels).toContain('Recent selections to remember')
     target.remove()
   })
 

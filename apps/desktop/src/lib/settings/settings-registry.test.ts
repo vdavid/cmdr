@@ -361,7 +361,7 @@ describe('indexing.indexSize hidden search anchor', () => {
     expect(fsw?.settings.some((s) => s.id === 'indexing.indexSize')).toBe(false)
   })
 
-  it('is included in the search index (hidden is searchable; only showInAdvanced is filtered)', () => {
+  it('is included in the search index (the whole registry is indexed; hidden is searchable)', () => {
     clearSearchIndex()
     const ids = searchSettings('').map((r) => r.setting.id)
     expect(ids).toContain('indexing.indexSize')

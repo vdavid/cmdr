@@ -35,12 +35,18 @@ let searchIndex: SearchIndexEntry[] | null = null
 function buildSearchIndex(): SearchIndexEntry[] {
   if (searchIndex) return searchIndex
 
-  searchIndex = settingsRegistry
-    .filter((s) => !s.showInAdvanced) // Advanced settings are searched separately
-    .map((setting) => ({
-      setting,
-      searchableText: buildSearchableText(setting),
-    }))
+  // The index covers the WHOLE registry, including `showInAdvanced` settings:
+  // the Advanced page renders them grouped into cards on the same `shouldShow`
+  // pipeline as every other section, so they must be globally findable too
+  // (searching "prefetch" lights the Advanced sidebar entry and shows the row
+  // in its card). Only `hidden` entries that aren't searchable anchors carry no
+  // rendered control, but `hidden` is intentionally NOT filtered here — a hidden
+  // entry like `indexing.indexSize` is a searchable anchor (see D4 in the
+  // settings card-groups plan). `buildSectionTree` excludes `hidden` from nav.
+  searchIndex = settingsRegistry.map((setting) => ({
+    setting,
+    searchableText: buildSearchableText(setting),
+  }))
 
   return searchIndex
 }
@@ -98,52 +104,6 @@ export function searchSettings(query: string): SettingSearchResult[] {
     const ranges = info.ranges[idx]
 
     // Convert ranges to individual character indices
-    const indices: number[] = []
-    for (let i = 0; i < ranges.length; i += 2) {
-      const start = ranges[i]
-      const end = ranges[i + 1]
-      for (let j = start; j < end; j++) {
-        indices.push(j)
-      }
-    }
-
-    return {
-      setting: entry.setting,
-      matchedIndices: indices,
-      searchableText: entry.searchableText,
-    }
-  })
-}
-
-/**
- * Search only advanced settings.
- */
-export function searchAdvancedSettings(query: string): SettingSearchResult[] {
-  const advancedSettings = settingsRegistry.filter((s) => s.showInAdvanced)
-
-  if (!query.trim()) {
-    return advancedSettings.map((setting) => ({
-      setting,
-      matchedIndices: [],
-      searchableText: buildSearchableText(setting),
-    }))
-  }
-
-  const entries = advancedSettings.map((setting) => ({
-    setting,
-    searchableText: buildSearchableText(setting),
-  }))
-
-  const haystack = entries.map((e) => e.searchableText)
-  const [matchedIndices, info, order] = fuzzy.search(haystack, query.toLowerCase())
-  if (!matchedIndices || !order) {
-    return []
-  }
-
-  return order.map((idx) => {
-    const entry = entries[matchedIndices[idx]]
-    const ranges = info.ranges[idx]
-
     const indices: number[] = []
     for (let i = 0; i < ranges.length; i += 2) {
       const start = ranges[i]

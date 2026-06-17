@@ -41,21 +41,21 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   mirrored `recentSearches.maxCount` / `recentSelections.maxCount` rows from Advanced. The card is gated via
   `anyVisible(shouldShow, ...)` so an all-filtered-out search leaves no empty frame.
 - **`AiSection.svelte`**: `AI` wrapper: provider toggle (Off / Cloud / Local), auto-stops local server on switch-away,
-  dispatches to one of the two sub-sections below. The provider toggle row sits in its own unlabeled `SectionCard`
-  (the row already carries a "Provider" label, so an unlabeled card avoids a duplicate heading). Card boundaries are a
-  deliberate "tasteful, not one-big-card" choice: only the registry-row clusters are card-framed; the AI status
-  blocks, gauge, action buttons, and the delete modal stay full-bleed (they already read as distinct blocks and don't
-  belong inside a card).
+  dispatches to one of the two sub-sections below. The provider toggle row sits in its own unlabeled `SectionCard` (the
+  row already carries a "Provider" label, so an unlabeled card avoids a duplicate heading). Card boundaries are a
+  deliberate "tasteful, not one-big-card" choice: only the registry-row clusters are card-framed; the AI status blocks,
+  gauge, action buttons, and the delete modal stay full-bleed (they already read as distinct blocks and don't belong
+  inside a card).
 - **`AiCloudSection.svelte`**: Cloud provider config: preset dropdown, per-provider endpoint/model in
   `ai.cloudProviderConfigs`, API key in OS secret store, two-step connection check. Its whole row list plus the
   connection-status block live in one unlabeled `SectionCard` (no `anyVisible` gate: the section mounts only when
   `provider === 'cloud'` and its rows aren't search-gated as a group).
 - **`AiLocalSection.svelte`**: Local llama-server lifecycle, model install with multi-step tracking, context window
   "Apply" (server restart), RAM gauge, delete confirmation. Only the context-window registry-row cluster (`SettingRow`
-  + the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the
-  `{#if modelInstalled && shouldShow('ai.localContextSize')}` guard, so no empty card renders before the model is
-  installed. The `.status-card`, install/`.actions` buttons, and the body-level delete `ModalDialog` stay OUTSIDE any
-  card on purpose (already visually distinct full-bleed blocks).
+  - the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the
+    `{#if modelInstalled && shouldShow('ai.localContextSize')}` guard, so no empty card renders before the model is
+    installed. The `.status-card`, install/`.actions` buttons, and the body-level delete `ModalDialog` stay OUTSIDE any
+    card on purpose (already visually distinct full-bleed blocks).
 - **`NetworkSection.svelte`**: `File systems > SMB/Network shares`: two `SectionCard` card groups — Connection
   (`network.enabled` master switch + the inline Local Network access info block + `network.directSmbConnection`) and
   Performance and timeouts (`shareCacheDuration` select, `timeoutMode` radio with its inline custom-timeout number, and
@@ -84,8 +84,8 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   snapshot) so the name-search derivation stays reactive to the parent-driven global search prop
 - **`McpServerSection.svelte`**: `Developer > MCP server`: one unlabeled `SectionCard` wrapping the enable switch, port
   row, and the live port-status block, gated via `anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpPort')`
-- **`LoggingSection.svelte`**: `Developer > Logging`: one unlabeled `SectionCard` wrapping the verbose-logging switch and
-  the open-log/copy-diagnostics action buttons, gated via `anyVisible(shouldShow, ...)`
+- **`LoggingSection.svelte`**: `Developer > Logging`: one unlabeled `SectionCard` wrapping the verbose-logging switch
+  and the open-log/copy-diagnostics action buttons, gated via `anyVisible(shouldShow, ...)`
 - **`UpdatesSection.svelte`**: `Updates & privacy`: two `SectionCard` card groups — Updates (the "Check for updates"
   action + status, `updates.autoCheck`, `whatsNew.showOnUpdate`) and Privacy and data sharing (the beta analytics
   opt-out `analytics.enabled` default-on, the `analytics.email` contact field with its "never sent with your usage data"
@@ -93,13 +93,19 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   always available). The report opt-in logic and the beta-signup email flow are unchanged; the cards are presentation
   only. Frames are gated via `anyVisible(shouldShow, ...)` (same pattern as FSW above). The email field persists to
   settings here; the beta-signup network call is wired separately
-- **`LicenseSection.svelte`**: `License`: special (non-registry), reads `getLicenseInfo` / `getLicenseStatus`. The
-  info block + action buttons live in one unlabeled `SectionCard`; the personal / commercial / expired / loading states
-  are presentational variants of that one block, all inside the one card (no `anyVisible` gate — it's not registry
+- **`LicenseSection.svelte`**: `License`: special (non-registry), reads `getLicenseInfo` / `getLicenseStatus`. The info
+  block + action buttons live in one unlabeled `SectionCard`; the personal / commercial / expired / loading states are
+  presentational variants of that one block, all inside the one card (no `anyVisible` gate — it's not registry
   search-driven). `.license-info` dropped its own background / border / radius so the wrapping card is the only frame
   (no card-in-card)
-- **`AdvancedSection.svelte`**: `Advanced`: auto-generated rows for every registry entry with `showInAdvanced: true`. No
-  custom UI per row
+- **`AdvancedSection.svelte`**: `Advanced`: auto-generated rows for every registry entry with `showInAdvanced: true`,
+  grouped into `SectionCard`s by `cardKey` via the pure `advanced-grouping.ts` (`groupAdvancedByCard`). No custom UI per
+  row. Row visibility rides the SAME global `shouldShow`/`anyVisible` pipeline as every other section (Advanced settings
+  are now in the global search index), so an advanced term lights the Advanced sidebar entry and shows its row in its
+  card — no separate `searchAdvancedSettings` path
+- **`advanced-grouping.ts`**: Pure card-grouping logic for `AdvancedSection` (group `showInAdvanced` settings by
+  resolved `card` title, registry order; trailing untitled "Other" bucket for any with no `cardKey`). Tested by a
+  set-equality regression guard (union of grouped === all Advanced settings)
 - **`ai-secret-error.ts`**: Pure mapper from OS secret-store error variants to user-facing strings. Used by
   `AiCloudSection`
 - **`license-section-utils.ts`**: Pure label/status formatters extracted from `LicenseSection` for testability
@@ -166,10 +172,21 @@ scale.
 
 ### Advanced section is auto-generated — don't hand-render
 
-Anything tagged `showInAdvanced: true` shows up in `AdvancedSection` with generated UI. Don't add a custom row for it
-elsewhere unless you're mirroring (see above) for discoverability. `advanced.maxLogStorageMb` (0 disables file logging
-entirely, non-zero/zero swap or raising the cap needs a restart) and `fileExplorer.typeToJump.resetDelay` (live-applied
-via `getTypeToJumpResetDelay()` on every keystroke) both live here.
+Anything tagged `showInAdvanced: true` shows up in `AdvancedSection` with generated UI, grouped into `SectionCard`s by
+its `cardKey` (every advanced setting carries one; `advanced-grouping.ts` is the pure grouper, set-equality-tested).
+Don't add a custom row for it elsewhere unless you're mirroring (see above) for discoverability.
+`advanced.maxLogStorageMb` (0 disables file logging entirely, non-zero/zero swap or raising the cap needs a restart) and
+`fileExplorer.typeToJump.resetDelay` (live-applied via `getTypeToJumpResetDelay()` on every keystroke) both live here.
+
+Advanced settings are in the GLOBAL search index (no separate `searchAdvancedSettings` anymore), so they're findable
+from the main settings search and the page rides the same `shouldShow` per-row + `anyVisible` per-card pipeline as every
+other section. A new advanced setting MUST get a `cardKey`, or the set-equality guard in `advanced-grouping.test.ts`
+flags it (it lands in a trailing untitled "Other" card). Mirrors with a natural section path (`network.smbConcurrency`,
+`fileOperations.maxConflictsToShow`, `progressUpdateInterval`) reuse their natural-page `cardKey` and appear in Advanced
+under that title; their search home stays their natural page (their sidebar identity follows their own `section`). The
+two `['Advanced']`-section mirrors rendered on the Search page (`recentSearches`/`recentSelections.maxCount`) surface in
+Advanced under "History and limits"; on the Search page they stay search-invisible (the section-scoped gate), exactly as
+before.
 
 ### Cloud AI API keys never go through registry primitives
 

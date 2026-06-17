@@ -1380,6 +1380,38 @@
   "@settings.network.card.performanceAndTimeouts": {
     "description": "Heading of the performance-and-timeouts card (share cache duration, network timeout mode, custom timeout, SMB concurrency) in Settings > File systems > SMB/Network shares."
   },
+  "settings.advanced.card.performance": "Performance",
+  "@settings.advanced.card.performance": {
+    "description": "Heading of the performance card (prefetch buffer size, virtualization buffer rows and columns) in Settings > Advanced."
+  },
+  "settings.advanced.card.fileWatching": "File watching",
+  "@settings.advanced.card.fileWatching": {
+    "description": "Heading of the file-watching card (file-watcher debounce, disk-space change threshold) in Settings > Advanced."
+  },
+  "settings.advanced.card.networkAndMounts": "Network and mounts",
+  "@settings.advanced.card.networkAndMounts": {
+    "description": "Heading of the network-and-mounts card (mount timeout, service-resolve timeout, filter safe-save artifacts) in Settings > Advanced."
+  },
+  "settings.advanced.card.hintsAndWarnings": "Hints and warnings",
+  "@settings.advanced.card.hintsAndWarnings": {
+    "description": "Heading of the hints-and-warnings card (suppress binary-view warning, suppress Quick Look hint) in Settings > Advanced. \"Quick Look\" is the macOS preview feature; keep its name."
+  },
+  "settings.advanced.card.input": "Input",
+  "@settings.advanced.card.input": {
+    "description": "Heading of the input card (drag threshold, type-to-jump reset delay) in Settings > Advanced."
+  },
+  "settings.advanced.card.historyAndLimits": "History and limits",
+  "@settings.advanced.card.historyAndLimits": {
+    "description": "Heading of the history-and-limits card (closed-tab history size, recent searches to remember, recent selections to remember) in Settings > Advanced."
+  },
+  "settings.advanced.card.loggingAndDiagnostics": "Logging and diagnostics",
+  "@settings.advanced.card.loggingAndDiagnostics": {
+    "description": "Heading of the logging-and-diagnostics card (max log storage, attach email to reports) in Settings > Advanced."
+  },
+  "settings.advanced.card.updates": "Updates",
+  "@settings.advanced.card.updates": {
+    "description": "Heading of the updates card (update-check interval) in Settings > Advanced."
+  },
   "settings.updates.card.updates": "Updates",
   "@settings.updates.card.updates": {
     "description": "Heading of the updates card (auto-check for updates, show what''s new on update) in Settings > Updates & privacy."

@@ -1015,6 +1015,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'updates.attachEmailToReports',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.loggingAndDiagnostics',
     labelKey: 'settings.updates.attachEmailToReports.label',
     descriptionKey: 'settings.updates.attachEmailToReports.description',
     keywords: ['email', 'report', 'crash', 'error', 'contact', 'attach', 'reply', 'beta'],
@@ -1027,15 +1028,18 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   // ========================================================================
   // Advanced (auto-generated UI, `showInAdvanced: true`).
   //
-  // Entries below carry a `section` path purely for reference / search; they
-  // are excluded from the section tree and rendered only inside the Advanced
-  // section. `network.smbConcurrency` above and the two `fileOperations.*`
-  // entries below (maxConflictsToShow, progressUpdateInterval) keep their
-  // natural section path AND surface here.
+  // Entries below carry a `section` path (used for search identity) and a
+  // `cardKey` that groups them into `SectionCard`s on the Advanced page (the
+  // page renders one card per `cardKey`, see `AdvancedSection.svelte` +
+  // `advanced-grouping.ts`). They're excluded from the section tree.
+  // `network.smbConcurrency` above and the two `fileOperations.*` entries
+  // below (maxConflictsToShow, progressUpdateInterval) keep their natural
+  // section path AND surface here, reusing their natural-page `cardKey`.
   // ========================================================================
   {
     id: 'advanced.prefetchBufferSize',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.performance',
     labelKey: 'settings.advanced.prefetchBufferSize.label',
     descriptionKey: 'settings.advanced.prefetchBufferSize.description',
     keywords: ['prefetch', 'buffer', 'scroll', 'performance'],
@@ -1052,6 +1056,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.virtualizationBufferRows',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.performance',
     labelKey: 'settings.advanced.virtualizationBufferRows.label',
     descriptionKey: 'settings.advanced.virtualizationBufferRows.description',
     keywords: ['virtualization', 'buffer', 'row', 'render'],
@@ -1068,6 +1073,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.virtualizationBufferColumns',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.performance',
     labelKey: 'settings.advanced.virtualizationBufferColumns.label',
     descriptionKey: 'settings.advanced.virtualizationBufferColumns.description',
     keywords: ['virtualization', 'buffer', 'column', 'brief'],
@@ -1084,6 +1090,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.fileWatcherDebounce',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.fileWatching',
     labelKey: 'settings.advanced.fileWatcherDebounce.label',
     descriptionKey: 'settings.advanced.fileWatcherDebounce.description',
     keywords: ['watcher', 'debounce', 'refresh', 'delay'],
@@ -1100,6 +1107,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.diskSpaceChangeThreshold',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.fileWatching',
     labelKey: 'settings.advanced.diskSpaceChangeThreshold.label',
     descriptionKey: 'settings.advanced.diskSpaceChangeThreshold.description',
     keywords: ['disk', 'space', 'threshold', 'poll', 'refresh', 'status', 'bar'],
@@ -1116,6 +1124,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'fileViewer.suppressBinaryWarning',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
     labelKey: 'settings.fileViewer.suppressBinaryWarning.label',
     descriptionKey: 'settings.fileViewer.suppressBinaryWarning.description',
     keywords: ['viewer', 'binary', 'image', 'pdf', 'raw', 'warning', 'banner', 'f3', 'quick', 'look'],
@@ -1127,6 +1136,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'fileExplorer.suppressQuickLookHint',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
     labelKey: 'settings.fileExplorer.suppressQuickLookHint.label',
     descriptionKey: 'settings.fileExplorer.suppressQuickLookHint.description',
     keywords: ['quick', 'look', 'preview', 'space', 'finder', 'hint', 'toast', 'reminder'],
@@ -1138,6 +1148,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'fileExplorer.tabs.closedTabHistorySize',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.historyAndLimits',
     labelKey: 'settings.fileExplorer.tabs.closedTabHistorySize.label',
     descriptionKey: 'settings.fileExplorer.tabs.closedTabHistorySize.description',
     keywords: ['tab', 'closed', 'reopen', 'history', 'undo', 'pane'],
@@ -1154,6 +1165,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.dragThreshold',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.input',
     labelKey: 'settings.advanced.dragThreshold.label',
     descriptionKey: 'settings.advanced.dragThreshold.description',
     keywords: ['drag', 'threshold', 'pixel', 'distance'],
@@ -1170,6 +1182,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'fileExplorer.typeToJump.resetDelay',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.input',
     labelKey: 'settings.fileExplorer.typeToJump.resetDelay.label',
     descriptionKey: 'settings.fileExplorer.typeToJump.resetDelay.description',
     keywords: ['type', 'jump', 'reset', 'delay', 'fuzzy', 'search', 'navigation', 'keystroke', 'buffer'],
@@ -1233,6 +1246,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.maxLogStorageMb',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.loggingAndDiagnostics',
     labelKey: 'settings.advanced.maxLogStorageMb.label',
     descriptionKey: 'settings.advanced.maxLogStorageMb.description',
     keywords: ['log', 'storage', 'disk', 'mb', 'cap', 'rotation', 'error', 'report', 'privacy'],
@@ -1249,6 +1263,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.mountTimeout',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.networkAndMounts',
     labelKey: 'settings.advanced.mountTimeout.label',
     descriptionKey: 'settings.advanced.mountTimeout.description',
     keywords: ['mount', 'timeout', 'network', 'share'],
@@ -1265,6 +1280,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.filterSafeSaveArtifacts',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.networkAndMounts',
     labelKey: 'settings.advanced.filterSafeSaveArtifacts.label',
     descriptionKey: 'settings.advanced.filterSafeSaveArtifacts.description',
     keywords: ['smb', 'safe-save', 'artifact', 'temp', 'sb', 'filter', 'watcher'],
@@ -1276,6 +1292,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.serviceResolveTimeout',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.networkAndMounts',
     labelKey: 'settings.advanced.serviceResolveTimeout.label',
     descriptionKey: 'settings.advanced.serviceResolveTimeout.description',
     keywords: ['bonjour', 'resolve', 'timeout', 'mdns'],
@@ -1292,6 +1309,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'search.recentSearches.maxCount',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.historyAndLimits',
     labelKey: 'settings.search.recentSearches.maxCount.label',
     descriptionKey: 'settings.search.recentSearches.maxCount.description',
     keywords: ['search', 'recent', 'history', 'cap', 'limit', 'max', 'count'],
@@ -1308,6 +1326,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'selection.recentSelections.maxCount',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.historyAndLimits',
     labelKey: 'settings.selection.recentSelections.maxCount.label',
     descriptionKey: 'settings.selection.recentSelections.maxCount.description',
     keywords: ['selection', 'select', 'recent', 'history', 'cap', 'limit', 'max', 'count'],
@@ -1335,6 +1354,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   {
     id: 'advanced.updateCheckInterval',
     section: ['Advanced'],
+    cardKey: 'settings.advanced.card.updates',
     labelKey: 'settings.advanced.updateCheckInterval.label',
     descriptionKey: 'settings.advanced.updateCheckInterval.description',
     keywords: ['update', 'interval', 'background', 'check'],
