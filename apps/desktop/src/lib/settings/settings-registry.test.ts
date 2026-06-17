@@ -335,7 +335,7 @@ describe('cardKey resolution (resolveDefinition)', () => {
   })
 
   it('leaves `card` undefined when a setting has no cardKey', () => {
-    // A setting from an unrelated page that doesn`t group into cards in M1.
+    // A setting on a single-card page (one unlabeled card), so it carries no `cardKey`.
     const def = getSettingDefinition('appearance.uiDensity')
     expect(def?.card).toBeUndefined()
   })

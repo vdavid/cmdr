@@ -190,11 +190,15 @@ be `hidden` and is never read or written**, not a free-floating search token. `S
 
 This closes the "card made entirely of non-registry content can't be a search hit" hole: such a card gets an anchor.
 
-### D5. `card` is ignored by the Advanced section (stated, not an oversight)
+### D5. (Superseded by M6.) Advanced now uses `card` and the global search
 
-`AdvancedSection` renders a flat list from `getAdvancedSettings()` / `searchAdvancedSettings` with bespoke markup and
-ignores `section`. It will also ignore `card`. Several M3-breakdown settings are `showInAdvanced` mirrors
-(`fileOperations.maxConflictsToShow`, `progressUpdateInterval`, `network.smbConcurrency`): they keep their real
+This decision originally said Advanced would keep its flat list and ignore `card`. **M6 supersedes it:** Advanced now
+groups by `cardKey` into `SectionCard`s and rides the global `shouldShow` search pipeline (so advanced settings are
+findable from the main search), and `searchAdvancedSettings` is retired. The mirror handling below still holds.
+
+Original text (for context): `AdvancedSection` rendered a flat list from `getAdvancedSettings()` /
+`searchAdvancedSettings` with bespoke markup and ignored `section`. Several M3-breakdown settings are `showInAdvanced`
+mirrors (`fileOperations.maxConflictsToShow`, `progressUpdateInterval`, `network.smbConcurrency`): they keep their real
 `section`
 
 - `card` for their main page and remain an ungrouped flat row in Advanced. Document this so a reader doesn't expect
@@ -343,25 +347,26 @@ Checks: `pnpm check --fast` while iterating; `pnpm check desktop`; FSW functiona
 
 Intent: apply the breakdown mechanically to every registry-driven page.
 
-**D7 placements (decided): no moves.** `fileViewer.suppressBinaryWarning` stays in Advanced; `appearance.showFunctionKeyBar`
-and `listing.directorySortMode` stay in `Appearance › Listing`. **D8 (decided): single-card pages get one unlabeled
-`SectionCard`** (no bare-row opt-out). **Card titles: placeholder copy is fine for now** (catalog strings David will
-review later); use the working titles below.
+**D7 placements (decided): no moves.** `fileViewer.suppressBinaryWarning` stays in Advanced;
+`appearance.showFunctionKeyBar` and `listing.directorySortMode` stay in `Appearance › Listing`. **D8 (decided):
+single-card pages get one unlabeled `SectionCard`** (no bare-row opt-out). **Card titles: placeholder copy is fine for
+now** (catalog strings David will review later); use the working titles below.
 
 Multi-card pages and their groups (confirmed groupings 4–8):
+
 - **Appearance › Colors and formats**: Theme (theme mode, app color) · List coloring (size colors, date colors, striped
   rows) · Date and time (format, custom format) · Pane tints (local, SMB, MTP).
-- **Appearance › Listing**: Names and icons (app icons, show extensions, sort directories, function key bar) · Brief mode
-  (column width mode, max width).
+- **Appearance › Listing**: Names and icons (app icons, show extensions, sort directories, function key bar) · Brief
+  mode (column width mode, max width).
 - **Behavior › File operations**: Renaming (extension changes) · Conflicts and progress (max conflicts, progress
   interval). **`maxConflictsToShow`/`progressUpdateInterval` are `showInAdvanced` mirrors NOT rendered on this page
   today** — M3 must ADD them as new `SettingRow`s here (guarded by `shouldShow(id)`), with a `cardKey`. This is load-
   bearing for M6 (see the mirror hazard): once Advanced joins the global index, these must already render here or their
   section matches-but-shows-nothing.
 - **File systems › SMB/Network shares**: Connection (enable networking, direct SMB) · Performance and timeouts (share
-  cache, timeout mode, custom timeout, concurrency). **`network.smbConcurrency` is a `showInAdvanced` mirror NOT rendered
-  here today** — M3 must ADD it as a new `SettingRow` in the Performance card (guarded by `shouldShow(id)`), with a
-  `cardKey` (same M6 mirror-hazard reason).
+  cache, timeout mode, custom timeout, concurrency). **`network.smbConcurrency` is a `showInAdvanced` mirror NOT
+  rendered here today** — M3 must ADD it as a new `SettingRow` in the Performance card (guarded by `shouldShow(id)`),
+  with a `cardKey` (same M6 mirror-hazard reason).
 - **Updates & privacy**: Updates (auto-check, what's new) · Privacy and data sharing (anonymous stats, beta email, crash
   reports, error reports).
 
@@ -398,6 +403,7 @@ stays green; add nothing structural.
 `AiSection` is a provider shell (`ai.provider` toggle → conditional `AiCloudSection`/`AiLocalSection`). Do NOT force one
 card over the whole section: it has full-bleed blocks that read as cards already or don't belong inside one
 (`AiLocalSection`'s `.status-card`, `.ram-gauge-container`, `.actions`, the body-level delete `ModalDialog`). Plan:
+
 - Wrap the provider toggle in its own unlabeled `SectionCard` (or a "Provider" card).
 - `AiCloudSection`: wrap its `SettingRow` list + status block in one `SectionCard`.
 - `AiLocalSection`: wrap the registry-row cluster (context size, etc.) in a `SectionCard`; leave the status card, RAM
@@ -409,10 +415,10 @@ card over the whole section: it has full-bleed blocks that read as cards already
 
 ### M6. Advanced — card-group the auto-rendered rows AND make them globally searchable (the structural one)
 
-Today `AdvancedSection` auto-renders a flat list from `getAdvancedSettings()` and uses a SEPARATE `searchAdvancedSettings`
-index; the global index excludes `showInAdvanced` (`settings-search.ts:38-39`). Consequence: **advanced settings are
-currently unfindable from the main settings search** (the sidebar/section gates run the global index, which excludes
-them). David explicitly wants them grouped AND "searchable just like the rest". So:
+Today `AdvancedSection` auto-renders a flat list from `getAdvancedSettings()` and uses a SEPARATE
+`searchAdvancedSettings` index; the global index excludes `showInAdvanced` (`settings-search.ts:38-39`). Consequence:
+**advanced settings are currently unfindable from the main settings search** (the sidebar/section gates run the global
+index, which excludes them). David explicitly wants them grouped AND "searchable just like the rest". So:
 
 - **Unify search onto the global pipeline.** Stop excluding `showInAdvanced` from `buildSearchIndex`; drive the Advanced
   section with `createShouldShow(searchQuery)` + `shouldShow(id)` like every other page. This makes advanced settings
@@ -437,22 +443,22 @@ them). David explicitly wants them grouped AND "searchable just like the rest". 
 - **Add `cardKey` to all 21 `showInAdvanced` settings**, grouped into logical cards (working titles, David reviews
   later). Proposed cards: **Performance** (prefetch buffer, virtualization rows/cols), **File watching** (file-watcher
   debounce, disk-space change threshold), **File operations** (max conflicts, progress interval), **Network and mounts**
-  (SMB concurrency, mount timeout, service-resolve timeout, filter safe-save artifacts), **Hints and warnings** (suppress
-  binary-view warning, suppress Quick Look hint), **Input** (drag threshold, type-to-jump reset delay), **History and
-  limits** (closed-tab history, recent searches, recent selections), **Logging and diagnostics** (max log storage,
-  attach email to reports), **Updates** (update-check interval). Settings with no `cardKey` fall into a trailing **Other**
-  card (none expected if all 21 are assigned).
+  (SMB concurrency, mount timeout, service-resolve timeout, filter safe-save artifacts), **Hints and warnings**
+  (suppress binary-view warning, suppress Quick Look hint), **Input** (drag threshold, type-to-jump reset delay),
+  **History and limits** (closed-tab history, recent searches, recent selections), **Logging and diagnostics** (max log
+  storage, attach email to reports), **Updates** (update-check interval). Settings with no `cardKey` fall into a
+  trailing **Other** card (none expected if all 21 are assigned).
 - **Render as cards.** Replace the flat `{#each}` with: a pure, unit-tested `groupAdvancedByCard(settings)` (parallel to
   `groupCommandsByScope`) → ordered list of `{cardKey, title, settings[]}`; outer loop renders
-  `{#if anyVisible(shouldShow, ...memberIds)}<SectionCard label={tString(cardKey)}>`, inner loop renders each row guarded
-  by `{#if shouldShow(id)}`. Keep the bespoke `.advanced-setting-row` rendering for now (migrating it to shared
+  `{#if anyVisible(shouldShow, ...memberIds)}<SectionCard label={tString(cardKey)}>`, inner loop renders each row
+  guarded by `{#if shouldShow(id)}`. Keep the bespoke `.advanced-setting-row` rendering for now (migrating it to shared
   `SettingRow` is optional/out-of-scope; don't expand risk).
 - **Preserve the existing per-row machinery under the new two-level loop:** the inner row key must still fold in
   `settingsChangeCounter` (today `` `${id}-${settingsChangeCounter}` ``) so the modified-dot (`isModified`) and reset
   link recompute on changes; keep `getLabelSegments`/`highlightMatches` wiring intact (after un-exclusion the advanced
   highlight starts working — lock it with a test asserting a highlighted advanced row). `groupAdvancedByCard` can be
-  computed outside the counter dependency (rows read `getSetting(id)` live), but the counter must stay in the keyed inner
-  block.
+  computed outside the counter dependency (rows read `getSetting(id)` live), but the counter must stay in the keyed
+  inner block.
 - Tests: `groupAdvancedByCard` set-equality guard (union of grouped settings === all advanced settings; fails if a new
   advanced setting lacks a `cardKey` bucket); a search test that advanced settings now match the global search and group
   into cards with no empty frames (call `clearSearchIndex()` in the test setup — the index is module-cached); update
@@ -463,6 +469,7 @@ them). David explicitly wants them grouped AND "searchable just like the rest". 
 
 `groupCommandsByScope` already emits only non-empty groups, so empty-card-hiding is FREE — no `anyVisible`/`shouldShow`
 plumbing needed here (commands aren't registry settings). Plan:
+
 - Swap the `.scope-group`/`.scope-title` (`<h3>`) rendering for `<SectionCard label={group.title}>` keyed on
   `group.scope`; drop the old `.scope-title` CSS. **Fully REMOVE the old `<h3 class="scope-title">`** — let
   `SectionCard`'s own `<h3>` label be the only heading, or you get a nested/duplicate `<h3>` (a11y heading-order
@@ -472,10 +479,11 @@ plumbing needed here (commands aren't registry settings). Plan:
   so a group's card shows iff it has ≥1 visible row automatically, under both — exactly the requested behavior.
 - **The Global row (`GlobalShortcutRow`, the go-to-latest hotkey) needs an explicit home:** it renders outside the
   `{#each}` (it's not a registry `Command`/`CommandScope`; its binding lives in `settings.json`). Give it its own small
-  `SectionCard` (a "Global" card) so it reads consistently. **Keep the existing `{#if controller.showGlobalGoToLatestRow}`
-  gate OUTSIDE the new `<SectionCard>`** (`{#if showGlobalGoToLatestRow}<SectionCard …><GlobalShortcutRow/></SectionCard>{/if}`),
-  or an empty "Global" card renders whenever the filter excludes it. Note it's the same shortcut FSW surfaces as the
-  "Go to latest download" card — that duplication is deliberate (rebinding here, on/off there).
+  `SectionCard` (a "Global" card) so it reads consistently. **Keep the existing
+  `{#if controller.showGlobalGoToLatestRow}` gate OUTSIDE the new `<SectionCard>`**
+  (`{#if showGlobalGoToLatestRow}<SectionCard …><GlobalShortcutRow/></SectionCard>{/if}`), or an empty "Global" card
+  renders whenever the filter excludes it. Note it's the same shortcut FSW surfaces as the "Go to latest download" card
+  — that duplication is deliberate (rebinding here, on/off there).
 - **Scrolling: keep the cards INSIDE the existing `.commands-list` scroller** (not page-scroll). The deep-link scroll
   does `target.closest('.commands-list')` and the scrollbar-gutter logic lives on `.commands-list`; moving cards out
   breaks both. `SectionCard` renders inside it fine (the row id stays on the row, not the card). Verify the deep-link
@@ -488,8 +496,8 @@ plumbing needed here (commands aren't registry settings). Plan:
 
 - Every Settings page renders its rows in `SectionCard`s, consistent with FSW; empty cards never appear under search.
 - Advanced settings are findable from the main settings search and grouped into cards.
-- Keyboard scope groups are cards and group correctly under both the section filter and the global search; the Global row
-  has a card home.
+- Keyboard scope groups are cards and group correctly under both the section filter and the global search; the Global
+  row has a card home.
 - AI and License match the card language without breaking their state machines.
 - All card titles come from the catalog (no raw strings); `pnpm intl:keys` clean; `pnpm check` (incl. a11y + settings
   E2E) green. Each section visually verified in the running app.

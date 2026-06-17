@@ -264,11 +264,12 @@ invalidated on locale change (`setLocale()` doesn't call `clearSearchIndex()`); 
 picker), but card titles don't re-translate live in search. Don't claim they do.
 
 **Decision / why (D2): card visibility is section-owned, never registry-derived.** The section keeps hand-rendering its
-rows and owns each row's visibility via `shouldShow(id)`. A card-group wrapper renders its frame only when a `visible`
-boolean — computed from the SAME `shouldShow` predicate (`anyVisible(shouldShow, ...ids)`) — is true, so empty cards
-vanish and the frame can never disagree with its contents. `card` is explicitly NOT read to decide rendering. An earlier
-draft had the wrapper re-derive visibility from `card`; that double-sources visibility and re-creates the empty-card bug
-for non-registry and mirrored rows. (The wrapper component and the FSW migration are M2.)
+rows and owns each row's visibility via `shouldShow(id)`. There is NO wrapper component: each card is an inline
+`{#if anyVisible(shouldShow, ...ids)}<SectionCard label={tString(cardKey)}>…rows…</SectionCard>`. The frame guard and
+each row's `{#if shouldShow(id)}` read the SAME `shouldShow` predicate, so an all-filtered-out card hides its frame and
+the frame can never disagree with its contents. `card` is explicitly NOT read to decide rendering. An earlier draft had
+a wrapper re-derive visibility from `card`; that double-sources visibility and re-creates the empty-card bug for
+non-registry and mirrored rows.
 
 **Decision / why (D4): non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry
 entry (e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show — searching "index size"
