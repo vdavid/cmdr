@@ -12,6 +12,7 @@
     "build:dashboard": "pnpm --filter @cmdr/analytics-dashboard build",
     "dev:api-server": "pnpm --filter @cmdr/api-server dev",
     "deploy:api-server": "pnpm --filter @cmdr/api-server deploy",
+    "i18n:pseudo": "pnpm --filter @cmdr/desktop i18n:pseudo",
     "i18n:capture": "pnpm --filter @cmdr/desktop i18n:capture",
     "i18n:couple": "pnpm --filter @cmdr/desktop i18n:couple",
     "i18n:shots": "pnpm --filter @cmdr/desktop i18n:shots",

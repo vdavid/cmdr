@@ -1,0 +1,30 @@
+{
+  "fixture.plainLabel": "Cancel",
+  "@fixture.plainLabel": {
+    "description": "A plain cancel button label."
+  },
+  "fixture.greeting": "Welcome back, {name}",
+  "@fixture.greeting": {
+    "description": "Greeting shown on launch; {name} is the display name."
+  },
+  "fixture.openSettings": "Open <link>{label}</link> to continue",
+  "@fixture.openSettings": {
+    "description": "Inline action; <link> wraps the clickable label."
+  },
+  "fixture.fileCount": "{count, plural, one {# file} other {# files}}",
+  "@fixture.fileCount": {
+    "description": "File count; {count} drives plural selection."
+  },
+  "fixture.paneSide": "{side, select, left {Left pane} other {Right pane}}",
+  "@fixture.paneSide": {
+    "description": "Names the focused pane."
+  },
+  "fixture.transferSummary": "Copied {fileText} from {source} to {target}",
+  "@fixture.transferSummary": {
+    "description": "Transfer summary; fileText is a preformatted count."
+  },
+  "errors.fixture.suggestion": "Open {system_settings}, then run `lsof <folder-path>`. Here's why.",
+  "@errors.fixture.suggestion": {
+    "description": "Raw error suggestion; {system_settings} is a substituted system label, <folder-path> is literal."
+  }
+}

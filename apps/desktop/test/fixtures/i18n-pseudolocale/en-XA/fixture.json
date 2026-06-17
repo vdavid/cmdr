@@ -1,0 +1,30 @@
+{
+  "fixture.plainLabel": "Çáñçéļ⟦áéí⟧",
+  "@fixture.plainLabel": {
+    "sourceHash": "19766ed"
+  },
+  "fixture.greeting": "Ŵéļçöṁé ḅáçḱ,⟦áéíöü⟧ {name}",
+  "@fixture.greeting": {
+    "sourceHash": "112b102"
+  },
+  "fixture.openSettings": "Öṗéñ⟦áé⟧ <link>{label}</link> ţö çöñţíñüé⟦áéíö⟧",
+  "@fixture.openSettings": {
+    "sourceHash": "5c7f9c6"
+  },
+  "fixture.fileCount": "{count, plural, one {# ḟíļé⟦áé⟧} other {# ḟíļéš⟦áé⟧}}",
+  "@fixture.fileCount": {
+    "sourceHash": "e60f4a2"
+  },
+  "fixture.paneSide": "{side, select, left {Ļéḟţ ṗáñé⟦áéíö⟧} other {Ŕíǧḣţ ṗáñé⟦áéíö⟧}}",
+  "@fixture.paneSide": {
+    "sourceHash": "cee56f6"
+  },
+  "fixture.transferSummary": "Çöṗíéḋ⟦áéí⟧ {fileText} ḟŕöṁ⟦áé⟧ {source} ţö⟦á⟧ {target}",
+  "@fixture.transferSummary": {
+    "sourceHash": "25de108"
+  },
+  "errors.fixture.suggestion": "Öṗéñ⟦áé⟧ {system_settings}, ţḣéñ⟦áé⟧ ŕüñ⟦áé⟧ `ļšöḟ⟦áé⟧ <ḟöļḋéŕ⟦áéí⟧-ṗáţḣ⟦áé⟧>`. Ḣéŕé⟦áé⟧'š⟦á⟧ ŵḣý⟦áé⟧.",
+  "@errors.fixture.suggestion": {
+    "sourceHash": "00b777b"
+  }
+}

@@ -168,8 +168,9 @@ export default tseslint.config(
     rules: buildTsRules(),
   },
   {
-    // Node.js scripts (like tauri-wrapper.js) and config files need Node globals
-    files: ['scripts/*.js', 'vite.config.js', 'vitest.config.ts', 'playwright.config.ts'],
+    // Node.js scripts (like tauri-wrapper.js), fixture generators, and config
+    // files need Node globals.
+    files: ['scripts/*.js', 'test/fixtures/**/*.js', 'vite.config.js', 'vitest.config.ts', 'playwright.config.ts'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

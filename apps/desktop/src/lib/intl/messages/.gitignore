@@ -1,0 +1,6 @@
+# The full generated pseudolocale (`en-XA/`) is DERIVED from `en/` and churns on
+# every English copy edit, so it's not tracked — regenerate it with `pnpm i18n:pseudo`.
+# It's the overflow-testing locale + the M2/M3 check input. The committed, stable,
+# hand-verifiable check fixture lives in `test/fixtures/i18n-pseudolocale/` instead.
+# See docs/guides/i18n.md § Pseudolocale.
+en-XA/

@@ -12,6 +12,10 @@ boundary: [`../CLAUDE.md`](../CLAUDE.md).
   stand-ins); one file serves many keys. PNGs are **gitignored** and regenerable; `capture-report.json` +
   `coverage-report.md` are tracked. Don't hand-edit `@key.screenshot`/`@key.screenshotNote` or commit PNGs — regenerate
   with `pnpm i18n:shots`. See [DETAILS.md](DETAILS.md) § Screenshots.
+- `en-XA/`: the generated **pseudolocale** (accented, expanded, structure-preserving), the overflow-testing locale + the
+  i18n-check fixture. **Gitignored + fully regenerable** from `en/` with `pnpm i18n:pseudo` — never hand-edit it (your
+  edit is overwritten). The committed check fixture is `test/fixtures/i18n-pseudolocale/`, not here. See
+  [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Pseudolocale.
 
 ## Must-knows
 
