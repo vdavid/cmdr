@@ -1,12 +1,14 @@
 {
   "commandPalette.searchPlaceholder": "Search commands...",
   "@commandPalette.searchPlaceholder": {
-    "description": "Placeholder text in the command palette's search input, shown when it's empty. The command palette is a Spotlight-style popup for finding and running commands. The trailing \"...\" suggests typing; keep it."
+    "description": "Placeholder text in the command palette's search input, shown when it's empty. The command palette is a Spotlight-style popup for finding and running commands. The trailing \"...\" suggests typing; keep it.",
+    "screenshot": "command-palette.png"
   },
 
   "commandPalette.searchAriaLabel": "Search commands",
   "@commandPalette.searchAriaLabel": {
-    "description": "Accessibility label (read by screen readers) for the command palette's search input."
+    "description": "Accessibility label (read by screen readers) for the command palette's search input.",
+    "screenshot": "command-palette.png"
   },
 
   "commandPalette.noResults": "No commands found",
@@ -16,16 +18,19 @@
 
   "commandPalette.resultsAriaLabel": "Commands",
   "@commandPalette.resultsAriaLabel": {
-    "description": "Accessibility label (read by screen readers) for the command palette's results list."
+    "description": "Accessibility label (read by screen readers) for the command palette's results list.",
+    "screenshot": "command-palette.png"
   },
 
   "commandPalette.groupRecent": "Recent",
   "@commandPalette.groupRecent": {
-    "description": "Heading above the recently-used commands at the top of the command palette (shown when the search box is empty). A short section label."
+    "description": "Heading above the recently-used commands at the top of the command palette (shown when the search box is empty). A short section label.",
+    "screenshot": "command-palette.png"
   },
 
   "commandPalette.groupAll": "All commands",
   "@commandPalette.groupAll": {
-    "description": "Heading above the full command list in the command palette, shown below the \"Recent\" group. A short section label."
+    "description": "Heading above the full command list in the command palette, shown below the \"Recent\" group. A short section label.",
+    "screenshot": "command-palette.png"
   }
 }

@@ -261,11 +261,13 @@
 
   "fileExplorer.network.cancel": "Cancel",
   "@fileExplorer.network.cancel": {
-    "description": "Button that dismisses a network dialog or form without connecting."
+    "description": "Button that dismisses a network dialog or form without connecting.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.connect": "Connect",
   "@fileExplorer.network.connect": {
-    "description": "Button that starts connecting to the entered network server or share."
+    "description": "Button that starts connecting to the entered network server or share.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.connecting": "Connecting...",
   "@fileExplorer.network.connecting": {
@@ -290,41 +292,50 @@
 
   "fileExplorer.network.connectDialog.title": "Connect to server",
   "@fileExplorer.network.connectDialog.title": {
-    "description": "Title of the dialog for manually connecting to a network server by typing its address."
+    "description": "Title of the dialog for manually connecting to a network server by typing its address.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.connectDialog.addressAriaLabel": "Server address",
   "@fileExplorer.network.connectDialog.addressAriaLabel": {
-    "description": "Accessibility label for the text field where the user types a server address in the connect-to-server dialog."
+    "description": "Accessibility label for the text field where the user types a server address in the connect-to-server dialog.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.connectDialog.addressPlaceholder": "hostname, IP address, or smb:// URL",
   "@fileExplorer.network.connectDialog.addressPlaceholder": {
     "description": "Placeholder text in the connect-to-server address field, hinting at the accepted formats. \"smb://\" is a literal URL scheme; do not translate it.",
-    "placeholders": {}
+    "placeholders": {},
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.connectDialog.examples": "Examples: mynas.local, 192.168.1.100, smb://server/share",
   "@fileExplorer.network.connectDialog.examples": {
-    "description": "Help text under the connect-to-server field giving example addresses. The example values (mynas.local, the IP, smb://server/share) are literals; keep them as-is."
+    "description": "Help text under the connect-to-server field giving example addresses. The example values (mynas.local, the IP, smb://server/share) are literals; keep them as-is.",
+    "screenshot": "connect-to-server.png"
   },
 
   "fileExplorer.network.browser.colName": "Name",
   "@fileExplorer.network.browser.colName": {
-    "description": "Column header in the network host list for the host''s display name. Tight column; keep it short."
+    "description": "Column header in the network host list for the host''s display name. Tight column; keep it short.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.colIp": "IP address",
   "@fileExplorer.network.browser.colIp": {
-    "description": "Column header in the network host list for the host''s IP address. Tight column; keep it short."
+    "description": "Column header in the network host list for the host''s IP address. Tight column; keep it short.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.colHostname": "Hostname",
   "@fileExplorer.network.browser.colHostname": {
-    "description": "Column header in the network host list for the host''s network hostname. Tight column; keep it short."
+    "description": "Column header in the network host list for the host''s network hostname. Tight column; keep it short.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.colShares": "Shares",
   "@fileExplorer.network.browser.colShares": {
-    "description": "Column header in the network host list for how many shared folders the host offers. Tight column; keep it short."
+    "description": "Column header in the network host list for how many shared folders the host offers. Tight column; keep it short.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.colStatus": "Status",
   "@fileExplorer.network.browser.colStatus": {
-    "description": "Column header in the network host list for the host''s connection status. Tight column; keep it short."
+    "description": "Column header in the network host list for the host''s connection status. Tight column; keep it short.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.fetching": "fetching...",
   "@fileExplorer.network.browser.fetching": {
@@ -332,7 +343,8 @@
   },
   "fileExplorer.network.browser.unknown": "(unknown)",
   "@fileExplorer.network.browser.unknown": {
-    "description": "Placeholder in the network host list''s Shares cell when the share count could not be determined. Shown in parentheses."
+    "description": "Placeholder in the network host list''s Shares cell when the share count could not be determined. Shown in parentheses.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.searching": "Searching...",
   "@fileExplorer.network.browser.searching": {
@@ -340,7 +352,8 @@
   },
   "fileExplorer.network.browser.connectToServerRow": "Connect to server...",
   "@fileExplorer.network.browser.connectToServerRow": {
-    "description": "Label of the always-present last row in the network host list that opens the manual connect-to-server dialog. The trailing ellipsis signals a dialog follows."
+    "description": "Label of the always-present last row in the network host list that opens the manual connect-to-server dialog. The trailing ellipsis signals a dialog follows.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.noHostsTitle": "No network hosts found",
   "@fileExplorer.network.browser.noHostsTitle": {
@@ -356,14 +369,16 @@
   },
   "fileExplorer.network.browser.refreshAriaLabel": "Refresh network hosts",
   "@fileExplorer.network.browser.refreshAriaLabel": {
-    "description": "Accessibility label for the status-bar button that re-scans the network for hosts."
+    "description": "Accessibility label for the status-bar button that re-scans the network for hosts.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.refreshHint": "Press <key></key> or click here to refresh",
   "@fileExplorer.network.browser.refreshHint": {
     "description": "Hint in the network status bar telling the user how to refresh the host list. The empty <key></key> marks where a keyboard-shortcut chip (showing ⌘R) is rendered inline; keep the tag in the sentence and reorder the surrounding words for natural grammar.",
     "placeholders": {
       "key": "marks where the keyboard-shortcut chip is inserted inline (the chip shows the ⌘R key combo); keep the tag, it carries no translatable text"
-    }
+    },
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} host} other {{countText} hosts}}",
   "@fileExplorer.network.browser.hostCount": {
@@ -371,7 +386,8 @@
     "placeholders": {
       "countText": "the number of hosts, already formatted for display",
       "count": "the same number of hosts (drives the singular/plural form)"
-    }
+    },
+    "screenshot": "connect-to-server.png"
   },
 
   "fileExplorer.network.browser.status.resolving": "Resolving...",
@@ -405,7 +421,8 @@
     "description": "Status cell when the host requires login and no credentials are stored. The lock emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
     "placeholders": {
       "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    }
+    },
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.timeout": "⏱️ Timeout{infoIcon}",
   "@fileExplorer.network.browser.status.timeout": {
@@ -438,7 +455,8 @@
   },
   "fileExplorer.network.browser.status.guest": "✓ Guest",
   "@fileExplorer.network.browser.status.guest": {
-    "description": "Status cell when connected to a host as a guest (no credentials). The check mark prefix is part of the status."
+    "description": "Status cell when connected to a host as a guest (no credentials). The check mark prefix is part of the status.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.guestStale": "✓ Guest 🔄",
   "@fileExplorer.network.browser.status.guestStale": {
@@ -475,7 +493,8 @@
   },
   "fileExplorer.network.browser.tooltip.requiresLogin": "This host requires login. Double-click to enter credentials.",
   "@fileExplorer.network.browser.tooltip.requiresLogin": {
-    "description": "Hover tooltip on a host row that needs login and has no stored credentials."
+    "description": "Hover tooltip on a host row that needs login and has no stored credentials.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.tooltip.authFailed": "Authentication failed. Check your credentials and try again.",
   "@fileExplorer.network.browser.tooltip.authFailed": {
@@ -1042,7 +1061,8 @@
   },
   "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
   "@fileExplorer.dirSize.dirPlaceholder": {
-    "description": "Placeholder shown in the Size column for a folder whose recursive size is not computed yet. Rendered literally as <dir> (with the angle brackets). The leading apostrophe-quote ICU-escapes the < so it is not parsed as a markup tag; keep the literal text <dir> intact."
+    "description": "Placeholder shown in the Size column for a folder whose recursive size is not computed yet. Rendered literally as <dir> (with the angle brackets). The leading apostrophe-quote ICU-escapes the < so it is not parsed as a markup tag; keep the literal text <dir> intact.",
+    "screenshot": "conflict-dialog.png"
   },
   "fileExplorer.dirSize.mismatchTooltipPrefix": "Content and on-disk sizes differ significantly.",
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
@@ -1094,7 +1114,8 @@
   },
   "fileExplorer.selectionInfo.dir": "DIR",
   "@fileExplorer.selectionInfo.dir": {
-    "description": "Status-bar marker shown in place of a size for a folder whose recursive size is not computed. Short for \"directory\"; rendered in capitals."
+    "description": "Status-bar marker shown in place of a size for a folder whose recursive size is not computed. Short for \"directory\"; rendered in capitals.",
+    "screenshot": "conflict-dialog.png"
   },
   "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Size not ready yet",
   "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
@@ -1254,7 +1275,8 @@
 
   "fileExplorer.extensionChange.title": "Change file extension?",
   "@fileExplorer.extensionChange.title": {
-    "description": "Title of the dialog confirming a change to a file''s extension during rename."
+    "description": "Title of the dialog confirming a change to a file''s extension during rename.",
+    "screenshot": "extension-change.png"
   },
   "fileExplorer.extensionChange.description": "Are you sure you want to change the extension from \".{oldExt}\" to \".{newExt}\"? Your file may open in a different app next time you open it.",
   "@fileExplorer.extensionChange.description": {
@@ -1262,25 +1284,29 @@
     "placeholders": {
       "oldExt": "the current file extension without the dot (e.g. txt)",
       "newExt": "the new file extension without the dot (e.g. md)"
-    }
+    },
+    "screenshot": "extension-change.png"
   },
   "fileExplorer.extensionChange.alwaysAllow": "Always allow extension changes",
   "@fileExplorer.extensionChange.alwaysAllow": {
-    "description": "Checkbox in the extension-change dialog to stop asking for confirmation on future extension changes."
+    "description": "Checkbox in the extension-change dialog to stop asking for confirmation on future extension changes.",
+    "screenshot": "extension-change.png"
   },
   "fileExplorer.extensionChange.keepOld": "Keep .{oldExt}",
   "@fileExplorer.extensionChange.keepOld": {
     "description": "Button to keep the original extension and not change it. The leading dot is part of the displayed extension.",
     "placeholders": {
       "oldExt": "the current file extension without the dot (e.g. txt)"
-    }
+    },
+    "screenshot": "extension-change.png"
   },
   "fileExplorer.extensionChange.useNew": "Use .{newExt}",
   "@fileExplorer.extensionChange.useNew": {
     "description": "Button to apply the new extension. The leading dot is part of the displayed extension.",
     "placeholders": {
       "newExt": "the new file extension without the dot (e.g. md)"
-    }
+    },
+    "screenshot": "extension-change.png"
   },
 
   "fileExplorer.quickLookHint.spaceSelects": "In Cmdr, <space></space> selects the file under the cursor by default.",
@@ -1346,7 +1372,8 @@
 
   "fileExplorer.navigation.networkVolume": "Network",
   "@fileExplorer.navigation.networkVolume": {
-    "description": "Name of the virtual Network entry in the volume switcher, which opens the network browser. Also shown as the current volume''s name in the breadcrumb when browsing the network."
+    "description": "Name of the virtual Network entry in the volume switcher, which opens the network browser. Also shown as the current volume''s name in the breadcrumb when browsing the network.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.navigation.networkVolumeDisabled": "Network (disabled)",
   "@fileExplorer.navigation.networkVolumeDisabled": {

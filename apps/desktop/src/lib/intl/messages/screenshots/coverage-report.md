@@ -8,22 +8,22 @@ Per catalog area: how many renderable keys are coupled to a screenshot vs not. U
 
 Coverage is PARTIAL until the driver covers the full surface inventory (M2). Low numbers here are expected, not bugs.
 
-**Total: 488 / 2070 keys coupled (24%).** 304 dynamic-only and 1278 not-yet-driven keys remain uncoupled.
+**Total: 649 / 2070 keys coupled (31%).** 304 dynamic-only and 1117 not-yet-driven keys remain uncoupled.
 
 | Area | Coupled | Total | % | Dynamic-only | Not driven |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | ai | 0 | 94 | 0% | 0 | 94 |
-| commandPalette | 0 | 6 | 0% | 0 | 6 |
-| commands | 114 | 150 | 76% | 0 | 36 |
+| commandPalette | 5 | 6 | 83% | 0 | 1 |
+| commands | 115 | 150 | 77% | 0 | 35 |
 | common | 0 | 1 | 0% | 0 | 1 |
 | crashReporter | 0 | 15 | 0% | 0 | 15 |
 | downloads | 3 | 34 | 9% | 0 | 31 |
 | errorReporter | 0 | 35 | 0% | 0 | 35 |
 | errors | 0 | 304 | 0% | 304 | 0 |
 | feedback | 0 | 14 | 0% | 0 | 14 |
-| fileExplorer | 42 | 296 | 14% | 0 | 254 |
-| fileOperations | 6 | 117 | 5% | 0 | 111 |
-| goToPath | 0 | 10 | 0% | 0 | 10 |
+| fileExplorer | 69 | 296 | 23% | 0 | 227 |
+| fileOperations | 60 | 117 | 51% | 0 | 57 |
+| goToPath | 7 | 10 | 70% | 0 | 3 |
 | indexing | 0 | 24 | 0% | 0 | 24 |
 | licensing | 17 | 97 | 18% | 0 | 80 |
 | lowDiskSpace | 0 | 5 | 0% | 0 | 5 |
@@ -31,12 +31,12 @@ Coverage is PARTIAL until the driver covers the full surface inventory (M2). Low
 | mtp | 0 | 22 | 0% | 0 | 22 |
 | notifications | 0 | 1 | 0% | 0 | 1 |
 | onboarding | 0 | 125 | 0% | 0 | 125 |
-| queryUi | 0 | 152 | 0% | 0 | 152 |
-| search | 0 | 13 | 0% | 0 | 13 |
+| queryUi | 54 | 152 | 36% | 0 | 98 |
+| search | 9 | 13 | 69% | 0 | 4 |
 | settings | 265 | 363 | 73% | 0 | 98 |
 | shortcuts | 25 | 54 | 46% | 0 | 29 |
 | transfer | 0 | 10 | 0% | 0 | 10 |
-| ui | 2 | 19 | 11% | 0 | 17 |
+| ui | 6 | 19 | 32% | 0 | 13 |
 | updates | 0 | 10 | 0% | 0 | 10 |
 | viewer | 14 | 91 | 15% | 0 | 77 |
 | whatsNew | 0 | 6 | 0% | 0 | 6 |

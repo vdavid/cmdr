@@ -74,7 +74,8 @@
     "placeholders": {
       "countText": "how many files, already formatted for display (for example 1,234)",
       "count": "the same number of files (drives the singular/plural form of the noun)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
   "ui.loadingIcon.loaded": "Loaded {countText} {count, plural, one {file} other {files}}...",
   "@ui.loadingIcon.loaded": {
@@ -86,17 +87,20 @@
   },
   "ui.loadingIcon.openingFolder": "Opening folder...",
   "@ui.loadingIcon.openingFolder": {
-    "description": "Loading message shown briefly while a folder is being opened, before its entries start arriving."
+    "description": "Loading message shown briefly while a folder is being opened, before its entries start arriving.",
+    "screenshot": "conflict-dialog.png"
   },
   "ui.loadingIcon.loading": "Loading...",
   "@ui.loadingIcon.loading": {
-    "description": "Generic loading message shown centered in a pane while content is being fetched."
+    "description": "Generic loading message shown centered in a pane while content is being fetched.",
+    "screenshot": "conflict-dialog.png"
   },
   "ui.loadingIcon.cancelHint": "Press <key></key> to cancel and go back",
   "@ui.loadingIcon.cancelHint": {
     "description": "Hint under the loading spinner telling the user how to abort a slow load. The empty <key></key> tag is where the app inserts a keyboard-key pill showing the Escape key (a styled chip); keep the tag, it has no text of its own.",
     "placeholders": {
       "key": "position of the inline Esc key pill (a styled chip the app fills in); keep the empty wrapper tag"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   }
 }

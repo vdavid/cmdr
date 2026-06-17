@@ -1,37 +1,44 @@
 {
   "goToPath.dialog.title": "Go to path",
   "@goToPath.dialog.title": {
-    "description": "Title of the \"Go to path\" dialog (opened with Command-G), which jumps a pane to a typed filesystem location. \"Path\" means a filesystem location like ~/Documents."
+    "description": "Title of the \"Go to path\" dialog (opened with Command-G), which jumps a pane to a typed filesystem location. \"Path\" means a filesystem location like ~/Documents.",
+    "screenshot": "go-to-path.png"
   },
 
   "goToPath.dialog.inputAriaLabel": "Path to go to",
   "@goToPath.dialog.inputAriaLabel": {
-    "description": "Accessibility label (read by screen readers) for the path input in the \"Go to path\" dialog."
+    "description": "Accessibility label (read by screen readers) for the path input in the \"Go to path\" dialog.",
+    "screenshot": "go-to-path.png"
   },
 
   "goToPath.dialog.inputPlaceholder": "Type or paste a path, e.g. ~/Documents",
   "@goToPath.dialog.inputPlaceholder": {
-    "description": "Placeholder in the \"Go to path\" dialog's input. \"~/Documents\" is an example filesystem path; keep it literally as a sample."
+    "description": "Placeholder in the \"Go to path\" dialog's input. \"~/Documents\" is an example filesystem path; keep it literally as a sample.",
+    "screenshot": "go-to-path.png"
   },
 
   "goToPath.dialog.recentsAriaLabel": "Recent paths",
   "@goToPath.dialog.recentsAriaLabel": {
-    "description": "Accessibility label (read by screen readers) for the list of recently visited paths in the \"Go to path\" dialog."
+    "description": "Accessibility label (read by screen readers) for the list of recently visited paths in the \"Go to path\" dialog.",
+    "screenshot": "go-to-path.png"
   },
 
   "goToPath.dialog.removeFromList": "Remove from list",
   "@goToPath.dialog.removeFromList": {
-    "description": "Tooltip and accessibility label for the button that removes one entry from the recent-paths list. A short label."
+    "description": "Tooltip and accessibility label for the button that removes one entry from the recent-paths list. A short label.",
+    "screenshot": "go-to-path.png"
   },
 
   "goToPath.dialog.cancel": "Cancel",
   "@goToPath.dialog.cancel": {
-    "description": "Button that closes the \"Go to path\" dialog without navigating. A short button label."
+    "description": "Button that closes the \"Go to path\" dialog without navigating. A short button label.",
+    "screenshot": "go-to-path.png"
   },
 
   "goToPath.dialog.confirm": "Go to path",
   "@goToPath.dialog.confirm": {
-    "description": "Primary button in the \"Go to path\" dialog that navigates to the typed path. A short button label."
+    "description": "Primary button in the \"Go to path\" dialog that navigates to the typed path. A short button label.",
+    "screenshot": "go-to-path.png"
   },
 
   "goToPath.dialog.ancestorHint": "This path doesn''t exist. The closest place to go is {dir}.",

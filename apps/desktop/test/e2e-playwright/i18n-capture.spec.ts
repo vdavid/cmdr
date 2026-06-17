@@ -27,12 +27,19 @@ import {
   ensureAppReady,
   dismissOverlay,
   skipParentEntry,
+  moveCursorToFile,
   openSettingsWindowViaProd,
   openViewerWindow,
   closeScopedWindow,
   dispatchMenuCommand,
+  getFixtureRoot,
+  LOCAL_VOLUME_NAME,
   MKDIR_DIALOG,
+  TRANSFER_DIALOG,
 } from './helpers.js'
+import { recreateFixtures } from '../e2e-shared/fixtures.js'
+import { initMcpClient, mcpSelectVolume } from '../e2e-shared/mcp-client.js'
+import { writeFile, waitForConflictPolicy, clickTransferStart } from './conflict-helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /**
@@ -234,6 +241,271 @@ async function captureSurface(
   }
 }
 
+/**
+ * Captures the Settings window's every section.
+ *
+ * Settings runs in its own Tauri WebviewWindow (own webview JS context, own
+ * `__cmdrI18nCapture` sink). Open it ONCE, then drive the production
+ * `navigate-to-section` deep-link (the same event the volume picker / shortcut
+ * chips use, passing the English section PATH so subsections land on real
+ * content, not a parent summary grid) to each section, reusing the one window +
+ * sink. Each `captureSurface` re-focuses for the shot so macOS composites the
+ * current frame into the backing store the native capture reads.
+ *
+ * Wrapped so an open failure marks every not-yet-done settings surface failed
+ * (rather than throwing) and the window is always closed. Per-surface isolation
+ * means one section's failure doesn't stop the rest.
+ */
+async function captureSettingsWindow(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
+  let settings: TauriPage | undefined
+  try {
+    settings = await openSettingsWindowViaProd(main)
+    const settingsPage = settings
+    await settingsPage.waitForSelector('.settings-window', 5000)
+    // The settings page gates content behind `{#if initialized}`, which flips
+    // true at the END of an async `onMount`. Focus the window so its async inits
+    // aren't throttled while occluded, then wait for `initialized` (the sidebar
+    // renders only after it). Don't wait on a specific section here: the
+    // default-rendered section is restored from the persisted store and is
+    // non-deterministic — the loop below deep-links to each section explicitly.
+    await focusWindow(settingsPage, 'settings')
+    await settingsPage.waitForSelector('.settings-window .section-item', 10000)
+    await captureCall(settingsPage, 'reset')
+    await captureCall<boolean>(settingsPage, 'enable')
+
+    for (const section of SETTINGS_SECTIONS) {
+      await captureSurface(section.label, report, failed, async () => {
+        const sectionJson = JSON.stringify({ section: section.path })
+        await settingsPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit_to', {
+          target: { kind: 'AnyLabel', label: 'settings' },
+          event: 'navigate-to-section',
+          payload: ${sectionJson}
+        })`)
+        await settingsPage.waitForSelector(`[data-section-id="${section.sectionId}"]`, 5000)
+        return { page: settingsPage, focusLabel: 'settings' }
+      })
+    }
+    await captureCall(settingsPage, 'disable')
+  } catch (err) {
+    // Opening the window or the `initialized` wait failed: mark every
+    // not-yet-done settings surface failed so the run continues and the report
+    // stays honest.
+    for (const { label } of SETTINGS_SECTIONS) {
+      if (!(label in report) && !failed.includes(label)) failed.push(label)
+    }
+    console.warn(`[i18n-capture] Settings window setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    if (settings) await closeScopedWindow(main, settings, 'settings').catch(() => {})
+  }
+}
+
+/**
+ * Captures every MAIN-WINDOW overlay surface: the file-op dialogs (new file,
+ * delete, trash, rename, extension-change, conflict, transfer), the navigation
+ * and networking dialogs (go-to-path, connect-to-server), the command palette,
+ * and the shared-`QueryDialog` query UI (search, selection, filter popover).
+ *
+ * All render into the main window's own capture sink, so each follows the About
+ * pattern: enable + setSurface the sink BEFORE opening (to record mount-time
+ * `t()` calls), open, wait on a per-overlay selector, capture, then dismiss +
+ * disable. The `mainOverlay` local wraps that rhythm; its `open` callback does
+ * the surface-specific staging and returns the wait selector. Surfaces that
+ * mutate the fixture tree (rename, delete, conflict) get a fresh tree up front,
+ * and cursor-dependent stages re-skip the synthetic `..` row first.
+ *
+ * Extracted from the test body so each surface's staging stays small and the
+ * driver's top-level complexity stays under the lint ceiling.
+ */
+async function captureMainOverlays(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
+  recreateFixtures(getFixtureRoot())
+  await ensureAppReady(main)
+  await initMcpClient(main)
+
+  // Stages one main-window overlay: enable+setSurface, run the surface-specific
+  // `open` (returns its wait selector), let `captureSurface` shoot it, then
+  // dismiss + disable. `dismissOverlay` no-ops (caught) for non-overlay surfaces.
+  const mainOverlay = async (label: string, open: () => Promise<string>): Promise<void> => {
+    await captureSurface(label, report, failed, async () => {
+      await captureCall(main, 'reset')
+      await captureCall(main, 'setSurface', label)
+      await captureCall<boolean>(main, 'enable')
+      const waitSelector = await open()
+      await main.waitForSelector(waitSelector, 5000)
+      return { page: main }
+    })
+    await dismissOverlay(main).catch(() => {})
+    await captureCall(main, 'disable').catch(() => {})
+  }
+
+  // New-file dialog (⇧F4 → `file.newFile`). The mkfile twin of `new-folder-dialog`.
+  await mainOverlay('new-file-dialog', async () => {
+    await skipParentEntry(main)
+    await dispatchMenuCommand(main, 'file.newFile')
+    return '[data-dialog-id="new-file-confirmation"] .name-input'
+  })
+
+  // Delete confirmation (F8 → `file.delete`): the recycle/trash-style confirm.
+  await mainOverlay('delete-confirm', async () => {
+    await skipParentEntry(main)
+    await dispatchMenuCommand(main, 'file.delete')
+    return '[data-dialog-id="delete-confirmation"]'
+  })
+
+  // Permanent-delete confirmation (⇧F8 → `file.deletePermanently`). Same
+  // `delete-confirmation` dialog id as trash, but distinct copy (no-trash
+  // warning / permanent wording), so it earns its own surface for the keys the
+  // trash variant doesn't render.
+  await mainOverlay('trash-confirm', async () => {
+    await skipParentEntry(main)
+    await dispatchMenuCommand(main, 'file.deletePermanently')
+    return '[data-dialog-id="delete-confirmation"]'
+  })
+
+  // Rename: the inline editor (F2 → `file.rename`), NOT a modal — the input
+  // mounts in-pane, so `dismissOverlay` (which only knows overlay selectors)
+  // can't close it. Cancel the editor explicitly with a synthetic Escape.
+  await captureSurface('rename-dialog', report, failed, async () => {
+    await captureCall(main, 'reset')
+    await captureCall(main, 'setSurface', 'rename-dialog')
+    await captureCall<boolean>(main, 'enable')
+    await skipParentEntry(main)
+    await dispatchMenuCommand(main, 'file.rename')
+    await main.waitForSelector('.rename-input', 5000)
+    return { page: main }
+  })
+  await main.evaluate(`(function(){
+    var el = document.querySelector('.rename-input');
+    if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  })()`)
+  await expect.poll(async () => (await main.count('.rename-input')) === 0, { timeout: 3000 }).toBeTruthy()
+  await captureCall(main, 'disable').catch(() => {})
+
+  // Extension-change confirmation: rename to a MEANINGFULLY different extension
+  // (default `fileOperations.allowFileExtensionChanges` is "ask"). `.txt` → a
+  // non-equivalent extension like `.zip` triggers the dialog; equivalent groups
+  // (`.txt`/`.md`, `.jpg`/`.jpeg`, …) are silently allowed and would NOT show it.
+  // Drive the inline editor to the new extension, then ⏎.
+  await mainOverlay('extension-change', async () => {
+    await skipParentEntry(main)
+    await moveCursorToFile(main, 'file-a.txt')
+    await dispatchMenuCommand(main, 'file.rename')
+    await main.waitForSelector('.rename-input', 3000)
+    await main.evaluate(`(function(){
+      var el = document.querySelector('.rename-input');
+      if (!el) return;
+      el.focus();
+      el.value = 'file-a.zip';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`)
+    await main.evaluate(`(function(){
+      var el = document.querySelector('.rename-input');
+      if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    })()`)
+    return '[data-dialog-id="extension-change"]'
+  })
+
+  // Conflict-resolution dialog: the inline `.conflict-section` inside the
+  // transfer-progress dialog. Stage a same-name collision (a `file-a.txt` in
+  // `right/`), copy `file-a.txt` left→right under the "Ask for each" (stop)
+  // policy so the per-file conflict prompt opens rather than an upfront policy.
+  await mainOverlay('conflict-dialog', async () => {
+    // Recreate first: an earlier surface (extension-change cancel) may leave the
+    // tree perturbed, and we need `file-a.txt` present on both sides to collide.
+    recreateFixtures(getFixtureRoot())
+    writeFile(getFixtureRoot(), 'right/file-a.txt', 'dest-collision')
+    await ensureAppReady(main)
+    await skipParentEntry(main)
+    await moveCursorToFile(main, 'file-a.txt')
+    await dispatchMenuCommand(main, 'file.copy')
+    await main.waitForSelector(TRANSFER_DIALOG, 5000)
+    await waitForConflictPolicy(main)
+    await clickTransferStart(main)
+    await main.waitForSelector('[data-dialog-id="transfer-progress"]', 3000)
+    return '.conflict-section'
+  })
+  // The conflict flow opens the transfer-progress modal; cancel it cleanly so it
+  // doesn't run the copy or leak into later surfaces.
+  await dismissOverlay(main).catch(() => {})
+
+  // Go-to-path dialog (`nav.goToPath`).
+  await mainOverlay('go-to-path', async () => {
+    await dispatchMenuCommand(main, 'nav.goToPath')
+    return '[data-dialog-id="go-to-path"] input[aria-label="Path to go to"]'
+  })
+
+  // Copy/move transfer dialog (F5 → `file.copy`): the source→dest picker with the
+  // operation toggle and counters, BEFORE confirming. No collision here, so it
+  // shows the plain confirm state (distinct from the conflict surface above).
+  await mainOverlay('transfer-dialog', async () => {
+    // Recreate first: the conflict surface left a collision in `right/`; a clean
+    // tree gives the plain confirm state (no upfront conflict-policy block).
+    recreateFixtures(getFixtureRoot())
+    await ensureAppReady(main)
+    await skipParentEntry(main)
+    await moveCursorToFile(main, 'file-b.txt')
+    await dispatchMenuCommand(main, 'file.copy')
+    return TRANSFER_DIALOG
+  })
+
+  // Command palette (`app.commandPalette`).
+  await mainOverlay('command-palette', async () => {
+    await dispatchMenuCommand(main, 'app.commandPalette')
+    return '.palette-overlay .search-input'
+  })
+
+  // Search dialog (`search.open`). Shares the `.search-overlay` markup with the
+  // selection dialog; captured FIRST so search-specific keys couple here and the
+  // selection dialog below only claims its remaining unique keys.
+  await mainOverlay('search-dialog', async () => {
+    await dispatchMenuCommand(main, 'search.open')
+    return '.search-overlay .query-input'
+  })
+
+  // Filter-chip popover: open the Search dialog, then the Size filter chip's
+  // popover, for the chip/popover copy. The search dialog was torn down above,
+  // so re-open it here.
+  await mainOverlay('filter-popover', async () => {
+    await dispatchMenuCommand(main, 'search.open')
+    await main.waitForSelector('.search-overlay', 5000)
+    await main.click('.search-overlay .chip-filter[aria-label="Size"]')
+    return '.search-overlay .ui-popover'
+  })
+  // The popover sits ON the search dialog; dismiss both (popover first).
+  await dismissOverlay(main).catch(() => {})
+
+  // Selection dialog (`selection.selectFiles`): the "Select files…" twin of the
+  // search dialog (same `QueryDialog` markup), so most keys already coupled to
+  // `search-dialog`; this claims the selection-only ones.
+  await mainOverlay('select-dialog', async () => {
+    await dispatchMenuCommand(main, 'selection.selectFiles')
+    return '.search-overlay .query-input'
+  })
+
+  // Connect-to-server dialog: reachable from the Network volume's browser via the
+  // "+ Connect to server…" pseudo-row. Switch the left pane to Network (MCP),
+  // then double-click the connect row (a single click only moves the cursor onto
+  // it; `handleConnectRowDoubleClick` is what opens the dialog).
+  await mainOverlay('connect-to-server', async () => {
+    await mcpSelectVolume('left', 'Network')
+    await main.waitForSelector('.network-browser .connect-row', 10000)
+    await main.evaluate(`(function(){
+      var el = document.querySelector('.network-browser .connect-row');
+      if (el) el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    })()`)
+    return '[data-dialog-id="connect-to-server"]'
+  })
+  // Leave the panes back on local so nothing downstream inherits Network.
+  await mcpSelectVolume('left', LOCAL_VOLUME_NAME).catch(() => {})
+}
+
 test.describe('i18n screenshot capture', () => {
   // Drives ~22 surfaces across several windows (main, dialogs, a separate
   // Settings window iterating 18 sections, the viewer, the shortcuts window),
@@ -291,58 +563,7 @@ test.describe('i18n screenshot capture', () => {
     await captureCall(main, 'disable')
 
     // ── Surface 3 + 4..N: Settings window (every section) ─────────────────────
-    // Settings runs in its own Tauri WebviewWindow — its own webview JS context,
-    // its own `__cmdrI18nCapture` sink. Open it ONCE, capture the default
-    // Appearance section, then drive the production `navigate-to-section`
-    // deep-link (same event the volume picker / shortcut chips use) to each
-    // remaining section, reusing the one window + sink. Wrapped so an open
-    // failure marks every settings surface failed (rather than throwing) and the
-    // window is always closed.
-    let settings: TauriPage | undefined
-    try {
-      settings = await openSettingsWindowViaProd(main)
-      const settingsPage = settings
-      await settingsPage.waitForSelector('.settings-window', 5000)
-      // The settings page gates content behind `{#if initialized}`, which flips
-      // true at the END of an async `onMount`. Focus the window so its async
-      // inits aren't throttled while occluded, then wait for `initialized` (the
-      // sidebar renders only after it). Don't wait on a specific section here:
-      // the default-rendered section is restored from the persisted store and is
-      // non-deterministic — the loop below deep-links to each section explicitly.
-      await focusWindow(settingsPage, 'settings')
-      await settingsPage.waitForSelector('.settings-window .section-item', 10000)
-      await captureCall(settingsPage, 'reset')
-      await captureCall<boolean>(settingsPage, 'enable')
-
-      // Capture every section via the production `navigate-to-section` deep-link
-      // (English section PATH, so subsections land on real content, not a parent
-      // summary grid). Each `captureSurface` re-focuses for the shot so macOS
-      // composites the current frame into the backing store the native capture
-      // reads. Isolated per-surface: one section's failure doesn't stop the rest.
-      for (const section of SETTINGS_SECTIONS) {
-        await captureSurface(section.label, report, failed, async () => {
-          const sectionJson = JSON.stringify({ section: section.path })
-          await settingsPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit_to', {
-            target: { kind: 'AnyLabel', label: 'settings' },
-            event: 'navigate-to-section',
-            payload: ${sectionJson}
-          })`)
-          await settingsPage.waitForSelector(`[data-section-id="${section.sectionId}"]`, 5000)
-          return { page: settingsPage, focusLabel: 'settings' }
-        })
-      }
-      await captureCall(settingsPage, 'disable')
-    } catch (err) {
-      // Opening the window or the `initialized` wait failed: mark every
-      // not-yet-done settings surface failed so the run continues and the report
-      // stays honest.
-      for (const { label } of SETTINGS_SECTIONS) {
-        if (!(label in report) && !failed.includes(label)) failed.push(label)
-      }
-      console.warn(`[i18n-capture] Settings window setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
-    } finally {
-      if (settings) await closeScopedWindow(main, settings, 'settings').catch(() => {})
-    }
+    await captureSettingsWindow(main, report, failed)
 
     // ── Surface: file viewer window ──────────────────────────────────────────
     // Its own restricted WebviewWindow (own webview context + sink). Opened on a
@@ -378,6 +599,12 @@ test.describe('i18n screenshot capture', () => {
     })
     await dismissOverlay(main).catch(() => {})
     await captureCall(main, 'disable').catch(() => {})
+
+    // ── Main-window overlay surfaces (dialogs, palette, query UI) ─────────────
+    // Every dialog/palette/query surface rendered into the MAIN window, staged by
+    // a keypress or registry command. Extracted to `captureMainOverlays` to keep
+    // each surface isolated and the test body's complexity in check.
+    await captureMainOverlays(main, report, failed)
 
     // ── Surface: keyboard shortcuts window (KNOWN-SKIPPED) ────────────────────
     // The standalone Keyboard shortcuts WebviewWindow (label `shortcuts`,

@@ -1,30 +1,36 @@
 {
   "search.dialog.title": "Search",
   "@search.dialog.title": {
-    "description": "Title shown at the top of the whole-drive file Search dialog. Single word naming the feature."
+    "description": "Title shown at the top of the whole-drive file Search dialog. Single word naming the feature.",
+    "screenshot": "search-dialog.png"
   },
 
   "search.runHint": "Press Enter to search",
   "@search.runHint": {
-    "description": "Subtle hint in the right side of the search input, shown when auto-apply is off and the typed query hasn't run yet. Tells the user the search runs on Enter."
+    "description": "Subtle hint in the right side of the search input, shown when auto-apply is off and the typed query hasn't run yet. Tells the user the search runs on Enter.",
+    "screenshot": "search-dialog.png"
   },
 
   "search.action.showAll.label": "Show all in main window",
   "@search.action.showAll.label": {
-    "description": "Primary footer button in the Search dialog. Promotes the current search results into the active file pane so the user can browse them like a folder. Activated by the keyboard shortcut shown next to it."
+    "description": "Primary footer button in the Search dialog. Promotes the current search results into the active file pane so the user can browse them like a folder. Activated by the keyboard shortcut shown next to it.",
+    "screenshot": "search-dialog.png"
   },
   "search.action.showAll.tooltip": "Open the search results in the active pane",
   "@search.action.showAll.tooltip": {
-    "description": "Hover tooltip for the 'Show all in main window' button in the Search dialog."
+    "description": "Hover tooltip for the 'Show all in main window' button in the Search dialog.",
+    "screenshot": "search-dialog.png"
   },
 
   "search.action.goToFile.label": "Go to file",
   "@search.action.goToFile.label": {
-    "description": "Secondary footer button in the Search dialog. Opens the file under the cursor by navigating the active pane to it. Activated by the Enter key shown next to it."
+    "description": "Secondary footer button in the Search dialog. Opens the file under the cursor by navigating the active pane to it. Activated by the Enter key shown next to it.",
+    "screenshot": "search-dialog.png"
   },
   "search.action.goToFile.tooltip": "Open the file in the active pane",
   "@search.action.goToFile.tooltip": {
-    "description": "Hover tooltip for the 'Go to file' button in the Search dialog."
+    "description": "Hover tooltip for the 'Go to file' button in the Search dialog.",
+    "screenshot": "search-dialog.png"
   },
 
   "search.recent.runAria": "Run recent {mode} search: {query}",
@@ -33,16 +39,19 @@
     "placeholders": {
       "mode": "the search mode of the past search, already translated (for example AI, Regex, or Filename)",
       "query": "the text the user searched for, shown verbatim and not translated"
-    }
+    },
+    "screenshot": "search-dialog.png"
   },
 
   "search.systemDirExclude.default": "Excludes common system and build folders",
   "@search.systemDirExclude.default": {
-    "description": "Placeholder tooltip on the 'Hide boring folders' option in the Search dialog's scope popover, shown briefly before the full folder list loads. 'build folders' are folders like node_modules that hold generated or downloaded code."
+    "description": "Placeholder tooltip on the 'Hide boring folders' option in the Search dialog's scope popover, shown briefly before the full folder list loads. 'build folders' are folders like node_modules that hold generated or downloaded code.",
+    "screenshot": "search-dialog.png"
   },
   "search.systemDirExclude.heading": "These folders are hidden:",
   "@search.systemDirExclude.heading": {
-    "description": "Heading inside the 'Hide boring folders' tooltip in the Search dialog's scope popover. Introduces the list of folder names that the search skips. The folder names themselves are not translated."
+    "description": "Heading inside the 'Hide boring folders' tooltip in the Search dialog's scope popover. Introduces the list of folder names that the search skips. The folder names themselves are not translated.",
+    "screenshot": "search-dialog.png"
   },
 
   "search.notAFolderToast": "Search results aren''t a folder. Paste into a real folder instead.",

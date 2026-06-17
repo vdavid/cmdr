@@ -37,7 +37,8 @@
 
   "commands.appLicenseKey.enterKey.label": "Enter license key",
   "@commands.appLicenseKey.enterKey.label": {
-    "description": "Command name shown when the user has no license yet: opens the dialog to enter a license key. Appears in the command palette. Paired with commands.appLicenseKey.seeDetails.label, shown instead once a license exists."
+    "description": "Command name shown when the user has no license yet: opens the dialog to enter a license key. Appears in the command palette. Paired with commands.appLicenseKey.seeDetails.label, shown instead once a license exists.",
+    "screenshot": "command-palette.png"
   },
 
   "commands.appCommandPalette.label": "Open command palette",

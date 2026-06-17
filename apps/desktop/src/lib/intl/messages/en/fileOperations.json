@@ -16,7 +16,8 @@
     "description": "Header line in the delete-confirm dialog showing the folder the items are deleted from. The path is abbreviated (home shown as ~).",
     "placeholders": {
       "path": "the source folder path, e.g. ~/Documents"
-    }
+    },
+    "screenshot": "delete-confirm.png"
   },
 
   "fileOperations.delete.noTrashWarningStrong": "This volume doesn''t support trash.",
@@ -31,12 +32,14 @@
 
   "fileOperations.delete.toggleTrash": "Trash",
   "@fileOperations.delete.toggleTrash": {
-    "description": "Label of the segmented-control option that moves items to the system trash (recoverable). Short control label, sits next to the Delete option."
+    "description": "Label of the segmented-control option that moves items to the system trash (recoverable). Short control label, sits next to the Delete option.",
+    "screenshot": "delete-confirm.png"
   },
 
   "fileOperations.delete.toggleDelete": "Delete",
   "@fileOperations.delete.toggleDelete": {
-    "description": "Label of the segmented-control option that permanently deletes items. Short control label, sits next to the Trash option."
+    "description": "Label of the segmented-control option that permanently deletes items. Short control label, sits next to the Trash option.",
+    "screenshot": "delete-confirm.png"
   },
 
   "fileOperations.delete.overflowMore": "... and {countText} more {count, plural, one {item} other {items}}",
@@ -53,7 +56,8 @@
     "description": "Unit noun shown after the live file tally in the delete dialog's scan stats (e.g. '123 files'). The number is rendered separately; this is only the noun.",
     "placeholders": {
       "count": "the file count (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "delete-confirm.png"
   },
 
   "fileOperations.delete.scanDir": "{count, plural, one {dir} other {dirs}}",
@@ -61,7 +65,8 @@
     "description": "Unit noun shown after the live directory tally in the delete dialog's scan stats (e.g. '4 dirs'). 'dir' is the abbreviation of directory/folder. The number is rendered separately.",
     "placeholders": {
       "count": "the directory count (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "delete-confirm.png"
   },
 
   "fileOperations.delete.throughputFiles": "{rateText} files/s",
@@ -74,12 +79,14 @@
 
   "fileOperations.delete.confirmDeletePermanently": "Delete permanently",
   "@fileOperations.delete.confirmDeletePermanently": {
-    "description": "Primary (destructive) confirm button in the delete dialog when permanent delete is selected. Control label."
+    "description": "Primary (destructive) confirm button in the delete dialog when permanent delete is selected. Control label.",
+    "screenshot": "trash-confirm.png"
   },
 
   "fileOperations.delete.confirmMoveToTrash": "Move to trash",
   "@fileOperations.delete.confirmMoveToTrash": {
-    "description": "Primary confirm button in the delete dialog when the trash option is selected. Control label."
+    "description": "Primary confirm button in the delete dialog when the trash option is selected. Control label.",
+    "screenshot": "delete-confirm.png"
   },
 
   "fileOperations.delete.titleCursorFile": "Delete 1 file under cursor",
@@ -89,7 +96,8 @@
 
   "fileOperations.delete.titleCursorFolder": "Delete 1 folder under cursor",
   "@fileOperations.delete.titleCursorFolder": {
-    "description": "Delete dialog title when deleting the single folder the cursor is on (nothing multi-selected)."
+    "description": "Delete dialog title when deleting the single folder the cursor is on (nothing multi-selected).",
+    "screenshot": "delete-confirm.png"
   },
 
   "fileOperations.delete.titleFallback": "Delete",
@@ -139,7 +147,8 @@
 
   "fileOperations.mkfile.title": "New file",
   "@fileOperations.mkfile.title": {
-    "description": "Title of the dialog that creates a new empty file (Shift+F4)."
+    "description": "Title of the dialog that creates a new empty file (Shift+F4).",
+    "screenshot": "new-file-dialog.png"
   },
 
   "fileOperations.mkfile.createIn": "Create file in <dir>{name}</dir>",
@@ -147,17 +156,20 @@
     "description": "Subtitle of the new-file dialog naming the destination folder. <dir> wraps the folder name, which is styled (bold). Keep the sentence; only the folder name is highlighted.",
     "placeholders": {
       "name": "the destination folder's name"
-    }
+    },
+    "screenshot": "new-file-dialog.png"
   },
 
   "fileOperations.mkfile.nameAria": "File name",
   "@fileOperations.mkfile.nameAria": {
-    "description": "Accessibility label for the new file's name text field (screen-reader only)."
+    "description": "Accessibility label for the new file's name text field (screen-reader only).",
+    "screenshot": "new-file-dialog.png"
   },
 
   "fileOperations.mkfile.placeholder": "Example: notes.txt",
   "@fileOperations.mkfile.placeholder": {
-    "description": "Placeholder text inside the new-file name field, showing an example filename. 'notes.txt' is an example file name; translate 'Example' but keep a plausible example filename."
+    "description": "Placeholder text inside the new-file name field, showing an example filename. 'notes.txt' is an example file name; translate 'Example' but keep a plausible example filename.",
+    "screenshot": "new-file-dialog.png"
   },
 
   "fileOperations.mkdir.title": "New folder",
@@ -238,22 +250,26 @@
 
   "fileOperations.transferDialog.toggleCopy": "Copy",
   "@fileOperations.transferDialog.toggleCopy": {
-    "description": "Label of the segmented-control option that sets the operation to copy. Short control label, sits next to Move."
+    "description": "Label of the segmented-control option that sets the operation to copy. Short control label, sits next to Move.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.toggleMove": "Move",
   "@fileOperations.transferDialog.toggleMove": {
-    "description": "Label of the segmented-control option that sets the operation to move. Short control label, sits next to Copy."
+    "description": "Label of the segmented-control option that sets the operation to move. Short control label, sits next to Copy.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.destVolumeAria": "Destination volume",
   "@fileOperations.transferDialog.destVolumeAria": {
-    "description": "Accessibility label for the dropdown that picks which volume (disk/device) the files go to (screen-reader only)."
+    "description": "Accessibility label for the dropdown that picks which volume (disk/device) the files go to (screen-reader only).",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.destPathAria": "Destination path",
   "@fileOperations.transferDialog.destPathAria": {
-    "description": "Accessibility label for the text field holding the destination folder path (screen-reader only)."
+    "description": "Accessibility label for the text field holding the destination folder path (screen-reader only).",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.spaceInfo": "{free} free of {total}",
@@ -262,7 +278,8 @@
     "placeholders": {
       "free": "available space, already formatted (e.g. 12 GB)",
       "total": "total volume size, already formatted (e.g. 500 GB)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.smbNativeNote": "This share uses the system connection. Cancellation may be delayed. Use \"Connect directly\" in the volume picker for faster transfers and reliable cancel.",
@@ -275,7 +292,8 @@
     "description": "Unit noun after the live file tally in the transfer dialog's scan stats (e.g. '123 files'). The number is rendered separately.",
     "placeholders": {
       "count": "the file count (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.scanDir": "{count, plural, one {dir} other {dirs}}",
@@ -283,7 +301,8 @@
     "description": "Unit noun after the live directory tally in the transfer dialog's scan stats (e.g. '4 dirs'). 'dir' abbreviates directory/folder. The number is rendered separately.",
     "placeholders": {
       "count": "the directory count (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.hardlinkNote": "<written></written> will be written. The source is <ondisk></ondisk> on disk – the extra is hardlinked files, which can''t stay linked across drives.",
@@ -293,7 +312,8 @@
 
   "fileOperations.transferDialog.checkingConflicts": "Checking for conflicts...",
   "@fileOperations.transferDialog.checkingConflicts": {
-    "description": "Status shown while the transfer dialog scans the destination for name clashes before the copy/move. Keep the trailing ellipsis."
+    "description": "Status shown while the transfer dialog scans the destination for name clashes before the copy/move. Keep the trailing ellipsis.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.mergeInfoSingle": "1 folder will merge with an existing folder",
@@ -315,7 +335,8 @@
     "placeholders": {
       "countText": "how many clashing files, formatted for display (e.g. 1,234)",
       "count": "the same number (drives the singular/plural verb phrase)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.policySkip": "{count, plural, one {Skip} other {Skip all}}",
@@ -323,7 +344,8 @@
     "description": "Radio option: leave clashing files untouched. Wording is 'Skip' for a single clash, 'Skip all' when there are several. Short control label.",
     "placeholders": {
       "count": "number of clashing files (selects the single vs. 'all' wording)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.policyOverwrite": "{count, plural, one {Overwrite} other {Overwrite all}}",
@@ -331,7 +353,8 @@
     "description": "Radio option: replace clashing files with the ones being transferred. 'Overwrite' for one clash, 'Overwrite all' for several. Short control label.",
     "placeholders": {
       "count": "number of clashing files (selects the single vs. 'all' wording)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.policyOverwriteSmaller": "{count, plural, one {Overwrite if smaller} other {Overwrite all smaller}}",
@@ -339,7 +362,8 @@
     "description": "Radio option: replace a clashing file only when the existing one is smaller. 'Overwrite if smaller' for one clash, 'Overwrite all smaller' for several. Control label.",
     "placeholders": {
       "count": "number of clashing files (selects the single vs. 'all' wording)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.policyOverwriteOlder": "{count, plural, one {Overwrite if older} other {Overwrite all older}}",
@@ -347,7 +371,8 @@
     "description": "Radio option: replace a clashing file only when the existing one is older. 'Overwrite if older' for one clash, 'Overwrite all older' for several. Control label.",
     "placeholders": {
       "count": "number of clashing files (selects the single vs. 'all' wording)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.policyStop": "{count, plural, one {Ask later} other {Ask for each}}",
@@ -355,7 +380,8 @@
     "description": "Radio option: decide per clash during the transfer instead of choosing now. 'Ask later' for one clash, 'Ask for each' for several. Control label.",
     "placeholders": {
       "count": "number of clashing files (selects the single vs. 'each' wording)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.typeMismatchWarning": "Some clashes mix a file and a folder by the same name. Overwriting will replace items of a different type, including the entire contents of a folder.",
@@ -377,7 +403,8 @@
     "placeholders": {
       "verb": "the operation: copy, move, delete, or trash",
       "phrase": "the pre-rendered counts phrase, e.g. '2 files and 3 folders'"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {file} other {files}}",
@@ -386,7 +413,8 @@
     "placeholders": {
       "countText": "how many files (plain number, not grouped)",
       "count": "the same number of files (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.foldersPart": "{countText} {count, plural, one {folder} other {folders}}",
@@ -417,7 +445,8 @@
 
   "fileOperations.transferDialog.confirmCopy": "Copy",
   "@fileOperations.transferDialog.confirmCopy": {
-    "description": "Primary confirm button in the transfer dialog when the operation is copy. Control label."
+    "description": "Primary confirm button in the transfer dialog when the operation is copy. Control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferDialog.confirmMove": "Move",
@@ -427,7 +456,8 @@
 
   "fileOperations.scanPhase.fromLabel": "From:",
   "@fileOperations.scanPhase.fromLabel": {
-    "description": "Label before the source path shown during the scan phase of a transfer, e.g. 'From: /Users/...'. Keep the trailing colon."
+    "description": "Label before the source path shown during the scan phase of a transfer, e.g. 'From: /Users/...'. Keep the trailing colon.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.scanPhase.scanFile": "{count, plural, one {file} other {files}}",
@@ -435,7 +465,8 @@
     "description": "Unit noun after the live file tally during a transfer's scan phase (e.g. '123 files'). The number is rendered separately.",
     "placeholders": {
       "count": "the file count (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.scanPhase.scanDir": "{count, plural, one {dir} other {dirs}}",
@@ -443,7 +474,8 @@
     "description": "Unit noun after the live directory tally during a transfer's scan phase (e.g. '4 dirs'). 'dir' abbreviates directory/folder. The number is rendered separately.",
     "placeholders": {
       "count": "the directory count (drives the singular/plural noun)"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.scanPhase.throughputFiles": "{rateText} files/s",
@@ -496,7 +528,8 @@
 
   "fileOperations.transferProgress.titleConflict": "File already exists",
   "@fileOperations.transferProgress.titleConflict": {
-    "description": "Progress-dialog title when a name clash needs the user to decide what to do. Deliberately plain; the destructive detail is spelled out in the body."
+    "description": "Progress-dialog title when a name clash needs the user to decide what to do. Deliberately plain; the destructive detail is spelled out in the body.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.titleFlushing": "Writing the last piece...",
@@ -509,12 +542,14 @@
     "description": "Progress-dialog title during the operation itself, in the -ing form of the verb. 'Moving to trash' is the trash variant. Keep the trailing ellipsis.",
     "placeholders": {
       "gerund": "the operation: copy, move, delete, or trash"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.stageScanning": "Scanning",
   "@fileOperations.transferProgress.stageScanning": {
-    "description": "Label of the first step chip in the progress dialog's two-step indicator: counting files. Short status label."
+    "description": "Label of the first step chip in the progress dialog's two-step indicator: counting files. Short status label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copying} move {Moving} delete {Deleting} other {Moving to trash}}",
@@ -522,7 +557,8 @@
     "description": "Label of the second step chip in the progress dialog's two-step indicator: the operation in progress, in the -ing form. No trailing ellipsis (this is a step chip, not the title).",
     "placeholders": {
       "gerund": "the operation: copy, move, delete, or trash"
-    }
+    },
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.warningFileOverFolder": "The target exists and is a <strong>folder</strong>. You''re about to overwrite it with a <strong>file</strong> by the same name. All contents of the target folder would be deleted and replaced by the file. What to do?",
@@ -542,7 +578,8 @@
 
   "fileOperations.transferProgress.existingLabel": "Existing:",
   "@fileOperations.transferProgress.existingLabel": {
-    "description": "Row label in the conflict comparison for the item already at the destination, when both items are the same type. Keep the trailing colon."
+    "description": "Row label in the conflict comparison for the item already at the destination, when both items are the same type. Keep the trailing colon.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.newFolderLabel": "New (folder):",
@@ -557,7 +594,8 @@
 
   "fileOperations.transferProgress.newLabel": "New:",
   "@fileOperations.transferProgress.newLabel": {
-    "description": "Row label in the conflict comparison for the incoming item, when both items are the same type. Keep the trailing colon."
+    "description": "Row label in the conflict comparison for the incoming item, when both items are the same type. Keep the trailing colon.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.sizeUnknown": "(unknown)",
@@ -567,12 +605,14 @@
 
   "fileOperations.transferProgress.annotationLarger": "(larger)",
   "@fileOperations.transferProgress.annotationLarger": {
-    "description": "Annotation next to whichever item in the conflict comparison is bigger. Keep the parentheses; it sits inline after a size."
+    "description": "Annotation next to whichever item in the conflict comparison is bigger. Keep the parentheses; it sits inline after a size.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.annotationNewer": "(newer)",
   "@fileOperations.transferProgress.annotationNewer": {
-    "description": "Annotation next to whichever item in the conflict comparison was modified more recently. Keep the parentheses; it sits inline after a date."
+    "description": "Annotation next to whichever item in the conflict comparison was modified more recently. Keep the parentheses; it sits inline after a date.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.smallerDisabledTooltip": "Can''t compare — target folder size is unknown.",
@@ -582,32 +622,38 @@
 
   "fileOperations.transferProgress.conflictSkip": "Skip",
   "@fileOperations.transferProgress.conflictSkip": {
-    "description": "Conflict button: leave this one clashing item untouched. Short control label."
+    "description": "Conflict button: leave this one clashing item untouched. Short control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.conflictSkipAll": "Skip all",
   "@fileOperations.transferProgress.conflictSkipAll": {
-    "description": "Conflict button: leave every remaining clashing item untouched. Short control label."
+    "description": "Conflict button: leave every remaining clashing item untouched. Short control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.conflictRename": "Rename",
   "@fileOperations.transferProgress.conflictRename": {
-    "description": "Conflict button: keep both by giving this incoming item a new name. Short control label."
+    "description": "Conflict button: keep both by giving this incoming item a new name. Short control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.conflictRenameAll": "Rename all",
   "@fileOperations.transferProgress.conflictRenameAll": {
-    "description": "Conflict button: keep both for every remaining clash by renaming the incoming items. Short control label."
+    "description": "Conflict button: keep both for every remaining clash by renaming the incoming items. Short control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.conflictOverwrite": "Overwrite",
   "@fileOperations.transferProgress.conflictOverwrite": {
-    "description": "Conflict button: replace this one existing item with the incoming one. Short control label."
+    "description": "Conflict button: replace this one existing item with the incoming one. Short control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.conflictOverwriteAll": "Overwrite all",
   "@fileOperations.transferProgress.conflictOverwriteAll": {
-    "description": "Conflict button: replace every remaining clashing item with the incoming ones. Short control label."
+    "description": "Conflict button: replace every remaining clashing item with the incoming ones. Short control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.conflictOverwriteFolderWithFile": "Overwrite folder with file",
@@ -622,12 +668,14 @@
 
   "fileOperations.transferProgress.conflictOverwriteAllSmaller": "Overwrite all smaller",
   "@fileOperations.transferProgress.conflictOverwriteAllSmaller": {
-    "description": "Conflict button: replace existing items only where the existing one is smaller than the incoming one. Control label."
+    "description": "Conflict button: replace existing items only where the existing one is smaller than the incoming one. Control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.conflictOverwriteAllOlder": "Overwrite all older",
   "@fileOperations.transferProgress.conflictOverwriteAllOlder": {
-    "description": "Conflict button: replace existing items only where the existing one is older than the incoming one. Control label."
+    "description": "Conflict button: replace existing items only where the existing one is older than the incoming one. Control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.conflictCancel": "Cancel",
@@ -637,12 +685,14 @@
 
   "fileOperations.transferProgress.conflictRollback": "Rollback",
   "@fileOperations.transferProgress.conflictRollback": {
-    "description": "Button in the conflict step that stops and undoes the operation so far (deletes the partial files it created). 'Rollback' means undoing the work done so far."
+    "description": "Button in the conflict step that stops and undoes the operation so far (deletes the partial files it created). 'Rollback' means undoing the work done so far.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.progressSize": "Size",
   "@fileOperations.transferProgress.progressSize": {
-    "description": "Label for the byte-progress bar in the progress dialog (how many bytes done out of total). Short label."
+    "description": "Label for the byte-progress bar in the progress dialog (how many bytes done out of total). Short label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.progressItems": "Items",
@@ -652,17 +702,20 @@
 
   "fileOperations.transferProgress.progressFiles": "Files",
   "@fileOperations.transferProgress.progressFiles": {
-    "description": "Label for the count-progress bar during copy/move/delete, where the unit is files. Short label."
+    "description": "Label for the count-progress bar during copy/move/delete, where the unit is files. Short label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.sizeProgressAria": "Size progress",
   "@fileOperations.transferProgress.sizeProgressAria": {
-    "description": "Accessibility label for the byte-progress bar (screen-reader only)."
+    "description": "Accessibility label for the byte-progress bar (screen-reader only).",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.fileProgressAria": "File progress",
   "@fileOperations.transferProgress.fileProgressAria": {
-    "description": "Accessibility label for the count-progress bar (screen-reader only)."
+    "description": "Accessibility label for the count-progress bar (screen-reader only).",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.etaRemaining": "~{duration} remaining",
@@ -680,7 +733,8 @@
 
   "fileOperations.transferProgress.rollbackTooltip": "Cancel and delete any partial target files created",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "description": "Tooltip on the Rollback button explaining it stops the operation and removes the half-written files it created so far."
+    "description": "Tooltip on the Rollback button explaining it stops the operation and removes the half-written files it created so far.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.errorDialog.technicalDetails": "Technical details",

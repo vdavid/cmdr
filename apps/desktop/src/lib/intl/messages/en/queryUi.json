@@ -9,7 +9,8 @@
   },
   "queryUi.bar.placeholder.filename": "Filename pattern (use * and ? as wildcards)",
   "@queryUi.bar.placeholder.filename": {
-    "description": "Placeholder text in the search input while Filename mode is active. The user types a filename pattern. The '*' and '?' are wildcard characters and must stay literal, not translated."
+    "description": "Placeholder text in the search input while Filename mode is active. The user types a filename pattern. The '*' and '?' are wildcard characters and must stay literal, not translated.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.bar.aria.ai": "Natural language search query",
   "@queryUi.bar.aria.ai": {
@@ -21,7 +22,8 @@
   },
   "queryUi.bar.aria.filename": "Filename search pattern",
   "@queryUi.bar.aria.filename": {
-    "description": "Accessibility label for the search input in Filename mode, read by screen readers."
+    "description": "Accessibility label for the search input in Filename mode, read by screen readers.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.bar.runTitle.ai": "Run AI search",
   "@queryUi.bar.runTitle.ai": {
@@ -29,7 +31,8 @@
   },
   "queryUi.bar.runTitle.default": "Run search",
   "@queryUi.bar.runTitle.default": {
-    "description": "Tooltip and accessibility label for the run button next to the search input in filename and regex modes."
+    "description": "Tooltip and accessibility label for the run button next to the search input in filename and regex modes.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.bar.runHint": "Press Enter to search",
   "@queryUi.bar.runHint": {
@@ -37,7 +40,8 @@
   },
   "queryUi.bar.runLabel": "Search",
   "@queryUi.bar.runLabel": {
-    "description": "Label on the run button at the right edge of the search input. A keyboard-shortcut glyph may appear next to it. Tight control: keep it short."
+    "description": "Label on the run button at the right edge of the search input. A keyboard-shortcut glyph may appear next to it. Tight control: keep it short.",
+    "screenshot": "search-dialog.png"
   },
 
   "queryUi.mode.ai.label": "Ask anything",
@@ -50,44 +54,54 @@
   },
   "queryUi.mode.filename.label": "Filename",
   "@queryUi.mode.filename.label": {
-    "description": "Label of the Filename mode chip in the search dialog's mode row. Switches to matching files by filename pattern. Tight chip: keep it short."
+    "description": "Label of the Filename mode chip in the search dialog's mode row. Switches to matching files by filename pattern. Tight chip: keep it short.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.mode.filename.aria": "Filename mode (Alt+F)",
   "@queryUi.mode.filename.aria": {
-    "description": "Accessibility label for the Filename mode chip, naming the mode and its keyboard shortcut. 'Alt' is the keyboard modifier key name."
+    "description": "Accessibility label for the Filename mode chip, naming the mode and its keyboard shortcut. 'Alt' is the keyboard modifier key name.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.mode.content.label": "Content",
   "@queryUi.mode.content.label": {
-    "description": "Label of the Content mode chip in the search dialog's mode row. This chip is visible but disabled: it previews a not-yet-available full-text search feature. Tight chip: keep it short."
+    "description": "Label of the Content mode chip in the search dialog's mode row. This chip is visible but disabled: it previews a not-yet-available full-text search feature. Tight chip: keep it short.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.mode.content.tooltip": "Coming soon: full-text search inside files",
   "@queryUi.mode.content.tooltip": {
-    "description": "Tooltip on the disabled Content mode chip, explaining it will later search the text inside files."
+    "description": "Tooltip on the disabled Content mode chip, explaining it will later search the text inside files.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.mode.content.aria": "Content mode (coming soon)",
   "@queryUi.mode.content.aria": {
-    "description": "Accessibility label for the disabled Content mode chip, noting it is not yet available."
+    "description": "Accessibility label for the disabled Content mode chip, noting it is not yet available.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.mode.regex.label": "Regex",
   "@queryUi.mode.regex.label": {
-    "description": "Label of the Regex mode chip in the search dialog's mode row. Switches to matching filenames with a regular expression. 'Regex' is short for regular expression; keep it short, it's a tight chip."
+    "description": "Label of the Regex mode chip in the search dialog's mode row. Switches to matching filenames with a regular expression. 'Regex' is short for regular expression; keep it short, it's a tight chip.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.mode.regex.aria": "Regex mode (Alt+R)",
   "@queryUi.mode.regex.aria": {
-    "description": "Accessibility label for the Regex mode chip, naming the mode and its keyboard shortcut. 'Alt' is the keyboard modifier key name."
+    "description": "Accessibility label for the Regex mode chip, naming the mode and its keyboard shortcut. 'Alt' is the keyboard modifier key name.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.mode.groupAria": "Search mode",
   "@queryUi.mode.groupAria": {
-    "description": "Accessibility label for the whole mode-chip row (the group of mode chips), read by screen readers."
+    "description": "Accessibility label for the whole mode-chip row (the group of mode chips), read by screen readers.",
+    "screenshot": "search-dialog.png"
   },
 
   "queryUi.empty.tryLine": "Try…",
   "@queryUi.empty.tryLine": {
-    "description": "Small heading above the example-query chips in the search dialog's empty state, before the user has searched. Invites the user to try one of the example queries below it. Ends with an ellipsis."
+    "description": "Small heading above the example-query chips in the search dialog's empty state, before the user has searched. Invites the user to try one of the example queries below it. Ends with an ellipsis.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.empty.tip": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘H</historyKey> shows recent searches.",
   "@queryUi.empty.tip": {
-    "description": "Keyboard tip at the bottom of the search dialog's empty state, when AI search is off. The <newKey> and <historyKey> tags wrap keyboard-shortcut glyphs (rendered as small key badges); keep them around the shortcut text and keep the surrounding sentence reading naturally. The glyphs ⌘N and ⌘H are macOS shortcuts and must stay as-is."
+    "description": "Keyboard tip at the bottom of the search dialog's empty state, when AI search is off. The <newKey> and <historyKey> tags wrap keyboard-shortcut glyphs (rendered as small key badges); keep them around the shortcut text and keep the surrounding sentence reading naturally. The glyphs ⌘N and ⌘H are macOS shortcuts and must stay as-is.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.empty.tipAi": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘H</historyKey> shows recent searches, <aiKey>⌘Enter</aiKey> runs an AI search.",
   "@queryUi.empty.tipAi": {
@@ -100,7 +114,8 @@
     "placeholders": {
       "countText": "the number of indexed entries, already formatted for display (for example 1,234,567)",
       "count": "the same number of entries (drives the singular/plural form of the noun)"
-    }
+    },
+    "screenshot": "search-dialog.png"
   },
 
   "queryUi.ai.lead": "Here''s what the agent did:",
@@ -162,23 +177,28 @@
 
   "queryUi.results.col.name": "Name",
   "@queryUi.results.col.name": {
-    "description": "Column header for the filename column in the search results table."
+    "description": "Column header for the filename column in the search results table.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.results.col.path": "Path",
   "@queryUi.results.col.path": {
-    "description": "Column header for the parent-folder path column in the search results table."
+    "description": "Column header for the parent-folder path column in the search results table.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.results.col.size": "Size",
   "@queryUi.results.col.size": {
-    "description": "Column header for the file-size column in the search results table. Right-aligned."
+    "description": "Column header for the file-size column in the search results table. Right-aligned.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.results.col.modified": "Modified",
   "@queryUi.results.col.modified": {
-    "description": "Column header for the last-modified-date column in the search results table. Right-aligned."
+    "description": "Column header for the last-modified-date column in the search results table. Right-aligned.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.results.col.actions": "Actions",
   "@queryUi.results.col.actions": {
-    "description": "Column header for the per-row actions menu column in the search results table. Right-aligned."
+    "description": "Column header for the per-row actions menu column in the search results table. Right-aligned.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.results.listboxAria": "Search results",
   "@queryUi.results.listboxAria": {
@@ -205,7 +225,8 @@
     "description": "Status-bar text shown when the drive index is ready and no search has run yet, reporting how many files it holds. Note: this count uses a compact short form, not the locale-grouped form.",
     "placeholders": {
       "countText": "the number of indexed entries, in a compact form (for example 12.3K or 1.2M)"
-    }
+    },
+    "screenshot": "search-dialog.png"
   },
   "queryUi.results.resultCount": "{shownText} of {totalText} results",
   "@queryUi.results.resultCount": {
@@ -272,39 +293,48 @@
 
   "queryUi.recent.leadingLabel": "Recent searches:",
   "@queryUi.recent.leadingLabel": {
-    "description": "Label at the left of the recent-searches strip at the bottom of the search dialog, before the recent-search chips. Ends with a colon."
+    "description": "Label at the left of the recent-searches strip at the bottom of the search dialog, before the recent-search chips. Ends with a colon.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.recent.trailingLabel": "All searches…",
   "@queryUi.recent.trailingLabel": {
-    "description": "Label on the trailing button of the recent-searches strip; opens a popover listing the full search history. A keyboard-shortcut glyph appears next to it. Ends with an ellipsis."
+    "description": "Label on the trailing button of the recent-searches strip; opens a popover listing the full search history. A keyboard-shortcut glyph appears next to it. Ends with an ellipsis.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.recent.trailingTooltip": "Show all recent searches",
   "@queryUi.recent.trailingTooltip": {
-    "description": "Tooltip on the 'All searches…' button at the right of the recent-searches strip."
+    "description": "Tooltip on the 'All searches…' button at the right of the recent-searches strip.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.recent.regionAria": "Recent searches",
   "@queryUi.recent.regionAria": {
-    "description": "Accessibility label for the recent-searches strip region, read by screen readers."
+    "description": "Accessibility label for the recent-searches strip region, read by screen readers.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.recent.allButtonAria": "All recent searches",
   "@queryUi.recent.allButtonAria": {
-    "description": "Accessibility label for the 'All searches…' button, read by screen readers."
+    "description": "Accessibility label for the 'All searches…' button, read by screen readers.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.recent.filterPlaceholder": "Filter recent searches",
   "@queryUi.recent.filterPlaceholder": {
-    "description": "Placeholder and accessibility label for the filter input at the top of the recent-searches popover, which fuzzy-filters the search history as the user types."
+    "description": "Placeholder and accessibility label for the filter input at the top of the recent-searches popover, which fuzzy-filters the search history as the user types.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.recent.emptyMessage": "No recent searches match that filter.",
   "@queryUi.recent.emptyMessage": {
-    "description": "Shown in the recent-searches popover when the filter text matches none of the history entries."
+    "description": "Shown in the recent-searches popover when the filter text matches none of the history entries.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.recent.popoverAria": "All recent searches",
   "@queryUi.recent.popoverAria": {
-    "description": "Accessibility label for the recent-searches popover wrapper, read by screen readers."
+    "description": "Accessibility label for the recent-searches popover wrapper, read by screen readers.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.recent.listboxAria": "Recent searches",
   "@queryUi.recent.listboxAria": {
-    "description": "Accessibility label for the list of entries inside the recent-searches popover, read by screen readers."
+    "description": "Accessibility label for the list of entries inside the recent-searches popover, read by screen readers.",
+    "screenshot": "search-dialog.png"
   },
 
   "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> to move · <runKey>Enter</runKey> to run · right-click to remove",
@@ -322,7 +352,8 @@
   },
   "queryUi.recent.mode.filename": "Filename",
   "@queryUi.recent.mode.filename": {
-    "description": "Friendly name of the Filename search mode, used in recent-search chip tooltips."
+    "description": "Friendly name of the Filename search mode, used in recent-search chip tooltips.",
+    "screenshot": "search-dialog.png"
   },
 
   "queryUi.age.justNow": "just now",
@@ -348,14 +379,16 @@
     "description": "Relative-time label in a recent-search chip tooltip, in days ago. The 'd' abbreviates days; keep it terse.",
     "placeholders": {
       "count": "the number of days ago"
-    }
+    },
+    "screenshot": "search-dialog.png"
   },
   "queryUi.age.weeks": "{count}w ago",
   "@queryUi.age.weeks": {
     "description": "Relative-time label in a recent-search chip tooltip, in weeks ago. The 'w' abbreviates weeks; keep it terse.",
     "placeholders": {
       "count": "the number of weeks ago"
-    }
+    },
+    "screenshot": "select-dialog.png"
   },
   "queryUi.age.months": "{count}mo ago",
   "@queryUi.age.months": {
@@ -391,7 +424,8 @@
     "description": "Last line of a recent-search chip's hover tooltip. Reminds the user how many matches that past search returned when it last ran. This line only renders when the count is at least 1, but it reads 'results' regardless of count.",
     "placeholders": {
       "countText": "the number of results, shown as a plain integer (no grouping)"
-    }
+    },
+    "screenshot": "search-dialog.png"
   },
   "queryUi.recent.sizeRange": "size {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {
@@ -444,12 +478,14 @@
     "placeholders": {
       "mode": "the search mode name, already translated (AI, Regex, or Filename)",
       "age": "the relative time, already translated (for example '3d ago')"
-    }
+    },
+    "screenshot": "search-dialog.png"
   },
 
   "queryUi.dialog.actionsAria": "Dialog actions",
   "@queryUi.dialog.actionsAria": {
-    "description": "Accessibility label for the group of primary/secondary buttons in the search dialog footer, read by screen readers."
+    "description": "Accessibility label for the group of primary/secondary buttons in the search dialog footer, read by screen readers.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.dialog.aiTranslateFailedToast": "Couldn''t run the AI search just now. Try again?",
   "@queryUi.dialog.aiTranslateFailedToast": {
@@ -458,39 +494,48 @@
 
   "queryUi.filters.toolbarAria": "Search filters",
   "@queryUi.filters.toolbarAria": {
-    "description": "Accessibility label for the filter-chip strip (type toggle plus Pattern, Size, Modified, and Search-in chips), read by screen readers."
+    "description": "Accessibility label for the filter-chip strip (type toggle plus Pattern, Size, Modified, and Search-in chips), read by screen readers.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.filters.type.both": "Both",
   "@queryUi.filters.type.both": {
-    "description": "Option in the file-type toggle at the start of the filter strip: match both files and folders. The default. Tight toggle cell: keep it short."
+    "description": "Option in the file-type toggle at the start of the filter strip: match both files and folders. The default. Tight toggle cell: keep it short.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.filters.type.files": "Files",
   "@queryUi.filters.type.files": {
-    "description": "Option in the file-type toggle: match files only. Tight toggle cell: keep it short."
+    "description": "Option in the file-type toggle: match files only. Tight toggle cell: keep it short.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.filters.type.folders": "Folders",
   "@queryUi.filters.type.folders": {
-    "description": "Option in the file-type toggle: match folders only. Tight toggle cell: keep it short."
+    "description": "Option in the file-type toggle: match folders only. Tight toggle cell: keep it short.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.filters.type.aria": "Filter by type",
   "@queryUi.filters.type.aria": {
-    "description": "Accessibility label for the file-type toggle (Both / Files / Folders), read by screen readers."
+    "description": "Accessibility label for the file-type toggle (Both / Files / Folders), read by screen readers.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.filters.chip.pattern": "Pattern",
   "@queryUi.filters.chip.pattern": {
-    "description": "Label of the Pattern filter chip, which surfaces the active filename, regex, or AI-produced match pattern. Tight chip: keep it short."
+    "description": "Label of the Pattern filter chip, which surfaces the active filename, regex, or AI-produced match pattern. Tight chip: keep it short.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.filters.chip.size": "Size",
   "@queryUi.filters.chip.size": {
-    "description": "Label of the Size filter chip, which opens a popover to filter results by file size. Tight chip: keep it short."
+    "description": "Label of the Size filter chip, which opens a popover to filter results by file size. Tight chip: keep it short.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.filters.chip.modified": "Modified",
   "@queryUi.filters.chip.modified": {
-    "description": "Label of the Modified filter chip, which opens a popover to filter results by last-modified date. Tight chip: keep it short."
+    "description": "Label of the Modified filter chip, which opens a popover to filter results by last-modified date. Tight chip: keep it short.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.filters.chip.scope": "Search in",
   "@queryUi.filters.chip.scope": {
-    "description": "Label of the scope filter chip, which opens a popover to limit search to specific folders. Tight chip: keep it short."
+    "description": "Label of the scope filter chip, which opens a popover to limit search to specific folders. Tight chip: keep it short.",
+    "screenshot": "search-dialog.png"
   },
 
   "queryUi.filters.scope.includesSystemFolders": "includes system folders",
@@ -543,11 +588,13 @@
 
   "queryUi.size.comparator.any": "any",
   "@queryUi.size.comparator.any": {
-    "description": "First option in the Size popover's comparator column: no size limit. Lowercase; reads as a cell in a list of choices."
+    "description": "First option in the Size popover's comparator column: no size limit. Lowercase; reads as a cell in a list of choices.",
+    "screenshot": "filter-popover.png"
   },
   "queryUi.size.comparator.between": "between",
   "@queryUi.size.comparator.between": {
-    "description": "Option in the Size popover's comparator column: size is between a lower and an upper bound. Lowercase; reads as a cell in a list of choices. (The other comparators are math glyphs and aren't translated.)"
+    "description": "Option in the Size popover's comparator column: size is between a lower and an upper bound. Lowercase; reads as a cell in a list of choices. (The other comparators are math glyphs and aren't translated.)",
+    "screenshot": "filter-popover.png"
   },
   "queryUi.size.unit.byte": "byte",
   "@queryUi.size.unit.byte": {
@@ -555,11 +602,13 @@
   },
   "queryUi.size.unit.bytes": "bytes",
   "@queryUi.size.unit.bytes": {
-    "description": "Plural byte unit label in the Size popover's unit column, shown for any value other than 1. The full word, not the 'B' abbreviation."
+    "description": "Plural byte unit label in the Size popover's unit column, shown for any value other than 1. The full word, not the 'B' abbreviation.",
+    "screenshot": "filter-popover.png"
   },
   "queryUi.size.customCell": "custom…",
   "@queryUi.size.customCell": {
-    "description": "Cell in the Size popover's value column that, when clicked, reveals a free-form number input. Lowercase with an ellipsis."
+    "description": "Cell in the Size popover's value column that, when clicked, reveals a free-form number input. Lowercase with an ellipsis.",
+    "screenshot": "filter-popover.png"
   },
   "queryUi.size.customInputPlaceholder": "custom",
   "@queryUi.size.customInputPlaceholder": {
@@ -567,23 +616,28 @@
   },
   "queryUi.size.popover.label": "Size",
   "@queryUi.size.popover.label": {
-    "description": "Header label of the Size filter popover."
+    "description": "Header label of the Size filter popover.",
+    "screenshot": "filter-popover.png"
   },
   "queryUi.size.popover.aria": "Size filter options",
   "@queryUi.size.popover.aria": {
-    "description": "Accessibility label for the Size filter popover and its option grid, read by screen readers."
+    "description": "Accessibility label for the Size filter popover and its option grid, read by screen readers.",
+    "screenshot": "filter-popover.png"
   },
   "queryUi.size.aria.comparator": "Comparator",
   "@queryUi.size.aria.comparator": {
-    "description": "Accessibility label for the comparator column (any / ≥ / ≤ / = / between) in the Size popover. A comparator is the kind of size comparison being made."
+    "description": "Accessibility label for the comparator column (any / ≥ / ≤ / = / between) in the Size popover. A comparator is the kind of size comparison being made.",
+    "screenshot": "filter-popover.png"
   },
   "queryUi.size.aria.minValue": "Minimum size value",
   "@queryUi.size.aria.minValue": {
-    "description": "Accessibility label for the lower-bound value column in the Size popover."
+    "description": "Accessibility label for the lower-bound value column in the Size popover.",
+    "screenshot": "filter-popover.png"
   },
   "queryUi.size.aria.minUnit": "Minimum size unit",
   "@queryUi.size.aria.minUnit": {
-    "description": "Accessibility label for the lower-bound unit column in the Size popover."
+    "description": "Accessibility label for the lower-bound unit column in the Size popover.",
+    "screenshot": "filter-popover.png"
   },
   "queryUi.size.aria.maxValue": "Maximum size value",
   "@queryUi.size.aria.maxValue": {
