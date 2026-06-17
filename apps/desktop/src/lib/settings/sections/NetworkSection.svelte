@@ -25,7 +25,6 @@
     const directSmbDef = getSettingDefinition('network.directSmbConnection') ?? defaultDef
     const cacheDurationDef = getSettingDefinition('network.shareCacheDuration') ?? defaultDef
     const timeoutModeDef = getSettingDefinition('network.timeoutMode') ?? defaultDef
-    const smbConcurrencyDef = getSettingDefinition('network.smbConcurrency') ?? defaultDef
 
     function handlePrivacyLinkClick(event: MouseEvent) {
         event.preventDefault()
@@ -86,7 +85,7 @@
         </SectionCard>
     {/if}
 
-    {#if anyVisible(shouldShow, 'network.shareCacheDuration', 'network.timeoutMode', 'network.smbConcurrency')}
+    {#if anyVisible(shouldShow, 'network.shareCacheDuration', 'network.timeoutMode')}
         <SectionCard label={tString('settings.network.card.performanceAndTimeouts')}>
             {#if shouldShow('network.shareCacheDuration')}
                 <SettingRow
@@ -122,18 +121,6 @@
                             {/snippet}
                         </SettingRadioGroup>
                     </div>
-                </SettingRow>
-            {/if}
-
-            {#if shouldShow('network.smbConcurrency')}
-                <SettingRow
-                    id="network.smbConcurrency"
-                    label={smbConcurrencyDef.label}
-                    description={smbConcurrencyDef.description}
-                    split
-                    {searchQuery}
-                >
-                    <SettingNumberInput id="network.smbConcurrency" />
                 </SettingRow>
             {/if}
         </SectionCard>

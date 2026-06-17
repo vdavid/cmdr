@@ -3,10 +3,9 @@
  *
  * Pins three things:
  *   1. The page renders two cards: Connection and Performance and timeouts.
- *   2. `network.smbConcurrency` (a `showInAdvanced` mirror) renders in the
- *      Performance card. It's load-bearing: if it didn't render here, a
- *      globally-searchable Advanced would match this page and then show a blank
- *      section.
+ *   2. `network.smbConcurrency` does NOT render here: it lives only in Advanced
+ *      now (its single home), so the Performance card holds share cache and
+ *      timeout rows but not concurrency.
  *   3. Card grouping under search: a search matching only a Connection-card term
  *      leaves NO empty "Performance and timeouts" frame standing (card
  *      visibility is section-owned via `anyVisible`).
@@ -23,7 +22,6 @@ vi.mock('$lib/settings/settings-store', () => ({
     if (key === 'network.shareCacheDuration') return 30000
     if (key === 'network.timeoutMode') return 'normal'
     if (key === 'network.customTimeout') return 15
-    if (key === 'network.smbConcurrency') return 10
     return undefined
   }),
   setSetting: vi.fn(() => Promise.resolve()),
@@ -57,11 +55,13 @@ describe('NetworkSection card groups', () => {
     target.remove()
   })
 
-  it('renders the mirrored smbConcurrency row in the Performance card', async () => {
+  it('does not render the smbConcurrency row (it lives only in Advanced now)', async () => {
     const target = await mountSection()
     // `SettingRow` renders `<label for={id}>`, so each row's `for` identifies its setting.
     const labelFors = Array.from(target.querySelectorAll('label.setting-label')).map((el) => el.getAttribute('for'))
-    expect(labelFors).toContain('network.smbConcurrency')
+    expect(labelFors).not.toContain('network.smbConcurrency')
+    // The Performance card still holds its own rows.
+    expect(labelFors).toContain('network.shareCacheDuration')
     target.remove()
   })
 

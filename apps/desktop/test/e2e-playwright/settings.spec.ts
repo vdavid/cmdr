@@ -183,8 +183,8 @@ test.describe('Settings page', () => {
     expect(styles.borderRightWidth).not.toBe('0px')
   })
 
-  test('Advanced section renders auto-generated rows for showInAdvanced entries', async () => {
-    // The Advanced page is registry-driven: every `showInAdvanced: true` entry becomes a
+  test('Advanced section renders auto-generated rows for its registry entries', async () => {
+    // The Advanced page is registry-driven: every `section: ['Advanced']` entry becomes a
     // `.advanced-setting-row`. A regression in the iteration / filtering would silently
     // empty this page out, so this asserts both shape (rows render) and content (a known
     // entry surfaces with its label).
@@ -204,8 +204,7 @@ test.describe('Settings page', () => {
     )
     // 16 entries today; assert >= 10 so adding/removing a handful doesn't churn the test.
     expect(probe.rowCount).toBeGreaterThanOrEqual(10)
-    // Sample entries from both the genuinely-Advanced bucket and the ones that surface
-    // there via `showInAdvanced: true` despite living under another section path.
+    // Sample entries, including the three former mirrors now re-homed to Advanced-only.
     expect(probe.names).toContain('Prefetch buffer size')
     expect(probe.names).toContain('Maximum conflicts to show')
     expect(probe.names).toContain('Progress update interval')

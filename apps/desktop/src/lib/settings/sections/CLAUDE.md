@@ -18,7 +18,7 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 
 - **Adding a setting to an existing section means hand-rendering its row HERE.** A `settings-registry.ts` entry alone
   doesn't render: add a `SettingRow` (with the matching control + a `shouldShow(id)` guard) to the section component, or
-  the setting is invisible. Only `AdvancedSection` auto-renders (`showInAdvanced`). Full checklist:
+  the setting is invisible. Only `AdvancedSection` auto-renders (`section: ['Advanced']`). Full checklist:
   [adding a new setting](../../../../../../docs/guides/adding-a-new-setting.md).
 - **Adding a section: register the route in `SettingsContent.svelte` AND the top-level entry in `TOP_LEVEL_ORDER`
   (`SettingsSidebar.svelte`), and mirror it in `apps/desktop/test/e2e-playwright/settings.spec.ts`.** Sections are
@@ -49,8 +49,9 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   digest; never store/log the raw key. See DETAILS § "The model picker loads on open".
 - **Don't push the AI config from a section.** Sections just call `setSetting(...)`; hot-apply is wired in
   `settings-applier.ts` → `ai-config.ts::pushConfigToBackend()` (re-reads fresh). See parent CLAUDE.md.
-- **Don't hand-render anything tagged `showInAdvanced: true`** (it auto-renders in `AdvancedSection`), unless you're
-  deliberately mirroring a setting in a second section for discoverability.
+- **Don't hand-render a `section: ['Advanced']` setting on a feature page** (it auto-renders in `AdvancedSection`; a
+  setting's `section` is its ONE home). The canonical/mirror pattern is only for a setting that belongs on two FEATURE
+  pages, never to surface an Advanced setting elsewhere.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

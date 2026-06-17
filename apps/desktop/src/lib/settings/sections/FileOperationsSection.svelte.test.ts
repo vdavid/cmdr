@@ -1,14 +1,10 @@
 /**
  * Tier-3 tests for `FileOperationsSection.svelte` (Behavior › File operations).
  *
- * Pins two things:
- *   1. The two `showInAdvanced` mirror rows (`fileOperations.maxConflictsToShow`,
- *      `fileOperations.progressUpdateInterval`) render on this page. They're
- *      load-bearing: if they didn't render here, a globally-searchable Advanced
- *      would match this page and then show a blank section.
- *   2. Card grouping under search: a search matching only the Renaming card's
- *      row leaves NO empty "Conflicts and progress" frame standing (card
- *      visibility is section-owned via `anyVisible`).
+ * The page holds ONLY `fileOperations.allowFileExtensionChanges` now: the
+ * conflict/progress settings live in Advanced (their single home), never
+ * mirrored here. So the page renders one unlabeled `SectionCard` with that one
+ * row, and the former mirror rows must NOT appear.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -18,8 +14,6 @@ import FileOperationsSection from './FileOperationsSection.svelte'
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'fileOperations.allowFileExtensionChanges') return 'ask'
-    if (key === 'fileOperations.progressUpdateInterval') return 500
-    if (key === 'fileOperations.maxConflictsToShow') return 100
     return undefined
   }),
   setSetting: vi.fn(() => Promise.resolve()),
@@ -41,28 +35,28 @@ function cardLabels(target: HTMLElement): string[] {
   return Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
 }
 
-describe('FileOperationsSection card groups', () => {
-  it('renders both cards with no search', async () => {
+describe('FileOperationsSection', () => {
+  it('renders a single unlabeled card holding only the renaming row', async () => {
     const target = await mountSection()
-    expect(cardLabels(target)).toEqual(expect.arrayContaining(['Renaming', 'Conflicts and progress']))
-    target.remove()
-  })
-
-  it('renders the two mirrored Conflicts-and-progress rows on this page', async () => {
-    const target = await mountSection()
-    // `SettingRow` renders `<label for={id}>`, so each row's `for` identifies its setting.
-    const labelFors = Array.from(target.querySelectorAll('label.setting-label')).map((el) => el.getAttribute('for'))
-    expect(labelFors).toContain('fileOperations.maxConflictsToShow')
-    expect(labelFors).toContain('fileOperations.progressUpdateInterval')
-    target.remove()
-  })
-
-  it('shows only the Renaming card when searching an extension term, leaving no empty cards', async () => {
-    const target = await mountSection('extension')
-    const labels = cardLabels(target)
-    expect(labels).toContain('Renaming')
-    expect(labels).not.toContain('Conflicts and progress')
     expect(target.querySelectorAll('.section-card')).toHaveLength(1)
+    // Unlabeled card: no `.section-card-label` heading.
+    expect(cardLabels(target)).toEqual([])
+    const labelFors = Array.from(target.querySelectorAll('label.setting-label')).map((el) => el.getAttribute('for'))
+    expect(labelFors).toContain('fileOperations.allowFileExtensionChanges')
+    target.remove()
+  })
+
+  it('does not render the former Advanced mirror rows', async () => {
+    const target = await mountSection()
+    const labelFors = Array.from(target.querySelectorAll('label.setting-label')).map((el) => el.getAttribute('for'))
+    expect(labelFors).not.toContain('fileOperations.maxConflictsToShow')
+    expect(labelFors).not.toContain('fileOperations.progressUpdateInterval')
+    target.remove()
+  })
+
+  it('hides the card entirely when the search matches nothing on this page', async () => {
+    const target = await mountSection('zzznomatch')
+    expect(target.querySelectorAll('.section-card')).toHaveLength(0)
     target.remove()
   })
 })

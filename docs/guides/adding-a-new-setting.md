@@ -51,8 +51,10 @@ The control components live in `settings/components/` (`SettingSwitch`, `Setting
 `SettingSlider`, `SettingRadioGroup`, `SettingToggleGroup`, `SettingCheckbox`, `SettingColorSwatchPicker`); pick the one
 matching your `component`.
 
-**The one exception:** `AdvancedSection` auto-renders any setting tagged `showInAdvanced: true` from the registry, so
-don't hand-render those there. Every other section is bespoke: no row, no render.
+**The one exception:** `AdvancedSection` auto-renders every `section: ['Advanced']` setting from the registry. To make a
+setting obscure, give it `section: ['Advanced']` plus a `cardKey` (its Advanced card group) and skip step 2 entirely —
+don't hand-render it. A setting's `section` is its ONE home: it's either an Advanced auto-rendered row OR a
+hand-rendered feature-page row, never both. Every non-Advanced section is bespoke: no row, no render.
 
 ## 3. If it changes backend behavior, wire live-apply
 

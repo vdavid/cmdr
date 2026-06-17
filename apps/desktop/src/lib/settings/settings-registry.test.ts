@@ -84,12 +84,29 @@ describe('getSettingsInSection', () => {
 })
 
 describe('getAdvancedSettings', () => {
-  it('should return settings marked as showInAdvanced', () => {
+  it('should return the settings whose single home is Advanced', () => {
     const advanced = getAdvancedSettings()
     expect(advanced.length).toBeGreaterThan(0)
     for (const setting of advanced) {
-      expect(setting.showInAdvanced).toBe(true)
+      expect(setting.section[0]).toBe('Advanced')
+      expect(setting.hidden).not.toBe(true)
     }
+  })
+
+  it('should include the repointed former mirrors and exclude them from their old feature pages', () => {
+    const advancedIds = new Set(getAdvancedSettings().map((s) => s.id))
+    // The three former mirrors now live only in Advanced.
+    expect(advancedIds.has('network.smbConcurrency')).toBe(true)
+    expect(advancedIds.has('fileOperations.maxConflictsToShow')).toBe(true)
+    expect(advancedIds.has('fileOperations.progressUpdateInterval')).toBe(true)
+    // And the two Recent* caps.
+    expect(advancedIds.has('search.recentSearches.maxCount')).toBe(true)
+    expect(advancedIds.has('selection.recentSelections.maxCount')).toBe(true)
+
+    // None of them is reachable through the nav tree (Advanced auto-renders instead).
+    expect(getSettingDefinition('network.smbConcurrency')?.section).toEqual(['Advanced'])
+    expect(getSettingDefinition('fileOperations.maxConflictsToShow')?.section).toEqual(['Advanced'])
+    expect(getSettingDefinition('fileOperations.progressUpdateInterval')?.section).toEqual(['Advanced'])
   })
 })
 
@@ -189,7 +206,7 @@ describe('search.recentSearches.maxCount', () => {
     expect(def).toBeDefined()
     expect(def?.type).toBe('number')
     expect(def?.default).toBe(1000)
-    expect(def?.showInAdvanced).toBe(true)
+    expect(def?.section).toEqual(['Advanced'])
     expect(def?.component).toBe('number-input')
     expect(def?.constraints?.min).toBe(0)
     expect(def?.constraints?.max).toBe(10000)
@@ -277,6 +294,49 @@ describe('buildSectionTree', () => {
       expect(section.path).toEqual([section.name])
     }
   })
+
+  it('includes Advanced as a top-level node holding its settings (no longer skipped)', () => {
+    const tree = buildSectionTree()
+    const advanced = tree.find((s) => s.name === 'Advanced')
+    expect(advanced).toBeDefined()
+    expect(advanced?.path).toEqual(['Advanced'])
+    expect(advanced?.subsections).toHaveLength(0)
+    const ids = advanced?.settings.map((s) => s.id) ?? []
+    expect(ids).toContain('network.smbConcurrency')
+    expect(ids).toContain('advanced.prefetchBufferSize')
+  })
+
+  it('gives every setting exactly one home: Advanced auto-render XOR a non-Advanced tree node', () => {
+    // The M8 invariant. `getAdvancedSettings()` is what AdvancedSection auto-renders;
+    // the tree (sans Advanced) is what feature pages hand-render. No id may be in both,
+    // and together (plus hidden) they account for the whole registry.
+    const advancedIds = new Set(getAdvancedSettings().map((s) => s.id))
+
+    function collect(nodes: ReturnType<typeof buildSectionTree>, acc: Set<string>): void {
+      for (const node of nodes) {
+        for (const s of node.settings) acc.add(s.id)
+        collect(node.subsections, acc)
+      }
+    }
+    const treeIds = new Set<string>()
+    collect(buildSectionTree(), treeIds)
+
+    // The Advanced tree node's settings ARE the Advanced auto-rendered set; remove them
+    // so `treeIds` is the feature-page (hand-rendered) home set.
+    for (const id of advancedIds) treeIds.delete(id)
+
+    // No setting is both Advanced-homed and feature-page-homed.
+    for (const id of advancedIds) {
+      expect(treeIds.has(id), `${id} is in both Advanced and a feature page`).toBe(false)
+    }
+
+    // Every non-hidden setting has exactly one home (Advanced or a feature page).
+    for (const s of settingsRegistry) {
+      if (s.hidden) continue
+      const homes = (advancedIds.has(s.id) ? 1 : 0) + (treeIds.has(s.id) ? 1 : 0)
+      expect(homes, `${s.id} should have exactly one home`).toBe(1)
+    }
+  })
 })
 
 describe('updates.attachEmailToReports', () => {
@@ -286,7 +346,7 @@ describe('updates.attachEmailToReports', () => {
     expect(def?.type).toBe('boolean')
     expect(def?.component).toBe('switch')
     expect(getDefaultValue('updates.attachEmailToReports')).toBe(false)
-    expect(def?.showInAdvanced).toBe(true)
+    expect(def?.section).toEqual(['Advanced'])
   })
 
   it('surfaces in the Advanced settings list', () => {

@@ -19,11 +19,12 @@
     let debounceTimer: ReturnType<typeof setTimeout> | null = null
     const sectionTree = buildSectionTree()
 
-    // Special sections have dedicated UI (not driven by the registry).
+    // Special sections have dedicated UI (not driven by the registry). Advanced is
+    // NOT special: it's a normal registry section (every entry is `section: ['Advanced']`)
+    // that auto-renders, so it comes from `sectionTree` via `TOP_LEVEL_ORDER`.
     const specialSections: Record<string, { name: string; path: string[] }> = {
         'Keyboard shortcuts': { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'] },
         License: { name: 'License', path: ['License'] },
-        Advanced: { name: 'Advanced', path: ['Advanced'] },
     }
 
     // Explicit top-to-bottom sidebar order. Registry-driven sections are looked up by name in
@@ -127,7 +128,6 @@
 
     function shouldShowSpecialSection(path: string[]): boolean {
         if (!searchQuery.trim()) return true
-        if (path[0] === 'Advanced') return sectionHasMatches(path, matchingSections)
         if (path[0] === 'Keyboard shortcuts') return matchingSections.has('Keyboard shortcuts')
         if (path[0] === 'License') return matchingSections.has('License')
         return false

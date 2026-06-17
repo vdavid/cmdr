@@ -61,11 +61,9 @@ describe('advanced settings in the global search index', () => {
     clearSearchIndex()
   })
 
-  // `showInAdvanced` settings used to be excluded from the global index and
-  // searched through a separate `searchAdvancedSettings`. They now ride the
-  // global pipeline (the Advanced page groups them into cards on the same
-  // `shouldShow` predicate), so they MUST be findable in the main settings
-  // search. Pre-fix, these queries returned nothing globally.
+  // Advanced settings (`section: ['Advanced']`) ride the global search pipeline
+  // (the Advanced page groups them into cards on the same `shouldShow`
+  // predicate), so they MUST be findable in the main settings search.
   it('finds an Advanced-only setting in the global search', () => {
     const ids = searchSettings('prefetch').map((r) => r.setting.id)
     expect(ids).toContain('advanced.prefetchBufferSize')
@@ -111,19 +109,18 @@ describe('advanced settings in the global search index', () => {
     expect(inListing.has('advanced.prefetchBufferSize')).toBe(false)
   })
 
-  it('a natural-section mirror lights its natural page, not Advanced: "concurrency" → SMB', () => {
-    // `network.smbConcurrency` is a `showInAdvanced` mirror whose registry
-    // `section` is its NATURAL path (SMB), not `['Advanced']`. Searching its
-    // term puts it in the SMB section's match set (so the row shows there, no
-    // blank page) and lights the SMB sidebar entry. It does NOT light Advanced
-    // (sidebar identity follows the setting's own `section`); the Advanced page
-    // still renders the row under its reused card title, it just isn't surfaced
-    // in search from the Advanced sidebar — the mirror's search home is SMB.
+  it('a former mirror now lights only Advanced: "concurrency" → Advanced, not SMB', () => {
+    // `network.smbConcurrency` now has `section: ['Advanced']` as its single home
+    // (no SMB mirror). Searching its term lights the Advanced sidebar entry and
+    // puts the row in Advanced's match set; it must NOT leak back into the SMB
+    // page's section-scoped match set.
+    const inAdvanced = getMatchingSettingIdsInSection('concurrency', ['Advanced'])
+    expect(inAdvanced.has('network.smbConcurrency')).toBe(true)
     const inSmb = getMatchingSettingIdsInSection('concurrency', ['File systems', 'SMB/Network shares'])
-    expect(inSmb.has('network.smbConcurrency')).toBe(true)
+    expect(inSmb.has('network.smbConcurrency')).toBe(false)
     const sections = getMatchingSections('concurrency')
-    expect(sectionHasMatches(['File systems', 'SMB/Network shares'], sections)).toBe(true)
-    expect(sectionHasMatches(['Advanced'], sections)).toBe(false)
+    expect(sectionHasMatches(['Advanced'], sections)).toBe(true)
+    expect(sectionHasMatches(['File systems', 'SMB/Network shares'], sections)).toBe(false)
   })
 })
 

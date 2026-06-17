@@ -43,8 +43,8 @@ describe('groupAdvancedByCard (registry guard)', () => {
     expect(new Set(ids).size).toBe(ids.length)
 
     // The union of grouped settings === every Advanced setting. This is the
-    // regression guard: a new `showInAdvanced` setting without a `cardKey` would
-    // fall into the untitled "Other" bucket rather than vanish — which still
+    // regression guard: a new `section: ['Advanced']` setting without a `cardKey`
+    // would fall into the untitled "Other" bucket rather than vanish — which still
     // shows up here as a non-empty `''` group, flagging that it needs a real
     // card home.
     expect(new Set(ids)).toEqual(new Set(advanced.map((s) => s.id)))
@@ -59,12 +59,13 @@ describe('groupAdvancedByCard (registry guard)', () => {
     ).toBeUndefined()
   })
 
-  it('places the natural-section mirrors under their reused card title', () => {
+  it('places the three repointed former mirrors under their Advanced card homes', () => {
     const groups = groupAdvancedByCard(getAdvancedSettings())
     const byId = (id: string) => groups.find((g) => g.settings.some((s) => s.id === id))
-    // The three natural-page mirrors reuse their natural-page card titles.
-    expect(byId('network.smbConcurrency')?.title).toBe('Performance and timeouts')
-    expect(byId('fileOperations.maxConflictsToShow')?.title).toBe('Conflicts and progress')
-    expect(byId('fileOperations.progressUpdateInterval')?.title).toBe('Conflicts and progress')
+    // smbConcurrency joins the existing "Network and mounts" Advanced card.
+    expect(byId('network.smbConcurrency')?.title).toBe('Network and mounts')
+    // The two conflict/progress rows form the new "File operations" Advanced card.
+    expect(byId('fileOperations.maxConflictsToShow')?.title).toBe('File operations')
+    expect(byId('fileOperations.progressUpdateInterval')?.title).toBe('File operations')
   })
 })

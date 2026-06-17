@@ -176,7 +176,7 @@ Top-level sidebar order (declared in `SettingsSidebar.svelte`'s `TOP_LEVEL_ORDER
 8. **Updates & privacy** (no subsections): app-update checks, the crash/error report opt-ins, and the beta
    `analytics.enabled` opt-out + `analytics.email` contact field
 9. **License** (special, non-registry)
-10. **Advanced** (special, auto-generated from `showInAdvanced: true` entries)
+10. **Advanced** (a normal registry section, auto-generated from `section: ['Advanced']` entries)
 
 Per-section component files (one `*Section.svelte` per sidebar entry), the section ↔ component map, the
 mirror-in-multiple-sections pattern, and the AI hybrid-section split live in [`sections/CLAUDE.md`](sections/CLAUDE.md).
@@ -274,13 +274,13 @@ non-registry and mirrored rows.
 **Decision / why (D4): non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry
 entry (e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show — searching "index size"
 yielded a blank pane. Fix: a `hidden: true` registry entry (`indexing.indexSize`) reusing the existing
-`settings.fileSystemWatching.indexSize` label key. `buildSearchIndex` indexes the WHOLE registry (it filters nothing —
-not `showInAdvanced`, not `hidden`), so a hidden entry IS searchable; `buildSectionTree` skips `hidden`, so it adds no
-nav row. It's a fully-modeled setting (its own `SettingsValues` key, `type:'boolean'`, `default:false`) that's never
-read or written — modeled because `SettingId = keyof SettingsValues`. **Guardrail: the anchor's `section` MUST equal its
-hosting page's section**, or it lands outside that page's section-scoped match set and the blank-page fix breaks.
-Additive key, so no `SCHEMA_VERSION` bump. Precedent: the hidden `downloadsToastCollapsed` / `…acknowledged` state rows;
-the anchor extends that pattern from "internal state" to "a searchable UI element that isn't a setting."
+`settings.fileSystemWatching.indexSize` label key. `buildSearchIndex` indexes the WHOLE registry (it filters nothing,
+not even `hidden`), so a hidden entry IS searchable; `buildSectionTree` skips `hidden`, so it adds no nav row. It's a
+fully-modeled setting (its own `SettingsValues` key, `type:'boolean'`, `default:false`) that's never read or written —
+modeled because `SettingId = keyof SettingsValues`. **Guardrail: the anchor's `section` MUST equal its hosting page's
+section**, or it lands outside that page's section-scoped match set and the blank-page fix breaks. Additive key, so no
+`SCHEMA_VERSION` bump. Precedent: the hidden `downloadsToastCollapsed` / `…acknowledged` state rows; the anchor extends
+that pattern from "internal state" to "a searchable UI element that isn't a setting."
 
 **Decision / why (D10): "subsection" stays the level-2 nav term.** The card axis got the new name `cardKey` (not
 `subsection`), because `subsection` already means the level-2 nav entry (`SettingsSection.subsections`, the page you
@@ -288,14 +288,24 @@ click). The terminology group → subsection → card is kept as-is; cards are n
 spawn a spurious nav level).
 
 **The Advanced page rides the same pipeline.** `AdvancedSection` is the one section that auto-renders its rows (from
-`getAdvancedSettings()`), but it now groups them into `SectionCard`s by `cardKey` via the pure `groupAdvancedByCard`
-(`sections/advanced-grouping.ts`) and gates each row with the same `shouldShow`/`anyVisible` as the hand-rendered
-sections. Two consequences of un-excluding `showInAdvanced` from the index (so the whole registry is searchable):
-advanced settings are now findable from the main settings search (searching "prefetch" lights the Advanced sidebar entry
-and shows its row in its card), and the advanced-row label highlight works (it reads the global index, which previously
-omitted these rows, so the highlight was always empty). Every advanced setting MUST carry a `cardKey`; the set-equality
-guard in `advanced-grouping.test.ts` flags any that don't (they fall into a trailing untitled "Other" card). Mirrors
-keep their natural-page `cardKey` and search home; see `sections/DETAILS.md` § "Advanced section is auto-generated".
+`getAdvancedSettings()`, which selects `section[0] === 'Advanced' && !hidden`), and it groups them into `SectionCard`s
+by `cardKey` via the pure `groupAdvancedByCard` (`sections/advanced-grouping.ts`), gating each row with the same
+`shouldShow`/`anyVisible` as the hand-rendered sections. The whole registry is in the search index, so advanced settings
+are findable from the main settings search (searching "prefetch" lights the Advanced sidebar entry and shows its row in
+its card) and the advanced-row label highlight works. Advanced is a normal section in `buildSectionTree` now (no longer
+skipped), so its sidebar entry comes from the tree via `TOP_LEVEL_ORDER`, not a hardcoded special-section list. Every
+advanced setting MUST carry a `cardKey`; the set-equality guard in `advanced-grouping.test.ts` flags any that don't
+(they fall into a trailing untitled "Other" card).
+
+**Decision / why (M8): `section` is a setting's single home; `showInAdvanced` is deleted.** A `showInAdvanced` flag on
+top of a real `section` let a setting render in two places (Advanced AND a feature page) — the wrong architecture. Now a
+setting's `section` is its one home: `section: ['Advanced']` means it auto-renders ONLY in Advanced; anything else means
+it hand-renders ONLY on its feature page. Five former two-place settings were consolidated to Advanced-only
+(`network.smbConcurrency`, `fileOperations.maxConflictsToShow`, `fileOperations.progressUpdateInterval`,
+`search.recentSearches.maxCount`, `selection.recentSelections.maxCount`), their feature-page rows removed. This also
+dissolved the Advanced "Performance and timeouts" vs "Performance" card-title duplication (`smbConcurrency` stopped
+dragging its SMB card title into Advanced; it now sits in "Network and mounts"). Registry metadata only, so no
+`SCHEMA_VERSION` bump. See `sections/DETAILS.md` § "Advanced section is auto-generated".
 
 ## Key decisions
 
@@ -364,9 +374,10 @@ that have menu items (`view.fullMode`, `view.briefMode`). Most commands don't ne
 
 ### Advanced section is auto-generated
 
-Settings with `showInAdvanced: true` appear in the Advanced section with auto-generated UI, grouped into `SectionCard`s
-by their `cardKey`. No custom component needed — add to the registry WITH a `cardKey` and it works. They're in the
-global search index too (findable from the main search). Details and the mirror rules: § "Card groups" above and
+Settings with `section: ['Advanced']` appear in the Advanced section with auto-generated UI, grouped into `SectionCard`s
+by their `cardKey`. No custom component needed — add to the registry with `section: ['Advanced']` and a `cardKey` and it
+works. A setting's `section` is its one home (no `showInAdvanced`), so an Advanced setting never also hand-renders on a
+feature page. They're in the global search index too (findable from the main search). Details: § "Card groups" above and
 `sections/DETAILS.md` § "Advanced section is auto-generated".
 
 ### Hidden internal-state settings

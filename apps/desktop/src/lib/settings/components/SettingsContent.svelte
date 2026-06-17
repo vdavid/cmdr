@@ -179,7 +179,7 @@
             </section>
         {/if}
 
-        <!-- Advanced (special) -->
+        <!-- Advanced (top-level registry section, no subsections; auto-renders) -->
         {#if shouldShowTopLevel(['Advanced'])}
             <section data-section-id="advanced">
                 <AdvancedSection {searchQuery} />

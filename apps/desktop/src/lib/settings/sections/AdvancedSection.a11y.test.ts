@@ -1,10 +1,10 @@
 /**
  * Tier 3 a11y tests for `AdvancedSection.svelte`.
  *
- * Auto-generated setting rows for everything marked `showInAdvanced:true`,
+ * Auto-generated setting rows for every `section: ['Advanced']` setting,
  * grouped into `SectionCard`s by `cardKey`. Covers default and search-filtered
  * states, the card structure, and the per-row search highlight (which only
- * works because Advanced rows are now in the global search index).
+ * works because Advanced rows are in the global search index).
  */
 
 import { describe, it, expect, vi } from 'vitest'

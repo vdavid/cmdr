@@ -128,7 +128,6 @@ export interface SettingDefinition {
     | 'text-input'
     | 'password-input'
     | 'duration'
-  showInAdvanced?: boolean
 }
 
 // ============================================================================

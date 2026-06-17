@@ -35,13 +35,12 @@ let searchIndex: SearchIndexEntry[] | null = null
 function buildSearchIndex(): SearchIndexEntry[] {
   if (searchIndex) return searchIndex
 
-  // The index covers the WHOLE registry, including `showInAdvanced` settings:
-  // the Advanced page renders them grouped into cards on the same `shouldShow`
-  // pipeline as every other section, so they must be globally findable too
-  // (searching "prefetch" lights the Advanced sidebar entry and shows the row
-  // in its card). Only `hidden` entries that aren't searchable anchors carry no
-  // rendered control, but `hidden` is intentionally NOT filtered here — a hidden
-  // entry like `indexing.indexSize` is a searchable anchor (see D4 in the
+  // The index covers the WHOLE registry, including the Advanced section
+  // (`section: ['Advanced']`): the Advanced page renders those grouped into cards
+  // on the same `shouldShow` pipeline as every other section, so they must be
+  // globally findable too (searching "prefetch" lights the Advanced sidebar entry
+  // and shows the row in its card). `hidden` is intentionally NOT filtered here —
+  // a hidden entry like `indexing.indexSize` is a searchable anchor (see D4 in the
   // settings card-groups plan). `buildSectionTree` excludes `hidden` from nav.
   searchIndex = settingsRegistry.map((setting) => ({
     setting,

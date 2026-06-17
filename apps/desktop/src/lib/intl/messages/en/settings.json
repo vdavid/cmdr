@@ -1368,10 +1368,6 @@
   "@settings.fileOperations.card.renaming": {
     "description": "Heading of the renaming card (the file-extension-change confirmation setting) in Settings > Behavior > File operations."
   },
-  "settings.fileOperations.card.conflictsAndProgress": "Conflicts and progress",
-  "@settings.fileOperations.card.conflictsAndProgress": {
-    "description": "Heading of the conflicts-and-progress card (max conflicts to show, progress update interval) in Settings > Behavior > File operations."
-  },
   "settings.network.card.connection": "Connection",
   "@settings.network.card.connection": {
     "description": "Heading of the connection card (enable networking, direct SMB connection) in Settings > File systems > SMB/Network shares."
@@ -1399,6 +1395,10 @@
   "settings.advanced.card.input": "Input",
   "@settings.advanced.card.input": {
     "description": "Heading of the input card (drag threshold, type-to-jump reset delay) in Settings > Advanced."
+  },
+  "settings.advanced.card.fileOperations": "File operations",
+  "@settings.advanced.card.fileOperations": {
+    "description": "Heading of the file-operations card (max conflicts to show, progress update interval) in Settings > Advanced."
   },
   "settings.advanced.card.historyAndLimits": "History and limits",
   "@settings.advanced.card.historyAndLimits": {

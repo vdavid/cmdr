@@ -2,17 +2,15 @@
  * Pure grouping logic for the Advanced settings page.
  *
  * Advanced is the one section that auto-renders its rows: it pulls every
- * `showInAdvanced && !hidden` setting from `getAdvancedSettings()` and lays them
- * out as bespoke rows. To match the macOS System Settings card look that every
- * other page now uses, the rows are grouped into `SectionCard`s by their
+ * `section[0] === 'Advanced' && !hidden` setting from `getAdvancedSettings()` and
+ * lays them out as bespoke rows. To match the macOS System Settings card look that
+ * every other page now uses, the rows are grouped into `SectionCard`s by their
  * `card` title (resolved from each setting's `cardKey`).
  *
  * Grouping is driven by the resolved `card` string, in first-appearance
  * (registry) order, so the card order on the page is the author's registry
- * order and stable. The mirrors that live on a natural page too
- * (`network.smbConcurrency`, the two `fileOperations.*` rows) reuse their
- * natural-page `cardKey`, so they appear here under that same title rather than
- * spawning an Advanced-only card.
+ * order and stable. Every Advanced setting has `section: ['Advanced']` as its
+ * single home (no mirrors on feature pages).
  *
  * `card` is descriptive metadata, never the visibility source: card visibility
  * is owned by `AdvancedSection.svelte` via the same `shouldShow` predicate that

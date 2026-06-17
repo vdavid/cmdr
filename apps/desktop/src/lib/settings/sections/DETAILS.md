@@ -18,11 +18,10 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`AppearanceSizesSection.svelte`**: `Appearance > File and folder sizes`: size display, size unit (binary/SI drives
   `kB`↔`KB` label override), file size format, size mismatch warning
 - **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width
-- **`FileOperationsSection.svelte`**: `Behavior > File operations`: two `SectionCard` card groups — Renaming
-  (extension-change confirms) and Conflicts and progress (`maxConflictsToShow` select + `progressUpdateInterval`
-  slider). The latter two are `showInAdvanced` mirrors that ALSO render here (their natural page) so a
-  globally-searchable Advanced doesn't match this page and then paint a blank section; they keep their Advanced
-  presence. Card frames are gated via `anyVisible(shouldShow, ...)` (same pattern as FSW above).
+- **`FileOperationsSection.svelte`**: `Behavior > File operations`: one unlabeled `SectionCard` holding only the
+  extension-change confirmation row (`allowFileExtensionChanges`). The conflict/progress settings live ONLY in Advanced
+  now (`maxConflictsToShow`, `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. Card frame gated
+  via `anyVisible(shouldShow, ...)` (same pattern as FSW above).
 - **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: four `SectionCard` card groups — Drive
   indexing (toggle + clear-index action, the hidden `indexing.indexSize` search anchor), Downloads notifications
   (4-option ToggleGroup, anchor `settings-downloads-notifications`), Go to latest download (a single on/off `Switch`
@@ -37,9 +36,9 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   land. The hidden `indexing.indexSize` anchor (its `section` equals this page's) makes "index size" a search hit, and
   the index-size action row is gated on `shouldShow('indexing.indexSize')`, so searching it keeps the section visible
   (no blank pane) and shows the Drive-indexing card. See `lib/settings/components/CLAUDE.md` § card groups.
-- **`SearchSection.svelte`**: `Behavior > Search`: one unlabeled `SectionCard` wrapping the auto-apply switch plus the
-  mirrored `recentSearches.maxCount` / `recentSelections.maxCount` rows from Advanced. The card is gated via
-  `anyVisible(shouldShow, ...)` so an all-filtered-out search leaves no empty frame.
+- **`SearchSection.svelte`**: `Behavior > Search`: one unlabeled `SectionCard` wrapping only the auto-apply switch. The
+  `recentSearches.maxCount` / `recentSelections.maxCount` caps live ONLY in Advanced now, never mirrored here. The card
+  is gated via `anyVisible(shouldShow, ...)` so an all-filtered-out search leaves no empty frame.
 - **`AiSection.svelte`**: `AI` wrapper: provider toggle (Off / Cloud / Local), auto-stops local server on switch-away,
   dispatches to one of the two sub-sections below. The provider toggle row sits in its own unlabeled `SectionCard` (the
   row already carries a "Provider" label, so an unlabeled card avoids a duplicate heading). Card boundaries are a
@@ -58,11 +57,10 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
     card on purpose (already visually distinct full-bleed blocks).
 - **`NetworkSection.svelte`**: `File systems > SMB/Network shares`: two `SectionCard` card groups — Connection
   (`network.enabled` master switch + the inline Local Network access info block + `network.directSmbConnection`) and
-  Performance and timeouts (`shareCacheDuration` select, `timeoutMode` radio with its inline custom-timeout number, and
-  `smbConcurrency`). `network.smbConcurrency` is a `showInAdvanced` mirror that ALSO renders here (its natural page), so
-  a globally-searchable Advanced doesn't match this page and then paint a blank section; it keeps its Advanced presence.
-  The info block's own heading is `<h4>` (the card's `<h3>` is the group heading). Card frames are gated via
-  `anyVisible(shouldShow, ...)` (same pattern as FSW above).
+  Performance and timeouts (`shareCacheDuration` select, `timeoutMode` radio with its inline custom-timeout number).
+  `network.smbConcurrency` lives ONLY in Advanced now (`section: ['Advanced']`), not on this page. The info block's own
+  heading is `<h4>` (the card's `<h3>` is the group heading). Card frames are gated via `anyVisible(shouldShow, ...)`
+  (same pattern as FSW above).
 - **`MtpSection.svelte`**: `File systems > MTP (Android/Kindle/cameras)`: one unlabeled `SectionCard`, gated via
   `anyVisible(shouldShow, ...)`
 - **`GitSection.svelte`**: `File systems > Git`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
@@ -103,12 +101,13 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   presentational variants of that one block, all inside the one card (no `anyVisible` gate — it's not registry
   search-driven). `.license-info` dropped its own background / border / radius so the wrapping card is the only frame
   (no card-in-card)
-- **`AdvancedSection.svelte`**: `Advanced`: auto-generated rows for every registry entry with `showInAdvanced: true`,
-  grouped into `SectionCard`s by `cardKey` via the pure `advanced-grouping.ts` (`groupAdvancedByCard`). No custom UI per
-  row. Row visibility rides the SAME global `shouldShow`/`anyVisible` pipeline as every other section (Advanced settings
-  are now in the global search index), so an advanced term lights the Advanced sidebar entry and shows its row in its
-  card — no separate `searchAdvancedSettings` path
-- **`advanced-grouping.ts`**: Pure card-grouping logic for `AdvancedSection` (group `showInAdvanced` settings by
+- **`AdvancedSection.svelte`**: `Advanced`: auto-generated rows for every `section: ['Advanced']` registry entry (via
+  `getAdvancedSettings()`), grouped into `SectionCard`s by `cardKey` via the pure `advanced-grouping.ts`
+  (`groupAdvancedByCard`). No custom UI per row. Row visibility rides the SAME global `shouldShow`/`anyVisible` pipeline
+  as every other section (Advanced settings are in the global search index), so an advanced term lights the Advanced
+  sidebar entry and shows its row in its card. Advanced is a normal registry section now (in `buildSectionTree`), not a
+  hardcoded special section
+- **`advanced-grouping.ts`**: Pure card-grouping logic for `AdvancedSection` (group `section: ['Advanced']` settings by
   resolved `card` title, registry order; trailing untitled "Other" bucket for any with no `cardKey`). Tested by a
   set-equality regression guard (union of grouped === all Advanced settings)
 - **`ai-secret-error.ts`**: Pure mapper from OS secret-store error variants to user-facing strings. Used by
@@ -144,9 +143,11 @@ mirrored in `apps/desktop/test/e2e-playwright/settings.spec.ts`).
 
 ### Mirroring a setting in multiple sections
 
-A setting can appear in more than one section without duplicating it in the registry. Each `*Section.svelte` lists the
-ids it wants to show (`getSettingDefinition('foo.bar')` + `shouldShow('foo.bar')` + a primitive); adding the same id to
-a second section just makes it render there too.
+A setting can appear on more than one FEATURE page without duplicating it in the registry. Each `*Section.svelte` lists
+the ids it wants to show (`getSettingDefinition('foo.bar')` + `shouldShow('foo.bar')` + a primitive); adding the same id
+to a second section just makes it render there too. This is ONLY for a setting that genuinely belongs on two feature
+pages — never to surface an Advanced setting (`section: ['Advanced']`) on a feature page. A setting's `section` is its
+one home; Advanced auto-renders its own.
 
 What this buys you:
 
@@ -177,21 +178,21 @@ scale.
 
 ### Advanced section is auto-generated — don't hand-render
 
-Anything tagged `showInAdvanced: true` shows up in `AdvancedSection` with generated UI, grouped into `SectionCard`s by
+Every `section: ['Advanced']` setting shows up in `AdvancedSection` with generated UI, grouped into `SectionCard`s by
 its `cardKey` (every advanced setting carries one; `advanced-grouping.ts` is the pure grouper, set-equality-tested).
-Don't add a custom row for it elsewhere unless you're mirroring (see above) for discoverability.
-`advanced.maxLogStorageMb` (0 disables file logging entirely, non-zero/zero swap or raising the cap needs a restart) and
-`fileExplorer.typeToJump.resetDelay` (live-applied via `getTypeToJumpResetDelay()` on every keystroke) both live here.
+There is no `showInAdvanced` flag and no mirroring of an Advanced setting onto a feature page: `section` is the single
+home. Don't add a custom row for an Advanced setting elsewhere. `advanced.maxLogStorageMb` (0 disables file logging
+entirely, non-zero/zero swap or raising the cap needs a restart) and `fileExplorer.typeToJump.resetDelay` (live-applied
+via `getTypeToJumpResetDelay()` on every keystroke) both live here.
 
-Advanced settings are in the GLOBAL search index (no separate `searchAdvancedSettings` anymore), so they're findable
-from the main settings search and the page rides the same `shouldShow` per-row + `anyVisible` per-card pipeline as every
-other section. A new advanced setting MUST get a `cardKey`, or the set-equality guard in `advanced-grouping.test.ts`
-flags it (it lands in a trailing untitled "Other" card). Mirrors with a natural section path (`network.smbConcurrency`,
-`fileOperations.maxConflictsToShow`, `progressUpdateInterval`) reuse their natural-page `cardKey` and appear in Advanced
-under that title; their search home stays their natural page (their sidebar identity follows their own `section`). The
-two `['Advanced']`-section mirrors rendered on the Search page (`recentSearches`/`recentSelections.maxCount`) surface in
-Advanced under "History and limits"; on the Search page they stay search-invisible (the section-scoped gate), exactly as
-before.
+Advanced settings are in the GLOBAL search index (no separate `searchAdvancedSettings`), so they're findable from the
+main settings search and the page rides the same `shouldShow` per-row + `anyVisible` per-card pipeline as every other
+section. Advanced is a normal section in `buildSectionTree` (no longer skipped), so the sidebar entry comes from the
+tree via `TOP_LEVEL_ORDER`. A new advanced setting MUST get a `cardKey`, or the set-equality guard in
+`advanced-grouping.test.ts` flags it (it lands in a trailing untitled "Other" card). The five settings consolidated to
+Advanced-only in M8 (`network.smbConcurrency` → "Network and mounts"; `fileOperations.maxConflictsToShow` /
+`progressUpdateInterval` → "File operations"; `search.recentSearches.maxCount` / `selection.recentSelections.maxCount` →
+"History and limits") render ONLY here now, each in exactly one place.
 
 ### Cloud AI API keys never go through registry primitives
 

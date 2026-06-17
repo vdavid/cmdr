@@ -794,23 +794,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
       step: 1,
     },
   },
-  {
-    id: 'network.smbConcurrency',
-    section: ['File systems', 'SMB/Network shares'],
-    labelKey: 'settings.network.smbConcurrency.label',
-    descriptionKey: 'settings.network.smbConcurrency.description',
-    cardKey: 'settings.network.card.performanceAndTimeouts',
-    keywords: ['smb', 'concurrency', 'parallel', 'copy', 'batch', 'performance', 'transfer', 'speed'],
-    type: 'number',
-    default: 10,
-    component: 'number-input',
-    showInAdvanced: true,
-    constraints: {
-      min: 1,
-      max: 32,
-      step: 1,
-    },
-  },
 
   // ========================================================================
   // File systems › MTP (Android/Kindle/cameras)
@@ -1022,19 +1005,17 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'boolean',
     default: false,
     component: 'switch',
-    showInAdvanced: true,
   },
 
   // ========================================================================
-  // Advanced (auto-generated UI, `showInAdvanced: true`).
+  // Advanced (auto-generated UI).
   //
-  // Entries below carry a `section` path (used for search identity) and a
-  // `cardKey` that groups them into `SectionCard`s on the Advanced page (the
-  // page renders one card per `cardKey`, see `AdvancedSection.svelte` +
-  // `advanced-grouping.ts`). They're excluded from the section tree.
-  // `network.smbConcurrency` above and the two `fileOperations.*` entries
-  // below (maxConflictsToShow, progressUpdateInterval) keep their natural
-  // section path AND surface here, reusing their natural-page `cardKey`.
+  // `section: ['Advanced']` is the single home for these settings: they render
+  // ONLY on the Advanced page (which auto-renders `getAdvancedSettings()`), never
+  // mirrored onto a feature page. `cardKey` groups them into `SectionCard`s on
+  // that page (one card per `cardKey`, see `AdvancedSection.svelte` +
+  // `advanced-grouping.ts`). `getAdvancedSettings()` selects on `section[0]`, so
+  // the page membership and the nav identity are the same `section`.
   // ========================================================================
   {
     id: 'advanced.prefetchBufferSize',
@@ -1046,7 +1027,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 200,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 50,
       max: 1000,
@@ -1063,7 +1043,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 20,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 5,
       max: 100,
@@ -1080,7 +1059,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 2,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 1,
       max: 10,
@@ -1097,7 +1075,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'duration',
     default: 200,
     component: 'duration',
-    showInAdvanced: true,
     constraints: {
       unit: 'ms',
       minMs: 50,
@@ -1114,7 +1091,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 1,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 0,
       max: 1000,
@@ -1131,7 +1107,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'boolean',
     default: false,
     component: 'switch',
-    showInAdvanced: true,
   },
   {
     id: 'fileExplorer.suppressQuickLookHint',
@@ -1143,7 +1118,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'boolean',
     default: false,
     component: 'switch',
-    showInAdvanced: true,
   },
   {
     id: 'fileExplorer.tabs.closedTabHistorySize',
@@ -1155,7 +1129,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 10,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 1,
       max: 50,
@@ -1172,7 +1145,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 5,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 1,
       max: 50,
@@ -1189,7 +1161,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 1000,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 300,
       max: 3000,
@@ -1198,15 +1169,14 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
   {
     id: 'fileOperations.maxConflictsToShow',
-    section: ['Behavior', 'File operations'],
-    cardKey: 'settings.fileOperations.card.conflictsAndProgress',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.fileOperations',
     labelKey: 'settings.fileOperations.maxConflictsToShow.label',
     descriptionKey: 'settings.fileOperations.maxConflictsToShow.description',
     keywords: ['conflict', 'max', 'limit', 'preview', 'operation'],
     type: 'number',
     default: 100,
     component: 'select',
-    showInAdvanced: true,
     constraints: {
       // Numeric option labels are plain numerals, not translatable copy.
       options: [
@@ -1227,15 +1197,14 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
   {
     id: 'fileOperations.progressUpdateInterval',
-    section: ['Behavior', 'File operations'],
-    cardKey: 'settings.fileOperations.card.conflictsAndProgress',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.fileOperations',
     labelKey: 'settings.fileOperations.progressUpdateInterval.label',
     descriptionKey: 'settings.fileOperations.progressUpdateInterval.description',
     keywords: ['progress', 'update', 'interval', 'refresh', 'cpu', 'performance'],
     type: 'number',
     default: 500,
     component: 'slider',
-    showInAdvanced: true,
     constraints: {
       min: 50,
       max: 5000,
@@ -1253,7 +1222,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 200,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 0,
       max: 5000,
@@ -1270,7 +1238,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'duration',
     default: 20000,
     component: 'duration',
-    showInAdvanced: true,
     constraints: {
       unit: 's',
       minMs: 5000,
@@ -1287,7 +1254,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'boolean',
     default: true,
     component: 'switch',
-    showInAdvanced: true,
   },
   {
     id: 'advanced.serviceResolveTimeout',
@@ -1299,11 +1265,26 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'duration',
     default: 5000,
     component: 'duration',
-    showInAdvanced: true,
     constraints: {
       unit: 's',
       minMs: 1000,
       maxMs: 30000,
+    },
+  },
+  {
+    id: 'network.smbConcurrency',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.networkAndMounts',
+    labelKey: 'settings.network.smbConcurrency.label',
+    descriptionKey: 'settings.network.smbConcurrency.description',
+    keywords: ['smb', 'concurrency', 'parallel', 'copy', 'batch', 'performance', 'transfer', 'speed'],
+    type: 'number',
+    default: 10,
+    component: 'number-input',
+    constraints: {
+      min: 1,
+      max: 32,
+      step: 1,
     },
   },
   {
@@ -1316,7 +1297,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 1000,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 0,
       max: 10000,
@@ -1333,7 +1313,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'number',
     default: 1000,
     component: 'number-input',
-    showInAdvanced: true,
     constraints: {
       min: 0,
       max: 10000,
@@ -1361,7 +1340,6 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     type: 'duration',
     default: 3600000, // 60 minutes
     component: 'duration',
-    showInAdvanced: true,
     constraints: {
       unit: 'min',
       minMs: 300000, // 5 min
@@ -1453,10 +1431,13 @@ export function getSettingsInSection(sectionPath: string[]): SettingDefinition[]
 }
 
 /**
- * Get all settings marked for the Advanced section.
+ * Get all settings that live in the Advanced section. `section[0] === 'Advanced'`
+ * is the single home: the Advanced page auto-renders exactly these (no mirrors on
+ * feature pages), grouped into cards by `cardKey`. `hidden` entries are excluded
+ * (internal state that renders nowhere).
  */
 export function getAdvancedSettings(): SettingDefinition[] {
-  return settingsRegistry.filter((s) => s.showInAdvanced && !s.hidden)
+  return settingsRegistry.filter((s) => s.section[0] === 'Advanced' && !s.hidden)
 }
 
 /**
@@ -1581,7 +1562,6 @@ export function buildSectionTree(): SettingsSection[] {
   const sectionMap = new Map<string, SettingsSection>()
 
   for (const setting of settingsRegistry) {
-    if (setting.showInAdvanced) continue // Advanced settings are handled separately
     if (setting.hidden) continue // Internal-only settings (e.g., network.firstTriggerDone)
 
     let currentLevel = root
