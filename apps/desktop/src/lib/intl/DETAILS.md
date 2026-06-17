@@ -13,11 +13,11 @@ resolves user-facing text from JSON catalogs under `messages/<locale>/`, reading
 ### Two accessors, two pipelines
 
 - **`t(key, params?)`** is the path for ordinary copy: resolve the catalog string, compile it with `intl-messageformat`
-  (memoized per `(locale, key)`), `.format(params)`. ONE code path for everything — plain `{name}` interpolation,
+  (memoized per `(locale, key)`), `.format(params)`. ONE code path for everything: plain `{name}` interpolation,
   `{count, plural, …}`, `{kind, select, …}`, and rich-text `<tag>` sentences (via `Trans.svelte`). Plurals/selects are
   resolved by the engine's `Intl.PluralRules`; we never hand-roll category selection.
 - **`getMessage(key)`** returns the RAW catalog string with NO ICU parsing, for callers that do their own composition
-  and must not hit ICU's brace/apostrophe grammar — specifically the error pipeline (`$lib/errors` `compose.ts` +
+  and must not hit ICU's brace/apostrophe grammar, specifically the error pipeline (`$lib/errors` `compose.ts` +
   `expandSystemStrings` + snarkdown). Its `{system_settings}` tokens and `esc()` HTML entities would collide with ICU
   placeholders. Same fallback chain as `t()`, just no `format()`.
 
@@ -47,12 +47,12 @@ shows up there (the same `BCP47_DIR` gate).
 
 ### Reactivity (load-bearing)
 
-A module-level `localeVersion = $state(0)` rune (hence `.svelte.ts`) is a re-render SIGNAL, not a second locale source —
+A module-level `localeVersion = $state(0)` rune (hence `.svelte.ts`) is a re-render SIGNAL, not a second locale source:
 `getLocale()` stays the single source of truth for the VALUE. Every `t()`/`getMessage()` call reads the rune
 UNCONDITIONALLY and FIRST, before any compiled-message cache lookup; otherwise Svelte doesn't track the dependency and a
 markup `{t('key')}` won't re-run on a locale switch. `setLocale(locale)` writes the value into `locale.ts`'s override
 (the same single source the formatters read) AND bumps the rune AND clears the compiled cache. `_setLocaleForTests`
-writes the value only — use it for non-reactive snapshot tests; use `setLocale()` for reactivity tests. The pattern
+writes the value only: use it for non-reactive snapshot tests; use `setLocale()` for reactivity tests. The pattern
 mirrors `system-strings.svelte.ts`. Reactivity holds only inside a reactive context (markup / `$derived`); a `t()` in a
 plain `.ts` computation is a snapshot, which is the right semantics for transient strings (toasts, error copy).
 
@@ -72,7 +72,7 @@ selection (noun + was/were agreement), never for display. Don't reformat inside 
 `scripts/gen-message-keys.js` (pure logic in `gen-message-keys-lib.js`, run via `pnpm intl:keys`) reads
 `messages/en/*.json`, strips `@key` metadata, and emits the `keys.gen.ts` `MessageKey` union, so a wrong/missing key is
 a typecheck error. It also reports keys used-in-code-but-missing (exit 1, a build failure) and catalog-keys-never-used
-(a warning; the scan only sees STATIC keys, so a dynamically-built key reads as dead — verify before deleting). Two Go
+(a warning; the scan only sees STATIC keys, so a dynamically-built key reads as dead, so verify before deleting). Two Go
 checks guard the rest: `desktop-message-keys-fresh` (regenerate-and-diff `keys.gen.ts`, fail if stale) and
 `desktop-message-key-naming` (the `area.feature.leaf` shape + a known first-segment area).
 `cmdr/no-raw-user-facing-string` (ESLint) stops new hardcoded copy in migrated areas (a closed sink set: `addToast`

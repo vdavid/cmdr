@@ -22,7 +22,7 @@ function capture() {
   return { lines, write: (/** @type {string} */ l) => void lines.push(l) }
 }
 
-describe('parityDetail — pure comparison', () => {
+describe('parityDetail: pure comparison', () => {
   it('is clean when an ICU value preserves placeholders and tags', () => {
     expect(parityDetail('a.b', 'Hello {name}', 'Hola {name}')).toBeNull()
     expect(parityDetail('a.b', 'Open <link>{x}</link>', 'Abrir <link>{x}</link>')).toBeNull()

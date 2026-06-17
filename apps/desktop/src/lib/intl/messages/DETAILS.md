@@ -23,7 +23,7 @@ that check.
 ## Message value format
 
 A value is either a plain ICU string or, for plurals/selects, an ICU string with `{count, plural, …}` /
-`{type, select, …}` inline (NOT a `{one, other}` object — the engine parses the inline form). Examples live in
+`{type, select, …}` inline (NOT a `{one, other}` object, since the engine parses the inline form). Examples live in
 `en/transfer.json` (the hardest multi-variable case: a `kind` discriminator `select` wrapping independent `plural`
 branches, with preformatted `*Text` count strings for display and raw integers for plural selection).
 
@@ -42,7 +42,7 @@ apostrophe in a catalog value, not only the dangerous ones: `''` is always safe,
 edits that might move an apostrophe next to a placeholder. The per-area parity test is the net that catches a missed
 double.
 
-## ⚠️ `errors.*` are RAW (no ICU) — translators must NOT add ICU syntax there
+## ⚠️ `errors.*` are RAW (no ICU): translators must NOT add ICU syntax there
 
 The entire `errors.*` family (`errors.listing.*`, `errors.git.*`, `errors.provider.*`, `errors.write.*`) does NOT render
 through ICU. It resolves via `getMessage()` (a raw catalog lookup), then `interpolate()` + `expandSystemStrings()` do
@@ -50,11 +50,11 @@ plain `.replaceAll('{token}', value)` substitution (see [`../../errors/CLAUDE.md
 runtime [`../CLAUDE.md`](../CLAUDE.md)). The apostrophe-doubling rule above is the OPPOSITE here. So in any `errors.*`
 value:
 
-- **Do NOT double apostrophes.** Write `doesn't`, not `doesn''t` — there's no ICU parser to un-double them, so `''`
-  would render as a literal double apostrophe.
+- **Do NOT double apostrophes.** Write `doesn't`, not `doesn''t`: there's no ICU parser to un-double them, so `''` would
+  render as a literal double apostrophe.
 - **`{token}` is a literal replacement target, not an ICU argument.** `{system_settings}`, `{path}`, `{reason}`, etc.
   are substituted by name. Keep them verbatim; don't reorder their braces or add ICU formatting (`{count, number}`,
-  `{x, plural, …}`) — none of that is parsed, it'd render as literal text.
+  `{x, plural, …}`): none of that is parsed, it'd render as literal text.
 - **`<…>` is LITERAL text, not a tag.** `<folder-path>` in an `errors.*` value prints literally; it is NOT an inline
   component. Don't treat `<x>` as ICU/HTML here.
 - **Markdown is literal.** `#`, bold markers, and backticks pass through untouched (the raw pipeline doesn't strip
@@ -88,22 +88,22 @@ codegen ever sees it:
 
 - `description`: a free-form, translator-facing note. Optimize it to set a translator (human or agent) up to do
   EXCELLENT work without seeing the running app. Cover what's string-SPECIFIC: (1) where and when it appears (the
-  surface and the trigger — "status-bar toast after a copy", "label in the Settings > Appearance section", "button in
-  the delete-confirm dialog"); (2) the tone or intent if it's not obvious (reassuring, a warning, a terse control
-  label); (3) any constraint that shapes the translation (a tight button/column that can't grow much, a term that must
-  match a sibling string, a literal token that must NOT be translated — brand names like "Finder"/"GitHub", format
-  tokens like `YYYY`/`MM`, shortcut glyphs). Keep it natural language, not a rigid schema. Do NOT explain the ICU
-  plumbing (the translator already knows to preserve placeholder/`plural`/`select` syntax and apply their language's
-  plural categories — that's a one-time instruction in the translator-agent prompt, not per-string noise). Two cases the
+  surface and the trigger: "status-bar toast after a copy", "label in the Settings > Appearance section", "button in the
+  delete-confirm dialog"); (2) the tone or intent if it's not obvious (reassuring, a warning, a terse control label);
+  (3) any constraint that shapes the translation (a tight button/column that can't grow much, a term that must match a
+  sibling string, a literal token that must NOT be translated, such as brand names like "Finder"/"GitHub", format tokens
+  like `YYYY`/`MM`, shortcut glyphs). Keep it natural language, not a rigid schema. Do NOT explain the ICU plumbing (the
+  translator already knows to preserve placeholder/`plural`/`select` syntax and apply their language's plural
+  categories: that's a one-time instruction in the translator-agent prompt, not per-string noise). Two cases the
   description MUST cover (the audit's top blind-translation risks):
-  - **A pass-through placeholder** (`{message}`, `{reason}`, a raw `{path}`, or any value Cmdr doesn't control — an OS
-    error string, an arbitrary file path) — the description MUST say the inserted value is uncontrolled, so the
+  - **A pass-through placeholder** (`{message}`, `{reason}`, a raw `{path}`, or any value Cmdr doesn't control, such as
+    an OS error string or an arbitrary file path): the description MUST say the inserted value is uncontrolled, so the
     translator structures the sentence to tolerate any length, casing, gender, or number.
-  - **A fragment / concatenation key** (a sentence part assembled at runtime, e.g. `*Part` keys) — the description MUST
+  - **A fragment / concatenation key** (a sentence part assembled at runtime, e.g. `*Part` keys): the description MUST
     name the `*Join` key that assembles it (today `fileOperations.shared.andJoin`), so the translator knows word order
     is owned by the join key and translates the fragment to read naturally once joined.
 - `placeholders`: an ARB-style map giving each placeholder a PLAIN-LANGUAGE meaning plus an example value, in the
-  translator's terms ("number of files", "the folder name") — never the ICU mechanics ("raw integer for plural
+  translator's terms ("number of files", "the folder name"), never the ICU mechanics ("raw integer for plural
   selection"). Include it whenever a message has placeholders; omit it for static strings. This is what lets a
   translator reorder placeholders correctly for their grammar.
 - `screenshot`: a filename in `screenshots/` showing the string in context. One screenshot may serve many keys; many
@@ -137,7 +137,7 @@ The guiding test for every `@key`: "Could a competent translator who has never r
 language, given this note plus a per-language style guide plus (optionally) the screenshot?" If not, the note is missing
 context, a placeholder meaning, or a constraint. Two non-negotiables a new key can't ship without: a
 pass-through-placeholder key MUST state the inserted value is uncontrolled, and a fragment key MUST name its `*Join`
-assembler (both spelled out in the `description` bullet above). Tone/voice/formality are NOT per-string — they live in
+assembler (both spelled out in the `description` bullet above). Tone/voice/formality are NOT per-string: they live in
 the per-language style guide, so don't repeat them on every key.
 
 Keep the `@key` twin's name in lockstep with its message key on a rename. `desktop-message-key-naming` validates the
@@ -148,13 +148,13 @@ twin too (it strips the leading `@` and checks the underlying key), so a metadat
 `@key.screenshot` values are populated by a re-runnable harness, never hand-authored. **`pnpm i18n:shots`** is the one
 command: it captures fresh screenshots, then rewrites every `@key.screenshot`. (Under the hood it's
 `i18n:capture --build` then `i18n:couple`; the orchestrator is `apps/desktop/scripts/i18n-capture.js`, the coupler is
-`couple-screenshots.js` — each carries a full header comment. Conceptual overview + the prod-no-op define:
+`couple-screenshots.js`, each carrying a full header comment. Conceptual overview + the prod-no-op define:
 [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Screenshots.)
 
 What's where, and what's tracked:
 
-- `screenshots/*.png`: the captured images. **Gitignored and regenerable** (`screenshots/.gitignore`) — they're large
-  and re-render byte-for-byte on every run. A checkout without them degrades gracefully (the `@key` descriptions are the
+- `screenshots/*.png`: the captured images. **Gitignored and regenerable** (`screenshots/.gitignore`): they're large and
+  re-render byte-for-byte on every run. A checkout without them degrades gracefully (the `@key` descriptions are the
   primary translator aid). Don't commit PNGs.
 - `screenshots/capture-report.json`: **tracked.** The surface → keys map the driver records; the coupler's input and the
   freshness check's source of truth.
@@ -172,8 +172,8 @@ The coupler writes screenshots in two passes:
 - **Direct**: a key that rendered on a captured surface gets that surface's screenshot (no note). It assigns each key
   its FIRST surface in the report's order (surfaces ordered narrow-to-broad, so the most-specific surface wins).
 - **Representative**: for a key STILL uncoupled after the direct pass that matches a curated prefix in
-  `REPRESENTATIVE_SCREENSHOTS` (in `scripts/couple-screenshots.js`), the coupler writes a STAND-IN screenshot — a real
-  capture of the same panel/toast/dialog where the string appears — plus a `@key.screenshotNote` explaining the mapping.
+  `REPRESENTATIVE_SCREENSHOTS` (in `scripts/couple-screenshots.js`), the coupler writes a STAND-IN screenshot (a real
+  capture of the same panel/toast/dialog where the string appears), plus a `@key.screenshotNote` explaining the mapping.
   This sets translators up for success on families with no captured surface of their own: the dynamic `errors.*` tail
   (mapped to one captured error pane, `error-message-example.png`), AI/cloud states, SMB/MTP connection states, the
   crash-report dialog, and the shortcuts window. Honesty rules baked into the mechanism: direct ALWAYS wins (a stand-in
@@ -190,7 +190,7 @@ never fails the build (screenshots are optional). Re-run `pnpm i18n:shots` to cl
 `en` is the base/source locale. Every migrated string's base-locale rendered output must equal the pre-migration English
 (this is readiness, not a copy change). The per-area parity test asserts this (the transfer pilot's is
 `../../file-operations/transfer/transfer-complete-toast.test.ts`, pinned to en-US). The `pluralize-noun` Go check scans
-source, not catalog JSON, so ICU plurals inside catalogs aren't covered by it — their correctness is the parity test's
+source, not catalog JSON, so ICU plurals inside catalogs aren't covered by it: their correctness is the parity test's
 job.
 
 ## Dead-key honesty + the orphan check
@@ -218,5 +218,5 @@ orphan.
 ## Principle 6 note (humans review human-facing copy)
 
 The base `en` catalog is a parity-protected MOVE of already-human-authored copy, so it's fine under principle 6. But
-future agent-translated locales DO meet human eyes, so that later pipeline must include human review — "agents
-translate, scripted pipeline" is not a license to ship unreviewed machine copy.
+future agent-translated locales DO meet human eyes, so that later pipeline must include human review: "agents translate,
+scripted pipeline" is not a license to ship unreviewed machine copy.

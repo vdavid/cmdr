@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * KEY PARITY / UNTRANSLATED VISIBILITY check (i18n maintenance, M3) — WARN class.
+ * KEY PARITY / UNTRANSLATED VISIBILITY check (i18n maintenance, M3): WARN class.
  *
  * Honest-coverage signal so a "100% translated" claim can be trusted (mirrors the
  * screenshot coverage report's "say what's covered, list what isn't" stance). Two
- * gaps, both warn-only (neither crashes — the runtime falls back to English):
+ * gaps, both warn-only (neither crashes, since the runtime falls back to English):
  *  - MISSING: an English key with no entry in the locale. The runtime silently
  *    renders English, so the gap is invisible without this check.
  *  - IDENTICAL: a locale value byte-identical to English. Usually means

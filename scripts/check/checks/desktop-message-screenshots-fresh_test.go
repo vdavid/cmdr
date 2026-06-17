@@ -19,7 +19,7 @@ func TestCountDriftLines_ZeroWhenNoBullets(t *testing.T) {
 }
 
 func TestCountDriftLines_IgnoresHeaderLine(t *testing.T) {
-	// The "(N):" header must NOT be counted as a drift line — only the "  - …"
+	// The "(N):" header must NOT be counted as a drift line; only the "  - …"
 	// bullets are. A regression here would double-count or miscount.
 	output := "Missing/stale screenshot couplings (1):\n  - settings.x → s.png (currently undefined)\n"
 	if got := countDriftLines(output); got != 1 {

@@ -5,7 +5,7 @@
  * A sibling of `i18n-capture-surfaces.ts`, split off purely for the file-length
  * budget. Holds the data-driven sweep of main-window file-explorer surfaces that
  * the earlier dialog/window tranches missed: states the dual-pane explorer
- * reaches WITHOUT a separate window, a backend event, or a debug build — a live
+ * reaches WITHOUT a separate window, a backend event, or a debug build: a live
  * multi-file selection (the selection-summary status bar + its tooltip) and the
  * Shift fork of the function-key bar.
  *
@@ -54,8 +54,8 @@ async function clearSelection(main: TauriPage): Promise<void> {
  *   keys had no home.
  * - `function-key-bar-shift`: hold Shift (dispatch a `Shift` keydown on the
  *   document, which the bar's `<svelte:document onkeydown>` reads) so the bar
- *   swaps to its Shift fork — New file, Rename, Delete permanently, and the empty
- *   F-key slots — recording `fileExplorer.functionKeyBar.{newFile*,permanently*,
+ *   swaps to its Shift fork (New file, Rename, Delete permanently, and the empty
+ *   F-key slots), recording `fileExplorer.functionKeyBar.{newFile*,permanently*,
  *   deletePermanently*,noShift*}` the default fork never shows.
  *
  * The Quick Look educational toast (`fileExplorer.quickLookHint.*`) is NOT here:
@@ -101,7 +101,7 @@ export async function captureMainExplorerSurfaces(
     // with `key:'Shift'` flips its `shiftHeld` rune and re-renders the Shift fork.
     // No keyup is dispatched, so it stays in the Shift state through the shot.
     await main.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift', bubbles: true }))`)
-    // The Shift fork shows "Delete permanently" — wait for it before the rerender.
+    // The Shift fork shows "Delete permanently"; wait for it before the rerender.
     await main.waitForSelector('.function-key-bar', 5000)
     await expect
       .poll(

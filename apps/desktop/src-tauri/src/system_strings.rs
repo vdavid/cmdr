@@ -287,7 +287,7 @@ fn apple_languages() -> Vec<String> {
 }
 
 // Every test here is macOS-only (they assert macOS system-string resolution), so
-// gate the whole module to macOS — on Linux `#[cfg(test)]` alone leaves `use
+// gate the whole module to macOS: on Linux `#[cfg(test)]` alone leaves `use
 // super::*` (and `snapshot()`) unused and trips `deny(unused)`.
 #[cfg(all(test, target_os = "macos"))]
 mod tests {

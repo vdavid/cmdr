@@ -14,14 +14,14 @@ the words "error" or "failed", no trivializing "just/simple/easy").
 
 ## Module map
 
-- `listing-error-messages.ts`: `getListingErrorMessage(reason)` — resolves `errors.listing.<reason>.*` and interpolates
+- `listing-error-messages.ts`: `getListingErrorMessage(reason)` resolves `errors.listing.<reason>.*` and interpolates
   the escaped `{path}` / `{osMessage}` param tokens.
-- `git-error-messages.ts`: `getGitErrorMessage(kind)` — resolves `errors.git.<kind>.*` (static copy, no params).
-- `provider-error-messages.ts`: `getProviderSuggestion(provider, category)` — resolves `errors.provider.*` (shared
+- `git-error-messages.ts`: `getGitErrorMessage(kind)` resolves `errors.git.<kind>.*` (static copy, no params).
+- `provider-error-messages.ts`: `getProviderSuggestion(provider, category)` resolves `errors.provider.*` (shared
   `appBased.*` template with `{name}`/`{app}` tokens, plus bespoke per-provider keys; see DETAILS.md).
-- `listing-error.ts`: `renderListingError(error)` — the wire-`ListingError` → displayable adapter `ErrorPane` calls
+- `listing-error.ts`: `renderListingError(error)` is the wire-`ListingError` → displayable adapter `ErrorPane` calls
   (picks the base message, applies the provider override).
-- `markdown-escape.ts`: `escapeMarkdown` — the XSS boundary (verbatim port of the old Rust escaper).
+- `markdown-escape.ts`: `escapeMarkdown` is the XSS boundary (verbatim port of the old Rust escaper).
 - `compose.ts`: `esc(...)` (escape a param) + `expandSystemStrings(...)` (localized macOS pane labels).
 - `friendly-error-message.ts`: the shared `FriendlyErrorMessage` shape (matches `transfer-error-messages.ts` so the two
   paths can converge later).
@@ -29,7 +29,7 @@ the words "error" or "failed", no trivializing "just/simple/easy").
 ## Must-knows
 
 - **Error strings resolve via `getMessage()`, NEVER `t()`/ICU.** Their `{system_settings}` tokens and `esc()` HTML
-  entities collide with ICU's brace/apostrophe grammar, so catalog values are PLAIN strings that bypass ICU — and do NOT
+  entities collide with ICU's brace/apostrophe grammar, so catalog values are PLAIN strings that bypass ICU, and do NOT
   double apostrophes (the ICU `''` rule doesn't apply; write them normally). The compose pipeline (catalog lookup →
   `interpolate` escaped `{path}`/`{osMessage}` → `expandSystemStrings` → snarkdown/`{@html}`) is unchanged.
 - **The codegen dead-key report lists EVERY `errors.*` key** (keys are built dynamically, so the usage scanner can't see

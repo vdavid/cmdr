@@ -10,16 +10,16 @@ boundary: [`../CLAUDE.md`](../CLAUDE.md).
   `settings.json`), so an agent editing one feature touches one file. `common.json` holds truly shared strings.
 - `screenshots/`: capture artifacts referenced by `@key.screenshot` (and `@key.screenshotNote` for representative
   stand-ins); one file serves many keys. PNGs are **gitignored** and regenerable; `capture-report.json` +
-  `coverage-report.md` are tracked. Don't hand-edit `@key.screenshot`/`@key.screenshotNote` or commit PNGs — regenerate
+  `coverage-report.md` are tracked. Don't hand-edit `@key.screenshot`/`@key.screenshotNote` or commit PNGs; regenerate
   with `pnpm i18n:shots`. See [DETAILS.md](DETAILS.md) § Screenshots.
 - `en-XA/`: the generated **pseudolocale** (accented, expanded, structure-preserving), the overflow-testing locale + the
-  i18n-check fixture. **Gitignored + fully regenerable** from `en/` with `pnpm i18n:pseudo` — never hand-edit it (your
+  i18n-check fixture. **Gitignored + fully regenerable** from `en/` with `pnpm i18n:pseudo`; never hand-edit it (your
   edit is overwritten). The committed check fixture is `test/fixtures/i18n-pseudolocale/`, not here. See
   [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Pseudolocale.
 
 ## Must-knows
 
-- **Key shape: `area.feature.leaf`** — lowerCamel segments, dot-separated, at least two, first segment a known area.
+- **Key shape: `area.feature.leaf`**: lowerCamel segments, dot-separated, at least two, first segment a known area.
   Enforced by `desktop-message-key-naming`. Add an area only by adding both a catalog file AND the area to that check's
   allowlist.
 - **Double every apostrophe (`''`).** ICU treats `'` as an escape char; a lone `'` before `{`/`<`/`#` opens a quoted
@@ -31,7 +31,7 @@ boundary: [`../CLAUDE.md`](../CLAUDE.md).
   optional `screenshot`. The runtime and codegen strip every `@`-prefixed entry, so it never reaches `format()`. Keep a
   `@key` twin in sync when you rename a key. **Write the `description` to set a translator up for excellence**
   (surface + trigger + constraints + do-not-translate tokens; plain-language placeholder meanings via `placeholders`; NO
-  ICU plumbing, NO tone — tone lives in the per-language style guide). Full guidance + the litmus test:
+  ICU plumbing, NO tone, since tone lives in the per-language style guide). Full guidance + the litmus test:
   [DETAILS.md](DETAILS.md) § `@key` metadata schema. Every migrated key SHOULD carry a `description` (and `placeholders`
   if it has any).
 - **Never hand-edit `../keys.gen.ts`.** It's generated from these files by `pnpm intl:keys`; run that after any key

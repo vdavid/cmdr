@@ -21,7 +21,7 @@
  *     checks + future overflow, not yet rendered in-app.
  *  2. Check fixture: it's a complete, structurally-faithful non-`en` locale, so
  *     M2 (stale) and M3 (parity / ICU / plural / key) checks can run against a
- *     real locale before any human translation exists — clean run passes, a
+ *     real locale before any human translation exists: clean run passes, a
  *     corrupted copy fails. A small committed hand-verifiable SUBSET lives in
  *     `test/fixtures/i18n-pseudolocale/` (the full `en-XA/` dir is gitignored).
  *
@@ -43,7 +43,7 @@
  *    literal text nodes, then serialize back. Robust against nested plurals.
  *  - Raw path (every `errors.*` key): a tokenizer that accents only runs of
  *    ASCII letters, leaving every `{token}`, `<…>`, backtick/`**`/`\n`/`-`
- *    markdown char, and punctuation untouched — preserving the raw-pipeline
+ *    markdown char, and punctuation untouched, preserving the raw-pipeline
  *    `.replaceAll('{token}', …)` substitution targets exactly.
  *
  * The acceptance bar both paths must clear (asserted in the tests): for an ICU
@@ -301,7 +301,7 @@ function serializeElement(el) {
  * serialized message re-parses to the same structure. ICU treats `{`, `}`, `#`
  * (inside a plural), and `<` as syntax and `'` as an escape introducer. Our
  * transformed text contains none of `{}<#` (the accent map leaves them as-is,
- * but English literal segments never contain a bare ICU-syntax brace — those are
+ * but English literal segments never contain a bare ICU-syntax brace: those are
  * placeholders, which are separate AST nodes), so the only character we must
  * guard is the apostrophe: per the ICU rule, a lone `'` is doubled to `''`,
  * which always renders as a single `'`.
@@ -383,7 +383,7 @@ export function pseudoIcu(value) {
  * `{tokens}`, `<…>`, backticks, `**`, `\n`, `-`, digits) passes through. This
  * provably never touches a `{…}` token: `{`, `}`, and the token name's letters
  * are inside braces, but we transform a letter RUN, and a run that's part of a
- * token would alter the token — so we must NOT transform letters inside `{…}`.
+ * token would alter the token, so we must NOT transform letters inside `{…}`.
  * We therefore skip whole `{…}` spans explicitly.
  * @param {string} value the raw English message
  * @returns {string} the pseudo raw message
@@ -471,7 +471,7 @@ export function generatePseudolocale(messagesRoot) {
 }
 
 // Stale `en-XA` files from a renamed/removed `en` area would linger; warn so the
-// operator prunes them (rare — area files map 1:1 to `en`).
+// operator prunes them (rare, since area files map 1:1 to `en`).
 /**
  * Names of `en-XA/*.json` files with no matching `en/*.json` (orphans to prune).
  * @param {string} [messagesRoot]

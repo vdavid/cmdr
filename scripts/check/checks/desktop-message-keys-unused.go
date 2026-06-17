@@ -19,10 +19,10 @@ import (
 //
 // Construction sites (apps/desktop/src/lib/), each building keys under one prefix
 // from an enum/reason variable spliced into the dotted path:
-//   - errors.git.       — git-error-messages.ts: getMessage(`errors.git.${kind}.{title,message,suggestion}`)
-//   - errors.listing.   — listing-error-messages.ts: `errors.listing.${reason}.${part}`
-//   - errors.provider.  — provider-error-messages.ts: getMessage(`errors.provider.${p}.…`) and `…appBased.${cat}`
-//   - errors.write.     — transfer-error-messages.ts: getMessage(`errors.write.${key}`)
+//   - errors.git.: git-error-messages.ts builds getMessage(`errors.git.${kind}.{title,message,suggestion}`)
+//   - errors.listing.: listing-error-messages.ts builds `errors.listing.${reason}.${part}`
+//   - errors.provider.: provider-error-messages.ts builds getMessage(`errors.provider.${p}.…`) and `…appBased.${cat}`
+//   - errors.write.: transfer-error-messages.ts builds getMessage(`errors.write.${key}`)
 //
 // The same dynamic-key set is the codegen's sanctioned non-fatal dead-key case
 // (see docs/guides/i18n.md and apps/desktop/src/lib/intl/messages/DETAILS.md).
@@ -101,7 +101,7 @@ func RunDesktopMessageKeysUnused(ctx *CheckContext) (CheckResult, error) {
 
 // collectUnusedCheckCatalogKeys reads every `en/*.json` catalog and returns the
 // sorted, deduped set of renderable message keys, dropping ARB-style `@key`
-// metadata entries — matching `gen-message-keys-lib.js`'s collectCatalogKeys.
+// metadata entries, matching `gen-message-keys-lib.js`'s collectCatalogKeys.
 func collectUnusedCheckCatalogKeys(messagesDir string) ([]string, error) {
 	entries, err := os.ReadDir(messagesDir)
 	if err != nil {
@@ -195,7 +195,7 @@ func findUnusedMessageKeys(catalogKeys, sources, dynamicPrefixes []string) []str
 }
 
 // unusedDynamicPrefixesWithoutKeys returns the allowlisted prefixes that no
-// catalog key starts with — a stale entry that should be removed so the dynamic
+// catalog key starts with: a stale entry that should be removed so the dynamic
 // allowlist stays honest (each prefix tied to a live construction site).
 func unusedDynamicPrefixesWithoutKeys(catalogKeys, dynamicPrefixes []string) []string {
 	var stale []string

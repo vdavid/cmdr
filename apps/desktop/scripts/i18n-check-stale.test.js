@@ -46,7 +46,7 @@ function capture() {
   return { lines, write }
 }
 
-describe('staleReason — pure classifier', () => {
+describe('staleReason: pure classifier', () => {
   it('is fresh when the stored hash matches the current English value', () => {
     expect(staleReason('a.b', { 'a.b': 'Cancel' }, { sourceHash: sourceHash('Cancel') })).toBeNull()
   })
@@ -127,7 +127,7 @@ describe('runStaleCheck negative cases (temp catalog copies)', () => {
     const { code, text } = run()
     expect(code).toBe(EXIT_ISSUES)
     expect(text).toMatch(/fixture\.plainLabel → source changed since translation/)
-    // Only that one key — the report lists exactly one issue line under en-XA.
+    // Only that one key: the report lists exactly one issue line under en-XA.
     expect(text.match(/^ {2}- /gm)?.length).toBe(1)
   })
 
@@ -264,7 +264,7 @@ describe('no-locales path (only en)', () => {
   })
 })
 
-describe('reportFindings — the shared report core (reused by M3)', () => {
+describe('reportFindings: the shared report core (reused by M3)', () => {
   it('returns clean with no locales', () => {
     expect(reportFindings({ title: 'X', findings: [], write: () => {} })).toBe(EXIT_CLEAN)
   })

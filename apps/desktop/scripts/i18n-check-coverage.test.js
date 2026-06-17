@@ -22,7 +22,7 @@ function capture() {
   return { lines, write: (/** @type {string} */ l) => void lines.push(l) }
 }
 
-describe('coverageStatus — pure classifier', () => {
+describe('coverageStatus: pure classifier', () => {
   it('null when the locale has a distinct value', () => {
     expect(coverageStatus('a.b', 'Cancel', { 'a.b': 'Avbryt' })).toBeNull()
   })

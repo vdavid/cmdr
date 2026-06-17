@@ -5,22 +5,22 @@ checks work. THIS guide is the process you follow to add a language or translate
 agent-handoff block. Mechanism lives in `i18n.md` and the colocated docs; this guide points to it, never restates it.
 
 Translation is agent-driven and human-reviewed (principle 6: anything meeting human eyes is made or closely reviewed by
-a human — agent translation is a draft, not a ship). No language-specific content lives in the repo docs; everything
-below talks about "the target language" and its per-language style guide.
+a human, since agent translation is a draft, not a ship). No language-specific content lives in the repo docs;
+everything below talks about "the target language" and its per-language style guide.
 
 ## Three inputs, kept separate
 
 Set a translator (human or agent) up for excellence with three inputs, never mixed:
 
-1. **Per-string context** — the `@key.description` + `placeholders` (+ optional `screenshot`/`screenshotNote`). Authored
+1. **Per-string context**: the `@key.description` + `placeholders` (+ optional `screenshot`/`screenshotNote`). Authored
    for every key; surface, trigger, constraints, do-not-translate tokens, plain-language placeholder meanings. See
    `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` metadata schema.
-2. **Per-language style guide** — you write this once per language: tone, voice, formality (T/V distinction if the
+2. **Per-language style guide**: you write this once per language: tone, voice, formality (T/V distinction if the
    language has one), terminology and glossary, how brand words are handled in this language. NOT per-string; never
    repeat tone on every key. It lives at `docs/i18n/<tag>-style.md` (start from
    [`/docs/i18n/_template-style.md`](../i18n/_template-style.md); see [`/docs/i18n/README.md`](../i18n/README.md)).
    These are working notes, not catalog data: the app never loads them.
-3. **One ICU instruction** — given once in the agent system prompt, not per string (see the block below).
+3. **One ICU instruction**: given once in the agent system prompt, not per string (see the block below).
 
 ## Add a new language
 
@@ -51,13 +51,13 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
 The routine maintenance loop, run for every change that adds or edits user-facing copy:
 
 1. **Add or edit the `en` key** with a `@key.description` that meets the bar (`messages/DETAILS.md` § `@key` metadata
-   schema — note the fragment-key and pass-through-placeholder requirements). Run `pnpm intl:keys` to regenerate the key
-   union.
+   schema, noting the fragment-key and pass-through-placeholder requirements). Run `pnpm intl:keys` to regenerate the
+   key union.
 2. **For each existing locale**, read its style guide, translate the new or changed keys, and update each touched key's
    `@key.sourceHash` to the new English value's hash.
 3. **Run the checks** (same set as step 5 above). `desktop-i18n-stale` is the safety net here: editing an `en` value
    changes its hash, so EVERY locale's translation of that key reads as stale until re-translated and re-hashed. You
-   can't silently leave a locale behind on a copy edit — the stale warning lists exactly which keys each locale owes.
+   can't silently leave a locale behind on a copy edit: the stale warning lists exactly which keys each locale owes.
 4. **Human-review** the changed strings and set `@key.reviewed: true` again (the stale check reset it when the source
    changed).
 
@@ -75,7 +75,7 @@ STYLE: Follow this per-language style guide for all tone, voice, formality, and 
 ICU (do this for every string):
 - Preserve every {placeholder}, every <tag>…</tag>, and every ICU plural/select structure EXACTLY. Translate only
   the human-readable text between them. Never rename, drop, add, or reorder a {placeholder} or <tag>.
-- Reorder placeholders within a sentence only as your language's grammar needs — the set of placeholders must stay
+- Reorder placeholders within a sentence only as your language's grammar needs. The set of placeholders must stay
   identical to the English.
 - Write plural/select branches for the TARGET language's CLDR plural categories (zero/one/two/few/many/other as your
   language requires), not English's. ICU only selects and fills; all grammatical correctness comes from the branches
@@ -84,10 +84,10 @@ ICU (do this for every string):
 
 UNCONTROLLED INSERTS: Placeholders like {message}, {reason}, and a raw {path} carry text Cmdr does not control (an OS
 error string, a file path with any characters or length). Structure the sentence so it reads correctly no matter what
-value lands there — never assume gender, number, capitalization, or length of the inserted value.
+value lands there. Never assume gender, number, capitalization, or length of the inserted value.
 
 FRAGMENT KEYS: Some keys are sentence fragments assembled at runtime by a named *Join key (the description names the
-assembler). Translate each fragment so the assembled phrase reads naturally in your language, and mind word order — if
+assembler). Translate each fragment so the assembled phrase reads naturally in your language, and mind word order: if
 your language orders the parts differently, the *Join key is where the order is expressed.
 
 ERRORS ARE RAW: Any key under errors.* does NOT use ICU. There, use NORMAL apostrophes (doesn't, not doesn''t),
@@ -95,7 +95,7 @@ keep {token} verbatim as a literal replacement target (never add ICU formatting)
 markdown (#, **, backticks) through untouched. The catalog's @key context flags these. Full note: i18n.md § Error
 pipeline.
 
-DON'T TRANSLATE: Keep brand and system tokens verbatim — Cmdr, macOS, GitHub, SMB, MTP, Quick Look, and the
+DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, Quick Look, and the
 {system_settings}-style tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in
 apps/desktop/scripts/i18n-catalog-lib.js, and the desktop-i18n-dont-translate check enforces it.
 
@@ -103,7 +103,7 @@ OUTPUT: For each key, return only the translated value. A human reviews everythi
 flag any string where the context was insufficient to translate confidently rather than guessing.
 ```
 
-The two "uncontrolled inserts" and "fragment keys" paragraphs come from the catalog audit — they're the two highest
+The two "uncontrolled inserts" and "fragment keys" paragraphs come from the catalog audit: they're the two highest
 blind-translation risks once placeholders and structure are otherwise handled. They're encoded into the
 description-quality bar (`messages/DETAILS.md`), so a well-described key already flags both, but stating them once in
 the prompt makes the agent defensive by default.

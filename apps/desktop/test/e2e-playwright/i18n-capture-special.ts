@@ -36,7 +36,7 @@ import { type SurfaceEntry, captureCall, captureSurface, focusWindow } from './i
  * license DETAILS view) can't be reached here: they depend on `AppStatus`, which
  * `app_status.rs` derives from `CMDR_MOCK_LICENSE` ONLY under
  * `#[cfg(debug_assertions)]`, and the capture binary is a RELEASE build (mock
- * compiled out). They're document-skipped in the spec — see its license-state
+ * compiled out). They're document-skipped in the spec: see its license-state
  * skip block for the reason.
  */
 export async function captureMainDialogs(

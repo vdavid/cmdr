@@ -202,7 +202,7 @@ function writeOverflowReport(): void {
 test.describe('i18n screenshot capture', () => {
   // Drives ~22 surfaces across several windows (main, dialogs, a separate
   // Settings window iterating 18 sections, the viewer, the shortcuts window),
-  // with window open/close throughout — well over the 15s per-test default. As
+  // with window open/close throughout, well over the 15s per-test default. As
   // the surface set grows, bump this. (A normal interaction test fits in
   // 15s; this is a multi-surface capture driver, not a normal test.)
   test('captures representative surfaces and writes the coupling report', async ({ tauriPage }) => {
@@ -228,7 +228,7 @@ test.describe('i18n screenshot capture', () => {
     try {
       await (main as unknown as { stopRecording: () => Promise<unknown> }).stopRecording()
     } catch {
-      // Already stopped or unsupported — fine.
+      // Already stopped or unsupported; fine.
     }
 
     // surface label → { keys, screenshot filename }, plus the surfaces that threw
@@ -317,7 +317,7 @@ test.describe('i18n screenshot capture', () => {
     // WebviewWindow), so it captures against the main page's sink. Opened via the
     // `app.about` command. Re-enable + setSurface BEFORE opening so the dialog's
     // mount-time `t()` calls record under `about` too. Foreground window, so the
-    // shared settlePaint is enough — no set_focus. Captured BEFORE the shortcuts
+    // shared settlePaint is enough, no set_focus. Captured BEFORE the shortcuts
     // window so the (separate-window) shortcuts open/close can't perturb the main
     // window's sink between the dialog mount and its key dump.
     await captureSurface('about', report, failed, async () => {
@@ -338,7 +338,7 @@ test.describe('i18n screenshot capture', () => {
 
     // ── Main-window report/feedback/license dialogs (default launch) ──────────
     // The license-key ENTRY dialog (Personal state), error-report, and feedback
-    // dialogs — all main-window ModalDialogs opened by a registry command. The
+    // dialogs, all main-window ModalDialogs opened by a registry command. The
     // commercial/expired license surfaces need a separate `CMDR_MOCK_LICENSE`
     // launch (the license pass below).
     await captureMainDialogs(main, report, failed)
@@ -448,7 +448,7 @@ test.describe('i18n screenshot capture', () => {
     //    committed-license view reads `getLicenseInfo()` (the stored,
     //    signature-verified key), which `CMDR_MOCK_LICENSE` does NOT populate (the
     //    mock only drives `AppStatus`, not the stored `LicenseInfo`). Reaching it
-    //    needs a real committed test key in the store — out of scope. The paid
+    //    needs a real committed test key in the store, out of scope. The paid
     //    About (`about-commercial` / `about-perpetual`), the commercial-reminder
     //    modal, and the expiration modal ARE captured in their license passes (the
     //    debug-assertions capture build honors the mock).
@@ -481,8 +481,8 @@ test.describe('i18n screenshot capture', () => {
     // window, which is out of scope to change here.
     //
     // Cost of skipping is low: this window renders only the `shortcuts.list.*`
-    // keys via `ShortcutsList` (noShortcut, addedTooltip, disabledTooltip) — 4
-    // keys total — and nothing else couples them today, so they stay uncoupled.
+    // keys via `ShortcutsList` (noShortcut, addedTooltip, disabledTooltip), 4
+    // keys total, and nothing else couples them today, so they stay uncoupled.
     // It is SKIPPED (not failed): a clean run shouldn't go red on a documented
     // harness gap. Tracked in `capture-skipped.json` for coverage honesty.
     //
@@ -557,7 +557,7 @@ test.describe('i18n screenshot capture', () => {
     if (failed.length > 0) console.warn(`[i18n-capture] FAILED surfaces: ${failed.join(', ')}`)
     if (skipped.length > 0) console.warn(`[i18n-capture] SKIPPED surfaces (documented gaps): ${skipped.join(', ')}`)
 
-    // Fail the test (non-zero) only on UNEXPECTED failures — but only AFTER
+    // Fail the test (non-zero) only on UNEXPECTED failures, but only AFTER
     // writing the report and attempting every surface, so partial progress is
     // never lost. Documented skips don't fail the run (they're logged + tracked).
     expect(failed, `surfaces failed to capture: ${failed.join(', ')}`).toEqual([])

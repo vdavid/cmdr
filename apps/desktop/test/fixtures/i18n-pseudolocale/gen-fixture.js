@@ -8,7 +8,7 @@
  * eyeball-able input that doesn't move when product copy changes.
  *
  * The fixture is BUILT from the generator (`buildPseudoFile`), never hand-typed, so
- * its `en-XA` side is always exactly what the generator produces — committing it
+ * its `en-XA` side is always exactly what the generator produces, and committing it
  * also pins the generator's output shape. The curated `en` keys deliberately cover
  * every shape a check must handle: a plain label, a `{placeholder}`, a `<tag>`, a
  * `plural`, a `select`, a multi-placeholder sentence, and a RAW `errors.*` key
@@ -60,7 +60,7 @@ const en = {
     description: 'Raw error suggestion; {system_settings} is a substituted system label, <folder-path> is literal.',
   },
 
-  // Brand/system WORDS (Cmdr, macOS) that must survive translation verbatim — the
+  // Brand/system WORDS (Cmdr, macOS) that must survive translation verbatim. The
   // generator keeps them un-accented, so this also pins that behavior and gives
   // the don't-translate check a clean fixture baseline.
   'fixture.brandLine': 'Cmdr needs Full Disk Access on macOS to continue',

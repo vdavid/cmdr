@@ -6,15 +6,15 @@
  * Three responsibilities, all pure/deterministic (no app/runtime imports beyond
  * the ICU parser, no `window`/DOM, no time/RNG):
  *
- *  1. Catalog I/O — load a locale's merged catalog (`messages/<locale>/*.json`),
+ *  1. Catalog I/O: load a locale's merged catalog (`messages/<locale>/*.json`),
  *     stripping the ARB-style `@key` metadata into a separate map; enumerate the
  *     available locales and each locale's key set.
- *  2. ICU parsing — parse each message to its AST with the SAME engine the
+ *  2. ICU parsing: parse each message to its AST with the SAME engine the
  *     runtime uses (`intl-messageformat`, see below), then extract the structure
  *     a translation must preserve: placeholder/argument names, `<tag>` names, and
  *     the `plural`/`select` categories per argument. A single source of truth for
  *     "what tokens/structure does this message have".
- *  3. Source hashing — `sourceHash(value)`: a git-style 7-char hex of an English
+ *  3. Source hashing: `sourceHash(value)` is a git-style 7-char hex of an English
  *     value, stamped into `@key.sourceHash` by the pseudolocale generator and
  *     compared by the stale check.
  *
@@ -188,7 +188,7 @@ export function loadCatalog(locale, messagesRoot) {
 /** A parsed-message analysis. See `parseMessage`. */
 /**
  * Recursively walks an ICU AST, collecting placeholder/argument names, `<tag>`
- * names, and, per argument, the set of category labels used — kept in SEPARATE
+ * names, and, per argument, the set of category labels used, kept in SEPARATE
  * maps for `plural` vs `select`. The distinction matters downstream: the
  * plural-coverage check compares a locale's `plural` categories against that
  * locale's required CLDR set, where `select` categories are an arbitrary,
@@ -247,7 +247,7 @@ function walkAst(ast, acc) {
  * @param {string} value the ICU message string
  * @param {string} [locale] locale tag for parsing (default `en`; the AST shape
  *   is locale-independent, so this only affects which CLDR plural set the engine
- *   would later use — irrelevant to structure extraction)
+ *   would later use, irrelevant to structure extraction)
  * @returns {{
  *   placeholders: Set<string>,
  *   tags: Set<string>,
@@ -284,7 +284,7 @@ export function sourceHash(englishValue) {
 }
 
 /**
- * Brand/product/system WORDS that must survive translation verbatim — never
+ * Brand/product/system WORDS that must survive translation verbatim: never
  * localized, never accented. Curated and explicit (extend deliberately, not by
  * pattern), derived from the brand glossary (`brand/copy/cmdr-copy.md`,
  * `docs/guides/branding.md`) and the product's external entities. Single source of
@@ -367,7 +367,7 @@ export function isRawKey(key) {
  * Extracts the set of brace-token names (`{system_settings}`, `{path}`, …) from a
  * RAW (non-ICU) message. The raw error pipeline substitutes these by name with
  * `.replaceAll('{token}', value)`, so a translation MUST preserve the exact token
- * set — exactly the role placeholder parity plays for ICU messages. Mirrors the
+ * set, exactly the role placeholder parity plays for ICU messages. Mirrors the
  * generator's `pseudoRaw` token handling: a `{…}` span (no nesting in raw error
  * tokens) is one token; everything else is literal.
  * @param {string} value the raw English/locale message

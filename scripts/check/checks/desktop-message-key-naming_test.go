@@ -44,7 +44,7 @@ func TestValidateMessageKey_RejectsUnknownArea(t *testing.T) {
 	if reason := validateMessageKey("bogusarea.title"); reason == "" {
 		t.Error("validateMessageKey(bogusarea.title) = valid, want an unknown-area violation")
 	}
-	// Shape is fine, only the area is unknown — the reason should say so.
+	// Shape is fine, only the area is unknown, so the reason should say so.
 	if reason := validateMessageKey("widgets.foo"); reason == "" {
 		t.Error("validateMessageKey(widgets.foo) = valid, want an unknown-area violation")
 	}

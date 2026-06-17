@@ -5,7 +5,7 @@
  * required categories (one, other). Negative paths: drop a required category from
  * the fixture (one → flagged), and exercise the pure classifier against a
  * richer-CLDR locale (Polish needs one/few/many/other) without committing any
- * real-language content — the data-driven required set comes from `Intl`.
+ * real-language content: the data-driven required set comes from `Intl`.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
@@ -22,7 +22,7 @@ function capture() {
   return { lines, write: (/** @type {string} */ l) => void lines.push(l) }
 }
 
-describe('requiredPluralCategories — data-driven from Intl', () => {
+describe('requiredPluralCategories: data-driven from Intl', () => {
   it('English needs one and other', () => {
     expect([...requiredPluralCategories('en')].sort()).toEqual(['one', 'other'])
   })
@@ -36,7 +36,7 @@ describe('requiredPluralCategories — data-driven from Intl', () => {
   })
 })
 
-describe('pluralCoverageDetail — pure classifier', () => {
+describe('pluralCoverageDetail: pure classifier', () => {
   it('is clean when a message covers the locale required set', () => {
     expect(pluralCoverageDetail('en', '{count, plural, one {# file} other {# files}}')).toBeNull()
   })

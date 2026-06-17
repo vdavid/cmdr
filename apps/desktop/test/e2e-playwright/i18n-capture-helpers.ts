@@ -8,7 +8,7 @@
  * (`captureSurface` for reactive mounted markup, `captureToastSurface` for
  * snapshot-resolved toasts). The per-group capture functions live in
  * `i18n-capture-surfaces.ts` and the orchestration in the spec; both import from
- * here. Split out purely for the file-length budget — behavior is unchanged.
+ * here. Split out purely for the file-length budget; behavior is unchanged.
  */
 
 import { dirname, join } from 'node:path'
@@ -195,7 +195,7 @@ export async function keysFor(page: TauriPage, surface: string): Promise<string[
  * Resolves on the next animation frame, BUT races a short timeout: `requestAnimationFrame`
  * is throttled/paused on a window that isn't foreground (in E2E, child windows
  * are ordered to the back), where it would otherwise never fire and hang the
- * eval. The timeout is a safety net, not the primary signal — a foreground window
+ * eval. The timeout is a safety net, not the primary signal: a foreground window
  * resolves on the real frame in ~16 ms.
  */
 export async function settlePaint(page: TauriPage): Promise<void> {
@@ -243,7 +243,7 @@ export interface StagedSurface {
  * caught, logged, and pushed to `failed`, and the run continues to the next
  * surface. Without this isolation a single broken surface (e.g. a window that
  * won't load) aborts the whole driver before the report is written, discarding
- * every surface that already succeeded — fatal whack-a-mole for a ~50-surface
+ * every surface that already succeeded: fatal whack-a-mole for a ~50-surface
  * capture. The test still fails at the end if `failed` is non-empty (see the
  * final `expect`), but only AFTER every surface is attempted and the report
  * written.
@@ -361,7 +361,7 @@ export async function captureToastSurface(
     // recorded) at emit time, which is inside `trigger`.
     await main.waitForSelector('.toast', 5000)
     // The toast slides in over a 0.2s animation (opacity 0→1, translateX 20→0).
-    // `waitForSelector` returns the instant it's in the DOM — mid-animation — so
+    // `waitForSelector` returns the instant it's in the DOM (mid-animation), so
     // wait for the enter animation to FINISH (opacity 1, transform settled to
     // identity) before the native capture, which composites the last frame and
     // would otherwise grab a half-faded or already-gone toast.
@@ -383,8 +383,8 @@ export async function captureToastSurface(
 /**
  * Captures ONE real friendly-error pane as the REPRESENTATIVE image for the whole
  * `errors.*` family (listing / write / provider / git). Every friendly error
- * shares this presentation — a bold title, an explanation paragraph, and a
- * suggestion — so a single honest capture, plus the coupler's representative
+ * shares this presentation (a bold title, an explanation paragraph, and a
+ * suggestion), so a single honest capture, plus the coupler's representative
  * `@key.screenshotNote`, lets a translator load one image for the entire family.
  *
  * Like a toast, the error copy is SNAPSHOT-RESOLVED: `renderListingError` calls
@@ -397,7 +397,7 @@ export async function captureToastSurface(
  * back so the next surface (and the afterEach leak guard) starts clean.
  *
  * Uses the `inject_listing_error` Tauri command (feature-gated behind
- * `playwright-e2e`, present in the capture build) — the same hook
+ * `playwright-e2e`, present in the capture build): the same hook
  * `error-pane.spec.ts` uses. The injected error is single-shot, so the cleanup
  * navigation succeeds naturally.
  */

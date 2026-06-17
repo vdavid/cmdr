@@ -14,9 +14,9 @@ import (
 const staleStrictEnv = "CMDR_I18N_STALE_STRICT"
 
 // RunDesktopI18nStale flags a non-`en` locale that holds a translation whose
-// stored `@key.sourceHash` no longer matches the current English value's hash —
-// i.e. the English source changed since the string was translated, so the
-// translation is STALE. It also flags a present translation with no stored hash,
+// stored `@key.sourceHash` no longer matches the current English value's hash
+// (the English source changed since the string was translated, so the
+// translation is STALE). It also flags a present translation with no stored hash,
 // a translated key whose English source was removed, and a stale key still
 // carrying `reviewed: true` (the human sign-off no longer applies). See
 // `apps/desktop/scripts/i18n-check-stale.js`.

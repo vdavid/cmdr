@@ -112,7 +112,7 @@ func RunDesktopMessageKeyNaming(ctx *CheckContext) (CheckResult, error) {
 		})
 		var sb strings.Builder
 		for _, v := range violations {
-			sb.WriteString(fmt.Sprintf("  %s: %q — %s\n", v.file, v.key, v.reason))
+			sb.WriteString(fmt.Sprintf("  %s: %q (%s)\n", v.file, v.key, v.reason))
 		}
 		return CheckResult{}, fmt.Errorf(
 			"found %d malformed message %s (shape `^[a-z][a-zA-Z0-9]*(\\.[a-z][a-zA-Z0-9]*)+$`, known area first segment):\n%s",

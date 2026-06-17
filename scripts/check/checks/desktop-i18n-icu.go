@@ -8,7 +8,7 @@ import (
 )
 
 // RunDesktopI18nIcu FAILS (error, not warn) when a non-`en` ICU message doesn't
-// compile via `intl-messageformat` — a stray unescaped `'`/`{`/`<`, an unclosed
+// compile via `intl-messageformat`: a stray unescaped `'`/`{`/`<`, an unclosed
 // tag, or a malformed `plural`/`select`. An invalid ICU message THROWS at render
 // time, so it's a runtime crash, not a typo. The raw `errors.*` family is
 // excluded (it resolves raw via `getMessage()`, not ICU). See

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * PLACEHOLDER / TAG PARITY check (i18n maintenance, M3) — ERROR class.
+ * PLACEHOLDER / TAG PARITY check (i18n maintenance, M3): ERROR class.
  *
  * A translation must preserve EXACTLY the substitution structure of its English
  * source: the same set of `{placeholders}` and `<tags>`. A missing, renamed, or
- * extra `{arg}`/`<tag>` is the #1 runtime CRASH class — `intl-messageformat`
+ * extra `{arg}`/`<tag>` is the #1 runtime CRASH class: `intl-messageformat`
  * throws on a `{name}` it has no value for, and the raw error pipeline silently
  * drops or mis-substitutes a token. So this is the one locale check that FAILS
  * the build (the Go wrapper maps exit 1 → ERROR), not a warn.
@@ -15,7 +15,7 @@
  *    ride along inside the message and are covered here via the arg name being a
  *    placeholder; plural-CATEGORY coverage is a separate check.)
  *  - Raw keys (`errors.*`): these bypass ICU (`getMessage()` raw lookup), so
- *    compare the `{token}` brace sets (`rawTokens`) instead — the raw-pipeline
+ *    compare the `{token}` brace sets (`rawTokens`) instead: the raw-pipeline
  *    analogue of placeholder parity.
  *
  * A key MISSING from the locale isn't a parity failure (the runtime falls back to
@@ -70,7 +70,7 @@ export function parityDetail(key, englishValue, localeValue) {
   const loc = parseMessage(localeValue)
   // An unparseable locale value is the ICU-validity check's job to report; here we
   // can still compare against English's tokens (the locale's sets are empty on a
-  // parse failure, so a parse failure also shows up as a parity mismatch — both
+  // parse failure, so a parse failure also shows up as a parity mismatch, and both
   // checks flagging it is fine and points at the same fix).
   const phMissing = difference(en.placeholders, loc.placeholders)
   const phExtra = difference(loc.placeholders, en.placeholders)

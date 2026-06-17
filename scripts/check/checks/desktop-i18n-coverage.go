@@ -10,8 +10,8 @@ import (
 // RunDesktopI18nCoverage warns (never fails) when a non-`en` locale doesn't fully
 // cover the English catalog: a key MISSING from the locale (the runtime silently
 // renders English), or a value byte-IDENTICAL to English (likely untranslated).
-// An honest-coverage signal so a "100% translated" claim is trustworthy — not a
-// crash (the runtime falls back to English), so warn-only. See
+// An honest-coverage signal so a "100% translated" claim is trustworthy. It's
+// not a crash (the runtime falls back to English), so warn-only. See
 // `apps/desktop/scripts/i18n-check-coverage.js`.
 //
 // Exit-code contract (mirrored by `i18n-locale-check-lib.js`): 0 = clean / no

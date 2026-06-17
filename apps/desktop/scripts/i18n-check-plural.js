@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PLURAL-CATEGORY COVERAGE check (i18n maintenance, M3) — ERROR class.
+ * PLURAL-CATEGORY COVERAGE check (i18n maintenance, M3): ERROR class.
  *
  * Each language has its own set of CLDR plural categories: English needs `one`
  * and `other`; Polish needs `one`, `few`, `many`, and `other`; Japanese needs
@@ -17,8 +17,8 @@
  * so they're ignored here (the catalog helper only surfaces keyword categories).
  *
  * Gated on the ENGLISH source's own plural shape, which encodes the value domain
- * the message can ever see. A few English plurals are DELIBERATELY degenerate —
- * `{count, plural, other {…}}` with no `one` — because the count is constrained
+ * the message can ever see. A few English plurals are DELIBERATELY degenerate
+ * (`{count, plural, other {…}}` with no `one`) because the count is constrained
  * by construction (e.g. `fileExplorer.network.reconnect.times` only renders for
  * three-or-more; one/two have their own words). When English uses only `other`,
  * `count` is never 1, so a translation matching that shape is correct and we
@@ -27,7 +27,7 @@
  * richer-CLDR locale (Polish: few/many) must cover its full required set. Without
  * this gate the check would flag English's own deliberate partial plurals.
  *
- * `select` is NOT checked here — its categories are an arbitrary, message-defined
+ * `select` is NOT checked here: its categories are an arbitrary, message-defined
  * enumeration (covered by placeholder/tag parity, which requires the locale's
  * select branches to match English). Only `plural` args are CLDR-governed, which
  * is why the catalog helper keeps `pluralCategories` and `selectCategories`

@@ -48,7 +48,7 @@ import {
  * stable `data-section-id` on the rendered `<section>` (see
  * `SettingsContent.svelte`) used as the per-section readiness signal; `label` is
  * the capture surface name. Mirrors the section table in `accessibility.spec.ts`
- * and `SettingsContent.svelte` — keep in sync if a section is added, renamed, or
+ * and `SettingsContent.svelte`: keep in sync if a section is added, renamed, or
  * re-homed.
  *
  * EVERY section (including the first, Appearance › Colors and formats) is reached
@@ -137,7 +137,7 @@ export async function captureSettingsWindow(
     // aren't throttled while occluded, then wait for `initialized` (the sidebar
     // renders only after it). Don't wait on a specific section here: the
     // default-rendered section is restored from the persisted store and is
-    // non-deterministic — the loop below deep-links to each section explicitly.
+    // non-deterministic, so the loop below deep-links to each section explicitly.
     await focusWindow(settingsPage, 'settings')
     await settingsPage.waitForSelector('.settings-window .section-item', 10000)
     await captureCall(settingsPage, 'reset')
@@ -235,7 +235,7 @@ export async function captureMainOverlays(
     return '[data-dialog-id="delete-confirmation"]'
   })
 
-  // Rename: the inline editor (F2 → `file.rename`), NOT a modal — the input
+  // Rename: the inline editor (F2 → `file.rename`), NOT a modal. The input
   // mounts in-pane, so `dismissOverlay` (which only knows overlay selectors)
   // can't close it. Cancel the editor explicitly with a synthetic Escape.
   await captureSurface('rename-dialog', report, failed, async () => {
@@ -379,7 +379,7 @@ export async function captureMainOverlays(
  * same registry commands / file ops the production UI uses.
  *
  * Toasts that need backend events we can't fire from the frontend (the real
- * download-complete toast, MTP-connected, low-disk) are NOT here — they're
+ * download-complete toast, MTP-connected, low-disk) are NOT here: they're
  * documented skips deferred to the mock-staged surfaces.
  */
 export async function captureFrontendToasts(
@@ -439,7 +439,7 @@ export async function captureFrontendToasts(
  * via the production `mcp-nav-to-path` event (the same path the MCP nav tool
  * uses); the list view renders `.empty-folder-message` when the directory has no
  * entries. Mounted markup, so the normal `captureSurface` rerender path records
- * its keys — no snapshot-before-trigger needed.
+ * its keys, no snapshot-before-trigger needed.
  */
 export async function captureEmptyPane(
   main: TauriPage,
@@ -449,7 +449,7 @@ export async function captureEmptyPane(
   await captureSurface('empty-pane', report, failed, async () => {
     // Make a guaranteed-fresh empty directory under the fixture root and navigate
     // a pane into it via the MCP `nav_to_path` tool (which acks on completion, so
-    // we know the listing actually swapped — `mcp-nav-to-path` is fire-and-forget
+    // we know the listing actually swapped; `mcp-nav-to-path` is fire-and-forget
     // and silently no-ops on a same-path or non-local pane). A brand-new dir
     // (not the start-path `right/`, which a prior copy or cached listing can leave
     // non-empty) reliably forces a re-listing of an empty directory. Navigate the
@@ -480,8 +480,8 @@ const ONBOARDING_STEP_BOUND = 6
  * component rendered into `.wizard-body` by the step cursor, so a step's `t()` /
  * `<Trans>` keys only mount while that step is active. The wizard lives in the
  * MAIN window's sink (it's an in-app sheet, not a separate window), and it's
- * mounted markup — the normal rerender path records the active step's keys. So
- * for each step: setSurface, rerender, screenshot, then click the forward button
+ * mounted markup, so the normal rerender path records the active step's keys.
+ * For each step: setSurface, rerender, screenshot, then click the forward button
  * to advance.
  *
  * Staging: `cmdr.openOnboarding` opens the wizard at the first reachable step. On

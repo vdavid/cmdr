@@ -184,7 +184,7 @@ export async function captureQuickLookHint(
  *
  * The LICENSE DETAILS view (the LicenseKeyDialog with a committed key) is NOT
  * here: it reads `getLicenseInfo()` (the stored, signature-verified key), which
- * the env mock doesn't populate — it needs a real committed test key, out of
+ * the env mock doesn't populate: it needs a real committed test key, out of
  * scope. It stays document-skipped in the spec.
  */
 export async function captureLicensePass(

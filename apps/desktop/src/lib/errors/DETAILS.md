@@ -23,12 +23,12 @@ parity-pinned by `transfer/transfer-error-messages.parity.test.ts`, not by our g
 1. Rust emits a `listing-error` event carrying a typed `ListingError` (category, reason + params, optional provider,
    action kind, retry hint, raw detail). Git failures ride as the `git` reason carrying a `FriendlyGitErrorKind`.
 2. `ErrorPane` calls `renderListingError(error)` (`listing-error.ts`): it picks the base message from the listing
-   factory (`getListingErrorMessage`) — or the git factory (`getGitErrorMessage`) for the `git` reason — then, when a
+   factory (`getListingErrorMessage`), or the git factory (`getGitErrorMessage`) for the `git` reason, then, when a
    `provider` is present, replaces the base suggestion with `getProviderSuggestion(provider, category)`. This reproduces
    the old Rust `enrich_with_provider` override exactly.
 3. The factory pulls each string from the `errors.*` message catalog via `getMessage()` (a RAW catalog lookup, never ICU
-   `t()` — see the catalog boundary below), substitutes its escaped runtime params (`{path}` / `{osMessage}` tokens),
-   and substitutes localized macOS pane labels via `expandSystemStrings(...)`.
+   `t()`; see the catalog boundary below), substitutes its escaped runtime params (`{path}` / `{osMessage}` tokens), and
+   substitutes localized macOS pane labels via `expandSystemStrings(...)`.
 4. `ErrorPane` renders the result. The explanation / suggestion go through the single `renderErrorMarkdown` → snarkdown
    → `{@html}` site ([`error-pane-utils.ts`](../file-explorer/pane/error-pane-utils.ts)); the title and `raw_detail` are
    plain text.
@@ -59,11 +59,11 @@ templates; `expandSystemStrings` substitutes the live localized labels from `lib
 ## Message-catalog boundary (`getMessage`, not ICU `t()`)
 
 The literal English lives in [`../intl/messages/en/errors.json`](../intl/messages/en/errors.json) under `errors.*`, and
-the factories resolve it via `getMessage(key)` — a raw catalog lookup with no ICU parsing. This is deliberate: error
+the factories resolve it via `getMessage(key)`, a raw catalog lookup with no ICU parsing. This is deliberate: error
 values carry markdown plus `{system_settings}`-style `expandSystemStrings` tokens and `esc()` HTML entities, all of
 which collide with ICU MessageFormat's brace/apostrophe grammar. Routing them through `t()`/`format()` would mangle
 them. So errors are the one area that bypasses ICU (see the i18n plan's Decision 2 and its errors note). A corollary:
-`errors.json` values do NOT double apostrophes — the ICU `''` rule does not apply to non-ICU strings.
+`errors.json` values do NOT double apostrophes, since the ICU `''` rule does not apply to non-ICU strings.
 
 Key shape: `errors.listing.<reason>.{title,explanation,suggestion}`, `errors.git.<kind>.{title,message,suggestion}`, and
 the provider keys. Param tokens (`{path}`, `{osMessage}`) are substituted by `interpolate(...)` in
@@ -89,11 +89,11 @@ into a single `nonTransient` key (they rendered identical copy for both). The `n
   `__fixtures__/friendly_error_golden.json` byte-for-byte (one assertion per golden key). The golden was generated once
   by a temporary Rust test that recorded the exact pre-change rendered strings for a representative matrix (every errno
   arm, every typed `VolumeError` variant, every git kind, the empty-root case, every provider × category). The fixture
-  is FROZEN: if the test fails, the FE copy drifted — fix the factory, never regenerate the fixture.
+  is FROZEN: if the test fails, the FE copy drifted, so fix the factory, never regenerate the fixture.
 - **`friendly-error-style.test.ts`**: iterates every listing reason × representative params, every git kind, and every
   provider × category, asserting the rendered output obeys the writing rules (no "error" / "failed" / trivializing
   words). Strictly better coverage than the old Rust string test: it checks the actual rendered output. The one
-  pre-existing nit ("for just this folder" in `tccRestricted`) is exempted via `PREEXISTING_TRIVIALIZING_EXCEPTIONS` —
+  pre-existing nit ("for just this folder" in `tccRestricted`) is exempted via `PREEXISTING_TRIVIALIZING_EXCEPTIONS`,
   flagged for a future copy pass, not reworded (behavior-preserving move).
 - **`markdown-escape.test.ts`**: the ported escaper unit tests (the security boundary).
 - **`listing-error.test.ts`**: the adapter (base-message selection + provider override).

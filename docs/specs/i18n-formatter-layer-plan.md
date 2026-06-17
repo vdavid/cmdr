@@ -95,7 +95,7 @@ German, say) now sees `1.234` where they saw `1,234`. This is the intended, nati
 with the dates that already localize. `LoadingIcon.svelte` routes through `formatNumber` instead of a bare
 `toLocaleString()`. An en-US-region runtime is unchanged.
 
-### Decision 3: file sizes — localize the numeric portion, keep units and tiers intact
+### Decision 3: file sizes (localize the numeric portion, keep units and tiers intact)
 
 Surgical: change ONLY the number formatting inside the size path; leave unit selection, unit-label casing, and all tier
 coloring exactly as-is.
@@ -109,7 +109,7 @@ coloring exactly as-is.
   colorizes to the right tier. (If you find a cleaner way to pass the unit explicitly instead of re-parsing, that's a
   welcome small improvement, but it's optional and must not expand scope.)
 
-### Decision 4: raw-byte triads — derive the group separator from the locale (KEY REVIEWABLE DECISION)
+### Decision 4: raw-byte triads, deriving the group separator from the locale (KEY REVIEWABLE DECISION)
 
 `formatSizeTriads` keeps its per-triad tier coloring (split into 3-digit groups, color each), but sources the group
 separator from the active locale instead of the hardcoded U+2009, so counts and byte grouping agree. Get the separator
@@ -122,7 +122,7 @@ byte sizes, which is incoherent). David should confirm this is the desired call 
 always-thin-space look, this decision flips to "keep U+2009" and `formatNumber` should arguably match. Flag it in the
 hand-off, don't silently pick.
 
-### Decision 5: dates — route the existing `'system'` formatter through the chokepoint
+### Decision 5: dates (route the existing `'system'` formatter through the chokepoint)
 
 `getSystemLocaleFormatter()` currently passes `undefined` as the locale (runtime default). Change it to `getLocale()` so
 there is one locale source. Behavior is identical today (the chokepoint returns the same runtime default), but the seam
@@ -195,7 +195,7 @@ Each step compiles and passes `pnpm check --fast` before the next.
 ## Files in scope (verify before editing)
 
 - new: `src/lib/intl/locale.ts` (+ `.test.ts`), `src/lib/intl/CLAUDE.md` + `DETAILS.md`, plus a memoized
-  `Intl.NumberFormat` factory (in `lib/intl/` or colocated with the size utils — pick the cleaner home).
+  `Intl.NumberFormat` factory (in `lib/intl/` or colocated with the size utils, whichever is the cleaner home).
 - `src/lib/file-explorer/selection/selection-info-utils.ts` (`formatNumber`, `formatSizeTriads`, `colorizeSizeString`,
   `tierClassForUnit`) + `.test.ts`.
 - `src/lib/settings/format-utils.ts` (`formatFileSizeWithFormat`, `getSystemLocaleFormatter`) + `.test.ts`.

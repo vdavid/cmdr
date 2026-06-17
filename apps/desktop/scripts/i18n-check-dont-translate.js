@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 /**
- * DON'T-TRANSLATE TOKENS check (i18n maintenance, M3) — WARN class.
+ * DON'T-TRANSLATE TOKENS check (i18n maintenance, M3): WARN class.
  *
  * Some tokens must survive translation verbatim: brand and product names, and the
  * system-label substitution tokens. If an English value contains one and the
  * locale's value dropped it, the translator likely localized something that
- * shouldn't be — a quality slip, not a crash, so warn-only.
+ * shouldn't be. That's a quality slip, not a crash, so warn-only.
  *
  * The curated lists (`BRAND_WORDS`, `SYSTEM_TOKENS`) live in `i18n-catalog-lib.js`
  * as the single source of truth, shared with the pseudolocale generator (which
  * keeps them verbatim so en-XA passes this check). Two token kinds (NO
  * language-specific translations, only token NAMES):
- *  1. Brand/system WORDS — literal substrings that must appear verbatim. Derived
+ *  1. Brand/system WORDS: literal substrings that must appear verbatim. Derived
  *     from the brand glossary (`brand/copy/cmdr-copy.md`, `docs/guides/branding.md`)
  *     and the product's external entities. Matched whole-word, case-sensitively
  *     (so "macOS" must stay "macOS"). A locale legitimately omitting one (a
  *     reworded sentence) produces a soft warn for a human to confirm.
- *  2. Substitution TOKENS — `{system_settings}` and friends, the
+ *  2. Substitution TOKENS: `{system_settings}` and friends, the
  *     `expandSystemStrings` placeholders the raw error pipeline replaces by name
  *     (mirrors `src/lib/system-strings.svelte.ts` `ENGLISH_DEFAULTS`). These are
  *     ALSO guarded structurally by the parity check (raw `{token}` parity); listing

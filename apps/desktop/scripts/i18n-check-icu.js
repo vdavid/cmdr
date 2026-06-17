@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
- * ICU VALIDITY check (i18n maintenance, M3) — ERROR class.
+ * ICU VALIDITY check (i18n maintenance, M3): ERROR class.
  *
  * Every NON-`en` ICU message must compile via `intl-messageformat` (the exact
  * engine the runtime uses). A stray unescaped `'`/`{`/`<`, an unclosed tag, or a
  * malformed `plural`/`select` THROWS at render time, so an invalid locale message
- * is a runtime crash, not a typo — this FAILS the build (Go wrapper maps exit
+ * is a runtime crash, not a typo, so this FAILS the build (Go wrapper maps exit
  * 1 → ERROR).
  *
  * The raw `errors.*` family is EXCLUDED (`isRawKey`): it resolves through
  * `getMessage()` (a raw lookup, no ICU), and its `{system_settings}` tokens,
  * literal `<…>` text, markdown, and lone apostrophes deliberately are NOT valid
- * ICU — running them through the ICU parser would false-flag valid raw copy. The
+ * ICU: running them through the ICU parser would false-flag valid raw copy. The
  * raw family's structure is guarded by the parity check's `{token}` comparison
  * instead. (The pseudolocale generator makes the same split via `isRawKey`, so
  * the fixture's raw value stays raw and is correctly skipped here.)

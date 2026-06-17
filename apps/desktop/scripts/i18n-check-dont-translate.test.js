@@ -4,7 +4,7 @@
  * Clean path: the committed pseudolocale fixture preserves `{system_settings}`
  * (its only listed token) in en-XA. Negative paths (temp copies): drop the system
  * token from the locale value, and introduce a brand word in English that the
- * locale value omits — asserting exactly those keys are flagged.
+ * locale value omits, asserting exactly those keys are flagged.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
@@ -28,7 +28,7 @@ describe('curated lists', () => {
   })
 })
 
-describe('droppedTokens — pure detector', () => {
+describe('droppedTokens: pure detector', () => {
   it('clean when the locale keeps the brand word and the system token', () => {
     expect(droppedTokens('Open {system_settings} in macOS', 'Abrir {system_settings} en macOS')).toEqual([])
   })

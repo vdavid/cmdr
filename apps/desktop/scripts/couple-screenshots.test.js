@@ -14,8 +14,8 @@ import {
 // 2-space indent, each `@key` twin right after its message key, BLANK LINES
 // between groups, a nested `placeholders` object, ICU braces, doubled
 // apostrophes. The N1 safety guarantee under test: coupling edits ONLY
-// `@key.screenshot` / `@key.screenshotNote` and leaves every other byte —
-// values, other twin fields, indentation, and the blank-line grouping —
+// `@key.screenshot` / `@key.screenshotNote` and leaves every other byte
+// (values, other twin fields, indentation, and the blank-line grouping)
 // byte-identical.
 const FIXTURE = `{
   "common.ok": "OK",
@@ -121,7 +121,7 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
 
   it('preserves the blank lines between catalog groups', () => {
     const { text } = coupleCatalog(FIXTURE, new Map([['common.ok', { screenshot: 'dialog.png' }]]))
-    // Same number of blank (empty) lines as the input — the round-trip bug this
+    // Same number of blank (empty) lines as the input: the round-trip bug this
     // guards would collapse them to zero.
     /** @param {string} s */
     const blanks = (s) => s.split('\n').filter((/** @type {string} */ l) => l === '').length

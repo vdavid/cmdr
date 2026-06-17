@@ -21,7 +21,7 @@ function capture() {
   return { lines, write: (/** @type {string} */ l) => void lines.push(l) }
 }
 
-describe('icuError — pure classifier', () => {
+describe('icuError: pure classifier', () => {
   it('is clean for valid ICU', () => {
     expect(icuError('a.b', 'Hello {name}')).toBeNull()
     expect(icuError('a.b', '{count, plural, one {# file} other {# files}}')).toBeNull()

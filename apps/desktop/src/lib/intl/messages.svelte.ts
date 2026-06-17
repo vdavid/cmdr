@@ -14,7 +14,7 @@
  *
  * Reactivity (load-bearing): a module-level locale-version `$state` rune
  * (`.svelte.ts` is required for `$state`). It is a re-render SIGNAL, not a
- * second locale source — `getLocale()` stays the single source of truth for the
+ * second locale source. `getLocale()` stays the single source of truth for the
  * VALUE. `t()` and `getMessage()` MUST read the version rune UNCONDITIONALLY at
  * the top, BEFORE any compiled-message cache lookup; otherwise the reactive
  * dependency isn't tracked and `{t('key')}` won't re-run on a locale change.
@@ -23,7 +23,7 @@
  * guard. Pattern mirrors `system-strings.svelte.ts`.
  *
  * `t()`/`getMessage()` are reactive only inside a reactive context (markup /
- * `$derived`). Called once in a plain `.ts` computation they're a snapshot —
+ * `$derived`). Called once in a plain `.ts` computation they're a snapshot,
  * the right semantics for transient strings (toasts, error copy).
  */
 
@@ -114,7 +114,7 @@ export function availableLocales(): string[] {
 
 /**
  * Re-render signal. Bumped by `setLocale()` so markup that read it re-runs.
- * NOT the locale value — that always comes from `getLocale()`.
+ * NOT the locale value: that always comes from `getLocale()`.
  */
 let localeVersion = $state(0)
 
@@ -151,7 +151,7 @@ function resolveRaw(locale: string, key: string): string {
 // `CMDR_I18N_CAPTURE_BUILD=1`) and FALSE in prod and ordinary dev/E2E builds.
 // Because it's a constant, esbuild dead-code-eliminates the entire block below
 // (the sink, `recordCapturedKey`, the API, and `if (false && captureActive) …`
-// in the hot path) when it's false — true zero overhead and verifiably ABSENT
+// in the hot path) when it's false: true zero overhead and verifiably ABSENT
 // from prod. Why a build constant, not the runtime `getAppMode()`: the install
 // runs at module load, before `initAppMode()` resolves over IPC, and the E2E
 // binary is a production Vite build (`import.meta.env.DEV` false), so the runtime

@@ -1,5 +1,5 @@
 /**
- * Tests for the pseudolocale generator (`gen-pseudolocale.js`) — the universal
+ * Tests for the pseudolocale generator (`gen-pseudolocale.js`): the universal
  * i18n test fixture that M2/M3 trust, so correctness of placeholder/ICU
  * preservation is the load-bearing property here.
  *
@@ -43,13 +43,13 @@ const mapEq = (a, b) => {
   return true
 }
 /**
- * The `{name}` brace-tokens of a raw (non-ICU) string — the substitution targets.
+ * The `{name}` brace-tokens of a raw (non-ICU) string: the substitution targets.
  * @param {string} s
  * @returns {Set<string>}
  */
 const braceTokens = (s) => new Set([...s.matchAll(/\{([^{}]+)\}/g)].map((m) => m[1]))
 
-describe('pseudoIcu — transforms literal text, preserves structure', () => {
+describe('pseudoIcu: transforms literal text, preserves structure', () => {
   /**
    * Parse both sides and assert token-set equality + valid pseudo ICU.
    * @param {string} en
@@ -129,7 +129,7 @@ describe('pseudoIcu — transforms literal text, preserves structure', () => {
   })
 })
 
-describe('pseudoRaw — accents text, preserves {tokens} and literal markup', () => {
+describe('pseudoRaw: accents text, preserves {tokens} and literal markup', () => {
   it('preserves {token} substitution targets and accents the rest', () => {
     const en = 'Open {system_settings} to continue'
     const pseudo = pseudoRaw(en)
@@ -212,7 +212,7 @@ describe('determinism', () => {
   })
 })
 
-describe('buildPseudoFile — values + sourceHash metadata', () => {
+describe('buildPseudoFile: values + sourceHash metadata', () => {
   const raw = {
     'a.label': 'Cancel',
     '@a.label': { description: 'A label' },
@@ -235,7 +235,7 @@ describe('buildPseudoFile — values + sourceHash metadata', () => {
   })
 })
 
-describe('ACCEPTANCE BAR — whole real en catalog round-trips with no structural loss', () => {
+describe('ACCEPTANCE BAR: whole real en catalog round-trips with no structural loss', () => {
   const en = loadCatalog('en')
 
   it('every ICU key: pseudo is valid ICU and token sets equal the source', () => {

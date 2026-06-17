@@ -10,9 +10,9 @@ import (
 // RunDesktopI18nParity FAILS (error, not warn) when a non-`en` translation's
 // substitution structure doesn't match its English source: a missing, renamed,
 // or extra `{placeholder}` or `<tag>` (ICU keys), or a dropped/changed `{token}`
-// (the raw `errors.*` family). This is the #1 runtime CRASH class —
+// (the raw `errors.*` family). This is the #1 runtime CRASH class:
 // `intl-messageformat` throws on a `{name}` it has no value for, and the raw
-// error pipeline mis-substitutes a token — so unlike the maintenance-signal
+// error pipeline mis-substitutes a token. So unlike the maintenance-signal
 // checks (stale, key parity, don't-translate), a parity break MUST fail the
 // build. See `apps/desktop/scripts/i18n-check-parity.js`.
 //

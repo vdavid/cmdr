@@ -127,7 +127,7 @@ async function waitForSocket(path, timeoutMs) {
 // A fresh, isolated data dir for the capture run. The app resolves its
 // tauri-plugin-store (settings, license, favorites) and all other persisted
 // state from `CMDR_DATA_DIR` (see `src-tauri/src/settings/loader.rs` /
-// `config.rs`); with no override it falls back to the OS default — the
+// `config.rs`); with no override it falls back to the OS default, which is the
 // DEVELOPER'S REAL PROD STORE. Captures must NOT depend on personal settings:
 // a translator screenshot is canonical only from DEFAULT settings, and a
 // settings-gated surface (the Quick Look hint, suppressed in David's real
@@ -157,7 +157,7 @@ process.on('exit', cleanupCaptureDataDir)
 /** @type {import('node:child_process').ChildProcess | null} */
 let appProc = null
 // Stop ONLY the app process THIS script launched, never a broad
-// `pkill -f 'target.*Cmdr'` — that pattern matches any worktree's running Cmdr
+// `pkill -f 'target.*Cmdr'`: that pattern matches any worktree's running Cmdr
 // (dev or E2E) and would clobber a parallel session. We spawn the binary
 // ourselves, so `appProc.pid` is the exact process to signal. Best-effort and
 // idempotent (SIGTERM a gone pid throws ESRCH, which we swallow).
@@ -182,7 +182,7 @@ process.on('SIGINT', () => {
  * foreign instance (a dev session in another worktree) is safe to coexist with.
  * BUT separate-window captures (Settings, Viewer, Shortcuts, About) rely on
  * `set_focus` bringing an occluded window frontmost, which macOS won't honor if
- * another app is actively foreground — so for clean shots the screen should be
+ * another app is actively foreground, so for clean shots the screen should be
  * idle during a run. We surface the foreign instance rather than hard-failing.
  */
 function warnIfForeignCmdr() {
@@ -190,7 +190,7 @@ function warnIfForeignCmdr() {
   // pgrep exits 0 with matches, 1 with none.
   if (res.status === 0 && res.stdout.trim() !== '') {
     console.warn(
-      `[i18n-capture] WARNING: another Cmdr is running — separate-window shots may capture stale frames ` +
+      `[i18n-capture] WARNING: another Cmdr is running, so separate-window shots may capture stale frames ` +
         `if the screen isn't idle:\n${res.stdout.trim()}`,
     )
   }
@@ -221,12 +221,12 @@ async function main() {
     console.log('[i18n-capture] building capture binary…')
     // `CMDR_I18N_CAPTURE_BUILD=1` flips the `__CMDR_I18N_CAPTURE__` Vite define so
     // the frontend bundle BAKES IN the capture instrumentation. Only THIS build
-    // sets it, so a binary built by the normal E2E lane has no capture API —
+    // sets it, so a binary built by the normal E2E lane has no capture API:
     // `pnpm i18n:capture` must always go through `--build`. The env propagates
     // through tauri-wrapper → Tauri → the vite build.
     //
     // The capture build carries EVERY mock/feature at once (the visual UI is
-    // identical between them — only the cfg gates flip), so one build reaches all
+    // identical between them, only the cfg gates flip), so one build reaches all
     // the special surfaces:
     //  - `playwright-e2e`: the capture sink + E2E IPC (always needed).
     //  - `virtual-mtp`: the fake MTP device, so the MTP browse surface + connected
@@ -234,7 +234,7 @@ async function main() {
     //  - `--config profile.release.debug-assertions=true`: turns ON
     //    `#[cfg(debug_assertions)]` for the RELEASE profile, so the
     //    `CMDR_MOCK_LICENSE` / `CMDR_MOCK_FDA` mocks (debug-only) take effect.
-    //    A clean, scoped Cargo override that touches only this one build — no
+    //    A clean, scoped Cargo override that touches only this one build, with no
     //    committed `Cargo.toml` change. Everything after the tauri `--` separator
     //    is forwarded to `cargo`.
     run(

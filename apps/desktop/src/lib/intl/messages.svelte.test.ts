@@ -5,7 +5,7 @@
  * `.svelte.` infix: the reactivity test mounts a real component that reads `t()`
  * in markup and drives a locale change through `setLocale()` (which bumps the
  * version rune), proving `{t('key')}` re-renders. Driving via
- * `_setLocaleForTests` (value only, no rune bump) would NOT re-render — that's
+ * `_setLocaleForTests` (value only, no rune bump) would NOT re-render: that's
  * the seam distinction Decision 6 warns about.
  */
 import { describe, it, expect, afterEach } from 'vitest'
@@ -178,7 +178,7 @@ describe('reactivity in markup (read-rune-before-cache invariant)', () => {
     const span = target.querySelector('[data-test="trans-text"]')
     expect(span?.textContent).toBe('Moved 1 file to trash')
 
-    // Drive via setLocale (bumps the rune) — the reactive path.
+    // Drive via setLocale (bumps the rune): the reactive path.
     setLocale(TEST_LANG)
     flushSync()
     expect(span?.textContent).toBe('SWITCHED 1')
