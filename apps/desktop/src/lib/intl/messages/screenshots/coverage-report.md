@@ -8,7 +8,7 @@ Per catalog area: how many renderable keys are coupled to a screenshot vs not. U
 
 Coverage is PARTIAL until the driver covers the full surface inventory. Low numbers here are expected, not bugs.
 
-**Total: 825 / 2070 keys coupled (40%).** 304 dynamic-only and 941 not-yet-driven keys remain uncoupled.
+**Total: 820 / 2069 keys coupled (40%).** 304 dynamic-only and 945 not-yet-driven keys remain uncoupled.
 
 | Area | Coupled | Total | % | Dynamic-only | Not driven |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -21,7 +21,7 @@ Coverage is PARTIAL until the driver covers the full surface inventory. Low numb
 | errorReporter | 10 | 35 | 29% | 0 | 25 |
 | errors | 0 | 304 | 0% | 304 | 0 |
 | feedback | 7 | 14 | 50% | 0 | 7 |
-| fileExplorer | 95 | 296 | 32% | 0 | 201 |
+| fileExplorer | 93 | 296 | 31% | 0 | 203 |
 | fileOperations | 62 | 117 | 53% | 0 | 55 |
 | goToPath | 5 | 10 | 50% | 0 | 5 |
 | indexing | 4 | 24 | 17% | 0 | 20 |
@@ -33,7 +33,7 @@ Coverage is PARTIAL until the driver covers the full surface inventory. Low numb
 | onboarding | 77 | 125 | 62% | 0 | 48 |
 | queryUi | 49 | 152 | 32% | 0 | 103 |
 | search | 8 | 13 | 62% | 0 | 5 |
-| settings | 264 | 363 | 73% | 0 | 99 |
+| settings | 261 | 362 | 72% | 0 | 101 |
 | shortcuts | 25 | 54 | 46% | 0 | 29 |
 | transfer | 2 | 10 | 20% | 0 | 8 |
 | ui | 7 | 19 | 37% | 0 | 12 |

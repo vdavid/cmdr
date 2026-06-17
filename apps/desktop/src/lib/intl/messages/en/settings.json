@@ -479,7 +479,8 @@
 
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Go to latest download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
-    "description": "Label for the toggle enabling a system-wide hotkey that jumps to the newest download. On the \"Downloads\" card in Settings > Behavior > File system watching."
+    "description": "Label for the toggle enabling a system-wide hotkey that jumps to the newest download. On the \"Downloads\" card in Settings > Behavior > File system watching.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Press ⌃⌥⌘J from any app to jump to your most recent download. Requires Full Disk Access.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
@@ -729,12 +730,12 @@
   "settings.network.smbConcurrency.label": "Concurrent operations per SMB connection",
   "@settings.network.smbConcurrency.label": {
     "description": "Label for the number input setting how many transfers run in parallel on one SMB connection. \"SMB\" is a protocol name; keep it. Also appears in the Advanced section.",
-    "screenshot": "settings-file-systems-smb.png"
+    "screenshot": "settings-advanced.png"
   },
   "settings.network.smbConcurrency.description": "How many file transfers Cmdr runs in parallel on a single SMB connection. Higher values speed up batch copies of many files (especially many small files) but use more server resources. Default 10 is safe for most home NAS hardware. Changes apply on the next batch copy.",
   "@settings.network.smbConcurrency.description": {
     "description": "Help text for the SMB-concurrency setting. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both). \"NAS\" = network-attached storage; keep the abbreviation. \"10\" is a literal default value.",
-    "screenshot": "settings-file-systems-smb.png"
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.fileOperations.mtpEnabled.label": "Android/Kindle/camera support (PTP and MTP)",
@@ -1035,23 +1036,23 @@
   "settings.fileOperations.maxConflictsToShow.label": "Maximum conflicts to show",
   "@settings.fileOperations.maxConflictsToShow.label": {
     "description": "Label for the picker limiting how many file conflicts are previewed before an operation. In Settings > Behavior > File operations (also in Advanced). \"conflicts\" = name clashes at the destination.",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileOperations.maxConflictsToShow.description": "Maximum number of file conflicts to display in the preview before an operation.",
   "@settings.fileOperations.maxConflictsToShow.description": {
     "description": "Help text for the max-conflicts-to-show setting. \"conflicts\" = files that would clash with existing names at the destination.",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.fileOperations.progressUpdateInterval.label": "Progress update interval",
   "@settings.fileOperations.progressUpdateInterval.label": {
     "description": "Label for the slider setting how often the progress display refreshes during file operations. In Settings > Behavior > File operations (also in Advanced).",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileOperations.progressUpdateInterval.description": "How often to refresh progress during file operations. Lower values feel more responsive but use more CPU.",
   "@settings.fileOperations.progressUpdateInterval.description": {
     "description": "Help text for the progress-update-interval setting. \"CPU\" = the processor; keep the abbreviation.",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.advanced.maxLogStorageMb.label": "Maximum disk space for log files (MB)",
@@ -1101,23 +1102,23 @@
   "settings.search.recentSearches.maxCount.label": "Recent searches to remember",
   "@settings.search.recentSearches.maxCount.label": {
     "description": "Advanced-section label for the number input capping stored recent searches.",
-    "screenshot": "settings-behavior-search.png"
+    "screenshot": "settings-advanced.png"
   },
   "settings.search.recentSearches.maxCount.description": "How many recent searches to keep for the in-dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).",
   "@settings.search.recentSearches.maxCount.description": {
     "description": "Help text for the recent-searches-max-count setting (advanced). \"0\" is a literal value meaning disable. \"footer\" and \"popover\" are UI element terms; \"roll off\" means the oldest are dropped.",
-    "screenshot": "settings-behavior-search.png"
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.selection.recentSelections.maxCount.label": "Recent selections to remember",
   "@settings.selection.recentSelections.maxCount.label": {
     "description": "Advanced-section label for the number input capping stored recent selections. \"selections\" here are saved file-select patterns from the Select/Deselect dialog.",
-    "screenshot": "settings-behavior-search.png"
+    "screenshot": "settings-advanced.png"
   },
   "settings.selection.recentSelections.maxCount.description": "How many recent selections to keep for the Select / Deselect files dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).",
   "@settings.selection.recentSelections.maxCount.description": {
     "description": "Help text for the recent-selections-max-count setting (advanced). \"Select / Deselect files\" is a Cmdr dialog name; translate consistently with that dialog. \"0\" is a literal value meaning disable. \"roll off\" means the oldest are dropped.",
-    "screenshot": "settings-behavior-search.png"
+    "screenshot": "settings-advanced.png"
   },
 
   "settings.onboarding.upgradeNudgeShown.label": "Onboarding upgrade nudge shown",
@@ -1392,7 +1393,7 @@
   "settings.control.customOption": "Custom...",
   "@settings.control.customOption": {
     "description": "Dropdown option that lets the user enter a custom value. The trailing ellipsis signals further input follows; keep an ellipsis.",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.control.customPrefix": "Custom: {value}",
   "@settings.control.customPrefix": {
@@ -1561,7 +1562,8 @@
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
-    "description": "Heading of the Downloads card in Settings > Behavior > File system watching. The card groups two Downloads-folder features: new-download notifications and the go-to-latest-download global shortcut. \"Downloads\" is the macOS folder name; use the OS's localized folder name."
+    "description": "Heading of the Downloads card in Settings > Behavior > File system watching. The card groups two Downloads-folder features: new-download notifications and the go-to-latest-download global shortcut. \"Downloads\" is the macOS folder name; use the OS's localized folder name.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.fileSystemWatching.cardLowDiskSpace": "Low disk space",
   "@settings.fileSystemWatching.cardLowDiskSpace": {
