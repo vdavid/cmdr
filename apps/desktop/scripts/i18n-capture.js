@@ -120,24 +120,29 @@ process.on('SIGINT', () => {
 })
 
 /**
- * Refuses to run if any Cmdr is already running, since a foreign instance (a dev
- * session in another worktree) means the environment isn't clean and our launch
- * could confuse a person. We never kill it — we stop and tell the operator.
+ * Warns (does not block) if another Cmdr is already running. Teardown only stops
+ * the PID we launch and the native screenshot targets our own window IDs, so a
+ * foreign instance (a dev session in another worktree) is safe to coexist with.
+ * BUT separate-window captures (Settings, Viewer, Shortcuts, About) rely on
+ * `set_focus` bringing an occluded window frontmost, which macOS won't honor if
+ * another app is actively foreground — so for clean shots the screen should be
+ * idle during a run. We surface the foreign instance rather than hard-failing.
  */
-function assertNoForeignCmdr() {
+function warnIfForeignCmdr() {
   const res = spawnSync('pgrep', ['-fl', 'target.*Cmdr'], { encoding: 'utf8' })
-  // pgrep exits 0 with matches, 1 with none. Any match → stop.
+  // pgrep exits 0 with matches, 1 with none.
   if (res.status === 0 && res.stdout.trim() !== '') {
-    throw new Error(
-      `A Cmdr instance is already running — refusing to launch a capture run that might confuse it:\n${res.stdout.trim()}\n` +
-        `Stop it (or its dev session) first, then re-run.`,
+    console.warn(
+      `[i18n-capture] WARNING: another Cmdr is running — separate-window shots may capture stale frames ` +
+        `if the screen isn't idle:\n${res.stdout.trim()}`,
     )
   }
 }
 
 async function main() {
-  // Never clobber a running Cmdr (e.g. a dev session in another worktree).
-  assertNoForeignCmdr()
+  // Coexisting with a running Cmdr is safe (PID-scoped teardown, window-ID-scoped
+  // capture); just warn, since a busy screen can spoil separate-window shots.
+  warnIfForeignCmdr()
 
   if (wantBuild) {
     console.log('[i18n-capture] building capture binary…')
