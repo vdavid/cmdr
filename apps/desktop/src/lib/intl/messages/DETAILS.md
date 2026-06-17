@@ -94,7 +94,14 @@ codegen ever sees it:
   match a sibling string, a literal token that must NOT be translated — brand names like "Finder"/"GitHub", format
   tokens like `YYYY`/`MM`, shortcut glyphs). Keep it natural language, not a rigid schema. Do NOT explain the ICU
   plumbing (the translator already knows to preserve placeholder/`plural`/`select` syntax and apply their language's
-  plural categories — that's a one-time instruction in the translator-agent prompt, not per-string noise).
+  plural categories — that's a one-time instruction in the translator-agent prompt, not per-string noise). Two cases the
+  description MUST cover (the audit's top blind-translation risks):
+  - **A pass-through placeholder** (`{message}`, `{reason}`, a raw `{path}`, or any value Cmdr doesn't control — an OS
+    error string, an arbitrary file path) — the description MUST say the inserted value is uncontrolled, so the
+    translator structures the sentence to tolerate any length, casing, gender, or number.
+  - **A fragment / concatenation key** (a sentence part assembled at runtime, e.g. `*Part` keys) — the description MUST
+    name the `*Join` key that assembles it (today `fileOperations.shared.andJoin`), so the translator knows word order
+    is owned by the join key and translates the fragment to read naturally once joined.
 - `placeholders`: an ARB-style map giving each placeholder a PLAIN-LANGUAGE meaning plus an example value, in the
   translator's terms ("number of files", "the folder name") — never the ICU mechanics ("raw integer for plural
   selection"). Include it whenever a message has placeholders; omit it for static strings. This is what lets a
@@ -120,8 +127,10 @@ codegen see it (same as `description`/`screenshot`), so adding them needs NO cod
 
 The guiding test for every `@key`: "Could a competent translator who has never run Cmdr render this perfectly into any
 language, given this note plus a per-language style guide plus (optionally) the screenshot?" If not, the note is missing
-context, a placeholder meaning, or a constraint. Tone/voice/formality are NOT per-string — they live in the per-language
-style guide, so don't repeat them on every key.
+context, a placeholder meaning, or a constraint. Two non-negotiables a new key can't ship without: a
+pass-through-placeholder key MUST state the inserted value is uncontrolled, and a fragment key MUST name its `*Join`
+assembler (both spelled out in the `description` bullet above). Tone/voice/formality are NOT per-string — they live in
+the per-language style guide, so don't repeat them on every key.
 
 Keep the `@key` twin's name in lockstep with its message key on a rename. `desktop-message-key-naming` validates the
 twin too (it strips the leading `@` and checks the underlying key), so a metadata entry for a misnamed key also fails.
