@@ -525,32 +525,35 @@ wrap pages one at a time. Sequential is fine and lower-risk.
 
 Decided 2026-06-17. `showInAdvanced: boolean` plus a real `section` let a setting live in two places (rendered in
 Advanced AND on a feature page). That is the wrong architecture. Fix: **delete `showInAdvanced`; a setting's `section`
-is its one and only home; Advanced is a normal section that happens to auto-render.** Five settings render in two
-places today and get consolidated to Advanced-only (David: anything that was `showInAdvanced` is obscure-by-definition →
+is its one and only home; Advanced is a normal section that happens to auto-render.** Five settings render in two places
+today and get consolidated to Advanced-only (David: anything that was `showInAdvanced` is obscure-by-definition →
 Advanced-only):
 
 - `network.smbConcurrency` (was SMB + Advanced), `fileOperations.maxConflictsToShow`,
-  `fileOperations.progressUpdateInterval` (were File operations + Advanced; the rows M3 added) → `section: ['Advanced']`.
+  `fileOperations.progressUpdateInterval` (were File operations + Advanced; the rows M3 added) →
+  `section: ['Advanced']`.
 - `search.recentSearches.maxCount`, `selection.recentSelections.maxCount` (were `['Advanced']` + hand-mirrored into
   Search) → Advanced-only (remove the Search rows). David confirmed both go to Advanced.
 
 Changes:
+
 - Delete `showInAdvanced` from `SettingDefinition` / `SettingDefinitionSource` (types.ts) and all 22 registry entries.
-- Repoint the 3 natural-section mirrors' `section` to `['Advanced']`. The 2 Recent* already are `['Advanced']`.
+- Repoint the 3 natural-section mirrors' `section` to `['Advanced']`. The 2 Recent\* already are `['Advanced']`.
 - Each Advanced setting keeps an area `cardKey` (the third level). Re-home the 3 repointed ones onto sensible Advanced
   cards (e.g. `smbConcurrency` → the existing Advanced "Network and mounts" card with mount/service-resolve timeouts;
   `maxConflictsToShow`/`progressUpdateInterval` → a new Advanced "File operations" card). This also dissolves the
   "Performance and timeouts" vs "Performance" duplication: `smbConcurrency` stops dragging its SMB card title into
   Advanced.
-- Remove the 5 hand-rendered mirror rows from `FileOperationsSection`, `NetworkSection`, `SearchSection`. File operations
-  then has only `allowFileExtensionChanges` (one unlabeled card); Search only `search.autoApply` (one unlabeled card).
+- Remove the 5 hand-rendered mirror rows from `FileOperationsSection`, `NetworkSection`, `SearchSection`. File
+  operations then has only `allowFileExtensionChanges` (one unlabeled card); Search only `search.autoApply` (one
+  unlabeled card).
 - `getAdvancedSettings()` filters `section[0] === 'Advanced' && !hidden` (not `showInAdvanced`).
 - `buildSectionTree` stops skipping advanced settings (keep skipping `hidden`), so Advanced becomes a real tree node.
 - Sidebar: remove `Advanced` from `specialSections` (it now comes from the tree via `TOP_LEVEL_ORDER`, same position);
   drop the Advanced-specific search-visibility branch (the tree path handles it). Keyboard shortcuts and License stay
   special (genuinely non-registry).
-- `SettingsContent`: Advanced still routes to the auto-rendering `AdvancedSection`; it has no subsections (depth-1) so it
-  gets no summary grid. Verify it renders once, in the right place, with the warning banner + reset-all intact.
+- `SettingsContent`: Advanced still routes to the auto-rendering `AdvancedSection`; it has no subsections (depth-1) so
+  it gets no summary grid. Verify it renders once, in the right place, with the warning banner + reset-all intact.
 - Search: remove the remaining `showInAdvanced` references (the index already covers the whole registry since M6).
 - No `SCHEMA_VERSION` bump (registry metadata, not stored values; setting ids/values unchanged).
 

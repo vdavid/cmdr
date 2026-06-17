@@ -263,17 +263,17 @@ read time — the same shape as `labelKey`. Caveat: the search index snapshots r
 invalidated on locale change (`setLocale()` doesn't call `clearSearchIndex()`); harmless today (no in-app locale
 picker), but card titles don't re-translate live in search. Don't claim they do.
 
-**Decision / why: card visibility is section-owned, never registry-derived.** The section keeps hand-rendering its
-rows and owns each row's visibility via `shouldShow(id)`. There is NO wrapper component: each card is an inline
+**Decision / why: card visibility is section-owned, never registry-derived.** The section keeps hand-rendering its rows
+and owns each row's visibility via `shouldShow(id)`. There is NO wrapper component: each card is an inline
 `{#if anyVisible(shouldShow, ...ids)}<SectionCard label={tString(cardKey)}>…rows…</SectionCard>`. The frame guard and
 each row's `{#if shouldShow(id)}` read the SAME `shouldShow` predicate, so an all-filtered-out card hides its frame and
 the frame can never disagree with its contents. `card` is explicitly NOT read to decide rendering. **Guardrail: don't
-add a wrapper component that re-derives card visibility from `card`** — that double-sources visibility and re-creates the
-empty-card bug for non-registry and mirrored rows.
+add a wrapper component that re-derives card visibility from `card`** — that double-sources visibility and re-creates
+the empty-card bug for non-registry and mirrored rows.
 
-**Decision / why: non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry
-entry (e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show — searching "index size"
-yielded a blank pane. Fix: a `hidden: true` registry entry (`indexing.indexSize`) reusing the existing
+**Decision / why: non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry entry
+(e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show — searching "index size" yielded
+a blank pane. Fix: a `hidden: true` registry entry (`indexing.indexSize`) reusing the existing
 `settings.fileSystemWatching.indexSize` label key. `buildSearchIndex` indexes the WHOLE registry (it filters nothing,
 not even `hidden`), so a hidden entry IS searchable; `buildSectionTree` skips `hidden`, so it adds no nav row. It's a
 fully-modeled setting (its own `SettingsValues` key, `type:'boolean'`, `default:false`) that's never read or written —
@@ -293,9 +293,9 @@ by `cardKey` via the pure `groupAdvancedByCard` (`sections/advanced-grouping.ts`
 `shouldShow`/`anyVisible` as the hand-rendered sections. The whole registry is in the search index, so advanced settings
 are findable from the main settings search (searching "prefetch" lights the Advanced sidebar entry and shows its row in
 its card) and the advanced-row label highlight works. Advanced is a normal section in `buildSectionTree`, so its sidebar
-entry comes from the tree via `TOP_LEVEL_ORDER`, not a hardcoded special-section list. Every
-advanced setting MUST carry a `cardKey`; the set-equality guard in `advanced-grouping.test.ts` flags any that don't
-(they fall into a trailing untitled "Other" card).
+entry comes from the tree via `TOP_LEVEL_ORDER`, not a hardcoded special-section list. Every advanced setting MUST carry
+a `cardKey`; the set-equality guard in `advanced-grouping.test.ts` flags any that don't (they fall into a trailing
+untitled "Other" card).
 
 **Decision / why: `section` is a setting's single home.** A setting's `section` is its ONE home: `section: ['Advanced']`
 means it auto-renders ONLY in Advanced; anything else means it hand-renders ONLY on its feature page. There is no

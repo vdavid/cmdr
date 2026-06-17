@@ -32,12 +32,13 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   `common.downloadsFdaHint`); Drive indexing stays interactive (it operates on whatever paths it can read; the gate is
   for the downloads watcher). **Card-group pattern (the empty-card / blank-page fix):** each `SectionCard` frame is
   wrapped in `{#if anyVisible(shouldShow, ...memberIds)}` over the card's member setting ids, reading the SAME
-  `shouldShow` (`createShouldShow(searchQuery)`) the rows use, so a card whose rows all filter out under search hides its
-  frame too (no empty cards). No wrapper component; card visibility is section-owned, never re-derived from the registry
-  `card` field. The anchor ids now sit on `SectionCard`'s own `<section id>`, so the `navigate-to-section` deep-links
-  still land. The hidden `indexing.indexSize` anchor (its `section` equals this page's) makes "index size" a search hit,
-  and the index-size action row is gated on `shouldShow('indexing.indexSize')`, so searching it keeps the section visible
-  (no blank pane) and shows the Drive-indexing card. See `lib/settings/components/CLAUDE.md` § card groups.
+  `shouldShow` (`createShouldShow(searchQuery)`) the rows use, so a card whose rows all filter out under search hides
+  its frame too (no empty cards). No wrapper component; card visibility is section-owned, never re-derived from the
+  registry `card` field. The anchor ids now sit on `SectionCard`'s own `<section id>`, so the `navigate-to-section`
+  deep-links still land. The hidden `indexing.indexSize` anchor (its `section` equals this page's) makes "index size" a
+  search hit, and the index-size action row is gated on `shouldShow('indexing.indexSize')`, so searching it keeps the
+  section visible (no blank pane) and shows the Drive-indexing card. See `lib/settings/components/CLAUDE.md` § card
+  groups.
 - **`SearchSection.svelte`**: `Behavior > Search`: one unlabeled `SectionCard` wrapping only the auto-apply switch. The
   `recentSearches.maxCount` / `recentSelections.maxCount` caps live ONLY in Advanced now, never mirrored here. The card
   is gated via `anyVisible(shouldShow, ...)` so an all-filtered-out search leaves no empty frame.
@@ -188,13 +189,13 @@ entirely, non-zero/zero swap or raising the cap needs a restart) and `fileExplor
 via `getTypeToJumpResetDelay()` on every keystroke) both live here.
 
 Advanced settings are in the GLOBAL search index (there's one index, no Advanced-specific one), so they're findable from
-the main settings search and the page rides the same `shouldShow` per-row + `anyVisible` per-card pipeline as every other
-section. Advanced is a normal section in `buildSectionTree`, so its sidebar entry comes from the tree via
+the main settings search and the page rides the same `shouldShow` per-row + `anyVisible` per-card pipeline as every
+other section. Advanced is a normal section in `buildSectionTree`, so its sidebar entry comes from the tree via
 `TOP_LEVEL_ORDER` like any other. A new advanced setting MUST get a `cardKey`, or the set-equality guard in
 `advanced-grouping.test.ts` flags it (it lands in a trailing untitled "Other" card). The Advanced-only settings each
-render here in exactly one place: `network.smbConcurrency` under "Network and mounts"; `fileOperations.maxConflictsToShow`
-/ `progressUpdateInterval` under "File operations"; `search.recentSearches.maxCount` /
-`selection.recentSelections.maxCount` under "History and limits".
+render here in exactly one place: `network.smbConcurrency` under "Network and mounts";
+`fileOperations.maxConflictsToShow` / `progressUpdateInterval` under "File operations"; `search.recentSearches.maxCount`
+/ `selection.recentSelections.maxCount` under "History and limits".
 
 ### Cloud AI API keys never go through registry primitives
 
@@ -366,16 +367,16 @@ The Downloads card carries `id={DOWNLOADS_NOTIFICATIONS_ANCHOR_ID}` (on `Section
 `settings-downloads-notifications`) so the downloads-toast "Stop showing these" deep-link lands on the card instead of
 the section top; the Low disk space card carries `LOW_DISK_SPACE_ANCHOR_ID` the same way for its warn-toast link.
 `openSettingsWindow(section, anchor)` accepts an optional `anchor` arg that the settings page
-(`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section` event on already-open
-windows, then `scrollIntoView`s the matching element.
+(`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section` event on
+already-open windows, then `scrollIntoView`s the matching element.
 
 ### Global go-to-latest hotkey: on/off in the Downloads card, combo edited in Keyboard shortcuts
 
 The go-to-latest toggle is a plain on/off `Switch` inside the Downloads card (alongside the downloads-notifications
-ToggleGroup). The combo is edited under `Keyboard shortcuts`
-(`lib/downloads/GlobalShortcutRow.svelte`, marked `(global)`), because that's where users look to rebind keys. We don't
-fold it into the `commands` registry / `shortcuts.json` machinery: the binding's persistent home must stay in
-`settings.json` so the Rust startup/focus refresh can read it before any window loads, and a global Carbon hotkey has no
-in-app scope and doesn't travel through the keydown dispatch, so the scope/conflict apparatus doesn't apply. The
-toggle's description references the live binding (via `global-shortcut-description.ts`) and updates when the user
-rebinds. Both surfaces call the `set_global_go_to_latest_shortcut` IPC on change for live-apply.
+ToggleGroup). The combo is edited under `Keyboard shortcuts` (`lib/downloads/GlobalShortcutRow.svelte`, marked
+`(global)`), because that's where users look to rebind keys. We don't fold it into the `commands` registry /
+`shortcuts.json` machinery: the binding's persistent home must stay in `settings.json` so the Rust startup/focus refresh
+can read it before any window loads, and a global Carbon hotkey has no in-app scope and doesn't travel through the
+keydown dispatch, so the scope/conflict apparatus doesn't apply. The toggle's description references the live binding
+(via `global-shortcut-description.ts`) and updates when the user rebinds. Both surfaces call the
+`set_global_go_to_latest_shortcut` IPC on change for live-apply.
