@@ -2,25 +2,25 @@
   "feedback.dialog.title": "Send feedback",
   "@feedback.dialog.title": {
     "description": "Title of the beta feedback dialog. Opened from the Help menu and other in-app prompts.",
-    "screenshot": "feedback-dialog.png"
+    "screenshot": "feedback.png"
   },
 
   "feedback.dialog.description": "What''s working? What''s missing? Your note goes straight to the maker of Cmdr.",
   "@feedback.dialog.description": {
     "description": "Intro line at the top of the feedback dialog, inviting the user to share. Warm and direct. \"Cmdr\" is the product name (do not translate).",
-    "screenshot": "feedback-dialog.png"
+    "screenshot": "feedback.png"
   },
 
   "feedback.dialog.label": "Your feedback",
   "@feedback.dialog.label": {
     "description": "Label above the multi-line text box where the user types their feedback.",
-    "screenshot": "feedback-dialog.png"
+    "screenshot": "feedback.png"
   },
 
   "feedback.dialog.placeholder": "Example: I''d love a shortcut for jumping between tabs.",
   "@feedback.dialog.placeholder": {
     "description": "Placeholder text inside the empty feedback text box, giving an example of useful feedback.",
-    "screenshot": "feedback-dialog.png"
+    "screenshot": "feedback.png"
   },
 
   "feedback.dialog.counter": "{currentText} / {maxText}",
@@ -52,7 +52,7 @@
   "feedback.dialog.moreWays": "You can also <github>browse and vote on GitHub</github> or <call>book a call</call> with David.",
   "@feedback.dialog.moreWays": {
     "description": "A line offering other ways to give feedback. <github> wraps a link to the GitHub issues page; <call> wraps a link to book a video call. \"GitHub\" is a brand name and \"David\" is the maker's name (do not translate either).",
-    "screenshot": "feedback-dialog.png"
+    "screenshot": "feedback.png"
   },
 
   "feedback.dialog.invalid": "That note didn''t go through. Shorten it and try again?",
@@ -68,13 +68,13 @@
   "feedback.dialog.cancel": "Cancel",
   "@feedback.dialog.cancel": {
     "description": "Button that closes the feedback dialog without sending. Keep it short (a tight button).",
-    "screenshot": "feedback-dialog.png"
+    "screenshot": "feedback.png"
   },
 
   "feedback.dialog.send": "Send feedback",
   "@feedback.dialog.send": {
     "description": "Primary button that submits the feedback. Keep it short (a tight button).",
-    "screenshot": "feedback-dialog.png"
+    "screenshot": "feedback.png"
   },
 
   "feedback.dialog.sending": "Sending…",

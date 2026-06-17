@@ -87,22 +87,26 @@
 
   "viewer.search.placeholder": "Find in file...",
   "@viewer.search.placeholder": {
-    "description": "Placeholder text in the viewer's search input box. \"Find\" as in search within the open file."
+    "description": "Placeholder text in the viewer's search input box. \"Find\" as in search within the open file.",
+    "screenshot": "viewer-search.png"
   },
 
   "viewer.search.ariaLabel": "Search text",
   "@viewer.search.ariaLabel": {
-    "description": "Accessibility label for the viewer's search input box (the same box whose placeholder is \"Find in file...\")."
+    "description": "Accessibility label for the viewer's search input box (the same box whose placeholder is \"Find in file...\").",
+    "screenshot": "viewer-search.png"
   },
 
   "viewer.search.caseSensitive": "Case sensitive",
   "@viewer.search.caseSensitive": {
-    "description": "Label for the search toggle that makes matching distinguish uppercase from lowercase. Used as both the button's accessibility label and its tooltip. The button's visible text is the fixed glyph \"Aa\", not this string."
+    "description": "Label for the search toggle that makes matching distinguish uppercase from lowercase. Used as both the button's accessibility label and its tooltip. The button's visible text is the fixed glyph \"Aa\", not this string.",
+    "screenshot": "viewer-search.png"
   },
 
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
-    "description": "Label for the search toggle that treats the query as a regular expression. Used as both the button's accessibility label and its tooltip. \"Regex\" is the common short form of \"regular expression\"; keep it short. The button's visible text is the fixed glyph \".*\", not this string."
+    "description": "Label for the search toggle that treats the query as a regular expression. Used as both the button's accessibility label and its tooltip. \"Regex\" is the common short form of \"regular expression\"; keep it short. The button's visible text is the fixed glyph \".*\", not this string.",
+    "screenshot": "viewer-search.png"
   },
 
   "viewer.search.matchPosition": "{current} of {total}{more, select, yes {+} other {}}",
@@ -142,22 +146,26 @@
 
   "viewer.search.previous": "Previous match",
   "@viewer.search.previous": {
-    "description": "Accessibility label and tooltip for the button that jumps to the previous search match. The button's visible content is an up-arrow glyph."
+    "description": "Accessibility label and tooltip for the button that jumps to the previous search match. The button's visible content is an up-arrow glyph.",
+    "screenshot": "viewer-search.png"
   },
 
   "viewer.search.next": "Next match",
   "@viewer.search.next": {
-    "description": "Accessibility label and tooltip for the button that jumps to the next search match. The button's visible content is a down-arrow glyph."
+    "description": "Accessibility label and tooltip for the button that jumps to the next search match. The button's visible content is a down-arrow glyph.",
+    "screenshot": "viewer-search.png"
   },
 
   "viewer.search.close": "Close search",
   "@viewer.search.close": {
-    "description": "Accessibility label for the button that closes the search bar. The button's visible content is an X glyph."
+    "description": "Accessibility label for the button that closes the search bar. The button's visible content is an X glyph.",
+    "screenshot": "viewer-search.png"
   },
 
   "viewer.search.closeTooltip": "Close",
   "@viewer.search.closeTooltip": {
-    "description": "Tooltip for the close-search button. Short verb/label; the action closes the search bar."
+    "description": "Tooltip for the close-search button. Short verb/label; the action closes the search bar.",
+    "screenshot": "viewer-search.png"
   },
 
   "viewer.toolbar.viewMode.ariaLabel": "View mode",
@@ -174,7 +182,8 @@
 
   "viewer.toolbar.viewMode.viewAsText": "View as text",
   "@viewer.toolbar.viewMode.viewAsText": {
-    "description": "Option in the view-mode dropdown (shown for an image or PDF) that switches to reading the file's raw text instead of the rendered media."
+    "description": "Option in the view-mode dropdown (shown for an image or PDF) that switches to reading the file's raw text instead of the rendered media.",
+    "screenshot": "viewer-image.png"
   },
 
   "viewer.toolbar.viewMode.viewAsImage": "View as image",
@@ -189,12 +198,14 @@
 
   "viewer.kind.image": "Image",
   "@viewer.kind.image": {
-    "description": "Label for the image content kind, shown in the view-mode dropdown and the status bar."
+    "description": "Label for the image content kind, shown in the view-mode dropdown and the status bar.",
+    "screenshot": "viewer-image.png"
   },
 
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "description": "Label for the PDF content kind, shown in the view-mode dropdown and the status bar. \"PDF\" is a format name; don't translate it."
+    "description": "Label for the PDF content kind, shown in the view-mode dropdown and the status bar. \"PDF\" is a format name; don't translate it.",
+    "screenshot": "viewer-pdf.png"
   },
 
   "viewer.kind.text": "Text",
@@ -325,7 +336,8 @@
 
   "viewer.statusBar.hint.image": "Click 100% / fit · Scroll zoom · Drag pan",
   "@viewer.statusBar.hint.image": {
-    "description": "Status-bar hint listing the image interactions: clicking toggles between 100% and fit-to-window, scrolling zooms, dragging pans. Middle-dot separators between the three; keep \"100%\". \"fit\" = fit to window, \"pan\" = move the view around."
+    "description": "Status-bar hint listing the image interactions: clicking toggles between 100% and fit-to-window, scrolling zooms, dragging pans. Middle-dot separators between the three; keep \"100%\". \"fit\" = fit to window, \"pan\" = move the view around.",
+    "screenshot": "viewer-image.png"
   },
 
   "viewer.statusBar.hint.text": "W wrap · F tail · ⌘F search",
@@ -340,7 +352,8 @@
     "placeholders": {
       "width": "image width in pixels, already formatted (e.g. 1,920)",
       "height": "image height in pixels, already formatted (e.g. 1,080)"
-    }
+    },
+    "screenshot": "viewer-image.png"
   },
 
   "viewer.image.loading": "Loading image",
@@ -355,22 +368,26 @@
 
   "viewer.pdf.loading": "Loading PDF",
   "@viewer.pdf.loading": {
-    "description": "Screen-reader-only status announced while a PDF is loading in the viewer. \"PDF\" is a format name; don't translate it."
+    "description": "Screen-reader-only status announced while a PDF is loading in the viewer. \"PDF\" is a format name; don't translate it.",
+    "screenshot": "viewer-pdf.png"
   },
 
   "viewer.contextMenu.ariaLabel": "Viewer actions",
   "@viewer.contextMenu.ariaLabel": {
-    "description": "Accessibility label for the viewer's right-click context menu, which offers Copy and Select all."
+    "description": "Accessibility label for the viewer's right-click context menu, which offers Copy and Select all.",
+    "screenshot": "viewer-context-menu.png"
   },
 
   "viewer.contextMenu.copy": "Copy",
   "@viewer.contextMenu.copy": {
-    "description": "Context-menu item that copies the selected text to the clipboard. Its keyboard shortcut (⌘C) is shown separately."
+    "description": "Context-menu item that copies the selected text to the clipboard. Its keyboard shortcut (⌘C) is shown separately.",
+    "screenshot": "viewer-context-menu.png"
   },
 
   "viewer.contextMenu.selectAll": "Select all",
   "@viewer.contextMenu.selectAll": {
-    "description": "Context-menu item that selects the whole file's text. Its keyboard shortcut (⌘A) is shown separately."
+    "description": "Context-menu item that selects the whole file's text. Its keyboard shortcut (⌘A) is shown separately.",
+    "screenshot": "viewer-context-menu.png"
   },
 
   "viewer.copyDialog.confirmTitleKnown": "Copy {size} to the clipboard?",

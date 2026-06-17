@@ -59,6 +59,7 @@ import {
   captureWhatsNew,
   captureIndexingStatus,
 } from './i18n-capture-surfaces.js'
+import { captureMainDialogs, captureViewerSubsurfaces } from './i18n-capture-special.js'
 
 test.describe('i18n screenshot capture', () => {
   // Drives ~22 surfaces across several windows (main, dialogs, a separate
@@ -136,6 +137,12 @@ test.describe('i18n screenshot capture', () => {
     })
     if (viewer && viewerLabel) await closeScopedWindow(main, viewer, viewerLabel).catch(() => {})
 
+    // ── Viewer subsurfaces (search, context menu, pickers, media) ─────────────
+    // Each opens its own viewer window on a fixture file (text or media) and
+    // captures a distinct viewer state. Run right after the base `viewer` surface
+    // so viewer keys couple narrow (per-state) before any broader surface.
+    await captureViewerSubsurfaces(main, report, failed, skipped)
+
     // ── Surface: About dialog (main window overlay) ──────────────────────────
     // About is an in-app dialog rendered into the MAIN window (NOT a separate
     // WebviewWindow), so it captures against the main page's sink. Opened via the
@@ -159,6 +166,13 @@ test.describe('i18n screenshot capture', () => {
     // a keypress or registry command. Extracted to `captureMainOverlays` to keep
     // each surface isolated and the test body's complexity in check.
     await captureMainOverlays(main, report, failed)
+
+    // ── Main-window report/feedback/license dialogs (default launch) ──────────
+    // The license-key ENTRY dialog (Personal state), error-report, and feedback
+    // dialogs — all main-window ModalDialogs opened by a registry command. The
+    // commercial/expired license surfaces need a separate `CMDR_MOCK_LICENSE`
+    // launch (the license pass below).
+    await captureMainDialogs(main, report, failed)
 
     // ── Snapshot-resolved toast surfaces ──────────────────────────────────────
     // Command-handler confirmations + the transfer-complete toast. These resolve
@@ -211,6 +225,50 @@ test.describe('i18n screenshot capture', () => {
       `[i18n-capture] ${String(7)} surfaces SKIPPED (deferred to the mock-staging tranche): ` +
         `download/MTP/low-disk toasts, AI suggestion, indexing rescan toast + aggregation/replay states. ` +
         `Each needs backend events or staged mocks the frontend can't fire here.`,
+    )
+
+    // ── Documented skips: surfaces needing backend state or a new prod hook ────
+    // SKIPPED (not failed), tracked for coverage honesty:
+    //  - crash-report dialog (`crashReporter.*`): only mounts when boot's
+    //    `checkPendingCrashReport()` IPC returns a pending crash; the gating +
+    //    state live in `(main)/+layout.svelte` (runes-touching, `file-length`-
+    //    flagged). There's no command or E2E event to force it, and adding an
+    //    `e2e-show-crash-report` listener to that production file is out of scope
+    //    for this capture tranche (a real prod-code change with its own review).
+    //  - viewer large-copy confirm/refuse dialogs (`viewer.copyDialog.*`): only
+    //    appear for a text selection over ~10 MB (confirm) / ~100 MB (refuse);
+    //    no fixture stages a selection that large deterministically.
+    //  - viewer reload toast (`viewer.reloadToast.*`): needs a file-changed event
+    //    from the backend watcher while the viewer is open; the frontend can't
+    //    fire it here.
+    //  - the paid/expired/reminder LICENSE surfaces (`about-commercial`,
+    //    `license-details`, `commercial-reminder`, `expiration`): they depend on
+    //    `AppStatus`, which `app_status.rs` derives from `CMDR_MOCK_LICENSE` ONLY
+    //    under `#[cfg(debug_assertions)]`. The capture binary is a RELEASE build
+    //    (`target/<triple>/release/Cmdr`, debug-assertions off), so the mock is
+    //    compiled out and a relaunch with the env just renders the Personal state
+    //    (verified: a `CMDR_MOCK_LICENSE=commercial` About was byte-for-key
+    //    identical to the Personal `about`). Reaching them needs a debug capture
+    //    build or a `debug-assertions = true` release-profile Cargo override, both
+    //    out of scope. The Personal license-key ENTRY dialog (`license-key-dialog`)
+    //    and Personal `about` ARE captured on the default launch.
+    for (const docSkip of [
+      'crash-report',
+      'viewer-copy-confirm',
+      'viewer-copy-refuse',
+      'viewer-reload-toast',
+      'about-commercial',
+      'license-details',
+      'commercial-reminder',
+      'expiration',
+    ]) {
+      skipped.push(docSkip)
+    }
+    console.warn(
+      `[i18n-capture] ${String(8)} surfaces SKIPPED (need backend state, a new prod hook, or a debug build): ` +
+        `crash-report dialog (boot-only pending-crash state), viewer large-copy confirm/refuse ` +
+        `(need a >10 MB selection), viewer reload toast (needs a watcher event), and the paid/expired/` +
+        `reminder license surfaces (CMDR_MOCK_LICENSE is debug-only; the capture binary is a release build).`,
     )
 
     // ── Surface: keyboard shortcuts window (KNOWN-SKIPPED) ────────────────────

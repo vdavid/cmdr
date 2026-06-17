@@ -172,7 +172,8 @@
 
   "licensing.dialog.loading": "Loading...",
   "@licensing.dialog.loading": {
-    "description": "Title of the license dialog while it loads the current license info. A trailing-ellipsis loading state."
+    "description": "Title of the license dialog while it loads the current license info. A trailing-ellipsis loading state.",
+    "screenshot": "license-key-dialog.png"
   },
 
   "licensing.dialog.detailsTitle": "License details",
@@ -182,7 +183,8 @@
 
   "licensing.dialog.enterTitle": "Enter license key",
   "@licensing.dialog.enterTitle": {
-    "description": "Title of the license dialog when no license is present (the key-entry form)."
+    "description": "Title of the license dialog when no license is present (the key-entry form).",
+    "screenshot": "license-key-dialog.png"
   },
 
   "licensing.dialog.serverInvalidBanner": "This key couldn''t be verified with the server. Please try a different key or email us at <supportEmail>{email}</supportEmail>.",
@@ -297,12 +299,14 @@
 
   "licensing.dialog.enterPrompt": "Paste your license key from the email you received after purchase. Don''t have one yet? <getLicense>Get a license</getLicense>.",
   "@licensing.dialog.enterPrompt": {
-    "description": "Instruction above the key-entry field telling the user where to find their key. <getLicense> wraps the inline link to the pricing page."
+    "description": "Instruction above the key-entry field telling the user where to find their key. <getLicense> wraps the inline link to the pricing page.",
+    "screenshot": "license-key-dialog.png"
   },
 
   "licensing.dialog.inputPlaceholder": "Example: CMDR-ABCD-EFGH-1234",
   "@licensing.dialog.inputPlaceholder": {
-    "description": "Placeholder text inside the license-key input showing the short-code format. 'CMDR-ABCD-EFGH-1234' is a format example and must NOT be translated; only the 'Example:' label is translatable."
+    "description": "Placeholder text inside the license-key input showing the short-code format. 'CMDR-ABCD-EFGH-1234' is a format example and must NOT be translated; only the 'Example:' label is translatable.",
+    "screenshot": "license-key-dialog.png"
   },
 
   "licensing.dialog.retryExhausted": "We''ve tried {count} times and it didn''t work. We''re sorry for the trouble. Please drop us a message at <supportEmail>{email}</supportEmail> and we''ll sort it out.",
@@ -332,7 +336,8 @@
 
   "licensing.dialog.cancelButton": "Cancel",
   "@licensing.dialog.cancelButton": {
-    "description": "Secondary button in the key-entry form that cancels and closes the dialog. Keep it short (a button)."
+    "description": "Secondary button in the key-entry form that cancels and closes the dialog. Keep it short (a button).",
+    "screenshot": "license-key-dialog.png"
   },
 
   "licensing.dialog.checking": "Checking...",
@@ -352,7 +357,8 @@
 
   "licensing.dialog.activate": "Activate",
   "@licensing.dialog.activate": {
-    "description": "Primary-button label that submits the entered license key for activation. Keep it short (a button)."
+    "description": "Primary-button label that submits the entered license key for activation. Keep it short (a button).",
+    "screenshot": "license-key-dialog.png"
   },
 
   "licensing.dialog.activatedToast": "License activated. Thanks for your support! ❤️",

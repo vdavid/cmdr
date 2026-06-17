@@ -1,4 +1,6 @@
 [
+  "viewer-view-mode",
+  "viewer-encoding",
   "toast-download",
   "toast-mtp-connected",
   "toast-low-disk",
@@ -6,5 +8,13 @@
   "toast-index-rescan",
   "indexing-aggregation",
   "indexing-replay",
+  "crash-report",
+  "viewer-copy-confirm",
+  "viewer-copy-refuse",
+  "viewer-reload-toast",
+  "about-commercial",
+  "license-details",
+  "commercial-reminder",
+  "expiration",
   "shortcuts"
 ]

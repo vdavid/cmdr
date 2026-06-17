@@ -1004,7 +1004,7 @@
   "fileExplorer.dirSize.updatingIndexTooltip": "Updating index: size may change.",
   "@fileExplorer.dirSize.updatingIndexTooltip": {
     "description": "Hover tooltip on a folder''s size while indexing is in progress, warning that the figure may still change. Note the colon.",
-    "screenshot": "indexing-status.png"
+    "screenshot": "toast-transfer-complete.png"
   },
   "fileExplorer.dirSize.scanProgressTooltip": "Sizes appear as the scan progresses",
   "@fileExplorer.dirSize.scanProgressTooltip": {
@@ -1059,7 +1059,7 @@
   "fileExplorer.dirSize.updatingIndexLine": "Updating index — size may change.",
   "@fileExplorer.dirSize.updatingIndexLine": {
     "description": "Last line of a folder''s size tooltip while indexing, warning the figure may change. Uses an en dash (—) as a separator.",
-    "screenshot": "indexing-status.png"
+    "screenshot": "toast-transfer-complete.png"
   },
   "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
   "@fileExplorer.dirSize.dirPlaceholder": {

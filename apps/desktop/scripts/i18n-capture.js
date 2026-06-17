@@ -47,9 +47,10 @@ const desktopDir = join(here, '..')
 // This matches `desktop-svelte-e2e-playwright.go`'s binary resolution.
 const repoRoot = join(desktopDir, '..', '..')
 const wantBuild = process.argv.includes('--build')
-// A per-run unique socket (not the shared default) so a parallel dev/E2E session
-// in another worktree can never collide on the socket path.
-const SOCKET = process.env.CMDR_PLAYWRIGHT_SOCKET ?? `/tmp/tauri-playwright-i18n-${String(process.pid)}.sock`
+// An explicit socket override (rare); otherwise each pass derives its own unique
+// per-launch socket in `launchAndCapture` so a parallel dev/E2E session in
+// another worktree can never collide and relaunches don't race a stale bind.
+const SOCKET_OVERRIDE = process.env.CMDR_PLAYWRIGHT_SOCKET
 
 /**
  * @param {string} cmd
@@ -180,7 +181,40 @@ async function main() {
   const startPath = createFixtures()
   console.log(`[i18n-capture] fixtures at ${startPath}`)
 
-  console.log('[i18n-capture] launching app…')
+  // A single launch captures every default-launch surface and writes the report.
+  //
+  // No license-state pass: the commercial/expired/reminder license surfaces depend
+  // on `AppStatus`, which `app_status.rs` derives from `CMDR_MOCK_LICENSE` ONLY
+  // under `#[cfg(debug_assertions)]`. The capture binary is a RELEASE build
+  // (`target/<triple>/release/Cmdr`, debug-assertions off), so the mock is
+  // compiled out and a `CMDR_MOCK_LICENSE` relaunch silently renders the Personal
+  // state — it can't reach the paid/expired surfaces. Forcing it would need a
+  // debug capture build or a `debug-assertions = true` release-profile override
+  // (a Cargo change), both out of scope here. So those surfaces are document-
+  // skipped in the spec; the default launch still reaches the Personal license-key
+  // entry dialog.
+  await launchAndCapture(binary, startPath, {}, 'main')
+
+  console.log('[i18n-capture] done. Next: `pnpm i18n:couple` to write @key.screenshot couplings.')
+}
+
+/**
+ * Launches the capture binary (with `extraEnv` merged in), waits for its unique
+ * socket, runs ONLY the capture spec against it, then stops that app. One launch
+ * per pass so a `CMDR_MOCK_LICENSE` state takes effect (it's read once at launch).
+ * @param {string} binary
+ * @param {string} startPath
+ * @param {Record<string, string>} extraEnv
+ * @param {string} passLabel
+ * @returns {Promise<void>}
+ */
+async function launchAndCapture(binary, startPath, extraEnv, passLabel) {
+  // A per-pass unique socket: the prior app is stopped, but a fresh socket path
+  // avoids any stale-bind races across relaunches. An explicit override wins.
+  const socket =
+    SOCKET_OVERRIDE ?? `/tmp/tauri-playwright-i18n-${String(process.pid)}-${passLabel.replace(/[^a-z0-9]+/gi, '-')}.sock`
+
+  console.log(`[i18n-capture] launching app (${passLabel})…`)
   appProc = spawn(binary, [], {
     cwd: desktopDir,
     stdio: 'inherit',
@@ -188,15 +222,16 @@ async function main() {
       ...process.env,
       CMDR_E2E_MODE: '1',
       CMDR_E2E_START_PATH: startPath,
-      CMDR_PLAYWRIGHT_SOCKET: SOCKET,
+      CMDR_PLAYWRIGHT_SOCKET: socket,
+      ...extraEnv,
     },
   })
   appProc.on('exit', (code) => {
-    if (code != null && code !== 0) console.warn(`[i18n-capture] app exited with code ${String(code)}`)
+    if (code != null && code !== 0) console.warn(`[i18n-capture] app (${passLabel}) exited with code ${String(code)}`)
   })
 
-  await waitForSocket(SOCKET, 60000)
-  console.log('[i18n-capture] socket ready; running capture spec…')
+  await waitForSocket(socket, 60000)
+  console.log(`[i18n-capture] socket ready (${passLabel}); running capture spec…`)
 
   // Don't pass `--project tauri` AND a positional spec path: Playwright treats
   // the positional as a project filter when `--project` is set, failing with
@@ -207,16 +242,20 @@ async function main() {
   // `CMDR_PLAYWRIGHT_SOCKET` to know which socket to connect to. Without this,
   // Playwright connects to the default `/tmp/tauri-playwright.sock` while the app
   // listens on our unique one, and the first `evaluate` hangs to timeout.
-  run('npx', ['playwright', 'test', '--config', 'test/e2e-playwright/playwright.config.ts'], {
-    env: {
-      ...process.env,
-      CMDR_E2E_START_PATH: startPath,
-      CMDR_E2E_SHARD_KIND: 'i18n-capture',
-      CMDR_PLAYWRIGHT_SOCKET: SOCKET,
-    },
-  })
-
-  console.log('[i18n-capture] done. Next: `pnpm i18n:couple` to write @key.screenshot couplings.')
+  try {
+    run('npx', ['playwright', 'test', '--config', 'test/e2e-playwright/playwright.config.ts'], {
+      env: {
+        ...process.env,
+        CMDR_E2E_START_PATH: startPath,
+        CMDR_E2E_SHARD_KIND: 'i18n-capture',
+        CMDR_PLAYWRIGHT_SOCKET: socket,
+        ...extraEnv,
+      },
+    })
+  } finally {
+    // Always stop THIS pass's app before the next launch (or before exit).
+    killApp()
+  }
 }
 
 main()
