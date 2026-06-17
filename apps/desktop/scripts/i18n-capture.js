@@ -35,7 +35,8 @@
  */
 
 import { spawn, spawnSync, execSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import net from 'node:net'
@@ -97,6 +98,36 @@ async function waitForSocket(path, timeoutMs) {
     await new Promise((r) => setTimeout(r, 150))
   }
 }
+
+// A fresh, isolated data dir for the capture run. The app resolves its
+// tauri-plugin-store (settings, license, favorites) and all other persisted
+// state from `CMDR_DATA_DIR` (see `src-tauri/src/settings/loader.rs` /
+// `config.rs`); with no override it falls back to the OS default — the
+// DEVELOPER'S REAL PROD STORE. Captures must NOT depend on personal settings:
+// a translator screenshot is canonical only from DEFAULT settings, and a
+// settings-gated surface (the Quick Look hint, suppressed in David's real
+// store) must render. So every launch gets the same fresh mktemp dir, removed
+// on exit. Created lazily on first launch; reused across the multi-launch
+// passes so they share one default-settings baseline.
+/** @type {string | null} */
+let captureDataDir = null
+function ensureCaptureDataDir() {
+  if (captureDataDir == null) {
+    captureDataDir = mkdtempSync(join(tmpdir(), 'cmdr-i18n-capture-data-'))
+    console.log(`[i18n-capture] isolated data dir at ${captureDataDir} (fresh default settings)`)
+  }
+  return captureDataDir
+}
+function cleanupCaptureDataDir() {
+  if (captureDataDir == null) return
+  try {
+    rmSync(captureDataDir, { recursive: true, force: true })
+  } catch {
+    /* best-effort; /tmp self-prunes */
+  }
+  captureDataDir = null
+}
+process.on('exit', cleanupCaptureDataDir)
 
 /** @type {import('node:child_process').ChildProcess | null} */
 let appProc = null
@@ -223,6 +254,9 @@ async function launchAndCapture(binary, startPath, extraEnv, passLabel) {
       CMDR_E2E_MODE: '1',
       CMDR_E2E_START_PATH: startPath,
       CMDR_PLAYWRIGHT_SOCKET: socket,
+      // Isolated, fresh data dir → default settings, reproducible, never the
+      // developer's real prod store. See `ensureCaptureDataDir`.
+      CMDR_DATA_DIR: ensureCaptureDataDir(),
       ...extraEnv,
     },
   })
