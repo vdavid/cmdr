@@ -320,7 +320,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		// Warn-only metric (keys missing from a locale fall back silently to English;
 		// values byte-identical to English are likely untranslated). Honest-coverage
-		// signal, not a build breaker — like desktop-i18n-stale, a CI step would be
+		// signal, not a build breaker, like desktop-i18n-stale, a CI step would be
 		// noise since it can never fail.
 		NotInCI:           "warn-only metric; it can never fail, so a CI step would be noise",
 		FreestyleIncompat: false,
@@ -337,7 +337,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		// Warn-only metric (a curated brand/system token English carries for a key
 		// but the locale's value dropped). A judgment-call quality signal, not a
-		// crash — a CI step would be noise since it can never fail.
+		// crash, so a CI step would be noise since it can never fail.
 		NotInCI:           "warn-only metric; it can never fail, so a CI step would be noise",
 		FreestyleIncompat: false,
 		DependsOn:         nil,

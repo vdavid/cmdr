@@ -19,7 +19,7 @@ const port = envPort ? Number(envPort) : 1420
 // orchestrator sets `CMDR_I18N_CAPTURE_BUILD=1` for its `tauri build`); FALSE for
 // prod AND ordinary dev/E2E builds. Because it's a compile-time constant, esbuild
 // dead-code-eliminates the whole capture path (the `window.__cmdrI18nCapture`
-// install, the recording hooks, the sink) when it's false — true zero overhead,
+// install, the recording hooks, the sink) when it's false: true zero overhead,
 // and verifiably absent from prod (grep the bundle for `__cmdrI18nCapture`). See
 // `src/lib/intl/messages.svelte.ts` and `docs/specs/i18n-screenshots-plan.md`.
 const i18nCaptureBuild = process.env.CMDR_I18N_CAPTURE_BUILD === '1'

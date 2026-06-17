@@ -268,12 +268,12 @@ and owns each row's visibility via `shouldShow(id)`. There is NO wrapper compone
 `{#if anyVisible(shouldShow, ...ids)}<SectionCard label={tString(cardKey)}>…rows…</SectionCard>`. The frame guard and
 each row's `{#if shouldShow(id)}` read the SAME `shouldShow` predicate, so an all-filtered-out card hides its frame and
 the frame can never disagree with its contents. `card` is explicitly NOT read to decide rendering. **Guardrail: don't
-add a wrapper component that re-derives card visibility from `card`** — that double-sources visibility and re-creates
-the empty-card bug for non-registry and mirrored rows.
+add a wrapper component that re-derives card visibility from `card`**: that double-sources visibility and re-creates the
+empty-card bug for non-registry and mirrored rows.
 
 **Decision / why: non-registry searchable rows get a hidden anchor.** A hand-rendered action row with no registry entry
-(e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show — searching "index size" yielded
-a blank pane. Fix: a `hidden: true` registry entry (`indexing.indexSize`) reusing the existing
+(e.g. "Index size / Clear index") can't be a search hit, so its card can't know to show, so searching "index size"
+yielded a blank pane. Fix: a `hidden: true` registry entry (`indexing.indexSize`) reusing the existing
 `settings.fileSystemWatching.indexSize` label key. `buildSearchIndex` indexes the WHOLE registry (it filters nothing,
 not even `hidden`), so a hidden entry IS searchable; `buildSectionTree` skips `hidden`, so it adds no nav row. It's a
 fully-modeled setting (its own `SettingsValues` key, `type:'boolean'`, `default:false`) that's never read or written —

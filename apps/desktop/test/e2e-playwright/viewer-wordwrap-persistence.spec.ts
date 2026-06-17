@@ -87,7 +87,7 @@ test.describe('Viewer word-wrap persistence', () => {
   // Three sequential viewer sessions plus two 500 ms-debounced disk writes.
   // `retries: 1` covers a transient open/debounce hiccup. The real hazard is a
   // PRIOR run that died before its Session-3 cleanup, leaving `viewer.wordWrap`
-  // on in the isolated settings.json — then Session 1's "default off" assertion
+  // on in the isolated settings.json, so Session 1's "default off" assertion
   // fails (and a retry alone can't recover persisted state). The afterEach below
   // always resets the key so a failed run can't poison the next.
   test.describe.configure({ timeout: 60000, retries: 1 })
