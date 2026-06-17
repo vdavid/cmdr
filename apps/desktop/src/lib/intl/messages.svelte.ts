@@ -51,30 +51,65 @@ function stripMetadata(raw: Record<string, unknown>): Catalog {
   return out
 }
 
-// Static catalog imports for the bundled SPA: every `messages/en/*.json` is
-// eagerly globbed and merged into one map at module load, so adding a catalog
-// file needs no edit here (the key prefix ↔ filename map is the only contract).
-// `ssr=false` (`+layout.ts`) means this only runs client-side; the merge touches
-// no `window`, so it's safe regardless. Lazy per-locale dynamic import is a
-// later concern (only `en` exists today).
-const enModules = import.meta.glob<Record<string, unknown>>('./messages/en/*.json', { eager: true, import: 'default' })
+// Static catalog imports for the bundled SPA: every `messages/<locale>/*.json` is
+// eagerly globbed and merged into one per-locale map at module load, so adding a
+// catalog file (or a whole new locale dir) needs no edit here. The dir segment is
+// the locale tag (`messages/de-DE/foo.json` → `de-DE`); a path that doesn't look
+// like a BCP-47 tag is NOT a locale and is skipped (the `screenshots/` capture-
+// artifact dir lives alongside the locale dirs, and `en-XA/` is present only in
+// dev builds). `ssr=false` (`+layout.ts`) means this runs client-side only; the
+// merge touches no `window`, so it's safe regardless.
+const allModules = import.meta.glob<Record<string, unknown>>('./messages/*/*.json', {
+  eager: true,
+  import: 'default',
+})
 
-/** Merges every globbed `en/*.json` module into one metadata-stripped catalog. */
-function mergeCatalog(modules: Record<string, Record<string, unknown>>): Catalog {
-  const merged: Catalog = {}
-  for (const raw of Object.values(modules)) {
-    Object.assign(merged, stripMetadata(raw))
-  }
-  return merged
+/**
+ * A loose BCP-47 tag matcher for the directory-name → locale gate: a 2-or-3
+ * letter language subtag, optionally followed by `-` plus script/region/variant
+ * subtags (letters or digits). Deliberately permissive (it just has to admit
+ * real locale dirs like `en`, `pt-BR`, `en-XA` and reject `screenshots`); the
+ * runtime never trusts the tag for anything beyond catalog keying and the
+ * fallback split, and `Intl` validates it later when used as a format locale.
+ */
+const BCP47_DIR = /^[a-z]{2,3}(-[a-z0-9]+)*$/i
+
+/** Extracts the locale-dir segment from a `./messages/<locale>/<file>.json` glob path. */
+function localeOfPath(path: string): string {
+  // path is `./messages/<locale>/<file>.json`; the locale is the third segment.
+  return path.split('/')[2]
 }
 
 /**
- * locale → its merged catalog. Only `en` is populated for now; the value is
- * `Catalog | undefined` because the fallback chain in `resolveRaw` genuinely
- * indexes by a locale that may have no catalog (the whole point of the chain).
+ * locale tag → its merged, metadata-stripped catalog, built from every globbed
+ * `messages/<locale>/*.json`. Non-locale dirs (`screenshots/`) are filtered out
+ * by `BCP47_DIR`. The value is `Catalog | undefined` because the fallback chain
+ * in `resolveRaw` genuinely indexes by a locale that may have no catalog (the
+ * whole point of the chain).
  */
-const catalogs: Record<string, Catalog | undefined> = {
-  en: mergeCatalog(enModules),
+const catalogs: Record<string, Catalog | undefined> = (() => {
+  const out: Record<string, Catalog> = {}
+  for (const [path, raw] of Object.entries(allModules)) {
+    const locale = localeOfPath(path)
+    if (!BCP47_DIR.test(locale)) continue // skip `screenshots/` and any other non-locale dir
+    out[locale] ??= {} as Catalog
+    Object.assign(out[locale], stripMetadata(raw))
+  }
+  return out
+})()
+
+/**
+ * The locale tags that have a loaded catalog, sorted, with the base `en` first.
+ * Drives the language-selector options so a newly-added locale dir auto-appears.
+ * `en` always exists (the base catalog ships); `en-XA` appears only in dev builds.
+ */
+export function availableLocales(): string[] {
+  const tags = Object.keys(catalogs)
+  return tags.sort((a, b) => {
+    if (a === BASE_LOCALE) return -1
+    if (b === BASE_LOCALE) return 1
+    return a.localeCompare(b)
+  })
 }
 
 /**
@@ -268,10 +303,12 @@ export function tString(key: MessageKey, params?: TranslationParams): string {
 }
 
 /**
- * The locale-switch seam (no in-app picker ships; tests drive it). Writes the
- * locale VALUE into the single `getLocale()` source AND bumps the version rune
- * so open `t()`/`<Trans>` usages re-render. Pass `null` to revert to the OS
- * default. Clears the compiled cache so a re-resolve picks up the new locale.
+ * The locale-switch seam, driven by the Settings > Appearance > Language picker
+ * (and by tests). Writes the locale VALUE into the single `getLocale()` source
+ * AND bumps the version rune so open `t()`/`<Trans>` usages re-render (and the
+ * number/date formatters, which read the same source, reformat). Pass `null` to
+ * revert to the OS default. Clears the compiled cache so a re-resolve picks up
+ * the new locale.
  */
 export function setLocale(locale: string | null): void {
   setLocaleOverride(locale)

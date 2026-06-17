@@ -10,7 +10,8 @@ text via ICU). Both read the locale from exactly one place here.
 - `number-format.ts`: memoized `Intl.NumberFormat` factory (`getNumberFormatter`), plus `formatInteger` (counts) and
   `getGroupSeparator` (byte-triad separator).
 - `messages.svelte.ts`: the message runtime: `t(key, params?)` (catalog + ICU), `getMessage(key)` (raw, no ICU),
-  `setLocale()`, the locale-version rune, the compiled-`IntlMessageFormat` cache. `Trans.svelte`: inline-component
+  `setLocale()`, `availableLocales()` (loaded tags, drives the Language picker), the per-locale catalog map + BCP-47
+  fallback resolver, the locale-version rune, the compiled-`IntlMessageFormat` cache. `Trans.svelte`: inline-component
   sentences. `keys.gen.ts`: the generated `MessageKey` union (never hand-edit). `messages/`: the JSON catalogs (see its
   [`CLAUDE.md`](messages/CLAUDE.md)).
 
@@ -20,6 +21,11 @@ text via ICU). Both read the locale from exactly one place here.
   reactive dependency: read it after the compiled-message cache and `{t('key')}` won't re-run on a locale change.
   `setLocale()` bumps the rune; `_setLocaleForTests` does NOT (value only). `state_referenced_locally` is suppressed, so
   the compiler won't warn on a wrong read; the `messages.svelte.test.ts` reactivity test is the only guard.
+- **The resolver loads ALL locale dirs (`messages/*/*.json`), keyed by the dir tag, with BCP-47 fallback** (locale →
+  base → `en` → key). A non-BCP-47 dir is NOT a locale and is filtered out: `screenshots/` sits alongside the locale
+  dirs, so a glob/gate change must keep excluding it or it surfaces as a fake locale in the picker. The live picker is
+  Settings > Appearance > Language (`appearance.language` → `setLocale` in `settings-applier.ts`): applies immediately,
+  no restart, frontend-only. Details: [DETAILS.md](DETAILS.md).
 - **Error copy uses `getMessage()` (raw lookup), NOT `t()`/ICU.** The error pipeline's `{system_settings}` tokens and
   `esc()` HTML entities collide with ICU's brace/apostrophe grammar. Only genuine multi-variable plural/select sentences
   go through `t()`. Don't route error strings through `format()`.

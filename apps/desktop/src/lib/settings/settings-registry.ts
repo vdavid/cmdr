@@ -25,8 +25,43 @@ import type {
 } from './types'
 import { SettingValidationError, VOLUME_TINT_COLORS } from './types'
 import { cloudProviderPresets } from './cloud-providers'
-import { tString } from '$lib/intl/messages.svelte'
+import { tString, availableLocales } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
+
+/**
+ * Display name for a locale tag, in the locale's OWN language (`de` → "Deutsch",
+ * `pt-BR` → "português (Brasil)"), so the picker is self-describing and we never
+ * hardcode a language-name list. Falls back to the raw tag when `Intl` can't
+ * resolve a name. `Intl.DisplayNames` is not a number/date formatter, so it's
+ * exempt from the `no-raw-locale-format` rule.
+ */
+function localeDisplayName(tag: string): string {
+  try {
+    const name = new Intl.DisplayNames([tag], { type: 'language' }).of(tag)
+    if (name !== undefined && name !== tag) {
+      // Capitalize the first letter: many languages lowercase their endonym, but
+      // a selector option reads better title-first. Locale-aware via the tag.
+      return name.charAt(0).toLocaleUpperCase(tag) + name.slice(1)
+    }
+  } catch {
+    // fall through to the raw tag
+  }
+  return tag
+}
+
+/**
+ * The language-picker options: "System default" (value `'system'`, follows the
+ * OS locale) plus one option per AVAILABLE catalog locale, derived live from
+ * `availableLocales()` so a newly-added locale dir auto-appears with no edit
+ * here. Per-locale options carry a literal `label` (the locale's endonym, not
+ * catalogued copy), so they pass through `resolveOption` unchanged.
+ */
+function languageOptions(): (EnumOptionSource | EnumOption)[] {
+  return [
+    { value: 'system', labelKey: 'settings.appearance.language.opt.system' },
+    ...availableLocales().map((tag) => ({ value: tag, label: localeDisplayName(tag) })),
+  ]
+}
 
 /** Message-key leaf for each tint color, used by the tint enum options. */
 const TINT_COLOR_KEY: Record<string, MessageKey> = {
@@ -64,6 +99,21 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   // ========================================================================
   // Appearance › Colors and formats
   // ========================================================================
+  {
+    id: 'appearance.language',
+    section: ['Appearance', 'Colors and formats'],
+    labelKey: 'settings.appearance.language.label',
+    descriptionKey: 'settings.appearance.language.description',
+    cardKey: 'settings.appearance.card.language',
+    keywords: ['language', 'locale', 'translation', 'i18n', 'region', 'english'],
+    type: 'enum',
+    default: 'system',
+    component: 'select',
+    // Options are derived from the loaded catalogs at module load: "System
+    // default" plus every available locale. A new locale dir auto-appears (no
+    // edit here). See `languageOptions`.
+    constraints: { options: languageOptions() },
+  },
   {
     id: 'theme.mode',
     section: ['Appearance', 'Colors and formats'],

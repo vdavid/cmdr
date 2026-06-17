@@ -427,3 +427,36 @@ describe('indexing.indexSize hidden search anchor', () => {
     expect(ids).toContain('indexing.indexSize')
   })
 })
+
+describe('appearance.language (the UI language picker)', () => {
+  it('is a persisted enum that defaults to System default', () => {
+    const def = getSettingDefinition('appearance.language')
+    expect(def?.type).toBe('enum')
+    expect(def?.component).toBe('select')
+    expect(getDefaultValue('appearance.language')).toBe('system')
+    expect(def?.section).toEqual(['Appearance', 'Colors and formats'])
+  })
+
+  it('offers a System default option plus every available locale (en at least)', () => {
+    const options = getSettingDefinition('appearance.language')?.constraints?.options ?? []
+    const values = options.map((o) => o.value)
+    // The System default sentinel comes first.
+    expect(values[0]).toBe('system')
+    // The base locale is always loaded, so it must be selectable.
+    expect(values).toContain('en')
+    // The non-locale screenshots dir must never leak in as an option.
+    expect(values).not.toContain('screenshots')
+  })
+
+  it('labels the `en` option with the locale endonym (English), not the raw tag', () => {
+    const options = getSettingDefinition('appearance.language')?.constraints?.options ?? []
+    const en = options.find((o) => o.value === 'en')
+    expect(en?.label).toBe('English')
+  })
+
+  it('validates: accepts `system` and a loaded locale, rejects an unknown tag', () => {
+    expect(() => validateSettingValue('appearance.language', 'system')).not.toThrow()
+    expect(() => validateSettingValue('appearance.language', 'en')).not.toThrow()
+    expect(() => validateSettingValue('appearance.language', 'zz-NOPE')).toThrow()
+  })
+})

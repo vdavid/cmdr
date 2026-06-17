@@ -26,12 +26,24 @@ possibly markdown), but they keep rendering through the existing snarkdown + `{@
 `getMessage()`, NOT `t()`/`<Trans>`. `<Trans>` is only for the handful of UI sentences with inline INTERACTIVE
 components (a `<LinkButton>` mid-sentence). Don't conflate the two.
 
-### Fallback chain
+### The resolver: per-locale catalogs + fallback chain
 
-`resolveRaw(locale, key)` tries `catalog[locale]` → `catalog[baseLanguage]` (`de-DE` → `de`) → `catalog.en` → the key
-string itself. A missing key renders as its own key (visible, never a crash). Only `en` is populated today; the
-base-language and exact-locale rungs exist for the future translation pipeline and are exercised by the
-`_setCatalogForTests` seam (a synthetic test-only locale, never a shipped non-en catalog).
+At module load, `import.meta.glob('./messages/*/*.json', { eager })` pulls EVERY locale dir's catalog files, not just
+`en`. The dir segment of each glob path is the locale tag (`messages/pt-BR/foo.json` → `pt-BR`), and a `BCP47_DIR` regex
+gate keeps only directories that look like a BCP-47 tag: the `screenshots/` capture-artifact dir sits alongside the
+locale dirs under `messages/` and is globbed too, so it MUST be filtered out (it's not a locale). The dev-only `en-XA/`
+pseudolocale is globbed when present and simply absent in prod (gitignored). The result is `catalogs`: a
+`localeTag → merged metadata-stripped Catalog` map.
+
+`resolveRaw(locale, key)` resolves with BCP-47 fallback: `catalog[locale]` → `catalog[baseLanguage]` (`de-DE` → `de`) →
+`catalog.en` (the base, always present) → the key string itself. A missing key renders as its own key (visible, never a
+crash). The active locale is `getLocale()`. `en` is the only TRANSLATED catalog that ships today; the base-language and
+exact-locale rungs are real (any added locale dir resolves through them) and also exercised by the `_setCatalogForTests`
+seam (a synthetic test-only locale).
+
+`availableLocales()` returns the loaded catalog tags (sorted, `en` first) and drives the Settings > Appearance >
+Language picker, so a newly-added locale dir auto-appears with no code edit. The non-locale `screenshots/` dir never
+shows up there (the same `BCP47_DIR` gate).
 
 ### Reactivity (load-bearing)
 
@@ -45,7 +57,7 @@ mirrors `system-strings.svelte.ts`. Reactivity holds only inside a reactive cont
 plain `.ts` computation is a snapshot, which is the right semantics for transient strings (toasts, error copy).
 
 No SSR/prerender concern: the app is a pure SPA (`+layout.ts` has `ssr = false`), so route components are never
-server/build-rendered; the catalog merge (a `import.meta.glob` over `messages/en/*.json`) and `getLocale()` touch no
+server/build-rendered; the catalog merge (a `import.meta.glob` over `messages/*/*.json`) and `getLocale()` touch no
 `window`.
 
 ### The ICU-vs-`$lib/intl` formatting split
@@ -81,8 +93,9 @@ Doesn't own (deliberately out of scope for the formatting layer):
 - Pluralization and sentence assembly (`pluralize.ts`, `${n} ${pluralize(...)}` sites, the fragment-concatenated
   transfer toasts). Locale-correct plurals (`Intl.PluralRules`, 6 categories) and whole-template messages belong to step
   2, where a catalog can hold the variants.
-- Locale switching / live reactivity. The locale is read from the OS at runtime; there's no in-app picker and no
-  requirement that a locale change re-renders open views without reload. Don't build a reactive locale store.
+- A reactive locale STORE. Live locale switching IS supported (the Settings > Appearance > Language picker, below), but
+  it rides the `setLocale()` seam + the message rune, not a `$store`. Don't add a reactive locale store; the single
+  `getLocale()` source plus the rune is the whole mechanism.
 - The deliberately-fixed date formats: the `iso`/`short`/`custom` modes (`format-utils.ts::applyTokens`) and the ISO
   `formatDate` helper in `selection-info-utils.ts` (`YYYY-MM-DD hh:mm:ss`). These are user-chosen fixed formats,
   locale-independent by design. Only the `'system'` date mode is locale-driven.
@@ -130,8 +143,18 @@ they read the same locale, so a localized separator is produced identically in b
 digits (modeling `font-variant-numeric: tabular-nums`), so a localized separator is measured at its real width, which is
 correct. Never add a second formatting path for measurement.
 
-## The locale source seam
+## The locale source seam + the Language picker
 
 `getLocale()` is intentionally a single function, not a locale-management system: `setLocale()` (in
 `messages.svelte.ts`) writes its override and bumps the message rune, so a locale switch is observable everywhere
-without a store. Keep the seam minimal. No in-app locale picker ships today; the seam supports one later.
+without a store. Keep the seam minimal.
+
+The in-app picker rides this seam. **Settings > Appearance > Language** is the `appearance.language` enum setting
+(`settings-registry.ts`), default `'system'`. Its options are built by `languageOptions()` from `availableLocales()`:
+`'system'` (the only translatable option label, `settings.appearance.language.opt.system`) plus one option per loaded
+locale, each labeled with the locale's own endonym via `Intl.DisplayNames` (`de` → "Deutsch"), so the list is
+self-describing and no language names are hardcoded. `settings-applier.ts`'s `applyLanguage` maps the value to the seam:
+`'system'` → `setLocale(null)` (follow the OS), a tag → `setLocale(tag)`. It runs in `applyAllSettings` at startup (so a
+persisted choice survives restart) and on every `appearance.language` change (live, no Apply button, no restart, no
+Tauri command: locale is frontend-only). A persisted tag with no loaded catalog (e.g. `en-XA` chosen in a dev build,
+then opened in prod) fails enum validation in the store and degrades to the `'system'` default with a warn.

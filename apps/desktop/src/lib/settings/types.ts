@@ -183,8 +183,17 @@ export type LowDiskSpaceNotificationsMode = 'in-app' | 'macos' | 'off'
 export type AiProvider = 'off' | 'cloud' | 'local'
 export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
 
+/**
+ * UI language: `'system'` follows the OS locale (the default); any other value
+ * is a BCP-47 locale tag with a loaded catalog (e.g. `'en'`, `'en-XA'`). The
+ * valid non-`'system'` values are derived at runtime from the loaded catalogs
+ * (`availableLocales()`), so they aren't a fixed union here.
+ */
+export type LanguageSetting = 'system' | string
+
 export interface SettingsValues {
   // Appearance
+  'appearance.language': LanguageSetting
   'appearance.appColor': AppColor
   'appearance.textSize': number
   'appearance.uiDensity': UiDensity

@@ -1,4 +1,17 @@
 {
+  "settings.appearance.language.label": "Language",
+  "@settings.appearance.language.label": {
+    "description": "Label for the app-language picker in Settings > Appearance > Colors and formats. Lets the user choose which language Cmdr's interface uses."
+  },
+  "settings.appearance.language.description": "Choose the language Cmdr uses. \"System default\" follows your Mac's language.",
+  "@settings.appearance.language.description": {
+    "description": "Help text under the language picker in Settings > Appearance. \"Cmdr\" is the product name; do not translate it. \"System default\" must match the wording of the settings.appearance.language.opt.system option below."
+  },
+  "settings.appearance.language.opt.system": "System default",
+  "@settings.appearance.language.opt.system": {
+    "description": "Language-picker option: follow the Mac's system language instead of forcing a specific one. The other options in this picker are each language's own name (auto-generated, not translated here). This is the only translatable option label."
+  },
+
   "settings.theme.mode.label": "Theme mode",
   "@settings.theme.mode.label": {
     "description": "Label for the theme picker in Settings > Appearance > Colors and formats. Lets the user choose light, dark, or follow-the-system appearance.",
@@ -1569,6 +1582,10 @@
   "@settings.fileSystemWatching.cardLowDiskSpace": {
     "description": "Heading of the low-disk-space card in Settings > Behavior > File system watching.",
     "screenshot": "settings-behavior-file-system-watching.png"
+  },
+  "settings.appearance.card.language": "Language",
+  "@settings.appearance.card.language": {
+    "description": "Heading of the Language card (the app-language picker) in Settings > Appearance > Colors and formats."
   },
   "settings.appearance.card.theme": "Theme",
   "@settings.appearance.card.theme": {

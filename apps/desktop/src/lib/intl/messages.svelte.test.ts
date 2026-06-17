@@ -15,6 +15,7 @@ import {
   tString,
   getMessage,
   setLocale,
+  availableLocales,
   _setCatalogForTests,
   _clearCompiledCacheForTests,
   _resetCaptureForTests,
@@ -85,6 +86,28 @@ describe('capture mode (screenshot-coupling instrumentation)', () => {
     api.disable()
     tString('transfer.split.clean', { verb: 'copy', phrase: '2 files' })
     expect(api.dump()).toEqual({ s1: ['transfer.trash'] })
+  })
+})
+
+describe('availableLocales() (loaded-catalog discovery + non-locale-dir exclusion)', () => {
+  it('includes the base `en` catalog and lists it first', () => {
+    const locales = availableLocales()
+    expect(locales).toContain('en')
+    expect(locales[0]).toBe('en')
+  })
+
+  it('never treats the `screenshots/` capture-artifact dir as a locale', () => {
+    // `screenshots/` sits alongside the locale dirs under `messages/` and is
+    // globbed by `messages/*/*.json`, but it's not a BCP-47 tag, so the runtime
+    // must filter it out. A regression here would surface it as a fake locale.
+    expect(availableLocales()).not.toContain('screenshots')
+  })
+
+  it('only lists BCP-47-shaped tags', () => {
+    const bcp47 = /^[a-z]{2,3}(-[a-z0-9]+)*$/i
+    for (const tag of availableLocales()) {
+      expect(tag).toMatch(bcp47)
+    }
   })
 })
 

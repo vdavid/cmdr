@@ -30,7 +30,7 @@ import {
   applyRecentSelectionsMaxCount,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
-import { tString } from '$lib/intl/messages.svelte'
+import { tString, setLocale } from '$lib/intl/messages.svelte'
 import { pushConfigToBackend } from './ai-config'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
 import { applyAutoCheckEnabled } from '$lib/updates/updater.svelte'
@@ -76,6 +76,19 @@ function applyDateColors(palette: DateColorsPalette): void {
  */
 function applyDensity(density: UiDensity): void {
   log.debug('Applied density: {density}', { density })
+}
+
+/**
+ * Applies the chosen UI language by driving the i18n locale-switch seam. The
+ * `'system'` sentinel maps to `null` (follow the OS locale); any other value is
+ * a BCP-47 tag. `setLocale()` writes the single locale source AND bumps the
+ * message rune, so every open `t()`/`<Trans>` re-renders and the number/date
+ * formatters (which read the same source) reformat: fully live, no restart.
+ * Locale is frontend-only, so there's no Tauri command to push.
+ */
+function applyLanguage(value: string): void {
+  setLocale(value === 'system' ? null : value)
+  log.debug('Applied language: {value}', { value })
 }
 
 /**
@@ -127,6 +140,11 @@ async function applyTheme(mode: ThemeMode): Promise<void> {
  * Applies all settings that affect the UI.
  */
 function applyAllSettings(): void {
+  // UI language. Run first (and at startup) so the persisted choice survives a
+  // restart: a saved real locale is applied before the rest of the UI renders;
+  // `'system'` reverts the override to the OS locale.
+  applyLanguage(getSetting('appearance.language'))
+
   // UI Density
   const density = getSetting('appearance.uiDensity')
   applyDensity(density)
@@ -201,6 +219,10 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
 function handleSettingChange(id: string, value: unknown): void {
   log.debug('Setting changed: {id} = {value}', { id, value })
 
+  if (id === 'appearance.language') {
+    applyLanguage(value as string)
+    return
+  }
   if (id === 'appearance.uiDensity') {
     applyDensity(value as UiDensity)
     return

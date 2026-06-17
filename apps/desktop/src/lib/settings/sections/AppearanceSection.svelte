@@ -5,6 +5,7 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
+    import SettingSelect from '../components/SettingSelect.svelte'
     import SettingColorSwatchPicker from '../components/SettingColorSwatchPicker.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
@@ -24,6 +25,7 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     // Definitions for rendering (with fallbacks for type safety)
+    const languageDef = getSettingDefinition('appearance.language') ?? { label: '', description: '' }
     const themeModeDef = getSettingDefinition('theme.mode') ?? { label: '', description: '' }
     const appColorDef = getSettingDefinition('appearance.appColor') ?? { label: '', description: '' }
     const sizeColorsDef = getSettingDefinition('appearance.sizeColors') ?? { label: '', description: '' }
@@ -89,6 +91,22 @@
 </script>
 
 <SettingsSection title={tString('settings.section.colorsAndFormats')}>
+    {#if anyVisible(shouldShow, 'appearance.language')}
+        <SectionCard label={tString('settings.appearance.card.language')}>
+            {#if shouldShow('appearance.language')}
+                <SettingRow
+                    id="appearance.language"
+                    label={languageDef.label}
+                    description={languageDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingSelect id="appearance.language" />
+                </SettingRow>
+            {/if}
+        </SectionCard>
+    {/if}
+
     {#if anyVisible(shouldShow, 'theme.mode', 'appearance.appColor')}
         <SectionCard label={tString('settings.appearance.card.theme')}>
             {#if shouldShow('theme.mode')}
