@@ -18,8 +18,7 @@ const mtpSpecMatch = /mtp(-[a-z-]+)?\.spec\.ts$/
 // by `pnpm i18n:capture`). Keeping it out of `all`/`mtp`/`non-mtp` means a full
 // suite run never spends time taking screenshots.
 const i18nCaptureSpecMatch = /i18n-capture\.spec\.ts$/
-const testMatch =
-  shardKind === 'mtp' ? mtpSpecMatch : shardKind === 'i18n-capture' ? i18nCaptureSpecMatch : '*.spec.ts'
+const testMatch = shardKind === 'mtp' ? mtpSpecMatch : shardKind === 'i18n-capture' ? i18nCaptureSpecMatch : '*.spec.ts'
 const testIgnore =
   shardKind === 'i18n-capture'
     ? undefined
