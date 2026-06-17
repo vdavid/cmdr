@@ -183,6 +183,19 @@ async function main() {
     // sets it, so a binary built by the normal E2E lane has no capture API —
     // `pnpm i18n:capture` must always go through `--build`. The env propagates
     // through tauri-wrapper → Tauri → the vite build.
+    //
+    // The capture build carries EVERY mock/feature at once (the visual UI is
+    // identical between them — only the cfg gates flip), so one build reaches all
+    // the special surfaces:
+    //  - `playwright-e2e`: the capture sink + E2E IPC (always needed).
+    //  - `virtual-mtp`: the fake MTP device, so the MTP browse surface + connected
+    //    toast are reachable without real hardware.
+    //  - `--config profile.release.debug-assertions=true`: turns ON
+    //    `#[cfg(debug_assertions)]` for the RELEASE profile, so the
+    //    `CMDR_MOCK_LICENSE` / `CMDR_MOCK_FDA` mocks (debug-only) take effect.
+    //    A clean, scoped Cargo override that touches only this one build — no
+    //    committed `Cargo.toml` change. Everything after the tauri `--` separator
+    //    is forwarded to `cargo`.
     run(
       'node',
       [
@@ -193,7 +206,9 @@ async function main() {
         hostTriple(),
         '--',
         '--features',
-        'playwright-e2e',
+        'playwright-e2e,virtual-mtp',
+        '--config',
+        'profile.release.debug-assertions=true',
       ],
       { env: { ...process.env, CMDR_I18N_CAPTURE_BUILD: '1' } },
     )
@@ -212,19 +227,48 @@ async function main() {
   const startPath = createFixtures()
   console.log(`[i18n-capture] fixtures at ${startPath}`)
 
-  // A single launch captures every default-launch surface and writes the report.
-  //
-  // No license-state pass: the commercial/expired/reminder license surfaces depend
-  // on `AppStatus`, which `app_status.rs` derives from `CMDR_MOCK_LICENSE` ONLY
-  // under `#[cfg(debug_assertions)]`. The capture binary is a RELEASE build
-  // (`target/<triple>/release/Cmdr`, debug-assertions off), so the mock is
-  // compiled out and a `CMDR_MOCK_LICENSE` relaunch silently renders the Personal
-  // state — it can't reach the paid/expired surfaces. Forcing it would need a
-  // debug capture build or a `debug-assertions = true` release-profile override
-  // (a Cargo change), both out of scope here. So those surfaces are document-
-  // skipped in the spec; the default launch still reaches the Personal license-key
-  // entry dialog.
-  await launchAndCapture(binary, startPath, {}, 'main')
+  // The MAIN launch captures every default-launch surface and writes the report
+  // fresh. `CMDR_MOCK_FDA=granted` opens the FDA gate so the download teaching
+  // toast surfaces (its event bridge bails when the gate is pending); the
+  // debug-assertions capture build honors the mock. The virtual MTP device
+  // auto-registers under E2E mode (no env needed beyond the feature).
+  await launchAndCapture(binary, startPath, { CMDR_MOCK_FDA: 'granted' }, 'main')
+
+  // PER-LAUNCH mock passes. Each carries an env the app reads once at startup,
+  // and the spec (keyed by `CMDR_I18N_CAPTURE_PASS`) captures only that pass's
+  // surface and MERGES into the report the main pass wrote. The
+  // debug-assertions capture build is what makes `CMDR_MOCK_LICENSE` /
+  // `CMDR_MOCK_FDA` (both `#[cfg(debug_assertions)]`) take effect in a release
+  // binary. `CMDR_MOCK_LICENSE` values per `app_status.rs::get_mock_status`.
+  /** @type {{ env: Record<string, string>, label: string }[]} */
+  const passes = [
+    // License states (paid About, perpetual About, commercial reminder, expired).
+    { env: { CMDR_MOCK_LICENSE: 'commercial' }, label: 'license:commercial' },
+    { env: { CMDR_MOCK_LICENSE: 'perpetual' }, label: 'license:perpetual' },
+    { env: { CMDR_MOCK_LICENSE: 'personal_reminder' }, label: 'license:reminder' },
+    { env: { CMDR_MOCK_LICENSE: 'expired' }, label: 'license:expired' },
+    // FDA-variant onboarding step 1 (the default macOS launch already grants FDA,
+    // so these drive the not-yet-granted / denied banner copy).
+    { env: { CMDR_MOCK_FDA: 'notgranted' }, label: 'fda:notgranted' },
+    { env: { CMDR_MOCK_FDA: 'denied' }, label: 'fda:denied' },
+  ]
+  // Run every pass even if one fails: a single broken pass must not abort the
+  // others (each pass MERGES into the report, so partial progress is kept). A
+  // failed Playwright run throws out of `launchAndCapture`; catch it, record the
+  // pass, and continue. We surface the failures (non-zero exit) at the very end.
+  const failedPasses = []
+  for (const { env: passEnv, label } of passes) {
+    try {
+      await launchAndCapture(binary, startPath, { ...passEnv, CMDR_I18N_CAPTURE_PASS: label }, label)
+    } catch (e) {
+      failedPasses.push(label)
+      console.warn(`[i18n-capture] pass '${label}' FAILED: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  if (failedPasses.length > 0) {
+    throw new Error(`capture passes failed: ${failedPasses.join(', ')}`)
+  }
 
   console.log('[i18n-capture] done. Next: `pnpm i18n:couple` to write @key.screenshot couplings.')
 }

@@ -344,7 +344,8 @@
   },
   "fileExplorer.network.browser.fetching": "fetching...",
   "@fileExplorer.network.browser.fetching": {
-    "description": "Placeholder shown in the network host list''s IP or hostname cell while that value is still being resolved. Lowercase, matching the quiet inline style."
+    "description": "Placeholder shown in the network host list''s IP or hostname cell while that value is still being resolved. Lowercase, matching the quiet inline style.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.unknown": "(unknown)",
   "@fileExplorer.network.browser.unknown": {
@@ -353,7 +354,8 @@
   },
   "fileExplorer.network.browser.searching": "Searching...",
   "@fileExplorer.network.browser.searching": {
-    "description": "Status shown while the app is still discovering network hosts (mDNS browsing in progress)."
+    "description": "Status shown while the app is still discovering network hosts (mDNS browsing in progress).",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.connectToServerRow": "Connect to server...",
   "@fileExplorer.network.browser.connectToServerRow": {
@@ -362,15 +364,18 @@
   },
   "fileExplorer.network.browser.noHostsTitle": "No network hosts found",
   "@fileExplorer.network.browser.noHostsTitle": {
-    "description": "Empty-state title in the network browser when no SMB hosts were discovered on the network."
+    "description": "Empty-state title in the network browser when no SMB hosts were discovered on the network.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.noHostsMessage": "Make sure you''re on a network with SMB-capable devices.",
   "@fileExplorer.network.browser.noHostsMessage": {
-    "description": "Empty-state body in the network browser advising the user to check their network. \"SMB\" is the file-sharing protocol name; do not translate it."
+    "description": "Empty-state body in the network browser advising the user to check their network. \"SMB\" is the file-sharing protocol name; do not translate it.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.refresh": "Refresh",
   "@fileExplorer.network.browser.refresh": {
-    "description": "Button in the empty network browser that re-scans the network for hosts."
+    "description": "Button in the empty network browser that re-scans the network for hosts.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.refreshAriaLabel": "Refresh network hosts",
   "@fileExplorer.network.browser.refreshAriaLabel": {
@@ -397,7 +402,8 @@
 
   "fileExplorer.network.browser.status.resolving": "Resolving...",
   "@fileExplorer.network.browser.status.resolving": {
-    "description": "Status cell in the network host list while the host''s name and IP are still being resolved."
+    "description": "Status cell in the network host list while the host''s name and IP are still being resolved.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "Waiting for network...",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
@@ -405,7 +411,8 @@
   },
   "fileExplorer.network.browser.status.notChecked": "Not checked",
   "@fileExplorer.network.browser.status.notChecked": {
-    "description": "Status cell for a host that has not been contacted yet (the user has not tried connecting)."
+    "description": "Status cell for a host that has not been contacted yet (the user has not tried connecting).",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.loggedIn": "🔑 Logged in{infoIcon}",
   "@fileExplorer.network.browser.status.loggedIn": {
@@ -441,7 +448,8 @@
     "description": "Status cell when the host could not be reached. The cross emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
     "placeholders": {
       "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    }
+    },
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.error": "⚠️ Error{infoIcon}",
   "@fileExplorer.network.browser.status.error": {
@@ -478,7 +486,8 @@
 
   "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address...",
   "@fileExplorer.network.browser.tooltip.resolving": {
-    "description": "Hover tooltip on a host row explaining that its name and IP are still being resolved."
+    "description": "Hover tooltip on a host row explaining that its name and IP are still being resolved.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Waiting for network name resolution",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -486,7 +495,8 @@
   },
   "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Double-click to connect and view shares",
   "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
-    "description": "Hover tooltip on a not-yet-contacted host row inviting the user to double-click to connect."
+    "description": "Hover tooltip on a not-yet-contacted host row inviting the user to double-click to connect.",
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.tooltip.credsStored": "Credentials stored. Double-click to connect.",
   "@fileExplorer.network.browser.tooltip.credsStored": {
@@ -1329,39 +1339,45 @@
     "description": "First line of the educational toast for users coming from Finder. The <space></space> tag wraps an inline keyboard-key chip showing the Space key. \"Cmdr\" is the app name; keep it. Reorder words naturally but keep the chip in the sentence.",
     "placeholders": {
       "space": "marks where the Space-key chip is shown inline; carries no translatable text"
-    }
+    },
+    "screenshot": "quick-look-hint.png"
   },
   "fileExplorer.quickLookHint.finderComparison": "If you come from Finder, this might be unusual because Finder triggers a \"Quick preview\" action on <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
     "description": "Second line of the Finder-convert toast, contrasting Cmdr with Finder. The <space></space> tag wraps an inline Space-key chip. \"Finder\" is the macOS file manager and \"Quick preview\" its feature; keep both. Reorder words naturally but keep the chip.",
     "placeholders": {
       "space": "marks where the Space-key chip is shown inline; carries no translatable text"
-    }
+    },
+    "screenshot": "quick-look-hint.png"
   },
   "fileExplorer.quickLookHint.quickView": "In Cmdr, you can trigger quick view via <key></key>. (<key></key> works in Finder, too, btw!)",
   "@fileExplorer.quickLookHint.quickView": {
     "description": "Third line of the Finder-convert toast, telling the user the Cmdr shortcut for quick view. Each <key></key> tag wraps an inline chip showing the same Quick Look shortcut (it appears twice). \"Cmdr\"/\"Finder\" are app names; \"btw\" is casual for \"by the way\". Keep both chips in the sentence.",
     "placeholders": {
       "key": "marks where the Quick Look shortcut chip is shown inline (appears twice, same shortcut); carries no translatable text"
-    }
+    },
+    "screenshot": "quick-look-hint.png"
   },
   "fileExplorer.quickLookHint.enterOpens": "You can also use <enter></enter> to open files in the default app.",
   "@fileExplorer.quickLookHint.enterOpens": {
     "description": "Fourth line of the Finder-convert toast, noting the Enter key opens files. The <enter></enter> tag wraps an inline Enter-key chip. Reorder words naturally but keep the chip.",
     "placeholders": {
       "enter": "marks where the Enter-key chip is shown inline; carries no translatable text"
-    }
+    },
+    "screenshot": "quick-look-hint.png"
   },
   "fileExplorer.quickLookHint.configurable": "All of this is configurable in <settingsLink>Settings > Keyboard shortcuts</settingsLink>.",
   "@fileExplorer.quickLookHint.configurable": {
     "description": "Last line of the Finder-convert toast, linking to the settings page. The <settingsLink>…</settingsLink> tag wraps the clickable link text, which names the Settings location; keep its label pointing at the Keyboard shortcuts area.",
     "placeholders": {
       "settingsLink": "the clickable link wrapping the text \"Settings > Keyboard shortcuts\""
-    }
+    },
+    "screenshot": "quick-look-hint.png"
   },
   "fileExplorer.quickLookHint.dontShowAgain": "Don''t show again",
   "@fileExplorer.quickLookHint.dontShowAgain": {
-    "description": "Button on the Finder-convert toast that permanently dismisses this hint (until re-enabled in Settings)."
+    "description": "Button on the Finder-convert toast that permanently dismisses this hint (until re-enabled in Settings).",
+    "screenshot": "quick-look-hint.png"
   },
 
   "fileExplorer.navigation.groupFavorites": "Favorites",
@@ -1495,7 +1511,8 @@
     "description": "Accessibility label and tooltip for the eject button on a volume in the breadcrumb and switcher. {name} is the volume''s display name.",
     "placeholders": {
       "name": "the display name of the volume to eject"
-    }
+    },
+    "screenshot": "mtp-browse.png"
   },
   "fileExplorer.navigation.ejectBusyTooltip": "Can''t eject while operations are in progress on this device",
   "@fileExplorer.navigation.ejectBusyTooltip": {

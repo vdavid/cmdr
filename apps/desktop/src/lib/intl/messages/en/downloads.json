@@ -5,7 +5,7 @@
     "placeholders": {
       "fileName": "the downloaded file's name (e.g. report.pdf)"
     },
-    "screenshot": "download-toast.png"
+    "screenshot": "toast-download.png"
   },
 
   "downloads.toast.inSubdir": "in {subdir}",
@@ -20,7 +20,7 @@
   "downloads.toast.learnIntro": "Something cool to learn about jumping to downloads",
   "@downloads.toast.learnIntro": {
     "description": "Friendly lead-in heading above the keyboard-shortcut tips in the expanded download toast. Upbeat, teaching tone.",
-    "screenshot": "download-toast.png"
+    "screenshot": "toast-download.png"
   },
 
   "downloads.toast.inAppHint": "In-app: Press <chip>{key}</chip> to jump here",
@@ -29,7 +29,7 @@
     "placeholders": {
       "key": "the shortcut keys to show in the chip (e.g. ⌘J)"
     },
-    "screenshot": "download-toast.png"
+    "screenshot": "toast-download.png"
   },
 
   "downloads.toast.globalHint": "In <em>any</em> app (global shortcut), press <chip>{key}</chip>",
@@ -38,7 +38,7 @@
     "placeholders": {
       "key": "the shortcut keys to show in the chip (e.g. ⌃⌥⌘J)"
     },
-    "screenshot": "download-toast.png"
+    "screenshot": "toast-download.png"
   },
 
   "downloads.toast.summaryBoth": "Jump with <inApp>{inAppKey}</inApp> in-app, <global>{globalKey}</global> globally.",
@@ -76,19 +76,20 @@
 
   "downloads.toast.collapseTip": "Make this notification more compact",
   "@downloads.toast.collapseTip": {
-    "description": "Accessibility label and tooltip for the chevron button that collapses the expanded download toast to a compact one-liner. A short action phrase."
+    "description": "Accessibility label and tooltip for the chevron button that collapses the expanded download toast to a compact one-liner. A short action phrase.",
+    "screenshot": "toast-download.png"
   },
 
   "downloads.toast.stopShowing": "Stop showing these",
   "@downloads.toast.stopShowing": {
     "description": "Button on the download toast that turns these download notifications off and opens their settings. A short button label.",
-    "screenshot": "download-toast.png"
+    "screenshot": "toast-download.png"
   },
 
   "downloads.toast.jumpToFile": "Jump to file",
   "@downloads.toast.jumpToFile": {
     "description": "Primary button on the download toast that reveals the downloaded file in Cmdr. A short button label.",
-    "screenshot": "download-toast.png"
+    "screenshot": "toast-download.png"
   },
 
   "downloads.notification.title": "Downloaded {fileName}",

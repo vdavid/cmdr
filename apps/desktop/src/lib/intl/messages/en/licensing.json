@@ -43,7 +43,8 @@
     "description": "License-status line in the About dialog for a perpetual (one-time) commercial license.",
     "placeholders": {
       "org": "the licensed organization name, or a fallback phrase like 'your organization'"
-    }
+    },
+    "screenshot": "about-perpetual.png"
   },
 
   "licensing.about.commercial": "Commercial license for {org}",
@@ -60,7 +61,8 @@
     "placeholders": {
       "org": "the licensed organization name, or a fallback phrase like 'your organization'",
       "date": "the expiry date, already formatted for the user's locale (e.g. June 15, 2026)"
-    }
+    },
+    "screenshot": "about-commercial.png"
   },
 
   "licensing.about.fallbackOrg": "your organization",
@@ -106,37 +108,44 @@
 
   "licensing.commercialReminder.title": "Thanks for using Cmdr!",
   "@licensing.commercialReminder.title": {
-    "description": "Title of the periodic reminder modal shown to personal-license users. Warm and grateful, not nagging. 'Cmdr' is the product name; do NOT translate."
+    "description": "Title of the periodic reminder modal shown to personal-license users. Warm and grateful, not nagging. 'Cmdr' is the product name; do NOT translate.",
+    "screenshot": "commercial-reminder.png"
   },
 
   "licensing.commercialReminder.usingPersonal": "You''re using a Personal license.",
   "@licensing.commercialReminder.usingPersonal": {
-    "description": "First line of the commercial-reminder modal stating the current license tier. 'Personal' is a license tier name; keep it capitalized and consistent with the other license labels."
+    "description": "First line of the commercial-reminder modal stating the current license tier. 'Personal' is a license tier name; keep it capitalized and consistent with the other license labels.",
+    "screenshot": "commercial-reminder.png"
   },
 
   "licensing.commercialReminder.askCommercial": "If you''re using Cmdr at work, please get a Commercial license to stay compliant.",
   "@licensing.commercialReminder.askCommercial": {
-    "description": "Body of the commercial-reminder modal politely asking work users to buy a commercial license. 'Cmdr' is the product name; 'Commercial' is a license tier name."
+    "description": "Body of the commercial-reminder modal politely asking work users to buy a commercial license. 'Cmdr' is the product name; 'Commercial' is a license tier name.",
+    "screenshot": "commercial-reminder.png"
   },
 
   "licensing.commercialReminder.priceInfo": "Commercial licenses are $59/year/user and support continued development.",
   "@licensing.commercialReminder.priceInfo": {
-    "description": "Supporting line in the commercial-reminder modal giving the price and framing it as support for development. Keep the price '$59/year/user' literal (currency and amount must not change)."
+    "description": "Supporting line in the commercial-reminder modal giving the price and framing it as support for development. Keep the price '$59/year/user' literal (currency and amount must not change).",
+    "screenshot": "commercial-reminder.png"
   },
 
   "licensing.commercialReminder.declinePersonal": "I only use Cmdr<break></break>for personal purposes",
   "@licensing.commercialReminder.declinePersonal": {
-    "description": "Secondary (dismiss) button in the commercial-reminder modal, for users who only use the app personally. <break> is an inline line break for two-line layout in a narrow button; place it at a sensible wrap point for the target language. 'Cmdr' is the product name."
+    "description": "Secondary (dismiss) button in the commercial-reminder modal, for users who only use the app personally. <break> is an inline line break for two-line layout in a narrow button; place it at a sensible wrap point for the target language. 'Cmdr' is the product name.",
+    "screenshot": "commercial-reminder.png"
   },
 
   "licensing.commercialReminder.getCommercial": "Get commercial license",
   "@licensing.commercialReminder.getCommercial": {
-    "description": "Primary button in the commercial-reminder modal that opens the pricing page. Keep it short (a button)."
+    "description": "Primary button in the commercial-reminder modal that opens the pricing page. Keep it short (a button).",
+    "screenshot": "commercial-reminder.png"
   },
 
   "licensing.expiration.title": "Your commercial license has expired",
   "@licensing.expiration.title": {
-    "description": "Title of the modal shown once when a commercial subscription has expired."
+    "description": "Title of the modal shown once when a commercial subscription has expired.",
+    "screenshot": "expiration.png"
   },
 
   "licensing.expiration.orgName": "License for: <strong>{org}</strong>",
@@ -144,7 +153,8 @@
     "description": "Line in the expiration modal naming the organization the expired license belonged to. <strong> emphasizes the organization name.",
     "placeholders": {
       "org": "the licensed organization name"
-    }
+    },
+    "screenshot": "expiration.png"
   },
 
   "licensing.expiration.message": "Your commercial subscription expired on <strong>{date}</strong>.",
@@ -152,22 +162,26 @@
     "description": "Main line of the expiration modal stating when the subscription lapsed. <strong> emphasizes the date.",
     "placeholders": {
       "date": "the expiry date, already formatted for the user's locale (e.g. March 1, 2026)"
-    }
+    },
+    "screenshot": "expiration.png"
   },
 
   "licensing.expiration.info": "Cmdr is now running in personal use mode. If you''re still using it for work, please renew your license.",
   "@licensing.expiration.info": {
-    "description": "Reassuring follow-up in the expiration modal explaining the app keeps working (now in personal mode) and inviting renewal. 'Cmdr' is the product name; do NOT translate."
+    "description": "Reassuring follow-up in the expiration modal explaining the app keeps working (now in personal mode) and inviting renewal. 'Cmdr' is the product name; do NOT translate.",
+    "screenshot": "expiration.png"
   },
 
   "licensing.expiration.renew": "Renew license",
   "@licensing.expiration.renew": {
-    "description": "Primary button in the expiration modal that opens the renewal page. Keep it short (a button)."
+    "description": "Primary button in the expiration modal that opens the renewal page. Keep it short (a button).",
+    "screenshot": "expiration.png"
   },
 
   "licensing.expiration.continue": "Continue in personal mode",
   "@licensing.expiration.continue": {
-    "description": "Secondary button in the expiration modal that dismisses it and keeps the app in personal mode. Keep it short (a button)."
+    "description": "Secondary button in the expiration modal that dismisses it and keeps the app in personal mode. Keep it short (a button).",
+    "screenshot": "expiration.png"
   },
 
   "licensing.dialog.loading": "Loading...",

@@ -236,7 +236,7 @@
   "commands.sortByCreated.label": "Sort by date created",
   "@commands.sortByCreated.label": {
     "description": "Command name that sorts the file list by creation date. Appears in the command palette.",
-    "screenshot": "main-window.png"
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "commands.sortAscending.label": "Sort ascending",

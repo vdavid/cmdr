@@ -4,7 +4,8 @@
     "description": "Title of the toast shown when an Android/Kindle/camera device connects over USB.",
     "placeholders": {
       "deviceName": "the connected device's display name (for example Pixel 7), or a generic fallback"
-    }
+    },
+    "screenshot": "mtp-connected-toast.png"
   },
   "mtp.connectedToast.bodyMac": "Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.",
   "@mtp.connectedToast.bodyMac": {
@@ -17,15 +18,18 @@
   },
   "mtp.connectedToast.dontShowAgain": "Don''t show again",
   "@mtp.connectedToast.dontShowAgain": {
-    "description": "Checkbox label that suppresses the device-connected toast for future connections."
+    "description": "Checkbox label that suppresses the device-connected toast for future connections.",
+    "screenshot": "mtp-connected-toast.png"
   },
   "mtp.connectedToast.disableMtp": "Disable MTP...",
   "@mtp.connectedToast.disableMtp": {
-    "description": "Button that turns off MTP device support entirely. The ellipsis hints further confirmation/settings. MTP is a protocol acronym; keep it. Tight mini button."
+    "description": "Button that turns off MTP device support entirely. The ellipsis hints further confirmation/settings. MTP is a protocol acronym; keep it. Tight mini button.",
+    "screenshot": "mtp-connected-toast.png"
   },
   "mtp.connectedToast.ok": "OK",
   "@mtp.connectedToast.ok": {
-    "description": "Button that acknowledges and dismisses the device-connected toast. Tight mini button."
+    "description": "Button that acknowledges and dismisses the device-connected toast. Tight mini button.",
+    "screenshot": "mtp-connected-toast.png"
   },
 
   "mtp.permissionDialog.title": "Can''t access USB device",

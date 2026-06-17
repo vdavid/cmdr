@@ -82,27 +82,32 @@
 
   "onboarding.stepFda.welcome.title": "Welcome to Cmdr!",
   "@onboarding.stepFda.welcome.title": {
-    "description": "Main welcome heading on the first onboarding step (Full Disk Access). Warm, first-impression greeting. \"Cmdr\" is the product name and stays untranslated."
+    "description": "Main welcome heading on the first onboarding step (Full Disk Access). Warm, first-impression greeting. \"Cmdr\" is the product name and stays untranslated.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.revoked.intro": "It looks like you accepted full disk access before but then revoked it.",
   "@onboarding.stepFda.revoked.intro": {
-    "description": "Opening line shown when the user previously granted Full Disk Access and later turned it off. \"full disk access\" is the macOS permission name."
+    "description": "Opening line shown when the user previously granted Full Disk Access and later turned it off. \"full disk access\" is the macOS permission name.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.revoked.noAccess": "The app currently has no full disk access.",
   "@onboarding.stepFda.revoked.noAccess": {
-    "description": "Emphasized line (rendered bold) restating that the app lacks Full Disk Access, in the revoked-permission variant. \"full disk access\" is the macOS permission name."
+    "description": "Emphasized line (rendered bold) restating that the app lacks Full Disk Access, in the revoked-permission variant. \"full disk access\" is the macOS permission name.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.revoked.ifIntentional": "If that was intentional, click <deny>Deny</deny> and the app won''t bother you again.",
   "@onboarding.stepFda.revoked.ifIntentional": {
-    "description": "Tells the user that if revoking access was deliberate, they can decline and won't be asked again. <deny> wraps the bolded word naming the Deny button; the button itself is labeled by onboarding.stepFda.deny, so keep this wrapped word matching that label."
+    "description": "Tells the user that if revoking access was deliberate, they can decline and won't be asked again. <deny> wraps the bolded word naming the Deny button; the button itself is labeled by onboarding.stepFda.deny, so keep this wrapped word matching that label.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.revoked.ifNot": "If it <em>wasn''t</em> intentional, consider allowing full disk access again. Here are the pros and cons:",
   "@onboarding.stepFda.revoked.ifNot": {
-    "description": "Suggests re-enabling Full Disk Access if revoking it was a mistake, then leads into a pros/cons list. <em> emphasizes the word \"wasn't\". \"full disk access\" is the macOS permission name."
+    "description": "Suggests re-enabling Full Disk Access if revoking it was a mistake, then leads into a pros/cons list. <em> emphasizes the word \"wasn't\". \"full disk access\" is the macOS permission name.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.firstAsk.lede": "<strong>You probably just want to start using the app.</strong> Sorry to bother you with this first, but it''s needed.",
@@ -122,17 +127,20 @@
 
   "onboarding.stepFda.pro": "<strong>Pro:</strong> The app will access your entire disk without nagging you for permissions to each folder like Downloads, Documents, and Desktop.",
   "@onboarding.stepFda.pro": {
-    "description": "The \"pro\" bullet for granting Full Disk Access. <strong> bolds the leading \"Pro:\" label. \"Downloads\", \"Documents\", and \"Desktop\" are macOS folder names, already localized by the OS in the real UI; translate them to your locale's standard macOS folder names."
+    "description": "The \"pro\" bullet for granting Full Disk Access. <strong> bolds the leading \"Pro:\" label. \"Downloads\", \"Documents\", and \"Desktop\" are macOS folder names, already localized by the OS in the real UI; translate them to your locale's standard macOS folder names.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.con": "<strong>Con:</strong> Full disk access is pretty powerful. It lets the app read any file on your Mac. Only grant this if you trust Cmdr. Cmdr uses this right respectfully, and is <sourceLink>source-available</sourceLink> if you feel unsure.",
   "@onboarding.stepFda.con": {
-    "description": "The \"con\" bullet for granting Full Disk Access: it's powerful, grant only if you trust the app. <strong> bolds the leading \"Con:\" label. <sourceLink> wraps the words linking to the public source code. \"Cmdr\" is the product name; \"Mac\" is the device name; both stay untranslated. \"source-available\" means the source code can be viewed publicly."
+    "description": "The \"con\" bullet for granting Full Disk Access: it's powerful, grant only if you trust the app. <strong> bolds the leading \"Con:\" label. <sourceLink> wraps the words linking to the public source code. \"Cmdr\" is the product name; \"Mac\" is the device name; both stay untranslated. \"source-available\" means the source code can be viewed publicly.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.ifAllow": "If you decide to allow:",
   "@onboarding.stepFda.ifAllow": {
-    "description": "Short heading introducing the numbered steps for turning on Full Disk Access in System Settings."
+    "description": "Short heading introducing the numbered steps for turning on Full Disk Access in System Settings.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.openSettings": "Open {systemSettings}",
@@ -140,7 +148,8 @@
     "description": "Button that opens the macOS System Settings to the Full Disk Access pane, and the same wording appears inline in the instructions. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS, so don't translate or alter it.",
     "placeholders": {
       "systemSettings": "the macOS System Settings app name, already localized by the OS (for example \"System Settings\")"
-    }
+    },
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.step1": "Click <strong>Open {systemSettings}</strong> below",
@@ -148,12 +157,14 @@
     "description": "First numbered instruction for granting Full Disk Access. <strong> bolds the button name the user should click. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS; keep it inside the <strong> wrap and don't alter it. Match the button wording in onboarding.stepFda.openSettings.",
     "placeholders": {
       "systemSettings": "the macOS System Settings app name, already localized by the OS (for example \"System Settings\")"
-    }
+    },
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.step2.ventura": "Find <strong>Cmdr</strong> in the list and toggle it on",
   "@onboarding.stepFda.step2.ventura": {
-    "description": "Second numbered instruction, for macOS Ventura (13) and newer, where the Full Disk Access list is alphabetical. <strong> bolds the app name. \"Cmdr\" is the product name and stays untranslated."
+    "description": "Second numbered instruction, for macOS Ventura (13) and newer, where the Full Disk Access list is alphabetical. <strong> bolds the app name. \"Cmdr\" is the product name and stays untranslated.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.step2.older": "Find <strong>Cmdr</strong> at the end of the list and toggle it on",
@@ -163,17 +174,20 @@
 
   "onboarding.stepFda.step2.tip": "Tip: Is Cmdr not in the list? Click the \"+\" button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.",
   "@onboarding.stepFda.step2.tip": {
-    "description": "Helper tip under the second instruction, for when the app isn't listed yet: add it manually with the plus button. <strong> bolds \"Cmdr\" and the \"Applications\" folder name. \"Cmdr\" is the product name; \"Applications\" is the macOS folder name (use your locale's standard macOS name). Keep the literal \"+\" character."
+    "description": "Helper tip under the second instruction, for when the app isn't listed yet: add it manually with the plus button. <strong> bolds \"Cmdr\" and the \"Applications\" folder name. \"Cmdr\" is the product name; \"Applications\" is the macOS folder name (use your locale's standard macOS name). Keep the literal \"+\" character.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.step3": "Confirm and click <strong>Quit & Reopen</strong>",
   "@onboarding.stepFda.step3": {
-    "description": "Third numbered instruction: confirm the macOS prompt to relaunch the app. <strong> bolds the macOS button label \"Quit & Reopen\", which is shown by macOS itself, so use the exact wording macOS uses in your locale."
+    "description": "Third numbered instruction: confirm the macOS prompt to relaunch the app. <strong> bolds the macOS button label \"Quit & Reopen\", which is shown by macOS itself, so use the exact wording macOS uses in your locale.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.deny": "Deny",
   "@onboarding.stepFda.deny": {
-    "description": "Button that declines Full Disk Access. Short, decisive control label. Must match the bolded \"Deny\" word referenced elsewhere on this step."
+    "description": "Button that declines Full Disk Access. Short, decisive control label. Must match the bolded \"Deny\" word referenced elsewhere on this step.",
+    "screenshot": "onboarding-fda-notgranted.png"
   },
 
   "onboarding.stepFda.postAction.intro": "Cmdr needs to restart so the new permission takes effect.",

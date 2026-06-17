@@ -1363,7 +1363,7 @@
   "settings.control.resetToDefault": "Reset to default",
   "@settings.control.resetToDefault": {
     "description": "Tooltip and aria-label for the per-setting reset button, which restores a setting to its default value. Keep concise.",
-    "screenshot": "settings-appearance.png"
+    "screenshot": "settings-developer-mcp-server.png"
   },
   "settings.control.restartRequired": "Restart required",
   "@settings.control.restartRequired": {
@@ -1778,7 +1778,8 @@
   },
   "settings.mcp.ephemeral": "(ephemeral)",
   "@settings.mcp.ephemeral": {
-    "description": "Suffix appended after the running port to mark it as an OS-picked temporary port. \"ephemeral\" is a networking term for an auto-assigned short-lived port. Keep the parentheses."
+    "description": "Suffix appended after the running port to mark it as an OS-picked temporary port. \"ephemeral\" is a networking term for an auto-assigned short-lived port. Keep the parentheses.",
+    "screenshot": "settings-developer-mcp-server.png"
   },
   "settings.mcp.portInUseFallback": "(port {port} was in use)",
   "@settings.mcp.portInUseFallback": {

@@ -24,7 +24,7 @@
  * report.
  */
 
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { test, expect } from './fixtures.js'
 import {
@@ -61,6 +61,66 @@ import {
 } from './i18n-capture-surfaces.js'
 import { captureMainDialogs, captureViewerSubsurfaces } from './i18n-capture-special.js'
 import { captureMainExplorerSurfaces } from './i18n-capture-surfaces-main.js'
+import {
+  captureMtpSurfaces,
+  captureDownloadToasts,
+  captureQuickLookHint,
+  captureLicensePass,
+  captureFdaOnboardingPass,
+} from './i18n-capture-staged.js'
+
+/**
+ * Runs ONE mock-staged pass (a non-`main` launch carrying a `CMDR_MOCK_LICENSE` /
+ * `CMDR_MOCK_FDA` env). Loads the report + sibling failed/skipped lists the
+ * `main` pass wrote, captures only this pass's surface(s), removes their labels
+ * from `skipped` (they're being captured now), and writes everything back. So a
+ * multi-launch run accumulates into one report instead of each launch clobbering
+ * the last.
+ *
+ * Pass names: `license:commercial`, `license:perpetual`, `license:reminder`,
+ * `license:expired` (each → `captureLicensePass`), and `fda:<variant>` (→
+ * `captureFdaOnboardingPass`).
+ */
+async function runMockPass(pass: string, main: TauriPage): Promise<void> {
+  const loadJson = <T>(p: string, fallback: T): T => {
+    if (!existsSync(p)) return fallback
+    try {
+      return JSON.parse(readFileSync(p, 'utf8')) as T
+    } catch {
+      return fallback
+    }
+  }
+  const report = loadJson<Record<string, SurfaceEntry>>(reportPath, {})
+  const failed = loadJson<string[]>(failedPath, [])
+  const skipped = loadJson<string[]>(skippedPath, [])
+
+  const before = new Set(Object.keys(report))
+
+  if (pass.startsWith('license:')) {
+    await captureLicensePass(pass, main, report, failed)
+  } else if (pass.startsWith('fda:')) {
+    await captureFdaOnboardingPass(pass, main, report, failed)
+  } else {
+    throw new Error(`unknown capture pass: ${pass}`)
+  }
+
+  // Any newly-captured surface that was previously a documented skip leaves the
+  // skip list (it's real now).
+  for (const label of Object.keys(report)) {
+    if (before.has(label)) continue
+    const idx = skipped.indexOf(label)
+    if (idx >= 0) skipped.splice(idx, 1)
+  }
+
+  writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n')
+  writeFileSync(failedPath, JSON.stringify(failed, null, 2) + '\n')
+  writeFileSync(skippedPath, JSON.stringify(skipped, null, 2) + '\n')
+  console.log(
+    `[i18n-capture] pass '${pass}': ${String(Object.keys(report).length)} surfaces in report, ` +
+      `${String(failed.length)} failed, ${String(skipped.length)} skipped`,
+  )
+  expect(failed, `surfaces failed to capture in pass ${pass}: ${failed.join(', ')}`).toEqual([])
+}
 
 test.describe('i18n screenshot capture', () => {
   // Drives ~22 surfaces across several windows (main, dialogs, a separate
@@ -72,6 +132,18 @@ test.describe('i18n screenshot capture', () => {
     test.setTimeout(180000)
     const main = tauriPage as TauriPage
     mkdirSync(screenshotsDir, { recursive: true })
+
+    // The orchestrator (`scripts/i18n-capture.js`) drives several launches: the
+    // `main` pass (no mock) plus per-launch passes carrying a `CMDR_MOCK_LICENSE`
+    // / `CMDR_MOCK_FDA` the app reads once at startup. `CMDR_I18N_CAPTURE_PASS`
+    // names the active pass. The `main` pass writes the report fresh; every other
+    // pass LOADS it, captures only its surface(s), and MERGES back, so a
+    // multi-launch run accumulates into one report.
+    const pass = process.env.CMDR_I18N_CAPTURE_PASS ?? 'main'
+    if (pass !== 'main') {
+      await runMockPass(pass, main)
+      return
+    }
 
     // The fixture auto-starts a video recorder (15 fps frame capture). It's
     // useless for this driver and just burns CPU + CoreGraphics work alongside
@@ -204,14 +276,24 @@ test.describe('i18n screenshot capture', () => {
     // ── Drive-indexing status indicator ───────────────────────────────────────
     await captureIndexingStatus(main, report, failed)
 
+    // ── Mock-staged MAIN-pass surfaces (this tranche) ─────────────────────────
+    // Reachable in the default launch now that the capture build carries
+    // `virtual-mtp` + a hermetic default store + (debug-assertions) `CMDR_MOCK_FDA`:
+    //  - Quick Look hint: fires on Space now that the default store doesn't
+    //    suppress it (the data-dir fix).
+    //  - MTP browse + connected toast: the virtual device auto-registers under
+    //    E2E mode; the toast re-fires from the typed connect event.
+    //  - Download teaching toast: emitted via the `download-detected` event with
+    //    the FDA gate mocked open.
+    // The per-launch license + FDA-variant surfaces run in their own passes (see
+    // `runMockPass`), driven by the orchestrator's multi-launch loop.
+    await captureQuickLookHint(main, report, failed)
+    await captureMtpSurfaces(main, report, failed)
+    await captureDownloadToasts(main, report, failed)
+
     // ── Documented skips deferred to the mock-staging tranche ─────────────────
     // These surfaces need backend state / events we can't fake from the frontend
-    // here, so they're SKIPPED (not failed) and tracked for coverage honesty.
-    // They're the explicit charter of the next tranche (mock staging):
-    //  - download toasts (`downloads.*`): need a real download-complete event
-    //    from the updater / download manager, not a frontend command.
-    //  - MTP-connected toast (`mtp.*`): needs a device or the `virtual-mtp`
-    //    feature staged, absent from this capture build.
+    // here, so they're SKIPPED (not failed) and tracked for coverage honesty:
     //  - low-disk warning (`lowDiskSpace.*`): needs disk-pressure state from the
     //    backend space monitor.
     //  - AI-suggestion surfaces (`ai.*`): need the AI backend / a configured
@@ -221,21 +303,36 @@ test.describe('i18n screenshot capture', () => {
     //  - indexing aggregation/replay indicator states (`indexing.aggregation.*`,
     //    `indexing.replay.*`): need their own event pairs; `indexing-status`
     //    above covers the scan state only.
+    //  - AI cloud connection / setup states (`ai.*` cloud, `cloudSetup.*`): need a
+    //    real (or mocked) AI backend + configured provider; no frontend-stageable
+    //    event reaches the connected/error cloud states here.
+    //  - SMB / network browser + connect/reconnect surfaces (`fileExplorer.network.*`,
+    //    `smbReconnect.*`): need the live SMB Docker stack (the `smb-e2e` Cargo
+    //    feature in the build PLUS `smb-servers/start.sh e2e` containers, vendored
+    //    `.compose/` files, a running Docker daemon, and credentialed connect). That
+    //    stack is far more invasive to bring up from this capture harness than the
+    //    other passes (a different feature build + external Docker lifecycle), so
+    //    it's the documented lower-priority skip per the tranche charter. The
+    //    connect-to-server DIALOG itself (`connect-to-server`) IS captured (reached
+    //    from the empty Network volume, no server needed).
+    // (The download + MTP-connected toasts were here; they're now captured in the
+    // main pass above via `captureDownloadToasts` / `captureMtpSurfaces`.)
     for (const deferred of [
-      'toast-download',
-      'toast-mtp-connected',
       'toast-low-disk',
       'ai-suggestion',
+      'ai-cloud',
       'toast-index-rescan',
       'indexing-aggregation',
       'indexing-replay',
+      'network-browser',
+      'smb-reconnect',
     ]) {
       skipped.push(deferred)
     }
     console.warn(
-      `[i18n-capture] ${String(7)} surfaces SKIPPED (deferred to the mock-staging tranche): ` +
-        `download/MTP/low-disk toasts, AI suggestion, indexing rescan toast + aggregation/replay states. ` +
-        `Each needs backend events or staged mocks the frontend can't fire here.`,
+      `[i18n-capture] ${String(8)} surfaces SKIPPED (need backend events, a configured provider, or the SMB Docker stack): ` +
+        `low-disk toast, AI suggestion + cloud states, indexing rescan toast + aggregation/replay states, ` +
+        `and the SMB network browser + reconnect (needs live containers).`,
     )
 
     // ── Documented skips: surfaces needing backend state or a new prod hook ────
@@ -252,47 +349,28 @@ test.describe('i18n screenshot capture', () => {
     //  - viewer reload toast (`viewer.reloadToast.*`): needs a file-changed event
     //    from the backend watcher while the viewer is open; the frontend can't
     //    fire it here.
-    //  - the paid/expired/reminder LICENSE surfaces (`about-commercial`,
-    //    `license-details`, `commercial-reminder`, `expiration`): they depend on
-    //    `AppStatus`, which `app_status.rs` derives from `CMDR_MOCK_LICENSE` ONLY
-    //    under `#[cfg(debug_assertions)]`. The capture binary is a RELEASE build
-    //    (`target/<triple>/release/Cmdr`, debug-assertions off), so the mock is
-    //    compiled out and a relaunch with the env just renders the Personal state
-    //    (verified: a `CMDR_MOCK_LICENSE=commercial` About was byte-for-key
-    //    identical to the Personal `about`). Reaching them needs a debug capture
-    //    build or a `debug-assertions = true` release-profile Cargo override, both
-    //    out of scope. The Personal license-key ENTRY dialog (`license-key-dialog`)
-    //    and Personal `about` ARE captured on the default launch.
-    //  - Quick Look educational toast (`fileExplorer.quickLookHint.*`): the toast
-    //    fires from a plain Space in the file list, but `maybeShowQuickLookHint()`
-    //    gates on the `fileExplorer.suppressQuickLookHint` setting. The capture
-    //    binary reads the REAL prod tauri-store (the orchestrator launches it with
-    //    no `CMDR_DATA_DIR` override — see `scripts/i18n-capture.js`), and that
-    //    store has the hint suppressed (`true`), so the toast never shows. The
-    //    Space toggle itself fires (verified: selection toggles, but 0 toasts);
-    //    it's the gate, not the trigger. Reaching it needs the harness to launch
-    //    with an isolated data dir (or seed the setting `false`) — a harness
-    //    change out of scope here. Mutating the real prod setting to force it is
-    //    not acceptable (it's David's live preference).
+    //  - the LICENSE DETAILS view (`license-details`): the LicenseKeyDialog's
+    //    committed-license view reads `getLicenseInfo()` (the stored,
+    //    signature-verified key), which `CMDR_MOCK_LICENSE` does NOT populate (the
+    //    mock only drives `AppStatus`, not the stored `LicenseInfo`). Reaching it
+    //    needs a real committed test key in the store — out of scope. The paid
+    //    About (`about-commercial` / `about-perpetual`), the commercial-reminder
+    //    modal, and the expiration modal ARE captured in their license passes (the
+    //    debug-assertions capture build honors the mock).
     for (const docSkip of [
       'crash-report',
       'viewer-copy-confirm',
       'viewer-copy-refuse',
       'viewer-reload-toast',
-      'about-commercial',
       'license-details',
-      'commercial-reminder',
-      'expiration',
-      'quick-look-hint',
     ]) {
       skipped.push(docSkip)
     }
     console.warn(
-      `[i18n-capture] ${String(9)} surfaces SKIPPED (need backend state, a new prod hook, or a debug build): ` +
+      `[i18n-capture] ${String(5)} surfaces SKIPPED (need backend state, a new prod hook, or a committed key): ` +
         `crash-report dialog (boot-only pending-crash state), viewer large-copy confirm/refuse ` +
-        `(need a >10 MB selection), viewer reload toast (needs a watcher event), the paid/expired/` +
-        `reminder license surfaces (CMDR_MOCK_LICENSE is debug-only; the capture binary is a release build), ` +
-        `and the Quick Look hint toast (suppressed in the real prod store the capture binary reads).`,
+        `(need a >10 MB selection), viewer reload toast (needs a watcher event), and the license-details ` +
+        `view (needs a real committed key, not just the AppStatus mock).`,
     )
 
     // ── Surface: keyboard shortcuts window (KNOWN-SKIPPED) ────────────────────
