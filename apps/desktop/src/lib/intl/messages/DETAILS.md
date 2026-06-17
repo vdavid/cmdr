@@ -81,6 +81,17 @@ codegen ever sees it:
   explains how a stand-in screenshot maps to this key ("this shows a different error, but your string is the
   title/explanation in this same pane"). Absent on direct (captured) couplings. Like `screenshot`, it's harness-written,
   never hand-authored, and stripped before runtime/codegen.
+- `sourceHash` (non-`en` locales only): a 7-char lowercase hex hash (git-style; the SHA-256 prefix of the EXACT English
+  value the translation was made from), computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.js`. The
+  pseudolocale generator and any locale skeleton write it; the `desktop-i18n-stale` check compares the stored hash
+  against the current English value's hash and flags a translation whose source has since changed as STALE.
+  Deterministic and git-independent (survives rebases/reformats); not present in `en` (the source has no source).
+- `reviewed` (non-`en` locales only): a boolean human sign-off (principle 6 — a human reviewed this translated copy).
+  Reset to absent/`false` by the stale check whenever `sourceHash` changes, because a re-translation needs a fresh
+  review. Likely lightly used; it exists so the review state has a home.
+
+`sourceHash` and `reviewed` are ordinary `@`-metadata fields: the whole `@`-entry is stripped before the runtime and
+codegen see it (same as `description`/`screenshot`), so adding them needs NO codegen or runtime change.
 
 The guiding test for every `@key`: "Could a competent translator who has never run Cmdr render this perfectly into any
 language, given this note plus a per-language style guide plus (optionally) the screenshot?" If not, the note is missing
