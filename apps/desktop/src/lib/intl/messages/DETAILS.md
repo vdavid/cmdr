@@ -42,6 +42,29 @@ apostrophe in a catalog value, not only the dangerous ones: `''` is always safe,
 edits that might move an apostrophe next to a placeholder. The per-area parity test is the net that catches a missed
 double.
 
+## ⚠️ `errors.*` are RAW (no ICU) — translators must NOT add ICU syntax there
+
+The entire `errors.*` family (`errors.listing.*`, `errors.git.*`, `errors.provider.*`, `errors.write.*`) does NOT render
+through ICU. It resolves via `getMessage()` (a raw catalog lookup), then `interpolate()` + `expandSystemStrings()` do
+plain `.replaceAll('{token}', value)` substitution (see [`../../errors/CLAUDE.md`](../../errors/CLAUDE.md) and the intl
+runtime [`../CLAUDE.md`](../CLAUDE.md)). The apostrophe-doubling rule above is the OPPOSITE here. So in any `errors.*`
+value:
+
+- **Do NOT double apostrophes.** Write `doesn't`, not `doesn''t` — there's no ICU parser to un-double them, so `''` would
+  render as a literal double apostrophe.
+- **`{token}` is a literal replacement target, not an ICU argument.** `{system_settings}`, `{path}`, `{reason}`, etc. are
+  substituted by name. Keep them verbatim; don't reorder their braces or add ICU formatting (`{count, number}`,
+  `{x, plural, …}`) — none of that is parsed, it'd render as literal text.
+- **`<…>` is LITERAL text, not a tag.** `<folder-path>` in an `errors.*` value prints literally; it is NOT an inline
+  component. Don't treat `<x>` as ICU/HTML here.
+- **`#`, `**`, backticks are markdown/literal**, passed through untouched.
+
+The unit on which this raw/ICU split is decided is the KEY PREFIX (`errors.`), single-sourced as `isRawKey()` in
+[`../../../../scripts/i18n-catalog-lib.js`](../../../../scripts/i18n-catalog-lib.js). The locale checks honor it: the
+ICU-validity check (`desktop-i18n-icu`) SKIPS `errors.*` (so valid raw copy isn't flagged as invalid ICU), and the
+parity check (`desktop-i18n-parity`) compares the raw `{token}` set instead of an ICU placeholder set for these keys.
+Translator-facing version of this note: [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Error pipeline.
+
 ## `@key` metadata schema
 
 Each message key MAY have a sibling `@`-prefixed entry holding ARB-style metadata, stripped before the runtime or
