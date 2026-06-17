@@ -269,6 +269,82 @@ var AllChecks = []CheckDefinition{
 		Run:               RunDesktopI18nStale,
 	},
 	{
+		ID:          "desktop-i18n-parity",
+		Nickname:    "i18n-parity",
+		DisplayName: "i18n-parity",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// ERROR class (NOT warn-only): a non-`en` translation whose {placeholder}/<tag>
+		// set (or raw {token} set, for errors.*) differs from English crashes at
+		// runtime. So this is a real CI gate, wired with a step in ci.yml.
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Run:               RunDesktopI18nParity,
+	},
+	{
+		ID:          "desktop-i18n-icu",
+		Nickname:    "i18n-icu",
+		DisplayName: "i18n-icu",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// ERROR class: a non-`en` ICU message that doesn't compile via
+		// intl-messageformat throws at render time. Real CI gate.
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Run:               RunDesktopI18nIcu,
+	},
+	{
+		ID:          "desktop-i18n-plural",
+		Nickname:    "i18n-plural",
+		DisplayName: "i18n-plural",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// ERROR class: a plural message missing a category its LOCALE requires (per
+		// CLDR) renders the wrong branch (or throws). Real CI gate.
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Run:               RunDesktopI18nPlural,
+	},
+	{
+		ID:          "desktop-i18n-coverage",
+		Nickname:    "i18n-coverage",
+		DisplayName: "i18n-coverage",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// Warn-only metric (keys missing from a locale fall back silently to English;
+		// values byte-identical to English are likely untranslated). Honest-coverage
+		// signal, not a build breaker — like desktop-i18n-stale, a CI step would be
+		// noise since it can never fail.
+		NotInCI:           "warn-only metric; it can never fail, so a CI step would be noise",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Run:               RunDesktopI18nCoverage,
+	},
+	{
+		ID:          "desktop-i18n-dont-translate",
+		Nickname:    "i18n-dont-translate",
+		DisplayName: "i18n-dont-translate",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// Warn-only metric (a curated brand/system token English carries for a key
+		// but the locale's value dropped). A judgment-call quality signal, not a
+		// crash — a CI step would be noise since it can never fail.
+		NotInCI:           "warn-only metric; it can never fail, so a CI step would be noise",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Run:               RunDesktopI18nDontTranslate,
+	},
+	{
 		ID:                "desktop-rust-tests",
 		CpuWeight:         6,
 		Nickname:          "rust-tests",

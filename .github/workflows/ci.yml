@@ -263,6 +263,15 @@ jobs:
       - name: Check for unused message keys
         run: ./scripts/check/check --check desktop-message-keys-unused --ci
 
+      - name: Check i18n placeholder/tag parity
+        run: ./scripts/check/check --check desktop-i18n-parity --ci
+
+      - name: Check i18n ICU validity
+        run: ./scripts/check/check --check desktop-i18n-icu --ci
+
+      - name: Check i18n plural-category coverage
+        run: ./scripts/check/check --check desktop-i18n-plural --ci
+
       - name: Run Knip
         run: ./scripts/check/check --check desktop-svelte-knip --ci
 
