@@ -1,0 +1,7 @@
+# Capture screenshots are large and churn on every UI change (re-rendered byte-for-byte
+# even when unchanged), so they're NOT tracked — they're regenerable with `pnpm i18n:shots`.
+# What IS tracked: `capture-report.json` (the surface→keys coupling source + freshness-check
+# input) and the `@key.screenshot` refs in the `en/*.json` catalogs. Screenshots are an
+# optional translator aid (the `@key` descriptions are the primary one), so a checkout without
+# them degrades gracefully — see docs/guides/i18n.md § Screenshots.
+*.png
