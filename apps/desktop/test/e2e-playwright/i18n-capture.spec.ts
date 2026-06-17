@@ -126,7 +126,7 @@ test.describe('i18n screenshot capture', () => {
   // Drives ~22 surfaces across several windows (main, dialogs, a separate
   // Settings window iterating 18 sections, the viewer, the shortcuts window),
   // with window open/close throughout — well over the 15s per-test default. As
-  // surfaces grow each tranche, bump this. (A normal interaction test fits in
+  // the surface set grows, bump this. (A normal interaction test fits in
   // 15s; this is a multi-surface capture driver, not a normal test.)
   test('captures representative surfaces and writes the coupling report', async ({ tauriPage }) => {
     test.setTimeout(180000)
@@ -276,7 +276,7 @@ test.describe('i18n screenshot capture', () => {
     // ── Drive-indexing status indicator ───────────────────────────────────────
     await captureIndexingStatus(main, report, failed)
 
-    // ── Mock-staged MAIN-pass surfaces (this tranche) ─────────────────────────
+    // ── Mock-staged MAIN-pass surfaces ────────────────────────────────────────
     // Reachable in the default launch now that the capture build carries
     // `virtual-mtp` + a hermetic default store + (debug-assertions) `CMDR_MOCK_FDA`:
     //  - Quick Look hint: fires on Space now that the default store doesn't
@@ -291,7 +291,7 @@ test.describe('i18n screenshot capture', () => {
     await captureMtpSurfaces(main, report, failed)
     await captureDownloadToasts(main, report, failed)
 
-    // ── Documented skips deferred to the mock-staging tranche ─────────────────
+    // ── Documented skips deferred beyond the mock-staged surfaces ─────────────
     // These surfaces need backend state / events we can't fake from the frontend
     // here, so they're SKIPPED (not failed) and tracked for coverage honesty:
     //  - low-disk warning (`lowDiskSpace.*`): needs disk-pressure state from the
@@ -312,7 +312,7 @@ test.describe('i18n screenshot capture', () => {
     //    `.compose/` files, a running Docker daemon, and credentialed connect). That
     //    stack is far more invasive to bring up from this capture harness than the
     //    other passes (a different feature build + external Docker lifecycle), so
-    //    it's the documented lower-priority skip per the tranche charter. The
+    //    it's the documented lower-priority skip. The
     //    connect-to-server DIALOG itself (`connect-to-server`) IS captured (reached
     //    from the empty Network volume, no server needed).
     // (The download + MTP-connected toasts were here; they're now captured in the
@@ -342,7 +342,7 @@ test.describe('i18n screenshot capture', () => {
     //    state live in `(main)/+layout.svelte` (runes-touching, `file-length`-
     //    flagged). There's no command or E2E event to force it, and adding an
     //    `e2e-show-crash-report` listener to that production file is out of scope
-    //    for this capture tranche (a real prod-code change with its own review).
+    //    for this capture work (a real prod-code change with its own review).
     //  - viewer large-copy confirm/refuse dialogs (`viewer.copyDialog.*`): only
     //    appear for a text selection over ~10 MB (confirm) / ~100 MB (refuse);
     //    no fixture stages a selection that large deterministically.
@@ -416,7 +416,7 @@ test.describe('i18n screenshot capture', () => {
           .evaluate<number>('1+1')
           .then((v) => v === 2)
           .catch(() => false),
-        new Promise<boolean>((r) => setTimeout(() => r(false), 3000)),
+        new Promise<boolean>((r) => setTimeout(() => { r(false); }, 3000)),
       ])
       if (evalWorks) {
         await focusWindow(shortcuts, 'shortcuts')

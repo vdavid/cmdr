@@ -380,7 +380,7 @@ export async function captureMainOverlays(
  *
  * Toasts that need backend events we can't fire from the frontend (the real
  * download-complete toast, MTP-connected, low-disk) are NOT here — they're
- * documented skips deferred to the mock-staging tranche.
+ * documented skips deferred to the mock-staged surfaces.
  */
 export async function captureFrontendToasts(
   main: TauriPage,
@@ -642,7 +642,7 @@ export async function captureWhatsNew(
  *
  * This only covers the SCAN keys; aggregation and replay would need their own
  * event pairs. The rescan-notification TOAST (`indexing.rescan.*`) is a separate
- * snapshot toast deferred to the mock-staging tranche (it needs a typed rescan
+ * snapshot toast deferred to the mock-staged surfaces (it needs a typed rescan
  * event with a reason).
  */
 export async function captureIndexingStatus(

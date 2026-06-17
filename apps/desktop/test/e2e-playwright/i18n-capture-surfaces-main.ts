@@ -43,7 +43,8 @@ async function clearSelection(main: TauriPage): Promise<void> {
 }
 
 /**
- * Captures the main-window file-explorer states an earlier tranche missed.
+ * Captures the main-window file-explorer states not covered by the dialog and
+ * window passes.
  *
  * - `selection-summary`: select every entry in the focused pane (Cmd/Ctrl+A) so
  *   `SelectionInfo` switches to its selection-summary mode, rendering

@@ -6,7 +6,7 @@ Per catalog area: how many renderable keys are coupled to a screenshot vs not. U
 `dynamic-only` (built at runtime, so no static surface can name them — see `DYNAMIC_KEY_PREFIXES`) and `not driven`
 (on a surface the capture driver does not visit yet).
 
-Coverage is PARTIAL until the driver covers the full surface inventory (M2). Low numbers here are expected, not bugs.
+Coverage is PARTIAL until the driver covers the full surface inventory. Low numbers here are expected, not bugs.
 
 **Total: 825 / 2070 keys coupled (40%).** 304 dynamic-only and 941 not-yet-driven keys remain uncoupled.
 

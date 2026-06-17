@@ -2,7 +2,7 @@
  * Mock-staged special-surface captures for the i18n screenshot-capture driver
  * (`i18n-capture.spec.ts`).
  *
- * These are the surfaces the special-staging tranche unblocked: the ones that
+ * These are the mock-staged surfaces: the ones that
  * need a feature-compiled binary (`virtual-mtp`), a `#[cfg(debug_assertions)]`
  * mock the release-with-debug-assertions capture build now honors
  * (`CMDR_MOCK_LICENSE`, `CMDR_MOCK_FDA`), or a backend event the frontend can

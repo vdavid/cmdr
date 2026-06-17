@@ -29,8 +29,8 @@
  * coupled to a screenshot vs not, and for the uncoupled ones a likely-reason
  * bucket (dynamic-only keys that no static surface can name, vs keys on a surface
  * the driver doesn't visit yet). Coverage is partial by design until the driver
- * covers the full inventory (M2), so the report says so rather than implying gaps
- * are bugs (Decision 4: no silent gaps).
+ * covers the full surface inventory, so the report says so rather than implying
+ * gaps are bugs (Decision 4: no silent gaps).
  *
  * The pure cores are exported (`couplingsFromReport`, `coupleCatalog`,
  * `buildCoverageReport`, `fileForKey`) so they're unit-testable without touching
@@ -168,7 +168,7 @@ export function renderCoverageReport(report) {
     '`dynamic-only` (built at runtime, so no static surface can name them — see `DYNAMIC_KEY_PREFIXES`) and `not driven`',
     '(on a surface the capture driver does not visit yet).',
     '',
-    `Coverage is PARTIAL until the driver covers the full surface inventory (M2). Low numbers here are expected, not bugs.`,
+    `Coverage is PARTIAL until the driver covers the full surface inventory. Low numbers here are expected, not bugs.`,
     '',
     `**Total: ${String(report.coupled)} / ${String(report.total)} keys coupled (${pct(report.coupled, report.total)}).** ` +
       `${String(report.dynamicUncoupled)} dynamic-only and ${String(report.surfaceUncoupled)} not-yet-driven keys remain uncoupled.`,
