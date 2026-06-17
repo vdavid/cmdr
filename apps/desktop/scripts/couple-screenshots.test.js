@@ -5,15 +5,18 @@ import {
   fileForKey,
   buildCoverageReport,
   renderCoverageReport,
-  DYNAMIC_KEY_PREFIXES,
+  representativeFor,
+  buildCouplings,
+  REPRESENTATIVE_SCREENSHOTS,
 } from './couple-screenshots.js'
 
 // An oxfmt-shaped fixture catalog mirroring the real `messages/en/<area>.json`:
 // 2-space indent, each `@key` twin right after its message key, BLANK LINES
 // between groups, a nested `placeholders` object, ICU braces, doubled
 // apostrophes. The N1 safety guarantee under test: coupling edits ONLY
-// `@key.screenshot` and leaves every other byte — values, other twin fields,
-// indentation, and the blank-line grouping — byte-identical.
+// `@key.screenshot` / `@key.screenshotNote` and leaves every other byte —
+// values, other twin fields, indentation, and the blank-line grouping —
+// byte-identical.
 const FIXTURE = `{
   "common.ok": "OK",
   "@common.ok": {
@@ -38,11 +41,11 @@ const FIXTURE = `{
 
 describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
   it('edits ONLY @key.screenshot lines; every other byte is preserved', () => {
-    const keyToScreenshot = new Map([
-      ['common.ok', 'dialog.png'],
-      ['common.greeting', 'status.png'],
+    const keyToCoupling = new Map([
+      ['common.ok', { screenshot: 'dialog.png' }],
+      ['common.greeting', { screenshot: 'status.png' }],
     ])
-    const { text, changed, couplingCount } = coupleCatalog(FIXTURE, keyToScreenshot)
+    const { text, changed, couplingCount } = coupleCatalog(FIXTURE, keyToCoupling)
 
     expect(changed).toBe(true)
     expect(couplingCount).toBe(2)
@@ -75,8 +78,49 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
     expect(after['@common.cancel']).toEqual({ description: 'Dismiss button in dialogs.', placeholders: {} })
   })
 
+  it('writes a representative note (screenshotNote) and preserves every other byte', () => {
+    const keyToCoupling = new Map([
+      ['common.ok', { screenshot: 'rep.png', note: 'A stand-in image of the same dialog.' }],
+    ])
+    const { text, changed, couplingCount } = coupleCatalog(FIXTURE, keyToCoupling)
+    expect(changed).toBe(true)
+    expect(couplingCount).toBe(1)
+
+    const after = JSON.parse(text)
+    expect(after['@common.ok']).toEqual({
+      description: 'Confirm button in dialogs.',
+      screenshot: 'rep.png',
+      screenshotNote: 'A stand-in image of the same dialog.',
+    })
+    // Values byte-identical; only the two new fields inserted on the twin.
+    const reverted = text.replace(
+      ',\n    "screenshot": "rep.png",\n    "screenshotNote": "A stand-in image of the same dialog."',
+      '',
+    )
+    expect(reverted).toBe(FIXTURE)
+  })
+
+  it('REMOVES a stale screenshotNote when a key gains a direct (note-less) coupling', () => {
+    // Couple representatively (with a note), then re-couple directly (no note):
+    // the note must be removed, and the twin must stay valid + parseable.
+    const rep = coupleCatalog(FIXTURE, new Map([['common.cancel', { screenshot: 'rep.png', note: 'stand-in' }]])).text
+    expect(JSON.parse(rep)['@common.cancel'].screenshotNote).toBe('stand-in')
+
+    const direct = coupleCatalog(rep, new Map([['common.cancel', { screenshot: 'real.png' }]]))
+    expect(direct.changed).toBe(true)
+    const obj = JSON.parse(direct.text)
+    expect(obj['@common.cancel']).toEqual({
+      description: 'Dismiss button in dialogs.',
+      placeholders: {},
+      screenshot: 'real.png',
+    })
+    expect('screenshotNote' in obj['@common.cancel']).toBe(false)
+    // No dangling comma / broken JSON anywhere.
+    expect(() => JSON.parse(direct.text)).not.toThrow()
+  })
+
   it('preserves the blank lines between catalog groups', () => {
-    const { text } = coupleCatalog(FIXTURE, new Map([['common.ok', 'dialog.png']]))
+    const { text } = coupleCatalog(FIXTURE, new Map([['common.ok', { screenshot: 'dialog.png' }]]))
     // Same number of blank (empty) lines as the input — the round-trip bug this
     // guards would collapse them to zero.
     /** @param {string} s */
@@ -85,8 +129,8 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
   })
 
   it('replaces an existing screenshot value rather than duplicating it', () => {
-    const once = coupleCatalog(FIXTURE, new Map([['common.ok', 'first.png']])).text
-    const twice = coupleCatalog(once, new Map([['common.ok', 'second.png']])).text
+    const once = coupleCatalog(FIXTURE, new Map([['common.ok', { screenshot: 'first.png' }]])).text
+    const twice = coupleCatalog(once, new Map([['common.ok', { screenshot: 'second.png' }]])).text
     const obj = JSON.parse(twice)
     expect(obj['@common.ok']).toEqual({ description: 'Confirm button in dialogs.', screenshot: 'second.png' })
     // Exactly one screenshot line for this twin.
@@ -95,12 +139,20 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
   })
 
   it('is idempotent: a second run with the same couplings is a byte-for-byte no-op', () => {
-    const keyToScreenshot = new Map([['common.ok', 'dialog.png']])
-    const first = coupleCatalog(FIXTURE, keyToScreenshot)
+    const keyToCoupling = new Map([['common.ok', { screenshot: 'dialog.png' }]])
+    const first = coupleCatalog(FIXTURE, keyToCoupling)
     expect(first.changed).toBe(true)
-    const second = coupleCatalog(first.text, keyToScreenshot)
+    const second = coupleCatalog(first.text, keyToCoupling)
     expect(second.changed).toBe(false)
     expect(second.couplingCount).toBe(0)
+    expect(second.text).toBe(first.text)
+  })
+
+  it('is idempotent for a representative coupling too (note included)', () => {
+    const keyToCoupling = new Map([['common.ok', { screenshot: 'rep.png', note: 'stand-in' }]])
+    const first = coupleCatalog(FIXTURE, keyToCoupling)
+    const second = coupleCatalog(first.text, keyToCoupling)
+    expect(second.changed).toBe(false)
     expect(second.text).toBe(first.text)
   })
 
@@ -112,7 +164,10 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
   }
 }
 `
-    const { coupledWithoutDescription, couplingCount } = coupleCatalog(catalog, new Map([['common.ok', 'x.png']]))
+    const { coupledWithoutDescription, couplingCount } = coupleCatalog(
+      catalog,
+      new Map([['common.ok', { screenshot: 'x.png' }]]),
+    )
     expect(couplingCount).toBe(1)
     expect(coupledWithoutDescription).toEqual(['common.ok → x.png'])
   })
@@ -122,7 +177,10 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
   "common.ok": "OK"
 }
 `
-    const { text, missingTwins, couplingCount, changed } = coupleCatalog(catalog, new Map([['common.ok', 'x.png']]))
+    const { text, missingTwins, couplingCount, changed } = coupleCatalog(
+      catalog,
+      new Map([['common.ok', { screenshot: 'x.png' }]]),
+    )
     expect(missingTwins).toEqual(['common.ok'])
     expect(couplingCount).toBe(0)
     expect(changed).toBe(false)
@@ -137,7 +195,7 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
   }
 }
 `
-    const { text, missingKeys, changed } = coupleCatalog(catalog, new Map([['common.ghost', 'x.png']]))
+    const { text, missingKeys, changed } = coupleCatalog(catalog, new Map([['common.ghost', { screenshot: 'x.png' }]]))
     expect(missingKeys).toEqual(['common.ghost'])
     expect(changed).toBe(false)
     expect(text).toBe(catalog)
@@ -156,6 +214,73 @@ describe('couplingsFromReport', () => {
   })
 })
 
+describe('representativeFor', () => {
+  const mappings = [
+    { prefix: 'errors.write.', screenshot: 'write.png', note: 'write note' },
+    { prefix: 'errors.', screenshot: 'errors.png', note: 'errors note' },
+  ]
+  it('returns the FIRST matching prefix (specific before broad)', () => {
+    expect(representativeFor('errors.write.x.title', mappings)?.screenshot).toBe('write.png')
+    expect(representativeFor('errors.listing.y.title', mappings)?.screenshot).toBe('errors.png')
+  })
+  it('returns null when no prefix matches', () => {
+    expect(representativeFor('common.ok', mappings)).toBeNull()
+  })
+})
+
+describe('buildCouplings (direct + representative, direct-wins)', () => {
+  const mappings = [{ prefix: 'errors.', screenshot: 'error-example.png', note: 'the error layout' }]
+
+  it('keeps direct couplings and never overwrites them with a representative', () => {
+    const direct = new Map([['errors.listing.a.title', 'real-capture.png']])
+    const allKeys = ['errors.listing.a.title', 'errors.listing.b.title']
+    const captured = new Set(['real-capture.png', 'error-example.png'])
+    const { byKey, directKeys, representativeKeys } = buildCouplings(direct, allKeys, captured, mappings)
+
+    expect(byKey.get('errors.listing.a.title')).toEqual({ screenshot: 'real-capture.png' }) // direct, no note
+    expect(byKey.get('errors.listing.b.title')).toEqual({ screenshot: 'error-example.png', note: 'the error layout' })
+    expect(directKeys).toEqual(new Set(['errors.listing.a.title']))
+    expect(representativeKeys).toEqual(new Set(['errors.listing.b.title']))
+  })
+
+  it('skips a representative whose screenshot was not actually captured', () => {
+    const { byKey, representativeKeys } = buildCouplings(
+      new Map(),
+      ['errors.x.title'],
+      new Set(['other.png']),
+      mappings,
+    )
+    expect(byKey.size).toBe(0)
+    expect(representativeKeys.size).toBe(0)
+  })
+
+  it('leaves a non-matching uncoupled key uncoupled', () => {
+    const { byKey } = buildCouplings(new Map(), ['common.ok'], new Set(['error-example.png']), mappings)
+    expect(byKey.has('common.ok')).toBe(false)
+  })
+})
+
+describe('REPRESENTATIVE_SCREENSHOTS config', () => {
+  it('lists specific prefixes before broader ones (first-match correctness)', () => {
+    // For any two entries where one prefix is a prefix of the other, the longer
+    // (more specific) one must come first, or it could never match.
+    for (let i = 0; i < REPRESENTATIVE_SCREENSHOTS.length; i++) {
+      for (let j = i + 1; j < REPRESENTATIVE_SCREENSHOTS.length; j++) {
+        const a = REPRESENTATIVE_SCREENSHOTS[i].prefix
+        const b = REPRESENTATIVE_SCREENSHOTS[j].prefix
+        // A later entry must not be a prefix of an earlier one (that would shadow it).
+        expect(a.startsWith(b), `'${b}' (later) shadows '${a}' (earlier)`).toBe(false)
+      }
+    }
+  })
+  it('every entry has a non-empty note and a .png screenshot', () => {
+    for (const m of REPRESENTATIVE_SCREENSHOTS) {
+      expect(m.note.trim().length).toBeGreaterThan(0)
+      expect(m.screenshot.endsWith('.png')).toBe(true)
+    }
+  })
+})
+
 describe('fileForKey', () => {
   it('maps a key to its area catalog file', () => {
     expect(fileForKey('settings.fsWatch.title')).toBe('settings.json')
@@ -164,49 +289,44 @@ describe('fileForKey', () => {
 })
 
 describe('buildCoverageReport', () => {
-  it('tallies coupled vs uncoupled per area, bucketing uncoupled by reason', () => {
-    const keyToScreenshot = new Map([
-      ['common.ok', 'dialog.png'],
-      ['errors.listing.notFound.title', 'errs.png'], // a dynamic key that WAS captured counts coupled
-    ])
+  it('tallies direct vs representative vs uncoupled per area', () => {
+    const directKeys = new Set(['common.ok', 'errors.listing.notFound.title'])
+    const representativeKeys = new Set(['errors.listing.denied.title'])
     const keysByArea = new Map([
-      ['common', ['common.ok', 'common.cancel']], // 1 coupled, 1 not-driven
-      ['errors', ['errors.listing.notFound.title', 'errors.listing.denied.title']], // 1 coupled, 1 dynamic-only
-      ['about', ['about.version']], // 0 coupled, 1 not-driven
+      ['common', ['common.ok', 'common.cancel']], // 1 direct, 1 uncoupled
+      ['errors', ['errors.listing.notFound.title', 'errors.listing.denied.title']], // 1 direct, 1 representative
+      ['about', ['about.version']], // 1 uncoupled
     ])
-    const r = buildCoverageReport(keyToScreenshot, keysByArea)
+    const r = buildCoverageReport(directKeys, representativeKeys, keysByArea)
 
     expect(r.total).toBe(5)
-    expect(r.coupled).toBe(2)
-    expect(r.dynamicUncoupled).toBe(1) // errors.listing.denied.title
-    expect(r.surfaceUncoupled).toBe(2) // common.cancel + about.version
+    expect(r.direct).toBe(2)
+    expect(r.representative).toBe(1)
+    expect(r.uncoupled).toBe(2)
 
     // Areas are sorted by name.
     expect(r.areas.map((a) => a.area)).toEqual(['about', 'common', 'errors'])
     const errors = r.areas.find((a) => a.area === 'errors')
-    expect(errors).toEqual({ area: 'errors', total: 2, coupled: 1, dynamicUncoupled: 1, surfaceUncoupled: 0 })
-  })
-
-  it('classifies an uncoupled key under a dynamic prefix as dynamic-only', () => {
-    for (const prefix of DYNAMIC_KEY_PREFIXES) {
-      const r = buildCoverageReport(new Map(), new Map([['x', [`${prefix}foo.title`]]]))
-      expect(r.dynamicUncoupled).toBe(1)
-      expect(r.surfaceUncoupled).toBe(0)
-    }
+    expect(errors).toEqual({ area: 'errors', total: 2, direct: 1, representative: 1, uncoupled: 0 })
   })
 })
 
 describe('renderCoverageReport', () => {
-  it('renders a small markdown table with totals and percentages', () => {
+  it('renders a markdown table distinguishing direct from representative', () => {
     const report = buildCoverageReport(
-      new Map([['common.ok', 'd.png']]),
-      new Map([['common', ['common.ok', 'common.cancel']]]),
+      new Set(['common.ok']),
+      new Set(['common.cancel']),
+      new Map([['common', ['common.ok', 'common.cancel', 'common.extra']]]),
     )
     const md = renderCoverageReport(report)
     expect(md).toContain('# Screenshot coverage')
-    expect(md).toContain('1 / 2 keys coupled (50%)')
-    expect(md).toContain('| common | 1 | 2 | 50% | 0 | 1 |')
-    // It states coverage is partial (no silent gaps).
+    // 1 direct + 1 representative of 3 = 67%.
+    expect(md).toContain('2 / 3 keys have a screenshot (67%)')
+    expect(md).toContain('1 direct')
+    expect(md).toContain('1 representative')
+    expect(md).toContain('| common | 1 | 1 | 1 | 3 | 67% |')
     expect(md.toLowerCase()).toContain('partial')
+    // It explains what a representative coupling is (honesty).
+    expect(md.toLowerCase()).toContain('representative')
   })
 })

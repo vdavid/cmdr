@@ -202,17 +202,23 @@
 
   "onboarding.stepAi.bannerTitle.granted": "Full disk access granted",
   "@onboarding.stepAi.bannerTitle.granted": {
-    "description": "Title of the positive banner at the top of the AI step, shown when the user just granted Full Disk Access. \"full disk access\" is the macOS permission name."
+    "description": "Title of the positive banner at the top of the AI step, shown when the user just granted Full Disk Access. \"full disk access\" is the macOS permission name.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.bannerBody.granted": "Thanks for granting full disk access! Now, the app can access your disk. Great!",
   "@onboarding.stepAi.bannerBody.granted": {
-    "description": "Body of the positive Full Disk Access banner on the AI step. Warm, congratulatory. \"full disk access\" is the macOS permission name."
+    "description": "Body of the positive Full Disk Access banner on the AI step. Warm, congratulatory. \"full disk access\" is the macOS permission name.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.bannerTitle.denied": "No full disk access",
   "@onboarding.stepAi.bannerTitle.denied": {
-    "description": "Title of the informational banner on the AI step, shown when the user declined Full Disk Access. Neutral, respectful tone. \"full disk access\" is the macOS permission name."
+    "description": "Title of the informational banner on the AI step, shown when the user declined Full Disk Access. Neutral, respectful tone. \"full disk access\" is the macOS permission name.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.bannerBody.denied": "You chose not to enable full disk access. We respect that. You''ll then shortly get a few permission requests from macOS for Cmdr to access your Desktop, Downloads, and similar folders. Accept or reject these at will. You can change all of this later in your {systemSettings}.",
@@ -220,12 +226,16 @@
     "description": "Body of the banner shown when the user declined Full Disk Access: macOS will ask per-folder instead, and the choice is changeable later. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS, so don't translate or alter it. \"Cmdr\" is the product name; \"macOS\" is the operating system name; \"Desktop\" and \"Downloads\" are macOS folder names (use your locale's standard macOS names).",
     "placeholders": {
       "systemSettings": "the macOS System Settings app name, already localized by the OS (for example \"System Settings\")"
-    }
+    },
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.bannerTitle.stuck": "Cmdr doesn''t seem to have full disk access yet",
   "@onboarding.stepAi.bannerTitle.stuck": {
-    "description": "Title of the warning banner on the AI step, shown when the user asked to enable Full Disk Access but the app still doesn't have it. \"Cmdr\" is the product name; \"full disk access\" is the macOS permission name."
+    "description": "Title of the warning banner on the AI step, shown when the user asked to enable Full Disk Access but the app still doesn't have it. \"Cmdr\" is the product name; \"full disk access\" is the macOS permission name.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.bannerBody.stuck": "You said you wanted to enable full disk access, but Cmdr doesn''t seem to have gotten it. You might need to restart the app (do it now, we''ll continue from here!), or go to your <settingsLink>{systemSettings} &gt; Privacy &amp; Security &gt; Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little \"+\" button at the bottom.",
@@ -233,17 +243,23 @@
     "description": "Body of the warning banner when Full Disk Access didn't take: suggests restarting or opening the exact System Settings pane. <settingsLink> wraps the clickable text that opens that pane; keep the breadcrumb path inside it. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS, so don't translate or alter it. \"Privacy & Security\" and \"Full Disk Access\" are the macOS settings pane names (use the exact macOS wording in your locale). The literal \"&gt;\" and \"&amp;\" are HTML entities for \">\" and \"&\" and must stay as written. \"Cmdr\" is the product name. Keep the literal \"+\" character.",
     "placeholders": {
       "systemSettings": "the macOS System Settings app name, already localized by the OS (for example \"System Settings\")"
-    }
+    },
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.welcomeLinux.title": "Welcome to Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
-    "description": "Heading shown at the top of the AI step on Linux, which has no Full Disk Access step before it. Warm greeting. \"Cmdr\" is the product name and stays untranslated."
+    "description": "Heading shown at the top of the AI step on Linux, which has no Full Disk Access step before it. Warm greeting. \"Cmdr\" is the product name and stays untranslated.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.welcomeLinux.subtitle": "Let''s set up AI.",
   "@onboarding.stepAi.welcomeLinux.subtitle": {
-    "description": "Subtitle under the Linux welcome heading on the AI step, introducing the AI setup."
+    "description": "Subtitle under the Linux welcome heading on the AI step, introducing the AI setup.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.title": "Now, let''s talk AI",
@@ -332,7 +348,9 @@
 
   "onboarding.stepAi.table.selectWithoutUnbound": "You open \"Select files…\" and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "description": "Comparison cell: how you select files without AI, when no shortcut key is bound, so it names the menu action instead. \"Select files…\" is the name of that action in the app (keep the trailing ellipsis character). <code> wraps a literal comma-separated list of file extension patterns that must NOT be translated."
+    "description": "Comparison cell: how you select files without AI, when no shortcut key is bound, so it names the menu action instead. \"Select files…\" is the name of that action in the app (keep the trailing ellipsis character). <code> wraps a literal comma-separated list of file extension patterns that must NOT be translated.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.table.selectWith": "You say \"select all image files\", agent suggests a selection, you review and apply at will.",
@@ -343,7 +361,9 @@
 
   "onboarding.stepAi.resumeCue": "You picked this last time. Confirm or change below.",
   "@onboarding.stepAi.resumeCue": {
-    "description": "Gentle note shown when the user is returning to the AI step with a previously-saved choice, prompting them to confirm or change it."
+    "description": "Gentle note shown when the user is returning to the AI step with a previously-saved choice, prompting them to confirm or change it.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.choiceLegend": "Based on this, do you want AI or not?",
@@ -378,7 +398,9 @@
 
   "onboarding.stepAi.cloud.pickerTitle": "Select a provider",
   "@onboarding.stepAi.cloud.pickerTitle": {
-    "description": "Heading above the scrollable list of cloud AI providers, shown when the cloud option is selected. \"provider\" is a company offering AI models."
+    "description": "Heading above the scrollable list of cloud AI providers, shown when the cloud option is selected. \"provider\" is a company offering AI models.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.local.label": "Yes, I want AI, but I want to be super private",
@@ -395,12 +417,16 @@
 
   "onboarding.stepAi.local.note": "Started downloading the local model in the background. You can finish onboarding now; the toast in the corner will keep you posted.",
   "@onboarding.stepAi.local.note": {
-    "description": "Note shown after the user picks local AI and the model download begins in the background. Reassures them they can continue. \"toast\" is the small temporary status message in the corner of the screen."
+    "description": "Note shown after the user picks local AI and the model download begins in the background. Reassures them they can continue. \"toast\" is the small temporary status message in the corner of the screen.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.localTooltip": "Local LLM requires Apple Silicon. Cloud works on Intel.",
   "@onboarding.stepAi.localTooltip": {
-    "description": "Tooltip on the disabled local-AI option, explaining it needs an Apple Silicon Mac while cloud AI works on Intel Macs too. \"LLM\" is the AI model type (large language model); \"Apple Silicon\" and \"Intel\" are Mac processor families; all stay untranslated."
+    "description": "Tooltip on the disabled local-AI option, explaining it needs an Apple Silicon Mac while cloud AI works on Intel Macs too. \"LLM\" is the AI model type (large language model); \"Apple Silicon\" and \"Intel\" are Mac processor families; all stay untranslated.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
   "onboarding.stepAi.off.label": "Thanks but no thanks, no AI for me",
@@ -631,7 +657,9 @@
     "description": "Heading above the setup steps for the chosen cloud AI provider. {provider} is the provider's name, which is a brand name and must NOT be translated.",
     "placeholders": {
       "provider": "the chosen cloud AI provider's name, a brand name (for example \"OpenAI\")"
-    }
+    },
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.step.signup": "Sign up at <signupLink>{provider}</signupLink> (if you don''t have an account)",
@@ -639,82 +667,114 @@
     "description": "First setup step: sign up at the provider's site. <signupLink> wraps the link; keep the provider name inside it. {provider} is the provider's brand name and must NOT be translated.",
     "placeholders": {
       "provider": "the chosen cloud AI provider's name, a brand name (for example \"OpenAI\")"
-    }
+    },
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.step.createKey": "Create an API key <keyLink>here</keyLink>",
   "@onboarding.cloudSetup.step.createKey": {
-    "description": "Setup step linking to the provider's page for creating an API key. <keyLink> wraps the word that is the link. \"API key\" is a technical credential term."
+    "description": "Setup step linking to the provider's page for creating an API key. <keyLink> wraps the word that is the link. \"API key\" is a technical credential term.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.step.endpoint": "Endpoint URL",
   "@onboarding.cloudSetup.step.endpoint": {
-    "description": "Label for the input where the user enters a custom API endpoint URL (shown for custom or Azure providers). \"URL\" stays as-is."
+    "description": "Label for the input where the user enters a custom API endpoint URL (shown for custom or Azure providers). \"URL\" stays as-is.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.step.endpointPlaceholder": "Example: https://api.example.com/v1",
   "@onboarding.cloudSetup.step.endpointPlaceholder": {
-    "description": "Placeholder in the endpoint-URL input showing an example address. Keep \"Example:\" as a lead-in; the URL itself is a literal example and stays as-is."
+    "description": "Placeholder in the endpoint-URL input showing an example address. Keep \"Example:\" as a lead-in; the URL itself is a literal example and stays as-is.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.step.pasteKey": "Paste your API key",
   "@onboarding.cloudSetup.step.pasteKey": {
-    "description": "Label for the input where the user pastes their provider API key. \"API key\" is a technical credential term."
+    "description": "Label for the input where the user pastes their provider API key. \"API key\" is a technical credential term.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.apiKeyAria": "API key",
   "@onboarding.cloudSetup.apiKeyAria": {
-    "description": "Accessible label for the API-key password input on the provider setup. \"API key\" is a technical credential term."
+    "description": "Accessible label for the API-key password input on the provider setup. \"API key\" is a technical credential term.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Example: sk-abc123...",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
-    "description": "Placeholder in the API-key input for OpenAI, hinting at the key format. Keep \"Example:\" as a lead-in; the literal sample key shape stays as-is."
+    "description": "Placeholder in the API-key input for OpenAI, hinting at the key format. Keep \"Example:\" as a lead-in; the literal sample key shape stays as-is.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Example: sk-ant-abc123...",
   "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
-    "description": "Placeholder in the API-key input for Anthropic, hinting at the key format. Keep \"Example:\" as a lead-in; the literal sample key shape stays as-is."
+    "description": "Placeholder in the API-key input for Anthropic, hinting at the key format. Keep \"Example:\" as a lead-in; the literal sample key shape stays as-is.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.apiKeyPlaceholder.generic": "API key",
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
-    "description": "Fallback placeholder in the API-key input for providers without a specific key-format hint. \"API key\" is a technical credential term."
+    "description": "Fallback placeholder in the API-key input for providers without a specific key-format hint. \"API key\" is a technical credential term.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.status.checking": "Checking your key…",
   "@onboarding.cloudSetup.status.checking": {
-    "description": "Status shown under the API-key input while the app verifies the key against the provider. Keep the trailing ellipsis character."
+    "description": "Status shown under the API-key input while the app verifies the key against the provider. Keep the trailing ellipsis character.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.status.authError": "That key didn''t work",
   "@onboarding.cloudSetup.status.authError": {
-    "description": "Fallback status when the API key was rejected by the provider (used when the provider gives no specific message). Gentle, non-blaming. Avoid the words \"error\" or \"failed\"."
+    "description": "Fallback status when the API key was rejected by the provider (used when the provider gives no specific message). Gentle, non-blaming. Avoid the words \"error\" or \"failed\".",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.status.connectionError": "Can''t reach the service right now",
   "@onboarding.cloudSetup.status.connectionError": {
-    "description": "Fallback status when the app can't connect to the provider's service (used when the provider gives no specific message). Implies a temporary network problem. Avoid the words \"error\" or \"failed\"."
+    "description": "Fallback status when the app can't connect to the provider's service (used when the provider gives no specific message). Implies a temporary network problem. Avoid the words \"error\" or \"failed\".",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.status.genericError": "Something went wrong",
   "@onboarding.cloudSetup.status.genericError": {
-    "description": "Generic fallback status for an unexpected problem checking the key (used when there's no specific message). Avoid the words \"error\" or \"failed\"."
+    "description": "Generic fallback status for an unexpected problem checking the key (used when there's no specific message). Avoid the words \"error\" or \"failed\".",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.status.connected": "Connected!",
   "@onboarding.cloudSetup.status.connected": {
-    "description": "Status shown when the API key works and the app connected to the provider. Upbeat, with the exclamation mark."
+    "description": "Status shown when the API key works and the app connected to the provider. Upbeat, with the exclamation mark.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.step.pickModel": "Pick a model",
   "@onboarding.cloudSetup.step.pickModel": {
-    "description": "Label for the combo box where the user picks which AI model to use. \"model\" means an AI model."
+    "description": "Label for the combo box where the user picks which AI model to use. \"model\" means an AI model.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.modelAria": "Model",
   "@onboarding.cloudSetup.modelAria": {
-    "description": "Accessible label for the model picker combo box. \"Model\" means an AI model."
+    "description": "Accessible label for the model picker combo box. \"Model\" means an AI model.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.modelPlaceholderExample": "Example: {model}",
@@ -722,11 +782,15 @@
     "description": "Placeholder in the model picker suggesting the provider's default model name. Keep \"Example:\" as a lead-in. {model} is the model's name, which is a literal identifier and must NOT be translated.",
     "placeholders": {
       "model": "the provider's default model name, a literal identifier (for example \"gpt-4o\")"
-    }
+    },
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
 
   "onboarding.cloudSetup.modelPlaceholder": "Model name",
   "@onboarding.cloudSetup.modelPlaceholder": {
-    "description": "Fallback placeholder in the model picker when there's no default model to suggest. \"Model\" means an AI model."
+    "description": "Fallback placeholder in the model picker when there's no default model to suggest. \"Model\" means an AI model.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   }
 }

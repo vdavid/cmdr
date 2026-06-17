@@ -1,17 +1,23 @@
 {
   "shortcuts.list.noShortcut": "No shortcut",
   "@shortcuts.list.noShortcut": {
-    "description": "Shown in the read-only Keyboard shortcuts help window in a command's shortcut column when that command has no shortcut assigned."
+    "description": "Shown in the read-only Keyboard shortcuts help window in a command's shortcut column when that command has no shortcut assigned.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.list.addedTooltip": "Added",
   "@shortcuts.list.addedTooltip": {
-    "description": "Tooltip on a shortcut chip in the Keyboard shortcuts help window, marking a shortcut the user added or changed from the default. A short label."
+    "description": "Tooltip on a shortcut chip in the Keyboard shortcuts help window, marking a shortcut the user added or changed from the default. A short label.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.list.disabledTooltip": "Disabled",
   "@shortcuts.list.disabledTooltip": {
-    "description": "Tooltip on a struck-through shortcut chip in the Keyboard shortcuts help window, marking a built-in shortcut the user turned off. A short label."
+    "description": "Tooltip on a struck-through shortcut chip in the Keyboard shortcuts help window, marking a built-in shortcut the user turned off. A short label.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.scope.app": "App",
@@ -76,7 +82,9 @@
 
   "shortcuts.scope.onboarding": "Onboarding",
   "@shortcuts.scope.onboarding": {
-    "description": "Group heading in the Keyboard shortcuts list for commands in onboarding (the guided first-time setup). A short section title."
+    "description": "Group heading in the Keyboard shortcuts list for commands in onboarding (the guided first-time setup). A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.conflict.reservedByMacOs": "{combo} is reserved by macOS ({command}) and won''t reach Cmdr. Pick a different combo.",
@@ -85,7 +93,9 @@
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ⌘H)",
       "command": "the name of the macOS command that already uses this combination (e.g. Hide Cmdr)"
-    }
+    },
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.conflict.fixedKey": "{combo} is a fixed key in Cmdr ({command}) and can''t be reassigned. Pick a different combo.",
@@ -94,7 +104,9 @@
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ↑)",
       "command": "the name of the built-in command that uses this fixed key (e.g. Select previous file)"
-    }
+    },
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.conflict.systemShortcut": "{combo} is usually taken by macOS ({label}), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.",
@@ -103,72 +115,100 @@
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ⌘Space)",
       "label": "the macOS feature that usually uses this combination (e.g. Spotlight)"
-    }
+    },
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "description": "Name of the macOS Spotlight search feature, shown inside a shortcut-conflict warning. Reuse the localized macOS name for Spotlight."
+    "description": "Name of the macOS Spotlight search feature, shown inside a shortcut-conflict warning. Reuse the localized macOS name for Spotlight.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.finderSearch": "Finder search window",
   "@shortcuts.system.finderSearch": {
-    "description": "The macOS Finder search window, shown inside a shortcut-conflict warning. \"Finder\" is the macOS app name; reuse the localized macOS wording."
+    "description": "The macOS Finder search window, shown inside a shortcut-conflict warning. \"Finder\" is the macOS app name; reuse the localized macOS wording.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.characterViewer": "Character Viewer",
   "@shortcuts.system.characterViewer": {
-    "description": "The macOS Character Viewer (emoji and symbols picker), shown inside a shortcut-conflict warning. Reuse the localized macOS name."
+    "description": "The macOS Character Viewer (emoji and symbols picker), shown inside a shortcut-conflict warning. Reuse the localized macOS name.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.inputSourceSwitching": "input source switching",
   "@shortcuts.system.inputSourceSwitching": {
-    "description": "The macOS feature for switching keyboard input sources (layouts/languages), shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence."
+    "description": "The macOS feature for switching keyboard input sources (layouts/languages), shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.appSwitcher": "the app switcher",
   "@shortcuts.system.appSwitcher": {
-    "description": "The macOS app switcher (Command-Tab), shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence after \"taken by macOS (\"."
+    "description": "The macOS app switcher (Command-Tab), shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence after \"taken by macOS (\".",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.missionControl": "Mission Control",
   "@shortcuts.system.missionControl": {
-    "description": "The macOS Mission Control feature, shown inside a shortcut-conflict warning. Reuse the localized macOS name."
+    "description": "The macOS Mission Control feature, shown inside a shortcut-conflict warning. Reuse the localized macOS name.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.appWindows": "App windows",
   "@shortcuts.system.appWindows": {
-    "description": "The macOS \"App windows\" Mission Control feature, shown inside a shortcut-conflict warning. Reuse the localized macOS name."
+    "description": "The macOS \"App windows\" Mission Control feature, shown inside a shortcut-conflict warning. Reuse the localized macOS name.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.spaces": "Spaces",
   "@shortcuts.system.spaces": {
-    "description": "The macOS Spaces (virtual desktops) feature, shown inside a shortcut-conflict warning. Reuse the localized macOS name."
+    "description": "The macOS Spaces (virtual desktops) feature, shown inside a shortcut-conflict warning. Reuse the localized macOS name.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.screenshots": "screenshots",
   "@shortcuts.system.screenshots": {
-    "description": "The macOS screenshot shortcuts, shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence."
+    "description": "The macOS screenshot shortcuts, shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.screenRecording": "screen recording",
   "@shortcuts.system.screenRecording": {
-    "description": "The macOS screen-recording shortcut, shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence."
+    "description": "The macOS screen-recording shortcut, shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.loggingOut": "logging out",
   "@shortcuts.system.loggingOut": {
-    "description": "The macOS log-out shortcut, shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence."
+    "description": "The macOS log-out shortcut, shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.lockingScreen": "locking the screen",
   "@shortcuts.system.lockingScreen": {
-    "description": "The macOS lock-screen shortcut, shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence."
+    "description": "The macOS lock-screen shortcut, shown inside a shortcut-conflict warning. Lowercase because it appears mid-sentence.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.forceQuit": "Force Quit",
   "@shortcuts.system.forceQuit": {
-    "description": "The macOS Force Quit dialog, shown inside a shortcut-conflict warning. Reuse the localized macOS wording for Force Quit."
+    "description": "The macOS Force Quit dialog, shown inside a shortcut-conflict warning. Reuse the localized macOS wording for Force Quit.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.title": "Keyboard shortcuts",
@@ -215,22 +255,30 @@
 
   "shortcuts.section.cancel": "Cancel",
   "@shortcuts.section.cancel": {
-    "description": "Button that dismisses the shortcut-conflict warning without making a change. A short button label."
+    "description": "Button that dismisses the shortcut-conflict warning without making a change. A short button label.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.useAnyway": "Use anyway",
   "@shortcuts.section.useAnyway": {
-    "description": "Button that assigns the shortcut despite a soft warning that macOS usually uses it. A short button label."
+    "description": "Button that assigns the shortcut despite a soft warning that macOS usually uses it. A short button label.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.keepBoth": "Keep both",
   "@shortcuts.section.keepBoth": {
-    "description": "Button that keeps the new shortcut AND the other command's existing one (both stay bound to the same combination). A short button label."
+    "description": "Button that keeps the new shortcut AND the other command's existing one (both stay bound to the same combination). A short button label.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.removeFromOther": "Remove from other",
   "@shortcuts.section.removeFromOther": {
-    "description": "Button that takes the shortcut away from the command that already had it, freeing it for the new command. A short button label."
+    "description": "Button that takes the shortcut away from the command that already had it, freeing it for the new command. A short button label.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.alreadyBound": "<b>{combo}</b> is already bound to ''{command}''",
@@ -239,17 +287,23 @@
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ⌘C)",
       "command": "the name of the command that already uses this combination (e.g. Copy to clipboard)"
-    }
+    },
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.modifiedTooltip": "Modified from default",
   "@shortcuts.section.modifiedTooltip": {
-    "description": "Tooltip on the dot marking a command whose shortcuts differ from the shipped defaults."
+    "description": "Tooltip on the dot marking a command whose shortcuts differ from the shipped defaults.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.hasConflictsTooltip": "Has conflicting shortcuts",
   "@shortcuts.section.hasConflictsTooltip": {
-    "description": "Tooltip on the warning icon marking a command that shares a shortcut with another command."
+    "description": "Tooltip on the warning icon marking a command that shares a shortcut with another command.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.noneShortcut": "(none)",
@@ -284,7 +338,9 @@
 
   "shortcuts.section.pressKeys": "Press keys...",
   "@shortcuts.section.pressKeys": {
-    "description": "Prompt shown in a shortcut pill while it's waiting for the user to press a key combination. The trailing \"...\" signals it's waiting; keep it."
+    "description": "Prompt shown in a shortcut pill while it's waiting for the user to press a key combination. The trailing \"...\" signals it's waiting; keep it.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.removeShortcutTooltip": "Remove shortcut",
@@ -301,7 +357,9 @@
 
   "shortcuts.section.resetToDefaultTooltip": "Reset to default",
   "@shortcuts.section.resetToDefaultTooltip": {
-    "description": "Tooltip and accessibility label on the button that restores a single command's shortcuts to the shipped defaults. A short label."
+    "description": "Tooltip and accessibility label on the button that restores a single command's shortcuts to the shipped defaults. A short label.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.section.resetAll": "Reset all to defaults",

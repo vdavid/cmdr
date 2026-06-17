@@ -21,8 +21,20 @@
  * coupling is missing/stale instead of writing — useful in CI once a full
  * capture exists.
  *
- * The `@key` metadata (including `screenshot`) is stripped by the runtime and by
- * `gen-message-keys.js`, so this never changes rendered output or the key union.
+ * The `@key` metadata (including `screenshot` and `screenshotNote`) is stripped
+ * by the runtime and by `gen-message-keys.js`, so this never changes rendered
+ * output or the key union.
+ *
+ * Two kinds of coupling, in two passes:
+ *  - DIRECT: a key that rendered on a captured surface gets that surface's
+ *    screenshot (`@key.screenshot`), no note. The precise capture.
+ *  - REPRESENTATIVE: for a key STILL uncoupled after the direct pass that matches
+ *    a curated `REPRESENTATIVE_SCREENSHOTS` prefix, it gets a STAND-IN screenshot
+ *    (a real capture of the same panel/toast/dialog where the string appears)
+ *    plus a `@key.screenshotNote` explaining the mapping. This raises coverage AND
+ *    shrinks the number of distinct images a translator must load. Direct always
+ *    wins; a representative never overwrites a precise screenshot, and a key that
+ *    later gains its own capture sheds its representative note.
  *
  * Alongside coupling, it writes a TRACKED coverage report
  * (`messages/screenshots/coverage-report.md`): per catalog area, how many keys are
@@ -84,69 +96,234 @@ export function couplingsFromReport(report) {
 export const DYNAMIC_KEY_PREFIXES = ['errors.git.', 'errors.listing.', 'errors.provider.', 'errors.write.']
 
 /**
+ * Curated REPRESENTATIVE screenshot mappings, applied AFTER the precise
+ * capture-based coupling. A representative coupling is honest-by-design: it says
+ * "we have no exact screenshot of YOUR string, but here's a real screenshot of
+ * the same panel/toast/dialog where it appears, in the same position" — so a
+ * translator loads ONE image for a whole family of strings instead of none.
+ *
+ * Each entry maps a key `prefix` to an already-captured `screenshot` plus a
+ * translator-facing `note` explaining how the image relates to the key. The note
+ * is written to `@key.screenshotNote` alongside `@key.screenshot`.
+ *
+ * Direct (captured) couplings ALWAYS win: a representative is only written to a
+ * key that is STILL uncoupled after the capture pass (no exact screenshot of its
+ * own). The first matching prefix in this ordered list wins, so list more
+ * specific prefixes before broader ones.
+ *
+ * Honesty bar: only add a mapping where the layout/position genuinely matches —
+ * the string really does render in that panel, in that spot. If no captured
+ * surface honestly represents a cluster, leave it uncoupled (it shows in the
+ * coverage report) rather than forcing a misleading image.
+ * @type {Array<{ prefix: string; screenshot: string; note: string }>}
+ */
+export const REPRESENTATIVE_SCREENSHOTS = [
+  {
+    // The whole friendly-error family (listing / write / provider / git) shares
+    // one presentation: an error pane (or, for write ops, the same title +
+    // explanation + suggestion layout in a dialog). The example shows a DIFFERENT
+    // error than yours, but your title/message/suggestion text appears in this
+    // same panel, in the same three stacked positions.
+    prefix: 'errors.',
+    screenshot: 'error-message-example.png',
+    note:
+      'Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion ' +
+      'below it (plus an optional action button and a collapsed "Technical details"). This screenshot shows a DIFFERENT error, ' +
+      'but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. ' +
+      'errors.provider.* names (Dropbox, Google Drive, OneDrive, etc.) are brand names — keep them as-is.',
+  },
+  {
+    // SMB / network connect + reconnect + the MTP connection states all live on
+    // the network/device browsing surface reached via "Connect to server".
+    prefix: 'fileExplorer.network.',
+    screenshot: 'connect-to-server.png',
+    note:
+      'Network (SMB) connection flow. This shows the "Connect to server" surface; your string appears here or on the ' +
+      'closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is.',
+  },
+  {
+    prefix: 'fileExplorer.smbReconnect.',
+    screenshot: 'connect-to-server.png',
+    note:
+      'The SMB reconnect banner shown when a mounted server drops: a "Reconnecting…" title, a countdown, and Retry/Cancel ' +
+      'controls. This shows the related "Connect to server" surface; your string appears in the same network-connection context.',
+  },
+  {
+    prefix: 'fileExplorer.networkMount.',
+    screenshot: 'connect-to-server.png',
+    note: 'Shown while mounting a network share, in the same network-connection flow as the "Connect to server" surface pictured here.',
+  },
+  {
+    // MTP device connection states + dialogs share the MTP browsing context.
+    prefix: 'fileExplorer.mtp.',
+    screenshot: 'mtp-browse.png',
+    note:
+      'MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears ' +
+      'as a status message in this same device context (connecting, busy, disconnected, etc.).',
+  },
+  {
+    prefix: 'mtp.',
+    screenshot: 'mtp-browse.png',
+    note:
+      'MTP (phone/camera) device messaging — a connect/permission dialog or toast tied to an MTP device. This shows the MTP ' +
+      'browse surface for context. Keep device/protocol names (MTP, PTP) as-is.',
+  },
+  {
+    // AI provider/cloud connection states render in the Settings > AI section.
+    prefix: 'ai.',
+    screenshot: 'settings-ai.png',
+    note:
+      'AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section ' +
+      'pictured here (and inline near AI actions). This shows the AI settings area for context.',
+  },
+  {
+    prefix: 'onboarding.cloudSetup.',
+    screenshot: 'onboarding-ai.png',
+    note: 'Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render.',
+  },
+  {
+    prefix: 'onboarding.stepAi.',
+    screenshot: 'onboarding-ai.png',
+    note: 'The AI step of the onboarding wizard, pictured here.',
+  },
+  {
+    // The crash-report dialog reuses the error-report dialog's form.
+    prefix: 'crashReporter.',
+    screenshot: 'error-report.png',
+    note:
+      'The crash-report dialog (shown after the app quit unexpectedly) uses the same report-form layout as the error-report ' +
+      'dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons.',
+  },
+  {
+    // The shortcuts window reuses the Settings keyboard-shortcuts list layout.
+    prefix: 'shortcuts.',
+    screenshot: 'settings-keyboard-shortcuts.png',
+    note:
+      'Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout ' +
+      'as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated.',
+  },
+]
+
+/**
+ * Returns the first representative mapping whose prefix matches `key`, or null.
+ * Order matters: list more specific prefixes before broader ones.
+ * @param {string} key
+ * @param {Array<{ prefix: string; screenshot: string; note: string }>} [mappings]
+ * @returns {{ prefix: string; screenshot: string; note: string } | null}
+ */
+export function representativeFor(key, mappings = REPRESENTATIVE_SCREENSHOTS) {
+  for (const m of mappings) {
+    if (key.startsWith(m.prefix)) return m
+  }
+  return null
+}
+
+/**
+ * @typedef {object} Couplings
+ * @property {Map<string, Coupling>} byKey Every key → its coupling (direct OR representative).
+ * @property {Set<string>} directKeys Keys coupled to their OWN captured screenshot.
+ * @property {Set<string>} representativeKeys Keys coupled to a representative stand-in.
+ */
+//
+/**
+ * Pure: merges DIRECT capture couplings with REPRESENTATIVE stand-ins. Direct
+ * couplings always win (a precise screenshot is never overwritten by a stand-in).
+ * A representative coupling is added only for a key that is (a) still uncoupled
+ * after the direct pass, (b) matches a representative `prefix`, and (c) whose
+ * representative screenshot is one the capture run actually produced
+ * (`capturedScreenshots`) — never point a key at an image that doesn't exist.
+ * @param {Map<string, string>} directKeyToScreenshot key → captured screenshot.
+ * @param {Iterable<string>} allKeys every renderable catalog key.
+ * @param {Set<string>} capturedScreenshots filenames present in the capture report.
+ * @param {Array<{ prefix: string; screenshot: string; note: string }>} [mappings]
+ * @returns {Couplings}
+ */
+export function buildCouplings(
+  directKeyToScreenshot,
+  allKeys,
+  capturedScreenshots,
+  mappings = REPRESENTATIVE_SCREENSHOTS,
+) {
+  /** @type {Map<string, Coupling>} */
+  const byKey = new Map()
+  /** @type {Set<string>} */
+  const directKeys = new Set()
+  /** @type {Set<string>} */
+  const representativeKeys = new Set()
+
+  for (const [key, screenshot] of directKeyToScreenshot) {
+    byKey.set(key, { screenshot })
+    directKeys.add(key)
+  }
+
+  for (const key of allKeys) {
+    if (directKeys.has(key)) continue // direct wins
+    const rep = representativeFor(key, mappings)
+    if (!rep) continue
+    if (!capturedScreenshots.has(rep.screenshot)) continue // its image wasn't captured
+    byKey.set(key, { screenshot: rep.screenshot, note: rep.note })
+    representativeKeys.add(key)
+  }
+
+  return { byKey, directKeys, representativeKeys }
+}
+
+/**
  * @typedef {object} AreaCoverage
  * @property {string} area The catalog area (filename minus `.json`).
  * @property {number} total Renderable keys in the area.
- * @property {number} coupled Keys with a screenshot coupling from this run.
- * @property {number} dynamicUncoupled Uncoupled keys under a dynamic prefix.
- * @property {number} surfaceUncoupled Uncoupled keys NOT under a dynamic prefix (surface not driven yet).
+ * @property {number} direct Keys coupled to their OWN captured screenshot.
+ * @property {number} representative Keys coupled to a representative (stand-in) screenshot.
+ * @property {number} uncoupled Keys with no screenshot at all.
  */
 
 /**
  * @typedef {object} CoverageReport
  * @property {AreaCoverage[]} areas Per-area coverage rows, sorted by area name.
  * @property {number} total Renderable keys across all areas.
- * @property {number} coupled Coupled keys across all areas.
- * @property {number} dynamicUncoupled Uncoupled dynamic-only keys across all areas.
- * @property {number} surfaceUncoupled Uncoupled not-yet-driven keys across all areas.
+ * @property {number} direct Directly-captured keys across all areas.
+ * @property {number} representative Representative-coupled keys across all areas.
+ * @property {number} uncoupled Uncoupled keys across all areas.
  */
 
 /**
- * Pure coverage core: given every renderable catalog key (by area) and the
- * key→screenshot couplings from this run, tallies per area how many keys are
- * coupled vs not, splitting the uncoupled into "dynamic-only" (built at runtime,
- * see DYNAMIC_KEY_PREFIXES) and "surface not driven yet". No filesystem access.
- * @param {Map<string, string>} keyToScreenshot key → screenshot for coupled keys.
+ * Pure coverage core: given every renderable catalog key (by area), the keys
+ * coupled to their OWN captured screenshot (`directKeys`), and the keys coupled
+ * to a representative stand-in (`representativeKeys`), tallies per area how many
+ * are direct vs representative vs uncoupled. A representative coupling is counted
+ * separately from a direct one so the report never implies a stand-in image is a
+ * precise capture. No filesystem access.
+ * @param {Set<string>} directKeys keys with their own captured screenshot.
+ * @param {Set<string>} representativeKeys keys coupled to a representative screenshot.
  * @param {Map<string, string[]>} keysByArea area → its renderable keys.
- * @param {string[]} [dynamicPrefixes] prefixes whose keys are runtime-assembled.
  * @returns {CoverageReport}
  */
-export function buildCoverageReport(keyToScreenshot, keysByArea, dynamicPrefixes = DYNAMIC_KEY_PREFIXES) {
+export function buildCoverageReport(directKeys, representativeKeys, keysByArea) {
   /** @type {AreaCoverage[]} */
   const areas = []
   let total = 0
-  let coupled = 0
-  let dynamicUncoupled = 0
-  let surfaceUncoupled = 0
+  let direct = 0
+  let representative = 0
+  let uncoupled = 0
 
   for (const area of [...keysByArea.keys()].sort()) {
     const keys = keysByArea.get(area) ?? []
-    let areaCoupled = 0
-    let areaDynamic = 0
-    let areaSurface = 0
+    let areaDirect = 0
+    let areaRep = 0
+    let areaUncoupled = 0
     for (const key of keys) {
-      if (keyToScreenshot.has(key)) {
-        areaCoupled++
-      } else if (dynamicPrefixes.some((p) => key.startsWith(p))) {
-        areaDynamic++
-      } else {
-        areaSurface++
-      }
+      if (directKeys.has(key)) areaDirect++
+      else if (representativeKeys.has(key)) areaRep++
+      else areaUncoupled++
     }
-    areas.push({
-      area,
-      total: keys.length,
-      coupled: areaCoupled,
-      dynamicUncoupled: areaDynamic,
-      surfaceUncoupled: areaSurface,
-    })
+    areas.push({ area, total: keys.length, direct: areaDirect, representative: areaRep, uncoupled: areaUncoupled })
     total += keys.length
-    coupled += areaCoupled
-    dynamicUncoupled += areaDynamic
-    surfaceUncoupled += areaSurface
+    direct += areaDirect
+    representative += areaRep
+    uncoupled += areaUncoupled
   }
 
-  return { areas, total, coupled, dynamicUncoupled, surfaceUncoupled }
+  return { areas, total, direct, representative, uncoupled }
 }
 
 /**
@@ -159,26 +336,33 @@ export function buildCoverageReport(keyToScreenshot, keysByArea, dynamicPrefixes
 export function renderCoverageReport(report) {
   /** @param {number} n @param {number} d @returns {string} */
   const pct = (n, d) => (d === 0 ? '—' : `${String(Math.round((n / d) * 100))}%`)
+  const anyCoverage = report.direct + report.representative
   const lines = [
     '# Screenshot coverage',
     '',
     'Generated by `scripts/couple-screenshots.js` (via `pnpm i18n:shots`). Tracked, regenerable.',
     '',
-    'Per catalog area: how many renderable keys are coupled to a screenshot vs not. Uncoupled keys split into',
-    '`dynamic-only` (built at runtime, so no static surface can name them — see `DYNAMIC_KEY_PREFIXES`) and `not driven`',
-    '(on a surface the capture driver does not visit yet).',
+    'Per catalog area, each renderable key is one of three:',
     '',
-    `Coverage is PARTIAL until the driver covers the full surface inventory. Low numbers here are expected, not bugs.`,
+    '- **Direct**: coupled to a screenshot that actually shows THIS string in context (a real capture of its own surface).',
+    '- **Representative**: coupled to a stand-in screenshot of the same panel/toast/dialog where the string appears, plus a',
+    '  `@key.screenshotNote` explaining the mapping. Honest-by-design: it is NOT a precise capture, but it shows the right',
+    '  layout and position so a translator loads one image for a whole family of strings.',
+    '- **Uncoupled**: no screenshot yet (a surface the capture driver does not visit, or one with no honest representative).',
     '',
-    `**Total: ${String(report.coupled)} / ${String(report.total)} keys coupled (${pct(report.coupled, report.total)}).** ` +
-      `${String(report.dynamicUncoupled)} dynamic-only and ${String(report.surfaceUncoupled)} not-yet-driven keys remain uncoupled.`,
+    `Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.`,
     '',
-    '| Area | Coupled | Total | % | Dynamic-only | Not driven |',
+    `**Total: ${String(anyCoverage)} / ${String(report.total)} keys have a screenshot (${pct(anyCoverage, report.total)}):** ` +
+      `${String(report.direct)} direct (${pct(report.direct, report.total)}) and ` +
+      `${String(report.representative)} representative (${pct(report.representative, report.total)}). ` +
+      `${String(report.uncoupled)} remain uncoupled.`,
+    '',
+    '| Area | Direct | Representative | Uncoupled | Total | Any % |',
     '| --- | ---: | ---: | ---: | ---: | ---: |',
   ]
   for (const a of report.areas) {
     lines.push(
-      `| ${a.area} | ${String(a.coupled)} | ${String(a.total)} | ${pct(a.coupled, a.total)} | ${String(a.dynamicUncoupled)} | ${String(a.surfaceUncoupled)} |`,
+      `| ${a.area} | ${String(a.direct)} | ${String(a.representative)} | ${String(a.uncoupled)} | ${String(a.total)} | ${pct(a.direct + a.representative, a.total)} |`,
     )
   }
   lines.push('')
@@ -186,9 +370,18 @@ export function renderCoverageReport(report) {
 }
 
 /**
+ * @typedef {object} Coupling
+ * @property {string} screenshot The screenshot filename to write to `@key.screenshot`.
+ * @property {string} [note] An optional translator note (`@key.screenshotNote`).
+ *   Present for REPRESENTATIVE couplings (a stand-in image), absent for DIRECT
+ *   (captured) ones. When absent, any existing `screenshotNote` is REMOVED, so a
+ *   key that gains a direct capture sheds its old representative note.
+ */
+
+/**
  * @typedef {object} CoupleResult
  * @property {string} text The catalog TEXT after coupling (line-surgical; all other bytes byte-identical).
- * @property {boolean} changed Whether any `@key.screenshot` was added or updated.
+ * @property {boolean} changed Whether any `@key.screenshot`/`@key.screenshotNote` was added, updated, or removed.
  * @property {number} couplingCount How many keys were (re)coupled.
  * @property {string[]} coupledWithoutDescription `key → screenshot` for keys whose twin has no description.
  * @property {string[]} missingKeys Keys requested but absent from this catalog.
@@ -198,22 +391,24 @@ export function renderCoverageReport(report) {
  */
 
 /**
- * Pure core: returns the catalog TEXT with `@key.screenshot` set for every
- * requested key, edited LINE-SURGICALLY so every other byte — message values,
- * other twin fields, indentation, AND the blank lines that group the catalog —
- * is preserved exactly. (A `JSON.parse` → `JSON.stringify` round-trip would drop
- * the blank-line grouping; oxfmt doesn't restore it, so it would reflatten every
+ * Pure core: returns the catalog TEXT with `@key.screenshot` (and, for
+ * representative couplings, `@key.screenshotNote`) set for every requested key,
+ * edited LINE-SURGICALLY so every other byte — message values, other twin
+ * fields, indentation, AND the blank lines that group the catalog — is preserved
+ * exactly. (A `JSON.parse` → `JSON.stringify` round-trip would drop the
+ * blank-line grouping; oxfmt doesn't restore it, so it would reflatten every
  * file on every run. The spec's gotcha: preserve oxfmt'd formatting, touch ONLY
- * `@key.screenshot`.) Does not read or write the filesystem.
+ * the `screenshot`/`screenshotNote` fields.) Does not read or write the
+ * filesystem.
  *
  * We parse the JSON once (read-only) to learn which keys exist, their current
- * screenshot (for idempotency), and whether the twin has a description; the
+ * screenshot/note (for idempotency), and whether the twin has a description; the
  * actual mutation is on the raw text.
  * @param {string} rawText The catalog file contents (`messages/en/<area>.json`).
- * @param {Map<string, string>} keyToScreenshot key → screenshot filename for THIS catalog.
+ * @param {Map<string, Coupling>} keyToCoupling key → coupling for THIS catalog.
  * @returns {CoupleResult}
  */
-export function coupleCatalog(rawText, keyToScreenshot) {
+export function coupleCatalog(rawText, keyToCoupling) {
   /** @type {Record<string, unknown>} */
   const json = JSON.parse(rawText)
   let text = rawText
@@ -228,7 +423,8 @@ export function coupleCatalog(rawText, keyToScreenshot) {
   /** @type {Array<{ key: string; screenshot: string; current: string | undefined }>} */
   const stale = []
 
-  for (const [key, screenshot] of keyToScreenshot) {
+  for (const [key, coupling] of keyToCoupling) {
+    const { screenshot, note } = coupling
     if (!(key in json)) {
       missingKeys.push(key)
       continue
@@ -243,14 +439,25 @@ export function coupleCatalog(rawText, keyToScreenshot) {
       continue
     }
     const meta = /** @type {Record<string, unknown>} */ (existing)
-    if (meta.screenshot === screenshot) continue // already coupled — idempotent
+    const currentNote = typeof meta.screenshotNote === 'string' ? meta.screenshotNote : undefined
+    // Idempotent: skip when both fields already match the desired state (note
+    // absent means "no screenshotNote field").
+    if (meta.screenshot === screenshot && currentNote === note) continue
 
-    const next = setTwinScreenshot(text, metaKey, screenshot)
+    let next = setTwinField(text, metaKey, 'screenshot', screenshot)
     if (next === null) {
       // Shouldn't happen (the twin parsed as an object), but never corrupt a file.
       missingTwins.push(key)
       continue
     }
+    // The note is set for representative couplings and REMOVED for direct ones,
+    // so a key never carries a stale stand-in note once it has its own capture.
+    const afterNote = setTwinField(next, metaKey, 'screenshotNote', note ?? null)
+    if (afterNote === null) {
+      missingTwins.push(key)
+      continue
+    }
+    next = afterNote
     text = next
     const hasDescription = typeof meta.description === 'string' && meta.description.trim() !== ''
     if (!hasDescription) coupledWithoutDescription.push(`${key} → ${screenshot}`)
@@ -263,17 +470,23 @@ export function coupleCatalog(rawText, keyToScreenshot) {
 }
 
 /**
- * Sets the `screenshot` field of one `"@key": { … }` object in the catalog text,
- * touching only that object. Replaces an existing `"screenshot": "…"` line if
- * present, else inserts the field as the last property (appending a comma to the
- * previous last line). Returns the new text, or null if the twin block can't be
- * located/parsed (caller then skips, never corrupting the file).
+ * Sets, replaces, or REMOVES one top-level string `field` of a single
+ * `"@key": { … }` object in the catalog text, touching only that object. With a
+ * non-null `value`, replaces an existing `"field": "…"` line if present, else
+ * inserts the field as the LAST property (appending a comma to the previous last
+ * line). With `value === null`, removes the field's line entirely (and its comma,
+ * keeping the object's comma structure valid) — a no-op if the field is absent.
+ * Returns the new text, or null if the twin block can't be located/parsed
+ * (caller then skips, never corrupting the file).
+ *
+ * Used for both `screenshot` and `screenshotNote` (representative-coupling note).
  * @param {string} text
  * @param {string} metaKey e.g. `@common.ok`
- * @param {string} screenshot
+ * @param {string} field e.g. `screenshot` or `screenshotNote`
+ * @param {string | null} value the JSON string value, or null to remove the field
  * @returns {string | null}
  */
-function setTwinScreenshot(text, metaKey, screenshot) {
+function setTwinField(text, metaKey, field, value) {
   // The twin is an oxfmt'd object opening on its own line: `  "@key": {`.
   const open = `  ${JSON.stringify(metaKey)}: {`
   const openIdx = text.indexOf(open)
@@ -310,21 +523,35 @@ function setTwinScreenshot(text, metaKey, screenshot) {
   const before = text.slice(0, braceStart + 1)
   const after = text.slice(closeIdx)
 
-  // Replace an existing top-level `"screenshot": "…"` in this object if present.
-  // (Top-level: 4-space indent, the twin's own field indent.)
-  const existingRe = /\n {4}"screenshot": "(?:[^"\\]|\\.)*"(,?)/
+  // Matches the existing top-level `"field": "…"` line (4-space indent, the
+  // twin's own field indent) plus a trailing comma if it has one (`$1`).
+  const fieldName = field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const existingRe = new RegExp(`\\n {4}"${fieldName}": "(?:[^"\\\\]|\\\\.)*"(,?)`)
   const m = existingRe.exec(body)
+
+  if (value === null) {
+    // Remove the field. If it had a trailing comma, dropping the line + comma
+    // keeps the rest valid. If it was the LAST field (no trailing comma), also
+    // drop the comma on the now-last preceding field.
+    if (!m) return before + body + after // already absent
+    if (m[1] === ',') return before + body.replace(existingRe, '') + after
+    // Last field: remove it AND the preceding field's trailing comma.
+    const withoutField = body.replace(existingRe, '')
+    const trimmedComma = withoutField.replace(/,(\n {2})$/, '$1') // last `,` before `\n  }`
+    return before + trimmedComma + after
+  }
+
   if (m) {
-    const replaced = body.replace(existingRe, `\n    "screenshot": ${JSON.stringify(screenshot)}${m[1]}`)
+    const replaced = body.replace(existingRe, `\n    "${field}": ${JSON.stringify(value)}${m[1]}`)
     return before + replaced + after
   }
 
   // Insert as the last field: append a comma to the current last property line,
-  // then add the screenshot line before the closing brace. `body` ends with the
+  // then add the new field line before the closing brace. `body` ends with the
   // last field then a newline + the close brace's indent; trim that trailing
-  // newline/indent, add `,\n    "screenshot": "…"\n  ` back.
+  // newline/indent, add `,\n    "field": "…"\n  ` back.
   const trimmed = body.replace(/\n {2}$/, '') // drop the "\n  " before `}`
-  return before + trimmed + `,\n    "screenshot": ${JSON.stringify(screenshot)}\n  ` + after
+  return before + trimmed + `,\n    "${field}": ${JSON.stringify(value)}\n  ` + after
 }
 
 // ── CLI shell (file I/O only; skipped when imported as a module) ──────────────
@@ -368,19 +595,30 @@ function main() {
 
   /** @type {Record<string, { screenshot: string; keys: string[] }>} */
   const report = JSON.parse(readFileSync(reportPath, 'utf8'))
-  const keyToScreenshot = couplingsFromReport(report)
+  const directKeyToScreenshot = couplingsFromReport(report)
+
+  // Every renderable catalog key (for the representative pass + coverage).
+  const keysByArea = keysByAreaFromCatalogs(messagesDir)
+  const allKeys = [...keysByArea.values()].flat()
+  // Screenshots the capture run actually produced — a representative may only
+  // point at one of these (never at a missing image).
+  const capturedScreenshots = new Set(Object.values(report).map((s) => s.screenshot))
+
+  // Direct (captured) couplings, then representative stand-ins for the keys still
+  // uncoupled. Direct always wins.
+  const { byKey, directKeys, representativeKeys } = buildCouplings(directKeyToScreenshot, allKeys, capturedScreenshots)
 
   // Group target keys by their catalog file so each file is read/written once.
-  /** @type {Map<string, Map<string, string>>} filename → (key → screenshot) */
+  /** @type {Map<string, Map<string, Coupling>>} filename → (key → coupling) */
   const byFile = new Map()
-  for (const [key, screenshot] of keyToScreenshot) {
+  for (const [key, coupling] of byKey) {
     const file = fileForKey(key)
     let m = byFile.get(file)
     if (m === undefined) {
       m = new Map()
       byFile.set(file, m)
     }
-    m.set(key, screenshot)
+    m.set(key, coupling)
   }
 
   const changedFiles = []
@@ -428,7 +666,8 @@ function main() {
   }
 
   console.log(
-    `Coupled ${String(couplingCount)} key(s) to screenshots across ${String(changedFiles.length)} catalog file(s).`,
+    `Coupled ${String(couplingCount)} key(s) to screenshots across ${String(changedFiles.length)} catalog file(s) ` +
+      `(${String(directKeys.size)} direct, ${String(representativeKeys.size)} representative).`,
   )
 
   if (coupledWithoutDescription.length > 0) {
@@ -457,13 +696,14 @@ function main() {
   }
 
   // Coverage report (Decision 4: no silent gaps) — a tracked, text artifact that
-  // shows which areas have screenshots and which keys remain uncoupled (+ why).
-  const keysByArea = keysByAreaFromCatalogs(messagesDir)
-  const coverage = buildCoverageReport(keyToScreenshot, keysByArea)
+  // shows which areas have screenshots (direct vs representative) and which keys
+  // remain uncoupled.
+  const coverage = buildCoverageReport(directKeys, representativeKeys, keysByArea)
   const coveragePath = join(messagesRoot, 'screenshots', 'coverage-report.md')
   writeFileSync(coveragePath, renderCoverageReport(coverage))
   console.log(
-    `Wrote coverage report: ${String(coverage.coupled)}/${String(coverage.total)} keys coupled → ${coveragePath}`,
+    `Wrote coverage report: ${String(coverage.direct)} direct + ${String(coverage.representative)} representative ` +
+      `/ ${String(coverage.total)} keys → ${coveragePath}`,
   )
 }
 

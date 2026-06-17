@@ -49,6 +49,7 @@ import {
   settlePaint,
   focusWindow,
   captureSurface,
+  captureErrorPaneExample,
 } from './i18n-capture-helpers.js'
 import {
   captureSettingsWindow,
@@ -290,6 +291,15 @@ test.describe('i18n screenshot capture', () => {
     await captureQuickLookHint(main, report, failed)
     await captureMtpSurfaces(main, report, failed)
     await captureDownloadToasts(main, report, failed)
+
+    // ── Representative friendly-error pane (the errors.* family) ───────────────
+    // One real error pane captured in situ via the `inject_listing_error` E2E
+    // hook. Every friendly error shares this title/explanation/suggestion layout,
+    // so the coupler maps the whole uncoupled `errors.*` family to this image with
+    // a `@key.screenshotNote` (see `REPRESENTATIVE_SCREENSHOTS` in
+    // `scripts/couple-screenshots.js`). Run last among the main-pass surfaces so a
+    // transient error state can't perturb earlier captures.
+    await captureErrorPaneExample('error-message-example', report, failed, main)
 
     // ── Documented skips deferred beyond the mock-staged surfaces ─────────────
     // These surfaces need backend state / events we can't fake from the frontend

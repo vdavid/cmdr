@@ -14,6 +14,7 @@
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect } from './fixtures.js'
+import { getFixtureRoot } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /**
@@ -247,5 +248,74 @@ export async function captureToastSurface(
   } finally {
     await dismissAllToasts(main).catch(() => {})
     await captureCall(main, 'disable').catch(() => {})
+  }
+}
+
+/**
+ * Captures ONE real friendly-error pane as the REPRESENTATIVE image for the whole
+ * `errors.*` family (listing / write / provider / git). Every friendly error
+ * shares this presentation — a bold title, an explanation paragraph, and a
+ * suggestion — so a single honest capture, plus the coupler's representative
+ * `@key.screenshotNote`, lets a translator load one image for the entire family.
+ *
+ * Like a toast, the error copy is SNAPSHOT-RESOLVED: `renderListingError` calls
+ * `getMessage('errors.listing.<reason>.*')` once at navigation time and stores
+ * plain strings on the FriendlyError props, so a later `rerender()` never
+ * re-records them. The sink must be enabled BEFORE the error renders. Flow:
+ * reset + setSurface + enable, THEN inject a real OS error (EACCES) and navigate
+ * into a subdir so the backend listing fails and the pane renders, capturing the
+ * `errors.listing.*` keys it resolves. We screenshot the real pane, then navigate
+ * back so the next surface (and the afterEach leak guard) starts clean.
+ *
+ * Uses the `inject_listing_error` Tauri command (feature-gated behind
+ * `playwright-e2e`, present in the capture build) — the same hook
+ * `error-pane.spec.ts` uses. The injected error is single-shot, so the cleanup
+ * navigation succeeds naturally.
+ */
+export async function captureErrorPaneExample(
+  label: string,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+  main: TauriPage,
+): Promise<void> {
+  const screenshot = `${label}.png`
+  const fixtureRoot = getFixtureRoot()
+  const subDirPath = `${fixtureRoot}/left/sub-dir`
+  const leftPath = `${fixtureRoot}/left`
+  try {
+    await captureCall(main, 'reset')
+    await captureCall(main, 'setSurface', label)
+    await captureCall<boolean>(main, 'enable')
+
+    // Inject EACCES (errno 13 → a friendly "No permission" error) and navigate
+    // into sub-dir in one atomic step (no wait between): a background listing
+    // could otherwise consume the single-shot injected error first.
+    await main.evaluate(
+      `window.__TAURI_INTERNALS__.invoke('inject_listing_error', { volumeId: 'root', errorCode: 13 })`,
+    )
+    await main.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+      event: 'mcp-nav-to-path',
+      payload: { pane: 'left', path: ${JSON.stringify(subDirPath)} }
+    })`)
+    // The error pane appearing IS the readiness signal: the keys were resolved
+    // (and recorded) during the listing the navigation kicked off.
+    await main.waitForSelector('.error-pane', 5000)
+    await settlePaint(main)
+    await main.screenshot({ path: join(screenshotsDir, screenshot) })
+    report[label] = { screenshot, keys: await keysFor(main, label) }
+    console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
+  } catch (err) {
+    failed.push(label)
+    console.warn(`[i18n-capture] surface ${label} FAILED: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    await captureCall(main, 'disable').catch(() => {})
+    // Navigate back to a real directory so the pane leaves the error state.
+    await main
+      .evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+        event: 'mcp-nav-to-path',
+        payload: { pane: 'left', path: ${JSON.stringify(leftPath)} }
+      })`)
+      .catch(() => {})
+    await main.waitForSelector('.file-entry', 5000).catch(() => {})
   }
 }

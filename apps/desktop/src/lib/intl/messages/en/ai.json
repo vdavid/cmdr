@@ -1,11 +1,15 @@
 {
   "ai.toast.downloadingTitle": "Downloading AI model...",
   "@ai.toast.downloadingTitle": {
-    "description": "Title of the persistent toast shown while the local AI model is downloading."
+    "description": "Title of the persistent toast shown while the local AI model is downloading.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.startingDownload": "Starting download...",
   "@ai.toast.startingDownload": {
-    "description": "Progress line shown in the AI download toast before the total size is known, just after the download begins."
+    "description": "Progress line shown in the AI download toast before the total size is known, just after the download begins.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · {eta} remaining}}",
   "@ai.toast.progress": {
@@ -16,306 +20,450 @@
       "total": "total download size, already formatted for display (for example 2.0 GB)",
       "speed": "current download speed without the unit suffix, already formatted (the /s suffix is added separately)",
       "eta": "the formatted time-remaining string (for example 35s), or the literal none when no estimate is available yet"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.cancel": "Cancel",
   "@ai.toast.cancel": {
-    "description": "Button that cancels (aborts) the in-progress local AI model download. Tight mini button."
+    "description": "Button that cancels (aborts) the in-progress local AI model download. Tight mini button.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.installingTitle": "Setting up AI...",
   "@ai.toast.installingTitle": {
-    "description": "Title of the AI toast during the install/setup phase, after the model finished downloading."
+    "description": "Title of the AI toast during the install/setup phase, after the model finished downloading.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.installingDescription": "Starting server",
   "@ai.toast.installingDescription": {
-    "description": "Sub-line under the Setting up AI title, while the local AI server is being started."
+    "description": "Sub-line under the Setting up AI title, while the local AI server is being started.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.readyTitle": "AI ready",
   "@ai.toast.readyTitle": {
-    "description": "Title of the AI toast once the local AI model is installed and the server is running."
+    "description": "Title of the AI toast once the local AI model is installed and the server is running.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.readyDescription": "Try creating a new folder (F7) to see AI-powered name suggestions.",
   "@ai.toast.readyDescription": {
-    "description": "Sub-line under the AI ready title, suggesting the user try the folder-name suggestion feature. F7 is the keyboard key for New folder; keep it as F7."
+    "description": "Sub-line under the AI ready title, suggesting the user try the folder-name suggestion feature. F7 is the keyboard key for New folder; keep it as F7.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.gotIt": "Got it",
   "@ai.toast.gotIt": {
-    "description": "Button on the AI ready toast that dismisses it (acknowledgement). Tight mini button."
+    "description": "Button on the AI ready toast that dismisses it (acknowledgement). Tight mini button.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.startingTitle": "AI starting...",
   "@ai.toast.startingTitle": {
-    "description": "Title of the AI toast shown at app startup when the local model is already installed and its server is starting up."
+    "description": "Title of the AI toast shown at app startup when the local model is already installed and its server is starting up.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.startingDescription": "Loading the model, this takes a few seconds",
   "@ai.toast.startingDescription": {
-    "description": "Sub-line under the AI starting title, reassuring that startup takes a moment."
+    "description": "Sub-line under the AI starting title, reassuring that startup takes a moment.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.toast.downloadCloseTooltip": "Close this notification — the download will continue in the background",
   "@ai.toast.downloadCloseTooltip": {
-    "description": "Tooltip on the × of the AI download toast, clarifying that hiding the toast does not stop the download."
+    "description": "Tooltip on the × of the AI download toast, clarifying that hiding the toast does not stop the download.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
 
   "ai.translateError.off.title": "AI is turned off",
   "@ai.translateError.off.title": {
-    "description": "Title of the toast shown when an AI search/selection is attempted but AI is turned off in settings."
+    "description": "Title of the toast shown when an AI search/selection is attempted but AI is turned off in settings.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.off.body": "Turn on a provider in Settings > AI to use AI search.",
   "@ai.translateError.off.body": {
-    "description": "Next-step line under the AI is turned off toast. Settings > AI is a navigation path to the AI settings section; keep the menu/section names as shown."
+    "description": "Next-step line under the AI is turned off toast. Settings > AI is a navigation path to the AI settings section; keep the menu/section names as shown.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.notConfigured.title": "AI needs a bit more setup",
   "@ai.translateError.notConfigured.title": {
-    "description": "Title shown when AI is enabled but not fully configured (for example a missing API key) and an AI action is attempted."
+    "description": "Title shown when AI is enabled but not fully configured (for example a missing API key) and an AI action is attempted.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.notConfigured.body": "Finish your provider setup in Settings > AI, then try again.",
   "@ai.translateError.notConfigured.body": {
-    "description": "Next-step line under the AI needs more setup toast. Settings > AI is a navigation path; keep it as shown."
+    "description": "Next-step line under the AI needs more setup toast. Settings > AI is a navigation path; keep it as shown.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.authFailed.title": "That API key got turned down",
   "@ai.translateError.authFailed.title": {
-    "description": "Title shown when the AI provider rejected the API key (authentication failed). Casual, slightly rueful tone."
+    "description": "Title shown when the AI provider rejected the API key (authentication failed). Casual, slightly rueful tone.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.authFailed.body": "Check your key in Settings > AI - it might be wrong or revoked.",
   "@ai.translateError.authFailed.body": {
-    "description": "Next-step line under the API key rejected toast. Settings > AI is a navigation path; keep it as shown."
+    "description": "Next-step line under the API key rejected toast. Settings > AI is a navigation path; keep it as shown.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.rateLimited.title": "Your AI provider is out of room",
   "@ai.translateError.rateLimited.title": {
-    "description": "Title shown when the AI provider is rate-limiting requests or the user's plan quota is exhausted."
+    "description": "Title shown when the AI provider is rate-limiting requests or the user's plan quota is exhausted.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.rateLimited.body": "It''s rate-limiting requests or your plan is out of quota. Check your plan and billing, then try again.",
   "@ai.translateError.rateLimited.body": {
-    "description": "Next-step line under the provider-out-of-room toast, explaining rate limiting / quota and pointing to plan and billing."
+    "description": "Next-step line under the provider-out-of-room toast, explaining rate limiting / quota and pointing to plan and billing.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.timeout.title": "The AI took too long",
   "@ai.translateError.timeout.title": {
-    "description": "Title shown when an AI request timed out."
+    "description": "Title shown when an AI request timed out.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.timeout.body": "The request timed out. Give it another go in a moment.",
   "@ai.translateError.timeout.body": {
-    "description": "Next-step line under the AI timeout toast, encouraging a retry."
+    "description": "Next-step line under the AI timeout toast, encouraging a retry.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.unavailable.title": "Can''t reach your AI provider",
   "@ai.translateError.unavailable.title": {
-    "description": "Title shown when the AI provider can't be reached (network or provider down)."
+    "description": "Title shown when the AI provider can't be reached (network or provider down).",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.unavailable.body": "Check your internet or the provider''s status, then try again.",
   "@ai.translateError.unavailable.body": {
-    "description": "Next-step line under the can't-reach-provider toast, pointing at internet and provider status."
+    "description": "Next-step line under the can't-reach-provider toast, pointing at internet and provider status.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.emptyResponse.title": "The AI came back empty",
   "@ai.translateError.emptyResponse.title": {
-    "description": "Title shown when the AI returned an empty response to a search/selection translation."
+    "description": "Title shown when the AI returned an empty response to a search/selection translation.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.emptyResponse.body": "Your model may need a bigger budget for this. Try a faster model like gpt-4.1-mini in Settings > AI.",
   "@ai.translateError.emptyResponse.body": {
-    "description": "Next-step line under the AI-came-back-empty toast. gpt-4.1-mini is a model name; keep it as shown. Settings > AI is a navigation path; keep it as shown."
+    "description": "Next-step line under the AI-came-back-empty toast. gpt-4.1-mini is a model name; keep it as shown. Settings > AI is a navigation path; keep it as shown.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.serverError.title": "Your AI provider hit a snag",
   "@ai.translateError.serverError.title": {
-    "description": "Title shown when the AI provider returned an unexpected server-side problem."
+    "description": "Title shown when the AI provider returned an unexpected server-side problem.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.serverError.body": "It returned something unexpected. Try again in a moment.",
   "@ai.translateError.serverError.body": {
-    "description": "Next-step line under the provider-hit-a-snag toast, encouraging a retry."
+    "description": "Next-step line under the provider-hit-a-snag toast, encouraging a retry.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.parseError.title": "Couldn''t read the AI''s answer",
   "@ai.translateError.parseError.title": {
-    "description": "Title shown when the AI's response couldn't be parsed into the expected form."
+    "description": "Title shown when the AI's response couldn't be parsed into the expected form.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.parseError.body": "Try again, or pick a different model in Settings > AI.",
   "@ai.translateError.parseError.body": {
-    "description": "Next-step line under the couldn't-read-the-answer toast. Settings > AI is a navigation path; keep it as shown."
+    "description": "Next-step line under the couldn't-read-the-answer toast. Settings > AI is a navigation path; keep it as shown.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.unknownProvider.title": "That AI provider isn''t recognized",
   "@ai.translateError.unknownProvider.title": {
-    "description": "Title shown when the configured AI provider isn't one Cmdr recognizes."
+    "description": "Title shown when the configured AI provider isn't one Cmdr recognizes.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.translateError.unknownProvider.body": "Pick a provider in Settings > AI.",
   "@ai.translateError.unknownProvider.body": {
-    "description": "Next-step line under the unrecognized-provider toast. Settings > AI is a navigation path; keep it as shown."
+    "description": "Next-step line under the unrecognized-provider toast. Settings > AI is a navigation path; keep it as shown.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
 
   "ai.cloud.serviceAria": "Cloud AI service",
   "@ai.cloud.serviceAria": {
-    "description": "aria-label for the dropdown that picks which cloud AI service (provider) to use, in Settings > AI."
+    "description": "aria-label for the dropdown that picks which cloud AI service (provider) to use, in Settings > AI.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.endpointLabel": "Endpoint",
   "@ai.cloud.endpointLabel": {
-    "description": "Setting row label for the cloud AI provider's API endpoint URL field."
+    "description": "Setting row label for the cloud AI provider's API endpoint URL field.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.endpointDescription": "API endpoint URL for the selected service.",
   "@ai.cloud.endpointDescription": {
-    "description": "Description under the Endpoint setting row for cloud AI."
+    "description": "Description under the Endpoint setting row for cloud AI.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.endpointPlaceholder": "Example: https://api.example.com/v1",
   "@ai.cloud.endpointPlaceholder": {
-    "description": "Placeholder in the cloud AI endpoint URL field, showing an example URL shape. Keep the example URL literal."
+    "description": "Placeholder in the cloud AI endpoint URL field, showing an example URL shape. Keep the example URL literal.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.endpointAria": "Endpoint URL",
   "@ai.cloud.endpointAria": {
-    "description": "aria-label for the cloud AI endpoint URL input."
+    "description": "aria-label for the cloud AI endpoint URL input.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.apiKeyLabel": "API key",
   "@ai.cloud.apiKeyLabel": {
-    "description": "Setting row label and aria-label for the cloud AI provider's API key field."
+    "description": "Setting row label and aria-label for the cloud AI provider's API key field.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.apiKeyDescription": "Your API key for this service.",
   "@ai.cloud.apiKeyDescription": {
-    "description": "Description under the API key setting row for cloud AI."
+    "description": "Description under the API key setting row for cloud AI.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.apiKeyPlaceholderOpenai": "Example: sk-abc123...",
   "@ai.cloud.apiKeyPlaceholderOpenai": {
-    "description": "Placeholder in the API key field for OpenAI, showing the typical key prefix. Keep the example token literal."
+    "description": "Placeholder in the API key field for OpenAI, showing the typical key prefix. Keep the example token literal.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.apiKeyPlaceholderAnthropic": "Example: sk-ant-abc123...",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
-    "description": "Placeholder in the API key field for Anthropic, showing the typical key prefix. Keep the example token literal."
+    "description": "Placeholder in the API key field for Anthropic, showing the typical key prefix. Keep the example token literal.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.apiKeyPlaceholderGeneric": "API key",
   "@ai.cloud.apiKeyPlaceholderGeneric": {
-    "description": "Generic placeholder in the API key field when the provider has no known key-prefix example."
+    "description": "Generic placeholder in the API key field when the provider has no known key-prefix example.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.modelLabel": "Model",
   "@ai.cloud.modelLabel": {
-    "description": "Setting row label and aria-label for the cloud AI model picker (a combobox of available model names)."
+    "description": "Setting row label and aria-label for the cloud AI model picker (a combobox of available model names).",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.modelDescription": "The model name to use for completions.",
   "@ai.cloud.modelDescription": {
-    "description": "Description under the Model setting row for cloud AI."
+    "description": "Description under the Model setting row for cloud AI.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.modelPlaceholderExample": "Example: {model}",
   "@ai.cloud.modelPlaceholderExample": {
     "description": "Placeholder in the cloud AI model field showing the provider's default model as an example.",
     "placeholders": {
       "model": "the provider's default model name (a literal identifier, not translated)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.modelPlaceholderGeneric": "Model name",
   "@ai.cloud.modelPlaceholderGeneric": {
-    "description": "Generic placeholder in the cloud AI model field when the provider has no default model to suggest."
+    "description": "Generic placeholder in the cloud AI model field when the provider has no default model to suggest.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.checking": "Checking...",
   "@ai.cloud.checking": {
-    "description": "Status line shown next to a spinner while Cmdr tests the cloud AI connection."
+    "description": "Status line shown next to a spinner while Cmdr tests the cloud AI connection.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.connected": "Connected",
   "@ai.cloud.connected": {
-    "description": "Status line shown when the cloud AI connection test succeeded and a model list was retrieved."
+    "description": "Status line shown when the cloud AI connection test succeeded and a model list was retrieved.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.connectedNoModels": "Connected (model list not available)",
   "@ai.cloud.connectedNoModels": {
-    "description": "Status line shown when the cloud AI connection succeeded but the provider didn't return a list of available models."
+    "description": "Status line shown when the cloud AI connection succeeded but the provider didn't return a list of available models.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.recheck": "Recheck",
   "@ai.cloud.recheck": {
-    "description": "Button that re-runs the cloud AI connection test. Tight mini button."
+    "description": "Button that re-runs the cloud AI connection test. Tight mini button.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.authError": "API key is invalid",
   "@ai.cloud.authError": {
-    "description": "Fallback status line shown when the cloud AI connection failed authentication and the provider gave no specific message."
+    "description": "Fallback status line shown when the cloud AI connection failed authentication and the provider gave no specific message.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.connectionError": "Can''t reach server",
   "@ai.cloud.connectionError": {
-    "description": "Fallback status line shown when the cloud AI server couldn't be reached and the provider gave no specific message."
+    "description": "Fallback status line shown when the cloud AI server couldn't be reached and the provider gave no specific message.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.genericError": "Something went wrong",
   "@ai.cloud.genericError": {
-    "description": "Fallback status line shown when a cloud AI connection test failed for an unspecified reason."
+    "description": "Fallback status line shown when a cloud AI connection test failed for an unspecified reason.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.testConnection": "Test connection",
   "@ai.cloud.testConnection": {
-    "description": "Button that runs the cloud AI connection test for the first time (idle state). Tight mini button."
+    "description": "Button that runs the cloud AI connection test for the first time (idle state). Tight mini button.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.cloud.unknownError": "Unknown error",
   "@ai.cloud.unknownError": {
-    "description": "Fallback message stored as the connection error when a thrown value carried no message."
+    "description": "Fallback message stored as the connection error when a thrown value carried no message.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
 
   "ai.local.memoryWarningAria": "Memory warning",
   "@ai.local.memoryWarningAria": {
-    "description": "aria-label for the warning icon shown next to the local AI context-size Apply button when the projected memory use is high."
+    "description": "aria-label for the warning icon shown next to the local AI context-size Apply button when the projected memory use is high.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.warningDanger": "This exceeds your available memory. Your system may slow down significantly.",
   "@ai.local.warningDanger": {
-    "description": "Tooltip on the local AI memory warning icon at the danger level (projected use exceeds available RAM)."
+    "description": "Tooltip on the local AI memory warning icon at the danger level (projected use exceeds available RAM).",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.warningCaution": "This uses most of your available memory. Other apps may slow down.",
   "@ai.local.warningCaution": {
-    "description": "Tooltip on the local AI memory warning icon at the caution level (projected use is most of available RAM)."
+    "description": "Tooltip on the local AI memory warning icon at the caution level (projected use is most of available RAM).",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.statusRestarting": "Restarting...",
   "@ai.local.statusRestarting": {
-    "description": "Local AI server status value while the server is being restarted to apply a new context size."
+    "description": "Local AI server status value while the server is being restarted to apply a new context size.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.statusStarting": "Starting...",
   "@ai.local.statusStarting": {
-    "description": "Local AI server status value while the server is starting up."
+    "description": "Local AI server status value while the server is starting up.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.statusRunning": "Running",
   "@ai.local.statusRunning": {
-    "description": "Local AI server status value when the server is running."
+    "description": "Local AI server status value when the server is running.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.statusStopped": "Stopped",
   "@ai.local.statusStopped": {
-    "description": "Local AI server status value when the server is stopped."
+    "description": "Local AI server status value when the server is stopped.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.installStepExtracting": "Step 1 of 4: Extracting runtime...",
   "@ai.local.installStepExtracting": {
-    "description": "Local AI install progress label, step 1: unpacking the AI runtime. Keep the Step N of 4 counter shape."
+    "description": "Local AI install progress label, step 1: unpacking the AI runtime. Keep the Step N of 4 counter shape.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.installStepDownloading": "Step 2 of 4: Downloading model...",
   "@ai.local.installStepDownloading": {
-    "description": "Local AI install progress label, step 2: downloading the model file. Keep the Step N of 4 counter shape."
+    "description": "Local AI install progress label, step 2: downloading the model file. Keep the Step N of 4 counter shape.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.installStepVerifying": "Step 3 of 4: Verifying download...",
   "@ai.local.installStepVerifying": {
-    "description": "Local AI install progress label, step 3: verifying the downloaded model. Keep the Step N of 4 counter shape."
+    "description": "Local AI install progress label, step 3: verifying the downloaded model. Keep the Step N of 4 counter shape.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.installStepStarting": "Step 4 of 4: Starting server...",
   "@ai.local.installStepStarting": {
-    "description": "Local AI install progress label, step 4: starting the AI server. Keep the Step N of 4 counter shape."
+    "description": "Local AI install progress label, step 4: starting the AI server. Keep the Step N of 4 counter shape.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.startingDownload": "Starting download...",
   "@ai.local.startingDownload": {
-    "description": "Local AI download progress text shown before the total size is known."
+    "description": "Local AI download progress text shown before the total size is known.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.etaSeconds": "~{value} sec left",
   "@ai.local.etaSeconds": {
     "description": "Estimated time remaining for the local AI download, in seconds (used under a minute). The leading ~ means approximately.",
     "placeholders": {
       "value": "the number of seconds remaining (a whole number)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.etaMinutes": "~{value} min left",
   "@ai.local.etaMinutes": {
     "description": "Estimated time remaining for the local AI download, in minutes (used under an hour). The leading ~ means approximately.",
     "placeholders": {
       "value": "the number of minutes remaining (a whole number)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.etaHours": "~{value} hr left",
   "@ai.local.etaHours": {
     "description": "Estimated time remaining for the local AI download, in hours (used at an hour or more). The leading ~ means approximately.",
     "placeholders": {
       "value": "the number of hours remaining (a whole number)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.modelLabel": "Model",
   "@ai.local.modelLabel": {
-    "description": "Row label in the local AI status card naming the installed model."
+    "description": "Row label in the local AI status card naming the installed model.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.serverLabel": "Server",
   "@ai.local.serverLabel": {
-    "description": "Row label in the local AI status card naming the local AI server."
+    "description": "Row label in the local AI status card naming the local AI server.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.modelUnknown": "Unknown",
   "@ai.local.modelUnknown": {
-    "description": "Fallback shown for the installed local AI model name when the backend didn't report one."
+    "description": "Fallback shown for the installed local AI model name when the backend didn't report one.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "description": "Fallback shown for the installed local AI model size when the backend didn't report one. A single question mark inside parentheses."
+    "description": "Fallback shown for the installed local AI model size when the backend didn't report one. A single question mark inside parentheses.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.notInstalled": "Not installed. The local model ({modelName}, {modelSize}) runs entirely on your device for maximum privacy. Requires Apple Silicon.",
   "@ai.local.notInstalled": {
@@ -323,97 +471,137 @@
     "placeholders": {
       "modelName": "the default local model name (for example Ministral 3B; a literal identifier)",
       "modelSize": "the default model's download size, already formatted (for example 2.0 GB)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.applyContextSize": "Apply",
   "@ai.local.applyContextSize": {
-    "description": "Button that applies a changed local AI context-window size by restarting the server. Tight mini button."
+    "description": "Button that applies a changed local AI context-window size by restarting the server. Tight mini button.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.ramGaugeAria": "Memory usage gauge",
   "@ai.local.ramGaugeAria": {
-    "description": "aria-label for the horizontal bar visualizing how local AI memory use fits within total system RAM."
+    "description": "aria-label for the horizontal bar visualizing how local AI memory use fits within total system RAM.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.ramLegendSystem": "System {size}",
   "@ai.local.ramLegendSystem": {
     "description": "RAM gauge legend item for memory used by the operating system.",
     "placeholders": {
       "size": "the amount of memory, already formatted (for example 4.0 GB)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.ramLegendApps": "Apps {size}",
   "@ai.local.ramLegendApps": {
     "description": "RAM gauge legend item for memory used by other running apps.",
     "placeholders": {
       "size": "the amount of memory, already formatted (for example 6.2 GB)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
   "@ai.local.ramLegendCmdrAi": {
     "description": "RAM gauge legend item for memory the local AI model will use. Cmdr is the app name; keep it.",
     "placeholders": {
       "size": "the projected AI memory amount, already formatted (for example ~2.4 GB)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.ramLegendProjected": "Projected",
   "@ai.local.ramLegendProjected": {
-    "description": "RAM gauge legend item for the additional memory a pending (not-yet-applied) context size would add."
+    "description": "RAM gauge legend item for the additional memory a pending (not-yet-applied) context size would add.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.ramLegendFreed": "Freed",
   "@ai.local.ramLegendFreed": {
-    "description": "RAM gauge legend item for memory that a pending (smaller) context size would free up."
+    "description": "RAM gauge legend item for memory that a pending (smaller) context size would free up.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.ramLegendFree": "Free {size}",
   "@ai.local.ramLegendFree": {
     "description": "RAM gauge legend item for currently unused (free) system memory.",
     "placeholders": {
       "size": "the amount of free memory, already formatted (for example 3.1 GB)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.cancel": "Cancel",
   "@ai.local.cancel": {
-    "description": "Button that cancels the in-progress local AI model download/install."
+    "description": "Button that cancels the in-progress local AI model download/install.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.stopServer": "Stop server",
   "@ai.local.stopServer": {
-    "description": "Button that stops the running local AI server."
+    "description": "Button that stops the running local AI server.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.startServer": "Start server",
   "@ai.local.startServer": {
-    "description": "Button that starts the local AI server when a model is installed but the server is stopped."
+    "description": "Button that starts the local AI server when a model is installed but the server is stopped.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.deleteModel": "Delete model",
   "@ai.local.deleteModel": {
-    "description": "Button that deletes (uninstalls) the local AI model to free disk space."
+    "description": "Button that deletes (uninstalls) the local AI model to free disk space.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.downloadModel": "Download model",
   "@ai.local.downloadModel": {
-    "description": "Button that starts downloading the local AI model when none is installed."
+    "description": "Button that starts downloading the local AI model when none is installed.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.deleteDialogTitleDeleting": "Deleting model...",
   "@ai.local.deleteDialogTitleDeleting": {
-    "description": "Title of the delete-model confirmation dialog while the deletion is in progress."
+    "description": "Title of the delete-model confirmation dialog while the deletion is in progress.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.deleteDialogTitle": "Delete AI model?",
   "@ai.local.deleteDialogTitle": {
-    "description": "Title of the confirmation dialog asking whether to delete the local AI model."
+    "description": "Title of the confirmation dialog asking whether to delete the local AI model.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.deletingStatus": "Stopping server and removing files...",
   "@ai.local.deletingStatus": {
-    "description": "Status line shown with a spinner in the delete-model dialog while the server stops and files are removed."
+    "description": "Status line shown with a spinner in the delete-model dialog while the server stops and files are removed.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.deleteConfirmMessage": "This frees up {modelSize} of disk space. You''ll need to re-download it to use local AI again.",
   "@ai.local.deleteConfirmMessage": {
     "description": "Body of the delete-model confirmation dialog, stating how much disk space is freed and that re-download is needed later.",
     "placeholders": {
       "modelSize": "the installed model's on-disk size, already formatted (for example 2.0 GB)"
-    }
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.deleteButtonDeleting": "Deleting...",
   "@ai.local.deleteButtonDeleting": {
-    "description": "Label of the confirm-delete button while deletion is in progress."
+    "description": "Label of the confirm-delete button while deletion is in progress.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
   "ai.local.deleteButton": "Delete",
   "@ai.local.deleteButton": {
-    "description": "Label of the confirm-delete button in the delete-model dialog (the destructive action)."
+    "description": "Label of the confirm-delete button in the delete-model dialog (the destructive action).",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   }
 }

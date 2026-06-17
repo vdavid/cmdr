@@ -71,12 +71,14 @@
     "description": "Button on the folder error screen that opens the macOS System Settings app (so the user can grant access). {systemSettings} is the OS name for that app.",
     "placeholders": {
       "systemSettings": "the localized OS name of the System Settings app (do not translate; comes from the OS)"
-    }
+    },
+    "screenshot": "error-message-example.png"
   },
 
   "fileExplorer.errorPane.technicalDetails": "Technical details",
   "@fileExplorer.errorPane.technicalDetails": {
-    "description": "Label for a collapsible disclosure on the folder error screen that reveals raw diagnostic info."
+    "description": "Label for a collapsible disclosure on the folder error screen that reveals raw diagnostic info.",
+    "screenshot": "error-message-example.png"
   },
 
   "fileExplorer.errorPane.aMomentAgo": "a moment ago",
@@ -276,23 +278,33 @@
   },
   "fileExplorer.network.connecting": "Connecting...",
   "@fileExplorer.network.connecting": {
-    "description": "In-progress label shown on the connect button (and in status text) while a network connection is being established."
+    "description": "In-progress label shown on the connect button (and in status text) while a network connection is being established.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.back": "Back",
   "@fileExplorer.network.back": {
-    "description": "Button that returns to the previous network screen (for example from a host''s shares back to the host list)."
+    "description": "Button that returns to the previous network screen (for example from a host''s shares back to the host list).",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.retry": "Retry",
   "@fileExplorer.network.retry": {
-    "description": "Button that re-attempts a failed network operation, such as connecting to a host."
+    "description": "Button that re-attempts a failed network operation, such as connecting to a host.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.signIn": "Sign in",
   "@fileExplorer.network.signIn": {
-    "description": "Button that opens the credentials form to sign in to a network host or share."
+    "description": "Button that opens the credentials form to sign in to a network host or share.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.authFailed": "Authentication failed",
   "@fileExplorer.network.authFailed": {
-    "description": "Short fallback message shown in the network sign-in form when the server rejected the connection and gave no more specific reason."
+    "description": "Short fallback message shown in the network sign-in form when the server rejected the connection and gave no more specific reason.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
 
   "fileExplorer.network.connectDialog.title": "Connect to server",
@@ -407,7 +419,9 @@
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "Waiting for network...",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
-    "description": "Status cell shown when a host is known but the network name has not resolved yet."
+    "description": "Status cell shown when a host is known but the network name has not resolved yet.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.notChecked": "Not checked",
   "@fileExplorer.network.browser.status.notChecked": {
@@ -419,14 +433,18 @@
     "description": "Status cell when stored credentials exist for a host that needs login. The key emoji prefix is part of the status. {infoIcon} is an optional trailing info marker (an emoji or empty).",
     "placeholders": {
       "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.loginFailed": "⚠️ Login failed{infoIcon}",
   "@fileExplorer.network.browser.status.loginFailed": {
     "description": "Status cell when a login attempt to the host failed. The warning emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
     "placeholders": {
       "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.loginNeeded": "🔒 Login needed{infoIcon}",
   "@fileExplorer.network.browser.status.loginNeeded": {
@@ -441,7 +459,9 @@
     "description": "Status cell when contacting the host timed out. The timer emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
     "placeholders": {
       "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.unreachable": "❌ Unreachable{infoIcon}",
   "@fileExplorer.network.browser.status.unreachable": {
@@ -449,22 +469,29 @@
     "placeholders": {
       "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
     },
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.error": "⚠️ Error{infoIcon}",
   "@fileExplorer.network.browser.status.error": {
     "description": "Generic fallback status cell for an unclassified host problem. The warning emoji prefix is part of the status. {infoIcon} is an optional trailing info marker. Avoid the literal word for \"error\" in languages with a friendlier alternative if your style guide prefers it.",
     "placeholders": {
       "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.loggedInOk": "✓ Logged in",
   "@fileExplorer.network.browser.status.loggedInOk": {
-    "description": "Status cell when connected to a host using stored credentials. The check mark prefix is part of the status."
+    "description": "Status cell when connected to a host using stored credentials. The check mark prefix is part of the status.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.loggedInOkStale": "✓ Logged in 🔄",
   "@fileExplorer.network.browser.status.loggedInOkStale": {
-    "description": "Same as the logged-in status, but with a refresh emoji showing the share data is stale and being refreshed."
+    "description": "Same as the logged-in status, but with a refresh emoji showing the share data is stale and being refreshed.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.guest": "✓ Guest",
   "@fileExplorer.network.browser.status.guest": {
@@ -473,15 +500,21 @@
   },
   "fileExplorer.network.browser.status.guestStale": "✓ Guest 🔄",
   "@fileExplorer.network.browser.status.guestStale": {
-    "description": "Same as the guest status, but with a refresh emoji showing the share data is stale and being refreshed."
+    "description": "Same as the guest status, but with a refresh emoji showing the share data is stale and being refreshed.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.connected": "✓ Connected",
   "@fileExplorer.network.browser.status.connected": {
-    "description": "Status cell when connected to a host (generic, neither explicitly credentialed nor guest). The check mark prefix is part of the status."
+    "description": "Status cell when connected to a host (generic, neither explicitly credentialed nor guest). The check mark prefix is part of the status.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.connectedStale": "✓ Connected 🔄",
   "@fileExplorer.network.browser.status.connectedStale": {
-    "description": "Same as the connected status, but with a refresh emoji showing the share data is stale and being refreshed."
+    "description": "Same as the connected status, but with a refresh emoji showing the share data is stale and being refreshed.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
 
   "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address...",
@@ -491,7 +524,9 @@
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Waiting for network name resolution",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
-    "description": "Hover tooltip on a host row explaining the app is waiting for the network to resolve the host name."
+    "description": "Hover tooltip on a host row explaining the app is waiting for the network to resolve the host name.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Double-click to connect and view shares",
   "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
@@ -500,11 +535,15 @@
   },
   "fileExplorer.network.browser.tooltip.credsStored": "Credentials stored. Double-click to connect.",
   "@fileExplorer.network.browser.tooltip.credsStored": {
-    "description": "Hover tooltip on a host row that needs login but already has stored credentials."
+    "description": "Hover tooltip on a host row that needs login but already has stored credentials.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.tooltip.credsRejected": "Stored credentials were rejected. Please log in with updated credentials.",
   "@fileExplorer.network.browser.tooltip.credsRejected": {
-    "description": "Hover tooltip on a host row whose stored credentials the server rejected, asking the user to update them."
+    "description": "Hover tooltip on a host row whose stored credentials the server rejected, asking the user to update them.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.tooltip.requiresLogin": "This host requires login. Double-click to enter credentials.",
   "@fileExplorer.network.browser.tooltip.requiresLogin": {
@@ -513,76 +552,100 @@
   },
   "fileExplorer.network.browser.tooltip.authFailed": "Authentication failed. Check your credentials and try again.",
   "@fileExplorer.network.browser.tooltip.authFailed": {
-    "description": "Hover tooltip on a host row whose authentication failed, asking the user to recheck credentials."
+    "description": "Hover tooltip on a host row whose authentication failed, asking the user to recheck credentials.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.tooltip.errorWithType": "Error: {reason}",
   "@fileExplorer.network.browser.tooltip.errorWithType": {
     "description": "Fallback hover tooltip on a host row for an unclassified problem, showing the raw technical error type. {reason} is a short error code. Used only when no friendlier message is available.",
     "placeholders": {
       "reason": "a short technical error type/code"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
 
   "fileExplorer.network.browser.cannotRemoveDiscovered": "Can''t remove discovered hosts",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
-    "description": "Warning toast when the user tries to remove a host that was auto-discovered (only manually-added hosts can be removed)."
+    "description": "Warning toast when the user tries to remove a host that was auto-discovered (only manually-added hosts can be removed).",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.removeHostConfirm": "Remove {hostName} from the server list?",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "description": "Confirmation dialog message before removing a manually-added host from the saved server list.",
     "placeholders": {
       "hostName": "the display name of the host being removed"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.removeHostConfirmButton": "Remove",
   "@fileExplorer.network.browser.removeHostConfirmButton": {
-    "description": "Confirm button in the remove-host dialog."
+    "description": "Confirm button in the remove-host dialog.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.hostRemoved": "Removed {hostName}",
   "@fileExplorer.network.browser.hostRemoved": {
     "description": "Success toast after removing a host from the saved server list.",
     "placeholders": {
       "hostName": "the display name of the host that was removed"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.hostRemoveFailed": "Couldn''t remove {hostName}",
   "@fileExplorer.network.browser.hostRemoveFailed": {
     "description": "Error toast when removing a host from the saved server list did not work.",
     "placeholders": {
       "hostName": "the display name of the host that could not be removed"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.forgotPassword": "Forgot saved password for {hostName}",
   "@fileExplorer.network.forgotPassword": {
     "description": "Success toast after deleting a host''s saved password from the Keychain. \"Keychain\" is the macOS credential store.",
     "placeholders": {
       "hostName": "the display name of the host whose password was removed"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.deletePasswordFailed": "Couldn''t delete saved password",
   "@fileExplorer.network.deletePasswordFailed": {
-    "description": "Error toast when deleting a host''s saved password from the Keychain did not work."
+    "description": "Error toast when deleting a host''s saved password from the Keychain did not work.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.disconnected": "Disconnected from {hostName}",
   "@fileExplorer.network.browser.disconnected": {
     "description": "Success toast after disconnecting from a network host (its mounted shares were unmounted).",
     "placeholders": {
       "hostName": "the display name of the host that was disconnected"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.noMountedShares": "No mounted shares from {hostName}",
   "@fileExplorer.network.browser.noMountedShares": {
     "description": "Info toast when a disconnect was requested but the host had no mounted shares to unmount.",
     "placeholders": {
       "hostName": "the display name of the host"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.disconnectFailed": "Couldn''t disconnect: {message}",
   "@fileExplorer.network.browser.disconnectFailed": {
     "description": "Error toast when disconnecting from a host did not work. {message} is the underlying reason text.",
     "placeholders": {
       "message": "the underlying failure reason"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
 
   "fileExplorer.network.login.title": "Sign in to \"{target}\"",
@@ -590,48 +653,70 @@
     "description": "Title of the network sign-in card. {target} is the host name, or host/share path, in quotes already.",
     "placeholders": {
       "target": "what the user is signing in to: either the host name, or host name slash share name"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.login.guestNowAuth": "You connected as guest before. You can now sign in for more access.",
   "@fileExplorer.network.login.guestNowAuth": {
-    "description": "Info note on the sign-in card shown when the user previously connected as a guest but can now authenticate for greater access."
+    "description": "Info note on the sign-in card shown when the user previously connected as a guest but can now authenticate for greater access.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.login.connectionModeLegend": "Connection mode",
   "@fileExplorer.network.login.connectionModeLegend": {
-    "description": "Screen-reader-only legend for the radio group choosing how to connect (guest vs credentials)."
+    "description": "Screen-reader-only legend for the radio group choosing how to connect (guest vs credentials).",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.login.connectAsGuest": "Connect as guest",
   "@fileExplorer.network.login.connectAsGuest": {
-    "description": "Radio option to connect to the share without credentials (guest access)."
+    "description": "Radio option to connect to the share without credentials (guest access).",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.login.signInWithCredentials": "Sign in with credentials",
   "@fileExplorer.network.login.signInWithCredentials": {
-    "description": "Radio option to connect to the share using a username and password."
+    "description": "Radio option to connect to the share using a username and password.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.login.username": "Username",
   "@fileExplorer.network.login.username": {
-    "description": "Field label for the username in the network sign-in form."
+    "description": "Field label for the username in the network sign-in form.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.login.usernamePlaceholderDefault": "Example: barry",
   "@fileExplorer.network.login.usernamePlaceholderDefault": {
-    "description": "Default placeholder for the username field when the server gives no hint. \"barry\" is a sample name; swap it for a typical sample name in the target language if appropriate."
+    "description": "Default placeholder for the username field when the server gives no hint. \"barry\" is a sample name; swap it for a typical sample name in the target language if appropriate.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.login.password": "Password",
   "@fileExplorer.network.login.password": {
-    "description": "Field label for the password in the network sign-in form."
+    "description": "Field label for the password in the network sign-in form.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.login.passwordPlaceholder": "Enter password",
   "@fileExplorer.network.login.passwordPlaceholder": {
-    "description": "Placeholder for the password field in the network sign-in form."
+    "description": "Placeholder for the password field in the network sign-in form.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.login.rememberInKeychain": "Remember in Keychain",
   "@fileExplorer.network.login.rememberInKeychain": {
-    "description": "Checkbox label to save the entered password in the macOS Keychain. \"Keychain\" is the macOS credential store; keep that name."
+    "description": "Checkbox label to save the entered password in the macOS Keychain. \"Keychain\" is the macOS credential store; keep that name.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
 
   "fileExplorer.network.share.credentialsStoredLocally": "Credentials stored locally (no system keyring detected)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
-    "description": "Info toast shown when no OS keyring is available, so credentials are kept in a local store instead."
+    "description": "Info toast shown when no OS keyring is available, so credentials are kept in a local store instead.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.notFound": "Share ''{shareName}'' not found on {hostName}",
   "@fileExplorer.network.share.notFound": {
@@ -639,56 +724,78 @@
     "placeholders": {
       "shareName": "the name of the share that was not found",
       "hostName": "the display name of the host"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.invalidCredentials": "Invalid username or password. Please try again.",
   "@fileExplorer.network.share.invalidCredentials": {
-    "description": "Sign-in error shown when the server rejected the username/password."
+    "description": "Sign-in error shown when the server rejected the username/password.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.authRequired": "Authentication required. Please enter your credentials.",
   "@fileExplorer.network.share.authRequired": {
-    "description": "Sign-in error shown when the share needs credentials and none were provided."
+    "description": "Sign-in error shown when the share needs credentials and none were provided.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.connectionFailed": "Connection failed: {reason}",
   "@fileExplorer.network.share.connectionFailed": {
     "description": "Fallback sign-in error for an unclassified failure. {reason} is a short technical error code.",
     "placeholders": {
       "reason": "a short technical error type/code from the connection attempt"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.connecting": "Connecting to {hostName}...",
   "@fileExplorer.network.share.connecting": {
     "description": "Loading status while opening a host''s share list.",
     "placeholders": {
       "hostName": "the display name of the host being connected to"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.connectFailedTitle": "Couldn''t connect to {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
     "description": "Error title shown when opening a host''s share list failed.",
     "placeholders": {
       "hostName": "the display name of the host"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.noSharesTitle": "No shares available",
   "@fileExplorer.network.share.noSharesTitle": {
-    "description": "Empty-state title when a host exposes no accessible shares."
+    "description": "Empty-state title when a host exposes no accessible shares.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.noSharesMessage": "This host has no accessible shares, or authentication is needed.",
   "@fileExplorer.network.share.noSharesMessage": {
-    "description": "Empty-state body when a host exposes no accessible shares, hinting that signing in might help."
+    "description": "Empty-state body when a host exposes no accessible shares, hinting that signing in might help.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.backArrow": "← Back",
   "@fileExplorer.network.share.backArrow": {
-    "description": "Compact back button in the share-list header that returns to the host list. The arrow is decorative; keep it leading the word."
+    "description": "Compact back button in the share-list header that returns to the host list. The arrow is decorative; keep it leading the word.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.forgetPasswordTooltip": "Remove saved password from Keychain",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
-    "description": "Hover tooltip for the button that deletes this host''s saved password. \"Keychain\" is the macOS credential store."
+    "description": "Hover tooltip for the button that deletes this host''s saved password. \"Keychain\" is the macOS credential store.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.forgetPassword": "🔑 Forget saved password",
   "@fileExplorer.network.share.forgetPassword": {
-    "description": "Button in the share-list header that deletes this host''s saved password from the Keychain. The key emoji prefix is part of the label."
+    "description": "Button in the share-list header that deletes this host''s saved password from the Keychain. The key emoji prefix is part of the label.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} share} other {{countText} shares}}",
   "@fileExplorer.network.share.shareCount": {
@@ -696,16 +803,22 @@
     "placeholders": {
       "countText": "the number of shares, already formatted for display",
       "count": "the same number of shares (drives the singular/plural form)"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
 
   "fileExplorer.network.reconnect.once": "once",
   "@fileExplorer.network.reconnect.once": {
-    "description": "Word for one reconnection attempt, used inside the reconnect-progress sentences (e.g. \"Retried once\"). Must read naturally where the sentences embed it."
+    "description": "Word for one reconnection attempt, used inside the reconnect-progress sentences (e.g. \"Retried once\"). Must read naturally where the sentences embed it.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.reconnect.twice": "twice",
   "@fileExplorer.network.reconnect.twice": {
-    "description": "Word for two reconnection attempts, used inside the reconnect-progress sentences (e.g. \"Retried twice\"). Must read naturally where the sentences embed it."
+    "description": "Word for two reconnection attempts, used inside the reconnect-progress sentences (e.g. \"Retried twice\"). Must read naturally where the sentences embed it.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.reconnect.times": "{count, plural, other {{countText} times}}",
   "@fileExplorer.network.reconnect.times": {
@@ -713,14 +826,18 @@
     "placeholders": {
       "countText": "the number of attempts, already formatted for display",
       "count": "the same number of attempts (drives the plural form)"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.reconnect.finalAttempt": "Retried {retried}, this is the final attempt. Connection drops if it fails.",
   "@fileExplorer.network.reconnect.finalAttempt": {
     "description": "Progress message during automatic SMB reconnection, shown on the last attempt. {retried} is a count phrase like \"once\", \"twice\", or \"3 times\".",
     "placeholders": {
       "retried": "how many times it has retried so far, as a phrase (once / twice / N times)"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.reconnect.willTryMore": "Retried {retried}, will try it {remaining} more after this.",
   "@fileExplorer.network.reconnect.willTryMore": {
@@ -728,40 +845,58 @@
     "placeholders": {
       "retried": "how many times it has retried so far, as a phrase (once / twice / N times)",
       "remaining": "how many attempts remain after the current one, as a phrase (once / twice / N times)"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
 
   "fileExplorer.mtp.connectTimedOut": "Connection timed out. The device may be slow or unresponsive.",
   "@fileExplorer.mtp.connectTimedOut": {
-    "description": "Message shown when connecting to a phone or camera (an MTP device) timed out. MTP is the protocol used to browse phones/cameras over USB."
+    "description": "Message shown when connecting to a phone or camera (an MTP device) timed out. MTP is the protocol used to browse phones/cameras over USB.",
+    "screenshot": "mtp-browse.png",
+    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
   "fileExplorer.mtp.exclusiveAccess": "Another app is using this device. Run the ptpcamerad workaround.",
   "@fileExplorer.mtp.exclusiveAccess": {
-    "description": "Message when another app holds the phone/camera so Cmdr can''t connect. \"ptpcamerad\" is a macOS process name; keep it as-is (it points to a known fix)."
+    "description": "Message when another app holds the phone/camera so Cmdr can''t connect. \"ptpcamerad\" is a macOS process name; keep it as-is (it points to a known fix).",
+    "screenshot": "mtp-browse.png",
+    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
   "fileExplorer.mtp.deviceNotFound": "Device not found. It may have been unplugged.",
   "@fileExplorer.mtp.deviceNotFound": {
-    "description": "Message when the connected phone/camera can no longer be found (likely unplugged)."
+    "description": "Message when the connected phone/camera can no longer be found (likely unplugged).",
+    "screenshot": "mtp-browse.png",
+    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
   "fileExplorer.mtp.disconnected": "Device was disconnected.",
   "@fileExplorer.mtp.disconnected": {
-    "description": "Message when the phone/camera was disconnected during use."
+    "description": "Message when the phone/camera was disconnected during use.",
+    "screenshot": "mtp-browse.png",
+    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
   "fileExplorer.mtp.deviceBusy": "Device is busy. Please try again.",
   "@fileExplorer.mtp.deviceBusy": {
-    "description": "Message when the phone/camera is busy and the connection should be retried."
+    "description": "Message when the phone/camera is busy and the connection should be retried.",
+    "screenshot": "mtp-browse.png",
+    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
   "fileExplorer.mtp.noStorage": "Device has no accessible storage",
   "@fileExplorer.mtp.noStorage": {
-    "description": "Message when a phone/camera connected but exposes no storage Cmdr can browse."
+    "description": "Message when a phone/camera connected but exposes no storage Cmdr can browse.",
+    "screenshot": "mtp-browse.png",
+    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
   "fileExplorer.mtp.connecting": "Connecting to device...",
   "@fileExplorer.mtp.connecting": {
-    "description": "Loading text shown while Cmdr connects to a phone or camera (an MTP device)."
+    "description": "Loading text shown while Cmdr connects to a phone or camera (an MTP device).",
+    "screenshot": "mtp-browse.png",
+    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
   "fileExplorer.mtp.tryAgain": "Try again",
   "@fileExplorer.mtp.tryAgain": {
-    "description": "Button to retry connecting to the phone/camera after a connection problem."
+    "description": "Button to retry connecting to the phone/camera after a connection problem.",
+    "screenshot": "mtp-browse.png",
+    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
 
   "fileExplorer.networkMount.mounting": "Mounting {target}...",
@@ -769,23 +904,33 @@
     "description": "Loading text while a network share is being mounted. {target} is the host or share name, or the word \"share\" when the name is unknown.",
     "placeholders": {
       "target": "the host/share name being mounted, or a generic word for a share"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
   },
   "fileExplorer.networkMount.shareFallback": "share",
   "@fileExplorer.networkMount.shareFallback": {
-    "description": "Generic word used in the mounting text when the share''s name is not known yet (e.g. \"Mounting share...\")."
+    "description": "Generic word used in the mounting text when the share''s name is not known yet (e.g. \"Mounting share...\").",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
   },
   "fileExplorer.networkMount.mountFailedTitle": "Couldn''t mount share",
   "@fileExplorer.networkMount.mountFailedTitle": {
-    "description": "Error title shown when mounting a network share failed."
+    "description": "Error title shown when mounting a network share failed.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
   },
   "fileExplorer.networkMount.tryAgain": "Try again",
   "@fileExplorer.networkMount.tryAgain": {
-    "description": "Button to retry mounting a network share after a failure."
+    "description": "Button to retry mounting a network share after a failure.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
   },
   "fileExplorer.networkMount.back": "Back",
   "@fileExplorer.networkMount.back": {
-    "description": "Button that returns from the mount-error screen to the share list."
+    "description": "Button that returns from the mount-error screen to the share list.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
   },
 
   "fileExplorer.smbReauth.savedPasswordFailed": "Your saved password didn’t work. Sign in to reconnect.",
@@ -802,53 +947,75 @@
     "description": "Total reconnect-cycle duration phrased in seconds, embedded in the \"Will keep trying for a total of …\" sentence.",
     "placeholders": {
       "seconds": "the number of seconds"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.totalMinutes": "{minutes} minutes",
   "@fileExplorer.smbReconnect.totalMinutes": {
     "description": "Total reconnect-cycle duration phrased in minutes, embedded in the \"Will keep trying for a total of …\" sentence.",
     "placeholders": {
       "minutes": "the number of minutes"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.title": "Reconnecting to server…",
   "@fileExplorer.smbReconnect.title": {
-    "description": "Heading of the screen shown while Cmdr automatically tries to reconnect to a dropped network server. Ends with an ellipsis character (…)."
+    "description": "Heading of the screen shown while Cmdr automatically tries to reconnect to a dropped network server. Ends with an ellipsis character (…).",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.progressBarAriaLabel": "Time until next reconnect attempt",
   "@fileExplorer.smbReconnect.progressBarAriaLabel": {
-    "description": "Accessibility label for the countdown progress bar showing how long until the next reconnect attempt."
+    "description": "Accessibility label for the countdown progress bar showing how long until the next reconnect attempt.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.willKeepTrying": "Will keep trying for a total of {duration}.",
   "@fileExplorer.smbReconnect.willKeepTrying": {
     "description": "Reassurance line telling the user how long the auto-reconnect will keep trying. {duration} is a phrase like \"60 seconds\" or \"2 minutes\".",
     "placeholders": {
       "duration": "the total duration phrase, e.g. 60 seconds or 2 minutes"
-    }
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.retryNowTooltip": "Try reconnecting immediately.",
   "@fileExplorer.smbReconnect.retryNowTooltip": {
-    "description": "Hover tooltip for the button that triggers a reconnect attempt right away instead of waiting."
+    "description": "Hover tooltip for the button that triggers a reconnect attempt right away instead of waiting.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.retryNow": "Retry now",
   "@fileExplorer.smbReconnect.retryNow": {
-    "description": "Button that triggers a reconnect attempt immediately."
+    "description": "Button that triggers a reconnect attempt immediately.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.cancelTooltip": "Stop trying for now. The connection stays available. Switch back to retry.",
   "@fileExplorer.smbReconnect.cancelTooltip": {
-    "description": "Hover tooltip for the button that pauses auto-reconnect while keeping the connection available to resume."
+    "description": "Hover tooltip for the button that pauses auto-reconnect while keeping the connection available to resume.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.cancel": "Cancel",
   "@fileExplorer.smbReconnect.cancel": {
-    "description": "Button that pauses the auto-reconnect attempts (the connection stays available)."
+    "description": "Button that pauses the auto-reconnect attempts (the connection stays available).",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.disconnectTooltip": "Stop trying and disconnect from the server.",
   "@fileExplorer.smbReconnect.disconnectTooltip": {
-    "description": "Hover tooltip for the button that stops reconnecting and drops the server connection."
+    "description": "Hover tooltip for the button that stops reconnecting and drops the server connection.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
   "fileExplorer.smbReconnect.disconnect": "Disconnect",
   "@fileExplorer.smbReconnect.disconnect": {
-    "description": "Button that stops reconnecting and disconnects from the server."
+    "description": "Button that stops reconnecting and disconnects from the server.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "The SMB reconnect banner shown when a mounted server drops: a \"Reconnecting…\" title, a countdown, and Retry/Cancel controls. This shows the related \"Connect to server\" surface; your string appears in the same network-connection context."
   },
 
   "fileExplorer.unreachable.title": "Couldn''t reach {path}",
