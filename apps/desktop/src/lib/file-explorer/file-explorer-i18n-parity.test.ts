@@ -102,9 +102,9 @@ describe('en-US parity: interpolating / plural / select fileExplorer keys (golde
     )
   })
 
-  it('navigation saved-password dialog body keeps its em dash and apostrophes', () => {
+  it('navigation saved-password dialog body keeps its apostrophes', () => {
     expect(tString('fileExplorer.navigation.useSavedPasswordMessage', { displayName: 'mynas' })).toBe(
-      'Cmdr can reuse the password macOS already saved for "mynas". You\'ll see a system prompt asking to allow Keychain access — that\'s expected; click Allow.',
+      'Cmdr can reuse the password macOS already saved for "mynas". You\'ll see a system prompt asking to allow Keychain access. That\'s expected, so click Allow.',
     )
   })
 

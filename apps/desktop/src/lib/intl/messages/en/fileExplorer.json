@@ -1238,9 +1238,9 @@
     },
     "screenshot": "main-window.png"
   },
-  "fileExplorer.dirSize.updatingIndexLine": "Updating index — size may change.",
+  "fileExplorer.dirSize.updatingIndexLine": "Updating index, so size may change.",
   "@fileExplorer.dirSize.updatingIndexLine": {
-    "description": "Last line of a folder''s size tooltip while indexing, warning the figure may change. Uses an en dash (—) as a separator.",
+    "description": "Last line of a folder''s size tooltip while indexing, warning the figure may change.",
     "screenshot": "indexing-status.png"
   },
   "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
@@ -1645,9 +1645,9 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "description": "Persistent progress toast shown while connecting to a network share using the password macOS already saved."
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr can reuse the password macOS already saved for \"{displayName}\". You''ll see a system prompt asking to allow Keychain access — that''s expected; click Allow.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr can reuse the password macOS already saved for \"{displayName}\". You''ll see a system prompt asking to allow Keychain access. That''s expected, so click Allow.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "description": "Body of the confirmation dialog offering to reuse a network share''s saved macOS password. Warns that a macOS Keychain consent prompt (which Cmdr can''t customize) will follow. \"Keychain\" is the macOS credential store and \"Allow\" is the button on that system prompt; keep both. Uses an em-dash-style break (—).",
+    "description": "Body of the confirmation dialog offering to reuse a network share''s saved macOS password. Warns that a macOS Keychain consent prompt (which Cmdr can''t customize) will follow. \"Keychain\" is the macOS credential store and \"Allow\" is the button on that system prompt; keep both.",
     "placeholders": {
       "displayName": "the display name of the network share whose saved password would be reused"
     }
@@ -1725,13 +1725,13 @@
   "@fileExplorer.navigation.spaceRetryingText": {
     "description": "Short inline text shown in place of a volume''s disk-space figure while a retry is in progress. Tight space; keep it short."
   },
-  "fileExplorer.navigation.spaceStillUnavailable": "Still unavailable — click to retry",
+  "fileExplorer.navigation.spaceStillUnavailable": "Still unavailable. Click to retry",
   "@fileExplorer.navigation.spaceStillUnavailable": {
-    "description": "Hover tooltip on a volume''s disk-space bar after a retry to fetch free space also failed, inviting another click to retry. Uses an em-dash-style break (—)."
+    "description": "Hover tooltip on a volume''s disk-space bar after a retry to fetch free space also failed, inviting another click to retry."
   },
-  "fileExplorer.navigation.spaceFetchFailed": "Couldn''t fetch disk space — click to retry",
+  "fileExplorer.navigation.spaceFetchFailed": "Couldn''t fetch disk space. Click to retry",
   "@fileExplorer.navigation.spaceFetchFailed": {
-    "description": "Hover tooltip on a volume''s disk-space bar when fetching free space failed (first time), inviting a click to retry. Uses an em-dash-style break (—)."
+    "description": "Hover tooltip on a volume''s disk-space bar when fetching free space failed (first time), inviting a click to retry."
   },
   "fileExplorer.navigation.spaceUnavailableText": "Unavailable",
   "@fileExplorer.navigation.spaceUnavailableText": {

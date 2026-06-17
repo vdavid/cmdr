@@ -59,7 +59,7 @@ describe('new-file and new-folder dialog chrome (en)', () => {
 
   it('resolves the new-folder timeout warning + AI suggestion chrome', () => {
     expect(tString('fileOperations.mkdir.timeoutMessage')).toBe(
-      "Couldn't confirm the folder was created. The volume may be slow — the folder may still have been created.",
+      "Couldn't confirm the folder was created. The volume may be slow, so the folder may still have been created.",
     )
     expect(tString('fileOperations.mkdir.timeoutRefresh')).toBe('Refresh listing')
     expect(tString('fileOperations.mkdir.timeoutDismiss')).toBe('Dismiss')
@@ -236,7 +236,7 @@ describe('transfer progress dialog chrome (en)', () => {
       'Cancel and delete any partial target files created',
     )
     expect(tString('fileOperations.transferProgress.smallerDisabledTooltip')).toBe(
-      "Can't compare — target folder size is unknown.",
+      "Can't compare: target folder size is unknown.",
     )
   })
 

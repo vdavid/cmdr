@@ -72,7 +72,7 @@ describe('ai area parity (en)', () => {
     expect(tString('ai.toast.startingTitle')).toBe('AI starting...')
     expect(tString('ai.toast.startingDescription')).toBe('Loading the model, this takes a few seconds')
     expect(tString('ai.toast.downloadCloseTooltip')).toBe(
-      'Close this notification — the download will continue in the background',
+      'Close this notification; the download will continue in the background',
     )
   })
 

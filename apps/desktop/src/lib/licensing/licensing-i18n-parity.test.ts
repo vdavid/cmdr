@@ -104,7 +104,7 @@ describe('License key dialog copy (en)', () => {
     expect(tString('licensing.dialog.enterTitle')).toBe('Enter license key')
     expect(tString('licensing.dialog.validityNotYetVerified')).toBe('Not yet verified')
     expect(tString('licensing.dialog.validityPerpetualUntil', { date: 'June 15, 2026' })).toBe(
-      'Perpetual — updates until June 15, 2026',
+      'Perpetual: updates until June 15, 2026',
     )
     expect(tString('licensing.dialog.validityValidUntil', { date: 'June 15, 2026' })).toBe('Valid until June 15, 2026')
     expect(tString('licensing.dialog.validityExpiredOn', { date: 'June 15, 2026' })).toBe('Expired on June 15, 2026')

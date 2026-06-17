@@ -12,7 +12,7 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 1398 / 2069 keys have a screenshot (68%):** 827 direct (40%) and 571 representative (28%). 671 remain
+**Total: 1398 / 2073 keys have a screenshot (67%):** 827 direct (40%) and 571 representative (28%). 675 remain
 uncoupled.
 
 | Area           | Direct | Representative | Uncoupled | Total | Any % |
@@ -38,7 +38,7 @@ uncoupled.
 | onboarding     |     77 |             32 |        16 |   125 |   87% |
 | queryUi        |     49 |              0 |       103 |   152 |   32% |
 | search         |      8 |              0 |         5 |    13 |   62% |
-| settings       |    261 |              0 |       101 |   362 |   72% |
+| settings       |    261 |              0 |       105 |   366 |   71% |
 | shortcuts      |     25 |             29 |         0 |    54 |  100% |
 | transfer       |      2 |              0 |         8 |    10 |   20% |
 | ui             |      7 |              0 |        12 |    19 |   37% |

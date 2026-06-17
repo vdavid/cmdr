@@ -72,7 +72,7 @@
     "screenshot": "settings-ai.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   },
-  "ai.toast.downloadCloseTooltip": "Close this notification — the download will continue in the background",
+  "ai.toast.downloadCloseTooltip": "Close this notification; the download will continue in the background",
   "@ai.toast.downloadCloseTooltip": {
     "description": "Tooltip on the × of the AI download toast, clarifying that hiding the toast does not stop the download.",
     "screenshot": "settings-ai.png",

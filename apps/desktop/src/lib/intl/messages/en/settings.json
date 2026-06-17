@@ -207,7 +207,7 @@
     "description": "Label for the text-size slider in Settings > Appearance > Zoom and density.",
     "screenshot": "settings-appearance-zoom.png"
   },
-  "settings.appearance.textSize.description": "Scales text and UI throughout the app. Compounds with the macOS Accessibility text size — 100% means \"exactly the system size\".",
+  "settings.appearance.textSize.description": "Scales text and UI throughout the app. Compounds with the macOS Accessibility text size, where 100% means \"exactly the system size\".",
   "@settings.appearance.textSize.description": {
     "description": "Help text for the text-size slider. Notes it multiplies with the macOS Accessibility text-size setting, so 100% equals the current system size. \"100%\" is a literal value; keep the percent sign.",
     "screenshot": "settings-appearance-zoom.png"
@@ -569,7 +569,7 @@
     "description": "Label for the toggle that runs searches automatically as you type. In Settings > Behavior > Search.",
     "screenshot": "settings-behavior-search.png"
   },
-  "settings.search.autoApply.description": "Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter — they cost money. When off, press Enter or click the run button to search.",
+  "settings.search.autoApply.description": "Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or click the run button to search.",
   "@settings.search.autoApply.description": {
     "description": "Help text for the auto-apply-searches toggle. \"regex\" = regular-expression search; keep the term or use the locale's standard equivalent. \"AI\" = artificial intelligence. \"Enter\" is the keyboard key name; use the locale's key name. \"1 second\" is a literal delay.",
     "screenshot": "settings-behavior-search.png"
@@ -1533,7 +1533,7 @@
   "@settings.ai.loading": {
     "description": "Shown while the AI section's state is loading. The trailing ellipsis signals an in-progress action; keep it."
   },
-  "settings.ai.tooltipOff": "AI features are turned off. Cmdr works fully without AI — suggestions and smart features are simply hidden.",
+  "settings.ai.tooltipOff": "AI features are turned off. Cmdr works fully without AI: suggestions and smart features are simply hidden.",
   "@settings.ai.tooltipOff": {
     "description": "Tooltip for the AI \"Off\" provider option. \"Cmdr\" is the product name; keep it. \"AI\" = artificial intelligence. Avoid implying AI is required."
   },
@@ -1541,7 +1541,7 @@
   "@settings.ai.tooltipCloud": {
     "description": "Tooltip for the AI \"Cloud AI\" provider option. \"API\" = application programming interface (keep it). All the bracketed and listed names (OpenAI, Anthropic, Claude, Google, Gemini, xAI, Grok, Groq, DeepSeek, OpenRouter, Ollama, LM Studio) are brand/product names; do NOT translate them. \"Cmdr\" is the product name; keep it. \"Bring your own ...\" means the user supplies their own key."
   },
-  "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy — nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple Silicon (M1+).",
+  "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy: nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple Silicon (M1+).",
   "@settings.ai.tooltipLocal": {
     "description": "Tooltip for the AI \"Local LLM\" provider option. \"~2 GB\" and \"~400 MB\" are approximate literal sizes (keep the unit symbols and tilde). \"Apple Silicon\" and \"M1\" are Apple product names; keep them. \"M1+\" means M1 or later. \"context size\" ties to the local context-window setting."
   },

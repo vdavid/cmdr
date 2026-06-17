@@ -199,7 +199,7 @@
     "screenshot": "new-folder-dialog.png"
   },
 
-  "fileOperations.mkdir.timeoutMessage": "Couldn''t confirm the folder was created. The volume may be slow — the folder may still have been created.",
+  "fileOperations.mkdir.timeoutMessage": "Couldn''t confirm the folder was created. The volume may be slow, so the folder may still have been created.",
   "@fileOperations.mkdir.timeoutMessage": {
     "description": "Warning in the new-folder dialog when the create command did not confirm in time (slow volume). Reassures the folder may still exist. Conversational, not alarming."
   },
@@ -617,7 +617,7 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.smallerDisabledTooltip": "Can''t compare — target folder size is unknown.",
+  "fileOperations.transferProgress.smallerDisabledTooltip": "Can''t compare: target folder size is unknown.",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
     "description": "Tooltip on the disabled 'Overwrite all smaller' button when the destination is a folder whose size is unknown, so a size comparison isn't possible. The dash is an en dash."
   },

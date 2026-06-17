@@ -18,8 +18,8 @@
  *
  * Run via `pnpm i18n:couple` (after `pnpm i18n:capture`), or directly with
  * `node scripts/couple-screenshots.js`. Pass `--check` to fail (exit 1) if any
- * coupling is missing/stale instead of writing — useful in CI once a full
- * capture exists.
+ * coupling is missing/stale instead of writing (useful in CI once a full
+ * capture exists).
  *
  * The `@key` metadata (including `screenshot` and `screenshotNote`) is stripped
  * by the runtime and by `gen-message-keys.js`, so this never changes rendered
@@ -85,7 +85,7 @@ export function couplingsFromReport(report) {
 /**
  * Message-key prefixes whose keys are assembled at runtime (a reason variable
  * spliced into the dotted path), so the static capture report can never name them
- * individually — the rendered surface records the RESOLVED key only if capture is
+ * individually: the rendered surface records the RESOLVED key only if capture is
  * active at resolution time. Uncoupled keys under one of these are bucketed as
  * "dynamic-only" in the coverage report rather than as a missed surface. Mirrors
  * `unusedKeyDynamicPrefixes` in `scripts/check/checks/desktop-message-keys-unused.go`
@@ -99,7 +99,7 @@ export const DYNAMIC_KEY_PREFIXES = ['errors.git.', 'errors.listing.', 'errors.p
  * Curated REPRESENTATIVE screenshot mappings, applied AFTER the precise
  * capture-based coupling. A representative coupling is honest-by-design: it says
  * "we have no exact screenshot of YOUR string, but here's a real screenshot of
- * the same panel/toast/dialog where it appears, in the same position" — so a
+ * the same panel/toast/dialog where it appears, in the same position", so a
  * translator loads ONE image for a whole family of strings instead of none.
  *
  * Each entry maps a key `prefix` to an already-captured `screenshot` plus a
@@ -111,8 +111,8 @@ export const DYNAMIC_KEY_PREFIXES = ['errors.git.', 'errors.listing.', 'errors.p
  * own). The first matching prefix in this ordered list wins, so list more
  * specific prefixes before broader ones.
  *
- * Honesty bar: only add a mapping where the layout/position genuinely matches —
- * the string really does render in that panel, in that spot. If no captured
+ * Honesty bar: only add a mapping where the layout/position genuinely matches,
+ * where the string really does render in that panel, in that spot. If no captured
  * surface honestly represents a cluster, leave it uncoupled (it shows in the
  * coverage report) rather than forcing a misleading image.
  * @type {Array<{ prefix: string; screenshot: string; note: string }>}
@@ -130,7 +130,7 @@ export const REPRESENTATIVE_SCREENSHOTS = [
       'Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion ' +
       'below it (plus an optional action button and a collapsed "Technical details"). This screenshot shows a DIFFERENT error, ' +
       'but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. ' +
-      'errors.provider.* names (Dropbox, Google Drive, OneDrive, etc.) are brand names — keep them as-is.',
+      'errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is.',
   },
   {
     // SMB / network connect + reconnect + the MTP connection states all live on
@@ -165,7 +165,7 @@ export const REPRESENTATIVE_SCREENSHOTS = [
     prefix: 'mtp.',
     screenshot: 'mtp-browse.png',
     note:
-      'MTP (phone/camera) device messaging — a connect/permission dialog or toast tied to an MTP device. This shows the MTP ' +
+      'MTP (phone/camera) device messaging: a connect/permission dialog or toast tied to an MTP device. This shows the MTP ' +
       'browse surface for context. Keep device/protocol names (MTP, PTP) as-is.',
   },
   {
@@ -231,7 +231,7 @@ export function representativeFor(key, mappings = REPRESENTATIVE_SCREENSHOTS) {
  * A representative coupling is added only for a key that is (a) still uncoupled
  * after the direct pass, (b) matches a representative `prefix`, and (c) whose
  * representative screenshot is one the capture run actually produced
- * (`capturedScreenshots`) — never point a key at an image that doesn't exist.
+ * (`capturedScreenshots`), never pointing a key at an image that doesn't exist.
  * @param {Map<string, string>} directKeyToScreenshot key → captured screenshot.
  * @param {Iterable<string>} allKeys every renderable catalog key.
  * @param {Set<string>} capturedScreenshots filenames present in the capture report.
@@ -328,14 +328,14 @@ export function buildCoverageReport(directKeys, representativeKeys, keysByArea) 
 
 /**
  * Renders a CoverageReport as Markdown for the tracked artifact. Kept text + small
- * so its diff stays readable. Pure (no filesystem, no Date — the caller stamps any
+ * so its diff stays readable. Pure (no filesystem, no Date: the caller stamps any
  * timestamp), so it's snapshot-testable.
  * @param {CoverageReport} report
  * @returns {string}
  */
 export function renderCoverageReport(report) {
   /** @param {number} n @param {number} d @returns {string} */
-  const pct = (n, d) => (d === 0 ? '—' : `${String(Math.round((n / d) * 100))}%`)
+  const pct = (n, d) => (d === 0 ? 'n/a' : `${String(Math.round((n / d) * 100))}%`)
   const anyCoverage = report.direct + report.representative
   const lines = [
     '# Screenshot coverage',
@@ -393,8 +393,8 @@ export function renderCoverageReport(report) {
 /**
  * Pure core: returns the catalog TEXT with `@key.screenshot` (and, for
  * representative couplings, `@key.screenshotNote`) set for every requested key,
- * edited LINE-SURGICALLY so every other byte — message values, other twin
- * fields, indentation, AND the blank lines that group the catalog — is preserved
+ * edited LINE-SURGICALLY so every other byte (message values, other twin
+ * fields, indentation, AND the blank lines that group the catalog) is preserved
  * exactly. (A `JSON.parse` → `JSON.stringify` round-trip would drop the
  * blank-line grouping; oxfmt doesn't restore it, so it would reflatten every
  * file on every run. The spec's gotcha: preserve oxfmt'd formatting, touch ONLY
@@ -475,7 +475,7 @@ export function coupleCatalog(rawText, keyToCoupling) {
  * non-null `value`, replaces an existing `"field": "…"` line if present, else
  * inserts the field as the LAST property (appending a comma to the previous last
  * line). With `value === null`, removes the field's line entirely (and its comma,
- * keeping the object's comma structure valid) — a no-op if the field is absent.
+ * keeping the object's comma structure valid); a no-op if the field is absent.
  * Returns the new text, or null if the twin block can't be located/parsed
  * (caller then skips, never corrupting the file).
  *
@@ -492,8 +492,8 @@ function setTwinField(text, metaKey, field, value) {
   const openIdx = text.indexOf(open)
   if (openIdx === -1) return null
   // Walk from the `{` tracking brace depth (skipping braces inside strings) to
-  // find this object's matching close brace — `placeholders` nests, so a naive
-  // "first }" is wrong.
+  // find this object's matching close brace (`placeholders` nests, so a naive
+  // "first }" is wrong).
   const braceStart = openIdx + open.length - 1 // index of the `{`
   let depth = 0
   let inStr = false
@@ -600,8 +600,8 @@ function main() {
   // Every renderable catalog key (for the representative pass + coverage).
   const keysByArea = keysByAreaFromCatalogs(messagesDir)
   const allKeys = [...keysByArea.values()].flat()
-  // Screenshots the capture run actually produced — a representative may only
-  // point at one of these (never at a missing image).
+  // Screenshots the capture run actually produced (a representative may only
+  // point at one of these, never at a missing image).
   const capturedScreenshots = new Set(Object.values(report).map((s) => s.screenshot))
 
   // Direct (captured) couplings, then representative stand-ins for the keys still
@@ -695,7 +695,7 @@ function main() {
     }
   }
 
-  // Coverage report (Decision 4: no silent gaps) — a tracked, text artifact that
+  // Coverage report (Decision 4: no silent gaps): a tracked, text artifact that
   // shows which areas have screenshots (direct vs representative) and which keys
   // remain uncoupled.
   const coverage = buildCoverageReport(directKeys, representativeKeys, keysByArea)

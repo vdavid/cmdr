@@ -244,9 +244,9 @@
     "description": "Validity value shown (in yellow) for a commercial license whose server check hasn't completed yet. Paired with the hint about verifying within a few days."
   },
 
-  "licensing.dialog.validityPerpetualUntil": "Perpetual — updates until {date}",
+  "licensing.dialog.validityPerpetualUntil": "Perpetual: updates until {date}",
   "@licensing.dialog.validityPerpetualUntil": {
-    "description": "Validity value for a perpetual license that includes updates until a given date. The em-style dash separates 'Perpetual' from the updates clause; keep a similar separator.",
+    "description": "Validity value for a perpetual license that includes updates until a given date. The colon separates 'Perpetual' from the updates clause; keep a similar separator.",
     "placeholders": {
       "date": "the updates-cutoff date, already formatted for the user's locale (e.g. June 15, 2026)"
     }

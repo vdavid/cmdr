@@ -59,7 +59,7 @@
 
   "viewer.binaryWarning.body": "This is the raw view of the file. You might want to view the actual <kind>{kind}</kind> instead. To do that, close this window and press <quickLookKey></quickLookKey> to open the quick view, or press <openKey></openKey> (or double-click the file) to open it in the associated app.",
   "@viewer.binaryWarning.body": {
-    "description": "Warning banner shown when the viewer is displaying the raw bytes of a non-text file (an image, PDF, archive, etc.), nudging the user to open it properly instead. <kind> wraps the file-type word ({kind}, e.g. \"image\", \"document\", \"ZIP\"). <quickLookKey> and <openKey> wrap keyboard-shortcut chips and have NO inner text — leave them empty, just keep both tags and their positions. \"quick view\" refers to the macOS Quick Look preview; \"the associated app\" is the default app for that file type.",
+    "description": "Warning banner shown when the viewer is displaying the raw bytes of a non-text file (an image, PDF, archive, etc.), nudging the user to open it properly instead. <kind> wraps the file-type word ({kind}, e.g. \"image\", \"document\", \"ZIP\"). <quickLookKey> and <openKey> wrap keyboard-shortcut chips and have NO inner text: leave them empty, keeping both tags and their positions. \"quick view\" refers to the macOS Quick Look preview; \"the associated app\" is the default app for that file type.",
     "placeholders": {
       "kind": "the file-type word, e.g. \"image\", \"document\", or an uppercased extension like \"ZIP\""
     }
