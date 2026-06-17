@@ -2,16 +2,16 @@
  * Tier-3 tests for `FileSystemWatchingSection.svelte`.
  *
  * Pins the contract:
- *   - Four sub-groups render: Drive indexing, Downloads notifications, Go to
- *     latest download, Low disk space.
- *   - When the FDA gate is closed (`fda_pending` is true), sub-groups 2 and 3
- *     grey out and one shared hint appears. Low disk space stays interactive
+ *   - Three card groups render: Drive indexing, Downloads (notifications +
+ *     go-to-latest hotkey), Low disk space.
+ *   - When the FDA gate is closed (`fda_pending` is true), the Downloads card
+ *     greys out and one shared hint appears. Low disk space stays interactive
  *     (statfs needs no TCC permission).
  *   - The downloads-notifications and low-disk-space ToggleGroups write
  *     through to the settings store.
  *   - The global-shortcut on/off toggle calls the backend IPC.
- *   - The Downloads notifications and Low disk space sub-groups carry stable
- *     anchor ids so deep-links can land on them.
+ *   - The Downloads and Low disk space cards carry stable anchor ids so
+ *     deep-links can land on them.
  *
  * The section calls a few backend IPCs (status snapshot, recheck gate, apply
  * shortcut, index status). All mocked so the tests can run without a Tauri
@@ -121,12 +121,11 @@ async function mountSection(searchQuery = ''): Promise<HTMLDivElement> {
 }
 
 describe('FileSystemWatchingSection', () => {
-  it('renders all four sub-groups when FDA is granted', async () => {
+  it('renders all three card groups when FDA is granted', async () => {
     const target = await mountSection()
     const labels = Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
-    expect(labels).toEqual(
-      expect.arrayContaining(['Drive indexing', 'Downloads notifications', 'Go to latest download', 'Low disk space']),
-    )
+    // Downloads notifications and go-to-latest share one "Downloads" card.
+    expect(labels).toEqual(expect.arrayContaining(['Drive indexing', 'Downloads', 'Low disk space']))
     // Section title.
     const title = target.querySelector('.section-title')?.textContent.trim()
     expect(title).toBe('File system watching')
@@ -140,18 +139,19 @@ describe('FileSystemWatchingSection', () => {
     target.remove()
   })
 
-  it('greys out sub-groups 2 and 3 with one shared hint when FDA is pending', async () => {
+  it('greys out the Downloads card with one shared hint when FDA is pending', async () => {
     setStatus(true)
     const target = await mountSection()
-    // Exactly one FDA hint, not one per sub-group.
+    // Exactly one FDA hint.
     const hints = target.querySelectorAll('.fda-hint')
     expect(hints).toHaveLength(1)
     expect(hints[0].textContent).toMatch(/Full Disk Access/)
-    // Sub-group 2 and 3 carry `data-gated="true"` to make the visual state
-    // assertable without sniffing class names. Sub-group 1 stays interactive
-    // so the indexing toggle still works while FDA is pending.
+    // The Downloads card carries `data-gated="true"` to make the visual state
+    // assertable without sniffing class names. Drive indexing stays interactive
+    // so the indexing toggle still works while FDA is pending; Low disk space
+    // isn't FDA-gated.
     const gated = target.querySelectorAll('[data-gated="true"]')
-    expect(gated).toHaveLength(2)
+    expect(gated).toHaveLength(1)
     target.remove()
   })
 
@@ -262,16 +262,15 @@ describe('FileSystemWatchingSection', () => {
   })
 
   it('renders only the matching card when searching, leaving no empty cards', async () => {
-    // Pre-fix this rendered three empty cards: each `SectionCard` drew its frame
+    // Pre-fix this rendered empty cards: each `SectionCard` drew its frame
     // unconditionally, so a search that matched only the Drive-indexing rows
-    // still painted Downloads / Go to latest / Low disk space as empty boxes.
-    // The fix gates each card frame on `anyVisible(shouldShow, ...memberIds)`,
-    // the SAME predicate the rows use, so an all-filtered-out card hides too.
+    // still painted Downloads / Low disk space as empty boxes. The fix gates
+    // each card frame on `anyVisible(shouldShow, ...memberIds)`, the SAME
+    // predicate the rows use, so an all-filtered-out card hides too.
     const target = await mountSection('drive index')
     const labels = Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
     expect(labels).toContain('Drive indexing')
-    expect(labels).not.toContain('Downloads notifications')
-    expect(labels).not.toContain('Go to latest download')
+    expect(labels).not.toContain('Downloads')
     expect(labels).not.toContain('Low disk space')
     // Exactly one card frame is left standing.
     expect(target.querySelectorAll('.section-card')).toHaveLength(1)

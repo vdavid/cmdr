@@ -1328,13 +1328,9 @@
   "@settings.fileSystemWatching.clearIndexDescription": {
     "description": "Help text under the Clear index button explaining what clearing does."
   },
-  "settings.fileSystemWatching.cardDownloads": "Downloads notifications",
+  "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
-    "description": "Heading of the Downloads-notifications card in Settings > Behavior > File system watching. \"Downloads\" is the macOS folder name; use the OS's localized folder name."
-  },
-  "settings.fileSystemWatching.cardGoToLatest": "Go to latest download",
-  "@settings.fileSystemWatching.cardGoToLatest": {
-    "description": "Heading of the go-to-latest-download card. Translate consistently with the matching setting label settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label."
+    "description": "Heading of the Downloads card in Settings > Behavior > File system watching. The card groups two Downloads-folder features: new-download notifications and the go-to-latest-download global shortcut. \"Downloads\" is the macOS folder name; use the OS's localized folder name."
   },
   "settings.fileSystemWatching.cardLowDiskSpace": "Low disk space",
   "@settings.fileSystemWatching.cardLowDiskSpace": {

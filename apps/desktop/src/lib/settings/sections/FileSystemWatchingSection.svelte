@@ -4,23 +4,22 @@
      * indexer and the downloads watcher. Both depend on the same FDA gate, so
      * we group them and surface a single hint when the gate is closed.
      *
-     * The section renders four card groups inside `SectionCard`s:
+     * The section renders three card groups inside `SectionCard`s:
      *
      *   1. **Drive indexing** — the existing `indexing.enabled` toggle plus
      *      the clear-index action (the hidden `indexing.indexSize` search
      *      anchor). Stays interactive even when the FDA gate is closed
      *      (indexing operates on whatever paths it has access to; the gate is
      *      for the downloads watcher).
-     *   2. **Downloads notifications** — the 4-option ToggleGroup driving
-     *      `behavior.fileSystemWatching.downloadsNotifications`. Greyed out
-     *      when the FDA gate is closed. Carries a stable anchor id so the
-     *      downloads-toast "Stop showing these" button can deep-link here.
-     *   3. **Go to latest download** — a single on/off `Switch` for the
-     *      global hotkey, whose description references the LIVE binding (so
-     *      it updates the moment the user rebinds in `Keyboard shortcuts`,
-     *      where the combo is actually edited). Greyed out when the FDA gate
-     *      is closed.
-     *   4. **Low disk space** — the 3-option ToggleGroup driving
+     *   2. **Downloads** — both Downloads-folder features in one card: the
+     *      4-option `downloadsNotifications` ToggleGroup, and the on/off
+     *      `Switch` for the global go-to-latest hotkey (whose description
+     *      references the LIVE binding, so it updates the moment the user
+     *      rebinds in `Keyboard shortcuts`, where the combo is actually
+     *      edited). Greyed out when the FDA gate is closed. Carries a stable
+     *      anchor id so the downloads-toast "Stop showing these" button can
+     *      deep-link here.
+     *   3. **Low disk space** — the 3-option ToggleGroup driving
      *      `behavior.fileSystemWatching.lowDiskSpaceNotifications` plus the
      *      percent-threshold number input. NOT FDA-gated: the backend's space
      *      poller reads `statfs`, which needs no TCC permission. Carries a
@@ -31,8 +30,8 @@
      * `SectionCard` frame is wrapped in `{#if anyVisible(shouldShow, ...ids)}`
      * over its member setting ids, the SAME `shouldShow` predicate that gates
      * each row inside, so a card whose rows all filter out hides its frame too
-     * (no empty cards). Cards 2 and 3 dim via `SectionCard`'s `gated` prop and
-     * share ONE FDA hint, not one per card, per the "Locked copy" decision.
+     * (no empty cards). The Downloads card dims via `SectionCard`'s `gated`
+     * prop and carries the single FDA hint, per the "Locked copy" decision.
      */
     import { commands } from '$lib/ipc/bindings'
     import { onMount } from 'svelte'
@@ -284,7 +283,7 @@
         </p>
     {/if}
 
-    {#if anyVisible(shouldShow, DOWNLOADS_NOTIFICATIONS_SETTING_KEY)}
+    {#if anyVisible(shouldShow, DOWNLOADS_NOTIFICATIONS_SETTING_KEY, GLOBAL_GO_TO_LATEST_ENABLED_KEY)}
         <SectionCard
             id={DOWNLOADS_NOTIFICATIONS_ANCHOR_ID}
             label={tString('settings.fileSystemWatching.cardDownloads')}
@@ -300,11 +299,6 @@
                     <SettingToggleGroup id={DOWNLOADS_NOTIFICATIONS_SETTING_KEY} disabled={downloadsGated} />
                 </SettingRow>
             {/if}
-        </SectionCard>
-    {/if}
-
-    {#if anyVisible(shouldShow, GLOBAL_GO_TO_LATEST_ENABLED_KEY)}
-        <SectionCard label={tString('settings.fileSystemWatching.cardGoToLatest')} gated={downloadsGated}>
             {#if shouldShow(GLOBAL_GO_TO_LATEST_ENABLED_KEY)}
                 <SettingRow
                     id={GLOBAL_GO_TO_LATEST_ENABLED_KEY}

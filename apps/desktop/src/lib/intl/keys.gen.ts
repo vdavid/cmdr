@@ -1711,7 +1711,6 @@ export type MessageKey =
   | 'settings.fileOperations.progressUpdateInterval.description'
   | 'settings.fileOperations.progressUpdateInterval.label'
   | 'settings.fileSystemWatching.cardDownloads'
-  | 'settings.fileSystemWatching.cardGoToLatest'
   | 'settings.fileSystemWatching.cardLowDiskSpace'
   | 'settings.fileSystemWatching.clearIndex'
   | 'settings.fileSystemWatching.clearIndexDescription'

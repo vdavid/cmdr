@@ -505,7 +505,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label',
     descriptionKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description',
-    cardKey: 'settings.fileSystemWatching.cardGoToLatest',
+    cardKey: 'settings.fileSystemWatching.cardDownloads',
     keywords: ['shortcut', 'hotkey', 'global', 'download', 'downloads', 'jump', 'go to', 'goto'],
     type: 'boolean',
     default: true,
