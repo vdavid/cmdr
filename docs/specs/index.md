@@ -45,6 +45,9 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
       Svelte `<Trans>`, generated `MessageKey` types, semantic scoped keys, no TMS); step 2 of i18n-readiness
 - [ ] 2026-06-16 i18n-screenshots-plan.md - Auto-couple a context screenshot to every catalog key via runtime
       capture-mode + a Playwright driver; visual context for translator agents (i18n follow-on)
+- [ ] 2026-06-17 i18n-translation-maintenance-plan.md - Translation-readiness + maintenance tooling (pseudolocale,
+      stale-detection via source-hash, placeholder/ICU/plural/key-parity checks, translator guide); pseudolocale as the
+      universal test fixture; English-only today, ready for the first real locales
 - [x] 2026-06-15 doc-context-diet-plan.md - Shrank the resident agent-doc bundle (9.5k → 2k words): re-homed desktop
       content, ratcheted CLAUDE.md toward 600, mandated sibling DETAILS.md, dieted the rules to path-scoped homes,
       enforced with checks (details-sibling, resident-doc-budget, dead-links)
