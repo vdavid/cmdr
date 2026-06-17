@@ -12,6 +12,21 @@ Related guides for the signing and distribution steps:
 - `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in GitHub secrets
 - Self-hosted runner: `create-dmg` must be installed (`brew install create-dmg`)
 
+## Release gates that abort before tagging
+
+`scripts/release.sh` runs a few hard gates locally before it commits and tags, so a release that can't ship is never
+tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, one is worth knowing:
+
+- **No stale translations may ship.** A non-`en` translation whose stored `@key.sourceHash` no longer matches the
+  current English value is STALE (it renders text translated from a sentence that no longer exists). The
+  `desktop-i18n-stale` check is warn-only in normal `pnpm check` (a maintenance signal, not a daily-dev build breaker),
+  but the release script escalates it to a build-failing ERROR by running
+  `CMDR_I18N_STALE_STRICT=1 pnpm check i18n-stale`. With `set -e`, a stale finding aborts the release before tagging, so
+  the re-translation lands first. Fix: re-translate the changed keys and refresh `@key.sourceHash` (and re-review), then
+  re-run the release. English-only today, so this is a clean no-op until a real locale exists. Mechanism and schema:
+  [`apps/desktop/src/lib/intl/messages/DETAILS.md`](../../apps/desktop/src/lib/intl/messages/DETAILS.md) § `@key`
+  metadata schema.
+
 ## Pre-release smoke test on old macOS
 
 Cmdr targets macOS 12 Monterey and up. The bundled Safari there can be 15.x, which doesn't support `color-mix()` (16.2+)

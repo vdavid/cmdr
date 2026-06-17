@@ -102,6 +102,13 @@ git add -u
 # instead of pushing.
 pnpm check oxfmt --ci
 
+# Release gate: a stale translation must NOT ship. The i18n-stale check is warn-only in
+# normal `pnpm check` (a maintenance signal, not a daily-dev build breaker), but at release
+# we escalate it to a build-failing ERROR via CMDR_I18N_STALE_STRICT. With `set -e`, a stale
+# finding aborts the release before we tag, so the fix lands first. (English-only today, so
+# this is a clean no-op until a real locale exists.) See docs/guides/releasing.md.
+CMDR_I18N_STALE_STRICT=1 pnpm check i18n-stale
+
 git commit -m "chore(release): v$VERSION"
 git tag "v$VERSION"
 

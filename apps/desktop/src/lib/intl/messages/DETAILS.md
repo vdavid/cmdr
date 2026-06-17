@@ -118,9 +118,17 @@ codegen ever sees it:
   pseudolocale generator and any locale skeleton write it; the `desktop-i18n-stale` check compares the stored hash
   against the current English value's hash and flags a translation whose source has since changed as STALE.
   Deterministic and git-independent (survives rebases/reformats); not present in `en` (the source has no source).
-- `reviewed` (non-`en` locales only): a boolean human sign-off (principle 6 — a human reviewed this translated copy).
-  Reset to absent/`false` by the stale check whenever `sourceHash` changes, because a re-translation needs a fresh
-  review. Likely lightly used; it exists so the review state has a home.
+  **Release-strict gate:** the stale check is warn-only in normal `pnpm check` (a maintenance signal, not a daily-dev
+  build breaker), but at release time it escalates a stale finding to a build-failing ERROR. The release flow
+  (`scripts/release.sh`) sets `CMDR_I18N_STALE_STRICT=1` before its `pnpm check i18n-stale`, so a release can NOT ship a
+  stale translation: the fix lands first. English-only today, so it's a clean no-op until a real locale exists. The gate
+  fires locally in `scripts/release.sh`, not a GitHub workflow; see
+  [`/docs/guides/releasing.md`](../../../../../../docs/guides/releasing.md).
+- `reviewed` (non-`en` locales only): an OPTIONAL boolean human sign-off (principle 6: a human reviewed this translated
+  copy). Reset to absent/`false` by a human when the stale check reports that `sourceHash` changed, because a
+  re-translation needs a fresh review. NOT a gate: no check requires `reviewed: true` to pass. The stale check only
+  REPORTS that a stale key's prior sign-off no longer applies; a missing or `false` flag never fails anything. Likely
+  lightly used; it exists so the review state has a home if David wants it.
 
 `sourceHash` and `reviewed` are ordinary `@`-metadata fields: the whole `@`-entry is stripped before the runtime and
 codegen see it (same as `description`/`screenshot`), so adding them needs NO codegen or runtime change.

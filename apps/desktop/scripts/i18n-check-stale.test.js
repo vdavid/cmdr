@@ -10,15 +10,27 @@
  * assert EXACTLY the affected key is flagged. The no-locales path uses a temp root
  * with only `en`.
  *
- * Exit codes: 0 = clean / no locales, 1 = at least one stale finding. (2, the
- * script-error code, is the CLI's catch path, exercised by the Go wrapper.)
+ * Exit codes: 0 = clean / no locales, 1 = at least one stale finding (normal,
+ * warn lane). Strict mode (`strict: true`, set by the release flow) escalates a
+ * stale finding to 2 (`EXIT_ERROR`, build-fail) while keeping a clean run at 0.
+ * (2 is also the CLI's script-error catch path, exercised by the Go wrapper.)
+ *
+ * Review is never a gate: a stale `reviewed: true` key is REPORTED with a reset
+ * note, but the absence of review never makes a clean key fail (covered below).
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runStaleCheck, staleReason } from './i18n-check-stale.js'
-import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck, reportFindings, newFindings } from './i18n-locale-check-lib.js'
+import {
+  EXIT_CLEAN,
+  EXIT_ISSUES,
+  EXIT_ERROR,
+  localesToCheck,
+  reportFindings,
+  newFindings,
+} from './i18n-locale-check-lib.js'
 import { sourceHash } from './i18n-catalog-lib.js'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
@@ -68,6 +80,11 @@ describe('runStaleCheck against the committed fixture', () => {
     const { lines, write } = capture()
     expect(runStaleCheck({ messagesRoot: FIXTURE_ROOT, write })).toBe(EXIT_CLEAN)
     expect(lines.join('\n')).toMatch(/en-XA: clean\./)
+  })
+
+  it('a clean catalog passes in BOTH normal and strict mode', () => {
+    expect(runStaleCheck({ messagesRoot: FIXTURE_ROOT, write: () => {} })).toBe(EXIT_CLEAN)
+    expect(runStaleCheck({ messagesRoot: FIXTURE_ROOT, strict: true, write: () => {} })).toBe(EXIT_CLEAN)
   })
 })
 
@@ -157,6 +174,70 @@ describe('runStaleCheck negative cases (temp catalog copies)', () => {
     const { code, text } = run()
     expect(code).toBe(EXIT_ISSUES)
     expect(text).toMatch(/fixture\.plainLabel → English source removed/)
+  })
+})
+
+describe('release-strict mode escalates a stale finding to an error exit', () => {
+  /** @type {string} */
+  let root
+  /** @type {string} */
+  let enFile
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-stale-strict-'))
+    cpSync(FIXTURE_ROOT, root, { recursive: true })
+    enFile = join(root, 'en', 'fixture.json')
+  })
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  /** Make one en value drift so en-XA goes stale, then run in the given mode. */
+  const runStaleFixture = (/** @type {boolean} */ strict) => {
+    const en = JSON.parse(readFileSync(enFile, 'utf8'))
+    en['fixture.plainLabel'] = 'Dismiss' // was "Cancel"
+    writeFileSync(enFile, JSON.stringify(en, null, 2) + '\n', 'utf8')
+    const { lines, write } = capture()
+    return { code: runStaleCheck({ messagesRoot: root, strict, write }), text: lines.join('\n') }
+  }
+
+  it('normal mode: a stale finding is a WARN (exit 1)', () => {
+    const { code, text } = runStaleFixture(false)
+    expect(code).toBe(EXIT_ISSUES)
+    expect(text).toMatch(/fixture\.plainLabel → source changed since translation/)
+  })
+
+  it('strict mode: the SAME stale finding becomes an ERROR (exit 2)', () => {
+    const { code, text } = runStaleFixture(true)
+    expect(code).toBe(EXIT_ERROR)
+    // Same report content; only the exit code is escalated.
+    expect(text).toMatch(/fixture\.plainLabel → source changed since translation/)
+  })
+})
+
+describe('review is never a gate', () => {
+  /** @type {string} */
+  let root
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-stale-noreview-'))
+    cpSync(FIXTURE_ROOT, root, { recursive: true })
+  })
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  // The committed fixture carries no `reviewed` flags, so it's already a "no review
+  // recorded" catalog. It must pass in both modes: missing review never fails a check.
+  it('an unreviewed but fresh catalog passes in normal AND strict mode', () => {
+    expect(runStaleCheck({ messagesRoot: root, write: () => {} })).toBe(EXIT_CLEAN)
+    expect(runStaleCheck({ messagesRoot: root, strict: true, write: () => {} })).toBe(EXIT_CLEAN)
+  })
+
+  it('a fresh key marked reviewed: true is still clean (review state never forces a finding)', () => {
+    // staleReason returns null for a fresh key regardless of reviewed, so no gate.
+    expect(staleReason('a.b', { 'a.b': 'Cancel' }, { sourceHash: sourceHash('Cancel'), reviewed: true })).toBeNull()
+    // ...and a fresh key with NO reviewed flag is equally clean (review is optional metadata).
+    expect(staleReason('a.b', { 'a.b': 'Cancel' }, { sourceHash: sourceHash('Cancel') })).toBeNull()
   })
 })
 

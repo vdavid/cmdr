@@ -255,13 +255,14 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "i18n-stale",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		// Warn-only metric (a non-`en` translation whose @key.sourceHash no longer
-		// matches the current English value): stale translations are a maintenance
-		// signal, not a build breaker, and escalation to a release-blocking error is
-		// a later policy choice. Like other warn-only metrics, a CI step would be
-		// noise since it can never fail. (English-only today, so it's a no-op until a
-		// real locale lands.)
-		NotInCI:           "warn-only metric; it can never fail, so a CI step would be noise",
+		// Two modes (a non-`en` translation whose @key.sourceHash no longer matches
+		// the current English value is STALE): warn-only in normal `pnpm check` (a
+		// maintenance signal, not a daily-dev build breaker), but a build-failing
+		// ERROR at release via CMDR_I18N_STALE_STRICT. The release gate fires in
+		// `scripts/release.sh` (run locally before tagging), NOT in any GitHub
+		// workflow, so there's still no workflow step to wire. (English-only today,
+		// so it's a no-op until a real locale lands.)
+		NotInCI:           "normal lane is warn-only (a CI step would be noise); the release gate runs in scripts/release.sh, not a GitHub workflow",
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
