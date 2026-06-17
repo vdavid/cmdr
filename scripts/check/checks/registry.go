@@ -250,6 +250,25 @@ var AllChecks = []CheckDefinition{
 		Run:               RunDesktopMessageScreenshotsFresh,
 	},
 	{
+		ID:          "desktop-i18n-stale",
+		Nickname:    "i18n-stale",
+		DisplayName: "i18n-stale",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// Warn-only metric (a non-`en` translation whose @key.sourceHash no longer
+		// matches the current English value): stale translations are a maintenance
+		// signal, not a build breaker, and escalation to a release-blocking error is
+		// a later policy choice. Like other warn-only metrics, a CI step would be
+		// noise since it can never fail. (English-only today, so it's a no-op until a
+		// real locale lands.)
+		NotInCI:           "warn-only metric; it can never fail, so a CI step would be noise",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Run:               RunDesktopI18nStale,
+	},
+	{
 		ID:                "desktop-rust-tests",
 		CpuWeight:         6,
 		Nickname:          "rust-tests",
