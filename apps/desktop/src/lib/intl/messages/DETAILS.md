@@ -94,12 +94,27 @@ twin too (it strips the leading `@` and checks the underlying key), so a metadat
 source, not catalog JSON, so ICU plurals inside catalogs aren't covered by it — their correctness is the parity test's
 job.
 
-## Dead-key honesty
+## Dead-key honesty + the orphan check
 
-The codegen's dead-key warning lists catalog keys never referenced in code. The usage scan only sees STATICALLY-written
-keys (`t('literal')`, `<Trans key="literal">`), so a dynamically-built key reads as dead. Verify a key is truly unused
-before deleting it on this warning alone. `common.downloadsFdaHint` originated as the `<Trans>` proof and now has its
-real call site (the Downloads FDA hint in `FileSystemWatchingSection.svelte`).
+Two layers look for catalog keys never referenced in code:
+
+- The codegen prints a non-fatal dead-key WARNING. Its usage scan only sees STATICALLY-written keys (`t('literal')`,
+  `<Trans key="literal">`), so a dynamically-built key reads as dead there.
+- `desktop-message-keys-unused` (Go check, error-level) is the enforced net: a catalog key whose literal appears in NO
+  `apps/desktop/src/` file (test files included) and isn't covered by an allowlisted dynamic prefix is a hard failure,
+  because an orphan key is dead translation work that costs money once human translators are involved. It credits any
+  indirection that stores the literal (registry `*Key` fields, Record maps), so the only keys it flags are genuinely
+  absent ones.
+
+Keys assembled at runtime never appear verbatim, so they're carried by a closed, documented dynamic-prefix allowlist
+(`unusedKeyDynamicPrefixes` in `scripts/check/checks/desktop-message-keys-unused.go`, the single source). Today that's
+the four error-factory prefixes (`errors.git.`, `errors.listing.`, `errors.provider.`, `errors.write.`), each tied to a
+runtime construction site in `lib/errors/` (and `lib/file-operations/transfer/`); a prefix with no matching catalog key
+fails the check as a stale entry. Add a prefix ONLY for a real runtime-construction site; never to silence a genuine
+orphan.
+
+`common.downloadsFdaHint` originated as the `<Trans>` proof and now has its real call site (the Downloads FDA hint in
+`FileSystemWatchingSection.svelte`).
 
 ## Principle 6 note (humans review human-facing copy)
 

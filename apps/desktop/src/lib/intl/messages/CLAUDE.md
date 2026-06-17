@@ -29,8 +29,9 @@ boundary: [`../CLAUDE.md`](../CLAUDE.md).
   if it has any).
 - **Never hand-edit `../keys.gen.ts`.** It's generated from these files by `pnpm intl:keys`; run that after any key
   add/remove/rename. The `desktop-message-keys-fresh` check fails if it's stale.
-- **A new key needs a real call site, or it's a dead key.** The codegen warns on catalog keys never referenced in code.
-  `common.downloadsFdaHint` originated as the `<Trans>` proof and now has its real call site (the Downloads FDA hint in
-  `FileSystemWatchingSection.svelte`).
+- **A new key needs a real call site, or it fails `desktop-message-keys-unused`.** A catalog key never referenced in
+  `apps/desktop/src/` is an orphan (dead translation work) and is an ERROR, not just the codegen's dead-key warning.
+  Keys built at runtime are carried by the closed dynamic-prefix allowlist in that check; don't add a key with no call
+  site expecting the allowlist to cover it. See [DETAILS.md](DETAILS.md) § Dead-key honesty + the orphan check.
 
 Depth (the `@key` schema, screenshots-by-filename, the dead-key honesty caveat, parity rules): [DETAILS.md](DETAILS.md).

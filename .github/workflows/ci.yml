@@ -260,6 +260,9 @@ jobs:
       - name: Check message-key naming
         run: ./scripts/check/check --check desktop-message-key-naming --ci
 
+      - name: Check for unused message keys
+        run: ./scripts/check/check --check desktop-message-keys-unused --ci
+
       - name: Run Knip
         run: ./scripts/check/check --check desktop-svelte-knip --ci
 

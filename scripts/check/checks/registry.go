@@ -221,6 +221,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunDesktopMessageKeyNaming,
 	},
 	{
+		ID:                "desktop-message-keys-unused",
+		Nickname:          "message-keys-unused",
+		DisplayName:       "message-keys-unused",
+		App:               AppDesktop,
+		Tech:              "🎨 Svelte",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            svelteInputs,
+		Run:               RunDesktopMessageKeysUnused,
+	},
+	{
 		ID:                "desktop-rust-tests",
 		CpuWeight:         6,
 		Nickname:          "rust-tests",

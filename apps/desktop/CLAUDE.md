@@ -26,9 +26,10 @@ directory's colocated `CLAUDE.md`.
   [`test/e2e-playwright/CLAUDE.md`](test/e2e-playwright/CLAUDE.md).
 - **The frontend is i18n-ized: user-facing strings live in the message catalog, not in components.** Resolve copy via
   `t()` / `getMessage()` / `<Trans>` from `$lib/intl`, with keys in `src/lib/intl/messages/en/<area>.json` carrying a
-  translator `@key` description. Hardcoding a string in a known sink fails `cmdr/no-raw-user-facing-string`. English-only
-  ships today; it's translation-ready. How it all works + adding strings/locales + leading translator agents:
-  [`/docs/guides/i18n.md`](../../docs/guides/i18n.md); runtime must-knows: [`src/lib/intl/CLAUDE.md`](src/lib/intl/CLAUDE.md).
+  translator `@key` description. Hardcoding a string in a known sink fails `cmdr/no-raw-user-facing-string`.
+  English-only ships today; it's translation-ready. How it all works + adding strings/locales + leading translator
+  agents: [`/docs/guides/i18n.md`](../../docs/guides/i18n.md); runtime must-knows:
+  [`src/lib/intl/CLAUDE.md`](src/lib/intl/CLAUDE.md).
 
 ## Structure
 
