@@ -148,16 +148,19 @@
     "description": "Accessibility label for a disabled function-key slot that has no action while Shift is held. {fnKey} is the key name like F2.",
     "placeholders": {
       "fnKey": "the function-key name, e.g. F2 (do not translate; it is a key label)"
-    }
+    },
+    "screenshot": "function-key-bar-shift.png"
   },
 
   "fileExplorer.functionKeyBar.newFileLabel": "New file",
   "@fileExplorer.functionKeyBar.newFileLabel": {
-    "description": "Short button label on the function-key bar for creating a new file. Space is tight; keep it short."
+    "description": "Short button label on the function-key bar for creating a new file. Space is tight; keep it short.",
+    "screenshot": "function-key-bar-shift.png"
   },
   "fileExplorer.functionKeyBar.newFileAction": "Create new file",
   "@fileExplorer.functionKeyBar.newFileAction": {
-    "description": "The full spoken action name (for screen readers) of the new-file function-key button. Longer form of the short button label."
+    "description": "The full spoken action name (for screen readers) of the new-file function-key button. Longer form of the short button label.",
+    "screenshot": "function-key-bar-shift.png"
   },
   "fileExplorer.functionKeyBar.renameLabel": "Rename",
   "@fileExplorer.functionKeyBar.renameLabel": {
@@ -171,11 +174,13 @@
   },
   "fileExplorer.functionKeyBar.permanentlyLabel": "Permanently",
   "@fileExplorer.functionKeyBar.permanentlyLabel": {
-    "description": "Short button label (shown while Shift is held) for permanently deleting the selected files, bypassing the trash. Space is tight; the full action is spoken separately."
+    "description": "Short button label (shown while Shift is held) for permanently deleting the selected files, bypassing the trash. Space is tight; the full action is spoken separately.",
+    "screenshot": "function-key-bar-shift.png"
   },
   "fileExplorer.functionKeyBar.deletePermanentlyAction": "Delete permanently",
   "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
-    "description": "The full spoken action name (for screen readers) of the permanent-delete function-key button (bypasses the trash)."
+    "description": "The full spoken action name (for screen readers) of the permanent-delete function-key button (bypasses the trash).",
+    "screenshot": "function-key-bar-shift.png"
   },
   "fileExplorer.functionKeyBar.viewLabel": "View",
   "@fileExplorer.functionKeyBar.viewLabel": {
@@ -1004,7 +1009,7 @@
   "fileExplorer.dirSize.updatingIndexTooltip": "Updating index: size may change.",
   "@fileExplorer.dirSize.updatingIndexTooltip": {
     "description": "Hover tooltip on a folder''s size while indexing is in progress, warning that the figure may still change. Note the colon.",
-    "screenshot": "toast-transfer-complete.png"
+    "screenshot": "indexing-status.png"
   },
   "fileExplorer.dirSize.scanProgressTooltip": "Sizes appear as the scan progresses",
   "@fileExplorer.dirSize.scanProgressTooltip": {
@@ -1059,7 +1064,7 @@
   "fileExplorer.dirSize.updatingIndexLine": "Updating index — size may change.",
   "@fileExplorer.dirSize.updatingIndexLine": {
     "description": "Last line of a folder''s size tooltip while indexing, warning the figure may change. Uses an en dash (—) as a separator.",
-    "screenshot": "toast-transfer-complete.png"
+    "screenshot": "indexing-status.png"
   },
   "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
   "@fileExplorer.dirSize.dirPlaceholder": {
@@ -1073,15 +1078,18 @@
 
   "fileExplorer.selectionTooltip.selected": "Selected",
   "@fileExplorer.selectionTooltip.selected": {
-    "description": "Label in the selection-summary size tooltip for the size of the selected items. Pairs with \"Of total\"."
+    "description": "Label in the selection-summary size tooltip for the size of the selected items. Pairs with \"Of total\".",
+    "screenshot": "selection-summary.png"
   },
   "fileExplorer.selectionTooltip.ofTotal": "Of total",
   "@fileExplorer.selectionTooltip.ofTotal": {
-    "description": "Label in the selection-summary size tooltip for the size of all items, against which the selection is compared. Pairs with \"Selected\"."
+    "description": "Label in the selection-summary size tooltip for the size of all items, against which the selection is compared. Pairs with \"Selected\".",
+    "screenshot": "selection-summary.png"
   },
   "fileExplorer.selectionTooltip.onDiskHeader": "On disk:",
   "@fileExplorer.selectionTooltip.onDiskHeader": {
-    "description": "Section header in the selection-summary size tooltip introducing the physical on-disk sizes (as opposed to logical content sizes). Note the colon."
+    "description": "Section header in the selection-summary size tooltip introducing the physical on-disk sizes (as opposed to logical content sizes). Note the colon.",
+    "screenshot": "selection-summary.png"
   },
 
   "fileExplorer.entry.brokenSymlink": "(broken symlink)",
@@ -1196,29 +1204,34 @@
     "description": "The noun \"file(s)\" used in the status-bar selection summary, e.g. \"3 of 10 files\". A separate count (shown nearby in styled markup) precedes it; this key supplies only the singular/plural noun.",
     "placeholders": {
       "count": "the number the noun agrees with (drives singular vs plural)"
-    }
+    },
+    "screenshot": "selection-summary.png"
   },
   "fileExplorer.summary.dirNoun": "{count, plural, one {dir} other {dirs}}",
   "@fileExplorer.summary.dirNoun": {
     "description": "The noun \"dir(s)\" (short for folder) used in the status-bar selection summary, e.g. \"2 of 5 dirs\". A separate count precedes it in styled markup; this key supplies only the singular/plural noun.",
     "placeholders": {
       "count": "the number the noun agrees with (drives singular vs plural)"
-    }
+    },
+    "screenshot": "selection-summary.png"
   },
   "fileExplorer.summary.of": "of",
   "@fileExplorer.summary.of": {
-    "description": "The connector word between a selected size/count and the total in the status-bar selection summary, e.g. \"5 MB of 20 MB\" or \"3 of 10 files\". Surrounded by spaces in the rendered line."
+    "description": "The connector word between a selected size/count and the total in the status-bar selection summary, e.g. \"5 MB of 20 MB\" or \"3 of 10 files\". Surrounded by spaces in the rendered line.",
+    "screenshot": "selection-summary.png"
   },
   "fileExplorer.summary.percentSelectedIn": "({percent}%) selected in",
   "@fileExplorer.summary.percentSelectedIn": {
     "description": "Mid-sentence fragment of the status-bar selection summary stating the selected percentage of the total size, before the item counts. Example full line: \"5 MB of 20 MB (25%) selected in 3 of 10 files\".",
     "placeholders": {
       "percent": "the selected size as a percentage of the total (a whole number)"
-    }
+    },
+    "screenshot": "selection-summary.png"
   },
   "fileExplorer.summary.and": "and",
   "@fileExplorer.summary.and": {
-    "description": "The connector word joining the file part and the folder part of the status-bar selection summary, e.g. \"3 of 10 files and 2 of 5 dirs\". Rendered with surrounding spaces."
+    "description": "The connector word joining the file part and the folder part of the status-bar selection summary, e.g. \"3 of 10 files and 2 of 5 dirs\". Rendered with surrounding spaces.",
+    "screenshot": "selection-summary.png"
   },
   "fileExplorer.summary.selectedSuffix": "selected",
   "@fileExplorer.summary.selectedSuffix": {

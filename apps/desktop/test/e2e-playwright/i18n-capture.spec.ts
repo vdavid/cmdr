@@ -60,6 +60,7 @@ import {
   captureIndexingStatus,
 } from './i18n-capture-surfaces.js'
 import { captureMainDialogs, captureViewerSubsurfaces } from './i18n-capture-special.js'
+import { captureMainExplorerSurfaces } from './i18n-capture-surfaces-main.js'
 
 test.describe('i18n screenshot capture', () => {
   // Drives ~22 surfaces across several windows (main, dialogs, a separate
@@ -116,6 +117,16 @@ test.describe('i18n screenshot capture', () => {
     })
     await dismissOverlay(main)
     await captureCall(main, 'disable')
+
+    // ── Main-window file-explorer states (selection summary, Shift bar, hint) ──
+    // Data-driven sweep of the dual-pane explorer states the dialog/window
+    // tranches missed: a live multi-file selection (the selection-summary status
+    // bar + its size tooltip), the Shift fork of the function-key bar, and the
+    // Quick Look educational toast. All render into the main window's sink while
+    // it's foreground, so they go here before the separate-window captures pull
+    // focus away. Their keys are unique to these states, so coupling order is
+    // immaterial; staged early to keep the main window the active surface.
+    await captureMainExplorerSurfaces(main, report, failed)
 
     // ── Surface 3 + 4..N: Settings window (every section) ─────────────────────
     await captureSettingsWindow(main, report, failed)
@@ -252,6 +263,17 @@ test.describe('i18n screenshot capture', () => {
     //    build or a `debug-assertions = true` release-profile Cargo override, both
     //    out of scope. The Personal license-key ENTRY dialog (`license-key-dialog`)
     //    and Personal `about` ARE captured on the default launch.
+    //  - Quick Look educational toast (`fileExplorer.quickLookHint.*`): the toast
+    //    fires from a plain Space in the file list, but `maybeShowQuickLookHint()`
+    //    gates on the `fileExplorer.suppressQuickLookHint` setting. The capture
+    //    binary reads the REAL prod tauri-store (the orchestrator launches it with
+    //    no `CMDR_DATA_DIR` override — see `scripts/i18n-capture.js`), and that
+    //    store has the hint suppressed (`true`), so the toast never shows. The
+    //    Space toggle itself fires (verified: selection toggles, but 0 toasts);
+    //    it's the gate, not the trigger. Reaching it needs the harness to launch
+    //    with an isolated data dir (or seed the setting `false`) — a harness
+    //    change out of scope here. Mutating the real prod setting to force it is
+    //    not acceptable (it's David's live preference).
     for (const docSkip of [
       'crash-report',
       'viewer-copy-confirm',
@@ -261,14 +283,16 @@ test.describe('i18n screenshot capture', () => {
       'license-details',
       'commercial-reminder',
       'expiration',
+      'quick-look-hint',
     ]) {
       skipped.push(docSkip)
     }
     console.warn(
-      `[i18n-capture] ${String(8)} surfaces SKIPPED (need backend state, a new prod hook, or a debug build): ` +
+      `[i18n-capture] ${String(9)} surfaces SKIPPED (need backend state, a new prod hook, or a debug build): ` +
         `crash-report dialog (boot-only pending-crash state), viewer large-copy confirm/refuse ` +
-        `(need a >10 MB selection), viewer reload toast (needs a watcher event), and the paid/expired/` +
-        `reminder license surfaces (CMDR_MOCK_LICENSE is debug-only; the capture binary is a release build).`,
+        `(need a >10 MB selection), viewer reload toast (needs a watcher event), the paid/expired/` +
+        `reminder license surfaces (CMDR_MOCK_LICENSE is debug-only; the capture binary is a release build), ` +
+        `and the Quick Look hint toast (suppressed in the real prod store the capture binary reads).`,
     )
 
     // ── Surface: keyboard shortcuts window (KNOWN-SKIPPED) ────────────────────
