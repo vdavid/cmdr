@@ -38,7 +38,7 @@ import {
   TRANSFER_DIALOG,
 } from './helpers.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { initMcpClient, mcpSelectVolume } from '../e2e-shared/mcp-client.js'
+import { initMcpClient, mcpSelectVolume, mcpNavToPath, mcpAwaitPath } from '../e2e-shared/mcp-client.js'
 import { writeFile, waitForConflictPolicy, clickTransferStart } from './conflict-helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
@@ -66,14 +66,22 @@ const SETTINGS_SECTIONS: { path: string[]; sectionId: string; label: string }[] 
     sectionId: 'appearance-colors-and-formats',
     label: 'settings-appearance',
   },
-  { path: ['Appearance', 'Zoom and density'], sectionId: 'appearance-zoom-and-density', label: 'settings-appearance-zoom' },
+  {
+    path: ['Appearance', 'Zoom and density'],
+    sectionId: 'appearance-zoom-and-density',
+    label: 'settings-appearance-zoom',
+  },
   {
     path: ['Appearance', 'File and folder sizes'],
     sectionId: 'appearance-file-and-folder-sizes',
     label: 'settings-appearance-sizes',
   },
   { path: ['Appearance', 'Listing'], sectionId: 'appearance-listing', label: 'settings-appearance-listing' },
-  { path: ['Behavior', 'File operations'], sectionId: 'behavior-file-operations', label: 'settings-behavior-file-operations' },
+  {
+    path: ['Behavior', 'File operations'],
+    sectionId: 'behavior-file-operations',
+    label: 'settings-behavior-file-operations',
+  },
   {
     path: ['Behavior', 'File system watching'],
     sectionId: 'behavior-file-system-watching',
@@ -238,6 +246,100 @@ async function captureSurface(
   } catch (err) {
     failed.push(label)
     console.warn(`[i18n-capture] surface ${label} FAILED: ${err instanceof Error ? err.message : String(err)}`)
+  }
+}
+
+/**
+ * Waits for the first toast's enter animation (0.2s slide-in: opacity 0→1,
+ * translateX 20→0) to FINISH, so the native screenshot captures a fully-rendered
+ * toast rather than a mid-fade frame. Polls the live computed style for a settled
+ * opacity (1) and transform (`none` or an identity matrix, no residual X
+ * translation). A short deadline keeps a `prefers-reduced-motion` build (no
+ * animation, instantly settled) from waiting needlessly.
+ */
+async function waitForToastSettled(page: TauriPage): Promise<void> {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate<boolean>(`(function(){
+          var toast = document.querySelector('.toast');
+          if (!toast) return false;
+          var s = getComputedStyle(toast);
+          if (s.opacity !== '1') return false;
+          var t = s.transform;
+          if (t === 'none' || t === '') return true;
+          // matrix(1, 0, 0, 1, tx, ty): settled when the X translation is ~0.
+          var m = t.match(/matrix\\(([^)]+)\\)/);
+          if (!m) return true;
+          var parts = m[1].split(',').map(function(n){ return parseFloat(n); });
+          return Math.abs(parts[4]) < 0.5;
+        })()`),
+      { timeout: 2000 },
+    )
+    .toBeTruthy()
+}
+
+/** Closes every open toast by clicking its `.toast-close`, then waits for them to clear. */
+async function dismissAllToasts(page: TauriPage): Promise<void> {
+  await page.evaluate(`(function(){
+    var toasts = document.querySelectorAll('.toast');
+    for (var i = 0; i < toasts.length; i++) {
+      var close = toasts[i].querySelector('.toast-close');
+      if (close) close.click();
+    }
+  })()`)
+  await expect.poll(async () => (await page.count('.toast')) === 0, { timeout: 3000 }).toBeTruthy()
+}
+
+/**
+ * Stages, captures, and records ONE TOAST surface, isolating its failure like
+ * `captureSurface`.
+ *
+ * Toasts are SNAPSHOT-RESOLVED: their text is resolved once via `tString('key')`
+ * at emit time and stored as a plain string, so a later `rerender()` never
+ * re-resolves it and never records the key. The recording hook only fires the
+ * key if capture is ACTIVE the moment the action emits the toast. So the flow is:
+ * reset + setSurface + enable the sink, THEN run `trigger` (the keypress / command
+ * that emits the toast), wait for the `.toast` to appear, screenshot, dump. No
+ * `rerender` (it can't recover a key resolved before enable, and re-resolving
+ * mounted markup would pollute the toast surface with unrelated keys).
+ *
+ * `trigger` returns nothing; the toast appearance is the readiness signal. After
+ * the shot every toast is dismissed so the next surface (and the afterEach leak
+ * guard) starts clean.
+ */
+async function captureToastSurface(
+  label: string,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+  main: TauriPage,
+  trigger: () => Promise<void>,
+): Promise<void> {
+  const screenshot = `${label}.png`
+  try {
+    await captureCall(main, 'reset')
+    await captureCall(main, 'setSurface', label)
+    await captureCall<boolean>(main, 'enable')
+    await trigger()
+    // The toast appearing IS the readiness signal: the key was resolved (and so
+    // recorded) at emit time, which is inside `trigger`.
+    await main.waitForSelector('.toast', 5000)
+    // The toast slides in over a 0.2s animation (opacity 0→1, translateX 20→0).
+    // `waitForSelector` returns the instant it's in the DOM — mid-animation — so
+    // wait for the enter animation to FINISH (opacity 1, transform settled to
+    // identity) before the native capture, which composites the last frame and
+    // would otherwise grab a half-faded or already-gone toast.
+    await waitForToastSettled(main)
+    await settlePaint(main)
+    await main.screenshot({ path: join(screenshotsDir, screenshot) })
+    report[label] = { screenshot, keys: await keysFor(main, label) }
+    console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
+  } catch (err) {
+    failed.push(label)
+    console.warn(`[i18n-capture] surface ${label} FAILED: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    await dismissAllToasts(main).catch(() => {})
+    await captureCall(main, 'disable').catch(() => {})
   }
 }
 
@@ -506,6 +608,309 @@ async function captureMainOverlays(
   await mcpSelectVolume('left', LOCAL_VOLUME_NAME).catch(() => {})
 }
 
+/**
+ * Captures the SNAPSHOT-RESOLVED toast surfaces (command-handler confirmations
+ * and the transfer-completion toast). Each follows the `captureToastSurface`
+ * rhythm: enable the sink, fire the trigger, catch the toast. Triggers are the
+ * same registry commands / file ops the production UI uses.
+ *
+ * Toasts that need backend events we can't fire from the frontend (the real
+ * download-complete toast, MTP-connected, low-disk) are NOT here — they're
+ * documented skips deferred to the mock-staging tranche.
+ */
+async function captureFrontendToasts(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
+  recreateFixtures(getFixtureRoot())
+  await ensureAppReady(main)
+  await initMcpClient(main)
+
+  // Favorite the focused pane's folder (`favorites.add` → success toast). The
+  // fixture root isn't favorited yet, so this hits the success path.
+  await captureToastSurface('toast-favorite', report, failed, main, async () => {
+    await dispatchMenuCommand(main, 'favorites.add')
+  })
+
+  // Reopen-closed-tab with empty history (`tab.reopen` → "no recently closed
+  // tabs" warning). At app start nothing has been closed, so the empty branch
+  // fires. The success path emits no toast, so this is the reachable tab toast.
+  await captureToastSurface('toast-tab', report, failed, main, async () => {
+    await dispatchMenuCommand(main, 'tab.reopen')
+  })
+
+  // Zoom in (`view.zoom.in` → "Zoom increased to N%" + reset-hint). Resolves
+  // `commands.handler.zoomIncreased` plus a `zoomResetHint*` key.
+  await captureToastSurface('toast-zoom-in', report, failed, main, async () => {
+    await dispatchMenuCommand(main, 'view.zoom.in')
+  })
+
+  // Zoom reset to 100% (`view.zoom.set100` → `commands.handler.zoomReset`). Also
+  // restores the global text size that `toast-zoom-in` bumped, so later surfaces
+  // render at the default scale.
+  await captureToastSurface('toast-zoom-reset', report, failed, main, async () => {
+    await dispatchMenuCommand(main, 'view.zoom.set100')
+  })
+
+  // Transfer-complete toast: finish a real copy and catch the completion toast
+  // (`transfer.split.clean` for a clean single-file copy). Recreate first so the
+  // copy lands in a clean `right/` with no collision (a conflict would change the
+  // flow). Copy `file-b.txt` left→right and confirm.
+  await captureToastSurface('toast-transfer-complete', report, failed, main, async () => {
+    recreateFixtures(getFixtureRoot())
+    await ensureAppReady(main)
+    await skipParentEntry(main)
+    await moveCursorToFile(main, 'file-b.txt')
+    await dispatchMenuCommand(main, 'file.copy')
+    await main.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 5000)
+    await main.click(`${TRANSFER_DIALOG} .btn-primary`)
+  })
+}
+
+/**
+ * Captures the empty-directory pane messaging (`fileExplorer.list.empty`).
+ *
+ * The fixture `right/` starts empty. Focus the right pane and navigate it there
+ * via the production `mcp-nav-to-path` event (the same path the MCP nav tool
+ * uses); the list view renders `.empty-folder-message` when the directory has no
+ * entries. Mounted markup, so the normal `captureSurface` rerender path records
+ * its keys — no snapshot-before-trigger needed.
+ */
+async function captureEmptyPane(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
+  await captureSurface('empty-pane', report, failed, async () => {
+    // Make a guaranteed-fresh empty directory under the fixture root and navigate
+    // a pane into it via the MCP `nav_to_path` tool (which acks on completion, so
+    // we know the listing actually swapped — `mcp-nav-to-path` is fire-and-forget
+    // and silently no-ops on a same-path or non-local pane). A brand-new dir
+    // (not the start-path `right/`, which a prior copy or cached listing can leave
+    // non-empty) reliably forces a re-listing of an empty directory. Navigate the
+    // LEFT (focused) pane so the empty state sits in the visible, focused pane.
+    // The list view renders `.empty-folder-message` when the directory is empty.
+    recreateFixtures(getFixtureRoot())
+    await ensureAppReady(main)
+    await initMcpClient(main)
+    const emptyDir = join(getFixtureRoot(), 'empty-for-capture')
+    mkdirSync(emptyDir, { recursive: true })
+    await mcpNavToPath('left', emptyDir)
+    await mcpAwaitPath('left', 'empty-for-capture')
+    await main.waitForSelector('.empty-folder-message', 5000)
+    await captureCall(main, 'reset')
+    await captureCall<boolean>(main, 'enable')
+    return { page: main }
+  })
+  await captureCall(main, 'disable').catch(() => {})
+}
+
+/** Loop bound for the onboarding step walk (a couple over the step count so a no-op click can't spin). */
+const ONBOARDING_STEP_BOUND = 6
+
+/**
+ * Captures the onboarding wizard, ONE surface per step.
+ *
+ * Each step (`StepFda` / `StepAi` / `StepBeta` / `StepOptional`) is a separate
+ * component rendered into `.wizard-body` by the step cursor, so a step's `t()` /
+ * `<Trans>` keys only mount while that step is active. The wizard lives in the
+ * MAIN window's sink (it's an in-app sheet, not a separate window), and it's
+ * mounted markup — the normal rerender path records the active step's keys. So
+ * for each step: setSurface, rerender, screenshot, then click the forward button
+ * to advance.
+ *
+ * Staging: `cmdr.openOnboarding` opens the wizard at the first reachable step. On
+ * macOS the E2E fixture grants FDA, so step 1 shows the `already-granted`
+ * (single-Next) variant; the other FDA variants need per-launch `CMDR_MOCK_FDA`
+ * the shared instance can't supply, so they stay covered by the tier-3 Vitest
+ * specs (documented in `onboarding.spec.ts`). Linux skips step 1.
+ *
+ * Advancing uses the wizard's own forward button (the last button in
+ * `.primary-slot`), exactly as `onboarding.spec.ts` does. The final step's button
+ * finishes onboarding and unmounts the wizard, which is the natural cleanup.
+ */
+async function captureOnboardingWizard(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
+  const WIZARD = '[data-dialog-id="onboarding"]'
+  // Surfaces per step, in step order. The macOS step-1 (FDA) surface is dropped
+  // on Linux (no step 1 there); the loop reads the live active-step dot so it
+  // labels whatever actually rendered.
+  const stepLabels: Record<number, string> = {
+    1: 'onboarding-fda',
+    2: 'onboarding-ai',
+    3: 'onboarding-beta',
+    4: 'onboarding-optional',
+  }
+
+  const activeStep = async (): Promise<number | null> =>
+    main.evaluate<number | null>(`(function(){
+      var dots = document.querySelectorAll('${WIZARD} .step-dot');
+      for (var i = 0; i < dots.length; i++) {
+        if (dots[i].getAttribute('aria-current') === 'step') return i + 1;
+      }
+      return null;
+    })()`)
+
+  const clickForward = async (): Promise<void> => {
+    await main.evaluate(`(function(){
+      var btns = document.querySelectorAll('${WIZARD} .primary-slot button');
+      if (btns.length > 0) btns[btns.length - 1].click();
+    })()`)
+  }
+
+  let opened = false
+  try {
+    await ensureAppReady(main)
+    await dispatchMenuCommand(main, 'cmdr.openOnboarding')
+    await main.waitForSelector(WIZARD, 5000)
+    opened = true
+    // Enable the sink ONCE for the whole wizard; each step re-`setSurface`s under
+    // its own label so the coupler assigns each step's keys to that step.
+    await captureCall(main, 'reset')
+    await captureCall<boolean>(main, 'enable')
+
+    // Walk the steps. Cap the loop above the step count so a no-op click can't
+    // spin. Each iteration captures the live step, then advances.
+    for (let i = 0; i < ONBOARDING_STEP_BOUND; i++) {
+      if (!(await main.isVisible(WIZARD))) break
+      const step = await activeStep()
+      if (step === null) break
+      const label = stepLabels[step] ?? `onboarding-step-${String(step)}`
+      if (!(label in report)) {
+        await captureSurface(label, report, failed, async () => {
+          await main.waitForSelector(`${WIZARD} .step-shell`, 5000)
+          await captureCall(main, 'setSurface', label)
+          await captureCall(main, 'rerender')
+          return { page: main }
+        })
+      }
+      // Advance to the next step; the final step's button finishes + unmounts.
+      const before = step
+      await clickForward()
+      await expect
+        .poll(async () => !(await main.isVisible(WIZARD)) || (await activeStep()) !== before, { timeout: 5000 })
+        .toBeTruthy()
+    }
+    await captureCall(main, 'disable').catch(() => {})
+  } catch (err) {
+    for (const label of Object.values(stepLabels)) {
+      if (!(label in report) && !failed.includes(label)) failed.push(label)
+    }
+    console.warn(`[i18n-capture] onboarding setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    // If the walk didn't finish (a capture threw mid-flow), make sure the wizard
+    // is closed so it doesn't leak into later surfaces. Best-effort: advance to
+    // the end. `opened` guards the no-op case.
+    if (opened) {
+      for (let i = 0; i < ONBOARDING_STEP_BOUND; i++) {
+        if (!(await main.isVisible(WIZARD).catch(() => false))) break
+        await clickForward().catch(() => {})
+        await expect
+          .poll(
+            async () =>
+              (await main.count(WIZARD).catch(() => 1)) === 0 || !(await main.isVisible(WIZARD).catch(() => false)),
+            {
+              timeout: 1500,
+            },
+          )
+          .toBeTruthy()
+          .catch(() => {})
+      }
+    }
+  }
+}
+
+/**
+ * Captures the "What's new" post-update popup (`whatsNew.*`).
+ *
+ * The boot auto-check is suppressed under E2E, so this drives the same real path
+ * the `whats-new.spec.ts` test uses: emit the E2E-gated `e2e-rerun-whats-new`
+ * event (seeds `isOnboarded` + an old `lastSeenVersion`, force-runs
+ * `maybeRunWhatsNew`), which opens the dialog with a non-empty release slice.
+ * Mounted markup, so the rerender path records its keys. The dialog dismisses via
+ * the footer Close button.
+ */
+async function captureWhatsNew(main: TauriPage, report: Record<string, SurfaceEntry>, failed: string[]): Promise<void> {
+  await captureSurface('whats-new', report, failed, async () => {
+    await ensureAppReady(main)
+    await main.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+      event: 'e2e-rerun-whats-new',
+      payload: { isOnboarded: true, lastSeenVersion: '0.1.0', showOnUpdate: true }
+    })`)
+    await main.waitForSelector('#whats-new-body', 5000)
+    await captureCall(main, 'reset')
+    await captureCall<boolean>(main, 'enable')
+    return { page: main }
+  })
+  await captureCall(main, 'disable').catch(() => {})
+  // Close via the footer's last button (Close); the opt-out button would flip the
+  // showOnUpdate setting, which we don't want to mutate. dismissOverlay can't
+  // close it (the dialog isn't in the OVERLAY_SELECTORS set).
+  await main
+    .evaluate(`(function(){
+      var btns = document.querySelectorAll('#whats-new-body .footer .btn');
+      if (btns.length > 0) btns[btns.length - 1].click();
+    })()`)
+    .catch(() => {})
+  await expect.poll(async () => (await main.count('#whats-new-body')) === 0, { timeout: 3000 }).toBeTruthy()
+}
+
+/**
+ * Captures the drive-indexing status indicator (`indexing.scan.*` /
+ * `indexing.eta.*`).
+ *
+ * The indicator (`.indexing-status`) renders only while a scan / aggregation /
+ * replay is live, driven by Tauri events the Rust indexer emits. We can't start a
+ * real backend scan deterministically from the frontend, so we emit the same
+ * typed events directly: an `index-scan-started` (with a prior-scan calibration
+ * so the tier-1 percent + ETA render) followed by an `index-scan-progress`. The
+ * frontend's `initIndexState` listeners flip `scanning` true and the indicator
+ * mounts. Its labels resolve reactively via `tString`/`$derived`, so the rerender
+ * path records them.
+ *
+ * This only covers the SCAN keys; aggregation and replay would need their own
+ * event pairs. The rescan-notification TOAST (`indexing.rescan.*`) is a separate
+ * snapshot toast deferred to the mock-staging tranche (it needs a typed rescan
+ * event with a reason).
+ */
+async function captureIndexingStatus(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
+  await captureSurface('indexing-status', report, failed, async () => {
+    await ensureAppReady(main)
+    // Emit a started + progress pair so the indicator mounts with a populated
+    // tier-1 percent/ETA. `volumeId` is cosmetic for the indicator; the prior-*
+    // fields drive the calibrated progress tier.
+    await main.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+      event: 'index-scan-started',
+      payload: { volumeId: 'i18n-capture', priorTotalEntries: 100000, priorScanDurationMs: 30000, volumeUsedBytes: null }
+    })`)
+    await main.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+      event: 'index-scan-progress',
+      payload: { volumeId: 'i18n-capture', entriesScanned: 42000, dirsFound: 3500, bytesScanned: 0 }
+    })`)
+    await main.waitForSelector('.indexing-status', 5000)
+    await captureCall(main, 'reset')
+    await captureCall<boolean>(main, 'enable')
+    return { page: main }
+  })
+  await captureCall(main, 'disable').catch(() => {})
+  // Clear the faked scan state so the indicator unmounts and nothing downstream
+  // inherits a stuck hourglass.
+  await main
+    .evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+      event: 'index-scan-complete',
+      payload: { volumeId: 'i18n-capture', totalEntries: 100000, totalDirs: 3500, durationMs: 30000 }
+    })`)
+    .catch(() => {})
+}
+
 test.describe('i18n screenshot capture', () => {
   // Drives ~22 surfaces across several windows (main, dialogs, a separate
   // Settings window iterating 18 sections, the viewer, the shortcuts window),
@@ -606,6 +1011,59 @@ test.describe('i18n screenshot capture', () => {
     // each surface isolated and the test body's complexity in check.
     await captureMainOverlays(main, report, failed)
 
+    // ── Snapshot-resolved toast surfaces ──────────────────────────────────────
+    // Command-handler confirmations + the transfer-complete toast. These resolve
+    // their text ONCE at emit time, so the sink must be enabled BEFORE the action
+    // fires (see `captureToastSurface`). Run after the dialogs so dialog keys
+    // couple narrow-first.
+    await captureFrontendToasts(main, report, failed)
+
+    // ── Empty-directory pane messaging ────────────────────────────────────────
+    await captureEmptyPane(main, report, failed)
+
+    // ── Onboarding wizard (one surface per step) ──────────────────────────────
+    await captureOnboardingWizard(main, report, failed)
+
+    // ── What's-new post-update popup ──────────────────────────────────────────
+    await captureWhatsNew(main, report, failed)
+
+    // ── Drive-indexing status indicator ───────────────────────────────────────
+    await captureIndexingStatus(main, report, failed)
+
+    // ── Documented skips deferred to the mock-staging tranche ─────────────────
+    // These surfaces need backend state / events we can't fake from the frontend
+    // here, so they're SKIPPED (not failed) and tracked for coverage honesty.
+    // They're the explicit charter of the next tranche (mock staging):
+    //  - download toasts (`downloads.*`): need a real download-complete event
+    //    from the updater / download manager, not a frontend command.
+    //  - MTP-connected toast (`mtp.*`): needs a device or the `virtual-mtp`
+    //    feature staged, absent from this capture build.
+    //  - low-disk warning (`lowDiskSpace.*`): needs disk-pressure state from the
+    //    backend space monitor.
+    //  - AI-suggestion surfaces (`ai.*`): need the AI backend / a configured
+    //    provider, and an emitted suggestion.
+    //  - indexing rescan-notification toast (`indexing.rescan.*`): a separate
+    //    snapshot toast needing a typed rescan event with a reason discriminator.
+    //  - indexing aggregation/replay indicator states (`indexing.aggregation.*`,
+    //    `indexing.replay.*`): need their own event pairs; `indexing-status`
+    //    above covers the scan state only.
+    for (const deferred of [
+      'toast-download',
+      'toast-mtp-connected',
+      'toast-low-disk',
+      'ai-suggestion',
+      'toast-index-rescan',
+      'indexing-aggregation',
+      'indexing-replay',
+    ]) {
+      skipped.push(deferred)
+    }
+    console.warn(
+      `[i18n-capture] ${String(7)} surfaces SKIPPED (deferred to the mock-staging tranche): ` +
+        `download/MTP/low-disk toasts, AI suggestion, indexing rescan toast + aggregation/replay states. ` +
+        `Each needs backend events or staged mocks the frontend can't fire here.`,
+    )
+
     // ── Surface: keyboard shortcuts window (KNOWN-SKIPPED) ────────────────────
     // The standalone Keyboard shortcuts WebviewWindow (label `shortcuts`,
     // `/shortcuts` route, opened by `help.openShortcuts`) opens and is visible,
@@ -663,7 +1121,9 @@ test.describe('i18n screenshot capture', () => {
         await shortcuts.screenshot({ path: join(screenshotsDir, 'shortcuts.png') })
         report['shortcuts'] = { screenshot: 'shortcuts.png', keys: await keysFor(shortcuts, 'shortcuts') }
         skipped.splice(skipped.indexOf('shortcuts'), 1)
-        console.log(`[i18n-capture] shortcuts: ${String(report['shortcuts'].keys.length)} keys → shortcuts.png (eval recovered)`)
+        console.log(
+          `[i18n-capture] shortcuts: ${String(report['shortcuts'].keys.length)} keys → shortcuts.png (eval recovered)`,
+        )
       }
     } catch {
       // Open/probe failed; stays skipped (already recorded above).

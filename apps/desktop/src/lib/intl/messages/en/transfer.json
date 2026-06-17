@@ -29,7 +29,7 @@
       "foldersText": "number of folders, ready to drop into the sentence (e.g. 12)",
       "folders": "the same number of folders (decides whether \"folder\" is singular or plural)"
     },
-    "screenshot": "transfer-complete-toast.png"
+    "screenshot": "toast-transfer-complete.png"
   },
 
   "transfer.split.clean": "{verb, select, copy {Copied} other {Moved}} {phrase}.",
@@ -39,7 +39,7 @@
       "verb": "the action that just finished: \"copy\" picks the copy wording, anything else picks the move wording",
       "phrase": "the already-built \"2 files and 1 folder\" fragment (from transfer.movedPhrase); insert it as-is"
     },
-    "screenshot": "transfer-complete-toast.png"
+    "screenshot": "toast-transfer-complete.png"
   },
 
   "transfer.split.skipped": "{verb, select, copy {Copied} other {Moved}} {phrase}, skipped {skippedText} {skipped, plural, one {file} other {files}} (already at the target).",

@@ -1,12 +1,14 @@
 {
   "onboarding.wizard.title": "Cmdr onboarding",
   "@onboarding.wizard.title": {
-    "description": "Screen-reader-only heading for the whole first-launch onboarding sheet. Not shown visually; announced to assistive tech as the dialog's name. \"Cmdr\" is the product name and stays untranslated."
+    "description": "Screen-reader-only heading for the whole first-launch onboarding sheet. Not shown visually; announced to assistive tech as the dialog's name. \"Cmdr\" is the product name and stays untranslated.",
+    "screenshot": "onboarding-fda.png"
   },
 
   "onboarding.wizard.progressLabel": "Onboarding progress",
   "@onboarding.wizard.progressLabel": {
-    "description": "Screen-reader label for the row of step dots at the top of the onboarding sheet. Names what the dots represent (which step the user is on)."
+    "description": "Screen-reader label for the row of step dots at the top of the onboarding sheet. Names what the dots represent (which step the user is on).",
+    "screenshot": "onboarding-fda.png"
   },
 
   "onboarding.wizard.stepProgress": "Step {step} of {total}{isOptional, select, true { (optional)} other {}}",
@@ -16,22 +18,26 @@
       "step": "the dot's step number, starting at 1 (for example 2)",
       "total": "the total number of onboarding steps (for example 4)",
       "isOptional": "whether this step is the optional one: the string \"true\" adds the \" (optional)\" suffix, anything else adds nothing"
-    }
+    },
+    "screenshot": "onboarding-fda.png"
   },
 
   "onboarding.wizard.back": "Back",
   "@onboarding.wizard.back": {
-    "description": "Tooltip on the back arrow button in the onboarding sheet footer. Goes to the previous step. Very short."
+    "description": "Tooltip on the back arrow button in the onboarding sheet footer. Goes to the previous step. Very short.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.wizard.backAria": "Go to previous step",
   "@onboarding.wizard.backAria": {
-    "description": "Accessible label (read by screen readers) for the back arrow button in the onboarding sheet footer."
+    "description": "Accessible label (read by screen readers) for the back arrow button in the onboarding sheet footer.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.wizard.next": "Next",
   "@onboarding.wizard.next": {
-    "description": "Primary button that advances to the next onboarding step. Short control label."
+    "description": "Primary button that advances to the next onboarding step. Short control label.",
+    "screenshot": "onboarding-fda.png"
   },
 
   "onboarding.wizard.finish": "Finish",
@@ -61,7 +67,8 @@
 
   "onboarding.stepFda.alreadyGranted.title": "Cmdr currently has full disk access",
   "@onboarding.stepFda.alreadyGranted.title": {
-    "description": "Heading on the Full Disk Access step when the app already has the permission (re-entry from the menu or command palette). Neutral, informational. \"Cmdr\" is the product name; \"full disk access\" is the macOS permission name."
+    "description": "Heading on the Full Disk Access step when the app already has the permission (re-entry from the menu or command palette). Neutral, informational. \"Cmdr\" is the product name; \"full disk access\" is the macOS permission name.",
+    "screenshot": "onboarding-fda.png"
   },
 
   "onboarding.stepFda.alreadyGranted.body": "You can revoke it any time in {systemSettings}.",
@@ -69,7 +76,8 @@
     "description": "Body text telling the user where to revoke Full Disk Access. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS, so don't translate or alter it.",
     "placeholders": {
       "systemSettings": "the macOS System Settings app name, already localized by the OS (for example \"System Settings\")"
-    }
+    },
+    "screenshot": "onboarding-fda.png"
   },
 
   "onboarding.stepFda.welcome.title": "Welcome to Cmdr!",
@@ -226,72 +234,86 @@
 
   "onboarding.stepAi.title": "Now, let''s talk AI",
   "@onboarding.stepAi.title": {
-    "description": "Heading of the AI step (shown on macOS, after the Full Disk Access step). Conversational, inviting tone."
+    "description": "Heading of the AI step (shown on macOS, after the Full Disk Access step). Conversational, inviting tone.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.intro": "Cmdr has a bunch of AI features that you <em>may</em> want and may not want. AI is a controversial topic these days.",
   "@onboarding.stepAi.intro": {
-    "description": "Opening paragraph of the AI step, acknowledging AI is divisive and the choice is the user's. <em> emphasizes \"may\". \"Cmdr\" is the product name."
+    "description": "Opening paragraph of the AI step, acknowledging AI is divisive and the choice is the user's. <em> emphasizes \"may\". \"Cmdr\" is the product name.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.comparisonIntro": "Here is how you do common actions with and without AI:",
   "@onboarding.stepAi.comparisonIntro": {
-    "description": "Sentence introducing the comparison table that contrasts doing tasks with AI versus without it."
+    "description": "Sentence introducing the comparison table that contrasts doing tasks with AI versus without it.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.colFeature": "Feature",
   "@onboarding.stepAi.table.colFeature": {
-    "description": "Column header in the with-AI / without-AI comparison table, naming the task being compared. Keep short to fit a narrow column."
+    "description": "Column header in the with-AI / without-AI comparison table, naming the task being compared. Keep short to fit a narrow column.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.colWithout": "Without AI",
   "@onboarding.stepAi.table.colWithout": {
-    "description": "Column header for the without-AI way of doing each task. Keep short to fit a narrow column."
+    "description": "Column header for the without-AI way of doing each task. Keep short to fit a narrow column.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.colWith": "With AI",
   "@onboarding.stepAi.table.colWith": {
-    "description": "Column header for the with-AI way of doing each task (highlighted column, preceded by a sparkle icon). Keep short to fit a narrow column."
+    "description": "Column header for the with-AI way of doing each task (highlighted column, preceded by a sparkle icon). Keep short to fit a narrow column.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.rowSearch": "Search",
   "@onboarding.stepAi.table.rowSearch": {
-    "description": "Row label in the comparison table for the file-search task. Short noun."
+    "description": "Row label in the comparison table for the file-search task. Short noun.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.searchWithout": "You type something like <code>*fish*.ppt</code>, and select the \"after 1st of this month\" filter.",
   "@onboarding.stepAi.table.searchWithout": {
-    "description": "Comparison cell: how you search without AI. <code> wraps a literal filename glob pattern, which must NOT be translated. \"after 1st of this month\" names a date filter option in the app."
+    "description": "Comparison cell: how you search without AI. <code> wraps a literal filename glob pattern, which must NOT be translated. \"after 1st of this month\" names a date filter option in the app.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.searchWith": "You say \"my recent fish-related presentations\", agent sets your filters.",
   "@onboarding.stepAi.table.searchWith": {
-    "description": "Comparison cell: how you search with AI, by describing what you want in plain words. \"agent\" means the AI assistant. The quoted phrase is an example of what a user might say."
+    "description": "Comparison cell: how you search with AI, by describing what you want in plain words. \"agent\" means the AI assistant. The quoted phrase is an example of what a user might say.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.rowRename": "Mass-rename",
   "@onboarding.stepAi.table.rowRename": {
-    "description": "Row label in the comparison table for the bulk-rename task. Short. \"Mass-rename\" means renaming many files at once."
+    "description": "Row label in the comparison table for the bulk-rename task. Short. \"Mass-rename\" means renaming many files at once.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.renameWithout": "You use the batch rename UI to manually set the rename pattern, review and apply.",
   "@onboarding.stepAi.table.renameWithout": {
-    "description": "Comparison cell: how you bulk-rename without AI, by setting a pattern by hand. \"batch rename UI\" is the bulk-rename screen in the app."
+    "description": "Comparison cell: how you bulk-rename without AI, by setting a pattern by hand. \"batch rename UI\" is the bulk-rename screen in the app.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.renameWith": "You say \"add ISO date prefix\", agent sets your rename pattern, you review and apply at will.",
   "@onboarding.stepAi.table.renameWith": {
-    "description": "Comparison cell: how you bulk-rename with AI, by describing the change. \"agent\" means the AI assistant. \"ISO date\" is the YYYY-MM-DD date format; \"ISO\" stays as-is. The quoted phrase is an example user request."
+    "description": "Comparison cell: how you bulk-rename with AI, by describing the change. \"agent\" means the AI assistant. \"ISO date\" is the YYYY-MM-DD date format; \"ISO\" stays as-is. The quoted phrase is an example user request.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.rowSelect": "Select",
   "@onboarding.stepAi.table.rowSelect": {
-    "description": "Row label in the comparison table for the file-selection task. Short verb."
+    "description": "Row label in the comparison table for the file-selection task. Short verb.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.selectWithoutBound": "You press the <chip></chip> key and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.",
   "@onboarding.stepAi.table.selectWithoutBound": {
-    "description": "Comparison cell: how you select files without AI, when the select-files shortcut is bound to a key. <chip> wraps the visual key-shortcut chip (it has no inner text; leave it empty). Worded \"the ... key\" so the chip reads as a key. <code> wraps a literal comma-separated list of file extension patterns that must NOT be translated."
+    "description": "Comparison cell: how you select files without AI, when the select-files shortcut is bound to a key. <chip> wraps the visual key-shortcut chip (it has no inner text; leave it empty). Worded \"the ... key\" so the chip reads as a key. <code> wraps a literal comma-separated list of file extension patterns that must NOT be translated.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.table.selectWithoutUnbound": "You open \"Select files…\" and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.",
@@ -301,7 +323,8 @@
 
   "onboarding.stepAi.table.selectWith": "You say \"select all image files\", agent suggests a selection, you review and apply at will.",
   "@onboarding.stepAi.table.selectWith": {
-    "description": "Comparison cell: how you select files with AI, by describing them. \"agent\" means the AI assistant. The quoted phrase is an example user request."
+    "description": "Comparison cell: how you select files with AI, by describing them. \"agent\" means the AI assistant. The quoted phrase is an example user request.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.resumeCue": "You picked this last time. Confirm or change below.",
@@ -311,27 +334,32 @@
 
   "onboarding.stepAi.choiceLegend": "Based on this, do you want AI or not?",
   "@onboarding.stepAi.choiceLegend": {
-    "description": "Screen-reader-only legend for the radio group of AI choices (it follows the comparison table). Frames the decision the user is making."
+    "description": "Screen-reader-only legend for the radio group of AI choices (it follows the comparison table). Frames the decision the user is making.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.choiceGroupAria": "AI choice",
   "@onboarding.stepAi.choiceGroupAria": {
-    "description": "Accessible group label for the set of AI radio options (cloud / local / off)."
+    "description": "Accessible group label for the set of AI radio options (cloud / local / off).",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.cloud.label": "Yes, I want AI",
   "@onboarding.stepAi.cloud.label": {
-    "description": "Label for the radio option that enables cloud-based AI. Affirmative, enthusiastic."
+    "description": "Label for the radio option that enables cloud-based AI. Affirmative, enthusiastic.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.cloud.recommended": "(recommended)",
   "@onboarding.stepAi.cloud.recommended": {
-    "description": "Small parenthetical marking the cloud-AI option as the recommended choice, shown right after its label."
+    "description": "Small parenthetical marking the cloud-AI option as the recommended choice, shown right after its label.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.cloud.help": "Use any cloud provider with your own API key. Fast, high-quality models. Pick a provider below.",
   "@onboarding.stepAi.cloud.help": {
-    "description": "Helper text under the cloud-AI radio option, explaining it uses the user's own API key with any cloud provider. \"API key\" is a technical credential term; \"cloud provider\" is a company offering AI models online."
+    "description": "Helper text under the cloud-AI radio option, explaining it uses the user's own API key with any cloud provider. \"API key\" is a technical credential term; \"cloud provider\" is a company offering AI models online.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.cloud.pickerTitle": "Select a provider",
@@ -341,12 +369,14 @@
 
   "onboarding.stepAi.local.label": "Yes, I want AI, but I want to be super private",
   "@onboarding.stepAi.local.label": {
-    "description": "Label for the radio option that runs AI locally on the device (more private, no data leaves the machine). Friendly, casual phrasing."
+    "description": "Label for the radio option that runs AI locally on the device (more private, no data leaves the machine). Friendly, casual phrasing.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.local.help": "A bit dumber model that takes up about 2 GB of space and a bit of CPU at every use. Still an okay solution. No data leaves your machine. Cmdr tries to deliver updates for the best small local model available.",
   "@onboarding.stepAi.local.help": {
-    "description": "Helper text under the local-AI radio option: a smaller, weaker model that keeps everything on-device. Honest, plain tone (\"a bit dumber\" is deliberate). \"Cmdr\" is the product name; \"GB\" is the gigabytes unit; \"CPU\" is the processor. \"2 GB\" is an approximate disk-size figure."
+    "description": "Helper text under the local-AI radio option: a smaller, weaker model that keeps everything on-device. Honest, plain tone (\"a bit dumber\" is deliberate). \"Cmdr\" is the product name; \"GB\" is the gigabytes unit; \"CPU\" is the processor. \"2 GB\" is an approximate disk-size figure.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.local.note": "Started downloading the local model in the background. You can finish onboarding now; the toast in the corner will keep you posted.",
@@ -361,47 +391,56 @@
 
   "onboarding.stepAi.off.label": "Thanks but no thanks, no AI for me",
   "@onboarding.stepAi.off.label": {
-    "description": "Label for the radio option that turns AI off entirely. Casual, no-pressure declining tone."
+    "description": "Label for the radio option that turns AI off entirely. Casual, no-pressure declining tone.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepAi.off.help": "Cmdr works fully without AI. You can turn it on later in Settings.",
   "@onboarding.stepAi.off.help": {
-    "description": "Helper text under the no-AI radio option, reassuring the user the app is fully usable without AI and AI can be enabled later. \"Cmdr\" is the product name; \"Settings\" is the app's settings screen."
+    "description": "Helper text under the no-AI radio option, reassuring the user the app is fully usable without AI and AI can be enabled later. \"Cmdr\" is the product name; \"Settings\" is the app's settings screen.",
+    "screenshot": "onboarding-ai.png"
   },
 
   "onboarding.stepBeta.footer.start": "Start using Cmdr!",
   "@onboarding.stepBeta.footer.start": {
-    "description": "Secondary footer button on the open-beta step that finishes onboarding right away, skipping the final optional-setup step. Upbeat, with the exclamation mark. \"Cmdr\" is the product name and stays untranslated."
+    "description": "Secondary footer button on the open-beta step that finishes onboarding right away, skipping the final optional-setup step. Upbeat, with the exclamation mark. \"Cmdr\" is the product name and stays untranslated.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.footer.continue": "One more optional setup step",
   "@onboarding.stepBeta.footer.continue": {
-    "description": "Primary footer button on the open-beta step that advances to the final optional-setup step instead of finishing now."
+    "description": "Primary footer button on the open-beta step that advances to the final optional-setup step instead of finishing now.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.title": "Help improve Cmdr!",
   "@onboarding.stepBeta.title": {
-    "description": "Heading of the open-beta step, inviting the user to help improve the app. Warm, inviting. \"Cmdr\" is the product name and stays untranslated."
+    "description": "Heading of the open-beta step, inviting the user to help improve the app. Warm, inviting. \"Cmdr\" is the product name and stays untranslated.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.greeting": "Hi, I''m <david>David</david>! I build Cmdr, and you''re one of the very first people using it. Thanks for your trust! ❤️",
   "@onboarding.stepBeta.greeting": {
-    "description": "Personal first-person greeting from David, the app's creator. Keep the warm, personal voice. <david> wraps a link to David's about page; keep his name inside it. \"David\" is a personal name and \"Cmdr\" the product name; both stay untranslated. Keep the heart emoji."
+    "description": "Personal first-person greeting from David, the app's creator. Keep the warm, personal voice. <david> wraps a link to David's about page; keep his name inside it. \"David\" is a personal name and \"Cmdr\" the product name; both stay untranslated. Keep the heart emoji.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.openBeta": "Cmdr is in open beta, which means it''s overall solid and usable, but some parts are still rough. See any <alpha></alpha> badges marking the most work-in-progress areas.",
   "@onboarding.stepBeta.openBeta": {
-    "description": "Explains the app is in open beta: usable but unfinished in places, with ALPHA badges marking rough areas. <alpha> wraps the visual ALPHA status badge component (it has no inner text; leave it empty). \"Cmdr\" is the product name; \"open beta\" is the release stage."
+    "description": "Explains the app is in open beta: usable but unfinished in places, with ALPHA badges marking rough areas. <alpha> wraps the visual ALPHA status badge component (it has no inner text; leave it empty). \"Cmdr\" is the product name; \"open beta\" is the release stage.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.feedbackIntro": "Your feedback helps me spot bugs and prioritize features. Here is how you can engage:",
   "@onboarding.stepBeta.feedbackIntro": {
-    "description": "First-person sentence (David speaking) introducing the list of ways to give feedback. Warm, personal voice."
+    "description": "First-person sentence (David speaking) introducing the list of ways to give feedback. Warm, personal voice.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.feedback.inAppBound": "<strong>In-app:</strong> See <strong>Help &gt; Send feedback…</strong> in the menu, or find it in the command palette with <chip></chip>.",
   "@onboarding.stepBeta.feedback.inAppBound": {
-    "description": "Feedback-channel item describing the in-app feedback option, shown when the command-palette shortcut is bound. <strong> bolds the leading \"In-app:\" label and the menu path. <chip> wraps the visual key-shortcut chip for the command palette (no inner text; leave it empty). \"Help > Send feedback…\" is the menu path (keep the trailing ellipsis); the literal \"&gt;\" is the HTML entity for \">\" and must stay as written. \"command palette\" is the app's searchable command list."
+    "description": "Feedback-channel item describing the in-app feedback option, shown when the command-palette shortcut is bound. <strong> bolds the leading \"In-app:\" label and the menu path. <chip> wraps the visual key-shortcut chip for the command palette (no inner text; leave it empty). \"Help > Send feedback…\" is the menu path (keep the trailing ellipsis); the literal \"&gt;\" is the HTML entity for \">\" and must stay as written. \"command palette\" is the app's searchable command list.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.feedback.inAppUnbound": "<strong>In-app:</strong> See <strong>Help &gt; Send feedback…</strong> in the menu, or find it in the command palette.",
@@ -411,47 +450,56 @@
 
   "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Add issues, vote on issues.",
   "@onboarding.stepBeta.feedback.github": {
-    "description": "Feedback-channel item for filing and voting on issues. <github> wraps a link to the project's GitHub issues. \"GitHub\" is a brand name and stays untranslated; \"issues\" are bug/feature reports on GitHub."
+    "description": "Feedback-channel item for filing and voting on issues. <github> wraps a link to the project's GitHub issues. \"GitHub\" is a brand name and stays untranslated; \"issues\" are bug/feature reports on GitHub.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.feedback.discord": "<discord>Discord</discord>: Click the link, hop on to the server, meet me and others.",
   "@onboarding.stepBeta.feedback.discord": {
-    "description": "Feedback-channel item inviting the user to the community chat. <discord> wraps an invite link. \"Discord\" is a brand name and stays untranslated; \"server\" means a Discord community. First-person (\"me\" is David)."
+    "description": "Feedback-channel item inviting the user to the community chat. <discord> wraps an invite link. \"Discord\" is a brand name and stays untranslated; \"server\" means a Discord community. First-person (\"me\" is David).",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.feedback.call": "<call>Schedule a call with me</call>: I won''t be doing this for very long, but while Cmdr is an open beta, I''d love to talk to you about your files!",
   "@onboarding.stepBeta.feedback.call": {
-    "description": "Feedback-channel item offering a personal one-on-one call with David. <call> wraps the booking link. Keep the warm, personal first-person voice. \"Cmdr\" is the product name; \"open beta\" is the release stage."
+    "description": "Feedback-channel item offering a personal one-on-one call with David. <call> wraps the booking link. Keep the warm, personal first-person voice. \"Cmdr\" is the product name; \"open beta\" is the release stage.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.star": "And one more very important way you can help in one minute: star, watch, and fork the repo <github>here on GitHub</github>. Homebrew wants me to present 225 stars, 50 forks, and 50 watches to enable <code>brew install cmdr</code>.",
   "@onboarding.stepBeta.star": {
-    "description": "Asks the user to star, watch, and fork the GitHub repository to help reach Homebrew's thresholds. <github> wraps the repo link. <code> wraps the literal install command, which must NOT be translated. \"star\", \"watch\", and \"fork\" are GitHub actions; \"repo\" is the code repository; \"Homebrew\" and \"GitHub\" are brand names; all stay untranslated. The numbers 225, 50, and 50 are Homebrew's required thresholds."
+    "description": "Asks the user to star, watch, and fork the GitHub repository to help reach Homebrew's thresholds. <github> wraps the repo link. <code> wraps the literal install command, which must NOT be translated. \"star\", \"watch\", and \"fork\" are GitHub actions; \"repo\" is the code repository; \"Homebrew\" and \"GitHub\" are brand names; all stay untranslated. The numbers 225, 50, and 50 are Homebrew's required thresholds.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.analyticsLede": "To learn what''s working and what isn''t, during the open beta Cmdr sends anonymous usage stats: which features get used and how often, never anything from your files. It''s on now, and you can turn it off anytime.",
   "@onboarding.stepBeta.analyticsLede": {
-    "description": "Discloses that the app sends anonymous usage statistics during the beta and never reads file contents. Transparent, reassuring tone. \"Cmdr\" is the product name; \"open beta\" is the release stage."
+    "description": "Discloses that the app sends anonymous usage statistics during the beta and never reads file contents. Transparent, reassuring tone. \"Cmdr\" is the product name; \"open beta\" is the release stage.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.analyticsTitle": "Send anonymous usage stats",
   "@onboarding.stepBeta.analyticsTitle": {
-    "description": "Title next to the toggle switch that controls anonymous usage statistics. The switch defaults on."
+    "description": "Title next to the toggle switch that controls anonymous usage statistics. The switch defaults on.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.analyticsCaption": "Note that it''s ON by default to encourage people to send me data during the Beta. You can change this any time in Settings.",
   "@onboarding.stepBeta.analyticsCaption": {
-    "description": "Small caption beside the analytics toggle explaining it defaults on during the beta. First-person (David). Keep \"ON\" emphasized in feel (it's the switch state). \"Beta\" is the release stage; \"Settings\" is the app's settings screen."
+    "description": "Small caption beside the analytics toggle explaining it defaults on during the beta. First-person (David). Keep \"ON\" emphasized in feel (it's the switch state). \"Beta\" is the release stage; \"Settings\" is the app's settings screen.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.emailTitle": "Stay in touch (optional)",
   "@onboarding.stepBeta.emailTitle": {
-    "description": "Heading above the optional email field, and also the field's accessible label. Makes clear giving an email is optional."
+    "description": "Heading above the optional email field, and also the field's accessible label. Makes clear giving an email is optional.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.emailPlaceholder": "you@example.com",
   "@onboarding.stepBeta.emailPlaceholder": {
-    "description": "Placeholder text inside the optional email input, showing the expected format. A standard example email address; keep it as a recognizable placeholder address."
+    "description": "Placeholder text inside the optional email input, showing the expected format. A standard example email address; keep it as a recognizable placeholder address.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepBeta.signup.success": "Check your inbox to confirm your email. Thanks for helping out!",
@@ -466,7 +514,8 @@
 
   "onboarding.stepBeta.emailNote": "Drop your email and I''ll reach out with the occasional question or update. The email address you enter here is stored only on your Mac and it''s never connected to your usage stats, the two are intentionally two separate subsystems.",
   "@onboarding.stepBeta.emailNote": {
-    "description": "Privacy note under the optional email field: David may reach out, and the email is stored locally and never linked to usage stats. First-person, reassuring. \"Mac\" is the device name and stays untranslated."
+    "description": "Privacy note under the optional email field: David may reach out, and the email is stored locally and never linked to usage stats. First-person, reassuring. \"Mac\" is the device name and stays untranslated.",
+    "screenshot": "onboarding-beta.png"
   },
 
   "onboarding.stepOptional.footer.start": "Start using Cmdr",
@@ -476,72 +525,86 @@
 
   "onboarding.stepOptional.title": "You''re almost ready",
   "@onboarding.stepOptional.title": {
-    "description": "Heading of the final optional-setup step, signaling onboarding is nearly done. Encouraging tone."
+    "description": "Heading of the final optional-setup step, signaling onboarding is nearly done. Encouraging tone.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.lede": "You chose to walk through a detailed setup, so here are a few easy choices. If you don''t care too much, just click the button below. These are all options, and the defaults are picked for your benefit.",
   "@onboarding.stepOptional.lede": {
-    "description": "Intro paragraph for the optional-setup step: a few toggles with sensible defaults the user can ignore. Casual, low-pressure."
+    "description": "Intro paragraph for the optional-setup step: a few toggles with sensible defaults the user can ignore. Casual, low-pressure.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.recommendedOn": "Recommended: on. You can change this any time in Settings.",
   "@onboarding.stepOptional.recommendedOn": {
-    "description": "Caption repeated beside each optional toggle, noting the recommended setting is on and it's changeable later. \"on\" refers to the toggle being enabled; \"Settings\" is the app's settings screen."
+    "description": "Caption repeated beside each optional toggle, noting the recommended setting is on and it's changeable later. \"on\" refers to the toggle being enabled; \"Settings\" is the app's settings screen.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.networking.title": "Networking",
   "@onboarding.stepOptional.networking.title": {
-    "description": "Title of the networking toggle on the optional-setup step (controls connecting to SMB network shares)."
+    "description": "Title of the networking toggle on the optional-setup step (controls connecting to SMB network shares).",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like. The only cost is a macOS permission dialog that pops up and asks you to allow \"Local network access\", and one for \"Accepting incoming connections\". Both dialogs are harmless, but if you don''t know what these are, they might be scary or annoying.",
   "@onboarding.stepOptional.networking.desc": {
-    "description": "Description of the networking toggle: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. \"Local network access\" and \"Accepting incoming connections\" are the exact macOS permission-prompt names (use macOS's wording in your locale)."
+    "description": "Description of the networking toggle: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. \"Local network access\" and \"Accepting incoming connections\" are the exact macOS permission-prompt names (use macOS's wording in your locale).",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.indexing.title": "Drive indexing",
   "@onboarding.stepOptional.indexing.title": {
-    "description": "Title of the drive-indexing toggle on the optional-setup step (builds a searchable index of the drive)."
+    "description": "Title of the drive-indexing toggle on the optional-setup step (builds a searchable index of the drive).",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.indexing.descIntro": "Drive indexing is totally cool! Gives you two main things:",
   "@onboarding.stepOptional.indexing.descIntro": {
-    "description": "Enthusiastic lead-in to the two benefits of drive indexing, followed by a numbered list."
+    "description": "Enthusiastic lead-in to the two benefits of drive indexing, followed by a numbered list.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.indexing.benefit1": "Instant search of your whole drive. Think Spotlight, but even faster.",
   "@onboarding.stepOptional.indexing.benefit1": {
-    "description": "First benefit of drive indexing: instant full-drive search. \"Spotlight\" is the macOS built-in search feature, a brand name that stays untranslated."
+    "description": "First benefit of drive indexing: instant full-drive search. \"Spotlight\" is the macOS built-in search feature, a brand name that stays untranslated.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.indexing.benefit2": "Real-time folder sizes for your whole drive. You always know how much stuff you have in each folder.",
   "@onboarding.stepOptional.indexing.benefit2": {
-    "description": "Second benefit of drive indexing: live folder-size totals across the whole drive."
+    "description": "Second benefit of drive indexing: live folder-size totals across the whole drive.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.indexing.descCost": "If you turn this off, you only get <code>&lt;DIR&gt;</code> for the sizes. The cost is a 300 MB index on your drive, but no extra CPU or memory use after the first 2&ndash;3 minutes of you first starting the app, or starting it after a long time. It''s a cheap feature considering the benefits.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "description": "Explains the trade-off of disabling indexing (folders show a placeholder instead of a size) and its cost (disk space, brief startup work). <code> wraps the literal placeholder text \"<DIR>\" shown for folder sizes; the \"&lt;\" and \"&gt;\" are HTML entities for \"<\" and \">\" and must stay as written. \"&ndash;\" is an en dash for the range \"2-3\" and must stay as written. \"300 MB\" is the index size; \"CPU\" is the processor; both stay as-is."
+    "description": "Explains the trade-off of disabling indexing (folders show a placeholder instead of a size) and its cost (disk space, brief startup work). <code> wraps the literal placeholder text \"<DIR>\" shown for folder sizes; the \"&lt;\" and \"&gt;\" are HTML entities for \"<\" and \">\" and must stay as written. \"&ndash;\" is an en dash for the range \"2-3\" and must stay as written. \"300 MB\" is the index size; \"CPU\" is the processor; both stay as-is.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.updates.title": "Automatic updates",
   "@onboarding.stepOptional.updates.title": {
-    "description": "Title of the automatic-updates toggle on the optional-setup step."
+    "description": "Title of the automatic-updates toggle on the optional-setup step.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates. If disabled, you''ll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
   "@onboarding.stepOptional.updates.desc": {
-    "description": "Description of the automatic-updates toggle, including the network requests it makes and the trade-off of disabling it. \"Cmdr\" is the product name. \"24 hours\" and \"commercial license\" are factual details."
+    "description": "Description of the automatic-updates toggle, including the network requests it makes and the trade-off of disabling it. \"Cmdr\" is the product name. \"24 hours\" and \"commercial license\" are factual details.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.mtp.title": "MTP (Android phones, Kindles, cameras)",
   "@onboarding.stepOptional.mtp.title": {
-    "description": "Title of the MTP-devices toggle on the optional-setup step. \"MTP\" is the device-transfer protocol; \"Android\", \"Kindles\", and \"cameras\" are example device types. \"MTP\", \"Android\", and \"Kindle\" are brand/protocol names that stay untranslated."
+    "description": "Title of the MTP-devices toggle on the optional-setup step. \"MTP\" is the device-transfer protocol; \"Android\", \"Kindles\", and \"cameras\" are example device types. \"MTP\", \"Android\", and \"Kindle\" are brand/protocol names that stay untranslated.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.stepOptional.mtp.desc": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP. The cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can''t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it''s running. When you quit Cmdr, this is politely restored. But it''s a bit of a cost, so:",
   "@onboarding.stepOptional.mtp.desc": {
-    "description": "Description of the MTP toggle: it lets the app talk to phones, e-readers, and cameras, at the cost of temporarily suppressing a conflicting macOS process. <strong> bolds the device list; <em> emphasizes \"also\". \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Finder\" is the macOS file manager; \"Android\", \"Kindles\", \"MTP\", and \"PTP\" are device/protocol names; all stay untranslated. The trailing colon leads into the recommendation caption beside the toggle."
+    "description": "Description of the MTP toggle: it lets the app talk to phones, e-readers, and cameras, at the cost of temporarily suppressing a conflicting macOS process. <strong> bolds the device list; <em> emphasizes \"also\". \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Finder\" is the macOS file manager; \"Android\", \"Kindles\", \"MTP\", and \"PTP\" are device/protocol names; all stay untranslated. The trailing colon leads into the recommendation caption beside the toggle.",
+    "screenshot": "onboarding-optional.png"
   },
 
   "onboarding.cloudPicker.listAria": "Cloud AI providers",

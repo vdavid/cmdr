@@ -236,7 +236,8 @@
 
   "fileOperations.shared.byteRate": "<size></size>/s",
   "@fileOperations.shared.byteRate": {
-    "description": "Data-transfer speed shown next to a scan or copy/move bar, e.g. '1.2 MB/s'. <size> renders the formatted size (a widget, no inner text); '/s' means per second. Keep the per-second marker adjacent to the size."
+    "description": "Data-transfer speed shown next to a scan or copy/move bar, e.g. '1.2 MB/s'. <size> renders the formatted size (a widget, no inner text); '/s' means per second. Keep the per-second marker adjacent to the size.",
+    "screenshot": "toast-transfer-complete.png"
   },
 
   "fileOperations.shared.andJoin": "{a} and {b}",
@@ -534,7 +535,8 @@
 
   "fileOperations.transferProgress.titleFlushing": "Writing the last piece...",
   "@fileOperations.transferProgress.titleFlushing": {
-    "description": "Progress-dialog title during the final flush to disk after the bytes are copied (a real pause on slow media). Reassures the user it isn't stuck. Keep the trailing ellipsis."
+    "description": "Progress-dialog title during the final flush to disk after the bytes are copied (a real pause on slow media). Reassures the user it isn't stuck. Keep the trailing ellipsis.",
+    "screenshot": "toast-transfer-complete.png"
   },
 
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} delete {Deleting} other {Moving to trash}}...",

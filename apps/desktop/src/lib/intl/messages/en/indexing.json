@@ -1,12 +1,14 @@
 {
   "indexing.status.ariaLabel": "Drive indexing status",
   "@indexing.status.ariaLabel": {
-    "description": "Accessibility label for the small hourglass icon in the top-right corner that shows while Cmdr is indexing a drive. Read aloud by screen readers; the live progress is in its tooltip."
+    "description": "Accessibility label for the small hourglass icon in the top-right corner that shows while Cmdr is indexing a drive. Read aloud by screen readers; the live progress is in its tooltip.",
+    "screenshot": "indexing-status.png"
   },
 
   "indexing.scan.label": "Scanning your drive...",
   "@indexing.scan.label": {
-    "description": "Tooltip heading shown while Cmdr scans a drive to build its index. This is a repeat scan (a prior scan exists, so progress is calibrated). The trailing '...' signals ongoing work; keep it."
+    "description": "Tooltip heading shown while Cmdr scans a drive to build its index. This is a repeat scan (a prior scan exists, so progress is calibrated). The trailing '...' signals ongoing work; keep it.",
+    "screenshot": "indexing-status.png"
   },
 
   "indexing.scan.labelFirst": "Scanning your drive (first scan)...",
@@ -20,7 +22,8 @@
     "placeholders": {
       "entriesText": "number of files and folders scanned so far, already formatted (e.g. 12,345)",
       "dirsText": "number of folders found so far, already formatted (e.g. 678)"
-    }
+    },
+    "screenshot": "indexing-status.png"
   },
 
   "indexing.scan.etaRough": "roughly {eta}",
@@ -71,7 +74,8 @@
 
   "indexing.eta.almostDone": "Almost done",
   "@indexing.eta.almostDone": {
-    "description": "Time-remaining phrase shown when an indexing operation has under two seconds left (a precise countdown there would be noise). Reassuring and terse."
+    "description": "Time-remaining phrase shown when an indexing operation has under two seconds left (a precise countdown there would be noise). Reassuring and terse.",
+    "screenshot": "indexing-status.png"
   },
 
   "indexing.eta.secondsLeft": "{secondsText}s left",

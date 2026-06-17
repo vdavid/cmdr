@@ -1,3 +1,10 @@
 [
+  "toast-download",
+  "toast-mtp-connected",
+  "toast-low-disk",
+  "ai-suggestion",
+  "toast-index-rescan",
+  "indexing-aggregation",
+  "indexing-replay",
   "shortcuts"
 ]

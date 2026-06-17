@@ -65,7 +65,8 @@
   },
   "ui.toast.dismissAria": "Dismiss notification",
   "@ui.toast.dismissAria": {
-    "description": "aria-label for the × button that closes (dismisses) a toast notification."
+    "description": "aria-label for the × button that closes (dismisses) a toast notification.",
+    "screenshot": "toast-favorite.png"
   },
 
   "ui.loadingIcon.finalizing": "All {countText} {count, plural, one {file} other {files}} loaded. Sorting your files, preparing view...",
