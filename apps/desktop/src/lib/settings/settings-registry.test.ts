@@ -391,7 +391,7 @@ describe('cardKey resolution (resolveDefinition)', () => {
   it('resolves a setting`s cardKey to a `card` getter (the in-page SectionCard title)', () => {
     // The downloads setting carries cardKey `settings.fileSystemWatching.cardDownloads`.
     const def = getSettingDefinition('behavior.fileSystemWatching.downloadsNotifications')
-    expect(def?.card).toBe('Downloads notifications')
+    expect(def?.card).toBe('Downloads')
   })
 
   it('leaves `card` undefined when a setting has no cardKey', () => {

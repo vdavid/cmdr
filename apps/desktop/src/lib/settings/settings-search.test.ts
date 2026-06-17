@@ -182,10 +182,10 @@ describe('card title indexing', () => {
   it('appends a setting`s resolved card title to its searchable text', () => {
     const results = searchSettings('')
     const downloads = results.find((r) => r.setting.id === 'behavior.fileSystemWatching.downloadsNotifications')
-    // The card title resolves to "Downloads notifications" (settings.fileSystemWatching.cardDownloads).
-    expect(downloads?.searchableText).toContain('downloads notifications')
+    // The card title resolves to "Downloads" (settings.fileSystemWatching.cardDownloads).
+    expect(downloads?.searchableText).toContain('downloads')
     // It MUST be appended last (after keywords), so label highlight offsets stay correct.
-    expect(downloads?.searchableText.endsWith('downloads notifications')).toBe(true)
+    expect(downloads?.searchableText.endsWith('downloads')).toBe(true)
   })
 
   it('does not append anything for a setting without a cardKey', () => {
