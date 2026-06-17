@@ -33,7 +33,7 @@
 //! - **`AppleLanguages` BCP-47 codes are loosely matched** to loctable language
 //!   keys. We try the exact code (with `-`→`_`), then the base language. We do
 //!   not try region fallbacks beyond that (a user on `pt-MZ` won't get `pt-PT`
-//!   if only `pt` exists, which is fine — `pt` does exist).
+//!   if only `pt` exists, which is fine, since `pt` does exist).
 //!
 //! ## When to refresh
 //!
@@ -352,7 +352,7 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn snapshot_resolves_to_non_empty_strings_on_macos() {
-        // Either fully localized or all English defaults — either way every
+        // Either fully localized or all English defaults. Either way, every
         // field must be non-empty so callers can blindly substitute.
         let s = snapshot();
         assert!(!s.system_settings.is_empty());
