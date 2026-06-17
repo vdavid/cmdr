@@ -92,7 +92,7 @@ const catalogs: Record<string, Catalog | undefined> = (() => {
   for (const [path, raw] of Object.entries(allModules)) {
     const locale = localeOfPath(path)
     if (!BCP47_DIR.test(locale)) continue // skip `screenshots/` and any other non-locale dir
-    out[locale] ??= {} as Catalog
+    out[locale] ??= {}
     Object.assign(out[locale], stripMetadata(raw))
   }
   return out
@@ -200,6 +200,15 @@ interface I18nCaptureApi {
    * there's no visible change.
    */
   rerender: () => void
+  /**
+   * Switches the app's active locale to `tag` (e.g. `en-XA`, the pseudolocale)
+   * for the overflow-capture pass, so every surface renders in the expanded,
+   * accented strings. `null` reverts to the OS default. The driver calls this
+   * once after the app is ready, before capturing surfaces. Relies on the
+   * `tag`'s catalog being loaded (the glob includes it only if the dir existed
+   * at build time, so generate `en-XA` BEFORE the capture build).
+   */
+  setLocale: (tag: string | null) => void
 }
 
 if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
@@ -224,6 +233,9 @@ if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
     },
     rerender() {
       setLocale(getLocale())
+    },
+    setLocale(tag: string | null) {
+      setLocale(tag)
     },
   }
   ;(window as unknown as { __cmdrI18nCapture?: I18nCaptureApi }).__cmdrI18nCapture = api

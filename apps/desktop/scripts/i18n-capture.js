@@ -21,6 +21,14 @@
  *   pnpm i18n:shots              # the full re-run: this with --build, then couple
  *   pnpm i18n:capture --build    # build the capture binary, then capture
  *   pnpm i18n:capture            # reuse a binary from a PRIOR --build run
+ *   pnpm i18n:overflow           # pseudolocale OVERFLOW pass (= --build --locale en-XA)
+ *
+ * The `--locale <tag>` axis (default `en`) switches the capture to an OVERFLOW
+ * pass: it generates the locale (en-XA), the driver switches the app to it, the
+ * screenshots land in a SEPARATE `screenshots/overflow/` dir, and a DOM clip scan
+ * writes `overflow/overflow-report.md`. An overflow pass never touches the
+ * coupling artifacts (`capture-report.json` / `@key.screenshot`) and runs only
+ * the main capture pass. See `docs/guides/i18n.md` § Pseudolocale.
  *
  * `pnpm i18n:shots` is the single entry point for a fresh end-to-end refresh
  * (capture with `--build`, then `i18n:couple`); reach for it after a UI change.
@@ -48,6 +56,23 @@ const desktopDir = join(here, '..')
 // This matches `desktop-svelte-e2e-playwright.go`'s binary resolution.
 const repoRoot = join(desktopDir, '..', '..')
 const wantBuild = process.argv.includes('--build')
+
+/**
+ * `--locale <tag>` axis. Default `en` is the normal coupling capture (writes
+ * `@key.screenshot` via `i18n:couple`). Any other tag (e.g. `en-XA`, the
+ * pseudolocale) is an OVERFLOW pass: the driver switches the app to that locale,
+ * screenshots land in a SEPARATE `screenshots/overflow/` dir, and a DOM clip scan
+ * writes `overflow/overflow-report.md`. An overflow pass never touches coupling
+ * artifacts and runs only the `main` capture pass (the mock-license/FDA passes
+ * are coupling-only). `pnpm i18n:overflow` is just this with `--locale en-XA
+ * --build`.
+ */
+const localeIdx = process.argv.indexOf('--locale')
+const captureLocale = localeIdx >= 0 ? process.argv[localeIdx + 1] : 'en'
+if (localeIdx >= 0 && (captureLocale === undefined || captureLocale.startsWith('--'))) {
+  throw new Error('`--locale` needs a tag, e.g. `--locale en-XA`')
+}
+const isOverflow = captureLocale !== 'en'
 // An explicit socket override (rare); otherwise each pass derives its own unique
 // per-launch socket in `launchAndCapture` so a parallel dev/E2E session in
 // another worktree can never collide and relaunches don't race a stale bind.
@@ -176,6 +201,22 @@ async function main() {
   // capture); just warn, since a busy screen can spoil separate-window shots.
   warnIfForeignCmdr()
 
+  if (isOverflow) {
+    // Generate the target locale BEFORE the build: the frontend's catalog glob
+    // (`messages/*/*.json`) is eager and resolved at BUILD time, so the locale dir
+    // must exist on disk before the capture binary is compiled or the runtime
+    // can't switch to it. Only `en-XA` (the pseudolocale) is generable today.
+    if (captureLocale === 'en-XA') {
+      console.log(`[i18n-capture] overflow pass: generating ${captureLocale} catalog…`)
+      run('node', ['scripts/gen-pseudolocale.js'])
+    } else {
+      console.log(
+        `[i18n-capture] overflow pass in ${captureLocale}: assuming its catalog is already on disk ` +
+          `(only en-XA is auto-generated). Build with --build so the glob includes it.`,
+      )
+    }
+  }
+
   if (wantBuild) {
     console.log('[i18n-capture] building capture binary…')
     // `CMDR_I18N_CAPTURE_BUILD=1` flips the `__CMDR_I18N_CAPTURE__` Vite define so
@@ -232,7 +273,21 @@ async function main() {
   // toast surfaces (its event bridge bails when the gate is pending); the
   // debug-assertions capture build honors the mock. The virtual MTP device
   // auto-registers under E2E mode (no env needed beyond the feature).
-  await launchAndCapture(binary, startPath, { CMDR_MOCK_FDA: 'granted' }, 'main')
+  // `CMDR_I18N_OVERFLOW_LOCALE` (overflow pass only) tells the spec to switch the
+  // app to the pseudolocale, redirect screenshots to `overflow/`, and run the
+  // clip scan; empty/absent → the normal English coupling capture.
+  /** @type {Record<string, string>} */
+  const mainEnv = { CMDR_MOCK_FDA: 'granted' }
+  if (isOverflow) mainEnv.CMDR_I18N_OVERFLOW_LOCALE = captureLocale
+  await launchAndCapture(binary, startPath, mainEnv, 'main')
+
+  // The mock-license / FDA-variant passes are coupling-only (they capture extra
+  // surfaces for `@key.screenshot`). An overflow pass only needs the main-pass
+  // surfaces rendered in the pseudolocale, so skip them: stop after the main pass.
+  if (isOverflow) {
+    console.log('[i18n-capture] overflow pass done. See `screenshots/overflow/overflow-report.md` for clip findings.')
+    return
+  }
 
   // PER-LAUNCH mock passes. Each carries an env the app reads once at startup,
   // and the spec (keyed by `CMDR_I18N_CAPTURE_PASS`) captures only that pass's

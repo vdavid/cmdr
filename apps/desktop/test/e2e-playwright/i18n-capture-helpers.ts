@@ -39,15 +39,136 @@ interface CaptureApi {
   dump: () => Record<string, string[]>
   reset: () => void
   rerender: () => void
+  setLocale: (tag: string | null) => void
 }
 
 const here = dirname(fileURLToPath(import.meta.url))
-export const screenshotsDir = join(here, '..', '..', 'src', 'lib', 'intl', 'messages', 'screenshots')
+const baseScreenshotsDir = join(here, '..', '..', 'src', 'lib', 'intl', 'messages', 'screenshots')
+
+/**
+ * The locale this run captures in for OVERFLOW review (the pseudolocale `en-XA`),
+ * or empty for the normal English coupling capture. Set by the orchestrator via
+ * `CMDR_I18N_OVERFLOW_LOCALE`. When set, the run is an overflow pass: screenshots
+ * land in a SEPARATE `overflow/` dir (so they never overwrite the coupling
+ * screenshots), the driver switches the app to this locale before capturing, and
+ * each surface gets a DOM clip-overflow scan. An overflow pass never touches the
+ * coupling artifacts (`capture-report.json` / `@key.screenshot`).
+ */
+export const overflowLocale = process.env.CMDR_I18N_OVERFLOW_LOCALE ?? ''
+export const isOverflowPass = overflowLocale !== ''
+
+/**
+ * Where screenshots land this run: the coupling dir for a normal pass, a
+ * dedicated `overflow/` subdir for an overflow pass (both gitignored).
+ */
+export const screenshotsDir = isOverflowPass ? join(baseScreenshotsDir, 'overflow') : baseScreenshotsDir
 export const reportPath = join(screenshotsDir, 'capture-report.json')
 /** Sibling list of surfaces that FAILED to capture this run (coverage honesty). */
 export const failedPath = join(screenshotsDir, 'capture-failed.json')
 /** Sibling list of surfaces deliberately SKIPPED (documented harness gaps). */
 export const skippedPath = join(screenshotsDir, 'capture-skipped.json')
+
+/**
+ * One element flagged by the clip-overflow scan: a text-bearing node whose
+ * content is cut off by its own box (its scroll size exceeds its client size
+ * while `overflow` clips). Best-effort heuristic, not proof of a visible defect.
+ */
+export interface ClipFinding {
+  /** A short CSS-ish path to the element (tag + id/classes), for the report. */
+  selector: string
+  /** The clipped text content (trimmed, capped), so the reviewer can spot it. */
+  text: string
+  /** Horizontal overflow in px (`scrollWidth - clientWidth`), 0 if none. */
+  overflowX: number
+  /** Vertical overflow in px (`scrollHeight - clientHeight`), 0 if none. */
+  overflowY: number
+}
+
+/** surface label → the clip findings detected on it (empty array = clean). */
+export const clipFindings: Record<string, ClipFinding[]> = {}
+
+/**
+ * Scans the page's DOM for text that its own box clips, and records the findings
+ * under `label`. The heuristic: a text-bearing element whose `scrollWidth >
+ * clientWidth` (or `scrollHeight > clientHeight`) by more than a small tolerance,
+ * AND whose computed `overflow` in that axis hides/clips the spill (so the text
+ * is actually cut off, not scrollable into view). We skip naturally-scrollable
+ * containers (`auto`/`scroll`), visually-hidden accessibility nodes (`sr-only` /
+ * the announcer, which always clip by design), and elements with no direct text.
+ * This finds the common pseudolocale failures: a truncated button/label/header
+ * where +40% text no longer fits. It is a HEURISTIC: it can miss a clip that an
+ * ancestor masks, and can flag a deliberately-ellipsized label (which may be
+ * acceptable design). Treat the report as a list of spots to eyeball, not a hard
+ * pass/fail. No-op outside an overflow pass.
+ */
+export async function scanForClipping(page: TauriPage, label: string): Promise<void> {
+  if (!isOverflowPass) return
+  try {
+    const findings = await page.evaluate<ClipFinding[]>(`(function() {
+      var TOL = 1; // sub-pixel rounding tolerance
+      var out = [];
+      var nodes = document.querySelectorAll('body *');
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        // Only text-bearing elements: at least one direct, non-whitespace text node.
+        var hasText = false;
+        for (var c = 0; c < el.childNodes.length; c++) {
+          var n = el.childNodes[c];
+          if (n.nodeType === 3 && n.textContent && n.textContent.trim() !== '') { hasText = true; break; }
+        }
+        if (!hasText) continue;
+        var s = getComputedStyle(el);
+        if (s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity) === 0) continue;
+        // Skip visually-hidden accessibility nodes: the standard 'sr-only' /
+        // screen-reader-announcer pattern collapses the box to a 1px clip-rect, so
+        // it ALWAYS "clips" its text by design and is never seen by a user. Flagging
+        // it is pure noise that buries real overflow. Detect it by the conventional
+        // class names AND by the tell-tale tiny clip box (clientW/H <= 1px).
+        var cls = (typeof el.className === 'string') ? el.className : '';
+        if (/\\bsr-only\\b/.test(cls) || el.id === 'svelte-announcer') continue;
+        if (el.clientWidth <= 1 || el.clientHeight <= 1) continue;
+        var ofx = el.scrollWidth - el.clientWidth;
+        var ofy = el.scrollHeight - el.clientHeight;
+        // Only count an axis whose overflow is hidden/clipped/ellipsed (text is
+        // actually cut off). 'auto'/'scroll' means the user can reach it, 'visible'
+        // means it spills (a layout-break, caught separately below).
+        var clipsX = (s.overflowX === 'hidden' || s.overflowX === 'clip' || s.textOverflow === 'ellipsis');
+        var clipsY = (s.overflowY === 'hidden' || s.overflowY === 'clip');
+        var hitX = ofx > TOL && clipsX;
+        var hitY = ofy > TOL && clipsY;
+        if (!hitX && !hitY) continue;
+        // Build a short selector for the report.
+        var sel = el.tagName.toLowerCase();
+        if (el.id) sel += '#' + el.id;
+        if (cls) {
+          var selCls = cls.trim().split(/\\s+/).slice(0, 3).join('.');
+          if (selCls) sel += '.' + selCls;
+        }
+        var txt = (el.textContent || '').trim().replace(/\\s+/g, ' ');
+        if (txt.length > 80) txt = txt.slice(0, 80) + '…';
+        out.push({ selector: sel, text: txt, overflowX: hitX ? ofx : 0, overflowY: hitY ? ofy : 0 });
+      }
+      // De-dup identical (selector,text) rows an ancestor + child can both produce.
+      var seen = {};
+      var dedup = [];
+      for (var k = 0; k < out.length; k++) {
+        var key = out[k].selector + '|' + out[k].text;
+        if (seen[key]) continue;
+        seen[key] = true;
+        dedup.push(out[k]);
+      }
+      return dedup;
+    })()`)
+    clipFindings[label] = findings
+    if (findings.length > 0) {
+      console.warn(`[i18n-overflow] ${label}: ${String(findings.length)} clipped element(s)`)
+    }
+  } catch {
+    // Best-effort: a window whose eval channel is unresponsive (e.g. shortcuts)
+    // just gets no findings rather than failing the run.
+    clipFindings[label] ??= []
+  }
+}
 
 /** Calls a method on the webview's `window.__cmdrI18nCapture`, returns its result. */
 export async function captureCall<T>(page: TauriPage, method: keyof CaptureApi, arg?: string): Promise<T> {
@@ -144,12 +265,19 @@ export async function captureSurface(
   const screenshot = `${label}.png`
   try {
     const { page, focusLabel } = await stage()
+    // Overflow pass: each separate WebviewWindow (settings, viewer, shortcuts)
+    // has its own locale source, so set the pseudolocale on whatever page this
+    // surface captures against. Idempotent on `main` (already switched in the
+    // first surface). The `rerender` below then re-resolves it in the expanded
+    // strings before the screenshot + clip scan. No-op outside an overflow pass.
+    if (isOverflowPass) await captureCall(page, 'setLocale', overflowLocale)
     await captureCall(page, 'setSurface', label)
     await captureCall(page, 'rerender')
     if (focusLabel !== undefined) await focusWindow(page, focusLabel)
     await settlePaint(page)
     await page.screenshot({ path: join(screenshotsDir, screenshot) })
     report[label] = { screenshot, keys: await keysFor(page, label) }
+    await scanForClipping(page, label)
     console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
   } catch (err) {
     failed.push(label)
@@ -241,6 +369,7 @@ export async function captureToastSurface(
     await settlePaint(main)
     await main.screenshot({ path: join(screenshotsDir, screenshot) })
     report[label] = { screenshot, keys: await keysFor(main, label) }
+    await scanForClipping(main, label)
     console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
   } catch (err) {
     failed.push(label)
@@ -303,6 +432,7 @@ export async function captureErrorPaneExample(
     await settlePaint(main)
     await main.screenshot({ path: join(screenshotsDir, screenshot) })
     report[label] = { screenshot, keys: await keysFor(main, label) }
+    await scanForClipping(main, label)
     console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
   } catch (err) {
     failed.push(label)

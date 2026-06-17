@@ -187,9 +187,11 @@ export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | 
  * UI language: `'system'` follows the OS locale (the default); any other value
  * is a BCP-47 locale tag with a loaded catalog (e.g. `'en'`, `'en-XA'`). The
  * valid non-`'system'` values are derived at runtime from the loaded catalogs
- * (`availableLocales()`), so they aren't a fixed union here.
+ * (`availableLocales()`), so they aren't a fixed union here. `string & {}` keeps
+ * the `'system'` literal visible in autocomplete without it being swallowed by
+ * the open `string` (which `'system' | string` would be, flagged as redundant).
  */
-export type LanguageSetting = 'system' | string
+export type LanguageSetting = 'system' | (string & {})
 
 export interface SettingsValues {
   // Appearance

@@ -455,8 +455,14 @@ describe('appearance.language (the UI language picker)', () => {
   })
 
   it('validates: accepts `system` and a loaded locale, rejects an unknown tag', () => {
-    expect(() => validateSettingValue('appearance.language', 'system')).not.toThrow()
-    expect(() => validateSettingValue('appearance.language', 'en')).not.toThrow()
-    expect(() => validateSettingValue('appearance.language', 'zz-NOPE')).toThrow()
+    expect(() => {
+      validateSettingValue('appearance.language', 'system')
+    }).not.toThrow()
+    expect(() => {
+      validateSettingValue('appearance.language', 'en')
+    }).not.toThrow()
+    expect(() => {
+      validateSettingValue('appearance.language', 'zz-NOPE')
+    }).toThrow()
   })
 })

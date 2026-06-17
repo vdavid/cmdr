@@ -22,8 +22,11 @@ vi.mock('$lib/intl/messages.svelte', async (importOriginal) => {
   return {
     ...actual,
     // Spy on the locale-switch seam; keep `availableLocales` (the registry needs
-    // it to build the language options) and everything else real.
-    setLocale: (locale: string | null) => setLocale(locale),
+    // it to build the language options) and everything else real. Braces keep the
+    // arrow void (the spy's signature is `(tag) => void`, so don't return the call).
+    setLocale: (locale: string | null) => {
+      setLocale(locale)
+    },
   }
 })
 

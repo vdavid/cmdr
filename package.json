@@ -17,6 +17,7 @@
     "i18n:capture": "pnpm --filter @cmdr/desktop i18n:capture",
     "i18n:couple": "pnpm --filter @cmdr/desktop i18n:couple",
     "i18n:shots": "pnpm --filter @cmdr/desktop i18n:shots",
+    "i18n:overflow": "pnpm --filter @cmdr/desktop i18n:overflow",
     "check": "./scripts/check.sh"
   },
   "devDependencies": {
