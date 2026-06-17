@@ -120,12 +120,13 @@ pub struct VolumeUnmounted {
 }
 
 /// Typed `volume-context-action` Tauri event. Emitted to the `main` window when
-/// the user picks an action (currently just "eject") from the native breadcrumb /
-/// dropdown-row context menu. Window-scoped, so it's emitted via `Event::emit_to`.
+/// the user picks an action ("eject", "rename-favorite", or "remove-favorite") from
+/// the native breadcrumb / volume-selector row context menu. Window-scoped, so it's
+/// emitted via `Event::emit_to`.
 #[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeContextAction {
-    /// The action id (for example, "eject").
+    /// The action id ("eject", "rename-favorite", or "remove-favorite").
     pub action: String,
     /// The target volume's ID.
     pub volume_id: String,

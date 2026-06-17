@@ -196,6 +196,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::icons::clear_directory_icon_cache,
         crate::commands::ui::show_file_context_menu,
         crate::commands::ui::show_breadcrumb_context_menu,
+        crate::commands::ui::show_volume_row_context_menu,
         crate::commands::ui::show_parent_row_context_menu,
         crate::commands::ui::show_tab_context_menu,
         crate::commands::ui::show_network_host_context_menu,

@@ -27,11 +27,11 @@ use super::menu_items::{
 #[cfg(target_os = "macos")]
 use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, QUICK_LOOK_ID};
 use super::{
-    COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EJECT_VOLUME_ID, FAVORITES_ADD_CONTEXT_ID,
-    FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, MenuItems,
-    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
-    SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID,
-    ViewMode, ViewerMenuItems,
+    COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
+    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
+    FILE_VIEW_ID, MenuItems, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
+    NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
+    TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -429,6 +429,38 @@ pub fn build_network_host_context_menu(
             None::<&str>,
         )?;
         menu.append(&forget_password)?;
+    }
+
+    Ok(menu)
+}
+
+/// Builds the context menu for a row in the volume-selector dropdown.
+///
+/// Favorites get `Rename` + `Remove`; an ejectable volume gets an `Eject ({name})`
+/// item (disabled with a ` (busy)` suffix while a write op touches it, mirroring the
+/// breadcrumb menu and the inline eject button). The caller stashes the target id +
+/// name in `MenuState.volume_row_context` so `on_menu_event` can dispatch the click.
+pub fn build_volume_row_context_menu<R: Runtime>(
+    app: &AppHandle<R>,
+    is_favorite: bool,
+    eject_volume_name: Option<&str>,
+    eject_busy: bool,
+) -> tauri::Result<Menu<R>> {
+    let menu = Menu::new(app)?;
+
+    if is_favorite {
+        let rename_item = MenuItem::with_id(app, FAVORITE_RENAME_ID, "Rename", true, None::<&str>)?;
+        menu.append(&rename_item)?;
+        let remove_item = MenuItem::with_id(app, FAVORITE_REMOVE_ID, "Remove", true, None::<&str>)?;
+        menu.append(&remove_item)?;
+    } else if let Some(name) = eject_volume_name {
+        let label = if eject_busy {
+            format!("Eject ({}) (busy)", name)
+        } else {
+            format!("Eject ({})", name)
+        };
+        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, &label, !eject_busy, None::<&str>)?;
+        menu.append(&eject_item)?;
     }
 
     Ok(menu)

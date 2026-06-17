@@ -2,8 +2,8 @@ use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
     CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode,
     build_breadcrumb_context_menu, build_context_menu, build_network_host_context_menu, build_parent_row_context_menu,
-    build_tab_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items,
-    sync_view_mode_check_states,
+    build_tab_context_menu, build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command,
+    rebuild_view_mode_items, sync_view_mode_check_states,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
@@ -118,7 +118,7 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileCont
 /// (e.g. "⌃⌘C"), or empty string if no shortcut is configured.
 /// `eject_volume_id` + `eject_volume_name` are set when the breadcrumb represents an
 /// ejectable volume; both must be present (or both absent) — the command stashes the
-/// id in `MenuState.volume_eject_context` so `on_menu_event` can dispatch the click.
+/// id in `MenuState.volume_row_context` so `on_menu_event` can dispatch the click.
 #[tauri::command]
 #[specta::specta]
 pub fn show_breadcrumb_context_menu<R: Runtime>(
@@ -142,7 +142,7 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
     // eject target — the builder also won't render the item.
     {
         let state = app.state::<MenuState<R>>();
-        let mut ctx = state.volume_eject_context.lock_ignore_poison();
+        let mut ctx = state.volume_row_context.lock_ignore_poison();
         if let (Some(id), Some(name)) = (eject_volume_id, eject_volume_name) {
             ctx.volume_id = id;
             ctx.volume_name = name;
@@ -150,6 +150,41 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
             ctx.volume_id.clear();
             ctx.volume_name.clear();
         }
+    }
+
+    menu.popup(window).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Shows a native context menu for a row in the volume-selector dropdown (fire-and-forget).
+///
+/// A favorite row (`is_favorite`) gets `Rename` + `Remove`; an ejectable volume row gets
+/// `Eject ({name})`. The picked action is delivered asynchronously via the
+/// `volume-context-action` Tauri event from `on_menu_event` (the same path as the breadcrumb
+/// eject item). The target id + name are stashed in `MenuState.volume_row_context` so the
+/// handler can read them back.
+#[tauri::command]
+#[specta::specta]
+pub fn show_volume_row_context_menu<R: Runtime>(
+    window: Window<R>,
+    volume_id: String,
+    volume_name: String,
+    is_favorite: bool,
+    is_ejectable: bool,
+) -> Result<(), String> {
+    let app = window.app_handle();
+
+    // Disable the eject item while a write op touches this volume (matches the inline
+    // eject button and the breadcrumb menu). Favorites are never ejectable.
+    let eject_busy = is_ejectable && crate::file_system::busy_volume_ids().contains(&volume_id);
+    let eject_name = (is_ejectable && !is_favorite).then_some(volume_name.as_str());
+    let menu = build_volume_row_context_menu(app, is_favorite, eject_name, eject_busy).map_err(|e| e.to_string())?;
+
+    {
+        let state = app.state::<MenuState<R>>();
+        let mut ctx = state.volume_row_context.lock_ignore_poison();
+        ctx.volume_id = volume_id;
+        ctx.volume_name = volume_name;
     }
 
     menu.popup(window).map_err(|e| e.to_string())?;

@@ -13,8 +13,8 @@ commands, and notable non-obvious placements.
   wrap menu, encoding pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`),
   `viewerReload`.
 - **`file-actions.ts`**: open file/URL, Finder reveal, Quick Look, Get Info, context menu (file / breadcrumb /
-  parent-row), clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` / `cloudRemoveDownload`, iCloud
-  Drive only).
+  volume-selector-row / parent-row), clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` /
+  `cloudRemoveDownload`, iCloud Drive only).
 - **`favorites.ts`**: user-editable switcher favorites: `addFavorite`, `removeFavorite`, `renameFavorite`,
   `reorderFavorites`, plus `stripFavoritePrefix` (recover the bare id from a `fav-…` switcher id). Listing rides
   `listVolumes` / `volumes-changed`; there's no `listFavorites`.

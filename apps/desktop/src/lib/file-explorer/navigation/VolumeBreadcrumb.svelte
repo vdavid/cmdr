@@ -3,12 +3,15 @@
     import {
         ejectVolume,
         getIpcErrorMessage,
+        onVolumeContextAction,
         resolvePathVolume,
+        showVolumeRowContextMenu,
         upgradeToSmbVolume,
         systemHasSavedSmbPassword,
         upgradeToSmbVolumeUsingSavedPassword,
         type UpgradeResult,
     } from '$lib/tauri-commands'
+    import type { UnlistenFn } from '@tauri-apps/api/event'
     import { ask } from '@tauri-apps/plugin-dialog'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
@@ -433,22 +436,26 @@
         // Close on click outside
         document.addEventListener('click', handleClickOutside)
         document.addEventListener('click', handleBreadcrumbPopupClickOutside)
-        document.addEventListener('click', handleRowMenuClickOutside)
         document.addEventListener('keydown', handleDocumentKeyDown)
         document.addEventListener('keydown', handleBreadcrumbPopupKeyDown)
-        document.addEventListener('keydown', handleRowMenuKeyDown)
         window.addEventListener('resize', handleResize)
+
+        // Native row context menu (Rename / Remove a favorite) routes its pick back here.
+        void onVolumeContextAction(handleVolumeContextAction).then((unlisten) => {
+            unlistenVolumeContext = unlisten
+        })
     })
+
+    let unlistenVolumeContext: UnlistenFn | undefined
 
     onDestroy(() => {
         spaceManager.destroy()
         fav.destroy()
+        unlistenVolumeContext?.()
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('click', handleBreadcrumbPopupClickOutside)
-        document.removeEventListener('click', handleRowMenuClickOutside)
         document.removeEventListener('keydown', handleDocumentKeyDown)
         document.removeEventListener('keydown', handleBreadcrumbPopupKeyDown)
-        document.removeEventListener('keydown', handleRowMenuKeyDown)
         window.removeEventListener('resize', handleResize)
     })
 
@@ -529,27 +536,34 @@
         }
     }
 
-    // Per-volume right-click popup (the small "Eject (name)" menu shown when
-    // the user right-clicks a row in the dropdown). Mirrors the breadcrumb-popup
-    // pattern used for "Connect directly", but each invocation targets a specific
-    // volume rather than the currently-selected one.
-    let rowMenuVolumeId: string | null = $state(null)
-    let rowMenuPosition: { left: number; top: number } | null = $state(null)
-    let rowMenuRef: HTMLDivElement | undefined = $state()
-
+    // Per-row right-click context menu. Favorites get Rename / Remove; ejectable
+    // volumes get Eject ({name}); anything else has no menu. Uses the NATIVE (muda)
+    // menu via `showVolumeRowContextMenu`, matching the breadcrumb / tab menus. While
+    // the native menu tracks, the webview is frozen, so the dropdown highlight can't
+    // drift onto another row under the cursor or arrow keys — it stays pinned to the
+    // right-clicked one. The picked action returns via the `volume-context-action`
+    // event: eject is handled in `DualPaneExplorer`; rename / remove land in
+    // `handleVolumeContextAction` below (the open dropdown owns them).
     function openRowMenu(volume: VolumeInfo, event: MouseEvent) {
         event.preventDefault()
         event.stopPropagation()
-        // Favorites get a Remove / Rename menu; ejectable volumes get the eject menu;
-        // everything else has no row menu.
-        if (volume.category !== 'favorite' && !isVolumeEjectable(volume)) return
-        rowMenuVolumeId = volume.id
-        rowMenuPosition = { left: event.clientX, top: event.clientY }
+        const isFavorite = volume.category === 'favorite'
+        const ejectable = isVolumeEjectable(volume)
+        if (!isFavorite && !ejectable) return
+        void showVolumeRowContextMenu(volume.id, volume.name, isFavorite, ejectable)
     }
 
-    function closeRowMenu() {
-        rowMenuVolumeId = null
-        rowMenuPosition = null
+    // Rename / remove a favorite when the user picks it from the native row menu.
+    // Both panes' breadcrumbs receive this global event, but only the one whose
+    // dropdown is open owns the menu it spawned (favorites are global, so the id
+    // alone can't tell the panes apart; `isOpen` can). Eject is handled elsewhere.
+    function handleVolumeContextAction(payload: { action: string; volumeId: string }) {
+        if (!isOpen) return
+        if (payload.action !== 'rename-favorite' && payload.action !== 'remove-favorite') return
+        const volume = favorites.find((f) => f.id === payload.volumeId)
+        if (!volume) return
+        if (payload.action === 'rename-favorite') fav.startRename(volume)
+        else void fav.remove(volume)
     }
 
     // ── Favorites: remove, rename, reorder ───────────────────────────────
@@ -564,9 +578,9 @@
         // keyboard / edge path could still reach here. Don't tear down a volume
         // mid-transfer.
         if (isVolumeBusy(volume.id)) return
-        closeRowMenu()
         breadcrumbPopup.close()
-        isOpen = false
+        // Keep the dropdown open so several drives can be ejected in a row; the ejected
+        // volume disappears on its own via `volume-unmounted` / `mtp-device-disconnected`.
         try {
             await ejectVolume(volume.id)
             // Success: the volume disappears via `volume-unmounted` (disk) or
@@ -576,18 +590,6 @@
             addToast(tString('fileExplorer.pane.ejectFailedToast', { volumeName: volume.name, message: getIpcErrorMessage(e) }), {
                 level: 'error',
             })
-        }
-    }
-
-    function handleRowMenuClickOutside(event: MouseEvent) {
-        if (rowMenuRef && !rowMenuRef.contains(event.target as Node)) {
-            closeRowMenu()
-        }
-    }
-
-    function handleRowMenuKeyDown(event: KeyboardEvent) {
-        if (event.key === 'Escape' && rowMenuVolumeId) {
-            closeRowMenu()
         }
     }
 
@@ -929,48 +931,6 @@
                 >
                     {tString('fileExplorer.navigation.connectDirectly')}
                 </div>
-            </div>
-        {/if}
-    {/if}
-
-    {#if rowMenuVolumeId && rowMenuPosition}
-        {@const rowMenuVolume = volumes.find((v) => v.id === rowMenuVolumeId)}
-        {#if rowMenuVolume}
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-                class="row-menu"
-                bind:this={rowMenuRef}
-                style:left="{rowMenuPosition.left}px"
-                style:top="{rowMenuPosition.top}px"
-            >
-                {#if rowMenuVolume.category === 'favorite'}
-                    <!-- svelte-ignore a11y_click_events_have_key_events -->
-                    <div
-                        class="row-menu-item"
-                        onclick={(e: MouseEvent) => { e.stopPropagation(); const v = rowMenuVolume; closeRowMenu(); fav.startRename(v) }}
-                    >
-                        {tString('fileExplorer.navigation.rename')}
-                    </div>
-                    <!-- svelte-ignore a11y_click_events_have_key_events -->
-                    <div
-                        class="row-menu-item"
-                        onclick={(e: MouseEvent) => { e.stopPropagation(); const v = rowMenuVolume; closeRowMenu(); void fav.remove(v) }}
-                    >
-                        {tString('fileExplorer.navigation.remove')}
-                    </div>
-                {:else}
-                    <!-- svelte-ignore a11y_click_events_have_key_events -->
-                    <div
-                        class="row-menu-item"
-                        class:row-menu-item-disabled={isVolumeBusy(rowMenuVolume.id)}
-                        use:tooltip={isVolumeBusy(rowMenuVolume.id) ? EJECT_BUSY_TOOLTIP : ''}
-                        onclick={(e: MouseEvent) => { void handleEjectClick(rowMenuVolume, e) }}
-                    >
-                        {isVolumeBusy(rowMenuVolume.id)
-                            ? tString('fileExplorer.navigation.ejectMenuItemBusy', { name: rowMenuVolume.name })
-                            : tString('fileExplorer.navigation.ejectMenuItem', { name: rowMenuVolume.name })}
-                    </div>
-                {/if}
             </div>
         {/if}
     {/if}
@@ -1567,34 +1527,5 @@
        to the SMB / USB badges instead of jamming against them. */
     .breadcrumb-eject-button {
         margin-left: var(--spacing-xs);
-    }
-
-    /* ── Per-volume right-click menu (dropdown rows) ──────────────── */
-
-    .row-menu {
-        position: fixed;
-        min-width: 180px;
-        background-color: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-md);
-        /* Above the dropdown (--z-overlay: 200) and its submenu. */
-        z-index: calc(var(--z-overlay) + 2);
-        padding: var(--spacing-xs) 0;
-    }
-
-    .row-menu-item {
-        padding: var(--spacing-sm) var(--spacing-md);
-        cursor: default;
-        white-space: nowrap;
-    }
-
-    .row-menu-item:hover:not(.row-menu-item-disabled) {
-        background-color: var(--color-accent-subtle);
-    }
-
-    /* Busy volume: the eject action is blocked while a transfer touches it. */
-    .row-menu-item-disabled {
-        opacity: 0.4;
     }
 </style>

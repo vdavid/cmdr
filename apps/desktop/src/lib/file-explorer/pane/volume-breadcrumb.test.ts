@@ -6,7 +6,19 @@ import { mount, tick } from 'svelte'
 import VolumeBreadcrumb from '../navigation/VolumeBreadcrumb.svelte'
 import { waitForUpdates, useMountTarget } from './integration-test-utils'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
-import { removeFavorite, renameFavorite, reorderFavorites } from '$lib/tauri-commands'
+import {
+  removeFavorite,
+  renameFavorite,
+  reorderFavorites,
+  showVolumeRowContextMenu,
+  onVolumeContextAction,
+} from '$lib/tauri-commands'
+
+/** The `volume-context-action` callback the most-recently-mounted breadcrumb registered. */
+function latestVolumeContextHandler(): (payload: { action: string; volumeId: string }) => void {
+  const calls = vi.mocked(onVolumeContextAction).mock.calls
+  return calls[calls.length - 1][0] as (payload: { action: string; volumeId: string }) => void
+}
 
 // ============================================================================
 // Mock setup (must be in each test file: Vitest hoists vi.mock calls)
@@ -99,6 +111,8 @@ vi.mock('$lib/tauri-commands', () => ({
   renameFavorite: vi.fn().mockResolvedValue(undefined),
   reorderFavorites: vi.fn().mockResolvedValue(undefined),
   stripFavoritePrefix: (id: string) => (id.startsWith('fav-') ? id.slice(4) : id),
+  showVolumeRowContextMenu: vi.fn().mockResolvedValue(undefined),
+  onVolumeContextAction: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 vi.mock('$lib/icon-cache', async () => {
@@ -755,29 +769,26 @@ describe('VolumeBreadcrumb', () => {
       expect(reorderFavorites).toHaveBeenCalledWith(['b', 'a', 'c'])
     })
 
-    it('right-click opens a Remove / Rename menu; Remove calls removeFavorite with the bare id', async () => {
+    it('right-click a favorite requests the native row menu; Remove (over volume-context-action) calls removeFavorite with the bare id', async () => {
       await openWithFavorites([fav('x', 'Pics', '/Users/me/Pics')])
       const item = getTarget().querySelector('.favorite-item[data-fav-id="fav-x"]') as HTMLElement
       item.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 }))
       await tick()
-      const menuItems = Array.from(getTarget().querySelectorAll('.row-menu-item'))
-      const labels = menuItems.map((m) => m.textContent.trim())
-      expect(labels).toEqual(['Rename', 'Remove'])
-      const removeItem = menuItems.find((m) => m.textContent.trim() === 'Remove') as HTMLElement
-      removeItem.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      // The native (muda) row menu is requested for the right-clicked favorite (not ejectable).
+      expect(showVolumeRowContextMenu).toHaveBeenCalledWith('fav-x', 'Pics', true, false)
+      // The backend emits the pick back over `volume-context-action`.
+      latestVolumeContextHandler()({ action: 'remove-favorite', volumeId: 'fav-x' })
       await tick()
       expect(removeFavorite).toHaveBeenCalledWith('x')
     })
 
-    it('Rename shows an inline input; committing calls renameFavorite with the bare id', async () => {
+    it('Rename (over volume-context-action) shows an inline input; committing calls renameFavorite with the bare id', async () => {
       await openWithFavorites([fav('y', 'Old', '/Users/me/Old')])
       const item = getTarget().querySelector('.favorite-item[data-fav-id="fav-y"]') as HTMLElement
       item.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 }))
       await tick()
-      const renameItem = Array.from(getTarget().querySelectorAll('.row-menu-item')).find(
-        (m) => m.textContent.trim() === 'Rename',
-      ) as HTMLElement
-      renameItem.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      expect(showVolumeRowContextMenu).toHaveBeenCalledWith('fav-y', 'Old', true, false)
+      latestVolumeContextHandler()({ action: 'rename-favorite', volumeId: 'fav-y' })
       await tick()
       const input = getTarget().querySelector('.favorite-rename-input') as HTMLInputElement
       expect(input).toBeTruthy()

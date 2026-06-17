@@ -95,6 +95,33 @@ export async function showBreadcrumbContextMenu(
 }
 
 /**
+ * Shows the native context menu for a row in the volume-selector dropdown.
+ *
+ * A favorite row gets `Rename` + `Remove`; an ejectable volume row gets `Eject ({name})`.
+ * The picked action arrives via the `volume-context-action` event (`onVolumeContextAction`),
+ * the same path as the breadcrumb eject item.
+ *
+ * @param volumeId - Target row's id (the `fav-…` switcher id for a favorite).
+ * @param volumeName - Target row's display name (used in the eject label / rename seed).
+ * @param isFavorite - True for a favorite row (Rename / Remove); false for a volume row.
+ * @param isEjectable - True when the volume row can be ejected (adds the Eject item).
+ */
+export async function showVolumeRowContextMenu(
+  volumeId: string,
+  volumeName: string,
+  isFavorite: boolean,
+  isEjectable: boolean,
+): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
+  await invoke('show_volume_row_context_menu', {
+    volumeId,
+    volumeName,
+    isFavorite,
+    isEjectable,
+  })
+}
+
+/**
  * Shows the minimal `..` parent-row context menu (just "Add to favorites").
  * The full file context menu doesn't fit `..`, so this is its own one-item menu.
  * @param parentPath - The directory the `..` row points at; favorited on click.

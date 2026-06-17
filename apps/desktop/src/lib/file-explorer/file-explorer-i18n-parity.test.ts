@@ -92,8 +92,6 @@ describe('en-US parity: interpolating / plural / select fileExplorer keys (golde
 
   it('navigation eject labels', () => {
     expect(tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name: 'Macintosh HD' })).toBe('Eject Macintosh HD')
-    expect(tString('fileExplorer.navigation.ejectMenuItem', { name: 'Backup' })).toBe('Eject (Backup)')
-    expect(tString('fileExplorer.navigation.ejectMenuItemBusy', { name: 'Backup' })).toBe('Eject (Backup) (busy)')
   })
 
   it('navigation USB speed line', () => {

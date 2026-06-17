@@ -17,13 +17,13 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::menu_items::{brief_view_label, full_view_label};
 use super::{
-    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, FAVORITES_ADD_CONTEXT_ID,
-    MenuItemEntry, MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
-    NETWORK_HOST_FORGET_SERVER_ID, SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID,
-    SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged,
-    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
-    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged,
-    menu_id_to_command,
+    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
+    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MenuItemEntry, MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID,
+    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID,
+    SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
+    SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
+    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    ViewModeChanged, menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -506,17 +506,26 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
-    // === Eject volume action (from breadcrumb / dropdown row context menu) ===
-    if id == EJECT_VOLUME_ID {
+    // === Eject volume / favorite rename / favorite remove (volume-selector row menus) ===
+    // All three are routed back to the frontend through the same `volume-context-action`
+    // event with the target stashed in `volume_row_context`; the action string disambiguates.
+    if id == EJECT_VOLUME_ID || id == FAVORITE_RENAME_ID || id == FAVORITE_REMOVE_ID {
         let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let ctx = menu_state.volume_eject_context.lock_ignore_poison();
+        let ctx = menu_state.volume_row_context.lock_ignore_poison();
         if ctx.volume_id.is_empty() {
-            log::warn!(target: "eject", "EJECT_VOLUME_ID clicked with no volume_id stashed");
+            log::warn!(target: "menu", "Volume row menu item {id} clicked with no volume_id stashed");
             return;
         }
+        let action = if id == FAVORITE_RENAME_ID {
+            "rename-favorite"
+        } else if id == FAVORITE_REMOVE_ID {
+            "remove-favorite"
+        } else {
+            "eject"
+        };
         use tauri_specta::Event as _;
         let payload = crate::volume_broadcast::VolumeContextAction {
-            action: "eject".to_string(),
+            action: action.to_string(),
             volume_id: ctx.volume_id.clone(),
             volume_name: ctx.volume_name.clone(),
         };

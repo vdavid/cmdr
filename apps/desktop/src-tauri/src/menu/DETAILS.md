@@ -18,7 +18,8 @@ window focus context.
   `show_in_file_manager_*` / `full_view_label` / `brief_view_label` platform helpers, and the
   `SortSubmenuItems` struct.
 - `menu_structure.rs`: hierarchical assembly: the `build_menu` dispatcher, file context menu
-  (`build_context_menu`), breadcrumb / tab / network-host context menus, the viewer-window menu
+  (`build_context_menu`), breadcrumb / tab / network-host / volume-selector-row context menus
+  (`build_volume_row_context_menu`: favorite Rename/Remove or volume Eject), the viewer-window menu
   (`build_viewer_menu`), plus the `FileContextInfo` and `ContextMenuResult` types.
 - `menu_handlers.rs`: event-handler and live-update helpers: `rebuild_view_mode_items`,
   `sync_view_mode_check_states`, `update_menu_item_accelerator`, `frontend_shortcut_to_accelerator`,

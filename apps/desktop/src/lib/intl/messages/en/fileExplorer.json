@@ -1602,15 +1602,6 @@
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
     "description": "Accessibility label for the inline text field that appears when renaming a favorite in the volume switcher."
   },
-  "fileExplorer.navigation.rename": "Rename",
-  "@fileExplorer.navigation.rename": {
-    "description": "Right-click menu item on a favorite row that starts renaming it."
-  },
-  "fileExplorer.navigation.remove": "Remove",
-  "@fileExplorer.navigation.remove": {
-    "description": "Right-click menu item on a favorite row that removes it from the favorites list."
-  },
-
   "fileExplorer.navigation.removeFavoriteFailed": "Couldn''t remove that favorite. Try again?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
     "description": "Error toast when removing a favorite from the list did not work, inviting the user to retry."
@@ -1685,21 +1676,6 @@
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume can''t be ejected because a file operation is running on it."
   },
-  "fileExplorer.navigation.ejectMenuItem": "Eject ({name})",
-  "@fileExplorer.navigation.ejectMenuItem": {
-    "description": "Right-click menu item that ejects a volume. {name} is the volume''s display name, shown in parentheses.",
-    "placeholders": {
-      "name": "the display name of the volume to eject"
-    }
-  },
-  "fileExplorer.navigation.ejectMenuItemBusy": "Eject ({name}) (busy)",
-  "@fileExplorer.navigation.ejectMenuItemBusy": {
-    "description": "Disabled right-click menu item shown when a volume can''t be ejected because a file operation is running on it. {name} is the volume''s display name; \"(busy)\" marks it as currently unavailable.",
-    "placeholders": {
-      "name": "the display name of the volume that is busy"
-    }
-  },
-
   "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
   "@fileExplorer.navigation.usbSpeed": {
     "description": "First line of the USB-speed tooltip on a volume, naming the negotiated USB standard and its peak throughput, e.g. \"USB 3.2 Gen 2 (Max. 1000 MB/s)\". \"Max.\" is short for maximum and \"MB/s\" is megabytes per second; keep the unit.",

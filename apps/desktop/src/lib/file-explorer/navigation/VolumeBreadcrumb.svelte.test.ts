@@ -12,6 +12,10 @@ import VolumeBreadcrumb from './VolumeBreadcrumb.svelte'
 
 const reorderFavorites = vi.fn(() => Promise.resolve())
 
+// Captures the `volume-context-action` listener the component registers in `onMount`, so a
+// test can fire a native row-menu pick (Rename / Remove) the same way the backend would.
+let volumeContextActionHandler: ((payload: { action: string; volumeId: string }) => void) | undefined
+
 vi.mock('$lib/tauri-commands', () => ({
   resolvePathVolume: vi.fn(() => Promise.resolve({ volume: { id: 'root', path: '/' } })),
   upgradeToSmbVolume: vi.fn(() => Promise.resolve({ status: 'success' })),
@@ -24,6 +28,11 @@ vi.mock('$lib/tauri-commands', () => ({
   renameFavorite: vi.fn(() => Promise.resolve()),
   reorderFavorites: (...args: unknown[]) => reorderFavorites(...(args as [])),
   stripFavoritePrefix: (id: string) => (id.startsWith('fav-') ? id.slice(4) : id),
+  showVolumeRowContextMenu: vi.fn(() => Promise.resolve()),
+  onVolumeContextAction: (cb: (payload: { action: string; volumeId: string }) => void) => {
+    volumeContextActionHandler = cb
+    return Promise.resolve(() => {})
+  },
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({
@@ -188,17 +197,11 @@ describe('VolumeBreadcrumb favorite-rename keyboard guard', () => {
     await tick()
     flushSync()
 
-    // Start the inline rename: right-click the favorite row, then click "Rename".
+    // Start the inline rename the way the native row menu does: the backend emits
+    // `volume-context-action` with `rename-favorite` for the right-clicked favorite.
     const favRow = target.querySelector('.favorite-item') as HTMLElement
     expect(favRow).toBeTruthy()
-    favRow.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
-    await tick()
-    flushSync()
-    const renameItem = [...target.querySelectorAll('.row-menu-item')].find(
-      (el) => el.textContent.trim() === 'Rename',
-    ) as HTMLElement
-    expect(renameItem).toBeTruthy()
-    renameItem.click()
+    volumeContextActionHandler?.({ action: 'rename-favorite', volumeId: 'fav-1' })
     await tick()
     flushSync()
 
@@ -218,13 +221,8 @@ describe('VolumeBreadcrumb favorite-rename keyboard guard', () => {
     flushSync()
 
     const favRow = target.querySelector('.favorite-item') as HTMLElement
-    favRow.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
-    await tick()
-    flushSync()
-    const renameItem = [...target.querySelectorAll('.row-menu-item')].find(
-      (el) => el.textContent.trim() === 'Rename',
-    ) as HTMLElement
-    renameItem.click()
+    expect(favRow).toBeTruthy()
+    volumeContextActionHandler?.({ action: 'rename-favorite', volumeId: 'fav-1' })
     await tick()
     flushSync()
 

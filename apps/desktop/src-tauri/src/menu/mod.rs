@@ -45,7 +45,7 @@ pub use menu_handlers::{
 };
 pub use menu_structure::{
     FileContextInfo, build_breadcrumb_context_menu, build_context_menu, build_menu, build_network_host_context_menu,
-    build_parent_row_context_menu, build_tab_context_menu, build_viewer_menu,
+    build_parent_row_context_menu, build_tab_context_menu, build_viewer_menu, build_volume_row_context_menu,
 };
 
 /// `settings-changed`: a CheckMenuItem toggle (currently only "Show hidden
@@ -199,6 +199,10 @@ pub const NETWORK_HOST_DISCONNECT_ID: &str = "network_host_disconnect";
 
 /// Menu item ID for "Eject (name)" in the breadcrumb / volume context menus.
 pub const EJECT_VOLUME_ID: &str = "eject_volume";
+
+/// Menu item IDs for the favorite row context menu (volume selector dropdown).
+pub const FAVORITE_RENAME_ID: &str = "favorite_rename";
+pub const FAVORITE_REMOVE_ID: &str = "favorite_remove";
 
 /// Menu item ID for About window.
 pub const ABOUT_ID: &str = "about";
@@ -475,10 +479,11 @@ pub struct NetworkHostMenuContext {
     pub host_name: String,
 }
 
-/// Context for the volume-eject menu item (stored so on_menu_event can emit it).
-/// Populated by `show_breadcrumb_context_menu` when an ejectable volume is in scope.
+/// Context for a volume / favorite row context menu (stored so on_menu_event can emit it).
+/// Carries the target's id + name for whichever action the user picks (eject, or favorite
+/// rename / remove). Populated by `show_breadcrumb_context_menu` and `show_volume_row_context_menu`.
 #[derive(Clone, Default)]
-pub struct VolumeEjectMenuContext {
+pub struct VolumeRowMenuContext {
     pub volume_id: String,
     pub volume_name: String,
 }
@@ -525,9 +530,10 @@ pub struct MenuState<R: Runtime> {
     pub sort_submenu: Mutex<Option<Submenu<R>>>,
     /// Context for the most recent network host context menu (host_id + host_name)
     pub network_host_context: Mutex<NetworkHostMenuContext>,
-    /// Context for the most recent breadcrumb / volume context menu's eject item.
-    /// Cleared (volume_id empty) when the menu was built without an ejectable target.
-    pub volume_eject_context: Mutex<VolumeEjectMenuContext>,
+    /// Context for the most recent breadcrumb / volume / favorite row context menu.
+    /// Holds the target id + name for the picked action (eject, favorite rename / remove).
+    /// Cleared (volume_id empty) when a breadcrumb menu was built without an ejectable target.
+    pub volume_row_context: Mutex<VolumeRowMenuContext>,
     /// The main app menu, cloned at startup before `app.set_menu()`. `app.set_menu()` swaps the
     /// app-level menu bar back to this when the main / Settings / Debug window gains focus. The
     /// clone shares the same underlying items (Tauri's `Menu` is a reference-counted handle), so
@@ -569,7 +575,7 @@ impl<R: Runtime> Default for MenuState<R> {
             items: Mutex::new(HashMap::new()),
             sort_submenu: Mutex::new(None),
             network_host_context: Mutex::new(NetworkHostMenuContext::default()),
-            volume_eject_context: Mutex::new(VolumeEjectMenuContext::default()),
+            volume_row_context: Mutex::new(VolumeRowMenuContext::default()),
             #[cfg(target_os = "macos")]
             main_menu: Mutex::new(None),
             #[cfg(target_os = "macos")]

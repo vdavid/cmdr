@@ -19,6 +19,8 @@ vi.mock('$lib/tauri-commands', () => ({
   renameFavorite: vi.fn(() => Promise.resolve()),
   reorderFavorites: vi.fn(() => Promise.resolve()),
   stripFavoritePrefix: (id: string) => (id.startsWith('fav-') ? id.slice(4) : id),
+  showVolumeRowContextMenu: vi.fn(() => Promise.resolve()),
+  onVolumeContextAction: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({

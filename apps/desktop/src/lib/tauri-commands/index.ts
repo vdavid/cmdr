@@ -87,6 +87,7 @@ export {
   openExternalUrl,
   showFileContextMenu,
   showBreadcrumbContextMenu,
+  showVolumeRowContextMenu,
   showParentRowContextMenu,
   showInFinder,
   copyToClipboard,

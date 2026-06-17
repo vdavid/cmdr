@@ -199,23 +199,31 @@ instead", a denied consent, or no saved password, it falls through to the `onSmb
 `FilePane` to show `NetworkLoginForm` inline (same pattern as `ShareBrowser`). Submenu supports full keyboard navigation
 (ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
 
-### Eject button + context-menu item
+### Eject button + row context menu
 
 Ejectable volumes (USB, SD, DMG, MTP, SMB — see `eject-predicate.ts`) show a small `⏏`-shaped icon button on the right
 of each dropdown row and on the right of the closed/header chip. Clicking it calls `ejectVolume(id)` which dispatches in
-the backend: SMB → `diskutil unmount`, MTP → connection manager disconnect, physical / DMG → `diskutil eject`.
-Right-clicking a dropdown row opens a small Svelte popup with a single `Eject ({name})` item; right-clicking the closed
-header opens the native breadcrumb context menu that, when the pane's volume is ejectable, adds an `Eject ({name})` item
-alongside "Copy path". The native item routes back via the `volume-context-action` Tauri event (subscribed in
-`DualPaneExplorer.svelte`); the Svelte popups call `ejectVolume` directly. The volume disappears via the existing
-`volume-unmounted` / `mtp-device-disconnected` flow — no extra success toast.
+the backend: SMB → `diskutil unmount`, MTP → connection manager disconnect, physical / DMG → `diskutil eject`. Clicking
+the inline button does NOT close the dropdown (`handleEjectClick` no longer flips `isOpen`), so the user can eject
+several drives in a row; each ejected volume vanishes from the list via the existing `volume-unmounted` /
+`mtp-device-disconnected` flow — no extra success toast.
+
+Right-clicking a dropdown row opens a NATIVE (muda) context menu via `show_volume_row_context_menu`: a favorite row gets
+`Rename` + `Remove`, an ejectable volume row gets `Eject ({name})`, anything else has no menu. Right-clicking the closed
+header opens the native breadcrumb menu (`show_breadcrumb_context_menu`) that adds `Eject ({name})` alongside "Copy path"
+when the pane's volume is ejectable. All these picks route back through the one `volume-context-action` Tauri event
+(`action` ∈ `eject` / `rename-favorite` / `remove-favorite`): `eject` is handled in `DualPaneExplorer.svelte` (calls
+`ejectVolume`); `rename-favorite` / `remove-favorite` land in `VolumeBreadcrumb.handleVolumeContextAction`, which only
+acts when its own dropdown `isOpen` (both panes' breadcrumbs receive the global event, but only the open one owns the
+menu it spawned). Going native means the webview is frozen while the menu tracks, so the dropdown's `highlightedIndex`
+can't drift onto another row under the cursor or arrow keys — the menu always acts on the right-clicked row.
 
 **Busy gating.** While a copy / move / delete reads from or writes to a volume, ejecting it is blocked so a disconnect
 can't truncate an in-flight file. `$lib/stores/volume-busy-store.svelte`'s `isVolumeBusy(id)` (fed by the backend
-`volumes-busy-changed` event) disables the header eject button, the dropdown-row eject button, and the right-click row
-menu item (the latter shows a ` (busy)` suffix), each with a "Can't eject while operations are in progress on this
-device" tooltip. `handleEjectClick` also early-returns on a busy volume. The native breadcrumb menu is gated
-backend-side: `show_breadcrumb_context_menu` passes the volume ID, and the Rust builder renders the item disabled with a
+`volumes-busy-changed` event) disables the header eject button and the dropdown-row eject button, each with a "Can't
+eject while operations are in progress on this device" tooltip; `handleEjectClick` also early-returns on a busy volume.
+The native row / breadcrumb eject items are gated backend-side: `show_volume_row_context_menu` /
+`show_breadcrumb_context_menu` pass the volume ID, and the Rust builder renders the `Eject` item disabled with a
 ` (busy)` suffix. The real safety net is the `eject_volume` backend guard, which refuses a busy volume even if the UI is
 stale or an MCP caller bypasses it. See `src-tauri/src/file_system/write_operations/CLAUDE.md` § "Busy-volumes set".
 
@@ -246,8 +254,11 @@ the bare id, not the `fav-…` switcher id).
   Pinned by `favorites-controller.svelte.test.ts` (the pointer-drag / rename / remove unit tests) plus the
   component-level `VolumeBreadcrumb.svelte.test.ts`.
 
-- **Remove / Rename** are per-item, on the existing dropdown `row-menu` (right-click a favorite). Rename swaps the label
-  for an inline `<input>` (Enter commits, Escape/blur cancels). Both strip the `fav-` prefix before calling the command.
+- **Remove / Rename** are per-item. Right-clicking a favorite opens the NATIVE row menu (`show_volume_row_context_menu`,
+  see § Eject button + row context menu); picking `Rename` / `Remove` routes back over `volume-context-action` to
+  `VolumeBreadcrumb.handleVolumeContextAction`, which calls `fav.startRename` / `fav.remove` on the open dropdown. Rename
+  swaps the label for an inline `<input>` (Enter commits, Escape/blur cancels). Both strip the `fav-` prefix before
+  calling the command.
   `fav.handleRenameKeyDown` calls `e.stopPropagation()` on EVERY key: the focused input owns its keystrokes, and the
   pane's Space-selection / type-to-jump DOM listeners aren't covered by the dispatch-level guard, so a leaked Space
   would select the file under the cursor while the user types into the box. Enter commits, Escape cancels, everything
