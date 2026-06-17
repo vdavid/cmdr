@@ -28,10 +28,75 @@ import {
   dismissOverlay,
   skipParentEntry,
   openSettingsWindowViaProd,
+  openViewerWindow,
   closeScopedWindow,
+  dispatchMenuCommand,
   MKDIR_DIALOG,
 } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
+
+/**
+ * Every Settings section to capture, beyond the default Appearance one already
+ * shot above. `path` is the English section identity the production
+ * `navigate-to-section` deep-link takes (NOT the localized sidebar title), so
+ * passing the full SUBSECTION path lands on real content rather than a parent's
+ * summary-card grid. `sectionId` is the stable `data-section-id` on the rendered
+ * `<section>` (see `SettingsContent.svelte`) used as the per-section readiness
+ * signal; `label` is the capture surface name. Mirrors the section table in
+ * `accessibility.spec.ts` and `SettingsContent.svelte` — keep in sync if a
+ * section is added, renamed, or re-homed.
+ */
+const SETTINGS_SECTIONS: { path: string[]; sectionId: string; label: string }[] = [
+  // Appearance › Colors and formats is already captured as `settings-appearance`.
+  { path: ['Appearance', 'Zoom and density'], sectionId: 'appearance-zoom-and-density', label: 'settings-appearance-zoom' },
+  {
+    path: ['Appearance', 'File and folder sizes'],
+    sectionId: 'appearance-file-and-folder-sizes',
+    label: 'settings-appearance-sizes',
+  },
+  { path: ['Appearance', 'Listing'], sectionId: 'appearance-listing', label: 'settings-appearance-listing' },
+  { path: ['Behavior', 'File operations'], sectionId: 'behavior-file-operations', label: 'settings-behavior-file-operations' },
+  {
+    path: ['Behavior', 'File system watching'],
+    sectionId: 'behavior-file-system-watching',
+    label: 'settings-behavior-file-system-watching',
+  },
+  { path: ['Behavior', 'Search'], sectionId: 'behavior-search', label: 'settings-behavior-search' },
+  { path: ['AI'], sectionId: 'ai', label: 'settings-ai' },
+  {
+    path: ['File systems', 'SMB/Network shares'],
+    sectionId: 'file-systems-smb-network-shares',
+    label: 'settings-file-systems-smb',
+  },
+  {
+    path: ['File systems', 'MTP (Android/Kindle/cameras)'],
+    sectionId: 'file-systems-mtp-android-kindle-cameras',
+    label: 'settings-file-systems-mtp',
+  },
+  { path: ['File systems', 'Git'], sectionId: 'file-systems-git', label: 'settings-file-systems-git' },
+  { path: ['Viewer'], sectionId: 'viewer', label: 'settings-viewer' },
+  { path: ['Keyboard shortcuts'], sectionId: 'keyboard-shortcuts', label: 'settings-keyboard-shortcuts' },
+  { path: ['Developer', 'MCP server'], sectionId: 'developer-mcp-server', label: 'settings-developer-mcp-server' },
+  { path: ['Developer', 'Logging'], sectionId: 'developer-logging', label: 'settings-developer-logging' },
+  { path: ['Updates & privacy'], sectionId: 'updates', label: 'settings-updates' },
+  { path: ['License'], sectionId: 'license', label: 'settings-license' },
+  { path: ['Advanced'], sectionId: 'advanced', label: 'settings-advanced' },
+]
+
+/**
+ * Fixture file the viewer opens. `CMDR_E2E_START_PATH` points at the shared E2E
+ * fixture tree (set by the checker before this spec runs); `left/file-a.txt`
+ * exists there. Throw rather than fall back to a bogus path so a missing env var
+ * surfaces as itself, not a confusing ENOENT in the viewer. Mirrors how
+ * `accessibility.spec.ts` resolves its viewer fixture.
+ */
+function viewerFixturePath(): string {
+  const root = process.env.CMDR_E2E_START_PATH
+  if (!root) {
+    throw new Error('CMDR_E2E_START_PATH env var is not set; fixtures must be created before running this spec')
+  }
+  return join(root, 'left', 'file-a.txt')
+}
 
 interface CaptureApi {
   enable: () => boolean
@@ -169,8 +234,101 @@ test.describe('i18n screenshot capture', () => {
       screenshot: 'settings-appearance.png',
       keys: await keysFor(settings, 'settings-appearance'),
     }
+    // ── Surfaces 4..N: every other Settings section (same window) ────────────
+    // Reuse the open, focused Settings window and its already-enabled capture
+    // sink. For each section, drive the production cross-window deep-link
+    // (`navigate-to-section`, the same event the volume picker and shortcut
+    // chips use) with the English section PATH, so subsections land on real
+    // content instead of a parent's summary grid. Then wait for that section's
+    // `data-section-id` to render before switching the surface and shooting.
+    // The window stays foreground from the set_focus above, so no re-focus per
+    // section; settle one paint after each render to be safe.
+    for (const section of SETTINGS_SECTIONS) {
+      const sectionJson = JSON.stringify({ section: section.path })
+      await settings.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit_to', {
+        target: { kind: 'AnyLabel', label: 'settings' },
+        event: 'navigate-to-section',
+        payload: ${sectionJson}
+      })`)
+      await settings.waitForSelector(`[data-section-id="${section.sectionId}"]`, 5000)
+      await captureCall(settings, 'setSurface', section.label)
+      await captureCall(settings, 'rerender')
+      await settlePaint(settings)
+      await settings.screenshot({ path: join(screenshotsDir, `${section.label}.png`) })
+      report[section.label] = {
+        screenshot: `${section.label}.png`,
+        keys: await keysFor(settings, section.label),
+      }
+    }
     await captureCall(settings, 'disable')
     await closeScopedWindow(main, settings, 'settings')
+
+    // ── Surface: file viewer window ──────────────────────────────────────────
+    // The viewer runs in its own restricted WebviewWindow (own webview JS
+    // context, own capture sink). Open it on a real fixture file via the
+    // production `open-file-viewer` event (the `openViewerWindow` helper), wait
+    // for the container to report `loaded`, then enable + capture against the
+    // VIEWER page. Just the default text-viewer chrome (toolbar + status bar);
+    // media/search subsurfaces are a later tranche.
+    const viewer = await openViewerWindow(main, viewerFixturePath())
+    await viewer.waitForSelector('.viewer-container[data-window-ready="loaded"]', 15000)
+    await captureCall(viewer, 'reset')
+    await captureCall<boolean>(viewer, 'enable')
+    await captureCall(viewer, 'setSurface', 'viewer')
+    await captureCall(viewer, 'rerender')
+    // Same occluded-window compositing caveat as Settings: focus the viewer so
+    // its backing store (which the native capture reads) refreshes to the
+    // current frame, then settle one paint. The viewer label is `viewer-<ts>`,
+    // resolved from the scoped page (set by `waitForWindow`).
+    const viewerLabel = viewer.targetWindow
+    if (!viewerLabel) throw new Error('viewer page has no targetWindow label')
+    const viewerLabelJson = JSON.stringify(viewerLabel)
+    await viewer.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_focus', { label: ${viewerLabelJson} })`)
+    await settlePaint(viewer)
+    await viewer.screenshot({ path: join(screenshotsDir, 'viewer.png') })
+    report['viewer'] = { screenshot: 'viewer.png', keys: await keysFor(viewer, 'viewer') }
+    await captureCall(viewer, 'disable')
+    await closeScopedWindow(main, viewer, viewerLabel)
+
+    // ── Surface: keyboard shortcuts window ───────────────────────────────────
+    // A separate singleton WebviewWindow (label `shortcuts`) on the `/shortcuts`
+    // route, opened by the `help.openShortcuts` command (same path Help >
+    // Keyboard shortcuts uses). There's no dedicated E2E helper, so dispatch the
+    // command and poll the window list for the `shortcuts` label, mirroring how
+    // `openSettingsWindowViaProd` waits for its window.
+    await dispatchMenuCommand(main, 'help.openShortcuts')
+    const shortcuts = await main.waitForWindow((w) => w.label === 'shortcuts', { timeout: 10000 })
+    await shortcuts.waitForSelector('.shortcuts-window', 5000)
+    // Wait for real content (the command list), not just the window shell.
+    await shortcuts.waitForSelector('.shortcuts-scroll .row', 5000)
+    await captureCall(shortcuts, 'reset')
+    await captureCall<boolean>(shortcuts, 'enable')
+    await captureCall(shortcuts, 'setSurface', 'shortcuts')
+    await captureCall(shortcuts, 'rerender')
+    await shortcuts.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_focus', { label: 'shortcuts' })`)
+    await settlePaint(shortcuts)
+    await shortcuts.screenshot({ path: join(screenshotsDir, 'shortcuts.png') })
+    report['shortcuts'] = { screenshot: 'shortcuts.png', keys: await keysFor(shortcuts, 'shortcuts') }
+    await captureCall(shortcuts, 'disable')
+    await closeScopedWindow(main, shortcuts, 'shortcuts')
+
+    // ── Surface: About dialog (main window overlay) ──────────────────────────
+    // About is an in-app dialog rendered into the MAIN window (NOT a separate
+    // WebviewWindow), so it captures against the main page's sink. Open it via
+    // the `app.about` command (Help > About Cmdr), wait for the dialog, then
+    // re-enable capture on the main page, set the surface, rerender, and shoot.
+    // The main window is foreground, so a paint settle (as for the new-folder
+    // dialog above) is enough — no set_focus needed.
+    await captureCall(main, 'setSurface', 'about')
+    await captureCall<boolean>(main, 'enable')
+    await dispatchMenuCommand(main, 'app.about')
+    await main.waitForSelector('[data-dialog-id="about"]', 5000)
+    await captureCall(main, 'rerender')
+    await settlePaint(main)
+    await main.screenshot({ path: join(screenshotsDir, 'about.png') })
+    report['about'] = { screenshot: 'about.png', keys: await keysFor(main, 'about') }
+    await dismissOverlay(main)
+    await captureCall(main, 'disable')
 
     writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n')
     // Surface a compact summary in the test output for quick eyeballing.
