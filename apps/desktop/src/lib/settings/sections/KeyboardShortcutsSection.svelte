@@ -11,6 +11,7 @@
         isFixedKeyCommand,
     } from '$lib/shortcuts'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import { fixedKeyMessage, reservedByMacOsMessage, systemShortcutMessage } from './keyboard-shortcuts-banner'
     import { shortcutAnchorId } from '$lib/settings/settings-window'
     import {
@@ -228,8 +229,7 @@
 
     <div class="commands-list">
         {#each controller.groupedCommands as group (group.scope)}
-            <div class="scope-group">
-                <h3 class="scope-title">{group.title}</h3>
+            <SectionCard label={group.title}>
                 {#each group.commands as command (`${command.id}-${String(controller.shortcutChangeCounter)}`)}
                     {@const shortcuts = getEffectiveShortcuts(command.id)}
                     {@const isModified = isShortcutModified(command.id)}
@@ -367,10 +367,12 @@
                         </div>
                     </div>
                 {/each}
-            </div>
+            </SectionCard>
         {/each}
         {#if controller.showGlobalGoToLatestRow}
-            <GlobalShortcutRow />
+            <SectionCard label={tString('downloads.shortcutRow.scopeTitle')}>
+                <GlobalShortcutRow />
+            </SectionCard>
         {/if}
     </div>
 
@@ -528,19 +530,6 @@
 
     .commands-list::-webkit-scrollbar-track {
         background: transparent;
-    }
-
-    .scope-group {
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .scope-title {
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        color: var(--color-text-tertiary);
-        margin: 0 0 var(--spacing-xs);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
 
     .command-row {

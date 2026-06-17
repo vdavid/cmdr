@@ -147,6 +147,72 @@ describe('KeyboardShortcutsSection name search', () => {
   })
 })
 
+/** Visible `SectionCard` labels inside the commands-list scroller, in DOM order. */
+function cardLabels(): string[] {
+  const list = target.querySelector('.commands-list')
+  if (!list) throw new Error('commands-list not found')
+  return [...list.querySelectorAll('.section-card-label')].map((el) => el.textContent.trim())
+}
+
+function typeNameSearch(value: string): void {
+  const searchInput = target.querySelector<HTMLInputElement>('.search-input')
+  if (!searchInput) throw new Error('name search input not found')
+  searchInput.value = value
+  searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+  flushSync()
+}
+
+describe('KeyboardShortcutsSection scope cards', () => {
+  it('renders each scope group as a SectionCard inside the scroller (rows live in cards)', () => {
+    render()
+    // Every scope group is a `.section-card`; no leftover `.scope-group`/`.scope-title`.
+    expect(target.querySelectorAll('.commands-list .section-card').length).toBeGreaterThan(1)
+    expect(target.querySelector('.scope-group')).toBeNull()
+    expect(target.querySelector('.scope-title')).toBeNull()
+    // The App scope card is present and its label is its group title.
+    expect(cardLabels()).toContain('App')
+    // The row's anchor lives on the row, INSIDE a card (deep-link target stays addressable).
+    const aboutRow = row(ABOUT)
+    expect(aboutRow.closest('.section-card')).not.toBeNull()
+  })
+
+  it('a filtered-out scope shows no card (groupCommandsByScope drops empty groups, so no empty cards)', () => {
+    render()
+    const allCards = cardLabels()
+    expect(allCards).toContain('File list')
+    // "palette" matches the App "Open command palette" row and the Command-palette
+    // scope rows, but nothing in the File-list scope.
+    typeNameSearch('palette')
+    const filtered = cardLabels()
+    expect(filtered).toContain('App')
+    // File-list scope (e.g. file.copy) is filtered out entirely — its card is gone,
+    // not rendered empty.
+    expect(filtered).not.toContain('File list')
+    expect(target.querySelector(`[id$="${COPY}"]`)).toBeNull()
+    expect(filtered.length).toBeLessThan(allCards.length)
+  })
+})
+
+describe('KeyboardShortcutsSection Global card', () => {
+  it('renders the Global hotkey in its own card when shown, gated outside the card', () => {
+    render()
+    // With no filter, the Global card renders and holds the GlobalShortcutRow.
+    expect(cardLabels()).toContain('Global')
+    const globalLabel = [...target.querySelectorAll('.section-card-label')].find(
+      (el) => el.textContent.trim() === 'Global',
+    )
+    expect(globalLabel?.closest('.section-card-wrap')?.querySelector('.section-card')).not.toBeNull()
+  })
+
+  it('hides the Global card entirely when the filter excludes it (no empty Global card)', () => {
+    render()
+    // A name search that matches no command and not "go to latest download" hides
+    // both the scope cards and the Global card — the gate sits OUTSIDE the card.
+    typeNameSearch('zzz-nonexistent-shortcut')
+    expect(cardLabels()).not.toContain('Global')
+  })
+})
+
 describe('KeyboardShortcutsSection add flow', () => {
   it('clicking + then clicking away leaves no entry in the store and no framed (none) pill', async () => {
     render()

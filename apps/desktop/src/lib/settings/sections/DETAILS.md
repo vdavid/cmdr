@@ -68,10 +68,15 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`GitSection.svelte`**: `File systems > Git`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
 - **`ViewerSection.svelte`**: `Viewer`: one unlabeled `SectionCard`, gated via `anyVisible(shouldShow, ...)`
 - **`KeyboardShortcutsSection.svelte`**: `Keyboard shortcuts`: special (non-registry) section, renders the shortcut
-  table from `shortcuts.json`, plus a bespoke `Global` group hosting `lib/downloads/GlobalShortcutRow.svelte` (the
-  go-to-latest hotkey, marked `(global)`, binding stored in `settings.json` not `shortcuts.json`). Thin: markup + scoped
-  styles + the capture-phase `document` keydown listener (and its `onMount` cleanup) + the deep-link highlight wiring;
-  all business logic lives in its `*.controller.svelte.ts` (see below)
+  table from `shortcuts.json` as one `SectionCard` per `CommandScope` (labelled with the scope title), plus a bespoke
+  `Global` `SectionCard` hosting `lib/downloads/GlobalShortcutRow.svelte` (the go-to-latest hotkey, marked `(global)`,
+  binding stored in `settings.json` not `shortcuts.json`). Empty-card hiding is FREE here: `groupCommandsByScope`
+  already emits only non-empty groups (both the in-section filter and the global search flow through it), so no
+  `anyVisible`/`shouldShow` plumbing is needed; the `Global` card's `{#if controller.showGlobalGoToLatestRow}` gate sits
+  OUTSIDE its `SectionCard`. The cards stay INSIDE the `.commands-list` scroller (the deep-link does
+  `row.closest('.commands-list')`, and the scrollbar-gutter logic lives on that element). Thin: markup + scoped styles +
+  the capture-phase `document` keydown listener (and its `onMount` cleanup) + the deep-link highlight wiring; all
+  business logic lives in its `*.controller.svelte.ts` (see below)
 - **`KeyboardShortcutsSection.controller.svelte.ts`**: the section's business logic behind a
   `createKeyboardShortcutsController(getSearchQuery)` factory (per-mount `$state`/`$derived`, exposed via
   getters/setters so the markup's `bind:`s stay live). Holds the keyboard-capture + conflict engine
@@ -228,14 +233,26 @@ session cache is process-lifetime and shared by both consumers.
 
 ### Every command groups by scope (one group per `CommandScope`)
 
-`KeyboardShortcutsSection` renders one titled group per `CommandScope`, in a fixed reading order, via the pure
-`groupCommandsByScope` (`keyboard-shortcuts-grouping.ts`). Compound scopes (`'Main window/File list'`,
-`'Main window/Brief mode'`, `'Main window/Volume chooser'`, …) each become their own group titled by the last segment
-("File list", "Brief mode", …). So every registry command lands in exactly one group and is rebindable here, including
-`file.quickLook` and the F-key commands. Don't reintroduce an ad-hoc title list matched against scopes: the group set
-must stay the scope union, or whole groups of commands silently vanish from the rebinding UI. The
-`keyboard-shortcuts-grouping.test.ts` set-equality test (union of grouped commands === all registry commands) is the
-guard; it also fails if a new `CommandScope` is added without a `scopeOrder` entry.
+`KeyboardShortcutsSection` renders one `SectionCard` per `CommandScope` (labelled with the scope title), in a fixed
+reading order, via the pure `groupCommandsByScope` (`keyboard-shortcuts-grouping.ts`). Compound scopes
+(`'Main window/File list'`, `'Main window/Brief mode'`, `'Main window/Volume chooser'`, …) each become their own card
+titled by the last segment ("File list", "Brief mode", …). So every registry command lands in exactly one card and is
+rebindable here, including `file.quickLook` and the F-key commands. Don't reintroduce an ad-hoc title list matched
+against scopes: the group set must stay the scope union, or whole groups of commands silently vanish from the rebinding
+UI. The `keyboard-shortcuts-grouping.test.ts` set-equality test (union of grouped commands === all registry commands) is
+the guard; it also fails if a new `CommandScope` is added without a `scopeOrder` entry.
+
+Empty cards never render under filtering: `groupCommandsByScope` drops empty groups, and BOTH the in-section name/key
+filter and the global settings search flow through it (the filtered command list feeds the grouping). So a scope's card
+shows iff it has ≥1 visible row, automatically, under both — no `anyVisible`/`shouldShow` plumbing is needed here
+(commands aren't registry settings). The `SectionCard`s sit inside the `.commands-list` scroller so the deep-link's
+`row.closest('.commands-list')` and the scrollbar-gutter still resolve; the row id (`shortcutAnchorId`) stays on the
+`.command-row`, not the card.
+
+The bespoke `Global` card (`lib/downloads/GlobalShortcutRow.svelte`) is a `SectionCard` too, gated by
+`{#if controller.showGlobalGoToLatestRow}` OUTSIDE the card so it never renders empty. `GlobalShortcutRow` renders only
+its row (no heading of its own): the `SectionCard`'s `<h3>` is the sole "Global" heading, so adding a heading back would
+duplicate the label and break heading order.
 
 Deep links to compound-scope rows now land + flash like any other (`shortcut-file.quickLook` from the Quick Look toast,
 F-key chips from the F-bar).

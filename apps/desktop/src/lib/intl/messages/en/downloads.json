@@ -150,7 +150,7 @@
 
   "downloads.shortcutRow.scopeTitle": "Global",
   "@downloads.shortcutRow.scopeTitle": {
-    "description": "Section heading in the Keyboard shortcuts settings for system-wide (global) shortcuts, above the go-to-latest-download row. Shown in uppercase by styling. 'global' = works from any app."
+    "description": "Card title in the Keyboard shortcuts settings for system-wide (global) shortcuts, above the go-to-latest-download row. A short section title. 'global' = works from any app."
   },
 
   "downloads.shortcutRow.commandName": "Go to latest download <marker>(global)</marker>",

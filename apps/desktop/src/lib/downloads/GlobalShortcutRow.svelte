@@ -6,6 +6,11 @@
      * is marked `(global)` to set expectations (it fires from any app, and its
      * on/off switch lives under Behavior → File system watching).
      *
+     * Renders only the row itself. The "Global" card heading is owned by the
+     * `SectionCard` that wraps this component in `KeyboardShortcutsSection`, so
+     * this component must NOT render its own heading (a second `<h3>` would
+     * duplicate the card label and break heading order).
+     *
      * Why this is a bespoke row, not a registry-`commands`-driven one:
      *  - The binding's home is `settings.json` (the Rust startup/focus refresh
      *    reads it from there before any window loads), not `shortcuts.json`.
@@ -146,70 +151,56 @@
     <span class="global-marker">{@render children()}</span>
 {/snippet}
 
-<div class="scope-group">
-    <h3 class="scope-title">{tString('downloads.shortcutRow.scopeTitle')}</h3>
-    <div class="command-row">
-        <div class="command-info">
-            {#if isModified}
-                <span class="modified-dot" use:tooltip={tString('downloads.shortcutRow.modifiedTooltip')}></span>
+<div class="command-row">
+    <div class="command-info">
+        {#if isModified}
+            <span class="modified-dot" use:tooltip={tString('downloads.shortcutRow.modifiedTooltip')}></span>
+        {/if}
+        <span class="command-name"
+            ><Trans key="downloads.shortcutRow.commandName" snippets={{ marker: globalMarker }} /></span
+        >
+    </div>
+    <div class="command-shortcuts">
+        <button
+            class="shortcut-pill"
+            class:editing
+            data-test="global-go-to-latest-binding"
+            onclick={() => {
+                if (editing) cancelEditing()
+                else startEditing()
+            }}
+        >
+            {#if editing}
+                {pendingKey || tString('downloads.shortcutRow.pressKeys')}
+            {:else}
+                {binding}
             {/if}
-            <span class="command-name"
-                ><Trans key="downloads.shortcutRow.commandName" snippets={{ marker: globalMarker }} /></span
-            >
-        </div>
-        <div class="command-shortcuts">
+        </button>
+        {#if isModified}
             <button
-                class="shortcut-pill"
-                class:editing
-                data-test="global-go-to-latest-binding"
-                onclick={() => {
-                    if (editing) cancelEditing()
-                    else startEditing()
-                }}
+                class="reset-shortcut"
+                aria-label={tString('downloads.shortcutRow.resetTooltip')}
+                use:tooltip={tString('downloads.shortcutRow.resetTooltip')}
+                onclick={handleReset}
             >
-                {#if editing}
-                    {pendingKey || tString('downloads.shortcutRow.pressKeys')}
-                {:else}
-                    {binding}
-                {/if}
+                ↩
             </button>
-            {#if isModified}
-                <button
-                    class="reset-shortcut"
-                    aria-label={tString('downloads.shortcutRow.resetTooltip')}
-                    use:tooltip={tString('downloads.shortcutRow.resetTooltip')}
-                    onclick={handleReset}
-                >
-                    ↩
-                </button>
-            {/if}
-            {#if statusText}
-                <span class="shortcut-status" class:warn={statusIsWarn}>{statusText}</span>
-            {/if}
-        </div>
+        {/if}
+        {#if statusText}
+            <span class="shortcut-status" class:warn={statusIsWarn}>{statusText}</span>
+        {/if}
     </div>
 </div>
 
 <style>
-    .scope-group {
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .scope-title {
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        color: var(--color-text-tertiary);
-        margin: 0 0 var(--spacing-xs);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
+    /* The single row of the "Global" card. The card heading is the wrapping
+       `SectionCard`'s `<h3>`; this component renders no heading of its own. No
+       bottom border: it's the only row in its card. */
     .command-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: var(--spacing-xs) 0;
-        border-bottom: 1px solid var(--color-border-subtle);
     }
 
     .command-info {
