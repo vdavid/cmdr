@@ -188,9 +188,14 @@ export function loadCatalog(locale, messagesRoot) {
 /** A parsed-message analysis. See `parseMessage`. */
 /**
  * Recursively walks an ICU AST, collecting placeholder/argument names, `<tag>`
- * names, and, per `plural`/`select` argument, the set of category labels used.
+ * names, and, per argument, the set of category labels used — kept in SEPARATE
+ * maps for `plural` vs `select`. The distinction matters downstream: the
+ * plural-coverage check compares a locale's `plural` categories against that
+ * locale's required CLDR set, where `select` categories are an arbitrary,
+ * message-defined enumeration that must match English exactly (and is covered by
+ * placeholder/tag parity, not by CLDR coverage).
  * @param {readonly any[]} ast
- * @param {{ placeholders: Set<string>, tags: Set<string>, pluralCategories: Map<string, Set<string>> }} acc
+ * @param {{ placeholders: Set<string>, tags: Set<string>, pluralCategories: Map<string, Set<string>>, selectCategories: Map<string, Set<string>> }} acc
  */
 function walkAst(ast, acc) {
   for (const el of ast) {
@@ -207,14 +212,16 @@ function walkAst(ast, acc) {
       case TYPE.plural: {
         // `{arg, plural/select, cat {…} …}`. The arg name is a placeholder; each
         // branch label is a category; each branch body is itself an AST to walk
-        // (placeholders/tags can nest inside a branch).
+        // (placeholders/tags can nest inside a branch). Plural and select
+        // categories go into separate maps (see the JSDoc above).
         acc.placeholders.add(el.value)
-        const cats = acc.pluralCategories.get(el.value) ?? new Set()
+        const target = el.type === TYPE.plural ? acc.pluralCategories : acc.selectCategories
+        const cats = target.get(el.value) ?? new Set()
         for (const [category, branch] of Object.entries(el.options)) {
           cats.add(category)
           walkAst(/** @type {any} */ (branch).value, acc)
         }
-        acc.pluralCategories.set(el.value, cats)
+        target.set(el.value, cats)
         break
       }
       case TYPE.tag:
@@ -245,13 +252,14 @@ function walkAst(ast, acc) {
  *   placeholders: Set<string>,
  *   tags: Set<string>,
  *   pluralCategories: Map<string, Set<string>>,
+ *   selectCategories: Map<string, Set<string>>,
  *   ok: boolean,
  *   error?: string,
  * }}
  */
 export function parseMessage(value, locale = 'en') {
-  /** @type {{ placeholders: Set<string>, tags: Set<string>, pluralCategories: Map<string, Set<string>> }} */
-  const acc = { placeholders: new Set(), tags: new Set(), pluralCategories: new Map() }
+  /** @type {{ placeholders: Set<string>, tags: Set<string>, pluralCategories: Map<string, Set<string>>, selectCategories: Map<string, Set<string>> }} */
+  const acc = { placeholders: new Set(), tags: new Set(), pluralCategories: new Map(), selectCategories: new Map() }
   try {
     const ast = new IntlMessageFormat(value, locale).getAst()
     walkAst(ast, acc)
@@ -273,4 +281,40 @@ export function parseMessage(value, locale = 'en') {
  */
 export function sourceHash(englishValue) {
   return createHash('sha256').update(englishValue, 'utf8').digest('hex').slice(0, 7)
+}
+
+/**
+ * Whether a message key renders RAW (no ICU) at runtime. The `errors.*` family
+ * is resolved through `getMessage()` (a raw lookup), NOT `t()`/`intl-messageformat`:
+ * its `{system_settings}` substitution tokens, literal `<…>` text (e.g.
+ * `<folder-path>`), markdown, and lone apostrophes deliberately bypass ICU grammar,
+ * and several such values don't even parse as ICU. So the locale checks must NOT
+ * run these through `parseMessage` (it would false-flag valid raw copy as invalid
+ * ICU); they compare the raw `{token}` set instead. Single source of truth for the
+ * raw/ICU split, reused by the pseudolocale generator and the locale checks.
+ * See `src/lib/errors/CLAUDE.md` + `src/lib/intl/CLAUDE.md`.
+ * @param {string} key
+ * @returns {boolean}
+ */
+export function isRawKey(key) {
+  return key.startsWith('errors.')
+}
+
+/**
+ * Extracts the set of brace-token names (`{system_settings}`, `{path}`, …) from a
+ * RAW (non-ICU) message. The raw error pipeline substitutes these by name with
+ * `.replaceAll('{token}', value)`, so a translation MUST preserve the exact token
+ * set — exactly the role placeholder parity plays for ICU messages. Mirrors the
+ * generator's `pseudoRaw` token handling: a `{…}` span (no nesting in raw error
+ * tokens) is one token; everything else is literal.
+ * @param {string} value the raw English/locale message
+ * @returns {Set<string>} token names without the braces, e.g. `{ 'system_settings' }`
+ */
+export function rawTokens(value) {
+  /** @type {Set<string>} */
+  const tokens = new Set()
+  const re = /\{([^{}]*)\}/g
+  let match
+  while ((match = re.exec(value)) !== null) tokens.add(match[1])
+  return tokens
 }

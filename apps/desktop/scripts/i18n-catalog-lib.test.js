@@ -14,7 +14,15 @@
  * and are exercised by the smoke run + the downstream check tests).
  */
 import { describe, it, expect } from 'vitest'
-import { splitCatalogFile, mergeCatalogFiles, parseMessage, sourceHash, isMetadataKey } from './i18n-catalog-lib.js'
+import {
+  splitCatalogFile,
+  mergeCatalogFiles,
+  parseMessage,
+  sourceHash,
+  isMetadataKey,
+  isRawKey,
+  rawTokens,
+} from './i18n-catalog-lib.js'
 
 describe('isMetadataKey', () => {
   it('flags @-prefixed keys only', () => {
@@ -68,11 +76,18 @@ describe('parseMessage', () => {
       placeholders: [...r.placeholders].sort(),
       tags: [...r.tags].sort(),
       pluralCategories: Object.fromEntries([...r.pluralCategories].map(([k, v]) => [k, [...v].sort()])),
+      selectCategories: Object.fromEntries([...r.selectCategories].map(([k, v]) => [k, [...v].sort()])),
     }
   }
 
   it('plain message has no structure', () => {
-    expect(parsed('Just text')).toEqual({ ok: true, placeholders: [], tags: [], pluralCategories: {} })
+    expect(parsed('Just text')).toEqual({
+      ok: true,
+      placeholders: [],
+      tags: [],
+      pluralCategories: {},
+      selectCategories: {},
+    })
   })
 
   it('extracts a simple {name} placeholder', () => {
@@ -81,6 +96,7 @@ describe('parseMessage', () => {
       placeholders: ['name'],
       tags: [],
       pluralCategories: {},
+      selectCategories: {},
     })
   })
 
@@ -94,28 +110,31 @@ describe('parseMessage', () => {
       placeholders: ['label'],
       tags: ['link'],
       pluralCategories: {},
+      selectCategories: {},
     })
   })
 
-  it('extracts plural categories and the count arg', () => {
+  it('extracts plural categories into pluralCategories (not selectCategories)', () => {
     expect(parsed('{count, plural, one {# file} other {# files}}')).toEqual({
       ok: true,
       placeholders: ['count'],
       tags: [],
       pluralCategories: { count: ['one', 'other'] },
+      selectCategories: {},
     })
   })
 
-  it('extracts select categories', () => {
+  it('extracts select categories into selectCategories (not pluralCategories)', () => {
     expect(parsed('{kind, select, dir {Folder} file {File} other {Item}}')).toEqual({
       ok: true,
       placeholders: ['kind'],
       tags: [],
-      pluralCategories: { kind: ['dir', 'file', 'other'] },
+      pluralCategories: {},
+      selectCategories: { kind: ['dir', 'file', 'other'] },
     })
   })
 
-  it('handles nested select wrapping plural with inner placeholders', () => {
+  it('handles nested select wrapping plural with inner placeholders, keeping the maps separate', () => {
     const msg =
       '{kind, select, ' +
       'copy {Copied {countText} {count, plural, one {file} other {files}}} ' +
@@ -124,7 +143,8 @@ describe('parseMessage', () => {
       ok: true,
       placeholders: ['count', 'countText', 'kind'],
       tags: [],
-      pluralCategories: { kind: ['copy', 'other'], count: ['one', 'other'] },
+      pluralCategories: { count: ['one', 'other'] },
+      selectCategories: { kind: ['copy', 'other'] },
     })
   })
 
@@ -161,5 +181,31 @@ describe('sourceHash', () => {
   it('matches a known sha256-prefix value (pins the algorithm)', () => {
     // First 7 hex of sha256("Cancel").
     expect(sourceHash('Cancel')).toBe('19766ed')
+  })
+})
+
+describe('isRawKey', () => {
+  it('flags the errors.* family as raw (resolved via getMessage, no ICU)', () => {
+    expect(isRawKey('errors.listing.notFound.suggestion')).toBe(true)
+    expect(isRawKey('errors.git.dirty.title')).toBe(true)
+  })
+
+  it('treats every non-errors key as ICU', () => {
+    expect(isRawKey('common.ok')).toBe(false)
+    expect(isRawKey('transfer.summary')).toBe(false)
+  })
+})
+
+describe('rawTokens', () => {
+  it('extracts brace-token names from a raw message', () => {
+    expect([...rawTokens('Open {system_settings}, then run `lsof <folder-path>`.')].sort()).toEqual(['system_settings'])
+  })
+
+  it('extracts multiple distinct tokens and ignores literal <…>', () => {
+    expect([...rawTokens('{a} then {b}, see <x> and {a}')].sort()).toEqual(['a', 'b'])
+  })
+
+  it('returns an empty set when there are no tokens', () => {
+    expect([...rawTokens('No tokens here, just `code` and <literal>')]).toEqual([])
   })
 })

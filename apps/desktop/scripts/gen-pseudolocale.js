@@ -57,7 +57,12 @@
 import { mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { IntlMessageFormat } from 'intl-messageformat'
-import { isMetadataKey, readLocaleFiles, resolveMessagesRoot, sourceHash } from './i18n-catalog-lib.js'
+import { isMetadataKey, isRawKey, readLocaleFiles, resolveMessagesRoot, sourceHash } from './i18n-catalog-lib.js'
+
+// `isRawKey` is the shared raw/ICU split (single source: `i18n-catalog-lib.js`).
+// Re-exported here because it's part of this module's tested surface and reads
+// naturally alongside the pseudo value routing below.
+export { isRawKey }
 
 /** The generated pseudolocale tag (Google's accented-expanded convention; a BCP-47 private-use region). */
 export const PSEUDO_LOCALE = 'en-XA'
@@ -363,16 +368,6 @@ export function pseudoRaw(value) {
     i++
   }
   return out
-}
-
-/**
- * Whether a message key renders RAW (no ICU) at runtime. The `errors.*` family
- * is pulled via `getMessage()` (raw lookup) — see `src/lib/errors/CLAUDE.md`.
- * @param {string} key
- * @returns {boolean}
- */
-export function isRawKey(key) {
-  return key.startsWith('errors.')
 }
 
 /**
