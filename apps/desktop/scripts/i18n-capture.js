@@ -4,21 +4,26 @@
  *
  * Mirrors the manual single-spec recipe (see `test/e2e-playwright/DETAILS.md`)
  * but wraps the whole lifecycle so capture is a single command:
- *   1. (optional `--build`) compile the Tauri binary with the `playwright-e2e`
- *      feature, the same build the E2E suite uses.
- *   2. create a fresh fixture tree.
- *   3. launch the binary (E2E mode, capture-friendly) and wait for its
- *      playwright socket.
- *   4. run ONLY `i18n-capture.spec.ts` (via the `i18n-capture` shard kind),
+ *   1. refuse to run if any Cmdr is already up (we never kill a foreign instance).
+ *   2. (optional `--build`) compile the capture binary: the `playwright-e2e`
+ *      feature PLUS `CMDR_I18N_CAPTURE_BUILD=1`, which bakes the capture
+ *      instrumentation into the frontend (see `messages.svelte.ts`).
+ *   3. create a fresh fixture tree.
+ *   4. launch the binary (E2E mode, unique socket) and wait for its socket.
+ *   5. run ONLY `i18n-capture.spec.ts` (via the `i18n-capture` shard kind),
  *      which drives the surfaces, records keys, and writes the screenshots +
  *      `screenshots/capture-report.json`.
- *   5. kill the app (always, even on failure).
+ *   6. stop ONLY the app WE launched (its pid), always, even on failure.
  *
  * Then run `pnpm i18n:couple` to write the `@key.screenshot` couplings.
  *
  * Usage:
- *   pnpm i18n:capture            # reuse the existing build
- *   pnpm i18n:capture --build    # rebuild the E2E binary first
+ *   pnpm i18n:capture --build    # build the capture binary, then capture
+ *   pnpm i18n:capture            # reuse a binary from a PRIOR --build run
+ *
+ * ALWAYS use `--build` unless a previous `--build` already produced a capture
+ * binary: the capture API is absent from a binary built by the normal E2E lane
+ * (that lane doesn't set `CMDR_I18N_CAPTURE_BUILD`).
  *
  * Extending to more surfaces: add a staging block to `i18n-capture.spec.ts`
  * (stage → setSurface → rerender → screenshot → dump) and re-run this. No change
@@ -38,7 +43,9 @@ const desktopDir = join(here, '..')
 // This matches `desktop-svelte-e2e-playwright.go`'s binary resolution.
 const repoRoot = join(desktopDir, '..', '..')
 const wantBuild = process.argv.includes('--build')
-const SOCKET = process.env.CMDR_PLAYWRIGHT_SOCKET ?? '/tmp/tauri-playwright.sock'
+// A per-run unique socket (not the shared default) so a parallel dev/E2E session
+// in another worktree can never collide on the socket path.
+const SOCKET = process.env.CMDR_PLAYWRIGHT_SOCKET ?? `/tmp/tauri-playwright-i18n-${String(process.pid)}.sock`
 
 /**
  * @param {string} cmd
@@ -86,13 +93,21 @@ async function waitForSocket(path, timeoutMs) {
   }
 }
 
+/** @type {import('node:child_process').ChildProcess | null} */
 let appProc = null
+// Stop ONLY the app process THIS script launched, never a broad
+// `pkill -f 'target.*Cmdr'` — that pattern matches any worktree's running Cmdr
+// (dev or E2E) and would clobber a parallel session. We spawn the binary
+// ourselves, so `appProc.pid` is the exact process to signal. Best-effort and
+// idempotent (SIGTERM a gone pid throws ESRCH, which we swallow).
 function killApp() {
+  if (appProc?.pid == null) return
   try {
-    spawnSync('pkill', ['-f', 'target.*Cmdr'])
+    process.kill(appProc.pid, 'SIGTERM')
   } catch {
-    /* best effort */
+    /* already gone */
   }
+  appProc = null
 }
 process.on('exit', killApp)
 process.on('SIGINT', () => {
@@ -100,19 +115,47 @@ process.on('SIGINT', () => {
   process.exit(130)
 })
 
+/**
+ * Refuses to run if any Cmdr is already running, since a foreign instance (a dev
+ * session in another worktree) means the environment isn't clean and our launch
+ * could confuse a person. We never kill it — we stop and tell the operator.
+ */
+function assertNoForeignCmdr() {
+  const res = spawnSync('pgrep', ['-fl', 'target.*Cmdr'], { encoding: 'utf8' })
+  // pgrep exits 0 with matches, 1 with none. Any match → stop.
+  if (res.status === 0 && res.stdout.trim() !== '') {
+    throw new Error(
+      `A Cmdr instance is already running — refusing to launch a capture run that might confuse it:\n${res.stdout.trim()}\n` +
+        `Stop it (or its dev session) first, then re-run.`,
+    )
+  }
+}
+
 async function main() {
+  // Never clobber a running Cmdr (e.g. a dev session in another worktree).
+  assertNoForeignCmdr()
+
   if (wantBuild) {
-    console.log('[i18n-capture] building E2E binary…')
-    run('node', [
-      'scripts/tauri-wrapper.js',
-      'build',
-      '--no-bundle',
-      '--target',
-      hostTriple(),
-      '--',
-      '--features',
-      'playwright-e2e',
-    ])
+    console.log('[i18n-capture] building capture binary…')
+    // `CMDR_I18N_CAPTURE_BUILD=1` flips the `__CMDR_I18N_CAPTURE__` Vite define so
+    // the frontend bundle BAKES IN the capture instrumentation. Only THIS build
+    // sets it, so a binary built by the normal E2E lane has no capture API —
+    // `pnpm i18n:capture` must always go through `--build`. The env propagates
+    // through tauri-wrapper → Tauri → the vite build.
+    run(
+      'node',
+      [
+        'scripts/tauri-wrapper.js',
+        'build',
+        '--no-bundle',
+        '--target',
+        hostTriple(),
+        '--',
+        '--features',
+        'playwright-e2e',
+      ],
+      { env: { ...process.env, CMDR_I18N_CAPTURE_BUILD: '1' } },
+    )
   }
 
   const triple = hostTriple()
@@ -127,9 +170,6 @@ async function main() {
   const { createFixtures } = await import('../test/e2e-shared/fixtures.js')
   const startPath = createFixtures()
   console.log(`[i18n-capture] fixtures at ${startPath}`)
-
-  // Make sure no stale app holds the socket.
-  killApp()
 
   console.log('[i18n-capture] launching app…')
   appProc = spawn(binary, [], {
@@ -154,8 +194,17 @@ async function main() {
   // "Project(s) ... not found". The `i18n-capture` shard's `testMatch` already
   // restricts the run to the capture spec, and the config has only the `tauri`
   // project, so it runs by default. (See the suite CLAUDE.md note on this clash.)
+  // Pass the SAME unique socket to Playwright: `fixtures.ts` reads
+  // `CMDR_PLAYWRIGHT_SOCKET` to know which socket to connect to. Without this,
+  // Playwright connects to the default `/tmp/tauri-playwright.sock` while the app
+  // listens on our unique one, and the first `evaluate` hangs to timeout.
   run('npx', ['playwright', 'test', '--config', 'test/e2e-playwright/playwright.config.ts'], {
-    env: { ...process.env, CMDR_E2E_START_PATH: startPath, CMDR_E2E_SHARD_KIND: 'i18n-capture' },
+    env: {
+      ...process.env,
+      CMDR_E2E_START_PATH: startPath,
+      CMDR_E2E_SHARD_KIND: 'i18n-capture',
+      CMDR_PLAYWRIGHT_SOCKET: SOCKET,
+    },
   })
 
   console.log('[i18n-capture] done. Next: `pnpm i18n:couple` to write @key.screenshot couplings.')

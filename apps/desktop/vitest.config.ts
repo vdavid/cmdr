@@ -5,6 +5,13 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [Icons({ compiler: 'svelte' }), svelte()],
+  // Bake the capture instrumentation in (TRUE) so the capture-mode unit tests in
+  // `messages.svelte.test.ts` can exercise `window.__cmdrI18nCapture`. In a real
+  // build this constant comes from `vite.config.js`'s `define` (TRUE only in the
+  // dedicated capture build); here it's always on so the tests run.
+  define: {
+    __CMDR_I18N_CAPTURE__: 'true',
+  },
   test: {
     include: [
       'src/**/*.test.ts',

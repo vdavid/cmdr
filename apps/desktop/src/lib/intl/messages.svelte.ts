@@ -29,7 +29,6 @@
 
 import { IntlMessageFormat, type PrimitiveType, type FormatXMLElementFn } from 'intl-messageformat'
 import { getLocale, setLocaleOverride } from './locale'
-import { getAppMode } from '$lib/app-mode'
 import type { MessageKey } from './keys.gen'
 
 const BASE_LOCALE = 'en'
@@ -103,7 +102,7 @@ function resolveRaw(locale: string, key: string): string {
   return catalogs[locale]?.[key] ?? catalogs[lang]?.[key] ?? catalogs[BASE_LOCALE]?.[key] ?? key
 }
 
-// ── Capture mode (dev/E2E only; inert and absent in production) ───────────────
+// ── Capture mode (capture build only; absent everywhere else) ─────────────────
 //
 // A screenshot-coupling harness drives the app surface-by-surface, records which
 // catalog keys render on each surface, and writes `@key.screenshot` couplings
@@ -112,13 +111,18 @@ function resolveRaw(locale: string, key: string): string {
 // RESOLVED key behind every `t()`/`getMessage()`/`<Trans>` call, so the
 // instrumentation lives here.
 //
-// Zero production cost: the hot path checks one module-level boolean that is only
-// ever flipped true by `window.__cmdrI18nCapture.enable()`, which itself refuses
-// to run in prod mode AND is never even installed there (the `getAppMode()` gate
-// below). When off, no Map is touched and no key is recorded — a single, always-
-// false, well-predicted branch per resolve.
+// Gated on `__CMDR_I18N_CAPTURE__`, a Vite `define` compile-time constant that is
+// TRUE only in the dedicated capture build (the i18n-capture orchestrator sets
+// `CMDR_I18N_CAPTURE_BUILD=1`) and FALSE in prod and ordinary dev/E2E builds.
+// Because it's a constant, esbuild dead-code-eliminates the entire block below
+// (the sink, `recordCapturedKey`, the API, and `if (false && captureActive) …`
+// in the hot path) when it's false — true zero overhead and verifiably ABSENT
+// from prod. Why a build constant, not the runtime `getAppMode()`: the install
+// runs at module load, before `initAppMode()` resolves over IPC, and the E2E
+// binary is a production Vite build (`import.meta.env.DEV` false), so the runtime
+// gate read `'prod'` at load and never installed the API.
 
-/** True only while a capture run is active. Always false in production. */
+/** True only while a capture run is active. Exists only in the capture build. */
 let captureActive = false
 /** The surface label every recorded key is tagged with until it changes. */
 let captureSurface = ''
@@ -140,10 +144,10 @@ function recordCapturedKey(key: string): void {
 /**
  * The window-exposed capture control surface. Typed loosely on `window` so the
  * Playwright driver (which talks to the webview by name) can call it without a
- * shared type. Installed once, only outside production.
+ * shared type. Installed once, only in the capture build.
  */
 interface I18nCaptureApi {
-  /** Turns recording on (no-op in prod). Returns whether it's now active. */
+  /** Turns recording on. Returns whether it's now active. */
   enable: () => boolean
   /** Turns recording off. */
   disable: () => void
@@ -163,10 +167,9 @@ interface I18nCaptureApi {
   rerender: () => void
 }
 
-if (getAppMode() !== 'prod' && typeof window !== 'undefined') {
+if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
   const api: I18nCaptureApi = {
     enable() {
-      if (getAppMode() === 'prod') return false
       captureActive = true
       return true
     },
@@ -209,7 +212,7 @@ export function getMessage(key: MessageKey): string {
   // Read the rune UNCONDITIONALLY and FIRST. See the reactivity note above.
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- load-bearing rune read: tracks the reactive dependency before any cache lookup; see header.
   localeVersion
-  if (captureActive) recordCapturedKey(key)
+  if (__CMDR_I18N_CAPTURE__ && captureActive) recordCapturedKey(key)
   const locale = getLocale()
   return resolveRaw(locale, key)
 }
@@ -247,7 +250,7 @@ export function t(key: MessageKey, params?: TranslationParams): TranslationResul
   // reactive dependency isn't tracked. See the reactivity note above.
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- load-bearing rune read: tracks the reactive dependency before any cache lookup; see header.
   localeVersion
-  if (captureActive) recordCapturedKey(key)
+  if (__CMDR_I18N_CAPTURE__ && captureActive) recordCapturedKey(key)
   const locale = getLocale()
   return getCompiled(locale, key).format(params)
 }

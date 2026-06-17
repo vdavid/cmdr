@@ -64,31 +64,44 @@ export function couplingsFromReport(report) {
 
 /**
  * @typedef {object} CoupleResult
- * @property {Record<string, unknown>} json The catalog object after coupling, with twins reordered.
+ * @property {string} text The catalog TEXT after coupling (line-surgical; all other bytes byte-identical).
  * @property {boolean} changed Whether any `@key.screenshot` was added or updated.
  * @property {number} couplingCount How many keys were (re)coupled.
  * @property {string[]} coupledWithoutDescription `key → screenshot` for keys whose twin has no description.
  * @property {string[]} missingKeys Keys requested but absent from this catalog.
+ * @property {string[]} missingTwins Keys present but with no `@key` twin to host the screenshot (skipped).
  * @property {Array<{ key: string; screenshot: string; current: string | undefined }>} stale
  *   For `--check`: keys whose coupling is missing/stale (the writes that WOULD happen).
  */
 
 /**
- * Pure core: returns a NEW catalog object with `@key.screenshot` set for every
- * requested key present in `json`, touching ONLY the `screenshot` field of each
- * twin. Message values and every other twin field are carried through unchanged.
- * Does not read or write the filesystem.
- * @param {Record<string, unknown>} json A parsed catalog (`messages/en/<area>.json`).
+ * Pure core: returns the catalog TEXT with `@key.screenshot` set for every
+ * requested key, edited LINE-SURGICALLY so every other byte — message values,
+ * other twin fields, indentation, AND the blank lines that group the catalog —
+ * is preserved exactly. (A `JSON.parse` → `JSON.stringify` round-trip would drop
+ * the blank-line grouping; oxfmt doesn't restore it, so it would reflatten every
+ * file on every run. The spec's gotcha: preserve oxfmt'd formatting, touch ONLY
+ * `@key.screenshot`.) Does not read or write the filesystem.
+ *
+ * We parse the JSON once (read-only) to learn which keys exist, their current
+ * screenshot (for idempotency), and whether the twin has a description; the
+ * actual mutation is on the raw text.
+ * @param {string} rawText The catalog file contents (`messages/en/<area>.json`).
  * @param {Map<string, string>} keyToScreenshot key → screenshot filename for THIS catalog.
  * @returns {CoupleResult}
  */
-export function coupleCatalog(json, keyToScreenshot) {
+export function coupleCatalog(rawText, keyToScreenshot) {
+  /** @type {Record<string, unknown>} */
+  const json = JSON.parse(rawText)
+  let text = rawText
   let changed = false
   let couplingCount = 0
   /** @type {string[]} */
   const coupledWithoutDescription = []
   /** @type {string[]} */
   const missingKeys = []
+  /** @type {string[]} */
+  const missingTwins = []
   /** @type {Array<{ key: string; screenshot: string; current: string | undefined }>} */
   const stale = []
 
@@ -100,70 +113,95 @@ export function coupleCatalog(json, keyToScreenshot) {
     const metaKey = `@${key}`
     const existing = json[metaKey]
     const metaIsObject = typeof existing === 'object' && existing !== null && !Array.isArray(existing)
-    // Merge into the existing twin (preserving `description`/`placeholders`); we
-    // only ever own the `screenshot` field. A key with no (or a malformed) twin,
-    // or one whose twin has no non-empty `description`, still gets coupled but is
-    // reported — the catalog convention wants a description, even though checks
-    // don't require it.
-    /** @type {Record<string, unknown>} */
-    const meta = metaIsObject ? /** @type {Record<string, unknown>} */ (existing) : {}
+    if (!metaIsObject) {
+      // No `@key` twin to host the screenshot. The migration gave every key a
+      // twin, so this is rare; skip rather than synthesize a twin in raw text.
+      missingTwins.push(key)
+      continue
+    }
+    const meta = /** @type {Record<string, unknown>} */ (existing)
     if (meta.screenshot === screenshot) continue // already coupled — idempotent
+
+    const next = setTwinScreenshot(text, metaKey, screenshot)
+    if (next === null) {
+      // Shouldn't happen (the twin parsed as an object), but never corrupt a file.
+      missingTwins.push(key)
+      continue
+    }
+    text = next
     const hasDescription = typeof meta.description === 'string' && meta.description.trim() !== ''
     if (!hasDescription) coupledWithoutDescription.push(`${key} → ${screenshot}`)
     couplingCount++
     stale.push({ key, screenshot, current: typeof meta.screenshot === 'string' ? meta.screenshot : undefined })
-    meta.screenshot = screenshot
-    json[metaKey] = meta
     changed = true
   }
 
-  return {
-    json: reorderTwins(json),
-    changed,
-    couplingCount,
-    coupledWithoutDescription,
-    missingKeys,
-    stale,
-  }
+  return { text, changed, couplingCount, coupledWithoutDescription, missingKeys, missingTwins, stale }
 }
 
 /**
- * Reorders the catalog so each `@key` metadata twin sits immediately after its
- * message key (the repo convention). Returns a new object; the input is not
- * mutated structurally (values are shared by reference, never altered).
- * @param {Record<string, unknown>} json
- * @returns {Record<string, unknown>}
+ * Sets the `screenshot` field of one `"@key": { … }` object in the catalog text,
+ * touching only that object. Replaces an existing `"screenshot": "…"` line if
+ * present, else inserts the field as the last property (appending a comma to the
+ * previous last line). Returns the new text, or null if the twin block can't be
+ * located/parsed (caller then skips, never corrupting the file).
+ * @param {string} text
+ * @param {string} metaKey e.g. `@common.ok`
+ * @param {string} screenshot
+ * @returns {string | null}
  */
-function reorderTwins(json) {
-  /** @type {Record<string, unknown>} */
-  const ordered = {}
-  const seen = new Set()
-  for (const k of Object.keys(json)) {
-    if (k.startsWith('@')) continue // placed alongside its message key below
-    if (seen.has(k)) continue
-    ordered[k] = json[k]
-    seen.add(k)
-    const twin = `@${k}`
-    if (twin in json) {
-      ordered[twin] = json[twin]
-      seen.add(twin)
+function setTwinScreenshot(text, metaKey, screenshot) {
+  // The twin is an oxfmt'd object opening on its own line: `  "@key": {`.
+  const open = `  ${JSON.stringify(metaKey)}: {`
+  const openIdx = text.indexOf(open)
+  if (openIdx === -1) return null
+  // Walk from the `{` tracking brace depth (skipping braces inside strings) to
+  // find this object's matching close brace — `placeholders` nests, so a naive
+  // "first }" is wrong.
+  const braceStart = openIdx + open.length - 1 // index of the `{`
+  let depth = 0
+  let inStr = false
+  let esc = false
+  let closeIdx = -1
+  for (let i = braceStart; i < text.length; i++) {
+    const c = text[i]
+    if (inStr) {
+      if (esc) esc = false
+      else if (c === '\\') esc = true
+      else if (c === '"') inStr = false
+      continue
+    }
+    if (c === '"') inStr = true
+    else if (c === '{') depth++
+    else if (c === '}') {
+      depth--
+      if (depth === 0) {
+        closeIdx = i
+        break
+      }
     }
   }
-  // Preserve any orphan `@`-entries (no message key) at the end, defensively.
-  for (const k of Object.keys(json)) {
-    if (!seen.has(k)) ordered[k] = json[k]
-  }
-  return ordered
-}
+  if (closeIdx === -1) return null
 
-/**
- * Serializes a catalog object: 2-space indent, trailing newline. (oxfmt runs
- * afterward on disk; this keeps the pre-oxfmt shape deterministic for tests.)
- * @param {Record<string, unknown>} json
- * @returns {string}
- */
-export function serializeCatalog(json) {
-  return JSON.stringify(json, null, 2) + '\n'
+  const body = text.slice(braceStart + 1, closeIdx) // between the braces
+  const before = text.slice(0, braceStart + 1)
+  const after = text.slice(closeIdx)
+
+  // Replace an existing top-level `"screenshot": "…"` in this object if present.
+  // (Top-level: 4-space indent, the twin's own field indent.)
+  const existingRe = /\n {4}"screenshot": "(?:[^"\\]|\\.)*"(,?)/
+  const m = existingRe.exec(body)
+  if (m) {
+    const replaced = body.replace(existingRe, `\n    "screenshot": ${JSON.stringify(screenshot)}${m[1]}`)
+    return before + replaced + after
+  }
+
+  // Insert as the last field: append a comma to the current last property line,
+  // then add the screenshot line before the closing brace. `body` ends with the
+  // last field then a newline + the close brace's indent; trim that trailing
+  // newline/indent, add `,\n    "screenshot": "…"\n  ` back.
+  const trimmed = body.replace(/\n {2}$/, '') // drop the "\n  " before `}`
+  return before + trimmed + `,\n    "screenshot": ${JSON.stringify(screenshot)}\n  ` + after
 }
 
 // ── CLI shell (file I/O only; skipped when imported as a module) ──────────────
@@ -205,6 +243,7 @@ function main() {
   let couplingCount = 0
   const staleForCheck = []
   const coupledWithoutDescription = []
+  const missingTwins = []
 
   for (const [file, keyMap] of byFile) {
     const filePath = join(messagesDir, file)
@@ -212,12 +251,13 @@ function main() {
       console.warn(`Skipping ${file}: no such catalog (key area without a catalog file?)`)
       continue
     }
-    /** @type {Record<string, unknown>} */
-    const json = JSON.parse(readFileSync(filePath, 'utf8'))
-    const result = coupleCatalog(json, keyMap)
+    const result = coupleCatalog(readFileSync(filePath, 'utf8'), keyMap)
 
     for (const key of result.missingKeys) {
       console.warn(`Skipping ${key}: not present in ${file} (catalog may have drifted from the report)`)
+    }
+    for (const key of result.missingTwins) {
+      missingTwins.push(`${key} (in ${file})`)
     }
     couplingCount += result.couplingCount
     coupledWithoutDescription.push(...result.coupledWithoutDescription)
@@ -228,7 +268,7 @@ function main() {
       continue
     }
     if (result.changed) {
-      writeFileSync(filePath, serializeCatalog(result.json))
+      writeFileSync(filePath, result.text)
       changedFiles.push(filePath)
     }
   }
@@ -254,7 +294,17 @@ function main() {
     for (const line of coupledWithoutDescription) console.warn(`  - ${line}`)
   }
 
-  // Normalize formatting on the changed catalogs so the result is oxfmt-clean.
+  if (missingTwins.length > 0) {
+    console.warn(
+      `Skipped ${String(missingTwins.length)} key(s) with no @key twin to host the screenshot (author a twin to couple them):`,
+    )
+    for (const line of missingTwins) console.warn(`  - ${line}`)
+  }
+
+  // Safety net: confirm the surgical edits are oxfmt-clean. With line-surgical
+  // editing this is a no-op in practice (we preserve oxfmt's shape), but if a
+  // future catalog has an unusual layout, oxfmt repairs it rather than leaving a
+  // formatting-check failure.
   if (changedFiles.length > 0) {
     const res = spawnSync('pnpm', ['exec', 'oxfmt', ...changedFiles], { cwd: desktopDir, stdio: 'inherit' })
     if (res.status !== 0) {

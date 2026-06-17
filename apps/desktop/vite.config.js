@@ -14,8 +14,22 @@ const host = process.env.TAURI_DEV_HOST
 const envPort = process.env.CMDR_VITE_PORT
 const port = envPort ? Number(envPort) : 1420
 
+// Build-time flag baking the i18n screenshot-capture instrumentation into the
+// frontend bundle. TRUE only for the dedicated capture build (the i18n-capture
+// orchestrator sets `CMDR_I18N_CAPTURE_BUILD=1` for its `tauri build`); FALSE for
+// prod AND ordinary dev/E2E builds. Because it's a compile-time constant, esbuild
+// dead-code-eliminates the whole capture path (the `window.__cmdrI18nCapture`
+// install, the recording hooks, the sink) when it's false — true zero overhead,
+// and verifiably absent from prod (grep the bundle for `__cmdrI18nCapture`). See
+// `src/lib/intl/messages.svelte.ts` and `docs/specs/i18n-screenshots-plan.md`.
+const i18nCaptureBuild = process.env.CMDR_I18N_CAPTURE_BUILD === '1'
+
 export default defineConfig(async () => ({
   plugins: [Icons({ compiler: 'svelte' }), sveltekit()],
+
+  define: {
+    __CMDR_I18N_CAPTURE__: JSON.stringify(i18nCaptureBuild),
+  },
 
   build: {
     chunkSizeWarningLimit: 1000,

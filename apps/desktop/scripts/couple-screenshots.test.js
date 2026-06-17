@@ -1,63 +1,63 @@
 import { describe, it, expect } from 'vitest'
-import { couplingsFromReport, coupleCatalog, serializeCatalog, fileForKey } from './couple-screenshots.js'
+import { couplingsFromReport, coupleCatalog, fileForKey } from './couple-screenshots.js'
 
-// A small fixture catalog mirroring the real `messages/en/<area>.json` shape: a
-// message value, then its ARB-style `@key` twin (description + placeholders).
-// The N1 safety guarantee under test: coupling touches ONLY `@key.screenshot`,
-// never a message VALUE or any other twin field.
-function fixtureCatalog() {
-  return {
-    'common.ok': 'OK',
-    '@common.ok': {
-      description: 'Confirm button in dialogs.',
-    },
-    'common.cancel': 'Cancel',
-    '@common.cancel': {
-      description: 'Dismiss button in dialogs.',
-      placeholders: {},
-    },
-    // A value with ICU braces and doubled apostrophes — exactly the kind of
-    // string a careless round-trip could corrupt.
-    'common.greeting': "It''s {count, plural, one {# file} other {# files}}",
-    '@common.greeting': {
-      description: 'Status text.',
-      placeholders: { count: 'number of files' },
-    },
+// An oxfmt-shaped fixture catalog mirroring the real `messages/en/<area>.json`:
+// 2-space indent, each `@key` twin right after its message key, BLANK LINES
+// between groups, a nested `placeholders` object, ICU braces, doubled
+// apostrophes. The N1 safety guarantee under test: coupling edits ONLY
+// `@key.screenshot` and leaves every other byte — values, other twin fields,
+// indentation, and the blank-line grouping — byte-identical.
+const FIXTURE = `{
+  "common.ok": "OK",
+  "@common.ok": {
+    "description": "Confirm button in dialogs."
+  },
+
+  "common.cancel": "Cancel",
+  "@common.cancel": {
+    "description": "Dismiss button in dialogs.",
+    "placeholders": {}
+  },
+
+  "common.greeting": "It''s {count, plural, one {# file} other {# files}}",
+  "@common.greeting": {
+    "description": "Status text.",
+    "placeholders": {
+      "count": "number of files"
+    }
   }
 }
+`
 
-/**
- * All message VALUES (non-`@` keys) of a catalog, as a plain object.
- * @param {Record<string, unknown>} json
- * @returns {Record<string, unknown>}
- */
-function valuesOf(json) {
-  /** @type {Record<string, unknown>} */
-  const out = {}
-  for (const [k, v] of Object.entries(json)) {
-    if (!k.startsWith('@')) out[k] = v
-  }
-  return out
-}
-
-describe('coupleCatalog (N1 value-safety)', () => {
-  it('changes only @key.screenshot fields; every message value is byte-identical', () => {
-    const before = fixtureCatalog()
-    const beforeValuesJson = JSON.stringify(valuesOf(before))
-
+describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
+  it('edits ONLY @key.screenshot lines; every other byte is preserved', () => {
     const keyToScreenshot = new Map([
       ['common.ok', 'dialog.png'],
       ['common.greeting', 'status.png'],
     ])
-    const { json: after, changed, couplingCount } = coupleCatalog(before, keyToScreenshot)
+    const { text, changed, couplingCount } = coupleCatalog(FIXTURE, keyToScreenshot)
 
     expect(changed).toBe(true)
     expect(couplingCount).toBe(2)
 
-    // Every message value survives byte-for-byte (the heart of the guarantee).
-    expect(JSON.stringify(valuesOf(after))).toBe(beforeValuesJson)
+    // The output must still parse and carry every message value byte-identical.
+    const before = JSON.parse(FIXTURE)
+    const after = JSON.parse(text)
+    for (const k of Object.keys(before)) {
+      if (k.startsWith('@')) continue
+      expect(after[k]).toBe(before[k])
+    }
 
-    // The only difference vs. the original is the added `screenshot` fields.
+    // The ONLY textual difference is the two inserted screenshot fields. Each was
+    // appended after the twin's previously-last field, so each insertion is
+    // `,\n    "screenshot": "…"` (a comma added to the prior line + the new line).
+    // Removing both reproduces the input exactly, blank lines included.
+    const reverted = text
+      .replace(',\n    "screenshot": "dialog.png"', '')
+      .replace(',\n    "screenshot": "status.png"', '')
+    expect(reverted).toBe(FIXTURE)
+
+    // The couplings landed on the right twins, descriptions/placeholders intact.
     expect(after['@common.ok']).toEqual({ description: 'Confirm button in dialogs.', screenshot: 'dialog.png' })
     expect(after['@common.greeting']).toEqual({
       description: 'Status text.',
@@ -68,40 +68,72 @@ describe('coupleCatalog (N1 value-safety)', () => {
     expect(after['@common.cancel']).toEqual({ description: 'Dismiss button in dialogs.', placeholders: {} })
   })
 
-  it('is idempotent: a second run with the same couplings is a no-op', () => {
+  it('preserves the blank lines between catalog groups', () => {
+    const { text } = coupleCatalog(FIXTURE, new Map([['common.ok', 'dialog.png']]))
+    // Same number of blank (empty) lines as the input — the round-trip bug this
+    // guards would collapse them to zero.
+    /** @param {string} s */
+    const blanks = (s) => s.split('\n').filter((/** @type {string} */ l) => l === '').length
+    expect(blanks(text)).toBe(blanks(FIXTURE))
+  })
+
+  it('replaces an existing screenshot value rather than duplicating it', () => {
+    const once = coupleCatalog(FIXTURE, new Map([['common.ok', 'first.png']])).text
+    const twice = coupleCatalog(once, new Map([['common.ok', 'second.png']])).text
+    const obj = JSON.parse(twice)
+    expect(obj['@common.ok']).toEqual({ description: 'Confirm button in dialogs.', screenshot: 'second.png' })
+    // Exactly one screenshot line for this twin.
+    expect((twice.match(/"screenshot": "second.png"/g) ?? []).length).toBe(1)
+    expect(twice.includes('first.png')).toBe(false)
+  })
+
+  it('is idempotent: a second run with the same couplings is a byte-for-byte no-op', () => {
     const keyToScreenshot = new Map([['common.ok', 'dialog.png']])
-    const first = coupleCatalog(fixtureCatalog(), keyToScreenshot)
+    const first = coupleCatalog(FIXTURE, keyToScreenshot)
     expect(first.changed).toBe(true)
-    const second = coupleCatalog(first.json, keyToScreenshot)
+    const second = coupleCatalog(first.text, keyToScreenshot)
     expect(second.changed).toBe(false)
     expect(second.couplingCount).toBe(0)
-    expect(serializeCatalog(second.json)).toBe(serializeCatalog(first.json))
+    expect(second.text).toBe(first.text)
   })
 
-  it('keeps each @key twin directly after its message key after coupling', () => {
-    const { json } = coupleCatalog(fixtureCatalog(), new Map([['common.cancel', 'dialog.png']]))
-    const keys = Object.keys(json)
-    for (const k of keys) {
-      if (k.startsWith('@')) continue
-      const twinIndex = keys.indexOf(`@${k}`)
-      if (twinIndex === -1) continue
-      expect(twinIndex).toBe(keys.indexOf(k) + 1)
-    }
-  })
-
-  it('reports keys coupled without a description twin', () => {
-    const catalog = { 'common.ok': 'OK' } // no twin at all
+  it('reports keys whose twin lacks a description (still couples them)', () => {
+    const catalog = `{
+  "common.ok": "OK",
+  "@common.ok": {
+    "placeholders": {}
+  }
+}
+`
     const { coupledWithoutDescription, couplingCount } = coupleCatalog(catalog, new Map([['common.ok', 'x.png']]))
     expect(couplingCount).toBe(1)
     expect(coupledWithoutDescription).toEqual(['common.ok → x.png'])
   })
 
+  it('reports keys with no twin at all and skips them (never synthesizes one)', () => {
+    const catalog = `{
+  "common.ok": "OK"
+}
+`
+    const { text, missingTwins, couplingCount, changed } = coupleCatalog(catalog, new Map([['common.ok', 'x.png']]))
+    expect(missingTwins).toEqual(['common.ok'])
+    expect(couplingCount).toBe(0)
+    expect(changed).toBe(false)
+    expect(text).toBe(catalog)
+  })
+
   it('reports keys absent from the catalog rather than minting them', () => {
-    const catalog = { 'common.ok': 'OK' }
-    const { json, missingKeys, changed } = coupleCatalog(catalog, new Map([['common.ghost', 'x.png']]))
+    const catalog = `{
+  "common.ok": "OK",
+  "@common.ok": {
+    "description": "x"
+  }
+}
+`
+    const { text, missingKeys, changed } = coupleCatalog(catalog, new Map([['common.ghost', 'x.png']]))
     expect(missingKeys).toEqual(['common.ghost'])
     expect(changed).toBe(false)
-    expect('@common.ghost' in json).toBe(false)
+    expect(text).toBe(catalog)
   })
 })
 

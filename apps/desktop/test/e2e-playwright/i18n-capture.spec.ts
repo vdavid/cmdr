@@ -62,6 +62,20 @@ async function keysFor(page: TauriPage, surface: string): Promise<string[]> {
   return dump[surface] ?? []
 }
 
+/**
+ * Waits for the webview to composite a fresh frame before a native screenshot.
+ * The native (CoreGraphics) screenshot grabs the window's last COMPOSITED frame,
+ * which lags a just-applied DOM change (a freshly-opened modal, a `rerender()`).
+ * Two rAF ticks guarantee the browser has laid out AND painted the pending
+ * change, so the capture shows the surface we actually staged. Without this, a
+ * modal that's present in the DOM can be missing from the image.
+ */
+async function settlePaint(page: TauriPage): Promise<void> {
+  await page.evaluate(`new Promise(function(resolve) {
+    requestAnimationFrame(function() { requestAnimationFrame(function() { resolve(true); }); });
+  })`)
+}
+
 test.describe('i18n screenshot capture', () => {
   test('captures representative surfaces and writes the coupling report', async ({ tauriPage }) => {
     const main = tauriPage as TauriPage
@@ -83,6 +97,7 @@ test.describe('i18n screenshot capture', () => {
     await captureCall<boolean>(main, 'enable')
     await captureCall(main, 'setSurface', 'main-window')
     await captureCall(main, 'rerender')
+    await settlePaint(main)
     await main.screenshot({ path: join(screenshotsDir, 'main-window.png') })
     report['main-window'] = { screenshot: 'main-window.png', keys: await keysFor(main, 'main-window') }
 
@@ -93,6 +108,7 @@ test.describe('i18n screenshot capture', () => {
     await main.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await captureCall(main, 'setSurface', 'new-folder-dialog')
     await captureCall(main, 'rerender')
+    await settlePaint(main)
     await main.screenshot({ path: join(screenshotsDir, 'new-folder-dialog.png') })
     report['new-folder-dialog'] = {
       screenshot: 'new-folder-dialog.png',
@@ -112,6 +128,7 @@ test.describe('i18n screenshot capture', () => {
     await captureCall<boolean>(settings, 'enable')
     await captureCall(settings, 'setSurface', 'settings-appearance')
     await captureCall(settings, 'rerender')
+    await settlePaint(settings)
     await settings.screenshot({ path: join(screenshotsDir, 'settings-appearance.png') })
     report['settings-appearance'] = {
       screenshot: 'settings-appearance.png',
