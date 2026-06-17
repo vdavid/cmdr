@@ -268,11 +268,9 @@ export async function captureFdaOnboardingPass(
   await ensureAppReady(main)
   const label = `onboarding-fda-${pass.replace('fda:', '')}`
 
-  let opened = false
   await captureSurface(label, report, failed, async () => {
     await dispatchMenuCommand(main, 'cmdr.openOnboarding')
     await main.waitForSelector(WIZARD, 5000)
-    opened = true
     await main.waitForSelector(`${WIZARD} .step-shell`, 5000)
     await captureCall(main, 'reset')
     await captureCall<boolean>(main, 'enable')
@@ -282,19 +280,18 @@ export async function captureFdaOnboardingPass(
   })
 
   // Close the wizard so it can't leak into a later launch's state (best-effort).
-  if (opened) {
-    for (let i = 0; i < 6; i++) {
-      if (!(await main.isVisible(WIZARD).catch(() => false))) break
-      await main
-        .evaluate(`(function(){
+  // The loop self-guards on visibility, so it's a no-op if the wizard never opened.
+  for (let i = 0; i < 6; i++) {
+    if (!(await main.isVisible(WIZARD).catch(() => false))) break
+    await main
+      .evaluate(`(function(){
           var btns = document.querySelectorAll('${WIZARD} .primary-slot button');
           if (btns.length > 0) btns[btns.length - 1].click();
         })()`)
-        .catch(() => {})
-      await expect
-        .poll(async () => !(await main.isVisible(WIZARD).catch(() => false)), { timeout: 1500 })
-        .toBeTruthy()
-        .catch(() => {})
-    }
+      .catch(() => {})
+    await expect
+      .poll(async () => !(await main.isVisible(WIZARD).catch(() => false)), { timeout: 1500 })
+      .toBeTruthy()
+      .catch(() => {})
   }
 }
