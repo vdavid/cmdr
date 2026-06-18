@@ -80,8 +80,8 @@ describe('Combobox value model', () => {
     // Open the popup (Ark only acts on a selection while open), then click a suggestion.
     getInput(target).click()
     await tick()
-    const option = [...target.querySelectorAll<HTMLElement>('.combobox-item')].find(
-      (el) => el.textContent?.includes('gpt-4o-mini'),
+    const option = [...target.querySelectorAll<HTMLElement>('.combobox-item')].find((el) =>
+      el.textContent?.includes('gpt-4o-mini'),
     )
     if (!option) throw new Error('combobox item not found')
     option.click()

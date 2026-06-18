@@ -210,13 +210,14 @@ several drives in a row; each ejected volume vanishes from the list via the exis
 
 Right-clicking a dropdown row opens a NATIVE (muda) context menu via `show_volume_row_context_menu`: a favorite row gets
 `Rename` + `Remove`, an ejectable volume row gets `Eject ({name})`, anything else has no menu. Right-clicking the closed
-header opens the native breadcrumb menu (`show_breadcrumb_context_menu`) that adds `Eject ({name})` alongside "Copy path"
-when the pane's volume is ejectable. All these picks route back through the one `volume-context-action` Tauri event
-(`action` ∈ `eject` / `rename-favorite` / `remove-favorite`): `eject` is handled in `DualPaneExplorer.svelte` (calls
-`ejectVolume`); `rename-favorite` / `remove-favorite` land in `VolumeBreadcrumb.handleVolumeContextAction`, which only
-acts when its own dropdown `isOpen` (both panes' breadcrumbs receive the global event, but only the open one owns the
-menu it spawned). Going native means the webview is frozen while the menu tracks, so the dropdown's `highlightedIndex`
-can't drift onto another row under the cursor or arrow keys — the menu always acts on the right-clicked row.
+header opens the native breadcrumb menu (`show_breadcrumb_context_menu`) that adds `Eject ({name})` alongside "Copy
+path" when the pane's volume is ejectable. All these picks route back through the one `volume-context-action` Tauri
+event (`action` ∈ `eject` / `rename-favorite` / `remove-favorite`): `eject` is handled in `DualPaneExplorer.svelte`
+(calls `ejectVolume`); `rename-favorite` / `remove-favorite` land in `VolumeBreadcrumb.handleVolumeContextAction`, which
+only acts when its own dropdown `isOpen` (both panes' breadcrumbs receive the global event, but only the open one owns
+the menu it spawned). Going native means the webview is frozen while the menu tracks, so the dropdown's
+`highlightedIndex` can't drift onto another row under the cursor or arrow keys — the menu always acts on the
+right-clicked row.
 
 **Busy gating.** While a copy / move / delete reads from or writes to a volume, ejecting it is blocked so a disconnect
 can't truncate an in-flight file. `$lib/stores/volume-busy-store.svelte`'s `isVolumeBusy(id)` (fed by the backend
@@ -256,13 +257,12 @@ the bare id, not the `fav-…` switcher id).
 
 - **Remove / Rename** are per-item. Right-clicking a favorite opens the NATIVE row menu (`show_volume_row_context_menu`,
   see § Eject button + row context menu); picking `Rename` / `Remove` routes back over `volume-context-action` to
-  `VolumeBreadcrumb.handleVolumeContextAction`, which calls `fav.startRename` / `fav.remove` on the open dropdown. Rename
-  swaps the label for an inline `<input>` (Enter commits, Escape/blur cancels). Both strip the `fav-` prefix before
-  calling the command.
-  `fav.handleRenameKeyDown` calls `e.stopPropagation()` on EVERY key: the focused input owns its keystrokes, and the
-  pane's Space-selection / type-to-jump DOM listeners aren't covered by the dispatch-level guard, so a leaked Space
-  would select the file under the cursor while the user types into the box. Enter commits, Escape cancels, everything
-  else edits the text. While a rename is active, `VolumeBreadcrumb.handleKeyDown` also bails
+  `VolumeBreadcrumb.handleVolumeContextAction`, which calls `fav.startRename` / `fav.remove` on the open dropdown.
+  Rename swaps the label for an inline `<input>` (Enter commits, Escape/blur cancels). Both strip the `fav-` prefix
+  before calling the command. `fav.handleRenameKeyDown` calls `e.stopPropagation()` on EVERY key: the focused input owns
+  its keystrokes, and the pane's Space-selection / type-to-jump DOM listeners aren't covered by the dispatch-level
+  guard, so a leaked Space would select the file under the cursor while the user types into the box. Enter commits,
+  Escape cancels, everything else edits the text. While a rename is active, `VolumeBreadcrumb.handleKeyDown` also bails
   (`fav.renamingFavoriteId !== null`) so the dropdown's list-nav keys (arrows / Home / End) don't steal them. The
   broader keystroke-leak guard lives one level up: while ANY pane's switcher dropdown is open,
   `DualPaneExplorer.routeToVolumeChooser` swallows the key from the pane behind it (returns true even when the dropdown

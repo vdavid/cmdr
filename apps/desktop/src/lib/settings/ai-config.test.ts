@@ -278,14 +278,7 @@ describe('pushConfigToBackend', () => {
 
     await pushConfigToBackend()
 
-    expect(configureAi).toHaveBeenCalledWith(
-      'cloud',
-      8192,
-      '',
-      expect.stringContaining('localhost'),
-      'llama3.2',
-      false,
-    )
+    expect(configureAi).toHaveBeenCalledWith('cloud', 8192, '', expect.stringContaining('localhost'), 'llama3.2', false)
   })
 
   it('surfaces a persistent toast and keeps pushing when the secret store read fails', async () => {
