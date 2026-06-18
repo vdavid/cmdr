@@ -297,6 +297,15 @@
         z-index: var(--z-modal);
     }
 
+    /* Drop the scrim blur when the OS asks for reduced transparency; the dimming
+       background still does its job. */
+    @media (prefers-reduced-transparency: reduce) {
+        .palette-overlay {
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+    }
+
     .palette-modal {
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border-strong);

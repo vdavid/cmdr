@@ -52,11 +52,13 @@
   --color-sidebar-border: rgba(255, 255, 255, 0.95);
   --shadow-sidebar: 6px 0 18px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.03);
 
-  /* === Frosted-glass material (tooltips, filter-chip popovers) ===
+  /* === Frosted-glass material (tooltips, filter-chip popovers, the volume selector) ===
      Shared values so every glass surface in the app reads as one material.
      `--color-bg-glass` is the translucent fill (pre-blur); `--color-border-glass`
      is the hairline that defines the surface against any wallpaper underneath.
-     The blur itself is applied per-component via `backdrop-filter: saturate(180%) blur(20px)`. */
+     The blur itself is applied per-component via `backdrop-filter: saturate(180%) blur(20px)`.
+     Under `prefers-reduced-transparency: reduce` both tokens flip to opaque in one place (see
+     the media block near the end of this file), and each glass rule drops its own blur. */
   --color-bg-glass: rgba(245, 245, 245, 0.72);
   --color-border-glass: rgba(0, 0, 0, 0.12);
 
@@ -782,6 +784,20 @@
   }
 }
 
+/* === Reduced transparency ===
+   When macOS "Reduce transparency" is on, flip the frosted-glass material to a plain
+   opaque fill. This redefines the two glass tokens to their nearest opaque, theme-aware
+   equivalents (so it's correct in light, dark, and high-contrast without per-theme
+   duplication); each glass surface separately drops its own `backdrop-filter` in a
+   matching media block at its rule site. Placed after every theme block above so it wins
+   the cascade whenever reduced-transparency is active. */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --color-bg-glass: var(--color-bg-secondary);
+    --color-border-glass: var(--color-border);
+  }
+}
+
 /* Screen reader only: visually hidden but accessible to assistive technology */
 .sr-only {
   position: absolute;
@@ -1194,6 +1210,15 @@ body {
 .cmdr-tooltip.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Reduced transparency: the `--color-bg-glass` token already flips to opaque above;
+   here we only drop the blur. */
+@media (prefers-reduced-transparency: reduce) {
+  .cmdr-tooltip {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* Keyboard shortcut badge inside tooltip */

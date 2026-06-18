@@ -181,4 +181,12 @@
         font-size: var(--font-size-sm);
         line-height: 1.3;
     }
+
+    /* Reduced transparency: `--color-bg-glass` flips to opaque (in `app.css`); drop the blur here. */
+    @media (prefers-reduced-transparency: reduce) {
+        .ui-popover {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+    }
 </style>

@@ -1007,8 +1007,14 @@
         min-width: 220px;
         max-height: calc(100vh - 30px); /* Fallback, overridden dynamically by fitDropdownToViewport() */
         overflow-y: auto;
-        background-color: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-strong);
+        /* Frosted-glass material: shared tokens with the tooltip / filter-chip popover so the
+           whole app reads as one glass. See `app.css` § Frosted-glass material. The translucent
+           fill flips to opaque under `prefers-reduced-transparency` via the `--color-bg-glass`
+           token (in `app.css`); the blur is dropped at the rule site below. */
+        background: var(--color-bg-glass);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        backdrop-filter: saturate(180%) blur(20px);
+        border: 0.5px solid var(--color-border-glass);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
         z-index: var(--z-overlay); /* Above function key bar and other pane elements */
@@ -1398,8 +1404,11 @@
     .connection-submenu {
         position: fixed;
         min-width: 220px;
-        background-color: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-strong);
+        /* Same frosted glass as the dropdown it extends. See `.volume-dropdown`. */
+        background: var(--color-bg-glass);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        backdrop-filter: saturate(180%) blur(20px);
+        border: 0.5px solid var(--color-border-glass);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
         /* Must be above the dropdown (--z-overlay: 200) */
@@ -1451,8 +1460,11 @@
         left: 0;
         margin-top: var(--spacing-xs);
         min-width: 220px;
-        background-color: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-strong);
+        /* Same frosted glass as the dropdown. See `.volume-dropdown`. */
+        background: var(--color-bg-glass);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        backdrop-filter: saturate(180%) blur(20px);
+        border: 0.5px solid var(--color-border-glass);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
         z-index: var(--z-dropdown);
@@ -1527,5 +1539,16 @@
        to the SMB / USB badges instead of jamming against them. */
     .breadcrumb-eject-button {
         margin-left: var(--spacing-xs);
+    }
+
+    /* Reduced transparency: the `--color-bg-glass` token already flips to opaque
+       (in `app.css`), so here we only drop the blur on the three glass surfaces. */
+    @media (prefers-reduced-transparency: reduce) {
+        .volume-dropdown,
+        .connection-submenu,
+        .breadcrumb-popup {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
     }
 </style>
