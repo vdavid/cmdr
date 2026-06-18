@@ -1421,8 +1421,7 @@ mod tests {
     #[cfg(feature = "virtual-mtp")]
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
-        use crate::mtp::virtual_device::setup_virtual_mtp_device;
-        use mtp_rs::ObjectHandle;
+        use crate::mtp::virtual_device::{VIRTUAL_DEVICE_SERIAL, setup_virtual_mtp_device};
 
         let location_id = setup_virtual_mtp_device();
         let device_id = format!("mtp-{}", location_id);
@@ -1433,18 +1432,19 @@ mod tests {
             .expect("virtual-mtp connect should succeed");
         let storage_id = info.storages.first().expect("virtual device should have storages").id;
 
-        // Browse so cmdr caches a (real, valid) handle for /Documents.
+        // Browse so cmdr caches the (real, valid) handle for /Documents.
         connection_manager()
             .list_directory(&device_id, storage_id, "/")
             .await
             .expect("list root should succeed");
 
-        // Simulate the device re-keying the folder's handle: poison cmdr's path
-        // cache with a handle the device no longer knows. `SendObjectInfo`
-        // against it returns `InvalidParentObject` — exactly the field report.
-        connection_manager()
-            .set_cached_handle_for_test(&device_id, storage_id, "/Documents", ObjectHandle(0x7FFF_FFFF))
-            .await;
+        // The device re-keys /Documents out from under cmdr — exactly what
+        // Android's MediaProvider does across a media rescan. cmdr's cached handle
+        // is now stale, so the next `SendObjectInfo` into it returns
+        // `InvalidParentObject` (the field report). This drives the REAL device
+        // behavior via mtp-rs, not a poke at cmdr's own cache.
+        mtp_rs::rekey_virtual_object(VIRTUAL_DEVICE_SERIAL, Path::new("Documents"))
+            .expect("/Documents was listed, so it must be re-keyable");
 
         let filename = "healed.txt";
         let payload = bytes::Bytes::from_static(b"contents that should land after the handle heals");

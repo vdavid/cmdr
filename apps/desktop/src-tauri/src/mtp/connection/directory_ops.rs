@@ -668,22 +668,6 @@ impl MtpConnectionManager {
         }
     }
 
-    /// Test-only: overwrite the cached handle for `path` to simulate the device
-    /// having re-keyed it (a stale cache entry). Used by the stale-handle upload
-    /// recovery tests (which are themselves `virtual-mtp`-gated); not compiled
-    /// into shipping builds.
-    #[cfg(all(test, feature = "virtual-mtp"))]
-    pub async fn set_cached_handle_for_test(&self, device_id: &str, storage_id: u32, path: &str, handle: ObjectHandle) {
-        let path = normalize_mtp_path(path);
-        let devices = self.devices.lock().await;
-        if let Some(entry) = devices.get(device_id)
-            && let Ok(mut cache_map) = entry.path_cache.write()
-        {
-            let storage_cache = cache_map.entry(storage_id).or_default();
-            storage_cache.path_to_handle.insert(path, handle);
-        }
-    }
-
     /// Resolves a virtual path to an MTP object handle.
     pub(super) fn resolve_path_to_handle(
         &self,
