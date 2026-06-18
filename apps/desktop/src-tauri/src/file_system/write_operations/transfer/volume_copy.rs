@@ -1932,6 +1932,16 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
         VolumeError::DeletePending(_) => WriteOperationError::DeletePending {
             path: context_path.to_string(),
         },
+        // Surfaced only when the transfer engine's one-shot retry on a stale
+        // destination handle ALSO failed. The fault is the destination folder
+        // (its handle couldn't be re-resolved), never the source, so attach the
+        // dest folder path and a destination-write classification — never
+        // `SourceNotFound`, which would point the user at an intact source file.
+        VolumeError::StaleDestinationHandle(dest_folder) => WriteOperationError::WriteError {
+            path: dest_folder,
+            message: "The destination folder couldn't be found on the device. Open the folder again and retry."
+                .to_string(),
+        },
     }
 }
 

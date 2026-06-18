@@ -42,6 +42,14 @@ layers. Parent: [`../CLAUDE.md`](../CLAUDE.md).
   (`source == Error::Cancelled`, which still maps to `MtpConnectionError::Cancelled`). Cleanup needs a live session; a
   failed cleanup logs under `target: "mtp_upload"` and never masks the original error. Pinned by
   `upload_failure_deletes_partial_object_on_device` and `upload_cancel_deletes_partial_and_surfaces_cancelled`.
+- **Stale cached parent handle on upload self-heals, then signals a one-shot retry.** When a re-keyed handle (Android
+  MediaProvider rescan between listing and upload) makes `SendObjectInfo` fail with `InvalidParentObject` /
+  `InvalidObjectHandle`, `upload_from_stream` refreshes the folder's handle and returns `StaleParentHandle` (→
+  `VolumeError::StaleDestinationHandle`); the transfer engine (`stream_pipe_file`) owns the actual retry (re-opens the
+  source stream — the connection layer can't, the stream is consumed). Two guardrails: DROP the device lock before
+  `refresh_dir_handle` (it re-lists via `list_directory`, and the per-device `tokio::sync::Mutex` isn't reentrant →
+  deadlock otherwise); and never map this to a hard not-found (that's the field bug — an intact source file shown as
+  "Path not found"). Full mechanism in [DETAILS.md](DETAILS.md) § "Stale parent handle on upload".
 - **Cancel propagation**: see parent `../CLAUDE.md` § "Cancel propagation". Cancel-aware entry points here are `delete()`
   and the `list_objects_with_cancel` path threaded down to `mtp-rs`.
 

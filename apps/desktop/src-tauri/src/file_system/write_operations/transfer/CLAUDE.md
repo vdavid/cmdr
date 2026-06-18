@@ -58,5 +58,8 @@ frontend in [`src/lib/file-operations/transfer/CLAUDE.md`](../../../../../src/li
   (reliable cancellation; `copyfile` ignores `COPYFILE_QUIT` on network mounts).
 - **`drive_transfer_serial_async` bounds closures as explicit `Pin<Box<dyn Future + Send>>`, not `AsyncFnMut`** (the
   latter isn't provably `Send` across the `tokio::spawn` boundary).
+- **`stream_pipe_file` retries once on `VolumeError::StaleDestinationHandle`** (re-opens the source, re-runs
+  `write_from_stream`); the only layer that can retry an MTP stale-handle rejection (the backend stream is single-use) —
+  don't drop the loop. Why: [`src/mtp/connection/DETAILS.md`](../../../mtp/connection/DETAILS.md) § "Stale parent handle".
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

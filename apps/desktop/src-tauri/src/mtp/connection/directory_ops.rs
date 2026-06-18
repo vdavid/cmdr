@@ -629,6 +629,61 @@ impl MtpConnectionManager {
         }
     }
 
+    /// Re-resolves the object handles along `dir`'s path so a subsequent
+    /// [`resolve_path_to_handle`](Self::resolve_path_to_handle) returns a FRESH
+    /// handle for `dir`, not a stale cached one. Used by the upload path when
+    /// the device rejects a cached parent handle (it re-keyed its handles since
+    /// the folder was last listed).
+    ///
+    /// Walks `dir`'s ancestors root-first (excluding `dir` itself), forcing a
+    /// real USB re-list of each (the listing cache is invalidated first so the
+    /// 5 s TTL can't serve a stale listing). Listing an ancestor repopulates the
+    /// path cache for its children, so by the time we list `dir`'s parent, the
+    /// fresh handle for `dir` is cached. Root (`ObjectHandle::ROOT`) is a
+    /// constant, so the common case (a top-level folder like `/Documents`) heals
+    /// with a single re-list of `/`. Best-effort: a failed re-list is logged and
+    /// the walk stops; the caller's retry then fails cleanly with a
+    /// destination-correct error rather than looping.
+    pub(super) async fn refresh_dir_handle(&self, device_id: &str, storage_id: u32, dir: &Path) {
+        let dir = normalize_mtp_path(dir.to_string_lossy().as_ref());
+        // Ancestors root-first, excluding `dir` itself: ["/", "/a", ...] up to
+        // and including `parent(dir)`. Listing `parent(dir)` refreshes `dir`'s
+        // own handle.
+        let mut ancestors: Vec<PathBuf> = dir.ancestors().skip(1).map(Path::to_path_buf).collect();
+        ancestors.reverse();
+        for ancestor in ancestors {
+            self.invalidate_listing_cache(device_id, storage_id, &ancestor).await;
+            if let Err(e) = self
+                .list_directory(device_id, storage_id, &ancestor.to_string_lossy())
+                .await
+            {
+                debug!(
+                    "refresh_dir_handle: re-list of {} failed while healing handle for {}: {:?}",
+                    ancestor.display(),
+                    dir.display(),
+                    e
+                );
+                return;
+            }
+        }
+    }
+
+    /// Test-only: overwrite the cached handle for `path` to simulate the device
+    /// having re-keyed it (a stale cache entry). Used by the stale-handle upload
+    /// recovery tests (which are themselves `virtual-mtp`-gated); not compiled
+    /// into shipping builds.
+    #[cfg(all(test, feature = "virtual-mtp"))]
+    pub async fn set_cached_handle_for_test(&self, device_id: &str, storage_id: u32, path: &str, handle: ObjectHandle) {
+        let path = normalize_mtp_path(path);
+        let devices = self.devices.lock().await;
+        if let Some(entry) = devices.get(device_id)
+            && let Ok(mut cache_map) = entry.path_cache.write()
+        {
+            let storage_cache = cache_map.entry(storage_id).or_default();
+            storage_cache.path_to_handle.insert(path, handle);
+        }
+    }
+
     /// Resolves a virtual path to an MTP object handle.
     pub(super) fn resolve_path_to_handle(
         &self,

@@ -3974,6 +3974,15 @@ export type MtpConnectionError =
   | { type: 'permissionDenied'; device_id: string }
   | { type: 'cancelled'; device_id: string; message: string }
   | { type: 'objectNotFound'; device_id: string; path: string }
+  /**
+   *  The cached parent-folder handle was rejected by the device during an
+   *  upload's `SendObjectInfo` (the device re-keyed its object handles since
+   *  the folder was last listed). The cache has been refreshed; the caller
+   *  should re-resolve and retry the upload once with a fresh source stream.
+   *  Carries the destination folder path so the volume layer can surface a
+   *  destination-correct message if the retry also fails.
+   */
+  | { type: 'staleParentHandle'; device_id: string; dest_folder: string }
   | { type: 'other'; device_id: string; message: string }
 
 /**

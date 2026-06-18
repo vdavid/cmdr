@@ -181,13 +181,36 @@ async fn stream_pipe_file(
     // imports that land in ~/Downloads.
     note_pending_for_local_dest(dest_volume, dest_path);
 
-    let stream = source_volume
-        .open_read_stream_with_hint(source_path, source_size_hint)
-        .await?;
-    let size = stream.total_size();
-    dest_volume
-        .write_from_stream(dest_path, size, stream, on_file_progress)
-        .await
+    // One-shot retry on a stale destination handle. A destination backend (MTP)
+    // can reject the write because the cached handle for the destination folder
+    // went stale — the device re-keyed its object handles since the folder was
+    // last listed (Android MediaProvider rescans). The backend refreshes its
+    // cache and returns `StaleDestinationHandle`; we re-open the source stream
+    // and try once more with the now-fresh handle. Safe to restart the whole
+    // file: the rejection lands at `SendObjectInfo`, before any source byte is
+    // read or any destination byte is written, so no progress is double-counted
+    // and no partial lingers.
+    let mut retried = false;
+    loop {
+        let stream = source_volume
+            .open_read_stream_with_hint(source_path, source_size_hint)
+            .await?;
+        let size = stream.total_size();
+        match dest_volume
+            .write_from_stream(dest_path, size, stream, on_file_progress)
+            .await
+        {
+            Err(VolumeError::StaleDestinationHandle(_)) if !retried => {
+                retried = true;
+                log::warn!(
+                    "stream_pipe_file: destination handle for {} was stale; retrying once with the refreshed handle",
+                    dest_path.display()
+                );
+                continue;
+            }
+            result => return result,
+        }
+    }
 }
 
 /// Resolve `dest_path` against `dest_volume.local_path()` and register it

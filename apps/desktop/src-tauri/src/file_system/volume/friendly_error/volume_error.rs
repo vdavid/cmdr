@@ -62,6 +62,11 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         VolumeError::ConnectionTimeout(_) => kinds::connection_timeout(raw),
         VolumeError::Cancelled(_) => kinds::cancelled(raw),
         VolumeError::DeletePending(_) => kinds::delete_pending(&path_display, raw),
+        // Write-only error (the MTP upload path's stale-handle signal); it never
+        // reaches the listing pipeline. Mapped defensively to a not-found on the
+        // path actually being listed (never a source path), so the match stays
+        // exhaustive without inventing a listing reason for a write condition.
+        VolumeError::StaleDestinationHandle(_) => kinds::not_found(&path_display, raw),
         VolumeError::IsADirectory(_) => ListingError {
             category: ErrorCategory::NeedsAction,
             reason: ListingErrorReason::IsADirectory { path: path_display },

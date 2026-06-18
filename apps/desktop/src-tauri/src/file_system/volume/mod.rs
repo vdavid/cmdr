@@ -260,6 +260,13 @@ pub enum VolumeError {
     /// once the last handle closes; any new `Create` (stat, open, write) on the path
     /// fails with this status in the meantime. SMB-only today.
     DeletePending(String),
+    /// The destination folder's cached handle was stale and the backend rejected
+    /// a write into it (MTP: the device re-keyed its object handles since the
+    /// folder was last listed). The backend has already refreshed its cache, so
+    /// the transfer engine retries the write once with a fresh source stream.
+    /// Carries the destination folder path for a destination-correct message if
+    /// the retry also fails. MTP-only today.
+    StaleDestinationHandle(String),
     IoError {
         message: String,
         raw_os_error: Option<i32>,
@@ -289,6 +296,7 @@ impl std::fmt::Display for VolumeError {
             Self::Cancelled(msg) => write!(f, "Cancelled: {}", msg),
             Self::IsADirectory(path) => write!(f, "Is a directory: {}", path),
             Self::DeletePending(path) => write!(f, "Delete pending: {}", path),
+            Self::StaleDestinationHandle(path) => write!(f, "Destination folder handle was stale: {}", path),
             Self::IoError { message, .. } => write!(f, "I/O error: {}", message),
             Self::FriendlyGit(err) => write!(f, "git: {}", err),
         }

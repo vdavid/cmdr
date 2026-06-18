@@ -48,6 +48,16 @@ pub enum MtpConnectionError {
         device_id: String,
         path: String,
     },
+    /// The cached parent-folder handle was rejected by the device during an
+    /// upload's `SendObjectInfo` (the device re-keyed its object handles since
+    /// the folder was last listed). The cache has been refreshed; the caller
+    /// should re-resolve and retry the upload once with a fresh source stream.
+    /// Carries the destination folder path so the volume layer can surface a
+    /// destination-correct message if the retry also fails.
+    StaleParentHandle {
+        device_id: String,
+        dest_folder: String,
+    },
     Other {
         device_id: String,
         message: String,
@@ -100,6 +110,9 @@ impl std::fmt::Display for MtpConnectionError {
             Self::ObjectNotFound { device_id, path } => {
                 write!(f, "Object not found on {device_id}: {path}")
             }
+            Self::StaleParentHandle { device_id, dest_folder } => {
+                write!(f, "Stale destination folder handle on {device_id}: {dest_folder}")
+            }
             Self::Other { device_id, message } => {
                 write!(f, "Error for {device_id}: {message}")
             }
@@ -108,6 +121,22 @@ impl std::fmt::Display for MtpConnectionError {
 }
 
 impl std::error::Error for MtpConnectionError {}
+
+/// `true` when the device rejected an operation because the object/parent handle
+/// we sent is no longer valid — the device re-keyed its handles since we last
+/// listed. On Android this happens when MediaProvider rescans between a folder
+/// listing and a later upload into it. The upload path treats this as a
+/// recoverable stale-cache condition (refresh handles + retry once) rather than
+/// a real not-found.
+pub(super) fn is_stale_handle_rejection(e: &mtp_rs::Error) -> bool {
+    matches!(
+        e,
+        mtp_rs::Error::Protocol {
+            code: ResponseCode::InvalidObjectHandle | ResponseCode::InvalidParentObject,
+            ..
+        }
+    )
+}
 
 /// Maps mtp_rs errors to our error types.
 pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionError {

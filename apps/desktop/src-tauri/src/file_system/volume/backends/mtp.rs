@@ -952,6 +952,7 @@ fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
             VolumeError::NotFound(e.to_string())
         }
         MtpConnectionError::ObjectNotFound { path, .. } => VolumeError::NotFound(path),
+        MtpConnectionError::StaleParentHandle { dest_folder, .. } => VolumeError::StaleDestinationHandle(dest_folder),
         MtpConnectionError::ExclusiveAccess { .. } | MtpConnectionError::PermissionDenied { .. } => {
             VolumeError::PermissionDenied(e.to_string())
         }
@@ -1379,6 +1380,120 @@ mod tests {
             !entries.iter().any(|e| e.name == filename),
             "partial object {filename} must not linger on the device after a cancelled upload; \
              found entries: {:?}",
+            entries.iter().map(|e| &e.name).collect::<Vec<_>>()
+        );
+
+        connection_manager()
+            .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+            .await
+            .expect("virtual-mtp disconnect should succeed");
+    }
+
+    /// Source stream that yields the whole payload in one chunk, then ends.
+    /// A successful upload's data phase, for the stale-handle recovery test.
+    #[cfg(feature = "virtual-mtp")]
+    struct OneShotStream {
+        chunk: Option<bytes::Bytes>,
+    }
+
+    #[cfg(feature = "virtual-mtp")]
+    impl futures_util::Stream for OneShotStream {
+        type Item = Result<bytes::Bytes, std::io::Error>;
+
+        fn poll_next(
+            mut self: Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<Option<Self::Item>> {
+            std::task::Poll::Ready(self.chunk.take().map(Ok))
+        }
+    }
+
+    /// A cached destination-folder handle that the device has since re-keyed
+    /// (Android MediaProvider rescanning between listing and upload) must NOT
+    /// fail the copy. The upload detects the `InvalidParentObject` rejection of
+    /// `SendObjectInfo`, refreshes the folder's handle, and signals
+    /// `StaleParentHandle`; the engine's one-shot retry (simulated here by a
+    /// second `upload_from_stream` with a fresh stream) then lands the file
+    /// against the refreshed handle.
+    ///
+    /// Pre-fix this would have surfaced as a raw `ObjectNotFound` (rendered to
+    /// the user as a "Path not found" on the intact SOURCE file) with no retry.
+    #[cfg(feature = "virtual-mtp")]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
+        use crate::mtp::virtual_device::setup_virtual_mtp_device;
+        use mtp_rs::ObjectHandle;
+
+        let location_id = setup_virtual_mtp_device();
+        let device_id = format!("mtp-{}", location_id);
+
+        let info = connection_manager()
+            .connect(&device_id, None)
+            .await
+            .expect("virtual-mtp connect should succeed");
+        let storage_id = info.storages.first().expect("virtual device should have storages").id;
+
+        // Browse so cmdr caches a (real, valid) handle for /Documents.
+        connection_manager()
+            .list_directory(&device_id, storage_id, "/")
+            .await
+            .expect("list root should succeed");
+
+        // Simulate the device re-keying the folder's handle: poison cmdr's path
+        // cache with a handle the device no longer knows. `SendObjectInfo`
+        // against it returns `InvalidParentObject` — exactly the field report.
+        connection_manager()
+            .set_cached_handle_for_test(&device_id, storage_id, "/Documents", ObjectHandle(0x7FFF_FFFF))
+            .await;
+
+        let filename = "healed.txt";
+        let payload = bytes::Bytes::from_static(b"contents that should land after the handle heals");
+        let size = payload.len() as u64;
+
+        // First attempt: the stale handle is rejected; the backend refreshes the
+        // cache and signals a retry rather than a hard not-found.
+        let first = connection_manager()
+            .upload_from_stream(
+                &device_id,
+                storage_id,
+                "Documents",
+                filename,
+                size,
+                Box::pin(OneShotStream {
+                    chunk: Some(payload.clone()),
+                }),
+            )
+            .await;
+        assert!(
+            matches!(first, Err(MtpConnectionError::StaleParentHandle { .. })),
+            "a stale cached parent handle must signal StaleParentHandle (retryable), got: {first:?}"
+        );
+
+        // Retry with a fresh stream (what `stream_pipe_file` does): the refreshed
+        // handle now resolves, so the file lands.
+        let second = connection_manager()
+            .upload_from_stream(
+                &device_id,
+                storage_id,
+                "Documents",
+                filename,
+                size,
+                Box::pin(OneShotStream { chunk: Some(payload) }),
+            )
+            .await;
+        assert!(
+            second.is_ok(),
+            "the retry after the handle heals must succeed, got: {second:?}"
+        );
+
+        // The file is really on the device now.
+        let entries = connection_manager()
+            .list_directory(&device_id, storage_id, "/Documents")
+            .await
+            .expect("list Documents should succeed");
+        assert!(
+            entries.iter().any(|e| e.name == filename),
+            "the healed upload must leave {filename} in /Documents; found: {:?}",
             entries.iter().map(|e| &e.name).collect::<Vec<_>>()
         );
 

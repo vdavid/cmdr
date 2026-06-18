@@ -9,7 +9,7 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 use tokio::io::AsyncWriteExt;
 
-use super::errors::{MtpConnectionError, map_mtp_error};
+use super::errors::{MtpConnectionError, is_stale_handle_rejection, map_mtp_error};
 use super::{
     MTP_TIMEOUT_SECS, MtpConnectionManager, MtpObjectInfo, MtpOperationResult, MtpTransferProgress, MtpTransferType,
     acquire_device_lock, normalize_mtp_path,
@@ -600,8 +600,42 @@ impl MtpConnectionManager {
                         );
                     }
                 }
+                // A stale cached parent handle (the device re-keyed its handles
+                // since this folder was last listed; common on Android when
+                // MediaProvider rescans between listing and upload) presents as
+                // an `InvalidParentObject` / `InvalidObjectHandle` rejection of
+                // `SendObjectInfo`. That's recoverable: refresh the folder's
+                // handle and signal the caller to retry once with a fresh source
+                // stream. Classify before `source` is moved into the mapper.
+                let is_stale = is_stale_handle_rejection(&upload_err.source);
+
+                // Release the device lock before any re-list: `refresh_dir_handle`
+                // re-acquires it through `list_directory`, and the tokio Mutex
+                // isn't reentrant — holding it here would deadlock the heal.
+                drop(storage);
+                drop(device);
+
+                if is_stale {
+                    log::warn!(
+                        target: "mtp_upload",
+                        "SendObjectInfo rejected for {dest_folder}/{filename} on {device_id}: cached parent handle is stale (device re-keyed). Refreshing handles and signaling a one-shot retry."
+                    );
+                    self.refresh_dir_handle(device_id, storage_id, Path::new(dest_folder))
+                        .await;
+                    return Err(MtpConnectionError::StaleParentHandle {
+                        device_id: device_id.to_string(),
+                        dest_folder: normalize_mtp_path(dest_folder).to_string_lossy().to_string(),
+                    });
+                }
+
                 // Always surface the original upload error (mapped), never the
-                // cleanup outcome.
+                // cleanup outcome. Log it: a bare protocol rejection here would
+                // otherwise leave no trace (no `error-report` breadcrumb).
+                log::warn!(
+                    target: "mtp_upload",
+                    "Upload failed for {dest_folder}/{filename} on {device_id}: {:?}",
+                    upload_err.source
+                );
                 return Err(map_mtp_error(upload_err.source, device_id));
             }
         };
