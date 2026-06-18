@@ -381,8 +381,20 @@ export async function captureSurface(
     // Worst-case pass: max the zoom and shrink the window to its min before the
     // shot. Resize the window this surface lives in (`focusLabel` for a separate
     // window, else `main`). No-op outside the worst-case pass.
-    await stressLayoutIfWorstCase(page, focusLabel ?? 'main')
-    if (focusLabel !== undefined) await focusWindow(page, focusLabel)
+    const windowLabel = focusLabel ?? 'main'
+    await stressLayoutIfWorstCase(page, windowLabel)
+    // Bring the window frontmost so macOS composites the CURRENT frame into the
+    // backing store the native capture reads, else an occluded window yields a
+    // blank frame. Separate windows always need this; the MAIN window also needs
+    // it in the worst-case pass, where it can be occluded (and the resize+zoom
+    // relayout makes a stale-frame grab more likely). In the default pass the main
+    // window stays foreground, so we keep the prior behavior (focus only separate
+    // windows) to avoid churn. `core:window:allow-set-focus` for `main` is granted
+    // only in the E2E capture build (build.rs `playwright.json`). Best-effort: a
+    // focus hiccup must not fail the surface, the worst case is a blank frame the
+    // DOM clip scan still covers. The `settlePaint` below waits for the composited
+    // frame AFTER focus + the relayout. See `stressLayoutIfWorstCase`.
+    if (focusLabel !== undefined || isWorstCasePass) await focusWindow(page, windowLabel).catch(() => {})
     await settlePaint(page)
     await page.screenshot({ path: join(screenshotsDir, screenshot) })
     report[label] = { screenshot, keys: await keysFor(page, label) }

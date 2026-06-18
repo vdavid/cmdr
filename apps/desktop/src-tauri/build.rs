@@ -32,7 +32,8 @@ fn main() {
         "core:window:allow-title",
         "core:window:allow-set-title",
         "core:window:allow-set-size",
-        "core:window:allow-set-min-size"
+        "core:window:allow-set-min-size",
+        "core:window:allow-set-focus"
     ]
 }
 "#,
