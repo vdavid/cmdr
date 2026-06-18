@@ -251,10 +251,9 @@ if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
     },
     async setTextSize(percent: number) {
       // Lazy import: keeps the always-loaded intl runtime free of a settings
-      // dependency; this method only ever runs in the capture build. Coerce in
-      // case the driver passes the percentage as a JSON string.
+      // dependency; this method only ever runs in the capture build.
       const { setSetting } = await import('$lib/settings')
-      setSetting('appearance.textSize', Number(percent))
+      setSetting('appearance.textSize', percent)
     },
   }
   ;(window as unknown as { __cmdrI18nCapture?: I18nCaptureApi }).__cmdrI18nCapture = api
