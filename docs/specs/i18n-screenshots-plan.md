@@ -139,8 +139,8 @@ not + why).
   idempotent, never touches values) and the capture sink (records keys per surface; off = no-op). The driver + capture
   are integration (E2E), proven by the spike.
 - **Don't break existing tests/checks**: `messages.svelte.test.ts` (capture mode added behind the guard), the parity
-  tests (unchanged, values untouched), `pnpm intl:keys` (union unchanged), `desktop-message-key-naming` (the `@key`
-  twin with a `screenshot` field still validates). Full `pnpm check -q` green at each milestone.
+  tests (unchanged, values untouched), `pnpm intl:keys` (union unchanged), `desktop-message-key-naming` (the `@key` twin
+  with a `screenshot` field still validates). Full `pnpm check -q` green at each milestone.
 
 ## Checks to run
 
@@ -152,8 +152,8 @@ command, not part of the default lane.
 ## Parallelization
 
 Mostly sequential (M0 gates the design; M1 the harness gates M2). Within M2, surfaces are independent captures but write
-to the SHARED catalog files + the shared coverage report, so parallel capture runs race on those: serialize the
-coupling step (capture in parallel if needed, couple once). Given no rush, sequential is fine.
+to the SHARED catalog files + the shared coverage report, so parallel capture runs race on those: serialize the coupling
+step (capture in parallel if needed, couple once). Given no rush, sequential is fine.
 
 ## Gotchas (carried from the migration)
 
@@ -214,8 +214,8 @@ Coverage truths to bake into the design:
 
 - **Snapshot-resolved strings need capture-on-before-trigger, not `rerender()`-after (extends Decision 1/2 + Decision
   4).** The spike's `rerender()` bumps the locale rune to re-run reactive `t()` in MOUNTED markup. But many transient
-  strings resolve as SNAPSHOTS in plain `.ts` at emit time, for example `settings-applier.ts:239` `addToast(tString(...))`,
-  and the dynamic
+  strings resolve as SNAPSHOTS in plain `.ts` at emit time, for example `settings-applier.ts:239`
+  `addToast(tString(...))`, and the dynamic
   `getMessage(\`errors.listing.${reason}.title\`)`keys. For those,`rerender()`records nothing; capture must be ENABLED BEFORE the action fires (the`getMessage`/`t`hook records the resolved key only if capture is active at resolution time). The whole "Toasts" category + error keys are snapshot-resolved. Drive them by enabling capture, then triggering the action; accept that keys resolved before`enable()`
   are unrecoverable, and log them (Decision 4).
 - **MTP is largely automatable: there's a `virtual-mtp` Cargo feature (corrects Staging + Open Question 2).** Existing

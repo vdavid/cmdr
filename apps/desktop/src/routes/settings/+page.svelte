@@ -69,7 +69,7 @@
      * settings UI live. `'system'` maps to the OS locale (`setLocale(null)`).
      */
     function initLanguageSync(): void {
-        const applyLanguage = (value: string) => setLocale(value === 'system' ? null : value)
+        const applyLanguage = (value: string) => { setLocale(value === 'system' ? null : value); }
         applyLanguage(getSetting('appearance.language'))
         unsubscribeLanguage = onSpecificSettingChange('appearance.language', (_id, value) => {
             applyLanguage(value)
