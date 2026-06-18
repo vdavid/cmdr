@@ -8,8 +8,8 @@
  * `.svelte.test.ts` so the `$state` rune in the reactive-prop test compiles.
  */
 
-import { describe, it, expect } from 'vitest'
-import { mount, flushSync } from 'svelte'
+import { describe, it, expect, vi } from 'vitest'
+import { mount, flushSync, tick } from 'svelte'
 import Combobox, { type ComboboxItem } from './Combobox.svelte'
 
 function getInput(target: HTMLElement): HTMLInputElement {
@@ -60,6 +60,34 @@ describe('Combobox value model', () => {
     state.inputValue = 'another/custom-13b'
     flushSync()
     expect(getInput(target).value).toBe('another/custom-13b')
+  })
+
+  it('selecting an item from the list reports it via onInputValueChange', async () => {
+    // The reported bug (issue #29): with `selectionBehavior="preserve"`, clicking a suggestion
+    // leaves the input text untouched, so wiring only `onInputValueChange` (the typing event)
+    // swallowed the click. The component must ALSO bridge Ark's selection (`onValueChange`) into
+    // `onInputValueChange`, or the dropdown can't select anything.
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const onInputValueChange = vi.fn<(v: string) => void>()
+    const items: ComboboxItem[] = [
+      { value: 'gpt-4o', label: 'gpt-4o' },
+      { value: 'gpt-4o-mini', label: 'gpt-4o-mini' },
+    ]
+    mount(Combobox, { target, props: { items, inputValue: '', onInputValueChange, ariaLabel: 'Model' } })
+    flushSync()
+
+    // Open the popup (Ark only acts on a selection while open), then click a suggestion.
+    getInput(target).click()
+    await tick()
+    const option = [...target.querySelectorAll<HTMLElement>('.combobox-item')].find(
+      (el) => el.textContent?.includes('gpt-4o-mini'),
+    )
+    if (!option) throw new Error('combobox item not found')
+    option.click()
+    await tick()
+
+    expect(onInputValueChange).toHaveBeenCalledWith('gpt-4o-mini')
   })
 
   it('shows its inputValue when the suggestion list arrives after a fetch (cold start, then populated)', () => {

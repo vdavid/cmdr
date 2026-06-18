@@ -246,7 +246,12 @@ your own; the list can be empty (cold start) or load async, and the field stays 
 and writes `inputValue = ""` — blanking the field on an empty / mid-fetch list and on a custom name not in `/models`. So
 the component drives the displayed text off `inputValue` (controlled separately from `value`, never derived from
 collection membership), sets `selectionBehavior="preserve"`, and passes `allowCustomValue` so a typed value is accepted
-on close. `value` is intentionally left uncontrolled.
+on close. `value` is left uncontrolled.
+
+**`preserve` has a flip side that bit us (issue #29): it also stops a list selection from updating the input text**, so
+wiring only `onInputValueChange` (the typing event) made clicking a suggestion a silent no-op. The component bridges
+Ark's selection event (`onValueChange` → `onInputValueChange(value[0])`) to restore click-to-select while keeping the
+custom-value / empty-list protection. Don't drop that handler. `Combobox.svelte.test.ts` pins the click path.
 
 Props:
 
@@ -258,10 +263,12 @@ Props:
 - `disabled?`, `placeholder?`, `ariaLabel`, `emptyText?` (shown as a non-actionable `role="option"` row when `items` is
   empty so the `role="listbox"` content satisfies axe's `aria-required-children`).
 
-Open-on-focus is wired via a controlled `open` state set in the input's `onfocus` (Ark has no `openOnFocus` prop; the
-chevron `Combobox.Trigger` also toggles it). Same standardized Lucide chevron as `Select`. No `Portal`, no entrance
-animation. Covered by `Combobox.svelte.test.ts` (the empty-list / custom-value / list-arrives-after-fetch invariants)
-and `Combobox.a11y.test.ts`.
+Open state is left uncontrolled (owned by Ark) with `openOnClick`: clicking the text opens it, the chevron
+`Combobox.Trigger` toggles it, typing opens it (`openOnChange`). Don't reintroduce a controlled `open` driven from the
+input's focus — the trigger focuses the input on click, so a focus-open handler races the trigger's toggle and flashes
+the popup shut. Same standardized Lucide chevron as `Select`. No `Portal`, no entrance animation. Covered by
+`Combobox.svelte.test.ts` (the empty-list / custom-value / list-arrives-after-fetch invariants, plus the click-select
+path) and `Combobox.a11y.test.ts`.
 
 ## Popover
 

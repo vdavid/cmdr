@@ -17,15 +17,28 @@ const saveAiApiKey = vi.fn<(id: string, key: string) => Promise<null>>(() => Pro
 const getAiApiKey = vi.fn<(id: string) => Promise<string>>(() => Promise.resolve(''))
 const hasAiApiKey = vi.fn<(id: string) => Promise<boolean>>(() => Promise.resolve(false))
 const configureAi = vi.fn<
-  (provider: string, contextSize: number, apiKey: string, baseUrl: string, model: string) => Promise<null>
+  (
+    provider: string,
+    contextSize: number,
+    apiKey: string,
+    baseUrl: string,
+    model: string,
+    requiresApiKey: boolean,
+  ) => Promise<null>
 >(() => Promise.resolve(null))
 
 vi.mock('$lib/tauri-commands', () => ({
   saveAiApiKey: (id: string, key: string) => saveAiApiKey(id, key),
   getAiApiKey: (id: string) => getAiApiKey(id),
   hasAiApiKey: (id: string) => hasAiApiKey(id),
-  configureAi: (provider: string, contextSize: number, apiKey: string, baseUrl: string, model: string) =>
-    configureAi(provider, contextSize, apiKey, baseUrl, model),
+  configureAi: (
+    provider: string,
+    contextSize: number,
+    apiKey: string,
+    baseUrl: string,
+    model: string,
+    requiresApiKey: boolean,
+  ) => configureAi(provider, contextSize, apiKey, baseUrl, model, requiresApiKey),
 }))
 
 const settingsMap: Record<string, string> = {}
@@ -245,7 +258,34 @@ describe('pushConfigToBackend', () => {
     await pushConfigToBackend()
 
     expect(getAiApiKey).toHaveBeenCalledWith('openai')
-    expect(configureAi).toHaveBeenCalledWith('cloud', 8192, 'sk-fresh', expect.stringContaining('openai.com'), 'gpt-4o')
+    // OpenAI requires a key, so requiresApiKey is true.
+    expect(configureAi).toHaveBeenCalledWith(
+      'cloud',
+      8192,
+      'sk-fresh',
+      expect.stringContaining('openai.com'),
+      'gpt-4o',
+      true,
+    )
+  })
+
+  it('passes requiresApiKey=false for a keyless local endpoint (Ollama)', async () => {
+    settingsMap['ai.provider'] = 'cloud'
+    settingsMap['ai.cloudProvider'] = 'ollama'
+    settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ ollama: { model: 'llama3.2' } })
+    settingsMap['ai.localContextSize'] = '8192'
+    getAiApiKey.mockResolvedValue('')
+
+    await pushConfigToBackend()
+
+    expect(configureAi).toHaveBeenCalledWith(
+      'cloud',
+      8192,
+      '',
+      expect.stringContaining('localhost'),
+      'llama3.2',
+      false,
+    )
   })
 
   it('surfaces a persistent toast and keeps pushing when the secret store read fails', async () => {
@@ -262,7 +302,7 @@ describe('pushConfigToBackend', () => {
     expect(typeof body).toBe('string')
     expect(opts).toMatchObject({ dismissal: 'persistent' })
     // Still pushed with an empty key so the rest of the config reaches the backend.
-    expect(configureAi).toHaveBeenCalledWith('cloud', 4096, '', expect.any(String), 'gpt-4o')
+    expect(configureAi).toHaveBeenCalledWith('cloud', 4096, '', expect.any(String), 'gpt-4o', true)
     expect(loggerError).toHaveBeenCalled()
   })
 
@@ -285,6 +325,6 @@ describe('pushConfigToBackend', () => {
 
     await pushConfigToBackend()
 
-    expect(configureAi).toHaveBeenCalledWith('local', 16384, '', expect.any(String), expect.any(String))
+    expect(configureAi).toHaveBeenCalledWith('local', 16384, '', expect.any(String), expect.any(String), false)
   })
 })

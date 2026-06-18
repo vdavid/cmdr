@@ -320,9 +320,10 @@ export async function configureAi(
   cloudApiKey: string,
   cloudBaseUrl: string,
   cloudModel: string,
+  cloudRequiresApiKey: boolean,
 ): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
-  await invoke('configure_ai', { provider, contextSize, cloudApiKey, cloudBaseUrl, cloudModel })
+  await invoke('configure_ai', { provider, contextSize, cloudApiKey, cloudBaseUrl, cloudModel, cloudRequiresApiKey })
 }
 
 /** Stops the local llama-server without uninstalling. */

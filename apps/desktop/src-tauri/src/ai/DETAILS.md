@@ -77,11 +77,13 @@ newer startup's flag.
 
 ## Provider routing
 
-Centralized in `manager::resolve_backend() -> BackendResolution`:
+Centralized in `manager::resolve_backend() -> BackendResolution` (the pure decision is `resolve_backend_inner`, split out of the global lock so it's unit-testable, mirroring `compute_ai_status`):
 - `Off`: provider is `"off"`.
-- `NotConfigured(reason)`: provider is set but missing config (local server not running, cloud key blank).
+- `NotConfigured(reason)`: provider is set but missing config (local server not running; cloud endpoint blank; or a **key-requiring** cloud provider with a blank key).
 - `Ready(AiBackend)`: backend ready to call `chat_completion` on.
 - `UnknownProvider(name)`: provider value isn't recognized.
+
+**The empty-key gate is keyed on `cloud_requires_api_key`, not on "key is blank".** Keyless OpenAI-compatible endpoints (Ollama, LM Studio, a custom endpoint) legitimately have no key, so they resolve to `Ready` on a non-empty base URL; only providers the frontend marks `requiresApiKey` (`cloud-providers.ts`) get `NotConfigured` for a blank key. The frontend owns that fact and pushes it through `configure_ai`'s `cloud_requires_api_key` arg into `ManagerState`. Gating on "key blank" alone (the pre-issue-#29 bug) made every local endpoint look unconfigured even when fully set up.
 
 Callers decide what to do per case. `suggestions.rs` returns empty on any non-Ready (folder suggestions are nice-to-have). The two translate commands (`commands/search.rs::translate_search_query`, `commands/selection.rs::translate_selection_query`) return a typed `AiTranslateError { kind, message }` (in `translate_error.rs`) so the frontend can branch on `kind` and show a SPECIFIC toast (key rejected vs. out of quota vs. timed out vs. empty answer) without string-matching the message. The `kind` set maps both the `BackendResolution` non-ready cases (`off` / `notConfigured` / `unknownProvider`) and the `AiError` transport variants (`authFailed` / `rateLimited` / `timeout` / `unavailable` / `emptyResponse` / `serverError` / `parseError`). Frontend counterpart: `lib/ai/translate-error-toast.ts`; keep the two enums in lockstep.
 
@@ -105,7 +107,7 @@ The frontend (`AiSection.svelte`) tracks `installStep` state and displays "Step 
 - Binary re-extraction is possible if model exists but binary is missing.
 - Download guard: `download_in_progress` flag prevents concurrent downloads.
 - Server logs written to `llama-server.log` in the AI dir for debugging.
-- OpenAI config (api_key, base_url, model) stored in `ManagerState` so suggestions.rs can read without settings files. The api_key originates from the OS secret store (`api_keys.rs`), pushed in via `configure_ai`.
+- Cloud config (api_key, base_url, model, requires_api_key) stored in `ManagerState` so suggestions.rs can read without settings files. The api_key originates from the OS secret store (`api_keys.rs`), pushed in via `configure_ai`; `requires_api_key` mirrors the provider preset's `requiresApiKey` and drives the `resolve_backend` empty-key gate.
 - `configure_ai` is idempotent -- frontend calls it on startup and whenever any AI setting changes.
 - `ModelInfo` includes `kv_bytes_per_token` and `base_overhead_bytes` for frontend memory estimation.
 

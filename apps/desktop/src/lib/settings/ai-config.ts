@@ -23,7 +23,14 @@
  * settings UI all reach for. `sections/` is reserved for UI subcomponents.
  */
 
-import { getSetting, setSetting, resolveCloudConfig, getRawStoreValue, deleteRawStoreKeys } from '$lib/settings'
+import {
+  getSetting,
+  setSetting,
+  resolveCloudConfig,
+  getCloudProvider,
+  getRawStoreValue,
+  deleteRawStoreKeys,
+} from '$lib/settings'
 import { configureAi, getAiApiKey, saveAiApiKey, hasAiApiKey } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { addToast } from '$lib/ui/toast'
@@ -140,6 +147,9 @@ export async function pushConfigToBackend(): Promise<void> {
   try {
     const providerId = getSetting('ai.cloudProvider')
     const resolved = resolveCloudConfig(providerId, getSetting('ai.cloudProviderConfigs'))
+    // Keyless endpoints (Ollama, LM Studio, a custom OpenAI-compatible endpoint) set this false, so
+    // the backend doesn't treat their empty key as "not configured". See `resolve_backend` (Rust).
+    const requiresApiKey = getCloudProvider(providerId)?.requiresApiKey ?? false
 
     let apiKey = ''
     try {
@@ -161,6 +171,7 @@ export async function pushConfigToBackend(): Promise<void> {
       apiKey,
       resolved.baseUrl,
       resolved.model,
+      requiresApiKey,
     )
   } catch (e) {
     logger.error("Couldn't push AI config to backend: {error}", { error: e })

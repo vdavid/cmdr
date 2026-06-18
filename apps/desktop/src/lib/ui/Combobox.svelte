@@ -18,9 +18,13 @@
      * regression we forbid on empty/mid-fetch lists and custom model names. So:
      * - The displayed text is `inputValue` (the saved/typed string), controlled separately from
      *   `value` and NEVER derived from collection membership.
-     * - `selectionBehavior="preserve"` keeps a typed custom value through a list sync.
+     * - `selectionBehavior="preserve"` keeps a typed custom value through a list sync. Its flip
+     *   side: selecting an item does NOT touch the input text, so we bridge Ark's selection event
+     *   (`onValueChange`) into `onInputValueChange` ourselves, or clicking a suggestion would be a
+     *   silent no-op (issue #29).
      * - `allowCustomValue` accepts the custom value on close.
-     * - `value` is intentionally left uncontrolled / unused: a typed custom value persists.
+     * - `value` is left uncontrolled (we never pass it back, so a typed custom value persists); we
+     *   only read its change event to learn which suggestion the user picked.
      *
      * Open state is owned entirely by Ark (uncontrolled) with `openOnClick`: clicking the text opens
      * it, the chevron `Trigger` toggles it, typing opens it (`openOnChange`). Don't reintroduce a
@@ -72,6 +76,15 @@
     function handleInputValueChange(details: { inputValue: string }): void {
         onInputValueChange(details.inputValue)
     }
+
+    // Bridge a list selection into the displayed text. `selectionBehavior="preserve"` deliberately
+    // leaves the input untouched on select, so without this a click would never reach the consumer.
+    function handleValueChange(details: { value: string[] }): void {
+        const selected = details.value[0]
+        if (selected !== undefined) {
+            onInputValueChange(selected)
+        }
+    }
 </script>
 
 <div class="combobox-wrapper">
@@ -84,6 +97,7 @@
         selectionBehavior="preserve"
         allowCustomValue
         onInputValueChange={handleInputValueChange}
+        onValueChange={handleValueChange}
     >
         <Combobox.Control class="combobox-control">
             <Combobox.Input class="combobox-input" {placeholder} aria-label={ariaLabel} />

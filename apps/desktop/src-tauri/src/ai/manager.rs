@@ -56,6 +56,10 @@ struct ManagerState {
     cloud_base_url: String,
     /// Cloud-AI provider model name (e.g. `gpt-4o-mini`, `claude-sonnet-4-5`, `gemini-2.5-flash`)
     cloud_model: String,
+    /// Whether the selected cloud provider needs an API key. The frontend owns this fact
+    /// (`requiresApiKey` per provider preset); keyless endpoints (Ollama, LM Studio, a custom
+    /// OpenAI-compatible endpoint) set it `false` so an empty key isn't treated as "not configured".
+    cloud_requires_api_key: bool,
 }
 
 const STATE_FILENAME: &str = "ai-state.json";
@@ -84,6 +88,7 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
         cloud_api_key: String::new(),
         cloud_base_url: String::from("https://api.openai.com/v1"),
         cloud_model: String::from("gpt-4o-mini"),
+        cloud_requires_api_key: false,
     });
 
     // Belt-and-suspenders: stop ALL llama-server processes from our AI directory,
@@ -207,6 +212,12 @@ pub fn get_cloud_config() -> (String, String, String) {
         .unwrap_or_default()
 }
 
+/// Whether the configured cloud provider needs an API key (frontend-owned `requiresApiKey`).
+pub fn get_cloud_requires_api_key() -> bool {
+    let manager = MANAGER.lock_ignore_poison();
+    manager.as_ref().map(|m| m.cloud_requires_api_key).unwrap_or(false)
+}
+
 /// Resolves the configured AI provider into either a ready-to-use [`AiBackend`] or
 /// a reason why one couldn't be built.
 ///
@@ -226,22 +237,47 @@ pub enum BackendResolution {
 }
 
 pub fn resolve_backend() -> BackendResolution {
-    let provider = get_provider();
-    match provider.as_str() {
+    let (api_key, base_url, model) = get_cloud_config();
+    resolve_backend_inner(
+        &get_provider(),
+        get_port(),
+        api_key,
+        base_url,
+        model,
+        get_cloud_requires_api_key(),
+    )
+}
+
+/// Pure provider-resolution decision, split out so the global `MANAGER` lock doesn't have to
+/// participate in tests (mirrors `compute_ai_status`).
+///
+/// The empty-key → `NotConfigured` gate applies ONLY when the provider needs a key
+/// (`requires_api_key`). Keyless OpenAI-compatible endpoints (Ollama, LM Studio, a custom
+/// endpoint) legitimately have no key, so they resolve to `Ready` on a non-empty base URL.
+fn resolve_backend_inner(
+    provider: &str,
+    port: Option<u16>,
+    api_key: String,
+    base_url: String,
+    model: String,
+    requires_api_key: bool,
+) -> BackendResolution {
+    match provider {
         "off" => BackendResolution::Off,
-        "local" => match get_port() {
+        "local" => match port {
             Some(port) => BackendResolution::Ready(super::client::AiBackend::local(port)),
             None => BackendResolution::NotConfigured("Local AI server isn't running. Start it in settings."),
         },
         "cloud" => {
-            let (api_key, base_url, model) = get_cloud_config();
-            if api_key.is_empty() {
+            if requires_api_key && api_key.is_empty() {
                 BackendResolution::NotConfigured("Cloud AI API key not configured. Add it in settings.")
+            } else if base_url.is_empty() {
+                BackendResolution::NotConfigured("Cloud AI endpoint not configured. Add it in settings.")
             } else {
                 BackendResolution::Ready(super::client::AiBackend::remote(api_key, base_url, model))
             }
         }
-        _ => BackendResolution::UnknownProvider(provider),
+        other => BackendResolution::UnknownProvider(other.to_string()),
     }
 }
 
@@ -456,9 +492,10 @@ pub fn configure_ai<R: Runtime>(
     cloud_api_key: String,
     cloud_base_url: String,
     cloud_model: String,
+    cloud_requires_api_key: bool,
 ) -> Result<(), String> {
     log::debug!(
-        "AI configure: provider={provider}, context_size={context_size}, base_url={cloud_base_url}, model={cloud_model}"
+        "AI configure: provider={provider}, context_size={context_size}, base_url={cloud_base_url}, model={cloud_model}, requires_api_key={cloud_requires_api_key}"
     );
 
     // Guard the BYOK key against plaintext exfiltration before we store config that
@@ -495,6 +532,7 @@ pub fn configure_ai<R: Runtime>(
         m.cloud_api_key = cloud_api_key;
         m.cloud_base_url = cloud_base_url;
         m.cloud_model = cloud_model;
+        m.cloud_requires_api_key = cloud_requires_api_key;
 
         // Spawn server synchronously so child_pid is set before the lock is released.
         // Only the health check (up to 60s) runs async.
@@ -1198,6 +1236,97 @@ mod tests {
         let out = truncate_body_preview(body, 200);
         assert!(out.contains("Bearer <redacted>"), "got: {out}");
         assert!(!out.contains("sk-abc123secret"), "token leaked: {out}");
+    }
+
+    #[test]
+    fn resolve_off_and_unknown_provider() {
+        assert!(matches!(
+            resolve_backend_inner("off", None, String::new(), String::new(), String::new(), true),
+            BackendResolution::Off
+        ));
+        assert!(matches!(
+            resolve_backend_inner("bogus", None, String::new(), String::new(), String::new(), true),
+            BackendResolution::UnknownProvider(p) if p == "bogus"
+        ));
+    }
+
+    #[test]
+    fn resolve_local_needs_a_running_port() {
+        assert!(matches!(
+            resolve_backend_inner("local", None, String::new(), String::new(), String::new(), false),
+            BackendResolution::NotConfigured(_)
+        ));
+        assert!(matches!(
+            resolve_backend_inner("local", Some(8080), String::new(), String::new(), String::new(), false),
+            BackendResolution::Ready(_)
+        ));
+    }
+
+    #[test]
+    fn resolve_cloud_key_required_provider_needs_a_key() {
+        // A key-requiring provider (OpenAI etc.) with no key stays NotConfigured (friendly hint).
+        assert!(matches!(
+            resolve_backend_inner(
+                "cloud",
+                None,
+                String::new(),
+                String::from("https://api.openai.com/v1"),
+                String::from("gpt-4o-mini"),
+                true,
+            ),
+            BackendResolution::NotConfigured(_)
+        ));
+        // Same provider, key present → Ready.
+        assert!(matches!(
+            resolve_backend_inner(
+                "cloud",
+                None,
+                String::from("sk-key"),
+                String::from("https://api.openai.com/v1"),
+                String::from("gpt-4o-mini"),
+                true,
+            ),
+            BackendResolution::Ready(_)
+        ));
+    }
+
+    #[test]
+    fn resolve_cloud_keyless_local_endpoint_is_ready() {
+        // Ollama / LM Studio / custom: `requires_api_key = false`, no key, but a real endpoint +
+        // model. This is the bug from issue #29 — it must resolve to Ready, not NotConfigured.
+        assert!(matches!(
+            resolve_backend_inner(
+                "cloud",
+                None,
+                String::new(),
+                String::from("http://localhost:11434/v1"),
+                String::from("llama3.2"),
+                false,
+            ),
+            BackendResolution::Ready(_)
+        ));
+        // A keyless *remote* custom endpoint is equally valid (custom shows no key field).
+        assert!(matches!(
+            resolve_backend_inner(
+                "cloud",
+                None,
+                String::new(),
+                String::from("https://my-proxy.example.com/v1"),
+                String::from("some-model"),
+                false,
+            ),
+            BackendResolution::Ready(_)
+        ));
+    }
+
+    #[test]
+    fn resolve_cloud_without_an_endpoint_is_not_configured() {
+        // Keyless provider but no base URL yet (e.g. custom before the user types one): there's
+        // nothing to connect to, so it's genuinely not configured.
+        assert!(matches!(
+            resolve_backend_inner("cloud", None, String::new(), String::new(), String::new(), false),
+            BackendResolution::NotConfigured(_)
+        ));
     }
 
     #[test]
