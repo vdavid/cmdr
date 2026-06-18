@@ -101,13 +101,16 @@ export async function captureMainExplorerSurfaces(
     // with `key:'Shift'` flips its `shiftHeld` rune and re-renders the Shift fork.
     // No keyup is dispatched, so it stays in the Shift state through the shot.
     await main.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift', bubbles: true }))`)
-    // The Shift fork shows "Delete permanently"; wait for it before the rerender.
+    // Wait for the Shift fork to render. Detect it by a LOCALE-INDEPENDENT marker,
+    // NOT by the English "permanently" label: the overflow pass pseudolocalizes
+    // every label. The Shift fork is the only fork that renders the disabled F2/F3
+    // empty slots, whose `<kbd>` carries the literal, never-translated "F2".
     await main.waitForSelector('.function-key-bar', 5000)
     await expect
       .poll(
         async () =>
           main.evaluate<boolean>(
-            `Array.from(document.querySelectorAll('.function-key-bar button span')).some(function(s){ return s.textContent && s.textContent.toLowerCase().indexOf('perman') !== -1; })`,
+            `Array.from(document.querySelectorAll('.function-key-bar button kbd')).some(function(k){ return k.textContent === 'F2'; })`,
           ),
         { timeout: 3000 },
       )

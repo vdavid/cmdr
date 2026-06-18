@@ -209,6 +209,18 @@ interface I18nCaptureApi {
    * at build time, so generate `en-XA` BEFORE the capture build).
    */
   setLocale: (tag: string | null) => void
+  /**
+   * Sets the UI zoom (the `appearance.textSize` percentage, 75/100/125/150) for
+   * the WORST-CASE overflow pass, so every surface renders at the largest
+   * supported zoom while the pseudolocale already inflates the strings. Drives
+   * the exact production path the Language/zoom UI uses: `setSetting` updates the
+   * store, which cross-window-syncs and re-runs `text-size.svelte`'s
+   * `computeAndApply` (the `--font-scale` root var + the reactive scale). Lazily
+   * imports `$lib/settings` so the intl runtime stays decoupled from settings
+   * outside the capture build. Returns a promise the driver awaits before the
+   * shot so the new scale has applied.
+   */
+  setTextSize: (percent: number) => Promise<void>
 }
 
 if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
@@ -236,6 +248,13 @@ if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
     },
     setLocale(tag: string | null) {
       setLocale(tag)
+    },
+    async setTextSize(percent: number) {
+      // Lazy import: keeps the always-loaded intl runtime free of a settings
+      // dependency; this method only ever runs in the capture build. Coerce in
+      // case the driver passes the percentage as a JSON string.
+      const { setSetting } = await import('$lib/settings')
+      setSetting('appearance.textSize', Number(percent))
     },
   }
   ;(window as unknown as { __cmdrI18nCapture?: I18nCaptureApi }).__cmdrI18nCapture = api

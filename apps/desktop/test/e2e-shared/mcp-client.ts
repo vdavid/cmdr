@@ -16,9 +16,24 @@ let mcpToken: string | null = null
 
 /** Discovers the actual MCP port and bearer token from the running app via Tauri IPC. */
 export async function initMcpClient(tauriPage: PageLike): Promise<void> {
-  mcpPort = await tauriPage.evaluate<number>(`window.__TAURI_INTERNALS__.invoke('get_mcp_port')`)
+  // Port: prefer the env pin when the launcher set one (`CMDR_MCP_PORT`, e.g. the
+  // i18n-capture orchestrator). The IPC `get_mcp_port` returns a `Promise<u16>`,
+  // and some tauri-playwright eval channels resolve a Promise-returning eval to
+  // the channel's truthy success flag (`true`) rather than the awaited value,
+  // which then poisons the fetch URL (`http://localhost:true/mcp`). The env pin
+  // sidesteps that entirely; the IPC stays the fallback for launchers that don't
+  // pin a port.
+  const envPort = process.env.CMDR_MCP_PORT
+  const pinnedPort = envPort !== undefined && /^\d+$/.test(envPort) ? Number(envPort) : undefined
+  mcpPort =
+    pinnedPort ??
+    (await tauriPage.evaluate<number>(
+      `(async function() { return await window.__TAURI_INTERNALS__.invoke('get_mcp_port'); })()`,
+    ))
   if (!mcpPort) throw new Error('MCP server not running: enable it in Settings > Developer')
-  mcpToken = await tauriPage.evaluate<string>(`window.__TAURI_INTERNALS__.invoke('get_mcp_token')`)
+  mcpToken = await tauriPage.evaluate<string>(
+    `(async function() { return await window.__TAURI_INTERNALS__.invoke('get_mcp_token'); })()`,
+  )
   if (!mcpToken) throw new Error('MCP server has no auth token: is it running?')
 }
 

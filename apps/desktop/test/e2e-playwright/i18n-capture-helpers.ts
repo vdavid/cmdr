@@ -40,6 +40,7 @@ interface CaptureApi {
   reset: () => void
   rerender: () => void
   setLocale: (tag: string | null) => void
+  setTextSize: (percent: number) => Promise<void>
 }
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -58,10 +59,32 @@ export const overflowLocale = process.env.CMDR_I18N_OVERFLOW_LOCALE ?? ''
 export const isOverflowPass = overflowLocale !== ''
 
 /**
- * Where screenshots land this run: the coupling dir for a normal pass, a
- * dedicated `overflow/` subdir for an overflow pass (both gitignored).
+ * Worst-case overflow pass (overflow pass only): on top of the pseudolocale, the
+ * driver maxes the UI zoom (`MAX_UI_ZOOM`) and resizes each captured window to
+ * its minimum allowed size before the shot + clip scan, the maximal-overflow
+ * scenario a translator must fit. Set by the orchestrator via
+ * `CMDR_I18N_WORST_CASE`. No effect outside an overflow pass.
  */
-export const screenshotsDir = isOverflowPass ? join(baseScreenshotsDir, 'overflow') : baseScreenshotsDir
+export const isWorstCasePass = isOverflowPass && process.env.CMDR_I18N_WORST_CASE === '1'
+
+/**
+ * The largest UI zoom the app offers (the `appearance.textSize` percentage; the
+ * `view.zoom.set150` preset is the ceiling). The worst-case pass drives the app
+ * to this before capturing so layout is stressed at max zoom AND inflated text.
+ */
+export const MAX_UI_ZOOM = 150
+
+/**
+ * Where screenshots land this run: the coupling dir for a normal pass, a
+ * dedicated `overflow/` subdir for an overflow pass, and a further
+ * `overflow/worst-case/` subdir for the worst-case pass (all gitignored), so the
+ * three never overwrite each other.
+ */
+export const screenshotsDir = isWorstCasePass
+  ? join(baseScreenshotsDir, 'overflow', 'worst-case')
+  : isOverflowPass
+    ? join(baseScreenshotsDir, 'overflow')
+    : baseScreenshotsDir
 export const reportPath = join(screenshotsDir, 'capture-report.json')
 /** Sibling list of surfaces that FAILED to capture this run (coverage honesty). */
 export const failedPath = join(screenshotsDir, 'capture-failed.json')
@@ -219,6 +242,88 @@ export async function focusWindow(page: TauriPage, label: string): Promise<void>
   await page.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_focus', { label: ${labelJson} })`)
 }
 
+/**
+ * Reads the live effective UI scale off the `--font-scale` root var that
+ * `text-size.svelte`'s `computeAndApply` writes. The worst-case staging polls
+ * this after `setTextSize` so it resizes the window only once the new scale (and
+ * the settings window's live min-size recompute) has applied.
+ */
+async function readFontScale(page: TauriPage): Promise<number> {
+  return page.evaluate<number>(
+    `parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale')) || 1`,
+  )
+}
+
+/**
+ * The minimum allowed LOGICAL size of each window at the worst-case zoom
+ * (`MAX_UI_ZOOM`). Tauri does NOT clamp a programmatic `setSize` to the window's
+ * `minWidth`/`minHeight` (requesting 1x1 actually shrinks to ~1px), so we set the
+ * EXACT minimum rather than a tiny value. Values mirror the window creators (keep
+ * in sync): `tauri.conf.json` (main, fixed 950x550), `settings-window.ts`
+ * (`SETTINGS_CHROME_WIDTH + SETTINGS_CONTENT_BASE_MIN_WIDTH*scale` by
+ * `SETTINGS_BASE_MIN_HEIGHT*scale`), `open-viewer.ts` (viewer, fixed 400x300),
+ * and `shortcuts-window.ts` (`MIN_WIDTH*scale` by `MIN_HEIGHT`). The scaled ones
+ * use the worst-case scale (`MAX_UI_ZOOM/100`).
+ */
+function minSizeFor(label: string): { width: number; height: number } {
+  const scale = MAX_UI_ZOOM / 100
+  if (label === 'settings') return { width: 252 + 348 * scale, height: 400 * scale }
+  if (label === 'shortcuts') return { width: 300 * scale, height: 420 }
+  if (label.startsWith('viewer')) return { width: 400, height: 300 }
+  // main window (and any main-window overlay captured against `main`).
+  return { width: 950, height: 550 }
+}
+
+/**
+ * Resizes a window to its minimum allowed size for the worst-case pass. Invokes
+ * the window plugin directly with the IPC payload shape `setSize` produces
+ * (`{ label, value: { Logical: { width, height } } }`); the
+ * `core:window:allow-set-size` permission is granted only in the E2E capture
+ * build (the build.rs-generated `playwright.json`), never in production. Tauri
+ * doesn't clamp `setSize` to the min constraint, so we pass the exact minimum
+ * (see `minSizeFor`).
+ */
+async function resizeWindowToMin(page: TauriPage, label: string): Promise<void> {
+  const labelJson = JSON.stringify(label)
+  const { width, height } = minSizeFor(label)
+  await page.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_size', {
+    label: ${labelJson},
+    value: { Logical: { width: ${String(width)}, height: ${String(height)} } }
+  })`)
+}
+
+/**
+ * Stages the WORST-CASE layout stress on `page`'s window before its shot + clip
+ * scan: maxes the UI zoom (`MAX_UI_ZOOM`) via the production `setSetting` path,
+ * waits for the new scale to apply, then shrinks the window to its minimum so the
+ * inflated pseudolocale text fights the tightest box the app permits. No-op
+ * outside the worst-case pass, so the default overflow pass is untouched.
+ *
+ * `label` is the window to resize (`'main'` for main-window overlays, the
+ * separate window's label otherwise). Best-effort per step: a window that
+ * refuses to shrink below its content (a documented case to note, not fake)
+ * leaves the resize logged rather than aborting the surface.
+ */
+export async function stressLayoutIfWorstCase(page: TauriPage, label: string): Promise<void> {
+  if (!isWorstCasePass) return
+  // Drive the real zoom path; cross-window-synced + re-runs computeAndApply.
+  await captureCall(page, 'setTextSize', String(MAX_UI_ZOOM))
+  // Wait for the scale to land (and the settings window's live min-size effect to
+  // recompute) before resizing, so the clamp targets the max-zoom floor. Polls
+  // the live `--font-scale`; falls through on timeout rather than hanging.
+  await expect
+    .poll(async () => readFontScale(page), { timeout: 3000 })
+    .toBeGreaterThanOrEqual(MAX_UI_ZOOM / 100 - 0.01)
+    .catch(() => {})
+  try {
+    await resizeWindowToMin(page, label)
+  } catch (err) {
+    console.warn(`[i18n-overflow] worst-case: could not shrink window '${label}' to min: ${String(err)}`)
+  }
+  // Let the layout reflow at the new (min) size before the shot + clip scan.
+  await settlePaint(page)
+}
+
 /** A surface's report entry: the screenshot file and the keys recorded for it. */
 export interface SurfaceEntry {
   screenshot: string
@@ -273,6 +378,10 @@ export async function captureSurface(
     if (isOverflowPass) await captureCall(page, 'setLocale', overflowLocale)
     await captureCall(page, 'setSurface', label)
     await captureCall(page, 'rerender')
+    // Worst-case pass: max the zoom and shrink the window to its min before the
+    // shot. Resize the window this surface lives in (`focusLabel` for a separate
+    // window, else `main`). No-op outside the worst-case pass.
+    await stressLayoutIfWorstCase(page, focusLabel ?? 'main')
     if (focusLabel !== undefined) await focusWindow(page, focusLabel)
     await settlePaint(page)
     await page.screenshot({ path: join(screenshotsDir, screenshot) })
@@ -356,11 +465,16 @@ export async function captureToastSurface(
     await captureCall(main, 'reset')
     await captureCall(main, 'setSurface', label)
     await captureCall<boolean>(main, 'enable')
+    // Worst-case pass: stage max zoom + min window BEFORE the trigger so the toast
+    // renders into the stressed layout. `setTextSize` writes the setting directly
+    // (not the `view.zoom.*` command), so it does NOT emit the zoom-change toast
+    // that would pollute this surface. No-op outside the worst-case pass.
+    await stressLayoutIfWorstCase(main, 'main')
     await trigger()
     // The toast appearing IS the readiness signal: the key was resolved (and so
     // recorded) at emit time, which is inside `trigger`.
     await main.waitForSelector('.toast', 5000)
-    // The toast slides in over a 0.2s animation (opacity 0→1, translateX 20→0).
+    // The toast slides in over a 0.2s animation (opacity 0->1, translateX 20->0).
     // `waitForSelector` returns the instant it's in the DOM (mid-animation), so
     // wait for the enter animation to FINISH (opacity 1, transform settled to
     // identity) before the native capture, which composites the last frame and
@@ -429,6 +543,9 @@ export async function captureErrorPaneExample(
     // The error pane appearing IS the readiness signal: the keys were resolved
     // (and recorded) during the listing the navigation kicked off.
     await main.waitForSelector('.error-pane', 5000)
+    // Worst-case pass: max zoom + min window so the error title/explanation/
+    // suggestion fight the tightest pane. No-op outside the worst-case pass.
+    await stressLayoutIfWorstCase(main, 'main')
     await settlePaint(main)
     await main.screenshot({ path: join(screenshotsDir, screenshot) })
     report[label] = { screenshot, keys: await keysFor(main, label) }

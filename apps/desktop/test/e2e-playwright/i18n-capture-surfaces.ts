@@ -304,7 +304,10 @@ export async function captureMainOverlays(
   // Go-to-path dialog (`nav.goToPath`).
   await mainOverlay('go-to-path', async () => {
     await dispatchMenuCommand(main, 'nav.goToPath')
-    return '[data-dialog-id="go-to-path"] input[aria-label="Path to go to"]'
+    // Stable class, NOT the `aria-label` text: the overflow pass pseudolocalizes
+    // every label, so an English `aria-label="Path to go to"` selector never
+    // matches under en-XA.
+    return '[data-dialog-id="go-to-path"] .path-input'
   })
 
   // Copy/move transfer dialog (F5 → `file.copy`): the source→dest picker with the
@@ -341,7 +344,13 @@ export async function captureMainOverlays(
   await mainOverlay('filter-popover', async () => {
     await dispatchMenuCommand(main, 'search.open')
     await main.waitForSelector('.search-overlay', 5000)
-    await main.click('.search-overlay .chip-filter[aria-label="Size"]')
+    // Open the Size popover via its production shortcut (Option+S, matched on the
+    // layout-stable `event.code === 'KeyS'`), NOT by clicking a chip selected on
+    // its English `aria-label="Size"`: the overflow pass pseudolocalizes that
+    // label, so the text selector never matches under en-XA.
+    await main.evaluate(
+      `document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS', key: 's', altKey: true, bubbles: true }))`,
+    )
     return '.search-overlay .ui-popover'
   })
   // The popover sits ON the search dialog; dismiss both (popover first).

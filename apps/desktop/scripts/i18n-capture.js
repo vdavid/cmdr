@@ -22,6 +22,7 @@
  *   pnpm i18n:capture --build    # build the capture binary, then capture
  *   pnpm i18n:capture            # reuse a binary from a PRIOR --build run
  *   pnpm i18n:overflow           # pseudolocale OVERFLOW pass (= --build --locale en-XA)
+ *   pnpm i18n:overflow --worst-case  # WORST CASE: pseudolocale + 150% zoom + min window size
  *
  * The `--locale <tag>` axis (default `en`) switches the capture to an OVERFLOW
  * pass: it generates the locale (en-XA), the driver switches the app to it, the
@@ -73,6 +74,18 @@ if (localeIdx >= 0 && (captureLocale === undefined || captureLocale.startsWith('
   throw new Error('`--locale` needs a tag, e.g. `--locale en-XA`')
 }
 const isOverflow = captureLocale !== 'en'
+// `--worst-case` (only meaningful in an overflow pass) stresses layout the
+// hardest: on top of the pseudolocale, the driver sets the UI zoom to its max
+// (150%) AND resizes each captured window to its minimum allowed size before the
+// shot + clip scan. Output lands in a SEPARATE `overflow/worst-case/` dir so it
+// never overwrites the default-size overflow shots. This is the maximal-overflow
+// scenario a translator must fit. `pnpm i18n:overflow --worst-case`.
+const wantWorstCase = process.argv.includes('--worst-case')
+if (wantWorstCase && !isOverflow) {
+  throw new Error(
+    '`--worst-case` only applies to an overflow pass; use it with `--locale en-XA` (or `pnpm i18n:overflow --worst-case`)',
+  )
+}
 // An explicit socket override (rare); otherwise each pass derives its own unique
 // per-launch socket in `launchAndCapture` so a parallel dev/E2E session in
 // another worktree can never collide and relaunches don't race a stale bind.
@@ -122,6 +135,32 @@ async function waitForSocket(path, timeoutMs) {
     if (Date.now() > deadline) throw new Error(`tauri-playwright socket ${path} never became ready`)
     await new Promise((r) => setTimeout(r, 150))
   }
+}
+
+/**
+ * Reserves a free high port by binding ephemeral and reading the assigned port,
+ * then releasing it. Used to pin `CMDR_MCP_PORT` so the in-app MCP server binds a
+ * known port the capture spec's MCP-client helpers can reach (the empty-pane and
+ * MTP surfaces, and cursor helpers, drive the app via `/mcp`). Without a pinned
+ * port the capture launch starts MCP on its default and the helper's port
+ * discovery comes back unusable, failing those surfaces. A tiny bind/release race
+ * window is acceptable here (single local process, no contention). Returns a
+ * number in the OS ephemeral range (high), matching the no-standard-ports rule.
+ * @returns {Promise<number>}
+ */
+function reserveFreePort() {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer()
+    srv.on('error', reject)
+    srv.listen(0, '127.0.0.1', () => {
+      const addr = srv.address()
+      const port = addr && typeof addr === 'object' ? addr.port : 0
+      srv.close(() => {
+        if (port > 0) resolve(port)
+        else reject(new Error('could not reserve a free MCP port'))
+      })
+    })
+  })
 }
 
 // A fresh, isolated data dir for the capture run. The app resolves its
@@ -279,13 +318,18 @@ async function main() {
   /** @type {Record<string, string>} */
   const mainEnv = { CMDR_MOCK_FDA: 'granted' }
   if (isOverflow) mainEnv.CMDR_I18N_OVERFLOW_LOCALE = captureLocale
+  // Worst-case overflow pass: the spec reads this to also max the UI zoom and
+  // shrink each window to its minimum before each shot + clip scan, and to
+  // redirect output to `overflow/worst-case/`.
+  if (wantWorstCase) mainEnv.CMDR_I18N_WORST_CASE = '1'
   await launchAndCapture(binary, startPath, mainEnv, 'main')
 
   // The mock-license / FDA-variant passes are coupling-only (they capture extra
   // surfaces for `@key.screenshot`). An overflow pass only needs the main-pass
   // surfaces rendered in the pseudolocale, so skip them: stop after the main pass.
   if (isOverflow) {
-    console.log('[i18n-capture] overflow pass done. See `screenshots/overflow/overflow-report.md` for clip findings.')
+    const dir = wantWorstCase ? 'overflow/worst-case' : 'overflow'
+    console.log(`[i18n-capture] overflow pass done. See \`screenshots/${dir}/overflow-report.md\` for clip findings.`)
     return
   }
 
@@ -345,7 +389,14 @@ async function launchAndCapture(binary, startPath, extraEnv, passLabel) {
     SOCKET_OVERRIDE ??
     `/tmp/tauri-playwright-i18n-${String(process.pid)}-${passLabel.replace(/[^a-z0-9]+/gi, '-')}.sock`
 
-  console.log(`[i18n-capture] launching app (${passLabel})…`)
+  // Pin a per-launch MCP port so the app and the spec's MCP-client helpers agree
+  // on where `/mcp` lives (mirrors what the standard E2E launcher passes). The
+  // capture build enables MCP by default (debug-assertions on), but discovery
+  // needs a known port. `CMDR_MCP_ENABLED=1` is belt-and-braces.
+  const mcpPort = await reserveFreePort()
+  const mcpEnv = { CMDR_MCP_PORT: String(mcpPort), CMDR_MCP_ENABLED: '1' }
+
+  console.log(`[i18n-capture] launching app (${passLabel}); MCP port ${String(mcpPort)}…`)
   appProc = spawn(binary, [], {
     cwd: desktopDir,
     stdio: 'inherit',
@@ -354,6 +405,7 @@ async function launchAndCapture(binary, startPath, extraEnv, passLabel) {
       CMDR_E2E_MODE: '1',
       CMDR_E2E_START_PATH: startPath,
       CMDR_PLAYWRIGHT_SOCKET: socket,
+      ...mcpEnv,
       // Isolated, fresh data dir → default settings, reproducible, never the
       // developer's real prod store. See `ensureCaptureDataDir`.
       CMDR_DATA_DIR: ensureCaptureDataDir(),
@@ -383,6 +435,7 @@ async function launchAndCapture(binary, startPath, extraEnv, passLabel) {
         CMDR_E2E_START_PATH: startPath,
         CMDR_E2E_SHARD_KIND: 'i18n-capture',
         CMDR_PLAYWRIGHT_SOCKET: socket,
+        ...mcpEnv,
         ...extraEnv,
       },
     })
