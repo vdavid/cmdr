@@ -5,6 +5,81 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] - 2026-06-19
+
+The file viewer now renders images and PDFs inline, local and custom AI endpoints like Ollama and LM Studio work, and
+counts and file sizes follow your Mac's region. The volume selector also gets a frosted-glass look.
+
+### Added
+
+- Show images and PDFs inline in the file viewer, with a Text/Image/PDF mode switch and a view-as-text fallback
+  ([ccfb536c](https://github.com/vdavid/cmdr/commit/ccfb536c),
+  [c03c0715](https://github.com/vdavid/cmdr/commit/c03c0715),
+  [e46cc1be](https://github.com/vdavid/cmdr/commit/e46cc1be))
+- Give the file viewer its own working menu bar on macOS: File, Edit, and View (with Word wrap) when it's focused
+  ([60b7b568](https://github.com/vdavid/cmdr/commit/60b7b568))
+
+### Changed
+
+- Give the volume selector a frosted-glass material and honor macOS Reduce transparency across the app
+  ([a10d7def](https://github.com/vdavid/cmdr/commit/a10d7def))
+- Keep the volume selector open while ejecting, and make its row menu native
+  ([84fe8c66](https://github.com/vdavid/cmdr/commit/84fe8c66))
+- Major Settings revamp: Group Settings pages into cards and make Advanced settings findable from the main search
+  ([3f9168ce](https://github.com/vdavid/cmdr/commit/3f9168ce),
+  [43fb5ad1](https://github.com/vdavid/cmdr/commit/43fb5ad1),
+  [027a89ed](https://github.com/vdavid/cmdr/commit/027a89ed))
+- Format counts and file sizes by your Mac's region instead of always US formatting
+  ([0324047b](https://github.com/vdavid/cmdr/commit/0324047b),
+  [83906c5a](https://github.com/vdavid/cmdr/commit/83906c5a))
+- Show real macOS default icons while the icon cache loads, replacing the emoji placeholders
+  ([8ea3a54a](https://github.com/vdavid/cmdr/commit/8ea3a54a),
+  [7272df9d](https://github.com/vdavid/cmdr/commit/7272df9d),
+  [9b41bcc3](https://github.com/vdavid/cmdr/commit/9b41bcc3))
+
+### Fixed
+
+- Fix local and custom AI endpoints (Ollama, LM Studio): the model picker now selects, and keyless endpoints register as
+  configured ([e8389003](https://github.com/vdavid/cmdr/commit/e8389003))
+- MTP: Heal a stale destination folder on MTP upload and retry instead of failing the copy
+  ([010d8b45](https://github.com/vdavid/cmdr/commit/010d8b45))
+- File viewer: Scroll search matches into view, and enable cut and paste in the search box
+  ([0496700a](https://github.com/vdavid/cmdr/commit/0496700a))
+- Show the running app version in copied diagnostic info, not a stale hardcoded one
+  ([32bce781](https://github.com/vdavid/cmdr/commit/32bce781))
+- Harden the backend against silent crashes and unsafe-code mistakes, and clear out dead code
+  ([d1e4f76f](https://github.com/vdavid/cmdr/commit/d1e4f76f),
+  [6d2acfb0](https://github.com/vdavid/cmdr/commit/6d2acfb0),
+  [ab34d853](https://github.com/vdavid/cmdr/commit/ab34d853))
+- Update the MTP library to 0.20.0 for transaction-ID self-heal and stale-handle recovery
+  ([7fedfadc](https://github.com/vdavid/cmdr/commit/7fedfadc))
+
+### Non-app
+
+- Lay the full groundwork for translating Cmdr into other languages (English-only for now): a message catalog of ~2,070
+  strings, region-aware number and date formatting, tooling that finds clipped text and screenshots every screen for
+  translators, and a Language picker ([56acb6c1](https://github.com/vdavid/cmdr/commit/56acb6c1),
+  [17e05af8](https://github.com/vdavid/cmdr/commit/17e05af8),
+  [2b085afc](https://github.com/vdavid/cmdr/commit/2b085afc),
+  [375600ce](https://github.com/vdavid/cmdr/commit/375600ce),
+  [8af5a0bb](https://github.com/vdavid/cmdr/commit/8af5a0bb),
+  [a3a9ef3c](https://github.com/vdavid/cmdr/commit/a3a9ef3c))
+- Move all error wording to the frontend so it's ready to translate, with the logic staying in Rust
+  ([1e918e06](https://github.com/vdavid/cmdr/commit/1e918e06),
+  [77a851b8](https://github.com/vdavid/cmdr/commit/77a851b8))
+- Cut the docs that load into every AI coding session by two-thirds, and add checks to keep them lean
+  ([b84ca26a](https://github.com/vdavid/cmdr/commit/b84ca26a),
+  [1ce6e7bb](https://github.com/vdavid/cmdr/commit/1ce6e7bb),
+  [3dad7e03](https://github.com/vdavid/cmdr/commit/3dad7e03))
+- Route every in-app icon and spinner through shared components, and split several oversized files into focused ones
+  ([94b6218a](https://github.com/vdavid/cmdr/commit/94b6218a),
+  [751e9bc4](https://github.com/vdavid/cmdr/commit/751e9bc4),
+  [d3c50a87](https://github.com/vdavid/cmdr/commit/d3c50a87))
+- Keep automated test runs from disturbing the developer's real apps, data, and keychain
+  ([28b6bcaf](https://github.com/vdavid/cmdr/commit/28b6bcaf),
+  [2476aba4](https://github.com/vdavid/cmdr/commit/2476aba4),
+  [3a56d765](https://github.com/vdavid/cmdr/commit/3a56d765))
+
 ## [0.27.0] - 2026-06-14
 
 You can now add/rename/reorder/remove Favorite folders in the Volume selector, hide the bottom F5/F6/F8 bar, and can set
