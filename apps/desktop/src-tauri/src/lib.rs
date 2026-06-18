@@ -169,6 +169,11 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Refuse to start an E2E run with no isolated data dir: it would resolve every persisted
+    // store to the developer's real prod dir and corrupt it (e.g. a screenshot `favorites.add`
+    // bleeding "left" favorites into prod). Must run before anything resolves a data dir.
+    test_mode::guard_e2e_requires_data_dir();
+
     // Type-safe IPC: collect every command and event into a tauri-specta Builder.
     // The same Builder is attached to `tauri::Builder::default()` below.
     // `bindings.ts` is regenerated explicitly via `pnpm bindings:regen` (which

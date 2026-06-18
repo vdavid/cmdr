@@ -266,7 +266,12 @@ E2E test hooks split along two axes:
 
 **Existing soft hooks** (env vars):
 
-- **`CMDR_E2E_MODE=1`**: Canonical "we're under E2E" marker; subsystems can flip behaviors.
+- **`CMDR_E2E_MODE=1`**: Canonical "we're under E2E" marker; subsystems can flip behaviors. **Requires
+  `CMDR_DATA_DIR`**: the app panics at startup (`guard_e2e_requires_data_dir`) if E2E mode is on with no data dir set,
+  since persisted state (favorites, settings, secrets) would otherwise write to the developer's real prod data dir. Every
+  harness already sets both; only a bare manual `CMDR_E2E_MODE=1` launch trips it.
+- **`CMDR_DATA_DIR`**: Isolated data dir for persisted state. Set by `tauri-wrapper.js` (dev) and every E2E harness;
+  mandatory under E2E mode (see above).
 - **`CMDR_E2E_START_PATH`**: Fixture directory; surfaced via `get_e2e_start_path` so FE can pick it up.
 - **`CMDR_E2E_SHARD_KIND`**: "mtp" / "non-mtp" / "all": selects spec subset for parallel sharding.
 - **`CMDR_E2E_JSON_REPORT`**: Per-shard Playwright JSON report path.

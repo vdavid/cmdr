@@ -73,6 +73,32 @@ pub fn is_e2e_mode() -> bool {
     std::env::var("CMDR_E2E_MODE").as_deref() == Ok("1")
 }
 
+/// Pure core of [`guard_e2e_requires_data_dir`]: true when E2E mode is on but no usable
+/// `CMDR_DATA_DIR` is set. Empty is treated as unset, matching `config::data_dir_from_env`.
+fn e2e_data_dir_missing(is_e2e: bool, data_dir: Option<&str>) -> bool {
+    is_e2e && data_dir.map(str::is_empty).unwrap_or(true)
+}
+
+/// Hard guard against an E2E run leaking persisted state into the developer's real production
+/// data dir. Call this once at the very top of `crate::run`, before anything resolves a data dir.
+///
+/// `CMDR_E2E_MODE=1` with no `CMDR_DATA_DIR` resolves every persisted store (favorites, settings,
+/// secrets, analytics, install id, go-to history) to the OS-default prod dir, since each subsystem
+/// falls back there independently (`favorites/store.rs`, `settings/loader.rs`, `secrets/mod.rs`,
+/// `install_id.rs`, …). A manually launched E2E app that then mutates state (e.g. `favorites.add`
+/// during a screenshot capture) writes straight into prod. Production never sets `CMDR_E2E_MODE`,
+/// and every real harness sets `CMDR_DATA_DIR`, so this combination is always a misconfiguration:
+/// fail fast rather than silently corrupt the developer's prod state.
+pub fn guard_e2e_requires_data_dir() {
+    if e2e_data_dir_missing(is_e2e_mode(), std::env::var("CMDR_DATA_DIR").ok().as_deref()) {
+        panic!(
+            "CMDR_E2E_MODE=1 requires CMDR_DATA_DIR to be set to an isolated path. Without it, \
+             persisted state (favorites, settings, secrets) would write to your real production \
+             data dir. Set CMDR_DATA_DIR=/tmp/cmdr-e2e-data (or another throwaway path) and relaunch."
+        );
+    }
+}
+
 /// Parses `CMDR_E2E_COPY_THROTTLE_MS` into milliseconds, or `None` when unset
 /// or invalid. The copy loop calls this once per file (between committing one
 /// and starting the next) to give E2E specs a deterministic window in which
@@ -116,6 +142,22 @@ mod tests {
         // Reference call to keep the helper from being dead-coded out of
         // test builds; the result is environment-dependent so we don't assert.
         let _ = is_e2e_mode();
+    }
+
+    /// The data-dir guard fires only when E2E mode is on AND no usable `CMDR_DATA_DIR`
+    /// is set (empty counts as unset). Every real harness sets the var, so they pass; a
+    /// bare `CMDR_E2E_MODE=1` manual launch (the prod-bleed footgun) is the one that trips.
+    #[test]
+    fn e2e_data_dir_missing_only_when_e2e_and_no_dir() {
+        // E2E off: never fires, regardless of the data dir.
+        assert!(!e2e_data_dir_missing(false, None));
+        assert!(!e2e_data_dir_missing(false, Some("")));
+        assert!(!e2e_data_dir_missing(false, Some("/tmp/cmdr-e2e-data")));
+        // E2E on with a real path: passes.
+        assert!(!e2e_data_dir_missing(true, Some("/tmp/cmdr-e2e-data")));
+        // E2E on with unset or empty: the violation we guard against.
+        assert!(e2e_data_dir_missing(true, None));
+        assert!(e2e_data_dir_missing(true, Some("")));
     }
 
     /// Same shape: `e2e_copy_throttle_ms` should return `None` for unset,

@@ -62,13 +62,18 @@ cd apps/desktop
 # Build the Tauri binary with the playwright plugin
 pnpm test:e2e:playwright:build
 
-# Start the app (in a separate terminal). Both env vars matter:
+# Start the app (in a separate terminal). All three env vars matter:
+# - CMDR_DATA_DIR isolates persisted state (favorites, settings, secrets) to a throwaway
+#   path. REQUIRED under E2E mode: without it the app refuses to start
+#   (`guard_e2e_requires_data_dir()` in `src-tauri/src/test_mode.rs`), because persisted
+#   writes would otherwise land in your real prod data dir (this is how a screenshot
+#   `favorites.add` once bled "left" favorites into prod).
 # - CMDR_E2E_START_PATH points the app at the fixture root.
 # - CMDR_E2E_MODE=1 turns on the blue title-bar stripe and `E2E -` window-title
 #   decoration (`is_e2e_mode()` in `src-tauri/src/test_mode.rs`). Without it the
 #   app launches looking like a prod build, which is confusing when you have a
 #   real Cmdr open at the same time.
-CMDR_E2E_MODE=1 CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures /path/to/target/.../release/Cmdr
+CMDR_E2E_MODE=1 CMDR_DATA_DIR=/tmp/cmdr-e2e-data CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures /path/to/target/.../release/Cmdr
 
 # Run the tests (app must be running with socket at /tmp/tauri-playwright.sock).
 # Chain `&& pkill -f 'target.*Cmdr'` so the manually-launched app is torn down
