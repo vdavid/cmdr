@@ -659,7 +659,17 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
     // readers or park a tokio worker). The live event loop reads via `ReadPool`
     // and never reacquires the registry lock, so dropping the guard while
     // `ShuttingDown` is published is safe.
-    let owned_mgr = {
+    // Take ownership of whatever the instance carries. `Running` hands back the
+    // manager (needs a blocking drain before the files go); `Initializing` /
+    // `ShuttingDown` carry no live writer to drain but MUST still be removed so
+    // the badge goes gray (not a dangling Stale) and the DB is reclaimed —
+    // forgetting a re-enabled-but-still-scanning Stale index has to work. Either
+    // way we resolve the DB path before dropping the guard.
+    enum ClearTarget {
+        Running { mgr: Box<IndexManager> },
+        NoWriter { db_path: PathBuf },
+    }
+    let target = {
         let mut reg = INDEX_REGISTRY
             .lock()
             .map_err(|e| format!("Failed to lock registry: {e}"))?;
@@ -671,27 +681,44 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
             }
         };
         match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
-            IndexPhase::Running(mgr) => mgr,
-            other => {
-                instance.phase = other;
-                log::info!("Drive index clear requested but '{volume_id}' was not active");
+            IndexPhase::Running(mgr) => ClearTarget::Running { mgr },
+            IndexPhase::Initializing { store } => {
+                // No live writer thread to drain (still in resume_or_scan), but
+                // an in-flight start may be mid-`resume_or_scan`: publishing
+                // `ShuttingDown` makes it observe the change and shut its
+                // half-built manager down (same contract as `stop_indexing`).
+                let db_path = store.db_path().to_path_buf();
+                reg.remove(volume_id);
+                ClearTarget::NoWriter { db_path }
+            }
+            IndexPhase::ShuttingDown => {
+                // Another teardown is already draining this volume. It will
+                // remove the instance and (for clear) delete the DB; don't race
+                // a second delete. Put the marker back and bail.
+                instance.phase = IndexPhase::ShuttingDown;
+                log::info!("Drive index clear requested but '{volume_id}' is already shutting down");
                 return Ok(());
             }
         }
     };
 
-    // Guard released: run the blocking drain without holding the registry lock.
-    let mut mgr = owned_mgr;
-    let db_path = mgr.db_path().to_path_buf();
-    mgr.shutdown();
-
-    // Re-lock only to remove the now-disabled instance.
-    {
-        let mut reg = INDEX_REGISTRY
-            .lock()
-            .map_err(|e| format!("Failed to lock registry: {e}"))?;
-        reg.remove(volume_id);
-    }
+    // Guard released: run the blocking drain (Running only) without the lock.
+    let db_path = match target {
+        ClearTarget::Running { mgr } => {
+            let mut mgr = mgr;
+            let db_path = mgr.db_path().to_path_buf();
+            mgr.shutdown();
+            // Re-lock only to remove the now-disabled instance.
+            {
+                let mut reg = INDEX_REGISTRY
+                    .lock()
+                    .map_err(|e| format!("Failed to lock registry: {e}"))?;
+                reg.remove(volume_id);
+            }
+            db_path
+        }
+        ClearTarget::NoWriter { db_path } => db_path,
+    };
 
     // Delete DB file and WAL/SHM sidecars
     for path in [
@@ -1305,6 +1332,143 @@ mod tests {
         assert_eq!(get_freshness("never-registered"), None);
 
         INDEX_REGISTRY.lock().unwrap().remove("smb-fresh-test");
+        clear_registry_and_pools();
+    }
+
+    /// Forgetting (`clear_index`) a Stale external index must transition the
+    /// volume to gray/disabled (M5 prune→Disabled), not leave a dangling Stale
+    /// badge, AND delete the DB from disk. The badge goes gray because removal
+    /// drops the registry instance, so `get_freshness` returns `None` (the
+    /// absence-of-instance = gray model). Exercises the `Initializing`-phase
+    /// `clear_index` path (a re-enabled-but-still-scanning Stale index): pre-fix,
+    /// that path early-returned, leaving the instance AND the DB behind.
+    #[test]
+    fn forget_stale_index_transitions_to_gray_and_deletes_db() {
+        let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        clear_registry_and_pools();
+        INDEX_REGISTRY.lock().unwrap().remove("smb-forget-test");
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("index-smb-forget-test.db");
+        let store = IndexStore::open(&db_path).expect("open store");
+        let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+        let pending = Arc::new(PendingSizes::new());
+
+        // Reserve as Stale (the load-as-Stale-on-launch case, then re-enabled so
+        // it's mid-scan / Initializing).
+        assert!(
+            try_reserve_initializing_phase("smb-forget-test", store, pool, pending, Some(Freshness::Stale)).is_ok(),
+            "reserve must succeed"
+        );
+        assert_eq!(get_freshness("smb-forget-test"), Some(Freshness::Stale), "loads Stale");
+        assert!(db_path.exists(), "DB file exists before forget");
+
+        // Forget it.
+        clear_index("smb-forget-test").expect("clear_index must succeed");
+
+        // Badge goes gray (no instance ⇒ no freshness), and the DB is gone.
+        assert_eq!(
+            get_freshness("smb-forget-test"),
+            None,
+            "forgetting a Stale index must transition it to gray, not a dangling Stale"
+        );
+        assert!(!is_active("smb-forget-test"), "the instance must be removed");
+        assert!(!db_path.exists(), "forget must delete the index DB from disk");
+
+        clear_registry_and_pools();
+    }
+
+    /// Disconnect-storm resilience (M5): rapidly connect/scan/disconnect/forget
+    /// two external volumes many times must never crash, wedge the registry, or
+    /// leave a dangling instance/freshness. Mirrors `stress_tests_lifecycle.rs`'s
+    /// repeated-cycle philosophy at the registry-lifecycle level (the seam where
+    /// SMB/MTP churn actually lives: reserve → ScanStarted → ScanCompleted →
+    /// WatcherDied(disconnect) → forget/disable).
+    ///
+    /// Each round alternates the teardown between `clear_index` (forget: delete
+    /// DB) and `stop_indexing` (disable: keep DB), and alternates which of the
+    /// two volume ids leads, so an interleave can't hide. After every round both
+    /// volumes must be fully gray (no instance, no freshness); after the storm
+    /// the registry must be empty of these ids and re-reservable (not wedged).
+    #[test]
+    fn disconnect_storm_two_volumes_never_wedges_the_registry() {
+        let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        clear_registry_and_pools();
+        for vid in ["smb-storm", "mtp-storm:65537"] {
+            INDEX_REGISTRY.lock().unwrap().remove(vid);
+        }
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        // Reserve a volume freshly as Stale (the load-as-Stale-on-launch case),
+        // re-opening its DB each round (forget deletes it between rounds).
+        let reserve_stale = |vid: &str| {
+            let db_path = dir.path().join(format!("index-{vid}.db"));
+            let store = IndexStore::open(&db_path).expect("open store");
+            let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+            let pending = Arc::new(PendingSizes::new());
+            assert!(
+                try_reserve_initializing_phase(vid, store, pool, pending, Some(Freshness::Stale)).is_ok(),
+                "reserve {vid} must succeed (registry not wedged)"
+            );
+        };
+
+        const ROUNDS: usize = 20;
+        let vids = ["smb-storm", "mtp-storm:65537"];
+        for round in 0..ROUNDS {
+            // Alternate which volume leads, so connect/disconnect ordering varies.
+            let ordered: Vec<&str> = if round % 2 == 0 {
+                vids.to_vec()
+            } else {
+                vids.iter().rev().copied().collect()
+            };
+
+            for vid in &ordered {
+                reserve_stale(vid);
+                // A rescan begins and completes: Stale → Scanning → Fresh.
+                apply_freshness_event(vid, FreshnessEvent::ScanStarted);
+                assert_eq!(get_freshness(vid), Some(Freshness::Scanning), "round {round}: scanning");
+                apply_freshness_event(vid, FreshnessEvent::ScanCompleted);
+                assert_eq!(get_freshness(vid), Some(Freshness::Fresh), "round {round}: fresh");
+                // The device disconnects / SMB session drops: Fresh → Stale.
+                apply_freshness_event(vid, FreshnessEvent::WatcherDied);
+                assert_eq!(
+                    get_freshness(vid),
+                    Some(Freshness::Stale),
+                    "round {round}: stale on disconnect"
+                );
+            }
+
+            // Tear both down. Alternate forget (clear_index, deletes DB) vs.
+            // disable (stop_indexing, keeps DB) so both teardown drains churn.
+            for vid in &ordered {
+                if round % 2 == 0 {
+                    clear_index(vid).expect("clear_index must not fail under churn");
+                } else {
+                    stop_indexing(vid).expect("stop_indexing must not fail under churn");
+                }
+                // Either way the badge must be gray: no instance ⇒ no freshness.
+                assert_eq!(
+                    get_freshness(vid),
+                    None,
+                    "round {round}: {vid} must be gray after teardown"
+                );
+                assert!(!is_active(vid), "round {round}: {vid} instance must be gone");
+            }
+        }
+
+        // The registry isn't wedged: both ids are absent and re-reservable.
+        {
+            let reg = INDEX_REGISTRY.lock().unwrap();
+            for vid in vids {
+                assert!(!reg.contains_key(vid), "{vid} must not linger in the registry");
+            }
+        }
+        reserve_stale("smb-storm");
+        assert!(
+            is_active("smb-storm"),
+            "registry still accepts a fresh reservation after the storm"
+        );
+
         clear_registry_and_pools();
     }
 

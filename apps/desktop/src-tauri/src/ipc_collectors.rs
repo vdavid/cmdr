@@ -200,6 +200,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::indexing::get_volume_index_status_by_id,
         crate::commands::indexing::enable_drive_index,
         crate::commands::indexing::disable_drive_index,
+        crate::commands::indexing::forget_drive_index,
         crate::commands::indexing::rescan_drive_index,
         crate::commands::search::prepare_search_index,
         crate::commands::search::search_files,

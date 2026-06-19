@@ -238,6 +238,22 @@ pub async fn disable_drive_index(volume_id: String) -> Result<(), String> {
     indexing::stop_indexing(&volume_id)
 }
 
+/// Forget a drive's index entirely: stop it, DELETE its index DB (plus WAL/SHM
+/// sidecars), and drop its registry instance, so its badge goes gray and a
+/// future enable does a clean fresh scan rather than resuming a stale DB.
+///
+/// This is the per-volume sibling of `clear_drive_index` (which is `root`-only):
+/// the user-facing "forget this drive" action for an external (SMB/MTP) index
+/// that's accumulating on disk. Unlike `disable_drive_index` (which preserves the
+/// DB for a fast resume), forget reclaims the disk. A no-op if not indexed. Since
+/// removal drops the instance, a Stale badge transitions to gray (not a dangling
+/// Stale) automatically — `get_freshness` returns `None` once the key is gone.
+#[tauri::command]
+#[specta::specta]
+pub async fn forget_drive_index(volume_id: String) -> Result<(), String> {
+    indexing::clear_index(&volume_id)
+}
+
 /// Force a fresh full rescan of a drive (the menu's "Rescan now").
 ///
 /// - An ALREADY-active drive: kicks off a fresh full scan (Stale ⇒ Scanning ⇒

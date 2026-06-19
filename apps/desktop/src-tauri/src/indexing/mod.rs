@@ -29,6 +29,7 @@ mod mtp_index;
 mod mtp_watch;
 mod pending_sizes;
 mod reconciler;
+mod retention;
 pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_index;
