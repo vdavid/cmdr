@@ -1009,7 +1009,7 @@
         overflow-y: auto;
         /* Frosted-glass material: shared tokens with the tooltip / filter-chip popover so the
            whole app reads as one glass. See `app.css` § Frosted-glass material. The translucent
-           fill flips to opaque under `prefers-reduced-transparency` via the `--color-bg-glass`
+           fill flips to opaque when reduce-transparency is active via the `--color-bg-glass`
            token (in `app.css`); the blur is dropped at the rule site below. */
         background: var(--color-bg-glass);
         -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -1543,12 +1543,10 @@
 
     /* Reduced transparency: the `--color-bg-glass` token already flips to opaque
        (in `app.css`), so here we only drop the blur on the three glass surfaces. */
-    @media (prefers-reduced-transparency: reduce) {
-        .volume-dropdown,
-        .connection-submenu,
-        .breadcrumb-popup {
-            -webkit-backdrop-filter: none;
-            backdrop-filter: none;
-        }
+    :global(html.reduce-transparency) .volume-dropdown,
+    :global(html.reduce-transparency) .connection-submenu,
+    :global(html.reduce-transparency) .breadcrumb-popup {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
     }
 </style>

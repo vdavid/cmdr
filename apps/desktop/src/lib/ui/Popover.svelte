@@ -183,10 +183,8 @@
     }
 
     /* Reduced transparency: `--color-bg-glass` flips to opaque (in `app.css`); drop the blur here. */
-    @media (prefers-reduced-transparency: reduce) {
-        .ui-popover {
-            -webkit-backdrop-filter: none;
-            backdrop-filter: none;
-        }
+    :global(html.reduce-transparency) .ui-popover {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
     }
 </style>

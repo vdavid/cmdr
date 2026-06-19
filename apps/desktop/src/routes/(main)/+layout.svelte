@@ -10,6 +10,7 @@
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
     import { initVolumeTints, cleanupVolumeTints } from '$lib/file-explorer/pane/volume-tint.svelte'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
     import { logWebkitCompat } from '$lib/utils/webkit-compat'
     import { initFocusWatchdog } from '$lib/focus-watchdog'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
@@ -227,6 +228,8 @@
             // Read system accent color from macOS and listen for changes
             await initAccentColor()
 
+            await initReduceTransparency()
+
             // Apply compounded text size (system Accessibility × user setting)
             await initTextSize()
 
@@ -299,6 +302,7 @@
         aiCleanup?.()
         // Cleanup other modules
         cleanupAccentColor()
+        cleanupReduceTransparency()
         cleanupTextSize()
         cleanupReactiveSettings()
         cleanupSettingsApplier()

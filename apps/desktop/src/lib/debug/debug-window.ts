@@ -17,6 +17,7 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { Effect, EffectState } from '@tauri-apps/api/window'
+import { commands } from '$lib/ipc/bindings'
 import { getAppLogger } from '$lib/logging/logger'
 import { decorateChildWindowTitle } from '$lib/app-mode'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '$lib/window-positioning'
@@ -48,6 +49,19 @@ export async function openDebugWindow(): Promise<void> {
     ? resolveChildPosition({ size: { width: DEBUG_WIDTH, height: DEBUG_HEIGHT }, main, monitors, saved })
     : null
 
+  // Honor macOS "Reduce transparency": open opaque and skip vibrancy, mirroring
+  // `settings-window.ts`. The opaque `backgroundColor` matches `--color-bg-primary`
+  // (the settings tokens flip opaque in `app.css`). Read from the backend
+  // (`NSWorkspace`), not a media query — WKWebView doesn't reflect
+  // `prefers-reduced-transparency`. `prefers-color-scheme` IS reflected.
+  const reduceTransparency = await commands.getShouldReduceTransparency()
+  const darkAppearance = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const backgroundColor: [number, number, number, number] = reduceTransparency
+    ? darkAppearance
+      ? [30, 30, 30, 255]
+      : [255, 255, 255, 255]
+    : [0, 0, 0, 0]
+
   const win = new WebviewWindow('debug', {
     url: '/debug',
     title: decorateChildWindowTitle('Debug'),
@@ -59,30 +73,33 @@ export async function openDebugWindow(): Promise<void> {
     resizable: true,
     decorations: true,
     focus: true,
-    // Translucent glass backdrop, mirroring Settings. Requires
-    // `tauri/macos-private-api` (already enabled for Settings).
-    transparent: true,
-    backgroundColor: [0, 0, 0, 0],
+    // Translucent glass backdrop, mirroring Settings — unless the user reduces
+    // transparency (then opaque). Requires `tauri/macos-private-api` (already
+    // enabled for Settings).
+    transparent: !reduceTransparency,
+    backgroundColor,
     // Overlay title bar so traffic lights can sit inside the sidebar.
     titleBarStyle: 'overlay',
     hiddenTitle: true,
     trafficLightPosition: new LogicalPosition(20, 29),
   })
 
-  // Apply NSVisualEffectView Sidebar material after creation — same
-  // reasoning as `settings-window.ts`: `windowEffects` in the options
-  // dict was dropped on the way to the Rust runtime in this Tauri
-  // version, so the explicit IPC path is the reliable one. Radius
-  // matches `--radius-xxl` in `app.css`.
-  void win.once('tauri://created', () => {
-    void win
-      .setEffects({
-        effects: [Effect.Sidebar],
-        state: EffectState.FollowsWindowActiveState,
-        radius: 29,
-      })
-      .catch((error: unknown) => {
-        log.warn('Failed to apply debug window effects: {error}', { error: String(error) })
-      })
-  })
+  // Apply NSVisualEffectView Sidebar material after creation — only when
+  // transparency is allowed. Same reasoning as `settings-window.ts`:
+  // `windowEffects` in the options dict was dropped on the way to the Rust
+  // runtime in this Tauri version, so the explicit IPC path is the reliable
+  // one. Radius matches `--radius-xxl` in `app.css`.
+  if (!reduceTransparency) {
+    void win.once('tauri://created', () => {
+      void win
+        .setEffects({
+          effects: [Effect.Sidebar],
+          state: EffectState.FollowsWindowActiveState,
+          radius: 29,
+        })
+        .catch((error: unknown) => {
+          log.warn('Failed to apply debug window effects: {error}', { error: String(error) })
+        })
+    })
+  }
 }

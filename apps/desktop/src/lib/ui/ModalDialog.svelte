@@ -173,11 +173,9 @@
 
     /* Drop the scrim blur when the OS asks for reduced transparency; the dimming
        background still does its job. */
-    @media (prefers-reduced-transparency: reduce) {
-        .modal-overlay.blur {
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-        }
+    :global(html.reduce-transparency) .modal-overlay.blur {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     .modal-dialog {

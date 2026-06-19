@@ -81,12 +81,10 @@
 
     /* When the OS asks for reduced transparency, drop the blur and go fully
        opaque so the label reads against any background. */
-    @media (prefers-reduced-transparency: reduce) {
-        .drag-overlay {
-            background: var(--color-drag-overlay-bg);
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-        }
+    :global(html.reduce-transparency) .drag-overlay {
+        background: var(--color-drag-overlay-bg);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     .name-list {

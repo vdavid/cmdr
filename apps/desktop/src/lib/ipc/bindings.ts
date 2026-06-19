@@ -2251,6 +2251,15 @@ export const commands = {
    *  Returns the brand fallback if the main-thread hop or channel fails.
    */
   getAccentColor: () => __TAURI_INVOKE<string>('get_accent_color'),
+  /**
+   *  Tauri command: returns whether macOS "reduce transparency" is enabled.
+   *
+   *  `NSWorkspace` accessibility queries are main-thread-only, so we hop to the
+   *  AppKit main thread via `run_on_main_thread` and read there, mirroring
+   *  `get_accent_color`. Returns `false` (don't reduce) if the main-thread hop or
+   *  channel fails.
+   */
+  getShouldReduceTransparency: () => __TAURI_INVOKE<boolean>('get_should_reduce_transparency'),
   // Tauri command: returns the current system text-size multiplier.
   getSystemTextSizeMultiplier: () => __TAURI_INVOKE<number>('get_system_text_size_multiplier'),
   /**
@@ -2421,6 +2430,7 @@ export const events = {
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
   quickLookClosed: makeEvent<QuickLookClosed>('quick-look-closed'),
   quickLookKey: makeEvent<QuickLookKeyEvent>('quick-look-key'),
+  reduceTransparencyChanged: makeEvent<ReduceTransparencyChanged>('reduce-transparency-changed'),
   restrictedPathsChanged: makeEvent<RestrictedPathsChangedPayload>('restricted-paths-changed'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
   scanPreviewCancelled: makeEvent<ScanPreviewCancelledEvent>('scan-preview-cancelled'),
@@ -4456,6 +4466,15 @@ export type RecentPathEntry = {
   timestamp: number
   // The resolved target we actually jumped to (dir, file, or ancestor).
   path: string
+}
+
+/**
+ *  `reduce-transparency-changed`: the macOS Accessibility > Display > Reduce
+ *  transparency setting changed. `reduce` is the new value (`true` = reduce
+ *  transparency / use opaque backgrounds).
+ */
+export type ReduceTransparencyChanged = {
+  reduce: boolean
 }
 
 /**

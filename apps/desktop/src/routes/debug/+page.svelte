@@ -2,6 +2,7 @@
     import { onDestroy, onMount, tick } from 'svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { trackOwnRect } from '$lib/window-positioning'
+    import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
     import DebugAppearancePanel from './DebugAppearancePanel.svelte'
     import DebugClosedTabsPanel from './DebugClosedTabsPanel.svelte'
     import DebugDriveIndexPanel from './DebugDriveIndexPanel.svelte'
@@ -144,6 +145,8 @@
         if (loadingScreen) loadingScreen.style.display = 'none'
         void tick().then(() => pageElement?.focus())
 
+        await initReduceTransparency()
+
         // Save position/size while open so reopening lands in the same spot
         // (in-memory cache, reset on app start).
         unlistenRectTracking = await trackOwnRect('debug')
@@ -151,6 +154,7 @@
 
     onDestroy(() => {
         unlistenRectTracking?.()
+        cleanupReduceTransparency()
     })
 
     function handleKeydown(event: KeyboardEvent) {

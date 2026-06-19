@@ -13,6 +13,8 @@ pub mod network;
 #[cfg(not(target_os = "linux"))]
 pub mod permissions;
 #[cfg(not(target_os = "macos"))]
+pub mod reduce_transparency;
+#[cfg(not(target_os = "macos"))]
 pub mod text_size;
 #[cfg(not(target_os = "linux"))]
 pub mod volumes;

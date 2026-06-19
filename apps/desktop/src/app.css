@@ -38,7 +38,9 @@
      the tokens below sit on top of a live `NSVisualEffectView` Sidebar
      material. Tuned for a clear liquid-glass look without sacrificing AA;
      verified manually against busy wallpapers (the `a11y-contrast` matrix
-     doesn't synthesize settings-window combos). */
+     doesn't synthesize settings-window combos). When reduce-transparency is active
+     these flip opaque and the window opens without the material — see the Reduced
+     transparency block near the end of this file. */
   /* Window backdrop tint */
   --color-bg-settings-primary: rgba(255, 255, 255, 0.6);
   /* Sidebar gradient (light): near-white "card" slightly *lighter* than
@@ -57,8 +59,8 @@
      `--color-bg-glass` is the translucent fill (pre-blur); `--color-border-glass`
      is the hairline that defines the surface against any wallpaper underneath.
      The blur itself is applied per-component via `backdrop-filter: saturate(180%) blur(20px)`.
-     Under `prefers-reduced-transparency: reduce` both tokens flip to opaque in one place (see
-     the media block near the end of this file), and each glass rule drops its own blur. */
+     When reduce-transparency is active both tokens flip to opaque in one place (see the
+     `html.reduce-transparency` block near the end of this file), and each glass rule drops its own blur. */
   --color-bg-glass: rgba(245, 245, 245, 0.72);
   --color-border-glass: rgba(0, 0, 0, 0.12);
 
@@ -785,17 +787,23 @@
 }
 
 /* === Reduced transparency ===
-   When macOS "Reduce transparency" is on, flip the frosted-glass material to a plain
-   opaque fill. This redefines the two glass tokens to their nearest opaque, theme-aware
-   equivalents (so it's correct in light, dark, and high-contrast without per-theme
-   duplication); each glass surface separately drops its own `backdrop-filter` in a
-   matching media block at its rule site. Placed after every theme block above so it wins
-   the cascade whenever reduced-transparency is active. */
-@media (prefers-reduced-transparency: reduce) {
-  :root {
-    --color-bg-glass: var(--color-bg-secondary);
-    --color-border-glass: var(--color-border);
-  }
+   When macOS "Reduce transparency" is on, flip every translucent material to a plain opaque
+   fill. Redefines the shared tokens to their nearest opaque, theme-aware equivalents (so it's
+   correct in light, dark, and high-contrast without per-theme duplication); each glass surface
+   separately drops its own `backdrop-filter` in a matching media block at its rule site. Placed
+   after every theme block above so it wins the cascade whenever reduced-transparency is active.
+   The Settings / Debug windows ALSO drop their native `NSVisualEffectView` material and open
+   opaque — that half lives in `settings-window.ts` / `debug-window.ts` (CSS can't reach the
+   AppKit layer). Here we flip their CSS tokens to match: the window frame becomes
+   `--color-bg-primary` (so it equals the opaque `backgroundColor` those windows now request)
+   and the floating sidebar card becomes a flat `--color-bg-secondary`. */
+html.reduce-transparency {
+  --color-bg-glass: var(--color-bg-secondary);
+  --color-border-glass: var(--color-border);
+  --color-bg-settings-primary: var(--color-bg-primary);
+  --color-bg-sidebar-from: var(--color-bg-secondary);
+  --color-bg-sidebar-to: var(--color-bg-secondary);
+  --color-sidebar-border: var(--color-border);
 }
 
 /* Screen reader only: visually hidden but accessible to assistive technology */
@@ -1214,11 +1222,9 @@ body {
 
 /* Reduced transparency: the `--color-bg-glass` token already flips to opaque above;
    here we only drop the blur. */
-@media (prefers-reduced-transparency: reduce) {
-  .cmdr-tooltip {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+html.reduce-transparency .cmdr-tooltip {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* Keyboard shortcut badge inside tooltip */

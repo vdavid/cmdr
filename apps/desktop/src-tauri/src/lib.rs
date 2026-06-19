@@ -131,6 +131,8 @@ mod platform;
 mod pluralize;
 mod quick_look;
 mod redact;
+#[cfg(target_os = "macos")]
+mod reduce_transparency;
 mod restricted_paths;
 pub mod search;
 mod secrets;
@@ -591,6 +593,12 @@ pub fn run() {
             accent_color::observe_accent_color_changes(app.handle().clone());
             #[cfg(target_os = "linux")]
             accent_color_linux::observe_accent_color_changes(app.handle().clone());
+
+            // Observe macOS Accessibility > Display > Reduce transparency changes
+            #[cfg(target_os = "macos")]
+            reduce_transparency::observe_reduce_transparency_changes(app.handle().clone());
+            #[cfg(not(target_os = "macos"))]
+            stubs::reduce_transparency::observe_reduce_transparency_changes(app.handle().clone());
 
             // Observe macOS Accessibility > Display > Text Size changes
             #[cfg(target_os = "macos")]

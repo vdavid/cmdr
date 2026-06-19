@@ -24,6 +24,9 @@ var allowedUnusedClasses = map[string]bool{
 	"select-content":     true,
 	// DualPaneExplorer.svelte - applied imperatively via classList.add during drag-and-drop
 	"folder-drop-target": true,
+	// app.css - toggled on <html> by JS to opt surfaces out of translucency (WKWebView doesn't
+	// honor the prefers-reduced-transparency media query, so the app drives the class itself)
+	"reduce-transparency": true,
 	// Button.svelte - classes constructed dynamically via template strings (btn-{variant}, btn-{size})
 	"btn-primary":   true,
 	"btn-secondary": true,

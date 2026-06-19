@@ -429,6 +429,18 @@ pub(super) fn collect_accent_color_types(types: &mut Types) -> Vec<Function> {
     collect_functions![crate::stubs::accent_color::get_accent_color](types)
 }
 
+// Reduce transparency command (platform-specific)
+#[cfg(target_os = "macos")]
+pub(super) fn collect_reduce_transparency_types(types: &mut Types) -> Vec<Function> {
+    use specta::function::collect_functions;
+    collect_functions![crate::reduce_transparency::get_should_reduce_transparency](types)
+}
+#[cfg(not(target_os = "macos"))]
+pub(super) fn collect_reduce_transparency_types(types: &mut Types) -> Vec<Function> {
+    use specta::function::collect_functions;
+    collect_functions![crate::stubs::reduce_transparency::get_should_reduce_transparency](types)
+}
+
 // System text size multiplier
 #[cfg(target_os = "macos")]
 pub(super) fn collect_text_size_types(types: &mut Types) -> Vec<Function> {
@@ -519,6 +531,7 @@ pub(super) fn collect_all_types(types: &mut Types) -> Vec<Function> {
     all.extend(collect_volume_types(types));
     all.extend(collect_network_types(types));
     all.extend(collect_accent_color_types(types));
+    all.extend(collect_reduce_transparency_types(types));
     all.extend(collect_text_size_types(types));
     all.extend(collect_permission_types(types));
     all.extend(collect_updater_types(types));

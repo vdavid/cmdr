@@ -18,6 +18,15 @@ pub struct AccentColorChanged {
     pub hex: String,
 }
 
+/// `reduce-transparency-changed`: the macOS Accessibility > Display > Reduce
+/// transparency setting changed. `reduce` is the new value (`true` = reduce
+/// transparency / use opaque backgrounds).
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct ReduceTransparencyChanged {
+    pub reduce: bool,
+}
+
 /// `system-text-size-changed`: the macOS Accessibility > Display > Text Size
 /// value changed. `multiplier` is the new system text-size multiplier (1.0 =
 /// default).

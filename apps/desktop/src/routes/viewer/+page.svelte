@@ -20,6 +20,7 @@
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { initializeSettings, getSetting, setSetting } from '$lib/settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
@@ -762,6 +763,8 @@
 
         await initAccentColor()
 
+        await initReduceTransparency()
+
         // The viewer has no store capability (see `src-tauri/capabilities/CLAUDE.md`
         // § viewer), so settings come from the restricted-window snapshot + the
         // cross-window change events. Non-throwing: falls back to registry defaults.
@@ -821,6 +824,7 @@
 
     onDestroy(() => {
         cleanupAccentColor()
+        cleanupReduceTransparency()
         cleanupTextSize()
         cleanupListeners()
         search.destroy()

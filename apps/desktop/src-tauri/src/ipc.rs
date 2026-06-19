@@ -95,7 +95,8 @@ use crate::menu::{MenuSort, SettingsChanged, ViewModeChanged};
 use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
 use crate::restricted_paths::RestrictedPathsChangedPayload;
 use crate::system_events::{
-    AccentColorChanged, DragImageSize, DragModifiers, SessionCompleteEvent, SessionStartedEvent, SystemTextSizeChanged,
+    AccentColorChanged, DragImageSize, DragModifiers, ReduceTransparencyChanged, SessionCompleteEvent,
+    SessionStartedEvent, SystemTextSizeChanged,
 };
 
 /// Public greeting used by the example webview surface; kept here as the
@@ -451,6 +452,10 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::accent_color::get_accent_color,
         #[cfg(target_os = "macos")]
+        crate::reduce_transparency::get_should_reduce_transparency,
+        #[cfg(not(target_os = "macos"))]
+        crate::stubs::reduce_transparency::get_should_reduce_transparency,
+        #[cfg(target_os = "macos")]
         crate::text_size::get_system_text_size_multiplier,
         #[cfg(not(target_os = "macos"))]
         crate::stubs::text_size::get_system_text_size_multiplier,
@@ -718,6 +723,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             // wrapped in named structs; the drag structs live in the always-compiled
             // `system_events` because their emit sites are macOS-gated.
             AccentColorChanged,
+            ReduceTransparencyChanged,
             SystemTextSizeChanged,
             SettingsChanged,
             ViewModeChanged, // emit_to("main")

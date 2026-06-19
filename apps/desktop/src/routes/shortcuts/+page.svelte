@@ -5,6 +5,7 @@
     import { initializeSettings } from '$lib/settings'
     import { initializeShortcuts } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { requestOpenSettings } from '$lib/tauri-commands'
     import { trackOwnRect } from '$lib/window-positioning'
@@ -47,6 +48,7 @@
             // Settings must load before text-size/theme reads; shortcuts before the list.
             await Promise.all([initializeSettings(), initializeShortcuts()])
             await initAccentColor()
+            await initReduceTransparency()
             await initTextSize()
             initialized = true
 
@@ -69,6 +71,7 @@
         unlistenFocusSelf?.()
         unlistenRectTracking?.()
         cleanupAccentColor()
+        cleanupReduceTransparency()
         cleanupTextSize()
     })
 </script>

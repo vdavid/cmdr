@@ -21,6 +21,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { emitTo } from '@tauri-apps/api/event'
 import { Effect, EffectState } from '@tauri-apps/api/window'
+import { commands } from '$lib/ipc/bindings'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } from '$lib/app-mode'
@@ -99,6 +100,24 @@ export async function openSettingsWindow(section?: string[], anchor?: string): P
       }`
     : '/settings'
 
+  // Honor macOS "Reduce transparency": open an opaque window and skip the
+  // vibrancy material (the settings tokens flip to opaque in `app.css` to
+  // match). The opaque `backgroundColor` mirrors `--color-bg-primary` so the
+  // pre-paint frame and the CSS line up, and the body's rounded corners sit
+  // seamlessly on a same-colored window. Read the value from the backend
+  // (`NSWorkspace`), NOT a media query: WKWebView doesn't reflect
+  // `prefers-reduced-transparency`. The window's opacity is fixed at creation
+  // for the current setting; the page content still re-themes live via the
+  // `reduce-transparency` class (see `$lib/reduce-transparency`).
+  // `prefers-color-scheme` IS reflected, so dark detection stays a media query.
+  const reduceTransparency = await commands.getShouldReduceTransparency()
+  const darkAppearance = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const backgroundColor: [number, number, number, number] = reduceTransparency
+    ? darkAppearance
+      ? [30, 30, 30, 255]
+      : [255, 255, 255, 255]
+    : [0, 0, 0, 0]
+
   const win = new WebviewWindow('settings', {
     url: settingsUrl,
     title: decorateChildWindowTitle('Settings'),
@@ -113,12 +132,12 @@ export async function openSettingsWindow(section?: string[], anchor?: string): P
     resizable: true,
     decorations: true,
     focus: !isE2e,
-    // Translucent glass backdrop. The settings window is the only window
-    // that opts into the macOS `NSVisualEffectView` material; the main
-    // window is plain opaque. Requires `tauri/macos-private-api` (enabled
-    // in `Cargo.toml`).
-    transparent: true,
-    backgroundColor: [0, 0, 0, 0],
+    // Translucent glass backdrop via the macOS `NSVisualEffectView` material,
+    // UNLESS the user reduces transparency (then open opaque). The settings
+    // window is the only one that opts into vibrancy; the main window is plain
+    // opaque. Requires `tauri/macos-private-api` (enabled in `Cargo.toml`).
+    transparent: !reduceTransparency,
+    backgroundColor,
     // Overlay title bar so the traffic lights can sit inside the sidebar
     // (see `routes/settings/+page.svelte` for the matching layout). The
     // `hiddenTitle` keeps the OS from painting the window title text.
@@ -127,26 +146,29 @@ export async function openSettingsWindow(section?: string[], anchor?: string): P
     trafficLightPosition: new LogicalPosition(20, 29),
   })
 
-  // Apply the `NSVisualEffectView` Sidebar material **after** creation. The
-  // `windowEffects` field on the JS `WebviewWindow` options was silently
-  // dropping on the way to the Rust runtime in this Tauri version, leaving
-  // the settings window with no vibrancy behind the translucent webview.
-  // `setEffects` is the explicit IPC path and reliably installs the
-  // material; the `core:window:allow-set-effects` permission is granted in
-  // `capabilities/settings.json`. Radius matches `--radius-xxl` in
-  // `app.css` so the NSWindow corner curve and the webview's CSS clip line
-  // up exactly.
-  void win.once('tauri://created', () => {
-    void win
-      .setEffects({
-        effects: [Effect.Sidebar],
-        state: EffectState.FollowsWindowActiveState,
-        radius: 29,
-      })
-      .catch((error: unknown) => {
-        log.warn('Failed to apply window effects: {error}', { error: String(error) })
-      })
-  })
+  // Apply the `NSVisualEffectView` Sidebar material **after** creation — only
+  // when transparency is allowed (skipped under reduce-transparency so the
+  // window stays fully opaque). The `windowEffects` field on the JS
+  // `WebviewWindow` options was silently dropping on the way to the Rust
+  // runtime in this Tauri version, leaving the settings window with no vibrancy
+  // behind the translucent webview. `setEffects` is the explicit IPC path and
+  // reliably installs the material; the `core:window:allow-set-effects`
+  // permission is granted in `capabilities/settings.json`. Radius matches
+  // `--radius-xxl` in `app.css` so the NSWindow corner curve and the webview's
+  // CSS clip line up exactly.
+  if (!reduceTransparency) {
+    void win.once('tauri://created', () => {
+      void win
+        .setEffects({
+          effects: [Effect.Sidebar],
+          state: EffectState.FollowsWindowActiveState,
+          radius: 29,
+        })
+        .catch((error: unknown) => {
+          log.warn('Failed to apply window effects: {error}', { error: String(error) })
+        })
+    })
+  }
 
   // E2E: push the window behind everything so a run's Settings windows don't pop
   // in front of the developer's work. No-op outside E2E. See `orderChildWindowToBackInE2e`.

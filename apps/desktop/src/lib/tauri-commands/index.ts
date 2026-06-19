@@ -306,7 +306,7 @@ export {
 } from './ai'
 
 // Appearance / system events
-export { onAccentColorChanged, onSystemTextSizeChanged } from './appearance'
+export { onAccentColorChanged, onReduceTransparencyChanged, onSystemTextSizeChanged } from './appearance'
 
 // Native-menu events
 export { onViewModeChanged, onMenuSort } from './menu-events'

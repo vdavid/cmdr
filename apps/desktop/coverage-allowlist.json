@@ -4,6 +4,9 @@
     "accent-color.ts": {
       "reason": "Depends on Tauri invoke and listen APIs"
     },
+    "reduce-transparency.ts": {
+      "reason": "Depends on Tauri invoke (getShouldReduceTransparency) and listen (reduceTransparencyChanged) APIs; just toggles the reduce-transparency html class"
+    },
     "app-status-store.ts": {
       "reason": "Depends on Tauri APIs"
     },

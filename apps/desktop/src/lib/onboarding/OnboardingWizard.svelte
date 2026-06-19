@@ -273,11 +273,9 @@
 
     /* Drop the backdrop blur when the OS asks for reduced transparency; the
        dimming background still does its job and the panel is already opaque. */
-    @media (prefers-reduced-transparency: reduce) {
-        .wizard-overlay {
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-        }
+    :global(html.reduce-transparency) .wizard-overlay {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     .wizard-panel {
