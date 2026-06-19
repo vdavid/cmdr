@@ -372,6 +372,14 @@ because breadcrumbs are best-effort instrumentation, not a feature.
   continuation lines of a multi-line record (panic backtraces, state-snapshot YAML).
   The cut boundary always lands on a timestamped line so we never ship a partial
   panic prefix.
+- **`parse_leading_iso8601` slices by byte, so guard the char boundary.** The leading stamp is
+  29 ASCII bytes, but a line reaching the parser need not be one of ours: backtrace frames,
+  captured output, and paths with accented or emoji names all flow through `load_and_filter_log_file`'s
+  per-line filter (Flow B `Window` scope). The parser takes the first 29 bytes via `line.get(..29)?`,
+  NOT `&line[..29]` — a byte-length check (`line.len() >= 29`) does NOT prove byte 29 is a char
+  boundary, so the bare slice panics (`slice_error_fail`) whenever a multibyte char straddles it.
+  This crashed the Flow B bundle build repeatedly in the wild before the fix; the panic surfaced as a
+  crash report *from inside the error reporter*. Keep using `get(..29)?` for any leading-stamp slice.
 - **Tail walker chunk size**: `tail_walker::CHUNK_SIZE` is 64 KB. A single log line
   larger than the chunk (state YAML, deep stack frames) spans multiple chunks; the
   walker accumulates them in a `pending` buffer until a `\n` shows up. Don't

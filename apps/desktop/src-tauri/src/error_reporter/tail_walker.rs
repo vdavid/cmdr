@@ -183,11 +183,11 @@ fn try_emit_line(raw: &[u8], cutoff: DateTime<Utc>, kept: &mut Vec<String>, hit_
 /// blank lines, panic-backtrace continuation lines, redacted-payload lines, etc.). Callers
 /// fall back to keeping the line in that case rather than risk a false drop.
 pub fn parse_leading_iso8601(line: &str) -> Option<DateTime<Utc>> {
-    // The timestamp is always 29 chars: 23 for date+time+ms + 6 for `±HH:MM`.
-    if line.len() < 29 {
-        return None;
-    }
-    let candidate = &line[..29];
+    // The timestamp is always 29 bytes: 23 for date+time+ms + 6 for `±HH:MM`, all ASCII.
+    // `get(..29)` returns `None` (rather than panicking) when byte 29 splits a multibyte
+    // char, which happens on non-timestamp lines (backtrace frames, captured output, paths
+    // with accented names); those have no leading stamp, so falling through to `None` is right.
+    let candidate = line.get(..29)?;
     DateTime::parse_from_str(candidate, "%Y-%m-%dT%H:%M:%S%.3f%:z")
         .ok()
         .map(|dt| dt.with_timezone(&Utc))
@@ -342,5 +342,21 @@ mod tests {
         assert_eq!(result.lines.len(), 1);
         assert!(!result.lines[0].ends_with('\r'));
         std::fs::remove_dir_all(p.parent().unwrap()).ok();
+    }
+
+    #[test]
+    fn multibyte_char_straddling_byte_29_returns_none_without_panic() {
+        // A non-timestamp log line (a panic-backtrace frame, captured output, or a path with
+        // an accented name) whose 29th byte lands inside a multibyte UTF-8 char. The function
+        // slices the first 29 *bytes*, and a naive `&line[..29]` panics here with
+        // `slice_error_fail` (byte 29 isn't a char boundary), crashing the Flow B bundle build.
+        // It must return `None` (no leading ISO-8601 stamp) instead.
+        let line = format!("{}ä trailing", "x".repeat(28));
+        // 'x'*28 fills bytes 0..28; the 'ä' (2 bytes) occupies 28..30, so byte 29 splits it.
+        assert!(
+            line.len() >= 29 && !line.is_char_boundary(29),
+            "test precondition: line is ≥29 bytes and byte 29 splits a char",
+        );
+        assert_eq!(parse_leading_iso8601(&line), None);
     }
 }
