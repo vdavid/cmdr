@@ -78,10 +78,10 @@ pub struct EjectContext<'a> {
 /// in the Tauri command wrapper.
 pub fn decide_eject_action(ctx: &EjectContext) -> Result<EjectAction, EjectDecisionError> {
     if ctx.is_mtp {
-        let device_id = ctx
-            .volume_id
-            .split_once(':')
-            .map(|(d, _)| d.to_string())
+        // rsplit-based parse (identity) so a `:` inside a serial-based device id
+        // doesn't truncate it: the storage id is the trailing numeric component.
+        let device_id = crate::mtp::identity::device_id_of_volume(ctx.volume_id)
+            .map(str::to_string)
             .ok_or_else(|| EjectDecisionError::MtpIdMissingDevicePrefix {
                 volume_id: ctx.volume_id.to_string(),
             })?;
@@ -175,7 +175,7 @@ pub fn get_busy_volume_ids() -> Vec<String> {
 async fn is_mtp_volume_id(volume_id: &str) -> bool {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
-        let Some((device_id, _)) = volume_id.split_once(':') else {
+        let Some(device_id) = crate::mtp::identity::device_id_of_volume(volume_id) else {
             return false;
         };
         crate::mtp::connection_manager()
@@ -288,7 +288,7 @@ mod tests {
     #[test]
     fn mtp_volume_routes_to_mtp_disconnect() {
         let ctx = EjectContext {
-            volume_id: "usb1234:0x10001",
+            volume_id: "mtp-336592896:65537",
             is_ejectable: false,
             is_smb: false,
             is_mtp: true,
@@ -296,7 +296,26 @@ mod tests {
         assert_eq!(
             decide_eject_action(&ctx).unwrap(),
             EjectAction::MtpDisconnect {
-                device_id: "usb1234".to_string()
+                device_id: "mtp-336592896".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn mtp_volume_with_colon_in_serial_keeps_the_full_device_id() {
+        // Regression for the identity fix: a serial-based device id can contain a
+        // `:`. The rsplit-based parse must keep the WHOLE device id, splitting
+        // only on the trailing numeric storage id.
+        let ctx = EjectContext {
+            volume_id: "mtp-AA:BB:CC:65537",
+            is_ejectable: false,
+            is_smb: false,
+            is_mtp: true,
+        };
+        assert_eq!(
+            decide_eject_action(&ctx).unwrap(),
+            EjectAction::MtpDisconnect {
+                device_id: "mtp-AA:BB:CC".to_string()
             }
         );
     }

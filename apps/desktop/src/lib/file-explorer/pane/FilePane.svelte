@@ -2517,9 +2517,14 @@
         const currentVolumeId = volumeId
         const currentIsMtpView = isMtpView
 
-        // Extract device ID from volume ID (like "mtp-2097152:65537" -> "mtp-2097152")
+        // Extract device ID from volume ID (like "mtp-2097152:65537" -> "mtp-2097152").
+        // Split on the LAST colon: the storage id is the trailing numeric segment,
+        // and a serial-based device id can itself contain a colon (mirrors the Rust
+        // `mtp::identity::device_id_of_volume`).
         const deviceIdFromVolume =
-            currentIsMtpView && currentVolumeId.includes(':') ? currentVolumeId.split(':')[0] : null
+            currentIsMtpView && currentVolumeId.includes(':')
+                ? currentVolumeId.slice(0, currentVolumeId.lastIndexOf(':'))
+                : null
 
         // Only set up listener if we're viewing an MTP volume with a storage ID
         if (!currentIsMtpView || !deviceIdFromVolume) {

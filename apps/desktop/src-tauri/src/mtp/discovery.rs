@@ -23,7 +23,10 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
             devices
                 .into_iter()
                 .map(|d| {
-                    let id = format!("mtp-{}", d.location_id);
+                    // Prefer the device's stable serial so the index re-matches
+                    // across a replug to any port; fall back to the topology
+                    // location_id (same-port-only) when no serial is reported.
+                    let id = super::identity::device_id_for(d.serial_number.as_deref(), d.location_id);
                     debug!(
                         "MTP device: id={}, vendor={:04x}, product={:04x}",
                         id, d.vendor_id, d.product_id
@@ -70,9 +73,13 @@ mod tests {
 
     #[test]
     fn test_device_id_format() {
-        // Test that our ID format is consistent (location_id based)
-        let location_id: u64 = 336592896;
-        let id = format!("mtp-{}", location_id);
-        assert_eq!(id, "mtp-336592896");
+        // Without a serial the id is location-based; with one it's serial-based.
+        // The derivation itself is covered by `mtp::identity` tests; this pins
+        // that discovery routes through it (so the two never drift).
+        assert_eq!(super::super::identity::device_id_for(None, 336_592_896), "mtp-336592896");
+        assert_eq!(
+            super::super::identity::device_id_for(Some("PIXEL7"), 336_592_896),
+            "mtp-PIXEL7"
+        );
     }
 }

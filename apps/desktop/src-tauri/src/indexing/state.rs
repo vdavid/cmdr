@@ -947,15 +947,32 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
 /// resolved volume has no registered index (`get_read_pool_for` → `None`), so an
 /// SMB share that isn't indexed costs zero DB work, exactly like before.
 ///
-/// MTP virtual paths (`mtp-*`) still resolve to `root` here; M4 maps them.
+/// An `mtp://{device_id}/{storage_id}[/inner…]` virtual path maps to its MTP
+/// volume id `{device_id}:{storage_id}` (the SAME id the `MtpConnectionManager`
+/// registers the volume and its index under), so dir-stats / status reads on an
+/// MTP path route to that device-storage's index. Everything else is `root`.
 fn volume_id_for_local_path(path: &str) -> VolumeId {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     if let Some(smb_id) = super::smb_index::smb_volume_id_for_path(path) {
         return smb_id;
     }
-    // TODO(M4): map mtp-* virtual paths to their volume ids.
-    let _ = path;
+    if let Some(mtp_id) = mtp_volume_id_for_path(path) {
+        return mtp_id;
+    }
     ROOT_VOLUME_ID.to_string()
+}
+
+/// Map an `mtp://{device_id}/{storage_id}[/…]` path to its MTP volume id
+/// `{device_id}:{storage_id}`, or `None` for any non-MTP path. Pure string work
+/// (no device lookup): the `mtp://` scheme + the first two segments fully
+/// determine the volume id. The storage segment must be numeric so a malformed
+/// `mtp://` path doesn't resolve to a bogus volume.
+fn mtp_volume_id_for_path(path: &str) -> Option<VolumeId> {
+    let without_scheme = path.strip_prefix("mtp://")?;
+    let mut parts = without_scheme.splitn(3, '/');
+    let device_id = parts.next().filter(|s| !s.is_empty())?;
+    let storage = parts.next().filter(|s| s.parse::<u32>().is_ok())?;
+    Some(format!("{device_id}:{storage}"))
 }
 
 /// Map a listing/dir-stats path into the path space the volume's index stores it
@@ -983,8 +1000,46 @@ fn index_read_path_pure(volume_id: &str, normalized_abs: &str, mount_root: Optio
     if volume_id == ROOT_VOLUME_ID {
         return Some(normalized_abs.to_string());
     }
+    // MTP: the index `ROOT_ID` is the storage root and the volume namespace is
+    // `mtp://{device}/{storage}[/inner…]`, so strip the scheme + device/storage
+    // segments to the inner `/path` the index stores under (the read-side mirror
+    // of how the MTP scan rooted the storage at `ROOT_ID`). A path on a DIFFERENT
+    // MTP volume yields `None` (drop rather than mis-root), exactly like SMB.
+    if crate::mtp::identity::is_mtp_volume_id(volume_id) {
+        return mtp_index_relative_path(volume_id, normalized_abs);
+    }
     let mount_root = mount_root?;
     super::smb_watch::index_relative_path(mount_root, normalized_abs)
+}
+
+/// Strip an `mtp://{device}/{storage}[/inner…]` path to the inner index-relative
+/// path (`/` for the storage root, `/DCIM/Camera` for a nested dir), but only if
+/// the path belongs to `volume_id`'s device+storage. Pure string work, so the
+/// MTP read-side mapping is unit-testable without a device.
+///
+/// Returns `None` if the path isn't an `mtp://` path for THIS volume (different
+/// device/storage, or malformed) — the caller then skips, like an unindexed
+/// volume. A plain `/inner` path (already storage-relative, e.g. from a
+/// self-mutation notify) is accepted as-is for this MTP volume.
+fn mtp_index_relative_path(volume_id: &str, abs_path: &str) -> Option<String> {
+    // Already storage-relative (no scheme): trust it for this MTP volume.
+    if !abs_path.starts_with("mtp://") {
+        return abs_path.starts_with('/').then(|| abs_path.to_string());
+    }
+    // Scheme form: confirm the device/storage prefix matches this volume id, then
+    // return the inner remainder rooted at `/`.
+    let path_volume_id = mtp_volume_id_for_path(abs_path)?;
+    if path_volume_id != volume_id {
+        return None;
+    }
+    let without_scheme = abs_path.strip_prefix("mtp://")?;
+    let mut parts = without_scheme.splitn(3, '/');
+    let _device = parts.next()?;
+    let _storage = parts.next()?;
+    match parts.next() {
+        Some(inner) if !inner.is_empty() => Some(format!("/{inner}")),
+        _ => Some("/".to_string()),
+    }
 }
 
 /// Live wrapper over [`index_read_path_pure`]: looks up a non-root volume's mount
@@ -1249,6 +1304,80 @@ mod tests {
             None,
             "a path outside the mount root must not resolve",
         );
+    }
+
+    /// The MTP read-side transform: an `mtp://{device}/{storage}/inner` path maps
+    /// to the inner `/inner` rooted at the storage `ROOT_ID`, but only when the
+    /// device+storage match the volume id. A path on another MTP volume yields
+    /// `None`. This is the MTP analogue of the SMB strip above.
+    #[test]
+    fn index_read_path_routes_mtp() {
+        let vid = "mtp-PIXEL7:65537";
+
+        // Storage root → "/".
+        assert_eq!(
+            index_read_path_pure(vid, "mtp://mtp-PIXEL7/65537", None),
+            Some("/".to_string()),
+            "the storage root maps to the index ROOT_ID path",
+        );
+        // Nested dir → the inner path rooted at "/".
+        assert_eq!(
+            index_read_path_pure(vid, "mtp://mtp-PIXEL7/65537/DCIM/Camera", None),
+            Some("/DCIM/Camera".to_string()),
+            "a nested MTP path maps to its storage-relative inner path",
+        );
+        // Already storage-relative (e.g. from a self-mutation notify) → as-is.
+        assert_eq!(
+            index_read_path_pure(vid, "/DCIM", None),
+            Some("/DCIM".to_string()),
+            "a storage-relative path is accepted for this MTP volume",
+        );
+
+        // A path on a DIFFERENT storage of the same device ⇒ None.
+        assert_eq!(
+            index_read_path_pure(vid, "mtp://mtp-PIXEL7/65538/DCIM", None),
+            None,
+            "a different storage must not resolve onto this volume's index",
+        );
+        // A path on a DIFFERENT device ⇒ None.
+        assert_eq!(
+            index_read_path_pure(vid, "mtp://mtp-OTHER/65537/DCIM", None),
+            None,
+            "a different device must not resolve onto this volume's index",
+        );
+
+        // A serial-based volume id with a `:` in the device part still round-trips
+        // (the volume id and the path's device segment match verbatim).
+        let colon_vid = "mtp-AA:BB:65537";
+        assert_eq!(
+            index_read_path_pure(colon_vid, "mtp://mtp-AA:BB/65537/Music", None),
+            Some("/Music".to_string()),
+            "a serial device id containing a colon maps correctly",
+        );
+    }
+
+    /// `volume_id_for_local_path`'s pure MTP half: an `mtp://device/storage` path
+    /// resolves to the `{device}:{storage}` volume id; non-MTP and malformed
+    /// paths don't.
+    #[test]
+    fn mtp_volume_id_for_path_maps_scheme_paths() {
+        assert_eq!(
+            mtp_volume_id_for_path("mtp://mtp-PIXEL7/65537/DCIM/Camera"),
+            Some("mtp-PIXEL7:65537".to_string()),
+        );
+        assert_eq!(
+            mtp_volume_id_for_path("mtp://mtp-PIXEL7/65537"),
+            Some("mtp-PIXEL7:65537".to_string()),
+        );
+        // A serial device id containing a colon round-trips into the volume id.
+        assert_eq!(
+            mtp_volume_id_for_path("mtp://mtp-AA:BB/65537/x"),
+            Some("mtp-AA:BB:65537".to_string()),
+        );
+        // Non-MTP and malformed paths don't resolve.
+        assert_eq!(mtp_volume_id_for_path("/Users/me"), None);
+        assert_eq!(mtp_volume_id_for_path("mtp://mtp-PIXEL7/not-numeric/x"), None);
+        assert_eq!(mtp_volume_id_for_path("mtp://"), None);
     }
 
     /// Reset every registry-backed test global: the instance map plus the root

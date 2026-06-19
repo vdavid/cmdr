@@ -189,7 +189,7 @@ impl MtpConnectionManager {
             let listings = get_listings_by_volume_prefix(&device_id);
             let mut storage_ids: Vec<u32> = listings
                 .iter()
-                .filter_map(|(_, volume_id, _, _)| volume_id.split(':').nth(1).and_then(|s| s.parse::<u32>().ok()))
+                .filter_map(|(_, volume_id, _, _)| crate::mtp::identity::storage_id_of_volume(volume_id))
                 .collect();
             storage_ids.sort_unstable();
             storage_ids.dedup();
@@ -242,7 +242,7 @@ impl MtpConnectionManager {
         let listings: Vec<(String, String, PathBuf, Vec<FileEntry>)> = get_listings_by_volume_prefix(device_id)
             .into_iter()
             .filter(|(_, volume_id, path, _)| {
-                volume_id.split(':').nth(1).and_then(|s| s.parse::<u32>().ok()) == Some(storage_id)
+                crate::mtp::identity::storage_id_of_volume(volume_id) == Some(storage_id)
                     && listing_inner_mtp_path(volume_id, path).as_deref() == Some(affected_dir)
             })
             .collect();
@@ -344,8 +344,9 @@ impl MtpConnectionManager {
     /// 5. Emit directory-diff event
     async fn compute_and_emit_diffs(device_id: &str, listings: Vec<(String, String, PathBuf, Vec<FileEntry>)>) {
         for (listing_id, volume_id, path, old_entries) in listings {
-            // Extract storage_id from volume_id (format: "mtp-{device}:{storage}")
-            let Some(storage_id) = volume_id.split(':').nth(1).and_then(|s| s.parse::<u32>().ok()) else {
+            // Extract storage_id from volume_id (format: "{device_id}:{storage}").
+            // rsplit-based parse via identity tolerates a `:` in a serial device id.
+            let Some(storage_id) = crate::mtp::identity::storage_id_of_volume(&volume_id) else {
                 warn!(
                     "MTP diff: could not parse storage_id from volume_id={}, skipping",
                     volume_id

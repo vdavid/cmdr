@@ -272,11 +272,13 @@ impl MtpConnectionManager {
 
         info!("Connecting to MTP device: {}", device_id);
 
-        // Parse device_id to get location_id (format: "mtp-{location_id}")
-        let location_id = parse_device_id(device_id).ok_or_else(|| MtpConnectionError::DeviceNotFound {
+        // Resolve device_id (serial- or location-based) to a live USB location_id
+        // by matching the live device enumeration. A serial id can't be parsed
+        // back into a location, so we look it up rather than decode it.
+        let location_id = resolve_device_location_id(device_id).ok_or_else(|| MtpConnectionError::DeviceNotFound {
             device_id: device_id.to_string(),
         })?;
-        debug!("Parsed device_id: location_id={}", location_id);
+        debug!("Resolved device_id to location_id={}", location_id);
 
         // Find and open the device
         debug!("Opening MTP device (timeout={}s)...", MTP_TIMEOUT_SECS);
@@ -424,7 +426,7 @@ impl MtpConnectionManager {
         // Register MTP volumes for each storage with the global VolumeManager
         // This enables MTP browsing through the standard file listing pipeline
         for storage in &connected_info.storages {
-            let volume_id = format!("{}:{}", device_id, storage.id);
+            let volume_id = crate::mtp::identity::mtp_volume_id(device_id, storage.id);
             let volume = Arc::new(MtpVolume::new(device_id, storage.id, &storage.name));
             get_volume_manager().register(&volume_id, volume);
             debug!("Registered MTP volume: {} ({})", volume_id, storage.name);
@@ -491,7 +493,7 @@ impl MtpConnectionManager {
 
         // Unregister MTP volumes from the VolumeManager
         for storage in &entry.storages {
-            let volume_id = format!("{}:{}", device_id, storage.id);
+            let volume_id = crate::mtp::identity::mtp_volume_id(device_id, storage.id);
             get_volume_manager().unregister(&volume_id);
             debug!("Unregistered MTP volume: {}", volume_id);
         }
@@ -633,7 +635,7 @@ impl MtpConnectionManager {
         drop(device);
 
         // Register the volume
-        let volume_id = format!("{}:{}", device_id, storage_id);
+        let volume_id = crate::mtp::identity::mtp_volume_id(device_id, storage_id);
         let volume = Arc::new(MtpVolume::new(device_id, storage_id, &storage_info.name));
         get_volume_manager().register(&volume_id, volume);
 
@@ -659,7 +661,7 @@ impl MtpConnectionManager {
 
     /// Handles a StoreRemoved event: unregisters the volume and broadcasts the change.
     pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32, app: &AppHandle) {
-        let volume_id = format!("{}:{}", device_id, storage_id);
+        let volume_id = crate::mtp::identity::mtp_volume_id(device_id, storage_id);
 
         // Remove from DeviceEntry
         {
@@ -750,16 +752,21 @@ pub fn connection_manager() -> &'static MtpConnectionManager {
     &CONNECTION_MANAGER
 }
 
-/// Parses a device ID to extract location_id.
+/// Resolve a device id (`mtp-{serial}` or `mtp-{location_id}`) to the live
+/// USB `location_id` to open it with.
 ///
-/// Format: "mtp-{location_id}"
-fn parse_device_id(device_id: &str) -> Option<u64> {
-    let prefix = "mtp-";
-    if !device_id.starts_with(prefix) {
-        return None;
-    }
-
-    device_id[prefix.len()..].parse().ok()
+/// The device id is now serial-based when the device reports a serial
+/// (`mtp::identity`), so it can no longer be NUMERICALLY parsed back into a
+/// location_id. Instead we re-enumerate and match the requested id against each
+/// live device's computed id — the same derivation discovery uses — and return
+/// its location_id. This keeps the id OPAQUE (no substring interpretation, per
+/// `.claude/rules/no-string-matching.md`) and works for both serial and
+/// location ids. `None` if no currently-connected device produces this id.
+fn resolve_device_location_id(device_id: &str) -> Option<u64> {
+    crate::mtp::list_mtp_devices()
+        .into_iter()
+        .find(|d| d.id == device_id)
+        .map(|d| d.location_id)
 }
 
 /// Opens an MTP device by location_id.
@@ -941,19 +948,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_device_id_valid() {
-        assert_eq!(parse_device_id("mtp-336592896"), Some(336592896));
-        assert_eq!(parse_device_id("mtp-12345"), Some(12345));
-        assert_eq!(parse_device_id("mtp-0"), Some(0));
-    }
-
-    #[test]
-    fn test_parse_device_id_invalid() {
-        assert_eq!(parse_device_id("usb-336592896"), None);
-        assert_eq!(parse_device_id("mtp-abc"), None);
-        assert_eq!(parse_device_id("mtp-"), None);
-        assert_eq!(parse_device_id("mtp"), None);
-        assert_eq!(parse_device_id(""), None);
+    fn resolve_device_location_id_is_none_when_no_device_matches() {
+        // Device-id → location_id resolution now matches the live enumeration
+        // rather than numerically decoding the id (a serial id can't be decoded).
+        // With no device of this id connected, resolution yields None — the
+        // connect path then returns `DeviceNotFound`. (A positive match needs a
+        // live/virtual device; the derivation it matches against is unit-tested
+        // in `mtp::identity`.)
+        assert_eq!(resolve_device_location_id("mtp-no-such-device-9999"), None);
     }
 
     // ========================================================================
@@ -1142,31 +1144,10 @@ mod tests {
         assert!(json.contains("\"isReadOnly\":false"));
     }
 
-    // ========================================================================
-    // Edge cases for parse_device_id
-    // ========================================================================
-
-    #[test]
-    fn test_parse_device_id_edge_cases() {
-        // Maximum u64 value
-        assert_eq!(parse_device_id("mtp-18446744073709551615"), Some(u64::MAX));
-
-        // Zero value
-        assert_eq!(parse_device_id("mtp-0"), Some(0));
-
-        // Typical macOS location_id values
-        assert_eq!(parse_device_id("mtp-336592896"), Some(336592896));
-
-        // Wrong prefix (case sensitive)
-        assert_eq!(parse_device_id("MTP-336592896"), None);
-
-        // Whitespace
-        assert_eq!(parse_device_id(" mtp-336592896"), None);
-        assert_eq!(parse_device_id("mtp-336592896 "), None);
-
-        // Negative numbers (not valid for u64)
-        assert_eq!(parse_device_id("mtp--1"), None);
-    }
+    // Device-id ↔ location_id derivation and the `:`-robust volume-id parse are
+    // owned and exhaustively tested by `crate::mtp::identity`; the connect path
+    // here only resolves a live id to a location (tested above as the no-match
+    // case). No id-string edge cases are re-tested in this module.
 
     // ========================================================================
     // MtpDisconnectReason serialization
