@@ -11,9 +11,11 @@ layers. Parent: [`../CLAUDE.md`](../CLAUDE.md).
   `LISTING_CACHE_TTL_SECS`), `EventDebouncer` (per-device 500 ms, `EVENT_DEBOUNCE_MS`).
 - **`errors.rs`**: `MtpConnectionError` enum + `map_mtp_error()` from `mtp_rs::Error`.
 - **`event_loop.rs`**: per-device background task: polls `device.next_event()` (clones `MtpDevice` so the interrupt-endpoint
-  poll doesn't hold the bulk mutex), resolves pathful events to a targeted dir refresh, emits `directory-diff`.
+  poll doesn't hold the bulk mutex), resolves pathful events to a targeted dir refresh, emits `directory-diff`, AND feeds
+  the per-volume index (`feed_index_added_or_changed` / `feed_index_removed`, see Must-knows).
 - **`handle_resolver.rs`**: `resolve_handle_to_path()` walks an `ObjectHandle`'s parent chain to a full path (the
-  pathless-PTP-event fix; [DETAILS.md](DETAILS.md) § "Pathful change events").
+  pathless-PTP-event fix; [DETAILS.md](DETAILS.md) § "Pathful change events"); `resolve_object_for_index()` adds the
+  object's metadata for an index upsert.
 - **`directory_ops.rs`**: `list_directory()`, `resolve_path_to_handle()` (cache-only, see must-knows).
 - **`file_ops.rs`**: `download_file()`, `upload_file()`, `upload_from_stream()`, `open_download_stream()` (emit
   `mtp-transfer-progress`; `open_download_stream` returns a `FileDownload` consumed by `MtpReadStream` in `volume/mtp.rs`).
@@ -35,7 +37,13 @@ layers. Parent: [`../CLAUDE.md`](../CLAUDE.md).
   sees the stale listing after `create_folder` / `rename` / `delete`. Invalidate explicitly for read-after-write consistency.
 - **Disconnect from the event loop must clear the device registry**: on `next_event()` → `Error::Disconnected`,
   `event_loop.rs` calls `handle_device_disconnected(...)`. Skipping it leaves a dead `devices` entry and the next
-  `connect()` fails with "already connected".
+  `connect()` fails with "already connected". That handler ALSO calls `indexing::on_mtp_device_disconnected` to flip every
+  indexed storage on the device to Stale (freshness D4) — don't drop it, or a Fresh index lies after an unplug.
+- **The event loop feeds the per-volume index, not just the live pane.** `ObjectAdded`/`ObjectInfoChanged` →
+  `feed_index_added_or_changed` (resolve handle→path+meta via `resolve_object_for_index`, upsert STORING the handle in
+  the index `inode`); `ObjectRemoved` → `feed_index_removed` (resolve by the STORED handle via `find_entry_by_inode` — the
+  object is gone, so there's no path to walk). The translation/buffering lives in `indexing/mtp_watch.rs`; the loop only
+  resolves + forwards. Removals don't call `resolve_handle_to_path` (it'd fail).
 - **`MtpDisconnectReason` is load-bearing for logs/UI**: pass `User` only for the settings-toggle / explicit-disconnect
   path; hotplug loss and I/O drops are `Removed`. Misclassifying makes unstable-USB sessions read like repeated unplugs.
 - **Failed PTP uploads must delete the partial object.** A failed/cancelled data phase leaves a created-but-incomplete

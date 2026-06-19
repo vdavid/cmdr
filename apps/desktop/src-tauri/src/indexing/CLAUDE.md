@@ -11,8 +11,9 @@ size aggregates so listings can show directory sizes.
   `delta.rs` / `aggregation.rs` / `maintenance.rs` = handlers), `scanner.rs` (jwalk walk, local only),
   `volume_scanner.rs` (`Volume`-trait recursive scan for SMB/network), `aggregator.rs` (dir-stats), `reconciler.rs` +
   `event_loop.rs` (replay + live FSEvents).
-- **SMB / freshness**: `freshness.rs` (the `Freshness` state machine: blue/green/yellow; gray = no instance),
-  `smb_index.rs` (the direct-smb2 gate + per-volume SMB enable).
+- **SMB / MTP / freshness**: `freshness.rs` (the `Freshness` state machine: blue/green/yellow; gray = no instance),
+  `smb_index.rs` / `mtp_index.rs` (per-volume enable + disconnect→Stale hook), `smb_watch.rs` / `mtp_watch.rs` (live
+  change → index-write translation; MTP stores the object handle in `inode` for removal lookup).
 - **Read path**: `enrichment.rs` (`ReadPool`, listing enrichment), `store.rs` (schema, queries, collation),
   `verifier.rs` (per-navigation readdir diff), `expected_totals.rs`, `pending_sizes.rs`.
 - **Support**: `partial_agg.rs`, `metadata.rs`, `firmlinks.rs`, `watcher.rs`, `memory_watchdog.rs`, `events.rs`. Thin
@@ -59,8 +60,9 @@ size aggregates so listings can show directory sizes.
   `/Volumes/`). The walker is cancelable per round trip, `timeout`-wrapped, and `autoreleasepool`-drained per listing.
 - **Freshness (per-volume, in `freshness.rs`) has ONE transition table; don't branch on it elsewhere.** SMB/MTP have no
   journal, so a persisted index loads **Stale** on launch (correct, not a bug) and a clean scan ⇒ Fresh. An
-  interrupted/disconnected SMB scan DISCARDS the partial and resets to gray (`reset_to_not_indexed`) — don't keep a
-  half-snapshot live. Live SMB `CHANGE_NOTIFY` keeps it Fresh; watcher death / overflow ⇒ Stale (next bullet).
+  interrupted/disconnected SMB/MTP scan DISCARDS the partial and resets to gray (`reset_to_not_indexed`) — don't keep a
+  half-snapshot live. Live SMB `CHANGE_NOTIFY` / MTP PTP events keep it Fresh; SMB watcher death/overflow ⇒ Stale (next
+  bullet), MTP device disconnect ⇒ Stale (`on_mtp_device_disconnected`, fired from `handle_device_disconnected`).
 - **SMB watch→index (`smb_watch.rs`, see DETAILS § "Live SMB watch → index").** `apply_smb_change` is hooked into
   `notify_directory_changed` BEFORE the pane early-return, so it runs with no pane open. Three things to get right: (1)
   the SMB index's `ROOT_ID` is the MOUNT ROOT, so translate events to MOUNT-RELATIVE paths (`index_relative_path`) before
@@ -70,7 +72,11 @@ size aggregates so listings can show directory sizes.
   writer's `EmitDirUpdated` fires `index-dir-updated` only after the write commits), and enqueue on the volume's writer,
   never write directly; (3) changes during a scan are BUFFERED (`scanning` flips true before the truncate) and replayed
   after — don't apply them against the rebuilding index. Watcher death / overflow call
-  `smb_index::on_smb_watcher_died` / `on_smb_overflow` ⇒ Stale.
+  `smb_index::on_smb_watcher_died` / `on_smb_overflow` ⇒ Stale. **MTP (`mtp_watch.rs`) mirrors all three**, fed from the
+  PTP event loop instead of `notify_directory_changed`: adds/changes resolve handle→path+meta and upsert STORING the PTP
+  handle in `inode`; `ObjectRemoved{handle}` resolves the row by that stored handle (`find_entry_by_inode`), since the
+  object is gone and has no path. MTP paths are storage-relative already (no mount-strip). MTP enable is FDA-independent
+  with no smb2 gate.
 - **The memory watchdog is a single GLOBAL budget, not per-volume.** It stops EVERY volume's index at 16 GB
   (`state::stop_all_indexing`); scans run in parallel (the wire, not RAM, is the bottleneck). Start is idempotent (one
   watchdog task across all volumes).

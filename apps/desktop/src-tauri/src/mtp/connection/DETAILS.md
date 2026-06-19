@@ -111,9 +111,21 @@ fails, timeout) or when no open listing shows the affected dir on any storage, i
 the resolver can't help — the cost is precision, not correctness.
 
 **`ObjectRemoved` is always blanket** for the live pane: the object is already gone, so `GetObjectInfo(handle)` fails and
-the resolver can't recover a path. The index path (M4) will resolve removals via a handle stored per index entry instead
-(precedent: the `inode` column) — out of scope here.
+the resolver can't recover a path. The index path resolves removals via the handle stored per index entry instead
+(`inode` column; see below).
 
 `listing_inner_mtp_path` reduces a listing's stored path (`mtp://<device>/<storage>/<inner…>` or a `/`-rooted inner
 path) to the leading-`/` inner form the resolver produces, so the affected-dir match compares apples to apples in both
 representations. Pinned by the `event_loop` tests.
+
+### Feeding the per-volume index (the second consumer)
+
+Each handle event also feeds the persisted index, so dir sizes stay correct while the device is Fresh even with no pane
+open — alongside the live-pane refresh above, not instead of it. `feed_index_added_or_changed` runs as a spawned task
+(it does USB I/O): for each indexed storage on the device (`indexing::registered_mtp_volume_ids_for_device`), it calls
+`resolve_object_for_index` (the handle→path walk plus one `GetObjectInfo` for size / is-dir / modified) and forwards an
+`indexing::MtpUpsert` carrying the handle; the first storage where the handle resolves wins (the object lives in exactly
+one). `feed_index_removed` is synchronous (DB + writer enqueue only, no USB): it forwards the bare handle to each indexed
+storage, and the one that indexed the object resolves it by the STORED handle. The translation, ordering, and
+buffer-during-scan logic live in `indexing/mtp_watch.rs` (see `indexing/DETAILS.md` § "MTP indexing"); the event loop
+only resolves + forwards. The handle is stored in the index `inode` column at scan time too (`directory_ops.rs`).

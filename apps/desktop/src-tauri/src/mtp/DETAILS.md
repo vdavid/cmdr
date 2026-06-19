@@ -2,6 +2,14 @@
 
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising. `CLAUDE.md` holds the must-knows; this is the depth.
 
+## Device and volume identity (`identity.rs`)
+
+The device id and volume id are built and parsed in ONE place so the scheme can't drift. `device_id_for(serial, location_id)` derives the device id: `mtp-{serial}` when the device reports a non-empty serial, else `mtp-{location_id}`. The serial-based id is stable across a replug to ANY USB port, which is what lets the persisted per-volume index (`indexing`, keyed `index-{volume_id}.db`) re-match a reconnected phone instead of forcing a rescan; the topology `location_id` only survives a same-port replug, so it's the fallback when no serial is reported (limitation surfaced in the drive-indexing tooltip). The volume id is `{device_id}:{storage_id}`.
+
+**Why parsing must split from the right.** Some devices report serials containing `:`, so the device-id half of a volume id can contain `:`. The storage id is always the trailing numeric component, so `split_volume_id` uses `rsplit_once(':')` and parses the tail as a `u32`; `device_id_of_volume` / `storage_id_of_volume` are the convenience accessors. A naive `split(':').nth(1)` would take the wrong segment and either mis-route or fail the parse. Everything that needs to decompose a volume id goes through these helpers (Rust: `event_loop`, `eject`, indexing path-mapping; TS: `FilePane` and `mtp-path-utils` use `lastIndexOf(':')` to mirror it). `is_mtp_volume_id` / `is_mtp_device_id` classify by the `mtp-` prefix + numeric tail.
+
+**The device id is opaque past construction.** Because a serial id can't be numerically decoded back to a `location_id`, `connect()` resolves a device id to the USB location to open by MATCHING it against the live `list_mtp_devices()` enumeration (`resolve_device_location_id`), not by parsing it. So adding a serial never breaks device opening, and no code interprets the serial's contents.
+
 ## Virtual MTP device (dev + E2E activation)
 
 The `virtual-mtp` feature compiles in `virtual_device.rs`; whether the device actually registers at startup is decided at

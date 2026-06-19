@@ -12,7 +12,8 @@ picker, reactive volume state). The frontend is a passive consumer: it subscribe
 
 - `mod.rs`: re-exports + module doc. `types.rs`: `MtpDeviceInfo`, `MtpStorageInfo` (camelCase JSON); `usb_speed` mirrors
   `mtp_rs::UsbSpeed` via `crate::usb_speed::UsbSpeed`.
-- `discovery.rs`: `list_mtp_devices()`; device IDs formatted `"mtp-{location_id}"`.
+- `discovery.rs`: `list_mtp_devices()`; device IDs via `identity::device_id_for` (see Must-knows).
+- `identity.rs`: device/volume id derivation (`device_id_for`) and the ONE robust parser (`split_volume_id` and friends).
 - `watcher.rs`: nusb hotplug watcher; 500 ms connect delay; auto-connect/disconnect; owns the `MTP_ENABLED` gate.
 - `macos_workaround.rs` (macOS-only): ptpcamerad suppression (see below).
 - `connection/`: per-device session layer (`MtpConnectionManager` singleton, connect/disconnect, event loop, list / read
@@ -40,7 +41,14 @@ picker, reactive volume state). The frontend is a passive consumer: it subscribe
 - **Error events the frontend depends on:** `mtp-exclusive-access-error` (ptpcamerad still holds the device; carries the
   blocking process name from `ioreg`, `None` on Linux), `mtp-permission-error` (Linux missing udev rules → frontend shows
   `MtpPermissionDialog` with the install command).
-- **Volume IDs:** `"{device_id}:{storage_id}"` (e.g. `"mtp-336592896:65537"`).
+- **Identity (`identity.rs`).** Device id = `device_id_for(serial, location_id)`: `mtp-{serial}` when the device reports
+  a serial (stable across a replug to ANY port, so the index re-matches), else `mtp-{location_id}` (same-port-only).
+  Volume id = `{device_id}:{storage_id}` (e.g. `mtp-336592896:65537`). ❌ A serial CAN contain `:`, so NEVER parse a
+  volume id with `split(':').nth(1)` / `split_once(':')` (they break on a colon in the serial): the storage id is the
+  trailing numeric tail, so ALWAYS go through `identity::split_volume_id` / `device_id_of_volume` /
+  `storage_id_of_volume` (rsplit on the last `:`). The TS side (`FilePane`, `mtp-path-utils`) mirrors this with
+  `lastIndexOf(':')`. The device id is OPAQUE — `connect()` resolves it to a `location_id` by matching the live
+  enumeration (`resolve_device_location_id`), never by decoding it.
 - **Cancel propagation bails at the next per-USB-roundtrip boundary** (per-handle in `ObjectListing::next`), driven by
   `WriteOperationState.backend_cancel` (`Arc<AtomicBool>`) wrapped as an `mtp_rs::CancelToken`. Without it, a cancel only
   stops the loop above the USB call, so an in-flight `list_objects` for a 950-photo dir would run all roundtrips to
