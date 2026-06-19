@@ -532,6 +532,57 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Gates the per-drive first-connect "turn on indexing?" notification (D6).
+    id: 'indexing.askForEachDrive',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.indexing.askForEachDrive.label',
+    descriptionKey: 'settings.indexing.askForEachDrive.description',
+    cardKey: 'settings.indexing.enabled.label',
+    keywords: ['drive', 'index', 'ask', 'prompt', 'notification', 'connect', 'network', 'smb', 'usb'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    // Gates the one-time "your drive went stale" dialog (D2). The yellow badge
+    // shows regardless of this toggle.
+    id: 'indexing.staleNotify',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.indexing.staleNotify.label',
+    descriptionKey: 'settings.indexing.staleNotify.description',
+    cardKey: 'settings.indexing.enabled.label',
+    keywords: ['drive', 'index', 'stale', 'outdated', 'notify', 'notification', 'disconnect', 'network', 'smb'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    // Internal (FE-owned): JSON array of volume ids the user silenced via
+    // "Don't ask again for this drive". Never a UI row; the "Re-enable
+    // notifications for all drives" button resets it to "[]".
+    id: 'indexing.silencedDrives',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.indexing.silencedDrives.label',
+    descriptionKey: 'settings.indexing.silencedDrives.description',
+    keywords: [],
+    type: 'string',
+    default: '[]',
+    component: 'text-input',
+    hidden: true,
+  },
+  {
+    // Internal (FE-owned): whether the one-time stale dialog has fired once.
+    id: 'indexing.firstStaleDialogShown',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.indexing.firstStaleDialogShown.label',
+    descriptionKey: 'settings.indexing.firstStaleDialogShown.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
     id: 'behavior.fileSystemWatching.downloadsNotifications',
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.behavior.fileSystemWatching.downloadsNotifications.label',

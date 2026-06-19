@@ -48,6 +48,8 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
+    import { clearSilencedDrives, hasSilencedDrives } from '$lib/indexing/drive-index-prefs'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import Size from '$lib/ui/Size.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { openPrivacySettings } from '$lib/tauri-commands'
@@ -81,6 +83,18 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const enabledDef = getSettingDefinition('indexing.enabled') ?? { label: '', description: '' }
+    const askForEachDriveDef = getSettingDefinition('indexing.askForEachDrive') ?? { label: '', description: '' }
+    const staleNotifyDef = getSettingDefinition('indexing.staleNotify') ?? { label: '', description: '' }
+
+    // The "Re-enable notifications for all drives" button is disabled until the
+    // user has silenced at least one drive's first-connect prompt. Tracked
+    // reactively so flipping a silence elsewhere (or here) updates the button.
+    let hasSilenced = $state(hasSilencedDrives())
+
+    function handleReEnableNotifications() {
+        clearSilencedDrives()
+        hasSilenced = false
+    }
     const notificationsDef = getSettingDefinition(DOWNLOADS_NOTIFICATIONS_SETTING_KEY) ?? {
         label: '',
         description: '',
@@ -213,6 +227,11 @@
         const unsubLowDiskSpace = onSpecificSettingChange(LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY, () => {
             lowDiskSpaceMode = getLowDiskSpaceNotificationsMode()
         })
+        // Re-read whether any drive is silenced (a first-connect notification can
+        // silence one while this page is open, in the same window or another).
+        const unsubSilenced = onSpecificSettingChange('indexing.silencedDrives', () => {
+            hasSilenced = hasSilencedDrives()
+        })
         // Refresh DB size every 2 seconds while visible
         refreshTimer = setInterval(() => void refreshDbSize(), 2000)
 
@@ -221,6 +240,7 @@
             unsubBinding()
             unsubEnabled()
             unsubLowDiskSpace()
+            unsubSilenced()
         }
     })
 </script>
@@ -230,7 +250,7 @@
 {/snippet}
 
 <SettingsSection title={tString('settings.section.fileSystemWatching')}>
-    {#if anyVisible(shouldShow, 'indexing.enabled', 'indexing.indexSize')}
+    {#if anyVisible(shouldShow, 'indexing.enabled', 'indexing.indexSize', 'indexing.askForEachDrive', 'indexing.staleNotify')}
         <SectionCard label={tString('settings.indexing.enabled.label')}>
             {#if shouldShow('indexing.enabled')}
                 <SettingRow
@@ -273,6 +293,51 @@
                         <div class="clear-error">{clearError}</div>
                     {/if}
                 </div>
+            {/if}
+
+            {#if shouldShow('indexing.askForEachDrive')}
+                <SettingRow
+                    id="indexing.askForEachDrive"
+                    label={askForEachDriveDef.label}
+                    description={askForEachDriveDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="indexing.askForEachDrive" />
+                </SettingRow>
+            {/if}
+
+            {#if shouldShow('indexing.askForEachDrive')}
+                <div class="reenable-row">
+                    <div class="reenable-header">
+                        <span class="info-label">{tString('settings.indexing.reEnableNotifications.label')}</span>
+                        <span
+                            use:tooltip={hasSilenced ? '' : tString('settings.indexing.reEnableNotifications.disabledTooltip')}
+                        >
+                            <Button
+                                variant="secondary"
+                                size="mini"
+                                disabled={!hasSilenced}
+                                onclick={handleReEnableNotifications}
+                            >
+                                {tString('settings.indexing.reEnableNotifications.button')}
+                            </Button>
+                        </span>
+                    </div>
+                    <p class="reenable-description">
+                        {tString('settings.indexing.reEnableNotifications.description')}
+                    </p>
+                </div>
+            {/if}
+
+            {#if shouldShow('indexing.staleNotify')}
+                <SettingRow
+                    id="indexing.staleNotify"
+                    label={staleNotifyDef.label}
+                    description={staleNotifyDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="indexing.staleNotify" />
+                </SettingRow>
             {/if}
         </SectionCard>
     {/if}
@@ -387,6 +452,25 @@
     }
 
     .clear-description {
+        margin: var(--spacing-xs) 0 0;
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
+    }
+
+    .reenable-row {
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .reenable-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-md);
+    }
+
+    .reenable-description {
         margin: var(--spacing-xs) 0 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);

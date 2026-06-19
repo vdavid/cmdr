@@ -273,6 +273,18 @@ export interface SettingsValues {
    * row is searchable ("index size") and its card can show. See settings-registry.ts.
    */
   'indexing.indexSize': boolean
+  /** Gates the per-drive first-connect "turn on indexing?" notification (D6). On by default. */
+  'indexing.askForEachDrive': boolean
+  /** Gates the one-time "your drive went stale" dialog (D2). The yellow badge shows regardless. On by default. */
+  'indexing.staleNotify': boolean
+  /**
+   * Internal (FE-owned): JSON array of volume ids the user silenced via "Don''t ask
+   * again for this drive". The first-connect notification skips a silenced drive.
+   * Cleared by the "Re-enable notifications for all drives" settings button.
+   */
+  'indexing.silencedDrives': string
+  /** Internal (FE-owned): whether the one-time stale dialog (D2) has fired once. */
+  'indexing.firstStaleDialogShown': boolean
 
   // File system watching - downloads notifications + global go-to-latest shortcut.
   'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode

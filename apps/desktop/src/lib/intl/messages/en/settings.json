@@ -459,6 +459,55 @@
     "screenshot": "settings-behavior-file-system-watching.png"
   },
 
+  "settings.indexing.askForEachDrive.label": "Ask for each drive",
+  "@settings.indexing.askForEachDrive.label": {
+    "description": "Label for the toggle that controls whether Cmdr asks, the first time you open a network share or USB device, if you''d like to index it. In Settings > Behavior > File system watching."
+  },
+  "settings.indexing.askForEachDrive.description": "When you first open a network share or device, ask whether to index it.",
+  "@settings.indexing.askForEachDrive.description": {
+    "description": "Help text for the \"Ask for each drive\" toggle. Indexing of external drives is off by default; this asks per drive the first time you open it."
+  },
+  "settings.indexing.staleNotify.label": "Notify me if any external drive index goes stale",
+  "@settings.indexing.staleNotify.label": {
+    "description": "Label for the toggle that controls whether Cmdr shows a one-time explanation the first time an external drive''s index may be out of date (because the drive was disconnected). In Settings > Behavior > File system watching."
+  },
+  "settings.indexing.staleNotify.description": "You''ll still see the yellow status if you turn this off.",
+  "@settings.indexing.staleNotify.description": {
+    "description": "Help text under the stale-notification toggle, reassuring that the yellow drive-index status dot stays visible even with the notification turned off."
+  },
+  "settings.indexing.reEnableNotifications.label": "Re-enable notifications for all drives",
+  "@settings.indexing.reEnableNotifications.label": {
+    "description": "Label for the row holding the button that clears every per-drive \"Don''t ask again\" silence, so Cmdr will ask about indexing each drive again."
+  },
+  "settings.indexing.reEnableNotifications.button": "Re-enable",
+  "@settings.indexing.reEnableNotifications.button": {
+    "description": "Button that clears every per-drive \"Don''t ask again\" silence. Short label; sits in a row next to its description."
+  },
+  "settings.indexing.reEnableNotifications.description": "Ask again about indexing each drive you turned the prompt off for.",
+  "@settings.indexing.reEnableNotifications.description": {
+    "description": "Help text under the \"Re-enable notifications for all drives\" button, explaining it undoes the per-drive \"Don''t ask again\" choices."
+  },
+  "settings.indexing.reEnableNotifications.disabledTooltip": "You haven''t turned off the prompt for any drive yet.",
+  "@settings.indexing.reEnableNotifications.disabledTooltip": {
+    "description": "Tooltip on the disabled \"Re-enable\" button, shown when the user hasn''t silenced the first-connect prompt for any drive (so there''s nothing to re-enable)."
+  },
+  "settings.indexing.silencedDrives.label": "Silenced drive prompts",
+  "@settings.indexing.silencedDrives.label": {
+    "description": "Internal label for a hidden setting (never shown in the UI) that stores which drives the user silenced the indexing prompt for. Not user-facing."
+  },
+  "settings.indexing.silencedDrives.description": "Internal: drives the user silenced the indexing prompt for.",
+  "@settings.indexing.silencedDrives.description": {
+    "description": "Internal description for a hidden, non-user-facing setting that stores silenced drive prompts."
+  },
+  "settings.indexing.firstStaleDialogShown.label": "Stale dialog shown",
+  "@settings.indexing.firstStaleDialogShown.label": {
+    "description": "Internal label for a hidden setting (never shown in the UI) tracking whether the one-time stale-drive dialog has been shown. Not user-facing."
+  },
+  "settings.indexing.firstStaleDialogShown.description": "Internal: whether the one-time stale-drive dialog has been shown.",
+  "@settings.indexing.firstStaleDialogShown.description": {
+    "description": "Internal description for a hidden, non-user-facing setting tracking whether the one-time stale dialog has fired."
+  },
+
   "settings.behavior.fileSystemWatching.downloadsNotifications.label": "Notify on downloads",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.label": {
     "description": "Label for the picker controlling how new downloads are announced. In Settings > Behavior > File system watching, on the \"Downloads notifications\" card.",
