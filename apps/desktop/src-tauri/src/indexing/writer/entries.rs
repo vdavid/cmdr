@@ -16,7 +16,7 @@ use crate::indexing::store::{DirStatsById, EntryRow, IndexStore};
 use crate::pluralize::pluralize_with;
 
 use super::delta::{propagate_delta_by_id, propagate_recursive_has_symlinks};
-use super::{AccumulatorMaps, AggregationProgressEvent, bump_generation, phase_to_str};
+use super::{AccumulatorMaps, AggregationProgressEvent, MutationTracker, phase_to_str};
 
 pub(super) fn handle_insert_entries_v2(
     conn: &rusqlite::Connection,
@@ -24,7 +24,7 @@ pub(super) fn handle_insert_entries_v2(
     accumulator: &mut AccumulatorMaps,
     app_handle: &Option<AppHandle>,
     expected_total_entries: &AtomicU64,
-    mutation_counter: &AtomicU64,
+    mutation_tracker: &MutationTracker,
 ) {
     let count = entries.len();
     let t = Instant::now();
@@ -83,7 +83,7 @@ pub(super) fn handle_insert_entries_v2(
             pluralize_with(count as u64, "entry", "entries")
         );
     }
-    bump_generation(mutation_counter);
+    mutation_tracker.bump();
     // Emit flushing progress when we know the expected total
     let expected = expected_total_entries.load(Ordering::Relaxed);
     if expected > 0
@@ -114,7 +114,7 @@ pub(super) fn handle_upsert_entry_v2(
     inode: Option<u64>,
     nlink: Option<u64>,
     next_id: &AtomicI64,
-    mutation_counter: &AtomicU64,
+    mutation_tracker: &MutationTracker,
 ) {
     // Hardlink dedup: if this file has nlink > 1, check whether another entry
     // for the same inode already has non-NULL sizes. If so, override sizes to
@@ -140,9 +140,9 @@ pub(super) fn handle_upsert_entry_v2(
                     old.is_directory
                 );
                 if old.is_directory {
-                    handle_delete_subtree_by_id(conn, existing_id, mutation_counter);
+                    handle_delete_subtree_by_id(conn, existing_id, mutation_tracker);
                 } else {
-                    handle_delete_entry_by_id(conn, existing_id, mutation_counter);
+                    handle_delete_entry_by_id(conn, existing_id, mutation_tracker);
                 }
                 upsert_insert_new(
                     conn,
@@ -193,7 +193,7 @@ pub(super) fn handle_upsert_entry_v2(
             log::warn!("Index writer: resolve_component failed for {name}: {e}");
         }
     }
-    bump_generation(mutation_counter);
+    mutation_tracker.bump();
 }
 
 /// Update an existing entry during `UpsertEntryV2`, with hardlink dedup and delta propagation.
@@ -353,7 +353,7 @@ pub(super) fn handle_move_entry_v2(
     entry_id: i64,
     new_parent_id: i64,
     new_name: String,
-    mutation_counter: &AtomicU64,
+    mutation_tracker: &MutationTracker,
 ) {
     use crate::indexing::store::normalize_for_comparison;
 
@@ -400,9 +400,9 @@ pub(super) fn handle_move_entry_v2(
                 .map(|e| e.is_directory)
                 .unwrap_or(false);
             if conflicting_is_dir {
-                handle_delete_subtree_by_id(conn, conflicting_id, mutation_counter);
+                handle_delete_subtree_by_id(conn, conflicting_id, mutation_tracker);
             } else {
-                handle_delete_entry_by_id(conn, conflicting_id, mutation_counter);
+                handle_delete_entry_by_id(conn, conflicting_id, mutation_tracker);
             }
         }
         Ok(_) => {}
@@ -430,7 +430,7 @@ pub(super) fn handle_move_entry_v2(
 
     // Same-parent rename: ancestor totals unchanged, just the row's name moved.
     if old_entry.parent_id == new_parent_id {
-        bump_generation(mutation_counter);
+        mutation_tracker.bump();
         return;
     }
 
@@ -494,10 +494,14 @@ pub(super) fn handle_move_entry_v2(
         }
     }
 
-    bump_generation(mutation_counter);
+    mutation_tracker.bump();
 }
 
-pub(super) fn handle_delete_entry_by_id(conn: &rusqlite::Connection, entry_id: i64, mutation_counter: &AtomicU64) {
+pub(super) fn handle_delete_entry_by_id(
+    conn: &rusqlite::Connection,
+    entry_id: i64,
+    mutation_tracker: &MutationTracker,
+) {
     // Read old entry before deleting to get accurate delta
     let old_entry = IndexStore::get_entry_by_id(conn, entry_id).ok().flatten();
     if let Err(e) = IndexStore::delete_entry_by_id(conn, entry_id) {
@@ -529,10 +533,14 @@ pub(super) fn handle_delete_entry_by_id(conn: &rusqlite::Connection, entry_id: i
             propagate_recursive_has_symlinks(conn, entry.parent_id);
         }
     }
-    bump_generation(mutation_counter);
+    mutation_tracker.bump();
 }
 
-pub(super) fn handle_delete_subtree_by_id(conn: &rusqlite::Connection, root_id: i64, mutation_counter: &AtomicU64) {
+pub(super) fn handle_delete_subtree_by_id(
+    conn: &rusqlite::Connection,
+    root_id: i64,
+    mutation_tracker: &MutationTracker,
+) {
     // Read subtree totals before deleting to get accurate delta
     let totals = IndexStore::get_subtree_totals_by_id(conn, root_id).ok();
     let parent_id = IndexStore::get_parent_id(conn, root_id).ok().flatten();
@@ -576,7 +584,7 @@ pub(super) fn handle_delete_subtree_by_id(conn: &rusqlite::Connection, root_id: 
             propagate_recursive_has_symlinks(conn, pid);
         }
     }
-    bump_generation(mutation_counter);
+    mutation_tracker.bump();
 }
 
 pub(super) fn handle_truncate_data(
@@ -584,7 +592,7 @@ pub(super) fn handle_truncate_data(
     accumulator: &mut AccumulatorMaps,
     expected_total_entries: &AtomicU64,
     next_id: &AtomicI64,
-    mutation_counter: &AtomicU64,
+    mutation_tracker: &MutationTracker,
 ) {
     accumulator.clear();
     expected_total_entries.store(0, Ordering::Relaxed);
@@ -606,7 +614,7 @@ pub(super) fn handle_truncate_data(
         }
         Err(e) => log::warn!("Writer: truncate failed: {e}"),
     }
-    bump_generation(mutation_counter);
+    mutation_tracker.bump();
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -707,7 +715,7 @@ mod tests {
 
         let mut accumulator = AccumulatorMaps::new();
         let expected = AtomicU64::new(0);
-        let mutation_counter = AtomicU64::new(0);
+        let mutation_tracker = MutationTracker::new(true);
 
         handle_insert_entries_v2(
             &conn,
@@ -715,7 +723,7 @@ mod tests {
             &mut accumulator,
             &None,
             &expected,
-            &mutation_counter,
+            &mutation_tracker,
         );
 
         // DB has the original first.txt (id=100) and the new second.txt (id=101).

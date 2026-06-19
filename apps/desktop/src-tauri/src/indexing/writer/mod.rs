@@ -63,10 +63,57 @@ pub(super) fn phase_to_str(phase: AggregationPhase) -> &'static str {
 
 /// Monotonically increasing generation counter, bumped on every mutation
 /// (`InsertEntriesV2`, `UpsertEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`,
-/// `TruncateData`). The search index stores the generation it was loaded at;
-/// a mismatch triggers a background reload. Initialized to 1 (not 0) to avoid
-/// ambiguity with a freshly constructed search index.
+/// `TruncateData`) of the **search-feeding** index only. The search index stores
+/// the generation it was loaded at; a mismatch triggers a background reload.
+/// Initialized to 1 (not 0) to avoid ambiguity with a freshly constructed
+/// search index.
+///
+/// Search is single-volume by construction (D7): `search/index.rs` loads exactly
+/// one in-memory `SearchIndex` off `root`'s DB. So ONLY `root`'s writer ticks this
+/// — an SMB/MTP writer mutating its own DB must not invalidate the root search
+/// index it doesn't feed (that would thrash a reload of the whole root index on
+/// every NAS/phone change-notify event). The gate lives in
+/// [`MutationTracker::bump`], the single point of policy; see `state.rs`'s
+/// `feeds_search` plumbing and `indexing/DETAILS.md` § "Search stays single-volume".
 pub(crate) static WRITER_GENERATION: AtomicU64 = AtomicU64::new(1);
+
+/// Per-writer mutation bookkeeping passed down through the handler functions.
+///
+/// Bundles the per-writer `counter` (test-only "did THIS writer mutate?" probe,
+/// immune to other concurrent writers in the same test binary) with the
+/// `feeds_search` flag that decides whether a mutation also bumps the global
+/// [`WRITER_GENERATION`]. Only the search-feeding (root) writer sets
+/// `feeds_search`, so a non-root mutation ticks just its own counter and leaves
+/// the root search index's generation untouched.
+pub(super) struct MutationTracker {
+    counter: AtomicU64,
+    feeds_search: bool,
+}
+
+impl MutationTracker {
+    pub(super) fn new(feeds_search: bool) -> Self {
+        Self {
+            counter: AtomicU64::new(0),
+            feeds_search,
+        }
+    }
+
+    /// Record a mutation: always tick the per-writer counter; tick the global
+    /// search generation only when this writer feeds the search index (root).
+    #[inline]
+    pub(super) fn bump(&self) {
+        self.counter.fetch_add(1, Ordering::Relaxed);
+        if self.feeds_search {
+            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    /// The per-writer mutation count (test-only observable).
+    #[cfg(test)]
+    pub(super) fn count(&self) -> u64 {
+        self.counter.load(Ordering::Relaxed)
+    }
+}
 
 // ── Messages ─────────────────────────────────────────────────────────
 
@@ -199,13 +246,16 @@ pub struct IndexWriter {
     /// this to get unique IDs, and the writer bumps it after `UpsertEntryV2` inserts
     /// (which let SQLite auto-assign). Reset to 2 on `TruncateData`.
     next_id: Arc<AtomicI64>,
-    /// Per-writer mutation counter, ticked alongside the global `WRITER_GENERATION`
-    /// at every mutating message. Tests use this instead of the global so an
+    /// Per-writer mutation bookkeeping (`counter` + `feeds_search`). The counter
+    /// ticks on every mutating message; tests use it instead of the global so an
     /// assertion of "did this writer mutate?" isn't disturbed by other concurrent
-    /// writers (cargo test runs tests as threads in one process). Production code
-    /// should keep using `WRITER_GENERATION`.
+    /// writers (cargo test runs tests as threads in one process). `feeds_search`
+    /// gates whether a mutation also bumps the global `WRITER_GENERATION` (only the
+    /// root, search-feeding writer does). Production code reads `WRITER_GENERATION`;
+    /// this handle is read only by the test-only `mutation_count`, but the writer
+    /// thread holds its own `Arc` clone, so the bookkeeping is live either way.
     #[cfg_attr(not(test), allow(dead_code, reason = "test-only observable"))]
-    mutation_counter: Arc<AtomicU64>,
+    mutation_tracker: Arc<MutationTracker>,
     /// Phase 1 instrumentation: best-effort estimate of channel depth.
     /// Incremented on each `send()`; the writer thread decrements it after each `recv()`.
     /// Used by the heartbeat (writer thread) to log queue pressure.
@@ -219,7 +269,24 @@ impl IndexWriter {
     /// `std::thread` (blocking I/O, not tokio), and returns a handle.
     /// If `app_handle` is provided, the writer emits `index-aggregation-progress`
     /// events during `ComputeAllAggregates`.
+    ///
+    /// `feeds_search` is `true` only for the volume whose DB backs the in-memory
+    /// search index (root): its mutations bump the global `WRITER_GENERATION` so
+    /// search reloads. A non-root (SMB/MTP) writer passes `false`, so its writes
+    /// never invalidate the root search index it doesn't feed. Tests that don't
+    /// care about search isolation use [`spawn`](Self::spawn) (defaults to
+    /// search-feeding, preserving prior behavior).
     pub fn spawn(db_path: &Path, app_handle: Option<AppHandle>) -> Result<Self, IndexStoreError> {
+        Self::spawn_for(db_path, app_handle, true)
+    }
+
+    /// Spawn a writer, explicitly choosing whether it feeds the search index.
+    /// See [`spawn`](Self::spawn) for the `feeds_search` contract.
+    pub fn spawn_for(
+        db_path: &Path,
+        app_handle: Option<AppHandle>,
+        feeds_search: bool,
+    ) -> Result<Self, IndexStoreError> {
         let conn = IndexStore::open_write_connection(db_path)?;
         // SQLite busy retry logger. Brief contention is routine (WAL checkpoints, long-lived
         // readers), so per-attempt logging stays at debug; sustained contention (>=20 attempts
@@ -245,8 +312,8 @@ impl IndexWriter {
         let expected_total_clone = Arc::clone(&expected_total_entries);
         let next_id = Arc::new(AtomicI64::new(initial_next_id));
         let next_id_clone = Arc::clone(&next_id);
-        let mutation_counter = Arc::new(AtomicU64::new(0));
-        let mutation_counter_clone = Arc::clone(&mutation_counter);
+        let mutation_tracker = Arc::new(MutationTracker::new(feeds_search));
+        let mutation_tracker_clone = Arc::clone(&mutation_tracker);
         let queue_depth = Arc::new(AtomicUsize::new(0));
         let queue_depth_clone = Arc::clone(&queue_depth);
 
@@ -259,7 +326,7 @@ impl IndexWriter {
                     app_handle,
                     expected_total_clone,
                     next_id_clone,
-                    mutation_counter_clone,
+                    mutation_tracker_clone,
                     queue_depth_clone,
                 )
             })
@@ -271,7 +338,7 @@ impl IndexWriter {
             db_path: db_path.to_path_buf(),
             expected_total_entries,
             next_id,
-            mutation_counter,
+            mutation_tracker,
             queue_depth,
         })
     }
@@ -300,7 +367,7 @@ impl IndexWriter {
     /// other-writer activity in the same test binary.
     #[cfg(test)]
     pub(crate) fn mutation_count(&self) -> u64 {
-        self.mutation_counter.load(Ordering::Relaxed)
+        self.mutation_tracker.count()
     }
 
     /// Send a message to the writer thread. Blocks if the channel is full
@@ -623,7 +690,7 @@ fn writer_loop(
     app_handle: Option<AppHandle>,
     expected_total_entries: Arc<AtomicU64>,
     next_id: Arc<AtomicI64>,
-    mutation_counter: Arc<AtomicU64>,
+    mutation_tracker: Arc<MutationTracker>,
     queue_depth: Arc<AtomicUsize>,
 ) {
     log::debug!("Writer: thread started");
@@ -674,7 +741,7 @@ fn writer_loop(
                 &app_handle,
                 &expected_total_entries,
                 &next_id,
-                &mutation_counter,
+                &mutation_tracker,
                 &mut probe,
             )
         });
@@ -687,7 +754,7 @@ fn writer_loop(
             &app_handle,
             &expected_total_entries,
             &next_id,
-            &mutation_counter,
+            &mutation_tracker,
             &mut probe,
         );
         probe.time_in_processing += proc_start.elapsed();
@@ -775,7 +842,7 @@ fn process_message(
     app_handle: &Option<AppHandle>,
     expected_total_entries: &AtomicU64,
     next_id: &AtomicI64,
-    mutation_counter: &AtomicU64,
+    mutation_tracker: &MutationTracker,
     probe: &mut ProbeStats,
 ) -> bool {
     match msg {
@@ -787,7 +854,7 @@ fn process_message(
                 accumulator,
                 app_handle,
                 expected_total_entries,
-                mutation_counter,
+                mutation_tracker,
             );
         }
         WriteMessage::UpsertEntryV2 {
@@ -813,7 +880,7 @@ fn process_message(
                 inode,
                 nlink,
                 next_id,
-                mutation_counter,
+                mutation_tracker,
             );
         }
         WriteMessage::MoveEntryV2 {
@@ -821,13 +888,13 @@ fn process_message(
             new_parent_id,
             new_name,
         } => {
-            handle_move_entry_v2(conn, entry_id, new_parent_id, new_name, mutation_counter);
+            handle_move_entry_v2(conn, entry_id, new_parent_id, new_name, mutation_tracker);
         }
         WriteMessage::DeleteEntryById(entry_id) => {
-            handle_delete_entry_by_id(conn, entry_id, mutation_counter);
+            handle_delete_entry_by_id(conn, entry_id, mutation_tracker);
         }
         WriteMessage::DeleteSubtreeById(root_id) => {
-            handle_delete_subtree_by_id(conn, root_id, mutation_counter);
+            handle_delete_subtree_by_id(conn, root_id, mutation_tracker);
         }
         WriteMessage::DeleteDescendantsById(root_id) => {
             // No delta propagation: the subtree will be immediately re-scanned and
@@ -853,7 +920,7 @@ fn process_message(
             );
         }
         WriteMessage::TruncateData => {
-            handle_truncate_data(conn, accumulator, expected_total_entries, next_id, mutation_counter);
+            handle_truncate_data(conn, accumulator, expected_total_entries, next_id, mutation_tracker);
         }
         WriteMessage::ComputeAllAggregates => {
             handle_compute_all_aggregates(conn, accumulator, app_handle, expected_total_entries);
@@ -935,22 +1002,99 @@ fn process_message(
     false
 }
 
-/// Tick the global writer-generation counter (used by search to detect a stale
-/// index) AND the per-writer counter (used by tests to assert that THIS writer
-/// did or didn't mutate, without flaking on other concurrent writers in the
-/// same test binary).
-#[inline]
-pub(super) fn bump_generation(mutation_counter: &AtomicU64) {
-    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
-    mutation_counter.fetch_add(1, Ordering::Relaxed);
-}
-
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 pub(super) mod tests {
     use super::*;
     use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
+
+    // ── Search-generation gating (D7: search is single-volume / root-only) ──
+
+    /// A search-feeding (root) writer's mutation bumps BOTH its per-writer
+    /// counter and the global `WRITER_GENERATION` the in-memory search index
+    /// watches. This is the only writer that may invalidate the search index.
+    #[test]
+    fn search_feeding_tracker_bumps_global_generation() {
+        let tracker = MutationTracker::new(true);
+        let before = WRITER_GENERATION.load(Ordering::Relaxed);
+        tracker.bump();
+        let after = WRITER_GENERATION.load(Ordering::Relaxed);
+        assert_eq!(tracker.count(), 1, "the per-writer counter always ticks");
+        assert!(
+            after > before,
+            "a root (search-feeding) mutation must bump the global search generation"
+        );
+    }
+
+    /// A non-search-feeding (SMB/MTP) writer's mutation ticks ONLY its own
+    /// counter and must leave the global `WRITER_GENERATION` untouched — an
+    /// SMB/MTP write must never invalidate the root search index it doesn't
+    /// feed (else every NAS/phone change-notify event thrashes a full root
+    /// search reload). This is the search-isolation guarantee.
+    ///
+    /// Read the global under a global lock so a concurrent feeding writer in
+    /// another test (cargo runs tests as threads in one process) can't bump it
+    /// between our two reads and flake the assertion.
+    #[test]
+    fn non_search_feeding_tracker_does_not_bump_global_generation() {
+        let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let tracker = MutationTracker::new(false);
+        let before = WRITER_GENERATION.load(Ordering::Relaxed);
+        tracker.bump();
+        tracker.bump();
+        tracker.bump();
+        let after = WRITER_GENERATION.load(Ordering::Relaxed);
+        assert_eq!(tracker.count(), 3, "the per-writer counter still ticks for SMB/MTP");
+        assert_eq!(
+            before, after,
+            "a non-root (SMB/MTP) mutation must NOT bump the root search generation"
+        );
+    }
+
+    /// A spawned non-feeding writer (the real SMB/MTP path) must not bump the
+    /// global generation when it actually processes a mutating message end to
+    /// end (covers the `spawn_for(.., false)` → `writer_loop` → handler →
+    /// `MutationTracker::bump` wiring, not just the tracker in isolation).
+    #[test]
+    fn spawned_non_feeding_writer_does_not_bump_global_generation() {
+        let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn_for(&db_path, None, false).unwrap();
+
+        let before = WRITER_GENERATION.load(Ordering::Relaxed);
+        writer
+            .send(WriteMessage::InsertEntriesV2(vec![EntryRow {
+                id: 10,
+                parent_id: ROOT_ID,
+                name: "smb-file.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(5),
+                physical_size: Some(5),
+                modified_at: None,
+                inode: None,
+            }]))
+            .unwrap();
+        writer.flush_blocking().unwrap();
+        let after = WRITER_GENERATION.load(Ordering::Relaxed);
+
+        assert_eq!(
+            writer.mutation_count(),
+            1,
+            "the SMB/MTP writer did process the mutation (its own counter moved)"
+        );
+        assert_eq!(
+            before, after,
+            "the SMB/MTP writer's mutation must not bump the root search generation"
+        );
+        writer.shutdown();
+    }
+
+    /// Serializes the few tests that read the global `WRITER_GENERATION` across
+    /// a non-atomic before/after window, so a concurrent feeding-writer test
+    /// can't interleave a bump and flake them.
+    static WRITER_GENERATION_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     /// Create a temp DB, open the store (to init schema), and return the path + temp dir guard.
     pub(super) fn setup_db() -> (PathBuf, tempfile::TempDir) {

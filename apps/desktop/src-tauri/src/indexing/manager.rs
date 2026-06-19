@@ -152,7 +152,14 @@ impl IndexManager {
 
         let store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open index store: {e}"))?;
 
-        let writer = IndexWriter::spawn(&db_path, Some(app.clone()))
+        // Only the search-feeding volume's writer bumps the global
+        // `WRITER_GENERATION`. Search is single-volume by construction (D7): it
+        // loads exactly one in-memory index off `root`'s (local-disk) DB. An
+        // SMB/MTP writer must not invalidate the root search index it doesn't
+        // feed, or every NAS/phone change-notify event would thrash a full root
+        // search reload. See `writer::WRITER_GENERATION` and `indexing/DETAILS.md`.
+        let feeds_search = kind == IndexVolumeKind::Local;
+        let writer = IndexWriter::spawn_for(&db_path, Some(app.clone()), feeds_search)
             .map_err(|e| format!("Failed to spawn index writer: {e}"))?;
 
         log::debug!(
