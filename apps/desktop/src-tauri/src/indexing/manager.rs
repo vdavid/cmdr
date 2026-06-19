@@ -105,6 +105,36 @@ fn live_scan_counters(
     }
 }
 
+/// Replay the changes the live watcher buffered during a `Volume`-trait scan,
+/// dispatching to the right per-backend buffer (SMB `CHANGE_NOTIFY` vs. MTP PTP
+/// events). Returns whether the volume stays Fresh (false ⇒ overflow forced
+/// Stale). `Local` never reaches here (jwalk path), so it's a trivially-Fresh
+/// no-op. The buffers are macOS/Linux-only (the only `Volume`-trait backends).
+fn replay_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) -> bool {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    match kind {
+        IndexVolumeKind::Smb => return super::replay_buffered_changes(volume_id),
+        IndexVolumeKind::Mtp => return super::replay_buffered_mtp_changes(volume_id),
+        IndexVolumeKind::Local => {}
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    let _ = (kind, volume_id);
+    true
+}
+
+/// Discard the live-watcher buffer for an interrupted scan (D-interrupted),
+/// dispatching by backend. Mirrors `replay_buffered_changes_for_kind`.
+fn discard_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    match kind {
+        IndexVolumeKind::Smb => super::discard_buffered_changes(volume_id),
+        IndexVolumeKind::Mtp => super::discard_buffered_mtp_changes(volume_id),
+        IndexVolumeKind::Local => {}
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    let _ = (kind, volume_id);
+}
+
 impl IndexManager {
     /// Create a new IndexManager for a volume of the given kind.
     ///
@@ -159,11 +189,11 @@ impl IndexManager {
     ///
     /// **No existing index:** Full scan via `start_scan()`.
     pub fn resume_or_scan(&mut self) -> Result<(), String> {
-        // SMB (and future network/USB) volumes have no event journal, so there's
-        // nothing to replay: a persisted index loaded Stale on launch (already
-        // seeded by `start_indexing_for`) and stays browsable until the user
-        // rescans; a never-scanned volume gets a fresh `Volume`-trait scan.
-        if self.kind == IndexVolumeKind::Smb {
+        // SMB and MTP volumes have no event journal, so there's nothing to
+        // replay: a persisted index loaded Stale on launch (already seeded by
+        // `start_indexing_for`) and stays browsable until the user rescans; a
+        // never-scanned volume gets a fresh `Volume`-trait scan.
+        if self.kind.is_trait_scanned() {
             return self.resume_or_scan_network();
         }
 
@@ -246,6 +276,7 @@ impl IndexManager {
     /// freshness only. The live SMB watcher that keeps the index Fresh hooks in
     /// at the seam documented in `state::apply_freshness_event`.
     fn resume_or_scan_network(&mut self) -> Result<(), String> {
+        let kind = self.kind_label();
         let status = self
             .store
             .get_index_status()
@@ -253,21 +284,28 @@ impl IndexManager {
 
         if status.scan_completed_at.is_some() {
             log::info!(
-                "Startup: SMB volume '{}' has a completed index, loading as Stale (no journal to replay)",
+                "Startup: {kind} volume '{}' has a completed index, loading as Stale (no journal to replay)",
                 self.volume_id
             );
             // Already Stale (seeded at reservation). Nothing to scan; reads serve
-            // the persisted index until the user rescans.
-            // TODO(live-watch / M2-B): start the volume's live watcher here so the
-            // Stale index can transition back toward Fresh while connected.
+            // the persisted index until the user rescans. The live watcher (SMB
+            // CHANGE_NOTIFY / MTP PTP event loop) runs connection-scoped and is
+            // what keeps a re-enabled/re-scanned index Fresh.
             return Ok(());
         }
 
-        log::info!(
-            "Startup: SMB volume '{}' fresh scan (no completed index)",
-            self.volume_id
-        );
-        self.start_volume_scan("fresh SMB scan")
+        log::info!("Startup: {kind} volume '{}' fresh scan (no completed index)", self.volume_id);
+        self.start_volume_scan("fresh network scan")
+    }
+
+    /// A short label for this volume kind, for diagnostics. Only `Smb`/`Mtp`
+    /// reach the network scan path; `Local` is handled by the jwalk path.
+    fn kind_label(&self) -> &'static str {
+        match self.kind {
+            IndexVolumeKind::Mtp => "MTP",
+            IndexVolumeKind::Smb => "SMB",
+            IndexVolumeKind::Local => "local",
+        }
     }
 
     /// Start a `Volume`-trait scan for a network volume (SMB today).
@@ -324,7 +362,7 @@ impl IndexManager {
             .send(WriteMessage::DeleteMeta("scan_completed_at".to_string()));
         let _ = self.writer.send(WriteMessage::TruncateData);
         if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
-            log::warn!("SMB scan: flush after TruncateData failed: {e}");
+            log::warn!("network scan: flush after TruncateData failed: {e}");
         }
 
         // Freshness ⇒ Scanning (blue), via the state machine.
@@ -374,6 +412,7 @@ impl IndexManager {
         let volume_id = self.volume_id.clone();
         let scanning = Arc::clone(&self.scanning);
         let root = self.volume_root.clone();
+        let kind = self.kind;
         tauri::async_runtime::spawn(async move {
             let result =
                 super::volume_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled).await;
@@ -384,7 +423,7 @@ impl IndexManager {
             match result {
                 Ok(summary) if !summary.was_cancelled => {
                     log::info!(
-                        "SMB scan: complete ({} entries, {} dirs, {:.1}s)",
+                        "network scan: complete ({} entries, {} dirs, {:.1}s)",
                         summary.total_entries,
                         summary.total_dirs,
                         summary.duration_ms as f64 / 1000.0,
@@ -434,7 +473,7 @@ impl IndexManager {
                     // full tree (and dir_stats) is in place. Returns false if the
                     // buffer overflowed mid-scan — then it already signaled
                     // OverflowUnrecoverable ⇒ Stale, so we must NOT claim Fresh.
-                    let stayed_fresh = super::replay_buffered_changes(&volume_id);
+                    let stayed_fresh = replay_buffered_changes_for_kind(kind, &volume_id);
 
                     if stayed_fresh {
                         // Freshness ⇒ Fresh (green). The volume is now authoritative
@@ -444,7 +483,7 @@ impl IndexManager {
                             super::freshness::FreshnessEvent::ScanCompleted,
                         );
                     }
-                    DEBUG_STATS.set_phase(ActivityPhase::Live, "SMB scan complete");
+                    DEBUG_STATS.set_phase(ActivityPhase::Live, "network scan complete");
 
                     // Tell the FE sizes are ready for this share's listings.
                     let _ = IndexDirUpdatedEvent {
@@ -458,10 +497,10 @@ impl IndexManager {
                     // resetting the volume to gray / not-indexed, and drop any
                     // changes buffered during the aborted scan (meaningless now).
                     match &other {
-                        Ok(_) => log::info!("SMB scan: cancelled for '{volume_id}', discarding partial"),
-                        Err(e) => log::warn!("SMB scan: failed for '{volume_id}' ({e}), discarding partial"),
+                        Ok(_) => log::info!("network scan: cancelled for '{volume_id}', discarding partial"),
+                        Err(e) => log::warn!("network scan: failed for '{volume_id}' ({e}), discarding partial"),
                     }
-                    super::discard_buffered_changes(&volume_id);
+                    discard_buffered_changes_for_kind(kind, &volume_id);
                     super::state::reset_to_not_indexed(&volume_id);
                 }
             }

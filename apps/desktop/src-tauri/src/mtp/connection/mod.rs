@@ -909,7 +909,7 @@ fn normalize_mtp_path(path: &str) -> PathBuf {
 }
 
 /// Converts MTP DateTime to Unix timestamp.
-fn convert_mtp_datetime(dt: mtp_rs::ptp::DateTime) -> u64 {
+pub(super) fn convert_mtp_datetime(dt: mtp_rs::ptp::DateTime) -> u64 {
     // Convert the DateTime struct fields to Unix timestamp
     // This is a simplified conversion - MTP DateTime has year, month, day, hour, minute, second
 

@@ -40,6 +40,22 @@ use super::{MTP_TIMEOUT_SECS, MtpConnectionManager, acquire_device_lock, map_mtp
 /// cyclic/self-referential parent chain from a malformed device.
 const MAX_WALK_DEPTH: usize = 256;
 
+/// A resolved MTP object for the index watch path: its storage-relative path plus
+/// the metadata an index upsert needs. Built by
+/// [`MtpConnectionManager::resolve_object_for_index`] from one extra
+/// `GetObjectInfo` on top of the handle→path walk. The handle itself is known by
+/// the caller (it's the event's handle), so it isn't repeated here.
+#[derive(Debug, Clone)]
+pub(crate) struct ResolvedMtpObject {
+    /// Full storage-relative path (leading `/`).
+    pub path: PathBuf,
+    pub is_directory: bool,
+    /// Logical size in bytes (`None` for directories).
+    pub size: Option<u64>,
+    /// Modified time as a Unix timestamp, if the device reports one.
+    pub modified_at: Option<u64>,
+}
+
 /// `true` when `handle` is a root sentinel: the walk stops here.
 ///
 /// `ObjectHandle::ROOT` (`0`) is the spec value, but the Android root quirk means
@@ -197,6 +213,65 @@ impl MtpConnectionManager {
         }
 
         Ok(path)
+    }
+
+    /// Resolve a PTP `ObjectAdded` / `ObjectInfoChanged` handle into the data an
+    /// index upsert needs: its storage-relative path plus size / is-directory /
+    /// modified time. Used by the MTP watch→index path (`indexing::mtp_watch`).
+    ///
+    /// Two USB-touching steps under the device lock: the handle→path walk
+    /// ([`resolve_handle_to_path`](Self::resolve_handle_to_path), usually one
+    /// round trip thanks to the reverse cache) plus one `GetObjectInfo` on the
+    /// object itself for its metadata. Cancelable/bounded via the same
+    /// `MTP_TIMEOUT_SECS` discipline.
+    ///
+    /// # Errors
+    ///
+    /// [`MtpConnectionError::ObjectNotFound`] if the handle is gone/invalid
+    /// (expected for a removed object — but removals never call this; they resolve
+    /// via the index's stored handle instead), plus the usual timeout / protocol
+    /// errors. On any error the caller simply skips the index update for this
+    /// event (the next scan reconciles).
+    pub(crate) async fn resolve_object_for_index(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        handle: ObjectHandle,
+    ) -> Result<ResolvedMtpObject, MtpConnectionError> {
+        let path = self.resolve_handle_to_path(device_id, storage_id, handle).await?;
+
+        // Fetch the object's own metadata for the upsert.
+        let device_arc = {
+            let devices = self.devices.lock().await;
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+            std::sync::Arc::clone(&entry.device)
+        };
+        let device = acquire_device_lock(&device_arc, device_id, "resolve_object_for_index").await?;
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+        let info = tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.get_object_info(handle))
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
+
+        let is_directory = info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+        Ok(ResolvedMtpObject {
+            path,
+            is_directory,
+            size: if is_directory { None } else { Some(info.size) },
+            modified_at: info.modified.map(super::convert_mtp_datetime),
+        })
     }
 
     /// Phase 1 of [`resolve_handle_to_path`](Self::resolve_handle_to_path):

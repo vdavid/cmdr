@@ -411,18 +411,30 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
 ///   (no jwalk; `/Volumes/` is excluded from the local scanner). No event
 ///   journal, so a persisted index loads **Stale** on launch and the live
 ///   watcher (M2-B) is what keeps it Fresh while connected.
+/// - [`Mtp`](IndexVolumeKind::Mtp): a phone/camera storage scanned over the same
+///   `Volume` trait. Identical to `Smb` for indexing purposes (non-journaled,
+///   network/USB scan path, loads Stale on launch); the live PTP event loop keeps
+///   it Fresh while the device is connected (D4). A distinct variant only so the
+///   scan path and any future MTP-specific tuning have a name to branch on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum IndexVolumeKind {
     Local,
     Smb,
+    Mtp,
 }
 
 impl IndexVolumeKind {
     /// Whether this volume self-heals watch continuity from an event journal on
     /// launch. Only the local boot disk does (FSEvents replay). Feeds
-    /// `freshness::initial_freshness_on_launch`.
+    /// `freshness::initial_freshness_on_launch`. SMB and MTP have no journal.
     fn is_journaled(self) -> bool {
         matches!(self, IndexVolumeKind::Local)
+    }
+
+    /// Whether this volume scans over the `Volume` trait (network/USB) rather
+    /// than jwalk. SMB and MTP both do; only `Local` uses jwalk + FSEvents.
+    pub(crate) fn is_trait_scanned(self) -> bool {
+        matches!(self, IndexVolumeKind::Smb | IndexVolumeKind::Mtp)
     }
 }
 
@@ -568,6 +580,36 @@ pub(crate) fn start_indexing_for_smb_inner(
     mount_root: PathBuf,
 ) -> Result<(), String> {
     start_indexing_for(app, volume_id, mount_root, IndexVolumeKind::Smb)
+}
+
+/// Internal MTP-start entry point, called by `mtp_index::start_indexing_for_mtp`
+/// once the device is confirmed connected. Funnels into the shared
+/// `start_indexing_for` with the `Mtp` kind so the lock-first reservation,
+/// load-as-Stale freshness seeding, and `Volume`-trait scan path all apply.
+/// `volume_root` is the MTP volume's `mtp://{device}/{storage}` root.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) fn start_indexing_for_mtp_inner(
+    app: &AppHandle,
+    volume_id: &str,
+    volume_root: PathBuf,
+) -> Result<(), String> {
+    start_indexing_for(app, volume_id, volume_root, IndexVolumeKind::Mtp)
+}
+
+/// All registered MTP volume ids belonging to `device_id` (one device hosts N
+/// storages, each a separate index). Used by the disconnect hook to flip every
+/// one of the device's indexes to Stale.
+///
+/// Matches by the volume id's device-id half (robust `rsplit` via
+/// `mtp::identity`, so a `:` in a serial device id doesn't mis-key), NOT a raw
+/// prefix — `mtp-AA` must not match `mtp-AAB:1`.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) fn registered_mtp_volume_ids_for_device(device_id: &str) -> Vec<String> {
+    let reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
+    reg.keys()
+        .filter(|vid| crate::mtp::identity::device_id_of_volume(vid) == Some(device_id))
+        .cloned()
+        .collect()
 }
 
 /// Discard a volume's partial index and reset it to gray / not-indexed

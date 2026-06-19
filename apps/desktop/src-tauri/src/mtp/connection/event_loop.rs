@@ -120,19 +120,28 @@ impl MtpConnectionManager {
             // ObjectAdded / ObjectInfoChanged carry a live handle, so we resolve
             // it to a path and refresh only the affected directory. ObjectRemoved
             // can't resolve (the object is already gone — `GetObjectInfo` fails),
-            // so it stays a blanket refresh for the live pane; the index path
-            // (M4) will resolve removals via a per-entry stored handle instead.
+            // so it stays a blanket refresh for the live pane; the index resolves
+            // removals via a per-entry stored handle instead.
+            //
+            // Each branch ALSO feeds the per-volume index (the second consumer):
+            // the live pane gets its targeted/blanket refresh, and the persisted
+            // index stays in sync so dir sizes are right while the device is Fresh,
+            // even with no pane open (mirrors the SMB `notify_directory_changed`
+            // dual-consumer wiring).
             DeviceEvent::ObjectAdded { handle } => {
                 debug!("MTP object added: {:?} on {}", handle, device_id);
                 Self::emit_change_for_handle(device_id, handle, app);
+                Self::feed_index_added_or_changed(device_id, handle);
             }
             DeviceEvent::ObjectRemoved { handle } => {
                 debug!("MTP object removed: {:?} on {}", handle, device_id);
                 Self::emit_directory_changed(device_id, app);
+                Self::feed_index_removed(device_id, handle);
             }
             DeviceEvent::ObjectInfoChanged { handle } => {
                 debug!("MTP object changed: {:?} on {}", handle, device_id);
                 Self::emit_change_for_handle(device_id, handle, app);
+                Self::feed_index_added_or_changed(device_id, handle);
             }
             DeviceEvent::StorageInfoChanged { storage_id } => {
                 debug!("MTP storage info changed: {:?} on {}", storage_id, device_id);
@@ -166,6 +175,68 @@ impl MtpConnectionManager {
             DeviceEvent::Unknown { code, params } => {
                 debug!("MTP unknown event {:04x} {:?} on {}", code, params, device_id);
             }
+        }
+    }
+
+    /// Feed an `ObjectAdded` / `ObjectInfoChanged` into the per-volume index, if
+    /// any storage on this device is indexed.
+    ///
+    /// PTP handles are device-wide but storages are separate namespaces, so we
+    /// resolve the handle against each INDEXED storage of the device and upsert
+    /// into the one where it resolves (the object lives in exactly one). Resolving
+    /// the handle on the wrong storage fails cleanly, so a non-matching storage is
+    /// skipped. Runs as a spawned task because resolution does USB I/O; the index
+    /// writes are enqueued (never blocking the event loop). No-op when the device
+    /// has no indexed storage.
+    fn feed_index_added_or_changed(device_id: &str, handle: ObjectHandle) {
+        let indexed = crate::indexing::registered_mtp_volume_ids_for_device(device_id);
+        if indexed.is_empty() {
+            return;
+        }
+        let device_id = device_id.to_string();
+        tokio::spawn(async move {
+            for volume_id in indexed {
+                let Some(storage_id) = crate::mtp::identity::storage_id_of_volume(&volume_id) else {
+                    continue;
+                };
+                match connection_manager()
+                    .resolve_object_for_index(&device_id, storage_id, handle)
+                    .await
+                {
+                    Ok(obj) => {
+                        crate::indexing::apply_mtp_added_or_changed(
+                            &volume_id,
+                            crate::indexing::MtpUpsert {
+                                path: obj.path,
+                                handle: handle.0,
+                                is_directory: obj.is_directory,
+                                size: obj.size,
+                                modified_at: obj.modified_at,
+                            },
+                        );
+                        // The handle resolved on this storage; it can't also live
+                        // on another, so we're done.
+                        return;
+                    }
+                    Err(e) => {
+                        debug!(
+                            "MTP index feed: handle {:?} unresolved on {}:{} ({:?})",
+                            handle, device_id, storage_id, e
+                        );
+                    }
+                }
+            }
+        });
+    }
+
+    /// Feed an `ObjectRemoved` into the per-volume index. The object is gone, so
+    /// there's no path to resolve — each indexed storage resolves the removal by
+    /// its STORED handle (`find_entry_by_inode`); only the storage that indexed
+    /// the object has a matching row, the rest are no-ops. Synchronous (DB reads +
+    /// writer enqueue only, no USB), so no spawn. No-op without an indexed storage.
+    fn feed_index_removed(device_id: &str, handle: ObjectHandle) {
+        for volume_id in crate::indexing::registered_mtp_volume_ids_for_device(device_id) {
+            crate::indexing::apply_mtp_removed(&volume_id, handle.0);
         }
     }
 

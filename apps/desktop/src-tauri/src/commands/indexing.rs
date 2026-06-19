@@ -199,9 +199,18 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
-        // SMB (and, later, MTP): gate on the direct-smb2 connection. Kick mDNS
-        // first so a freshly-typed server name resolves during the upgrade, then
-        // start. The typed gate reason is the refusal surface for the UI.
+        // MTP: no connection-upgrade gate (one USB session, FDA-independent), so
+        // it can't return a typed `SmbIndexGateReason`. Route it to the MTP enable
+        // path; a plain string error (device not connected / internal start
+        // failure) surfaces as a command error.
+        if crate::mtp::identity::is_mtp_volume_id(&volume_id) {
+            indexing::start_indexing_for_mtp(app, volume_id)?;
+            return Ok(EnableIndexingOutcome::Started);
+        }
+
+        // SMB: gate on the direct-smb2 connection. Kick mDNS first so a
+        // freshly-typed server name resolves during the upgrade, then start. The
+        // typed gate reason is the refusal surface for the UI.
         crate::network::ensure_mdns_started(app.clone());
         match indexing::start_indexing_for_smb(app, volume_id).await {
             Ok(()) => Ok(EnableIndexingOutcome::Started),

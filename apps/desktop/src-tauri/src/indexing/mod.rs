@@ -27,6 +27,10 @@ mod pending_sizes;
 mod reconciler;
 pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+mod mtp_index;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod mtp_watch;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_index;
 mod smb_watch;
 mod verifier;
@@ -66,3 +70,12 @@ pub use smb_index::SmbIndexGateReason;
 pub(crate) use smb_index::{on_smb_overflow, on_smb_watcher_died, start_indexing_for_smb};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use smb_watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use mtp_index::{on_mtp_device_disconnected, start_indexing_for_mtp};
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use mtp_watch::{
+    MtpUpsert, apply_mtp_added_or_changed, apply_mtp_removed, discard_buffered_mtp_changes, replay_buffered_mtp_changes,
+};
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use state::registered_mtp_volume_ids_for_device;

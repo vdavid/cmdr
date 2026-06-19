@@ -479,6 +479,10 @@ impl MtpConnectionManager {
                 permissions: if is_dir { 0o755 } else { 0o644 },
                 icon_id: get_mtp_icon_id(is_dir, &info.filename),
                 extended_metadata_loaded: true,
+                // Carry the PTP object handle in `inode` so the index can store it
+                // per entry; `ObjectRemoved{handle}` then resolves via
+                // `find_entry_by_inode` even though the object is already gone.
+                inode: Some(u64::from(info.handle.0)),
                 ..FileEntry::new(
                     info.filename.clone(),
                     child_path.to_string_lossy().to_string(),
@@ -726,6 +730,11 @@ impl MtpConnectionManager {
         // Stop the event loop for this device
         self.stop_event_loop(device_id);
 
+        // Freshness (D4): any disconnect breaks watch continuity, so flip every
+        // indexed storage on this device to Stale. Continuity can't be re-claimed
+        // by a reconnect (events were lost while unplugged) — only a rescan does.
+        crate::indexing::on_mtp_device_disconnected(device_id);
+
         if removed {
             info!("MTP device disconnected and removed from registry: {}", device_id);
 
@@ -773,6 +782,9 @@ fn convert_object_infos(
             permissions: if is_dir { 0o755 } else { 0o644 },
             icon_id: get_mtp_icon_id(is_dir, &info.filename),
             extended_metadata_loaded: true,
+            // Carry the PTP object handle in `inode` (see the streaming build site
+            // above): the index stores it per entry so removals resolve by handle.
+            inode: Some(u64::from(info.handle.0)),
             ..FileEntry::new(
                 info.filename.clone(),
                 child_path.to_string_lossy().to_string(),
