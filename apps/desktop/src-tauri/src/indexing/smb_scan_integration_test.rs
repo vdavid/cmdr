@@ -48,7 +48,10 @@ fn unique_dir() -> String {
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
     static N: AtomicU64 = AtomicU64::new(0);
-    let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock is after UNIX_EPOCH")
+        .as_nanos();
     format!(
         "cmdr-index-test-{}-{}-{}",
         std::process::id(),

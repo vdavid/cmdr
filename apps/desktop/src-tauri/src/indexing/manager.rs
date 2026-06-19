@@ -263,7 +263,10 @@ impl IndexManager {
             return Ok(());
         }
 
-        log::info!("Startup: SMB volume '{}' fresh scan (no completed index)", self.volume_id);
+        log::info!(
+            "Startup: SMB volume '{}' fresh scan (no completed index)",
+            self.volume_id
+        );
         self.start_volume_scan("fresh SMB scan")
     }
 
@@ -306,7 +309,9 @@ impl IndexManager {
         // Clear the prior completion marker, then truncate — identical to the
         // local scan so an interrupted SMB rescan heals (no stale `scan_completed_at`
         // over a gutted table). Freshness is reset to Scanning below.
-        let _ = self.writer.send(WriteMessage::DeleteMeta("scan_completed_at".to_string()));
+        let _ = self
+            .writer
+            .send(WriteMessage::DeleteMeta("scan_completed_at".to_string()));
         let _ = self.writer.send(WriteMessage::TruncateData);
         if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
             log::warn!("SMB scan: flush after TruncateData failed: {e}");

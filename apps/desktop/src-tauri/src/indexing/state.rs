@@ -516,7 +516,11 @@ fn start_indexing_for(
 /// `start_indexing_for` with the `Smb` kind so the lock-first reservation,
 /// load-as-Stale freshness seeding, and `Volume`-trait scan path all apply.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) fn start_indexing_for_smb_inner(app: &AppHandle, volume_id: &str, mount_root: PathBuf) -> Result<(), String> {
+pub(crate) fn start_indexing_for_smb_inner(
+    app: &AppHandle,
+    volume_id: &str,
+    mount_root: PathBuf,
+) -> Result<(), String> {
     start_indexing_for(app, volume_id, mount_root, IndexVolumeKind::Smb)
 }
 

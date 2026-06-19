@@ -101,8 +101,7 @@ pub(crate) async fn scan_volume_via_trait(
     // scanner's volume-root setup, so all downstream id/parent logic is shared.
     let db_path = writer.db_path();
     let mut scan_ctx = {
-        let conn =
-            IndexStore::open_write_connection(&db_path).map_err(|e| VolumeScanError::Context(e.to_string()))?;
+        let conn = IndexStore::open_write_connection(&db_path).map_err(|e| VolumeScanError::Context(e.to_string()))?;
         ScanContext::new(&conn, &root, true, Arc::clone(writer.next_id()))
             .map_err(|e| VolumeScanError::Context(e.to_string()))?
     };
@@ -326,15 +325,9 @@ mod tests {
         let vol: Arc<dyn Volume> = Arc::new(vol);
 
         let cancelled = Arc::new(AtomicBool::new(false));
-        let summary = scan_volume_via_trait(
-            vol,
-            PathBuf::from("/"),
-            writer.clone(),
-            progress(),
-            cancelled,
-        )
-        .await
-        .expect("scan should complete");
+        let summary = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
+            .await
+            .expect("scan should complete");
 
         assert!(!summary.was_cancelled);
         assert_eq!(summary.total_entries, 3, "2 files + 1 dir");
