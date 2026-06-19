@@ -22,7 +22,7 @@ use crate::file_system::get_volume_manager;
 use crate::file_system::volume::SmbConnectionState;
 
 /// Why an SMB volume couldn't be indexed. Typed (and serialized as a
-/// snake_case tag) so callers and the M3 UX classify by variant on BOTH sides
+/// snake_case tag) so callers and the per-drive UX classify by variant on BOTH sides
 /// of the IPC boundary, never by message substring (`.claude/rules/no-string-matching.md`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
@@ -151,12 +151,12 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
     }
 }
 
-/// Turn on indexing for an SMB volume (M2's per-volume enable).
+/// Turn on indexing for an SMB volume (the per-volume enable).
 ///
 /// Gates on a direct smb2 connection (upgrading from os_mount if needed), then
 /// starts a `Volume`-trait scan into the volume's own index DB. FDA-independent
 /// by design (network paths aren't TCC-protected). Returns the typed gate reason
-/// on refusal so the caller (and M3's UX) can show an honest, non-string-matched
+/// on refusal so the caller (and the per-drive UX) can show an honest, non-string-matched
 /// status. A no-op if the volume's index is already active.
 pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result<(), SmbIndexGateReason> {
     if super::state::is_active(&volume_id) {
@@ -188,7 +188,7 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
 /// the watcher task returning on a fatal `next_events` error). Flips a Fresh
 /// index to Stale via the freshness state machine.
 ///
-/// This is the M2-B `WatcherDied` call site (the seam M2-A declared). A reconnect
+/// This is the `WatcherDied` call site. A reconnect
 /// respawns the watcher, but continuity already broke (events were lost while
 /// disconnected), so the index stays Stale until the user rescans — the model's
 /// "Stale ⇒ Fresh only via rescan" rule. No-op for an unindexed volume.
@@ -201,7 +201,7 @@ pub(crate) fn on_smb_watcher_died(volume_id: &str) {
 
 /// Record a `CHANGE_NOTIFY` overflow (`STATUS_NOTIFY_ENUM_DIR`) on an SMB volume.
 ///
-/// Policy (M2-B): overflow means the server dropped change records we can't
+/// Policy: overflow means the server dropped change records we can't
 /// recover, so the index may have drifted. The watcher only ever signals
 /// overflow for the share ROOT (it emits a root-scoped `FullRefresh`), so the
 /// only honest repair is a full rescan — there's no narrower subtree to target.
@@ -250,7 +250,7 @@ mod tests {
         assert!(smb_volume_id_for_path("/").is_none());
     }
 
-    // ── Freshness call sites (the M2-B seam) ──────────────────────────────
+    // ── Freshness call sites (the live-watch wiring) ──────────────────────
 
     use std::sync::Arc;
 
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn watcher_died_flips_a_fresh_smb_volume_to_stale() {
-        // The headline M2-B transition wired at the call site: when the live SMB
+        // The headline live-watch transition wired at the call site: when the live SMB
         // watcher dies, `on_smb_watcher_died` must drive the index Fresh ⇒ Stale.
         with_reserved_volume("smb-watcher-died-test", Freshness::Fresh, || {
             on_smb_watcher_died("smb-watcher-died-test");

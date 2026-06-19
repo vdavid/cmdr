@@ -1060,13 +1060,14 @@ fn stop_indexing_when_disabled_is_a_noop() {
 
 #[test]
 fn clear_index_from_initializing_removes_instance_and_deletes_db() {
-    // M5: forgetting (`clear_index`) an Initializing volume (a re-enabled
+    // Forgetting (`clear_index`) an Initializing volume (a re-enabled
     // still-scanning Stale index) must remove the instance — so the badge goes
     // gray, not a dangling Stale — and delete its DB. This mirrors
     // `stop_indexing`'s Initializing arm (already removes the instance), and is
     // race-safe: an in-flight `start_indexing` post-`resume_or_scan` re-lock sees
     // `still_initializing == false` and shuts its half-built manager down.
-    // (Pre-M5 this arm early-returned, leaking the instance AND the DB.)
+    // This guards against the Initializing arm early-returning and leaking the
+    // instance AND the DB.
     let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
     reset_indexing_for_test();
 

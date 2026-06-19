@@ -12,7 +12,7 @@
 //! PTP events carry an opaque object handle, not a path:
 //!
 //! - **`ObjectAdded` / `ObjectInfoChanged`** resolve the handle to a path via the
-//!   M0.5 resolver (`resolve_handle_to_path`), so the event loop hands us the
+//!   handle→path resolver (`resolve_handle_to_path`), so the event loop hands us the
 //!   resolved storage-relative path plus the object's metadata. We upsert under
 //!   the resolved parent, STORING THE HANDLE in the index's `inode` column (the
 //!   same column the MTP scan fills) so a later removal can find this row.
@@ -46,7 +46,7 @@ use crate::indexing::writer::{IndexWriter, WriteMessage};
 
 /// A resolved MTP add/change: the object's storage-relative path plus the
 /// metadata needed to upsert it, and its object handle (stored in `inode`).
-/// Built by the event loop from the M0.5 resolver + `ObjectInfo`.
+/// Built by the event loop from the handle→path resolver + `ObjectInfo`.
 #[derive(Debug, Clone)]
 pub(crate) struct MtpUpsert {
     /// Storage-relative path of the changed object (e.g. `/DCIM/Camera/IMG.jpg`).

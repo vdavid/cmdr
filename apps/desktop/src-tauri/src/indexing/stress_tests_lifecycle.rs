@@ -526,9 +526,9 @@ fn shutdown_with_mixed_queued_work() {
     writer2.shutdown();
 }
 
-// ── Test 6: disconnect-storm at the writer level (M5) ───────────────
+// ── Test 6: disconnect-storm at the writer level ────────────────────
 
-/// Disconnect-storm resilience for the WRITER drain (M5). An SMB/MTP device that
+/// Disconnect-storm resilience for the WRITER drain. An SMB/MTP device that
 /// connects/disconnects repeatedly spawns a fresh writer thread on its per-volume
 /// DB each connect and shuts it down each disconnect. Doing this many times
 /// across two distinct volume DBs must never panic, leak the writer thread, wedge

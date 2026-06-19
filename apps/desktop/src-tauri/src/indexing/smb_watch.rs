@@ -36,10 +36,15 @@
 //!   the scan, so it isn't lost against the rebuilding index.
 //! - **Reads off the registry lock**: id resolution uses the volume's `ReadPool`
 //!   (`get_read_pool_for`), never the lifecycle mutex.
-//! - **Stat-verify-before-delete**: SMB coalescing can deliver a false `Removed`
-//!   (an atomic rename's old name, a deleted-then-recreated path). We only enqueue
-//!   a delete when the entry is gone from the live volume; if it still exists we
-//!   upsert instead, mirroring the FSEvents `item_removed` rule.
+//! - **Resolve deletes against the INDEX, not a live stat**: SMB coalescing can
+//!   deliver a false `Removed` (an atomic rename's old name, a deleted-then-
+//!   recreated path). We deliberately do NOT stat the live volume per delete (that
+//!   would add a network round trip per event). Instead we resolve the removed name
+//!   against the index: we enqueue a delete only when that name still exists as an
+//!   index entry; an unknown name is a no-op, and a recreate heals via the separate
+//!   `Added` the watcher fires for it. The index is display-only, so a briefly
+//!   stale row is safe. (FSEvents' `item_removed`, on a local disk where a stat is
+//!   cheap, DOES stat-verify; SMB intentionally doesn't.)
 
 use std::collections::HashMap;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -373,8 +378,7 @@ pub(crate) fn discard_buffered_changes(volume_id: &str) {
 /// so the resolution rules are testable against a seeded in-memory index.
 ///
 /// `None` means "nothing to write" (parent not indexed, or a `Removed`/`Renamed`
-/// whose target was never in the index, or a stat-verified-still-present delete
-/// that we upsert instead).
+/// whose target was never an index entry, so there's nothing to delete).
 fn resolve_change(conn: &rusqlite::Connection, parent_rel: &str, change: &DirectoryChange) -> Option<ResolvedWrite> {
     let parent_id = store::resolve_path(conn, parent_rel).ok().flatten()?;
 
@@ -391,15 +395,12 @@ fn resolve_change(conn: &rusqlite::Connection, parent_rel: &str, change: &Direct
             Some(ResolvedWrite::upsert_from_entry(parent_id, new_entry))
         }
         DirectoryChange::Removed(name) => {
-            // Stat-verify before delete: SMB coalescing delivers false removals
-            // (atomic-rename old name, delete-then-recreate). Only delete when the
-            // entry is gone from the index's perspective AND we don't already see a
-            // replacement — here we resolve by id and trust the watcher's Removed
-            // only if the entry exists in the index; a never-indexed name is a
-            // no-op. The "still exists on the volume" check happens in the caller's
-            // async context is intentionally NOT done per-delete (it would add a
-            // network round trip per event); instead we rely on the upsert path's
-            // re-add when the watcher also fires an Added for a recreated file.
+            // Resolve the delete against the INDEX, not a live stat. SMB coalescing
+            // delivers false removals (atomic-rename old name, delete-then-recreate).
+            // We deliberately skip a per-delete live stat (it would add a network
+            // round trip per event); instead we delete only when the removed name
+            // still exists as an index entry. A never-indexed name is a no-op, and a
+            // recreate heals via the separate `Added` the watcher fires for it.
             let entry_id = store::resolve_path(conn, &join_rel(parent_rel, name)).ok().flatten()?;
             let is_dir = IndexStore::get_entry_by_id(conn, entry_id)
                 .ok()

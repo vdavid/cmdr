@@ -53,9 +53,9 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
       enforced with checks (details-sibling, resident-doc-budget, dead-links)
 - [ ] 2026-06-16 settings-card-groups-plan.md - Third settings grouping level: rows grouped into `SectionCard`s per
       page, empty cards auto-hidden, search-grouping kept in sync (fixes empty-card and blank-page search bugs)
-- [ ] 2026-06-19 smb-mtp-indexing-plan.md - Extend drive indexing to SMB and MTP volumes with a new "admittedly stale"
-      freshness state, a per-drive status badge, and per-drive last-index duration (multi-volume index registry; SMB
-      first, MTP scan-only fast-follow)
+- [x] 2026-06-19 smb-mtp-indexing-plan.md - Extended drive indexing to SMB and MTP volumes with a new "admittedly stale"
+      freshness model, a per-drive status badge, and per-drive last-index duration (per-volume index registry; SMB and
+      MTP both index and stay live via smb2 `CHANGE_NOTIFY` / PTP events)
 
 ## Later
 

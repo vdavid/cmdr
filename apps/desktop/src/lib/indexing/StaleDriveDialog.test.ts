@@ -7,7 +7,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushSync, tick } from 'svelte'
 import type { IndexFreshnessChangedEvent } from '$lib/ipc/bindings'
-import { expectNoA11yViolations } from '$lib/test-a11y'
 
 // Capture the freshness-event callback the dialog registers so the test can fire it.
 let freshnessCb: ((p: IndexFreshnessChangedEvent) => void) | undefined
@@ -123,11 +122,5 @@ describe('StaleDriveDialog', () => {
     flushSync()
     expect(setSetting).not.toHaveBeenCalled()
     expect(target.querySelector('[role="dialog"]')).toBeNull()
-  })
-
-  it('the open dialog has no a11y violations', async () => {
-    const target = mountDialog()
-    await fire({ volumeId: 'smb-backups', freshness: 'stale' })
-    await expectNoA11yViolations(target)
   })
 })

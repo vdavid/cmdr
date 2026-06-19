@@ -5,7 +5,7 @@
 //! the bootstrap logic that spins up the `IndexManager`, the `ReadPool`, and the
 //! incremental-vacuum timer.
 //!
-//! ## Registry shape (M1)
+//! ## Registry shape
 //!
 //! Each indexed volume has one `IndexInstance` bundling its `{phase, read_pool,
 //! pending_sizes}`. The registry is the authority for *which* volumes are
@@ -50,7 +50,8 @@ use crate::settings::FullDiskAccessChoice;
 /// A volume's identity in the index registry (e.g. `"root"` for the local disk).
 pub(crate) type VolumeId = String;
 
-/// The local-disk volume id. The only volume ever registered in M1.
+/// The local-disk volume id. The only volume registered when no network drive
+/// is indexed.
 pub(crate) const ROOT_VOLUME_ID: &str = "root";
 
 // ── Indexing state machine ────────────────────────────────────────────
@@ -89,7 +90,7 @@ pub(crate) struct IndexInstance {
     pub(crate) pending_sizes: Arc<PendingSizes>,
     /// This volume's freshness signal (gray = absent instance; blue/green/yellow
     /// = the `Freshness` variants). `Arc<Mutex<…>>` so scan-transition tasks and
-    /// (M2-B) the watcher-lifetime layer can flip it without holding the registry
+    /// the live-watch layer can flip it without holding the registry
     /// lock. `None` means "not yet determined" (e.g. mid-initialization before
     /// the first scan transition); a `Running` volume always carries `Some`. The
     /// freshness state machine itself lives in `freshness.rs`. See DETAILS §
@@ -156,7 +157,7 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
 ///
 /// **FDA gates only the local (`root`) volume** (scanning `/` triggers TCC). SMB/MTP volumes are
 /// not TCC-protected, so a future per-volume "Turn on indexing" for them must NOT route through
-/// this gate (see the plan's rabbit hole #13). In M1 only `root` is ever started, so this is the
+/// this gate. When no network drive is indexed, only `root` is ever started, so this is the
 /// only auto-start path.
 pub fn should_auto_start_indexing(
     indexing_enabled: Option<bool>,
@@ -355,11 +356,9 @@ pub(crate) fn try_reserve_initializing_phase(
 /// (`freshness::Freshness::on`). No-op if the volume has no registered instance
 /// or no current freshness value yet.
 ///
-/// This is the seam M2-B uses to wire watcher-driven transitions
-/// (`FreshnessEvent::WatcherDied` / `OverflowUnrecoverable`) into the index: it
-/// just calls `apply_freshness_event(volume_id, FreshnessEvent::WatcherDied)`
-/// from the watcher-lifetime layer. The scan paths call it with `ScanStarted` /
-/// `ScanCompleted`.
+/// The live-watch layer routes watcher-driven transitions
+/// (`FreshnessEvent::WatcherDied` / `OverflowUnrecoverable`) through here, and
+/// the scan paths call it with `ScanStarted` / `ScanCompleted`.
 pub(crate) fn apply_freshness_event(volume_id: &str, event: FreshnessEvent) {
     // `ScanStarted` is total even from "not yet determined": a scan can begin on
     // a volume that has no freshness yet (first ever scan). Seed it so the
@@ -406,11 +405,11 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
 ///
 /// - [`Local`](IndexVolumeKind::Local): the boot disk. jwalk scan + FSEvents
 ///   journal, so a persisted index replays to **Fresh** on launch (continuity
-///   self-heals). The only kind M1 ever started.
+///   self-heals). The only kind started when no network drive is indexed.
 /// - [`Smb`](IndexVolumeKind::Smb): an SMB share scanned over the `Volume` trait
 ///   (no jwalk; `/Volumes/` is excluded from the local scanner). No event
 ///   journal, so a persisted index loads **Stale** on launch and the live
-///   watcher (M2-B) is what keeps it Fresh while connected.
+///   watcher is what keeps it Fresh while connected.
 /// - [`Mtp`](IndexVolumeKind::Mtp): a phone/camera storage scanned over the same
 ///   `Volume` trait. Identical to `Smb` for indexing purposes (non-journaled,
 ///   network/USB scan path, loads Stale on launch); the live PTP event loop keeps
@@ -446,7 +445,7 @@ impl IndexVolumeKind {
 /// it starts a fresh full scan.
 ///
 /// `start_indexing` starts the local `root` volume; `start_indexing_for_smb`
-/// starts an SMB share (M2). Both funnel through `start_indexing_for`.
+/// starts an SMB share. Both funnel through `start_indexing_for`.
 pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
     start_indexing_for(app, ROOT_VOLUME_ID, PathBuf::from("/"), IndexVolumeKind::Local)
 }
@@ -737,11 +736,11 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
 
 // ── Module-level public API (called by IPC commands) ─────────────────
 
-/// Per-volume index status for the freshness UX (M3's per-drive badge).
+/// Per-volume index status for the per-drive freshness badge.
 ///
 /// Carries the volume's freshness color plus the last completed scan's facts
 /// (`scan_completed_at`, `scan_duration_ms`) for the tooltip/menu footer. This
-/// is the shape M3 consumes for EVERY drive (local included). A volume with no
+/// is the shape the badge consumes for EVERY drive (local included). A volume with no
 /// registered instance is the gray / not-indexed state (`enabled: false`,
 /// `freshness: None`); a registered one always carries a `freshness`.
 ///
@@ -932,7 +931,7 @@ pub fn get_dir_stats_on_volume(volume_id: &str, path: &str) -> Result<Option<Dir
 
 /// Look up recursive stats for a single directory, resolving the owning volume
 /// from the path. IPC stays path-based (see `commands/indexing.rs`); the volume
-/// is resolved internally. In M1 every absolute local path resolves to `root`.
+/// is resolved internally. Every absolute local path resolves to `root`.
 pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
     get_dir_stats_on_volume(&volume_id_for_local_path(path), path)
 }
@@ -996,7 +995,7 @@ pub fn get_dir_stats_batch_on_volume(volume_id: &str, paths: &[String]) -> Resul
 
 /// Batch lookup of dir_stats, resolving the owning volume from the paths. The
 /// IPC `get_dir_stats_batch` sends one directory's children, which all live on
-/// one volume; resolving from the first path is sufficient. In M1 every
+/// one volume; resolving from the first path is sufficient. Every
 /// absolute local path resolves to `root`.
 pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
     let volume_id = paths
@@ -1289,9 +1288,9 @@ mod tests {
 
     /// Freshness rides the registry instance and transitions through the pure
     /// state machine via `apply_freshness_event`. This pins the registry-level
-    /// wiring (the seam M2-B's watcher uses): a volume reserved Stale (the
+    /// wiring (the path the live watcher uses): a volume reserved Stale (the
     /// load-as-Stale-on-launch case) goes Stale → Scanning → Fresh, and the
-    /// M2-B watcher-died event flips Fresh → Stale. The pure transitions
+    /// watcher-died event flips Fresh → Stale. The pure transitions
     /// themselves are pinned in `freshness::tests`; this proves the registry
     /// stores and threads them.
     #[test]
@@ -1322,7 +1321,7 @@ mod tests {
         apply_freshness_event("smb-fresh-test", FreshnessEvent::ScanCompleted);
         assert_eq!(get_freshness("smb-fresh-test"), Some(Freshness::Fresh));
 
-        // M2-B's seam: a watcher death flips Fresh ⇒ Stale.
+        // Live-watch path: a watcher death flips Fresh ⇒ Stale.
         apply_freshness_event("smb-fresh-test", FreshnessEvent::WatcherDied);
         assert_eq!(get_freshness("smb-fresh-test"), Some(Freshness::Stale));
 
@@ -1336,7 +1335,7 @@ mod tests {
     }
 
     /// Forgetting (`clear_index`) a Stale external index must transition the
-    /// volume to gray/disabled (M5 prune→Disabled), not leave a dangling Stale
+    /// volume to gray/disabled, not leave a dangling Stale
     /// badge, AND delete the DB from disk. The badge goes gray because removal
     /// drops the registry instance, so `get_freshness` returns `None` (the
     /// absence-of-instance = gray model). Exercises the `Initializing`-phase
@@ -1378,7 +1377,7 @@ mod tests {
         clear_registry_and_pools();
     }
 
-    /// Disconnect-storm resilience (M5): rapidly connect/scan/disconnect/forget
+    /// Disconnect-storm resilience: rapidly connect/scan/disconnect/forget
     /// two external volumes many times must never crash, wedge the registry, or
     /// leave a dangling instance/freshness. Mirrors `stress_tests_lifecycle.rs`'s
     /// repeated-cycle philosophy at the registry-lifecycle level (the seam where

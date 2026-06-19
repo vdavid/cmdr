@@ -141,9 +141,9 @@ fn listing_parent_path(entries: &[FileEntry]) -> Option<String> {
 /// index. Convenience wrapper for call sites without a `volume_id` in scope
 /// (most local-listing paths) and for the read-path tests.
 ///
-/// In M1 only `root` is ever registered, so routing every caller through root
-/// is byte-identical to the old single-volume behaviour. M2+ call sites that
-/// know the listing's volume call `enrich_entries_with_index_on_volume`.
+/// When only `root` is registered, routing every caller through root is
+/// byte-identical to single-volume behaviour. Call sites that know the
+/// listing's volume call `enrich_entries_with_index_on_volume` directly.
 pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
     enrich_entries_with_index_on_volume(ROOT_VOLUME_ID, entries);
 }
@@ -154,10 +154,10 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
 /// for lock-free DB reads, so enrichment never blocks on the lifecycle mutex.
 ///
 /// **Skip-vs-route gate**: if no index is registered for `volume_id`, return
-/// before any DB work. This *replaces* the old `should_exclude(parent_path)`
-/// early-return, but preserves it exactly in M1: only `root` is registered, so
-/// every non-root listing (SMB, MTP, network mounts under their own volume ids)
-/// skips here. For the `root` volume we ALSO keep the path-based exclusion check
+/// before any DB work. This replaces the path-based `should_exclude(parent_path)`
+/// early-return: when only `root` is registered, every non-root listing (SMB,
+/// MTP, network mounts under their own volume ids) skips here, the same as
+/// before. For the `root` volume we ALSO keep the path-based exclusion check
 /// below, so a listing navigated to an excluded local path (`/Volumes/...`,
 /// `/proc/...`) under the root volume id still skips — those paths aren't in
 /// root's index, and enrichment would miss the parent lookup and log "Parent
@@ -171,8 +171,9 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
     // Skip if no index is registered for this volume: `get_read_pool_for`
     // returns `None`, which IS the "no index registered" signal (root's pool
     // lives in `READ_POOL`; a non-root volume's pool lives in its registry
-    // instance). In M1 this fires for every volume except root, preserving the
-    // old network-mount fast skip exactly. A single lock-free Arc-clone check.
+    // instance). When only root is registered, this fires for every volume
+    // except root, preserving the network-mount fast skip. A single lock-free
+    // Arc-clone check.
     let pool = match get_read_pool_for(volume_id) {
         Some(p) => p,
         None => {

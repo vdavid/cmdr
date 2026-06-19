@@ -30,10 +30,10 @@ pub enum EnableIndexingOutcome {
     Refused { reason: SmbIndexGateReason },
 }
 
-// IPC stays path-based and single-volume in M1: the index-status, scan, and
-// clear commands all act on the local-disk `root` index. The backend resolves
-// the volume internally (here, the constant `root`), so the frontend and
-// `bindings.ts` are unchanged. M2+ will widen these to carry a volume.
+// These path-based IPC commands act on the local-disk `root` index: the
+// index-status, scan, and clear commands resolve the volume internally (here,
+// the constant `root`), so the frontend and `bindings.ts` stay path-based. The
+// per-drive (volume-carrying) commands live further down.
 
 #[tauri::command]
 #[specta::specta]
@@ -83,7 +83,7 @@ pub async fn get_index_debug_status() -> Result<IndexDebugStatusResponse, String
     indexing::get_debug_status(ROOT_VOLUME_ID)
 }
 
-/// Per-volume index status for the freshness badge (M3's per-drive UX).
+/// Per-volume index status for the freshness badge (the per-drive freshness UX).
 ///
 /// Returns the volume's freshness color plus the last completed scan's facts
 /// (`scan_completed_at`, `scan_duration_ms`). Resolves the owning volume from
@@ -166,7 +166,7 @@ pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), Str
     indexing::start_indexing(&app)
 }
 
-// ── Per-drive enable / disable / rescan (M3's per-drive badge menu) ───
+// ── Per-drive enable / disable / rescan (the per-drive badge menu) ───
 //
 // These are the typed, per-volume controls the freshness UX drives: "Turn on
 // indexing for this drive", "Turn off indexing for this drive", and "Rescan

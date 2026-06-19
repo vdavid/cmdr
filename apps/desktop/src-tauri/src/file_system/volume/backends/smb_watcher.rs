@@ -181,7 +181,7 @@ pub(super) async fn run_smb_watcher(
         dfs_target_overrides: Default::default(),
     };
     // A watcher that can't even establish its session can't keep the index
-    // Fresh, so each setup-failure return flips a Fresh index Stale (M2-B). Cheap
+    // Fresh, so each setup-failure return flips a Fresh index Stale. Cheap
     // no-op when the volume isn't indexed or is already Stale.
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     let mark_stale = || crate::indexing::on_smb_watcher_died(&volume_id);
@@ -342,8 +342,8 @@ pub(super) async fn run_smb_watcher(
                     share_name, e
                 );
                 // Index freshness: the live watch broke, so a Fresh index can no
-                // longer be trusted. Flip it Stale (M2-B `WatcherDied` seam). A
-                // later reconnect respawns the watcher but does NOT restore Fresh
+                // longer be trusted. Flip it Stale (the `WatcherDied` freshness
+                // seam). A later reconnect respawns the watcher but does NOT restore Fresh
                 // — only a rescan does (the "admittedly stale" model).
                 #[cfg(any(target_os = "macos", target_os = "linux"))]
                 crate::indexing::on_smb_watcher_died(&volume_id);

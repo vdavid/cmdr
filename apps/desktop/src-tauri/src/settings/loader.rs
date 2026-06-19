@@ -36,7 +36,7 @@ pub struct Settings {
     pub developer_mcp_port: Option<u16>,
     #[serde(alias = "indexing.enabled", default)]
     pub indexing_enabled: Option<bool>,
-    /// Drive-indexing freshness UX (M3). All three gate FRONTEND behavior (the
+    /// Drive-indexing freshness UX. All three gate FRONTEND behavior (the
     /// first-connect notification and the one-time stale dialog), so the FE owns
     /// reads/writes via the settings registry; they're parsed here for
     /// completeness and crash-report correlation, mirroring
@@ -421,7 +421,7 @@ mod tests {
 
     #[test]
     fn parses_drive_indexing_freshness_keys() {
-        // The M3 drive-indexing freshness toggles round-trip from their literal
+        // The drive-indexing freshness toggles round-trip from their literal
         // dot-notation keys. A missing key stays `None` (the FE applies the
         // registry default: both ON).
         let json = r#"{ "indexing.askForEachDrive": false, "indexing.staleNotify": true }"#;

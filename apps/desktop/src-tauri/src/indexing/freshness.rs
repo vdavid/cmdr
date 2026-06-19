@@ -25,11 +25,10 @@
 //! ## The transition table (this module is the single source of truth)
 //!
 //! [`Freshness::on`] is a pure function from `(current, event)` to the next
-//! state. M2 implements the transitions that DON'T need the live watcher;
-//! [`FreshnessEvent`] also declares the watcher-driven ones (`WatcherDied`,
-//! `OverflowUnrecoverable`) so M2-B can wire them in without touching the state
-//! machine — it just calls `on(WatcherDied)` from the watcher-lifetime layer.
-//! That's the documented seam.
+//! state. Some transitions are scan-driven (`ScanStarted`, `ScanCompleted`);
+//! the watcher-driven ones (`WatcherDied`, `OverflowUnrecoverable`) are fired
+//! from the watcher-lifetime layer (`smb_index` / `mtp_index`), which just calls
+//! `on(WatcherDied)` — the call sites live there, never in this state machine.
 //!
 //! ## Persistence
 //!
@@ -60,12 +59,11 @@ pub enum Freshness {
 
 /// Inputs that drive a volume's freshness transitions.
 ///
-/// The first three are the M2 transitions — none needs a live watcher. The last
-/// two are declared here for M2-B to fire from the watcher-lifetime layer
-/// (`WatcherDied` when the SMB session drops / the watcher task returns,
-/// `OverflowUnrecoverable` if a `CHANGE_NOTIFY` overflow can't be repaired by a
-/// targeted subtree rescan). Declaring them now is the seam: M2-B adds the
-/// *call sites*, not new state-machine arms.
+/// The first three are scan-driven and need no live watcher. The last two are
+/// fired from the watcher-lifetime layer: `WatcherDied` when the SMB session
+/// drops / the watcher task returns, `OverflowUnrecoverable` when a
+/// `CHANGE_NOTIFY` overflow can't be repaired by a targeted subtree rescan. All
+/// the call sites live there, never as new state-machine arms.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FreshnessEvent {
     /// A full scan started (initial or rescan). ⇒ `Scanning`.
@@ -79,16 +77,14 @@ pub enum FreshnessEvent {
     /// The live watcher for this volume reported the watched session is gone
     /// (disconnect, SMB session drop, MTP device unplug). ⇒ `Stale`.
     ///
-    /// **M2-B wires the call site** (the watcher-lifetime change is M2-B's
-    /// scope). M2 only defines the transition so the seam is testable now.
+    /// Fired from the watcher-lifetime layer (`smb_index` / `mtp_index`).
     WatcherDied,
     /// A `CHANGE_NOTIFY` overflow could not be repaired by a targeted subtree
     /// rescan, so the index may have drifted. ⇒ `Stale`.
     ///
-    /// **M2-B wires the call site.** Note the SMB watcher today keeps watching
-    /// on overflow and emits a `FullRefresh`; M2-B decides overflow policy
-    /// (rescan-subtree vs. signal Stale) and calls this only for the
-    /// unrecoverable case.
+    /// The SMB watcher keeps watching on overflow and emits a `FullRefresh`; the
+    /// watcher-lifetime layer decides overflow policy (rescan-subtree vs. signal
+    /// Stale) and fires this only for the unrecoverable case.
     OverflowUnrecoverable,
 }
 
@@ -96,8 +92,8 @@ impl Freshness {
     /// Pure transition: the next freshness given the current state and an event.
     ///
     /// Total and deterministic — every `(state, event)` pair has a defined
-    /// result, so the table is the single source of truth and M2-B's new call
-    /// sites can't introduce an undefined transition. A scan can start from any
+    /// result, so the table is the single source of truth and the watcher-layer
+    /// call sites can't introduce an undefined transition. A scan can start from any
     /// state (re-scan a Fresh or Stale volume), and a watcher death / overflow
     /// only matters once we'd otherwise claim Fresh, but defining them from
     /// every state keeps the function total and the seam trivial.
@@ -176,8 +172,8 @@ mod tests {
 
     #[test]
     fn watcher_death_makes_a_fresh_volume_stale() {
-        // The headline Fresh→Stale transition. M2-B wires the call site; the
-        // transition itself must already hold.
+        // The headline Fresh→Stale transition. The watcher-lifetime layer wires
+        // the call site; the transition itself must already hold.
         assert_eq!(Freshness::Fresh.on(FreshnessEvent::WatcherDied), Freshness::Stale);
     }
 

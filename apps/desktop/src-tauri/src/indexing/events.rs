@@ -125,8 +125,9 @@ pub struct IndexMemoryWarningEvent {
 }
 
 /// Emitted when a volume's freshness changes to a NEW value (blue/green/yellow
-/// transitions). Drives the M3 freshness UX: the always-visible badge refreshes,
-/// and the FE's one-time stale dialog (D2) fires on the exact Fresh→Stale edge.
+/// transitions). Drives the per-drive freshness UX: the always-visible badge
+/// refreshes, and the FE's one-time stale dialog (D2) fires on the exact
+/// Fresh→Stale edge.
 /// Emitted from `state::apply_freshness_event` only when the value actually
 /// changes, so the FE can subscribe rather than poll.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
@@ -221,10 +222,10 @@ pub struct IndexStatusResponse {
     pub volume_used_bytes: Option<u64>,
 }
 
-/// Per-volume index status for the freshness UX (M3's per-drive badge).
+/// Per-volume index status for the per-drive freshness badge.
 ///
 /// Unlike [`IndexStatusResponse`] (the local-disk scan-progress shape the debug
-/// window and scan overlay consume), this is the *per-volume* status M3's badge
+/// window and scan overlay consume), this is the *per-volume* status the badge
 /// renders for every drive, local included: the freshness color plus the
 /// last-completed-scan facts the tooltip/menu footer show. `enabled: false`
 /// with `freshness: None` is the gray / not-indexed state (no registered index

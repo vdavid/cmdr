@@ -126,7 +126,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `platform.rs`: Shared platform-identity helpers (`os_version()`), used by crash + error reports and the heartbeat
 - `licensing/`: Ed25519 license verification, server validation
 - `settings/`: Settings persistence (tauri-plugin-store)
-- `indexing/`: Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes
+- `indexing/`: Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes. Per-volume registry (one
+  index DB per drive, not just local) with a per-volume freshness model (Fresh/Stale/gray); SMB and MTP drives index too
+  and stay live via smb2 `CHANGE_NOTIFY` / PTP events, with an "admittedly stale" model on launch and disconnect
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher

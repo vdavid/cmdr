@@ -271,17 +271,17 @@ impl IndexManager {
         self.start_scan(trigger)
     }
 
-    /// `resume_or_scan` for journal-less network volumes (SMB; MTP in M4).
+    /// `resume_or_scan` for journal-less network volumes (SMB and MTP).
     ///
     /// A completed prior scan loaded **Stale** (no journal to roll forward — see
     /// `freshness`), so we DON'T rescan automatically: the index stays browsable
     /// and the user rescans to refresh. A never-completed index (first connect,
     /// or an interrupted prior scan) triggers a fresh `Volume`-trait scan.
     ///
-    /// Note: no `DriveWatcher` here. FSEvents on a network mount is M2-B's
-    /// concern (the watcher-lifetime change); this milestone wires the scan and
-    /// freshness only. The live SMB watcher that keeps the index Fresh hooks in
-    /// at the seam documented in `state::apply_freshness_event`.
+    /// Note: no `DriveWatcher` here. FSEvents doesn't cover network mounts; the
+    /// live SMB watcher that keeps the index Fresh hooks in through
+    /// `state::apply_freshness_event` instead. This path handles the scan and
+    /// freshness seeding only.
     fn resume_or_scan_network(&mut self) -> Result<(), String> {
         let kind = self.kind_label();
         let status = self
@@ -322,8 +322,8 @@ impl IndexManager {
     ///
     /// Mirrors `start_scan`'s shape (truncate → scan → aggregate → meta on clean
     /// completion) but walks via `volume_scanner::scan_volume_via_trait` instead
-    /// of jwalk, and starts NO `DriveWatcher` (M2-B owns live watch). Freshness
-    /// transitions: `ScanStarted` ⇒ Scanning now; on clean completion the
+    /// of jwalk, and starts NO `DriveWatcher` (the live-watch layer owns that).
+    /// Freshness transitions: `ScanStarted` ⇒ Scanning now; on clean completion the
     /// completion task fires `ScanCompleted` ⇒ Fresh and writes the meta marker;
     /// on cancel/error the partial is discarded by RESETTING the volume to gray
     /// (removing the registry instance), per D-interrupted.
@@ -763,7 +763,7 @@ impl IndexManager {
         DEBUG_STATS.set_phase(ActivityPhase::Scanning, scan_trigger);
 
         // Freshness ⇒ Scanning (blue). For local `root` this also drives the
-        // per-volume badge M3 renders; the clean-completion handler flips it back
+        // per-drive badge; the clean-completion handler flips it back
         // to Fresh. (Root is journaled, so a restart re-seeds Fresh; this keeps
         // the badge honest DURING a scan/rescan.)
         super::state::apply_freshness_event(&self.volume_id, super::freshness::FreshnessEvent::ScanStarted);

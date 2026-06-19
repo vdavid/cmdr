@@ -1459,7 +1459,7 @@ export const commands = {
   // Extended debug status for the debug window (dev only).
   getIndexDebugStatus: () => typedError<IndexDebugStatusResponse, string>(__TAURI_INVOKE('get_index_debug_status')),
   /**
-   *  Per-volume index status for the freshness badge (M3's per-drive UX).
+   *  Per-volume index status for the freshness badge (the per-drive freshness UX).
    *
    *  Returns the volume's freshness color plus the last completed scan's facts
    *  (`scan_completed_at`, `scan_duration_ms`). Resolves the owning volume from
@@ -3547,8 +3547,9 @@ export type IndexDirUpdatedEvent = {
 
 /**
  *  Emitted when a volume's freshness changes to a NEW value (blue/green/yellow
- *  transitions). Drives the M3 freshness UX: the always-visible badge refreshes,
- *  and the FE's one-time stale dialog (D2) fires on the exact Fresh→Stale edge.
+ *  transitions). Drives the per-drive freshness UX: the always-visible badge
+ *  refreshes, and the FE's one-time stale dialog (D2) fires on the exact
+ *  Fresh→Stale edge.
  *  Emitted from `state::apply_freshness_event` only when the value actually
  *  changes, so the FE can subscribe rather than poll.
  */
@@ -5215,7 +5216,7 @@ export type SmbDiagnosticsDto = {
 
 /**
  *  Why an SMB volume couldn't be indexed. Typed (and serialized as a
- *  snake_case tag) so callers and the M3 UX classify by variant on BOTH sides
+ *  snake_case tag) so callers and the per-drive UX classify by variant on BOTH sides
  *  of the IPC boundary, never by message substring (`.claude/rules/no-string-matching.md`).
  */
 export type SmbIndexGateReason =
@@ -5617,10 +5618,10 @@ export type VolumeCopyScanResult = {
 }
 
 /**
- *  Per-volume index status for the freshness UX (M3's per-drive badge).
+ *  Per-volume index status for the per-drive freshness badge.
  *
  *  Unlike [`IndexStatusResponse`] (the local-disk scan-progress shape the debug
- *  window and scan overlay consume), this is the *per-volume* status M3's badge
+ *  window and scan overlay consume), this is the *per-volume* status the badge
  *  renders for every drive, local included: the freshness color plus the
  *  last-completed-scan facts the tooltip/menu footer show. `enabled: false`
  *  with `freshness: None` is the gray / not-indexed state (no registered index

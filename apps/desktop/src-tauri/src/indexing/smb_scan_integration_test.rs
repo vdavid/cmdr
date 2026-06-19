@@ -149,7 +149,7 @@ async fn smb_integration_volume_scan_indexes_share() {
 /// The live watch→index path: scan a fixture share, then MUTATE it and feed the
 /// change through the real translator (`smb_watch`), asserting the index reflects
 /// the mutation — the "scan a share, mutate it, assert the index reflects the
-/// change while Fresh" requirement (plan M2). No pane/listing is involved, so it
+/// change while Fresh" requirement. No pane/listing is involved, so it
 /// also pins the volume-index-scoped (not pane-scoped) behavior: the index
 /// updates from a watch event with zero open listings.
 #[tokio::test]
@@ -261,7 +261,7 @@ async fn smb_integration_watch_event_updates_index() {
 /// The READ-side mirror of `smb_integration_volume_scan_indexes_share`: scan a
 /// fixture share, then enrich a listing of it and assert directory sizes appear.
 ///
-/// This is the regression test for the SMB read-side gap (M3-A item 1): an SMB
+/// This is the regression test for the SMB read-side gap: an SMB
 /// index's `ROOT_ID` is the mount root, so enrichment must strip the mount root
 /// to a mount-relative path (`index_read_path` / `index_relative_path`) before
 /// `resolve_path`. Without that transform, a mount-absolute parent resolves to
