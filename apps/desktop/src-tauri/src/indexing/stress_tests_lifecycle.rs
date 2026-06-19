@@ -525,3 +525,74 @@ fn shutdown_with_mixed_queued_work() {
     writer2.flush_blocking().unwrap();
     writer2.shutdown();
 }
+
+// ── Test 6: disconnect-storm at the writer level (M5) ───────────────
+
+/// Disconnect-storm resilience for the WRITER drain (M5). An SMB/MTP device that
+/// connects/disconnects repeatedly spawns a fresh writer thread on its per-volume
+/// DB each connect and shuts it down each disconnect. Doing this many times
+/// across two distinct volume DBs must never panic, leak the writer thread, wedge
+/// the DB with a stale lock, or corrupt the index — the writer-shutdown drain has
+/// to hold under churn. Uses `spawn_for(.., false)` (non-search-feeding), the
+/// real SMB/MTP path, so the storm also can't thrash the root search generation.
+///
+/// Complements the registry-level disconnect storm in `state.rs`
+/// (`disconnect_storm_two_volumes_never_wedges_the_registry`): that one churns
+/// the freshness/registry lifecycle, this one churns the writer thread + DB.
+#[test]
+fn disconnect_storm_writer_drain_holds_across_volumes() {
+    let dir = tempfile::tempdir().expect("create temp dir");
+    let db_a = dir.path().join("index-smb-storm.db");
+    let db_b = dir.path().join("index-mtp-storm.db");
+    for db in [&db_a, &db_b] {
+        IndexStore::open(db).expect("init schema");
+    }
+
+    const ROUNDS: usize = 20;
+    for round in 0..ROUNDS {
+        // Alternate which DB leads so connect/disconnect ordering varies.
+        let order: [&std::path::PathBuf; 2] = if round % 2 == 0 { [&db_a, &db_b] } else { [&db_b, &db_a] };
+        for db_path in order {
+            // Connect: spawn a non-search-feeding writer (the SMB/MTP path).
+            let writer = IndexWriter::spawn_for(db_path, None, false).expect("spawn writer under storm");
+            // A small live-write burst (the watch→index path during a session).
+            let tree = build_synthetic_tree(2, 2, 3, 256);
+            for chunk in tree.chunks(8) {
+                // A send may fail only if a prior shutdown raced; here the writer
+                // is freshly spawned and alive, so every send must land.
+                writer
+                    .send(WriteMessage::InsertEntriesV2(chunk.to_vec()))
+                    .expect("send must land on a live writer");
+            }
+            writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+            // Disconnect: shutdown joins the writer thread (no panic = clean drain).
+            writer.shutdown();
+        }
+    }
+
+    // After the storm both DBs open cleanly (no stale lock), are queryable (no
+    // corruption), and accept a fresh writer + full rescan to a consistent state.
+    for db_path in [&db_a, &db_b] {
+        let writer = IndexWriter::spawn(db_path, None).expect("spawn after storm: DB not wedged");
+        writer.send(WriteMessage::TruncateData).unwrap();
+        let tree = build_synthetic_tree(2, 3, 4, 512);
+        let tree_len = tree.len();
+        for chunk in tree.chunks(16) {
+            writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
+        }
+        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_read_connection(db_path).expect("open read conn after storm");
+        check_db_consistency(&conn);
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM entries", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(
+            count,
+            tree_len as i64 + 1,
+            "post-storm rescan must yield tree + root sentinel (no corruption)"
+        );
+        writer.shutdown();
+    }
+}
