@@ -80,7 +80,7 @@
     // Bridge a list selection into the displayed text. `selectionBehavior="preserve"` deliberately
     // leaves the input untouched on select, so without this a click would never reach the consumer.
     function handleValueChange(details: { value: string[] }): void {
-        const selected = details.value[0]
+        const selected = details.value.at(0)
         if (selected !== undefined) {
             onInputValueChange(selected)
         }

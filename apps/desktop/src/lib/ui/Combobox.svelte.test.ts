@@ -81,7 +81,7 @@ describe('Combobox value model', () => {
     getInput(target).click()
     await tick()
     const option = [...target.querySelectorAll<HTMLElement>('.combobox-item')].find((el) =>
-      el.textContent?.includes('gpt-4o-mini'),
+      el.textContent.includes('gpt-4o-mini'),
     )
     if (!option) throw new Error('combobox item not found')
     option.click()
