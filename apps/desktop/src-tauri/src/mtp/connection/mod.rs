@@ -18,6 +18,7 @@ mod directory_ops;
 pub(super) mod errors;
 mod event_loop;
 mod file_ops;
+mod handle_resolver;
 mod mutation_ops;
 
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};

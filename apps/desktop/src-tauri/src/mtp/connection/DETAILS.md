@@ -51,3 +51,69 @@ dest_folder }` ("Couldn't write to the destination…"), a destination-correct m
 upload failures now also `log::warn!` under `target: "mtp_upload"`, so a bare protocol rejection leaves a breadcrumb.
 Pinned by `upload_into_stale_parent_handle_heals_and_retry_succeeds` (connection layer) and
 `stream_pipe_file_retries_once_on_stale_destination_handle` (engine).
+
+## Pathful change events: handle → path resolution (`handle_resolver.rs`)
+
+PTP change events carry only an opaque `ObjectHandle` (a `u32`), never a path: every event on the interrupt endpoint is
+`code + 3×u32`, a property of the wire format, not a Cmdr or mtp-rs gap. `event_loop.rs` turns `ObjectAdded` /
+`ObjectInfoChanged` into a **targeted** refresh of just the affected directory, instead of the old blanket re-list of
+every open pane on the device. `ObjectRemoved` stays blanket (see below).
+
+### The resolver
+
+`MtpConnectionManager::resolve_handle_to_path(device_id, storage_id, handle) → Result<PathBuf, MtpConnectionError>`
+returns the object's full virtual path (`/DCIM/Camera/IMG_0001.jpg`). It asks the device for the object's `ObjectInfo`
+(`{ parent, filename }`) and walks the `parent` chain up to the storage root, prepending each filename. Root-level
+objects resolve to `/<name>`; the root handle itself resolves to `/`.
+
+It's split in two on purpose:
+
+- **Phase 1 — `prefetch_handle_chain` (async, the only USB-touching half).** Follows parents hop-by-hop via
+  `GetObjectInfo`, memoizing `(parent, filename)`, stopping at a cached ancestor, a root sentinel, or `MAX_WALK_DEPTH`.
+  The device/storage open lazily on the first miss, so a fully-cached resolve issues **zero** USB calls. Each round trip
+  is `MTP_TIMEOUT_SECS`-bounded; the device lock is held across the (few, shallow) hops so an event burst can't
+  interleave them and thrash the session.
+- **Phase 2 — `walk_handle_to_path` (pure).** Assembles the path from the phase-1 memo plus the reverse cache. It owns
+  the canonical stop/assembly logic (short-circuit, root sentinels, depth cap), so phase 1 only over-approximates "what
+  might be needed" and never computes the path. Being pure, it unit-tests against an in-memory handle graph with no
+  device (cached-ancestor short-circuit, full walk to root, root object, invalid handle, cyclic chain).
+
+**Root sentinels:** the walk stops at both `ObjectHandle::ROOT` (`0`, the spec value) and `ObjectHandle::ALL`
+(`0xFFFFFFFF`) — the Android root quirk lets a root child report either as its parent (mirrors mtp-rs's `AndroidRoot`
+filter). Treating only `ROOT` as root would fail the walk for those devices.
+
+**Cycle guard:** `MAX_WALK_DEPTH` (256) bounds a self-referential/cyclic parent chain from malformed firmware. Real MTP
+trees are a handful of levels deep; the cap exists only so a bad device can't wedge the walk — it fails cleanly and the
+caller falls back.
+
+### Reverse cache (`PathHandleCache::handle_to_path`)
+
+**Decision:** `PathHandleCache` keeps both `path → handle` (forward, for browsing's `resolve_path_to_handle`) and
+`handle → path` (reverse, for the resolver). **Why:** the resolver's walk would otherwise hit USB for every ancestor up
+to root on every event; the reverse map lets it stop the instant it reaches an ancestor the user has already browsed, so
+resolving a newly added file under an open folder is usually one `GetObjectInfo` (the file itself). The two maps are
+populated together at the same sites (`finalize_listing`, fed by both `convert_object_infos` and the streaming path) via
+`PathHandleCache::insert`, which writes both directions — **never** insert into `path_to_handle` directly, or the maps
+drift. The resolver also caches the resolved leaf `(handle → path)` so a follow-up event under the same folder
+short-circuits on it.
+
+### Targeted refresh and the blanket fallback (`event_loop.rs`)
+
+`emit_change_for_handle` resolves the handle, derives the **affected directory** (the object's parent — the folder whose
+listing shows it), and re-reads only the listing(s) showing that exact directory on that storage, through the same
+debouncer and diff coalescer as the blanket path. PTP handles are device-wide but storages are separate namespaces, so
+it attempts resolution against each storage that has an open listing and targets the first whose resolved parent matches
+an open listing.
+
+**Blanket fallback — never lose an update.** On any resolution failure (handle invalid, parent uncached and the walk
+fails, timeout) or when no open listing shows the affected dir on any storage, it falls back to
+`emit_directory_changed` (re-read + diff every open listing on the device). This keeps the live pane correct even when
+the resolver can't help — the cost is precision, not correctness.
+
+**`ObjectRemoved` is always blanket** for the live pane: the object is already gone, so `GetObjectInfo(handle)` fails and
+the resolver can't recover a path. The index path (M4) will resolve removals via a handle stored per index entry instead
+(precedent: the `inode` column) — out of scope here.
+
+`listing_inner_mtp_path` reduces a listing's stored path (`mtp://<device>/<storage>/<inner…>` or a `/`-rooted inner
+path) to the leading-`/` inner form the resolver produces, so the affected-dir match compares apples to apples in both
+representations. Pinned by the `event_loop` tests.

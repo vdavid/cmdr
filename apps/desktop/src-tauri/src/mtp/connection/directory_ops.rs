@@ -552,7 +552,7 @@ impl MtpConnectionManager {
             {
                 let storage_cache = cache_map.entry(storage_id).or_default();
                 for (path, handle) in cache_updates {
-                    storage_cache.path_to_handle.insert(path, handle);
+                    storage_cache.insert(path, handle);
                 }
             }
         }

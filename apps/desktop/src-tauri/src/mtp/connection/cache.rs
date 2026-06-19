@@ -10,11 +10,34 @@ use std::time::{Duration, Instant};
 use crate::file_system::FileEntry;
 use crate::ignore_poison::RwLockIgnorePoison;
 
-/// Cache for mapping paths to MTP object handles.
+/// Cache mapping virtual paths to MTP object handles, and back.
+///
+/// Both directions are populated together (see [`insert`](Self::insert)) at the
+/// same sites that list a directory, so they never drift. The forward map
+/// (`path_to_handle`) backs [`resolve_path_to_handle`](super::MtpConnectionManager::resolve_path_to_handle)
+/// for browsing; the reverse map (`handle_to_path`) lets the pathless PTP change
+/// events ([`DeviceEvent::ObjectAdded`](mtp_rs::mtp::DeviceEvent) and friends, which carry only an
+/// opaque handle) short-circuit a parent-walk the moment they hit a cached
+/// ancestor instead of always walking to the storage root over USB.
 #[derive(Default)]
 pub(super) struct PathHandleCache {
     /// Maps virtual path -> MTP object handle.
     pub(super) path_to_handle: HashMap<PathBuf, ObjectHandle>,
+    /// Maps MTP object handle -> virtual path. The reverse of `path_to_handle`,
+    /// kept in lockstep with it.
+    pub(super) handle_to_path: HashMap<ObjectHandle, PathBuf>,
+}
+
+impl PathHandleCache {
+    /// Records a `(path, handle)` pair in both directions.
+    ///
+    /// Always insert through this (never `path_to_handle.insert` directly) so the
+    /// reverse map can't fall out of sync. `ObjectHandle` is `Copy` and `PathBuf`
+    /// is cheap to clone for a single map entry.
+    pub(super) fn insert(&mut self, path: PathBuf, handle: ObjectHandle) {
+        self.path_to_handle.insert(path.clone(), handle);
+        self.handle_to_path.insert(handle, path);
+    }
 }
 
 /// Cache for directory listings.
