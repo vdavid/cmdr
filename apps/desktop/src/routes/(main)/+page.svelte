@@ -19,6 +19,7 @@
     import { getFocusedPanePath, getFocusedPaneSearchableFolder } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
     import IndexingStatusIndicator from '$lib/indexing/IndexingStatusIndicator.svelte'
+    import StaleDriveDialog from '$lib/indexing/StaleDriveDialog.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
@@ -783,6 +784,7 @@
         {#if showApp}
             <DualPaneExplorer bind:this={explorerRef} onCommand={handleCommandExecute} />
             <IndexingStatusIndicator />
+            <StaleDriveDialog />
         {/if}
 
         {#if showApp}

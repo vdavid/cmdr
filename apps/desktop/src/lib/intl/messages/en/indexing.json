@@ -137,5 +137,49 @@
   "indexing.rescan.fallback": "Running a fresh drive scan to keep the index accurate.",
   "@indexing.rescan.fallback": {
     "description": "Generic fallback info toast shown when Cmdr rescans the drive for a reason not covered by the specific messages. Calm and explanatory."
+  },
+
+  "indexing.firstConnect.title": "Index {name}?",
+  "@indexing.firstConnect.title": {
+    "description": "Heading of the notification shown the first time the user opens a new external drive (a network share or device). Asks whether to index it for folder sizes and search.",
+    "placeholders": {
+      "name": "the drive''s display name (e.g. Backups)"
+    }
+  },
+  "indexing.firstConnect.body": "Cmdr can index this drive in the background so folder sizes and search work here. It only runs while the drive is connected.",
+  "@indexing.firstConnect.body": {
+    "description": "Body of the first-connect indexing notification, explaining what indexing the drive gives you and that it only runs while connected."
+  },
+  "indexing.firstConnect.enable": "Enable indexing",
+  "@indexing.firstConnect.enable": {
+    "description": "Primary button in the first-connect notification. Turns on indexing for this drive and starts the scan."
+  },
+  "indexing.firstConnect.silenceDrive": "Don''t ask again for this drive",
+  "@indexing.firstConnect.silenceDrive": {
+    "description": "Button in the first-connect notification that stops Cmdr asking about THIS drive again (but keeps asking about others)."
+  },
+  "indexing.firstConnect.silenceAll": "Don''t ask again for any drives",
+  "@indexing.firstConnect.silenceAll": {
+    "description": "Button in the first-connect notification that stops Cmdr asking about indexing for ANY drive (turns the per-drive prompt off in Settings)."
+  },
+
+  "indexing.staleDialog.title": "This drive''s index may be out of date",
+  "@indexing.staleDialog.title": {
+    "description": "Title of the one-time dialog shown the first time any external drive''s index goes stale (the drive was disconnected, so changes may have been missed). Never use the words ''error'' or ''failed''."
+  },
+  "indexing.staleDialog.body": "While {name} was disconnected, files on it may have changed. Folder sizes and search results might be a bit off until you rescan. The yellow status next to the drive always shows when this happens, and a rescan refreshes it.",
+  "@indexing.staleDialog.body": {
+    "description": "Body of the one-time stale-drive dialog, explaining that the drive may have changed while disconnected, that the yellow status flags it, and that a rescan refreshes it. Calm and reassuring; active voice.",
+    "placeholders": {
+      "name": "the drive''s display name (e.g. Backups)"
+    }
+  },
+  "indexing.staleDialog.neverShowAgain": "Never show again",
+  "@indexing.staleDialog.neverShowAgain": {
+    "description": "Button in the one-time stale-drive dialog that turns off this notification for good (the yellow status still shows). Sentence case."
+  },
+  "indexing.staleDialog.close": "Close",
+  "@indexing.staleDialog.close": {
+    "description": "Button in the one-time stale-drive dialog that dismisses it without changing the notification setting."
   }
 }

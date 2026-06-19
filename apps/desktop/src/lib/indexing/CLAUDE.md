@@ -10,6 +10,12 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
 - **`index-events.ts`**: listens for `index-dir-updated`, calls back with updated paths.
 - **`eta.ts`**: pure ETA helpers + `computeScanProgress` (two-tier scan fraction).
 - **`IndexingStatusIndicator.svelte`**: top-right hourglass icon with a rich tooltip (scan / aggregation / replay).
+- **`drive-index-prefs.ts`**: FE-OWNED persisted prefs the backend never reads: per-drive "don't ask again" silences
+  (D6) and the one-time stale-dialog flag (D2), stored as hidden settings.
+- **`first-connect-trigger.ts`** + **`FirstConnectIndexToastContent.svelte`**: the first-connect "index this drive?"
+  prompt (D6), shown once per session per new external drive, self-gated on settings + silence + already-indexed.
+- **`StaleDriveDialog.svelte`**: the one-time "your drive went stale" dialog (D2), mounted once in `+page.svelte`,
+  subscribes to `index-freshness-changed`, fires on the first external Fresh→Stale edge (gated on `indexing.staleNotify`).
 
 ## Must-knows
 
