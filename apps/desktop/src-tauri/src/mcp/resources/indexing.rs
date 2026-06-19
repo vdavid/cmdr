@@ -29,7 +29,7 @@ pub fn format_duration_human(ms: u64) -> String {
 
 /// Build a plain-text summary of the indexing status for the MCP resource.
 pub fn build_indexing_status_text() -> String {
-    let status = match crate::indexing::get_debug_status() {
+    let status = match crate::indexing::get_debug_status(crate::indexing::ROOT_VOLUME_ID) {
         Ok(s) => s,
         Err(e) => return format!("Couldn't read indexing status: {e}"),
     };

@@ -1225,7 +1225,7 @@ struct VerifyResult {
 ///    `PropagateDeltaById`. New directories are collected in `new_dir_paths` for the caller to scan
 ///    via `scan_subtree`.
 fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) -> VerifyResult {
-    // ── Phase 1: Bulk-read DB state via ReadPool (no INDEXING lock) ──
+    // ── Phase 1: Bulk-read DB state via ReadPool (no lifecycle/registry lock) ──
     // Snapshot: parent_path → (parent_id, Vec<EntryRow>)
     let pool = match get_read_pool() {
         Some(p) => p,

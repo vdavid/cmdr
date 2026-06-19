@@ -12,8 +12,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use rusqlite::Connection;
 
 use super::firmlinks;
+use super::state::ROOT_VOLUME_ID;
 use super::store::{self, DirStatsById, IndexStore, IndexStoreError};
 use crate::file_system::listing::FileEntry;
+use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
 // ── Read pool (lock-free enrichment reads) ──────────────────────────
@@ -69,6 +71,14 @@ impl ReadPool {
     }
 }
 
+/// The root volume's read pool. The fast handle for local-disk enrichment,
+/// search (D7 keeps search local-only), and IPC dir-stats. The root
+/// `IndexInstance` shares this same `Arc`, so registry and read path can't drift.
+///
+/// Root is special-cased to this global (rather than read from the registry)
+/// for two reasons: search reads it on the hot path, and the indexing tests
+/// install it directly. Non-root volumes' pools live in their `IndexInstance`
+/// (see `super::state::get_instance_read_pool`).
 pub(super) static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
     LazyLock::new(|| std::sync::Mutex::new(None));
 
@@ -76,9 +86,41 @@ pub(super) static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
 #[cfg(test)]
 pub(super) static READ_POOL_TEST_MUTEX: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
 
-/// Clone the pool Arc. Lock held for nanoseconds (just an Arc clone).
+/// Clone the root volume's pool Arc. Lock held for nanoseconds (just an Arc
+/// clone). Kept for the search module (local-disk-only by D7) and the root
+/// read-path callers.
 pub(crate) fn get_read_pool() -> Option<Arc<ReadPool>> {
     READ_POOL.lock().ok()?.as_ref().cloned()
+}
+
+/// Clone a specific volume's read pool. Routes root to `READ_POOL`, every other
+/// volume to its `IndexInstance` in the registry. `None` means "no index
+/// registered for this volume" — the read path skips before any DB work.
+pub(crate) fn get_read_pool_for(volume_id: &str) -> Option<Arc<ReadPool>> {
+    if volume_id == ROOT_VOLUME_ID {
+        get_read_pool()
+    } else {
+        super::state::get_instance_read_pool(volume_id)
+    }
+}
+
+/// Install the root volume's read pool into the global fast handle. No-op for
+/// non-root volumes: their pool is owned by the `IndexInstance` directly.
+pub(super) fn install_read_pool(volume_id: &str, pool: Arc<ReadPool>) {
+    if volume_id == ROOT_VOLUME_ID {
+        *READ_POOL.lock_ignore_poison() = Some(pool);
+    }
+}
+
+/// Clear the root volume's global read pool and return it (for invalidation on
+/// stop/clear). Non-root volumes' pools are dropped with their `IndexInstance`;
+/// this returns the instance's pool so the caller can `invalidate()` it.
+pub(super) fn uninstall_read_pool(volume_id: &str) -> Option<Arc<ReadPool>> {
+    if volume_id == ROOT_VOLUME_ID {
+        READ_POOL.lock_ignore_poison().take()
+    } else {
+        super::state::get_instance_read_pool(volume_id)
+    }
 }
 
 /// The common parent directory of a sibling listing (all entries in a listing share one
@@ -95,21 +137,46 @@ fn listing_parent_path(entries: &[FileEntry]) -> Option<String> {
     }
 }
 
-/// Enrich directory entries with recursive size data from the index.
+/// Enrich directory entries with recursive size data from the local (`root`)
+/// index. Convenience wrapper for call sites without a `volume_id` in scope
+/// (most local-listing paths) and for the read-path tests.
 ///
-/// Called from `get_file_range` on every page fetch. Does nothing if
-/// indexing is not initialized. Uses a `ReadPool` for lock-free DB reads,
-/// so enrichment never blocks on the `INDEXING` state-machine mutex.
+/// In M1 only `root` is ever registered, so routing every caller through root
+/// is byte-identical to the old single-volume behaviour. M2+ call sites that
+/// know the listing's volume call `enrich_entries_with_index_on_volume`.
+pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
+    enrich_entries_with_index_on_volume(ROOT_VOLUME_ID, entries);
+}
+
+/// Enrich directory entries with recursive size data from a volume's index.
+///
+/// Called when entries land in the listing cache. Uses a per-volume `ReadPool`
+/// for lock-free DB reads, so enrichment never blocks on the lifecycle mutex.
+///
+/// **Skip-vs-route gate**: if no index is registered for `volume_id`, return
+/// before any DB work. This *replaces* the old `should_exclude(parent_path)`
+/// early-return, but preserves it exactly in M1: only `root` is registered, so
+/// every non-root listing (SMB, MTP, network mounts under their own volume ids)
+/// skips here. For the `root` volume we ALSO keep the path-based exclusion check
+/// below, so a listing navigated to an excluded local path (`/Volumes/...`,
+/// `/proc/...`) under the root volume id still skips — those paths aren't in
+/// root's index, and enrichment would miss the parent lookup and log "Parent
+/// path not found" on every refresh.
 ///
 /// **Integer-keyed optimization**: Instead of resolving each directory path
 /// individually, resolves the common parent directory once, gets all child
 /// dir `(id, name)` pairs via `idx_parent`, then batch-fetches their
 /// `dir_stats` by integer IDs. Two indexed queries total.
-pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
-    let pool = match get_read_pool() {
+pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileEntry]) {
+    // Skip if no index is registered for this volume: `get_read_pool_for`
+    // returns `None`, which IS the "no index registered" signal (root's pool
+    // lives in `READ_POOL`; a non-root volume's pool lives in its registry
+    // instance). In M1 this fires for every volume except root, preserving the
+    // old network-mount fast skip exactly. A single lock-free Arc-clone check.
+    let pool = match get_read_pool_for(volume_id) {
         Some(p) => p,
         None => {
-            log::debug!("enrich: no read pool");
+            log::debug!("enrich: no index registered for volume '{volume_id}'");
             return;
         }
     };
@@ -127,12 +194,13 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
         None => return,
     };
 
-    // Skip listings the indexer never covers: network mounts and external drives under
-    // /Volumes, /mnt, and system paths (the scanner's exclusion set). Their entries are
-    // never in the index, so enrichment would miss the parent lookup, fall through to
-    // per-file lookups that also miss, and log "Parent path not found" on every listing
-    // refresh. Nothing to enrich here — return before touching the DB.
-    if super::scanner::should_exclude(&parent_path) {
+    // For the local (`root`) volume, also skip excluded local paths the scanner
+    // never indexes (network mounts under /Volumes, /mnt, /proc, system paths).
+    // Their entries aren't in root's index, so enrichment would miss the parent
+    // lookup, fall through to per-file lookups that also miss, and log "Parent
+    // path not found" on every listing refresh. Non-root volumes use virtual
+    // path namespaces, so this local-FS exclusion set doesn't apply to them.
+    if volume_id == ROOT_VOLUME_ID && super::scanner::should_exclude(&parent_path) {
         return;
     }
 

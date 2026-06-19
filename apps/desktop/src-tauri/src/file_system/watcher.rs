@@ -19,8 +19,8 @@ use tauri::AppHandle;
 use tauri_specta::Event as _;
 
 use crate::file_system::listing::{
-    FileEntry, ModifyResult, get_listing_entries, get_listing_path, get_single_entry, has_entry, insert_entry_sorted,
-    list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
+    FileEntry, ModifyResult, get_listing_entries, get_listing_volume_id_and_path, get_single_entry, has_entry,
+    insert_entry_sorted, list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
 };
 
 /// Default debounce duration in milliseconds (used if not configured)
@@ -204,8 +204,8 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
         return;
     }
 
-    // Get watched directory path from the cache (without cloning all entries)
-    let Some(dir_path) = get_listing_path(listing_id) else {
+    // Get watched directory path + volume from the cache (without cloning all entries)
+    let Some((volume_id, dir_path)) = get_listing_volume_id_and_path(listing_id) else {
         return;
     };
 
@@ -256,10 +256,10 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
 
     // Enrich new/modified entries with index data
     for entry in &mut adds {
-        crate::indexing::enrich_entries_with_index(std::slice::from_mut(entry));
+        crate::indexing::enrich_entries_with_index_on_volume(&volume_id, std::slice::from_mut(entry));
     }
     for entry in &mut modifies {
-        crate::indexing::enrich_entries_with_index(std::slice::from_mut(entry));
+        crate::indexing::enrich_entries_with_index_on_volume(&volume_id, std::slice::from_mut(entry));
     }
 
     // Apply changes: removes first (indices refer to OLD listing), then adds, then modifies.
@@ -443,7 +443,7 @@ pub async fn handle_directory_change(listing_id: &str) {
         if let Ok(cache) = LISTING_CACHE.read()
             && let Some(listing) = cache.get(listing_id)
         {
-            crate::indexing::enrich_entries_with_index(&mut new_entries);
+            crate::indexing::enrich_entries_with_index_on_volume(&listing.volume_id, &mut new_entries);
             sort_entries(
                 &mut new_entries,
                 listing.sort_by,

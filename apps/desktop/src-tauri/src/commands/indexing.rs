@@ -4,14 +4,19 @@
 
 use tauri::AppHandle;
 
-use crate::indexing::{self, IndexDebugStatusResponse, IndexStatusResponse, store::DirStats};
+use crate::indexing::{self, IndexDebugStatusResponse, IndexStatusResponse, ROOT_VOLUME_ID, store::DirStats};
+
+// IPC stays path-based and single-volume in M1: the index-status, scan, and
+// clear commands all act on the local-disk `root` index. The backend resolves
+// the volume internally (here, the constant `root`), so the frontend and
+// `bindings.ts` are unchanged. M2+ will widen these to carry a volume.
 
 #[tauri::command]
 #[specta::specta]
 pub async fn start_drive_index(app: AppHandle) -> Result<(), String> {
-    if indexing::is_active() {
+    if indexing::is_active(ROOT_VOLUME_ID) {
         // Already running: force a fresh full scan (for example, from the debug "Start scan" button)
-        indexing::force_scan()
+        indexing::force_scan(ROOT_VOLUME_ID)
     } else {
         indexing::start_indexing(&app)
     }
@@ -20,13 +25,13 @@ pub async fn start_drive_index(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub async fn stop_drive_index() -> Result<(), String> {
-    indexing::stop_scan()
+    indexing::stop_scan(ROOT_VOLUME_ID)
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn get_index_status() -> Result<IndexStatusResponse, String> {
-    indexing::get_status()
+    indexing::get_status(ROOT_VOLUME_ID)
 }
 
 #[tauri::command]
@@ -44,14 +49,14 @@ pub async fn get_dir_stats_batch(paths: Vec<String>) -> Result<Vec<Option<DirSta
 #[tauri::command]
 #[specta::specta]
 pub async fn clear_drive_index() -> Result<(), String> {
-    indexing::clear_index()
+    indexing::clear_index(ROOT_VOLUME_ID)
 }
 
 /// Extended debug status for the debug window (dev only).
 #[tauri::command]
 #[specta::specta]
 pub async fn get_index_debug_status() -> Result<IndexDebugStatusResponse, String> {
-    indexing::get_debug_status()
+    indexing::get_debug_status(ROOT_VOLUME_ID)
 }
 
 /// Toggle drive indexing on/off based on the user's setting.
@@ -59,11 +64,11 @@ pub async fn get_index_debug_status() -> Result<IndexDebugStatusResponse, String
 #[specta::specta]
 pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
     if enabled {
-        if !indexing::is_active() {
+        if !indexing::is_active(ROOT_VOLUME_ID) {
             indexing::start_indexing(&app)?;
         }
     } else {
-        indexing::stop_indexing()?;
+        indexing::stop_indexing(ROOT_VOLUME_ID)?;
     }
     Ok(())
 }
@@ -105,7 +110,7 @@ pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), Str
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     crate::mtp::start_mtp_watcher(&app);
 
-    if indexing::is_active() {
+    if indexing::is_active(ROOT_VOLUME_ID) {
         return Ok(());
     }
     indexing::start_indexing(&app)

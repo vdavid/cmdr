@@ -69,8 +69,11 @@ async fn run_watchdog(app: tauri::AppHandle) {
             }
             .emit(&app);
 
-            // Stop indexing
-            if let Err(e) = super::stop_indexing() {
+            // Stop indexing. M1 only the local `root` volume is indexed; M2 will
+            // make the watchdog a single GLOBAL budget that stops every volume's
+            // index (see the plan's rabbit hole #8).
+            // TODO(M2: global memory budget): iterate all registered volumes here.
+            if let Err(e) = super::stop_indexing(super::ROOT_VOLUME_ID) {
                 crate::log_error!("Memory watchdog: stop_indexing failed: {e}");
             }
             return;

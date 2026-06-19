@@ -77,8 +77,8 @@ pub async fn list_directory_start_with_volume(
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
     // so that sort-by-size works correctly for directories.
     let mut all_entries = all_entries;
-    crate::indexing::enrich_entries_with_index(&mut all_entries);
-    crate::indexing::trigger_verification(&path.to_string_lossy());
+    crate::indexing::enrich_entries_with_index_on_volume(volume_id, &mut all_entries);
+    crate::indexing::trigger_verification(volume_id, &path.to_string_lossy());
 
     // Sort the entries
     sort_entries(&mut all_entries, sort_by, sort_order, dir_sort_mode);
@@ -369,7 +369,8 @@ pub fn resort_listing(
     };
 
     // Refresh index data before re-sorting (cache entries may not have fresh sizes)
-    crate::indexing::enrich_entries_with_index(&mut listing.entries);
+    let volume_id = listing.volume_id.clone();
+    crate::indexing::enrich_entries_with_index_on_volume(&volume_id, &mut listing.entries);
 
     // Re-sort the entries
     sort_entries(&mut listing.entries, sort_by, sort_order, dir_sort_mode);
@@ -421,7 +422,7 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) 
     {
         listing.touch();
         let mut entries = entries;
-        crate::indexing::enrich_entries_with_index(&mut entries);
+        crate::indexing::enrich_entries_with_index_on_volume(&listing.volume_id, &mut entries);
         sort_entries(
             &mut entries,
             listing.sort_by,
@@ -585,7 +586,8 @@ pub fn get_listing_stats(
 pub fn refresh_listing_index_sizes(listing_id: &str) -> Result<(), String> {
     let mut cache = LISTING_CACHE.write().map_err(|_| "Failed to acquire cache lock")?;
     if let Some(listing) = cache.get_mut(listing_id) {
-        crate::indexing::enrich_entries_with_index(&mut listing.entries);
+        let volume_id = listing.volume_id.clone();
+        crate::indexing::enrich_entries_with_index_on_volume(&volume_id, &mut listing.entries);
     }
     Ok(())
 }

@@ -31,6 +31,8 @@ use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use super::firmlinks;
+use super::state::ROOT_VOLUME_ID;
+use crate::ignore_poison::IgnorePoison;
 
 /// In-memory set of directory paths with unprocessed index writes in flight.
 ///
@@ -102,9 +104,11 @@ impl PendingSizes {
     }
 }
 
-/// Global tracker handle, installed/cleared in lockstep with `READ_POOL`
-/// (see `enrichment.rs` and the lifecycle sites in `state.rs` / `mod.rs`).
-/// `None` whenever indexing isn't running, so reads return "not pending".
+/// The root volume's pending-size tracker, installed/cleared in lockstep with
+/// `READ_POOL` (see `enrichment.rs` and the lifecycle sites in `state.rs`).
+/// `None` whenever root indexing isn't running, so reads return "not pending".
+/// The root `IndexInstance` shares this same `Arc`. Non-root volumes' trackers
+/// live in their `IndexInstance` (see `super::state::get_instance_pending_sizes`).
 pub(super) static PENDING_SIZES: LazyLock<Mutex<Option<Arc<PendingSizes>>>> = LazyLock::new(|| Mutex::new(None));
 
 /// Tests that touch `PENDING_SIZES` must hold this lock to avoid races with
@@ -112,9 +116,35 @@ pub(super) static PENDING_SIZES: LazyLock<Mutex<Option<Arc<PendingSizes>>>> = La
 #[cfg(test)]
 pub(super) static PENDING_SIZES_TEST_MUTEX: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
-/// Clone the tracker `Arc`, if installed. Lock held for nanoseconds.
+/// Clone the root tracker `Arc`, if installed. Lock held for nanoseconds.
 pub(crate) fn get_pending_sizes() -> Option<Arc<PendingSizes>> {
     PENDING_SIZES.lock().ok()?.as_ref().cloned()
+}
+
+/// Clone a specific volume's tracker. Routes root to `PENDING_SIZES`, every
+/// other volume to its `IndexInstance` in the registry.
+pub(crate) fn get_pending_sizes_for(volume_id: &str) -> Option<Arc<PendingSizes>> {
+    if volume_id == ROOT_VOLUME_ID {
+        get_pending_sizes()
+    } else {
+        super::state::get_instance_pending_sizes(volume_id)
+    }
+}
+
+/// Install the root volume's tracker into the global fast handle. No-op for
+/// non-root volumes: their tracker is owned by the `IndexInstance` directly.
+pub(super) fn install_pending_sizes(volume_id: &str, tracker: Arc<PendingSizes>) {
+    if volume_id == ROOT_VOLUME_ID {
+        *PENDING_SIZES.lock_ignore_poison() = Some(tracker);
+    }
+}
+
+/// Clear the root volume's global tracker (on stop/clear). Non-root volumes'
+/// trackers drop with their `IndexInstance`.
+pub(super) fn uninstall_pending_sizes(volume_id: &str) {
+    if volume_id == ROOT_VOLUME_ID {
+        *PENDING_SIZES.lock_ignore_poison() = None;
+    }
 }
 
 #[cfg(test)]

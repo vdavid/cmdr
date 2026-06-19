@@ -5,15 +5,17 @@
 //! (connection reuse, generation invalidation, cross-thread reads, contention),
 //! the `should_auto_start_indexing` FDA gate, and the `IndexPhase` lifecycle
 //! transitions reachable without a Tauri runtime. Tests use temp dirs and real
-//! SQLite; those touching the global `INDEXING` cell serialize on a dedicated
-//! mutex and restore it before returning.
+//! SQLite; those touching the per-volume `INDEX_REGISTRY` serialize on a
+//! dedicated mutex and clear it before returning.
 
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::settings::FullDiskAccessChoice;
 use enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
 use rusqlite::Connection;
-use state::{INDEXING, IndexPhase, is_initializing_phase, try_reserve_initializing_phase};
+use state::{
+    INDEX_REGISTRY, IndexInstance, IndexPhase, ROOT_VOLUME_ID, is_initializing_phase, try_reserve_initializing_phase,
+};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -504,21 +506,25 @@ fn setup_db_for_pool() -> (PathBuf, tempfile::TempDir) {
     (db_path, dir)
 }
 
-/// Key regression test: enrichment succeeds even while INDEXING is locked.
-/// Before the ReadPool fix, `enrich_entries_with_index` used `try_lock()` on
-/// INDEXING and silently skipped when the lock was held.
+/// Key regression test: enrichment succeeds even while the lifecycle lock is
+/// held. Before the ReadPool fix, `enrich_entries_with_index` used `try_lock()`
+/// on the lifecycle mutex and silently skipped when the lock was held. With the
+/// registry, the lifecycle lock is `INDEX_REGISTRY`; enrichment must still read
+/// via the `ReadPool` without contending on it.
 #[test]
 fn enrichment_under_contention() {
     let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
     let (db_path, _dir) = setup_db_for_pool();
     let pool = Arc::new(ReadPool::new(db_path).expect("create pool"));
 
-    // Install pool into READ_POOL so `enrich_entries_with_index` can find it
+    // Install pool into READ_POOL so `enrich_entries_with_index` can find it.
+    // For root, an installed pool IS the skip-vs-route gate signal, so no
+    // registry entry is needed here.
     *enrichment::READ_POOL.lock().unwrap() = Some(Arc::clone(&pool));
 
-    // Hold INDEXING.lock() on a background thread for 2 seconds
+    // Hold INDEX_REGISTRY.lock() on a background thread for 2 seconds
     let lock_handle = std::thread::spawn(|| {
-        let guard = INDEXING.lock().unwrap();
+        let guard = INDEX_REGISTRY.lock().unwrap();
         std::thread::sleep(Duration::from_secs(2));
         drop(guard);
     });
@@ -526,7 +532,7 @@ fn enrichment_under_contention() {
     // Give the locker thread time to acquire
     std::thread::sleep(Duration::from_millis(50));
 
-    // Enrich on this thread; must succeed despite INDEXING being locked
+    // Enrich on this thread; must succeed despite INDEX_REGISTRY being locked
     let mut entries = vec![make_file_entry("projects", "/projects", true)];
     enrich_entries_with_index(&mut entries);
 
@@ -877,46 +883,72 @@ fn should_auto_start_indexing_blocked_when_indexing_disabled() {
 
 // ── IndexPhase transitions ─────────────────────────────────────────
 //
-// The global INDEXING cell is shared with the running app (and with the
+// The `INDEX_REGISTRY` is shared with the running app (and with the
 // verifier::trigger_verification path), so these tests serialize via a
-// dedicated mutex and always restore the cell to Disabled before
-// returning. They never call `start_indexing` (needs an AppHandle);
-// instead they install an `Initializing { store }` phase by hand and
+// dedicated mutex and always clear the registry before returning. They
+// never call `start_indexing` (needs an AppHandle); instead they reserve
+// an `Initializing { store }` instance by hand for the `root` volume and
 // drive the transitions whose Rust-side state machine is reachable
-// without a Tauri runtime: stop_indexing's Initializing -> Disabled
-// arm, and clear_index's no-op arm when not Running.
+// without a Tauri runtime: stop_indexing's Initializing -> removed arm,
+// and clear_index's no-op arm when not Running.
+//
+// With the per-volume registry, "Disabled" is the ABSENCE of an instance
+// (there is no `IndexPhase::Disabled` variant). So assertions that used to
+// read "phase is Disabled" now read "no instance for `root`", testing the
+// same invariant: a stopped/never-started volume is fully disabled.
 
 static INDEXING_TEST_GUARD: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-/// Replace INDEXING with `Disabled` and clear READ_POOL. Used at the
-/// start of each IndexPhase test so transient state from earlier tests
-/// (or the running app, if these tests are run inside a debug build
-/// with the app warmed up) doesn't bleed in.
+/// Clear the `root` registry instance and the root read-path globals. Used at
+/// the start of each IndexPhase test so transient state from earlier tests (or
+/// the running app, if these tests run inside a warmed-up debug build) doesn't
+/// bleed in.
 fn reset_indexing_for_test() {
-    let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
-    *guard = IndexPhase::Disabled;
-    drop(guard);
-    // The stop/clear paths invalidate READ_POOL; mirror that so we
-    // don't carry a stale pool from a prior test.
+    INDEX_REGISTRY.lock().expect("registry poisoned").remove(ROOT_VOLUME_ID);
+    // The stop/clear paths invalidate the root READ_POOL/PENDING_SIZES; mirror
+    // that so we don't carry stale handles from a prior test.
     *enrichment::READ_POOL.lock().unwrap() = None;
     *pending_sizes::PENDING_SIZES.lock().unwrap() = None;
 }
 
-fn install_initializing_phase() -> tempfile::TempDir {
+/// Whether the `root` volume has a registered instance (the registry's
+/// "indexed / not-disabled" predicate).
+fn root_is_registered() -> bool {
+    INDEX_REGISTRY.lock().unwrap().contains_key(ROOT_VOLUME_ID)
+}
+
+/// Whether the `root` instance is in the `Initializing` phase.
+fn root_is_initializing() -> bool {
+    INDEX_REGISTRY
+        .lock()
+        .unwrap()
+        .get(ROOT_VOLUME_ID)
+        .is_some_and(|i| is_initializing_phase(&i.phase))
+}
+
+/// Reserve an `Initializing { store }` instance for a volume id (the harness
+/// stand-in for `start_indexing` up to the `IndexManager` build, which needs an
+/// `AppHandle`). Returns the temp dir backing the DB.
+fn reserve_initializing_for(volume_id: &str) -> tempfile::TempDir {
     let dir = tempfile::tempdir().expect("temp dir for init store");
     let db_path = dir.path().join("init-phase-test.db");
     let store = IndexStore::open(&db_path).expect("open init store");
-    let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
-    *guard = IndexPhase::Initializing { store };
+    let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+    let pending = Arc::new(pending_sizes::PendingSizes::new());
+    try_reserve_initializing_phase(volume_id, store, pool, pending)
+        .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
     dir
+}
+
+fn install_initializing_phase() -> tempfile::TempDir {
+    reserve_initializing_for(ROOT_VOLUME_ID)
 }
 
 #[test]
 fn is_initializing_phase_matches_only_initializing_variant() {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = IndexStore::open(&dir.path().join("classifier.db")).expect("open store");
-    // Disabled / ShuttingDown / Running classified as not-initializing.
-    assert!(!is_initializing_phase(&IndexPhase::Disabled));
+    // ShuttingDown classified as not-initializing.
     assert!(!is_initializing_phase(&IndexPhase::ShuttingDown));
     // Initializing classified as initializing.
     assert!(is_initializing_phase(&IndexPhase::Initializing { store }));
@@ -924,95 +956,105 @@ fn is_initializing_phase_matches_only_initializing_variant() {
 
 #[test]
 fn try_reserve_initializing_succeeds_only_from_disabled() {
-    // The reservation function is the lock-first guard for `start_indexing`.
-    // It must atomically transition `Disabled -> Initializing(store)` and
-    // reject every other starting phase so a second `start_indexing` call
-    // cannot spawn a second `IndexManager` / writer thread on the same DB.
+    // The reservation function is the lock-first guard for `start_indexing`,
+    // now per volume id. It must atomically transition `(absent) ->
+    // Initializing(store)` and reject every other starting phase so a second
+    // `start_indexing` call cannot spawn a second `IndexManager` / writer thread
+    // on the same DB.
     let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
 
-    // From Disabled: reservation succeeds.
+    // From absent (Disabled): reservation succeeds.
     reset_indexing_for_test();
-    let dir = tempfile::tempdir().expect("temp dir");
-    let store = IndexStore::open(&dir.path().join("from-disabled.db")).expect("open store");
-    assert!(
-        try_reserve_initializing_phase(store).is_ok(),
-        "reservation from Disabled must succeed"
-    );
-    assert!(
-        is_initializing_phase(&INDEXING.lock().unwrap()),
-        "Disabled should transition to Initializing"
-    );
+    let _tmp = reserve_initializing_for(ROOT_VOLUME_ID);
+    assert!(root_is_initializing(), "absent should transition to Initializing");
 
-    // From Initializing: reservation must fail and leave phase untouched.
+    // From Initializing: reservation must fail and leave the phase untouched.
     let dir2 = tempfile::tempdir().expect("temp dir");
-    let store2 = IndexStore::open(&dir2.path().join("from-init.db")).expect("open store");
-    let res = try_reserve_initializing_phase(store2);
+    let db2 = dir2.path().join("from-init.db");
+    let store2 = IndexStore::open(&db2).expect("open store");
+    let pool2 = Arc::new(ReadPool::new(db2.clone()).expect("pool"));
+    let pending2 = Arc::new(pending_sizes::PendingSizes::new());
+    let res = try_reserve_initializing_phase(ROOT_VOLUME_ID, store2, pool2, pending2);
     assert!(
         res.is_err(),
         "second reservation while already Initializing must fail (would spawn a second writer)"
     );
     assert!(
-        is_initializing_phase(&INDEXING.lock().unwrap()),
+        root_is_initializing(),
         "failed reservation must leave the phase unchanged"
     );
     reset_indexing_for_test();
 
-    // From Running stand-in (we can't construct an IndexManager without an
-    // AppHandle, so simulate by installing Initializing and asserting the
-    // mirror behaviour for ShuttingDown below). Pinning ShuttingDown is the
-    // analogous case at the other end of the lifecycle.
+    // From ShuttingDown: reservation must fail and leave the instance intact.
+    // Pinning ShuttingDown is the analogous case at the other end of the
+    // lifecycle (the Running case needs an AppHandle).
     {
-        let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
-        *guard = IndexPhase::ShuttingDown;
+        let dir3 = tempfile::tempdir().expect("temp dir");
+        let db3 = dir3.path().join("from-shutdown.db");
+        let store_sd = IndexStore::open(&db3).expect("open store");
+        let pool_sd = Arc::new(ReadPool::new(db3.clone()).expect("pool"));
+        let pending_sd = Arc::new(pending_sizes::PendingSizes::new());
+        INDEX_REGISTRY.lock().unwrap().insert(
+            ROOT_VOLUME_ID.to_string(),
+            IndexInstance {
+                phase: IndexPhase::ShuttingDown,
+                read_pool: pool_sd,
+                pending_sizes: pending_sd,
+            },
+        );
+        // store_sd is unused after insert; the ShuttingDown phase carries no store.
+        drop(store_sd);
     }
-    let dir3 = tempfile::tempdir().expect("temp dir");
-    let store3 = IndexStore::open(&dir3.path().join("from-shutdown.db")).expect("open store");
-    let res = try_reserve_initializing_phase(store3);
+    let dir4 = tempfile::tempdir().expect("temp dir");
+    let db4 = dir4.path().join("from-shutdown2.db");
+    let store4 = IndexStore::open(&db4).expect("open store");
+    let pool4 = Arc::new(ReadPool::new(db4.clone()).expect("pool"));
+    let pending4 = Arc::new(pending_sizes::PendingSizes::new());
+    let res = try_reserve_initializing_phase(ROOT_VOLUME_ID, store4, pool4, pending4);
     assert!(res.is_err(), "reservation from ShuttingDown must fail");
-    let phase_after = INDEXING.lock().expect("INDEXING lock poisoned");
     assert!(
-        matches!(*phase_after, IndexPhase::ShuttingDown),
+        matches!(
+            INDEX_REGISTRY.lock().unwrap().get(ROOT_VOLUME_ID).map(|i| &i.phase),
+            Some(IndexPhase::ShuttingDown)
+        ),
         "failed reservation must leave ShuttingDown intact"
     );
-    drop(phase_after);
     reset_indexing_for_test();
 }
 
 #[test]
 fn stop_indexing_during_initialization_transitions_to_disabled() {
-    // Pins the Initializing -> Disabled race arm in stop_indexing.
-    // If `stop_indexing` runs while `start_indexing` is inside
-    // `resume_or_scan`, the phase must be cleared to Disabled so the
-    // post-scan re-lock observes the change and shuts the half-built
-    // manager down.
+    // Pins the Initializing -> disabled (instance removed) race arm in
+    // stop_indexing. If `stop_indexing` runs while `start_indexing` is inside
+    // `resume_or_scan`, the instance must be removed so the post-scan re-lock
+    // observes the change and shuts the half-built manager down.
     let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
     reset_indexing_for_test();
 
     let _tmp = install_initializing_phase();
-    stop_indexing().expect("stop_indexing must succeed from Initializing");
+    stop_indexing(ROOT_VOLUME_ID).expect("stop_indexing must succeed from Initializing");
 
-    let phase_guard = INDEXING.lock().expect("INDEXING lock poisoned");
     assert!(
-        matches!(*phase_guard, IndexPhase::Disabled),
-        "stop_indexing must collapse Initializing to Disabled"
+        !root_is_registered(),
+        "stop_indexing must collapse Initializing to disabled (instance removed)"
     );
-    drop(phase_guard);
     reset_indexing_for_test();
 }
 
 #[test]
 fn stop_indexing_when_disabled_is_a_noop() {
-    // Pins the catch-all arm in stop_indexing: if the phase isn't
-    // Running or Initializing, the original phase must be restored
-    // (not silently replaced with Disabled).
+    // Pins the catch-all arm in stop_indexing: if the volume isn't
+    // Running or Initializing (here: absent), the call is a no-op and
+    // the volume stays disabled (absent).
     let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
     reset_indexing_for_test();
 
-    // Already Disabled; stop_indexing should remain Disabled (no-op).
-    stop_indexing().expect("stop_indexing from Disabled must succeed");
-    let phase_guard = INDEXING.lock().expect("INDEXING lock poisoned");
-    assert!(matches!(*phase_guard, IndexPhase::Disabled));
-    drop(phase_guard);
+    // Already disabled (absent); stop_indexing should stay disabled (no-op).
+    stop_indexing(ROOT_VOLUME_ID).expect("stop_indexing from disabled must succeed");
+    assert!(
+        !root_is_registered(),
+        "stop_indexing on an absent volume stays disabled"
+    );
 }
 
 #[test]
@@ -1024,13 +1066,8 @@ fn clear_index_when_not_running_is_a_noop() {
     reset_indexing_for_test();
 
     let _tmp = install_initializing_phase();
-    clear_index().expect("clear_index from Initializing must succeed");
-    let phase_guard = INDEXING.lock().expect("INDEXING lock poisoned");
-    assert!(
-        matches!(*phase_guard, IndexPhase::Initializing { .. }),
-        "clear_index must preserve a non-Running phase"
-    );
-    drop(phase_guard);
+    clear_index(ROOT_VOLUME_ID).expect("clear_index from Initializing must succeed");
+    assert!(root_is_initializing(), "clear_index must preserve a non-Running phase");
     reset_indexing_for_test();
 }
 
@@ -1039,11 +1076,11 @@ fn clear_index_when_not_running_is_a_noop() {
 /// `stop_indexing`/`clear_index` publish `IndexPhase::ShuttingDown`, release
 /// the lock, and only THEN run `mgr.shutdown()` (a blocking up-to-5 s drain of
 /// the live-event task). This test models that exact lock discipline against
-/// the real `INDEXING` static and the real `get_status()`: it publishes
-/// `ShuttingDown`, drops the guard, spawns a thread that simulates the slow
-/// drain (holding NO lock), and asserts a concurrent `get_status()` returns
-/// promptly — far under the 5 s drain budget. With the buggy
-/// lock-held-across-drain shape, `get_status()` would block for the whole
+/// the real `INDEX_REGISTRY` static and the real `get_status()`: it publishes a
+/// `ShuttingDown` instance for `root`, drops the guard, spawns a thread that
+/// simulates the slow drain (holding NO lock), and asserts a concurrent
+/// `get_status()` returns promptly — far under the 5 s drain budget. With the
+/// buggy lock-held-across-drain shape, `get_status()` would block for the whole
 /// drain; here it returns immediately and reports the `ShuttingDown` phase as
 /// not-initialized, the coherent intermediate state concurrent callers see.
 ///
@@ -1059,13 +1096,25 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
     reset_indexing_for_test();
 
     // Publish the intermediate phase and release the lock, mirroring the
-    // fixed `stop_indexing`/`clear_index` shape.
+    // fixed `stop_indexing`/`clear_index` shape (instance present, ShuttingDown).
     {
-        let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
-        *guard = IndexPhase::ShuttingDown;
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db = dir.path().join("shutdown-drain.db");
+        let store = IndexStore::open(&db).expect("open store");
+        drop(store); // ShuttingDown carries no store
+        let pool = Arc::new(ReadPool::new(db.clone()).expect("pool"));
+        let pending = Arc::new(pending_sizes::PendingSizes::new());
+        INDEX_REGISTRY.lock().expect("registry poisoned").insert(
+            ROOT_VOLUME_ID.to_string(),
+            IndexInstance {
+                phase: IndexPhase::ShuttingDown,
+                read_pool: pool,
+                pending_sizes: pending,
+            },
+        );
     }
 
-    // Simulate the blocking drain on another thread WITHOUT holding INDEXING.
+    // Simulate the blocking drain on another thread WITHOUT holding the registry.
     let drain_done = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let drain_done_bg = Arc::clone(&drain_done);
     let drain = std::thread::spawn(move || {
@@ -1076,7 +1125,7 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
     // Concurrent status poll must return promptly (well under the drain), and
     // must observe the published `ShuttingDown` phase as not-initialized.
     let start = std::time::Instant::now();
-    let status = get_status().expect("get_status during shutdown drain");
+    let status = get_status(ROOT_VOLUME_ID).expect("get_status during shutdown drain");
     let elapsed = start.elapsed();
 
     assert!(

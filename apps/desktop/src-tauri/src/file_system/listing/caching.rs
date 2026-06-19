@@ -428,7 +428,7 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
     match change {
         DirectoryChange::Added(entry) => {
             let mut entry = entry;
-            crate::indexing::enrich_entries_with_index(std::slice::from_mut(&mut entry));
+            crate::indexing::enrich_entries_with_index_on_volume(volume_id, std::slice::from_mut(&mut entry));
             for (listing_id, ..) in &listings {
                 notify_added(listing_id, entry.clone());
             }
@@ -441,14 +441,14 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
         }
         DirectoryChange::Modified(entry) => {
             let mut entry = entry;
-            crate::indexing::enrich_entries_with_index(std::slice::from_mut(&mut entry));
+            crate::indexing::enrich_entries_with_index_on_volume(volume_id, std::slice::from_mut(&mut entry));
             for (listing_id, ..) in &listings {
                 notify_modified(listing_id, entry.clone());
             }
         }
         DirectoryChange::Renamed { old_name, new_entry } => {
             let mut new_entry = new_entry;
-            crate::indexing::enrich_entries_with_index(std::slice::from_mut(&mut new_entry));
+            crate::indexing::enrich_entries_with_index_on_volume(volume_id, std::slice::from_mut(&mut new_entry));
             let old_path = parent_path.join(&old_name);
             for (listing_id, ..) in &listings {
                 notify_removed(listing_id, &old_path);
@@ -600,7 +600,7 @@ async fn notify_full_refresh(
         }
     };
 
-    crate::indexing::enrich_entries_with_index(&mut new_entries);
+    crate::indexing::enrich_entries_with_index_on_volume(&volume_id, &mut new_entries);
 
     for (listing_id, sort_by, sort_order, dir_sort_mode) in &listings {
         // Re-sort to match this listing's sort params

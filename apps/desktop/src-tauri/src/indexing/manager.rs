@@ -19,7 +19,7 @@ use super::events::{
 use super::partial_agg;
 use super::reconciler::{self, EventReconciler};
 use super::scanner::{self, ScanConfig};
-use super::state::{INDEXING, IndexPhase};
+use super::state::{INDEX_REGISTRY, IndexInstance, IndexPhase};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
 use super::writer::{IndexWriter, WriteMessage};
@@ -268,6 +268,11 @@ impl IndexManager {
         let live_event_task_slot = Arc::clone(&self.live_event_task);
         let scanning = Arc::clone(&self.scanning);
 
+        // The fallback task (below) re-resolves this manager in the registry by
+        // volume id, so keep a clone for it before `volume_id` is moved into the
+        // replay loop task.
+        let fallback_volume_id = self.volume_id.clone();
+
         // We need a way for the replay loop to signal "journal unavailable, need full scan".
         // Use a oneshot channel: if the replay detects a gap, it sends a signal.
         let (fallback_tx, fallback_rx) = tokio::sync::oneshot::channel::<()>();
@@ -308,14 +313,18 @@ impl IndexManager {
         tauri::async_runtime::spawn(async move {
             if fallback_rx.await.is_ok() {
                 log::warn!("Journal replay detected gap, initiating full scan fallback");
-                let mut guard = match INDEXING.lock() {
+                let mut reg = match INDEX_REGISTRY.lock() {
                     Ok(g) => g,
                     Err(e) => {
-                        log::warn!("Failed to lock state for fallback scan: {e}");
+                        log::warn!("Failed to lock registry for fallback scan: {e}");
                         return;
                     }
                 };
-                if let IndexPhase::Running(mgr) = &mut *guard {
+                if let Some(IndexInstance {
+                    phase: IndexPhase::Running(mgr),
+                    ..
+                }) = reg.get_mut(&fallback_volume_id)
+                {
                     // Stop the current watcher (replay detected it's useless)
                     if let Some(ref mut watcher) = mgr.drive_watcher {
                         watcher.stop();

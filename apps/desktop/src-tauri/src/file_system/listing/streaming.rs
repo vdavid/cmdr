@@ -473,9 +473,9 @@ pub(crate) async fn read_directory_with_progress(
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
     // so that sort-by-size works correctly for directories.
     let enrich_start = std::time::Instant::now();
-    crate::indexing::enrich_entries_with_index(&mut entries);
+    crate::indexing::enrich_entries_with_index_on_volume(volume_id, &mut entries);
     let enrich_ms = enrich_start.elapsed().as_millis();
-    crate::indexing::trigger_verification(&path.to_string_lossy());
+    crate::indexing::trigger_verification(volume_id, &path.to_string_lossy());
 
     // Sort entries
     benchmark::log_event("sort START");

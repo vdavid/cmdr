@@ -32,7 +32,7 @@ pub async fn create_directory(
     // Synthetic diff only works for volumes backed by the local filesystem.
     // Protocol-only volumes (MTP) handle UI updates through their own event systems.
     if should_emit_synthetic_diff(volume_id.as_deref()) {
-        emit_synthetic_entry_diff(&new_path, &PathBuf::from(&expanded_path));
+        emit_synthetic_entry_diff(volume_id.as_deref(), &new_path, &PathBuf::from(&expanded_path));
     }
     Ok(new_path.to_string_lossy().to_string())
 }
@@ -43,7 +43,7 @@ pub async fn create_file(volume_id: Option<String>, parent_path: String, name: S
     let (new_path, expanded_path) = create_file_core(volume_id.clone(), &parent_path, &name).await?;
 
     if should_emit_synthetic_diff(volume_id.as_deref()) {
-        emit_synthetic_entry_diff(&new_path, &PathBuf::from(&expanded_path));
+        emit_synthetic_entry_diff(volume_id.as_deref(), &new_path, &PathBuf::from(&expanded_path));
     }
     Ok(new_path.to_string_lossy().to_string())
 }
@@ -364,7 +364,7 @@ fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
 ///
 /// Best-effort: if any step fails (stat, cache lookup, etc.) we log a warning
 /// and return. The watcher will pick up the change later.
-fn emit_synthetic_entry_diff(entry_path: &Path, parent_path: &Path) {
+fn emit_synthetic_entry_diff(volume_id: Option<&str>, entry_path: &Path, parent_path: &Path) {
     use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::listing::reading::get_single_entry;
     use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};
@@ -379,8 +379,10 @@ fn emit_synthetic_entry_diff(entry_path: &Path, parent_path: &Path) {
         }
     };
 
-    // 2. Enrich with index data
-    crate::indexing::enrich_entries_with_index(std::slice::from_mut(&mut entry));
+    // 2. Enrich with index data. `None` means the local filesystem (`root`); this
+    // path only runs for local-FS volumes (`should_emit_synthetic_diff`).
+    let volume_id = volume_id.unwrap_or(crate::indexing::ROOT_VOLUME_ID);
+    crate::indexing::enrich_entries_with_index_on_volume(volume_id, std::slice::from_mut(&mut entry));
 
     // 3. Find affected listings
     let listings = find_listings_for_path(parent_path);

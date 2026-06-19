@@ -39,11 +39,12 @@ mod stress_tests_lifecycle;
 #[cfg(test)]
 mod stress_tests_partial_aggregation;
 
-pub use enrichment::enrich_entries_with_index;
 pub(crate) use enrichment::{ReadPool, get_read_pool};
+pub use enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
 pub(crate) use events::DEBUG_STATS;
 pub use events::*;
 
+pub(crate) use state::ROOT_VOLUME_ID;
 pub use state::{
     clear_index, force_scan, get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, init, is_active,
     should_auto_start, should_auto_start_indexing, start_indexing, stop_indexing, stop_scan, trigger_verification,

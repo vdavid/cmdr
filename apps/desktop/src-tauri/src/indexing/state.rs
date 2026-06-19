@@ -1,13 +1,32 @@
-//! Indexing state machine and lifecycle.
+//! Indexing state machine and the per-volume registry.
 //!
-//! Holds the global `INDEXING` mutex and the `IndexPhase` enum that gates
-//! every public operation. Also owns the bootstrap logic that spins up the
-//! `IndexManager`, the `ReadPool`, and the incremental-vacuum timer.
+//! Holds the `INDEX_REGISTRY` (one `IndexInstance` per volume id) and the
+//! `IndexPhase` enum that gates every public operation for a volume. Also owns
+//! the bootstrap logic that spins up the `IndexManager`, the `ReadPool`, and the
+//! incremental-vacuum timer.
+//!
+//! ## Registry shape (M1)
+//!
+//! Each indexed volume has one `IndexInstance` bundling its `{phase, read_pool,
+//! pending_sizes}`. The registry is the authority for *which* volumes are
+//! indexed and for their lifecycle transitions. Every invariant the
+//! single-volume design held — single-writer per DB, lock-first reservation,
+//! drop-guard-before-drain, reads via `ReadPool` never under the lifecycle
+//! lock — now holds *per volume id*, keyed independently in the map so two
+//! volumes can't corrupt each other.
+//!
+//! The root volume's `ReadPool` and `PendingSizes` are *also* reachable through
+//! the standalone `READ_POOL` / `PENDING_SIZES` module globals (the read-path
+//! fast handles used by enrichment, search, and IPC dir-stats). The root
+//! `IndexInstance` shares the very same `Arc`s, so there is exactly one
+//! allocation per volume and the two can't drift. See `enrichment.rs` /
+//! `pending_sizes.rs` and the `DETAILS.md` registry section.
 //!
 //! `mod.rs` is a thin facade that re-exports the public functions defined
 //! here; module-internal callers (e.g. `manager.rs`) can use the items
 //! directly via `super::state`.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::LazyLock;
@@ -16,45 +35,77 @@ use std::time::Duration;
 
 use tauri::AppHandle;
 
-use super::enrichment::{READ_POOL, ReadPool, get_read_pool};
+use super::enrichment::{ReadPool, get_read_pool_for, install_read_pool, uninstall_read_pool};
 use super::events::{DEBUG_STATS, IndexDebugStatusResponse, IndexStatusResponse};
 use super::firmlinks;
 use super::manager::IndexManager;
-use super::pending_sizes::{PENDING_SIZES, PendingSizes, get_pending_sizes};
+use super::pending_sizes::{PendingSizes, get_pending_sizes_for, install_pending_sizes, uninstall_pending_sizes};
 use super::store::{self, DirStats, IndexStore};
 use super::verifier;
 use super::writer::WriteMessage;
 
-use crate::ignore_poison::IgnorePoison;
 use crate::settings::FullDiskAccessChoice;
+
+/// A volume's identity in the index registry (e.g. `"root"` for the local disk).
+pub(crate) type VolumeId = String;
+
+/// The local-disk volume id. The only volume ever registered in M1.
+pub(crate) const ROOT_VOLUME_ID: &str = "root";
 
 // ── Indexing state machine ────────────────────────────────────────────
 
-/// Lifecycle phases of the indexing system. Single source of truth for
-/// whether indexing is active and what capabilities are available.
+/// Lifecycle phases of one volume's index. Single source of truth for whether
+/// that volume's index is active and what capabilities are available.
+///
+/// There is no `Disabled` variant: in the registry model, "disabled / not
+/// indexed" is the *absence* of an `IndexInstance` for the volume id. An
+/// instance only ever exists in one of these live-or-transitional phases, so
+/// the read-path gate (`get_read_pool_for` returning `None`) and `get_status`
+/// treat an absent key as disabled.
 pub(crate) enum IndexPhase {
-    /// Indexing is not active (disabled by user, not yet started, or shut down).
-    Disabled,
     /// IndexManager created, `resume_or_scan()` is running. A temporary read
     /// store is available for enrichment and status queries while initialization
     /// completes.
     Initializing { store: IndexStore },
     /// Fully operational: scanning, watching, enrichment, IPC all work.
     Running(Box<IndexManager>),
-    /// Shutdown in progress (transitional, cleanup running).
+    /// Shutdown in progress (transitional, cleanup running). The instance is
+    /// removed from the registry once the drain completes.
     ShuttingDown,
 }
 
-pub(crate) static INDEXING: LazyLock<std::sync::Mutex<IndexPhase>> =
-    LazyLock::new(|| std::sync::Mutex::new(IndexPhase::Disabled));
+/// One volume's index: its lifecycle phase plus the read-path handles
+/// (`ReadPool` for lock-free enrichment/verification reads, `PendingSizes` for
+/// the "size updating" hourglass). Bundling them per volume means a second
+/// volume's pool can never be confused for this one's.
+///
+/// For the root volume, `read_pool` and `pending_sizes` are the same `Arc`s
+/// installed into the `READ_POOL` / `PENDING_SIZES` module globals, so the
+/// read-path fast handles and the registry never disagree.
+pub(crate) struct IndexInstance {
+    pub(crate) phase: IndexPhase,
+    pub(crate) read_pool: Arc<ReadPool>,
+    pub(crate) pending_sizes: Arc<PendingSizes>,
+}
+
+/// The per-volume index registry: the authority for which volumes are indexed
+/// and their lifecycle. Keyed by volume id so each volume's `(absent) ->
+/// Initializing -> Running` machine is independent and two volumes can't race
+/// on each other's state.
+///
+/// An *absent* key means "no index registered for this volume" — the read path
+/// uses exactly that to decide skip-vs-route (`get_read_pool_for` returns
+/// `None`, so enrichment skips before any DB work).
+pub(crate) static INDEX_REGISTRY: LazyLock<std::sync::Mutex<HashMap<VolumeId, IndexInstance>>> =
+    LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
 
 // ── Initialization ───────────────────────────────────────────────────
 
-/// Force-initialize the INDEXING static. Called during app setup so the
+/// Force-initialize the registry static. Called during app setup so the
 /// LazyLock is ready before any async tasks access it.
 pub fn init() {
-    drop(INDEXING.lock());
-    log::debug!("Indexing state initialized");
+    drop(INDEX_REGISTRY.lock());
+    log::debug!("Indexing registry initialized");
 }
 
 /// Whether indexing should auto-start on launch.
@@ -86,6 +137,11 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
 ///   `start_indexing_after_fda_decision`) or Allow (which restarts the app), the indexer
 ///   auto-starts. After Deny, the scan triggers per-folder TCC prompts as it walks protected paths:
 ///   that's the "individual Allow/Deny prompts" contract the user opted into by denying FDA.
+///
+/// **FDA gates only the local (`root`) volume** (scanning `/` triggers TCC). SMB/MTP volumes are
+/// not TCC-protected, so a future per-volume "Turn on indexing" for them must NOT route through
+/// this gate (see the plan's rabbit hole #13). In M1 only `root` is ever started, so this is the
+/// only auto-start path.
 pub fn should_auto_start_indexing(
     indexing_enabled: Option<bool>,
     fda_choice: FullDiskAccessChoice,
@@ -94,73 +150,114 @@ pub fn should_auto_start_indexing(
     should_auto_start(indexing_enabled) && !crate::fda_gate::is_fda_pending(fda_choice, os_fda_granted)
 }
 
-/// Trigger background verification of a directory against the index DB.
-/// Called after enrichment on each navigation. No-op if indexing is not running.
-/// Fully fire-and-forget: the INDEXING lock is acquired on a spawned task,
-/// so it never blocks the caller (navigation thread).
-pub fn trigger_verification(dir_path: &str) {
+// ── Registry helpers ─────────────────────────────────────────────────
+
+/// Clone a non-root volume's read pool from its registry instance. Root's pool
+/// lives in the `READ_POOL` global instead (see `enrichment::get_read_pool`).
+pub(crate) fn get_instance_read_pool(volume_id: &str) -> Option<Arc<ReadPool>> {
+    INDEX_REGISTRY
+        .lock()
+        .ok()?
+        .get(volume_id)
+        .map(|i| Arc::clone(&i.read_pool))
+}
+
+/// Clone a non-root volume's pending-size tracker from its registry instance.
+/// Root's tracker lives in the `PENDING_SIZES` global instead.
+pub(crate) fn get_instance_pending_sizes(volume_id: &str) -> Option<Arc<PendingSizes>> {
+    INDEX_REGISTRY
+        .lock()
+        .ok()?
+        .get(volume_id)
+        .map(|i| Arc::clone(&i.pending_sizes))
+}
+
+/// Trigger background verification of a directory against the volume's index DB.
+/// Called after enrichment on each navigation. No-op if the volume's index is
+/// not running. Fully fire-and-forget: the registry lock is acquired on a
+/// spawned task, so it never blocks the caller (navigation thread).
+pub fn trigger_verification(volume_id: &str, dir_path: &str) {
+    let volume_id = volume_id.to_string();
     let dir_path = dir_path.to_string();
     tauri::async_runtime::spawn(async move {
-        let guard = match INDEXING.lock() {
+        let reg = match INDEX_REGISTRY.lock() {
             Ok(g) => g,
             Err(_) => return,
         };
-        if let IndexPhase::Running(ref mgr) = *guard {
+        if let Some(IndexInstance {
+            phase: IndexPhase::Running(mgr),
+            ..
+        }) = reg.get(&volume_id)
+        {
             let writer = mgr.writer.clone();
             let app = mgr.app.clone();
             let scanning = mgr.scanning.load(Ordering::Relaxed);
-            drop(guard);
+            drop(reg);
             verifier::maybe_verify(dir_path, writer, app, scanning);
         }
     });
 }
 
-/// Stop all scans and watcher without deleting the DB.
+/// Stop all scans and watcher for a volume without deleting its DB.
 ///
 /// Called when the user disables indexing via settings. The index stays on disk
 /// but no scanning or watching runs. Directory sizes revert to `<dir>`.
-pub fn stop_indexing() -> Result<(), String> {
+pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
     verifier::invalidate();
 
-    // Invalidate ReadPool before shutdown so thread-local connections are discarded.
-    if let Some(pool) = READ_POOL.lock_ignore_poison().take() {
+    // Invalidate this volume's ReadPool/PendingSizes read-path handles before
+    // shutdown so thread-local connections are discarded. For root these are the
+    // module globals.
+    if let Some(pool) = uninstall_read_pool(volume_id) {
         pool.invalidate();
     }
-    *PENDING_SIZES.lock_ignore_poison() = None;
+    uninstall_pending_sizes(volume_id);
 
-    // Swap the phase to `ShuttingDown` under the lock, then release the lock
-    // BEFORE the blocking drain. `mgr.shutdown()` blocks up to 5 s draining the
-    // live-event task; holding `INDEXING` across it would stall every concurrent
-    // `get_status`/`is_active`/`trigger_verification` caller and park a tokio
-    // worker. The live event loop reads via `ReadPool` and never reacquires
-    // `INDEXING`, so dropping the guard while `ShuttingDown` is published is safe:
-    // concurrent callers see `ShuttingDown` and proceed.
+    // Take the instance out under the lock, publish `ShuttingDown`, then release
+    // the lock BEFORE the blocking drain. `mgr.shutdown()` blocks up to 5 s
+    // draining the live-event task; holding the registry lock across it would
+    // stall every concurrent `get_status`/`is_active`/`trigger_verification`
+    // caller (for ANY volume) and park a tokio worker. The live event loop reads
+    // via `ReadPool` and never reacquires the registry lock, so dropping the
+    // guard while `ShuttingDown` is published is safe: concurrent callers see
+    // `ShuttingDown` and proceed.
     let owned_mgr = {
-        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
-        match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
+        let mut reg = INDEX_REGISTRY
+            .lock()
+            .map_err(|e| format!("Failed to lock registry: {e}"))?;
+        let instance = match reg.get_mut(volume_id) {
+            Some(i) => i,
+            None => return Ok(()), // not indexed
+        };
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
             IndexPhase::Running(mgr) => mgr,
             IndexPhase::Initializing { .. } => {
-                *guard = IndexPhase::Disabled;
-                log::info!("Indexing stopped during initialization");
+                // An in-flight start observes the removal and shuts its half-built
+                // manager down. Removing the whole instance is correct: it's
+                // disabled now.
+                reg.remove(volume_id);
+                log::info!("Indexing stopped during initialization for '{volume_id}'");
                 return Ok(());
             }
             other => {
-                *guard = other; // put it back, wasn't running
+                instance.phase = other; // put it back, wasn't running
                 return Ok(());
             }
         }
     };
 
-    // Guard released: run the blocking drain without holding `INDEXING`.
+    // Guard released: run the blocking drain without holding the registry lock.
     let mut mgr = owned_mgr;
     mgr.shutdown();
 
-    // Re-lock only to publish the final phase.
+    // Re-lock only to remove the now-disabled instance.
     {
-        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
-        *guard = IndexPhase::Disabled;
+        let mut reg = INDEX_REGISTRY
+            .lock()
+            .map_err(|e| format!("Failed to lock registry: {e}"))?;
+        reg.remove(volume_id);
     }
-    log::info!("Indexing stopped (DB preserved on disk)");
+    log::info!("Indexing stopped for '{volume_id}' (DB preserved on disk)");
 
     Ok(())
 }
@@ -168,8 +265,8 @@ pub fn stop_indexing() -> Result<(), String> {
 /// Phase classifier used by `start_indexing`'s post-`resume_or_scan` branch.
 /// Returns true only while the phase carries the temporary init store. If
 /// `stop_indexing` swapped the state out from under us during `resume_or_scan`,
-/// the phase is `Disabled` (or briefly `ShuttingDown`) and this returns false.
-/// The caller treats that as "phase changed, shut the manager down".
+/// the phase is `ShuttingDown` (or the instance was removed) and this returns
+/// false. The caller treats that as "phase changed, shut the manager down".
 ///
 /// Extracted as a pure helper so the state-machine race fragment is testable
 /// without standing up an `AppHandle` / `IndexManager`.
@@ -177,23 +274,42 @@ pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
     matches!(phase, IndexPhase::Initializing { .. })
 }
 
-/// Atomically reserve the `Initializing(store)` phase. Returns `Ok(())` when
-/// the previous phase was `Disabled` (the only legitimate start); returns
-/// `Err(store)` otherwise so the caller can drop the unused store without
-/// constructing the heavy `IndexManager`.
+/// Atomically reserve the `Initializing(store)` phase for `volume_id`. Returns
+/// `Ok(())` when the volume had no registered instance (the only legitimate
+/// start); returns `Err(store)` otherwise so the caller can drop the unused
+/// store without constructing the heavy `IndexManager`.
 ///
-/// This is the lock-first guard for `start_indexing`. Two writer threads
-/// racing on the same DB share neither their `Arc<AtomicI64>` ID counter nor
-/// their `AccumulatorMaps`, which produces PK collisions and inflated
-/// `dir_stats`. The transition must be a single atomic check-and-set, not
-/// "construct manager then maybe shut down" (which leaks a live writer
-/// thread while `resume_or_scan` runs).
-pub(crate) fn try_reserve_initializing_phase(store: IndexStore) -> Result<(), Box<IndexStore>> {
-    let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
-    if !matches!(*guard, IndexPhase::Disabled) {
+/// This is the lock-first guard for `start_indexing`, now per volume id. Two
+/// writer threads racing on the same DB share neither their `Arc<AtomicI64>` ID
+/// counter nor their `AccumulatorMaps`, which produces PK collisions and
+/// inflated `dir_stats`. The transition must be a single atomic check-and-set,
+/// not "construct manager then maybe shut down" (which leaks a live writer
+/// thread while `resume_or_scan` runs). Keyed per volume, two starts for the
+/// *same* volume still can't race, while two *different* volumes start freely.
+///
+/// On success, installs the volume's `read_pool`/`pending_sizes` into the
+/// registry instance (and, for root, the module globals) so enrichment works
+/// during the `Initializing` phase.
+pub(crate) fn try_reserve_initializing_phase(
+    volume_id: &str,
+    store: IndexStore,
+    read_pool: Arc<ReadPool>,
+    pending_sizes: Arc<PendingSizes>,
+) -> Result<(), Box<IndexStore>> {
+    let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
+    if reg.contains_key(volume_id) {
         return Err(Box::new(store));
     }
-    *guard = IndexPhase::Initializing { store };
+    install_read_pool(volume_id, Arc::clone(&read_pool));
+    install_pending_sizes(volume_id, Arc::clone(&pending_sizes));
+    reg.insert(
+        volume_id.to_string(),
+        IndexInstance {
+            phase: IndexPhase::Initializing { store },
+            read_pool,
+            pending_sizes,
+        },
+    );
     Ok(())
 }
 
@@ -203,59 +319,67 @@ pub(crate) fn try_reserve_initializing_phase(store: IndexStore) -> Result<(), Bo
 /// Call after `init()`. On startup this checks for an existing index: if found,
 /// it replays the FSEvents journal from the stored `last_event_id`; otherwise
 /// it starts a fresh full scan.
+///
+/// M1 only ever starts `root`. The body is written volume-generically so M2 can
+/// add SMB/MTP starts, but the local call sites pass `"root"` / `/`.
 pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
-    log::info!("start_indexing: begin");
+    start_indexing_for(app, ROOT_VOLUME_ID, PathBuf::from("/"))
+}
+
+/// Start indexing for a specific volume id and root path.
+fn start_indexing_for(app: &AppHandle, volume_id: &str, volume_root: PathBuf) -> Result<(), String> {
+    log::info!("start_indexing: begin for '{volume_id}'");
     super::memory_watchdog::start(app.clone());
 
-    // Lock-first reservation. We open the init store and atomically claim the
-    // `Disabled -> Initializing(store)` transition BEFORE constructing the
-    // heavy `IndexManager`. If another call is already initializing or
-    // running, this call becomes a no-op — without this guard, two writers
-    // race on the same DB (each owns its own `Arc<AtomicI64>` ID counter and
-    // `AccumulatorMaps`), producing PK collisions and inflated `dir_stats`.
+    // Lock-first reservation, per volume id. We open the init store and the
+    // read-path handles, then atomically claim the `(absent) -> Initializing`
+    // transition BEFORE constructing the heavy `IndexManager`. If this volume is
+    // already initializing or running, this call becomes a no-op — without the
+    // per-volume guard, two writers race on the same DB (each owns its own
+    // `Arc<AtomicI64>` ID counter and `AccumulatorMaps`), producing PK
+    // collisions and inflated `dir_stats`.
     let data_dir = crate::config::resolved_app_data_dir(app)?;
-    let db_path = data_dir.join("index-root.db");
+    let db_path = data_dir.join(format!("index-{volume_id}.db"));
     let init_store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open init store: {e}"))?;
-    if try_reserve_initializing_phase(init_store).is_err() {
-        log::info!("start_indexing: phase already Initializing/Running/ShuttingDown, no-op");
+    let pool = Arc::new(ReadPool::new(db_path.clone()).map_err(|e| format!("Failed to create read pool: {e}"))?);
+    let pending = Arc::new(PendingSizes::new());
+    if try_reserve_initializing_phase(volume_id, init_store, Arc::clone(&pool), Arc::clone(&pending)).is_err() {
+        log::info!("start_indexing: '{volume_id}' already Initializing/Running/ShuttingDown, no-op");
         return Ok(());
     }
 
-    // Install ReadPool early so enrichment works during the Initializing phase.
-    let pool = Arc::new(ReadPool::new(db_path.clone()).map_err(|e| format!("Failed to create read pool: {e}"))?);
-    *READ_POOL.lock_ignore_poison() = Some(pool);
-    // Install the pending-size tracker in lockstep with the ReadPool.
-    *PENDING_SIZES.lock_ignore_poison() = Some(Arc::new(PendingSizes::new()));
-
-    let mut manager = match IndexManager::new("root".to_string(), PathBuf::from("/"), app.clone()) {
+    let mut manager = match IndexManager::new(volume_id.to_string(), volume_root, app.clone()) {
         Ok(m) => m,
         Err(e) => {
-            // Reservation succeeded but manager construction failed: hand the
-            // phase back to Disabled so a subsequent call can retry cleanly.
-            let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
-            *guard = IndexPhase::Disabled;
-            if let Some(pool) = READ_POOL.lock_ignore_poison().take() {
-                pool.invalidate();
-            }
-            *PENDING_SIZES.lock_ignore_poison() = None;
+            // Reservation succeeded but manager construction failed: remove the
+            // instance so a subsequent call can retry cleanly, and drop the
+            // installed read-path handles.
+            remove_instance_and_handles(volume_id);
             return Err(e);
         }
     };
 
     let scan_result = manager.resume_or_scan();
 
-    // Clone the writer before moving manager into the state machine, so we
-    // can hand it to the maintenance timer if startup succeeds.
+    // Clone the writer before moving manager into the registry, so we can hand
+    // it to the maintenance timer if startup succeeds.
     let writer_for_maintenance = manager.writer.clone();
 
-    // Re-lock and check: if someone called stop_indexing() while we were
-    // inside resume_or_scan(), the phase is no longer Initializing.
-    // Respect that: shut down the manager instead of overwriting.
-    let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
-    match (is_initializing_phase(&guard), scan_result) {
+    // Re-lock and check: if someone called stop_indexing() for this volume while
+    // we were inside resume_or_scan(), the phase is no longer Initializing (or
+    // the instance is gone). Respect that: shut the manager down instead of
+    // overwriting.
+    let mut reg = INDEX_REGISTRY
+        .lock()
+        .map_err(|e| format!("Failed to lock registry: {e}"))?;
+    let still_initializing = reg.get(volume_id).is_some_and(|i| is_initializing_phase(&i.phase));
+    match (still_initializing, scan_result) {
         (true, Ok(())) => {
-            *guard = IndexPhase::Running(Box::new(manager));
-            log::info!("start_indexing: done, IndexManager is Running");
+            if let Some(instance) = reg.get_mut(volume_id) {
+                instance.phase = IndexPhase::Running(Box::new(manager));
+            }
+            drop(reg);
+            log::info!("start_indexing: done, '{volume_id}' IndexManager is Running");
 
             // Periodic DB maintenance every 30 s: reclaim free pages from
             // deletes/rescans (`IncrementalVacuum`) AND truncate the WAL file
@@ -274,20 +398,19 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
             });
         }
         (true, Err(e)) => {
-            *guard = IndexPhase::Disabled;
-            if let Some(pool) = READ_POOL.lock_ignore_poison().take() {
-                pool.invalidate();
-            }
-            *PENDING_SIZES.lock_ignore_poison() = None;
+            drop(reg);
+            remove_instance_and_handles(volume_id);
             return Err(e);
         }
         (false, Ok(())) => {
-            // Phase changed (e.g. stop_indexing set Disabled). Don't override.
-            log::info!("start_indexing: phase changed during init, shutting down manager");
+            // Phase changed (e.g. stop_indexing removed the instance). Don't override.
+            drop(reg);
+            log::info!("start_indexing: '{volume_id}' phase changed during init, shutting down manager");
             manager.shutdown();
         }
         (false, Err(e)) => {
-            log::warn!("start_indexing: resume_or_scan failed and phase changed: {e}");
+            drop(reg);
+            log::warn!("start_indexing: resume_or_scan failed and phase changed for '{volume_id}': {e}");
             manager.shutdown();
         }
     }
@@ -295,45 +418,71 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Stop all scans, shut down the writer, delete the DB file, and reset state.
-///
-/// Call `start_indexing()` to create a fresh index afterward.
-pub fn clear_index() -> Result<(), String> {
-    verifier::invalidate();
-
-    // Invalidate ReadPool before deleting DB files so thread-local connections are discarded.
-    if let Some(pool) = READ_POOL.lock_ignore_poison().take() {
+/// Remove a volume's instance from the registry and uninstall its read-path
+/// handles (for root, the module globals). Used on start-up failure paths.
+fn remove_instance_and_handles(volume_id: &str) {
+    {
+        let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
+        reg.remove(volume_id);
+    }
+    if let Some(pool) = uninstall_read_pool(volume_id) {
         pool.invalidate();
     }
-    *PENDING_SIZES.lock_ignore_poison() = None;
+    uninstall_pending_sizes(volume_id);
+}
 
-    // Swap the phase to `ShuttingDown` under the lock, then release the lock
-    // BEFORE the blocking drain (same reasoning as `stop_indexing`: the up-to-5 s
-    // `mgr.shutdown()` drain must not stall concurrent `INDEXING` readers or park
-    // a tokio worker). The live event loop reads via `ReadPool` and never
-    // reacquires `INDEXING`, so dropping the guard while `ShuttingDown` is
-    // published is safe.
+/// Stop all scans, shut down the writer, delete the DB file, and reset state
+/// for a volume.
+///
+/// Call `start_indexing()` to create a fresh index afterward.
+pub fn clear_index(volume_id: &str) -> Result<(), String> {
+    verifier::invalidate();
+
+    // Invalidate this volume's ReadPool/PendingSizes before deleting DB files so
+    // thread-local connections are discarded.
+    if let Some(pool) = uninstall_read_pool(volume_id) {
+        pool.invalidate();
+    }
+    uninstall_pending_sizes(volume_id);
+
+    // Take the instance out under the lock, publish `ShuttingDown`, then release
+    // the lock BEFORE the blocking drain (same reasoning as `stop_indexing`: the
+    // up-to-5 s `mgr.shutdown()` drain must not stall concurrent registry
+    // readers or park a tokio worker). The live event loop reads via `ReadPool`
+    // and never reacquires the registry lock, so dropping the guard while
+    // `ShuttingDown` is published is safe.
     let owned_mgr = {
-        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
-        match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
+        let mut reg = INDEX_REGISTRY
+            .lock()
+            .map_err(|e| format!("Failed to lock registry: {e}"))?;
+        let instance = match reg.get_mut(volume_id) {
+            Some(i) => i,
+            None => {
+                log::info!("Drive index clear requested but '{volume_id}' was not indexed");
+                return Ok(());
+            }
+        };
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
             IndexPhase::Running(mgr) => mgr,
             other => {
-                *guard = other;
-                log::info!("Drive index clear requested but indexing was not active");
+                instance.phase = other;
+                log::info!("Drive index clear requested but '{volume_id}' was not active");
                 return Ok(());
             }
         }
     };
 
-    // Guard released: run the blocking drain without holding `INDEXING`.
+    // Guard released: run the blocking drain without holding the registry lock.
     let mut mgr = owned_mgr;
     let db_path = mgr.db_path().to_path_buf();
     mgr.shutdown();
 
-    // Re-lock only to publish the final phase.
+    // Re-lock only to remove the now-disabled instance.
     {
-        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
-        *guard = IndexPhase::Disabled;
+        let mut reg = INDEX_REGISTRY
+            .lock()
+            .map_err(|e| format!("Failed to lock registry: {e}"))?;
+        reg.remove(volume_id);
     }
 
     // Delete DB file and WAL/SHM sidecars
@@ -346,28 +495,33 @@ pub fn clear_index() -> Result<(), String> {
             std::fs::remove_file(&path).map_err(|e| format!("Failed to delete {}: {e}", path.display()))?;
         }
     }
-    log::info!("Drive index cleared (DB deleted)");
+    log::info!("Drive index cleared for '{volume_id}' (DB deleted)");
 
     Ok(())
 }
 
 // ── Module-level public API (called by IPC commands) ─────────────────
 
-/// Get the current indexing status.
-pub fn get_status() -> Result<IndexStatusResponse, String> {
-    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &*guard {
-        IndexPhase::Disabled | IndexPhase::ShuttingDown => Ok(IndexStatusResponse {
-            initialized: false,
-            scanning: false,
-            entries_scanned: 0,
-            dirs_found: 0,
-            bytes_scanned: 0,
-            index_status: None,
-            db_file_size: None,
-            volume_used_bytes: None,
-        }),
-        IndexPhase::Initializing { store, .. } => {
+/// The empty/disabled status response (a volume with no running index).
+fn disabled_status_response() -> IndexStatusResponse {
+    IndexStatusResponse {
+        initialized: false,
+        scanning: false,
+        entries_scanned: 0,
+        dirs_found: 0,
+        bytes_scanned: 0,
+        index_status: None,
+        db_file_size: None,
+        volume_used_bytes: None,
+    }
+}
+
+/// Get the current indexing status for a volume.
+pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
+    let reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match reg.get(volume_id).map(|i| &i.phase) {
+        None | Some(IndexPhase::ShuttingDown) => Ok(disabled_status_response()),
+        Some(IndexPhase::Initializing { store, .. }) => {
             let db_file_size = store.db_file_size().ok();
             let index_status = store.get_index_status().ok();
             Ok(IndexStatusResponse {
@@ -381,25 +535,16 @@ pub fn get_status() -> Result<IndexStatusResponse, String> {
                 volume_used_bytes: None,
             })
         }
-        IndexPhase::Running(mgr) => mgr.get_status(),
+        Some(IndexPhase::Running(mgr)) => mgr.get_status(),
     }
 }
 
 /// Get extended debug status for the debug window.
-pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
-    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &*guard {
-        IndexPhase::Disabled | IndexPhase::ShuttingDown => {
-            let base = IndexStatusResponse {
-                initialized: false,
-                scanning: false,
-                entries_scanned: 0,
-                dirs_found: 0,
-                bytes_scanned: 0,
-                index_status: None,
-                db_file_size: None,
-                volume_used_bytes: None,
-            };
+pub fn get_debug_status(volume_id: &str) -> Result<IndexDebugStatusResponse, String> {
+    let reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match reg.get(volume_id).map(|i| &i.phase) {
+        None | Some(IndexPhase::ShuttingDown) => {
+            let base = disabled_status_response();
             let (activity_phase, phase_started_at, phase_duration_ms, phase_history) =
                 IndexManager::read_phase_timeline();
             Ok(IndexDebugStatusResponse {
@@ -423,7 +568,7 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
                 db_freelist_count: None,
             })
         }
-        IndexPhase::Initializing { store, .. } => {
+        Some(IndexPhase::Initializing { store, .. }) => {
             let db_file_size = store.db_file_size().ok();
             let index_status = store.get_index_status().ok();
             let base = IndexStatusResponse {
@@ -465,13 +610,16 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
                 db_freelist_count,
             })
         }
-        IndexPhase::Running(mgr) => mgr.get_debug_status(),
+        Some(IndexPhase::Running(mgr)) => mgr.get_debug_status(),
     }
 }
 
-/// Look up recursive stats for a single directory.
-pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
-    let pool = get_read_pool().ok_or_else(|| "Indexing not initialized".to_string())?;
+/// Look up recursive stats for a single directory in a volume's index.
+pub fn get_dir_stats_on_volume(volume_id: &str, path: &str) -> Result<Option<DirStats>, String> {
+    let pool = match get_read_pool_for(volume_id) {
+        Some(p) => p,
+        None => return Ok(None),
+    };
     let normalized = firmlinks::normalize_path(path);
 
     pool.with_conn(|conn| {
@@ -484,7 +632,7 @@ pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
         let stats =
             IndexStore::get_dir_stats_by_id(conn, entry_id).map_err(|e| format!("Couldn't get dir stats: {e}"))?;
 
-        let pending = get_pending_sizes().is_some_and(|t| t.is_pending(&normalized));
+        let pending = get_pending_sizes_for(volume_id).is_some_and(|t| t.is_pending(&normalized));
         Ok(stats.map(|s| DirStats {
             path: normalized.clone(),
             recursive_size: s.recursive_logical_size,
@@ -497,9 +645,19 @@ pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
     })?
 }
 
-/// Batch lookup of dir_stats for multiple paths.
-pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
-    let pool = get_read_pool().ok_or_else(|| "Indexing not initialized".to_string())?;
+/// Look up recursive stats for a single directory, resolving the owning volume
+/// from the path. IPC stays path-based (see `commands/indexing.rs`); the volume
+/// is resolved internally. In M1 every absolute local path resolves to `root`.
+pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
+    get_dir_stats_on_volume(&volume_id_for_local_path(path), path)
+}
+
+/// Batch lookup of dir_stats for multiple paths on a volume.
+pub fn get_dir_stats_batch_on_volume(volume_id: &str, paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
+    let pool = match get_read_pool_for(volume_id) {
+        Some(p) => p,
+        None => return Ok(paths.iter().map(|_| None).collect()),
+    };
 
     pool.with_conn(|conn| {
         let mut results = Vec::with_capacity(paths.len());
@@ -521,7 +679,7 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
             let stats_batch = IndexStore::get_dir_stats_batch_by_ids(conn, &ids)
                 .map_err(|e| format!("Couldn't get dir stats batch: {e}"))?;
 
-            let tracker = get_pending_sizes();
+            let tracker = get_pending_sizes_for(volume_id);
             for ((_, idx, normalized), stats_opt) in id_to_idx.into_iter().zip(stats_batch) {
                 let pending = tracker.as_ref().is_some_and(|t| t.is_pending(&normalized));
                 results[idx] = stats_opt.map(|s| DirStats {
@@ -540,20 +698,45 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
     })?
 }
 
-/// Force a fresh full scan (for debug/manual trigger).
-pub fn force_scan() -> Result<(), String> {
-    let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &mut *guard {
-        IndexPhase::Running(mgr) => mgr.start_scan("manual start"),
+/// Batch lookup of dir_stats, resolving the owning volume from the paths. The
+/// IPC `get_dir_stats_batch` sends one directory's children, which all live on
+/// one volume; resolving from the first path is sufficient. In M1 every
+/// absolute local path resolves to `root`.
+pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
+    let volume_id = paths
+        .first()
+        .map(|p| volume_id_for_local_path(p))
+        .unwrap_or_else(|| ROOT_VOLUME_ID.to_string());
+    get_dir_stats_batch_on_volume(&volume_id, paths)
+}
+
+/// Resolve a filesystem path to its index volume id.
+///
+/// M1: the only registered volume is `root` (the local disk at `/`), and the
+/// path-based IPC only ever carries local absolute paths, so this is `"root"`.
+/// M2+ will map `/Volumes/...` and `mtp-*` virtual paths to their volume ids
+/// here once those backends register indexes.
+fn volume_id_for_local_path(_path: &str) -> VolumeId {
+    // TODO(M2/M4): map /Volumes/<share> and mtp-* virtual paths to their volume
+    // ids once SMB/MTP indexes can register. Until then, all index-backed paths
+    // are local-disk `root`.
+    ROOT_VOLUME_ID.to_string()
+}
+
+/// Force a fresh full scan for a volume (for debug/manual trigger).
+pub fn force_scan(volume_id: &str) -> Result<(), String> {
+    let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match reg.get_mut(volume_id).map(|i| &mut i.phase) {
+        Some(IndexPhase::Running(mgr)) => mgr.start_scan("manual start"),
         _ => Err("Indexing not initialized".to_string()),
     }
 }
 
-/// Stop the active scan without shutting down the manager.
-pub fn stop_scan() -> Result<(), String> {
-    let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &mut *guard {
-        IndexPhase::Running(mgr) => {
+/// Stop the active scan for a volume without shutting down the manager.
+pub fn stop_scan(volume_id: &str) -> Result<(), String> {
+    let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match reg.get_mut(volume_id).map(|i| &mut i.phase) {
+        Some(IndexPhase::Running(mgr)) => {
             mgr.stop_scan();
             Ok(())
         }
@@ -561,10 +744,131 @@ pub fn stop_scan() -> Result<(), String> {
     }
 }
 
-/// Check whether indexing is active (initializing or running).
-pub fn is_active() -> bool {
-    INDEXING
+/// Check whether a volume's index is active (initializing or running).
+pub fn is_active(volume_id: &str) -> bool {
+    INDEX_REGISTRY
         .lock()
-        .map(|g| matches!(&*g, IndexPhase::Initializing { .. } | IndexPhase::Running(_)))
+        .map(|reg| {
+            matches!(
+                reg.get(volume_id).map(|i| &i.phase),
+                Some(IndexPhase::Initializing { .. } | IndexPhase::Running(_))
+            )
+        })
         .unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The read path's skip-vs-route gate is "does `get_read_pool_for` return a
+    /// pool?". An unregistered volume must return `None` (so its listings skip
+    /// before any DB work, exactly like the old `should_exclude` early-return); a
+    /// reserved one (root → global pool, non-root → instance pool) returns the
+    /// pool. Reserving installs the pool, so the gate flips on; removing drops it.
+    #[test]
+    fn read_pool_routing_tracks_registration() {
+        let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        clear_registry_and_pools();
+
+        let indexed = |vid: &str| get_read_pool_for(vid).is_some();
+
+        assert!(!indexed("root"), "no pool => not indexed");
+        assert!(!indexed("smb-nas"), "absent key => not indexed");
+
+        // Reserve root (installs the global pool) and a non-root volume (installs
+        // the instance pool). Both must then route to a pool.
+        let dir = tempfile::tempdir().expect("temp dir");
+        let reserve = |name: &str| {
+            let db_path = dir.path().join(format!("{name}.db"));
+            let store = IndexStore::open(&db_path).expect("open store");
+            let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+            let pending = Arc::new(PendingSizes::new());
+            assert!(
+                try_reserve_initializing_phase(name, store, pool, pending).is_ok(),
+                "reserve {name} must succeed"
+            );
+        };
+        reserve(ROOT_VOLUME_ID);
+        reserve("smb-nas");
+
+        assert!(indexed("root"), "reserved root => indexed");
+        assert!(indexed("smb-nas"), "reserved non-root => indexed");
+        assert!(!indexed("mtp-phone"), "unreserved volume still not indexed");
+        // Routing is per-volume: root's pool and the non-root pool are distinct Arcs.
+        assert!(
+            !Arc::ptr_eq(
+                &get_read_pool_for("root").unwrap(),
+                &get_read_pool_for("smb-nas").unwrap()
+            ),
+            "each volume must route to its own pool, never another's"
+        );
+
+        clear_registry_and_pools();
+        assert!(!indexed("root"), "cleared root => not indexed");
+        assert!(!indexed("smb-nas"), "cleared non-root => not indexed");
+    }
+
+    /// Two distinct non-root volume ids reserve and release independently:
+    /// reserving one must not block or affect the other, and removing one leaves
+    /// the other intact. This is the per-volume isolation the registry buys — the
+    /// `start/stop` two-volumes-don't-corrupt-each-other proof at the lock layer
+    /// (the full lifecycle needs an `AppHandle`, kept under integration/E2E).
+    #[test]
+    fn reservations_are_independent_across_volumes() {
+        let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        clear_registry_and_pools();
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let mk = |name: &str| {
+            let db_path = dir.path().join(format!("{name}.db"));
+            let store = IndexStore::open(&db_path).expect("store");
+            let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+            let pending = Arc::new(PendingSizes::new());
+            (store, pool, pending)
+        };
+
+        let (s1, p1, pe1) = mk("vol-a");
+        let (s2, p2, pe2) = mk("vol-b");
+
+        assert!(try_reserve_initializing_phase("vol-a", s1, p1, pe1).is_ok());
+        assert!(try_reserve_initializing_phase("vol-b", s2, p2, pe2).is_ok());
+        assert!(is_active("vol-a"));
+        assert!(is_active("vol-b"));
+        // Each volume routes to ITS OWN pool, never the other's (no cross-talk).
+        assert!(get_read_pool_for("vol-a").is_some() && get_read_pool_for("vol-b").is_some());
+
+        // A second reservation for vol-a must fail (would spawn a second writer
+        // on the same DB) while vol-b is untouched.
+        let (s1b, p1b, pe1b) = mk("vol-a");
+        assert!(
+            try_reserve_initializing_phase("vol-a", s1b, p1b, pe1b).is_err(),
+            "double-start of the same volume must be rejected"
+        );
+        assert!(is_active("vol-b"), "vol-b unaffected by vol-a's rejected start");
+
+        // Remove vol-a; vol-b survives.
+        INDEX_REGISTRY.lock().unwrap().remove("vol-a");
+        assert!(!is_active("vol-a"));
+        assert!(
+            get_read_pool_for("vol-a").is_none(),
+            "vol-a's pool gone with its instance"
+        );
+        assert!(is_active("vol-b"), "removing vol-a must not disturb vol-b");
+        assert!(get_read_pool_for("vol-b").is_some(), "vol-b still routable");
+
+        clear_registry_and_pools();
+    }
+
+    /// Reset every registry-backed test global: the instance map plus the root
+    /// read-path globals (which live outside the map).
+    fn clear_registry_and_pools() {
+        INDEX_REGISTRY.lock().unwrap().clear();
+        uninstall_read_pool(ROOT_VOLUME_ID);
+        uninstall_pending_sizes(ROOT_VOLUME_ID);
+    }
+
+    /// Tests that mutate `INDEX_REGISTRY` serialize on this guard (mirrors
+    /// `integration_tests.rs`'s `INDEXING_TEST_GUARD`).
+    static INDEX_REGISTRY_TEST_GUARD: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
 }
