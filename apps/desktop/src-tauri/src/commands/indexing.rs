@@ -4,7 +4,9 @@
 
 use tauri::AppHandle;
 
-use crate::indexing::{self, IndexDebugStatusResponse, IndexStatusResponse, ROOT_VOLUME_ID, store::DirStats};
+use crate::indexing::{
+    self, IndexDebugStatusResponse, IndexStatusResponse, ROOT_VOLUME_ID, VolumeIndexStatus, store::DirStats,
+};
 
 // IPC stays path-based and single-volume in M1: the index-status, scan, and
 // clear commands all act on the local-disk `root` index. The backend resolves
@@ -57,6 +59,19 @@ pub async fn clear_drive_index() -> Result<(), String> {
 #[specta::specta]
 pub async fn get_index_debug_status() -> Result<IndexDebugStatusResponse, String> {
     indexing::get_debug_status(ROOT_VOLUME_ID)
+}
+
+/// Per-volume index status for the freshness badge (M3's per-drive UX).
+///
+/// Returns the volume's freshness color plus the last completed scan's facts
+/// (`scan_completed_at`, `scan_duration_ms`). Resolves the owning volume from
+/// the path so the FE can pass a listing path; an SMB path maps to its SMB
+/// volume id, everything else to `root`. A not-indexed volume reports
+/// `enabled: false`, `freshness: None` (gray).
+#[tauri::command]
+#[specta::specta]
+pub async fn get_volume_index_status(path: String) -> Result<VolumeIndexStatus, String> {
+    Ok(indexing::get_volume_index_status_for_path(&path))
 }
 
 /// Toggle drive indexing on/off based on the user's setting.

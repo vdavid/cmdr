@@ -208,6 +208,33 @@ pub struct IndexStatusResponse {
     pub volume_used_bytes: Option<u64>,
 }
 
+/// Per-volume index status for the freshness UX (M3's per-drive badge).
+///
+/// Unlike [`IndexStatusResponse`] (the local-disk scan-progress shape the debug
+/// window and scan overlay consume), this is the *per-volume* status M3's badge
+/// renders for every drive, local included: the freshness color plus the
+/// last-completed-scan facts the tooltip/menu footer show. `enabled: false`
+/// with `freshness: None` is the gray / not-indexed state (no registered index
+/// for the volume); a registered index always carries a `freshness`.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeIndexStatus {
+    /// The volume this status describes (`"root"`, `smb-…`, `mtp-…`).
+    pub volume_id: String,
+    /// Whether an index is registered (and thus being kept live) for this
+    /// volume. `false` ⇒ gray / not-indexed.
+    pub enabled: bool,
+    /// The volume's freshness (gray = `None`/disabled; blue = `scanning`; green
+    /// = `fresh`; yellow = `stale`). Always `Some` when `enabled`.
+    pub freshness: Option<super::freshness::Freshness>,
+    /// Unix seconds of the last completed scan, for the "Last indexed: …"
+    /// tooltip/footer. From `meta.scan_completed_at`; `None` if none completed.
+    pub scan_completed_at: Option<u64>,
+    /// The last completed scan's wall-clock duration, for "… took N min, S s".
+    /// From `meta.scan_duration_ms`; `None` if no scan has completed.
+    pub scan_duration_ms: Option<u64>,
+}
+
 /// Extended debug status for the debug window. Includes live DB counts
 /// and MustScanSubDirs tracking.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]

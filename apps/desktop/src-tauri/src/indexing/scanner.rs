@@ -120,7 +120,7 @@ pub struct ScanProgressSnapshot {
 }
 
 impl ScanProgress {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             entries_scanned: Arc::new(AtomicU64::new(0)),
             dirs_found: Arc::new(AtomicU64::new(0)),
@@ -145,6 +145,13 @@ pub struct ScanHandle {
 }
 
 impl ScanHandle {
+    /// Build a handle around an existing progress + cancel pair. Used by the
+    /// `Volume`-trait scanner (`volume_scanner`), which owns the walk itself and
+    /// just needs the manager-facing progress/cancel surface.
+    pub(crate) fn new(progress: Arc<ScanProgress>, cancelled: Arc<AtomicBool>) -> Self {
+        Self { progress, cancelled }
+    }
+
     /// Signal the scan to stop. Already-written data remains in the DB.
     pub fn cancel(&self) {
         self.cancelled.store(true, Ordering::Relaxed);

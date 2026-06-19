@@ -19,7 +19,7 @@ use super::events::{
 use super::partial_agg;
 use super::reconciler::{self, EventReconciler};
 use super::scanner::{self, ScanConfig};
-use super::state::{INDEX_REGISTRY, IndexInstance, IndexPhase};
+use super::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
 use super::writer::{IndexWriter, WriteMessage};
@@ -36,6 +36,10 @@ use crate::pluralize::pluralize;
 pub(crate) struct IndexManager {
     /// Volume ID (for example, "root" for /)
     pub(super) volume_id: String,
+    /// What kind of volume this is, which selects the scan strategy (jwalk +
+    /// FSEvents for `Local`, the `Volume`-trait scanner with no journal for
+    /// `Smb`) and the launch-time freshness. See `IndexVolumeKind`.
+    kind: IndexVolumeKind,
     /// Volume root path
     volume_root: PathBuf,
     /// SQLite store for reads
@@ -102,11 +106,16 @@ fn live_scan_counters(
 }
 
 impl IndexManager {
-    /// Create a new IndexManager for a volume.
+    /// Create a new IndexManager for a volume of the given kind.
     ///
-    /// Opens (or creates) the SQLite database, spawns the writer thread,
-    /// and initializes the path resolver.
-    pub fn new(volume_id: String, volume_root: PathBuf, app: AppHandle) -> Result<Self, String> {
+    /// Opens (or creates) the SQLite database, spawns the writer thread, and
+    /// records the volume kind so `resume_or_scan` picks the right scan strategy.
+    pub fn new_for_kind(
+        volume_id: String,
+        volume_root: PathBuf,
+        app: AppHandle,
+        kind: IndexVolumeKind,
+    ) -> Result<Self, String> {
         let data_dir = crate::config::resolved_app_data_dir(&app)?;
 
         let db_path = data_dir.join(format!("index-{volume_id}.db"));
@@ -117,12 +126,13 @@ impl IndexManager {
             .map_err(|e| format!("Failed to spawn index writer: {e}"))?;
 
         log::debug!(
-            "IndexManager created for volume '{volume_id}' at {}",
+            "IndexManager created for volume '{volume_id}' ({kind:?}) at {}",
             volume_root.display()
         );
 
         Ok(Self {
             volume_id,
+            kind,
             volume_root,
             store,
             writer,
@@ -149,6 +159,14 @@ impl IndexManager {
     ///
     /// **No existing index:** Full scan via `start_scan()`.
     pub fn resume_or_scan(&mut self) -> Result<(), String> {
+        // SMB (and future network/USB) volumes have no event journal, so there's
+        // nothing to replay: a persisted index loaded Stale on launch (already
+        // seeded by `start_indexing_for`) and stays browsable until the user
+        // rescans; a never-scanned volume gets a fresh `Volume`-trait scan.
+        if self.kind == IndexVolumeKind::Smb {
+            return self.resume_or_scan_network();
+        }
+
         let status = self
             .store
             .get_index_status()
@@ -214,6 +232,211 @@ impl IndexManager {
             "fresh scan"
         };
         self.start_scan(trigger)
+    }
+
+    /// `resume_or_scan` for journal-less network volumes (SMB; MTP in M4).
+    ///
+    /// A completed prior scan loaded **Stale** (no journal to roll forward — see
+    /// `freshness`), so we DON'T rescan automatically: the index stays browsable
+    /// and the user rescans to refresh. A never-completed index (first connect,
+    /// or an interrupted prior scan) triggers a fresh `Volume`-trait scan.
+    ///
+    /// Note: no `DriveWatcher` here. FSEvents on a network mount is M2-B's
+    /// concern (the watcher-lifetime change); this milestone wires the scan and
+    /// freshness only. The live SMB watcher that keeps the index Fresh hooks in
+    /// at the seam documented in `state::apply_freshness_event`.
+    fn resume_or_scan_network(&mut self) -> Result<(), String> {
+        let status = self
+            .store
+            .get_index_status()
+            .map_err(|e| format!("Failed to get index status: {e}"))?;
+
+        if status.scan_completed_at.is_some() {
+            log::info!(
+                "Startup: SMB volume '{}' has a completed index, loading as Stale (no journal to replay)",
+                self.volume_id
+            );
+            // Already Stale (seeded at reservation). Nothing to scan; reads serve
+            // the persisted index until the user rescans.
+            // TODO(live-watch / M2-B): start the volume's live watcher here so the
+            // Stale index can transition back toward Fresh while connected.
+            return Ok(());
+        }
+
+        log::info!("Startup: SMB volume '{}' fresh scan (no completed index)", self.volume_id);
+        self.start_volume_scan("fresh SMB scan")
+    }
+
+    /// Start a `Volume`-trait scan for a network volume (SMB today).
+    ///
+    /// Mirrors `start_scan`'s shape (truncate → scan → aggregate → meta on clean
+    /// completion) but walks via `volume_scanner::scan_volume_via_trait` instead
+    /// of jwalk, and starts NO `DriveWatcher` (M2-B owns live watch). Freshness
+    /// transitions: `ScanStarted` ⇒ Scanning now; on clean completion the
+    /// completion task fires `ScanCompleted` ⇒ Fresh and writes the meta marker;
+    /// on cancel/error the partial is discarded by RESETTING the volume to gray
+    /// (removing the registry instance), per D-interrupted.
+    fn start_volume_scan(&mut self, scan_trigger: &str) -> Result<(), String> {
+        use super::scanner::{ScanHandle, ScanProgress};
+        use std::sync::atomic::AtomicBool;
+
+        if self.scanning.load(Ordering::Relaxed) {
+            return Err("Scan already running".to_string());
+        }
+
+        // Resolve the live volume handle by id. Gone ⇒ the share unmounted; bail
+        // so the caller resets to gray rather than scanning nothing.
+        let volume = crate::file_system::get_volume_manager()
+            .get(&self.volume_id)
+            .ok_or_else(|| format!("Volume '{}' is not registered (unmounted?)", self.volume_id))?;
+
+        // Capture tier-2 calibration before truncating (same flow as start_scan).
+        let prior = IndexStore::read_scan_calibration(self.store.read_conn()).unwrap_or_default();
+        let volume_root = self.volume_root.clone();
+        let volume_used_bytes = tokio::task::block_in_place(|| {
+            crate::file_system::volume::backends::get_space_info_for_path(&volume_root)
+                .map(|info| info.used_bytes)
+                .ok()
+        });
+        self.scan_calibration = Some(ScanCalibration {
+            prior,
+            volume_used_bytes,
+        });
+
+        // Clear the prior completion marker, then truncate — identical to the
+        // local scan so an interrupted SMB rescan heals (no stale `scan_completed_at`
+        // over a gutted table). Freshness is reset to Scanning below.
+        let _ = self.writer.send(WriteMessage::DeleteMeta("scan_completed_at".to_string()));
+        let _ = self.writer.send(WriteMessage::TruncateData);
+        if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
+            log::warn!("SMB scan: flush after TruncateData failed: {e}");
+        }
+
+        // Freshness ⇒ Scanning (blue), via the state machine.
+        super::state::apply_freshness_event(&self.volume_id, super::freshness::FreshnessEvent::ScanStarted);
+
+        let _ = IndexScanStartedEvent {
+            volume_id: self.volume_id.clone(),
+            prior_total_entries: prior.total_entries,
+            prior_scan_duration_ms: prior.scan_duration_ms,
+            volume_used_bytes,
+        }
+        .emit(&self.app);
+        DEBUG_STATS.set_phase(ActivityPhase::Scanning, scan_trigger);
+
+        let progress = Arc::new(ScanProgress::new());
+        let cancelled = Arc::new(AtomicBool::new(false));
+        self.scan_handle = Some(ScanHandle::new(Arc::clone(&progress), Arc::clone(&cancelled)));
+        self.scanning.store(true, Ordering::Relaxed);
+
+        // Progress reporter (500 ms), stops when the scan signals done.
+        let scan_done = Arc::new(AtomicBool::new(false));
+        let progress_report = Arc::clone(&progress);
+        let volume_id_progress = self.volume_id.clone();
+        let app_progress = self.app.clone();
+        let scan_done_progress = Arc::clone(&scan_done);
+        tauri::async_runtime::spawn(async move {
+            loop {
+                tokio::time::sleep(Duration::from_millis(500)).await;
+                if scan_done_progress.load(Ordering::Relaxed) {
+                    break;
+                }
+                let snap = progress_report.snapshot();
+                let _ = IndexScanProgressEvent {
+                    volume_id: volume_id_progress.clone(),
+                    entries_scanned: snap.entries_scanned,
+                    dirs_found: snap.dirs_found,
+                    bytes_scanned: snap.bytes_scanned,
+                }
+                .emit(&app_progress);
+            }
+        });
+
+        // The walk + completion handler. Runs as a tokio task because the
+        // `Volume` API is async. The writer is `Send` and shared by `Arc`.
+        let writer = self.writer.clone();
+        let app = self.app.clone();
+        let volume_id = self.volume_id.clone();
+        let scanning = Arc::clone(&self.scanning);
+        let root = self.volume_root.clone();
+        tauri::async_runtime::spawn(async move {
+            let result =
+                super::volume_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled).await;
+
+            scan_done.store(true, Ordering::Relaxed);
+            scanning.store(false, Ordering::Relaxed);
+
+            match result {
+                Ok(summary) if !summary.was_cancelled => {
+                    log::info!(
+                        "SMB scan: complete ({} entries, {} dirs, {:.1}s)",
+                        summary.total_entries,
+                        summary.total_dirs,
+                        summary.duration_ms as f64 / 1000.0,
+                    );
+                    DEBUG_STATS.close_phase_with_stats(vec![
+                        ("entries", summary.total_entries.to_string()),
+                        ("dirs", summary.total_dirs.to_string()),
+                    ]);
+
+                    // Persist the completion marker so reads see Fresh and a
+                    // future restart knows a scan finished (loads Stale then).
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_secs().to_string())
+                        .unwrap_or_default();
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: "scan_completed_at".to_string(),
+                        value: now,
+                    });
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: "scan_duration_ms".to_string(),
+                        value: summary.duration_ms.to_string(),
+                    });
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: "total_entries".to_string(),
+                        value: summary.total_entries.to_string(),
+                    });
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: "total_physical_bytes".to_string(),
+                        value: summary.total_physical_bytes.to_string(),
+                    });
+                    let _ = writer.flush().await;
+
+                    let _ = IndexScanCompleteEvent {
+                        volume_id: volume_id.clone(),
+                        total_entries: summary.total_entries,
+                        total_dirs: summary.total_dirs,
+                        duration_ms: summary.duration_ms,
+                    }
+                    .emit(&app);
+                    let _ = IndexAggregationCompleteEvent.emit(&app);
+
+                    // Freshness ⇒ Fresh (green). The volume is now authoritative
+                    // until M2-B's live watcher observes a continuity break.
+                    super::state::apply_freshness_event(&volume_id, super::freshness::FreshnessEvent::ScanCompleted);
+                    DEBUG_STATS.set_phase(ActivityPhase::Live, "SMB scan complete");
+
+                    // Tell the FE sizes are ready for this share's listings.
+                    let _ = IndexDirUpdatedEvent {
+                        paths: vec![volume_id.clone()],
+                    }
+                    .emit(&app);
+                }
+                other => {
+                    // Cancelled, timed out, or the volume vanished mid-walk: the
+                    // partial index is worthless (D-interrupted). Discard it by
+                    // resetting the volume to gray / not-indexed.
+                    match &other {
+                        Ok(_) => log::info!("SMB scan: cancelled for '{volume_id}', discarding partial"),
+                        Err(e) => log::warn!("SMB scan: failed for '{volume_id}' ({e}), discarding partial"),
+                    }
+                    super::state::reset_to_not_indexed(&volume_id);
+                }
+            }
+        });
+
+        Ok(())
     }
 
     /// Resume from an existing index by replaying FSEvents journal since `since_event_id`.
@@ -458,6 +681,12 @@ impl IndexManager {
         .emit(&self.app);
 
         DEBUG_STATS.set_phase(ActivityPhase::Scanning, scan_trigger);
+
+        // Freshness ⇒ Scanning (blue). For local `root` this also drives the
+        // per-volume badge M3 renders; the clean-completion handler flips it back
+        // to Fresh. (Root is journaled, so a restart re-seeds Fresh; this keeps
+        // the badge honest DURING a scan/rescan.)
+        super::state::apply_freshness_event(&self.volume_id, super::freshness::FreshnessEvent::ScanStarted);
 
         // Step 2: Start the full scan
         let config = ScanConfig {
@@ -722,6 +951,17 @@ impl IndexManager {
 
                     // Switch to live mode
                     reconciler.switch_to_live();
+
+                    // Freshness ⇒ Fresh (green) on a clean completion. A cancelled
+                    // local scan keeps its prior freshness (root stays browsable);
+                    // it isn't reset to gray the way an interrupted SMB scan is,
+                    // because local data isn't tied to a connection that vanished.
+                    if !summary.was_cancelled {
+                        super::state::apply_freshness_event(
+                            &volume_id,
+                            super::freshness::FreshnessEvent::ScanCompleted,
+                        );
+                    }
 
                     DEBUG_STATS.close_phase_with_stats(vec![("buffered_events", buffered_count.to_string())]);
                     DEBUG_STATS.set_phase(ActivityPhase::Live, "post-scan reconciliation complete");

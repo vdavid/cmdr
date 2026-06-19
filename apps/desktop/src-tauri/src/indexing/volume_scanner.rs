@@ -1,0 +1,382 @@
+//! A `Volume`-trait recursive scanner for indexing network/USB volumes.
+//!
+//! The jwalk [`scanner`](super::scanner) is local-FS-only (`getattrlistbulk`)
+//! and its `should_exclude` deliberately blocks `/Volumes/`. SMB (and, later,
+//! MTP) shares are walked here instead, over the SAME `Volume::list_directory`
+//! API the live pane uses, pulling sizes from the backend's stat. EVERYTHING
+//! downstream of [`EntryRow`](super::store::EntryRow) is reused unchanged: the
+//! shared `Arc<AtomicI64>` id counter via `ScanContext`, the single writer
+//! thread (`InsertEntriesV2` batches), the aggregator (`ComputeAllAggregates`),
+//! and `dir_stats`. Only the *front* of the pipeline (how entries are
+//! discovered and stat'd) differs.
+//!
+//! ## Discipline for network round trips (plan rabbit hole #3)
+//!
+//! Every `list_directory` is a network syscall that can block 30–120 s on a
+//! slow or hung mount, so the walk:
+//!
+//! - **is cancelable at every round trip**: the cancel flag is checked before
+//!   each directory listing and the BFS bails immediately when set;
+//! - **wraps each listing in a timeout** (`LIST_TIMEOUT`): a wedged mount yields
+//!   a typed `VolumeScanError::Timeout` rather than parking forever;
+//! - **wraps each round trip in `objc2::rc::autoreleasepool` on macOS**: the SMB
+//!   listing path touches NSURL/`NSString`-adjacent code, and unpooled ObjC
+//!   autoreleases leak multi-GB over a long walk (the same rule the index writer
+//!   thread follows — see `indexing/CLAUDE.md`).
+//!
+//! ## Partial completion ⇒ discard (D-interrupted)
+//!
+//! If the volume vanishes mid-walk, the partial index is worthless (we'd be
+//! Stale anyway), so the caller treats a non-`Completed` outcome as "reset to
+//! gray / not-indexed" and discards the partial. This scanner does NOT write the
+//! `scan_completed_at` meta marker; the caller's completion handler does, only
+//! on a clean finish — the same `scan_completed_at`-absent ⇒ no-Fresh mechanism
+//! the local scanner relies on (see `manager.rs`).
+
+use std::collections::VecDeque;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant};
+
+use crate::file_system::volume::Volume;
+use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
+use crate::indexing::writer::{IndexWriter, WriteMessage};
+
+use super::scanner::{ScanProgress, ScanSummary};
+
+/// Per-directory listing timeout. Network/USB `list_directory` blocks 30–120 s
+/// on a hung mount; we cap a single round trip so a wedged share fails the walk
+/// instead of parking it. Generous enough for a slow-but-alive NAS directory.
+const LIST_TIMEOUT: Duration = Duration::from_secs(120);
+
+/// Batch size for `InsertEntriesV2` sends — matches the jwalk scanner's default.
+const BATCH_SIZE: usize = 2000;
+
+/// Why a `Volume`-trait scan ended other than cleanly.
+#[derive(Debug)]
+pub(crate) enum VolumeScanError {
+    /// A directory listing exceeded `LIST_TIMEOUT` (wedged/hung mount).
+    Timeout(PathBuf),
+    /// The backend returned an error (disconnect mid-walk, permission, etc.).
+    Volume(crate::file_system::volume::VolumeError),
+    /// A writer send failed (the writer thread is gone).
+    WriterSend(String),
+    /// Setting up the scan context (root sentinel, id counter) failed.
+    Context(String),
+}
+
+impl std::fmt::Display for VolumeScanError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Timeout(p) => write!(f, "listing timed out: {}", p.display()),
+            Self::Volume(e) => write!(f, "volume error: {e}"),
+            Self::WriterSend(m) => write!(f, "writer send failed: {m}"),
+            Self::Context(m) => write!(f, "scan context setup failed: {m}"),
+        }
+    }
+}
+
+impl std::error::Error for VolumeScanError {}
+
+/// Recursively scan `volume` from its `root`, streaming `EntryRow`s into
+/// `writer`. Async (the `Volume` API is async); the caller runs it on a tokio
+/// task. On clean completion, fires `ComputeAllAggregates` so the existing
+/// aggregator computes `dir_stats` exactly as for a local scan.
+///
+/// Cancelable via `cancelled`; cancellation flushes the current batch and
+/// returns `was_cancelled: true`. A timeout / backend error returns `Err`; the
+/// caller discards the partial (D-interrupted).
+pub(crate) async fn scan_volume_via_trait(
+    volume: Arc<dyn Volume>,
+    root: PathBuf,
+    writer: IndexWriter,
+    progress: Arc<ScanProgress>,
+    cancelled: Arc<AtomicBool>,
+) -> Result<ScanSummary, VolumeScanError> {
+    let start = Instant::now();
+
+    // Set up the scan context against a write connection (it creates the root
+    // sentinel), mapping the scan root to ROOT_ID — identical to the jwalk
+    // scanner's volume-root setup, so all downstream id/parent logic is shared.
+    let db_path = writer.db_path();
+    let mut scan_ctx = {
+        let conn =
+            IndexStore::open_write_connection(&db_path).map_err(|e| VolumeScanError::Context(e.to_string()))?;
+        ScanContext::new(&conn, &root, true, Arc::clone(writer.next_id()))
+            .map_err(|e| VolumeScanError::Context(e.to_string()))?
+    };
+
+    let mut batch: Vec<EntryRow> = Vec::with_capacity(BATCH_SIZE);
+    let mut total_entries: u64 = 0;
+    let mut total_dirs: u64 = 0;
+    let mut total_physical_bytes: u64 = 0;
+
+    // Breadth-first so a directory's id is always registered in the context
+    // before we list its children (their parent lookup must hit). Each queue
+    // item is an absolute directory path; the root is already mapped to ROOT_ID.
+    let mut queue: VecDeque<PathBuf> = VecDeque::new();
+    queue.push_back(root.clone());
+
+    while let Some(dir_path) = queue.pop_front() {
+        if cancelled.load(Ordering::Relaxed) {
+            flush_batch(&mut batch, &writer)?;
+            return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
+        }
+
+        // One round trip per directory, timeout- and autoreleasepool-wrapped.
+        let entries = match list_one_directory(volume.as_ref(), &dir_path).await {
+            Ok(e) => e,
+            Err(VolumeScanError::Volume(ref e)) if dir_path == root => {
+                // Failing to list the root itself is fatal — there's nothing to
+                // index. Surface it so the caller discards and resets to gray.
+                return Err(VolumeScanError::Volume(e.clone()));
+            }
+            Err(VolumeScanError::Volume(e)) => {
+                // A sub-directory we can't list (permission, transient): skip it
+                // and keep walking the rest, like the jwalk scanner skips errored
+                // entries. A vanished VOLUME surfaces as repeated failures and the
+                // freshness model handles it; a single bad dir shouldn't abort.
+                log::debug!("volume_scanner: skipping unlistable dir {}: {e}", dir_path.display());
+                continue;
+            }
+            Err(other) => return Err(other),
+        };
+
+        // The parent's id was registered when it was discovered (or is ROOT_ID
+        // for the scan root). If it's somehow absent, skip the whole subtree.
+        let parent_id = match scan_ctx.lookup_parent(&dir_path) {
+            Some(id) => id,
+            None => {
+                log::debug!("volume_scanner: parent id missing for {}, skipping", dir_path.display());
+                continue;
+            }
+        };
+
+        for entry in entries {
+            let is_dir = entry.is_directory;
+            let is_symlink = entry.is_symlink;
+            let child_path = PathBuf::from(&entry.path);
+            let id = scan_ctx.alloc_id();
+
+            if is_dir {
+                scan_ctx.register_dir(child_path.clone(), id);
+                queue.push_back(child_path);
+                total_dirs += 1;
+                progress.dirs_found.fetch_add(1, Ordering::Relaxed);
+            }
+
+            // SMB/MTP have no inode and no separate physical size; mirror the
+            // logical size into physical so dir_stats' physical totals are
+            // populated (the backend reports one size). Symlinks contribute no
+            // size, matching the local scanner's `du`-style omission.
+            let (logical_size, physical_size) = if is_symlink {
+                (None, None)
+            } else {
+                let s = entry.size;
+                (s, entry.physical_size.or(s))
+            };
+
+            let entry_physical = physical_size.unwrap_or(0);
+            total_physical_bytes += entry_physical;
+            progress.bytes_scanned.fetch_add(entry_physical, Ordering::Relaxed);
+            total_entries += 1;
+            progress.entries_scanned.fetch_add(1, Ordering::Relaxed);
+
+            batch.push(EntryRow {
+                id,
+                parent_id,
+                name: entry.name,
+                is_directory: is_dir,
+                is_symlink,
+                logical_size,
+                physical_size,
+                modified_at: entry.modified_at,
+                inode: entry.inode,
+            });
+
+            if batch.len() >= BATCH_SIZE {
+                flush_batch(&mut batch, &writer)?;
+            }
+        }
+    }
+
+    flush_batch(&mut batch, &writer)?;
+
+    // Clean finish: aggregate exactly like the local scanner, then trim the WAL.
+    writer
+        .send(WriteMessage::ComputeAllAggregates)
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+    writer
+        .send(WriteMessage::WalCheckpoint)
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+
+    log::info!(
+        "volume_scanner: walk complete for {}: {total_entries} entries, {total_dirs} dirs in {}ms",
+        root.display(),
+        start.elapsed().as_millis()
+    );
+
+    Ok(summary(total_entries, total_dirs, total_physical_bytes, start, false))
+}
+
+/// List one directory over the `Volume` trait, wrapped in a timeout and (macOS)
+/// an autoreleasepool. The pool is drained per round trip so autoreleased ObjC
+/// objects from the SMB listing path don't accumulate across a long walk.
+async fn list_one_directory(
+    volume: &dyn Volume,
+    dir_path: &Path,
+) -> Result<Vec<crate::file_system::listing::FileEntry>, VolumeScanError> {
+    let fut = async {
+        let result = volume.list_directory(dir_path, None).await;
+        // Drain the autoreleased ObjC objects this listing created before the
+        // future resolves. Cheap no-op on non-macOS.
+        drain_autorelease_pool();
+        result
+    };
+
+    match tokio::time::timeout(LIST_TIMEOUT, fut).await {
+        Ok(Ok(entries)) => Ok(entries),
+        Ok(Err(e)) => Err(VolumeScanError::Volume(e)),
+        Err(_elapsed) => Err(VolumeScanError::Timeout(dir_path.to_path_buf())),
+    }
+}
+
+/// Drain the current thread's ObjC autorelease pool. On macOS this wraps a
+/// no-op closure in `objc2::rc::autoreleasepool`, which drains on scope exit; on
+/// other platforms it's a no-op. We can't hold an `autoreleasepool` guard across
+/// an `.await` (it isn't `Send`), so we drain after the await resolves instead.
+#[inline]
+fn drain_autorelease_pool() {
+    #[cfg(target_os = "macos")]
+    objc2::rc::autoreleasepool(|_| {});
+}
+
+fn flush_batch(batch: &mut Vec<EntryRow>, writer: &IndexWriter) -> Result<(), VolumeScanError> {
+    if batch.is_empty() {
+        return Ok(());
+    }
+    let entries = std::mem::take(batch);
+    writer
+        .send(WriteMessage::InsertEntriesV2(entries))
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
+}
+
+fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant, cancelled: bool) -> ScanSummary {
+    ScanSummary {
+        total_entries: entries,
+        total_dirs: dirs,
+        total_physical_bytes: physical_bytes,
+        duration_ms: start.elapsed().as_millis() as u64,
+        was_cancelled: cancelled,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::AtomicU64;
+
+    use super::*;
+    use crate::file_system::listing::FileEntry;
+    use crate::file_system::volume::InMemoryVolume;
+    use crate::indexing::store::ROOT_ID;
+
+    fn progress() -> Arc<ScanProgress> {
+        // `ScanProgress::new` is private; build the public-fielded struct directly.
+        Arc::new(ScanProgress {
+            entries_scanned: Arc::new(AtomicU64::new(0)),
+            dirs_found: Arc::new(AtomicU64::new(0)),
+            bytes_scanned: Arc::new(AtomicU64::new(0)),
+        })
+    }
+
+    fn entry(name: &str, path: &str, is_dir: bool, size: Option<u64>) -> FileEntry {
+        FileEntry {
+            size,
+            ..FileEntry::new(name.to_string(), path.to_string(), is_dir, false)
+        }
+    }
+
+    /// Walk a small in-memory tree over the `Volume` trait and assert the index
+    /// reflects its contents: the writer/aggregator reuse is exercised end to
+    /// end (entries land under ROOT_ID, sizes flow into dir_stats). This is the
+    /// backend-agnostic half of the SMB-fixture integration test; the live SMB
+    /// scan is pinned by `smb_integration_volume_scan_indexes_share` (Docker).
+    #[tokio::test]
+    async fn scans_in_memory_tree_into_index() {
+        use crate::indexing::writer::IndexWriter;
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        // Build an in-memory volume with a known tree:
+        //   /sub/         (dir)
+        //   /sub/leaf.txt (11 bytes)
+        //   /top.txt      (5 bytes)
+        let vol = InMemoryVolume::with_entries(
+            "Test",
+            vec![
+                entry("sub", "/sub", true, None),
+                entry("leaf.txt", "/sub/leaf.txt", false, Some(11)),
+                entry("top.txt", "/top.txt", false, Some(5)),
+            ],
+        );
+        let vol: Arc<dyn Volume> = Arc::new(vol);
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let summary = scan_volume_via_trait(
+            vol,
+            PathBuf::from("/"),
+            writer.clone(),
+            progress(),
+            cancelled,
+        )
+        .await
+        .expect("scan should complete");
+
+        assert!(!summary.was_cancelled);
+        assert_eq!(summary.total_entries, 3, "2 files + 1 dir");
+        assert_eq!(summary.total_dirs, 1);
+
+        // Async test: await the flush rather than `flush_blocking` (which would
+        // `block_on` the current runtime thread and panic).
+        writer.flush().await.expect("flush");
+        writer.shutdown();
+
+        let store = IndexStore::open(&db_path).expect("reopen");
+        let children = store.list_children(ROOT_ID).expect("list root");
+        assert_eq!(children.len(), 2, "root has sub/ and top.txt");
+        let sub = children.iter().find(|e| e.name == "sub").expect("sub dir present");
+        assert!(sub.is_directory);
+        let sub_children = store.list_children(sub.id).expect("list sub");
+        assert_eq!(sub_children.len(), 1);
+        assert_eq!(sub_children[0].name, "leaf.txt");
+        assert_eq!(sub_children[0].logical_size, Some(11));
+    }
+
+    /// A pre-set cancel flag stops the walk immediately and reports
+    /// `was_cancelled` (the caller then discards the partial — D-interrupted).
+    #[tokio::test]
+    async fn honors_cancellation_before_first_listing() {
+        use crate::indexing::writer::IndexWriter;
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan-cancel.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        let vol = InMemoryVolume::with_entries("Test", vec![entry("a.txt", "/a.txt", false, Some(1))]);
+        let vol: Arc<dyn Volume> = Arc::new(vol);
+
+        let cancelled = Arc::new(AtomicBool::new(true));
+        let summary = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
+            .await
+            .expect("cancelled scan still returns Ok");
+        assert!(summary.was_cancelled);
+        assert_eq!(summary.total_entries, 0, "nothing scanned after immediate cancel");
+
+        writer.shutdown();
+    }
+}

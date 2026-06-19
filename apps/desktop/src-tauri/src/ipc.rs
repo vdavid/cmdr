@@ -574,6 +574,9 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::indexing::set_indexing_enabled,
         crate::commands::indexing::start_indexing_after_fda_decision,
         crate::commands::indexing::get_index_debug_status,
+        crate::commands::indexing::get_volume_index_status,
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        crate::commands::network::set_smb_indexing_enabled,
         crate::commands::search::prepare_search_index,
         crate::commands::search::search_files,
         crate::commands::search::release_search_index,

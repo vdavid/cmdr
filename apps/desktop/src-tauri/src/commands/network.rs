@@ -371,6 +371,33 @@ pub async fn upgrade_to_smb_volume(volume_id: String, app_handle: tauri::AppHand
     upgrade_to_smb_volume_inner(volume_id).await
 }
 
+/// Turn drive indexing on or off for an SMB volume (M2's per-volume enable).
+///
+/// On enable, gates on a direct smb2 connection — triggering/awaiting the
+/// upgrade from an os_mount if needed — then starts a `Volume`-trait scan into
+/// the volume's own index DB. Returns the typed [`SmbIndexGateReason`] on
+/// refusal (upgrade failed, credentials needed, disconnected) so the FE
+/// classifies by variant, not by parsing a string. FDA-independent: SMB paths
+/// aren't TCC-protected (plan rabbit hole #12). On disable, stops the volume's
+/// index (the DB stays on disk).
+#[tauri::command]
+#[specta::specta]
+pub async fn set_smb_indexing_enabled(
+    app: tauri::AppHandle,
+    volume_id: String,
+    enabled: bool,
+) -> Result<(), crate::indexing::SmbIndexGateReason> {
+    if enabled {
+        crate::network::ensure_mdns_started(app.clone());
+        crate::indexing::start_indexing_for_smb(app, volume_id).await
+    } else {
+        // Stopping never fails the gate; ignore the `String` error (logged in
+        // `stop_indexing`) so the FE's typed surface stays clean.
+        let _ = crate::indexing::stop_indexing(&volume_id);
+        Ok(())
+    }
+}
+
 /// Body of `upgrade_to_smb_volume` minus the mDNS kick (which needs concrete
 /// `AppHandle`). Used by the Tauri command above and by the MCP
 /// `upgrade_smb_to_direct` executor — both routes share the same Keychain

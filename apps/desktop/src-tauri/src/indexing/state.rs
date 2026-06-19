@@ -36,8 +36,9 @@ use std::time::Duration;
 use tauri::AppHandle;
 
 use super::enrichment::{ReadPool, get_read_pool_for, install_read_pool, uninstall_read_pool};
-use super::events::{DEBUG_STATS, IndexDebugStatusResponse, IndexStatusResponse};
+use super::events::{DEBUG_STATS, IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
 use super::firmlinks;
+use super::freshness::{Freshness, FreshnessEvent};
 use super::manager::IndexManager;
 use super::pending_sizes::{PendingSizes, get_pending_sizes_for, install_pending_sizes, uninstall_pending_sizes};
 use super::store::{self, DirStats, IndexStore};
@@ -86,6 +87,14 @@ pub(crate) struct IndexInstance {
     pub(crate) phase: IndexPhase,
     pub(crate) read_pool: Arc<ReadPool>,
     pub(crate) pending_sizes: Arc<PendingSizes>,
+    /// This volume's freshness signal (gray = absent instance; blue/green/yellow
+    /// = the `Freshness` variants). `Arc<Mutex<…>>` so scan-transition tasks and
+    /// (M2-B) the watcher-lifetime layer can flip it without holding the registry
+    /// lock. `None` means "not yet determined" (e.g. mid-initialization before
+    /// the first scan transition); a `Running` volume always carries `Some`. The
+    /// freshness state machine itself lives in `freshness.rs`. See DETAILS §
+    /// "The freshness model".
+    pub(crate) freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
 }
 
 /// The per-volume index registry: the authority for which volumes are indexed
@@ -295,6 +304,7 @@ pub(crate) fn try_reserve_initializing_phase(
     store: IndexStore,
     read_pool: Arc<ReadPool>,
     pending_sizes: Arc<PendingSizes>,
+    initial_freshness: Option<Freshness>,
 ) -> Result<(), Box<IndexStore>> {
     let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
     if reg.contains_key(volume_id) {
@@ -308,9 +318,66 @@ pub(crate) fn try_reserve_initializing_phase(
             phase: IndexPhase::Initializing { store },
             read_pool,
             pending_sizes,
+            freshness: Arc::new(std::sync::Mutex::new(initial_freshness)),
         },
     );
     Ok(())
+}
+
+/// Apply a freshness transition for a volume via the pure state machine
+/// (`freshness::Freshness::on`). No-op if the volume has no registered instance
+/// or no current freshness value yet.
+///
+/// This is the seam M2-B uses to wire watcher-driven transitions
+/// (`FreshnessEvent::WatcherDied` / `OverflowUnrecoverable`) into the index: it
+/// just calls `apply_freshness_event(volume_id, FreshnessEvent::WatcherDied)`
+/// from the watcher-lifetime layer. The scan paths call it with `ScanStarted` /
+/// `ScanCompleted`.
+pub(crate) fn apply_freshness_event(volume_id: &str, event: FreshnessEvent) {
+    // `ScanStarted` is total even from "not yet determined": a scan can begin on
+    // a volume that has no freshness yet (first ever scan). Seed it so the
+    // transition is meaningful, then apply the event.
+    if let Ok(reg) = INDEX_REGISTRY.lock()
+        && let Some(instance) = reg.get(volume_id)
+        && let Ok(mut f) = instance.freshness.lock()
+    {
+        let current = f.unwrap_or(Freshness::Scanning);
+        *f = Some(current.on(event));
+    }
+}
+
+/// Read a volume's current freshness, if it has a registered instance.
+pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
+    INDEX_REGISTRY
+        .lock()
+        .ok()?
+        .get(volume_id)
+        .and_then(|i| i.freshness.lock().ok().and_then(|f| *f))
+}
+
+/// How a volume's index sources its freshness, which decides the scan strategy
+/// and the launch-time freshness.
+///
+/// - [`Local`](IndexVolumeKind::Local): the boot disk. jwalk scan + FSEvents
+///   journal, so a persisted index replays to **Fresh** on launch (continuity
+///   self-heals). The only kind M1 ever started.
+/// - [`Smb`](IndexVolumeKind::Smb): an SMB share scanned over the `Volume` trait
+///   (no jwalk; `/Volumes/` is excluded from the local scanner). No event
+///   journal, so a persisted index loads **Stale** on launch and the live
+///   watcher (M2-B) is what keeps it Fresh while connected.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum IndexVolumeKind {
+    Local,
+    Smb,
+}
+
+impl IndexVolumeKind {
+    /// Whether this volume self-heals watch continuity from an event journal on
+    /// launch. Only the local boot disk does (FSEvents replay). Feeds
+    /// `freshness::initial_freshness_on_launch`.
+    fn is_journaled(self) -> bool {
+        matches!(self, IndexVolumeKind::Local)
+    }
 }
 
 /// Create the IndexManager for the root volume and auto-start indexing
@@ -320,15 +387,20 @@ pub(crate) fn try_reserve_initializing_phase(
 /// it replays the FSEvents journal from the stored `last_event_id`; otherwise
 /// it starts a fresh full scan.
 ///
-/// M1 only ever starts `root`. The body is written volume-generically so M2 can
-/// add SMB/MTP starts, but the local call sites pass `"root"` / `/`.
+/// `start_indexing` starts the local `root` volume; `start_indexing_for_smb`
+/// starts an SMB share (M2). Both funnel through `start_indexing_for`.
 pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
-    start_indexing_for(app, ROOT_VOLUME_ID, PathBuf::from("/"))
+    start_indexing_for(app, ROOT_VOLUME_ID, PathBuf::from("/"), IndexVolumeKind::Local)
 }
 
 /// Start indexing for a specific volume id and root path.
-fn start_indexing_for(app: &AppHandle, volume_id: &str, volume_root: PathBuf) -> Result<(), String> {
-    log::info!("start_indexing: begin for '{volume_id}'");
+fn start_indexing_for(
+    app: &AppHandle,
+    volume_id: &str,
+    volume_root: PathBuf,
+    kind: IndexVolumeKind,
+) -> Result<(), String> {
+    log::info!("start_indexing: begin for '{volume_id}' ({kind:?})");
     super::memory_watchdog::start(app.clone());
 
     // Lock-first reservation, per volume id. We open the init store and the
@@ -343,12 +415,33 @@ fn start_indexing_for(app: &AppHandle, volume_id: &str, volume_root: PathBuf) ->
     let init_store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open init store: {e}"))?;
     let pool = Arc::new(ReadPool::new(db_path.clone()).map_err(|e| format!("Failed to create read pool: {e}"))?);
     let pending = Arc::new(PendingSizes::new());
-    if try_reserve_initializing_phase(volume_id, init_store, Arc::clone(&pool), Arc::clone(&pending)).is_err() {
+
+    // Seed the launch-time freshness from whether a scan ever completed on this
+    // volume's persisted index, combined with the volume kind: a journaled local
+    // index loads Fresh, a non-journaled SMB index loads Stale (we weren't
+    // watching while off — the heart of the "admittedly stale" model). A fresh
+    // start (no completed scan) seeds `None`; the scan transition flips it to
+    // Scanning. Read the marker off the init store before reserving.
+    let scan_completed = init_store
+        .get_index_status()
+        .map(|s| s.scan_completed_at.is_some())
+        .unwrap_or(false);
+    let initial_freshness = super::freshness::initial_freshness_on_launch(scan_completed, kind.is_journaled());
+
+    if try_reserve_initializing_phase(
+        volume_id,
+        init_store,
+        Arc::clone(&pool),
+        Arc::clone(&pending),
+        initial_freshness,
+    )
+    .is_err()
+    {
         log::info!("start_indexing: '{volume_id}' already Initializing/Running/ShuttingDown, no-op");
         return Ok(());
     }
 
-    let mut manager = match IndexManager::new(volume_id.to_string(), volume_root, app.clone()) {
+    let mut manager = match IndexManager::new_for_kind(volume_id.to_string(), volume_root, app.clone(), kind) {
         Ok(m) => m,
         Err(e) => {
             // Reservation succeeded but manager construction failed: remove the
@@ -416,6 +509,29 @@ fn start_indexing_for(app: &AppHandle, volume_id: &str, volume_root: PathBuf) ->
     }
 
     Ok(())
+}
+
+/// Internal SMB-start entry point, called by `smb_index::start_indexing_for_smb`
+/// AFTER the direct-smb2 gate has passed. Funnels into the shared
+/// `start_indexing_for` with the `Smb` kind so the lock-first reservation,
+/// load-as-Stale freshness seeding, and `Volume`-trait scan path all apply.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) fn start_indexing_for_smb_inner(app: &AppHandle, volume_id: &str, mount_root: PathBuf) -> Result<(), String> {
+    start_indexing_for(app, volume_id, mount_root, IndexVolumeKind::Smb)
+}
+
+/// Discard a volume's partial index and reset it to gray / not-indexed
+/// (D-interrupted): an interrupted/disconnected network scan leaves data that's
+/// worthless once the volume is gone, so we don't keep a half-snapshot live.
+///
+/// Removes the registry instance (so reads skip → gray), draining/shutting down
+/// the writer first. The DB file stays on disk but carries no `scan_completed_at`
+/// (the scan path cleared it at start), so a future enable does a clean fresh
+/// scan. Equivalent to `stop_indexing` for this purpose, named for intent.
+pub(crate) fn reset_to_not_indexed(volume_id: &str) {
+    if let Err(e) = stop_indexing(volume_id) {
+        log::warn!("reset_to_not_indexed('{volume_id}') failed: {e}");
+    }
 }
 
 /// Remove a volume's instance from the registry and uninstall its read-path
@@ -501,6 +617,50 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
 }
 
 // ── Module-level public API (called by IPC commands) ─────────────────
+
+/// Per-volume index status for the freshness UX (M3's per-drive badge).
+///
+/// Carries the volume's freshness color plus the last completed scan's facts
+/// (`scan_completed_at`, `scan_duration_ms`) for the tooltip/menu footer. This
+/// is the shape M3 consumes for EVERY drive (local included). A volume with no
+/// registered instance is the gray / not-indexed state (`enabled: false`,
+/// `freshness: None`); a registered one always carries a `freshness`.
+///
+/// Freshness is read from the registry; the scan facts come from the persisted
+/// `meta` surfaced by `get_status`. The two can briefly disagree during a
+/// transition, which is fine for a status badge.
+pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
+    let freshness = get_freshness(volume_id);
+    let enabled = is_active(volume_id);
+
+    // Pull the persisted last-scan facts from the status response (best-effort;
+    // a not-indexed volume yields `None`s).
+    let (scan_completed_at, scan_duration_ms) = get_status(volume_id)
+        .ok()
+        .and_then(|s| s.index_status)
+        .map(|st| {
+            (
+                st.scan_completed_at.and_then(|v| v.parse::<u64>().ok()),
+                st.scan_duration_ms.and_then(|v| v.parse::<u64>().ok()),
+            )
+        })
+        .unwrap_or((None, None));
+
+    VolumeIndexStatus {
+        volume_id: volume_id.to_string(),
+        enabled,
+        freshness,
+        scan_completed_at,
+        scan_duration_ms,
+    }
+}
+
+/// Per-volume index status, resolving the owning volume from a path (the IPC
+/// stays path-based, like `get_dir_stats`). An SMB path resolves to its SMB
+/// volume id; everything else to `root`.
+pub fn get_volume_index_status_for_path(path: &str) -> VolumeIndexStatus {
+    get_volume_index_status(&volume_id_for_local_path(path))
+}
 
 /// The empty/disabled status response (a volume with no running index).
 fn disabled_status_response() -> IndexStatusResponse {
@@ -712,14 +872,22 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
 
 /// Resolve a filesystem path to its index volume id.
 ///
-/// M1: the only registered volume is `root` (the local disk at `/`), and the
-/// path-based IPC only ever carries local absolute paths, so this is `"root"`.
-/// M2+ will map `/Volumes/...` and `mtp-*` virtual paths to their volume ids
-/// here once those backends register indexes.
-fn volume_id_for_local_path(_path: &str) -> VolumeId {
-    // TODO(M2/M4): map /Volumes/<share> and mtp-* virtual paths to their volume
-    // ids once SMB/MTP indexes can register. Until then, all index-backed paths
-    // are local-disk `root`.
+/// An SMB-mounted path (`/Volumes/<share>/…` on macOS, an `smbfs`/`cifs` mount
+/// on Linux) maps to its `smb_volume_id(server, port, share)` — the SAME id the
+/// `VolumeManager` and the SMB index register under — so a listing under that
+/// share routes to the SMB volume's index, not `root`. Everything else (local
+/// absolute paths) is `root`. The routed read paths still skip cleanly when the
+/// resolved volume has no registered index (`get_read_pool_for` → `None`), so an
+/// SMB share that isn't indexed costs zero DB work, exactly like before.
+///
+/// MTP virtual paths (`mtp-*`) still resolve to `root` here; M4 maps them.
+fn volume_id_for_local_path(path: &str) -> VolumeId {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    if let Some(smb_id) = super::smb_index::smb_volume_id_for_path(path) {
+        return smb_id;
+    }
+    // TODO(M4): map mtp-* virtual paths to their volume ids.
+    let _ = path;
     ROOT_VOLUME_ID.to_string()
 }
 
@@ -741,6 +909,26 @@ pub fn stop_scan(volume_id: &str) -> Result<(), String> {
             Ok(())
         }
         _ => Err("Indexing not initialized".to_string()),
+    }
+}
+
+/// Snapshot every registered volume id. Used by the global memory watchdog to
+/// stop EVERY volume's index (not just `root`) when the global budget is hit.
+pub(crate) fn all_registered_volume_ids() -> Vec<VolumeId> {
+    INDEX_REGISTRY
+        .lock()
+        .map(|reg| reg.keys().cloned().collect())
+        .unwrap_or_default()
+}
+
+/// Stop indexing for every registered volume (the global memory-budget action).
+/// Each `stop_indexing` drains and removes one instance; we snapshot the ids
+/// first so we're not iterating the map while `stop_indexing` mutates it.
+pub(crate) fn stop_all_indexing() {
+    for volume_id in all_registered_volume_ids() {
+        if let Err(e) = stop_indexing(&volume_id) {
+            log::warn!("stop_all_indexing: stop_indexing('{volume_id}') failed: {e}");
+        }
     }
 }
 
@@ -785,7 +973,7 @@ mod tests {
             let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
             let pending = Arc::new(PendingSizes::new());
             assert!(
-                try_reserve_initializing_phase(name, store, pool, pending).is_ok(),
+                try_reserve_initializing_phase(name, store, pool, pending, None).is_ok(),
                 "reserve {name} must succeed"
             );
         };
@@ -831,8 +1019,8 @@ mod tests {
         let (s1, p1, pe1) = mk("vol-a");
         let (s2, p2, pe2) = mk("vol-b");
 
-        assert!(try_reserve_initializing_phase("vol-a", s1, p1, pe1).is_ok());
-        assert!(try_reserve_initializing_phase("vol-b", s2, p2, pe2).is_ok());
+        assert!(try_reserve_initializing_phase("vol-a", s1, p1, pe1, None).is_ok());
+        assert!(try_reserve_initializing_phase("vol-b", s2, p2, pe2, None).is_ok());
         assert!(is_active("vol-a"));
         assert!(is_active("vol-b"));
         // Each volume routes to ITS OWN pool, never the other's (no cross-talk).
@@ -842,7 +1030,7 @@ mod tests {
         // on the same DB) while vol-b is untouched.
         let (s1b, p1b, pe1b) = mk("vol-a");
         assert!(
-            try_reserve_initializing_phase("vol-a", s1b, p1b, pe1b).is_err(),
+            try_reserve_initializing_phase("vol-a", s1b, p1b, pe1b, None).is_err(),
             "double-start of the same volume must be rejected"
         );
         assert!(is_active("vol-b"), "vol-b unaffected by vol-a's rejected start");
@@ -857,6 +1045,54 @@ mod tests {
         assert!(is_active("vol-b"), "removing vol-a must not disturb vol-b");
         assert!(get_read_pool_for("vol-b").is_some(), "vol-b still routable");
 
+        clear_registry_and_pools();
+    }
+
+    /// Freshness rides the registry instance and transitions through the pure
+    /// state machine via `apply_freshness_event`. This pins the registry-level
+    /// wiring (the seam M2-B's watcher uses): a volume reserved Stale (the
+    /// load-as-Stale-on-launch case) goes Stale → Scanning → Fresh, and the
+    /// M2-B watcher-died event flips Fresh → Stale. The pure transitions
+    /// themselves are pinned in `freshness::tests`; this proves the registry
+    /// stores and threads them.
+    #[test]
+    fn freshness_transitions_through_the_registry() {
+        let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        clear_registry_and_pools();
+        INDEX_REGISTRY.lock().unwrap().remove("smb-fresh-test");
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("smb-fresh-test.db");
+        let store = IndexStore::open(&db_path).expect("open store");
+        let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+        let pending = Arc::new(PendingSizes::new());
+
+        // Reserve as Stale — the load-as-Stale-on-launch case for a persisted
+        // SMB index.
+        assert!(
+            try_reserve_initializing_phase("smb-fresh-test", store, pool, pending, Some(Freshness::Stale)).is_ok(),
+            "reserve must succeed"
+        );
+        assert_eq!(get_freshness("smb-fresh-test"), Some(Freshness::Stale), "loads Stale");
+
+        // A rescan begins ⇒ Scanning.
+        apply_freshness_event("smb-fresh-test", FreshnessEvent::ScanStarted);
+        assert_eq!(get_freshness("smb-fresh-test"), Some(Freshness::Scanning));
+
+        // Clean completion ⇒ Fresh.
+        apply_freshness_event("smb-fresh-test", FreshnessEvent::ScanCompleted);
+        assert_eq!(get_freshness("smb-fresh-test"), Some(Freshness::Fresh));
+
+        // M2-B's seam: a watcher death flips Fresh ⇒ Stale.
+        apply_freshness_event("smb-fresh-test", FreshnessEvent::WatcherDied);
+        assert_eq!(get_freshness("smb-fresh-test"), Some(Freshness::Stale));
+
+        // An absent volume has no freshness, and events on it are no-ops.
+        assert_eq!(get_freshness("never-registered"), None);
+        apply_freshness_event("never-registered", FreshnessEvent::ScanCompleted);
+        assert_eq!(get_freshness("never-registered"), None);
+
+        INDEX_REGISTRY.lock().unwrap().remove("smb-fresh-test");
         clear_registry_and_pools();
     }
 

@@ -935,7 +935,7 @@ fn reserve_initializing_for(volume_id: &str) -> tempfile::TempDir {
     let store = IndexStore::open(&db_path).expect("open init store");
     let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
     let pending = Arc::new(pending_sizes::PendingSizes::new());
-    try_reserve_initializing_phase(volume_id, store, pool, pending)
+    try_reserve_initializing_phase(volume_id, store, pool, pending, None)
         .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
     dir
 }
@@ -974,7 +974,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let store2 = IndexStore::open(&db2).expect("open store");
     let pool2 = Arc::new(ReadPool::new(db2.clone()).expect("pool"));
     let pending2 = Arc::new(pending_sizes::PendingSizes::new());
-    let res = try_reserve_initializing_phase(ROOT_VOLUME_ID, store2, pool2, pending2);
+    let res = try_reserve_initializing_phase(ROOT_VOLUME_ID, store2, pool2, pending2, None);
     assert!(
         res.is_err(),
         "second reservation while already Initializing must fail (would spawn a second writer)"
@@ -1000,6 +1000,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
                 phase: IndexPhase::ShuttingDown,
                 read_pool: pool_sd,
                 pending_sizes: pending_sd,
+                freshness: Arc::new(std::sync::Mutex::new(None)),
             },
         );
         // store_sd is unused after insert; the ShuttingDown phase carries no store.
@@ -1010,7 +1011,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let store4 = IndexStore::open(&db4).expect("open store");
     let pool4 = Arc::new(ReadPool::new(db4.clone()).expect("pool"));
     let pending4 = Arc::new(pending_sizes::PendingSizes::new());
-    let res = try_reserve_initializing_phase(ROOT_VOLUME_ID, store4, pool4, pending4);
+    let res = try_reserve_initializing_phase(ROOT_VOLUME_ID, store4, pool4, pending4, None);
     assert!(res.is_err(), "reservation from ShuttingDown must fail");
     assert!(
         matches!(
@@ -1110,6 +1111,7 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
                 phase: IndexPhase::ShuttingDown,
                 read_pool: pool,
                 pending_sizes: pending,
+                freshness: Arc::new(std::sync::Mutex::new(None)),
             },
         );
     }

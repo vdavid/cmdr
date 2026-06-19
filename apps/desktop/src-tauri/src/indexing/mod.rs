@@ -14,6 +14,7 @@ mod event_loop;
 mod events;
 pub mod expected_totals;
 pub mod firmlinks;
+pub mod freshness;
 mod manager;
 mod partial_agg;
 mod state;
@@ -25,8 +26,15 @@ mod metadata;
 mod pending_sizes;
 mod reconciler;
 pub(crate) mod scanner;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod smb_index;
 mod verifier;
+pub(crate) mod volume_scanner;
 pub(crate) mod watcher;
+
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+#[path = "smb_scan_integration_test.rs"]
+mod smb_scan_integration_test;
 
 #[cfg(test)]
 mod integration_tests;
@@ -46,6 +54,10 @@ pub use events::*;
 
 pub(crate) use state::ROOT_VOLUME_ID;
 pub use state::{
-    clear_index, force_scan, get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, init, is_active,
-    should_auto_start, should_auto_start_indexing, start_indexing, stop_indexing, stop_scan, trigger_verification,
+    clear_index, force_scan, get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
+    get_volume_index_status_for_path, init, is_active, should_auto_start, should_auto_start_indexing, start_indexing,
+    stop_indexing, stop_scan, trigger_verification,
 };
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use smb_index::{SmbIndexGateReason, start_indexing_for_smb};

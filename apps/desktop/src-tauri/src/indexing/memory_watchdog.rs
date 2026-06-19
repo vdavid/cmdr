@@ -2,10 +2,21 @@
 //! at safety thresholds to prevent unbounded memory growth.
 //!
 //! - 8 GB: logs a warning.
-//! - 16 GB: stops all indexing and emits a user-visible event.
+//! - 16 GB: stops EVERY volume's index and emits a user-visible event.
+//!
+//! **The budget is GLOBAL, not per-volume** (plan rabbit hole #8, resolved by
+//! David). Scans run in parallel — the network/USB wire is the bottleneck, not
+//! RAM — so there's no one-at-a-time serialization; instead a single process-
+//! wide budget is the safety net that stops ALL indexing if total resident
+//! memory crosses the catastrophe line. The 16 GB number is a machine-protection
+//! stop, NOT expected usage (real scan memory is the accumulator maps + the 20K
+//! writer channel — hundreds of MB per normal volume).
 //!
 //! On non-macOS platforms this is a no-op stub (platform memory queries
 //! differ and can be added later).
+
+#[cfg(target_os = "macos")]
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// 8 GB in bytes.
 #[cfg(target_os = "macos")]
@@ -19,15 +30,28 @@ const STOP_THRESHOLD: u64 = 16 * 1024 * 1024 * 1024;
 #[cfg(target_os = "macos")]
 const CHECK_INTERVAL_SECS: u64 = 5;
 
-/// Start the memory watchdog as a fire-and-forget background task.
+/// Whether the single global watchdog task is already running. The watchdog is
+/// process-wide (one global budget over all volumes), so the first `start()`
+/// wins and later per-volume `start_indexing_for` calls are no-ops — without
+/// this, every volume start would spawn a redundant watchdog loop all racing to
+/// stop indexing.
+#[cfg(target_os = "macos")]
+static WATCHDOG_RUNNING: AtomicBool = AtomicBool::new(false);
+
+/// Start the global memory watchdog as a fire-and-forget background task.
 ///
-/// On macOS, spawns a task that checks resident memory every 5 seconds
-/// using `mach_task_info`. Runs until the app is stopped or indexing is
-/// halted due to excessive memory usage. On other platforms, this is a no-op.
+/// On macOS, spawns ONE task (idempotent across volumes) that checks resident
+/// memory every 5 seconds using `mach_task_info`. On other platforms, no-op.
 #[cfg(target_os = "macos")]
 pub fn start(app: tauri::AppHandle) {
+    // Idempotent: only the first caller spawns the single global watchdog.
+    if WATCHDOG_RUNNING.swap(true, Ordering::SeqCst) {
+        return;
+    }
     tauri::async_runtime::spawn(async move {
         run_watchdog(app).await;
+        // Let a future `start()` respawn it (e.g. after the budget stop returned).
+        WATCHDOG_RUNNING.store(false, Ordering::SeqCst);
     });
 }
 
@@ -69,13 +93,11 @@ async fn run_watchdog(app: tauri::AppHandle) {
             }
             .emit(&app);
 
-            // Stop indexing. M1 only the local `root` volume is indexed; M2 will
-            // make the watchdog a single GLOBAL budget that stops every volume's
-            // index (see the plan's rabbit hole #8).
-            // TODO(M2: global memory budget): iterate all registered volumes here.
-            if let Err(e) = super::stop_indexing(super::ROOT_VOLUME_ID) {
-                crate::log_error!("Memory watchdog: stop_indexing failed: {e}");
-            }
+            // Global budget: stop EVERY registered volume's index, not just
+            // `root`. Scans run in parallel (the wire, not RAM, is the
+            // bottleneck), so the safety net is one process-wide stop rather than
+            // per-volume serialization (plan rabbit hole #8).
+            super::state::stop_all_indexing();
             return;
         }
 
