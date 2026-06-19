@@ -28,8 +28,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
+      - name: Use a persistent cargo target dir
+        # The biggest release-time cost is recompiling the ~1000-crate Tauri tree from scratch,
+        # three times. By default `target/` lives in the workspace, which actions/checkout wipes
+        # (`git clean -ffdx`) at the start of every job, so nothing is ever reused. Point
+        # CARGO_TARGET_DIR at a stable path OUTSIDE the workspace so it survives checkout and is
+        # shared by all three (sequential, single-runner) arch jobs and across releases:
+        #   - Within a release: the universal build compiles BOTH the aarch64 and x86_64 slices;
+        #     whichever arch job runs first compiles its slice once, the rest hit cargo's cache.
+        #   - Across releases: an unchanged-Cargo.lock release recompiles only the `cmdr` crate.
+        # Cargo's own fingerprinting keeps this correct. The dir grows to ~15-30 GB (three target
+        # triples, release profile) and is intentionally never pruned; `cargo clean` it by hand if
+        # disk ever gets tight. Safe ONLY because these jobs run sequentially on one runner; a
+        # shared target dir under concurrent cargo builds would corrupt/lock.
+        run: echo "CARGO_TARGET_DIR=$HOME/.cache/cmdr-release-target" >> "$GITHUB_ENV"
+
       - name: Install mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+        with:
+          # Self-hosted runner: mise tools persist locally in ~/.local/share/mise across runs,
+          # so `mise install` is already a no-op. The action's default GitHub-Actions cache
+          # (save + restore of the whole mise dir every run) is pure round-trip waste here
+          # (~1 min/job), with nothing to gain over the local persistence. CI keeps it on
+          # because GitHub-hosted runners are ephemeral; this runner is not.
+          cache: false
 
       - name: Install tools with mise
         run: mise install

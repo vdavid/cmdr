@@ -12,6 +12,18 @@ Related guides for the signing and distribution steps:
 - `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in GitHub secrets
 - Self-hosted runner: `create-dmg` must be installed (`brew install create-dmg`)
 
+## Build caching on the self-hosted runner
+
+The three arch jobs (`aarch64`, `x86_64`, `universal`) run sequentially on the one self-hosted Mac runner. To avoid
+recompiling the ~1000-crate Tauri tree from scratch each time, `release.yml` sets `CARGO_TARGET_DIR` to
+`~/.cache/cmdr-release-target`, outside the workspace that `actions/checkout` wipes. The `universal` build already
+compiles both the aarch64 and x86_64 slices, so the per-arch jobs reuse those (whichever job runs first compiles a given
+slice; the rest hit cargo's cache), and an unchanged-`Cargo.lock` release recompiles only the `cmdr` crate.
+
+This dir grows to ~15–30 GB and is never auto-pruned. If runner disk gets tight, `rm -rf ~/.cache/cmdr-release-target`
+(or `cargo clean` it), and the next release just pays one cold build. The sharing is safe ONLY because the jobs run
+sequentially on one runner; never let them run concurrently against this shared dir (cargo would lock/corrupt it).
+
 ## Release gates that abort before tagging
 
 `scripts/release.sh` runs a few hard gates locally before it commits and tags, so a release that can't ship is never
