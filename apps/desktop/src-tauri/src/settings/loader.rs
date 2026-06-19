@@ -36,6 +36,22 @@ pub struct Settings {
     pub developer_mcp_port: Option<u16>,
     #[serde(alias = "indexing.enabled", default)]
     pub indexing_enabled: Option<bool>,
+    /// Drive-indexing freshness UX (M3). All three gate FRONTEND behavior (the
+    /// first-connect notification and the one-time stale dialog), so the FE owns
+    /// reads/writes via the settings registry; they're parsed here for
+    /// completeness and crash-report correlation, mirroring
+    /// `network.firstTriggerDone`. A missing key means the registry default
+    /// (`ask_for_each_drive` ON, `stale_notify` ON).
+    ///
+    /// Gates the per-drive first-connect "Enable indexing?" notification (D6).
+    #[serde(alias = "indexing.askForEachDrive", default)]
+    #[allow(dead_code, reason = "FE-gating setting; parsed for completeness/crash correlation")]
+    pub indexing_ask_for_each_drive: Option<bool>,
+    /// Gates the one-time "a drive went stale" dialog (D2). The yellow stale
+    /// badge shows regardless of this toggle.
+    #[serde(alias = "indexing.staleNotify", default)]
+    #[allow(dead_code, reason = "FE-gating setting; parsed for completeness/crash correlation")]
+    pub indexing_stale_notify: Option<bool>,
     #[serde(alias = "updates.crashReports", default)]
     #[allow(
         dead_code,
@@ -103,6 +119,8 @@ impl Default for Settings {
             developer_mcp_enabled: None,
             developer_mcp_port: None,
             indexing_enabled: None,
+            indexing_ask_for_each_drive: None,
+            indexing_stale_notify: None,
             crash_reports_enabled: None,
             ai_provider: None,
             verbose_logging: None,
@@ -161,6 +179,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         .and_then(|v| u16::try_from(v).ok());
 
     let indexing_enabled = json.get("indexing.enabled").and_then(|v| v.as_bool());
+    let indexing_ask_for_each_drive = json.get("indexing.askForEachDrive").and_then(|v| v.as_bool());
+    let indexing_stale_notify = json.get("indexing.staleNotify").and_then(|v| v.as_bool());
 
     let crash_reports_enabled = json.get("updates.crashReports").and_then(|v| v.as_bool());
     let ai_provider = json.get("ai.provider").and_then(|v| v.as_str()).map(String::from);
@@ -195,6 +215,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         developer_mcp_enabled,
         developer_mcp_port,
         indexing_enabled,
+        indexing_ask_for_each_drive,
+        indexing_stale_notify,
         crash_reports_enabled,
         ai_provider,
         verbose_logging,
@@ -395,5 +417,23 @@ mod tests {
         let parsed = parse_restricted_window_settings(json);
         assert_eq!(parsed.viewer_word_wrap, None);
         assert_eq!(parsed.appearance_text_size, None);
+    }
+
+    #[test]
+    fn parses_drive_indexing_freshness_keys() {
+        // The M3 drive-indexing freshness toggles round-trip from their literal
+        // dot-notation keys. A missing key stays `None` (the FE applies the
+        // registry default: both ON).
+        let json = r#"{ "indexing.askForEachDrive": false, "indexing.staleNotify": true }"#;
+        let parsed = parse_settings(json).expect("valid settings json");
+        assert_eq!(parsed.indexing_ask_for_each_drive, Some(false));
+        assert_eq!(parsed.indexing_stale_notify, Some(true));
+
+        let empty = parse_settings("{}").expect("empty settings json");
+        assert_eq!(
+            empty.indexing_ask_for_each_drive, None,
+            "missing key → None (FE default)"
+        );
+        assert_eq!(empty.indexing_stale_notify, None, "missing key → None (FE default)");
     }
 }
