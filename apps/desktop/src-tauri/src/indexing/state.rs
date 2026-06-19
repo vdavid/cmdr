@@ -805,10 +805,16 @@ pub fn get_dir_stats_on_volume(volume_id: &str, path: &str) -> Result<Option<Dir
         None => return Ok(None),
     };
     let normalized = firmlinks::normalize_path(path);
+    // Map the mount-absolute path into the volume's index path space (no-op for
+    // `root`, mount-relative for SMB). `None` ⇒ outside the mount ⇒ no stats.
+    let index_path = match index_read_path(volume_id, &normalized) {
+        Some(p) => p,
+        None => return Ok(None),
+    };
 
     pool.with_conn(|conn| {
         let entry_id =
-            match store::resolve_path(conn, &normalized).map_err(|e| format!("Couldn't resolve path: {e}"))? {
+            match store::resolve_path(conn, &index_path).map_err(|e| format!("Couldn't resolve path: {e}"))? {
                 Some(id) => id,
                 None => return Ok(None),
             };
@@ -849,7 +855,18 @@ pub fn get_dir_stats_batch_on_volume(volume_id: &str, paths: &[String]) -> Resul
 
         for (i, path) in paths.iter().enumerate() {
             let normalized = firmlinks::normalize_path(path);
-            match store::resolve_path(conn, &normalized).map_err(|e| format!("Couldn't resolve path: {e}"))? {
+            // Resolve in the volume's index path space (mount-relative for SMB),
+            // but keep `normalized` (the mount-absolute path) as the returned
+            // `path` and the pending-tracker key, since both are FE/write-side
+            // keyed on the absolute path.
+            let index_path = match index_read_path(volume_id, &normalized) {
+                Some(p) => p,
+                None => {
+                    results.push(None);
+                    continue;
+                }
+            };
+            match store::resolve_path(conn, &index_path).map_err(|e| format!("Couldn't resolve path: {e}"))? {
                 Some(id) => {
                     id_to_idx.push((id, i, normalized));
                     results.push(None);
@@ -913,6 +930,54 @@ fn volume_id_for_local_path(path: &str) -> VolumeId {
     // TODO(M4): map mtp-* virtual paths to their volume ids.
     let _ = path;
     ROOT_VOLUME_ID.to_string()
+}
+
+/// Map a listing/dir-stats path into the path space the volume's index stores it
+/// under, so `store::resolve_path` (which walks component-by-component from
+/// `ROOT_ID`) hits.
+///
+/// This is the READ-side mirror of `smb_watch`'s write-side mount-relative
+/// transform, and it's load-bearing: an SMB index's `ROOT_ID` is the share's
+/// **mount root** (the scanner maps the scan root to `ROOT_ID`), but enrichment
+/// and `get_dir_stats` receive **mount-absolute** paths (`/Volumes/share/sub`).
+/// Without stripping the mount root first, `resolve_path` tries to walk
+/// `Volumes` / `share` as children of the share root and always misses, so an
+/// indexed SMB folder shows no sizes. (Pure over `mount_root`; the live mount
+/// lookup is in [`index_read_path`].)
+///
+/// - `root` (local disk): the index is rooted at `/`, so the firmlink-normalized
+///   absolute path is already index-rooted — return it as-is (`mount_root` is
+///   `None`). Firmlink normalization is local-only and must not touch virtual
+///   SMB/MTP paths.
+/// - A non-root volume with a known `mount_root` (SMB): strip the mount root to a
+///   mount-relative path via the shared [`smb_watch::index_relative_path`]. A
+///   path that isn't under the mount root yields `None` (drop it rather than
+///   mis-root it at `ROOT_ID`).
+fn index_read_path_pure(volume_id: &str, normalized_abs: &str, mount_root: Option<&str>) -> Option<String> {
+    if volume_id == ROOT_VOLUME_ID {
+        return Some(normalized_abs.to_string());
+    }
+    let mount_root = mount_root?;
+    super::smb_watch::index_relative_path(mount_root, normalized_abs)
+}
+
+/// Live wrapper over [`index_read_path_pure`]: looks up a non-root volume's mount
+/// root from the `VolumeManager` and maps `abs_path` into the volume's index path
+/// space. `abs_path` should already be firmlink-normalized for `root`; for a
+/// non-root SMB volume firmlinks don't apply (virtual path namespace), so we pass
+/// it through unchanged.
+///
+/// `None` means "this path isn't resolvable in this volume's index" (unknown
+/// volume, or a path outside the mount root) — the caller then skips, exactly
+/// like an unindexed volume.
+pub(crate) fn index_read_path(volume_id: &str, abs_path: &str) -> Option<String> {
+    if volume_id == ROOT_VOLUME_ID {
+        return Some(abs_path.to_string());
+    }
+    let mount_root = crate::file_system::get_volume_manager()
+        .get(volume_id)
+        .map(|v| v.root().to_string_lossy().into_owned());
+    index_read_path_pure(volume_id, abs_path, mount_root.as_deref())
 }
 
 /// Force a fresh full scan for a volume (for debug/manual trigger).
@@ -1118,6 +1183,46 @@ mod tests {
 
         INDEX_REGISTRY.lock().unwrap().remove("smb-fresh-test");
         clear_registry_and_pools();
+    }
+
+    /// The read-side path transform routes by volume: `root` passes the absolute
+    /// path through (its index is rooted at `/`), while a non-root SMB volume
+    /// strips its mount root to a mount-relative path (its index `ROOT_ID` is the
+    /// mount root). This is the pure decision the live `index_read_path` wraps; it
+    /// fixes the SMB read-side gap where a mount-absolute path resolved to nothing.
+    #[test]
+    fn index_read_path_routes_root_vs_smb() {
+        // Root: the absolute path is already index-rooted (no mount_root needed).
+        assert_eq!(
+            index_read_path_pure(ROOT_VOLUME_ID, "/Users/me/project", None),
+            Some("/Users/me/project".to_string()),
+            "root passes the absolute path straight through",
+        );
+
+        // SMB: strip the mount root to a mount-relative path.
+        assert_eq!(
+            index_read_path_pure("smb-nas", "/Volumes/share/sub/deep", Some("/Volumes/share")),
+            Some("/sub/deep".to_string()),
+            "an SMB volume maps the mount-absolute path to mount-relative",
+        );
+        assert_eq!(
+            index_read_path_pure("smb-nas", "/Volumes/share", Some("/Volumes/share")),
+            Some("/".to_string()),
+            "the share mount root maps to the index ROOT_ID path",
+        );
+
+        // SMB with no known mount root (volume not registered) ⇒ can't map ⇒ None.
+        assert_eq!(
+            index_read_path_pure("smb-nas", "/Volumes/share/sub", None),
+            None,
+            "without a mount root an SMB path can't be index-rooted",
+        );
+        // A path outside the mount root ⇒ None (don't mis-root it at ROOT_ID).
+        assert_eq!(
+            index_read_path_pure("smb-nas", "/Volumes/other/x", Some("/Volumes/share")),
+            None,
+            "a path outside the mount root must not resolve",
+        );
     }
 
     /// Reset every registry-backed test global: the instance map plus the root

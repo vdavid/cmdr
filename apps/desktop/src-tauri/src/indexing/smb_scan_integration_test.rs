@@ -257,3 +257,94 @@ async fn smb_integration_watch_event_updates_index() {
     writer.shutdown();
     rm_rf(vol.as_ref(), &base).await;
 }
+
+/// The READ-side mirror of `smb_integration_volume_scan_indexes_share`: scan a
+/// fixture share, then enrich a listing of it and assert directory sizes appear.
+///
+/// This is the regression test for the SMB read-side gap (M3-A item 1): an SMB
+/// index's `ROOT_ID` is the mount root, so enrichment must strip the mount root
+/// to a mount-relative path (`index_read_path` / `index_relative_path`) before
+/// `resolve_path`. Without that transform, a mount-absolute parent resolves to
+/// nothing and dir sizes never appear. We drive `enrich_via_parent_id_on` (the
+/// fast path) directly against the freshly-scanned index with the mount-relative
+/// parent the read path now computes, so the test needs no `VolumeManager` /
+/// registry — the same isolation `resolve_and_send_for_test` buys the write side.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_enrich_listing_shows_sizes() {
+    use crate::file_system::listing::FileEntry;
+    use crate::indexing::enrichment::enrich_via_parent_id_on;
+    use crate::indexing::smb_watch::index_relative_path;
+
+    let vol = connect_public().await;
+
+    // Seed a known subtree:  <base>/sub/ (a dir, with a 11-byte leaf inside)
+    //                        <base>/top.txt (5 bytes)
+    let base = format!("/{}", unique_dir());
+    rm_rf(vol.as_ref(), &base).await;
+    vol.create_directory(Path::new(&base))
+        .await
+        .expect("create base dir on share");
+    let sub = format!("{base}/sub");
+    vol.create_directory(Path::new(&sub)).await.expect("create sub dir");
+    vol.create_file(Path::new(&format!("{sub}/leaf.txt")), b"hello world")
+        .await
+        .expect("create leaf.txt");
+    vol.create_file(Path::new(&format!("{base}/top.txt")), b"hello")
+        .await
+        .expect("create top.txt");
+
+    // Scan the subtree (scan root → ROOT_ID, like a real volume-root scan).
+    let dir = tempfile::tempdir().expect("temp db dir");
+    let db_path = dir.path().join("smb-enrich.db");
+    let _store = IndexStore::open(&db_path).expect("open store");
+    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+    let cancelled = Arc::new(AtomicBool::new(false));
+    scan_volume_via_trait(
+        Arc::clone(&vol),
+        PathBuf::from(&base),
+        writer.clone(),
+        progress(),
+        cancelled,
+    )
+    .await
+    .expect("SMB volume scan should complete");
+    writer.flush().await.expect("flush after scan");
+    writer.shutdown();
+
+    // Build a listing of the share's mount-absolute children, as the live pane
+    // would: `sub/` (a directory, the one that should get a recursive size) and
+    // `top.txt` (a file, which never gets a recursive size).
+    let mut entries = vec![
+        {
+            let p = format!("{base}/sub");
+            FileEntry::new("sub".to_string(), p, true, false)
+        },
+        {
+            let p = format!("{base}/top.txt");
+            FileEntry::new("top.txt".to_string(), p, false, false)
+        },
+    ];
+
+    // The mount-relative parent the read path computes: `base` IS the mount root
+    // here, so the listing parent (`base`) maps to `/` in the index path space.
+    let index_parent = index_relative_path(&base, &base).expect("base maps to the index root");
+    assert_eq!(index_parent, "/", "the mount root maps to the index ROOT_ID path");
+
+    let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+    enrich_via_parent_id_on(&mut entries, &conn, &index_parent).expect("enrichment must succeed");
+
+    // The directory `sub/` must now carry a recursive size from its index: it
+    // contains leaf.txt (11 bytes). Pre-fix this assertion failed — the
+    // mount-absolute parent resolved to nothing and no size was applied.
+    let sub_entry = entries.iter().find(|e| e.name == "sub").expect("sub in listing");
+    assert_eq!(
+        sub_entry.recursive_size,
+        Some(11),
+        "the indexed SMB directory must enrich to its recursive size",
+    );
+
+    // Clean up the share.
+    let vol2 = connect_public().await;
+    rm_rf(vol2.as_ref(), &base).await;
+}

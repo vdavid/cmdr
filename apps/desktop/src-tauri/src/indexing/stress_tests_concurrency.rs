@@ -389,7 +389,11 @@ fn concurrent_scan_with_enrichment_reads() {
 
                     // Also exercise the individual-paths fallback
                     let fallback_result = pool.with_conn(|conn| {
-                        enrichment::enrich_via_individual_paths_on(&mut entries, conn);
+                        enrichment::enrich_via_individual_paths_on(
+                            crate::indexing::state::ROOT_VOLUME_ID,
+                            &mut entries,
+                            conn,
+                        );
                     });
                     if let Err(e) = fallback_result {
                         panic!(
@@ -566,7 +570,11 @@ fn live_event_storm_with_concurrent_reads() {
                     }
 
                     let result = pool.with_conn(|conn| {
-                        enrichment::enrich_via_individual_paths_on(&mut entries, conn);
+                        enrichment::enrich_via_individual_paths_on(
+                            crate::indexing::state::ROOT_VOLUME_ID,
+                            &mut entries,
+                            conn,
+                        );
                     });
                     if let Err(e) = result {
                         panic!(

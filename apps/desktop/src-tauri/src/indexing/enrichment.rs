@@ -204,16 +204,28 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
         return;
     }
 
+    // Map the mount-absolute parent into the volume's index path space: a no-op
+    // for `root`, mount-relative for an SMB volume (its index `ROOT_ID` is the
+    // mount root, so a mount-absolute parent would resolve to nothing). `None`
+    // means the parent isn't under this volume's mount root — skip.
+    let index_parent_path = match super::state::index_read_path(volume_id, &parent_path) {
+        Some(p) => p,
+        None => {
+            log::debug!("enrich: parent {parent_path} not under volume '{volume_id}' mount root, skipping");
+            return;
+        }
+    };
+
     log::debug!("enrich: {} under {parent_path}", pluralize(dir_count as u64, "dir"));
 
     // Use the integer-keyed fast path: resolve parent once, batch-fetch child stats
     if let Err(e) = pool
-        .with_conn(|conn| enrich_via_parent_id_on(entries, conn, &parent_path))
+        .with_conn(|conn| enrich_via_parent_id_on(entries, conn, &index_parent_path))
         .and_then(|r| r)
     {
         log::debug!("Enrichment fast path failed: {e}, trying fallback");
         // Fallback: resolve each path individually (handles mixed-parent edge cases)
-        let _ = pool.with_conn(|conn| enrich_via_individual_paths_on(entries, conn));
+        let _ = pool.with_conn(|conn| enrich_via_individual_paths_on(volume_id, entries, conn));
     }
 
     let enriched = entries
@@ -299,13 +311,21 @@ pub(super) fn enrich_via_parent_id_on(
 }
 
 /// Fallback: resolve each directory path individually (handles mixed-parent entries).
-pub(super) fn enrich_via_individual_paths_on(entries: &mut [FileEntry], conn: &Connection) {
-    // Resolve each dir path → entry_id, then batch-fetch stats
+///
+/// Each entry's mount-absolute path is mapped into the volume's index path space
+/// (mount-relative for SMB) before `resolve_path`, mirroring the fast path.
+pub(super) fn enrich_via_individual_paths_on(volume_id: &str, entries: &mut [FileEntry], conn: &Connection) {
+    // Resolve each dir path → entry_id, then batch-fetch stats. We key the stats
+    // map on the index-rooted path (what resolved) so the apply loop below, which
+    // recomputes the same index-rooted path per entry, matches.
     let mut id_to_path: Vec<(i64, String)> = Vec::new();
     for entry in entries.iter().filter(|e| e.is_directory && !e.is_symlink) {
         let normalized = firmlinks::normalize_path(&entry.path);
-        if let Ok(Some(id)) = store::resolve_path(conn, &normalized) {
-            id_to_path.push((id, normalized));
+        let Some(index_path) = super::state::index_read_path(volume_id, &normalized) else {
+            continue;
+        };
+        if let Ok(Some(id)) = store::resolve_path(conn, &index_path) {
+            id_to_path.push((id, index_path));
         }
     }
 
@@ -331,10 +351,13 @@ pub(super) fn enrich_via_individual_paths_on(entries: &mut [FileEntry], conn: &C
         }
     }
 
-    // Apply to entries
+    // Apply to entries (key on the same index-rooted path the map was built with)
     for entry in entries.iter_mut().filter(|e| e.is_directory && !e.is_symlink) {
         let normalized = firmlinks::normalize_path(&entry.path);
-        if let Some(stats) = stats_map.get(&normalized) {
+        let Some(index_path) = super::state::index_read_path(volume_id, &normalized) else {
+            continue;
+        };
+        if let Some(stats) = stats_map.get(&index_path) {
             entry.recursive_size = Some(stats.recursive_logical_size);
             entry.recursive_physical_size = Some(stats.recursive_physical_size);
             entry.recursive_file_count = Some(stats.recursive_file_count);

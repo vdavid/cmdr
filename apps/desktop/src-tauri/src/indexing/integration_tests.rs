@@ -225,7 +225,7 @@ fn enrich_entries_fallback_individual_paths() {
     let mut file_entries = vec![make_file_entry("docs", "/docs", true)];
 
     // Use the individual path fallback
-    enrich_via_individual_paths_on(&mut file_entries, store.read_conn());
+    enrich_via_individual_paths_on(ROOT_VOLUME_ID, &mut file_entries, store.read_conn());
 
     let docs = &file_entries[0];
     assert_eq!(docs.recursive_size, Some(500));
@@ -238,7 +238,7 @@ fn enrich_entries_fallback_individual_paths() {
 fn enrich_entries_empty_list() {
     let (store, _conn, _dir) = open_temp_store();
     let mut entries: Vec<FileEntry> = Vec::new();
-    enrich_via_individual_paths_on(&mut entries, store.read_conn());
+    enrich_via_individual_paths_on(ROOT_VOLUME_ID, &mut entries, store.read_conn());
 }
 
 /// Test that enrichment handles entries with no matching index data.
@@ -246,7 +246,7 @@ fn enrich_entries_empty_list() {
 fn enrich_entries_no_matching_index() {
     let (store, _conn, _dir) = open_temp_store();
     let mut entries = vec![make_file_entry("nonexistent", "/nonexistent", true)];
-    enrich_via_individual_paths_on(&mut entries, store.read_conn());
+    enrich_via_individual_paths_on(ROOT_VOLUME_ID, &mut entries, store.read_conn());
     assert_eq!(entries[0].recursive_size, None, "unindexed dir should remain None");
 }
 
