@@ -64,7 +64,9 @@ size aggregates so listings can show directory sizes.
 - **SMB watch→index (`smb_watch.rs`, see DETAILS § "Live SMB watch → index").** `apply_smb_change` is hooked into
   `notify_directory_changed` BEFORE the pane early-return, so it runs with no pane open. Three things to get right: (1)
   the SMB index's `ROOT_ID` is the MOUNT ROOT, so translate events to MOUNT-RELATIVE paths (`index_relative_path`) before
-  `resolve_path` — a mount-absolute path resolves to nothing; (2) sequence the index write BEFORE the FE refresh (the
+  `resolve_path` — a mount-absolute path resolves to nothing. The READ side needs the SAME strip: enrichment and
+  `get_dir_stats*` route mount-absolute paths through `state::index_read_path` (pass-through for `root`, mount-relative
+  for SMB) or an indexed SMB folder shows no sizes; (2) sequence the index write BEFORE the FE refresh (the
   writer's `EmitDirUpdated` fires `index-dir-updated` only after the write commits), and enqueue on the volume's writer,
   never write directly; (3) changes during a scan are BUFFERED (`scanning` flips true before the truncate) and replayed
   after — don't apply them against the rebuilding index. Watcher death / overflow call
