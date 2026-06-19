@@ -71,6 +71,7 @@ Two colocated tiers per code area, enforced by checks:
   (no broken links), and `resident-doc-budget` (the always-resident bundle, this file plus its `@`-imports plus
   `.claude/rules/`, can't silently regrow). Keep this section crisp: it's the contract every agent replicates.
 - How the doc system works and how to slim it (playbook, principles, why): [`docs/doc-system.md`](docs/doc-system.md).
+- We abbreviate these to C.md, D.md, and C+D.md together.
 
 ## Writing voice
 
