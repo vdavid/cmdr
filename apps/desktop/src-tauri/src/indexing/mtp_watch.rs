@@ -206,7 +206,11 @@ fn apply_remove(volume_id: &str, writer: &IndexWriter, handle: u32) {
 /// `None` when the parent isn't indexed (nothing to attach to). Pure over the DB
 /// state so the mapping is testable against a seeded index.
 fn resolve_upsert(conn: &rusqlite::Connection, upsert: &MtpUpsert) -> Option<ResolvedWrite> {
-    let parent_rel = upsert.path.parent().map(path_to_index_str).unwrap_or_else(|| "/".to_string());
+    let parent_rel = upsert
+        .path
+        .parent()
+        .map(path_to_index_str)
+        .unwrap_or_else(|| "/".to_string());
     let name = upsert.path.file_name()?.to_string_lossy().into_owned();
     let parent_id = store::resolve_path(conn, &parent_rel).ok().flatten()?;
     Some(ResolvedWrite::Upsert {
@@ -223,7 +227,9 @@ fn resolve_upsert(conn: &rusqlite::Connection, upsert: &MtpUpsert) -> Option<Res
 /// stored handle. `None` if the handle was never indexed (no row to delete) —
 /// the stat-verify analogue: a removal for an object we never saw is a no-op.
 fn resolve_remove(conn: &rusqlite::Connection, handle: u32) -> Option<ResolvedWrite> {
-    let entry_id = IndexStore::find_entry_by_inode(conn, u64::from(handle)).ok().flatten()?;
+    let entry_id = IndexStore::find_entry_by_inode(conn, u64::from(handle))
+        .ok()
+        .flatten()?;
     let is_dir = IndexStore::get_entry_by_id(conn, entry_id)
         .ok()
         .flatten()
@@ -252,8 +258,7 @@ fn path_to_index_str(path: &std::path::Path) -> String {
 /// Build the absolute MTP URL (`mtp://{device}/{storage}/inner`) for a
 /// storage-relative path, for the FE `index-dir-updated` listing-cache key.
 fn mtp_url_for(volume_id: &str, storage_rel: &std::path::Path) -> String {
-    let (device_id, storage_id) =
-        crate::mtp::identity::split_volume_id(volume_id).unwrap_or((volume_id, 0));
+    let (device_id, storage_id) = crate::mtp::identity::split_volume_id(volume_id).unwrap_or((volume_id, 0));
     let inner = storage_rel.to_string_lossy();
     let inner = inner.trim_start_matches('/');
     if inner.is_empty() {
@@ -490,7 +495,10 @@ mod tests {
         let vid = "mtp-buffer-discard-test";
         SCAN_CHANGE_BUFFER.lock_ignore_poison().remove(vid);
         for i in 0..3 {
-            buffer_change_during_scan(vid, BufferedChange::Upsert(upsert(&format!("/f{i}.txt"), 100 + i, false, Some(1))));
+            buffer_change_during_scan(
+                vid,
+                BufferedChange::Upsert(upsert(&format!("/f{i}.txt"), 100 + i, false, Some(1))),
+            );
         }
         buffer_change_during_scan(vid, BufferedChange::Remove(50));
         {

@@ -133,7 +133,11 @@ mod tests {
         with_reserved_volume(&vol_a, Freshness::Fresh, || {
             with_reserved_volume(&vol_b, Freshness::Fresh, || {
                 on_mtp_device_disconnected(dev_a);
-                assert_eq!(get_freshness(&vol_a), Some(Freshness::Stale), "device A's volume goes Stale");
+                assert_eq!(
+                    get_freshness(&vol_a),
+                    Some(Freshness::Stale),
+                    "device A's volume goes Stale"
+                );
                 assert_eq!(
                     get_freshness(&vol_b),
                     Some(Freshness::Fresh),

@@ -76,7 +76,10 @@ mod tests {
         // Without a serial the id is location-based; with one it's serial-based.
         // The derivation itself is covered by `mtp::identity` tests; this pins
         // that discovery routes through it (so the two never drift).
-        assert_eq!(super::super::identity::device_id_for(None, 336_592_896), "mtp-336592896");
+        assert_eq!(
+            super::super::identity::device_id_for(None, 336_592_896),
+            "mtp-336592896"
+        );
         assert_eq!(
             super::super::identity::device_id_for(Some("PIXEL7"), 336_592_896),
             "mtp-PIXEL7"

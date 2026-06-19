@@ -23,13 +23,13 @@ pub mod writer;
 
 mod memory_watchdog;
 mod metadata;
-mod pending_sizes;
-mod reconciler;
-pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp_index;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp_watch;
+mod pending_sizes;
+mod reconciler;
+pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_index;
 mod smb_watch;

@@ -294,7 +294,10 @@ impl IndexManager {
             return Ok(());
         }
 
-        log::info!("Startup: {kind} volume '{}' fresh scan (no completed index)", self.volume_id);
+        log::info!(
+            "Startup: {kind} volume '{}' fresh scan (no completed index)",
+            self.volume_id
+        );
         self.start_volume_scan("fresh network scan")
     }
 
