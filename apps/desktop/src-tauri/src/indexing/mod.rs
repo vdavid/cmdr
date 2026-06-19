@@ -28,6 +28,7 @@ mod reconciler;
 pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_index;
+mod smb_watch;
 mod verifier;
 pub(crate) mod volume_scanner;
 pub(crate) mod watcher;
@@ -60,4 +61,6 @@ pub use state::{
 };
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use smb_index::{SmbIndexGateReason, start_indexing_for_smb};
+pub(crate) use smb_index::{SmbIndexGateReason, on_smb_overflow, on_smb_watcher_died, start_indexing_for_smb};
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use smb_watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};

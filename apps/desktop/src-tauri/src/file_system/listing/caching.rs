@@ -13,6 +13,11 @@ use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOr
 ///
 /// Used by `notify_directory_changed` to apply targeted cache updates
 /// and emit `directory-diff` events to the frontend.
+///
+/// `Clone` so the SMB watch→index translator (`indexing::smb_watch`) can stash a
+/// change in its mid-scan replay buffer without taking ownership away from the
+/// pane-update path.
+#[derive(Clone)]
 pub enum DirectoryChange {
     /// A single entry was added. Includes the full `FileEntry` to insert.
     Added(FileEntry),
@@ -408,6 +413,17 @@ pub fn update_entry_sorted(listing_id: &str, new_entry: FileEntry) -> Option<Mod
 /// For `FullRefresh`, re-reads the directory via the Volume trait and computes a diff.
 pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: DirectoryChange) {
     use crate::file_system::watcher::WATCHER_MANAGER;
+
+    // Index sync FIRST, before any pane-listing work (plan Architecture §3).
+    // The SMB watcher runs for the WHOLE volume's lifetime, not just while a pane
+    // shows the share, so the index must update even when no listing matches this
+    // path — hence this sits ahead of the "no listing, bail" early-return below.
+    // It's a no-op for `root` and any non-indexed volume. Sequencing the index
+    // write before the pane enrich means the enrich (and the `index-dir-updated`
+    // the writer emits) reflect the just-written sizes, not the pre-event ones.
+    // The coupling is one-directional: listing → indexer, never the reverse.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    crate::indexing::apply_smb_change(volume_id, parent_path, &change);
 
     let listings = find_listings_for_path_on_volume(Some(volume_id), parent_path);
 

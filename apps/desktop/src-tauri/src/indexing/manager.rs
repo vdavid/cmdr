@@ -306,6 +306,16 @@ impl IndexManager {
             volume_used_bytes,
         });
 
+        // Pre-arm-before-snapshot: flip `scanning` BEFORE truncating, so any live
+        // SMB change racing in during/after the truncate is BUFFERED by
+        // `apply_smb_change` (which reads this flag) instead of being applied
+        // against the gutted, half-rebuilt index and lost. The smb2 watcher has
+        // been running continuously since connect, so its events are already on
+        // the wire; this is the moment we start stashing them for post-scan
+        // replay. The ordering survives a mid-scan watcher respawn: a respawned
+        // watcher feeds the same buffer while this flag stays set.
+        self.scanning.store(true, Ordering::Relaxed);
+
         // Clear the prior completion marker, then truncate — identical to the
         // local scan so an interrupted SMB rescan heals (no stale `scan_completed_at`
         // over a gutted table). Freshness is reset to Scanning below.
@@ -332,7 +342,7 @@ impl IndexManager {
         let progress = Arc::new(ScanProgress::new());
         let cancelled = Arc::new(AtomicBool::new(false));
         self.scan_handle = Some(ScanHandle::new(Arc::clone(&progress), Arc::clone(&cancelled)));
-        self.scanning.store(true, Ordering::Relaxed);
+        // `scanning` was already set true above (pre-arm before truncate).
 
         // Progress reporter (500 ms), stops when the scan signals done.
         let scan_done = Arc::new(AtomicBool::new(false));
@@ -417,9 +427,23 @@ impl IndexManager {
                     .emit(&app);
                     let _ = IndexAggregationCompleteEvent.emit(&app);
 
-                    // Freshness ⇒ Fresh (green). The volume is now authoritative
-                    // until M2-B's live watcher observes a continuity break.
-                    super::state::apply_freshness_event(&volume_id, super::freshness::FreshnessEvent::ScanCompleted);
+                    // Replay changes the live watcher buffered DURING the scan
+                    // (pre-arm-before-snapshot): the smb2 watcher ran throughout,
+                    // and any change to an already-walked dir was stashed rather
+                    // than lost against the rebuilding index. Replay now that the
+                    // full tree (and dir_stats) is in place. Returns false if the
+                    // buffer overflowed mid-scan — then it already signaled
+                    // OverflowUnrecoverable ⇒ Stale, so we must NOT claim Fresh.
+                    let stayed_fresh = super::replay_buffered_changes(&volume_id);
+
+                    if stayed_fresh {
+                        // Freshness ⇒ Fresh (green). The volume is now authoritative
+                        // until the live watcher observes a continuity break.
+                        super::state::apply_freshness_event(
+                            &volume_id,
+                            super::freshness::FreshnessEvent::ScanCompleted,
+                        );
+                    }
                     DEBUG_STATS.set_phase(ActivityPhase::Live, "SMB scan complete");
 
                     // Tell the FE sizes are ready for this share's listings.
@@ -431,11 +455,13 @@ impl IndexManager {
                 other => {
                     // Cancelled, timed out, or the volume vanished mid-walk: the
                     // partial index is worthless (D-interrupted). Discard it by
-                    // resetting the volume to gray / not-indexed.
+                    // resetting the volume to gray / not-indexed, and drop any
+                    // changes buffered during the aborted scan (meaningless now).
                     match &other {
                         Ok(_) => log::info!("SMB scan: cancelled for '{volume_id}', discarding partial"),
                         Err(e) => log::warn!("SMB scan: failed for '{volume_id}' ({e}), discarding partial"),
                     }
+                    super::discard_buffered_changes(&volume_id);
                     super::state::reset_to_not_indexed(&volume_id);
                 }
             }

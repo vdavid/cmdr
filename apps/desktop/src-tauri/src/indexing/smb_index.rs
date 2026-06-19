@@ -179,6 +179,39 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     Ok(())
 }
 
+/// Record that an SMB volume's live watcher died (session drop, disconnect, or
+/// the watcher task returning on a fatal `next_events` error). Flips a Fresh
+/// index to Stale via the freshness state machine.
+///
+/// This is the M2-B `WatcherDied` call site (the seam M2-A declared). A reconnect
+/// respawns the watcher, but continuity already broke (events were lost while
+/// disconnected), so the index stays Stale until the user rescans — the model's
+/// "Stale ⇒ Fresh only via rescan" rule. No-op for an unindexed volume.
+///
+/// Deliberately NOT fired on a clean watcher cancel (volume unmount / deliberate
+/// stop): that's a teardown, not a continuity break to surface as Stale.
+pub(crate) fn on_smb_watcher_died(volume_id: &str) {
+    super::state::apply_freshness_event(volume_id, super::freshness::FreshnessEvent::WatcherDied);
+}
+
+/// Record a `CHANGE_NOTIFY` overflow (`STATUS_NOTIFY_ENUM_DIR`) on an SMB volume.
+///
+/// Policy (M2-B): overflow means the server dropped change records we can't
+/// recover, so the index may have drifted. The watcher only ever signals
+/// overflow for the share ROOT (it emits a root-scoped `FullRefresh`), so the
+/// only honest repair is a full rescan — there's no narrower subtree to target.
+/// We therefore fire `OverflowUnrecoverable` ⇒ Stale, surfacing the one-click
+/// rescan affordance, rather than silently serving a possibly-drifted index as
+/// Fresh. A future optimization (deferred, see DETAILS): if the watcher ever
+/// scopes overflow to a subtree, rescan just that subtree and keep Fresh.
+///
+/// Distinct from `on_smb_watcher_died`: overflow keeps the watcher alive (the
+/// session is fine), so it's a different code path, never conflated with a
+/// disconnect. No-op for an unindexed volume.
+pub(crate) fn on_smb_overflow(volume_id: &str) {
+    super::state::apply_freshness_event(volume_id, super::freshness::FreshnessEvent::OverflowUnrecoverable);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -210,5 +243,72 @@ mod tests {
         // SMB volume.
         assert!(smb_volume_id_for_path("/Users/someone/Documents").is_none());
         assert!(smb_volume_id_for_path("/").is_none());
+    }
+
+    // ── Freshness call sites (the M2-B seam) ──────────────────────────────
+
+    use std::sync::Arc;
+
+    use crate::indexing::enrichment::{ReadPool, uninstall_read_pool};
+    use crate::indexing::freshness::Freshness;
+    use crate::indexing::pending_sizes::{PendingSizes, uninstall_pending_sizes};
+    use crate::indexing::state::{INDEX_REGISTRY, get_freshness, try_reserve_initializing_phase};
+    use crate::indexing::store::IndexStore;
+
+    /// Reserve a volume's registry instance at a given freshness, run the test
+    /// body, then remove it. Keeps these freshness-seam tests independent of the
+    /// registry's other tests. Freshness lives on the instance, so removing it
+    /// (plus uninstalling the read-path handles) fully resets the volume.
+    fn with_reserved_volume(vid: &str, initial: Freshness, body: impl FnOnce()) {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join(format!("{vid}.db"));
+        let store = IndexStore::open(&db_path).expect("open store");
+        let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+        let pending = Arc::new(PendingSizes::new());
+        INDEX_REGISTRY.lock().expect("registry").remove(vid);
+        assert!(
+            try_reserve_initializing_phase(vid, store, pool, pending, Some(initial)).is_ok(),
+            "reserve must succeed",
+        );
+        body();
+        INDEX_REGISTRY.lock().expect("registry").remove(vid);
+        uninstall_read_pool(vid);
+        uninstall_pending_sizes(vid);
+    }
+
+    #[test]
+    fn watcher_died_flips_a_fresh_smb_volume_to_stale() {
+        // The headline M2-B transition wired at the call site: when the live SMB
+        // watcher dies, `on_smb_watcher_died` must drive the index Fresh ⇒ Stale.
+        with_reserved_volume("smb-watcher-died-test", Freshness::Fresh, || {
+            on_smb_watcher_died("smb-watcher-died-test");
+            assert_eq!(
+                get_freshness("smb-watcher-died-test"),
+                Some(Freshness::Stale),
+                "a dead watcher must mark a Fresh index Stale",
+            );
+        });
+    }
+
+    #[test]
+    fn watcher_died_is_a_noop_for_an_unindexed_volume() {
+        // No registered instance ⇒ nothing to transition; must not panic or
+        // spuriously register anything.
+        on_smb_watcher_died("smb-never-registered");
+        assert_eq!(get_freshness("smb-never-registered"), None);
+    }
+
+    #[test]
+    fn overflow_flips_a_fresh_smb_volume_to_stale() {
+        // Overflow policy: an unrecoverable CHANGE_NOTIFY overflow drives
+        // Fresh ⇒ Stale (the index may have drifted), distinct from a disconnect.
+        with_reserved_volume("smb-overflow-test", Freshness::Fresh, || {
+            on_smb_overflow("smb-overflow-test");
+            assert_eq!(
+                get_freshness("smb-overflow-test"),
+                Some(Freshness::Stale),
+                "an unrecoverable overflow must mark a Fresh index Stale",
+            );
+        });
     }
 }

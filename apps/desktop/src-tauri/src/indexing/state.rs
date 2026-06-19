@@ -181,6 +181,26 @@ pub(crate) fn get_instance_pending_sizes(volume_id: &str) -> Option<Arc<PendingS
         .map(|i| Arc::clone(&i.pending_sizes))
 }
 
+/// Clone a volume's writer handle (and read whether a full scan is in progress)
+/// if it has a `Running` index. Used by the SMB watch→index translator to
+/// enqueue change messages (`UpsertEntryV2` / `DeleteEntryById` / …) onto the
+/// single per-volume writer thread, preserving the single-writer-per-DB
+/// invariant: the translator never writes directly. The `scanning` flag lets the
+/// translator BUFFER changes during a full (re)scan and replay them after, so a
+/// change to an already-walked directory isn't lost against the mid-scan
+/// (truncated, rebuilding) index — the SMB equivalent of the local
+/// arm-watcher-before-snapshot + reconcile flow.
+///
+/// `None` while the volume is `Initializing` (its scan owns the writer) or
+/// absent.
+pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(super::writer::IndexWriter, bool)> {
+    let reg = INDEX_REGISTRY.lock().ok()?;
+    match reg.get(volume_id).map(|i| &i.phase) {
+        Some(IndexPhase::Running(mgr)) => Some((mgr.writer.clone(), mgr.scanning.load(Ordering::Relaxed))),
+        _ => None,
+    }
+}
+
 /// Trigger background verification of a directory against the volume's index DB.
 /// Called after enrichment on each navigation. No-op if the volume's index is
 /// not running. Fully fire-and-forget: the registry lock is acquired on a

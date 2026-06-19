@@ -180,10 +180,19 @@ pub(super) async fn run_smb_watcher(
         dfs_enabled: false,
         dfs_target_overrides: Default::default(),
     };
+    // A watcher that can't even establish its session can't keep the index
+    // Fresh, so each setup-failure return flips a Fresh index Stale (M2-B). Cheap
+    // no-op when the volume isn't indexed or is already Stale.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    let mark_stale = || crate::indexing::on_smb_watcher_died(&volume_id);
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    let mark_stale = || {};
+
     let mut client = match SmbClient::connect(config).await {
         Ok(c) => c,
         Err(e) => {
             warn!("smb_watcher({}): connect failed: {}", share_name, e);
+            mark_stale();
             return;
         }
     };
@@ -191,6 +200,7 @@ pub(super) async fn run_smb_watcher(
         Ok(t) => t,
         Err(e) => {
             warn!("smb_watcher({}): tree connect failed: {}", share_name, e);
+            mark_stale();
             return;
         }
     };
@@ -206,6 +216,7 @@ pub(super) async fn run_smb_watcher(
         }
         Err(e) => {
             warn!("smb_watcher({}): failed to start watch: {}", share_name, e);
+            mark_stale();
             return;
         }
     };
@@ -311,6 +322,12 @@ pub(super) async fn run_smb_watcher(
                         share_name
                     );
                     notify_directory_changed(&volume_id, &mount_path, DirectoryChange::FullRefresh);
+                    // Index freshness: overflow means the server dropped change
+                    // records we can't recover, so the index may have drifted.
+                    // Mark it Stale (the index's overflow policy; the watcher
+                    // itself keeps running — a different path from a disconnect).
+                    #[cfg(any(target_os = "macos", target_os = "linux"))]
+                    crate::indexing::on_smb_overflow(&volume_id);
                     // The pipelined-next CHANGE_NOTIFY is already outstanding,
                     // so events arriving during the consumer's re-scan land in
                     // it. Keep watching.
@@ -324,6 +341,12 @@ pub(super) async fn run_smb_watcher(
                     "smb_watcher({}): next_events failed: {} — bailing, SmbVolume reconnect will respawn",
                     share_name, e
                 );
+                // Index freshness: the live watch broke, so a Fresh index can no
+                // longer be trusted. Flip it Stale (M2-B `WatcherDied` seam). A
+                // later reconnect respawns the watcher but does NOT restore Fresh
+                // — only a rescan does (the "admittedly stale" model).
+                #[cfg(any(target_os = "macos", target_os = "linux"))]
+                crate::indexing::on_smb_watcher_died(&volume_id);
                 let _ = watcher.close().await;
                 return;
             }

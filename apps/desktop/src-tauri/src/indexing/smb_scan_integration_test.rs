@@ -145,3 +145,115 @@ async fn smb_integration_volume_scan_indexes_share() {
     // Clean up the share so reruns start fresh.
     rm_rf(vol.as_ref(), &base).await;
 }
+
+/// The live watch→index path: scan a fixture share, then MUTATE it and feed the
+/// change through the real translator (`smb_watch`), asserting the index reflects
+/// the mutation — the "scan a share, mutate it, assert the index reflects the
+/// change while Fresh" requirement (plan M2). No pane/listing is involved, so it
+/// also pins the volume-index-scoped (not pane-scoped) behavior: the index
+/// updates from a watch event with zero open listings.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_watch_event_updates_index() {
+    use crate::file_system::listing::caching::DirectoryChange;
+    use crate::indexing::smb_watch::resolve_and_send_for_test;
+
+    let vol = connect_public().await;
+
+    // Seed and scan a known subtree (same shape as the scan test).
+    let base = format!("/{}", unique_dir());
+    rm_rf(vol.as_ref(), &base).await;
+    vol.create_directory(Path::new(&base))
+        .await
+        .expect("create base dir on share");
+    vol.create_file(Path::new(&format!("{base}/top.txt")), b"hello")
+        .await
+        .expect("create top.txt");
+
+    let dir = tempfile::tempdir().expect("temp db dir");
+    let db_path = dir.path().join("smb-watch.db");
+    let _store = IndexStore::open(&db_path).expect("open store");
+    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+    let cancelled = Arc::new(AtomicBool::new(false));
+    scan_volume_via_trait(
+        Arc::clone(&vol),
+        PathBuf::from(&base),
+        writer.clone(),
+        progress(),
+        cancelled,
+    )
+    .await
+    .expect("scan should complete");
+    writer.flush().await.expect("flush after scan");
+
+    // ── Mutation 1: add a file. The watcher would stat it and emit Added. ──
+    let added_path = format!("{base}/added.txt");
+    vol.create_file(Path::new(&added_path), b"twelve bytes")
+        .await
+        .expect("create added.txt on share");
+    let added_meta = vol.get_metadata(Path::new(&added_path)).await.expect("stat added.txt");
+
+    // The watcher delivers a mount-absolute parent path; the index ROOT_ID is the
+    // scan root (`base`), so `resolve_and_send_for_test` strips `base` to `/`.
+    {
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        let sent = resolve_and_send_for_test(
+            &conn,
+            &writer,
+            &base, // mount root == scan root
+            &base, // parent dir of added.txt is the root
+            &DirectoryChange::Added(added_meta),
+        );
+        assert!(sent, "Added must translate to an index write");
+    }
+    writer.flush().await.expect("flush after add");
+
+    {
+        let store = IndexStore::open(&db_path).expect("reopen after add");
+        let children = store.list_children(ROOT_ID).expect("list root");
+        let added = children
+            .iter()
+            .find(|e| e.name == "added.txt")
+            .expect("added.txt now in the index");
+        assert_eq!(added.logical_size, Some(12), "size came from the SMB stat");
+        // The writer auto-propagated the new file's size into the root dir_stats.
+        let root_stats = IndexStore::get_dir_stats_by_id(store.read_conn(), ROOT_ID)
+            .expect("root stats")
+            .expect("root has stats");
+        assert!(
+            root_stats.recursive_logical_size >= 12,
+            "root recursive size must include the added file (got {})",
+            root_stats.recursive_logical_size,
+        );
+    }
+
+    // ── Mutation 2: delete top.txt. The watcher emits Removed by name. ──
+    vol.delete(Path::new(&format!("{base}/top.txt")))
+        .await
+        .expect("delete top.txt on share");
+    {
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        let sent = resolve_and_send_for_test(
+            &conn,
+            &writer,
+            &base,
+            &base,
+            &DirectoryChange::Removed("top.txt".to_string()),
+        );
+        assert!(sent, "Removed of an indexed file must translate to a delete");
+    }
+    writer.flush().await.expect("flush after delete");
+
+    {
+        let store = IndexStore::open(&db_path).expect("reopen after delete");
+        let children = store.list_children(ROOT_ID).expect("list root");
+        assert!(
+            children.iter().all(|e| e.name != "top.txt"),
+            "top.txt must be gone from the index after the Removed event",
+        );
+    }
+
+    writer.shutdown();
+    rm_rf(vol.as_ref(), &base).await;
+}
