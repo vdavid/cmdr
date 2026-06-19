@@ -32,6 +32,8 @@ Shared tooling: the Go check runner ([`scripts/check/CLAUDE.md`](scripts/check/C
   don't need app internals.
 - **Writing, code, or UI-copy style**: [`docs/style-guide.md`](docs/style-guide.md) (read before writing user-facing
   strings or non-trivial code). Product and UX values: [`docs/design-principles.md`](docs/design-principles.md).
+- **Translating the app / adding a language**: [`docs/guides/i18n-translation.md`](docs/guides/i18n-translation.md) (the
+  translator process, per-language style guides under [`docs/i18n/`](docs/i18n), and the local reference pile).
 
 ## Principles
 

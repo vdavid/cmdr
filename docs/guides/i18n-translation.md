@@ -15,12 +15,32 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
 1. **Per-string context**: the `@key.description` + `placeholders` (+ optional `screenshot`/`screenshotNote`). Authored
    for every key; surface, trigger, constraints, do-not-translate tokens, plain-language placeholder meanings. See
    `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` metadata schema.
-2. **Per-language style guide**: you write this once per language: tone, voice, formality (T/V distinction if the
-   language has one), terminology and glossary, how brand words are handled in this language. NOT per-string; never
-   repeat tone on every key. It lives at `docs/i18n/<tag>-style.md` (start from
-   [`/docs/i18n/_template-style.md`](../i18n/_template-style.md); see [`/docs/i18n/README.md`](../i18n/README.md)).
-   These are working notes, not catalog data: the app never loads them.
+2. **Per-language style guide**: tone, voice, formality (T/V distinction if the language has one), terminology and
+   glossary, how brand words are handled in this language. NOT per-string; never repeat tone on every key. It lives at
+   `docs/i18n/<tag>-style.md` (start from [`/docs/i18n/_template-style.md`](../i18n/_template-style.md); see
+   [`/docs/i18n/README.md`](../i18n/README.md)). These are working notes, not catalog data: the app never loads them.
+   **Treat it as a living doc, and capturing is part of the job**: read it before translating AND extend it as you go,
+   recording each glossary choice with its sources and a confidence (see Researching terms below). This isn't only for
+   terms: whenever you hit a convention, gotcha, decision point, or rule that wasn't already written where you looked for
+   it, write it down so the next translator inherits it instead of rediscovering it. Per-language findings go in the
+   style guide; a missing cross-language rule (like an ICU mechanic) goes in this guide or the template.
 3. **One ICU instruction**: given once in the agent system prompt, not per string (see the block below).
+
+## Researching terms: the reference pile
+
+Don't guess terms, and don't figure out the sources from scratch. A local reference pile at the repo root,
+`_ignored/i18n/`, holds authoritative localizations keyed by language: `_ignored/i18n/<tag>/` gathers, for that one
+language, the real macOS UI strings, the Microsoft terminology and localization style guide, and the GNOME/Xfce
+file-manager catalogs. Read `_ignored/i18n/CLAUDE.md` for what's there and the authority tiers, and
+`_ignored/i18n/HOW-TO-MINE.md` for tested per-source recipes (greps, jq, `msggrep`, `pdftotext`). (The pile is
+gitignored, so those paths are plain references, not links; in a linked worktree it's symlinked in, so the same paths
+resolve.)
+
+For each term or convention: triangulate across every source the language has (macOS is highest authority, then
+Microsoft, then GNOME/Xfce), pick the most native-sounding fit for Cmdr's voice, then record it in the style guide's
+glossary as **chosen · sources · confidence**. Confidence is `confirmed` (a human signed off), `high` (authoritative
+sources agree), or `tentative` (sources conflict or none had it). Push every `tentative` term, and any unresolved
+formality/voice call, into the style guide's "Decisions to confirm with David" section rather than burying it.
 
 ## Add a new language
 
