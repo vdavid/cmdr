@@ -124,6 +124,19 @@ pub struct IndexMemoryWarningEvent {
     pub action: String,
 }
 
+/// Emitted when a volume's freshness changes to a NEW value (blue/green/yellow
+/// transitions). Drives the M3 freshness UX: the always-visible badge refreshes,
+/// and the FE's one-time stale dialog (D2) fires on the exact Fresh→Stale edge.
+/// Emitted from `state::apply_freshness_event` only when the value actually
+/// changes, so the FE can subscribe rather than poll.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-freshness-changed")]
+#[serde(rename_all = "camelCase")]
+pub struct IndexFreshnessChangedEvent {
+    pub volume_id: String,
+    pub freshness: super::freshness::Freshness,
+}
+
 /// Emit an `index-rescan-notification` event and log the reason at INFO level.
 pub(super) fn emit_rescan_notification(app: &AppHandle, volume_id: &str, reason: RescanReason, details: String) {
     log::info!("Index rescan triggered ({reason:?}): {details}");

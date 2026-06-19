@@ -8,6 +8,7 @@ import {
   events,
   type AggregationProgressEvent,
   type IndexDirUpdatedEvent,
+  type IndexFreshnessChangedEvent,
   type IndexMemoryWarningEvent,
   type IndexReplayCompleteEvent,
   type IndexReplayProgressEvent,
@@ -85,6 +86,18 @@ export function onIndexDirUpdated(callback: (payload: IndexDirUpdatedEvent) => v
 /** Fires when the memory watchdog stops indexing to avoid a system crash. */
 export function onIndexMemoryWarning(callback: (payload: IndexMemoryWarningEvent) => void): Promise<UnlistenFn> {
   return events.indexMemoryWarning.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * Fires when a volume's index freshness changes to a NEW value (the badge
+ * refreshes; the one-time stale dialog fires on the exact Fresh→Stale edge).
+ */
+export function onIndexFreshnessChanged(
+  callback: (payload: IndexFreshnessChangedEvent) => void,
+): Promise<UnlistenFn> {
+  return events.indexFreshnessChanged.listen((event) => {
     callback(event.payload)
   })
 }

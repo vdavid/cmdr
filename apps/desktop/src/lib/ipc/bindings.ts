@@ -2454,6 +2454,7 @@ export const events = {
   indexAggregationComplete: makeEvent<IndexAggregationCompleteEvent>('index-aggregation-complete'),
   indexAggregationProgress: makeEvent<AggregationProgressEvent>('index-aggregation-progress'),
   indexDirUpdated: makeEvent<IndexDirUpdatedEvent>('index-dir-updated'),
+  indexFreshnessChanged: makeEvent<IndexFreshnessChangedEvent>('index-freshness-changed'),
   indexMemoryWarning: makeEvent<IndexMemoryWarningEvent>('index-memory-warning'),
   indexReplayComplete: makeEvent<IndexReplayCompleteEvent>('index-replay-complete'),
   indexReplayProgress: makeEvent<IndexReplayProgressEvent>('index-replay-progress'),
@@ -3529,6 +3530,18 @@ export type IndexDebugStatusResponse = {
 
 export type IndexDirUpdatedEvent = {
   paths: string[]
+}
+
+/**
+ *  Emitted when a volume's freshness changes to a NEW value (blue/green/yellow
+ *  transitions). Drives the M3 freshness UX: the always-visible badge refreshes,
+ *  and the FE's one-time stale dialog (D2) fires on the exact Fresh→Stale edge.
+ *  Emitted from `state::apply_freshness_event` only when the value actually
+ *  changes, so the FE can subscribe rather than poll.
+ */
+export type IndexFreshnessChangedEvent = {
+  volumeId: string
+  freshness: Freshness
 }
 
 /**

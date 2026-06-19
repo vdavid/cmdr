@@ -771,7 +771,7 @@ pub fn run() {
             ai::manager::init(app.handle());
 
             // Initialize indexing state (does not start scanning until explicitly started)
-            indexing::init();
+            indexing::init(app.handle());
 
             // Reuse the OS FDA result already captured for the gate above; this
             // call is on `/Library/Mail` which is cheap, but a fresh probe here

@@ -108,12 +108,19 @@ pub(crate) struct IndexInstance {
 pub(crate) static INDEX_REGISTRY: LazyLock<std::sync::Mutex<HashMap<VolumeId, IndexInstance>>> =
     LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
 
+/// App handle for emitting freshness-change events from the (otherwise
+/// handle-free) `apply_freshness_event` seam. Set once in `init`; absent only
+/// before setup or in unit tests, where the emit is silently skipped.
+static APP_HANDLE: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
+
 // ── Initialization ───────────────────────────────────────────────────
 
-/// Force-initialize the registry static. Called during app setup so the
-/// LazyLock is ready before any async tasks access it.
-pub fn init() {
+/// Force-initialize the registry static and stash the app handle for freshness
+/// event emission. Called during app setup so the LazyLock is ready before any
+/// async tasks access it.
+pub fn init(app: &AppHandle) {
     drop(INDEX_REGISTRY.lock());
+    let _ = APP_HANDLE.set(app.clone());
     log::debug!("Indexing registry initialized");
 }
 
@@ -357,12 +364,31 @@ pub(crate) fn apply_freshness_event(volume_id: &str, event: FreshnessEvent) {
     // `ScanStarted` is total even from "not yet determined": a scan can begin on
     // a volume that has no freshness yet (first ever scan). Seed it so the
     // transition is meaningful, then apply the event.
-    if let Ok(reg) = INDEX_REGISTRY.lock()
-        && let Some(instance) = reg.get(volume_id)
-        && let Ok(mut f) = instance.freshness.lock()
+    //
+    // We compute the next value under the registry + freshness locks, then emit
+    // the FE event AFTER dropping both (emit never needs them, and holding a std
+    // Mutex across a Tauri call risks contention). The event fires only on an
+    // actual value change, so the FE's one-time stale dialog sees the exact
+    // Fresh→Stale transition (subscribe-don't-poll).
+    let changed_to = {
+        let Ok(reg) = INDEX_REGISTRY.lock() else { return };
+        let Some(instance) = reg.get(volume_id) else { return };
+        let Ok(mut f) = instance.freshness.lock() else { return };
+        let previous = *f;
+        let next = f.unwrap_or(Freshness::Scanning).on(event);
+        *f = Some(next);
+        (previous != Some(next)).then_some(next)
+    };
+
+    if let Some(next) = changed_to
+        && let Some(app) = APP_HANDLE.get()
     {
-        let current = f.unwrap_or(Freshness::Scanning);
-        *f = Some(current.on(event));
+        use tauri_specta::Event;
+        let _ = super::events::IndexFreshnessChangedEvent {
+            volume_id: volume_id.to_string(),
+            freshness: next,
+        }
+        .emit(app);
     }
 }
 

@@ -62,9 +62,9 @@ use crate::file_system::write_operations::{
 };
 use crate::indexing::writer::AggregationProgressEvent;
 use crate::indexing::{
-    IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexMemoryWarningEvent, IndexReplayCompleteEvent,
-    IndexReplayProgressEvent, IndexRescanNotificationEvent, IndexScanCompleteEvent, IndexScanProgressEvent,
-    IndexScanStartedEvent,
+    IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexFreshnessChangedEvent, IndexMemoryWarningEvent,
+    IndexReplayCompleteEvent, IndexReplayProgressEvent, IndexRescanNotificationEvent, IndexScanCompleteEvent,
+    IndexScanProgressEvent, IndexScanStartedEvent,
 };
 use crate::ipc_collectors::collect_all_types;
 use crate::mtp::{
@@ -689,6 +689,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             AggregationProgressEvent,      // event_name = "index-aggregation-progress"
             IndexAggregationCompleteEvent, // event_name = "index-aggregation-complete" (payloadless)
             IndexMemoryWarningEvent,       // event_name = "index-memory-warning"
+            IndexFreshnessChangedEvent,    // event_name = "index-freshness-changed"
             SearchIndexReadyEvent,         // event_name = "search-index-ready"
             // MTP device events (mtp/connection/, mtp/watcher.rs). Struct names
             // kebab-case directly to the wire names, so no `event_name` override.
