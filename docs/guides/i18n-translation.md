@@ -28,13 +28,12 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
 
 ## Researching terms: the reference pile
 
-Don't guess terms, and don't figure out the sources from scratch. A local reference pile at the repo root,
-`_ignored/i18n/`, holds authoritative localizations keyed by language: `_ignored/i18n/<tag>/` gathers, for that one
-language, the real macOS UI strings, the Microsoft terminology and localization style guide, and the GNOME/Xfce
-file-manager catalogs. Read `_ignored/i18n/CLAUDE.md` for what's there and the authority tiers, and
-`_ignored/i18n/HOW-TO-MINE.md` for tested per-source recipes (greps, jq, `msggrep`, `pdftotext`). (The pile is
-gitignored, so those paths are plain references, not links; in a linked worktree it's symlinked in, so the same paths
-resolve.)
+Don't guess terms, and don't figure out the sources from scratch. A reference pile holds authoritative localizations
+keyed by language: the ~3 GB of macOS, Microsoft, and GNOME/Xfce data sits gitignored at `_ignored/i18n/<tag>/` (one
+folder per language), and the docs explaining it are tracked in the repo. Read
+[`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's there and the authority tiers, and
+[`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested per-source recipes (greps, jq,
+`msggrep`, `pdftotext`).
 
 For each term or convention: triangulate across every source the language has (macOS is highest authority, then
 Microsoft, then GNOME/Xfce), pick the most native-sounding fit for Cmdr's voice, then record it in the style guide's

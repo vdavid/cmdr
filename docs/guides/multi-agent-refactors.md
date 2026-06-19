@@ -23,6 +23,24 @@ entry points; this is the playbook they assume.
 5. **Close out.** An end-of-phase adversarial conformance review agent (against the invariants register) plus a
    docs-audit agent that reads ALL commit bodies and verifies every touched `CLAUDE.md`.
 
+## Fan-out sweeps (parallel research or generation over a list)
+
+A different shape from the refactor loop above: many independent agents each handle a slice of a long list (e.g. one
+doc per language). Hard-won rules:
+
+- **Cap concurrency at ~3 subagents.** The Anthropic API rate-limits aggressively; a 14-agent burst gets throttled and
+  agents silently finish partial. Keep ~3 in flight; queue the rest. Batch size per agent (3 vs 10 items) is separate
+  and can stay large once concurrency is capped.
+- **Give ABSOLUTE write paths.** Subagents inherit the orchestrator's cwd (the main clone, not a worktree), so a
+  relative `docs/x.md` write scatters into the wrong tree. Pass the full worktree path.
+- **Terse returns, artifacts to files.** Tell agents to write their output to files and reply with one line per item
+  (plus flags), not a full report. Verbose returns blow the orchestrator's context over many waves. Persist a
+  progress/plan file so the loop survives a context compaction.
+- **Bake guardrails into the prompt.** Anti-hallucination (ground claims in local sources, mark web-only as unverified),
+  format rules, and "don't emit literal tool-call tags" prevent a cleanup pass later.
+- **Batched meta-check round after.** Independent reviewer agents (alphabet thirds) spot-check claims against ground
+  truth and flag stubs; this is what catches the fabrication-class errors the generators miss.
+
 ## Why it works
 
 The review rounds catch data-corruption-class design errors before implementation (a per-pane-vs-global counter that
