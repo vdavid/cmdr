@@ -30,6 +30,12 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `effectiveVolumes` / `favorites` stay in the component and read `fav.optimisticFavoriteIds`
 - **`eject-predicate.ts`**: Pure `isVolumeEjectable(volume)` used by the eject button gate. Returns true when NSURL says
   ejectable OR the volume has any SMB connection state
+- **`DriveIndexBadge.svelte`**: Per-drive index freshness dot (gray/blue/green/yellow) + its click menu (see § Drive
+  index freshness badge)
+- **`drive-index-status.ts`**: Pure mapping for the badge: `VolumeIndexStatus` → state/color, menu items per state, the
+  "N min, S s" duration formatter (`drive-index-status.test.ts`)
+- **`drive-index-manager.svelte.ts`**: Reactive `volumeId → VolumeIndexStatus` map; fetches on demand and subscribes to
+  the indexing events to stay live. `isDriveRow(volume)` is the badge-eligibility predicate
 - **`navigation-history.test.ts`**: Full unit test coverage of history functions
 - **`path-navigation.test.ts`**: Unit tests for path resolution and timeouts
 - **`keyboard-shortcuts.test.ts`**: Unit tests for shortcut calculations
@@ -315,6 +321,33 @@ green; dark green is `--color-allow`, same shade as SMB direct) on the right of 
 row. Tooltip shows `<label> (Max. <N> MB/s)\nNegotiated for this cable, port, and device` (the global tooltip CSS uses
 `white-space: pre-line`, so `\n` becomes a real line break). The dot is the only visual — no inline text in the chip and
 no extra line under the disk-space bar, by design.
+
+### Drive index freshness badge
+
+Each real drive carries a small index-freshness dot (`DriveIndexBadge.svelte`) in TWO placements: always-visible next to
+the dropdown trigger (reflecting the ACTIVE drive), and per-row inside the dropdown. Both reuse the same colored-dot +
+`use:tooltip` shape as the SMB light and USB-speed ring. The four states map from the backend `VolumeIndexStatus`
+(`commands.getVolumeIndexStatusById`): gray = `disabled` (no live index, `enabled: false` or `freshness: null`), blue =
+`scanning`, green = `fresh`, yellow = `stale`. The mapping, the menu items per state, and the "N min, S s" duration
+formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated behind `prefers-reduced-motion`).
+
+- **Eligibility is `isDriveRow(volume)`** (in `drive-index-manager.svelte.ts`): every entry except favorites and the
+  synthetic `network` / `search-results` ids. SMB shares (`category: 'network'`, real id) and the local disk (`root`)
+  DO get a badge; the synthetic "Network" group entry does not. The badge is gray for any drive without a registered
+  index, so it's safe to query for every eligible row.
+- **Status stays live by SUBSCRIPTION, not polling** (`drive-index-manager.svelte.ts`): it listens to
+  `index-freshness-changed`, `index-scan-started`, and `index-scan-complete`, refetching the named volume's status on
+  each (the events alone don't carry the last-scan facts). The active-drive badge also refetches when the active drive
+  changes; dropdown rows refetch on open.
+- **The badge is a focusable `<button>`** with an `aria-label` (state ariaLabel + the tooltip text) and
+  `aria-haspopup="menu"`; clicking opens a small themed popover menu (NOT a native menu) anchored to the badge. Menu
+  actions (`enable`/`rescan`/`disable`/`stop`) call back to `VolumeBreadcrumb`'s `handleDriveIndexAction`, which runs
+  the per-drive IPC. ❌ Don't put `role="img"` on the button (axe rejects it; the button role + label already convey it).
+- **Refused enable/rescan is classified by TYPED variant** (`SmbIndexGateReason`), never message text: `credentials_needed`
+  routes into the existing direct-connect/login flow (`handleSubmenuAction`); the others show a friendly toast.
+- **The dropdown-row menu can be clipped by the dropdown's `overflow-y: auto`** (unlike the breadcrumb placement). The
+  breadcrumb badge is the primary surface (D3) and isn't clipped; the row menu is a convenience. If this becomes a
+  problem, switch the row menu to `position: fixed` from `getBoundingClientRect()` like the connection submenu.
 
 ### Dropdown and submenu UI patterns
 

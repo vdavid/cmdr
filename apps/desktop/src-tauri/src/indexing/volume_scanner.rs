@@ -211,7 +211,7 @@ pub(crate) async fn scan_volume_via_trait(
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
 
     log::info!(
-        "volume_scanner: walk complete for {}: {total_entries} entries, {total_dirs} dirs in {}ms",
+        "volume_scanner: walk complete for {}: entries={total_entries}, dirs={total_dirs} in {}ms",
         root.display(),
         start.elapsed().as_millis()
     );

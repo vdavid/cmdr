@@ -59,6 +59,13 @@
     const EJECT_BUSY_TOOLTIP = $derived(tString('fileExplorer.navigation.ejectBusyTooltip'))
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
+    import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
+    import DriveIndexBadge from './DriveIndexBadge.svelte'
+    import type { DriveIndexMenuAction } from './drive-index-status'
+    import { commands, type SmbIndexGateReason } from '$lib/ipc/bindings'
+    import { maybePromptFirstConnect } from '$lib/indexing/first-connect-trigger'
+    import { silenceDrive } from '$lib/indexing/drive-index-prefs'
+    import { setSetting } from '$lib/settings'
     import { createFavoritesController } from './favorites-controller.svelte'
     import {
         createBreadcrumbPopupController,
@@ -113,6 +120,10 @@
         spaceRetryAttemptedSet,
         spaceAutoRetryingSet,
     } = spaceManager
+
+    // Per-drive index freshness status, kept live via the indexing events.
+    const driveIndex = createDriveIndexManager()
+    const driveIndexStatusMap = driveIndex.statusMap
 
     // Favorites interaction layer (rename, pointer-drag + keyboard reorder, remove, optimistic order).
     // Instantiated at top level so its reconciliation `$effect` registers during component init.
@@ -275,12 +286,24 @@
         } else {
             // For actual volumes, navigate to the volume's root
             onVolumeChange?.(volume.id, volume.path, volume.path)
+            // First-connect indexing prompt (D6): self-gates on settings,
+            // per-drive silence, and whether the drive is already indexed.
+            if (isDriveRow(volume)) {
+                void maybePromptFirstConnect(volume.id, volume.name, {
+                    onEnable: (vid) => { void handleDriveIndexAction(vid, 'enable') },
+                    onSilenceDrive: (vid) => { silenceDrive(vid) },
+                    onSilenceAll: () => { setSetting('indexing.askForEachDrive', false) },
+                })
+            }
         }
     }
 
     function setOpen(value: boolean) {
         isOpen = value
-        if (value) void spaceManager.fetchVolumeSpaces(volumes)
+        if (value) {
+            void spaceManager.fetchVolumeSpaces(volumes)
+            void driveIndex.fetchStatuses(volumes)
+        }
     }
 
     function handleToggle() {
@@ -425,6 +448,16 @@
         void updateContainingVolume(currentPath)
     })
 
+    // Keep the always-visible active-drive badge's status fresh: refetch whenever
+    // the active drive changes. Subsequent live updates arrive via the manager's
+    // event subscriptions (subscribe, don't poll).
+    $effect(() => {
+        const active = currentVolume
+        if (active && isDriveRow(active)) {
+            void driveIndex.fetchStatus(active.id)
+        }
+    })
+
     onMount(() => {
         void updateContainingVolume(currentPath)
 
@@ -450,6 +483,7 @@
 
     onDestroy(() => {
         spaceManager.destroy()
+        driveIndex.destroy()
         fav.destroy()
         unlistenVolumeContext?.()
         document.removeEventListener('click', handleClickOutside)
@@ -593,6 +627,60 @@
         }
     }
 
+    // ── Drive-index badge menu actions ───────────────────────────────────
+    // Run the per-drive IPC for a picked menu action and refresh the badge.
+    // `enable`/`rescan` can be refused on SMB (typed `SmbIndexGateReason`); we
+    // classify by variant (never by message) and route `credentials_needed` into
+    // the existing direct-connect/login flow.
+    /** Sync adapter for the badge's `onAction` prop (its callback returns void). */
+    function onDriveIndexAction(vid: string, action: DriveIndexMenuAction) {
+        void handleDriveIndexAction(vid, action)
+    }
+
+    async function handleDriveIndexAction(vid: string, action: DriveIndexMenuAction) {
+        const volume = volumes.find((v) => v.id === vid)
+        const name = volume?.name ?? vid
+        try {
+            if (action === 'disable' || action === 'stop') {
+                await commands.disableDriveIndex(vid)
+            } else {
+                // enable | rescan: both return an EnableIndexingOutcome.
+                const res =
+                    action === 'enable'
+                        ? await commands.enableDriveIndex(vid)
+                        : await commands.rescanDriveIndex(vid)
+                if (res.status === 'ok' && res.data.status === 'refused') {
+                    handleIndexRefusal(vid, name, res.data.reason)
+                }
+            }
+        } catch (e) {
+            addToast(tString('fileExplorer.navigation.driveIndex.refusedGeneric', { name }), { level: 'error' })
+            void e
+        }
+        await driveIndex.fetchStatus(vid)
+    }
+
+    /** Surface a typed SMB index refusal: route credentials to login, else a friendly toast. */
+    function handleIndexRefusal(vid: string, name: string, reason: SmbIndexGateReason) {
+        switch (reason) {
+            case 'credentials_needed':
+                // Reuse the direct-connect flow, which prompts for the password and
+                // reconnects; the user can then turn indexing on again.
+                void handleSubmenuAction(vid)
+                break
+            case 'upgrade_failed':
+                addToast(tString('fileExplorer.navigation.driveIndex.refusedUpgradeFailed', { name }), { level: 'error' })
+                break
+            case 'disconnected':
+                addToast(tString('fileExplorer.navigation.driveIndex.refusedDisconnected', { name }), { level: 'error' })
+                break
+            case 'not_registered':
+            case 'not_an_smb_volume':
+                addToast(tString('fileExplorer.navigation.driveIndex.refusedGeneric', { name }), { level: 'error' })
+                break
+        }
+    }
+
     function handleBreadcrumbPopupClickOutside(event: MouseEvent) {
         if (breadcrumbPopupRef && !breadcrumbPopupRef.contains(event.target as Node)) {
             breadcrumbPopup.close()
@@ -675,6 +763,17 @@
                     {tString('fileExplorer.navigation.connectDirectly')}
                 </div>
             </div>
+        {/if}
+    {/if}
+    {#if currentVolume && isDriveRow(currentVolume)}
+        {@const activeIndexStatus = driveIndexStatusMap.get(currentVolume.id)}
+        {#if activeIndexStatus}
+            <DriveIndexBadge
+                volumeId={currentVolume.id}
+                status={activeIndexStatus}
+                breadcrumb
+                onAction={onDriveIndexAction}
+            />
         {/if}
     {/if}
     {#if currentVolume && isVolumeEjectable(currentVolume)}
@@ -806,6 +905,12 @@
                                 class="usb-speed-indicator usb-speed-indicator-{describeUsbSpeed(volume.usbSpeed).tier}"
                                 use:tooltip={`${usbSpeedDisplay(volume)}\n${tString('fileExplorer.navigation.usbSpeedNegotiated')}`}
                             ></span>
+                        {/if}
+                        {#if isDriveRow(volume)}
+                            {@const rowIndexStatus = driveIndexStatusMap.get(volume.id)}
+                            {#if rowIndexStatus}
+                                <DriveIndexBadge volumeId={volume.id} status={rowIndexStatus} onAction={onDriveIndexAction} />
+                            {/if}
                         {/if}
                         {#if isVolumeEjectable(volume)}
                             <button

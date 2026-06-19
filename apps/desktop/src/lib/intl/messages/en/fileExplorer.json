@@ -1725,5 +1725,94 @@
   "fileExplorer.navigation.refreshVolumeList": "Refresh volume list",
   "@fileExplorer.navigation.refreshVolumeList": {
     "description": "Hover tooltip on the retry button in the volume switcher''s missing-volumes warning row, which reloads the volume list."
+  },
+
+  "fileExplorer.navigation.driveIndex.ariaLabel": "Drive index status",
+  "@fileExplorer.navigation.driveIndex.ariaLabel": {
+    "description": "Accessibility label, read aloud by screen readers, for the small colored dot next to a drive in the volume switcher that shows whether the drive is indexed and up to date. The color and the live detail are in its tooltip."
+  },
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "Indexing is off for this drive. Turn it on to see folder sizes and search here.",
+  "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
+    "description": "Hover tooltip on the gray drive-index dot, shown when a drive isn''t indexed. Invites the user to turn indexing on for folder sizes and search."
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanning": "Indexing this drive…",
+  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
+    "description": "Hover tooltip on the blue drive-index dot while a scan is running. The ellipsis (…) signals ongoing work; keep it."
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFresh": "Indexed and up to date. Last indexed {date}, took {duration}.",
+  "@fileExplorer.navigation.driveIndex.tooltipFresh": {
+    "description": "Hover tooltip on the green drive-index dot when the drive''s index is current. Names when it was last indexed and how long that scan took.",
+    "placeholders": {
+      "date": "ISO date of the last completed scan, already formatted (e.g. 2026-06-19)",
+      "duration": "how long the last scan took, already formatted (e.g. 2 min, 14 s)"
+    }
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFreshNoScan": "Indexed and up to date.",
+  "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
+    "description": "Hover tooltip on the green drive-index dot when the index is current but the last scan''s date and duration aren''t known (no completed scan recorded). Shorter variant of the fresh tooltip."
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStale": "This drive may have changed while it was disconnected. Sizes and search might be a bit off. Rescan to refresh.",
+  "@fileExplorer.navigation.driveIndex.tooltipStale": {
+    "description": "Hover tooltip on the yellow drive-index dot, shown when the drive''s index may be out of date because the drive was disconnected. Active voice; never use the words ''error'' or ''failed''."
+  },
+  "fileExplorer.navigation.driveIndex.menuEnable": "Turn on indexing for this drive",
+  "@fileExplorer.navigation.driveIndex.menuEnable": {
+    "description": "Menu item to start indexing the drive (shown when indexing is off). Sentence case."
+  },
+  "fileExplorer.navigation.driveIndex.menuRescan": "Rescan now",
+  "@fileExplorer.navigation.driveIndex.menuRescan": {
+    "description": "Menu item to rebuild the drive''s index from scratch (shown when the drive is already indexed). Sentence case."
+  },
+  "fileExplorer.navigation.driveIndex.menuDisable": "Turn off indexing for this drive",
+  "@fileExplorer.navigation.driveIndex.menuDisable": {
+    "description": "Menu item to stop indexing the drive and drop its live index (shown when the drive is indexed). Sentence case."
+  },
+  "fileExplorer.navigation.driveIndex.menuStop": "Stop indexing",
+  "@fileExplorer.navigation.driveIndex.menuStop": {
+    "description": "Menu item to cancel an in-progress scan (shown while the drive is being indexed). Sentence case."
+  },
+  "fileExplorer.navigation.driveIndex.footer": "Last indexed: {date} · took {duration}",
+  "@fileExplorer.navigation.driveIndex.footer": {
+    "description": "Non-interactive footer at the bottom of the drive-index menu, naming when the drive was last indexed and how long that scan took. The middle dot (·) is a separator; keep it.",
+    "placeholders": {
+      "date": "ISO date of the last completed scan, already formatted (e.g. 2026-06-19)",
+      "duration": "how long the last scan took, already formatted (e.g. 2 min, 14 s)"
+    }
+  },
+  "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationMinSec": {
+    "description": "A scan duration of a minute or more, e.g. ''2 min, 14 s''. ''min'' and ''s'' abbreviate minutes and seconds.",
+    "placeholders": {
+      "minutes": "whole minutes, already formatted (e.g. 2)",
+      "seconds": "whole seconds, already formatted (e.g. 14)"
+    }
+  },
+  "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationSec": {
+    "description": "A scan duration under a minute, e.g. ''14 s''. ''s'' abbreviates seconds.",
+    "placeholders": {
+      "seconds": "whole seconds, already formatted (e.g. 14)"
+    }
+  },
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr couldn''t connect to {name} directly, which it needs to index this share. Check the share is reachable and try again.",
+  "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
+    "description": "Toast shown when turning on indexing for an SMB share doesn''t go through because the direct connection couldn''t be established. Active voice; avoid the words ''error'' and ''failed''.",
+    "placeholders": {
+      "name": "the share''s display name (e.g. Backups)"
+    }
+  },
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} is disconnected. Reconnect it, then turn on indexing.",
+  "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
+    "description": "Toast shown when turning on indexing for an SMB share is refused because the share is currently disconnected.",
+    "placeholders": {
+      "name": "the share''s display name (e.g. Backups)"
+    }
+  },
+  "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr can''t index {name} right now. Reconnect the drive and try again.",
+  "@fileExplorer.navigation.driveIndex.refusedGeneric": {
+    "description": "Fallback toast when turning on indexing for a drive is refused for a reason not covered by a more specific message (not registered, not an SMB volume).",
+    "placeholders": {
+      "name": "the drive''s display name (e.g. Backups)"
+    }
   }
 }

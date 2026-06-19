@@ -56,6 +56,12 @@ var allowedUnusedClasses = map[string]bool{
 	"usb-speed-indicator-high":       true,
 	"usb-speed-indicator-super":      true,
 	"usb-speed-indicator-super_plus": true,
+	// DriveIndexBadge.svelte - freshness state color classes applied dynamically via
+	// `drive-index-badge-{state}` template string, where `state` is the DriveIndexState value.
+	"drive-index-badge-disabled": true,
+	"drive-index-badge-scanning": true,
+	"drive-index-badge-fresh":    true,
+	"drive-index-badge-stale":    true,
 }
 
 // allowedUnusedVariables lists CSS custom properties that are defined but used dynamically,

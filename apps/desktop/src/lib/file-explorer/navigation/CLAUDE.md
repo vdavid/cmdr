@@ -34,6 +34,12 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   make it per-pane.
 - **`containingVolumeId` is derived via `resolvePathVolume(currentPath)`, not the `volumeId` prop** (which may be a
   favorite's virtual id), so the active checkmark tracks the real containing volume.
+- **The drive-index freshness badge (`DriveIndexBadge.svelte`) renders only on real DRIVE rows** (`isDriveRow`: not
+  favorites, not the synthetic `network` / `search-results` entries), in two placements (active-drive by the trigger,
+  per-row in the dropdown). State→color/menu mapping is the pure `drive-index-status.ts`; status stays live via the
+  manager's event subscriptions, not polling. The badge is a `<button>` (no `role="img"` — axe rejects it). Refused
+  enable/rescan is classified by typed `SmbIndexGateReason`, never message text. Full contract: DETAILS § Drive index
+  freshness badge.
 - **Favorites: mutate ONLY via the `commands.*` wrappers and ALWAYS strip the `fav-` prefix.** The switcher's
   `LocationInfo.id` is `fav-<favoriteId>`; `removeFavorite` / `renameFavorite` / `reorderFavorites` take the bare id
   (`stripFavoritePrefix`). The favorites group in `volume-grouping.ts` always renders (even empty, for the placeholder),
