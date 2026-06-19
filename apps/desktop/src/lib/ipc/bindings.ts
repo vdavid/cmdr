@@ -1470,6 +1470,53 @@ export const commands = {
   getVolumeIndexStatus: (path: string) =>
     typedError<VolumeIndexStatus, string>(__TAURI_INVOKE('get_volume_index_status', { path })),
   /**
+   *  Per-volume index status keyed by volume id (the per-drive badge surface).
+   *
+   *  The dropdown renders one badge per drive ROW, and the FE identifies drives by
+   *  `volume.id` (`"root"`, `smb-…`, `mtp-…`), not by a path. This is the id-keyed
+   *  sibling of `get_volume_index_status` (which takes a listing path for the
+   *  always-visible active-drive badge). Both return the same [`VolumeIndexStatus`]
+   *  shape; a not-indexed volume reports `enabled: false`, `freshness: None` (gray).
+   */
+  getVolumeIndexStatusById: (volumeId: string) =>
+    typedError<VolumeIndexStatus, string>(__TAURI_INVOKE('get_volume_index_status_by_id', { volumeId })),
+  /**
+   *  Turn on indexing for a specific drive.
+   *
+   *  - `root` (local disk): starts the local indexer (same as `start_drive_index`,
+   *    FDA-gated at launch elsewhere; an explicit user enable here is honored).
+   *  - An SMB volume: gates on a direct smb2 connection, upgrading from `os_mount`
+   *    if needed, then scans over the `Volume` trait. A refusal (upgrade failed,
+   *    credentials needed, disconnected) returns `Refused { reason }` so the UI
+   *    classifies it by typed variant. FDA-independent.
+   *
+   *  Idempotent: a no-op (`Started`) if the drive's index is already active.
+   */
+  enableDriveIndex: (volumeId: string) =>
+    typedError<EnableIndexingOutcome, string>(__TAURI_INVOKE('enable_drive_index', { volumeId })),
+  /**
+   *  Turn off indexing for a specific drive.
+   *
+   *  Stops the scan and watcher and removes the volume's registry instance (so its
+   *  badge goes gray / not-indexed), but PRESERVES the DB on disk, so re-enabling
+   *  can resume rather than rescan from scratch. Local `root` disable/enable still
+   *  works (don't break it). A no-op if the drive isn't indexed.
+   */
+  disableDriveIndex: (volumeId: string) =>
+    typedError<null, string>(__TAURI_INVOKE('disable_drive_index', { volumeId })),
+  /**
+   *  Force a fresh full rescan of a drive (the menu's "Rescan now").
+   *
+   *  - An ALREADY-active drive: kicks off a fresh full scan (Stale ⇒ Scanning ⇒
+   *    Fresh on clean completion), truncating and rebuilding its index.
+   *  - An SMB drive that's NOT active (e.g. a persisted Stale index loaded on
+   *    launch but never re-enabled this session): enable it, which scans. Returns
+   *    the typed refusal if the direct-smb2 gate blocks it.
+   *  - `root` that's not active: starts the local indexer.
+   */
+  rescanDriveIndex: (volumeId: string) =>
+    typedError<EnableIndexingOutcome, string>(__TAURI_INVOKE('rescan_drive_index', { volumeId })),
+  /**
    *  Called when the search dialog opens. Starts loading the index in the background.
    *  Returns immediately with `{ ready, entryCount }`.
    */
@@ -2127,19 +2174,6 @@ export const commands = {
    */
   upgradeToSmbVolume: (volumeId: string) =>
     typedError<UpgradeResult, string>(__TAURI_INVOKE('upgrade_to_smb_volume', { volumeId })),
-  /**
-   *  Turn drive indexing on or off for an SMB volume (M2's per-volume enable).
-   *
-   *  On enable, gates on a direct smb2 connection — triggering/awaiting the
-   *  upgrade from an os_mount if needed — then starts a `Volume`-trait scan into
-   *  the volume's own index DB. Returns the typed [`SmbIndexGateReason`] on
-   *  refusal (upgrade failed, credentials needed, disconnected) so the FE
-   *  classifies by variant, not by parsing a string. FDA-independent: SMB paths
-   *  aren't TCC-protected (plan rabbit hole #12). On disable, stops the volume's
-   *  index (the DB stays on disk).
-   */
-  setSmbIndexingEnabled: (volumeId: string, enabled: boolean) =>
-    typedError<null, SmbIndexGateReason>(__TAURI_INVOKE('set_smb_indexing_enabled', { volumeId, enabled })),
   /**
    *  Upgrades an existing OS-mounted SMB volume using explicit credentials.
    *
@@ -3040,6 +3074,25 @@ export type DryRunResult = {
   // True if `conflicts` is a sample (`conflicts_total > conflicts.len()`).
   conflictsSampled: boolean
 }
+
+/**
+ *  The outcome of a per-drive "Turn on indexing" request.
+ *
+ *  The typed REFUSAL (an SMB volume that needs a direct-smb2 upgrade which can't
+ *  complete) rides the `Ok` channel as a variant the FE classifies by tag, never
+ *  by message substring (`.claude/rules/no-string-matching.md`) — mirroring
+ *  `upgrade_to_smb_volume`'s `UpgradeResult`. A genuine internal failure (DB
+ *  open, manager spawn) is the command's `Err(String)` instead.
+ */
+export type EnableIndexingOutcome =
+  // Indexing started (a scan is now running or resuming) for the volume.
+  | { status: 'started' }
+  /**
+   *  An SMB volume couldn't be indexed yet; `reason` says why (upgrade failed,
+   *  credentials needed, disconnected). The FE shows an honest status and, for
+   *  `credentials_needed`, can route into the reconnect/login flow.
+   */
+  | { status: 'refused'; reason: SmbIndexGateReason }
 
 // One row in the encoding dropdown.
 export type EncodingChoice = {

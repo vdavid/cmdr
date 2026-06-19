@@ -2,11 +2,33 @@
 //!
 //! Thin wrappers around `indexing` module functions, exposed to the frontend via Tauri commands.
 
+use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+use crate::indexing::SmbIndexGateReason;
 use crate::indexing::{
     self, IndexDebugStatusResponse, IndexStatusResponse, ROOT_VOLUME_ID, VolumeIndexStatus, store::DirStats,
 };
+
+/// The outcome of a per-drive "Turn on indexing" request.
+///
+/// The typed REFUSAL (an SMB volume that needs a direct-smb2 upgrade which can't
+/// complete) rides the `Ok` channel as a variant the FE classifies by tag, never
+/// by message substring (`.claude/rules/no-string-matching.md`) — mirroring
+/// `upgrade_to_smb_volume`'s `UpgradeResult`. A genuine internal failure (DB
+/// open, manager spawn) is the command's `Err(String)` instead.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case", tag = "status")]
+pub enum EnableIndexingOutcome {
+    /// Indexing started (a scan is now running or resuming) for the volume.
+    Started,
+    /// An SMB volume couldn't be indexed yet; `reason` says why (upgrade failed,
+    /// credentials needed, disconnected). The FE shows an honest status and, for
+    /// `credentials_needed`, can route into the reconnect/login flow.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    Refused { reason: SmbIndexGateReason },
+}
 
 // IPC stays path-based and single-volume in M1: the index-status, scan, and
 // clear commands all act on the local-disk `root` index. The backend resolves
@@ -74,6 +96,19 @@ pub async fn get_volume_index_status(path: String) -> Result<VolumeIndexStatus, 
     Ok(indexing::get_volume_index_status_for_path(&path))
 }
 
+/// Per-volume index status keyed by volume id (the per-drive badge surface).
+///
+/// The dropdown renders one badge per drive ROW, and the FE identifies drives by
+/// `volume.id` (`"root"`, `smb-…`, `mtp-…`), not by a path. This is the id-keyed
+/// sibling of `get_volume_index_status` (which takes a listing path for the
+/// always-visible active-drive badge). Both return the same [`VolumeIndexStatus`]
+/// shape; a not-indexed volume reports `enabled: false`, `freshness: None` (gray).
+#[tauri::command]
+#[specta::specta]
+pub async fn get_volume_index_status_by_id(volume_id: String) -> Result<VolumeIndexStatus, String> {
+    Ok(indexing::get_volume_index_status(&volume_id))
+}
+
 /// Toggle drive indexing on/off based on the user's setting.
 #[tauri::command]
 #[specta::specta]
@@ -129,4 +164,86 @@ pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), Str
         return Ok(());
     }
     indexing::start_indexing(&app)
+}
+
+// ── Per-drive enable / disable / rescan (M3's per-drive badge menu) ───
+//
+// These are the typed, per-volume controls the freshness UX drives: "Turn on
+// indexing for this drive", "Turn off indexing for this drive", and "Rescan
+// now". Thin pass-throughs to the `indexing` module (smart backend / thin
+// frontend). SMB enable is FDA-independent by design (network paths aren't
+// TCC-protected) and triggers the direct-smb2 upgrade when needed, surfacing a
+// TYPED `SmbIndexGateReason` on refusal.
+
+/// Turn on indexing for a specific drive.
+///
+/// - `root` (local disk): starts the local indexer (same as `start_drive_index`,
+///   FDA-gated at launch elsewhere; an explicit user enable here is honored).
+/// - An SMB volume: gates on a direct smb2 connection, upgrading from `os_mount`
+///   if needed, then scans over the `Volume` trait. A refusal (upgrade failed,
+///   credentials needed, disconnected) returns `Refused { reason }` so the UI
+///   classifies it by typed variant. FDA-independent.
+///
+/// Idempotent: a no-op (`Started`) if the drive's index is already active.
+#[tauri::command]
+#[specta::specta]
+pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<EnableIndexingOutcome, String> {
+    if indexing::is_active(&volume_id) {
+        return Ok(EnableIndexingOutcome::Started);
+    }
+
+    if volume_id == ROOT_VOLUME_ID {
+        indexing::start_indexing(&app)?;
+        return Ok(EnableIndexingOutcome::Started);
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        // SMB (and, later, MTP): gate on the direct-smb2 connection. Kick mDNS
+        // first so a freshly-typed server name resolves during the upgrade, then
+        // start. The typed gate reason is the refusal surface for the UI.
+        crate::network::ensure_mdns_started(app.clone());
+        match indexing::start_indexing_for_smb(app, volume_id).await {
+            Ok(()) => Ok(EnableIndexingOutcome::Started),
+            Err(reason) => Ok(EnableIndexingOutcome::Refused { reason }),
+        }
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        let _ = app;
+        Err(format!(
+            "Indexing for volume '{volume_id}' is not supported on this platform"
+        ))
+    }
+}
+
+/// Turn off indexing for a specific drive.
+///
+/// Stops the scan and watcher and removes the volume's registry instance (so its
+/// badge goes gray / not-indexed), but PRESERVES the DB on disk, so re-enabling
+/// can resume rather than rescan from scratch. Local `root` disable/enable still
+/// works (don't break it). A no-op if the drive isn't indexed.
+#[tauri::command]
+#[specta::specta]
+pub async fn disable_drive_index(volume_id: String) -> Result<(), String> {
+    indexing::stop_indexing(&volume_id)
+}
+
+/// Force a fresh full rescan of a drive (the menu's "Rescan now").
+///
+/// - An ALREADY-active drive: kicks off a fresh full scan (Stale ⇒ Scanning ⇒
+///   Fresh on clean completion), truncating and rebuilding its index.
+/// - An SMB drive that's NOT active (e.g. a persisted Stale index loaded on
+///   launch but never re-enabled this session): enable it, which scans. Returns
+///   the typed refusal if the direct-smb2 gate blocks it.
+/// - `root` that's not active: starts the local indexer.
+#[tauri::command]
+#[specta::specta]
+pub async fn rescan_drive_index(app: AppHandle, volume_id: String) -> Result<EnableIndexingOutcome, String> {
+    if indexing::is_active(&volume_id) {
+        indexing::force_scan(&volume_id)?;
+        return Ok(EnableIndexingOutcome::Started);
+    }
+    // Not active: enabling is what triggers the (first) scan.
+    enable_drive_index(app, volume_id).await
 }

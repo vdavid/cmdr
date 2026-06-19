@@ -61,6 +61,8 @@ pub use state::{
 };
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use smb_index::{SmbIndexGateReason, on_smb_overflow, on_smb_watcher_died, start_indexing_for_smb};
+pub use smb_index::SmbIndexGateReason;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use smb_index::{on_smb_overflow, on_smb_watcher_died, start_indexing_for_smb};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use smb_watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};

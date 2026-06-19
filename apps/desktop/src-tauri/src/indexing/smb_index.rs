@@ -26,7 +26,7 @@ use crate::file_system::volume::SmbConnectionState;
 /// of the IPC boundary, never by message substring (`.claude/rules/no-string-matching.md`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
-pub(crate) enum SmbIndexGateReason {
+pub enum SmbIndexGateReason {
     /// No volume is registered for this id (unmounted, or never seen).
     NotRegistered,
     /// The volume isn't an SMB share at all (no `smb_connection_state`).
