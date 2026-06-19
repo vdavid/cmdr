@@ -60,9 +60,15 @@ size aggregates so listings can show directory sizes.
 - **Freshness (per-volume, in `freshness.rs`) has ONE transition table; don't branch on it elsewhere.** SMB/MTP have no
   journal, so a persisted index loads **Stale** on launch (correct, not a bug) and a clean scan ⇒ Fresh. An
   interrupted/disconnected SMB scan DISCARDS the partial and resets to gray (`reset_to_not_indexed`) — don't keep a
-  half-snapshot live. The live watcher that keeps SMB Fresh is M2-B: it hooks in by calling
-  `state::apply_freshness_event(vid, FreshnessEvent::WatcherDied/OverflowUnrecoverable)` — that's the seam; look for
-  `TODO(live-watch / M2-B)`.
+  half-snapshot live. Live SMB `CHANGE_NOTIFY` keeps it Fresh; watcher death / overflow ⇒ Stale (next bullet).
+- **SMB watch→index (`smb_watch.rs`, see DETAILS § "Live SMB watch → index").** `apply_smb_change` is hooked into
+  `notify_directory_changed` BEFORE the pane early-return, so it runs with no pane open. Three things to get right: (1)
+  the SMB index's `ROOT_ID` is the MOUNT ROOT, so translate events to MOUNT-RELATIVE paths (`index_relative_path`) before
+  `resolve_path` — a mount-absolute path resolves to nothing; (2) sequence the index write BEFORE the FE refresh (the
+  writer's `EmitDirUpdated` fires `index-dir-updated` only after the write commits), and enqueue on the volume's writer,
+  never write directly; (3) changes during a scan are BUFFERED (`scanning` flips true before the truncate) and replayed
+  after — don't apply them against the rebuilding index. Watcher death / overflow call
+  `smb_index::on_smb_watcher_died` / `on_smb_overflow` ⇒ Stale.
 - **The memory watchdog is a single GLOBAL budget, not per-volume.** It stops EVERY volume's index at 16 GB
   (`state::stop_all_indexing`); scans run in parallel (the wire, not RAM, is the bottleneck). Start is idempotent (one
   watchdog task across all volumes).
