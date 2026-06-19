@@ -8,8 +8,11 @@ size aggregates so listings can show directory sizes.
 - **Lifecycle / state**: `state.rs` (`IndexPhase` machine, the per-volume `INDEX_REGISTRY`, public API), `manager.rs`
   (per-volume coordinator).
 - **Write path**: `writer/` (single writer thread + write connection; `mod.rs` = protocol + loop, `entries.rs` /
-  `delta.rs` / `aggregation.rs` / `maintenance.rs` = handlers), `scanner.rs` (jwalk walk), `aggregator.rs` (dir-stats),
-  `reconciler.rs` + `event_loop.rs` (replay + live FSEvents).
+  `delta.rs` / `aggregation.rs` / `maintenance.rs` = handlers), `scanner.rs` (jwalk walk, local only),
+  `volume_scanner.rs` (`Volume`-trait recursive scan for SMB/network), `aggregator.rs` (dir-stats), `reconciler.rs` +
+  `event_loop.rs` (replay + live FSEvents).
+- **SMB / freshness**: `freshness.rs` (the `Freshness` state machine: blue/green/yellow; gray = no instance),
+  `smb_index.rs` (the direct-smb2 gate + per-volume SMB enable).
 - **Read path**: `enrichment.rs` (`ReadPool`, listing enrichment), `store.rs` (schema, queries, collation),
   `verifier.rs` (per-navigation readdir diff), `expected_totals.rs`, `pending_sizes.rs`.
 - **Support**: `partial_agg.rs`, `metadata.rs`, `firmlinks.rs`, `watcher.rs`, `memory_watchdog.rs`, `events.rs`. Thin
@@ -48,8 +51,21 @@ size aggregates so listings can show directory sizes.
 - **Reconciler/event loops hold a READ connection** (`open_read_connection`), never a write one: write-mode pragmas can
   `SQLITE_BUSY` and silently kill live indexing.
 - **Defer `root` auto-start until FDA is decided** (`should_auto_start_indexing`): a first-launch scan from `/` stacks
-  TCC popups over the FDA modal. FDA gates ONLY `root` — future SMB/MTP starts must not route through it (not
-  TCC-protected).
+  TCC popups over the FDA modal. FDA gates ONLY `root` — SMB/MTP starts (`start_indexing_for_smb`) must not route
+  through it (not TCC-protected).
+- **SMB indexing is gated on a `direct` (smb2) connection; an `os_mount` is upgraded first.** `start_indexing_for_smb`
+  refuses with a TYPED `SmbIndexGateReason` (never a message substring) when the upgrade fails / needs creds / is
+  disconnected. SMB scans walk via `volume_scanner` (the `Volume` trait), NOT jwalk (`scanner`'s `should_exclude` blocks
+  `/Volumes/`). The walker is cancelable per round trip, `timeout`-wrapped, and `autoreleasepool`-drained per listing.
+- **Freshness (per-volume, in `freshness.rs`) has ONE transition table; don't branch on it elsewhere.** SMB/MTP have no
+  journal, so a persisted index loads **Stale** on launch (correct, not a bug) and a clean scan ⇒ Fresh. An
+  interrupted/disconnected SMB scan DISCARDS the partial and resets to gray (`reset_to_not_indexed`) — don't keep a
+  half-snapshot live. The live watcher that keeps SMB Fresh is M2-B: it hooks in by calling
+  `state::apply_freshness_event(vid, FreshnessEvent::WatcherDied/OverflowUnrecoverable)` — that's the seam; look for
+  `TODO(live-watch / M2-B)`.
+- **The memory watchdog is a single GLOBAL budget, not per-volume.** It stops EVERY volume's index at 16 GB
+  (`state::stop_all_indexing`); scans run in parallel (the wire, not RAM, is the bottleneck). Start is idempotent (one
+  watchdog task across all volumes).
 - **macOS: the writer thread (and any thread calling ObjC/Cocoa) must wrap work in `objc2::rc::autoreleasepool`** or
   autoreleased `NSData` / `NSInvocation` leak (multi-GB over hours).
 - **Spawn indexing tasks with `tauri::async_runtime::spawn`, not `tokio::spawn`** (indexing can start from the sync

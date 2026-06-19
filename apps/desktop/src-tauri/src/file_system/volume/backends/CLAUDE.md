@@ -41,5 +41,9 @@ The trait shape, capability matrix, streaming patterns, and "Building a new volu
   mount paths) before cache lookups. See [DETAILS.md](DETAILS.md) § "Gotchas".
 - **SMB auto-upgrade is gated on `network.directSmbConnection`** and is a no-op when no SMB mounts are present (so it
   fires no macOS Local Network prompt). See [DETAILS.md](DETAILS.md) § "SMB auto-upgrade lifecycle".
+- **SMB drive INDEXING (sizes + search-data) lives in `src/indexing/`, not here.** It requires a `direct` smb2 session
+  (it walks `Volume::list_directory`, not the kernel mount) and treats an `SmbVolume` whose `smb_connection_state()` is
+  `Direct` as indexable; an `os_mount` is upgraded first. The "admittedly stale" freshness model is the index's, not the
+  backend's. See [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "SMB indexing and the freshness model".
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
