@@ -4,13 +4,10 @@ The factories that turn a typed error into the title / explanation / suggestion 
 lives in Rust ([`friendly_error/CLAUDE.md`](../../../src-tauri/src/file_system/volume/friendly_error/CLAUDE.md)): it
 ships a typed, word-free `ListingError` (reason + params + category + detected provider + retry/action hints) over IPC.
 
-The literal English lives in the `errors.*` catalog
-([`../intl/messages/en/errors.json`](../intl/messages/en/errors.json)); each factory pulls its strings via
-`getMessage('errors.<reason>.<part>')`. Editing copy means editing `errors.json` + `pnpm intl:keys`, not these `.ts`
-files.
-
-Writing rules for the copy: [`docs/style-guide.md`](../../../../../docs/style-guide.md) (active voice, friendly, never
-the words "error" or "failed", no trivializing "just/simple/easy").
+The literal English lives in the `errors.*` catalog ([`../intl/messages/en/errors.json`](../intl/messages/en/errors.json));
+each factory pulls its strings via `getMessage('errors.<reason>.<part>')`. Editing copy means editing `errors.json` +
+`pnpm intl:keys`, not these `.ts` files. Writing rules: [`docs/style-guide.md`](../../../../../docs/style-guide.md)
+(active voice, friendly, never the words "error" / "failed", no "just/simple/easy").
 
 ## Module map
 
@@ -21,8 +18,8 @@ the words "error" or "failed", no trivializing "just/simple/easy").
   `appBased.*` template with `{name}`/`{app}` tokens, plus bespoke per-provider keys; see DETAILS.md).
 - `listing-error.ts`: `renderListingError(error)` is the wire-`ListingError` → displayable adapter `ErrorPane` calls
   (picks the base message, applies the provider override).
-- `markdown-escape.ts`: `escapeMarkdown` is the XSS boundary (verbatim port of the old Rust escaper).
-- `compose.ts`: `esc(...)` (escape a param) + `expandSystemStrings(...)` (localized macOS pane labels).
+- `markdown-escape.ts`: `escapeMarkdown` is the XSS boundary. `compose.ts`: `esc(...)` (escape a param) +
+  `expandSystemStrings(...)` (localized macOS pane labels).
 - `friendly-error-message.ts`: the shared `FriendlyErrorMessage` shape (matches `transfer-error-messages.ts` so the two
   paths can converge later).
 
@@ -53,13 +50,11 @@ the words "error" or "failed", no trivializing "just/simple/easy").
 
 ## Adding a new error message
 
-FE side (the Rust side is in
-[`friendly_error/CLAUDE.md`](../../../src-tauri/src/file_system/volume/friendly_error/CLAUDE.md)): add the
-`errors.<reason>.{title,explanation,suggestion}` keys (plus `@key` descriptions) to
-[`errors.json`](../intl/messages/en/errors.json), run `pnpm intl:keys`, then add the new reason to the union in the
-factory (the compose pipeline reads its keys automatically; a runtime param goes in the variant and is escaped + named
-as a `{token}` in the catalog value). Add the reason to the parity + style test matrices. Full recipe + the convergence
-note: [DETAILS.md](DETAILS.md).
+FE side: add the `errors.<reason>.{title,explanation,suggestion}` keys (plus `@key` descriptions) to
+[`errors.json`](../intl/messages/en/errors.json), run `pnpm intl:keys`, add the reason to the factory union (a runtime
+param goes in the variant and is escaped + named as a `{token}`), and add it to the parity + style test matrices. Rust
+side: [`friendly_error/CLAUDE.md`](../../../src-tauri/src/file_system/volume/friendly_error/CLAUDE.md). Full recipe +
+the convergence note: [DETAILS.md](DETAILS.md).
 
 Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

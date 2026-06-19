@@ -51,9 +51,9 @@ Consumer-specific decisions: [`lib/search/CLAUDE.md`](../search/CLAUDE.md),
   live chips stay editable). Its first-person agent voice is a SANCTIONED exception to the no-first-person copy rule
   (alongside onboarding / About).
 - **Type-in-AI is leave-alone-if-null; size/date are reset-first. Don't "consistency-fix" this.** Each AI run resets
-  `sizeFilter` / `dateFilter` to `'any'` before applying (helpers no-op on a null bound, so without the reset a prior
-  run's filter leaks). `applyTypeFromAi` writes only on non-null `isDirectory`, so AI silence keeps the user's choice;
-  callers must NOT pre-reset `typeFilter`. Contract in `apply-ai-filters.ts`.
+  `sizeFilter` / `dateFilter` to `'any'` before applying, or a prior run's filter leaks. `applyTypeFromAi` writes only on
+  non-null `isDirectory`, so AI silence keeps the user's choice; callers must NOT pre-reset `typeFilter`. Contract in
+  `apply-ai-filters.ts`.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

@@ -2,23 +2,22 @@
 
 Cloudflare Worker (Hono) backend for Cmdr: licensing (Paddle webhooks, Ed25519 keys, activation codes in KV), telemetry
 (crash reports, downloads, update checks, heartbeats in D1), admin endpoints, and cron notifications. Deployed at
-`api.getcmdr.com` (`license.getcmdr.com` is a permanent alias for existing app versions). Full route table,
-env-var/binding tables, data flows, runbooks, and decisions: [DETAILS.md](DETAILS.md).
+`api.getcmdr.com` (`license.getcmdr.com` is a permanent alias for existing app versions). Routes, env/binding tables,
+data flows, runbooks, and decisions: [DETAILS.md](DETAILS.md).
 
 ## Module map
 
-- `src/index.ts`: Hono app assembly + scheduled handler wiring. `src/types.ts`: shared `Bindings`, constants, auth.
+- `src/index.ts`: Hono app assembly + scheduled-handler wiring. `src/types.ts`: shared `Bindings`, constants, auth.
 - Route modules: `licensing.ts`, `admin.ts`, `telemetry.ts` (crash/heartbeat/download/update-check), `likes.ts`,
-  `error-report.ts`, `beta-signup.ts`, `feedback.ts`, `funnel.ts`, `link-codes.ts` (`?r=` codes: public `/r-codes.json`
-  - `/admin/r-codes` CRUD, map in the `LINK_CODES` KV namespace). Cron in `scheduled.ts`; eviction in
-    `error-report-eviction.ts`.
-- Crypto/Paddle: `license.ts` (short code + key gen), `paddle.ts` (HMAC verify), `paddle-api.ts`, `email.ts`,
-  `discord.ts`, `device-tracking.ts`. Tests sit beside their module.
+  `error-report.ts`, `beta-signup.ts`, `feedback.ts`, `funnel.ts`, `link-codes.ts` (`?r=` codes). Cron in
+  `scheduled.ts`; eviction in `error-report-eviction.ts`.
+- Crypto/Paddle: `license.ts`, `paddle.ts` (HMAC verify), `paddle-api.ts`, `email.ts`, `discord.ts`,
+  `device-tracking.ts`. Tests sit beside their module.
 
 ## Must-knows
 
-- **Sandbox and live are completely separated** (different Paddle accounts, keys, price IDs, webhook secrets, Discord
-  targets). `PADDLE_ENVIRONMENT` picks the routing; never infer it from transaction IDs (both use the `txn_` prefix).
+- **Sandbox and live are fully separated** (different Paddle accounts, keys, price IDs, webhook secrets, Discord
+  targets). `PADDLE_ENVIRONMENT` routes; never infer it from transaction IDs (both use the `txn_` prefix).
 - **Secrets are Cloudflare secrets** (`wrangler secret put`), never in `wrangler.toml`. `/admin/stats` uses a dedicated
   `ADMIN_API_TOKEN`, separate from the Paddle webhook secret used by `/admin/generate`. Admin auth compares with
   `constantTimeEqual` (timing-safe); don't swap in `===`.

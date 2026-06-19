@@ -40,8 +40,8 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
   MCP transport before touching it.
 - **New Tauri listener wiring goes in `listener-setup.ts`, not `+page.svelte`** (which is `file-length`-flagged): thread
   `$state` through `ListenerSetupContext` (getters/setters; shared `unlistenFns` for HMR cleanup). Runes-touching logic
-  (keydown, onboarding, licensing) can't move. New commands get a `command-handlers/` handler, NOT a branch in the small
-  core; only `handleTextRegionShortcut` and `blockedByCapabilities` belong there.
+  (keydown, onboarding, licensing) can't move. New commands get a `command-handlers/` handler; only
+  `handleTextRegionShortcut` and `blockedByCapabilities` belong in the core.
 - **E2E and debug listeners stay off the bus (intentional, not unfinished).** `e2e-trigger-file-drop` and the
   `import.meta.env.DEV` `debug-*-error` listeners call `explorerRef.*` directly: gated test/dev hooks, no registry
   entry. Don't "finish the migration." See DETAILS.md § Off-bus test and debug hooks.
@@ -49,9 +49,9 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
 ## Gotchas
 
 - **Don't remove the `{#if settingsReady}` wrapper** in `+layout.svelte`, and don't move setting-reading work ahead of
-  the flag. The subtree mounts only after `initReactiveSettings()` + `initSettingsApplier()` resolve; components read
-  `getSetting()` synchronously at mount, and a pre-init read returns registry defaults that can get pushed to the
-  backend as real choices. See `settings-store.ts` § `getSetting`.
+  the flag. The subtree mounts only after `initReactiveSettings()` + `initSettingsApplier()` resolve; a pre-init
+  `getSetting()` returns registry defaults that can get pushed to the backend as real choices. See `settings-store.ts`
+  § `getSetting`.
 - **Native-menu accelerators fire before the webview keydown**, so these can't rely on the keydown bail and carry
   load-bearing constraints (mechanism in DETAILS.md § Native-menu and input-focus interactions):
   - **⌘A** routes to `active.select()` for a focused `<input>` / `<textarea>` before delegating to the explorer.

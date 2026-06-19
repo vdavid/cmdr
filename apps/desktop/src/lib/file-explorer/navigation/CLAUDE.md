@@ -38,21 +38,20 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `LocationInfo.id` is `fav-<favoriteId>`; `removeFavorite` / `renameFavorite` / `reorderFavorites` take the bare id
   (`stripFavoritePrefix`). The favorites group in `volume-grouping.ts` always renders (even empty, for the placeholder),
   so don't "tidy" it back into a hide-when-empty branch. "Add to favorites" is handled in Rust
-  (`FAVORITES_ADD_CONTEXT_ID`), not the `favorites.add` command. Full flow in [DETAILS.md](DETAILS.md) § Editable
-  favorites.
+  (`FAVORITES_ADD_CONTEXT_ID`), not the `favorites.add` command. Full flow: DETAILS.md § Editable favorites.
 - **The favorites interaction layer lives in `favorites-controller.svelte.ts`** (`createFavoritesController(deps)`,
   instantiated as `fav`): rename, reorder, remove, and the local-first `optimisticFavoriteIds` override. State is
   exposed via getters, so template reads MUST go through `fav.*` (a snapshot won't stay reactive).
 - **The favorite-rename `<input>` must not leak keystrokes to the panes.** Four guards work together; don't remove any:
-  `fav.handleRenameKeyDown` `stopPropagation()`s every key (the pane's Space-selection DOM listener isn't covered by the
-  dispatch-level guard); `VolumeBreadcrumb.handleKeyDown` bails while `fav.renamingFavoriteId !== null`;
-  `routeToVolumeChooser` swallows keys from the pane behind any open switcher dropdown; and `+page.svelte`'s
-  `isModalDialogOpen()` reads `explorerRef.isVolumeChooserOpen()` to suppress centralized dispatch.
+  `fav.handleRenameKeyDown` `stopPropagation()`s every key; `VolumeBreadcrumb.handleKeyDown` bails while
+  `fav.renamingFavoriteId !== null`; `routeToVolumeChooser` swallows keys from the pane behind an open switcher dropdown;
+  and `+page.svelte`'s `isModalDialogOpen()` reads `explorerRef.isVolumeChooserOpen()` to suppress centralized dispatch.
+  Why each: DETAILS § Editable favorites.
 - **Favorite reorder is POINTER-based and LOCAL-FIRST, not HTML5 drag.** HTML5 `draggable`/`ondragstart`/`ondrop` never
   fire under Tauri's `dragDropEnabled` (the OS intercepts drag gestures first). Keyboard reorder (Alt+↑ / Alt+↓) must
   run before `handleDropdownKey` consumes the bare arrows. Both paths set `optimisticFavoriteIds` synchronously, then
   persist the FULL order via `reorderFavorites(bareIds)` in the background. Don't reintroduce HTML5 drag; don't await
-  the IPC before updating the UI. Full mechanism in [DETAILS.md](DETAILS.md) § Editable favorites.
+  the IPC before updating the UI. Full mechanism: DETAILS.md § Editable favorites.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.
