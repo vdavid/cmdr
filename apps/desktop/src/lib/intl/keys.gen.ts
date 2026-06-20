@@ -754,6 +754,8 @@ export type MessageKey =
   | 'fileExplorer.navigation.driveIndex.tooltipFresh'
   | 'fileExplorer.navigation.driveIndex.tooltipFreshNoScan'
   | 'fileExplorer.navigation.driveIndex.tooltipScanning'
+  | 'fileExplorer.navigation.driveIndex.tooltipScanningCount'
+  | 'fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed'
   | 'fileExplorer.navigation.driveIndex.tooltipStale'
   | 'fileExplorer.navigation.ejectBusyTooltip'
   | 'fileExplorer.navigation.ejectVolumeAriaLabel'

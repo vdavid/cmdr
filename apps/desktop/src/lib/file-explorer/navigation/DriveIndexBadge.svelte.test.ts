@@ -27,12 +27,21 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
   }
 }
 
-function render(status: VolumeIndexStatus, onAction = vi.fn()) {
+function render(
+  status: VolumeIndexStatus,
+  onAction = vi.fn(),
+  scanProgress?: { entriesScanned: number; scanStartedAt: number },
+) {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(DriveIndexBadge, { target, props: { volumeId: status.volumeId, status, onAction } })
+  mount(DriveIndexBadge, { target, props: { volumeId: status.volumeId, status, scanProgress, onAction } })
   flushSync()
   return { target, onAction }
+}
+
+/** The badge's aria-label embeds the resolved tooltip text (`ariaLabel: tooltip`). */
+function ariaLabel(target: HTMLElement): string {
+  return must(target, '.drive-index-badge').getAttribute('aria-label') ?? ''
 }
 
 describe('DriveIndexBadge color class', () => {
@@ -101,5 +110,42 @@ describe('DriveIndexBadge menu', () => {
     must(target, '.drive-index-menu-item').click()
     flushSync()
     expect(onAction).toHaveBeenCalledWith('smb-test', 'rescan')
+  })
+})
+
+describe('DriveIndexBadge scanning tooltip', () => {
+  it('falls back to the static scanning phrasing before any progress arrives', () => {
+    const { target } = render(makeStatus({ freshness: 'scanning' }))
+    expect(ariaLabel(target)).toContain('Indexing this drive')
+  })
+
+  it('shows the live file count once progress has arrived', () => {
+    const { target } = render(makeStatus({ freshness: 'scanning' }), vi.fn(), {
+      entriesScanned: 12_345,
+      scanStartedAt: Date.now(),
+    })
+    const label = ariaLabel(target)
+    expect(label).toContain('Indexing…')
+    // Thousands-separated count (separator is locale-dependent; check both ends).
+    expect(label).toMatch(/12.345/)
+    expect(label).toContain('files')
+  })
+
+  it('appends the elapsed clock once the scan has run for over a second', () => {
+    const { target } = render(makeStatus({ freshness: 'scanning' }), vi.fn(), {
+      entriesScanned: 7,
+      scanStartedAt: Date.now() - 42_000,
+    })
+    expect(ariaLabel(target)).toContain('0:42')
+  })
+
+  it('ignores scan progress when the badge is not scanning', () => {
+    const { target } = render(makeStatus({ freshness: 'fresh' }), vi.fn(), {
+      entriesScanned: 999,
+      scanStartedAt: Date.now(),
+    })
+    const label = ariaLabel(target)
+    expect(label).not.toContain('Indexing…')
+    expect(label).not.toContain('999')
   })
 })

@@ -21,10 +21,12 @@
         driveIndexMenuActions,
         driveIndexMenuLabelKey,
         driveIndexDuration,
+        driveIndexScanProgress,
         hasLastScanFacts,
         type DriveIndexMenuAction,
         type DriveIndexState,
     } from './drive-index-status'
+    import type { DriveScanProgress } from './drive-index-manager.svelte'
 
     interface Props {
         /** The drive this badge describes. */
@@ -36,11 +38,17 @@
          * (matches the `.breadcrumb-smb-indicator` spacing). Off for dropdown rows.
          */
         breadcrumb?: boolean
+        /**
+         * Live in-flight scan progress for THIS badge's volume (entries scanned
+         * + start time), or `undefined` when it isn't scanning. When present and
+         * the badge is `scanning`, the tooltip shows a live count + elapsed clock.
+         */
+        scanProgress?: DriveScanProgress | undefined
         /** The parent runs the actual IPC for a picked menu action. */
         onAction: (volumeId: string, action: DriveIndexMenuAction) => void
     }
 
-    const { volumeId, status, breadcrumb = false, onAction }: Props = $props()
+    const { volumeId, status, breadcrumb = false, scanProgress, onAction }: Props = $props()
 
     const badgeState = $derived<DriveIndexState>(driveIndexState(status))
 
@@ -56,12 +64,35 @@
     const duration = $derived(driveIndexDuration(status.scanDurationMs))
     const durationText = $derived(duration ? tString(duration.key, duration.params) : '')
 
+    // A 1 Hz clock that ticks ONLY while this badge is scanning, so the tooltip's
+    // elapsed time advances live (the count itself comes from 500 ms backend
+    // events). Idle badges never run a timer.
+    let now = $state(Date.now())
+    $effect(() => {
+        if (badgeState !== 'scanning') return
+        now = Date.now()
+        const id = setInterval(() => {
+            now = Date.now()
+        }, 1000)
+        return () => {
+            clearInterval(id)
+        }
+    })
+
+    // The live "Indexing… N files · 0:42" copy for a scanning badge. Falls back to
+    // the static phrasing before the first progress event arrives (no count yet).
+    const scanningTooltip = $derived.by(() => {
+        if (!scanProgress) return tString('fileExplorer.navigation.driveIndex.tooltipScanning')
+        const { key, params } = driveIndexScanProgress(scanProgress.entriesScanned, scanProgress.scanStartedAt, now)
+        return tString(key, params)
+    })
+
     const tooltipText = $derived.by(() => {
         switch (badgeState) {
             case 'disabled':
                 return tString('fileExplorer.navigation.driveIndex.tooltipDisabled')
             case 'scanning':
-                return tString('fileExplorer.navigation.driveIndex.tooltipScanning')
+                return scanningTooltip
             case 'stale':
                 return tString('fileExplorer.navigation.driveIndex.tooltipStale')
             case 'fresh':

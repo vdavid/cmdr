@@ -771,6 +771,7 @@
             <DriveIndexBadge
                 volumeId={currentVolume.id}
                 status={activeIndexStatus}
+                scanProgress={driveIndex.getScanProgress(currentVolume.id)}
                 breadcrumb
                 onAction={onDriveIndexAction}
             />
@@ -909,7 +910,12 @@
                         {#if isDriveRow(volume)}
                             {@const rowIndexStatus = driveIndexStatusMap.get(volume.id)}
                             {#if rowIndexStatus}
-                                <DriveIndexBadge volumeId={volume.id} status={rowIndexStatus} onAction={onDriveIndexAction} />
+                                <DriveIndexBadge
+                                    volumeId={volume.id}
+                                    status={rowIndexStatus}
+                                    scanProgress={driveIndex.getScanProgress(volume.id)}
+                                    onAction={onDriveIndexAction}
+                                />
                             {/if}
                         {/if}
                         {#if isVolumeEjectable(volume)}
