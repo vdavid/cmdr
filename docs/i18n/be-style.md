@@ -11,20 +11,11 @@ against the pile on 2026-06-20.
 
 ## Decisions to confirm with David
 
-The calls a translator can't make alone. The first two are real open flags.
+The calls a translator can't make alone.
 
-- **Orthography: official (наркамаўка) vs classical (тарашкевіца) - David must settle (high importance).** Belarusian
-  has two competing orthographic norms. The **official/standard orthography** ("наркамаўка", the state standard) is what
-  Microsoft, GNOME, and government use; the **classical orthography** ("тарашкевіца") is preferred by parts of the
-  diaspora and independent media and differs in spelling, soft-sign use, and some loanword forms. They are NOT
-  interchangeable - a native reader immediately clocks which one a product uses, and it carries political weight.
-  Recommendation: target the **official orthography** (matches every reference source in the pile and the largest user
-  base), but this is a David call, not a translator call, because it's identity-loaded. Confidence: high that official
-  is the safer default; flag regardless.
-- **Script: Cyrillic vs Łacinka (Latin) - Cyrillic recommended.** Belarusian has a historical Latin alphabet (Łacinka),
-  and the pile even has a `be-Latn` GNOME catalog. But Cyrillic is overwhelmingly the dominant everyday and software
-  script. Recommendation: target **Cyrillic (`be`)**; treat `be-Latn` as out of scope unless David specifically wants
-  it. Confidence: high.
+- **Script and orthography: RESOLVED to Cyrillic, official наркамаўка orthography** (not classical тарашкевіца;
+  `be-Latn` Łacinka out of scope). See the script decision points below and [`script-decisions.md`](script-decisions.md).
+  No longer open.
 - **Address form: polite plural "Вы" recommended, worth a sign-off (high).** Like Russian/Bulgarian, software uses the
   polite plural. See Formality. Recommended default below.
 
@@ -48,10 +39,10 @@ English avoids "error"/"failed".
 
 ## Decision points
 
-- **Orthography (наркамаўка vs тарашкевіца).** Covered as the headline flag above - the single most consequential
-  decision for Belarusian, more than script. Default: official (наркамаўка). Confidence: high that this is the safer
-  default; the choice is David's.
-- **Script: Cyrillic, with a Łacinka sibling to ignore for now.** Covered above. Default Cyrillic. Confidence: high.
+- **Orthography (наркамаўка vs тарашкевіца): RESOLVED to official наркамаўка.** The single most consequential decision
+  for Belarusian, more than script. Recorded in [`script-decisions.md`](script-decisions.md).
+- **Script: RESOLVED to Cyrillic (`be`)**, with the Łacinka sibling (`be-Latn`) out of scope. Recorded in
+  [`script-decisions.md`](script-decisions.md).
 - **Regional variant: one, `be` (`be-BY`).** Belarusian is standardized in Belarus; no second national standard. The
   meaningful split is orthographic (above), not regional. Confidence: high.
 - **Gender / inclusive language (high on the problem, high on the fix via polite plural).** Belarusian past tense uses

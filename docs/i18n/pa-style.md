@@ -27,14 +27,13 @@ register matches Cmdr.
 
 ## Decision points
 
-- **Script: Gurmukhi vs Shahmukhi (Perso-Arabic). This is the central Punjabi decision.** Punjabi is written in
-  Gurmukhi in Indian Punjab (left-to-right, Brahmic) and in Shahmukhi (a Perso-Arabic script, right-to-left) in
-  Pakistani Punjab. They are mutually unreadable in print. Microsoft ships terminology for BOTH (`pa-IN` Gurmukhi and a
-  Perso-Arabic variant); GNOME ships Gurmukhi. Gurmukhi has by far the larger digital footprint, standardized Unicode
-  usage, and free-software coverage. Recommendation: ship `pa` as **Gurmukhi** (LTR); only add a separate `pa-Arab`
-  (RTL) build if there's real Pakistani-Punjabi demand. Confidence: high. Flag for David: this is a genuine
-  product-scope call, not just a default. Shahmukhi would need full RTL handling (mirroring, bidi) like Arabic, so it's
-  a much heavier lift than a script swap.
+- **Script: Gurmukhi vs Shahmukhi (Perso-Arabic). RESOLVED to Gurmukhi (`pa`).** Punjabi is written in Gurmukhi in
+  Indian Punjab (left-to-right, Brahmic) and in Shahmukhi (a Perso-Arabic script, right-to-left) in Pakistani Punjab.
+  They are mutually unreadable in print. Microsoft ships terminology for BOTH (`pa-IN` Gurmukhi and a Perso-Arabic
+  variant); GNOME ships Gurmukhi. Gurmukhi has by far the larger digital footprint, standardized Unicode usage, and
+  free-software coverage. Ship `pa` as Gurmukhi (LTR). Shahmukhi `pa-Arab` is Perso-Arabic RTL and out of scope under
+  the no-RTL decision (it would need full bidi handling like Arabic). Recorded in
+  [`script-decisions.md`](script-decisions.md).
 - **Formality: respectful `ਤੁਸੀਂ` + polite imperatives.** Covered above. Confidence: high.
 - **Register: modern, not over-Sanskritized/Persianized.** Keep everyday Punjabi; avoid heavy Sanskrit (Gurmukhi side)
   or heavy Persian/Urdu (Shahmukhi side) officialese. Microsoft modern voice and GNOME both favor everyday words.
@@ -77,8 +76,8 @@ two-category shape as English; every plural message needs both branches. The `de
 
 ## Notes and decisions
 
-- Script: this base is Gurmukhi (LTR); Shahmukhi/Perso-Arabic (RTL) would be a separate `pa-Arab` build needing full
-  bidi handling. Flag the scope to David before doing the Perso-Arabic side.
+- Script: RESOLVED to Gurmukhi (`pa`, LTR); Shahmukhi/Perso-Arabic `pa-Arab` (RTL) is out of scope under the no-RTL
+  decision. See [`script-decisions.md`](script-decisions.md).
 - Register: modern everyday Punjabi, not officialese.
 - Numerals: rely on `Intl` (Western digits by default).
 - Address: `ਤੁਸੀਂ` + polite imperatives throughout.

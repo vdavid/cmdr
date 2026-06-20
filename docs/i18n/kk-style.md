@@ -9,11 +9,9 @@ Well-sourced for terms: the pile has MS terminology, MS style guide, GNOME Nauti
 
 ## Decisions to confirm with David
 
-- **Script: target Cyrillic (`kk` / `kk-Cyrl`), recommended, but flag the Latin transition (high).** Kazakhstan is
-  mid-migration from Cyrillic to a Latin alphabet (government roadmap to complete around the late 2020s), but Cyrillic
-  is still what installed software, MS, and GNOME use today (verified 2026-06-20). Recommended default: **Cyrillic
-  now.** Flagging because the Latin script is coming and a future `kk-Latn` variant may be wanted; building the catalog
-  in `kk` (Cyrillic) keeps the seam clean for adding `kk-Latn` later. See Decision points.
+- **Script: RESOLVED to Cyrillic (base tag `kk`).** `kk-Latn` is a later fast-follow as the ~2031 Latin transition
+  lands; building the catalog in `kk` (Cyrillic) now keeps the seam clean for adding `kk-Latn` later. See the script
+  decision point below and [`script-decisions.md`](script-decisions.md). No longer open.
 
 ## Voice and tone
 
@@ -35,11 +33,11 @@ problem and the next step, and avoid a bare "қате" (error) status label the 
 
 ## Decision points
 
-- **Script: Cyrillic now, Latin coming (the key decision, high).** Kazakh is written today in a 42-letter Cyrillic
+- **Script: RESOLVED to Cyrillic (base tag `kk`), Latin coming.** Kazakh is written today in a 42-letter Cyrillic
   alphabet; Kazakhstan has an official roadmap to switch to a Latin alphabet (the exact letterforms have been revised
-  several times). Every authoritative source in the pile (MS, GNOME) is Cyrillic (verified 2026-06-20). Recommendation:
-  **target Cyrillic (`kk`)** for now; if/when a Latin standard stabilizes and users want it, add `kk-Latn` as a sibling
-  variant rather than reflowing the base. Don't pre-emptively translate to Latin. Confidence: high.
+  several times). Every authoritative source in the pile (MS, GNOME) is Cyrillic (verified 2026-06-20). Ship Cyrillic
+  (`kk`) now; `kk-Latn` is a later fast-follow as the ~2031 transition lands, added as a sibling rather than reflowing
+  the base. Don't pre-emptively translate to Latin. Recorded in [`script-decisions.md`](script-decisions.md).
 - **Regional variant: one, `kk` (`kk-KZ`).** Kazakh is standardized in Kazakhstan; no second national standard worth a
   variant matrix (the Kazakh diaspora in China/Mongolia uses other scripts but isn't a localization target here).
   Confidence: high.

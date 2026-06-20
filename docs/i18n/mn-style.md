@@ -44,7 +44,8 @@ This is the single biggest tone rule for Mongolian, and it inverts the English i
 
 The genuinely tricky calls, with how the majors handle each, a recommended default, and a confidence level.
 
-- **Script: Cyrillic (`mn`), not Traditional Mongolian vertical script. THIS IS DAVID'S CALL, flagged explicitly.**
+- **Script: RESOLVED to Cyrillic (`mn`), not Traditional Mongolian vertical script.** Recorded in
+  [`script-decisions.md`](script-decisions.md). The evidence below stands.
   Mongolian is written in two scripts: Cyrillic (dominant in independent Mongolia since the 1940s, the everyday script
   for ~3M people and every mainstream device) and the Traditional Mongolian vertical script `mn-Mong` (used in Inner
   Mongolia, China, and the target of a Mongolian-government revival that since Jan 2025 requires both scripts in
@@ -138,8 +139,8 @@ even after a number, so write each branch as a full natural phrase rather than s
 
 ## Notes and decisions
 
-- Script: Cyrillic (`mn`). Traditional vertical script (`mn-Mong`) is out of scope and a separate locale if ever done
-  (David's call).
+- Script: RESOLVED to Cyrillic (`mn`); Traditional vertical script (`mn-Mong`) is out of scope. See
+  [`script-decisions.md`](script-decisions.md).
 - Pronouns: avoid `та` / `таны` / `танд`; use neutral or passive phrasing; polite `та` only when direction needs it;
   never `чи`.
 - Actions: polite imperative (`-на уу`) for instructions the user performs; bare verb for short buttons; subjectless

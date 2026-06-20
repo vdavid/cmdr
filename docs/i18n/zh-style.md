@@ -16,10 +16,9 @@ written, add it here.
 
 These are calls a translator can't make alone. The rest of this guide assumes them.
 
-- **Which script variant(s) to ship: Simplified, Traditional, or both?** This is THE Chinese decision (see the decision
-  point below). The two are not mutually intelligible in writing for many users, and serving the wrong one is a real
-  miss. Recommendation: ship Simplified (`zh-Hans`) first (largest user base), Traditional (`zh-Hant`) as a fast follow.
-  Only David can decide scope and priority.
+- **Which script variant(s) to ship: RESOLVED to Simplified `zh-Hans` only for now** (Traditional `zh-Hant`, Taiwan
+  norm, is a fast-follow; never auto-convert, vocabulary differs). See the script decision point below and
+  [`script-decisions.md`](script-decisions.md). No longer open.
 - **Formal vs neutral "you" (`您` vs `你`): RESOLVED to `你`** (consumer-brand evidence; legal/billing copy uses formal
   `您`; see Formality and [`formal-informal-decisions.md`](formal-informal-decisions.md)). No longer open.
 
@@ -56,6 +55,10 @@ naturally and isn't cryptically clipped.
 ## Decision points
 
 ### Script: Simplified vs Traditional (the big one), and which region
+
+**RESOLVED: ship Simplified `zh-Hans` only for now** (Traditional `zh-Hant`, Taiwan norm, is a fast-follow; never
+auto-convert, the vocabulary differs). Recorded in [`script-decisions.md`](script-decisions.md). The structure and
+evidence below stand.
 
 - **Two written standards, not mutually substitutable.** Simplified Chinese (`zh-Hans`) is the standard in Mainland
   China and Singapore; Traditional Chinese (`zh-Hant`) is standard in Taiwan, Hong Kong, and Macau. They differ in

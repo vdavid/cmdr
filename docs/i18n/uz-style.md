@@ -25,14 +25,12 @@ Microsoft references are plain and direct, which suits Cmdr's register.
 
 ## Decision points
 
-- **Script: Latin vs Cyrillic. This is the central Uzbek decision.** Uzbek officially transitioned from Cyrillic to a
-  Latin alphabet (the transition has run for decades and is still ongoing in practice). Both scripts are in real use:
-  Latin is the official, education, and younger-generation script and the modern software default; Cyrillic remains
-  widespread among older users and in some media. Microsoft's primary style guide is the "Uzbek (Latin) Style Guide",
-  and GNOME ships Latin ("Nusxalash", "Katalog", "Bekor qilish"). Both vendors keep a Cyrillic variant too. 
-  Recommendation: ship `uz` as **Latin** (matching Microsoft's and GNOME's primary choice and the official direction);
-  only add `uz-Cyrl` if there's real demand. Confidence: high. Flag for David: this is a genuine product-scope call;
-  Cyrillic still has a sizable readership.
+- **Script: Latin vs Cyrillic. RESOLVED to Latin (`uz`).** Uzbek officially transitioned from Cyrillic to a Latin
+  alphabet (the transition has run for decades and is still ongoing in practice). Both scripts are in real use: Latin is
+  the official, education, and younger-generation script and the modern software default; Cyrillic remains widespread
+  among older users and in some media. Microsoft's primary style guide is the "Uzbek (Latin) Style Guide", and GNOME
+  ships Latin ("Nusxalash", "Katalog", "Bekor qilish"). Both vendors keep a Cyrillic variant too. Ship `uz` as Latin;
+  add `uz-Cyrl` only on real demand. Recorded in [`script-decisions.md`](script-decisions.md).
 - **Formality: respectful `siz` + imperatives.** Covered above. Confidence: high.
 - **Latin orthography detail.** Modern Uzbek Latin uses the letters `oʻ` (o with turned comma) and `gʻ` (g with turned
   comma), and the apostrophe-like `ʼ` (modifier letter), NOT plain ASCII apostrophe `'`. The GNOME catalog uses a
@@ -77,7 +75,8 @@ requires both.
 
 ## Notes and decisions
 
-- Script: this base is Latin; Cyrillic would be a separate `uz-Cyrl` build. Flag the scope to David.
+- Script: RESOLVED to Latin (`uz`); Cyrillic would be a separate `uz-Cyrl` build. See
+  [`script-decisions.md`](script-decisions.md).
 - Latin letters: use Unicode `oʻ`/`gʻ` (U+02BB) and modifier `ʼ` (U+02BC), not ASCII `'`. These are letters, NOT ICU
   apostrophes, so do NOT double them; a genuine literal `'` still doubles to `''`.
 - Gender: Uzbek is genderless; copy is naturally neutral.

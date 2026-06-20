@@ -26,15 +26,15 @@ so they sit fine under a `ti` register. Full-sentence prompts addressing the use
 
 The defining Bosnian decision is script.
 
-- **Script: Latin (`bs` base), settled.** Bosnian is officially biscriptal (Latin and Cyrillic are both constitutional),
-  but Latin overwhelmingly dominates everyday life, media, and software. The script-tagged siblings exist in the
-  reference pile (`bs-Latn`, `bs-Cyrl`), confirming both are localizable, but:
+- **Script: RESOLVED to Latin (`bs` base).** Recorded in [`script-decisions.md`](script-decisions.md). Bosnian is
+  officially biscriptal (Latin and Cyrillic are both constitutional), but Latin overwhelmingly dominates everyday life,
+  media, and software. The script-tagged siblings exist in the reference pile (`bs-Latn`, `bs-Cyrl`), confirming both
+  are localizable, but:
   - Latin is the default and dominant script in modern Bosnian usage (verified via web research, 2026-06-20).
   - Microsoft ships Bosnian primarily in Latin (`bs-Latn` is the maintained MS locale; `bs-Cyrl` exists but is far less
     used).
-  - Recommendation: target Latin for the `bs` base. Only add a `bs-Cyrl` variant if a real Cyrillic-preferring audience
-    surfaces, which is unlikely for a macOS app. Confidence: high. No David call needed beyond confirming Cmdr won't
-    pursue a Cyrillic variant.
+  - Ship Latin for the `bs` base. Add a `bs-Cyrl` variant only if a real Cyrillic-preferring audience surfaces, which is
+    unlikely for a macOS app.
 - **Mutual intelligibility with Serbian/Croatian.** Bosnian, Croatian (`hr`), Serbian (`sr`), and Montenegrin are
   mutually intelligible variants of one diasystem (BCMS). A Bosnian user reads Croatian/Serbian-Latin near-perfectly.
   This is informational, not a decision: don't conflate the catalogs, but expect heavy term overlap. Bosnian's

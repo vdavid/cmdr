@@ -21,6 +21,8 @@ Which languages Cmdr plans to localize vs set aside for now: [language-selection
 
 Formal vs informal address per language, with OS and retail evidence: [formal-informal-decisions.md](formal-informal-decisions.md).
 
+Which script each digraphic language ships in: [script-decisions.md](script-decisions.md).
+
 ## Current language guides
 
 One per language (BCP-47 base tag). Each may carry a "Decisions to confirm with David" section, a "Decision points" section, and a sourced glossary.

@@ -12,11 +12,11 @@ Azerbaijani.
 
 The calls a translator can't make alone. The first is the headline.
 
-- **Script: Latin (`az-Latn`) - recommended, but it's a real history to know (high).** Azerbaijani in Azerbaijan
-  switched from Cyrillic to a Latin alphabet (officially completed 2001); modern Azerbaijan uses Latin exclusively. The
-  pile's Microsoft sources are `az-Latn`. (Azerbaijani in Iran is written in Perso-Arabic script, a separate variant,
-  `az-Arab`, RTL - out of scope unless David wants the Iranian audience.) Recommendation: target **Latin (`az-Latn`)**;
-  do NOT use Cyrillic (it reads as dated/Soviet-era to a modern Azerbaijani reader). Confidence: high.
+- **Script: RESOLVED to Latin (`az-Latn`).** Azerbaijani in Azerbaijan switched from Cyrillic to a Latin alphabet
+  (officially completed 2001); modern Azerbaijan uses Latin exclusively. The pile's Microsoft sources are `az-Latn`.
+  Perso-Arabic `az-Arab` (Iran) is RTL and out of scope under the no-RTL decision. Don't use Cyrillic (it reads as
+  dated/Soviet-era to a modern reader). See the script decision point below and
+  [`script-decisions.md`](script-decisions.md). No longer open.
 - **Address form: polite plural "Siz" recommended, worth a sign-off (high).** Azerbaijani (Turkic, like Turkish) has a
   T-V split; software uses the polite plural. MS Azerbaijani uses the polite second person ("istəsəniz" = if you wish,
   verified 2026-06-20). Recommended default below.
@@ -43,7 +43,7 @@ Azerbaijani distinguishes informal singular "sən" from polite plural "Siz", lik
 
 ## Decision points
 
-- **Script: Latin.** Covered as the headline flag above. Default `az-Latn`. Confidence: high.
+- **Script: RESOLVED to Latin (`az-Latn`).** Recorded in [`script-decisions.md`](script-decisions.md).
 - **Regional variant: `az` / `az-Latn` (Azerbaijan).** The Republic of Azerbaijan standard, Latin script. The Iranian
   (South Azerbaijani, Perso-Arabic) variant is a separate, RTL workstream - out of scope by default. Confidence: high.
 - **Gender / inclusive language: a non-issue (high).** Azerbaijani (Turkic) has NO grammatical gender and a single
