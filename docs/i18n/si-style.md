@@ -90,6 +90,12 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('si')`; the
 
 ## Notes and decisions
 
+- **Encoding check to add when translating (TODO):** before the `si` catalog ships, wire a ZWJ-for-ligatures
+  consistency guard (a milder version of Malayalam's chillu check). Sinhala uses ZWJ (U+200D) to form certain conjunct
+  ligatures, so the same word can be encoded with or without ZWJ and look near-identical while differing in bytes, which
+  breaks search, sort, and dedup. The check should enforce a single consistent ZWJ convention across the `si` catalog
+  (don't mix ZWJ and non-ZWJ forms of the same cluster) so string compares stay stable. Build this check when `si` is
+  actually translated.
 - **Capitalization is moot** (no case in the script); see Decision points.
 - **Numbers and dates come from the formatter layer.** `formatNumber()`/`formatBytes()` produce locale-correct output;
   never hardcode separators. Sinhala uses Western (Arabic) digits in modern UI.

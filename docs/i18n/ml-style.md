@@ -135,6 +135,12 @@ Build this up as terms come up. Starting set (encode all chillus atomically):
 
 ## Notes and decisions
 
+- **Encoding check to add when translating (TODO):** before the `ml` catalog ships, wire an atomic-chillu validation
+  guard. Every `ml` value must use the atomic chillu code points (U+0D7A–U+0D7F), never legacy base + virama + ZWJ. The
+  two look identical but differ in bytes and break search, sort, and dedup; NFC does NOT convert legacy to atomic, so it
+  must be enforced by check. Practical rule: a `ml` value should contain ZERO U+200D (ZWJ) used for chillus. GNOME
+  reference data is almost all legacy ZWJ chillu, so re-normalize anything lifted from it. Build this check when `ml` is
+  actually translated.
 - Punctuation: use the Latin full stop `.`, comma `,`, and question mark `?`. Malayalam does not use distinct
   sentence-terminal punctuation; standard Latin marks are conventional in modern Malayalam UIs.
 - Quotation marks: follow the English source's marks; no Malayalam-specific quote convention to enforce.

@@ -90,6 +90,11 @@ string needs one.
 
 ## Notes and decisions
 
+- **Encoding check to add when translating (TODO):** before the `km` catalog ships, wire a ZWSP word-boundary
+  validation guard. Khmer has no inter-word spaces, so every `km` value must carry a zero-width space (U+200B) at word
+  boundaries for correct line- and word-breaking. The check should flag `km` values that contain no U+200B at all (a
+  near-certain sign ZWSP is missing), and the diff/normalization tooling must preserve U+200B rather than strip it.
+  Don't insert ZWSP inside Latin brand words. Build this check when `km` is actually translated.
 - **ZWSP everywhere (repeat of the decision point because it's that important):** every Khmer value carries U+200B at
   word boundaries. Don't let any pipeline step strip it.
 - **Quotation marks:** Khmer commonly uses the French-style guillemets `«…»` or English `"…"` depending on house style;

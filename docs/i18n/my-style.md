@@ -64,6 +64,12 @@ noun reads fine. Verify the category the runtime returns for `my` before writing
 
 These are the calls that actually matter for Burmese; settle them before a translation pass.
 
+- **Encoding check to add when translating (TODO):** before the `my` catalog ships, wire a Zawgyi-vs-Unicode validation
+  guard. Every `my` value must be strict, NFC-normalized Unicode (Myanmar block U+1000–U+109F), never Zawgyi. Zawgyi
+  shares the same code points, so a string can LOOK Burmese yet be wrong bytes that render as garbage. Detect with
+  Google's `myanmar-tools` (npm `myanmar-tools`) `ZawgyiDetector` over the whole catalog, fail on any Zawgyi hit, and
+  NFC-normalize. This is the one Burmese-specific check worth adding; build it when `my` is actually translated.
+
 - **Encoding: strict Unicode (NFC), never Zawgyi (the headline finding).** Two encodings compete for Burmese text on the
   same Myanmar code points. Zawgyi (the legacy "Zawgyi-One" font encoding) is NOT Unicode-compliant: it stores
   characters in a different, overlapping arrangement of the U+1000–U+109F block, so Zawgyi-encoded bytes render as

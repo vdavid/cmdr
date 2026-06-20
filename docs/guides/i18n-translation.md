@@ -102,6 +102,20 @@ The routine maintenance loop, run for every change that adds or edits user-facin
 4. **Human-review** the changed strings and set `@key.reviewed: true` again (the stale check reset it when the source
    changed).
 
+### Write placeholder strings to be restructurable
+
+When a user-facing string contains a placeholder (`{path}`, `{name}`, `{volumeName}`), phrase the English so a translator
+can move that placeholder into a grammatically neutral slot. Many languages must change the grammar *around* a
+placeholder based on its (unknown) runtime value: a Hungarian/Finnish/Turkish case suffix that has to vowel-harmonize
+with `{path}`, a German/Slavic case ending, a Celtic initial mutation. They can only handle that by reordering or
+reshaping the sentence (ICU allows reordering placeholders). So as the author, don't lock a placeholder into a slot that
+forces agreement: avoid `the {fileName}'s owner`; prefer `Owner: {fileName}` or `This file belongs to {owner}`. A
+`@key.description` that names what each placeholder holds is what lets the translator restructure safely.
+
+This is a forward discipline only: existing English-only strings need no retrofit (nothing is translated yet, so nothing
+is broken). If a future translation ever surfaces an English string that genuinely can't be restructured, fix that one
+string then.
+
 ## The translator-agent context (reusable system-prompt block)
 
 Hand an agent the block below as its system prompt, then feed it batches of keys with each key's `@key.description`,
