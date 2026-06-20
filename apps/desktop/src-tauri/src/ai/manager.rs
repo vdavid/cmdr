@@ -1,70 +1,47 @@
-//! AI model download manager and llama-server process lifecycle.
+//! AI manager facade: lifecycle, status, provider config, and backend resolution.
 //!
-//! The llama-server binary is bundled with the app (no runtime download needed).
-//! Only the AI model (~4.3 GB) is downloaded on first use.
+//! The thin coordinator over the AI subsystem's concern modules. It owns the
+//! cross-cutting commands (`init` / `shutdown`, `get_ai_status`, `configure_ai`,
+//! `get_ai_runtime_status`) and the provider-routing decision (`resolve_backend`),
+//! and delegates the rest:
+//!
+//! - shared state + persistence + model info → [`super::state`]
+//! - model download / uninstall → [`super::install`]
+//! - llama-server process lifecycle → [`super::server`]
+//! - cloud-endpoint probing + URL safety → [`super::connection_check`]
+//! - streaming-cancellation registry → [`super::stream_registry`]
+//!
+//! Each concern module's Tauri commands are registered directly from there (`ipc.rs`):
+//! the `#[tauri::command]` macro's generated helper items don't survive a `pub use`, so
+//! re-exporting wouldn't make the IPC path work. The handful of plain-fn callers that
+//! still reach in via `ai::manager::…` (`get_provider`, the stream-cancel registry) are
+//! covered by the re-exports just below.
 //!
 //! Uses `is_local_ai_supported()` to gate local-only operations (requires Apple Silicon).
 
-use super::download::{cleanup_partial, download_file};
-use super::extract::{LLAMA_SERVER_BINARY, REQUIRED_DYLIB, extract_bundled_llama_server};
-use super::process::{
-    SERVER_LOG_FILENAME, find_available_port, is_process_alive, kill_and_reap_in_background, kill_process,
-    kill_stale_llama_servers, log_diagnostics, read_log_tail, spawn_llama_server,
+use super::process::{kill_process, kill_stale_llama_servers};
+use super::state::{
+    MANAGER, get_ai_dir, get_cloud_config, get_current_model, get_port, is_fully_installed, load_state,
+    new_manager_state, save_state,
 };
-use super::{
-    AiExtracting, AiInstallComplete, AiInstalling, AiServerReady, AiStarting, AiState, AiStatus, AiVerifying,
-    ModelInfo, get_default_model, get_model_by_id, is_local_ai_supported,
-};
+use super::{AiStarting, AiStatus, is_local_ai_supported};
 use crate::ignore_poison::IgnorePoison;
-use crate::pluralize::pluralize;
-use regex::Regex;
-use std::borrow::Cow;
-use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::sync::{LazyLock, Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use tauri::{AppHandle, Runtime};
 use tauri_specta::Event as _;
-use tokio_util::sync::CancellationToken;
 
-/// Global manager state, accessible from Tauri commands.
-static MANAGER: Mutex<Option<ManagerState>> = Mutex::new(None);
+// --- Re-exports keeping the `ai::manager::…` path stable for the facade's non-command
+// callers. The Tauri command fns live in their concern modules and are registered from
+// there (`ipc.rs`), because the `#[tauri::command]` macro's generated helper items don't
+// travel through a `pub use`. These plain re-exports cover the rest:
+// `get_provider` (commands/selection.rs) and the stream-cancellation registry (suggestions.rs).
 
-struct ManagerState {
-    ai_dir: PathBuf,
-    state: AiState,
-    /// PID of the running llama-server process
-    child_pid: Option<u32>,
-    /// Flag to cancel an in-progress download
-    cancel_requested: bool,
-    /// Flag to prevent multiple concurrent downloads
-    download_in_progress: bool,
-    /// True while the server is starting up (health check polling)
-    server_starting: bool,
-    /// Cancels the in-flight startup health-check when the server is intentionally stopped
-    /// or superseded, so a deliberate stop isn't reported as a startup failure.
-    start_cancel: Option<CancellationToken>,
-    /// AI provider mode: "off", "cloud", or "local"
-    provider: String,
-    /// Context size for local llama-server
-    context_size: u32,
-    /// Cloud-AI provider API key (stored here so suggestions.rs can read without settings files)
-    cloud_api_key: String,
-    /// Cloud-AI provider base URL (e.g. `https://api.openai.com/v1`, `https://api.anthropic.com/v1/`)
-    cloud_base_url: String,
-    /// Cloud-AI provider model name (e.g. `gpt-4o-mini`, `claude-sonnet-4-5`, `gemini-2.5-flash`)
-    cloud_model: String,
-    /// Whether the selected cloud provider needs an API key. The frontend owns this fact
-    /// (`requiresApiKey` per provider preset); keyless endpoints (Ollama, LM Studio, a custom
-    /// OpenAI-compatible endpoint) set it `false` so an empty key isn't treated as "not configured".
-    cloud_requires_api_key: bool,
-}
-
-const STATE_FILENAME: &str = "ai-state.json";
-/// Stale partial downloads older than this are cleaned up at app start.
-const STALE_PARTIAL_SECONDS: u64 = 24 * 60 * 60; // 24 hours
+pub(super) use super::install::cleanup_stale_partial_download;
+pub(super) use super::server::{handle_startup_outcome, spawn_and_track_server, wait_for_server_health};
+pub use super::state::get_provider;
+pub use super::stream_registry::cancel_stream;
+pub(super) use super::stream_registry::{register_stream, unregister_stream};
 
 /// Initializes the AI manager. Called once on app startup.
 ///
@@ -75,21 +52,7 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
     let state = load_state(&ai_dir);
 
     let mut manager = MANAGER.lock_ignore_poison();
-    *manager = Some(ManagerState {
-        ai_dir,
-        state,
-        child_pid: None,
-        cancel_requested: false,
-        download_in_progress: false,
-        server_starting: false,
-        start_cancel: None,
-        provider: String::from("local"),
-        context_size: 4096,
-        cloud_api_key: String::new(),
-        cloud_base_url: String::from("https://api.openai.com/v1"),
-        cloud_model: String::from("gpt-4o-mini"),
-        cloud_requires_api_key: false,
-    });
+    *manager = Some(new_manager_state(ai_dir, state));
 
     // Belt-and-suspenders: stop ALL llama-server processes from our AI directory,
     // not just the tracked PID. Catches orphans from race conditions or crashes.
@@ -188,36 +151,6 @@ fn current_unix_seconds() -> u64 {
         .as_secs()
 }
 
-/// Returns the port the llama-server is listening on, if running.
-pub fn get_port() -> Option<u16> {
-    let manager = MANAGER.lock_ignore_poison();
-    manager.as_ref().and_then(|m| m.state.port)
-}
-
-/// Returns the current AI provider stored in manager state.
-pub fn get_provider() -> String {
-    let manager = MANAGER.lock_ignore_poison();
-    manager
-        .as_ref()
-        .map(|m| m.provider.clone())
-        .unwrap_or_else(|| String::from("off"))
-}
-
-/// Returns the cloud-AI config (api_key, base_url, model) stored in manager state.
-pub fn get_cloud_config() -> (String, String, String) {
-    let manager = MANAGER.lock_ignore_poison();
-    manager
-        .as_ref()
-        .map(|m| (m.cloud_api_key.clone(), m.cloud_base_url.clone(), m.cloud_model.clone()))
-        .unwrap_or_default()
-}
-
-/// Whether the configured cloud provider needs an API key (frontend-owned `requiresApiKey`).
-pub fn get_cloud_requires_api_key() -> bool {
-    let manager = MANAGER.lock_ignore_poison();
-    manager.as_ref().map(|m| m.cloud_requires_api_key).unwrap_or(false)
-}
-
 /// Resolves the configured AI provider into either a ready-to-use [`AiBackend`] or
 /// a reason why one couldn't be built.
 ///
@@ -244,7 +177,7 @@ pub fn resolve_backend() -> BackendResolution {
         api_key,
         base_url,
         model,
-        get_cloud_requires_api_key(),
+        super::state::get_cloud_requires_api_key(),
     )
 }
 
@@ -281,148 +214,6 @@ fn resolve_backend_inner(
     }
 }
 
-// region: --- Streaming-suggestion cancellation registry --------------------------
-
-/// Per-request cancellation tokens for in-flight `stream_folder_suggestions` calls.
-///
-/// Why a separate registry rather than reusing `MANAGER`: this state is purely about
-/// AI streaming task lifecycle, not file-manager AI state. Keeping it isolated avoids
-/// expanding `ManagerState` and lets us drop entries on task end without a wider lock.
-static STREAM_CANCEL_TOKENS: LazyLock<Mutex<HashMap<String, CancellationToken>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
-
-/// Registers a fresh `CancellationToken` for `request_id` and returns a clone for the
-/// task to await. If `request_id` collides with an existing entry (UUID collision is
-/// astronomically unlikely; buggy frontend possible) the prior token is silently
-/// orphaned; the prior task will keep running until natural completion.
-pub(super) fn register_stream(request_id: &str) -> CancellationToken {
-    let token = CancellationToken::new();
-    STREAM_CANCEL_TOKENS
-        .lock_ignore_poison()
-        .insert(request_id.to_owned(), token.clone());
-    token
-}
-
-/// Removes the token for `request_id` from the registry. The task calls this from its
-/// RAII guard; safe to call even if `cancel_stream` already removed the entry.
-pub(super) fn unregister_stream(request_id: &str) {
-    STREAM_CANCEL_TOKENS.lock_ignore_poison().remove(request_id);
-}
-
-/// Cancels and removes the token for `request_id`. Idempotent: missing id is a no-op
-/// (the stream may have already completed and unregistered). `CancellationToken::cancel`
-/// is itself idempotent.
-pub fn cancel_stream(request_id: &str) {
-    if let Some(token) = STREAM_CANCEL_TOKENS.lock_ignore_poison().remove(request_id) {
-        token.cancel();
-    }
-}
-
-// endregion: --- Streaming-suggestion cancellation registry -----------------------
-
-/// Starts the AI download (binary + model).
-#[tauri::command]
-#[specta::specta]
-pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
-    if !is_local_ai_supported() {
-        return Err(String::from("Local AI not supported on this hardware"));
-    }
-
-    // Check if download is already in progress
-    {
-        let mut manager = MANAGER.lock_ignore_poison();
-        if let Some(ref mut m) = *manager {
-            if m.download_in_progress {
-                log::warn!("AI download: already in progress, ignoring duplicate request");
-                return Ok(());
-            }
-            m.download_in_progress = true;
-        }
-    }
-
-    let result = do_download(&app).await;
-
-    // Clear in-progress flag
-    {
-        let mut manager = MANAGER.lock_ignore_poison();
-        if let Some(ref mut m) = *manager {
-            m.download_in_progress = false;
-        }
-    }
-
-    result
-}
-
-/// Cancels an in-progress download.
-#[tauri::command]
-#[specta::specta]
-pub fn cancel_ai_download() {
-    let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager {
-        m.cancel_requested = true;
-    }
-}
-
-/// Uninstalls the AI model and binary, resets state.
-/// Async because file deletion may block briefly.
-#[tauri::command]
-#[specta::specta]
-pub async fn uninstall_ai() {
-    tauri::async_runtime::spawn_blocking(uninstall_ai_sync).await.ok();
-}
-
-fn uninstall_ai_sync() {
-    let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager {
-        // Stop server if running
-        if let Some(pid) = m.child_pid.take() {
-            kill_and_reap_in_background(pid);
-        }
-
-        // Delete files
-        let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
-        let _ = fs::remove_file(m.ai_dir.join(LLAMA_SERVER_BINARY));
-        let _ = fs::remove_file(m.ai_dir.join(model.filename));
-
-        // Reset state
-        m.state.installed = false;
-        m.state.port = None;
-        m.state.pid = None;
-        m.state.model_download_complete = false;
-        save_state(&m.ai_dir, &m.state);
-    }
-}
-
-/// Model info returned to frontend.
-#[derive(Debug, Clone, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AiModelInfo {
-    pub id: String,
-    pub display_name: String,
-    pub size_bytes: u64,
-    /// Human-readable size (like "4.3 GB")
-    pub size_formatted: String,
-    /// Bytes per token for KV cache (used for memory estimation)
-    pub kv_bytes_per_token: u64,
-    /// Base memory overhead in bytes (model weights + compute buffers)
-    pub base_overhead_bytes: u64,
-}
-
-/// Returns information about the current AI model.
-#[tauri::command]
-#[specta::specta]
-pub fn get_ai_model_info() -> AiModelInfo {
-    let model = get_current_model();
-    AiModelInfo {
-        id: model.id.to_string(),
-        display_name: model.display_name.to_string(),
-        size_bytes: model.size_bytes,
-        size_formatted: format_bytes_gb(model.size_bytes),
-        kv_bytes_per_token: model.kv_bytes_per_token,
-        base_overhead_bytes: model.base_overhead_bytes,
-    }
-}
-
 /// Runtime status of the AI subsystem, returned to frontend.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -456,7 +247,7 @@ pub fn get_ai_runtime_status() -> AiRuntimeStatus {
             model_installed: is_fully_installed(m),
             model_name: model.display_name.to_string(),
             model_size_bytes: model.size_bytes,
-            model_size_formatted: format_bytes_gb(model.size_bytes),
+            model_size_formatted: super::state::format_bytes_gb(model.size_bytes),
             download_in_progress: m.download_in_progress,
             local_ai_supported: is_local_ai_supported(),
             kv_bytes_per_token: model.kv_bytes_per_token,
@@ -470,7 +261,7 @@ pub fn get_ai_runtime_status() -> AiRuntimeStatus {
             model_installed: false,
             model_name: model.display_name.to_string(),
             model_size_bytes: model.size_bytes,
-            model_size_formatted: format_bytes_gb(model.size_bytes),
+            model_size_formatted: super::state::format_bytes_gb(model.size_bytes),
             download_in_progress: false,
             local_ai_supported: is_local_ai_supported(),
             kv_bytes_per_token: model.kv_bytes_per_token,
@@ -502,7 +293,7 @@ pub fn configure_ai<R: Runtime>(
     // suggestions.rs / search will later send with an Authorization header. Only
     // enforced for the cloud provider with a non-empty base URL.
     if provider == "cloud" && !cloud_base_url.is_empty() {
-        validate_ai_base_url(&cloud_base_url, &cloud_api_key)?;
+        super::connection_check::validate_ai_base_url(&cloud_base_url, &cloud_api_key)?;
     }
 
     // Single lock: decide, stop, spawn (no race window for orphan processes)
@@ -520,7 +311,7 @@ pub fn configure_ai<R: Runtime>(
             }
             if let Some(pid) = m.child_pid.take() {
                 log::info!("AI configure: provider changed away from local, stopping server");
-                kill_and_reap_in_background(pid);
+                super::process::kill_and_reap_in_background(pid);
                 m.state.port = None;
                 m.state.pid = None;
                 save_state(&m.ai_dir, &m.state);
@@ -565,678 +356,9 @@ pub fn configure_ai<R: Runtime>(
     Ok(())
 }
 
-/// Stops the local llama-server without uninstalling.
-#[tauri::command]
-#[specta::specta]
-pub fn stop_ai_server() {
-    let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager {
-        // Cancel an in-flight startup first, so its waiter sees an intentional stop
-        // rather than a crash.
-        if let Some(token) = m.start_cancel.take() {
-            token.cancel();
-        }
-        if let Some(pid) = m.child_pid.take() {
-            log::info!("AI: stopping server (PID {pid})");
-            kill_and_reap_in_background(pid);
-            m.state.port = None;
-            m.state.pid = None;
-            save_state(&m.ai_dir, &m.state);
-        }
-    }
-}
-
-/// Starts the local llama-server with the given context size.
-/// Spawns the server in a background task and returns immediately.
-#[tauri::command]
-#[specta::specta]
-pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(), String> {
-    if !is_local_ai_supported() {
-        return Err(String::from("Local AI not supported on this hardware"));
-    }
-
-    // Recovery: re-extract binary if missing (before acquiring lock)
-    let ai_dir = get_ai_dir(&app);
-    let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
-    if !binary_path.exists() {
-        log::debug!("AI manager: binary missing, attempting re-extraction...");
-        extract_bundled_llama_server(&app, &ai_dir)?;
-    }
-
-    let spawn_result;
-    {
-        let mut manager = MANAGER.lock_ignore_poison();
-        let Some(ref mut m) = *manager else {
-            return Err(String::from("AI manager not initialized"));
-        };
-        m.context_size = ctx_size;
-
-        spawn_result = if is_fully_installed(m) && m.child_pid.is_none() {
-            match spawn_and_track_server(m) {
-                Ok((pid, port, cancel)) => {
-                    m.server_starting = true;
-                    Some((pid, port, cancel))
-                }
-                Err(e) => return Err(e),
-            }
-        } else {
-            None
-        };
-    }
-
-    if let Some((pid, port, cancel)) = spawn_result {
-        let _ = AiStarting.emit(&app);
-        tauri::async_runtime::spawn(async move {
-            handle_startup_outcome(wait_for_server_health(&ai_dir, pid, port, cancel).await, pid, &app);
-        });
-    }
-
-    Ok(())
-}
-
-/// Logs a startup outcome at the right severity, emits `AiServerReady` only on success, and
-/// clears `server_starting` unless a newer startup has taken over the slot. A `Cancelled`
-/// outcome (provider switched away, server stopped, or superseded) is deliberately quiet:
-/// no ERROR, no event. That's the normal case when someone toggles local AI on and off.
-fn handle_startup_outcome<R: Runtime>(outcome: StartupOutcome, pid: u32, app: &AppHandle<R>) {
-    match outcome {
-        StartupOutcome::Ready => {
-            log::info!("AI: server ready");
-            let _ = AiServerReady.emit(app);
-        }
-        StartupOutcome::Cancelled => {
-            log::debug!("AI server: startup cancelled (provider switched or server stopped)");
-        }
-        StartupOutcome::Failed(e) => crate::log_error!("AI manager: server didn't start: {e}"),
-    }
-
-    let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager
-        && startup_task_owns_slot(m.child_pid, pid)
-    {
-        m.server_starting = false;
-    }
-}
-
-/// Result of checking connectivity to an AI API endpoint.
-#[derive(Debug, Clone, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AiConnectionCheckResult {
-    pub connected: bool,
-    pub auth_error: bool,
-    pub models: Vec<String>,
-    pub error: Option<String>,
-}
-
-/// Checks connectivity to an AI API endpoint by calling GET {base_url}/models.
-/// Returns connection status, auth status, and available model list.
-#[tauri::command]
-#[specta::specta]
-pub async fn check_ai_connection(base_url: String, api_key: String) -> AiConnectionCheckResult {
-    // Same plaintext-key guard as `configure_ai`: never send the BYOK key over
-    // `http://` to a non-loopback host.
-    if let Err(message) = validate_ai_base_url(&base_url, &api_key) {
-        return AiConnectionCheckResult {
-            connected: false,
-            auth_error: false,
-            models: vec![],
-            error: Some(message),
-        };
-    }
-
-    let url = format!("{}/models", base_url.trim_end_matches('/'));
-
-    let client = match reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-    {
-        Ok(c) => c,
-        Err(e) => {
-            return AiConnectionCheckResult {
-                connected: false,
-                auth_error: false,
-                models: vec![],
-                error: Some(format!("Can't create HTTP client: {e}")),
-            };
-        }
-    };
-
-    let mut request = client.get(&url);
-    if !api_key.is_empty() {
-        request = request.header("Authorization", format!("Bearer {api_key}"));
-    }
-
-    let response = match request.send().await {
-        Ok(r) => r,
-        Err(e) => {
-            let msg = if e.is_timeout() {
-                String::from("Can't reach server (timed out)")
-            } else if e.is_connect() {
-                String::from("Can't reach server")
-            } else {
-                format!("Can't reach server: {e}")
-            };
-            return AiConnectionCheckResult {
-                connected: false,
-                auth_error: false,
-                models: vec![],
-                error: Some(msg),
-            };
-        }
-    };
-
-    let status = response.status();
-
-    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
-        return AiConnectionCheckResult {
-            connected: true,
-            auth_error: true,
-            models: vec![],
-            error: Some(String::from("API key is invalid")),
-        };
-    }
-
-    if status == reqwest::StatusCode::OK {
-        let body = response.text().await.unwrap_or_default();
-        // Try parsing OpenAI-style response: { "data": [{ "id": "model-name" }, ...] }
-        let models = parse_model_ids(&body);
-        return AiConnectionCheckResult {
-            connected: true,
-            auth_error: false,
-            models,
-            error: None,
-        };
-    }
-
-    // Other HTTP error
-    let body = response.text().await.unwrap_or_default();
-    let body_preview = truncate_body_preview(&body, 200);
-    AiConnectionCheckResult {
-        connected: true,
-        auth_error: false,
-        models: vec![],
-        error: Some(format!("HTTP {status}: {body_preview}")),
-    }
-}
-
-/// Validates a cloud-AI base URL before we attach the BYOK API key to a request.
-///
-/// We attach the key as an `Authorization: Bearer ...` header. Sending that over
-/// plaintext `http://` to a host we don't control would leak the secret on the
-/// wire, so we require `https://` unless the host is loopback. Loopback `http://`
-/// stays allowed because the Ollama / LM Studio presets are `http://localhost:*`.
-///
-/// An empty `api_key` means there's no secret to leak, so plaintext to any host is
-/// fine (used for local OpenAI-compatible servers that don't require auth).
-///
-/// Never logs `api_key`.
-fn validate_ai_base_url(url: &str, api_key: &str) -> Result<(), String> {
-    let parsed = reqwest::Url::parse(url).map_err(|_| String::from("That endpoint URL doesn't look valid."))?;
-
-    match parsed.scheme() {
-        "https" => Ok(()),
-        "http" => {
-            if api_key.is_empty() || host_is_loopback(&parsed) {
-                Ok(())
-            } else {
-                Err(String::from(
-                    "We only send your API key over HTTPS — use https:// or clear the key first.",
-                ))
-            }
-        }
-        _ => Err(String::from("That endpoint URL doesn't look valid.")),
-    }
-}
-
-/// True when the URL's host is a loopback address (`localhost`, `127.0.0.1`, `::1`).
-fn host_is_loopback(parsed: &reqwest::Url) -> bool {
-    let Some(host) = parsed.host_str() else {
-        return false;
-    };
-    if host.eq_ignore_ascii_case("localhost") {
-        return true;
-    }
-    // `host_str()` returns IPv6 hosts wrapped in brackets, e.g. `[::1]`.
-    let bare = host.strip_prefix('[').and_then(|h| h.strip_suffix(']')).unwrap_or(host);
-    bare.parse::<std::net::IpAddr>()
-        .map(|ip| ip.is_loopback())
-        .unwrap_or(false)
-}
-
-/// Parses model IDs from an OpenAI-compatible /models response.
-/// Returns empty vec on parse failure (connected but can't list models).
-fn parse_model_ids(body: &str) -> Vec<String> {
-    #[derive(serde::Deserialize)]
-    struct ModelsResponse {
-        data: Vec<ModelEntry>,
-    }
-    #[derive(serde::Deserialize)]
-    struct ModelEntry {
-        id: String,
-    }
-
-    serde_json::from_str::<ModelsResponse>(body)
-        .map(|r| r.data.into_iter().map(|m| m.id).collect())
-        .unwrap_or_default()
-}
-
-/// Truncate an error-response body to at most `max` characters for a log/error preview,
-/// appending `...` only when truncation actually happened.
-///
-/// Char-based (not byte-based): slicing `&body[..max]` panics when byte `max` lands inside
-/// a multibyte UTF-8 sequence, which is trivially reachable with a non-ASCII error body from
-/// a user-configured AI endpoint. We also scrub `Bearer <token>`-shaped substrings as
-/// belt-and-suspenders in case a misbehaving proxy reflects the `Authorization` header back
-/// in its error body.
-fn truncate_body_preview(body: &str, max: usize) -> String {
-    let scrubbed = scrub_bearer_tokens(body);
-    let mut chars = scrubbed.chars();
-    let preview: String = chars.by_ref().take(max).collect();
-    // `chars` still has at least one item left iff the body was longer than `max` chars.
-    if chars.next().is_some() {
-        format!("{preview}...")
-    } else {
-        preview
-    }
-}
-
-/// Replace the token in any `Bearer <token>` substring with `<redacted>`, leaving the rest
-/// of the text intact. Case-insensitive on the `Bearer` keyword.
-fn scrub_bearer_tokens(text: &str) -> Cow<'_, str> {
-    static BEARER_RE: OnceLock<Regex> = OnceLock::new();
-    let re = BEARER_RE.get_or_init(|| Regex::new(r"(?i)\bBearer\s+\S+").expect("valid bearer regex"));
-    re.replace_all(text, "Bearer <redacted>")
-}
-
-/// Formats bytes as GB with one decimal place (like "4.3 GB").
-fn format_bytes_gb(bytes: u64) -> String {
-    let gb = bytes as f64 / 1_000_000_000.0;
-    format!("{gb:.1} GB")
-}
-
-// --- Internal helpers ---
-
-/// Returns the model info for the currently selected/installed model.
-/// Falls back to default if the stored model ID is not in the registry.
-fn get_current_model() -> &'static ModelInfo {
-    let manager = MANAGER.lock_ignore_poison();
-    if let Some(ref m) = *manager
-        && let Some(model) = get_model_by_id(&m.state.installed_model_id)
-    {
-        return model;
-    }
-    get_default_model()
-}
-
-fn get_ai_dir<R: Runtime>(app: &AppHandle<R>) -> PathBuf {
-    crate::config::resolved_app_data_dir(app)
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("ai")
-}
-
-fn load_state(ai_dir: &Path) -> AiState {
-    let path = ai_dir.join(STATE_FILENAME);
-    fs::read_to_string(&path)
-        .ok()
-        .and_then(|contents| serde_json::from_str(&contents).ok())
-        .unwrap_or_default()
-}
-
-fn save_state(ai_dir: &Path, state: &AiState) {
-    let _ = fs::create_dir_all(ai_dir);
-    let path = ai_dir.join(STATE_FILENAME);
-    if let Ok(json) = serde_json::to_string_pretty(state) {
-        let _ = fs::write(path, json);
-    }
-}
-
-/// Returns true if AI is fully installed and ready to run.
-/// Requires binary, model, AND shared libraries to exist.
-fn is_fully_installed(m: &ManagerState) -> bool {
-    let binary_exists = m.ai_dir.join(LLAMA_SERVER_BINARY).exists();
-    let dylib_exists = m.ai_dir.join(REQUIRED_DYLIB).exists();
-
-    // Get model info based on installed model ID
-    let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
-    let model_path = m.ai_dir.join(model.filename);
-    let model_exists = model_path.exists();
-
-    if !binary_exists || !dylib_exists {
-        if binary_exists && !dylib_exists {
-            log::debug!("AI: binary exists but shared libraries missing, need re-extraction");
-        }
-        return false;
-    }
-
-    // Model must exist AND be verified complete (not a partial download)
-    let model_complete = model_exists && m.state.model_download_complete;
-
-    if model_exists && !m.state.model_download_complete {
-        // Double-check by file size in case state is stale
-        if let Ok(meta) = fs::metadata(&model_path)
-            && meta.len() >= model.size_bytes
-        {
-            log::debug!("AI: model file size matches expected, marking as complete");
-            return true; // Binary, dylibs, and model all present
-        }
-        log::debug!("AI: model file exists but download not verified complete");
-    }
-
-    model_complete
-}
-
-/// Cleans up stale partial downloads older than 24 hours.
-fn cleanup_stale_partial_download(m: &mut ManagerState) {
-    // Only cleanup if there's a partial download (not complete) with a start timestamp
-    if m.state.model_download_complete {
-        return;
-    }
-
-    let Some(started) = m.state.partial_download_started else {
-        return;
-    };
-
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-
-    if now.saturating_sub(started) >= STALE_PARTIAL_SECONDS {
-        let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
-        let model_path = m.ai_dir.join(model.filename);
-        if model_path.exists() {
-            log::debug!(
-                "AI: cleaning up stale partial download (started {} hours ago)",
-                (now - started) / 3600
-            );
-            let _ = fs::remove_file(&model_path);
-            m.state.partial_download_started = None;
-            save_state(&m.ai_dir, &m.state);
-        }
-    }
-}
-
-async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
-    let ai_dir = get_ai_dir(app);
-    fs::create_dir_all(&ai_dir).map_err(|e| format!("Failed to create AI directory: {e}"))?;
-
-    // Get the model to download (use default for new installs)
-    let model = get_current_model();
-    log::debug!("AI download: using model {} ({})", model.id, model.display_name);
-
-    // Reset cancel flag and set the model ID we're installing
-    {
-        let mut manager = MANAGER.lock_ignore_poison();
-        if let Some(ref mut m) = *manager {
-            m.cancel_requested = false;
-            m.state.installed_model_id = model.id.to_string();
-        }
-    }
-
-    // Step 1: Extract llama-server from bundled archive (instant, no download needed)
-    let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
-    if !binary_path.exists() {
-        let _ = AiExtracting.emit(app);
-        extract_bundled_llama_server(app, &ai_dir)?;
-    }
-
-    // Check if cancelled before starting big download
-    if is_cancel_requested() {
-        cleanup_partial(&ai_dir, model);
-        return Err(String::from("Download cancelled"));
-    }
-
-    // Step 2: Download GGUF model - this is the only network download
-    let model_path = ai_dir.join(model.filename);
-
-    // Track when this partial download started (for stale cleanup)
-    {
-        let mut manager = MANAGER.lock_ignore_poison();
-        if let Some(ref mut m) = *manager {
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs();
-            m.state.partial_download_started = Some(now);
-            save_state(&m.ai_dir, &m.state);
-        }
-    }
-
-    download_file(app, model.url, &model_path, is_cancel_requested).await?;
-
-    // Step 3: Verify download integrity by checking file size
-    let _ = AiVerifying.emit(app);
-    let actual_size = fs::metadata(&model_path)
-        .map(|m| m.len())
-        .map_err(|e| format!("Failed to read downloaded model file: {e}"))?;
-
-    if actual_size < model.size_bytes {
-        crate::log_error!(
-            "AI download: model file size mismatch. Expected {} bytes, got {} bytes",
-            model.size_bytes,
-            actual_size
-        );
-        return Err(format!(
-            "Download incomplete: expected {} bytes, got {} bytes",
-            model.size_bytes, actual_size
-        ));
-    }
-
-    log::debug!("AI download: model verified, {} bytes", actual_size);
-
-    // Mark download as complete and update state
-    {
-        let mut manager = MANAGER.lock_ignore_poison();
-        if let Some(ref mut m) = *manager {
-            m.state.installed = true;
-            m.state.model_download_complete = true;
-            m.state.partial_download_started = None; // Clear partial marker
-            save_state(&m.ai_dir, &m.state);
-        }
-    }
-
-    // Emit installing event so UI shows "Setting up AI..." while server starts
-    let _ = AiInstalling.emit(app);
-
-    // Start the server FIRST, then emit install complete.
-    // Spawn synchronously so PID is tracked immediately, then health-check async.
-    let (pid, port, cancel) = {
-        let mut manager = MANAGER.lock_ignore_poison();
-        let Some(ref mut m) = *manager else {
-            return Err(String::from("AI manager not initialized"));
-        };
-        spawn_and_track_server(m)?
-    };
-    match wait_for_server_health(&ai_dir, pid, port, cancel).await {
-        StartupOutcome::Ready => {}
-        // The user switched away mid-install. The model is installed and state saved;
-        // the server start was deliberately abandoned, so this isn't an install failure.
-        StartupOutcome::Cancelled => return Ok(()),
-        StartupOutcome::Failed(e) => return Err(e),
-    }
-
-    // Emit install complete only after server is healthy
-    let _ = AiInstallComplete.emit(app);
-
-    Ok(())
-}
-
-fn is_cancel_requested() -> bool {
-    let manager = MANAGER.lock_ignore_poison();
-    manager.as_ref().is_some_and(|m| m.cancel_requested)
-}
-
-/// Spawns llama-server and immediately tracks its PID in manager state.
-/// Must be called while holding the MANAGER lock.
-/// Returns (pid, port) for the caller to health-check asynchronously.
-fn spawn_and_track_server(m: &mut ManagerState) -> Result<(u32, u16, CancellationToken), String> {
-    let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
-    let port = find_available_port().ok_or("No available port")?;
-
-    log::debug!(
-        "AI server: starting llama-server on port {port} with context size {}",
-        m.context_size
-    );
-
-    // Supersede any previous in-flight startup: its health-check waiter should exit
-    // quietly rather than report the now-orphaned PID's death as a failure.
-    if let Some(token) = m.start_cancel.take() {
-        token.cancel();
-    }
-
-    // Belt-and-suspenders: stop any stale llama-servers before spawning a new one
-    kill_stale_llama_servers(&m.ai_dir);
-
-    let pid = spawn_llama_server(&m.ai_dir, model.filename, port, m.context_size)?;
-
-    // Track PID immediately (no race window where a process exists untracked)
-    let cancel = CancellationToken::new();
-    m.start_cancel = Some(cancel.clone());
-    m.child_pid = Some(pid);
-    m.state.port = Some(port);
-    m.state.pid = Some(pid);
-    save_state(&m.ai_dir, &m.state);
-
-    Ok((pid, port, cancel))
-}
-
-/// Outcome of waiting for a freshly-spawned llama-server to become healthy.
-enum StartupOutcome {
-    /// The server passed its health check and is ready.
-    Ready,
-    /// Startup was intentionally cancelled: the provider was switched away, the server was
-    /// stopped, or a newer spawn superseded this one. Not a failure: the caller logs it
-    /// quietly and emits no "ready" event.
-    Cancelled,
-    /// The server genuinely failed to start (crashed, or never became healthy in time).
-    Failed(String),
-}
-
-/// A finished startup task should clear `server_starting` only if it still owns the slot:
-/// either it's the current child, or no child is tracked (the server was stopped or the
-/// process failed and was cleaned up). If a newer startup has taken over (`child_pid` now
-/// points at a different process), that task owns the flag and this one must leave it alone.
-fn startup_task_owns_slot(current_child: Option<u32>, my_pid: u32) -> bool {
-    current_child.is_none_or(|current| current == my_pid)
-}
-
-/// Waits for the server to become healthy (polls every 500ms, up to 60s). Returns early and
-/// quietly if `cancel` fires (an intentional stop or supersede). On genuine failure or
-/// timeout, kills the process and clears state.
-async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16, cancel: CancellationToken) -> StartupOutcome {
-    // Brief pause to let the process initialize. A `biased` select checks cancellation first,
-    // so an intentional stop during this window never gets misread as a crash below.
-    tokio::select! {
-        biased;
-        () = cancel.cancelled() => return StartupOutcome::Cancelled,
-        () = tokio::time::sleep(std::time::Duration::from_millis(100)) => {}
-    }
-    if !is_process_alive(pid) {
-        cleanup_failed_server(pid);
-        let last_lines = read_log_tail(ai_dir, 20);
-        crate::log_error!("AI server: process died immediately. Last log lines:\n{last_lines}");
-        let log_path = ai_dir.join(SERVER_LOG_FILENAME);
-        return StartupOutcome::Failed(format!("llama-server crashed on startup. Check log at: {log_path:?}"));
-    }
-
-    log::debug!("AI server: waiting for health check on port {port}...");
-    for i in 0..120 {
-        tokio::select! {
-            biased;
-            () = cancel.cancelled() => return StartupOutcome::Cancelled,
-            () = tokio::time::sleep(std::time::Duration::from_millis(500)) => {}
-        }
-
-        if !is_process_alive(pid) {
-            // A genuine death: an intentional stop would have cancelled the token, and the
-            // biased select above would have returned `Cancelled` before reaching here.
-            cleanup_failed_server(pid);
-            let last_lines = read_log_tail(ai_dir, 20);
-            crate::log_error!("AI server: process died during startup. Last log lines:\n{last_lines}");
-            return StartupOutcome::Failed(format!("llama-server process (PID {pid}) died during startup"));
-        }
-
-        if super::client::health_check(port).await {
-            log::debug!("AI server: healthy on port {port} after {}s", (i + 1) / 2);
-            return StartupOutcome::Ready;
-        }
-
-        if i % 10 == 9 {
-            log::debug!("AI server: still waiting for health check ({}s)...", (i + 1) / 2);
-            if let Some((line_count, last_line)) = log_diagnostics(ai_dir) {
-                log::debug!(
-                    "AI server: log has {}, last: {last_line}",
-                    pluralize(line_count as u64, "line")
-                );
-            }
-        }
-    }
-
-    // Timed out; kill the process instead of leaving it orphaned
-    cleanup_failed_server(pid);
-    let last_lines = read_log_tail(ai_dir, 20);
-    crate::log_error!("AI server: health check timed out. Last log lines:\n{last_lines}");
-    StartupOutcome::Failed(String::from("llama-server failed to become healthy within 60s"))
-}
-
-/// Kills a server process and clears its tracking state.
-/// Only clears state if the tracked PID still matches (avoids clobbering a newer spawn).
-fn cleanup_failed_server(pid: u32) {
-    kill_and_reap_in_background(pid);
-    let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager
-        && m.child_pid == Some(pid)
-    {
-        m.child_pid = None;
-        m.state.port = None;
-        m.state.pid = None;
-        save_state(&m.ai_dir, &m.state);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn truncate_body_preview_is_char_safe_on_multibyte_boundary() {
-        // '€' is 3 bytes in UTF-8. A string of 300 of them is 900 bytes; byte 200 lands
-        // mid-codepoint (200 % 3 != 0), so the old `&body[..200]` form would panic here.
-        let body = "€".repeat(300);
-        // The point is simply that this does NOT panic.
-        let out = truncate_body_preview(&body, 200);
-        // 200 chars kept (each still a full '€'), plus the "..." marker.
-        assert_eq!(out.chars().filter(|&c| c == '€').count(), 200);
-        assert!(out.ends_with("..."));
-
-        // '日' is also 3 bytes; same boundary hazard, different codepoint.
-        let body = "日".repeat(300);
-        let out = truncate_body_preview(&body, 200);
-        assert_eq!(out.chars().filter(|&c| c == '日').count(), 200);
-    }
-
-    #[test]
-    fn truncate_body_preview_truncates_ascii() {
-        let body = "a".repeat(500);
-        let out = truncate_body_preview(&body, 200);
-        assert_eq!(out, format!("{}...", "a".repeat(200)));
-    }
-
-    #[test]
-    fn truncate_body_preview_no_ellipsis_when_short() {
-        assert_eq!(truncate_body_preview("short body", 200), "short body");
-        // Exactly `max` chars: no truncation, so no ellipsis.
-        let exact = "x".repeat(200);
-        assert_eq!(truncate_body_preview(&exact, 200), exact);
-    }
-
-    #[test]
-    fn truncate_body_preview_scrubs_bearer_tokens() {
-        let body = "error: invalid auth Bearer sk-abc123secret rejected";
-        let out = truncate_body_preview(body, 200);
-        assert!(out.contains("Bearer <redacted>"), "got: {out}");
-        assert!(!out.contains("sk-abc123secret"), "token leaked: {out}");
-    }
 
     #[test]
     fn resolve_off_and_unknown_provider() {
@@ -1330,71 +452,6 @@ mod tests {
     }
 
     #[test]
-    fn validate_url_allows_https() {
-        assert!(validate_ai_base_url("https://api.openai.com/v1", "sk-secret").is_ok());
-        assert!(validate_ai_base_url("https://api.openai.com/v1", "").is_ok());
-    }
-
-    #[test]
-    fn validate_url_allows_http_loopback() {
-        // Ollama / LM Studio presets, with or without a key.
-        assert!(validate_ai_base_url("http://localhost:11434/v1", "key").is_ok());
-        assert!(validate_ai_base_url("http://127.0.0.1:1234/v1", "key").is_ok());
-        assert!(validate_ai_base_url("http://[::1]:8080/v1", "key").is_ok());
-        assert!(validate_ai_base_url("http://localhost:11434/v1", "").is_ok());
-    }
-
-    #[test]
-    fn validate_url_rejects_http_remote_with_key() {
-        assert!(validate_ai_base_url("http://api.openai.com/v1", "sk-secret").is_err());
-        assert!(validate_ai_base_url("http://10.0.0.5:1234/v1", "key").is_err());
-    }
-
-    #[test]
-    fn validate_url_allows_http_remote_without_key() {
-        // No secret to leak, so plaintext to a remote host is allowed.
-        assert!(validate_ai_base_url("http://api.openai.com/v1", "").is_ok());
-        assert!(validate_ai_base_url("http://10.0.0.5:1234/v1", "").is_ok());
-    }
-
-    #[test]
-    fn validate_url_rejects_garbage() {
-        assert!(validate_ai_base_url("not a url", "key").is_err());
-        assert!(validate_ai_base_url("ftp://example.com", "key").is_err());
-        assert!(validate_ai_base_url("", "key").is_err());
-    }
-
-    #[test]
-    fn test_default_ai_state() {
-        let state = AiState::default();
-        assert!(!state.installed);
-        assert_eq!(state.port, None);
-        assert_eq!(state.pid, None);
-        assert_eq!(state.installed_model_id, "ministral-3b-instruct-q4km");
-        assert_eq!(state.dismissed_until, None);
-    }
-
-    #[test]
-    fn test_state_serialization() {
-        let state = AiState {
-            installed: true,
-            port: Some(52847),
-            pid: Some(12345),
-            installed_model_id: String::from("ministral-3b-instruct-q4km"),
-            dismissed_until: None,
-            model_download_complete: true,
-            partial_download_started: None,
-        };
-
-        let json = serde_json::to_string(&state).unwrap();
-        let parsed: AiState = serde_json::from_str(&json).unwrap();
-        assert!(parsed.installed);
-        assert_eq!(parsed.port, Some(52847));
-        assert_eq!(parsed.pid, Some(12345));
-        assert!(parsed.model_download_complete);
-    }
-
-    #[test]
     fn test_get_ai_status_no_manager() {
         // When manager is not initialized, status is Unavailable
         let status = get_ai_status();
@@ -1456,51 +513,5 @@ mod tests {
     fn compute_ai_status_expired_dismissal_offers_again() {
         let s = compute_ai_status("local", false, false, Some(NOW - 60), true, NOW);
         assert_eq!(s, AiStatus::Offer);
-    }
-
-    // --- startup health-check: cancellation vs genuine failure ---
-
-    /// A PID above macOS's default `PID_MAX` (99999), so it's never a live process. Positive
-    /// as an `i32`, so `kill(pid, 0)` reports "no such process" rather than the `-1` broadcast.
-    const DEAD_PID: u32 = 999_999;
-    const UNUSED_DIR: &str = "/nonexistent-cmdr-startup-test-dir";
-
-    #[tokio::test]
-    async fn wait_for_server_health_reports_cancelled_not_failed_when_token_fired() {
-        // The race this guards: switching the AI provider off mid-startup kills the server
-        // process, so the waiter sees a dead PID. Because the startup was cancelled it must
-        // report `Cancelled` (silent), NOT `Failed` (which logs an ERROR and auto-sends a
-        // report). DEAD_PID is already gone, so without the cancel check the death branch
-        // would fire and return `Failed`.
-        let cancel = CancellationToken::new();
-        cancel.cancel();
-        let outcome = wait_for_server_health(Path::new(UNUSED_DIR), DEAD_PID, 1, cancel).await;
-        assert!(
-            matches!(outcome, StartupOutcome::Cancelled),
-            "an intentional stop must be reported quietly, not as a failure"
-        );
-    }
-
-    #[tokio::test]
-    async fn wait_for_server_health_reports_failed_on_genuine_death() {
-        // A real crash (process gone, startup NOT cancelled) must still surface as `Failed`,
-        // so the cancel fix doesn't suppress genuine startup failures.
-        let cancel = CancellationToken::new(); // never cancelled
-        let outcome = wait_for_server_health(Path::new(UNUSED_DIR), DEAD_PID, 1, cancel).await;
-        assert!(
-            matches!(outcome, StartupOutcome::Failed(_)),
-            "a genuine death must still be reported as a failure"
-        );
-    }
-
-    #[test]
-    fn startup_task_owns_slot_only_when_current_or_unset() {
-        // No child tracked (server stopped, or failed and cleaned up): the finishing task
-        // owns the slot and may clear `server_starting`.
-        assert!(startup_task_owns_slot(None, 42));
-        // Still the current child: we own it.
-        assert!(startup_task_owns_slot(Some(42), 42));
-        // A newer startup took over (different PID): that task owns the flag, not us.
-        assert!(!startup_task_owns_slot(Some(43), 42));
     }
 }

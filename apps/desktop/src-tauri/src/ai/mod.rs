@@ -30,10 +30,15 @@ mod client_real_groq_test;
 mod client_real_openai_test;
 #[cfg(test)]
 mod client_streaming_test;
+pub mod connection_check;
 mod download;
 pub mod extract;
+pub mod install;
 pub mod manager;
 mod process;
+pub mod server;
+pub mod state;
+mod stream_registry;
 pub mod suggestions;
 #[cfg(test)]
 mod suggestions_streaming_test;

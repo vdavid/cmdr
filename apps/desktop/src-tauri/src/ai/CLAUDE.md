@@ -8,10 +8,17 @@ Frontend counterpart: [`apps/desktop/src/lib/ai/CLAUDE.md`](../../../src/lib/ai/
 
 ## Module map
 
-- `manager.rs`: central coordinator, global `Mutex<Option<ManagerState>>` singleton, most Tauri commands,
-  `resolve_backend() -> BackendResolution`, the `STREAM_CANCEL_TOKENS` registry.
+Local-AI lifecycle, split by concern around one shared singleton (depth in DETAILS.md):
+
+- `state.rs`: owns the `Mutex<Option<ManagerState>>` singleton + `ai-state.json` persistence + derived install/model
+  facts. Others borrow `&mut ManagerState` through its `MANAGER` lock; don't add a second copy of this state.
+- `manager.rs`: thin facade — cross-cutting commands (`init`/`shutdown`, status, `configure_ai`) + `resolve_backend()`.
+- `install.rs`: model download + verify + first-launch install, cancel, uninstall.
+- `server.rs`: llama-server process orchestration over the stateless syscalls in `process.rs`.
+- `connection_check.rs`: cloud-endpoint probe + the `validate_ai_base_url` key-safety gate.
+- `stream_registry.rs`: the `STREAM_CANCEL_TOKENS` registry, kept off `ManagerState` on purpose.
 - `client.rs`: `genai`-backed chat client (`AiBackend`); model name picks the provider adapter.
-- `download.rs` / `extract.rs` / `process.rs`: model download (Range resume), binary extraction, llama-server lifecycle.
+- `download.rs` / `extract.rs` / `process.rs`: stateless leaves (HTTP download, extraction, llama-server syscalls).
 - `suggestions.rs`: folder-name prompt + streaming sanitizer. `api_keys.rs`: per-provider key storage.
   `translate_error.rs`: typed error for the two translate commands.
 
