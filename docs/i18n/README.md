@@ -15,6 +15,10 @@ A translator (human or agent) reads the per-string `@key` context AND this langu
 translation process and the agent prompt that consumes both live in
 [`../guides/i18n-translation.md`](../guides/i18n-translation.md).
 
+## Selection roster
+
+Which languages Cmdr plans to localize vs set aside for now: [language-selection-decisions.md](language-selection-decisions.md).
+
 ## Current language guides
 
 One per language (BCP-47 base tag). Each may carry a "Decisions to confirm with David" section, a "Decision points" section, and a sourced glossary.
