@@ -13,22 +13,12 @@ archaic phrasing, which suits Cmdr's voice. Avoid heavy "σφάλμα"/"αποτ
 
 ## Formality
 
-**This is the central Greek call, and it's split between the majors, flag for David.** Greek has a T-V distinction:
-informal singular "εσύ" (verbs in 2nd-person singular, `-εις`) vs the polite/formal plural "εσείς" (verbs in 2nd-person
-plural, `-ετε`).
-
-- **macOS Greek uses the FORMAL plural (εσείς).** The mined Finder dialogs address the user in 2nd-person plural
-  throughout: "Θέλετε…", "Αν διαγράψετε…", "Εάν μετακινήσετε…", "…με εσάς", "…συσκευές σας" (verified in `el/macOS/`,
-  counted `-ετε` formal verb endings dominate the dialog text; the `-εις` hits are all nouns like "ρυθμίσεις", not
-  informal verbs; 2026-06-20).
-- **Microsoft Greek leans informal/conversational.** Its style guide pushes a relaxed, non-formal voice ("be informal,
-  be friendly, talk like a real person"), and the general Greek-localization convention is that translators usually pick
-  the formal plural but switch to informal singular for deliberately informal products.
-- **Recommendation: formal plural (εσείς), confidence high, but flag for David.** A file manager addressing an unknown
-  adult, on macOS, where the platform itself (Finder) uses formal plural, is the safe and native-feeling default; it
-  reads respectful, not cold. The counter-case: Cmdr's English voice is warm and signs onboarding as David, which is the
-  one argument for informal singular. Whichever is chosen, it MUST be consistent across the entire catalog. David
-  settles whether Cmdr's Greek leans formal-native (match macOS) or informal-friendly (match its English personality).
+**Verdict: informal singular `εσύ` (esy), not the formal plural `εσείς`.** Greek has a T-V distinction: informal
+singular "εσύ" (2nd-person-singular verbs, `-εις`) vs the polite/formal plural "εσείς" (2nd-person-plural verbs,
+`-ετε`). Consumer brands (IKEA, Spotify, Netflix, and peers) trend informal `εσύ` in Greek (the formal plural can read
+snobbish for a consumer product), which fits Cmdr's friendly personal voice. macOS Finder leans formal plural, but
+Cmdr deliberately picks the warmer consumer-brand register. Apply it consistently across the whole catalog. Formality
+decision recorded in [`formal-informal-decisions.md`](formal-informal-decisions.md).
 
 **Imperatives for UI actions** (buttons, menu items): macOS Greek uses the **nominalized noun form**, not an imperative
 verb: "Αντιγραφή" (copying), "Διαγραφή" (deletion), "Μετακίνηση" (moving), "Μετονομασία" (renaming), "Ακύρωση"
@@ -96,7 +86,8 @@ get the agreement right inside each branch.
 
 ## Decisions to confirm with David
 
-- **Formality: formal plural (εσείς, macOS-native) vs informal singular (εσύ, matches Cmdr's warm English voice).**
-  Recommended formal plural; David's call. Whatever is chosen, apply it consistently across the whole catalog.
+- **Formality: RESOLVED to informal singular `εσύ`** (consumer-brand evidence; see Formality and
+  [`formal-informal-decisions.md`](formal-informal-decisions.md)). No longer open. Apply consistently across the whole
+  catalog.
 - **crash report → "αναφορά σφάλματος"** (tentative): confirm the term reads non-alarmist enough, or pick a calmer
   phrasing.

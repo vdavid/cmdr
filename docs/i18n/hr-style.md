@@ -12,32 +12,33 @@ Xfce Thunar (`_ignored/i18n/hr/`). Evidence verified against the pile on 2026-06
 The calls a translator can't make alone. Only the first is a true open flag; the rest carry a confident default and are
 listed so they're never relitigated.
 
-- **Address form: formal second-person plural (`vi`) recommended, needs a sign-off (high).** Croatian distinguishes
-  formal `vi` (persiranje) from informal `ti`. MS Croatian addresses the user with the polite second person `vi` and
-  notes the Microsoft voice "avoids an unnecessarily formal tone" while staying respectful (verified 2026-06-20).
-  Standard software register is `vi`. Recommended default: **`vi` throughout.** Flagging because Cmdr's English voice is
-  warm-and-informal, so David may want to confirm the register shift is intended.
+- **Address form: RESOLVED to informal `ti`** (consumer-brand evidence; Apple-HR and most Croatian consumer/tech
+  brands use `ti`; see Formality and [`formal-informal-decisions.md`](formal-informal-decisions.md)). No longer open.
 - **`volume` term (tentative).** No clean macOS "volume" string in the Croatian pile; candidates are `pogon` (drive,
   the MS-preferred everyday word) or a more literal partition term. See the glossary; worth a native check.
 
 ## Voice and tone
 
-Friendly, concise, active, calm, but **formal in address** (`vi`). MS Croatian explicitly steers away from
-overly-formal, heavy literary phrasing ("don't follow the English informal style strictly, but avoid heavy
-literary/journalistic register"), and prefers everyday words over professional ones (`disk` over `pogon` where "drive"
-means "disk"; `računalo` over `osobno računalo`) (verified 2026-06-20). So the warmth comes from short, plain,
-helpful sentences, not from informal `ti`. Error messages stay calm and actionable: name the problem and the next step,
-and don't use "greška" (error) or "neuspjelo" (failed) as a bare status label the way English avoids "error"/"failed".
+Friendly, concise, active, calm, and **informal in address** (`ti`; see Formality). MS Croatian steers away from
+overly-formal, heavy literary phrasing and prefers everyday words over professional ones (`disk` over `pogon` where
+"drive" means "disk"; `računalo` over `osobno računalo`) (verified 2026-06-20). Error messages stay calm and
+actionable: name the problem and the next step, and don't use "greška" (error) or "neuspjelo" (failed) as a bare
+status label the way English avoids "error"/"failed".
 
 ## Formality
 
-- **Formal `vi` for full sentences addressed to the user.** "Jeste li sigurni da želite izbrisati ove datoteke?" (Are
-  you sure you want to delete these files?). Never informal `ti`. Confidence: high (MS Croatian).
+**Verdict: informal `ti`, not the formal `vi`.** Consumer brands (IKEA, Spotify, Netflix, and peers; Apple-HR, A1,
+Telemach, Bolt, Glovo, and Netflix all use `ti` in Croatian) address users informally, which fits Cmdr's friendly
+personal voice. The OS sources lean `vi`, but Cmdr deliberately picks the warmer consumer-brand register. Formality
+decision recorded in [`formal-informal-decisions.md`](formal-informal-decisions.md).
+
+- **Informal `ti` for full sentences addressed to the user.** "Jesi li siguran/-na da želiš izbrisati ove datoteke?"
+  (Are you sure you want to delete these files?). Prefer an impersonal recast where it avoids a gendered participle.
+  Confidence: high.
 - **Action labels (buttons, menu items): bare imperative, second-person singular form.** This is what macOS Croatian
   shows: "Kopiraj" (Copy), "Izreži" (Cut), "Zalijepi" (Paste), "Spremi" (Save), "Obriši" (Delete), "Otvori" (Open),
-  "Odustani" (Cancel) (macOS AppKit, verified 2026-06-20). So the rule is dual: **standalone action labels =
-  imperative; full sentences to the user = `vi`.** This matches the Slavic/Apple UI norm and is not a contradiction:
-  the imperative label is an action name, not address. Confidence: high.
+  "Odustani" (Cancel) (macOS AppKit, verified 2026-06-20). The imperative label is an action name, not address, so it
+  sits naturally under the `ti` register. Confidence: high.
 
 ## Decision points
 
@@ -47,11 +48,11 @@ and don't use "greška" (error) or "neuspjelo" (failed) as a bare status label t
   (Bosnian `bs` and Serbian `sr` are separate languages in this pile, not variants of Croatian.) Don't build a variant
   matrix. Confidence: high.
 - **Gender / inclusive language (high on the problem, high on the fix).** Croatian past tense uses gendered
-  l-participles (-o masc, -la fem), so a singular-addressed "you deleted" forces a gender guess. The formal `vi`-plural
-  participle is `-li`, which reads as the default/masculine plural but is the conventional neutral software form;
-  where it would still expose gender, **rewrite impersonally**: "Kopiranje dovršeno" (Copying complete) or "Datoteka je
-  izbrisana" (The file was deleted) rather than "Izbrisali ste…". Recommendation: lean on `vi`-plural for user actions,
-  impersonal/nominal phrasing for system-state messages. Confidence: high.
+  l-participles (-o masc, -la fem), so an informal `ti`-addressed "you deleted" ("izbrisao/-la si…") forces a gender
+  guess. The fix is to **rewrite impersonally** for system-state messages: "Kopiranje dovršeno" (Copying complete) or
+  "Datoteka je izbrisana" (The file was deleted) rather than a gendered "izbrisao si…". Recommendation: use `ti` for
+  direct address, but prefer impersonal/nominal phrasing for anything that would otherwise carry a user-agreeing
+  participle. Confidence: high.
 - **Capitalization: sentence case everywhere (high).** Croatian capitalizes only the first word and proper nouns in
   titles, menu items, labels, and buttons. English title case is wrong ("Prikaži skrivene datoteke", not "Prikaži
   Skrivene Datoteke"). Matches Cmdr's sentence-case rule with no friction.

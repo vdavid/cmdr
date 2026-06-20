@@ -12,16 +12,16 @@ rinominare il file. Riprovare?"), it reads as calm and is not the forbidden "err
 
 ## Formality
 
-**Use the impersonal/infinitive register, not direct `tu`/`Lei` address.** macOS Italian avoids second-person pronouns
-almost entirely: prompts are phrased with the infinitive ("Riprovare?", "Spostare gli elementi nel Cestino?") and
-buttons are imperatives that read as infinitives ("Annulla", "Elimina", "Sposta"). This sidesteps the `tu` (informal)
-vs `Lei` (formal) choice cleanly and is the macOS-native register.
+**Verdict: informal `tu`, not `Lei`.** Consumer brands (IKEA, Spotify, Netflix, and peers) address Italian users
+informally, which fits Cmdr's friendly personal voice. macOS itself dodges the choice via the infinitive, but where
+Cmdr does address the user, the register is `tu`. Formality decision recorded in
+[`formal-informal-decisions.md`](formal-informal-decisions.md).
 
 - Buttons and menu items: imperative second-person-singular form, which in Italian looks like the verb stem ("Annulla",
   "Apri", "Elimina", "Sposta", "Copia", "Rinomina", "Cerca"). This matches macOS Finder exactly.
-- Confirmation prompts: prefer the infinitive ("Eliminare 3 elementi?") over "Vuoi eliminare…" (`tu`) or "Desidera
-  eliminare…" (`Lei`). Apple does this; it keeps the formality question moot.
-- Where a sentence genuinely needs a pronoun (rare in UI), Cmdr's friendly voice would lean `tu`, but avoid needing one.
+- Confirmation prompts: the infinitive ("Eliminare 3 elementi?") reads clean and Apple uses it, but `tu` ("Vuoi
+  eliminare…") is correct and on-brand where a personal address fits. Never `Lei` ("Desidera eliminare…").
+- Where a sentence needs a pronoun, use `tu`.
 
 ## Decision points
 

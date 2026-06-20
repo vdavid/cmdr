@@ -14,15 +14,13 @@ factual, never using the bare labels "error"/"failed".
 
 ## Formality
 
-**Address the user with the formal `Vi` (vykanje), recommended.** Bosnian (like Serbian and Croatian) distinguishes
-informal `ti` from formal/polite `Vi`. Software UI in the South Slavic family conventionally uses the polite `Vi` form
-for addressing the user, capitalized as `Vi`. Microsoft's Bosnian (Latin) localization follows this. Confidence: high
-that `Vi` is the conventional choice; a native reviewer should confirm Cmdr's friendly voice doesn't warrant `ti`
-instead (some modern consumer apps lean informal).
+**Verdict: informal `ti`, not the formal `Vi`.** Consumer brands (IKEA, Spotify, Netflix, and peers) address users
+informally, which fits Cmdr's friendly personal voice; South Slavic consumer brands lean informal for young/trendy
+products, and Cmdr is one. Formality decision recorded in
+[`formal-informal-decisions.md`](formal-informal-decisions.md).
 
-**Imperatives for UI actions**: use the form consistent with the address choice; the `Vi`-register imperative for
-buttons and menu items (e.g. "Kopiraj" stays a bare imperative regardless, but full-sentence prompts take the `Vi`
-verb forms).
+**Imperatives for UI actions**: bare imperatives for buttons and menu items ("Kopiraj") are action names, not address,
+so they sit fine under a `ti` register. Full-sentence prompts addressing the user take the informal `ti` verb forms.
 
 ## Decision points
 
@@ -88,6 +86,6 @@ correct case form, not just a swapped number.
 
 ## Decisions to confirm with David
 
-- **Formality: `Vi` (formal) recommended, but Cmdr's friendly voice might prefer `ti` (informal).** A native reviewer
-  should settle which fits Cmdr's tone; the South Slavic software convention is `Vi`.
+- **Formality: RESOLVED to informal `ti`** (consumer-brand evidence; see Formality and
+  [`formal-informal-decisions.md`](formal-informal-decisions.md)). No longer open.
 - **Trash and folder terms** have competing options ("Smeće"/"Korpa", "folder"/"direktorij") needing a native call.

@@ -12,27 +12,23 @@ cite which sources back each choice.
 ## Voice and tone
 
 Friendly, concise, active, calm. Hungarian software leans on a nominal style for labels (a button is a noun, "Másolás" =
-"Copying", not a command), which reads clean and native rather than cold. Conversational copy stays warm but uses the
-impersonal address that all four reference sources use (see Formality). Error messages stay calm and actionable and
+"Copying", not a command), which reads clean and native rather than cold. Conversational copy stays warm and uses the
+informal `te` address (see Formality). Error messages stay calm and actionable and
 never use "hiba" (error) or "sikertelen" (failed) as a bare label: state the problem and a next step ("Nem sikerült
-átnevezni a fájlt. Megpróbálja újra?").
+átnevezni a fájlt. Megpróbálod újra?").
 
 ## Formality
 
-**Verdict: impersonal / önözés throughout. No informal `te`.** This is the unanimous convention across every reference
-source, and it overrides the earlier draft's `te` recommendation.
+**Verdict: informal `te` (tegezés) throughout. No önözés.** Consumer brands (IKEA, Spotify, Netflix, H&M, Coca-Cola)
+all address Hungarian users with `te`, which fits Cmdr's friendly personal voice. The OS sources lean önözés, but
+Cmdr deliberately picks the warmer consumer-brand register. Formality decision recorded in
+[`formal-informal-decisions.md`](formal-informal-decisions.md).
 
 - **Labels (buttons, menus, headers): nominal / infinitive, no direct address.** "Másolás", "Áthelyezés", "Törlés",
-  "Mégsem". The dominant Hungarian UI convention; macOS Finder, Microsoft, GNOME, and Xfce all do this.
-- **Conversational copy and questions: önözés (polite third-person), not `te`.** Where English addresses the user
-  directly, Hungarian uses the polite third-person form, not the informal `te`. Evidence:
-  - Microsoft Hungarian style guide § 4.1.12: when English says "you", "avoid using a pronoun if possible; if not, use
-    the polite third-person singular imperative, declarative, or inquisitive mood (önözés)".
-  - macOS Finder uses önözés everywhere ("Jelölje ki…", "…nem vonhatja vissza", "…nincs jogosultsága módosítani").
-  - Xfce Thunar phrases its confirms as önözés questions ("Felülírja?", "Végleg törli?", "…nevezi át?").
-  - GNOME Nautilus avoids the choice with impersonal passive ("…véglegesen törlésre kerül").
-  - So Cmdr stays warm through word choice and brevity, not through `te`. A friendly question is "Megpróbálja újra?",
-    not "Megpróbálod újra?".
+  "Mégsem". The dominant Hungarian UI convention; macOS Finder, Microsoft, GNOME, and Xfce all do this, and it sits
+  fine under a `te` register since a label isn't direct address.
+- **Conversational copy and questions: `te` (tegezés).** Where English addresses the user directly, use the informal
+  second person. A friendly question is "Megpróbálod újra?", not the önözés "Megpróbálja újra?".
 - **Cancel is "Mégsem"** (the macOS Finder button label), not "Mégse" or "Visszavonás" (that's undo). See the glossary
   note: this is a real macOS-vs-Windows split and macOS wins here.
 
@@ -154,9 +150,8 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 David is the native expert here. Everything above is grounded in the sources; these are the ones still worth a native
 gut-check.
 
-- **Address style (önözös, not `te`).** The sources are unanimous on impersonal önözés, so this is set at `high`, but
-  it's a voice call worth David's confirmation: Cmdr's English is notably warm and informal, and a fully önözés Hungarian
-  UI is correct-but-formal. Confirm önözés, or decide Cmdr deliberately breaks platform convention with `te` for warmth.
+- **Address style: RESOLVED to informal `te`** (consumer-brand evidence; see Formality and
+  [`formal-informal-decisions.md`](formal-informal-decisions.md)). No longer open.
 - **bookmark → `könyvjelző` vs `kedvenc`** (tentative). `könyvjelző` is the literal, file-manager-native choice (GNOME);
   `kedvenc` is what macOS calls its Favorites sidebar. Pick one.
 - **pane → `panel`** (tentative). No Tier-1 source (Finder is single-pane). `panel` reads clean; `ablaktábla` is the

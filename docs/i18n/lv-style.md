@@ -12,10 +12,15 @@ imperative where it reads friendlier. Error messages stay calm and actionable; s
 
 ## Formality
 
-Pronoun-free imperative verb forms for buttons and instructions (saglabājiet, atveriet). When a pronoun is unavoidable,
-use the formal-plural `jūs` / `jums` / `jūsu`, lowercase (capital only in correspondence). Never the informal `tu`.
-Microsoft's Latvian style guide is explicit and consistent on this. It fits Cmdr's friendly + concise + active voice
-well, since the convention already omits the pronoun.
+**Verdict: informal `tu`, not the formal `jūs`.** Consumer brands (around 17 of 20 surveyed — Swedbank, Rimi, the
+telcos, IKEA, Coca-Cola — use `tu`; `jūs` is reserved for legal copy) address Latvian users informally, which fits
+Cmdr's friendly personal voice. Microsoft's style guide leans formal `jūs`, but Cmdr deliberately picks the warmer
+consumer-brand register. Formality decision recorded in [`formal-informal-decisions.md`](formal-informal-decisions.md).
+
+- **Labels and instructions:** the pronoun-free singular imperative reads clean (saglabā, atver) and aligns with the
+  `tu` register; the pronoun-free style stays the default where it works.
+- **Direct address: informal singular `tu` / `tev` / `tavs`.** Use it when a pronoun is unavoidable, not the formal
+  `jūs`.
 
 ## Decision points
 

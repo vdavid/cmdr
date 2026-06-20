@@ -9,34 +9,37 @@ Slovenian.
 These are the calls a translator can't make alone. The rest of this guide assumes them; the address-form one is the
 real flag, the rest carry a confident default and are listed so they're never relitigated.
 
-- **Address form: prefer impersonal, `vikanje` (formal) when 2nd person is unavoidable, needs a sign-off (high).**
-  Slovenian distinguishes formal `vi` (vikanje) from informal `ti` (tikanje). Informal `ti` reads as disrespectful in
-  software, so it's out. The strongly preferred Slovenian-software style is to **avoid 2nd person entirely** with
-  impersonal/agentless phrasing, falling back to vikanje only when you must address the user directly. Recommended
-  default: **impersonal first, vikanje for direct sentences, never tikanje.** Flagging because Cmdr's English voice is
-  warm-and-informal, so David may want to confirm the more reserved register is intended.
+- **Address form: RESOLVED to informal `ti`** (consumer-brand evidence; see Formality and
+  [`formal-informal-decisions.md`](formal-informal-decisions.md)). No longer open. Slovenian still prefers impersonal,
+  agentless phrasing where natural (it stays gender-neutral too), but direct second-person address is informal `ti`,
+  never `vikanje`.
 - **Quotation-mark house style: `»…«` vs `„…"` (high either way).** Both are standard Slovenian (see Notes); the choice
   is a house-style pick, not a correctness one. Recommended default: `»…«` (most traditional, most distinctively
   Slovenian); `„…"` is fully acceptable. Pick one and be consistent.
 
 ## Voice and tone
 
-Friendly, concise, active, calm, but **reserved in address**: warmth comes from clear, short, helpful phrasing, not from
-informal `ti`. Prefer impersonal, present-tense, agentless constructions throughout ("Datoteka je premaknjena",
-"Kopiranje je končano"): they read tight, stay gender-neutral, and dodge the formality question in one move. Error
+Friendly, concise, active, calm, and **informal in address** (`ti`; see Formality). Still prefer impersonal,
+present-tense, agentless constructions where they read naturally ("Datoteka je premaknjena", "Kopiranje je končano"):
+they read tight and stay gender-neutral. Where the user is addressed directly, use informal `ti`. Error
 messages stay calm and actionable: phrase the problem and the next step, and don't use "napaka" (error) or "spodletelo"
 (failed) as a status label the way English avoids "error"/"failed".
 
 ## Formality
 
-- **Impersonal first; `vikanje` (formal `vi`) when 2nd person is unavoidable; never tikanje.** "Ali ste prepričani?"
-  (Are you sure?), "Ali želite shraniti spremembe?" (Do you want to save changes?) when you must address the user.
-- **Action labels (buttons, menu items): short infinitive/neutral command form, not the polite plural imperative.**
-  This is what macOS Slovenian shows: "Shrani" (Save), "Prekliči" (Cancel), "Izbriši" (Delete), "Odpri" (Open),
-  "Kopiraj" (Copy). These short forms are the neutral command-label convention, read as labels rather than as `ti`
-  address. Avoid the verbose polite-plural imperative on a button ("Shranite", "Prekličite"): too formal and too long
-  for a label. (verified against the reference pile, 2026-06-20: macOS Finder shows "Prekliči", "Izvrzi", "Odpri mapo",
-  all short command form.)
+**Verdict: informal `ti` (tikanje), not `vikanje`.** Consumer brands (IKEA, Spotify, Netflix, and peers; IKEA-SI uses
+informal `ti`/`Vnesi`) address Slovenian users informally, which fits Cmdr's friendly personal voice. Formality
+decision recorded in [`formal-informal-decisions.md`](formal-informal-decisions.md). Slovenian still leans on
+impersonal, agentless phrasing where it reads naturally (it also stays gender-neutral), but where the user is
+addressed in the second person, the register is informal `ti`, never `vikanje`.
+
+- **Direct address: informal `ti`.** "Ali si prepričan/-a?" (Are you sure?), "Ali želiš shraniti spremembe?" (Do you
+  want to save changes?). Prefer an impersonal recast where it avoids a gendered participle ("Ali so spremembe
+  shranjene?").
+- **Action labels (buttons, menu items): short infinitive/neutral command form.** This is what macOS Slovenian shows:
+  "Shrani" (Save), "Prekliči" (Cancel), "Izbriši" (Delete), "Odpri" (Open), "Kopiraj" (Copy). These short forms read
+  as labels and align with the `ti` register. (verified against the reference pile, 2026-06-20: macOS Finder shows
+  "Prekliči", "Izvrzi", "Odpri mapo", all short command form.)
 
 ## Decision points
 

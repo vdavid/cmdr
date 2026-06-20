@@ -35,15 +35,17 @@ problem and the next step rather than labeling a failure. Prefer the impersonal 
 
 ## Formality
 
-- **Address the user with the polite second-person plural ("Vi" form), as Serbian software UI does.** Microsoft's
-  Serbian style guide says address the user as "you" directly, avoid impersonal third-person "user", and its own UI
-  examples use 2nd-person-plural imperatives: "кликните", "изаберите", "притисните" (click, select, press) (verified
-  against the reference pile, 2026-06-20). This is the established register for Serbian software and is polite without
-  being stiff. Don't use the singular informal "ti" imperative ("кликни", "изабери") for system UI. `high`.
-- **Buttons and menu items: imperative verb, 2nd-person-plural or the bare command form the OS uses.** GNOME and
-  Microsoft both render action labels as imperatives: "Премести у смеће" / "Premesti u smeće" (Move to trash),
-  "Преименуј" / "Preimenuj" (Rename), "Откажи" / "Otkaži" (Cancel) (verified against the reference pile, 2026-06-20).
-  Short button labels take the bare imperative; sentences addressing the user take the polite plural.
+**Verdict: informal `ti`, not the polite plural `Vi`.** Consumer brands (IKEA, Spotify, Netflix, and peers; IKEA-RS
+uses informal `ti`/`tvoj`) address Serbian users informally, which fits Cmdr's friendly personal voice. Formality
+decision recorded in [`formal-informal-decisions.md`](formal-informal-decisions.md).
+
+- **Direct address: informal singular `ti`** ("кликни", "изабери" / "klikni", "izaberi"), not the polite plural `Vi`
+  ("кликните", "изаберите") that the OS sources lean on. Cmdr deliberately picks the warmer consumer-brand register.
+  `high`.
+- **Buttons and menu items: bare imperative.** GNOME and Microsoft render action labels as imperatives: "Премести у
+  смеће" / "Premesti u smeće" (Move to trash), "Преименуј" / "Preimenuj" (Rename), "Откажи" / "Otkaži" (Cancel)
+  (verified against the reference pile, 2026-06-20). A bare-imperative label is an action name, not address, so it sits
+  fine under a `ti` register; full sentences addressing the user take singular `ti`.
 - **Sentence case, not title case.** Serbian doesn't capitalize common nouns; the app's sentence-case rule applies
   natively. Capitalize only the first word and proper names.
 
@@ -102,8 +104,9 @@ problem and the next step rather than labeling a failure. Prefer the impersonal 
 
 ### Formality / T-V (ti vs Vi)
 
-- Covered in Formality above: use the polite **"Vi"** (2nd-person-plural) register, matching Microsoft's Serbian UI and
-  GNOME's imperatives. `high`. (Listed here too so it's not relitigated as a "decision point".)
+- Covered in Formality above: use the informal singular **`ti`** register (consumer-brand decision; bare imperatives
+  on buttons). `high`. (Listed here too so it's not relitigated as a "decision point".) See
+  [`formal-informal-decisions.md`](formal-informal-decisions.md).
 
 ### Gender agreement (the gendered-grammar trap)
 
@@ -118,7 +121,7 @@ problem and the next step rather than labeling a failure. Prefer the impersonal 
   - Prefer a determiner over a possessive pronoun ("овај документ" not "његов документ").
 - **Recommendation.** Phrase UI strings to describe the object/state ("Датотека је премештена.") rather than the user's
   gendered action wherever a past participle would otherwise agree with the user. Where the user must be addressed,
-  2nd-person-plural imperatives are gender-neutral, so the "Vi" register helps here. `high`.
+  imperatives (singular `ti` form) are gender-neutral, so they dodge the participle problem. `high`.
 
 ### Plurals (the Slavic plural-by-number trap)
 

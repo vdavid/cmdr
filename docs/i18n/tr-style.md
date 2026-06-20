@@ -19,30 +19,27 @@ than translating word for word (verified in `tr/microsoft-style-guides/StyleGuid
   so don't copy that pattern.
 - Prefer a verb over a verbal noun where the English does ("Ara", not a noun phrase for "Make a search").
 
-## Formality: `siz` (formal/plural), settled
+## Formality: `sen` (informal), settled
 
-**Address the user with the formal second person (`siz`, the plural verb endings `-ınız` / `-iniz` / `-musunuz` /
-`-misiniz`).** This is settled from the sources, not a guess, and Turkish is the rare case where macOS and Microsoft
-agree on formal:
+**Verdict: informal second person (`sen`, the singular verb endings `-ın` / `-in` / `-musun` / `-misin`).** Consumer
+brands (Trendyol, Spotify, Duolingo, and peers) address Turkish users informally with `sen`, which fits Cmdr's
+friendly personal voice. This bucks the OS-vendor norm: macOS and Microsoft both use formal `siz`, but Cmdr
+deliberately picks the warmer consumer-brand register. Formality decision recorded in
+[`formal-informal-decisions.md`](formal-informal-decisions.md).
 
-- macOS Turkish is overwhelmingly formal-plural. In the mined Finder strings, formal `siz` verb markers outnumber
-  informal `sen` markers 409 to 32, and AppKit is entirely formal (171 `siz` markers, zero informal). Finder phrases
-  prompts as "… değiştirmek ister misiniz?", "… açamazsınız", "… diski seçin" (verified in `tr/macOS/`, grep over Finder
-  + AppKit, 2026-06-20). The handful of informal `sen` hits ("silebilirsin", "seçebilirsin") are marketing-style "you
-  can…" lines, not the UI register.
-- Microsoft Turkish matches: the style guide directs addressing the user with the second-person pronoun to take an
-  action, and its examples are formal-plural.
-- So `siz` is both the platform-native choice and the safe one; informal `sen` reads as either too intimate or
-  unprofessional to many Turkish users. Cmdr's friendly voice lives in word choice and warmth, not in dropping to `sen`.
+- The OS sources lean formal: macOS Turkish formal `siz` markers outnumber informal `sen` 409 to 32 in the mined
+  Finder strings, and AppKit is entirely formal; Microsoft Turkish is formal-plural too. Cmdr departs from this on
+  purpose to match how Turkish consumer apps speak.
+- So phrase prompts in the informal singular: "… değiştirmek ister misin?", "… diski seç", rather than the formal
+  "ister misiniz?" / "seçin".
 
 ### Imperatives in buttons and menu items
 
 Single-action button and menu labels use the bare second-person-singular imperative stem (no honorific suffix), which is
 the standard short UI form: "Sil" (Delete), "Kopyala" (Copy), "Taşı" (Move), "Aç" (Open), "Çıkar" (Eject), "Ara"
-(Search), "Sırala" (Sort), "Vazgeç" (Cancel). This is what macOS Finder uses for command labels. Full sentences
-addressed to the user still take the formal-plural ending ("… diski seçin", "… ister misiniz?"). So: short labels =
-bare imperative; sentences = formal `siz`. Both are consistent; they're different grammatical slots, not a register
-clash.
+(Search), "Sırala" (Sort), "Vazgeç" (Cancel). This is what macOS Finder uses for command labels, and it aligns directly
+with the informal `sen` register. So: short labels = bare imperative; full sentences to the user = informal `sen`. Both
+are the same singular grammatical person, fully consistent.
 
 ## Decision points
 

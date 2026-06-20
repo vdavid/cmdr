@@ -13,13 +13,15 @@ warm without slang. Error messages stay calm and actionable. macOS Finder is the
 
 ## Formality
 
-Use the infinitive-as-imperative for actions, which avoids the tu/dumneavoastră (familiar/polite) choice entirely:
+**Verdict: informal `tu`, not `dumneavoastră`.** Consumer brands (IKEA, Spotify, Netflix, and peers; IKEA-RO leads with
+informal `tu`/`introdu`) address Romanian users informally, which fits Cmdr's friendly personal voice. Formality
+decision recorded in [`formal-informal-decisions.md`](formal-informal-decisions.md).
 
 - "Copiere", "Mutare", "Redenumire", "Ștergere" as button/menu noun-infinitive labels, OR the imperative "Copiază",
   "Mută" form. macOS Finder and Microsoft both lean on the infinitive/supine noun form ("Copiere", "Lipire") for menu
-  commands, which reads neutral and sidesteps formality. Prefer that.
-- When running text must address the user, use the polite **dumneavoastră** register (implied via verb form), matching
-  Apple and Microsoft. Never the familiar **tu** in product UI.
+  commands, which reads neutral and sits fine under a `tu` register. Prefer that for labels.
+- When running text addresses the user, use the familiar **tu** register (via the singular verb form), matching the
+  consumer-brand norm. Never the polite **dumneavoastră** in product UI.
 
 ## Decision points
 

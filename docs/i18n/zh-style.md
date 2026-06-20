@@ -20,9 +20,8 @@ These are calls a translator can't make alone. The rest of this guide assumes th
   point below). The two are not mutually intelligible in writing for many users, and serving the wrong one is a real
   miss. Recommendation: ship Simplified (`zh-Hans`) first (largest user base), Traditional (`zh-Hant`) as a fast follow.
   Only David can decide scope and priority.
-- **Formal vs neutral "you" (`您` vs `你`): which register?** Apple uses `你` (neutral) throughout macOS; Microsoft leans
-  `您` (polite). This sets the whole catalog's tone. Recommendation below is `你` to match Finder, but it's a brand-voice
-  call worth David's glance.
+- **Formal vs neutral "you" (`您` vs `你`): RESOLVED to `你`** (consumer-brand evidence; legal/billing copy uses formal
+  `您`; see Formality and [`formal-informal-decisions.md`](formal-informal-decisions.md)). No longer open.
 
 ## Voice and tone
 
@@ -42,11 +41,14 @@ naturally and isn't cryptically clipped.
 
 ## Formality
 
-- **Address the user as `你` (neutral), to match macOS, with `您` as the documented alternative.** Chinese has a
-  polite second-person `您` and a neutral `你`. macOS Finder/AppKit uses `你` exclusively (zero `您` across zh-CN and
-  zh-TW; 411 and 398 `你` respectively, verified against the reference pile, 2026-06-20). Microsoft's house style leans
-  `您`. Cmdr's friendly, less-formal voice and the macOS precedent both point to `你`. Pick ONE and keep it consistent
-  across the whole catalog; mixing reads as careless. Flagged above as a David call.
+- **Verdict: address the user as `你` (informal/neutral), not the formal `您`.** Chinese has a polite second-person
+  `您` and a neutral `你`. Consumer brands (Apple zh-CN, WeChat, Bilibili, Xiaohongshu, Duolingo) use `你`, which fits
+  Cmdr's friendly personal voice; macOS Finder/AppKit uses `你` exclusively (zero `您` across zh-CN and zh-TW; 411 and
+  398 `你` respectively, verified against the reference pile, 2026-06-20). Microsoft's house style leans `您`, but Cmdr
+  picks `你`. Keep it consistent across the whole catalog; mixing reads as careless. Formality decision recorded in
+  [`formal-informal-decisions.md`](formal-informal-decisions.md).
+- **Exception: legal and billing copy uses the formal `您`.** Where the copy is contractual (licensing, payment,
+  terms), the formal `您` is the convention; reserve it for those strings and keep `你` everywhere else.
 - **Buttons and menu items: bare verb, no politener.** macOS labels actions as plain verbs: `拷贝`/`拷貝` (copy),
   `移动`/`搬移` (move), `打开`/`打開` (open), `删除`/`刪除` (delete), `取消` (cancel). This is the correct register for
   Cmdr's buttons and menus: concise and direct, polite by default because a bare verb isn't rude in Chinese.

@@ -13,11 +13,10 @@ on 2026-06-20.
 The calls a translator can't make alone. The rest of the guide assumes them; only the first is a true open flag, the
 rest carry a confident default and are listed so they're never relitigated.
 
-- **Address form: impersonal/infinitive recommended, needs a sign-off (high).** Polish has a sharp formal/informal
-  split, and crucially BOTH forms are awkward for a file manager (see Formality). The recommended default is to avoid
-  addressing the user as a person at all wherever possible: infinitive labels ("Kopiuj"→ actually use infinitive
-  "Kopiować"? no, see below) and impersonal system messages. Flagging because it sets the tone for every sentence and
-  because Polish, unlike English, can't stay neutral on the formal/informal axis the moment it addresses a person.
+- **Address form: RESOLVED to informal `Ty`** (consumer-brand evidence; see Formality and
+  [`formal-informal-decisions.md`](formal-informal-decisions.md)). No longer open. Polish still prefers depersonalized
+  phrasing where natural (it also dodges the gendered-past-tense trap), but direct address is informal `Ty`, never
+  `Pan/Pani`.
 - **`folder` = `folder` vs `katalog` (high, but worth a glance).** macOS Finder shows "Folder" verbatim (the English
   loanword, fully naturalized in Polish); GNOME uses "Katalog". For a macOS app, match Finder: **`folder`**. `katalog`
   reads more like the technical "directory". See glossary.
@@ -32,29 +31,25 @@ status label the way English avoids "error"/"failed".
 
 ## Formality
 
-Polish has a hard formal/informal second-person split, and **neither pole fits a file manager cleanly**:
+**Verdict: informal `Ty`, not `Pan/Pani`.** Consumer brands (IKEA, Spotify, Netflix, and peers) address Polish users
+with informal `Ty`, which fits Cmdr's friendly personal voice. Formality decision recorded in
+[`formal-informal-decisions.md`](formal-informal-decisions.md). Polish still leans heavily on depersonalized phrasing
+where it reads naturally (it also sidesteps the gendered-past-tense trap), but the register, wherever the user is
+addressed, is informal `Ty`, never the formal `Pan/Pani`.
 
-- **Informal `ty`** uses second-person verb forms ("Czy chcesz usunąć…"). Reads warm but presumptuous to a Polish adult
-  from an app that doesn't know them; the friendly-app excuse doesn't carry the way it might in English.
-- **Formal `Pan/Pani`** (literally Sir/Madam) forces **third-person verb forms** AND **gendered past-tense endings**
-  (MS style guide, verified 2026-06-20: "you" → "Pan(i)", with masculine/feminine verb endings in the past tense). So
-  "you deleted" becomes "usunął Pan" / "usunęła Pani", a gender guess on every past-tense sentence. Heavy and clunky
-  for UI.
-- **The escape hatch Polish software uses: avoid addressing the person.** This is the dominant convention and what
-  sidesteps both the register choice AND the gender problem:
-  - **Action labels (buttons, menu items): use the imperative or, where it reads as a feature name, a verbal noun.**
-    macOS Polish shows imperative forms: "Kopiuj" (Copy), "Wklej" (Paste), "Wytnij" (Cut), "Otwórz" (Open), "Usuń"
-    (Delete), "Anuluj" (Cancel), "Przenieś" (Move) (macOS AppKit, verified 2026-06-20). These are bare imperatives but on
-    a button they read as the standard OS convention, not as informal `ty`. GNOME prefers verbal nouns for some entries
-    ("Zmiana nazwy" = renaming), but macOS imperative is the file-manager norm to match.
-  - **System messages: impersonal/passive.** "Nie można utworzyć folderu" (Cannot create the folder, macOS Finder
-    "Could not create the folder" maps here), "Usunięto 3 pliki" (3 files deleted), "Kopiowanie zakończone" (Copying
-    complete). Impersonal phrasing dodges both the formal/informal choice and the gendered-past-tense trap entirely.
-  - **Where a full sentence MUST address the user** (rare; a confirmation), prefer impersonal "Czy na pewno usunąć te
-    pliki?" (Delete these files for sure?) over either "Czy chcesz…" (ty) or a Pan/Pani construction.
+- **Action labels (buttons, menu items): use the imperative or, where it reads as a feature name, a verbal noun.**
+  macOS Polish shows imperative forms: "Kopiuj" (Copy), "Wklej" (Paste), "Wytnij" (Cut), "Otwórz" (Open), "Usuń"
+  (Delete), "Anuluj" (Cancel), "Przenieś" (Move) (macOS AppKit, verified 2026-06-20). These bare imperatives are the
+  standard OS convention and sit fine under a `Ty` register. GNOME prefers verbal nouns for some entries ("Zmiana
+  nazwy" = renaming), but macOS imperative is the file-manager norm to match.
+- **System messages: impersonal/passive where natural.** "Nie można utworzyć folderu" (Cannot create the folder),
+  "Usunięto 3 pliki" (3 files deleted), "Kopiowanie zakończone" (Copying complete). Impersonal phrasing dodges the
+  gendered-past-tense trap, so prefer it for system-state messages.
+- **Where a full sentence addresses the user, use `Ty`.** "Czy chcesz usunąć te pliki?" (Do you want to delete these
+  files?) is on-brand; the impersonal "Czy na pewno usunąć te pliki?" is also fine and gender-safe. Never `Pan/Pani`.
 
-So the rule: **labels = imperative; system messages = impersonal/passive; never reach for Pan/Pani or `ty` unless a
-sentence genuinely can't be depersonalized.** This is the standard Polish UI approach and the gender-safe one.
+So the rule: **labels = imperative; system messages = impersonal/passive where it reads natural; direct address = `Ty`,
+never `Pan/Pani`.** This keeps the gender-safe phrasing while landing the warm consumer-brand register.
 
 ## Decision points
 

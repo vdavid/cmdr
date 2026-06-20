@@ -22,13 +22,17 @@ the problem and the next step, and avoid a bare "შეცდომა" (error) 
 
 ## Formality
 
-- **No T/V distinction to resolve. Georgian uses verb forms and the plural pronoun `თქვენ` for polite address.**
-  Georgian doesn't have a French-style tu/vous split; politeness is carried by the plural-form verb and `თქვენ` (you,
-  plural/polite). Standard software register addresses the user with the polite plural form. Confidence: high.
+**Verdict: informal singular `შენ` (šen), not the polite plural `თქვენ`.** Georgian politeness is carried by the
+plural-form verb and `თქვენ` (you, plural/polite) vs the informal singular `შენ`. Consumer brands (TBC, Bank of
+Georgia and all the banks, plus Wolt, Bolt, and Glovo) address Georgian users with informal `შენ`, which fits Cmdr's
+friendly personal voice. There's no macOS Georgian to anchor a formal default, and the consumer-brand norm is
+unambiguous. Formality decision recorded in [`formal-informal-decisions.md`](formal-informal-decisions.md).
+
+- **Direct address: informal singular `შენ`** (singular verb forms), not the polite plural `თქვენ`. Confidence: high.
 - **Action labels (buttons, menu items): use the established GNOME verbal-noun / imperative form.** macOS isn't
   available, so follow GNOME Nautilus, which uses verbal nouns for actions: "კოპირება" (copying/Copy), "გახსნა"
   (opening/Open), "გაუქმება" (cancelling/Cancel), "გამოღება" (ejecting/Eject) (GNOME, verified 2026-06-20). Keep this
-  nominalized style for standalone action labels; use full polite-plural verb forms in sentences to the user.
+  nominalized style for standalone action labels; use the informal singular verb form in sentences to the user.
 
 ## Decision points
 
