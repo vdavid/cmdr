@@ -55,24 +55,40 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
 ## Researching terms: the reference pile
 
 Checking the reference pile is MANDATORY for every term: mine it for the term and for similar sentences, reuse and cite,
-never guess. The reference pile holds authoritative localizations keyed by language: the ~3 GB of macOS, Microsoft,
-GNOME/Xfce, and the two orthodox file managers (Total Commander, Double Commander) sits gitignored at
-`_ignored/i18n/<tag>/` (one folder per language), and the docs explaining it are tracked in the repo. Read
-[`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's there and the authority tiers, and
-[`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested per-source recipes (greps, jq,
-`msggrep`, `pdftotext`, `.lng`).
+never guess. The reference pile holds authoritative localizations keyed by language: the ~3 GB of macOS, Microsoft, and
+five file managers — the explorer family (GNOME Nautilus, Xfce Thunar, KDE Dolphin) plus the orthodox two-pane pair
+(Total Commander, Double Commander) — sits gitignored at `_ignored/i18n/<tag>/` (one folder per language), and the docs
+explaining it are tracked in the repo. Read [`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's
+there and the authority tiers, and [`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested
+per-source recipes (greps, jq, `msggrep`, `pdftotext`, `.lng`).
 
 For each term or convention: triangulate across every source the language has, pick the most native-sounding fit for
 Cmdr's voice, then record it in the style guide's glossary as **chosen · sources · confidence**. Weight by authority:
-macOS first, then Microsoft, then the four file-manager corpora (GNOME Nautilus, Xfce Thunar, Total Commander, Double
-Commander). The catch the file-manager sources cover: Cmdr is a two-pane orthodox manager, so the concepts Finder lacks
-(pane, file list, the command line, directory hotlist) are exactly where the orthodox pair (TC, DC) is the closest
-lineage match and the OS vendors are silent. They're community-translated, so weight them below the first-party vendors
-for general terms but lean on them for orthodox-specific ones. Confidence is `confirmed` (a human signed off), `high`
-(authoritative sources agree), or `tentative` (sources conflict or none had it). Push every `tentative` term, and any
-unresolved formality/voice call, into the style guide's "Decisions to confirm with David" section rather than burying
-it. Some terms stay `tentative` even after full triangulation (the sources genuinely disagree, or none names the
-concept Cmdr does) — that's a real outcome to record, not a failure to dig harder.
+macOS first, then Microsoft, then the file-manager corpora (community-translated, so below the first-party vendors for
+general terms). Confidence is `confirmed` (a human signed off), `high` (authoritative sources agree), or `tentative`
+(sources conflict or none had it). Record open terms in the style guide's open-decisions section rather than burying
+them — but for Hungarian, resolve by evidence and don't park it for David (see § Treat every language the same).
+
+### Mining the file-manager sources: four gotchas
+
+These are reusable across every language — they're how to read the five file-manager catalogs without being misled:
+
+1. **Match the source to Cmdr's UI family.** The orthodox two-pane pair (TC, DC) is Cmdr's design lineage and the only
+   source for the concepts Finder lacks — pane, file list, command line, the button bar. The explorer family (Nautilus,
+   Thunar, Dolphin) owns general file operations and has the broadest language coverage. A term lifted from the wrong
+   family can mislead, so pick by which UI shares Cmdr's surface for that concept.
+2. **A source may name a DIFFERENT concept, not just a different word.** The orthodox managers' "directory hotlist", for
+   instance, is a related-but-distinct feature, not a translation of Cmdr's "bookmark". When the nearest match names a
+   different feature, record the mismatch and keep looking — don't adopt its term as if it were yours.
+3. **A feature may be a brand name in the references, giving no generic term.** Apple's "Quick Look" and TC's "Lister"
+   are product names, kept verbatim (don't-translate), so they hand you no generic word for "viewer". When every
+   reference uses a brand, choose a generic term from the generic-word evidence and flag it as `tentative`.
+4. **A shared ROOT across sources is signal even when the form differs.** If two references render a term with the same
+   root in different forms, that root is the evidence: pick the most standard form on it and record the variant, rather
+   than treating the term as unsourced and inventing from scratch.
+
+Some terms stay `tentative` even after all of this (the sources genuinely disagree, or none names the concept Cmdr does)
+— that's a real outcome to record, not a failure to dig harder.
 
 ## Gender and inclusive language
 
@@ -192,7 +208,7 @@ nouns, status that agrees with the object ("Connection established", not "You ar
 result still reads naturally; if neutral phrasing would be stilted, flag the string for human review rather than ship an
 awkward rewrite or an exposed gendered default.
 
-REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine _ignored/i18n/[TARGET LANGUAGE TAG]/ for how Apple/Microsoft/GNOME/Xfce and the orthodox file managers (Total Commander, Double Commander) render each term and for similar sentences to model phrasing on; reuse and cite, never guess. For two-pane concepts the OS file managers lack (pane, file list, command line), the orthodox pair is the closest lineage match. Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: docs/i18n/reference-pile/how-to-mine.md.
+REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine _ignored/i18n/[TARGET LANGUAGE TAG]/ for how Apple/Microsoft, the explorer file managers (GNOME Nautilus, Xfce Thunar, KDE Dolphin), and the orthodox two-pane pair (Total Commander, Double Commander) render each term and for similar sentences to model phrasing on; reuse and cite, never guess. Match the source to Cmdr's UI: for two-pane concepts the OS/explorer managers lack (pane, file list, command line), the orthodox pair is the closest lineage match. Mind the four mining gotchas in the guide's "Researching terms" section (wrong-family terms, a source naming a different concept, brand names that yield no generic term, shared-root signal). Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: docs/i18n/reference-pile/how-to-mine.md.
 
 DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, Quick Look, and the
 {system_settings}-style tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in

@@ -72,14 +72,17 @@ grep -A2 'Plural-Forms' sv/gnome-nautilus/nautilus.po             # the language
 Plural entries use `msgid`/`msgid_plural` with `msgstr[0]`, `msgstr[1]`, … — good evidence for how a real catalog
 phrases counted strings in your language.
 
-## Double Commander (Tier 3, orthodox file manager) — `<tag>/double-commander/doublecmd.po`
+## Double Commander + KDE Dolphin (Tier 3, gettext) — `<tag>/double-commander/doublecmd.po`, `<tag>/kde-dolphin/dolphin.po`
 
-Same gettext format as GNOME/Xfce, so the same `msggrep` recipes apply — just point at `doublecmd.po`. This is the
-orthodox two-pane source, so it's where to look for terms Finder doesn't have:
+Same gettext format as GNOME/Xfce, so the same `msggrep` recipes apply — just point at the file. Pick by UI family:
+**Double Commander** is orthodox two-pane (Cmdr's lineage — the place to look for terms Finder doesn't have); **KDE
+Dolphin** is single-pane explorer family (broadest coverage at 92 languages — weight it with Nautilus/Thunar for general
+file ops, not for two-pane terms).
 
 ```sh
-msggrep --msgid -e 'panel' -i hu/double-commander/doublecmd.po | grep -E '^msg(id|str) '   # pane → "panel"
+msggrep --msgid -e 'panel' -i hu/double-commander/doublecmd.po | grep -E '^msg(id|str) '   # pane → "panel" (orthodox)
 msggrep --msgid -e 'file list' -i hu/double-commander/doublecmd.po                          # file list → "fájllista"
+msggrep --msgid -e 'Move to Trash' -i hu/kde-dolphin/dolphin.po                             # general op, broad coverage
 ```
 
 ## Total Commander (Tier 3, orthodox file manager) — `<tag>/total-commander/WCMD.LNG.utf8`

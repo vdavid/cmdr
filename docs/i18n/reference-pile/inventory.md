@@ -5,10 +5,11 @@ map: [README.md](README.md).
 
 ## Layout and locale keys
 
-The pile is language-first: `_ignored/i18n/<tag>/<source>/…`, 202 locale folders. Inside each `<tag>` the sources are
+The pile is language-first: `_ignored/i18n/<tag>/<source>/…`, 207 locale folders. Inside each `<tag>` the sources are
 subdirs (`macOS/`, `microsoft-terminology/`, `microsoft-style-guides/`, `gnome-nautilus/`, `xfce-thunar/`,
-`total-commander/`, `double-commander/`), present only where that source has the language. (`ksh`/Kölsch is the one
-folder that exists for a single source — Total Commander only.)
+`total-commander/`, `double-commander/`, `kde-dolphin/`), present only where that source has the language. A few folders
+exist for a single source only: `ksh`/Kölsch (Total Commander), and `se`, `csb`, `hne`, `hsb`, `sr-Latn-ije` (KDE
+Dolphin).
 
 `<tag>` is a BCP-47 locale, derived losslessly from each source's native code — punctuation and script-modifier
 normalization only, never region↔script remapping:
@@ -23,6 +24,9 @@ normalization only, never region↔script remapping:
   to base (`punjabi`→`pa`, `uzbek`→`uz`, `sanskrit`→`sa`).
 - **double-commander**: gettext `.po` filename codes, same normalization as GNOME/Xfce (`pt_BR`→`pt-BR`, `sr@latin`→
   `sr-Latn`, `zh_CN`→`zh-CN`, `zh_TW`→`zh-TW`).
+- **kde-dolphin**: KDE's `po/<lang>/` dir codes, same `_`→`-` and `@mod`→`-Subtag` normalization (`en_GB`→`en-GB`,
+  `ca@valencia`→`ca-valencia`, `uz@cyrillic`→`uz-Cyrl`, `be@latin`→`be-Latn`). Serbian ijekavian aligns to existing
+  siblings: `sr@ijekavian`→`sr-ije`, `sr@ijekavianlatin`→`sr-Latn-ije`.
 - **total-commander**: TC's own 3-letter codes (installer-bundled: `HUN`→`hu`, `DEU`→`de`, `CHN`→`zh-CN`, `SK`→`sk`
   Slovak, `SVN`→`sl` Slovene, `NOR`→`nb`, …) and the additional-language zip slugs (`wcmd_ptg`→`pt-BR`, `wcmd_tw`→
   `zh-TW`, `wcmd_loc_srb`→`sr-Cyrl`, `wcmd_loc_srl`→`sr-Latn`, `wcmd_esa`→`es-419`, `wcmd_koe`→`ksh`, …), name-matched
@@ -101,6 +105,17 @@ For de, sv, hu, and every plain base language there are no such splits: one clea
 - **Provenance**: `language/doublecmd.*.po` from `https://github.com/doublecmd/doublecmd` (`master`, raw fetch
   2026-06-20). Re-fetch the `language/` dir to refresh.
 
+### kde-dolphin (Tier 3, file-manager domain)
+
+- **What**: translation catalogs (`.po`) for KDE Dolphin. Single-pane explorer family (like Nautilus/Thunar), not
+  orthodox two-pane — so weight it with the GTK pair for general file ops, not with TC/DC for two-pane terms.
+- **Layout**: `<tag>/kde-dolphin/dolphin.po`.
+- **Coverage**: 92 languages, ~22 MB — the broadest file-manager cross-language source in the pile.
+- **License**: GPL (reference use; don't copy strings verbatim).
+- **Provenance**: `po/<lang>/dolphin.po` from the GitHub mirror `https://github.com/KDE/dolphin` (`master`, raw fetch
+  2026-06-21). The mirror carries a populated `po/` dir (KDE's scripty l10n sync), so no SVN or per-language l10n clone
+  is needed — re-fetch `po/` to refresh.
+
 ### total-commander (Tier 3, file-manager domain)
 
 - **What**: language files (`.lng`) for Total Commander, the archetypal orthodox two-pane manager. The richest source
@@ -135,9 +150,10 @@ For de, sv, hu, and every plain base language there are no such splits: one clea
   and Microsoft Terminology + Style Guides (Tier 2) already capture Windows terminology authoritatively. Revisit only if
   a specific term needs the live Windows wording; then share a folder out of the VM (or mount its disk image) and
   harvest the `.mui` resource strings.
-- **KDE Dolphin (Tier 3) — not collected.** KDE keeps translations in per-language l10n repos rather than the app repo,
-  so harvesting Dolphin across languages is more work than the clean `po/`-dir clones used for Nautilus and Thunar.
-  GNOME + Xfce already give broad file-manager parity; add Dolphin later if a term needs a third Linux data point.
+- **KDE Dolphin (Tier 3) — collected 2026-06-21.** The earlier "more work, skip it" call was wrong: the GitHub mirror
+  `KDE/dolphin` carries a populated `po/<lang>/dolphin.po` (scripty l10n sync), so it fetches as cleanly as Nautilus,
+  Thunar, and Double Commander — no SVN, no per-language l10n clone. At 92 languages it's now the broadest file-manager
+  cross-language source. Single-pane explorer family, so it complements Nautilus/Thunar, not the orthodox TC/DC pair.
 
 ## Notes
 
