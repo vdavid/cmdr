@@ -1,8 +1,8 @@
 # Luxembourgish (lb) translation style guide
 
-Working notes for translating Cmdr into Luxembourgish. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Luxembourgish.
+Working notes for translating Cmdr into Luxembourgish. Read [`README.md`](../README.md) for how this fits the
+translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes
+carry into Luxembourgish.
 
 The reference pile holds only Microsoft sources for `lb-LU` (terminology + style guide); no macOS, GNOME, or Xfce data
 exists for Luxembourgish, consistent with no one shipping a full OS/desktop in lb. We write to base tag `lb`.
@@ -24,6 +24,7 @@ A native reviewer could argue for `du` to sound warmer; record that as a confirm
 ## Decision points
 
 Ship lb at all, or fall back to de/fr? (David-only strategic call):
+
 - Luxembourg is trilingual: ~98% French, ~78% German, ~77% Luxembourgish, ~80% English. French dominates written/admin
   use; Luxembourgish is mainly spoken/home use.
 - Major-vendor reality: Apple does NOT localize macOS into lb (only optional spellcheck; Luxembourg Mac users get French
@@ -35,12 +36,14 @@ Ship lb at all, or fall back to de/fr? (David-only strategic call):
   below). Confidence: tentative, leans defer. Flag for David.
 
 Orthography instability:
+
 - Luxembourgish borrows heavily from German but has its own ZLS/Akademie-governed orthography, reformed as recently as
   2019/2020. Spelling is genuinely unstable.
-- Recommendation: if shipping, fix the target orthography (current ZLS rules) and require a native reviewer.
-  Confidence: high that review is needed.
+- Recommendation: if shipping, fix the target orthography (current ZLS rules) and require a native reviewer. Confidence:
+  high that review is needed.
 
 French nouns + Germanic verbs (don't auto-derive from German):
+
 - Key file-manager nouns are French loanwords, not German coinages: file → `Fichier` (pl. `Fichieren`), NOT "Datei";
   folder → `Dossier`, NOT "Ordner". Verbs lean Germanic (läschen, kopéieren, späicheren). lb is not "German with ë".
 - Recommendation: follow Microsoft terminology (glossary below); don't machine-derive lb from de. Confidence: high for
@@ -91,11 +94,11 @@ the categories this language needs.
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/lb/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/lb/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

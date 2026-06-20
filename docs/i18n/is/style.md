@@ -15,12 +15,13 @@ coinages over loanwords), so prefer the established native term over an English 
 "þér" is archaic and inappropriate for a friendly app. There is no formal/informal choice to make.
 
 - Address: use "þú" where direct address is needed, but UI mostly uses the imperative/infinitive and avoids the pronoun.
-- Buttons and menu items: imperative ("Afrita", "Færa", "Eyða", "Endurnefna", "Opna", "Leita", "Hætta við"). This matches
-  Xfce Thunar Icelandic and MS terminology.
+- Buttons and menu items: imperative ("Afrita", "Færa", "Eyða", "Endurnefna", "Opna", "Leita", "Hætta við"). This
+  matches Xfce Thunar Icelandic and MS terminology.
 
 ## Decision points
 
 ### Strong grammatical gender + four-case declension (the big one)
+
 - Icelandic nouns have three genders (m/f/n) and decline through four cases (nominative, accusative, dative, genitive),
   and adjectives + articles agree. A counted noun changes case with surrounding prepositions ("í 3 möppum" = dative
   plural). A `{name}` placeholder dropped into a case slot can't be inflected by the catalog.
@@ -30,6 +31,7 @@ coinages over loanwords), so prefer the established native term over an English 
   right inside each plural branch. This is the dominant correctness risk. Confidence: high (grammatical fact).
 
 ### No first-party Apple localization (authority shifts to Microsoft + Thunar)
+
 - macOS does NOT ship in Icelandic; there is no `is/macOS/` reference pile (only MS terminology + Thunar + GNOME).
 - So the usual Tier-1 (macOS) authority is absent. Use MS terminology (Tier 2) and Xfce Thunar / GNOME Nautilus (Tier 3)
   as the top sources, cross-checked against each other.
@@ -37,6 +39,7 @@ coinages over loanwords), so prefer the established native term over an English 
   Confidence: high (this is just which sources exist).
 
 ### "trash" and "volume" term traps
+
 - The MS terminology TBX gives trash → "ruslakrafa" (likely a typo/odd entry) and volume → "hljóðstyrkur" (the
   AUDIO-loudness sense, wrong for a disk volume). Don't take these at face value.
 - Thunar uses "ruslatunnu"/"rusl" for trash, which is the natural file-manager term.
@@ -44,12 +47,13 @@ coinages over loanwords), so prefer the established native term over an English 
   "hljóðstyrkur". Confidence: tentative (sources conflict); flag for David.
 
 ### No regional variant
+
 - Icelandic is `is` only (one country, one standard). No region split. Confidence: high.
 
 ## Terminology and glossary
 
-Format: `English → chosen · sources · confidence`. With no macOS source, tier order here is MS terminology (top) →
-Xfce Thunar → GNOME Nautilus. From mined `is/microsoft-terminology/ICELANDIC.tbx` and `is/xfce-thunar/thunar.po`.
+Format: `English → chosen · sources · confidence`. With no macOS source, tier order here is MS terminology (top) → Xfce
+Thunar → GNOME Nautilus. From mined `is/microsoft-terminology/ICELANDIC.tbx` and `is/xfce-thunar/thunar.po`.
 
 - file → skrá (f) · MS, Thunar · high
 - folder → mappa (f) · MS · high
@@ -57,7 +61,8 @@ Xfce Thunar → GNOME Nautilus. From mined `is/microsoft-terminology/ICELANDIC.t
 - drive → drif · MS · high
 - delete → eyða ("Eyða") · MS, Thunar · high
 - copy → afrita ("Afrita") · MS, Thunar · high
-- move → færa ("Færa") · Thunar; MS terminology gives "hreyfa" (the physical-motion sense, less apt). Prefer "færa". · high
+- move → færa ("Færa") · Thunar; MS terminology gives "hreyfa" (the physical-motion sense, less apt). Prefer "færa". ·
+  high
 - rename → endurnefna ("Endurnefna") · Thunar · high
 - open → opna ("Opna") · MS, Thunar · high
 - search → leita (verb) / leit (noun) · MS · high
@@ -102,6 +107,6 @@ correct case and gender.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/is/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/is/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -21,15 +21,15 @@ The calls a translator can't make alone. The first two carry real weight.
 - **Address form: informal singular imperative - recommended, and unusually so (high).** Unlike most languages where
   software uses the polite form, the Microsoft Amharic guide explicitly chooses the INFORMAL tone: "the informal tone
   has been used in the localization in Amharic… No sense of disrespect can be inferred", and the formal (plural-
-  conjugated) verb "would be contrary to the spirit of ICT and would impose an unnecessary burden on communication"
-  (MS style guide, verified 2026-06-20). So for Amharic, informal singular is the CORRECT software register, not a
-  warmth liberty. Recommended default: **informal singular.** Flag so it's a conscious, documented choice.
+  conjugated) verb "would be contrary to the spirit of ICT and would impose an unnecessary burden on communication" (MS
+  style guide, verified 2026-06-20). So for Amharic, informal singular is the CORRECT software register, not a warmth
+  liberty. Recommended default: **informal singular.** Flag so it's a conscious, documented choice.
 
 ## Voice and tone
 
 Friendly, concise, active, calm, never alarmist. The informal register (above) actually aligns Amharic naturally with
-Cmdr's warm-informal English voice. MS Amharic adds: **avoid the passive voice** - it "suggests a stubborn refusal to
-be polite"; politeness is carried by tone variation, not by passivization (verified 2026-06-20). So phrase actively and
+Cmdr's warm-informal English voice. MS Amharic adds: **avoid the passive voice** - it "suggests a stubborn refusal to be
+polite"; politeness is carried by tone variation, not by passivization (verified 2026-06-20). So phrase actively and
 directly. With no macOS reference, prioritize clear, plain Amharic. Error messages stay calm and actionable: phrase the
 problem and the next step.
 
@@ -104,11 +104,12 @@ falls into `other`. The `desktop-i18n-plural` check requires both categories.
   pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/am/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/am/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

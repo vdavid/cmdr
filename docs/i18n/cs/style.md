@@ -1,7 +1,8 @@
 # Czech (cs) translation style guide
 
-Working notes for translating Cmdr into Czech. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Czech.
+Working notes for translating Cmdr into Czech. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Czech.
 
 Well-sourced: the pile has macOS Finder/AppKit (highest authority), MS terminology, MS style guide, GNOME Nautilus, and
 Xfce Thunar (`_ignored/i18n/cs/`). Evidence verified against the pile on 2026-06-20.
@@ -15,9 +16,9 @@ listed so they're never relitigated.
   Czech distinguishes formal `vy` (vykání) from informal `ty` (tykání). MS Czech is explicit: "use the neutral 'you'
   (second-person plural) whenever possible; don't use the informal 'you' (tykání) unless appropriate (a Skype chat
   between friends)" (verified 2026-06-20). The neutral plural is what software uses, and its past-tense participle is
-  gender-neutral, which solves the gender problem too (see decision point). Recommended default: **neutral
-  second-person plural throughout.** Flagging because Cmdr's English voice is warm-and-informal, so David may want to
-  confirm the register shift is intended.
+  gender-neutral, which solves the gender problem too (see decision point). Recommended default: **neutral second-person
+  plural throughout.** Flagging because Cmdr's English voice is warm-and-informal, so David may want to confirm the
+  register shift is intended.
 - **`volume` term (tentative).** No clean macOS "volume" string in the Czech pile; candidates are `svazek` (literal
   volume) or `oddíl` (partition/section). See the glossary; worth a native check.
 
@@ -32,9 +33,9 @@ next step, and don't use "chyba" (error) or "selhalo" (failed) as a bare status 
 
 ## Formality
 
-- **Neutral second-person plural, throughout. Never tykání (informal `ty`).** The formal uppercase `Vy`/`Vás`
-  (vykání proper) belongs to personal correspondence (emails, letters to a specific named user), not product UI; MS
-  Czech reserves it for exactly that (verified 2026-06-20). In Cmdr UI, use the lowercase neutral plural.
+- **Neutral second-person plural, throughout. Never tykání (informal `ty`).** The formal uppercase `Vy`/`Vás` (vykání
+  proper) belongs to personal correspondence (emails, letters to a specific named user), not product UI; MS Czech
+  reserves it for exactly that (verified 2026-06-20). In Cmdr UI, use the lowercase neutral plural.
 - **Action labels (buttons, menu items): infinitive, not imperative.** This is the Slavic UI norm and what macOS Czech
   shows: "Kopírovat" (Copy), "Uložit" (Save), "Smazat" (Delete), "Otevřít" (Open), "Zrušit" (Cancel), "Odpojit"
   (Disconnect) (macOS AppKit, verified 2026-06-20). Avoid bare imperatives like "Kopíruj"/"Ulož": they bark a command
@@ -45,8 +46,8 @@ next step, and don't use "chyba" (error) or "selhalo" (failed) as a bare status 
 
 ## Decision points
 
-- **Script: Latin, no decision.** Czech is written in the Latin alphabet with diacritics (á, č, ď, é, ě, í, ň, ó, ř,
-  š, ť, ú, ů, ý, ž). No script choice. Confidence: high.
+- **Script: Latin, no decision.** Czech is written in the Latin alphabet with diacritics (á, č, ď, é, ě, í, ň, ó, ř, š,
+  ť, ú, ů, ý, ž). No script choice. Confidence: high.
 - **Regional variant: one, `cs` (`cs-CZ`).** Czech is standardized only in Czechia; no second national standard, no
   pt-BR/pt-PT-style split. Don't build a variant matrix. (Slovak is a separate language, `sk`, not a variant.)
   Confidence: high.
@@ -58,8 +59,8 @@ next step, and don't use "chyba" (error) or "selhalo" (failed) as a bare status 
   (Copying complete) or "Soubor byl odstraněn" (The file was deleted) rather than "Odstranili jste…". Recommendation:
   lean on the gender-neutral vy-plural for user actions, and impersonal/nominal phrasing for system-state messages.
   Confidence: high.
-- **Capitalization: sentence case everywhere (high).** Czech capitalizes only the first word and proper nouns in
-  titles, menu items, labels, and buttons. English title case is wrong ("Zobrazit skryté soubory", not "Zobrazit Skryté
+- **Capitalization: sentence case everywhere (high).** Czech capitalizes only the first word and proper nouns in titles,
+  menu items, labels, and buttons. English title case is wrong ("Zobrazit skryté soubory", not "Zobrazit Skryté
   Soubory"). Matches Cmdr's sentence-case rule with no friction.
 
 ## Terminology and glossary
@@ -122,17 +123,18 @@ CLDR categories for `cs`: `one`, `few`, `many`, `other` (verified with `new Intl
 
 - **Quotation marks: `„…"`** (low-9 opening U+201E, high-6 closing U+201C), the standard Czech form (same shape as
   German/Slovak). Avoid straight ASCII `"` and English `"…"`.
-- **Numbers and dates come from the formatter layer.** Czech uses a comma decimal and space thousands separator
-  (1 000); `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
+- **Numbers and dates come from the formatter layer.** Czech uses a comma decimal and space thousands separator (1 000);
+  `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
 - **Length.** Czech runs somewhat longer than English (case endings, longer compounds), so overflow-check the layout
   against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/cs/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/cs/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

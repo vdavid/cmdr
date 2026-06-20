@@ -17,8 +17,8 @@ Keep error and crash copy calm and factual.
 Yoruba's deep honorific system (the plural/respectful **ẹ** vs singular **o**, and respectful verb forms) is mostly a
 spoken-address concern. For UI, use a neutral, respectful register: prefer plain imperative verb labels for actions
 ("Ṣẹ̀dà" Copy, "Paá rẹ́" Delete) and the respectful **ẹ** form if a sentence directly addresses the user. Keep it
-consistent. There's no large shipped Yoruba software corpus to lock a convention, so confirm the address form with
-David / a native reviewer.
+consistent. There's no large shipped Yoruba software corpus to lock a convention, so confirm the address form with David
+/ a native reviewer.
 
 ## Decision points
 
@@ -28,13 +28,12 @@ David / a native reviewer.
   high, grave = low, mid = unmarked) AND sub-dot vowels/consonants (ẹ, ọ, ṣ), and these stack (e.g. `ṣẹ̀dà` Copy,
   `ìfẹnukò` from MS terminology, `Parẹ́̀` Cancel from GNOME). Dropping or flattening a mark produces a different or
   nonsense word.
-- Majors: Microsoft's Yoruba terminology fully tone-marks (verified: `fáìlì` File, `fódà` Folder, `ṣẹ̀dà` Copy,
-  `àjọlò`, reference pile `yo-NG/microsoft-terminology`, 2026-06-19). The GNOME Yoruba catalog also tone-marks
-  (`Parẹ́̀`, `Fódà`).
+- Majors: Microsoft's Yoruba terminology fully tone-marks (verified: `fáìlì` File, `fódà` Folder, `ṣẹ̀dà` Copy, `àjọlò`,
+  reference pile `yo-NG/microsoft-terminology`, 2026-06-19). The GNOME Yoruba catalog also tone-marks (`Parẹ́̀`, `Fódà`).
 - Recommendation: preserve every tone mark and sub-dot exactly; treat them as load-bearing, never optional. Two concrete
   guardrails: (1) the translation must use proper precomposed/combining Unicode (NFC), not ASCII-fallback spelling; (2)
-  the UI font must render stacked combining marks (acute over a sub-dot vowel). Verify the chosen app font shows
-  `ọ́`/`ẹ̀` without clipping or tofu before shipping (Cmdr respects the system font, so this is a real rendering risk to
+  the UI font must render stacked combining marks (acute over a sub-dot vowel). Verify the chosen app font shows `ọ́`/`ẹ̀`
+  without clipping or tofu before shipping (Cmdr respects the system font, so this is a real rendering risk to
   overflow-check).
 - Confidence: high (that marks are load-bearing); the font-rendering check is the open action.
 
@@ -65,14 +64,14 @@ David / a native reviewer.
 
 ## Terminology and glossary
 
-| English term | Yoruba | Notes |
-| ------------ | ------ | ----- |
-| File | fáìlì | borrowed-respelled; MS terminology (high) |
-| Folder | fódà | borrowed-respelled; MS terminology + GNOME agree (high) |
-| Copy | ṣẹ̀dà | MS terminology (high); note the stacked marks |
-| Delete | paá rẹ́ | MS terminology (high) |
-| Move to Trash | (confirm) | GNOME Yoruba is partly untranslated; needs review |
-| Cancel | parẹ́ | GNOME "Cancel" = `Parẹ́̀` (tentative; verify mark stacking) |
+| English term  | Yoruba    | Notes                                                     |
+| ------------- | --------- | --------------------------------------------------------- |
+| File          | fáìlì     | borrowed-respelled; MS terminology (high)                 |
+| Folder        | fódà      | borrowed-respelled; MS terminology + GNOME agree (high)   |
+| Copy          | ṣẹ̀dà      | MS terminology (high); note the stacked marks             |
+| Delete        | paá rẹ́    | MS terminology (high)                                     |
+| Move to Trash | (confirm) | GNOME Yoruba is partly untranslated; needs review         |
+| Cancel        | parẹ́      | GNOME "Cancel" = `Parẹ́̀` (tentative; verify mark stacking) |
 
 ## Brand and do-not-translate
 
@@ -101,6 +100,6 @@ counts. A plural message still needs a natural-reading single branch (often the 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/yo/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/yo/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

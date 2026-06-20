@@ -7,8 +7,8 @@ This is the language base (`dz`), the national language of Bhutan, written in th
 
 ## Voice and tone
 
-Friendly, concise, active, and never alarmist. Match the English register where the language allows. Dzongkha has a
-real software-localization tradition driven by Bhutan's Dzongkha Development Authority (the GNOME desktop and a Bhutanese
+Friendly, concise, active, and never alarmist. Match the English register where the language allows. Dzongkha has a real
+software-localization tradition driven by Bhutan's Dzongkha Development Authority (the GNOME desktop and a Bhutanese
 Linux distribution were localized into Dzongkha), so there is a usable precedent for plain, respectful UI tone, lean on
 the GNOME catalog. Keep error and crash copy reassuring and factual.
 
@@ -50,7 +50,8 @@ dependent locale that nonetheless has a real (if small) localization precedent t
 Dzongkha file-manager terms should come from the GNOME Dzongkha catalog and Dzongkha Development Authority terminology,
 confirmed by native review. Leave this table to be populated from those sources rather than guessing.
 
-- Glossary: populate from GNOME dz catalog + DDA terminology, via native review (populate via the cited sources and native review; nothing guessed yet).
+- Glossary: populate from GNOME dz catalog + DDA terminology, via native review (populate via the cited sources and
+  native review; nothing guessed yet).
 
 ## Brand and do-not-translate
 
@@ -60,10 +61,10 @@ words in Latin script sit inside Tibetan-script runs; verify they render and don
 
 ## Plurals
 
-Dzongkha CLDR categories: `other` only, a single category (verified with `new Intl.PluralRules('dz')`, 2026-06-20;
-GNOME nautilus uses `nplurals=2; plural=(n!=1)` but CLDR treats Dzongkha as having no count-based plural distinction).
-This is the simplest plural language in Cmdr's set: one `other` branch covers every count. Don't invent a singular/plural
-split the language doesn't make; phrase counted strings to read correctly for any number with a single form. Confidence:
+Dzongkha CLDR categories: `other` only, a single category (verified with `new Intl.PluralRules('dz')`, 2026-06-20; GNOME
+nautilus uses `nplurals=2; plural=(n!=1)` but CLDR treats Dzongkha as having no count-based plural distinction). This is
+the simplest plural language in Cmdr's set: one `other` branch covers every count. Don't invent a singular/plural split
+the language doesn't make; phrase counted strings to read correctly for any number with a single form. Confidence:
 confirmed.
 
 ## Notes and decisions
@@ -72,8 +73,8 @@ confirmed.
   terminator rather than the Latin period. A native reviewer handles this; don't impose Latin punctuation.
 - **Digits**: Dzongkha may use Tibetan digits (༠༡༢…) or Western digits; let the formatter layer decide, don't hardcode.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -85,6 +86,6 @@ confirmed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/dz/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/dz/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

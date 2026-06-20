@@ -21,36 +21,43 @@ software localizations typically use the formal "Դուք" for respect, but a fr
 Like other languages, the cleaner path is to AVOID the pronoun: use imperative verbs for buttons and impersonal phrasing
 for prompts, which sidesteps the choice.
 
-- Buttons and menu items: imperative ("Պատճենել" copy, "Տեղափոխել" move, "Ջնջել" delete, "Բացել" open, "Չեղարկել" cancel).
+- Buttons and menu items: imperative ("Պատճենել" copy, "Տեղափոխել" move, "Ջնջել" delete, "Բացել" open, "Չեղարկել"
+  cancel).
 - Recommendation: avoid the second-person pronoun; where unavoidable, lean informal "դու" to match Cmdr's friendly,
   David-signed voice. Confidence: tentative (no strong Apple/MS Armenian convention to anchor on); flag for David.
 
 ## Decision points
 
 ### Script: Armenian alphabet (single script, settled)
+
 - Armenian uses its own unique alphabet (Ա-Ֆ), not Latin or Cyrillic. There is no script choice to make.
 - Ensure the Armenian Unicode block survives the catalog round-trip; never transliterate to Latin.
 - Confidence: high.
 
 ### Regional variant: Eastern vs Western Armenian (the real call)
+
 - Two standardized literary forms: Eastern Armenian (Armenia, the larger user base, the de-facto computing standard) and
   Western Armenian (diaspora). They differ in orthography, verb conjugation, and some vocabulary.
-- Majors: where Apple/Microsoft localize Armenian at all, they target EASTERN Armenian (hy / hy-AM, Republic of Armenia).
+- Majors: where Apple/Microsoft localize Armenian at all, they target EASTERN Armenian (hy / hy-AM, Republic of
+  Armenia).
 - Recommendation: target Eastern Armenian (hy-AM as the regional anchor). Confidence: high.
 
 ### Reformed vs classical (Mesropian) orthography
-- Armenia uses the reformed (Soviet-era) orthography; the diaspora keeps classical Mesropian orthography. This tracks the
-  Eastern/Western split above.
+
+- Armenia uses the reformed (Soviet-era) orthography; the diaspora keeps classical Mesropian orthography. This tracks
+  the Eastern/Western split above.
 - Recommendation: reformed orthography (matches Eastern Armenian / hy-AM). Confidence: high.
 
 ### Sparse major-product localization (low-priority signal)
+
 - The reference pile has GNOME Nautilus for Armenian but limited/absent Apple and Microsoft file-manager strings. Apple
   ships no full Armenian macOS UI; Microsoft Armenian is partial.
 - This means fewer authoritative anchors and a smaller localized-software ecosystem. Lower priority than major locales.
-- Recommendation: treat Armenian as lower priority; rely on GNOME Nautilus (`hy/gnome-nautilus/`) plus a native reviewer.
-  Confidence: high (this is the priority finding itself).
+- Recommendation: treat Armenian as lower priority; rely on GNOME Nautilus (`hy/gnome-nautilus/`) plus a native
+  reviewer. Confidence: high (this is the priority finding itself).
 
 ### No grammatical gender
+
 - Armenian has NO grammatical gender (nouns, pronouns, adjectives are genderless; one pronoun "նա" for he/she/it).
   Inclusive language is a non-issue. Confidence: high.
 
@@ -58,9 +65,9 @@ for prompts, which sidesteps the choice.
 
 Source priority for Armenian: GNOME Nautilus (`hy/gnome-nautilus/`) is the main file-manager reference (no macOS,
 partial MS). Triangulate against a native reviewer. Add rows as terms come up; mark most `tentative` until a native
-speaker confirms, given the thin authoritative base. Core verbs to confirm: copy → Պատճենել, move → Տեղափոխել,
-delete → Ջնջել, rename → Վերանվանել, open → Բացել, search → Որոնել, cancel → Չեղարկել, trash → Աղբարկղ,
-folder → Պանակ/Թղթապանակ, file → Ֆայլ.
+speaker confirms, given the thin authoritative base. Core verbs to confirm: copy → Պատճենել, move → Տեղափոխել, delete →
+Ջնջել, rename → Վերանվանել, open → Բացել, search → Որոնել, cancel → Չեղարկել, trash → Աղբարկղ, folder → Պանակ/Թղթապանակ,
+file → Ֆայլ.
 
 ## Brand and do-not-translate
 
@@ -90,6 +97,6 @@ case and number, so decline the counted noun correctly inside each branch.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/hy/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/hy/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

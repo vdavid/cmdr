@@ -29,8 +29,7 @@ locale: an agent draft here is genuinely a first pass that a Wayuunaiki speaker 
 
 - **Script: Latin only.** Wayuunaiki is written in the Latin alphabet (the Aguilar / standardized orthography, with
   letters like ü and the apostrophe-marked glottal/saltillo). Use the standardized orthography; never romanize beyond
-  it. Confidence: tentative (orthography variants exist among communities; a native reviewer should settle which).
-  FLAG.
+  it. Confidence: tentative (orthography variants exist among communities; a native reviewer should settle which). FLAG.
 - **Terminology gaps are the core problem.** Many computing concepts (folder, tab, volume, SMB, transfer) have no
   settled Wayuunaiki term. The Microsoft terminology has some (file = "anaajaalaa", folder = "katpeeta", copy =
   "ashataa", delete = "awasütaa", cancel = "oo'ulawaa"), but expect to leave brand/technical tokens in English/Spanish
@@ -42,15 +41,15 @@ locale: an agent draft here is genuinely a first pass that a Wayuunaiki speaker 
 
 ## Terminology and glossary
 
-| English term | Wayuu | Notes |
-| ------------ | ----- | ----- |
-| Copy | ashataa | Microsoft terminology |
-| Delete | awasütaa | Microsoft terminology |
-| Cancel | oo'ulawaa | Microsoft terminology (note the saltillo apostrophe) |
-| file | anaajaalaa | Microsoft terminology |
-| folder | katpeeta | Microsoft terminology (Spanish-derived "carpeta") |
-| Move | (confirm) | not found in Microsoft terminology sample |
-| trash | (confirm) | not found; needs native review |
+| English term | Wayuu      | Notes                                                |
+| ------------ | ---------- | ---------------------------------------------------- |
+| Copy         | ashataa    | Microsoft terminology                                |
+| Delete       | awasütaa   | Microsoft terminology                                |
+| Cancel       | oo'ulawaa  | Microsoft terminology (note the saltillo apostrophe) |
+| file         | anaajaalaa | Microsoft terminology                                |
+| folder       | katpeeta   | Microsoft terminology (Spanish-derived "carpeta")    |
+| Move         | (confirm)  | not found in Microsoft terminology sample            |
+| trash        | (confirm)  | not found; needs native review                       |
 
 (All rows: tentative, native-review-gated. The Microsoft terms are the best available anchor, not confirmed UI usage.)
 
@@ -70,7 +69,8 @@ Confidence: confirmed (categories); tentative (grammar).
 
 - **The apostrophe (saltillo) is a real letter** in Wayuunaiki orthography (glottal stop), e.g. "oo'ulawaa". This
   collides with ICU's apostrophe escaping: double EVERY apostrophe in ICU values (`'` becomes `''`), which matters a lot
-  here because the saltillo is frequent. Full rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  here because the saltillo is frequent. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 - **Numbers and dates come from the formatter layer.** Never hardcode.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 
@@ -83,6 +83,6 @@ Confidence: confirmed (categories); tentative (grammar).
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/guc/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/guc/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

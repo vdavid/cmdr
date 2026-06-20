@@ -1,7 +1,8 @@
 # Tajik (tg) translation style guide
 
-Working notes for translating Cmdr into Tajik. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Tajik.
+Working notes for translating Cmdr into Tajik. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Tajik.
 
 Base tag `tg` means Tajik in CYRILLIC script (the official, default script). See Decision points.
 
@@ -24,6 +25,7 @@ for button and menu labels.
 ## Decision points
 
 Script, Cyrillic (David should ratify):
+
 - Options: Cyrillic vs Perso-Arabic vs Latin. Cyrillic is the sole official script in Tajikistan and the only script
   used in production systems, schools, government, and media. Both reference sources (GNOME, Microsoft terminology) are
   Cyrillic. Use the Tajik-specific extra letters: `ғ ӣ қ ӯ ҳ ҷ` (and capitals `Ғ Ӣ Қ Ӯ Ҳ Ҷ`); don't substitute Russian
@@ -34,6 +36,7 @@ Script, Cyrillic (David should ratify):
 - Recommendation: Cyrillic only; don't build alternate scripts. Confidence: high.
 
 Tajik is Persian in Cyrillic, terminology can lean Persian, script stays Cyrillic:
+
 - Tajik shares most basic vocabulary with Persian and Dari; it's a variety of Eastern Persian written in a modified
   Cyrillic alphabet. So Persian/Dari term sense is a useful sanity check, but the script and the actual spelling are
   always Cyrillic. Never carry a Perso-Arabic spelling across; transliterate the sense into Cyrillic Tajik orthography.
@@ -41,6 +44,7 @@ Tajik is Persian in Cyrillic, terminology can lean Persian, script stays Cyrilli
   Cyrillic. Confidence: high.
 
 Russian loanwords vs native Tajik/Persian terms:
+
 - Like other ex-Soviet Central Asian languages, Tajik tech, government, and science vocabulary borrows heavily from
   Russian (an estimated 2,500 Russian loanwords, concentrated in technology, government, military, and medicine). So for
   any computing term there's often a Russian-loan option and a native Persian-rooted option.
@@ -53,6 +57,7 @@ Russian loanwords vs native Tajik/Persian terms:
   high for the file-manager core; native review needed for anything outside it.
 
 Gender, none (simplifies translation):
+
 - Tajik (Persian-family) has NO grammatical gender: no gendered nouns, adjectives, or pronouns, and a single
   third-person pronoun. So there's no gender agreement to thread through `{name}`/`{path}` placeholders, and no
   masculine/feminine variant problem. This removes a whole class of placeholder-agreement risk that gendered Slavic or
@@ -60,6 +65,7 @@ Gender, none (simplifies translation):
 - Recommendation: no gender handling needed. Confidence: high.
 
 Major-product localization is essentially absent (the priority signal):
+
 - Apple does NOT ship Tajik: it's not a macOS UI display language and there's no Finder localization, so there's no
   Tier-1 (macOS) source at all. Microsoft has a terminology glossary (`tg-Cyrl-TJ`) but Tajik isn't a standard Windows
   display language. Google/Spotify/Netflix: no Tajik UI found. The only full-UI prior art is the GNOME Nautilus catalog
@@ -84,7 +90,7 @@ file-manager core, so confidence is high there; native review still gates shippi
 - rename → тағйири ном · (Persian-rooted; native review) · tentative, sources thin for this exact term
 - open → кушодан · MS, GNOME · high
 - search → ҷустуҷӯ · MS, GNOME · high
-- cancel (dialog button) → бекор кардан · GNOME · high, do NOT use Microsoft's `лағви интихоб`, which is the *deselect*
+- cancel (dialog button) → бекор кардан · GNOME · high, do NOT use Microsoft's `лағви интихоб`, which is the _deselect_
   sense, not a dialog Cancel
 - trash → сабад · GNOME · high (literally "basket", matches the file-manager domain)
 
@@ -120,11 +126,11 @@ singular after a numeral, so the two forms are often the same word, but the fram
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/tg/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/tg/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

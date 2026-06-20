@@ -1,7 +1,8 @@
 # Per-language translation style guides
 
-Each shippable locale gets a folder at `docs/i18n/<tag>/` (its home: `style.md` plus `glossary.md`), where `<tag>` is the locale's BCP-47 tag (the
-same tag as its `apps/desktop/src/lib/intl/messages/<tag>/` catalog dir, e.g. `de`, `pt-BR`, `en-GB`).
+Each shippable locale gets a folder at `docs/i18n/<tag>/` (its home: `style.md` plus `glossary.md`), where `<tag>` is
+the locale's BCP-47 tag (the same tag as its `apps/desktop/src/lib/intl/messages/<tag>/` catalog dir, e.g. `de`,
+`pt-BR`, `en-GB`).
 
 A style guide is the per-language half of the translation context. The other half is per-string and lives in the catalog
 (each key's `@key.description`, `placeholders`, and screenshot). The split matters:
@@ -17,15 +18,18 @@ translation process and the agent prompt that consumes both live in
 
 ## Selection roster
 
-Which languages Cmdr plans to localize vs set aside for now: [language-selection-decisions.md](language-selection-decisions.md).
+Which languages Cmdr plans to localize vs set aside for now:
+[language-selection-decisions.md](language-selection-decisions.md).
 
-Formal vs informal address per language, with OS and retail evidence: [formal-informal-decisions.md](formal-informal-decisions.md).
+Formal vs informal address per language, with OS and retail evidence:
+[formal-informal-decisions.md](formal-informal-decisions.md).
 
 Which script each digraphic language ships in: [script-decisions.md](script-decisions.md).
 
 ## Current language guides
 
-One per language (BCP-47 base tag). Each may carry a "Decisions to confirm with David" section, a "Decision points" section, and a sourced glossary.
+One per language (BCP-47 base tag). Each may carry a "Decisions to confirm with David" section, a "Decision points"
+section, and a sourced glossary.
 
 - [`ab`](ab/style.md)
 - [`af`](af/style.md)

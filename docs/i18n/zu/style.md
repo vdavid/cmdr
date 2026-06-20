@@ -1,7 +1,7 @@
 # Zulu (zu) translation style guide
 
-Working notes for translating Cmdr into Zulu (isiZulu). Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Zulu (isiZulu). Read [`README.md`](../README.md) for how this fits the
+translation process.
 
 This is the language base (`zu`), isiZulu in Latin script. The pile has a GNOME catalog (`zu`, ~88% translated) and
 Microsoft terminology plus a Microsoft style guide (`zu-ZA`); for Cmdr a single `zu` base covers it (see Region).
@@ -54,23 +54,23 @@ same source). Use that direct, respectful second-person register, with plain imp
 
 ### Gender / inclusive language
 
-- The choice: isiZulu has no grammatical gender and class-1 personal references aren't gendered, so the gendered-language
-  inclusivity problem mostly doesn't arise.
+- The choice: isiZulu has no grammatical gender and class-1 personal references aren't gendered, so the
+  gendered-language inclusivity problem mostly doesn't arise.
 - Recommendation: no special handling needed.
 - Confidence: high.
 
 ## Terminology and glossary
 
-| English term | Zulu | Notes |
-| ------------ | ---- | ----- |
-| File | ifayela | borrowed-respelled; GNOME (high) |
-| Folder | ifolda / isikhwama | GNOME `ifolda` vs MS `isikhwama`; conflict, see decision point (tentative) |
-| Copy | kopisha | MS terminology (high) |
-| Delete | sula | MS terminology + GNOME agree (high) |
-| Open | vula | GNOME (high) |
-| Rename | qamba futhi | GNOME (high) |
-| Cancel | khansela / cima | GNOME shows `cima`; verify against MS (tentative) |
-| Move to Trash | hambisa kudoti | GNOME (high) |
+| English term  | Zulu               | Notes                                                                      |
+| ------------- | ------------------ | -------------------------------------------------------------------------- |
+| File          | ifayela            | borrowed-respelled; GNOME (high)                                           |
+| Folder        | ifolda / isikhwama | GNOME `ifolda` vs MS `isikhwama`; conflict, see decision point (tentative) |
+| Copy          | kopisha            | MS terminology (high)                                                      |
+| Delete        | sula               | MS terminology + GNOME agree (high)                                        |
+| Open          | vula               | GNOME (high)                                                               |
+| Rename        | qamba futhi        | GNOME (high)                                                               |
+| Cancel        | khansela / cima    | GNOME shows `cima`; verify against MS (tentative)                          |
+| Move to Trash | hambisa kudoti     | GNOME (high)                                                               |
 
 ## Brand and do-not-translate
 
@@ -100,6 +100,6 @@ branches as full native forms.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/zu/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/zu/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -20,8 +20,8 @@ Microsoft references are plain and direct, which suits Cmdr's register.
 - **Second person: respectful `Siz` (plural-polite "you").** Uzbek distinguishes familiar `sen` from respectful `siz`;
   software and formal address use `siz`, which reads as ordinary courtesy. Microsoft and GNOME use `siz`-level address.
   Recommendation: `siz` throughout. Confidence: high.
-- **UI actions use the imperative**, matching GNOME Uzbek (Latin): "Oching" (open), "Bekor qilish" (cancel),
-  "Nusxalash" (copy). Recommendation: imperative for buttons and menu items. Confidence: high.
+- **UI actions use the imperative**, matching GNOME Uzbek (Latin): "Oching" (open), "Bekor qilish" (cancel), "Nusxalash"
+  (copy). Recommendation: imperative for buttons and menu items. Confidence: high.
 
 ## Decision points
 
@@ -38,26 +38,26 @@ Microsoft references are plain and direct, which suits Cmdr's register.
   Recommendation: use the correct Unicode turned-comma letters; note this interacts with ICU apostrophe escaping (a
   literal `'` in a value must be doubled to `''`, but `ʻ`/`ʼ` are normal letters and are NOT doubled). Confidence: high.
   Flag for David only if a font-rendering issue with `ʻ`/`ʼ` shows up in the app.
-- **Anglicism handling.** Computing terms are often kept as Uzbek-spelled loanwords or Russian-derived terms
-  ("Katalog" for folder in GNOME). Recommendation: prefer the native/established term the references use; keep
-  entrenched loanwords. Confidence: medium.
-- **Inclusive/gendered language.** Uzbek has NO grammatical gender and no gendered third-person pronoun (`u` = he/she/it).
-  Generic UI copy is naturally gender-neutral. No special handling needed. Confidence: high.
+- **Anglicism handling.** Computing terms are often kept as Uzbek-spelled loanwords or Russian-derived terms ("Katalog"
+  for folder in GNOME). Recommendation: prefer the native/established term the references use; keep entrenched
+  loanwords. Confidence: medium.
+- **Inclusive/gendered language.** Uzbek has NO grammatical gender and no gendered third-person pronoun (`u` =
+  he/she/it). Generic UI copy is naturally gender-neutral. No special handling needed. Confidence: high.
 
 ## Terminology and glossary
 
 Confirmed against GNOME Nautilus Uzbek (Latin, Tier 3) and Microsoft (Tier 2). Latin forms; correct Unicode would use
 `ʻ`/`ʼ` where GNOME shows a straight `'`. Extend as strings come up.
 
-| English term | Uzbek (Latin) | Notes |
-| ------------ | ------------- | ----- |
-| folder | Katalog | GNOME (Russian-derived); confirm vs "jild" |
-| copy | Nusxalash | GNOME |
-| open | Oching | GNOME; imperative |
-| cancel | Bekor qilish | GNOME |
-| rename | Nomini oʻzgartirish | GNOME ("Nomini o'zgartirish"); use `ʻ` |
-| paste | Qoʻyish | GNOME ("Qo'yish"); use `ʻ` |
-| trash | Savat / Oʻchirish | GNOME shows "O'chirish" (=delete); "Savat" is the better trash-bin noun |
+| English term | Uzbek (Latin)       | Notes                                                                   |
+| ------------ | ------------------- | ----------------------------------------------------------------------- |
+| folder       | Katalog             | GNOME (Russian-derived); confirm vs "jild"                              |
+| copy         | Nusxalash           | GNOME                                                                   |
+| open         | Oching              | GNOME; imperative                                                       |
+| cancel       | Bekor qilish        | GNOME                                                                   |
+| rename       | Nomini oʻzgartirish | GNOME ("Nomini o'zgartirish"); use `ʻ`                                  |
+| paste        | Qoʻyish             | GNOME ("Qo'yish"); use `ʻ`                                              |
+| trash        | Savat / Oʻchirish   | GNOME shows "O'chirish" (=delete); "Savat" is the better trash-bin noun |
 
 ## Brand and do-not-translate
 
@@ -86,6 +86,6 @@ requires both.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/uz/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/uz/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

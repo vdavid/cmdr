@@ -17,13 +17,13 @@ Well-sourced for terms: the pile has MS terminology, MS style guide, GNOME Nauti
 
 Friendly, concise, active, calm, never alarmist. MS Kazakh targets a "clear, friendly, and concise" conversational
 register and explicitly "avoids an unnecessarily formal tone" while addressing the user directly in the second person
-(verified 2026-06-20), a good match for Cmdr's English voice. Error messages stay calm and actionable: name the
-problem and the next step, and avoid a bare "қате" (error) status label the way English avoids "error"/"failed".
+(verified 2026-06-20), a good match for Cmdr's English voice. Error messages stay calm and actionable: name the problem
+and the next step, and avoid a bare "қате" (error) status label the way English avoids "error"/"failed".
 
 ## Formality
 
-- **Polite second person, addressing the user directly.** MS Kazakh uses the second-person pronoun "сіз" (polite you)
-  to ask the user to take action, and prefers direct second-person/imperative phrasing (verified 2026-06-20). Kazakh
+- **Polite second person, addressing the user directly.** MS Kazakh uses the second-person pronoun "сіз" (polite you) to
+  ask the user to take action, and prefers direct second-person/imperative phrasing (verified 2026-06-20). Kazakh
   distinguishes polite `сіз` from familiar `сен`; software uses `сіз`. Recommended default: **`сіз`-register
   throughout.** Confidence: high.
 - **Action labels (buttons, menu items): the established GNOME verbal-noun / imperative form.** macOS isn't available;
@@ -48,8 +48,8 @@ problem and the next step, and avoid a bare "қате" (error) status label the 
   case suffix can't reliably attach a harmonized suffix to runtime text. Structure sentences so a placeholder lands
   where the grammar doesn't depend on the inserted value's final vowel. A native reviewer handles vowel-harmony edges.
   Confidence: high; the subtlest translator-craft concern for Kazakh.
-- **Capitalization: sentence case (high).** Kazakh Cyrillic has case; capitalize only the first word and proper nouns
-  in labels and titles. English title case is wrong. Confidence: high.
+- **Capitalization: sentence case (high).** Kazakh Cyrillic has case; capitalize only the first word and proper nouns in
+  labels and titles. English title case is wrong. Confidence: high.
 
 ## Terminology and glossary
 
@@ -93,19 +93,20 @@ CLDR categories for `kk`: `one`, `other` (verified with `new Intl.PluralRules('k
 
 ## Notes and decisions
 
-- **Quotation marks: `«…»`** (guillemets), the Cyrillic/Russian-influenced standard for Kazakh. Avoid straight ASCII
-  `"` and English `"…"`.
+- **Quotation marks: `«…»`** (guillemets), the Cyrillic/Russian-influenced standard for Kazakh. Avoid straight ASCII `"`
+  and English `"…"`.
 - **Numbers and dates come from the formatter layer.** Kazakh uses a comma decimal and space thousands separator;
   `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
 - **Length.** Kazakh runs longer than English (agglutinative suffixes); overflow-check the layout against the
   pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/kk/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/kk/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

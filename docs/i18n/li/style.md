@@ -22,6 +22,7 @@ address.
 ## Decision points
 
 Ship li at all, or fall back to Dutch? (THE strategic call for David):
+
 - Options: (a) ship li; (b) skip li, resolve to nl (Dutch).
 - Limburgish is a recognized regional language of the Dutch/Belgian Limburg provinces (Netherlands, 1997, European
   Charter Part II), ~1.2-1.5M speakers, but speakers use Dutch for computing essentially universally. No major vendor
@@ -32,6 +33,7 @@ Ship li at all, or fall back to Dutch? (THE strategic call for David):
   community-contributed, native-reviewed extra once nl ships. Confidence: high.
 
 Orthography / standardization (only if li is built):
+
 - Limburgish has NO single standardized orthography (it's a dialect continuum). The main candidate is the Veldeke
   "Spelling 2003" (used by the Province and on bilingual place-name signs), but it has no official status.
 - Majors: none, no vendor has made this choice, so no precedent to inherit.
@@ -39,6 +41,7 @@ Orthography / standardization (only if li is built):
   Nautilus catalog's ad-hoc spelling wholesale. Confidence: high on the target; medium on consistency without review.
 
 Fallback chain:
+
 - Recommendation: `li → nl → en`. Dutch is the natural, universally-understood second language for every Limburgish
   speaker; never fall straight to English. Confidence: high.
 
@@ -82,11 +85,11 @@ CLDR categories: `one`, `other` (standard Germanic, same shape as Dutch/English:
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/li/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/li/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -33,8 +33,8 @@ messages stay calm and actionable: phrase the problem and the next step.
 
 Assamese verbs distinguish honorific levels (familiar vs honorific 2nd person). Software uses the honorific/polite form.
 
-- **Polite imperative, throughout.** The polite imperative is formed with `-ক`/`কৰক` ("কৰক" = please do). GNOME Assamese:
-  "বাতিল কৰক" (Cancel), and the MS guide uses the honorific register (verified 2026-06-20).
+- **Polite imperative, throughout.** The polite imperative is formed with `-ক`/`কৰক` ("কৰক" = please do). GNOME
+  Assamese: "বাতিল কৰক" (Cancel), and the MS guide uses the honorific register (verified 2026-06-20).
 - **Action labels (buttons, menu items): polite imperative.** "সন্ধান" (Search), "বাতিল কৰক" (Cancel). So the rule:
   **labels and user-facing instructions both use the polite imperative; never the familiar/informal form.** Confidence:
   high (GNOME and MS agree on the honorific register).
@@ -99,11 +99,12 @@ requires both categories.
   pseudolocale (`en-XA`), and watch line height for stacked conjuncts/matras.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/as/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/as/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

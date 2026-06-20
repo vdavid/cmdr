@@ -1,6 +1,7 @@
 # Santali (sat) translation style guide
 
-Working notes for translating Cmdr into Santali. Read [`README.md`](../README.md) for how this fits the translation process.
+Working notes for translating Cmdr into Santali. Read [`README.md`](../README.md) for how this fits the translation
+process.
 
 LOW priority. Santali is an Austroasiatic (Munda) language, an official language of India (~7M speakers, mainly
 Jharkhand, West Bengal, Odisha). The pile has ONLY a Microsoft style guide for `sat-Olck` (Ol Chiki script); no macOS
@@ -54,13 +55,14 @@ None in the pile beyond the style guide; defer to a native reviewer using the Mi
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by `desktop-i18n-dont-translate`.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
+`desktop-i18n-dont-translate`.
 
 ## Plurals
 
 CLDR categories for `sat`: `one`, `two`, `other`. Note the distinct **two** (dual) category, Santali grammatically marks
-a dual number, so count messages must write a `two` branch in addition to one/other. This is unusual (most languages lack
-`two`) and easy to miss.
+a dual number, so count messages must write a `two` branch in addition to one/other. This is unusual (most languages
+lack `two`) and easy to miss.
 
 ## Decisions to confirm with David
 
@@ -70,6 +72,6 @@ a dual number, so count messages must write a `two` branch in addition to one/ot
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/sat/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/sat/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

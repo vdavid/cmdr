@@ -1,6 +1,7 @@
 # Sindhi (sd) translation style guide
 
-Working notes for translating Cmdr into Sindhi. Read [`README.md`](../README.md) for how this fits the translation process.
+Working notes for translating Cmdr into Sindhi. Read [`README.md`](../README.md) for how this fits the translation
+process.
 
 Low resourcing AND a hard script split. The pile has Microsoft terminology for `sd` (Perso-Arabic) and Microsoft style
 guide for `sd-Deva` (Devanagari); NO macOS Finder. Apple does not ship a Sindhi macOS UI. The script choice below is the
@@ -27,7 +28,8 @@ different reading direction:
 - **Perso-Arabic (extended, RTL)**: the sole official script in Pakistan (Sindh province), where the large majority of
   Sindhi speakers live. Microsoft's `sd` terminology uses this.
 - **Devanagari (LTR)**: used by Sindhi communities in India. Microsoft's `sd-Deva` style guide uses this.
-- BCP-47: `sd` (or `sd-Arab`) = Perso-Arabic; `sd-Deva` = Devanagari. These are SEPARATE locales, never one blended text.
+- BCP-47: `sd` (or `sd-Arab`) = Perso-Arabic; `sd-Deva` = Devanagari. These are SEPARATE locales, never one blended
+  text.
 - Apple ships no Sindhi macOS UI at all. Google/Microsoft treat them as distinct locales.
 
 The two are abjad (Perso-Arabic) vs abugida (Devanagari) and one is RTL while the other is LTR, so this isn't just a
@@ -35,9 +37,9 @@ font swap; it changes the entire layout-direction story for the app.
 
 Recommendation: if Sindhi ships at all, target **Perso-Arabic `sd` (Pakistan)** as the primary, since it's the official
 script and the larger speaker base; treat `sd-Deva` as a separate, lower-priority LTR variant only if Indian-Sindhi
-demand appears. Confidence: high on Perso-Arabic being the primary; the whole language is low priority though.
-Flag for David: confirm Sindhi is in scope, and if so that `sd` base = Perso-Arabic. The Perso-Arabic primary is RTL, so
-it inherits the entire RTL-readiness gate (see below).
+demand appears. Confidence: high on Perso-Arabic being the primary; the whole language is low priority though. Flag for
+David: confirm Sindhi is in scope, and if so that `sd` base = Perso-Arabic. The Perso-Arabic primary is RTL, so it
+inherits the entire RTL-readiness gate (see below).
 
 ### RTL (for the Perso-Arabic primary)
 
@@ -62,16 +64,16 @@ Confidence: tentative.
 Defer; no macOS source, so every term is tentative and needs native review. Triangulate Microsoft sd terminology
 (Perso-Arabic) and sd-Deva style guide only, and keep separate columns per script if both ship.
 
-| English term | Sindhi (Perso-Arabic) | Notes |
-| ------------ | --------------------- | ----- |
-| file | فائل | confirm with reviewer |
-| folder | فولڊر | tentative |
-| trash | ردي | tentative, needs native check |
+| English term | Sindhi (Perso-Arabic) | Notes                         |
+| ------------ | --------------------- | ----------------------------- |
+| file         | فائل                  | confirm with reviewer         |
+| folder       | فولڊر                 | tentative                     |
+| trash        | ردي                   | tentative, needs native check |
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by `desktop-i18n-dont-translate`.
-In Perso-Arabic (RTL) these LTR brand runs need bidi isolation.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
+`desktop-i18n-dont-translate`. In Perso-Arabic (RTL) these LTR brand runs need bidi isolation.
 
 ## Plurals
 
@@ -91,6 +93,6 @@ CLDR categories for `sd`: `one`, `other`. Only two plural forms needed (same for
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/sd/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/sd/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

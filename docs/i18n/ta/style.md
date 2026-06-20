@@ -1,7 +1,8 @@
 # Tamil (ta) translation style guide
 
-Working notes for translating Cmdr into Tamil. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Tamil.
+Working notes for translating Cmdr into Tamil. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Tamil.
 
 ## Decisions to confirm with David
 
@@ -31,10 +32,10 @@ problem and the next step, the way the English voice avoids "error" / "failed".
   `நீங்கள்` (polite/plural). Microsoft's Tamil style guide states outright to address the user as `நீங்கள்`, directly or
   indirectly (verified against the reference pile, 2026-06-20). Never use `நீ` in UI: it reads as curt or talking down.
   Keep verb endings and pronouns in the `நீங்கள்` register consistently.
-- **Buttons and menu items: imperative in the polite register.** Tamil UI uses the polite imperative for actions:
-  "சேமி" (save), "ரத்து செய்" (cancel), "நீக்கு" (delete), "நகலெடு" (copy), "நகர்த்து" (move), "திற" (open), "மூடு"
-  (close). These short imperative forms are the established UI norm; keep them concise, don't expand to full polite
-  request forms on buttons.
+- **Buttons and menu items: imperative in the polite register.** Tamil UI uses the polite imperative for actions: "சேமி"
+  (save), "ரத்து செய்" (cancel), "நீக்கு" (delete), "நகலெடு" (copy), "நகர்த்து" (move), "திற" (open), "மூடு" (close).
+  These short imperative forms are the established UI norm; keep them concise, don't expand to full polite request forms
+  on buttons.
 
 ## Decision points
 
@@ -133,14 +134,14 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('ta')`, 202
 
 - **No title case; Tamil has no letter case at all.** The script is unicameral, so the app's sentence-case rule is moot
   for Tamil text itself; just keep Latin brand words (Cmdr, macOS) as-is.
-- **Numbers and dates come from the formatter layer.** Tamil (ta-IN) uses the Indian digit-grouping system
-  (1,00,000, the lakh/crore grouping) and a period decimal; `formatNumber()` / `formatBytes()` produce these from the
-  locale. Never hardcode separators or assume thousands-grouping.
+- **Numbers and dates come from the formatter layer.** Tamil (ta-IN) uses the Indian digit-grouping system (1,00,000,
+  the lakh/crore grouping) and a period decimal; `formatNumber()` / `formatBytes()` produce these from the locale. Never
+  hardcode separators or assume thousands-grouping.
 - **Quotation marks:** Tamil uses standard double quotes "…"; no special pair needed.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ta/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ta/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

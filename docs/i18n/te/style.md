@@ -1,16 +1,17 @@
 # Telugu (te) translation style guide
 
-Working notes for translating Cmdr into Telugu. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Telugu.
+Working notes for translating Cmdr into Telugu. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Telugu.
 
 ## Decisions to confirm with David
 
 These are the calls a translator can't make alone. The rest of this guide assumes them.
 
 - **Regional target: `te-IN`, with one unified written standard, high.** Telugu is spoken across Telangana and Andhra
-  Pradesh; the spoken dialects differ, but the written/formal standard used in software is largely unified, and Microsoft
-  targets `te-IN`. There's no Telangana-vs-Andhra catalog split to make: ship one `te` catalog in the standard written
-  register. Flagged only because region is nominally a product call; the default is low-risk.
+  Pradesh; the spoken dialects differ, but the written/formal standard used in software is largely unified, and
+  Microsoft targets `te-IN`. There's no Telangana-vs-Andhra catalog split to make: ship one `te` catalog in the standard
+  written register. Flagged only because region is nominally a product call; the default is low-risk.
 - **Native-coinage vs English-loanword leaning, tentative.** See the tech-term decision point. Microsoft leans toward
   English loanwords for several core terms (folder, file, trash) while GNOME/Thunar use native Telugu coinages; the
   choice sets the catalog's whole register, so it's worth David's glance even though a default is recommended below.
@@ -31,8 +32,8 @@ problem and the next step, the way the English voice avoids "error" / "failed".
   (polite/plural). Microsoft's Telugu style guide uses `మీరు` to politely address the user (verified against the
   reference pile, 2026-06-20). Never use `నువ్వు` in UI: it reads as overly familiar or talking down. Keep verb endings
   (`-ండి` polite imperatives) and pronouns in the `మీరు` register consistently.
-- **Buttons and menu items: polite imperative.** Telugu UI uses the polite `-ండి` imperative for actions: "రద్దు చేయి"
-  / "రద్దుచేయి" (cancel), "తొలగించు" (delete), "నకలు చెయ్యి" (copy), "తరలించు" (move), "తెరువు" (open), "మూసివేయి"
+- **Buttons and menu items: polite imperative.** Telugu UI uses the polite `-ండి` imperative for actions: "రద్దు చేయి" /
+  "రద్దుచేయి" (cancel), "తొలగించు" (delete), "నకలు చెయ్యి" (copy), "తరలించు" (move), "తెరువు" (open), "మూసివేయి"
   (close). Keep these concise; don't expand to full polite request sentences on buttons.
 
 ## Decision points
@@ -57,9 +58,9 @@ problem and the next step, the way the English voice avoids "error" / "failed".
   `macOS/` (verified against the reference pile, 2026-06-20). Telugu actually has the widest pile of the three (it's the
   only one with Thunar).
 - **Who does localize:** Microsoft (Windows, Office; terminology authority), Google (Android, Search, Workspace UI),
-  GNOME Nautilus + Xfce Thunar (file-manager-domain cross-check, and they often agree with each other against Microsoft),
-  and Spotify (mobile). With no macOS tier, the tiebreak is "Microsoft for product consistency, GNOME/Thunar as the
-  file-manager-native register".
+  GNOME Nautilus + Xfce Thunar (file-manager-domain cross-check, and they often agree with each other against
+  Microsoft), and Spotify (mobile). With no macOS tier, the tiebreak is "Microsoft for product consistency, GNOME/Thunar
+  as the file-manager-native register".
 
 ### Tech-term strategy: weigh Microsoft loanwords vs GNOME/Thunar native coinages
 
@@ -70,11 +71,11 @@ problem and the next step, the way the English voice avoids "error" / "failed".
   - trash → Microsoft `రీసైకిల్ బిన్` (loanword) vs GNOME/Thunar `చెత్తబుట్ట` (native "rubbish bin"). GNOME and Thunar
     agree here, strengthening the native form.
   - They agree on copy → `నకలు చెయ్యి`, move → `తరలించు`, delete → `తొలగించు`, settings → `సెట్టింగ్‌లు`.
-- **Recommendation:** lean toward the native GNOME/Thunar coinages for the file-manager-core nouns where two
-  independent open-source catalogs agree (`సంచయం`, `చెత్తబుట్ట`, `దస్త్రం`), because Cmdr is a file manager and that's
-  the register users meet in Nautilus/Thunar; the Microsoft loanwords are widely understood and a valid alternative if
-  David prefers them for consistency with Windows. This is the one term-register call worth settling up front.
-  `tentative` (real source split, flagged above); the agreed terms are `high`.
+- **Recommendation:** lean toward the native GNOME/Thunar coinages for the file-manager-core nouns where two independent
+  open-source catalogs agree (`సంచయం`, `చెత్తబుట్ట`, `దస్త్రం`), because Cmdr is a file manager and that's the register
+  users meet in Nautilus/Thunar; the Microsoft loanwords are widely understood and a valid alternative if David prefers
+  them for consistency with Windows. This is the one term-register call worth settling up front. `tentative` (real
+  source split, flagged above); the agreed terms are `high`.
 
 ### Gender: grammatical gender in 3rd person, keep UI gender-neutral
 
@@ -86,9 +87,9 @@ problem and the next step, the way the English voice avoids "error" / "failed".
 
 ### Length: overflow-check
 
-- Telugu strings can run longer than English, and stacked conjuncts plus matras raise line-height demands. Overflow-check
-  buttons and menus against the pseudolocale (`en-XA`) and real Telugu strings, and confirm line height doesn't clip
-  the tallest stacked glyph clusters. `high`.
+- Telugu strings can run longer than English, and stacked conjuncts plus matras raise line-height demands.
+  Overflow-check buttons and menus against the pseudolocale (`en-XA`) and real Telugu strings, and confirm line height
+  doesn't clip the tallest stacked glyph clusters. `high`.
 
 ## Terminology and glossary
 
@@ -137,14 +138,14 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('te')`, 202
 
 - **No title case; Telugu has no letter case.** The script is unicameral, so the app's sentence-case rule is moot for
   Telugu text; just keep Latin brand words (Cmdr, macOS) as-is.
-- **Numbers and dates come from the formatter layer.** Telugu (te-IN) uses the Indian digit-grouping system
-  (1,00,000, the lakh/crore grouping) and a period decimal; `formatNumber()` / `formatBytes()` produce these from the
-  locale. Never hardcode separators or assume thousands-grouping.
+- **Numbers and dates come from the formatter layer.** Telugu (te-IN) uses the Indian digit-grouping system (1,00,000,
+  the lakh/crore grouping) and a period decimal; `formatNumber()` / `formatBytes()` produce these from the locale. Never
+  hardcode separators or assume thousands-grouping.
 - **Quotation marks:** standard double quotes "…"; no special pair needed.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/te/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/te/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

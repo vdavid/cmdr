@@ -40,16 +40,17 @@ The defining concern is script rendering, not formality or variant. Major commer
 - **No grammatical gender.** Tibetan does not grammatically gender nouns or the person addressed, so the
   gender-agreement traps of Romance/Slavic languages don't apply. The register (honorific vs plain) is the live
   distinction, not gender. Confidence: high.
-- **Regional variant: none worth splitting.** "Tibetan" here is standard/literary Tibetan (Central Tibetan basis).
-  Amdo and Kham are spoken variants but the written standard is shared; no product-level split. (Dzongkha is a separate
+- **Regional variant: none worth splitting.** "Tibetan" here is standard/literary Tibetan (Central Tibetan basis). Amdo
+  and Kham are spoken variants but the written standard is shared; no product-level split. (Dzongkha is a separate
   language, `dz`, not a Tibetan variant.) Confidence: high.
 
 ## Terminology and glossary
 
-Tibetan file-manager terms should come from the GNOME Tibetan catalog and the Tibetan computing community's
-terminology, confirmed by native review. Leave the table to be populated from those sources rather than guessing.
+Tibetan file-manager terms should come from the GNOME Tibetan catalog and the Tibetan computing community's terminology,
+confirmed by native review. Leave the table to be populated from those sources rather than guessing.
 
-- Glossary: populate from `bo/gnome-nautilus/nautilus.po` + Tibetan-computing terminology, via native review (populate via the cited sources and native review; nothing guessed yet).
+- Glossary: populate from `bo/gnome-nautilus/nautilus.po` + Tibetan-computing terminology, via native review (populate
+  via the cited sources and native review; nothing guessed yet).
 
 ## Brand and do-not-translate
 
@@ -70,8 +71,8 @@ counted strings to read correctly for any number with a single form. Confidence:
   terminator rather than the Latin period. A native reviewer handles this; don't impose Latin punctuation.
 - **Digits**: Tibetan may use Tibetan digits (༠༡༢…) or Western digits; let the formatter layer decide, don't hardcode.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -83,6 +84,6 @@ counted strings to read correctly for any number with a single form. Confidence:
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/bo/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/bo/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

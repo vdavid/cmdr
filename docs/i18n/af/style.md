@@ -1,7 +1,7 @@
 # Afrikaans (af) translation style guide
 
-Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the
+translation process.
 
 ## Voice and tone
 
@@ -17,15 +17,15 @@ a personal file manager. Imperatives for buttons and menu items use the plain ve
 
 ## Terminology and glossary
 
-| English term | This language | Notes |
-| ------------ | ------------- | ----- |
-| file | lêer | |
-| folder | gids / omslag / vouer | GNOME uses "gids", Microsoft uses "omslag"; pick one and keep it consistent |
-| copy | kopieer | |
-| move | skuif | |
-| delete | vee uit | |
-| trash | asblik | |
-| search | soek | |
+| English term | This language         | Notes                                                                       |
+| ------------ | --------------------- | --------------------------------------------------------------------------- |
+| file         | lêer                  |                                                                             |
+| folder       | gids / omslag / vouer | GNOME uses "gids", Microsoft uses "omslag"; pick one and keep it consistent |
+| copy         | kopieer               |                                                                             |
+| move         | skuif                 |                                                                             |
+| delete       | vee uit               |                                                                             |
+| trash        | asblik                |                                                                             |
+| search       | soek                  |                                                                             |
 
 (Confirm "gids" vs "vouer" for folder against the Microsoft Afrikaans terminology in the reference pile; record the
 final call here.)
@@ -54,6 +54,6 @@ branches per plural message.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/af/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/af/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

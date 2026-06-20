@@ -44,8 +44,8 @@ Formality is settled above. The big remaining Catalan call is the Valencian vari
   Central Catalan (the macOS base, used in Catalonia) and Valencian (`ca-valencia`, used in the Valencian Community,
   with its own official body, the AVL). Both are real shipping targets:
   - Apple ships a single "Català" (Central); it does not ship a separate Valencian macOS.
-  - Microsoft ships both "Català" and "Valencià" as distinct localizations (the reference pile has a
-    `ca-ES-valencia` MS folder), and the GNOME/Xfce projects carry a separate `ca@valencia` catalog.
+  - Microsoft ships both "Català" and "Valencià" as distinct localizations (the reference pile has a `ca-ES-valencia` MS
+    folder), and the GNOME/Xfce projects carry a separate `ca@valencia` catalog.
   - Differences that surface in a file-manager UI are narrow but real: Valencian prefers the demonstratives "este/esta"
     over Central "aquest/aquesta", differs in some verb morphology (Valencian "ix" vs Central "surt"), and diverges on a
     handful of nouns. None of these block a single Central base from reading acceptably to a Valencian user.
@@ -83,9 +83,8 @@ Add rows as terms come up, each with sources and a confidence.
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens and `{email}`. Enforced by `desktop-i18n-dont-translate` (list in
-`apps/desktop/scripts/i18n-catalog-lib.js`).
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style tokens
+and `{email}`. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.js`).
 
 ## Plurals
 
@@ -95,15 +94,15 @@ grammatical gender; articles and adjectives agree with the counted noun in every
 
 ## Notes and decisions
 
-- **Apostrophe and the geminate `l·l`.** Catalan uses the typographic apostrophe in contractions ("l'usuari", "d'aquest").
-  In ICU values, double EVERY apostrophe regardless of which character; if the source uses the curly `'`, it still needs
-  doubling per ICU's escape rule. Keep the interpunct `·` in geminate l (see Decision points).
+- **Apostrophe and the geminate `l·l`.** Catalan uses the typographic apostrophe in contractions ("l'usuari",
+  "d'aquest"). In ICU values, double EVERY apostrophe regardless of which character; if the source uses the curly `'`,
+  it still needs doubling per ICU's escape rule. Keep the interpunct `·` in geminate l (see Decision points).
 - **Quotation marks.** Catalan traditionally uses `«…»` (guillemets), but macOS Catalan UI strings use curly `"…"`
   (verified in `ca/macOS/Finder/`, 2026-06-19). Match macOS: curly double quotes.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
 - **Length: Catalan runs ~10–20% longer than English.** Overflow-check tight buttons against the pseudolocale (`en-XA`).
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -112,6 +111,6 @@ grammatical gender; articles and adjectives agree with the counted noun in every
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ca/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ca/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

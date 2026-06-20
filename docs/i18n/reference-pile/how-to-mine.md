@@ -10,8 +10,8 @@ below from `_ignored/i18n/`.
 
 ## macOS (Tier 1, strongest) — `<tag>/macOS/<bundle>/*.json`
 
-Flat `key: value` JSON per bundle (`Finder`, `AppKit`, `CoreTypes`, `SystemSettings`). Keys are stable across
-languages, so cross-reference English→target by key. The `en/` folder is the English side.
+Flat `key: value` JSON per bundle (`Finder`, `AppKit`, `CoreTypes`, `SystemSettings`). Keys are stable across languages,
+so cross-reference English→target by key. The `en/` folder is the English side.
 
 ```sh
 # 1. Find the key for an English term (which bundle/file, and the key):
@@ -22,10 +22,12 @@ grep '"NSNavEjectButton"' sv/macOS/AppKit/AccessibilityImageDescriptions.json   
 ```
 
 Or with jq, search value strings and print key+value:
+
 ```sh
 jq -r 'to_entries[]|select((.value|type)=="string" and (.value|test("eject";"i")))|"\(.key)\t\(.value)"' \
   sv/macOS/Finder/*.json
 ```
+
 macOS is the highest-authority source: it's what a user literally sees in Finder. Prefer it when sources disagree.
 
 ## Microsoft terminology (Tier 2) — `<tag>/microsoft-terminology/<LANG>.tbx`
@@ -42,6 +44,7 @@ grep -i -A14 '<term[^>]*>folder</term>' de/microsoft-terminology/GERMAN.tbx | gr
 # Validate a candidate target term exists, and see its English source (-B = lines before):
 grep -i -B14 '<term[^>]*>Ordner</term>' de/microsoft-terminology/GERMAN.tbx | grep -iE '<term'
 ```
+
 Files are large; grep (streaming) beats loading them. `xmllint --xpath` works too but reads the whole doc into memory.
 
 ## Microsoft style guide (Tier 2) — `<tag>/microsoft-style-guides/StyleGuide.pdf`
@@ -52,6 +55,7 @@ text once, then grep; or open sections with the Read tool (it renders PDF pages)
 ```sh
 pdftotext de/microsoft-style-guides/StyleGuide.pdf - | grep -iE -A3 'addressing the user|formal|du-form|anrede|tilltal'
 ```
+
 The high-value sections are the early style/tone/grammar chapters and the "addressing the user" / formality section.
 
 ## GNOME / Xfce (Tier 3, cross-language parity) — `<tag>/gnome-nautilus/nautilus.po`, `<tag>/xfce-thunar/thunar.po`
@@ -64,6 +68,7 @@ msggrep --msgid -e 'Eject' sv/gnome-nautilus/nautilus.po          # entries whos
 msggrep --msgstr -e 'papperskorg' sv/gnome-nautilus/nautilus.po   # reverse: find by target word
 grep -A2 'Plural-Forms' sv/gnome-nautilus/nautilus.po             # the language's plural rule
 ```
+
 Plural entries use `msgid`/`msgid_plural` with `msgstr[0]`, `msgstr[1]`, … — good evidence for how a real catalog
 phrases counted strings in your language.
 

@@ -1,9 +1,9 @@
 # Maltese (mt) translation style guide
 
 Working notes for translating Cmdr into Maltese. Read [`README.md`](../README.md) for how this fits the translation
-process. Maltese is a Semitic language written in **Latin script** with special letters (ċ, ġ, ħ, ż, and the digraphs
-għ and ie); it is an EU official language. Localization depth is THIN outside Microsoft and EU institutions: Microsoft
-is the primary reference (see Decision points).
+process. Maltese is a Semitic language written in **Latin script** with special letters (ċ, ġ, ħ, ż, and the digraphs għ
+and ie); it is an EU official language. Localization depth is THIN outside Microsoft and EU institutions: Microsoft is
+the primary reference (see Decision points).
 
 ## Voice and tone
 
@@ -47,12 +47,12 @@ The genuinely tricky calls, with how the majors handle each, a recommended defau
   - copy / paste / save: **ikkopja / ippejstja / issejvja** (English verbs given Maltese conjugation).
   - drive: **drajv**; volume: **volum**; destination: **destinazzjoni** (Italian-pattern loan).
   - Native Semitic verbs survive where they're well established: open **iftaħ/fetaħ**, delete **ħassar**, search
-    **fittex/tiftix**, move **mexxi**, window **tieqa**, cut **aqta'**.
-  Recommendation: follow Microsoft. Use the naturalized English loan where Microsoft does (fajl, fowlder, drajv,
-  ikkopja, ippejstja, issejvja); use the native verb where Microsoft does (iftaħ, ħassar, fittex). Do NOT substitute
-  Italian terms (cartella) or invent purist Semitic coinages: neither matches user expectations. This is the highest-
-  value consistency call, so lock each term in the glossary as it comes up. Confidence: high for the pattern, medium per
-  individual term (Microsoft's own terminology is not 100% consistent, e.g. "Settings" sometimes stays English).
+    **fittex/tiftix**, move **mexxi**, window **tieqa**, cut **aqta'**. Recommendation: follow Microsoft. Use the
+    naturalized English loan where Microsoft does (fajl, fowlder, drajv, ikkopja, ippejstja, issejvja); use the native
+    verb where Microsoft does (iftaħ, ħassar, fittex). Do NOT substitute Italian terms (cartella) or invent purist
+    Semitic coinages: neither matches user expectations. This is the highest- value consistency call, so lock each term
+    in the glossary as it comes up. Confidence: high for the pattern, medium per individual term (Microsoft's own
+    terminology is not 100% consistent, e.g. "Settings" sometimes stays English).
 
 - **Special characters ċ ġ ħ ż and the digraphs għ, ie are load-bearing, not decoration.** They are distinct letters
   that change meaning (ż vs z, ħ vs h, ċ vs k/c), so a stripped-ASCII rendering is wrong, not just ugly. The encoding/
@@ -65,10 +65,10 @@ The genuinely tricky calls, with how the majors handle each, a recommended defau
   macOS/iOS system language), so there is no Apple Finder precedent to match, and no macOS "Trash" Maltese anchor.
   Microsoft DOES localize Maltese (Windows/Office, a published terminology base and style guide) and is the primary
   reference. EU institutions localize Maltese fully (it's an official EU language) but their register is legal/formal,
-  not consumer-UI, so borrow terminology from them cautiously and tone never. Google is partial (Translate, some Android/
-  Search surfaces) with uneven coverage. Spotify and Netflix do not ship a Maltese interface. Recommendation: treat
-  Microsoft terminology as primary; don't reach for Finder or Apple conventions, and don't adopt EU legalese register.
-  Confidence: high.
+  not consumer-UI, so borrow terminology from them cautiously and tone never. Google is partial (Translate, some
+  Android/ Search surfaces) with uneven coverage. Spotify and Netflix do not ship a Maltese interface. Recommendation:
+  treat Microsoft terminology as primary; don't reach for Finder or Apple conventions, and don't adopt EU legalese
+  register. Confidence: high.
 
 - **Gender and number agreement bites in dynamic strings.** Maltese nouns carry grammatical gender (masculine/feminine),
   and adjectives, the definite article's assimilation, and past-tense verbs agree with the noun's gender and number.
@@ -108,31 +108,31 @@ The genuinely tricky calls, with how the majors handle each, a recommended defau
 Core terms drawn from Microsoft Maltese terminology. Extend as strings come up. Per-term confidence is medium (see the
 code-switching decision point); lock each as it's used.
 
-| English term | Maltese | Notes |
-| ------------ | ------- | ----- |
-| file | fajl | masculine; English loan, not Italian |
-| folder | fowlder | feminine; English loan, not "cartella" |
-| copy | ikkopja | imperative; English-derived verb |
-| move | mexxi | imperative; native verb |
-| delete | ħassar | imperative; native verb (keep the ħ) |
-| paste | ippejstja | imperative; English-derived verb |
-| cut | aqta' | imperative; note the closing apostrophe (a real letter mark) |
-| rename | ibdel l-isem | "change the name" |
-| open | iftaħ | imperative; native (keep the ħ) |
-| save | issejvja | imperative; English-derived verb |
-| cancel | ikkanċella | imperative (keep the ċ) |
-| search | fittex | verb; the noun is "tiftix" / "tiftixa" |
-| trash | Barmil | owner call; Microsoft's Recycle Bin term |
-| pane | kwadru | owner call; "panew" also attested |
-| tab | tab | English loan |
-| window | tieqa | native |
-| volume | volum | the storage-volume sense |
-| drive | drajv | English loan |
-| settings | settings | Microsoft often keeps English; "issettjar" is attested |
-| destination folder | fowlder tad-destinazzjoni | note article assimilation: tad- |
-| file name | isem tal-fajl | |
-| name | isem | |
-| view | dehra | the noun |
+| English term       | Maltese                   | Notes                                                        |
+| ------------------ | ------------------------- | ------------------------------------------------------------ |
+| file               | fajl                      | masculine; English loan, not Italian                         |
+| folder             | fowlder                   | feminine; English loan, not "cartella"                       |
+| copy               | ikkopja                   | imperative; English-derived verb                             |
+| move               | mexxi                     | imperative; native verb                                      |
+| delete             | ħassar                    | imperative; native verb (keep the ħ)                         |
+| paste              | ippejstja                 | imperative; English-derived verb                             |
+| cut                | aqta'                     | imperative; note the closing apostrophe (a real letter mark) |
+| rename             | ibdel l-isem              | "change the name"                                            |
+| open               | iftaħ                     | imperative; native (keep the ħ)                              |
+| save               | issejvja                  | imperative; English-derived verb                             |
+| cancel             | ikkanċella                | imperative (keep the ċ)                                      |
+| search             | fittex                    | verb; the noun is "tiftix" / "tiftixa"                       |
+| trash              | Barmil                    | owner call; Microsoft's Recycle Bin term                     |
+| pane               | kwadru                    | owner call; "panew" also attested                            |
+| tab                | tab                       | English loan                                                 |
+| window             | tieqa                     | native                                                       |
+| volume             | volum                     | the storage-volume sense                                     |
+| drive              | drajv                     | English loan                                                 |
+| settings           | settings                  | Microsoft often keeps English; "issettjar" is attested       |
+| destination folder | fowlder tad-destinazzjoni | note article assimilation: tad-                              |
+| file name          | isem tal-fajl             |                                                              |
+| name               | isem                      |                                                              |
+| view               | dehra                     | the noun                                                     |
 
 ## Brand and do-not-translate
 
@@ -146,6 +146,7 @@ CLDR plural categories for `mt`: **`one`, `two`, `few`, `many`, and `other`** (F
 `new Intl.PluralRules('mt').resolvedOptions().pluralCategories`). This is one of the heaviest plural burdens of any
 locale and a real translation cost: EVERY plural count message needs five branches, not two. The boundaries (verified
 against CLDR):
+
 - **one**: n = 1
 - **two**: n = 2
 - **few**: n = 0, or n mod 100 in 3..10 (so 3-10, 103-110, ...)
@@ -175,6 +176,6 @@ this is the single largest correctness risk for Maltese.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/mt/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/mt/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

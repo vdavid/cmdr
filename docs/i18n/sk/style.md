@@ -15,8 +15,8 @@ flag, the rest carry a confident default and are listed so they're never relitig
   not tykanie). Recommended default: **vykanie throughout.** Flagging because it sets the tone for every sentence the
   app speaks, and because Cmdr's English voice is deliberately warm-and-informal, so David may want to confirm the
   register shift is intended.
-- **`volume` = `oddiel` vs `zväzok` (tentative).** macOS Slovak Finder uses `oddiel` (literally "partition/section")
-  for server volumes ("Serverové oddiely"). It's the macOS-backed term, so it's the default, but `oddiel` also means
+- **`volume` = `oddiel` vs `zväzok` (tentative).** macOS Slovak Finder uses `oddiel` (literally "partition/section") for
+  server volumes ("Serverové oddiely"). It's the macOS-backed term, so it's the default, but `oddiel` also means
   "partition", which can read oddly for a whole mounted disk. See the glossary; worth a native check.
 
 ## Voice and tone
@@ -41,8 +41,8 @@ the user, use the polite vy-plural ("Naozaj chcete odstrániť tieto súbory?").
 
 ## Decision points
 
-- **Script: Latin, no decision.** Slovak is written in the Latin alphabet with diacritics (á, ä, č, ď, é, í, ĺ, ľ, ň,
-  ó, ô, ŕ, š, ť, ú, ý, ž). No script choice to make. Confidence: high.
+- **Script: Latin, no decision.** Slovak is written in the Latin alphabet with diacritics (á, ä, č, ď, é, í, ĺ, ľ, ň, ó,
+  ô, ŕ, š, ť, ú, ý, ž). No script choice to make. Confidence: high.
 - **Regional variant: one, `sk` (`sk-SK`).** Slovak is standardized only in Slovakia; there's no second national
   standard (no pt-BR/pt-PT-style split). Don't build a variant matrix. Confidence: high.
 - **Gender / inclusive language: the vy-plural already solves most of it (high on the problem, tentative on the single
@@ -60,10 +60,10 @@ the user, use the polite vy-plural ("Naozaj chcete odstrániť tieto súbory?").
 ## Terminology and glossary
 
 Format per term: `chosen · sources · confidence`. Confidence is `confirmed` (a native human signed off), `high`
-(authoritative sources agree), or `tentative` (sources conflict or none had it). Evidence verified against the
-reference pile (`_ignored/i18n/sk/`: macOS Finder/AppKit, MS terminology, GNOME Nautilus, Xfce Thunar) on 2026-06-20;
-macOS strings cited are what Slovak Finder/AppKit actually show. Sources decide the term; Cmdr writes its own value
-(Apple/MS copyrighted, GNOME/Xfce GPL, never copied verbatim).
+(authoritative sources agree), or `tentative` (sources conflict or none had it). Evidence verified against the reference
+pile (`_ignored/i18n/sk/`: macOS Finder/AppKit, MS terminology, GNOME Nautilus, Xfce Thunar) on 2026-06-20; macOS
+strings cited are what Slovak Finder/AppKit actually show. Sources decide the term; Cmdr writes its own value (Apple/MS
+copyrighted, GNOME/Xfce GPL, never copied verbatim).
 
 Settled terms (sources agree):
 
@@ -81,8 +81,8 @@ Settled terms (sources agree):
 - **cancel: `zrušiť`** · macOS AppKit ("Zrušiť"). Imperative-infinitive on buttons. `high`.
 - **open: `otvoriť`** · macOS AppKit ("Otvoriť"). `high`.
 - **search: `vyhľadať` (verb) / `vyhľadávanie` (noun)** · macOS Finder shows both. `high`.
-- **server: `server`** · macOS Finder ("Pripojiť k serveru", "Serverové oddiely"). Connect-to-server verb is
-  "Pripojiť". `high`.
+- **server: `server`** · macOS Finder ("Pripojiť k serveru", "Serverové oddiely"). Connect-to-server verb is "Pripojiť".
+  `high`.
 - **disconnect: `odpojiť`** · macOS AppKit ("Odpojiť"). `high`.
 - **sidebar: `postranný panel`** · GNOME ("Postranný panel"). `high`.
 - **bookmark: `záložka`** · GNOME ("…do záložiek"). Plural "záložky". `high`.
@@ -125,19 +125,20 @@ CLDR categories: `one`, `few`, `many`, `other` (verified with `new Intl.PluralRu
 ## Notes and decisions
 
 - **Quotation marks: `„…"`** (low-9 opening U+201E, high-6 closing U+201C), the standard Slovak form, same shape as
-  German/Czech. Nested/secondary: **`»…«`** (guillemets pointing inward, not the French `«…»`). Avoid straight ASCII
-  `"` and English `"…"`.
-- **Numbers and dates come from the formatter layer.** Slovak uses a comma decimal and space thousands separator
-  (1 000); `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
+  German/Czech. Nested/secondary: **`»…«`** (guillemets pointing inward, not the French `«…»`). Avoid straight ASCII `"`
+  and English `"…"`.
+- **Numbers and dates come from the formatter layer.** Slovak uses a comma decimal and space thousands separator (1
+  000); `formatNumber()`/`formatBytes()` produce these from the locale. Never hardcode separators in a string.
 - **Length.** Slovak runs somewhat longer than English (case endings, longer compounds), so overflow-check the layout
   against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/sk/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/sk/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

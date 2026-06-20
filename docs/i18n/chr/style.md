@@ -42,8 +42,8 @@ The defining fact is the syllabary script. Cherokee has unusually good commercia
 - **No grammatical gender.** Cherokee does not grammatically gender nouns or the addressee, so gender-agreement traps
   don't apply. Confidence: high.
 - **Regional/dialect variant: none worth splitting.** Cherokee has dialects (Eastern/Giduwa vs Western/Otali), and the
-  Western dialect underlies most standardized written Cherokee. No product-level split; target the standard written
-  form the Cherokee Nation uses. Confidence: high.
+  Western dialect underlies most standardized written Cherokee. No product-level split; target the standard written form
+  the Cherokee Nation uses. Confidence: high.
 - **Syllabary rendering.** Verify the app renders the full Cherokee syllabary block correctly with a font that has
   complete coverage (some fonts miss characters), before shipping. Confidence: high; a rendering check.
 
@@ -53,13 +53,13 @@ Format per term: `English → chosen · sources · confidence`. Primary source f
 syllabary), confirmed by the Cherokee Nation Language Department on native review.
 
 - folder → ᏗᏴᏈᏛᎥᏍᎩ · MS terminology ("folder" → "ᏗᏴᏈᏛᎥᏍᎩ") · high
-- (populate file, copy, delete, search, settings, trash, etc. from `chr-Cher/microsoft-terminology/CHEROKEE.tbx`
-  during translation)
+- (populate file, copy, delete, search, settings, trash, etc. from `chr-Cher/microsoft-terminology/CHEROKEE.tbx` during
+  translation)
 
-| English term | Cherokee | Notes |
-| ------------ | -------- | ----- |
-| folder | ᏗᏴᏈᏛᎥᏍᎩ | MS terminology; high |
-| | | populate the rest from `chr-Cher/microsoft-terminology/`, confirm via Cherokee Nation review |
+| English term | Cherokee | Notes                                                                                        |
+| ------------ | -------- | -------------------------------------------------------------------------------------------- |
+| folder       | ᏗᏴᏈᏛᎥᏍᎩ  | MS terminology; high                                                                         |
+|              |          | populate the rest from `chr-Cher/microsoft-terminology/`, confirm via Cherokee Nation review |
 
 ## Brand and do-not-translate
 
@@ -69,16 +69,16 @@ brand words sit inside syllabary runs; verify they render cleanly.
 
 ## Plurals
 
-CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('chr')`, 2026-06-20). Two branches. Cherokee's
-verb morphology encodes number richly; a native reviewer confirms how counted strings agree. Write both branches.
+CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('chr')`, 2026-06-20). Two branches. Cherokee's verb
+morphology encodes number richly; a native reviewer confirms how counted strings agree. Write both branches.
 
 ## Notes and decisions
 
 - **Numbers and dates come from the formatter layer.** Cherokee uses Western digits in modern usage; let the formatter
   decide.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -90,6 +90,6 @@ verb morphology encodes number richly; a native reviewer confirms how counted st
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/chr/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/chr/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

@@ -43,8 +43,8 @@ over long noun constructions where the grammar allows.
   Setswana Language Board) blends the eight dialects and is broadly shared across the border. There is no script
   question: Setswana is written in Latin script in both countries.
 - Recommendation: translate under the base tag `tn` using standard orthography, leaning on the Microsoft `ZAF` glossary
-  as the lexical anchor. Avoid spellings that are distinctively one-dialect. Only split into `tn-BW` / `tn-ZA` later if a
-  Botswana reviewer flags concrete divergences. Confidence: high (that minor base-tag-with-standard-orthography is the
+  as the lexical anchor. Avoid spellings that are distinctively one-dialect. Only split into `tn-BW` / `tn-ZA` later if
+  a Botswana reviewer flags concrete divergences. Confidence: high (that minor base-tag-with-standard-orthography is the
   right call); the specific term spellings stay tentative pending review.
 
 ### Noun-class system: the central grammatical feature
@@ -93,37 +93,37 @@ over long noun constructions where the grammar allows.
 
 ## Terminology and glossary
 
-Sources below are Microsoft terminology (`tn-ZA/microsoft-terminology/SETSWANA.tbx`) unless noted. All `tentative`
-until a native Setswana reviewer signs off (no second source exists to raise confidence to `high`).
+Sources below are Microsoft terminology (`tn-ZA/microsoft-terminology/SETSWANA.tbx`) unless noted. All `tentative` until
+a native Setswana reviewer signs off (no second source exists to raise confidence to `high`).
 
-| English | Setswana | Notes (source · confidence) |
-| ------- | -------- | --------------------------- |
-| file | faele | loanword · MS · tentative |
-| files | difaele | `di-` plural class · MS · tentative |
-| folder | setsholadifaele | native coinage (holds files) · MS · tentative |
-| copy | Kopolola | imperative verb · MS · tentative |
-| move | sutisa | imperative verb · MS · tentative |
-| delete | Phimola | imperative verb · MS · tentative |
-| open | Bula | imperative verb · MS · tentative |
-| save | Boloka | imperative verb · MS · tentative |
-| close | tswala | imperative verb · MS · tentative |
-| cancel | tlosa go tlhopha | "remove the choice" · MS · tentative |
-| paste | kgomaretsa | imperative verb · MS · tentative |
-| search | pheneno | noun · MS · tentative |
-| settings | Thulaganyo | MS · tentative |
-| window | fensetere | loanword · MS · tentative |
-| tab | thebe | loanword · MS · tentative |
-| drive | Polokelo | native ("a place of keeping") · MS · tentative |
-| disk | disike | loanword · MS · tentative |
-| computer | khomphiutha | loanword · MS · tentative |
-| network | mafaratlhatlhaseloago | native coinage · MS · tentative |
-| Recycle Bin | Moteme wa matlakala | native phrase · MS · tentative |
-| item | selwana | MS · tentative |
-| name | leina | MS · tentative |
-| help | thuso | MS · tentative |
-| error | phoso | use in concept only; Cmdr copy avoids the word "error" · MS · tentative |
-| back | Morago | MS · tentative |
-| home | Gae | MS · tentative |
+| English     | Setswana              | Notes (source · confidence)                                             |
+| ----------- | --------------------- | ----------------------------------------------------------------------- |
+| file        | faele                 | loanword · MS · tentative                                               |
+| files       | difaele               | `di-` plural class · MS · tentative                                     |
+| folder      | setsholadifaele       | native coinage (holds files) · MS · tentative                           |
+| copy        | Kopolola              | imperative verb · MS · tentative                                        |
+| move        | sutisa                | imperative verb · MS · tentative                                        |
+| delete      | Phimola               | imperative verb · MS · tentative                                        |
+| open        | Bula                  | imperative verb · MS · tentative                                        |
+| save        | Boloka                | imperative verb · MS · tentative                                        |
+| close       | tswala                | imperative verb · MS · tentative                                        |
+| cancel      | tlosa go tlhopha      | "remove the choice" · MS · tentative                                    |
+| paste       | kgomaretsa            | imperative verb · MS · tentative                                        |
+| search      | pheneno               | noun · MS · tentative                                                   |
+| settings    | Thulaganyo            | MS · tentative                                                          |
+| window      | fensetere             | loanword · MS · tentative                                               |
+| tab         | thebe                 | loanword · MS · tentative                                               |
+| drive       | Polokelo              | native ("a place of keeping") · MS · tentative                          |
+| disk        | disike                | loanword · MS · tentative                                               |
+| computer    | khomphiutha           | loanword · MS · tentative                                               |
+| network     | mafaratlhatlhaseloago | native coinage · MS · tentative                                         |
+| Recycle Bin | Moteme wa matlakala   | native phrase · MS · tentative                                          |
+| item        | selwana               | MS · tentative                                                          |
+| name        | leina                 | MS · tentative                                                          |
+| help        | thuso                 | MS · tentative                                                          |
+| error       | phoso                 | use in concept only; Cmdr copy avoids the word "error" · MS · tentative |
+| back        | Morago                | MS · tentative                                                          |
+| home        | Gae                   | MS · tentative                                                          |
 
 ## Brand and do-not-translate
 
@@ -149,8 +149,8 @@ Quick Look. The full curated list plus the system placeholder tokens is enforced
 - Whole-language go/no-go: Tswana has no Apple or GNOME reference and only a single (Microsoft, South-Africa-only)
   glossary, so every term is `tentative`. Confirm whether Tswana is in scope at all before investing a full pass, and
   line up a native Setswana reviewer (mandatory before ship under principle 6).
-- Base tag `tn` vs region split: recommend shipping under base `tn` with standard orthography; revisit `tn-BW` /
-  `tn-ZA` only if a Botswana reviewer flags real divergence.
+- Base tag `tn` vs region split: recommend shipping under base `tn` with standard orthography; revisit `tn-BW` / `tn-ZA`
+  only if a Botswana reviewer flags real divergence.
 - Imperative singular as the action register (recommended) vs plural-respect honorific: recommend singular imperative
   throughout; confirm it does not read as curt to a native speaker.
 
@@ -166,6 +166,6 @@ Quick Look. The full curated list plus the system placeholder tokens is enforced
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/tn/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/tn/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

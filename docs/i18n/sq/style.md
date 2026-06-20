@@ -22,23 +22,22 @@ Albanian is a low-priority target for a macOS app, but it's better-resourced tha
 ## Voice and tone
 
 Friendly, concise, active, calm. Microsoft's Albanian voice guidance lines up with Cmdr's English voice: "warm and
-relaxed", "crisp and clear", "we make it simple above all", short everyday words over formal technical register,
-written for scanning first (verified against the reference pile, 2026-06-20). Carry the English voice over directly.
+relaxed", "crisp and clear", "we make it simple above all", short everyday words over formal technical register, written
+for scanning first (verified against the reference pile, 2026-06-20). Carry the English voice over directly.
 
-Error messages stay calm and actionable: name the problem and the next step. The MS guide's own sample does exactly
-this ("Ky çelës produkti nuk funksionoi. Kontrolloje dhe provoje përsëri." = "This product key didn't work. Check it
-and try again."), phrasing the problem and the fix rather than leading with "error" or "failed". Mirror that pattern.
+Error messages stay calm and actionable: name the problem and the next step. The MS guide's own sample does exactly this
+("Ky çelës produkti nuk funksionoi. Kontrolloje dhe provoje përsëri." = "This product key didn't work. Check it and try
+again."), phrasing the problem and the fix rather than leading with "error" or "failed". Mirror that pattern.
 
 ## Formality
 
 - **Address the user as `ti` (informal second person singular), not `ju`.** Microsoft's Albanian guidance addresses the
   user directly with the familiar second person and explicitly avoids the formal/impersonal third person ("user"); its
-  samples use `ti` ("Ti zgjedh…") (verified against the reference pile, 2026-06-20). Albanian has a real `ti`/`ju`
-  T-V distinction and `ju` is the polite/formal form, so this is a genuine choice, but the MS-backed default for warm
+  samples use `ti` ("Ti zgjedh…") (verified against the reference pile, 2026-06-20). Albanian has a real `ti`/`ju` T-V
+  distinction and `ju` is the polite/formal form, so this is a genuine choice, but the MS-backed default for warm
   consumer software is informal `ti`. `high`.
-  - Flag for David: if Cmdr's Albanian voice should feel more deferential or business-formal, `ju` is the lever.
-    The recommended default is informal `ti`, matching the app's friendly English voice and Microsoft's Albanian
-    convention.
+  - Flag for David: if Cmdr's Albanian voice should feel more deferential or business-formal, `ju` is the lever. The
+    recommended default is informal `ti`, matching the app's friendly English voice and Microsoft's Albanian convention.
 - **Buttons and menu items: imperative verb, informal singular.** The MS terminology gives the imperative forms
   directly: "Fshi" (delete), "Anulo" (cancel), "rendit" (sort), "hap" (open), "mbyll" (close). Use the singular
   imperative, consistent with `ti` address.
@@ -50,8 +49,8 @@ and try again."), phrasing the problem and the fix rather than leading with "err
 
 ## Decision points
 
-These are the calls that actually move the needle for Albanian. Each: how the majors handle it, a recommended default,
-a confidence, and whether only David can settle it.
+These are the calls that actually move the needle for Albanian. Each: how the majors handle it, a recommended default, a
+confidence, and whether only David can settle it.
 
 - **Formality (`ti` vs `ju`).** Covered under Formality above. Microsoft uses informal `ti`; recommended default is
   `ti`; David's call only if a more formal register is wanted. `high`.
@@ -67,9 +66,9 @@ a confidence, and whether only David can settle it.
   - Flag for David only if Cmdr ever wants a dedicated Kosovo build (`sq-XK`); not worth it at this priority.
 
 - **Translate vs borrow tech terms.**
-  - Albanian is more mature than Somali here: Microsoft terminology supplies native terms for most core nouns and
-    verbs, so borrowing is less necessary. But Albanian IT usage does borrow some English/international roots
-    (`server`, `volum`, `direktori`, `Tab`), and the MS terminology itself keeps these.
+  - Albanian is more mature than Somali here: Microsoft terminology supplies native terms for most core nouns and verbs,
+    so borrowing is less necessary. But Albanian IT usage does borrow some English/international roots (`server`,
+    `volum`, `direktori`, `Tab`), and the MS terminology itself keeps these.
   - Recommended default: **prefer the established Albanian term where Microsoft terminology and the file-manager
     catalogs agree; keep the borrowed/international term where that's what the sources use** (notably `server`, `volum`,
     `Tab`). Don't coin new natives over a settled loan. `high` where sources agree, `tentative` where only the partial
@@ -97,8 +96,8 @@ pile, 2026-06-20). Sources read to decide the term, never pasted (MS copyrighted
 - **file: `skedar`** (masculine) · MS terminology (`skedar`). `high`.
 - **directory: `direktori`** · MS terminology; use only where the technical filesystem sense matters, else `dosje`.
   `high`.
-- **pane: `pjesë`** · MS terminology (`pjesë`, the window-region sense). Reads a little generic; confirm against the
-  two file lists with a native reviewer. `tentative`.
+- **pane: `pjesë`** · MS terminology (`pjesë`, the window-region sense). Reads a little generic; confirm against the two
+  file lists with a native reviewer. `tentative`.
 - **tab: `Tab`** (borrowed) · MS terminology keeps `Tab`. `high`.
 - **volume: `volum`** · MS terminology (`volum`). A mounted disk volume. `high`.
 - **drive: `njësia e diskut`** · MS terminology. `high`.
@@ -107,8 +106,8 @@ pile, 2026-06-20). Sources read to decide the term, never pasted (MS copyrighted
   differ).
 - **delete: `Fshi`** (imperative) · MS terminology. `high`.
 - **rename: `riemërto`** · Nautilus community (`Riemërto`); MS terminology had no clean hit. `tentative`.
-- **cancel: `Anulo`** · MS terminology (`Anulo`); Nautilus community uses `Anullo` (double-l, nonstandard). Use
-  `Anulo`. `high`.
+- **cancel: `Anulo`** · MS terminology (`Anulo`); Nautilus community uses `Anullo` (double-l, nonstandard). Use `Anulo`.
+  `high`.
 - **sort: `rendit`** · MS terminology (`rendit`). `high`.
 - **search: `kërkim` (noun) / `kërko` (verb)** · MS terminology (`kërkim`). `high`.
 - **settings: `cilësimet`** · MS terminology (`cilësimet`). `high`.
@@ -120,8 +119,8 @@ pile, 2026-06-20). Sources read to decide the term, never pasted (MS copyrighted
 - **view: `pamje`** · MS terminology (`pamje`); list view → `Listë`. `high`.
 - **preview / viewer: `paraafishim`** · MS terminology (`paraafishim`, "preview"). Cmdr's file viewer is a preview
   surface, so `paraafishim` fits; confirm the exact viewer noun with a native reviewer. `tentative`.
-- **bookmark: `shëno si referim` / `referim`** · MS terminology (`shëno si referim`). Reads long for a short label;
-  flag a shorter native label with a reviewer. `tentative`.
+- **bookmark: `shëno si referim` / `referim`** · MS terminology (`shëno si referim`). Reads long for a short label; flag
+  a shorter native label with a reviewer. `tentative`.
 - **eject / overwrite:** no clean source hit in the pile this round; defer to a native reviewer. `tentative`.
 
 Add terms in the same `chosen · sources · confidence` shape; keep the catalog consistent.
@@ -133,10 +132,10 @@ tokens. The curated list is enforced by `desktop-i18n-dont-translate`; see `apps
 
 ## Plurals
 
-CLDR categories for `sq`: `one`, `other` (the Albanian Nautilus catalog declares `nplurals=2; plural=(n != 1)`,
-verified against the reference pile, 2026-06-20; confirm with `new Intl.PluralRules('sq').resolvedOptions()`). Write
-both branches. Keep noun and adjective gender agreement correct inside each branch. Numbers and dates come from the
-formatter layer (`formatNumber()` / `formatBytes()`); never hardcode separators.
+CLDR categories for `sq`: `one`, `other` (the Albanian Nautilus catalog declares `nplurals=2; plural=(n != 1)`, verified
+against the reference pile, 2026-06-20; confirm with `new Intl.PluralRules('sq').resolvedOptions()`). Write both
+branches. Keep noun and adjective gender agreement correct inside each branch. Numbers and dates come from the formatter
+layer (`formatNumber()` / `formatBytes()`); never hardcode separators.
 
 ## Notes and decisions
 
@@ -151,6 +150,6 @@ formatter layer (`formatNumber()` / `formatBytes()`); never hardcode separators.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/sq/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/sq/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

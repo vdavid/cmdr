@@ -22,9 +22,9 @@ These are calls a translator can't make alone. The rest of this guide assumes th
   shared standard literary Bengali (sadhu-free, cholito modern), leaning bn-IN where the pile gives evidence, since
   that's what the sources cover; flag bn-BD as a possible later override. Picking the primary region is a product call.
 - **Native-coinage vs English/transliterated loanword leaning, tentative.** Microsoft and GNOME diverge on visible terms
-  (trash: Microsoft transliterates `রিসাইকেল বিন` "recycle bin"; GNOME uses native `আবর্জনার বাক্স` "rubbish box").
-  The choice sets the catalog's register; recommendation leans native GNOME forms (see the tech-term decision point),
-  worth David's glance.
+  (trash: Microsoft transliterates `রিসাইকেল বিন` "recycle bin"; GNOME uses native `আবর্জনার বাক্স` "rubbish box"). The
+  choice sets the catalog's register; recommendation leans native GNOME forms (see the tech-term decision point), worth
+  David's glance.
 
 ## Voice and tone
 
@@ -40,11 +40,11 @@ phrase what happened and the next step (Bengali has neutral framings around `ক
 
 ## Formality
 
-- **Address the user as `আপনি` (respectful you), high.** Bengali has a three-way politeness split: `তুই`
-  (intimate/rude in UI), `তুমি` (familiar), and `আপনি` (respectful/polite). The GNOME Bengali catalog uses `আপনি`
-  exclusively (38 instances, zero `তুমি`/`তুই`, verified against the reference pile, 2026-06-20), and the bn-IN Microsoft
-  style guide addresses the user politely with `আপনি`. Always use `আপনি`; never `তুই`/`তুমি` in UI. Keep verb endings in
-  the `আপনি` register (the polite `-উন`/`-ন` imperative) consistently.
+- **Address the user as `আপনি` (respectful you), high.** Bengali has a three-way politeness split: `তুই` (intimate/rude
+  in UI), `তুমি` (familiar), and `আপনি` (respectful/polite). The GNOME Bengali catalog uses `আপনি` exclusively (38
+  instances, zero `তুমি`/`তুই`, verified against the reference pile, 2026-06-20), and the bn-IN Microsoft style guide
+  addresses the user politely with `আপনি`. Always use `আপনি`; never `তুই`/`তুমি` in UI. Keep verb endings in the `আপনি`
+  register (the polite `-উন`/`-ন` imperative) consistently.
 - **Buttons and menu items: polite imperative.** GNOME labels actions in the polite imperative: `মুছে ফেলুন` (delete),
   `খুলুন` (open), `বাতিল` (cancel), `বের করে আনা` (eject). Keep these concise polite-imperative forms; don't expand to
   full request sentences on buttons.
@@ -57,11 +57,11 @@ phrase what happened and the next step (Bengali has neutral framings around `ক
   localizes Bengali ships native Bengali script: Microsoft, Google (Android, Search), and the GNOME catalog all render
   real Bengali (Microsoft/GNOME verified against the pile; Google web-evidenced, unverified). No Apple/macOS Bengali
   exists to cross-check. `high`.
-- **Rendering care:** Bengali uses combining vowel signs, the hasanta (virama), and heavy consonant-conjunct
-  ligatures (juktakkhor) where two or more consonants fuse into one glyph (e.g. ক্ষ, ঞ্জ); some vowel signs render
-  before/around their base, so visual order isn't code-point order. Don't measure, truncate, or reverse strings by code
-  unit, and confirm the app's font stack shapes Bengali correctly (conjuncts form, vowel signs attach, no tofu boxes).
-  This is a real complex-script rendering risk, and conjunct-heavy fonts vary in quality.
+- **Rendering care:** Bengali uses combining vowel signs, the hasanta (virama), and heavy consonant-conjunct ligatures
+  (juktakkhor) where two or more consonants fuse into one glyph (e.g. ক্ষ, ঞ্জ); some vowel signs render before/around
+  their base, so visual order isn't code-point order. Don't measure, truncate, or reverse strings by code unit, and
+  confirm the app's font stack shapes Bengali correctly (conjuncts form, vowel signs attach, no tofu boxes). This is a
+  real complex-script rendering risk, and conjunct-heavy fonts vary in quality.
 - **Do NOT transliterate** product UI into Latin "Banglish"; that's an informal chat register, never a localized-UI
   convention.
 
@@ -146,10 +146,10 @@ CLDR categories: **`one`, `other`** (verified with `new Intl.PluralRules('bn')`,
 - **Gotcha: Bengali's `one` covers more than "exactly 1".** CLDR maps 0 and 1 (and some fractions) to `one` for Bengali,
   so the `one` branch must read naturally for 0 too, or use an `=0` exact branch where the English needs a distinct zero
   phrasing. Don't assume `one` means only the integer 1.
-- Bengali pluralizes with classifiers/quantifiers and optional plural markers (`-গুলি`/`-গুলো`/`-রা`), and counted
-  nouns usually take a classifier (`টি`/`টা`/`জন`): a natural counted string is `{count}টি ফাইল` "{count} files" rather
-  than pluralizing the noun. Mind the classifier per noun, and keep agreement consistent inside each branch. Because
-  Bengali has no gender agreement, plural branches are simpler than Hindi's.
+- Bengali pluralizes with classifiers/quantifiers and optional plural markers (`-গুলি`/`-গুলো`/`-রা`), and counted nouns
+  usually take a classifier (`টি`/`টা`/`জন`): a natural counted string is `{count}টি ফাইল` "{count} files" rather than
+  pluralizing the noun. Mind the classifier per noun, and keep agreement consistent inside each branch. Because Bengali
+  has no gender agreement, plural branches are simpler than Hindi's.
 
 ## Notes and decisions
 
@@ -166,10 +166,11 @@ CLDR categories: **`one`, `other`** (verified with `new Intl.PluralRules('bn')`,
 - Double every apostrophe in a value (`'` becomes `''`); ICU treats a lone `'` as an escape and silently swallows text.
   Bengali rarely needs apostrophes, but any in a loanword or English fragment must be doubled.
 - Keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/bn/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/bn/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

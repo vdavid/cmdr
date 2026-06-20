@@ -1,7 +1,7 @@
 # Crimean Tatar (crh) translation style guide
 
-Working notes for translating Cmdr into Crimean Tatar (Qırımtatar tili). Read [`README.md`](../README.md) for how this fits
-the translation process.
+Working notes for translating Cmdr into Crimean Tatar (Qırımtatar tili). Read [`README.md`](../README.md) for how this
+fits the translation process.
 
 `crh` is the language base, targeted in the Latin script (see Decision points). The reference pile has only GNOME
 nautilus for `crh` (Tier 3); no macOS, no Microsoft. This is a low-resource locale with a real but small localization
@@ -17,8 +17,8 @@ for established UI phrasing.
 
 **Use the polite/standard register, recommended, with native review.** Crimean Tatar is a Turkic language and, like
 Turkish, distinguishes an informal `sen` from a polite/plural `siz`. Turkic software UI conventionally addresses the
-user with the polite `siz` form. Recommendation: `siz` register. Confidence: high that polite is correct; the exact
-verb forms need a native reviewer. Apply consistently.
+user with the polite `siz` form. Recommendation: `siz` register. Confidence: high that polite is correct; the exact verb
+forms need a native reviewer. Apply consistently.
 
 **Imperatives for UI actions**: use the polite imperative for buttons and menu items, following the GNOME Crimean Tatar
 catalog's conventions.
@@ -53,7 +53,8 @@ The defining decision is script, and it has recently been settled in Latin's fav
 Format per term: `English → chosen · sources · confidence`. Only source for `crh` is GNOME nautilus (Tier 3); pull terms
 from there and mark them `tentative` until a native reviewer or a second source confirms.
 
-- Glossary: populate from `crh/gnome-nautilus/nautilus.po`; mark tentative pending native review (populate via the cited sources and native review; nothing guessed yet).
+- Glossary: populate from `crh/gnome-nautilus/nautilus.po`; mark tentative pending native review (populate via the cited
+  sources and native review; nothing guessed yet).
 
 ## Brand and do-not-translate
 
@@ -83,6 +84,6 @@ strings to read correctly with the language's own number-agreement rules.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/crh/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/crh/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

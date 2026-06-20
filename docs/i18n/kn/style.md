@@ -1,8 +1,8 @@
 # Kannada (kn) translation style guide
 
-Working notes for translating Cmdr into Kannada (ಕನ್ನಡ). Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Kannada.
+Working notes for translating Cmdr into Kannada (ಕನ್ನಡ). Read [`README.md`](../README.md) for how this fits the
+translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes
+carry into Kannada.
 
 Sourced: the pile has MS terminology, MS style guide, and GNOME Nautilus (`_ignored/i18n/kn/`); no macOS folder for
 Kannada, no Xfce. Evidence verified against the pile on 2026-06-20.
@@ -10,11 +10,11 @@ Kannada, no Xfce. Evidence verified against the pile on 2026-06-20.
 ## Decisions to confirm with David
 
 - **English-loanword vs native-coinage register (the key flag, high).** Indian-language software localization runs on a
-  spectrum: heavy native (Sanskritized) coinages vs everyday speech that borrows common English tech words
-  ("file", "folder", "copy") in Kannada script. The two read very differently to users. MS and GNOME lean native; many
-  users speak the loanword register daily. Recommendation: lean native where a well-established Kannada term exists
-  (trash, folder), but don't coin obscure words where the English loan is what users actually say. Flagging because
-  this is a register call a native reviewer/David should set once, then apply consistently.
+  spectrum: heavy native (Sanskritized) coinages vs everyday speech that borrows common English tech words ("file",
+  "folder", "copy") in Kannada script. The two read very differently to users. MS and GNOME lean native; many users
+  speak the loanword register daily. Recommendation: lean native where a well-established Kannada term exists (trash,
+  folder), but don't coin obscure words where the English loan is what users actually say. Flagging because this is a
+  register call a native reviewer/David should set once, then apply consistently.
 - **A few file-manager terms (tentative).** GNOME Kannada is partial; settle core terms against MS terminology with a
   native check.
 
@@ -92,15 +92,16 @@ CLDR categories for `kn`: `one`, `other` (verified with `new Intl.PluralRules('k
 - **Quotation marks:** Kannada UI commonly uses English-style `"…"` (or `'…'`); a native reviewer settles house style.
 - **Numbers and dates come from the formatter layer.** Kannada has its own digit glyphs but Arabic digits are standard
   in modern UI; `formatNumber()`/`formatBytes()` follow the locale. Never hardcode separators in a string.
-- **Length and height.** Kannada renders with stacked vowel/consonant signs and can be taller; overflow-check both
-  width and line-height against the pseudolocale (`en-XA`) and a Kannada font.
+- **Length and height.** Kannada renders with stacked vowel/consonant signs and can be taller; overflow-check both width
+  and line-height against the pseudolocale (`en-XA`) and a Kannada font.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/kn/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/kn/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -41,11 +41,11 @@ catalogs, not script or variant.
   Breton forms for counted UI strings (several CLDR branches may collapse to identical text). Flag for David/translator:
   this language is one where the CLDR category set and the practical catalog convention diverge. Confidence: high that
   the divergence exists; native review settles how many branches truly differ.
-- **Initial consonant mutations.** Breton mutates the initial consonant of a word based on the preceding word
-  (article, possessive, number, etc.). This bites with `{placeholder}` inserts and assembled *Join fragments: a
-  fixed-form word before or after a placeholder may need a mutated form depending on context that isn't known until
-  runtime. Structure sentences to avoid forcing a mutation across a placeholder boundary; a native reviewer handles the
-  mutation rules. Confidence: high; the subtlest translator-craft concern for Breton.
+- **Initial consonant mutations.** Breton mutates the initial consonant of a word based on the preceding word (article,
+  possessive, number, etc.). This bites with `{placeholder}` inserts and assembled \*Join fragments: a fixed-form word
+  before or after a placeholder may need a mutated form depending on context that isn't known until runtime. Structure
+  sentences to avoid forcing a mutation across a placeholder boundary; a native reviewer handles the mutation rules.
+  Confidence: high; the subtlest translator-craft concern for Breton.
 - **No grammatical gender trap for the address pronoun**, though nouns are gendered (masculine/feminine) and trigger
   mutations. Don't gender the user; the mutation system is the real grammar concern. Confidence: high.
 - **Regional variant: none worth splitting.** Breton has dialects (KLT vs Gwenedeg) and competing orthographies
@@ -60,10 +60,10 @@ open-source community (Drouizig) is the practical terminology authority. Mark si
 - trash → Lastez · GNOME nautilus ("Trash" → "Lastez") · high
 - (populate copy, delete, search, settings, file, folder, etc. from `br/gnome-nautilus/nautilus.po`)
 
-| English term | Breton | Notes |
-| ------------ | ------ | ----- |
-| trash | Lastez | GNOME nautilus; high |
-| | | populate the rest from `br/gnome-nautilus/`, mark tentative pending native review |
+| English term | Breton | Notes                                                                             |
+| ------------ | ------ | --------------------------------------------------------------------------------- |
+| trash        | Lastez | GNOME nautilus; high                                                              |
+|              |        | populate the rest from `br/gnome-nautilus/`, mark tentative pending native review |
 
 ## Brand and do-not-translate
 
@@ -72,9 +72,9 @@ tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop
 
 ## Plurals
 
-CLDR categories: `one`, `two`, `few`, `many`, `other` (verified with `new Intl.PluralRules('br')`, 2026-06-20), the
-most complex plural system in this batch. But note the divergence from real catalogs under Decision points: GNOME Breton
-uses only two forms. Cover the CLDR categories the check requires; a native reviewer confirms which branches carry truly
+CLDR categories: `one`, `two`, `few`, `many`, `other` (verified with `new Intl.PluralRules('br')`, 2026-06-20), the most
+complex plural system in this batch. But note the divergence from real catalogs under Decision points: GNOME Breton uses
+only two forms. Cover the CLDR categories the check requires; a native reviewer confirms which branches carry truly
 distinct text vs which can repeat the same form.
 
 ## Notes and decisions
@@ -97,6 +97,6 @@ distinct text vs which can repeat the same form.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/br/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/br/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

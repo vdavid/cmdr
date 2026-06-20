@@ -1,7 +1,8 @@
 # Italian (it) translation style guide
 
-Working notes for translating Cmdr into Italian. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Italian.
+Working notes for translating Cmdr into Italian. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Italian.
 
 ## Voice and tone
 
@@ -13,8 +14,8 @@ rinominare il file. Riprovare?"), it reads as calm and is not the forbidden "err
 ## Formality
 
 **Verdict: informal `tu`, not `Lei`.** Consumer brands (IKEA, Spotify, Netflix, and peers) address Italian users
-informally, which fits Cmdr's friendly personal voice. macOS itself dodges the choice via the infinitive, but where
-Cmdr does address the user, the register is `tu`. Formality decision recorded in
+informally, which fits Cmdr's friendly personal voice. macOS itself dodges the choice via the infinitive, but where Cmdr
+does address the user, the register is `tu`. Formality decision recorded in
 [`formal-informal-decisions.md`](../formal-informal-decisions.md).
 
 - Buttons and menu items: imperative second-person-singular form, which in Italian looks like the verb stem ("Annulla",
@@ -26,14 +27,16 @@ Cmdr does address the user, the register is `tu`. Formality decision recorded in
 ## Decision points
 
 ### Regional variant: standard Italian (it), single target
+
 - Options: Italy standard (it / it-IT) vs Swiss Italian (it-CH).
 - Majors: Apple and Microsoft both ship one Italian (it / it-IT); it-CH differs almost only in number/quote formatting,
   which the formatter layer handles, not the strings.
 - Recommendation: target plain `it`. No region split needed. Confidence: high.
 
 ### Gender agreement (the real trap)
-- Italian adjectives, articles, and past participles agree in gender and number with the noun. A generic
-  file-or-folder entity is hard to phrase: "selezionato" (m) vs "selezionata" (f), "eliminato" vs "eliminata".
+
+- Italian adjectives, articles, and past participles agree in gender and number with the noun. A generic file-or-folder
+  entity is hard to phrase: "selezionato" (m) vs "selezionata" (f), "eliminato" vs "eliminata".
 - Majors: Apple uses "elemento" (m, "elementi selezionati", "elementi eliminati") as the neutral generic term, which
   fixes agreement to masculine and dodges the problem. Microsoft does the same with "elemento".
 - A counted placeholder like `{count} {item}` where `{item}` could be "file" (m) or "cartella" (f) means surrounding
@@ -42,15 +45,16 @@ Cmdr does address the user, the register is `tu`. Formality decision recorded in
   agreement masculine and predictable. Confidence: high.
 
 ### Apostrophe / elision and ICU escaping
-- Italian elides constantly: "l'elemento", "dell'archivio", "un'immagine". Every literal apostrophe in an ICU value
-  must be doubled (`'` becomes `''`) or ICU swallows the text. This is the single highest-frequency mechanical risk for
+
+- Italian elides constantly: "l'elemento", "dell'archivio", "un'immagine". Every literal apostrophe in an ICU value must
+  be doubled (`'` becomes `''`) or ICU swallows the text. This is the single highest-frequency mechanical risk for
   Italian. Confidence: high (mechanical fact).
 
 ## Terminology and glossary
 
-Format per term: `English → chosen · sources · confidence`. Tier order: macOS (Tier 1) → Microsoft (Tier 2) →
-GNOME/Xfce (Tier 3). Confidence: `confirmed` (human signed off), `high` (sources agree), `tentative` (conflict or
-none). All from the mined `it/macOS/` Finder + AppKit unless noted.
+Format per term: `English → chosen · sources · confidence`. Tier order: macOS (Tier 1) → Microsoft (Tier 2) → GNOME/Xfce
+(Tier 3). Confidence: `confirmed` (human signed off), `high` (sources agree), `tentative` (conflict or none). All from
+the mined `it/macOS/` Finder + AppKit unless noted.
 
 - file → file (invariable, m; plural also "file") · macOS, MS · high
 - folder → cartella (f) · macOS Finder · high
@@ -114,6 +118,6 @@ branches must agree in gender with the counted noun (use "elemento" to keep it m
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/it/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/it/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

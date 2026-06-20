@@ -2,8 +2,8 @@
 
 Working notes for translating Cmdr into Mongolian. Read [`README.md`](../README.md) for how this fits the translation
 process. `mn` here means **Mongolian in Cyrillic script** (the practical software default; see Decision points). The
-base tag is `mn`; a `mn-Cyrl` variant is unnecessary unless a `mn-Mong` (Traditional script) locale ever ships
-alongside it.
+base tag is `mn`; a `mn-Cyrl` variant is unnecessary unless a `mn-Mong` (Traditional script) locale ever ships alongside
+it.
 
 ## Voice and tone
 
@@ -28,13 +28,14 @@ This is the single biggest tone rule for Mongolian, and it inverts the English i
 - **Avoid the second-person pronoun.** English leans on "you / your" constantly; Mongolian does not. Microsoft's
   Mongolian guide is explicit: avoid `та` / `таны` / `танд` wherever possible, and use neutral structures or passive
   voice instead. Translating every English "you" literally produces stiff, machine-translated Mongolian. Example
-  (Microsoft): "You cannot select any names now" becomes "Одоо ямар ч нэр сонгох боломжгүй" (no `та`), not "Та одоо ...".
+  (Microsoft): "You cannot select any names now" becomes "Одоо ямар ч нэр сонгох боломжгүй" (no `та`), not "Та одоо
+  ...".
 - **Use `та` (the polite second person) only when direction genuinely needs it** and there's no clean neutral phrasing.
   When `та` does appear, it's the polite/plural form `та`, never the familiar `чи`. There is no informal-register
   decision to make: `чи` is wrong for app chrome.
-- **UI actions use the imperative with the polite suffix.** For buttons, menu items, and instructions the user
-  performs, use the imperative mood, typically the polite `-на уу` / `-гана уу` ending: "...суулгана уу" (install),
-  "дахин оролдоно уу" (try again). Microsoft prefers the bare polite imperative ("суулгана уу") over the longer
+- **UI actions use the imperative with the polite suffix.** For buttons, menu items, and instructions the user performs,
+  use the imperative mood, typically the polite `-на уу` / `-гана уу` ending: "...суулгана уу" (install), "дахин
+  оролдоно уу" (try again). Microsoft prefers the bare polite imperative ("суулгана уу") over the longer
   `...суулгах ёстой` ("you must install") construction. For very short button labels, the plain verb stem is fine
   (Cyrillic Nautilus and the Microsoft terminology use bare verbs: `хуулах` copy, `устгах` delete, `нэрлэх` rename).
 - **System/program actions take neutral passive, no subject.** When Cmdr or the OS is the actor (a transfer, a failure,
@@ -45,19 +46,18 @@ This is the single biggest tone rule for Mongolian, and it inverts the English i
 The genuinely tricky calls, with how the majors handle each, a recommended default, and a confidence level.
 
 - **Script: RESOLVED to Cyrillic (`mn`), not Traditional Mongolian vertical script.** Recorded in
-  [`script-decisions.md`](../script-decisions.md). The evidence below stands.
-  Mongolian is written in two scripts: Cyrillic (dominant in independent Mongolia since the 1940s, the everyday script
-  for ~3M people and every mainstream device) and the Traditional Mongolian vertical script `mn-Mong` (used in Inner
-  Mongolia, China, and the target of a Mongolian-government revival that since Jan 2025 requires both scripts in
-  official documents, though Cyrillic stays the predominant medium). For software the gap is decisive: a 2023 device
-  survey found NO major OS had adequate Traditional-script localization (iOS has no Mongolian UI at all; Android had no
-  Traditional display-language option; Windows 10 offered "Mongolian (Traditional)" but rendered a mix of horizontal
-  Traditional, Cyrillic, and English). Microsoft ships a Mongolian **(Cyrillic)** terminology set and style guide, no
-  equivalent Traditional one; the reference pile likewise has a Cyrillic Microsoft style guide and a Cyrillic Nautilus
-  catalog, nothing in Traditional. Traditional script also demands vertical text layout plus complex cursive shaping, a
-  real and large engineering burden Cmdr's Tauri/Svelte UI is not built for. Recommendation: ship **Cyrillic** as `mn`.
-  Confidence: high on Cyrillic being the right practical default; the decision to support Mongolian at all, and to ever
-  attempt Traditional, is David's.
+  [`script-decisions.md`](../script-decisions.md). The evidence below stands. Mongolian is written in two scripts:
+  Cyrillic (dominant in independent Mongolia since the 1940s, the everyday script for ~3M people and every mainstream
+  device) and the Traditional Mongolian vertical script `mn-Mong` (used in Inner Mongolia, China, and the target of a
+  Mongolian-government revival that since Jan 2025 requires both scripts in official documents, though Cyrillic stays
+  the predominant medium). For software the gap is decisive: a 2023 device survey found NO major OS had adequate
+  Traditional-script localization (iOS has no Mongolian UI at all; Android had no Traditional display-language option;
+  Windows 10 offered "Mongolian (Traditional)" but rendered a mix of horizontal Traditional, Cyrillic, and English).
+  Microsoft ships a Mongolian **(Cyrillic)** terminology set and style guide, no equivalent Traditional one; the
+  reference pile likewise has a Cyrillic Microsoft style guide and a Cyrillic Nautilus catalog, nothing in Traditional.
+  Traditional script also demands vertical text layout plus complex cursive shaping, a real and large engineering burden
+  Cmdr's Tauri/Svelte UI is not built for. Recommendation: ship **Cyrillic** as `mn`. Confidence: high on Cyrillic being
+  the right practical default; the decision to support Mongolian at all, and to ever attempt Traditional, is David's.
 
 - **Formality: polite, but pronoun-light.** Covered above. Default to neutral/passive phrasing, polite `та` only when
   unavoidable, polite imperative for actions, never `чи`. Recommendation: as in the Formality section. Confidence: high
@@ -65,32 +65,32 @@ The genuinely tricky calls, with how the majors handle each, a recommended defau
 
 - **Anglicism vs native words: prefer the established native term; the file-manager core has good ones.** Mongolian
   Cyrillic has settled native vocabulary for the domain, and both Microsoft and GNOME use it: `файл` (file, itself a
-  long-naturalized loan and the standard term), `хавтас` (folder; Microsoft and Nautilus agree, not the colloquial
-  loan `фолдер`), `хуулах` (copy), `устгах` (delete), `нэрлэх` / `нэр` (rename / name), `систем` (system). The judgment
-  cases are newer or compound terms (pane, tab, volume, mount) where usage is thinner; coin or borrow consistently and
-  record each in the glossary. Recommendation: use the established native term for the core vocabulary; avoid casual
-  loans like `фолдер` where `хавтас` is standard; lock the thinner terms in the glossary as they come up. Confidence:
-  high for the core, medium for the newer terms. Flag for David: "pane" has no settled Mongolian term and needs one
-  picked and locked.
+  long-naturalized loan and the standard term), `хавтас` (folder; Microsoft and Nautilus agree, not the colloquial loan
+  `фолдер`), `хуулах` (copy), `устгах` (delete), `нэрлэх` / `нэр` (rename / name), `систем` (system). The judgment cases
+  are newer or compound terms (pane, tab, volume, mount) where usage is thinner; coin or borrow consistently and record
+  each in the glossary. Recommendation: use the established native term for the core vocabulary; avoid casual loans like
+  `фолдер` where `хавтас` is standard; lock the thinner terms in the glossary as they come up. Confidence: high for the
+  core, medium for the newer terms. Flag for David: "pane" has no settled Mongolian term and needs one picked and
+  locked.
 
 - **Compounds: separate words or one word, NO hyphens.** Microsoft's guide is explicit that English hyphenated/inverted
-  compounds should NOT carry the hyphen into Mongolian: write "анх удаа суурилуулах" (first-time setup), not
-  "анх-удаа"; "хэрэглэгчийн тодорхойлсон параметр" (user-specified parameter), not "хэрэглэгчийн-тодорхойлсон". This is
-  a frequent mechanical error worth a dedicated review pass. Recommendation: drop hyphens from translated compounds.
-  Confidence: high.
+  compounds should NOT carry the hyphen into Mongolian: write "анх удаа суурилуулах" (first-time setup), not "анх-удаа";
+  "хэрэглэгчийн тодорхойлсон параметр" (user-specified parameter), not "хэрэглэгчийн-тодорхойлсон". This is a frequent
+  mechanical error worth a dedicated review pass. Recommendation: drop hyphens from translated compounds. Confidence:
+  high.
 
 - **Punctuation and symbols.** No em-dashes: Microsoft says the em-dash is not applicable to Mongolian and must become a
   colon, semicolon, parentheses, or a reworded sentence (this matches Cmdr's own no-em-dash rule). En-dash for numeric
   ranges with no surrounding spaces ("Хуудас 3–5") and as a minus sign with no space after it ("−5"). No comma between
-  subject and predicate (incorrect in Mongolian), and no comma after the conjunctions `ба` / `бөгөөд` / `эсвэл` /
-  `буюу` / `болон`. The symbols `@`, `#`, and `&` are not used in Mongolian body text: write `ба` for "and" (not `&`),
-  and `зүйлийн тоо` for "# items". Recommendation: follow these; most are handled in copy, not code. Confidence: high.
+  subject and predicate (incorrect in Mongolian), and no comma after the conjunctions `ба` / `бөгөөд` / `эсвэл` / `буюу`
+  / `болон`. The symbols `@`, `#`, and `&` are not used in Mongolian body text: write `ба` for "and" (not `&`), and
+  `зүйлийн тоо` for "# items". Recommendation: follow these; most are handled in copy, not code. Confidence: high.
 
 - **Quotation marks: straight double quotes in the UI, never single.** For software, product help, and web pages,
   Microsoft Mongolian uses straight double quotes `"..."` (the same as English) and explicitly says DO NOT use single
-  quotation marks. Chevrons «...» are for documentation only, not app chrome. Quote UI item names (menus, commands)
-  when they lack other formatting. Product/brand names are NOT quoted. Recommendation: `"..."` in the app, no single
-  quotes, no chevrons in UI strings. Confidence: high.
+  quotation marks. Chevrons «...» are for documentation only, not app chrome. Quote UI item names (menus, commands) when
+  they lack other formatting. Product/brand names are NOT quoted. Recommendation: `"..."` in the app, no single quotes,
+  no chevrons in UI strings. Confidence: high.
 
 - **Inclusive/gendered language.** Mongolian has no grammatical gender and the pronoun-light style means the user is
   rarely addressed by a gendered role anyway. No special handling needed. Recommendation: none. Confidence: high
@@ -98,30 +98,30 @@ The genuinely tricky calls, with how the majors handle each, a recommended defau
 
 - **Numbers and dates.** Mongolian uses a space (or non-breaking space) as the thousands separator; `Intl` handles this
   at runtime, so it matters only for any hand-written numeral in copy. Times use the 24-hour clock with a colon
-  ("18:30", per Microsoft). ISO dates (YYYY-MM-DD) per Cmdr's house rule. Recommendation: rely on `Intl`; 24-hour
-  times. Confidence: high.
+  ("18:30", per Microsoft). ISO dates (YYYY-MM-DD) per Cmdr's house rule. Recommendation: rely on `Intl`; 24-hour times.
+  Confidence: high.
 
 ## Terminology and glossary
 
 A few core terms confirmed against Microsoft Mongolian (Cyrillic) terminology and GNOME Nautilus (`mn`). Extend as
 strings come up; record every newly-coined term so it stays consistent.
 
-| English term | Mongolian | Notes |
-| ------------ | --------- | ----- |
-| file | файл | naturalized loan, the standard term |
-| folder | хавтас | not the casual loan `фолдер` |
-| copy | хуулах | bare verb for buttons |
-| move | зөөх | |
-| delete | устгах | |
-| rename | нэрлэх / нэр өөрчлөх | `нэр` = name |
-| open | нээх | |
-| cancel | болих / цуцлах | confirm against the catalog as it grows |
-| system | систем | |
-| settings | тохиргоо | |
-| search | хайх | Microsoft fragment uses `Хай` |
-| tab | (lock in glossary) | UI tab; pick one term and keep it |
-| pane | (unresolved - David to pick) | no settled Mongolian term; flag |
-| volume | (lock in glossary) | storage volume sense |
+| English term | Mongolian                    | Notes                                   |
+| ------------ | ---------------------------- | --------------------------------------- |
+| file         | файл                         | naturalized loan, the standard term     |
+| folder       | хавтас                       | not the casual loan `фолдер`            |
+| copy         | хуулах                       | bare verb for buttons                   |
+| move         | зөөх                         |                                         |
+| delete       | устгах                       |                                         |
+| rename       | нэрлэх / нэр өөрчлөх         | `нэр` = name                            |
+| open         | нээх                         |                                         |
+| cancel       | болих / цуцлах               | confirm against the catalog as it grows |
+| system       | систем                       |                                         |
+| settings     | тохиргоо                     |                                         |
+| search       | хайх                         | Microsoft fragment uses `Хай`           |
+| tab          | (lock in glossary)           | UI tab; pick one term and keep it       |
+| pane         | (unresolved - David to pick) | no settled Mongolian term; flag         |
+| volume       | (lock in glossary)           | storage volume sense                    |
 
 ## Brand and do-not-translate
 
@@ -156,6 +156,6 @@ even after a number, so write each branch as a full natural phrase rather than s
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/mn/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/mn/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -6,9 +6,9 @@ Lithuanian.
 
 ## Voice and tone
 
-Friendly, concise, active, calm. Lithuanian UI convention already drops the second-person pronoun and addresses the
-user through the verb, which suits Cmdr's direct voice. Error messages stay calm and actionable; state the problem and a
-next step, and don't use a bare "klaida" label.
+Friendly, concise, active, calm. Lithuanian UI convention already drops the second-person pronoun and addresses the user
+through the verb, which suits Cmdr's direct voice. Error messages stay calm and actionable; state the problem and a next
+step, and don't use a bare "klaida" label.
 
 ## Formality
 
@@ -23,12 +23,14 @@ it. Flagged below.
 ## Decision points
 
 No macOS anchor (priority signal):
+
 - Apple does NOT ship a Lithuanian macOS UI, so there's no Tier-1 Finder reference; Lithuanian Mac users run English or
   another language. Authority rests on Microsoft (Tier 2: full terminology DB + style guide) and GNOME/Xfce (Tier 3),
   both well-sourced. Recommendation: lean on Microsoft for terms, GNOME/Xfce for file-manager parity, and budget native
   review before shipping (no native Finder to check against). Confidence: high.
 
 Case system vs placeholder insertion (the #1 structural risk):
+
 - Lithuanian nouns inflect across 7 cases x 2 numbers x several declensions; a `{name}`/`{count}` dropped into a
   sentence forces agreement the template can't satisfy. "Perkelti {name} į {folder}" forces both placeholders into the
   wrong case.
@@ -40,6 +42,7 @@ Case system vs placeholder insertion (the #1 structural risk):
   Confidence: high.
 
 CLDR plurals (four categories, easy to under-cover):
+
 - lt categories: `one`, `few`, `many`, `other` (verified, CLDR v48).
   - one: n%10=1 and n%100 not in 11..19 (1, 21, 31)
   - few: n%10=2..9 and n%100 not in 11..19 (2-9, 22-29)
@@ -51,6 +54,7 @@ CLDR plurals (four categories, easy to under-cover):
   model since Cmdr's intl layer is CLDR-based. Confidence: high.
 
 Terminology splits (Microsoft vs GNOME; David to settle):
+
 - Cmdr's friendly voice tilts toward the everyday GNOME words over Microsoft's more technical picks, but pick one and
   don't mix:
   - cancel: Atšaukti (MS) vs Atsisakyti (GNOME/Xfce). Recommend Atšaukti (standard modern UI button).
@@ -112,6 +116,6 @@ a lone `'`), and keep every `{placeholder}` and `<tag>` verbatim. Full rules: th
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/lt/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/lt/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

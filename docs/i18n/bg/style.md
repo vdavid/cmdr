@@ -4,10 +4,10 @@ Working notes for translating Cmdr into Bulgarian. Read [`README.md`](../README.
 process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
 Bulgarian.
 
-**No macOS reference.** Apple does NOT ship a Bulgarian macOS UI, so the pile has GNOME Nautilus + Xfce Thunar +
-MS terminology + MS style guide only (`_ignored/i18n/bg/`); no macOS Finder. The highest-authority source (a real
-localized OS) is absent, so terms lean on GNOME + Microsoft and stay a notch less certain than for a macOS-backed
-language. Evidence verified against the pile on 2026-06-20.
+**No macOS reference.** Apple does NOT ship a Bulgarian macOS UI, so the pile has GNOME Nautilus + Xfce Thunar + MS
+terminology + MS style guide only (`_ignored/i18n/bg/`); no macOS Finder. The highest-authority source (a real localized
+OS) is absent, so terms lean on GNOME + Microsoft and stay a notch less certain than for a macOS-backed language.
+Evidence verified against the pile on 2026-06-20.
 
 ## Decisions to confirm with David
 
@@ -34,19 +34,19 @@ avoid blaming the user, verified 2026-06-20 - useful for phrasing failures gentl
 
 - **Polite plural "Вие", throughout. Never informal "ти".** The polite form is carried by the plural verb ending and,
   when spelled out, the capitalized "Вие"/"Ви"/"Вас" in direct address to the user.
-- **Action labels (buttons, menu items): verbal noun, not imperative.** The Bulgarian (and broader Slavic) UI norm,
-  and what GNOME Bulgarian shows, is the verbal noun: "Преименуване" (renaming = Rename), "Изваждане" (ejecting =
-  Eject), "Търсене" (searching = Search) (GNOME Nautilus, verified 2026-06-20). Avoid bare imperatives, which read as
-  informal "ти".
+- **Action labels (buttons, menu items): verbal noun, not imperative.** The Bulgarian (and broader Slavic) UI norm, and
+  what GNOME Bulgarian shows, is the verbal noun: "Преименуване" (renaming = Rename), "Изваждане" (ejecting = Eject),
+  "Търсене" (searching = Search) (GNOME Nautilus, verified 2026-06-20). Avoid bare imperatives, which read as informal
+  "ти".
 - **Full sentences addressed to the user: polite plural.** "Наистина ли искате да изтриете тези файлове?" (Are you sure
   you want to delete these files?). So the rule is dual: **standalone labels = verbal noun; sentences to the user =
   polite plural.** Confidence: high.
 
 ## Decision points
 
-- **Script: Cyrillic, no decision.** Bulgarian is written only in Cyrillic; there is no Latin variant in use. Confidence:
-  high. (Bulgarian Cyrillic has a few letterform differences from Russian in italic faces, but that's font rendering,
-  not orthography; nothing to encode in strings.)
+- **Script: Cyrillic, no decision.** Bulgarian is written only in Cyrillic; there is no Latin variant in use.
+  Confidence: high. (Bulgarian Cyrillic has a few letterform differences from Russian in italic faces, but that's font
+  rendering, not orthography; nothing to encode in strings.)
 - **Regional variant: one, `bg` (`bg-BG`).** Bulgarian is standardized only in Bulgaria; no second national standard, no
   variant matrix. Confidence: high.
 - **Gender / inclusive language (high on the problem, high on the fix via polite plural).** Bulgarian past tense uses
@@ -65,9 +65,9 @@ avoid blaming the user, verified 2026-06-20 - useful for phrasing failures gentl
 ## Terminology and glossary
 
 Format per term: `chosen · sources · confidence`. Evidence verified against `_ignored/i18n/bg/` (GNOME Nautilus, Xfce
-Thunar, MS terminology, MS style guide; NO macOS) on 2026-06-20. Sources decide the term; Cmdr writes its own value
-(MS copyrighted, GNOME/Xfce GPL, never copied verbatim). Without macOS, terms here are `high` only where GNOME and MS
-agree, else `tentative`.
+Thunar, MS terminology, MS style guide; NO macOS) on 2026-06-20. Sources decide the term; Cmdr writes its own value (MS
+copyrighted, GNOME/Xfce GPL, never copied verbatim). Without macOS, terms here are `high` only where GNOME and MS agree,
+else `tentative`.
 
 Settled terms (GNOME / MS agree):
 
@@ -104,16 +104,17 @@ requires both categories.
 
 - **Quotation marks: `„…"`** (low-9 opening U+201E, high-6 closing U+201C), the standard Bulgarian form (same shape as
   German/Czech). Avoid straight ASCII `"` and English `"…"`.
-- **Numbers and dates come from the formatter layer.** Bulgarian uses a comma decimal and a space thousands separator
-  (1 000,5); `formatNumber()`/`formatBytes()` produce these. Never hardcode separators in a string.
+- **Numbers and dates come from the formatter layer.** Bulgarian uses a comma decimal and a space thousands separator (1
+  000,5); `formatNumber()`/`formatBytes()` produce these. Never hardcode separators in a string.
 - **Length.** Bulgarian runs somewhat longer than English; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/bg/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/bg/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

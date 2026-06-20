@@ -4,9 +4,9 @@ Working notes for translating Cmdr into Japanese. Read [`README.md`](../README.m
 process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
 Japanese.
 
-Japanese has no second-person T/V split like European languages, but it has a politeness-register system (keigo) that
-is just as load-bearing for UI tone: getting the register wrong makes the app read as childish, cold, or oddly stiff.
-The register decision is settled below; read it before translating.
+Japanese has no second-person T/V split like European languages, but it has a politeness-register system (keigo) that is
+just as load-bearing for UI tone: getting the register wrong makes the app read as childish, cold, or oddly stiff. The
+register decision is settled below; read it before translating.
 
 ## Voice and tone
 
@@ -16,27 +16,27 @@ heavy honorific keigo. The Microsoft Japanese style guide explicitly says to avo
 and use everyday words appropriate to the context (verified in `ja/microsoft-style-guides/StyleGuide.pdf`, pdftotext +
 grep, 2026-06-19).
 
-Error messages stay calm and actionable and never label themselves "エラー" (error) or "失敗" (failed) as a bare heading:
-state what happened and the next step. macOS does this naturally, "フォルダを作成できませんでした。" ("could not create the
-folder", verified in `ja/macOS/Finder/Localizable.json`, 2026-06-19) is the calm "could not …" framing Cmdr wants, not
-"エラー".
+Error messages stay calm and actionable and never label themselves "エラー" (error) or "失敗" (failed) as a bare
+heading: state what happened and the next step. macOS does this naturally, "フォルダを作成できませんでした。" ("could
+not create the folder", verified in `ja/macOS/Finder/Localizable.json`, 2026-06-19) is the calm "could not …" framing
+Cmdr wants, not "エラー".
 
 ## Formality
 
 **Use です・ます (teinei, polite) register throughout.** This is settled, not a guess:
 
-- macOS Japanese is consistently です・ます: "項目をゴミ箱に入れます" ("moves items to the Trash"), "項目の新しい名前を入力して
-  ください。" ("please provide a new name", polite -てください imperative), "フォルダを作成できませんでした。" (polite negative)
-  (all verified in `ja/macOS/Finder/Localizable.json`, 2026-06-19).
+- macOS Japanese is consistently です・ます: "項目をゴミ箱に入れます" ("moves items to the Trash"),
+  "項目の新しい名前を入力してください。" ("please provide a new name", polite -てください imperative),
+  "フォルダを作成できませんでした。" (polite negative) (all verified in `ja/macOS/Finder/Localizable.json`, 2026-06-19).
 - This is the de-facto standard for consumer software UI. Plain form (だ/である) reads as terse/blunt and is wrong for
-  user-facing copy; heavy keigo (お…になる, 〜いたします) reads as over-formal/obsequious and is also wrong. です・ます is the
-  warm-professional middle that matches Cmdr's friendly voice.
+  user-facing copy; heavy keigo (お…になる, 〜いたします) reads as over-formal/obsequious and is also
+  wrong. です・ます is the warm-professional middle that matches Cmdr's friendly voice.
 
 Mechanics:
 
 - **Button and menu labels: bare noun-stem (連用形 / sahen noun), not a full sentence.** macOS labels are nouns:
-  "キャンセル" (Cancel), "コピー" (Copy), "移動" (Move), "削除" (Delete), "名称変更" (Rename). Don't make a button a です・ます
-  sentence, that's for descriptions, prompts, and status, not labels.
+  "キャンセル" (Cancel), "コピー" (Copy), "移動" (Move), "削除" (Delete), "名称変更" (Rename). Don't make a button
+  a です・ますsentence, that's for descriptions, prompts, and status, not labels.
 - **Sentences, prompts, status, and descriptions: です・ます.** "…します" / "…できませんでした" / "…してください".
 - Don't force a subject pronoun ("あなた"), Japanese omits it; macOS does too.
 
@@ -45,10 +45,10 @@ Mechanics:
 Register is settled above (です・ます). These are the Japanese-specific calls.
 
 - **Script: no variant choice; the live decision is kanji vs katakana for loanwords.** Japanese uses kanji + hiragana +
-  katakana together, there is no script variant to pick (unlike zh Simplified/Traditional). The real recurring choice
-  is how to render a borrowed tech term: as a katakana loanword or as a kanji compound. macOS picks per term and is the
-  guide: "Folder" → "フォルダ" (katakana), "Copy" → "コピー" (katakana), but "Trash" → "ゴミ箱" (kanji+kana), "Document" →
-  "書類" (kanji), "Move" → "移動" (kanji) (all verified in `ja/macOS/Finder/Localizable.json`, 2026-06-19). Apple,
+  katakana together, there is no script variant to pick (unlike zh Simplified/Traditional). The real recurring choice is
+  how to render a borrowed tech term: as a katakana loanword or as a kanji compound. macOS picks per term and is the
+  guide: "Folder" → "フォルダ" (katakana), "Copy" → "コピー" (katakana), but "Trash" → "ゴミ箱" (kanji+kana), "Document"
+  → "書類" (kanji), "Move" → "移動" (kanji) (all verified in `ja/macOS/Finder/Localizable.json`, 2026-06-19). Apple,
   Microsoft, and Google all mix the same way.
   - Recommendation: **follow macOS term by term** (the glossary below records each choice). Don't katakana-ize a term
     macOS writes in kanji, or vice versa, consistency with Finder is what a Mac user expects. Confidence: high.
@@ -61,12 +61,12 @@ Register is settled above (です・ます). These are the Japanese-specific cal
   Confidence: high.
 
 - **Counters (助数詞): count + counter word, not a bare number.** Japanese counts objects with a classifier suffix that
-  depends on what's counted. macOS uses "件" for events/items in lists ("^0件" = N items, e.g. "^0件の参加依頼") and "個"
-  for generic objects, and "項目" as the word for "item". For Cmdr's "N files / N items selected" style strings, this is
-  a per-string call inside the plural/select branch.
+  depends on what's counted. macOS uses "件" for events/items in lists ("^0件" = N items, e.g. "^0件の参加依頼") and
+  "個" for generic objects, and "項目" as the word for "item". For Cmdr's "N files / N items selected" style strings,
+  this is a per-string call inside the plural/select branch.
   - Recommendation: use **件** or **個** consistent with what's being counted, matching macOS; treat the counter as part
-    of writing the plural branch (Japanese has only one plural category, see Plurals, so the counter, not a plural
-    form, carries the counting). When unsure which counter fits, flag the string. Confidence: high (macOS counter usage
+    of writing the plural branch (Japanese has only one plural category, see Plurals, so the counter, not a plural form,
+    carries the counting). When unsure which counter fits, flag the string. Confidence: high (macOS counter usage
     verified; exact counter per Cmdr string is a translate-time call).
 
 - **Gender: not grammatically marked; nothing to handle.** Japanese verbs and adjectives don't inflect for the
@@ -81,13 +81,13 @@ Register is settled above (です・ます). These are the Japanese-specific cal
 
 ## Terminology and glossary
 
-Format per term: `English → chosen · sources · confidence`. Tier order: macOS (Tier 1) → Microsoft (Tier 2) →
-GNOME/Xfce (Tier 3). All terms below are from macOS Japanese Finder strings unless noted (verified in
+Format per term: `English → chosen · sources · confidence`. Tier order: macOS (Tier 1) → Microsoft (Tier 2) → GNOME/Xfce
+(Tier 3). All terms below are from macOS Japanese Finder strings unless noted (verified in
 `ja/macOS/Finder/Localizable.json`, 2026-06-19).
 
 - file → ファイル · macOS Finder · high
-- folder → フォルダ (no trailing ー) · macOS ("Folder" → "フォルダ", "Could not create the folder." → "フォルダを作成できませんで
-  した。") · high
+- folder → フォルダ (no trailing ー) · macOS ("Folder" → "フォルダ", "Could not create the folder." →
+  "フォルダを作成できませんでした。") · high
 - trash → ゴミ箱 · macOS ("Trash" → "ゴミ箱") · high
 - copy → コピー · macOS ("Copies items …" → "項目を別の場所にコピーします") · high
 - move → 移動 · macOS ("Move ${entities} to ${destinationFolder}" → "${entities}を${destinationFolder}に移動") · high
@@ -110,7 +110,8 @@ GNOME/Xfce (Tier 3). All terms below are from macOS Japanese Finder strings unle
     loan) or "領域". Flag for David.
 - listing → 一覧 · no direct source · tentative
   - "listing" (the file list) → "一覧" reads naturally; confirm with David.
-- volume → ボリューム · macOS uses ボリューム for a mounted disk volume · tentative (verify against macOS volume strings)
+- volume → ボリューム · macOS uses ボリューム for a mounted disk volume · tentative (verify against macOS volume
+  strings)
 
 Add rows as terms come up, each with sources and a confidence.
 
@@ -118,8 +119,8 @@ Add rows as terms come up, each with sources and a confidence.
 
 Keep verbatim, in Latin script: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, plus the `{system_settings}`-style
 tokens. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.js`). macOS keeps
-these Latin in Japanese text ("このMacを検索" keeps "Mac" Latin). **Quick Look is the one wrinkle**: macOS localizes it to
-katakana "クイックルック", but Cmdr's do-not-translate list keeps "Quick Look" verbatim, flag this conflict for David
+these Latin in Japanese text ("このMacを検索" keeps "Mac" Latin). **Quick Look is the one wrinkle**: macOS localizes it
+to katakana "クイックルック", but Cmdr's do-not-translate list keeps "Quick Look" verbatim, flag this conflict for David
 (verbatim "Quick Look" vs macOS-native "クイックルック").
 
 ## Plurals
@@ -129,8 +130,8 @@ corroborated by the GNOME Japanese catalog header `nplurals=1` in `ja/gnome-naut
 form does not change with count.
 
 - Because there's no plural inflection, the count is carried by **the number + a counter word** (see the Counters
-  decision point), not by selecting a plural branch. "1 file" and "5 files" use the same noun: "1個のファイル" / "5個の
-  ファイル" (or 件/項目 per context).
+  decision point), not by selecting a plural branch. "1 file" and "5 files" use the same noun: "1個のファイル" /
+  "5個のファイル" (or 件/項目 per context).
 - A single `other` branch satisfies `desktop-i18n-plural`, but the branch text must read naturally for any count, write
   it counter-aware.
 
@@ -141,8 +142,8 @@ form does not change with count.
 - **Punctuation: full-width Japanese marks.** Use the Japanese full stop "。" and comma "、" (not ASCII `.`/`,`), and
   full-width brackets/quotes where macOS does ("“…”" appears as full-width「…」/“…” in Finder). Match macOS.
 - **No inter-word spaces; don't add ASCII spaces** for wrapping (see Spacing decision point).
-- **Numbers and dates come from the formatter layer**, never hardcode separators. Japanese uses Western digits in
-  modern UI (macOS does), so digits aren't a decision here.
+- **Numbers and dates come from the formatter layer**, never hardcode separators. Japanese uses Western digits in modern
+  UI (macOS does), so digits aren't a decision here.
 - **ICU mechanics** (catalog-level, easy to miss): double every apostrophe in a value (`'` becomes `''`; ICU treats a
   lone `'` as an escape and silently swallows text), and keep every `{placeholder}` and `<tag>` verbatim. Full rules:
   the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
@@ -157,6 +158,6 @@ form does not change with count.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ja/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ja/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

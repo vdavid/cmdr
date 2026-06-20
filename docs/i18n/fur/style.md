@@ -34,9 +34,9 @@ the single source. Confidence: confirmed (about the coverage).
 - **Script: Latin only, no decision.** Friulian uses the Latin alphabet with the official ARLeF orthography (including
   ç, and the circumflex on long vowels: â ê î ô û). Keep the diacritics; they're part of the standard spelling.
   Confidence: high.
-- **Use the official ARLeF/OLF koiné, not a local variety.** Friulian has dialect variation (Central, Western,
-  Carnian), but the standard written koiné is what GNOME and official Friulian materials use. Translate in the koiné.
-  Confidence: high.
+- **Use the official ARLeF/OLF koiné, not a local variety.** Friulian has dialect variation (Central, Western, Carnian),
+  but the standard written koiné is what GNOME and official Friulian materials use. Translate in the koiné. Confidence:
+  high.
 - **Don't translate from Italian by reflex.** Friulian is a distinct Romance language, not an Italian dialect: "file" =
   "file" (English loan, as in Italian) but folder = "cartele", delete = "elimine". Use the Friulian GNOME terms.
   Confidence: high (GNOME).
@@ -47,15 +47,15 @@ the single source. Confidence: confirmed (about the coverage).
 
 ## Terminology and glossary
 
-| English term | Friulian | Notes |
-| ------------ | -------- | ----- |
-| Copy | Copie | GNOME ("_Copie") |
-| Delete | Elimine | GNOME ("_Elimine") |
-| Cancel | Scancele | GNOME ("S_cancele") |
-| folder | Cartele | GNOME |
-| file | file | GNOME (English loan, as in Italian) |
-| trash | Scovacere | GNOME |
-| Move | (confirm) | not in the sampled GNOME entries; check the catalog |
+| English term | Friulian  | Notes                                               |
+| ------------ | --------- | --------------------------------------------------- |
+| Copy         | Copie     | GNOME ("\_Copie")                                   |
+| Delete       | Elimine   | GNOME ("\_Elimine")                                 |
+| Cancel       | Scancele  | GNOME ("S_cancele")                                 |
+| folder       | Cartele   | GNOME                                               |
+| file         | file      | GNOME (English loan, as in Italian)                 |
+| trash        | Scovacere | GNOME                                               |
+| Move         | (confirm) | not in the sampled GNOME entries; check the catalog |
 
 ## Brand and do-not-translate
 
@@ -75,8 +75,8 @@ Confidence: confirmed.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators (Friulian follows Italian: comma
   decimal).
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -85,6 +85,6 @@ Confidence: confirmed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/fur/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/fur/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

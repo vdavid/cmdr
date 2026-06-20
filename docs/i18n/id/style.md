@@ -1,14 +1,14 @@
 # Indonesian (id) translation style guide
 
-Working notes for translating Cmdr into Indonesian (Bahasa Indonesia). Read [`README.md`](../README.md) for how this fits
-the translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice.
+Working notes for translating Cmdr into Indonesian (Bahasa Indonesia). Read [`README.md`](../README.md) for how this
+fits the translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice.
 
 ## Voice and tone
 
-Friendly, concise, active, calm. Indonesian UI copy is naturally polite-neutral; no special warmth markers needed.
-Error messages stay calm and actionable and avoid a bare "Galat"/"Gagal" label: state the problem and a next step
-("Tidak dapat mengganti nama file. Coba lagi?"). macOS Indonesian uses "Tidak dapat…" ("cannot…") for this and it reads
-calm, so prefer that pattern over "Gagal".
+Friendly, concise, active, calm. Indonesian UI copy is naturally polite-neutral; no special warmth markers needed. Error
+messages stay calm and actionable and avoid a bare "Galat"/"Gagal" label: state the problem and a next step ("Tidak
+dapat mengganti nama file. Coba lagi?"). macOS Indonesian uses "Tidak dapat…" ("cannot…") for this and it reads calm, so
+prefer that pattern over "Gagal".
 
 ## Formality
 
@@ -17,7 +17,8 @@ entirely.** macOS Indonesian phrases actions impersonally with verb prefixes, no
 (informal): "Memindahkan item ke Tong Sampah" (the verb does the work). Use this register.
 
 - Buttons and menu items: bare imperative verb stem, often without the meN- prefix: "Salin" (copy), "Pindahkan" (move),
-  "Hapus" (delete), "Ubah nama" (rename), "Buka" (open), "Cari" (search), "Batalkan" (cancel). This matches macOS Finder.
+  "Hapus" (delete), "Ubah nama" (rename), "Buka" (open), "Cari" (search), "Batalkan" (cancel). This matches macOS
+  Finder.
 - Where direct address is unavoidable, use "Anda" (capital A, polite-neutral), never "kamu". But avoid needing it.
 - Affixation is the real subtlety, not formality: "pindah" (move, intransitive) vs "pindahkan" (move something). macOS
   uses the transitive "Pindahkan" for the action on files; follow that. Get the prefix/suffix right per verb.
@@ -25,12 +26,14 @@ entirely.** macOS Indonesian phrases actions impersonally with verb prefixes, no
 ## Decision points
 
 ### Single national standard, no regional split
+
 - Indonesian is one standardized language (Bahasa Indonesia); do NOT confuse with Malay (ms/Bahasa Melayu), which is a
   separate locale with different vocabulary ("folder" vs "folder", but "search"=cari vs cari, "file"=fail in Malay).
 - Majors: Apple and Microsoft ship one Indonesian (id). No regional variants.
 - Recommendation: target plain `id`. Keep Malay out of scope. Confidence: high.
 
 ### Loanword vs native term (the recurring choice)
+
 - Many tech terms have both an English loan and a native coinage; the majors split on a few.
 - "folder": macOS Indonesian keeps the English loan "Folder" (verbatim, capitalized as a term). GNOME/Microsoft also use
   "folder". So "folder" stays "folder", NOT "map".
@@ -40,17 +43,19 @@ entirely.** macOS Indonesian phrases actions impersonally with verb prefixes, no
   app; use native verbs for actions (salin, pindahkan, hapus). Confidence: high.
 
 ### Reduplication for plurals is NOT needed
+
 - Indonesian has no grammatical plural; nouns are number-neutral ("3 file", not "3 file-file"). Reduplication
   ("file-file") marks plurality only for emphasis and is wrong in counted UI strings. See Plurals. Confidence: high.
 
 ### No grammatical gender
-- Indonesian has no gendered nouns, articles, or adjectives, and a single neutral third-person pronoun ("dia"). Inclusive
-  language is a non-issue here; no decision needed. Confidence: high.
+
+- Indonesian has no gendered nouns, articles, or adjectives, and a single neutral third-person pronoun ("dia").
+  Inclusive language is a non-issue here; no decision needed. Confidence: high.
 
 ## Terminology and glossary
 
-Format: `English → chosen · sources · confidence`. Tier: macOS (1) → MS (2) → GNOME/Xfce (3). All from mined
-`id/macOS/` Finder + AppKit unless noted.
+Format: `English → chosen · sources · confidence`. Tier: macOS (1) → MS (2) → GNOME/Xfce (3). All from mined `id/macOS/`
+Finder + AppKit unless noted.
 
 - file → file (loan, invariable) · macOS, MS · high
 - folder → folder (loan) · macOS ("Folder" verbatim) · high
@@ -89,9 +94,9 @@ but for the glossary reason above, not the brand check.
 
 ## Plurals
 
-CLDR category: `other` only (verified `new Intl.PluralRules('id')`, 2026-06-20). Indonesian marks no grammatical
-number, so every plural message needs ONLY the `other` branch: "{count} item" works for 1 and for 1,000. Do NOT
-reduplicate the noun in counted strings. The `desktop-i18n-plural` check requires just `other` for `id`.
+CLDR category: `other` only (verified `new Intl.PluralRules('id')`, 2026-06-20). Indonesian marks no grammatical number,
+so every plural message needs ONLY the `other` branch: "{count} item" works for 1 and for 1,000. Do NOT reduplicate the
+noun in counted strings. The `desktop-i18n-plural` check requires just `other` for `id`.
 
 ## Notes and decisions
 
@@ -111,6 +116,6 @@ reduplicate the noun in counted strings. The `desktop-i18n-plural` check require
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/id/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/id/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

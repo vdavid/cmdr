@@ -1,9 +1,9 @@
 # Thai (th) translation style guide
 
-Working notes for translating Cmdr into Thai. Read [`README.md`](../README.md) for how this fits the translation process.
-Thai is a tier-1 well-localized language: Apple (Finder), Microsoft, Google, Spotify, and Netflix all ship Thai, so
-triangulation evidence is strong. Sources mined for this guide: macOS Finder/AppKit Thai strings, Microsoft Thai
-terminology and style guide, GNOME Nautilus and Xfce Thunar Thai catalogs.
+Working notes for translating Cmdr into Thai. Read [`README.md`](../README.md) for how this fits the translation
+process. Thai is a tier-1 well-localized language: Apple (Finder), Microsoft, Google, Spotify, and Netflix all ship
+Thai, so triangulation evidence is strong. Sources mined for this guide: macOS Finder/AppKit Thai strings, Microsoft
+Thai terminology and style guide, GNOME Nautilus and Xfce Thunar Thai catalogs.
 
 This is a living doc, and capturing is your job. When you discover a convention, gotcha, or ruling that wasn't already
 written, add it here.
@@ -16,8 +16,8 @@ for scanning first, and deliberately avoiding stiff, overly formal vocabulary. U
 formal or technical synonyms.
 
 Error and warning messages stay calm and actionable, never alarmist. Keep the English rule of avoiding the words "error"
-and "failed"; Thai has neutral equivalents (state what happened and what to do, for example phrasing around
-ไม่สามารถ… "couldn't…" rather than a loud failure word).
+and "failed"; Thai has neutral equivalents (state what happened and what to do, for example phrasing around ไม่สามารถ…
+"couldn't…" rather than a loud failure word).
 
 ## Formality
 
@@ -28,8 +28,8 @@ register system built from pronoun choice, vocabulary level, and sentence-final 
   addressing a user, used by Microsoft's Thai style guide and macOS. Don't use formal/deferential ท่าน (reads stiff and
   corporate) or any familiar/intimate pronoun. Often the pronoun is dropped entirely in UI, which is natural and fine.
 - **Imperatives for buttons and menu items: bare verb, no particle, no politener.** macOS Finder labels actions as plain
-  verbs (คัดลอก "Copy", ย้ายไป "Move to", เปิด "Open", ทิ้ง…ลงในถังขยะ "Move…to Trash"). This is the correct register for
-  Cmdr's buttons and menus: concise, direct, polite by default in Thai because a bare verb isn't rude.
+  verbs (คัดลอก "Copy", ย้ายไป "Move to", เปิด "Open", ทิ้ง…ลงในถังขยะ "Move…to Trash"). This is the correct register
+  for Cmdr's buttons and menus: concise, direct, polite by default in Thai because a bare verb isn't rude.
 - **No sentence-final politeness particles (ครับ/ค่ะ) in standard UI.** See the decision point below; this is the single
   highest-stakes register call and macOS/Microsoft both omit them.
 
@@ -38,8 +38,8 @@ register system built from pronoun choice, vocabulary level, and sentence-final 
 ### No word spaces: segmentation, line-breaking, and truncation
 
 - Thai writes words with no spaces between them; spaces mark phrase or sentence boundaries only. Word boundaries are
-  inferred by the reader (and by software via a dictionary segmenter, for example ICU). This is the defining Thai
-  layout challenge for a file manager.
+  inferred by the reader (and by software via a dictionary segmenter, for example ICU). This is the defining Thai layout
+  challenge for a file manager.
 - Effects to design for: line-breaking can only happen at (invisible) word boundaries, so a naive break at any character
   splits a word and reads as broken; mid-word truncation with an ellipsis can chop a word so it changes or loses
   meaning; tone marks and combining vowels above/below the base consonant must not be split from their base; the
@@ -49,9 +49,9 @@ register system built from pronoun choice, vocabulary level, and sentence-final 
 - Majors: macOS and the Thai web of Apple, Microsoft, Google, Spotify, and Netflix all rely on the OS/browser ICU-based
   Thai line-breaker rather than spacing words manually. Their catalog strings contain no inserted spaces between Thai
   words.
-- **Recommendation (high):** write Thai values with no spaces between words, exactly as the language is written, and rely
-  on the platform's Thai-aware line-breaker (macOS/WebKit ships one). Don't hand-insert spaces or zero-width spaces to
-  force breaks. Where Cmdr truncates filenames or paths, prefer truncating at the OS layer; if Cmdr does its own
+- **Recommendation (high):** write Thai values with no spaces between words, exactly as the language is written, and
+  rely on the platform's Thai-aware line-breaker (macOS/WebKit ships one). Don't hand-insert spaces or zero-width spaces
+  to force breaks. Where Cmdr truncates filenames or paths, prefer truncating at the OS layer; if Cmdr does its own
   ellipsizing, that logic must be Thai-segmentation-aware, not byte- or grapheme-naive. Flag any Cmdr-side truncation or
   middle-eliding of paths as a layout item to verify with a real Thai string during the overflow check.
 - **For David:** whether Cmdr's own path/filename ellipsizing is segmentation-aware is an engineering question to verify
@@ -62,8 +62,8 @@ register system built from pronoun choice, vocabulary level, and sentence-final 
 - In spoken and conversational written Thai, the politeness particles ครับ (male speaker) and ค่ะ/คะ (female speaker)
   end polite sentences, and they carry the speaker's gender.
 - In software UI, the majors omit them: macOS Finder and AppKit Thai strings carry no politeness particles, and the tone
-  stays polite through word choice alone. Adding them would (a) force a speaker gender onto the app's voice, and (b) read
-  as chatty/spoken in a place that should be neutral product copy.
+  stays polite through word choice alone. Adding them would (a) force a speaker gender onto the app's voice, and (b)
+  read as chatty/spoken in a place that should be neutral product copy.
 - **Recommendation (high):** do NOT use ครับ/ค่ะ in Cmdr UI strings (buttons, labels, menus, status, errors). Politeness
   comes from vocabulary and the คุณ pronoun, not particles. This also sidesteps the gender problem entirely.
 
@@ -80,8 +80,8 @@ register system built from pronoun choice, vocabulary level, and sentence-final 
 
 ### Dates and the Buddhist era
 
-- Thailand officially uses the Buddhist Era (BE) calendar, which is 543 years ahead of the Gregorian/Common Era (so
-  2026 CE = 2569 BE), with a common day/month/year order. Both calendars circulate; BE is the formal/official default,
+- Thailand officially uses the Buddhist Era (BE) calendar, which is 543 years ahead of the Gregorian/Common Era (so 2026
+  CE = 2569 BE), with a common day/month/year order. Both calendars circulate; BE is the formal/official default,
   Gregorian appears in international and some tech contexts.
 - Majors: Apple and Microsoft expose BE as the locale default for Thai system date formatting, so OS-formatted dates a
   Thai user sees elsewhere are typically BE.
@@ -104,17 +104,17 @@ register system built from pronoun choice, vocabulary level, and sentence-final 
 
 Early high-confidence terms (macOS Finder + Microsoft agree). Expand during the first translation pass.
 
-| English term | Thai | Notes |
-| ------------ | ---- | ----- |
-| file | ไฟล์ | macOS, Microsoft. Loanword, standard. |
-| folder | โฟลเดอร์ | macOS, Microsoft. Loanword, standard. |
-| Trash | ถังขยะ | macOS Finder. "Move to Trash" = ทิ้ง…ลงในถังขยะ / ย้าย…ไปยังถังขยะ. |
-| copy (verb) | คัดลอก | macOS Finder. |
-| move (verb) | ย้าย / ย้ายไป | macOS Finder ("move to" = ย้ายไปยัง). |
-| open (verb) | เปิด | macOS Finder. |
-| tab | แท็บ | macOS, Microsoft. Loanword. |
-| eject | นำออก | macOS (verify against Cmdr's eject context). |
-| you (2nd person) | คุณ | Polite, neutral, gender-neutral. Often dropped in UI. |
+| English term     | Thai          | Notes                                                               |
+| ---------------- | ------------- | ------------------------------------------------------------------- |
+| file             | ไฟล์          | macOS, Microsoft. Loanword, standard.                               |
+| folder           | โฟลเดอร์      | macOS, Microsoft. Loanword, standard.                               |
+| Trash            | ถังขยะ        | macOS Finder. "Move to Trash" = ทิ้ง…ลงในถังขยะ / ย้าย…ไปยังถังขยะ. |
+| copy (verb)      | คัดลอก        | macOS Finder.                                                       |
+| move (verb)      | ย้าย / ย้ายไป | macOS Finder ("move to" = ย้ายไปยัง).                               |
+| open (verb)      | เปิด          | macOS Finder.                                                       |
+| tab              | แท็บ          | macOS, Microsoft. Loanword.                                         |
+| eject            | นำออก         | macOS (verify against Cmdr's eject context).                        |
+| you (2nd person) | คุณ           | Polite, neutral, gender-neutral. Often dropped in UI.               |
 
 Pane, volume, listing, transfer, viewer: not yet confirmed; triangulate during the first pass and record here with
 sources + confidence.
@@ -134,11 +134,11 @@ inflection.
 
 - Every ICU plural message needs only the `other` branch for Thai. `desktop-i18n-plural` requires that the categories a
   language needs are covered; for Thai that's just `other`.
-- Write the `other` branch so it reads naturally for any count, including 1. Don't try to special-case 1 with a
-  separate phrasing unless the English context genuinely needs it (then use `=1` exact match, not a plural category).
+- Write the `other` branch so it reads naturally for any count, including 1. Don't try to special-case 1 with a separate
+  phrasing unless the English context genuinely needs it (then use `=1` exact match, not a plural category).
 - Counted nouns in Thai often want a classifier (for example รายการ "item(s)" as a generic classifier-like noun), so a
-  natural counted string is "{count} รายการ" rather than pluralizing the noun. Mind this when translating
-  count-bearing strings.
+  natural counted string is "{count} รายการ" rather than pluralizing the noun. Mind this when translating count-bearing
+  strings.
 
 ## Notes and decisions
 
@@ -157,18 +157,20 @@ inflection.
 - Double every apostrophe in a value (`'` becomes `''`); ICU treats a lone `'` as an escape and silently swallows text.
   Thai rarely needs apostrophes, but any in a loanword or English fragment must be doubled.
 - Keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Decisions to confirm with David
 
 - **Dates: follow OS Thai locale (likely Buddhist era, matching Finder) or stay Gregorian app-wide?** Recommend
-  following the OS via `Intl.DateTimeFormat('th')` so listings feel native; confirm what Cmdr's formatter emits for `th`.
+  following the OS via `Intl.DateTimeFormat('th')` so listings feel native; confirm what Cmdr's formatter emits for
+  `th`.
 - **Cmdr-side path/filename truncation must be Thai-segmentation-aware.** Engineering verification item, not a
   translation choice: confirm during the overflow check with a real Thai string that mid-name ellipsizing doesn't split
   words or detach tone marks.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/th/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/th/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

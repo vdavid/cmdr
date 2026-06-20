@@ -1,14 +1,13 @@
 # Norwegian Nynorsk (nn) translation style guide
 
 Working notes for translating Cmdr into Norwegian Nynorsk. Read [`README.md`](../README.md) for how this fits the
-translation process. `nn` is the Nynorsk written standard; Bokmål is the separate [`nb`](../nb/style.md) locale. They are
-two written standards of the same spoken language, not dialects, and must not be mixed within one build.
+translation process. `nn` is the Nynorsk written standard; Bokmål is the separate [`nb`](../nb/style.md) locale. They
+are two written standards of the same spoken language, not dialects, and must not be mixed within one build.
 
 ## Voice and tone
 
-Cmdr's Nynorsk voice mirrors its English one: friendly, concise, active, and never alarmist. Nynorsk UI copy from
-GNOME and Xfce (Nynorsk has a strong free-software tradition) is plain and direct, so this register is native, not a
-stretch.
+Cmdr's Nynorsk voice mirrors its English one: friendly, concise, active, and never alarmist. Nynorsk UI copy from GNOME
+and Xfce (Nynorsk has a strong free-software tradition) is plain and direct, so this register is native, not a stretch.
 
 - Address the user informally as **du** (lowercase), universal in modern Norwegian software.
 - Stay calm and actionable in error messages; keep the English rule of avoiding "error" and "failed". Rewrite around
@@ -20,8 +19,8 @@ stretch.
 
 ## Formality
 
-- **Second person: informal `du`, always.** The formal `De` paradigm is dead in modern Norwegian and not recommended
-  for software. Apple, Microsoft, and GNOME all use `du`. No register decision to make.
+- **Second person: informal `du`, always.** The formal `De` paradigm is dead in modern Norwegian and not recommended for
+  software. Apple, Microsoft, and GNOME all use `du`. No register decision to make.
 - **UI actions use the imperative**, matching GNOME Nynorsk and Xfce: "Kopier", "Flytt", "Slett", "Opna", "Lim inn",
   "Endra namn", "Avbryt". Do NOT use the infinitive for buttons.
 
@@ -53,22 +52,22 @@ stretch.
 Confirmed against GNOME Nynorsk and Xfce Nynorsk (Tier 3) plus the `nb` guide where the forms coincide. Extend as
 strings come up.
 
-| English term | Norwegian Nynorsk | Notes |
-| ------------ | ----------------- | ----- |
-| file | fil | |
-| folder | mappe | |
-| copy | kopier | imperative |
-| move | flytt | imperative |
-| delete | slett | imperative |
-| trash | papirkorg | GNOME Nynorsk; the location noun |
-| rename | endra namn | Nynorsk `namn`, not Bokmål `navn` |
-| paste | lim inn | |
-| cut | klipp ut | |
-| open | opna | Nynorsk `opna`, not Bokmål `åpne` |
-| cancel | avbryt | GNOME Nynorsk |
-| tab | fane | UI tab, not the key |
-| settings | innstillingar | Nynorsk `-ar` plural |
-| file name | filnamn | one word (samanskriving) |
+| English term | Norwegian Nynorsk | Notes                             |
+| ------------ | ----------------- | --------------------------------- |
+| file         | fil               |                                   |
+| folder       | mappe             |                                   |
+| copy         | kopier            | imperative                        |
+| move         | flytt             | imperative                        |
+| delete       | slett             | imperative                        |
+| trash        | papirkorg         | GNOME Nynorsk; the location noun  |
+| rename       | endra namn        | Nynorsk `namn`, not Bokmål `navn` |
+| paste        | lim inn           |                                   |
+| cut          | klipp ut          |                                   |
+| open         | opna              | Nynorsk `opna`, not Bokmål `åpne` |
+| cancel       | avbryt            | GNOME Nynorsk                     |
+| tab          | fane              | UI tab, not the key               |
+| settings     | innstillingar     | Nynorsk `-ar` plural              |
+| file name    | filnamn           | one word (samanskriving)          |
 
 ## Brand and do-not-translate
 
@@ -89,12 +88,12 @@ any adjective, so write each branch as a full natural phrase. The `desktop-i18n-
 - Punctuation and capitalization: sentence case; lowercase days, months, and language names.
 - Letters: `æ`, `ø`, `å` are full letters; never transliterate.
 - Numbers: comma decimal mark, space thousands separator; `Intl` handles formatting at runtime.
-- Nynorsk forms differ systematically from Bokmål (`ikkje`/`kva`/`eg`/`frå`/`namn`/`-ar` plurals); translate fresh, never
-  convert from `nb`.
+- Nynorsk forms differ systematically from Bokmål (`ikkje`/`kva`/`eg`/`frå`/`namn`/`-ar` plurals); translate fresh,
+  never convert from `nb`.
 - Dedicate one human review pass to samanskriving (compound spelling).
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/nn/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/nn/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

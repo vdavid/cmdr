@@ -10,12 +10,12 @@ only authority here. Evidence verified against the pile on 2026-06-20.
 ## Decisions to confirm with David
 
 - **Script: target Devanagari (`kok` / `kok-Deva`), recommended, but Konkani is genuinely multi-script (the key flag,
-  high).** Konkani is unusual: it's officially written in multiple scripts across communities: Devanagari (the
-  official script of Goa and the standard for most digital localization), Roman/Latin (used by Goan Catholic
-  communities), Kannada (in coastal Karnataka), and historically Malayalam and Perso-Arabic. MS Konkani localizes in
-  **Devanagari** and cites the Goa Konkani Academi orthography rules (verified 2026-06-20). Recommendation: **target
-  Devanagari** as the single shipped script; treat Roman-Konkani as a possible future `kok-Latn` variant only if users
-  ask. Flagging because the multi-script reality is a real product decision, not a detail.
+  high).** Konkani is unusual: it's officially written in multiple scripts across communities: Devanagari (the official
+  script of Goa and the standard for most digital localization), Roman/Latin (used by Goan Catholic communities),
+  Kannada (in coastal Karnataka), and historically Malayalam and Perso-Arabic. MS Konkani localizes in **Devanagari**
+  and cites the Goa Konkani Academi orthography rules (verified 2026-06-20). Recommendation: **target Devanagari** as
+  the single shipped script; treat Roman-Konkani as a possible future `kok-Latn` variant only if users ask. Flagging
+  because the multi-script reality is a real product decision, not a detail.
 - **Low-resource: MS is the only source.** No file-manager catalog (GNOME/Xfce) for Konkani, so core file-manager terms
   lean on MS terminology plus native review; several will be `tentative`.
 
@@ -38,16 +38,16 @@ the problem and the next step, and avoid a bare "चूक" (error) status label
 ## Decision points
 
 - **Script: Devanagari, with a real multi-script backdrop (the key decision, high).** Ship Devanagari (`kok`), the
-  official Goa script and MS's localization script (verified 2026-06-20). Devanagari is an abugida and is unicameral
-  (no case), so title-case-vs-sentence-case collapses to one letterform. Roman-Konkani and Kannada-Konkani exist but
-  aren't the localization target unless a `kok-Latn`/`kok-Knda` variant is later requested. Confidence: high that
-  Devanagari is the right default.
+  official Goa script and MS's localization script (verified 2026-06-20). Devanagari is an abugida and is unicameral (no
+  case), so title-case-vs-sentence-case collapses to one letterform. Roman-Konkani and Kannada-Konkani exist but aren't
+  the localization target unless a `kok-Latn`/`kok-Knda` variant is later requested. Confidence: high that Devanagari is
+  the right default.
 - **Regional variant: one shipped, `kok` (`kok-IN`).** Konkani is official in Goa; treat it as a single Devanagari
   target. The script variants above are the real axis of variation, not region. Confidence: high.
 - **Gender / inclusive language (medium-high problem).** Konkani has grammatical gender (masculine/feminine/neuter) and
   verb agreement that can expose the subject's gender. A sentence addressed to the user in past tense may force a
-  gender. Where it would, **rewrite impersonally** or use a neuter/agentless construction. A native reviewer handles
-  the agreement; this is a more live concern than in the genderless languages in this batch. Confidence: medium-high.
+  gender. Where it would, **rewrite impersonally** or use a neuter/agentless construction. A native reviewer handles the
+  agreement; this is a more live concern than in the genderless languages in this batch. Confidence: medium-high.
 - **Capitalization: not applicable.** Devanagari has no case. Don't capitalize labels. Confidence: confirmed.
 - **Agglutination/postpositions affect placeholder grammar (high).** Like other Indian languages, Konkani uses
   postpositions and case-marked nouns. A `{path}`/`{name}` placeholder before a postposition can't reliably attach to
@@ -57,9 +57,8 @@ the problem and the next step, and avoid a bare "चूक" (error) status label
 ## Terminology and glossary
 
 Format per term: `chosen · sources · confidence`. Evidence verified against `_ignored/i18n/kok/` (MS terminology, MS
-style guide) on 2026-06-20; no macOS or GNOME for Konkani, so MS terminology is the only authority and core
-file-manager terms need native review. Sources decide the term; Cmdr writes its own value (MS copyrighted, never copied
-verbatim).
+style guide) on 2026-06-20; no macOS or GNOME for Konkani, so MS terminology is the only authority and core file-manager
+terms need native review. Sources decide the term; Cmdr writes its own value (MS copyrighted, never copied verbatim).
 
 To settle from MS terminology (`kok/microsoft-terminology/`) with a native check (expect most to start `tentative`):
 
@@ -95,11 +94,12 @@ CLDR categories for `kok`: `one`, `other` (verified with `new Intl.PluralRules('
   line-height against the pseudolocale (`en-XA`) and a Devanagari font.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/kok/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/kok/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

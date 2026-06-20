@@ -55,17 +55,17 @@ file-manager catalogs use: "Kopeeri" (copy), "Kustuta" (delete), "Loobu" (cancel
 
 ## Terminology and glossary
 
-| English term | Estonian | Notes |
-| ------------ | -------- | ----- |
-| Copy | Kopeeri | imperative, GNOME |
-| Move | Liiguta | imperative, GNOME |
-| Delete | Kustuta | imperative |
-| Cancel | Loobu | imperative, GNOME ("_Loobu") |
-| trash | Prügikast | standard Estonian term for the trash; confirm against MS terminology |
-| folder | kaust | |
-| file | fail | partitive "faili" in counted phrases |
-| Settings | Sätted | confirm against MS Estonian terminology |
-| crash report | krahhiaruanne / vearaport | confirm the non-alarmist fit against MS terminology |
+| English term | Estonian                  | Notes                                                                |
+| ------------ | ------------------------- | -------------------------------------------------------------------- |
+| Copy         | Kopeeri                   | imperative, GNOME                                                    |
+| Move         | Liiguta                   | imperative, GNOME                                                    |
+| Delete       | Kustuta                   | imperative                                                           |
+| Cancel       | Loobu                     | imperative, GNOME ("\_Loobu")                                        |
+| trash        | Prügikast                 | standard Estonian term for the trash; confirm against MS terminology |
+| folder       | kaust                     |                                                                      |
+| file         | fail                      | partitive "faili" in counted phrases                                 |
+| Settings     | Sätted                    | confirm against MS Estonian terminology                              |
+| crash report | krahhiaruanne / vearaport | confirm the non-alarmist fit against MS terminology                  |
 
 ## Brand and do-not-translate
 
@@ -85,8 +85,8 @@ just the number.
   style guide.
 - **Numbers and dates come from the formatter layer** (comma decimal, space thousands). Never hardcode separators.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -96,6 +96,6 @@ just the number.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/et/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/et/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

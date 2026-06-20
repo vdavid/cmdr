@@ -3,8 +3,8 @@
 Working notes for translating Cmdr into Western Frisian (Frysk). Read [`README.md`](../README.md) for how this fits the
 translation process.
 
-This is the language base (`fy`), Western Frisian, the West Germanic language of Friesland (Fryslân) in the
-Netherlands. A single standard orthography (the 2015 spelling); no region variant needed for UI.
+This is the language base (`fy`), Western Frisian, the West Germanic language of Friesland (Fryslân) in the Netherlands.
+A single standard orthography (the 2015 spelling); no region variant needed for UI.
 
 ## Voice and tone
 
@@ -46,15 +46,15 @@ coverage).
 
 ## Terminology and glossary
 
-| English term | Western Frisian | Notes |
-| ------------ | --------------- | ----- |
-| Delete | Wiskje | GNOME ("Wiske"/"Wiskje") |
-| trash | Jiskefet | GNOME |
-| Copy | (confirm) | not translated in the sampled GNOME entries; Dutch "Kopiearje" form |
-| Move | (confirm) | gap in GNOME; check catalog / Dutch fallback |
-| Cancel | (confirm) | gap in GNOME |
-| file | (confirm) | gap; likely "triem" (Frisian) or Dutch "bestand" |
-| folder | (confirm) | gap; check catalog |
+| English term | Western Frisian | Notes                                                               |
+| ------------ | --------------- | ------------------------------------------------------------------- |
+| Delete       | Wiskje          | GNOME ("Wiske"/"Wiskje")                                            |
+| trash        | Jiskefet        | GNOME                                                               |
+| Copy         | (confirm)       | not translated in the sampled GNOME entries; Dutch "Kopiearje" form |
+| Move         | (confirm)       | gap in GNOME; check catalog / Dutch fallback                        |
+| Cancel       | (confirm)       | gap in GNOME                                                        |
+| file         | (confirm)       | gap; likely "triem" (Frisian) or Dutch "bestand"                    |
+| folder       | (confirm)       | gap; check catalog                                                  |
 
 (Many rows are gaps in the sparse GNOME catalog; these are the highest-value terms to settle first, likely via Dutch
 reference + native review.)
@@ -76,8 +76,8 @@ coverage. Confidence: confirmed.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators (Frisian follows Dutch: comma decimal,
   period thousands).
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -86,6 +86,6 @@ coverage. Confidence: confirmed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/fy/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/fy/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -4,9 +4,9 @@ Working notes for translating Cmdr into Spanish. Read [`README.md`](../README.md
 process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
 Spanish.
 
-`es` is the base (European-Spanish-leaning, because macOS base Spanish is es-ES). A region variant (`es-419`,
-`es-MX`, …) would only carry overrides where Latin American usage diverges; the reference pile has `es-419`/`es-MX`/
-`es-US` folders if one is ever added.
+`es` is the base (European-Spanish-leaning, because macOS base Spanish is es-ES). A region variant (`es-419`, `es-MX`,
+…) would only carry overrides where Latin American usage diverges; the reference pile has `es-419`/`es-MX`/ `es-US`
+folders if one is ever added.
 
 ## Formality: `tú`, settled
 
@@ -15,17 +15,17 @@ Spanish.
 - macOS Spanish is fully informal. Across the mined Finder/AppKit strings, second-person address is overwhelmingly `tú`:
   176 `quieres`, 67 `puedes`, 43 `haz`, 40 `estás`, 31 `tus` vs essentially no formal address (the 30 `quiere` hits are
   third-person "someone/it wants", e.g. "Alguien quiere enviarte algo…", not polite "you"). Finder phrases the very
-  string we need informally: "The last time you opened %@, it unexpectedly quit … Do you want to …?" →
-  "La última vez que abriste %@, se cerró inesperadamente … ¿Quieres …?" (verified in `es/macOS/`, grep over
-  Finder + AppKit, 2026-06-19).
+  string we need informally: "The last time you opened %@, it unexpectedly quit … Do you want to …?" → "La última vez
+  que abriste %@, se cerró inesperadamente … ¿Quieres …?" (verified in `es/macOS/`, grep over Finder + AppKit,
+  2026-06-19).
 - Microsoft Spanish leans formal `usted` (Windows convention). That's not ours.
 - Cmdr is a macOS app with a friendly voice that signs onboarding as David, so `tú` is both the macOS-native choice and
   the right tonal fit.
 
 ## Voice and tone
 
-Friendly, concise, active, calm, never alarmist. Spanish UI copy drifts long and formal; resist it. Prefer a verb over
-a verbal noun ("Buscar", not "Realizar una búsqueda").
+Friendly, concise, active, calm, never alarmist. Spanish UI copy drifts long and formal; resist it. Prefer a verb over a
+verbal noun ("Buscar", not "Realizar una búsqueda").
 
 Error messages stay calm and actionable and never use the bare labels "error"/"failed": state the problem and a next
 step. Note: macOS Spanish itself does say "Error interno" / "Se ha producido…"; Cmdr's voice rule is stricter, so don't
@@ -86,8 +86,8 @@ GNOME/Xfce (Tier 3). Confidence: `confirmed` (human signed off), `high` (authori
 - crash (noun) → bloqueo · MS terminology ("crash"→"bloqueo", all regions incl. ESP/419); macOS NSExceptionAlert also
   uses "Bloqueo" · high. For a user-facing "crash report" Cmdr prefers the softer "informe de fallos" over "informe de
   bloqueos" (see below) · tentative
-- report (noun) → informe · MS terminology ("report"→"informe", all regions incl. ESP/419); GNOME ("Informe de
-  errores") · high
+- report (noun) → informe · MS terminology ("report"→"informe", all regions incl. ESP/419); GNOME ("Informe de errores")
+  · high
 - crash report → informe de fallos · composed; "fallo" reads as the gentlest, most natural word for "something went
   wrong" in es UI and keeps Cmdr's non-alarmist voice (vs the more technical "bloqueo"). macOS has no single "crash
   report" string to copy. · tentative, confirm with David
@@ -104,9 +104,8 @@ Add rows as terms come up, each with sources and a confidence.
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens and `{email}`. Enforced by `desktop-i18n-dont-translate` (list in
-`apps/desktop/scripts/i18n-catalog-lib.js`).
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style tokens
+and `{email}`. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.js`).
 
 ## Plurals
 
@@ -120,8 +119,8 @@ strings are counted, so no plural branches are needed there.
   (es-ES) is deferred. See [`language-selection-decisions.md`](../language-selection-decisions.md).
 - **Quotation marks: macOS Spanish uses `“…”`** (curly), not `«…»`, in its UI strings (verified in `es/macOS/Finder/`,
   2026-06-19). Match macOS.
-- **Inverted opening marks.** Questions open with `¿` and exclamations with `¡`. (No question/exclamation strings in
-  the crash set.)
+- **Inverted opening marks.** Questions open with `¿` and exclamations with `¡`. (No question/exclamation strings in the
+  crash set.)
 - **Ellipsis in "Sending…".** The en catalog value is `Sending...` (three ASCII dots, per its `@key` description "Ends
   with three dots"), so the Spanish value uses three ASCII dots too: "Enviando...". macOS's own string is "Enviando…"
   (one Unicode char); we follow Cmdr's catalog convention, not macOS's, to keep the source/translation shapes aligned.
@@ -131,12 +130,12 @@ strings are counted, so no plural branches are needed there.
 
 ## Decisions to confirm with David
 
-- **crash report → "informe de fallos"** (tentative): no single canonical source. "fallos" is the gentlest, most
-  natural fit for Cmdr's non-alarmist voice; the more technical alternatives are "informe de bloqueos" (matches MS/macOS
+- **crash report → "informe de fallos"** (tentative): no single canonical source. "fallos" is the gentlest, most natural
+  fit for Cmdr's non-alarmist voice; the more technical alternatives are "informe de bloqueos" (matches MS/macOS
   "bloqueo" for crash) or keeping it generic as "informe del problema". Confirm which reads best.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/es/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/es/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

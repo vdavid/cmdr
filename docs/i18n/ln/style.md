@@ -20,14 +20,16 @@ informal split. Keep a neutral, respectful register; defer fine calls to a nativ
 ## Decision points
 
 Ship ln at all, or fall back to French? (strategic call for David):
+
 - Lingala is a Bantu lingua franca of DR Congo and Republic of Congo (tens of millions of speakers), an official
   national language, but NOT a computing-UI language. French dominates computing across both Congos. No major vendor
   (Apple, Microsoft, Google products, Spotify, Netflix) localizes into ln.
-- Recommendation: French fallback is the pragmatic default for the region; an ln localization would be a near-first-mover
-  with essentially zero vendor reference and a thin, aged community corpus. Low priority. Confidence: high. Flag for
-  David.
+- Recommendation: French fallback is the pragmatic default for the region; an ln localization would be a
+  near-first-mover with essentially zero vendor reference and a thin, aged community corpus. Low priority. Confidence:
+  high. Flag for David.
 
 Orthography / diacritics (ɛ ɔ + tone marks):
+
 - Lingala uses Latin script with seven vowels; ɛ and ɔ are distinct letters in the standard/scientific orthography. Tone
   is phonemic (high marked with acute, low unmarked), but tone marking is inconsistent in everyday writing. There's no
   single enforced standard.
@@ -36,8 +38,9 @@ Orthography / diacritics (ɛ ɔ + tone marks):
   these are proper Unicode letters. Confirm the app font covers ɛ/ɔ with combining acute. Confidence: medium-high.
 
 Noun-class / count agreement (the {count}/{placeholder} pitfall):
-- Bantu noun classes mean the plural is a distinct word form (often a `Ba`-prefixed particle) plus word reordering, not a
-  suffix. The catalog shows this: `%'u folders` → `[0] %'u Dosíye` / `[1] Ba dosíye %'u`, the placeholder/word order
+
+- Bantu noun classes mean the plural is a distinct word form (often a `Ba`-prefixed particle) plus word reordering, not
+  a suffix. The catalog shows this: `%'u folders` → `[0] %'u Dosíye` / `[1] Ba dosíye %'u`, the placeholder/word order
   shifts between forms. A naive `{count} {noun}s` template will be wrong, and agreement varies by the noun's class.
 - Recommendation: use full CLDR plural messages (one/other) with the WHOLE noun phrase translated per form, never string
   concatenation. Multi-noun counted strings can't be fully covered by count plurals alone, flag them for a native
@@ -82,11 +85,11 @@ stack.) The `desktop-i18n-plural` check requires every plural message to cover t
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ln/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ln/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

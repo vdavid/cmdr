@@ -4,9 +4,9 @@ Working notes for translating Cmdr into Hebrew. Read [`README.md`](../README.md)
 process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
 Hebrew.
 
-**RTL, and a real macOS reference exists.** Apple ships a Hebrew macOS UI, so the pile has macOS Finder/AppKit
-(highest authority) plus MS terminology, MS style guide, GNOME Nautilus, and Xfce Thunar (`_ignored/i18n/he/`). RTL is a
-layout workstream, not just translation. Evidence verified against the pile on 2026-06-20.
+**RTL, and a real macOS reference exists.** Apple ships a Hebrew macOS UI, so the pile has macOS Finder/AppKit (highest
+authority) plus MS terminology, MS style guide, GNOME Nautilus, and Xfce Thunar (`_ignored/i18n/he/`). RTL is a layout
+workstream, not just translation. Evidence verified against the pile on 2026-06-20.
 
 ## Decisions to confirm with David
 
@@ -28,9 +28,9 @@ The calls a translator can't make alone. The first two are real open flags; the 
 
 Friendly, concise, active, calm, never alarmist, matching Cmdr's English voice. The Hebrew Microsoft voice is "warm and
 relaxed, less formal", and explicitly says to "avoid artificial high register" and instead "think how would I say it to
-my friend, partner, parent" (MS style guide, verified 2026-06-20). That matches Cmdr's warm-informal English well.
-Error messages stay calm and actionable: phrase the problem and the next step, and avoid "שגיאה" (error) / "נכשל"
-(failed) as a bare status label the way English avoids "error"/"failed".
+my friend, partner, parent" (MS style guide, verified 2026-06-20). That matches Cmdr's warm-informal English well. Error
+messages stay calm and actionable: phrase the problem and the next step, and avoid "שגיאה" (error) / "נכשל" (failed) as
+a bare status label the way English avoids "error"/"failed".
 
 ## Formality
 
@@ -77,9 +77,9 @@ approach (verified 2026-06-20):
   rewrite generic references to drop gendered pronouns.
 - Prefer the **gerund/verbal noun** for UI verbs (button labels), which sidesteps gender entirely ("מחיקה" rather than a
   gendered imperative).
-- Recommendation: combine plural address for sentences + gerund for labels + impersonal/nominal phrasing for system-state
-  messages. This covers nearly all of Cmdr's strings without a gender guess. Confidence: high that this is the right
-  strategy; the only open call is committing to it app-wide.
+- Recommendation: combine plural address for sentences + gerund for labels + impersonal/nominal phrasing for
+  system-state messages. This covers nearly all of Cmdr's strings without a gender guess. Confidence: high that this is
+  the right strategy; the only open call is committing to it app-wide.
 
 ### Numerals: Western digits
 
@@ -94,8 +94,8 @@ Hebrew is standardized only in Israel; no second national standard, no variant m
 ## Terminology and glossary
 
 Format per term: `chosen · sources · confidence`. Evidence verified against `_ignored/i18n/he/` (macOS Finder/AppKit, MS
-terminology, GNOME Nautilus, Xfce Thunar) on 2026-06-20; macOS strings cited are what Hebrew Finder/AppKit actually show.
-Sources decide the term; Cmdr writes its own value (Apple/MS copyrighted, GNOME/Xfce GPL, never copied verbatim).
+terminology, GNOME Nautilus, Xfce Thunar) on 2026-06-20; macOS strings cited are what Hebrew Finder/AppKit actually
+show. Sources decide the term; Cmdr writes its own value (Apple/MS copyrighted, GNOME/Xfce GPL, never copied verbatim).
 
 Settled terms (sources agree):
 
@@ -126,9 +126,9 @@ tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i
 ## Plurals
 
 CLDR categories for `he`: `one`, `two`, `other` (verified with `new Intl.PluralRules('he')`). Note the distinct **two**
-(dual) category: Hebrew grammatically marks a dual, so count messages must write a `two` branch in addition to one/other.
-This is unusual (most languages lack `two`) and easy to miss. The `desktop-i18n-plural` check requires every plural
-message to cover all three.
+(dual) category: Hebrew grammatically marks a dual, so count messages must write a `two` branch in addition to
+one/other. This is unusual (most languages lack `two`) and easy to miss. The `desktop-i18n-plural` check requires every
+plural message to cover all three.
 
 ## Notes and decisions
 
@@ -141,11 +141,12 @@ message to cover all three.
   mirroring, but still overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/he/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/he/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

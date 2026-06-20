@@ -1,8 +1,8 @@
 # Kurdish (Kurmanji) (ku) translation style guide
 
-Working notes for translating Cmdr into Kurmanji Kurdish (Kurdî / Kurmancî). Read [`README.md`](../README.md) for how this
-fits the translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these
-notes carry into Kurdish.
+Working notes for translating Cmdr into Kurmanji Kurdish (Kurdî / Kurmancî). Read [`README.md`](../README.md) for how
+this fits the translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice
+these notes carry into Kurdish.
 
 `ku` here is **Kurmanji** (Northern Kurdish), written in the **Latin** (Hawar) script. The reference pile has only GNOME
 Nautilus for `ku` (about 1,180 translated strings, Tier 3); no macOS, no Microsoft, no Xfce (`_ignored/i18n/ku/`).
@@ -20,16 +20,16 @@ Evidence verified against the pile on 2026-06-20.
 ## Voice and tone
 
 Friendly, concise, active, calm, never alarmist. Lean on the GNOME Kurmanji catalog for established file-manager
-phrasing; the Kurdish open-source localization community is the de facto terminology authority. Error messages stay
-calm and actionable: name the problem and the next step, and avoid a bare "çewtî" (error) status label, consistent with
+phrasing; the Kurdish open-source localization community is the de facto terminology authority. Error messages stay calm
+and actionable: name the problem and the next step, and avoid a bare "çewtî" (error) status label, consistent with
 Cmdr's English voice.
 
 ## Formality
 
-- **Direct second person; Kurmanji has a polite/plural form (`hûn`) vs familiar singular (`tu`).** Kurmanji distinguishes
-  familiar `tu` from polite/plural `hûn`. Software conventionally uses the polite/plural `hûn` for addressing the user,
-  or impersonal phrasing. Recommended default: **`hûn`-register**, consistent with the GNOME catalog. Confidence:
-  medium-high (community catalog; no MS style guide to confirm).
+- **Direct second person; Kurmanji has a polite/plural form (`hûn`) vs familiar singular (`tu`).** Kurmanji
+  distinguishes familiar `tu` from polite/plural `hûn`. Software conventionally uses the polite/plural `hûn` for
+  addressing the user, or impersonal phrasing. Recommended default: **`hûn`-register**, consistent with the GNOME
+  catalog. Confidence: medium-high (community catalog; no MS style guide to confirm).
 - **Action labels (buttons, menu items): the established form** from the GNOME catalog ("Betal" Cancel). Keep labels
   short. Confidence: medium-high.
 
@@ -97,11 +97,12 @@ catalog declares `nplurals=2; plural=(n != 1)` (verified 2026-06-20), which agre
 - **Length.** Kurmanji runs roughly English-length or a bit longer; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ku/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ku/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

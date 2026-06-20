@@ -45,8 +45,8 @@ Romanian writes the same sound as **î** word-initially/finally and **â** word-
 
 ### Regional variant: Romania vs Moldova
 
-Romanian is also official in Moldova (`ro-MD`), historically written in Cyrillic but now Latin script; the spoken/written
-standard is effectively the same Academy Romanian with minor lexical differences.
+Romanian is also official in Moldova (`ro-MD`), historically written in Cyrillic but now Latin script; the
+spoken/written standard is effectively the same Academy Romanian with minor lexical differences.
 
 - Apple, Microsoft, Google, Spotify, and Netflix all ship a single "Română" locale, not a separate Moldovan one.
 - Recommendation: target standard `ro` (Romania), no separate ro-MD. Confidence: high.
@@ -63,17 +63,18 @@ avoid gendered user-adjectives; otherwise unmarked masculine. Confidence: high.
 
 Defer the full glossary; triangulate macOS Finder (highest) + Microsoft terminology + Nautilus/Thunar as terms arise.
 
-| English term | Romanian | Notes |
-| ------------ | -------- | ----- |
-| file | fișier | comma-below ș |
-| folder | dosar / folder | confirm Finder; "folder" is also widely used |
-| trash | Coș (de gunoi) | Finder term to confirm |
-| copy | Copiere / Copiază | infinitive-noun preferred in menus |
-| pane | panou | confirm |
+| English term | Romanian          | Notes                                        |
+| ------------ | ----------------- | -------------------------------------------- |
+| file         | fișier            | comma-below ș                                |
+| folder       | dosar / folder    | confirm Finder; "folder" is also widely used |
+| trash        | Coș (de gunoi)    | Finder term to confirm                       |
+| copy         | Copiere / Copiază | infinitive-noun preferred in menus           |
+| pane         | panou             | confirm                                      |
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by `desktop-i18n-dont-translate`.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
+`desktop-i18n-dont-translate`.
 
 ## Plurals
 
@@ -95,6 +96,6 @@ ICU can't insert "de" for you, so bake it into the `few`/`other` branch text cor
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ro/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ro/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

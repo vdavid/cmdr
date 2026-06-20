@@ -39,12 +39,12 @@ phrases things. Confidence: confirmed (about the coverage gap).
 
 - **Script: Latin only, no decision.** Filipino uses the Latin alphabet. Confidence: high.
 - **English code-switching is the central style question, and it's real.** Educated Philippine usage mixes English
-  heavily ("Taglish"); much local software leaves common computing verbs and nouns in English ("File", "Folder",
-  "Copy", "Settings") and translates only connective and explanatory text. Forcing pure-Tagalog coinages ("talaksan"
-  for file, "pulutong" for folder) reads as stilted and is widely avoided in real UI. Recommendation: keep the common
-  computing terms in English and translate the surrounding sentence into natural Filipino; this matches how Filipinos
-  actually read software. Confidence: high; this is a genuine David-worth-confirming call because it sets the whole
-  texture of the translation. FLAG.
+  heavily ("Taglish"); much local software leaves common computing verbs and nouns in English ("File", "Folder", "Copy",
+  "Settings") and translates only connective and explanatory text. Forcing pure-Tagalog coinages ("talaksan" for file,
+  "pulutong" for folder) reads as stilted and is widely avoided in real UI. Recommendation: keep the common computing
+  terms in English and translate the surrounding sentence into natural Filipino; this matches how Filipinos actually
+  read software. Confidence: high; this is a genuine David-worth-confirming call because it sets the whole texture of
+  the translation. FLAG.
 - **Gender: Filipino is largely gender-neutral grammatically** (pronouns like "siya" don't mark gender; verbs don't
   agree with gender). This makes neutral phrasing easy. Confidence: high.
 - **Length: Filipino runs longer than English** when fully translated (affixation and particles add length), but the
@@ -53,15 +53,15 @@ phrases things. Confidence: confirmed (about the coverage gap).
 
 ## Terminology and glossary
 
-| English term | Filipino | Notes |
-| ------------ | -------- | ----- |
-| Copy | Kopyahin / Copy | Taglish: English "Copy" common in UI; "Kopyahin" the Tagalog verb |
-| Move | Ilipat / Move | English "Move" common in UI |
-| Delete | Tanggalin / Delete | |
-| Cancel | Kanselahin / Cancel | |
-| file | File | English term standard in Philippine UI (avoid "talaksan") |
-| folder | Folder | English term standard (avoid "pulutong") |
-| trash | Basurahan | "basura" = trash; confirm UI form |
+| English term | Filipino            | Notes                                                             |
+| ------------ | ------------------- | ----------------------------------------------------------------- |
+| Copy         | Kopyahin / Copy     | Taglish: English "Copy" common in UI; "Kopyahin" the Tagalog verb |
+| Move         | Ilipat / Move       | English "Move" common in UI                                       |
+| Delete       | Tanggalin / Delete  |                                                                   |
+| Cancel       | Kanselahin / Cancel |                                                                   |
+| file         | File                | English term standard in Philippine UI (avoid "talaksan")         |
+| folder       | Folder              | English term standard (avoid "pulutong")                          |
+| trash        | Basurahan           | "basura" = trash; confirm UI form                                 |
 
 (The English/Tagalog choice per row hinges on the code-switching decision above. Defaulting to English for core
 computing nouns/verbs is the recommendation.)
@@ -85,8 +85,8 @@ the noun at all. The `desktop-i18n-plural` check enforces coverage. Confidence: 
   numerals are preferred over spelled-out numbers in most UI contexts.
 - **Punctuation follows English conventions** (per the Microsoft style guide).
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -97,6 +97,6 @@ the noun at all. The `desktop-i18n-plural` check enforces coverage. Confidence: 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/fil/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/fil/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

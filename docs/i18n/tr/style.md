@@ -15,23 +15,23 @@ than translating word for word (verified in `tr/microsoft-style-guides/StyleGuid
 - Turkish is agglutinative: one word often carries a whole English phrase, so translations frequently come out shorter
   per word but can still run 20-30% longer overall. Overflow-check the layout against the pseudolocale (`en-XA`).
 - Error messages stay calm and actionable and never lead with "hata" (error) or "başarısız" (failed) as a bare label.
-  State the problem and a next step. Note: macOS itself does use "bir hata oluştu" freely; Cmdr's voice rule is stricter,
-  so don't copy that pattern.
+  State the problem and a next step. Note: macOS itself does use "bir hata oluştu" freely; Cmdr's voice rule is
+  stricter, so don't copy that pattern.
 - Prefer a verb over a verbal noun where the English does ("Ara", not a noun phrase for "Make a search").
 
 ## Formality: `sen` (informal), settled
 
 **Verdict: informal second person (`sen`, the singular verb endings `-ın` / `-in` / `-musun` / `-misin`).** Consumer
-brands (Trendyol, Spotify, Duolingo, and peers) address Turkish users informally with `sen`, which fits Cmdr's
-friendly personal voice. This bucks the OS-vendor norm: macOS and Microsoft both use formal `siz`, but Cmdr
-deliberately picks the warmer consumer-brand register. Formality decision recorded in
+brands (Trendyol, Spotify, Duolingo, and peers) address Turkish users informally with `sen`, which fits Cmdr's friendly
+personal voice. This bucks the OS-vendor norm: macOS and Microsoft both use formal `siz`, but Cmdr deliberately picks
+the warmer consumer-brand register. Formality decision recorded in
 [`formal-informal-decisions.md`](../formal-informal-decisions.md).
 
-- The OS sources lean formal: macOS Turkish formal `siz` markers outnumber informal `sen` 409 to 32 in the mined
-  Finder strings, and AppKit is entirely formal; Microsoft Turkish is formal-plural too. Cmdr departs from this on
-  purpose to match how Turkish consumer apps speak.
-- So phrase prompts in the informal singular: "… değiştirmek ister misin?", "… diski seç", rather than the formal
-  "ister misiniz?" / "seçin".
+- The OS sources lean formal: macOS Turkish formal `siz` markers outnumber informal `sen` 409 to 32 in the mined Finder
+  strings, and AppKit is entirely formal; Microsoft Turkish is formal-plural too. Cmdr departs from this on purpose to
+  match how Turkish consumer apps speak.
+- So phrase prompts in the informal singular: "… değiştirmek ister misin?", "… diski seç", rather than the formal "ister
+  misiniz?" / "seçin".
 
 ### Imperatives in buttons and menu items
 
@@ -45,9 +45,9 @@ are the same singular grammatical person, fully consistent.
 
 ### Dotted/dotless i and locale-aware case mapping (high)
 
-Turkish has four i's: dotted `i`/`İ` and dotless `ı`/`I`. They are distinct letters, and case mapping is locale-specific:
-under a Turkish locale `"i".toUpperCase()` is `"İ"` (not `"I"`) and `"I".toLowerCase()` is `"ı"` (not `"i"`). This is the
-infamous Turkish locale bug, and it cuts both ways for Cmdr:
+Turkish has four i's: dotted `i`/`İ` and dotless `ı`/`I`. They are distinct letters, and case mapping is
+locale-specific: under a Turkish locale `"i".toUpperCase()` is `"İ"` (not `"I"`) and `"I".toLowerCase()` is `"ı"` (not
+`"i"`). This is the infamous Turkish locale bug, and it cuts both ways for Cmdr:
 
 - **Any case-changing of a Turkish UI string must be locale-aware.** If code ever uppercases or lowercases a translated
   label for display (a CSS `text-transform` is fine, it's presentational; a JS `.toUpperCase()` on the string is not),
@@ -66,13 +66,13 @@ infamous Turkish locale bug, and it cuts both ways for Cmdr:
 
 Turkish marks grammatical case with suffixes that obey vowel harmony, and proper nouns take an apostrophe before a
 suffix ("Ali'yi", "Mac'i"). A filename or path in a `{name}` placeholder is uncontrolled text, so the catalog can't pick
-the right harmonized suffix or decide the apostrophe. Don't write "{name}'i sil" (the `-i` is wrong after a
-back-vowel name, and the apostrophe rule varies). Instead, follow exactly what macOS Finder does: put a generic noun
-after the quoted placeholder and attach the suffix to THAT noun:
+the right harmonized suffix or decide the apostrophe. Don't write "{name}'i sil" (the `-i` is wrong after a back-vowel
+name, and the apostrophe rule varies). Instead, follow exactly what macOS Finder does: put a generic noun after the
+quoted placeholder and attach the suffix to THAT noun:
 
-- macOS pattern: `"^0" öğesini açamazsınız` ("you can't open the item ^0"), `"^0" uygulamasını …` ("the application
-  ^0 …"), `"^0" içindeki öğeler` (verified in `tr/macOS/Finder/`, 2026-06-20). The suffix lands on `öğe` / `uygulama`
-  (item / application), never on the placeholder, so vowel harmony and the apostrophe are both sidestepped.
+- macOS pattern: `"^0" öğesini açamazsınız` ("you can't open the item ^0"), `"^0" uygulamasını …` ("the application ^0
+  …"), `"^0" içindeki öğeler` (verified in `tr/macOS/Finder/`, 2026-06-20). The suffix lands on `öğe` / `uygulama` (item
+  / application), never on the placeholder, so vowel harmony and the apostrophe are both sidestepped.
 - Recommendation: structure every placeholder-bearing Turkish string so the inflected suffix sits on a fixed Cmdr-chosen
   noun ("öğe", "dosya", "klasör"), with the `{name}` in quotes and uninflected. This is the single highest
   blind-translation risk for this language. Confidence: high.
@@ -100,8 +100,8 @@ gendered borrowings), but for a file manager this rarely comes up. Confidence: h
 
 ## Terminology and glossary
 
-Format per term: `English → chosen · sources · confidence`. Tier order: macOS (Tier 1) > Microsoft (Tier 2) >
-GNOME/Xfce (Tier 3). Not exhaustive this round; extend as terms come up.
+Format per term: `English → chosen · sources · confidence`. Tier order: macOS (Tier 1) > Microsoft (Tier 2) > GNOME/Xfce
+(Tier 3). Not exhaustive this round; extend as terms come up.
 
 - file → dosya · macOS, MS terminology, Nautilus · high
 - folder → klasör · macOS, MS terminology · high
@@ -136,9 +136,9 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('tr')`, 202
   Turkish ships `nplurals=1` (a single form), with `%u dosya` used for any count (verified in `tr/gnome-nautilus`,
   2026-06-20). So in practice the `one` and `other` ICU branches usually carry the SAME noun form; the only reason to
   differ is when the surrounding sentence (not the noun) changes with count.
-- Turkish has no gender or case agreement that varies by the plural category, so the branches are simple. The risk is the
-  opposite of most languages: don't "correct" the `other` branch into a `-lar`/`-ler` plural to match English. Keep the
-  noun singular in both.
+- Turkish has no gender or case agreement that varies by the plural category, so the branches are simple. The risk is
+  the opposite of most languages: don't "correct" the `other` branch into a `-lar`/`-ler` plural to match English. Keep
+  the noun singular in both.
 
 ## Notes and decisions
 
@@ -158,11 +158,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('tr')`, 202
 - **Cancel → Vazgeç vs İptal**: macOS-native "Vazgeç" recommended, but "İptal" is widely recognized (Windows, web). A
   recognizability call only David can settle.
 - **Locale-aware casing guardrail**: the dotted/dotless i bug is a code-correctness item (not a translation choice).
-  Recommend a one-line guardrail in the intl runtime docs that any case transform of a UI string must choose locale-aware
-  (display) or invariant (comparison) explicitly. Confirm whether to add it now.
+  Recommend a one-line guardrail in the intl runtime docs that any case transform of a UI string must choose
+  locale-aware (display) or invariant (comparison) explicitly. Confirm whether to add it now.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/tr/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/tr/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

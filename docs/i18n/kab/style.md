@@ -19,10 +19,10 @@ against the pile on 2026-06-20.
 
 ## Voice and tone
 
-Friendly, concise, active, calm, never alarmist. Lean on the GNOME Kabyle catalog for established file-manager
-phrasing; the Kabyle open-source localization community (around Mozilla and GNOME) is the de facto terminology
-authority. Error messages stay calm and actionable: name the problem and the next step, and avoid a bare "tuccḍa"
-(error) status label, consistent with Cmdr's English voice.
+Friendly, concise, active, calm, never alarmist. Lean on the GNOME Kabyle catalog for established file-manager phrasing;
+the Kabyle open-source localization community (around Mozilla and GNOME) is the de facto terminology authority. Error
+messages stay calm and actionable: name the problem and the next step, and avoid a bare "tuccḍa" (error) status label,
+consistent with Cmdr's English voice.
 
 ## Formality
 
@@ -96,11 +96,12 @@ for the check; a native reviewer confirms which counts truly share a form. Write
 - **Length.** Kabyle runs roughly English-length; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/kab/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/kab/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

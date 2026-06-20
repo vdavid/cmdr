@@ -23,10 +23,10 @@ the problem and the next step, and avoid a bare "შეცდომა" (error) 
 ## Formality
 
 **Verdict: informal singular `შენ` (šen), not the polite plural `თქვენ`.** Georgian politeness is carried by the
-plural-form verb and `თქვენ` (you, plural/polite) vs the informal singular `შენ`. Consumer brands (TBC, Bank of
-Georgia and all the banks, plus Wolt, Bolt, and Glovo) address Georgian users with informal `შენ`, which fits Cmdr's
-friendly personal voice. There's no macOS Georgian to anchor a formal default, and the consumer-brand norm is
-unambiguous. Formality decision recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+plural-form verb and `თქვენ` (you, plural/polite) vs the informal singular `შენ`. Consumer brands (TBC, Bank of Georgia
+and all the banks, plus Wolt, Bolt, and Glovo) address Georgian users with informal `შენ`, which fits Cmdr's friendly
+personal voice. There's no macOS Georgian to anchor a formal default, and the consumer-brand norm is unambiguous.
+Formality decision recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
 
 - **Direct address: informal singular `შენ`** (singular verb forms), not the polite plural `თქვენ`. Confidence: high.
 - **Action labels (buttons, menu items): use the established GNOME verbal-noun / imperative form.** macOS isn't
@@ -36,16 +36,16 @@ unambiguous. Formality decision recorded in [`formal-informal-decisions.md`](../
 
 ## Decision points
 
-- **Script: Georgian (Mkhedruli), no decision.** Georgian is written in its own unicameral Mkhedruli script. There is
-  no case (no capital/lowercase), so the English title-case-vs-sentence-case question collapses: there is simply one
+- **Script: Georgian (Mkhedruli), no decision.** Georgian is written in its own unicameral Mkhedruli script. There is no
+  case (no capital/lowercase), so the English title-case-vs-sentence-case question collapses: there is simply one
   letterform. Confidence: confirmed.
 - **Regional variant: one, `ka` (`ka-GE`).** Georgian is standardized only in Georgia; no second national standard, no
   variant matrix. Confidence: high.
 - **Gender / inclusive language: a non-issue.** Georgian has no grammatical gender and no gendered pronouns (a single
   third-person pronoun `ის` covers he/she/it). No gender guessing, no inclusive-form workarounds needed. This is one of
   the easier languages on this axis. Confidence: confirmed.
-- **Capitalization: not applicable.** Mkhedruli has no letter case, so "sentence case" and "title case" don't exist as
-  a choice. Don't try to capitalize the first letter of a label; there's nothing to capitalize. Confidence: confirmed.
+- **Capitalization: not applicable.** Mkhedruli has no letter case, so "sentence case" and "title case" don't exist as a
+  choice. Don't try to capitalize the first letter of a label; there's nothing to capitalize. Confidence: confirmed.
 - **Postpositions and agglutination affect placeholder grammar (high).** Georgian is agglutinative and uses
   postpositions (suffixes) rather than prepositions, and nouns take case suffixes. A `{path}` or `{name}` inserted
   before a postposition may need the postposition to attach to runtime text it can't control. Structure sentences so a
@@ -104,11 +104,12 @@ CLDR categories for `ka`: `one`, `other` (verified with `new Intl.PluralRules('k
   Mkhedruli also renders taller than Latin in some fonts, so check vertical fit too.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ka/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ka/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

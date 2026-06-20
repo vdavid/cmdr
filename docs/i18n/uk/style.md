@@ -13,10 +13,11 @@ verbatim (Apple and Microsoft are copyrighted, GNOME and Xfce are GPL): Cmdr wri
 These are the calls a translator can't make alone. The rest of this guide assumes them. Both resolved confidently from
 the reference pile, listed here only so they aren't relitigated:
 
-- **Formal `Ви` address, resolved (high).** Microsoft's Ukrainian style guide directs avoiding the informal «ти» in favor of the formal «Ви» for
-  software (paraphrased; the substance is supported, but the exact quoted wording wasn't verifiable from the PDF). macOS Finder addresses the user formally too. Settled, not pending.
-- **Cyrillic only, target the single `uk` base (high).** Ukrainian has one script (Cyrillic) and one mainstream
-  written standard. No regional split to manage. The one live risk is Russian-convention leakage, called out below.
+- **Formal `Ви` address, resolved (high).** Microsoft's Ukrainian style guide directs avoiding the informal «ти» in
+  favor of the formal «Ви» for software (paraphrased; the substance is supported, but the exact quoted wording wasn't
+  verifiable from the PDF). macOS Finder addresses the user formally too. Settled, not pending.
+- **Cyrillic only, target the single `uk` base (high).** Ukrainian has one script (Cyrillic) and one mainstream written
+  standard. No regional split to manage. The one live risk is Russian-convention leakage, called out below.
 
 ## Voice and tone
 
@@ -87,8 +88,8 @@ failure, and politically charged. Guard specifically:
   layer, not strings.
 - **Quotation marks: «…» (guillemets)** as the primary pair, the way macOS Finder writes them ("папки «Робочий стіл»").
   For a nested quote, the German-style „…" can be used inside. Avoid English "…".
-- **Sentence case is native.** Ukrainian doesn't capitalize common nouns, weekdays, or months, so the app's sentence-case
-  rule applies cleanly. Don't title-case.
+- **Sentence case is native.** Ukrainian doesn't capitalize common nouns, weekdays, or months, so the app's
+  sentence-case rule applies cleanly. Don't title-case.
 - Confidence: high.
 
 ## Terminology and glossary
@@ -120,8 +121,8 @@ against `_ignored/i18n/uk/` on 2026-06-20.
 - **overwrite: `Перезаписати`** · macOS Finder ("Залишати чи перезаписувати … розширення"). `high`.
 - **volume / disk: `том` / `диск`** · macOS Finder ("Зовнішні диски", "Стартовий диск"); "том" for a mounted volume per
   MS terminology. `high`.
-- **pane / tab: `панель` / `вкладка`** · MS terminology ("вкладка" for tab). The two file lists are "панелі". `tentative`
-  for pane (no direct macOS Finder source); low risk.
+- **pane / tab: `панель` / `вкладка`** · MS terminology ("вкладка" for tab). The two file lists are "панелі".
+  `tentative` for pane (no direct macOS Finder source); low risk.
 
 Add terms as they come up in this same `chosen · sources · confidence` shape.
 
@@ -165,6 +166,6 @@ gender-avoidance rule above: if a counted-items message also references an actio
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/uk/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/uk/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -33,8 +33,8 @@ class**, not a simple singular/plural like English.
 
 - This means a count message ("{count} files") needs the verb/agreement to match the noun class of "file", ICU plural
   one/other can't capture noun-class agreement on its own.
-- Inserted `{path}`/`{name}` values that are foreign words have unpredictable class, another reason to isolate inserts in
-  their own slot rather than agreeing with them.
+- Inserted `{path}`/`{name}` values that are foreign words have unpredictable class, another reason to isolate inserts
+  in their own slot rather than agreeing with them.
 - Recommendation: phrase count and possessive messages so agreement is fixed by the in-message noun (which you control),
   never by an insert; have a native speaker verify class agreement. Confidence: high that this is the key hazard.
 
@@ -53,7 +53,8 @@ Defer; triangulate GNOME Nautilus (file-manager terms) + Microsoft rw-RW termino
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by `desktop-i18n-dont-translate`.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
+`desktop-i18n-dont-translate`.
 
 ## Plurals
 
@@ -62,11 +63,11 @@ CLDR categories for `rw`: `one`, `other`. Two CLDR forms, but note the noun-clas
 
 ## Decisions to confirm with David
 
-- Is Kinyarwanda in scope? Recommend low priority for launch (no Apple reference, needs native reviewer). The
-  noun-class agreement on counts is the technical gotcha to brief any translator on.
+- Is Kinyarwanda in scope? Recommend low priority for launch (no Apple reference, needs native reviewer). The noun-class
+  agreement on counts is the technical gotcha to brief any translator on.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/rw/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/rw/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

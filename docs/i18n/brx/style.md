@@ -50,7 +50,8 @@ Format per term: `English → chosen · sources · confidence`. The only source 
 (prose/tone, not a term database), so there's no mined term list. File-manager terms must come from native review and
 any Bodo computing glossary; mark everything `tentative` until reviewed.
 
-- Glossary: no term source in the pile (style guide only); populate via native review (populate via the cited sources and native review; nothing guessed yet).
+- Glossary: no term source in the pile (style guide only); populate via native review (populate via the cited sources
+  and native review; nothing guessed yet).
 
 ## Brand and do-not-translate
 
@@ -69,8 +70,8 @@ shows up in the pronoun/verb; write both count branches with correct agreement. 
 - **Numbers and dates come from the formatter layer.** Bodo (Devanagari) may use Devanagari digits (०१२…) or Western
   digits; let the formatter decide, don't hardcode.
 - **No capitalization** (see Decision points): don't apply English casing rules.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -80,6 +81,6 @@ shows up in the pronoun/verb; write both count branches with correct agreement. 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/brx/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/brx/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

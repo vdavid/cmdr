@@ -57,10 +57,10 @@ avoids "error"/"failed".
   used. No script choice. Confidence: high.
 - **Regional variant: one written standard (high).** Northern (Hanoi) and Southern (Saigon) Vietnamese differ in
   pronunciation and some vocabulary, but the WRITTEN standard is effectively unified; software ships one `vi`, no
-  pt-BR/pt-PT-style matrix. A few lexical pairs differ (e.g. some everyday nouns), but UI/file-manager terms are
-  shared. Don't build a variant matrix. Confidence: high.
-- **Gender / inclusive language: a non-issue (high).** Vietnamese is analytic with no grammatical gender and no
-  gendered verb/adjective agreement. `bạn` is gender-neutral. Nothing to engineer around. Confidence: high.
+  pt-BR/pt-PT-style matrix. A few lexical pairs differ (e.g. some everyday nouns), but UI/file-manager terms are shared.
+  Don't build a variant matrix. Confidence: high.
+- **Gender / inclusive language: a non-issue (high).** Vietnamese is analytic with no grammatical gender and no gendered
+  verb/adjective agreement. `bạn` is gender-neutral. Nothing to engineer around. Confidence: high.
 - **Capitalization: sentence case everywhere (high).** Vietnamese capitalizes only the first word and proper nouns in
   titles, labels, and buttons. English title case is wrong ("Hiện tệp ẩn", not "Hiện Tệp Ẩn"). Matches Cmdr's
   sentence-case rule. Confidence: high.
@@ -135,11 +135,12 @@ Vietnamese has no grammatical number, so one form covers all counts.
   break inside a compound when wrapping. The renderer handles this; just don't manually insert breaks.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/vi/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/vi/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

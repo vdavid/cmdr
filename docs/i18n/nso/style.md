@@ -2,8 +2,8 @@
 
 Working notes for translating Cmdr into Northern Sotho (Sepedi), one of South Africa's official languages. Read
 [`README.md`](../README.md) for how this fits the translation process. Sepedi is written in the Latin script (with no
-special diacritic letters beyond `š`); there is no script decision. References: Microsoft terminology (`nso-ZA`,
-Tier 2) and GNOME Nautilus (`nso`, Tier 3).
+special diacritic letters beyond `š`); there is no script decision. References: Microsoft terminology (`nso-ZA`, Tier 2)
+and GNOME Nautilus (`nso`, Tier 3).
 
 ## Voice and tone
 
@@ -45,17 +45,17 @@ Cmdr's Sepedi voice mirrors its English one: friendly, concise, active, and neve
 
 From Microsoft terminology (Tier 2) and GNOME Nautilus (Tier 3). Treat as `tentative` pending native review.
 
-| English term | Sepedi | Notes |
-| ------------ | ------ | ----- |
-| folder | foltara | Microsoft; adapted loanword |
-| file | faele | Microsoft; adapted loanword |
-| copy | kopiša | Microsoft |
-| move | šuthiša | Microsoft |
-| delete | tloša | Microsoft |
-| open | bula | Microsoft |
-| cancel | khansela | GNOME/Microsoft |
-| trash | ditlakala | GNOME (="litter/rubbish"); the location noun |
-| rename | thea ka leswa | GNOME ("name anew") |
+| English term | Sepedi        | Notes                                        |
+| ------------ | ------------- | -------------------------------------------- |
+| folder       | foltara       | Microsoft; adapted loanword                  |
+| file         | faele         | Microsoft; adapted loanword                  |
+| copy         | kopiša        | Microsoft                                    |
+| move         | šuthiša       | Microsoft                                    |
+| delete       | tloša         | Microsoft                                    |
+| open         | bula          | Microsoft                                    |
+| cancel       | khansela      | GNOME/Microsoft                              |
+| trash        | ditlakala     | GNOME (="litter/rubbish"); the location noun |
+| rename       | thea ka leswa | GNOME ("name anew")                          |
 
 ## Brand and do-not-translate
 
@@ -80,6 +80,6 @@ write each branch as a full natural phrase. The `desktop-i18n-plural` check requ
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/nso/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/nso/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

@@ -25,11 +25,11 @@ the Microsoft style guides confirm; GNOME Manx is informal).
 ## Decision points
 
 **This is a thin-coverage minority locale, and that's the headline finding (though GNOME coverage is surprisingly
-good).** The reference pile has ONLY a GNOME nautilus catalog (Tier 3) for Manx, but it's well-translated (~82%, 1,187 of
-1,444 strings, verified 2026-06-20): no macOS, no Microsoft terminology, no Microsoft style guide. Apple and Microsoft
-do not localize into Manx, so the user's OS chrome is in English. The single GNOME source is solid for file-manager
-terms. Treat Manx as a low-priority, single-anchor locale (its small speaker base is the real priority signal), but the
-GNOME catalog makes a decent draft feasible. Confidence: confirmed (about the coverage).
+good).** The reference pile has ONLY a GNOME nautilus catalog (Tier 3) for Manx, but it's well-translated (~82%, 1,187
+of 1,444 strings, verified 2026-06-20): no macOS, no Microsoft terminology, no Microsoft style guide. Apple and
+Microsoft do not localize into Manx, so the user's OS chrome is in English. The single GNOME source is solid for
+file-manager terms. Treat Manx as a low-priority, single-anchor locale (its small speaker base is the real priority
+signal), but the GNOME catalog makes a decent draft feasible. Confidence: confirmed (about the coverage).
 
 - **Script: Latin only, no decision.** Manx uses the Latin alphabet with an English-influenced orthography (unlike
   Irish/Scottish Gaelic, Manx spelling is based on English conventions, e.g. "ch", "ee", "oo"). No special diacritics
@@ -48,15 +48,15 @@ GNOME catalog makes a decent draft feasible. Confidence: confirmed (about the co
 
 ## Terminology and glossary
 
-| English term | Manx | Notes |
-| ------------ | ---- | ----- |
-| Delete | Doll magh | GNOME |
-| Cancel | Cur ass | GNOME |
-| trash | Trustyr | GNOME |
-| Copy | (confirm) | GNOME has it; verify the exact form against the catalog |
-| Move | (confirm) | check the catalog |
-| file | (confirm) | likely "coadan"; verify against GNOME |
-| folder | (confirm) | likely "coodagh"; verify against GNOME |
+| English term | Manx      | Notes                                                   |
+| ------------ | --------- | ------------------------------------------------------- |
+| Delete       | Doll magh | GNOME                                                   |
+| Cancel       | Cur ass   | GNOME                                                   |
+| trash        | Trustyr   | GNOME                                                   |
+| Copy         | (confirm) | GNOME has it; verify the exact form against the catalog |
+| Move         | (confirm) | check the catalog                                       |
+| file         | (confirm) | likely "coadan"; verify against GNOME                   |
+| folder       | (confirm) | likely "coodagh"; verify against GNOME                  |
 
 ## Brand and do-not-translate
 
@@ -78,8 +78,8 @@ for the translator.
   accents by reflex.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -89,6 +89,6 @@ for the translator.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/gv/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/gv/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

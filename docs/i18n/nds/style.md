@@ -13,13 +13,13 @@ reference for `nds` is GNOME Nautilus (Tier 3); it reads plain and direct, which
   nature; a formal register is rarely written).
 - Stay calm and actionable in error messages; keep the English rule of avoiding "error" and "failed". Rewrite around
   what happened.
-- Never machine-translate from High German by find-replace: `nds` uses `un` not `und`, `nich` not `nicht`, `Datei`
-  vs the GNOME catalog's choices, etc. The forms differ systematically.
+- Never machine-translate from High German by find-replace: `nds` uses `un` not `und`, `nich` not `nicht`, `Datei` vs
+  the GNOME catalog's choices, etc. The forms differ systematically.
 
 ## Formality
 
-- **Second person: informal `du`, always.** Low German is a spoken/regional language with a strong informal default;
-  a formal `Se`/`Ji` paradigm exists but is not used in software. Recommendation: `du` everywhere. Confidence: high.
+- **Second person: informal `du`, always.** Low German is a spoken/regional language with a strong informal default; a
+  formal `Se`/`Ji` paradigm exists but is not used in software. Recommendation: `du` everywhere. Confidence: high.
 - **UI actions use the imperative**, matching the GNOME Nautilus Low German catalog ("Avbreken" for Cancel).
   Recommendation: imperative for buttons and menu items. Confidence: medium (single source).
 
@@ -35,9 +35,9 @@ reference for `nds` is GNOME Nautilus (Tier 3); it reads plain and direct, which
   modern convention and what the GNOME catalog broadly follows. Recommendation: follow SASS and the GNOME catalog's
   spelling; lock choices in the glossary. Confidence: medium. Flag for David: spelling is genuinely unsettled across
   speakers; a native reviewer's regional convention may differ.
-- **Regional variation.** `nds` spans Northern Germany and the eastern Netherlands (where it overlaps with `nl`-influenced
-  Low Saxon). The GNOME catalog is German-side Low German. Recommendation: target German-side Plattdüütsch; don't try to
-  serve Dutch Low Saxon in the same build. Confidence: medium.
+- **Regional variation.** `nds` spans Northern Germany and the eastern Netherlands (where it overlaps with
+  `nl`-influenced Low Saxon). The GNOME catalog is German-side Low German. Recommendation: target German-side
+  Plattdüütsch; don't try to serve Dutch Low Saxon in the same build. Confidence: medium.
 - **Formality: informal `du`.** Covered above. Confidence: high.
 - **Letters and special characters.** Uses the German letters `ä`, `ö`, `ü`, `ß` (and the GNOME catalog uses `ö` in
   "Papierkörv"). Never transliterate to `ae`/`oe`/`ue`/`ss`. Confidence: high.
@@ -48,12 +48,12 @@ reference for `nds` is GNOME Nautilus (Tier 3); it reads plain and direct, which
 
 From GNOME Nautilus Low German (Tier 3); treat as `tentative` pending native review.
 
-| English term | Low German | Notes |
-| ------------ | ---------- | ----- |
-| trash | Papierkörv | GNOME; the location noun |
-| cancel | Avbreken | GNOME; imperative |
-| file | Datei | tentative; confirm against native usage |
-| folder | Ornner | tentative; High German `Ordner` -> nds `Ornner` |
+| English term | Low German | Notes                                           |
+| ------------ | ---------- | ----------------------------------------------- |
+| trash        | Papierkörv | GNOME; the location noun                        |
+| cancel       | Avbreken   | GNOME; imperative                               |
+| file         | Datei      | tentative; confirm against native usage         |
+| folder       | Ornner     | tentative; High German `Ordner` -> nds `Ornner` |
 
 ## Brand and do-not-translate
 
@@ -77,6 +77,6 @@ message needs both branches. The `desktop-i18n-plural` check requires both.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/nds/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/nds/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

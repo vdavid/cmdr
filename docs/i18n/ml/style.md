@@ -24,9 +24,8 @@ copy.
   sure you want to delete?" is best rendered without a pronoun.
 - **Imperatives for actions (buttons, menu items): use the `-uക` infinitive/imperative stem** (e.g. `പകർത്തുക` copy,
   `തുറക്കുക` open, `ഇല്ലാതാക്കുക` delete, `തിരയുക` search). This is the register-neutral command form every major
-  Malayalam UI uses for action labels; it isn't rude and matches Cmdr's direct English buttons. Don't pile on
-  politeness particles (`-ൂ`, `ദയവായി` "please") on ordinary buttons; reserve a softener only where the English is
-  itself softened.
+  Malayalam UI uses for action labels; it isn't rude and matches Cmdr's direct English buttons. Don't pile on politeness
+  particles (`-ൂ`, `ദയവായി` "please") on ordinary buttons; reserve a softener only where the English is itself softened.
 
 ## Decision points
 
@@ -51,9 +50,9 @@ to mirror "the macOS Malayalam translation," which doesn't exist.
 
 ### Script: atomic chillu, not legacy ZWJ chillu (a real encoding pitfall)
 
-Chillu letters (pure consonants: `ൻ ർ ൽ ൾ ൺ ൿ`) have two encodings. The old way is a sequence base + virama + ZWJ
-(`ന` + `്` + U+200D); the modern way (Unicode 5.1, 2008) is the single atomic character (`ൻ` = U+0D7B). They can look
-identical but are different byte sequences, so they break search, sorting, dedup, and the i18n checks' string compares.
+Chillu letters (pure consonants: `ൻ ർ ൽ ൾ ൺ ൿ`) have two encodings. The old way is a sequence base + virama + ZWJ (`ന` +
+`്` + U+200D); the modern way (Unicode 5.1, 2008) is the single atomic character (`ൻ` = U+0D7B). They can look identical
+but are different byte sequences, so they break search, sorting, dedup, and the i18n checks' string compares.
 
 - **Always use atomic chillu (U+0D7A–U+0D7F).** Never emit base + virama + ZWJ.
 - Watch the source: the Nautilus reference is almost entirely legacy ZWJ chillu (~1,300 ZWJ sequences). Microsoft's
@@ -71,8 +70,8 @@ stay English-in-script, while common actions and well-rooted concepts use native
 follow this split.
 
 - **Transliterate (keep the English word, write it in Malayalam script)** for terms where the English is what users
-  actually say: `ഫയൽ` (file), `ഫോൾഡർ` (folder), `ടാബ്` (tab). Coining an obscure native word here (e.g. `രേഖ` for
-  file) reads academic and hurts comprehension. Nautilus and Microsoft both transliterate file/folder.
+  actually say: `ഫയൽ` (file), `ഫോൾഡർ` (folder), `ടാബ്` (tab). Coining an obscure native word here (e.g. `രേഖ` for file)
+  reads academic and hurts comprehension. Nautilus and Microsoft both transliterate file/folder.
 - **Use the native Malayalam word** for actions and concepts that have a clear, common term: `തിരയുക` (search - both
   Google and Microsoft), `പകർത്തുക` (copy), `ഒട്ടിക്കുക` (paste), `ഇല്ലാതാക്കുക` (delete), `പേരുമാറ്റുക` (rename),
   `തുറക്കുക` (open). Trash/recycle is native (`ചവറ്റുകുട്ട` / Microsoft's `പുനരുപയോഗപെട്ടി`); pick one and keep it
@@ -102,9 +101,9 @@ that could carry an implied gender; prefer neutral phrasing. Confidence: high.
 ## Plurals
 
 CLDR plural categories for `ml`: `one` and `other` (`new Intl.PluralRules('ml').resolvedOptions().pluralCategories`).
-Every plural message must cover both. Malayalam pluralizes nouns with the `-കൾ` suffix (`ഫയൽ` → `ഫയലുകൾ`), and a
-counted noun after a number commonly stays grammatically singular in form, so write each branch for natural Malayalam
-rather than mirroring English plural rules. No gender or case agreement interacts with the count for UI strings.
+Every plural message must cover both. Malayalam pluralizes nouns with the `-കൾ` suffix (`ഫയൽ` → `ഫയലുകൾ`), and a counted
+noun after a number commonly stays grammatically singular in form, so write each branch for natural Malayalam rather
+than mirroring English plural rules. No gender or case agreement interacts with the count for UI strings.
 
 ## Brand and do-not-translate
 
@@ -116,22 +115,22 @@ plus the `{system_settings}`-style tokens. The curated list is enforced by `desk
 
 Build this up as terms come up. Starting set (encode all chillus atomically):
 
-| English term | Malayalam | Notes |
-| ------------ | --------- | ----- |
-| File | ഫയൽ | Transliterated; what users say. |
-| Folder | ഫോൾഡർ | Transliterated. |
-| Open | തുറക്കുക | Native. |
-| Copy | പകർത്തുക | Native. |
-| Paste | ഒട്ടിക്കുക | Native. |
-| Delete | ഇല്ലാതാക്കുക | Native. |
-| Rename | പേരുമാറ്റുക | Native. |
-| Search | തിരയുക | Native; matches Google + Microsoft. |
-| Name | പേര് | |
-| Size | വലിപ്പം | |
-| Type | തരം | |
-| Trash | ചവറ്റുകുട്ട | Pick one trash term and stay consistent. |
-| Tab | ടാബ് | Transliterated. |
-| Pane, Volume, Drive, Viewer, Listing, Transfer | (to decide) | Flag to David: borderline transliterate-vs-coin calls. |
+| English term                                   | Malayalam    | Notes                                                  |
+| ---------------------------------------------- | ------------ | ------------------------------------------------------ |
+| File                                           | ഫയൽ          | Transliterated; what users say.                        |
+| Folder                                         | ഫോൾഡർ        | Transliterated.                                        |
+| Open                                           | തുറക്കുക     | Native.                                                |
+| Copy                                           | പകർത്തുക     | Native.                                                |
+| Paste                                          | ഒട്ടിക്കുക   | Native.                                                |
+| Delete                                         | ഇല്ലാതാക്കുക | Native.                                                |
+| Rename                                         | പേരുമാറ്റുക  | Native.                                                |
+| Search                                         | തിരയുക       | Native; matches Google + Microsoft.                    |
+| Name                                           | പേര്         |                                                        |
+| Size                                           | വലിപ്പം      |                                                        |
+| Type                                           | തരം          |                                                        |
+| Trash                                          | ചവറ്റുകുട്ട  | Pick one trash term and stay consistent.               |
+| Tab                                            | ടാബ്         | Transliterated.                                        |
+| Pane, Volume, Drive, Viewer, Listing, Transfer | (to decide)  | Flag to David: borderline transliterate-vs-coin calls. |
 
 ## Notes and decisions
 
@@ -151,6 +150,6 @@ Build this up as terms come up. Starting set (encode all chillus atomically):
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ml/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ml/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

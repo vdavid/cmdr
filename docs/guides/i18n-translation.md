@@ -21,19 +21,19 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
    [`/docs/i18n/README.md`](../i18n/README.md)). These are working notes, not catalog data: the app never loads them.
    **Treat it as a living doc, and capturing is part of the job**: read it before translating AND extend it as you go,
    recording each glossary choice with its sources and a confidence (see Researching terms below). This isn't only for
-   terms: whenever you hit a convention, gotcha, decision point, or rule that wasn't already written where you looked for
-   it, write it down so the next translator inherits it instead of rediscovering it. Per-language findings go in the
+   terms: whenever you hit a convention, gotcha, decision point, or rule that wasn't already written where you looked
+   for it, write it down so the next translator inherits it instead of rediscovering it. Per-language findings go in the
    style guide; a missing cross-language rule (like an ICU mechanic) goes in this guide or the template.
 3. **One ICU instruction**: given once in the agent system prompt, not per string (see the block below).
 
 ## Researching terms: the reference pile
 
-Checking the reference pile is MANDATORY for every term: mine it for the term and for similar sentences, reuse and cite, never guess. The reference pile holds authoritative localizations
-keyed by language: the ~3 GB of macOS, Microsoft, and GNOME/Xfce data sits gitignored at `_ignored/i18n/<tag>/` (one
-folder per language), and the docs explaining it are tracked in the repo. Read
-[`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's there and the authority tiers, and
-[`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested per-source recipes (greps, jq,
-`msggrep`, `pdftotext`).
+Checking the reference pile is MANDATORY for every term: mine it for the term and for similar sentences, reuse and cite,
+never guess. The reference pile holds authoritative localizations keyed by language: the ~3 GB of macOS, Microsoft, and
+GNOME/Xfce data sits gitignored at `_ignored/i18n/<tag>/` (one folder per language), and the docs explaining it are
+tracked in the repo. Read [`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's there and the
+authority tiers, and [`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested per-source
+recipes (greps, jq, `msggrep`, `pdftotext`).
 
 For each term or convention: triangulate across every source the language has (macOS is highest authority, then
 Microsoft, then GNOME/Xfce), pick the most native-sounding fit for Cmdr's voice, then record it in the style guide's
@@ -104,9 +104,9 @@ The routine maintenance loop, run for every change that adds or edits user-facin
 
 ### Write placeholder strings to be restructurable
 
-When a user-facing string contains a placeholder (`{path}`, `{name}`, `{volumeName}`), phrase the English so a translator
-can move that placeholder into a grammatically neutral slot. Many languages must change the grammar *around* a
-placeholder based on its (unknown) runtime value: a Hungarian/Finnish/Turkish case suffix that has to vowel-harmonize
+When a user-facing string contains a placeholder (`{path}`, `{name}`, `{volumeName}`), phrase the English so a
+translator can move that placeholder into a grammatically neutral slot. Many languages must change the grammar _around_
+a placeholder based on its (unknown) runtime value: a Hungarian/Finnish/Turkish case suffix that has to vowel-harmonize
 with `{path}`, a German/Slavic case ending, a Celtic initial mutation. They can only handle that by reordering or
 reshaping the sentence (ICU allows reordering placeholders). So as the author, don't lock a placeholder into a slot that
 forces agreement: avoid `the {fileName}'s owner`; prefer `Owner: {fileName}` or `This file belongs to {owner}`. A

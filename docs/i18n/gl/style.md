@@ -22,8 +22,8 @@ ti-conjugated verbs, drop the explicit pronoun where the verb makes it clear. Th
 the Galician-software norm, so there's nothing for David to settle here.
 
 **Imperatives for UI actions** (buttons, menu items): use the infinitive, matching the Galician software convention
-("Copiar", "Eliminar", "Cancelar"). This is the Spanish/Galician UI pattern: menu and button labels are infinitives,
-not imperatives.
+("Copiar", "Eliminar", "Cancelar"). This is the Spanish/Galician UI pattern: menu and button labels are infinitives, not
+imperatives.
 
 ## Decision points
 
@@ -47,15 +47,15 @@ anchor here. Confidence: confirmed.
 
 ## Terminology and glossary
 
-| English term | Galician | Notes |
-| ------------ | -------- | ----- |
-| Copy | Copiar | Microsoft + GNOME |
-| Move | Mover | GNOME |
-| Delete | Eliminar | GNOME ("_Eliminar") |
-| Cancel | Cancelar | GNOME ("_Cancelar") |
-| file | ficheiro | Microsoft + GNOME (NOT Spanish "archivo") |
-| folder | cartafol | Microsoft + GNOME (NOT Spanish "carpeta") |
-| trash | Lixo | GNOME |
+| English term | Galician | Notes                                     |
+| ------------ | -------- | ----------------------------------------- |
+| Copy         | Copiar   | Microsoft + GNOME                         |
+| Move         | Mover    | GNOME                                     |
+| Delete       | Eliminar | GNOME ("\_Eliminar")                      |
+| Cancel       | Cancelar | GNOME ("\_Cancelar")                      |
+| file         | ficheiro | Microsoft + GNOME (NOT Spanish "archivo") |
+| folder       | cartafol | Microsoft + GNOME (NOT Spanish "carpeta") |
+| trash        | Lixo     | GNOME                                     |
 
 ## Brand and do-not-translate
 
@@ -75,8 +75,8 @@ Confidence: confirmed.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators (Galician uses a comma decimal
   separator and a period or space for thousands).
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -85,6 +85,6 @@ Confidence: confirmed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/gl/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/gl/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

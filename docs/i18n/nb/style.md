@@ -14,7 +14,8 @@ stretch.
   no single neutral word for "failed" that isn't either alarmist (`mislyktes`) or clunky; rewrite around what happened
   and what to do, for example "Fant ikke mappen" (Couldn't find the folder) rather than "Operasjonen mislyktes".
 - Drop English filler that doesn't carry meaning: don't translate "successfully" (a Norwegian sentence states the
-  outcome without it), and avoid `vennligst` ("please") in terse UI actions, where it reads stiff and machine-translated.
+  outcome without it), and avoid `vennligst` ("please") in terse UI actions, where it reads stiff and
+  machine-translated.
 - Be concise: Norwegian compounds run long (see særskriving), so prefer the shortest natural phrasing.
 
 ## Formality
@@ -24,9 +25,9 @@ stretch.
   Norwegian products and on their Norwegian sites. There is no register decision to make here.
 - Verbs don't change between `du` and `De`, so this choice carries no grammatical ripple.
 - **UI actions use the imperative**, matching Apple Finder, GNOME, and Microsoft's official Bokmål style guide:
-  "Kopier", "Flytt", "Slett", "Åpne", "Lim inn", "Endre navn", "Avbryt". Do NOT use the infinitive ("Kopiere",
-  "Flytte") for buttons and menu items. (One major localization house, Proton, uses infinitive as a house style, but
-  it's the outlier; the file-manager majors Cmdr competes with are uniformly imperative.)
+  "Kopier", "Flytt", "Slett", "Åpne", "Lim inn", "Endre navn", "Avbryt". Do NOT use the infinitive ("Kopiere", "Flytte")
+  for buttons and menu items. (One major localization house, Proton, uses infinitive as a house style, but it's the
+  outlier; the file-manager majors Cmdr competes with are uniformly imperative.)
 
 ## Decision points
 
@@ -51,8 +52,8 @@ The genuinely tricky calls, with how the majors handle each, a recommended defau
   `fane` (tab), `mappe`/`vindu`/`rute` (window/pane). Keep verbatim only the brand and platform names in the
   do-not-translate list plus established acronyms (SMB, MTP, URL, VPN, DNS). Acronyms take Norwegian gender with a
   hyphen when inflected ("URL-en", "VPN-et"). Recommendation: translate the domain vocabulary; keep only the
-  do-not-translate list and standard acronyms. Confidence: high. Flag for David: "pane" has no single dominant
-  Norwegian term (`rute` and `panel` both occur); pick one and lock it in the glossary.
+  do-not-translate list and standard acronyms. Confidence: high. Flag for David: "pane" has no single dominant Norwegian
+  term (`rute` and `panel` both occur); pick one and lock it in the glossary.
 
 - **Særskriving (compound spacing) is the top mechanical risk.** Norwegian writes compounds as ONE word where English
   uses two: "filnavn" (file name), "målmappe" (destination folder), "søkefelt" (search field), "hurtigtast" (keyboard
@@ -71,33 +72,33 @@ The genuinely tricky calls, with how the majors handle each, a recommended defau
   decimal mark (1 234,5); `Intl` handles this at runtime, so this matters only for any hand-written numeral in copy.
   Recommendation: native letters, «guillemets», rely on `Intl` for numbers. Confidence: high.
 
-- **Inclusive/gendered language.** Norwegian has grammatical gender on nouns but no he/she issue in generic UI copy
-  (the user is addressed as `du`). No special handling needed beyond avoiding gendered role nouns where a neutral one
-  exists. Recommendation: no special measures. Confidence: medium (low-stakes; revisit only if a string addresses a
-  person by role).
+- **Inclusive/gendered language.** Norwegian has grammatical gender on nouns but no he/she issue in generic UI copy (the
+  user is addressed as `du`). No special handling needed beyond avoiding gendered role nouns where a neutral one exists.
+  Recommendation: no special measures. Confidence: medium (low-stakes; revisit only if a string addresses a person by
+  role).
 
 ## Terminology and glossary
 
 A few core terms confirmed against Apple Finder, GNOME Nautilus, and Microsoft terminology. Extend as strings come up.
 
-| English term | Norwegian Bokmål | Notes |
-| ------------ | ---------------- | ----- |
-| file | fil | |
-| folder | mappe | |
-| copy | kopier | imperative |
-| move | flytt | imperative |
-| delete | slett | imperative |
-| trash | papirkurv | the noun (the location); "legg i papirkurven" = move to trash |
-| rename | endre navn | Apple/GNOME both use this two-word verb phrase |
-| paste | lim inn | |
-| cut | klipp ut | |
-| open | åpne | |
-| cancel | avbryt | |
-| tab | fane | UI tab, not the key |
-| volume | volum | |
-| settings | innstillinger | |
-| destination folder | målmappe | one word (særskriving) |
-| file name | filnavn | one word (særskriving) |
+| English term       | Norwegian Bokmål | Notes                                                         |
+| ------------------ | ---------------- | ------------------------------------------------------------- |
+| file               | fil              |                                                               |
+| folder             | mappe            |                                                               |
+| copy               | kopier           | imperative                                                    |
+| move               | flytt            | imperative                                                    |
+| delete             | slett            | imperative                                                    |
+| trash              | papirkurv        | the noun (the location); "legg i papirkurven" = move to trash |
+| rename             | endre navn       | Apple/GNOME both use this two-word verb phrase                |
+| paste              | lim inn          |                                                               |
+| cut                | klipp ut         |                                                               |
+| open               | åpne             |                                                               |
+| cancel             | avbryt           |                                                               |
+| tab                | fane             | UI tab, not the key                                           |
+| volume             | volum            |                                                               |
+| settings           | innstillinger    |                                                               |
+| destination folder | målmappe         | one word (særskriving)                                        |
+| file name          | filnavn          | one word (særskriving)                                        |
 
 ## Brand and do-not-translate
 
@@ -122,6 +123,6 @@ natural phrase rather than swapping only the numeral. The `desktop-i18n-plural` 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/nb/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/nb/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

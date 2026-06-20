@@ -4,18 +4,18 @@ Working notes for translating Cmdr into Belarusian. Read [`README.md`](../README
 process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
 Belarusian.
 
-**No macOS reference.** Apple does NOT ship a Belarusian macOS UI, so the pile has GNOME Nautilus + Xfce Thunar +
-MS terminology + MS style guide for `be` (Cyrillic), plus a separate `be-Latn` GNOME catalog for the Latin (Łacinka)
-script (`_ignored/i18n/be/` and `be-Latn/`). No macOS Finder. Terms lean on GNOME + Microsoft. Evidence verified
-against the pile on 2026-06-20.
+**No macOS reference.** Apple does NOT ship a Belarusian macOS UI, so the pile has GNOME Nautilus + Xfce Thunar + MS
+terminology + MS style guide for `be` (Cyrillic), plus a separate `be-Latn` GNOME catalog for the Latin (Łacinka) script
+(`_ignored/i18n/be/` and `be-Latn/`). No macOS Finder. Terms lean on GNOME + Microsoft. Evidence verified against the
+pile on 2026-06-20.
 
 ## Decisions to confirm with David
 
 The calls a translator can't make alone.
 
 - **Script and orthography: RESOLVED to Cyrillic, official наркамаўка orthography** (not classical тарашкевіца;
-  `be-Latn` Łacinka out of scope). See the script decision points below and [`script-decisions.md`](../script-decisions.md).
-  No longer open.
+  `be-Latn` Łacinka out of scope). See the script decision points below and
+  [`script-decisions.md`](../script-decisions.md). No longer open.
 - **Address form: polite plural "Вы" recommended, worth a sign-off (high).** Like Russian/Bulgarian, software uses the
   polite plural. See Formality. Recommended default below.
 
@@ -57,8 +57,8 @@ English avoids "error"/"failed".
 ## Terminology and glossary
 
 Format per term: `chosen · sources · confidence`. Evidence verified against `_ignored/i18n/be/` (GNOME Nautilus, Xfce
-Thunar, MS terminology, MS style guide; NO macOS) on 2026-06-20. Sources decide the term; Cmdr writes its own value
-(MS copyrighted, GNOME/Xfce GPL, never copied verbatim). Without macOS, terms are `high` where GNOME and MS agree, else
+Thunar, MS terminology, MS style guide; NO macOS) on 2026-06-20. Sources decide the term; Cmdr writes its own value (MS
+copyrighted, GNOME/Xfce GPL, never copied verbatim). Without macOS, terms are `high` where GNOME and MS agree, else
 `tentative`. All spellings below assume the official orthography (see the flag).
 
 Settled terms (GNOME / MS agree):
@@ -104,18 +104,19 @@ The East-Slavic pattern (same shape as Russian/Ukrainian):
 
 - **Quotation marks: `«…»`** (guillemets, the standard East-Slavic form, same as Russian). Nested: `„…"`. Avoid straight
   ASCII `"`.
-- **Numbers and dates come from the formatter layer.** Belarusian uses a comma decimal and space thousands separator
-  (1 000,5); `formatNumber()`/`formatBytes()` produce these. Never hardcode separators in a string.
+- **Numbers and dates come from the formatter layer.** Belarusian uses a comma decimal and space thousands separator (1
+  000,5); `formatNumber()`/`formatBytes()` produce these. Never hardcode separators in a string.
 - **Length.** Belarusian runs somewhat longer than English; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Belarusian uses an apostrophe-like character (the separating sign, often typed
   as `'` U+0027 or `’`) inside words ("аб'ём") - that real apostrophe must be DOUBLED in ICU values too, a common
   Belarusian-specific trap. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/be/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/be/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

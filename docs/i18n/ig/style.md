@@ -1,7 +1,7 @@
 # Igbo (ig) translation style guide
 
-Working notes for translating Cmdr into Igbo. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice.
+Working notes for translating Cmdr into Igbo. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice.
 
 ## Voice and tone
 
@@ -13,12 +13,13 @@ Cmdr's own voice plus the GNOME Nautilus Igbo catalog rather than a major-vendor
 **Igbo has no European-style T-V formality distinction.** No formal/informal pronoun split to resolve. Use imperative
 verbs for buttons and impersonal phrasing for prompts.
 
-- Buttons and menu items: imperative ("Detuo"/"Depụta" copy, "Bagharịa aha" rename, "Hichaa"/"Hapụ" delete, "Mepee" open,
-  "Wepụ" cancel) per the GNOME Igbo catalog.
+- Buttons and menu items: imperative ("Detuo"/"Depụta" copy, "Bagharịa aha" rename, "Hichaa"/"Hapụ" delete, "Mepee"
+  open, "Wepụ" cancel) per the GNOME Igbo catalog.
 
 ## Decision points
 
 ### Tone marking and diacritics (the defining technical call)
+
 - Igbo is a TONAL language and standard orthography uses diacritics and dotted-below letters: ị, ọ, ụ, ṅ, plus tone
   marks. These are distinct Unicode characters, not optional accents; dropping them changes meaning.
 - Majors: where Igbo is localized (GNOME), the dotted letters (ụ, ị, ọ) are used ("Faịlụ" file, "Bagharịa aha" rename).
@@ -27,26 +28,30 @@ verbs for buttons and impersonal phrasing for prompts.
   Confidence: high.
 
 ### Sparse major-product localization (low-priority signal)
+
 - No Apple macOS Igbo and no Microsoft terminology Igbo in the reference pile; only GNOME Nautilus
   (`ig/gnome-nautilus/`). Igbo has limited localized-software coverage overall.
 - This is the finding: Igbo is lower priority than the major locales, with one Tier-3 source and no native macOS anchor.
 - Recommendation: treat as lower priority; rely on GNOME Nautilus plus a native reviewer. Confidence: high.
 
 ### Heavy English borrowing in tech register
-- Everyday Igbo tech speech borrows English freely ("file", "folder"); the GNOME catalog Igbo-izes spelling ("Faịlụ"
-  for file). Decide whether to use native coinages, Igbo-ized loans, or plain English loans.
+
+- Everyday Igbo tech speech borrows English freely ("file", "folder"); the GNOME catalog Igbo-izes spelling ("Faịlụ" for
+  file). Decide whether to use native coinages, Igbo-ized loans, or plain English loans.
 - Recommendation: follow the GNOME catalog's Igbo-ized loans where it has them; flag the loan-vs-native balance for a
   native reviewer. Confidence: tentative.
 
 ### No grammatical gender
-- Igbo has no grammatical gender (one pronoun "ọ"/"ya" for he/she/it). Inclusive language is a non-issue. Confidence: high.
+
+- Igbo has no grammatical gender (one pronoun "ọ"/"ya" for he/she/it). Inclusive language is a non-issue. Confidence:
+  high.
 
 ## Terminology and glossary
 
 Source: GNOME Nautilus (`ig/gnome-nautilus/`) is the only reference (no macOS, no MS). All `tentative` until a native
-reviewer confirms. From the catalog: file → Faịlụ, open → Mepee, delete → Hichaa/Hapụ, rename → Bagharịa aha,
-cancel → Wepụ, trash → Ebemkpofuozi. Confirm copy, move, search, folder, settings, volume, server with a native speaker
-(the mined catalog had thin coverage for these).
+reviewer confirms. From the catalog: file → Faịlụ, open → Mepee, delete → Hichaa/Hapụ, rename → Bagharịa aha, cancel →
+Wepụ, trash → Ebemkpofuozi. Confirm copy, move, search, folder, settings, volume, server with a native speaker (the
+mined catalog had thin coverage for these).
 
 ## Brand and do-not-translate
 
@@ -74,6 +79,6 @@ requires just `other` for `ig`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ig/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ig/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

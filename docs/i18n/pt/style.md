@@ -33,7 +33,8 @@ imperatives in UI almost never name the subject:
 The single biggest Portuguese decision. The two variants differ in vocabulary, spelling, and some grammar, enough that a
 single text reads "foreign" to one side. How the majors handle it:
 
-- Apple ships **both** pt-BR (Brazil) and pt-PT (Portugal) as separate Finder/macOS locales; the reference pile has both.
+- Apple ships **both** pt-BR (Brazil) and pt-PT (Portugal) as separate Finder/macOS locales; the reference pile has
+  both.
 - Microsoft ships **both** pt-BR and pt-PT terminology and full style guides.
 - Google, Spotify, Netflix all offer **both** "Português (Brasil)" and "Português (Portugal)" as distinct UI locales.
 - The industry norm is therefore two locales, not one blended Portuguese.
@@ -53,8 +54,8 @@ clusters still differ in practice and in vendor style guides).
 Recommendation: target **pt-BR as the primary** Portuguese locale and treat `pt` (the base) as pt-BR by default, since
 Brazil is ~80% of Portuguese speakers and the larger Cmdr audience; add `pt-PT` as a separate variant later if Portugal
 demand appears. Do NOT ship one blended "Portuguese". Confidence: high on the two-locale split being correct; the
-base=pt-BR default is a product call for David.
-Flag for David: confirm `pt` base resolves to Brazilian, and whether pt-PT is in scope for launch.
+base=pt-BR default is a product call for David. Flag for David: confirm `pt` base resolves to Brazilian, and whether
+pt-PT is in scope for launch.
 
 ### Spelling reform compliance
 
@@ -84,17 +85,18 @@ distinction matters; the exact verbs are tentative until the variant is fixed.
 Defer the full glossary until the variant is chosen (every row depends on it). Triangulate pt-BR/pt-PT macOS Finder
 (highest authority, both in the pile) + Microsoft terminology + GNOME/Xfce.
 
-| English term | Portuguese (pt-BR default) | Notes |
-| ------------ | -------------------------- | ----- |
-| file | arquivo | pt-PT: ficheiro |
-| folder | pasta | shared |
-| trash | Lixeira | pt-PT: Lixo / Reciclagem |
-| pane | painel | confirm vs Finder |
-| tab | aba | pt-BR; pt-PT: separador |
+| English term | Portuguese (pt-BR default) | Notes                    |
+| ------------ | -------------------------- | ------------------------ |
+| file         | arquivo                    | pt-PT: ficheiro          |
+| folder       | pasta                      | shared                   |
+| trash        | Lixeira                    | pt-PT: Lixo / Reciclagem |
+| pane         | painel                     | confirm vs Finder        |
+| tab          | aba                        | pt-BR; pt-PT: separador  |
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by `desktop-i18n-dont-translate`.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
+`desktop-i18n-dont-translate`.
 
 ## Plurals
 
@@ -117,6 +119,6 @@ modern CLDR Portuguese (compact/large numbers), so plural messages must write a 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/pt/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/pt/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

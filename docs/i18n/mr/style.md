@@ -8,19 +8,20 @@ first: the script pitfalls (Marathi-only letters) and the formality default domi
 ## Voice and tone
 
 Friendly, concise, calm, active. Same register Cmdr uses in English: a helpful peer, never bureaucratic or alarmist.
-Error and warning copy stays calm and actionable; never use a Marathi equivalent of "error" or "failed" as a scare
-word (prefer plain phrasings like `अडचण आली` "ran into a problem" over `त्रुटी` / `अयशस्वी`). Prefer plain everyday
-Marathi (the register of a well-made consumer app), not heavily Sanskritized prose. Marathi is verb-final (SOV); let
-the action verb close the sentence rather than forcing English word order.
+Error and warning copy stays calm and actionable; never use a Marathi equivalent of "error" or "failed" as a scare word
+(prefer plain phrasings like `अडचण आली` "ran into a problem" over `त्रुटी` / `अयशस्वी`). Prefer plain everyday Marathi
+(the register of a well-made consumer app), not heavily Sanskritized prose. Marathi is verb-final (SOV); let the action
+verb close the sentence rather than forcing English word order.
 
 ## Formality
 
-Marathi marks respect through the second-person PRONOUN and the verb ending: `तू` (informal) vs `तुम्ही` (polite/plural).
+Marathi marks respect through the second-person PRONOUN and the verb ending: `तू` (informal) vs `तुम्ही`
+(polite/plural).
 
-- **Use the `तुम्ही` register.** Crucially, unlike Hindi, Marathi `तू` is the everyday default among family and peers and
-  is NOT inherently disrespectful, but addressing a stranger (which every app user is) with `तू` reads too familiar and
-  can offend. `तुम्ही` is the safe, neutral choice for someone whose age and status you don't know, and it's what Google
-  and Microsoft use in their Marathi UIs.
+- **Use the `तुम्ही` register.** Crucially, unlike Hindi, Marathi `तू` is the everyday default among family and peers
+  and is NOT inherently disrespectful, but addressing a stranger (which every app user is) with `तू` reads too familiar
+  and can offend. `तुम्ही` is the safe, neutral choice for someone whose age and status you don't know, and it's what
+  Google and Microsoft use in their Marathi UIs.
 - **Prefer pronoun-free phrasing.** Most UI copy needs no "you" at all; Marathi drops the subject readily. "Are you sure
   you want to delete?" reads best without a pronoun. This also sidesteps gender agreement (see Decision points).
 - **Imperatives for actions (buttons, menu items): use the `तुम्ही`-imperative `-आ` ending** (e.g. `कॉपी करा` copy,
@@ -57,8 +58,8 @@ to mirror "the macOS Marathi translation," which doesn't exist.
 ### Script: use the Marathi-specific letters, not the Hindi subset (a real correctness pitfall)
 
 Marathi uses Devanagari, but with letters and conventions Hindi lacks. A Hindi-trained translator or model (or a font
-with thin Marathi coverage) silently substitutes the Hindi forms, which reads wrong to a Marathi user and breaks
-string compares.
+with thin Marathi coverage) silently substitutes the Hindi forms, which reads wrong to a Marathi user and breaks string
+compares.
 
 - **`ळ` (U+0933, retroflex LLA) is Marathi-only** and absent from standard Hindi. Use it wherever the word has the
   retroflex `l` (place and word forms, many native terms); never flatten it to `ल` (U+0932).
@@ -70,8 +71,8 @@ string compares.
   half-forms. NFC-normalize all values. Modern reformed orthography throughout (the script a contemporary Maharashtra
   reader expects).
 
-Confidence: high that these are correctness issues; the practical risk is a translator defaulting to Hindi habits, so
-a native Marathi reviewer should specifically check `ळ` vs `ल`.
+Confidence: high that these are correctness issues; the practical risk is a translator defaulting to Hindi habits, so a
+native Marathi reviewer should specifically check `ळ` vs `ल`.
 
 ### Anglicism: transliterate universal tech terms, native-coin the rest
 
@@ -107,8 +108,8 @@ Devanagari digits are available only via an explicit `-nu deva` override.
 
 ### Inclusive / gender: the standout Marathi pitfall
 
-Marathi has THREE grammatical genders (masculine, feminine, neuter) and finite verbs agree with the subject's gender
-and number. This is the highest dynamic-string risk in Marathi:
+Marathi has THREE grammatical genders (masculine, feminine, neuter) and finite verbs agree with the subject's gender and
+number. This is the highest dynamic-string risk in Marathi:
 
 - A sentence whose verb agrees with a runtime-inserted noun (a file name, an item the user picked) can't be written
   gender-correctly, because the gender of `{name}` isn't known at translation time.
@@ -141,39 +142,39 @@ plus the `{system_settings}`-style tokens. The curated list is enforced by `desk
 
 Build this up as terms come up. Starting set:
 
-| English term | Marathi | Notes |
-| ------------ | ------- | ----- |
-| File | फाइल | Transliterated; what users say. Watch `ळ` if a spelling needs it. |
-| Folder | फोल्डर | Transliterated. |
-| Open | उघडा | Native; `-आ` imperative. |
-| Copy | कॉपी करा / प्रत बनवा | Borderline: transliterated vs Nautilus's native. Pick one. |
-| Paste | चिकटवा | Native. |
-| Cut | कापा | Native (Nautilus). |
-| Delete | काढून टाका | Native. |
-| Rename | नाव बदला | Native. |
-| Search | शोधा | Native; matches Google + Microsoft. |
-| Cancel | रद्द करा | Native (Microsoft). |
-| Close | बंद करा | Native (Microsoft). |
-| Sort | क्रमवारी लावा | Native (Microsoft). |
-| Name | नाव | |
-| Size | आकार | |
-| Trash | कचरापेटी | Native (Nautilus); confirm vs matching macOS "Trash". |
-| Recycle Bin | रीसायकल बिन | Microsoft transliterates. |
-| Tab | टॅब | Transliterated. |
-| Pane, Volume, Drive, Viewer, Listing, Transfer | (to decide) | Flag to David: borderline transliterate-vs-coin calls. |
+| English term                                   | Marathi              | Notes                                                             |
+| ---------------------------------------------- | -------------------- | ----------------------------------------------------------------- |
+| File                                           | फाइल                 | Transliterated; what users say. Watch `ळ` if a spelling needs it. |
+| Folder                                         | फोल्डर               | Transliterated.                                                   |
+| Open                                           | उघडा                 | Native; `-आ` imperative.                                          |
+| Copy                                           | कॉपी करा / प्रत बनवा | Borderline: transliterated vs Nautilus's native. Pick one.        |
+| Paste                                          | चिकटवा               | Native.                                                           |
+| Cut                                            | कापा                 | Native (Nautilus).                                                |
+| Delete                                         | काढून टाका           | Native.                                                           |
+| Rename                                         | नाव बदला             | Native.                                                           |
+| Search                                         | शोधा                 | Native; matches Google + Microsoft.                               |
+| Cancel                                         | रद्द करा             | Native (Microsoft).                                               |
+| Close                                          | बंद करा              | Native (Microsoft).                                               |
+| Sort                                           | क्रमवारी लावा        | Native (Microsoft).                                               |
+| Name                                           | नाव                  |                                                                   |
+| Size                                           | आकार                 |                                                                   |
+| Trash                                          | कचरापेटी             | Native (Nautilus); confirm vs matching macOS "Trash".             |
+| Recycle Bin                                    | रीसायकल बिन          | Microsoft transliterates.                                         |
+| Tab                                            | टॅब                  | Transliterated.                                                   |
+| Pane, Volume, Drive, Viewer, Listing, Transfer | (to decide)          | Flag to David: borderline transliterate-vs-coin calls.            |
 
 ## Notes and decisions
 
 - Punctuation: use the Latin full stop `.`, comma `,`, and question mark `?`. The traditional Devanagari danda `।` is
   not used as sentence-terminal punctuation in modern Marathi UIs; standard Latin marks are conventional.
 - Quotation marks: follow the English source's marks; no Marathi-specific quote convention to enforce.
-- Capitalization: Devanagari has no letter case, so the English guide's "sentence case" rules don't apply to letterforms;
-  keep them as guidance for the English source only.
+- Capitalization: Devanagari has no letter case, so the English guide's "sentence case" rules don't apply to
+  letterforms; keep them as guidance for the English source only.
 - When in doubt on register, a borderline anglicism, the `ळ`/`ल` choice, or a gender-agreement rewrite, flag the string
   for David and a native reviewer rather than guessing (principle 6: human-reviewed).
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/mr/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/mr/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

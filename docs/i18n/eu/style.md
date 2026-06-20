@@ -26,9 +26,8 @@ Lean into that. Error messages state the problem and a next step; never use the 
 - GNOME/Xfce Basque catalogs use `zu`-register imperatives.
 - `hi` (hika) is too intimate for a product UI and carries gendered allocutive verb forms (it agrees with the
   addressee's gender), which a UI cannot resolve. Never use hika.
-- Recommendation: `zu` register throughout. Confidence: high. Note Basque is not a T/V language in the
-  Romance/Germanic sense; `zu` is the single neutral choice, so there's no formal-vs-informal call to make beyond
-  "don't use hika".
+- Recommendation: `zu` register throughout. Confidence: high. Note Basque is not a T/V language in the Romance/Germanic
+  sense; `zu` is the single neutral choice, so there's no formal-vs-informal call to make beyond "don't use hika".
 
 **Imperatives for UI actions**: use the standard imperative consistent with `zu`, following the GNOME/Microsoft Basque
 conventions for file-manager actions (often the verb root + "-tu/-i" forms, e.g. "Kopiatu", "Ezabatu").
@@ -46,13 +45,13 @@ Formality is settled above (`zu`/zuka). The genuinely tricky parts of Basque are
 - **Agglutination and case suffixes are the real translation difficulty, not gender.** Basque has no grammatical gender,
   so the gender-agreement traps of Romance languages don't apply. Instead, Basque is heavily agglutinative: the article
   and case ending attach as suffixes to the noun, and the suffix form depends on whether the stem ends in a vowel or
-  consonant. This bites hardest with `{placeholder}` inserts: a sentence like "Move {name} to trash" can't safely
-  bolt a fixed case suffix onto `{name}`, because the suffix that's grammatical depends on the (unknown, runtime) final
-  sound of the inserted value. Structure such sentences to avoid suffixing directly onto an uncontrolled placeholder
-  (e.g. quote the name and use a postposition or a neutral frame). This is the single biggest blind-translation risk for
+  consonant. This bites hardest with `{placeholder}` inserts: a sentence like "Move {name} to trash" can't safely bolt a
+  fixed case suffix onto `{name}`, because the suffix that's grammatical depends on the (unknown, runtime) final sound
+  of the inserted value. Structure such sentences to avoid suffixing directly onto an uncontrolled placeholder (e.g.
+  quote the name and use a postposition or a neutral frame). This is the single biggest blind-translation risk for
   Basque. Confidence: high; flag for translator awareness, no David call needed.
 - **Ergative alignment / word order.** Basque is ergative-absolutive and default SOV. Phrasing reads naturally only when
-  the translator respects this, especially in *Join fragment keys where the assembly order is set in the join key.
+  the translator respects this, especially in \*Join fragment keys where the assembly order is set in the join key.
   Confidence: high; a translator concern, not a David call.
 
 ## Terminology and glossary
@@ -75,11 +74,10 @@ Add rows as terms come up, each with sources and a confidence.
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens and `{email}`. Enforced by `desktop-i18n-dont-translate` (list in
-`apps/desktop/scripts/i18n-catalog-lib.js`). Note that Basque case suffixes attach to brand words too in running text
-("Cmdr-ek", "GitHub-en"); keep the brand stem verbatim and let the suffix follow with a hyphen as Basque convention
-allows, but never alter the brand token itself.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style tokens
+and `{email}`. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.js`). Note that
+Basque case suffixes attach to brand words too in running text ("Cmdr-ek", "GitHub-en"); keep the brand stem verbatim
+and let the suffix follow with a hyphen as Basque convention allows, but never alter the brand token itself.
 
 ## Plurals
 
@@ -94,8 +92,8 @@ both branches so the counted noun's suffix is correct for one vs many.
   English. Overflow-check tight buttons against the pseudolocale (`en-XA`).
 - **Quotation marks.** Basque commonly uses `«…»` (guillemets) in print, but UI catalogs vary; match the surrounding
   source convention and keep it consistent. No counted/quoted strings force a call in the crash set.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -104,6 +102,6 @@ both branches so the counted noun's suffix is correct for one vs many.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/eu/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/eu/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

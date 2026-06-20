@@ -23,23 +23,25 @@ imperative ends in `-ez` ("Rinomizez" rename, "Abrogez" cancel, "Serchez" search
 ## Decision points
 
 ### Script and variants: none to decide
+
 - Latin script with regular spelling, one standardized form. No regional variants, no orthography or gender decision.
   Confidence: high.
 
 ### Gender: optional, default neutral
+
 - Ido nouns are gender-neutral by default; gender is marked only by optional affixes (`-ino` feminine, `-ulo` masculine)
   when explicitly needed. Default to the neutral root. Inclusive language is the natural default. Confidence: high.
 
 ### Distinct from Esperanto and the other auxlangs
+
 - Ido is its own language (reformed Esperanto); do not mix with Esperanto (eo), Interlingua (ia), or Interlingue (ie)
   catalogs. The `-ez` imperative and forms like "Dokumento" (file) are Ido-specific. Confidence: high.
 
 ## Terminology and glossary
 
-Source: GNOME Nautilus (`io/gnome-nautilus/`) only. `tentative` until reviewed. From the catalog:
-rename → Rinomizez, trash → Eskombreyo, cancel → Abrogez, search → Serchez, file → Dokumento. Confirm copy (likely
-"Kopiez"), move (likely "Movez"), delete (likely "Efacez"), open (likely "Apertez"), folder, settings against the
-catalog.
+Source: GNOME Nautilus (`io/gnome-nautilus/`) only. `tentative` until reviewed. From the catalog: rename → Rinomizez,
+trash → Eskombreyo, cancel → Abrogez, search → Serchez, file → Dokumento. Confirm copy (likely "Kopiez"), move (likely
+"Movez"), delete (likely "Efacez"), open (likely "Apertez"), folder, settings against the catalog.
 
 ## Brand and do-not-translate
 
@@ -62,6 +64,6 @@ both branches.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/io/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/io/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

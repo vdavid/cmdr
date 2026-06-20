@@ -50,8 +50,8 @@ Western (or Devanagari) digits; `Intl` with `sa` handles shaping. Confidence: hi
 ### Sandhi and compounding
 
 Sanskrit's sandhi (sound-change at word boundaries) and heavy compounding mean concatenating a `{placeholder}` into a
-sentence can produce grammatically wrong joins. Recommendation: isolate inserts in their own slot (e.g. label-then-value)
-rather than inlining them into a sandhi context. Confidence: high that this is a real hazard.
+sentence can produce grammatically wrong joins. Recommendation: isolate inserts in their own slot (e.g.
+label-then-value) rather than inlining them into a sandhi context. Confidence: high that this is a real hazard.
 
 ## Terminology and glossary
 
@@ -59,7 +59,8 @@ None available in the pile beyond the style guide; all terms would be fresh coin
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by `desktop-i18n-dont-translate`.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
+`desktop-i18n-dont-translate`.
 
 ## Plurals
 
@@ -73,6 +74,6 @@ collapses selection to one/other for `sa`.)
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/sa/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/sa/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -6,8 +6,8 @@ tradition, so GNOME and Xfce are full and consistent references.
 
 ## Voice and tone
 
-Cmdr's Occitan voice mirrors its English one: friendly, concise, active, and never alarmist. The GNOME Nautilus and
-Xfce Thunar Occitan catalogs (Tier 3) are well-maintained and plain, which suits Cmdr's register.
+Cmdr's Occitan voice mirrors its English one: friendly, concise, active, and never alarmist. The GNOME Nautilus and Xfce
+Thunar Occitan catalogs (Tier 3) are well-maintained and plain, which suits Cmdr's register.
 
 - Stay calm and actionable in error messages; keep the English rule of avoiding "error" and "failed".
 - Drop English filler ("successfully"); Occitan states the outcome without it.
@@ -16,9 +16,9 @@ Xfce Thunar Occitan catalogs (Tier 3) are well-maintained and plain, which suits
 
 ## Formality
 
-- **Second person: informal `tu`** is the natural software default and what GNOME/Xfce Occitan use. Occitan has a
-  formal `vos`, but free-software UI copy is informal. Recommendation: `tu`. Confidence: medium (community-catalog
-  evidence, no Tier-1/2 source). Flag for David if a more formal register is wanted.
+- **Second person: informal `tu`** is the natural software default and what GNOME/Xfce Occitan use. Occitan has a formal
+  `vos`, but free-software UI copy is informal. Recommendation: `tu`. Confidence: medium (community-catalog evidence, no
+  Tier-1/2 source). Flag for David if a more formal register is wanted.
 - **UI actions use the infinitive**, matching GNOME/Xfce Occitan and the broader Romance free-software convention:
   "Copiar", "Renomenar", "Dobrir", "Pegar", "Anullar". This mirrors French/Catalan/Spanish UI style, which use the
   infinitive for buttons (unlike German/English imperative). Recommendation: infinitive for buttons and menu items.
@@ -27,9 +27,8 @@ Xfce Thunar Occitan catalogs (Tier 3) are well-maintained and plain, which suits
 ## Decision points
 
 - **Spelling norm: classical vs Mistralian.** Occitan has two competing orthographies: the classical norm (norma
-  classica, the academic and free-software standard) and the Mistralian norm (norma mistralenca, used by some
-  Provençal writers). GNOME and Xfce both use the classical norm. Recommendation: classical norm throughout.
-  Confidence: high.
+  classica, the academic and free-software standard) and the Mistralian norm (norma mistralenca, used by some Provençal
+  writers). GNOME and Xfce both use the classical norm. Recommendation: classical norm throughout. Confidence: high.
 - **Regional variant (dialect).** Occitan spans several dialects (Lengadocian, Provençal, Gascon, Auvernhat, Lemosin,
   Vivaroalpenc). Lengadocian (Languedocien) is treated as the reference koine for the classical norm and is what the
   free-software catalogs target. Recommendation: target Lengadocian under the classical norm. Confidence: high.
@@ -48,21 +47,21 @@ Xfce Thunar Occitan catalogs (Tier 3) are well-maintained and plain, which suits
 
 Confirmed against GNOME Nautilus and Xfce Thunar Occitan (Tier 3). Extend as strings come up.
 
-| English term | Occitan | Notes |
-| ------------ | ------- | ----- |
-| file | fichièr | GNOME |
-| folder | dorsièr | GNOME |
-| copy | copiar | infinitive |
-| move | desplaçar | |
-| delete | suprimir | |
-| trash | escobilhièr | GNOME; the location noun |
-| rename | renomenar | infinitive |
-| paste | pegar | GNOME |
-| cut | talhar | |
-| open | dobrir | GNOME |
-| cancel | anullar | GNOME |
-| tab | onglet | UI tab, not the key |
-| settings | paramètres | |
+| English term | Occitan     | Notes                    |
+| ------------ | ----------- | ------------------------ |
+| file         | fichièr     | GNOME                    |
+| folder       | dorsièr     | GNOME                    |
+| copy         | copiar      | infinitive               |
+| move         | desplaçar   |                          |
+| delete       | suprimir    |                          |
+| trash        | escobilhièr | GNOME; the location noun |
+| rename       | renomenar   | infinitive               |
+| paste        | pegar       | GNOME                    |
+| cut          | talhar      |                          |
+| open         | dobrir      | GNOME                    |
+| cancel       | anullar     | GNOME                    |
+| tab          | onglet      | UI tab, not the key      |
+| settings     | paramètres  |                          |
 
 ## Brand and do-not-translate
 
@@ -73,8 +72,8 @@ check; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.js`.
 ## Plurals
 
 CLDR plural categories for `oc`: **`one`** and **`other`** (confirmed via
-`new Intl.PluralRules('oc').resolvedOptions().pluralCategories`). Note Occitan uses `one` for 0 and 1 and `other` for
-2+ (the GNOME/Xfce catalogs encode `plural=(n > 1)`). Every plural message needs both branches; write each as a full
+`new Intl.PluralRules('oc').resolvedOptions().pluralCategories`). Note Occitan uses `one` for 0 and 1 and `other` for 2+
+(the GNOME/Xfce catalogs encode `plural=(n > 1)`). Every plural message needs both branches; write each as a full
 natural phrase since noun gender interacts with the count. The `desktop-i18n-plural` check requires both.
 
 ## Notes and decisions
@@ -88,6 +87,6 @@ natural phrase since noun gender interacts with the count. The `desktop-i18n-plu
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/oc/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/oc/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

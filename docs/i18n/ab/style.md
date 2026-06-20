@@ -1,7 +1,7 @@
 # Abkhaz (ab) translation style guide
 
-Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the
+translation process.
 
 ## Voice and tone
 
@@ -43,8 +43,7 @@ These are the calls that actually matter for Abkhaz; settle them before a transl
   effect: there's no major-vendor precedent to copy, almost no inherited computing vocabulary, and a tiny user base.
   Recommendation: treat as low priority; only translate if there's a specific reason. Confidence: high.
 - **Script: Cyrillic.** Abkhaz is written in an extended Cyrillic alphabet (with many additional letters for its large
-  consonant inventory). Left-to-right, no RTL concerns. Use Cyrillic; no Latin variant is in real use. Confidence:
-  high.
+  consonant inventory). Left-to-right, no RTL concerns. Use Cyrillic; no Latin variant is in real use. Confidence: high.
 - **Loan-word policy.** Because there's no native computing lexicon, the real translation work is deciding per term
   whether to coin a native Abkhaz word or borrow (most often from Russian). Be consistent and record every call in the
   glossary. Flag for David that this is judgment-heavy and best done with a native reviewer. Confidence: medium that
@@ -52,6 +51,6 @@ These are the calls that actually matter for Abkhaz; settle them before a transl
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ab/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ab/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

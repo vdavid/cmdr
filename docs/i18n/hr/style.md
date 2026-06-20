@@ -12,18 +12,18 @@ Xfce Thunar (`_ignored/i18n/hr/`). Evidence verified against the pile on 2026-06
 The calls a translator can't make alone. Only the first is a true open flag; the rest carry a confident default and are
 listed so they're never relitigated.
 
-- **Address form: RESOLVED to informal `ti`** (consumer-brand evidence; Apple-HR and most Croatian consumer/tech
-  brands use `ti`; see Formality and [`formal-informal-decisions.md`](../formal-informal-decisions.md)). No longer open.
-- **`volume` term (tentative).** No clean macOS "volume" string in the Croatian pile; candidates are `pogon` (drive,
-  the MS-preferred everyday word) or a more literal partition term. See the glossary; worth a native check.
+- **Address form: RESOLVED to informal `ti`** (consumer-brand evidence; Apple-HR and most Croatian consumer/tech brands
+  use `ti`; see Formality and [`formal-informal-decisions.md`](../formal-informal-decisions.md)). No longer open.
+- **`volume` term (tentative).** No clean macOS "volume" string in the Croatian pile; candidates are `pogon` (drive, the
+  MS-preferred everyday word) or a more literal partition term. See the glossary; worth a native check.
 
 ## Voice and tone
 
 Friendly, concise, active, calm, and **informal in address** (`ti`; see Formality). MS Croatian steers away from
 overly-formal, heavy literary phrasing and prefers everyday words over professional ones (`disk` over `pogon` where
-"drive" means "disk"; `računalo` over `osobno računalo`) (verified 2026-06-20). Error messages stay calm and
-actionable: name the problem and the next step, and don't use "greška" (error) or "neuspjelo" (failed) as a bare
-status label the way English avoids "error"/"failed".
+"drive" means "disk"; `računalo` over `osobno računalo`) (verified 2026-06-20). Error messages stay calm and actionable:
+name the problem and the next step, and don't use "greška" (error) or "neuspjelo" (failed) as a bare status label the
+way English avoids "error"/"failed".
 
 ## Formality
 
@@ -82,10 +82,11 @@ Settled terms (sources agree):
 
 Tentative / needs a native check:
 
-- **volume: `pogon`** · MS prefers `pogon` for "drive"; no clean macOS "volume" string. Default to `pogon` for a
-  mounted disk, or a literal partition term where the technical sense matters. `tentative`.
+- **volume: `pogon`** · MS prefers `pogon` for "drive"; no clean macOS "volume" string. Default to `pogon` for a mounted
+  disk, or a literal partition term where the technical sense matters. `tentative`.
 - **pane: `okno`** · the two file lists are "okna"; GNOME/window-region convention. `tentative`.
-- **tab (UI tab): `kartica`** · MS/GNOME convention; the macOS "Tab" string is the keyboard key, wrong sense. `tentative`.
+- **tab (UI tab): `kartica`** · MS/GNOME convention; the macOS "Tab" string is the keyboard key, wrong sense.
+  `tentative`.
 
 ## Brand and do-not-translate
 
@@ -117,11 +118,12 @@ three. This is the Slavic one/few/other pattern (same as bs, sr).
   pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/hr/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/hr/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

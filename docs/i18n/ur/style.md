@@ -1,6 +1,7 @@
 # Urdu (ur) translation style guide
 
-Working notes for translating Cmdr into Urdu. Read [`README.md`](../README.md) for how this fits the translation process.
+Working notes for translating Cmdr into Urdu. Read [`README.md`](../README.md) for how this fits the translation
+process.
 
 RTL, and the biggest workstream here is the app, not the words. Urdu is written right-to-left in the Perso-Arabic
 script. The pile has Microsoft terminology and the Microsoft Urdu style guide (both useful for register and gender
@@ -29,8 +30,8 @@ This is the single biggest issue, and it's a LAYOUT problem as much as a text on
 
 - The whole UI must mirror: the two panes swap sides, and cursor/selection logic, progress bars, chevrons, and
   back/forward navigation arrows all reverse. A right-pointing "forward" arrow is wrong in RTL.
-- Cmdr is a two-pane file manager, so the left/right pane mental model itself mirrors under RTL. Confirm the app's layout
-  engine flips correctly before shipping any RTL locale; this is an app-code question, not a translation one.
+- Cmdr is a two-pane file manager, so the left/right pane mental model itself mirrors under RTL. Confirm the app's
+  layout engine flips correctly before shipping any RTL locale; this is an app-code question, not a translation one.
 - Bidi is the headline hazard for a FILE MANAGER specifically: file paths, filenames, extensions (`.txt`), URLs, brand
   names (Cmdr, macOS, SMB), and (if Western digits are used) numbers are all LTR runs embedded in RTL Urdu text. Without
   proper Unicode bidi isolation, a `{path}` or `{name}` insert visually scrambles the surrounding sentence: the period
@@ -52,8 +53,8 @@ Urdu is Perso-Arabic, but the rendering tradition matters and differs from Arabi
   systems fall back to whatever Nastaliq or Naskh face is installed.
 - Nastaliq is expensive: it needs 2D glyph positioning, far more glyphs, and tall line-height (roughly 2.0–2.4) to keep
   the descending words from colliding. That collides with a dense file-list UI with tight rows.
-- macOS renders Urdu text (the script isn't blocked) but ships no Urdu UI; the system Urdu font face is not guaranteed to
-  be Nastaliq.
+- macOS renders Urdu text (the script isn't blocked) but ships no Urdu UI; the system Urdu font face is not guaranteed
+  to be Nastaliq.
 - Recommendation: respect the system font per Cmdr's principle, but verify Urdu actually renders in a Nastaliq-capable
   face and that row heights don't clip the tall Nastaliq baseline; if the system face is Naskh-only, consider bundling
   Noto Nastaliq Urdu. This is an app-rendering call, not a translation one. Confidence: high on "Nastaliq expected",
@@ -65,8 +66,8 @@ Urdu is Perso-Arabic, but the rendering tradition matters and differs from Arabi
   are in Pakistan. `ur-IN` (India) differs in minor vocabulary and some loanword preferences; the written standard is
   broadly shared.
 - Microsoft references `ur-PK`. The variant gap is minor for a file-manager UI.
-- Recommendation: base `ur` = Pakistan register; treat `ur-IN` as a possible later, lower-priority variant only if Indian
-  demand appears. Confidence: high.
+- Recommendation: base `ur` = Pakistan register; treat `ur-IN` as a possible later, lower-priority variant only if
+  Indian demand appears. Confidence: high.
 
 ### Numerals: Western (0123) vs Eastern Arabic-Indic (۰۱۲۳)
 
@@ -100,11 +101,11 @@ Defer; with no macOS source, every term is tentative and needs native review. Tr
 the (sparse) Xfce Thunar catalog only. The Thunar `ur` catalog is largely untranslated, which is itself a low-precedent
 signal.
 
-| English term | Urdu | Notes |
-| ------------ | ---- | ----- |
-| file | فائل | Thunar `ur`; confirm with reviewer |
-| trash | ردی | Thunar `ur`; tentative |
-| folder | فولڈر | tentative, needs native check |
+| English term | Urdu  | Notes                              |
+| ------------ | ----- | ---------------------------------- |
+| file         | فائل  | Thunar `ur`; confirm with reviewer |
+| trash        | ردی   | Thunar `ur`; tentative             |
+| folder       | فولڈر | tentative, needs native check      |
 
 ## Brand and do-not-translate
 
@@ -120,17 +121,17 @@ frame.
 
 ## Notes and decisions
 
-- Urdu desktop localization is LOW priority and sparse in precedent: no Apple macOS UI, limited Apple system support,
-  a mostly-untranslated Thunar catalog, and it forces the RTL app-readiness work. Major-product Urdu desktop
-  localization is essentially absent (the action is on mobile/web). That low-priority signal IS a finding: recommend
-  deprioritizing until an RTL workstream exists and a native reviewer is available.
+- Urdu desktop localization is LOW priority and sparse in precedent: no Apple macOS UI, limited Apple system support, a
+  mostly-untranslated Thunar catalog, and it forces the RTL app-readiness work. Major-product Urdu desktop localization
+  is essentially absent (the action is on mobile/web). That low-priority signal IS a finding: recommend deprioritizing
+  until an RTL workstream exists and a native reviewer is available.
 - Punctuation: in bidi context the sentence-final period attaches to the RTL paragraph; let the bidi algorithm place it,
   don't force it with marks.
 
 ## Decisions to confirm with David
 
-- Is the app's RTL layout mirroring + bidi isolation ready? Urdu can't ship without it. This gates ur, ps, sd-Arabic, and
-  every RTL locale, and is the headline finding.
+- Is the app's RTL layout mirroring + bidi isolation ready? Urdu can't ship without it. This gates ur, ps, sd-Arabic,
+  and every RTL locale, and is the headline finding.
 - Nastaliq rendering: rely on the system font, or bundle Noto Nastaliq Urdu, and how to handle tall Nastaliq line-height
   in dense rows?
 - Numerals: Western (the `Intl` default and software norm) vs Eastern Arabic-Indic? Defaulting to `Intl` is safe; native
@@ -139,6 +140,6 @@ frame.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ur/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ur/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

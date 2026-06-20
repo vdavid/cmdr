@@ -4,17 +4,18 @@ Three-layer composited hero illustration for the getcmdr.com landing page. Each 
 into a frame + two pane cutouts so they animate independently in `Hero.astro`. Reshoot + regeneration procedure (script,
 verify, cutout geometry): [DETAILS.md](DETAILS.md).
 
-This directory ships ONLY WebP. The intermediate master PNGs live in [`brand/hero-masters/`](../../../../brand/hero-masters)
-(regeneration inputs, never shipped); the regeneration script writes the WebPs here from them.
+This directory ships ONLY WebP. The intermediate master PNGs live in
+[`brand/hero-masters/`](../../../../brand/hero-masters) (regeneration inputs, never shipped); the regeneration script
+writes the WebPs here from them.
 
 ## Files (all shipped, all WebP)
 
-| File                               | Purpose                                                                   |
-| ---------------------------------- | ------------------------------------------------------------------------- |
-| `cmdr-hero-frame-{dark,light}.webp`     | 2x window chrome (title bar, toolbar, borders, status bar), transparent pane areas |
-| `cmdr-hero-left-pane-{dark,light}.webp` | 2x left pane screenshot content on a transparent canvas                   |
-| `cmdr-hero-right-pane-{dark,light}.webp`| 2x right pane screenshot content on a transparent canvas                  |
-| `cmdr-hero-*-{dark,light}-1x.webp`      | 1x lossless WebP for 1x-DPR displays                                      |
+| File                                     | Purpose                                                                            |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| `cmdr-hero-frame-{dark,light}.webp`      | 2x window chrome (title bar, toolbar, borders, status bar), transparent pane areas |
+| `cmdr-hero-left-pane-{dark,light}.webp`  | 2x left pane screenshot content on a transparent canvas                            |
+| `cmdr-hero-right-pane-{dark,light}.webp` | 2x right pane screenshot content on a transparent canvas                           |
+| `cmdr-hero-*-{dark,light}-1x.webp`       | 1x lossless WebP for 1x-DPR displays                                               |
 
 The 2x WebPs are 2508 x 1634 px (2x retina, the master canvas size); the 1x WebPs are 1254 x 817 px.
 

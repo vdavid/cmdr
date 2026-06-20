@@ -1,13 +1,13 @@
 # Tatar (tt) translation style guide
 
-Working notes for translating Cmdr into Tatar. Read [`README.md`](../README.md) for how this fits the translation process,
-and the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) for the ICU mechanics
-every translator must follow.
+Working notes for translating Cmdr into Tatar. Read [`README.md`](../README.md) for how this fits the translation
+process, and the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) for the ICU
+mechanics every translator must follow.
 
 **Priority signal: low.** Tatar localization is sparse. Apple does NOT ship Tatar (no macOS reference), and there is no
-GNOME/Xfce Tatar file-manager catalog in the reference pile. The only authoritative source is Microsoft (terminology
-TBX plus a 2011 style guide), both Cyrillic-only (`tt-Cyrl`). There is no Tier-1 macOS evidence, so most terminology
-calls rest on Microsoft alone and stay tentative until a native reviewer signs off. Treat Tatar as a later-tier locale.
+GNOME/Xfce Tatar file-manager catalog in the reference pile. The only authoritative source is Microsoft (terminology TBX
+plus a 2011 style guide), both Cyrillic-only (`tt-Cyrl`). There is no Tier-1 macOS evidence, so most terminology calls
+rest on Microsoft alone and stay tentative until a native reviewer signs off. Treat Tatar as a later-tier locale.
 
 ## Voice and tone
 
@@ -29,8 +29,8 @@ calls rest on Microsoft alone and stay tentative until a native reviewer signs o
   -сың. Example from the guide's own message corpus: "Бу тоташуны рөхсәт итәсезме?" (the -сез ending).
 - Tatar is Turkic and agglutinative, so imperatives in buttons and menu items are verbal nouns or polite imperative
   forms, not bare stems. The MS terminology renders UI verbs as verbal nouns (the -у / -ү form): copy = `күчереп алу`,
-  save = `саклау`, search = `эзләү`, open = `ачу`, move = `күчерү`, delete = `бетерү`. Follow that convention for
-  action labels.
+  save = `саклау`, search = `эзләү`, open = `ачу`, move = `күчерү`, delete = `бетерү`. Follow that convention for action
+  labels.
 - **Agglutination on placeholders is a blind-translation risk (same family as Turkish).** A suffix often attaches to the
   noun a `{placeholder}` stands for (case endings, the question particle -мы/-ме, possessives), and the suffix's vowel
   must harmonize with the inserted word, which Cmdr cannot control. Structure sentences so a raw `{path}`, `{name}`, or
@@ -68,8 +68,8 @@ calls rest on Microsoft alone and stay tentative until a native reviewer signs o
 - **Recommendation: follow Microsoft's term-by-term choice as the default**, because it already encodes this tradeoff
   per word and it's the only authoritative source Tatar has. That means keeping `папка`/`файл`/`диск` as loanwords while
   using `санак`/`сайлак`/`тәрәз` natively. Don't impose a blanket "always native" or "always Russian" rule. Confidence:
-  **tentative** per term (single source, no macOS cross-check, no native review). Push the whole glossary to David /
-  a native reviewer before shipping.
+  **tentative** per term (single source, no macOS cross-check, no native review). Push the whole glossary to David / a
+  native reviewer before shipping.
 - **Flag for David:** this is the one call that defines how "Tatar" Cmdr feels, and it can't be settled from Microsoft
   alone. Decide the house lean (track Microsoft, or push harder toward native coinages for a more distinctly Tatar
   product) before a full pass.
@@ -118,7 +118,8 @@ the `{system_settings}`-style tokens. Enforced by `desktop-i18n-dont-translate`;
   TBX, that's a flag to surface, not a gap to fill by guessing.
 - **ICU mechanics** (catalog-level, easy to miss): double every apostrophe in a value (`'` becomes `''`), and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Decisions to confirm with David
 
@@ -129,6 +130,6 @@ the `{system_settings}`-style tokens. Enforced by `desktop-i18n-dont-translate`;
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/tt/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/tt/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

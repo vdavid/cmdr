@@ -1,7 +1,8 @@
 # Dutch (nl) translation style guide
 
-Working notes for translating Cmdr into Dutch. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Dutch.
+Working notes for translating Cmdr into Dutch. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Dutch.
 
 ## Formality: `je`, settled
 
@@ -38,9 +39,9 @@ so don't copy that pattern.
 
 ## Terminology and glossary
 
-Format per term: `English → chosen · sources · confidence`. Tier order is macOS (highest, Tier 1) → Microsoft (Tier 2)
-→ GNOME/Xfce (Tier 3). Confidence is `confirmed` (human signed off), `high` (authoritative sources agree), or
-`tentative` (sources conflict or none had it).
+Format per term: `English → chosen · sources · confidence`. Tier order is macOS (highest, Tier 1) → Microsoft (Tier 2) →
+GNOME/Xfce (Tier 3). Confidence is `confirmed` (human signed off), `high` (authoritative sources agree), or `tentative`
+(sources conflict or none had it).
 
 Straightforward (sources agree, `high`):
 
@@ -54,11 +55,11 @@ Straightforward (sources agree, `high`):
 - updates → Updates (kept; capitalized as a Settings-section name) · MS ("Updates"→"Updates", ProperNoun) · high
 - version → versie · MS ("version"→"versie") · high
 - report → rapport · MS ("report"→"rapport") · high
-- crash report → crashrapport · macOS uses "Crashrapportage" for crash reporting; "crashrapport" is the natural
-  Dutch compound for the report itself · high
+- crash report → crashrapport · macOS uses "Crashrapportage" for crash reporting; "crashrapport" is the natural Dutch
+  compound for the report itself · high
 - quit unexpectedly → onverwachts gestopt · macOS ("unexpectedly quit"→"onverwachts gestopt") · high
-- dismiss → Sluit (button) / sluiten · MS ("dismiss"→"sluiten"); rendered as the bare-stem imperative per the
-  button rule · high
+- dismiss → Sluit (button) / sluiten · MS ("dismiss"→"sluiten"); rendered as the bare-stem imperative per the button
+  rule · high
 - done → Gereed · macOS ("Done"→"Gereed") · high
 - save → bewaren · macOS ("Save"→"Bewaar"); macOS uses "bewaren", NOT "opslaan", for save · high
 - file → bestand (plural bestanden) · macOS, MS, Nautilus · high
@@ -67,8 +68,8 @@ Add rows as terms come up, each with sources and a confidence.
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens and any `{email}`-style placeholders. Enforced by `desktop-i18n-dont-translate` (list in
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style tokens
+and any `{email}`-style placeholders. Enforced by `desktop-i18n-dont-translate` (list in
 `apps/desktop/scripts/i18n-catalog-lib.js`). macOS UI names Cmdr opens into (System Settings panes, "Prullenmand")
 should match a Dutch macOS.
 
@@ -100,6 +101,6 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/nl/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/nl/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

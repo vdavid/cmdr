@@ -16,8 +16,8 @@ active voice.
 ## Formality
 
 **Use "du"** (informal second person), settled from the sources, not a guess. macOS Danish addresses the user as `du`
-throughout: across the mined Finder and AppKit strings the informal forms dominate overwhelmingly (`du` ~577, plus
-`dig` / `din` / `dine` / `dit`), with no use of the formal `De` / `Dem` / `Deres` capitalized polite form (verified in
+throughout: across the mined Finder and AppKit strings the informal forms dominate overwhelmingly (`du` ~577, plus `dig`
+/ `din` / `dine` / `dit`), with no use of the formal `De` / `Dem` / `Deres` capitalized polite form (verified in
 `da/macOS/`, grep over Finder + AppKit, 2026-06-20). The Microsoft Danish style guide likewise prescribes `du`. Danish
 dropped the formal `De` from everyday and software use decades ago; it now reads stiff or old-fashioned. So `du`
 everywhere, no exceptions.
@@ -41,23 +41,23 @@ Formality is settled above (`du`). The remaining Danish-specific calls are minor
   does not gender the person addressed, and direct `du`-address sidesteps any "he/she" choice. No inclusive-form debate
   like Spanish's or German's exists for Danish UI. Recommendation: direct `du`-address, neutral nouns; nothing special
   needed. Confidence: high.
-- **Compounding and length.** Danish writes compounds as one word ("filoverførsel" = file transfer,
-  "netværksdrev" = network drive), which both lengthens individual tokens and is a correctness trap (splitting a Danish
-  compound into two words, "fil overførsel", is a real and common error that changes meaning). Keep compounds joined.
-  Length runs modestly longer than English. Confidence: confirmed (Danish orthography).
+- **Compounding and length.** Danish writes compounds as one word ("filoverførsel" = file transfer, "netværksdrev" =
+  network drive), which both lengthens individual tokens and is a correctness trap (splitting a Danish compound into two
+  words, "fil overførsel", is a real and common error that changes meaning). Keep compounds joined. Length runs modestly
+  longer than English. Confidence: confirmed (Danish orthography).
 
 ## Terminology and glossary
 
-| English term | Danish | Notes |
-| ------------ | ------ | ----- |
-| trash | Papirkurv | macOS Danish term for the trash; matches Finder |
-| Copy | Kopier | imperative, macOS Finder |
-| Move | Flyt | imperative, macOS Finder |
-| Delete | Slet | imperative |
-| Rename | Omdøb | imperative, macOS Finder |
-| Cancel | Annuller | imperative, macOS |
-| Save | Gem | imperative, macOS |
-| Settings | Indstillinger | macOS app-settings term |
+| English term | Danish          | Notes                                                                |
+| ------------ | --------------- | -------------------------------------------------------------------- |
+| trash        | Papirkurv       | macOS Danish term for the trash; matches Finder                      |
+| Copy         | Kopier          | imperative, macOS Finder                                             |
+| Move         | Flyt            | imperative, macOS Finder                                             |
+| Delete       | Slet            | imperative                                                           |
+| Rename       | Omdøb           | imperative, macOS Finder                                             |
+| Cancel       | Annuller        | imperative, macOS                                                    |
+| Save         | Gem             | imperative, macOS                                                    |
+| Settings     | Indstillinger   | macOS app-settings term                                              |
 | crash report | nedbrudsrapport | "nedbrud" is the standard Danish term for an app crash; non-alarmist |
 
 ## Brand and do-not-translate
@@ -81,8 +81,8 @@ English's. Danish, like English, treats only 1 as singular.
 - **Numbers and dates come from the formatter layer** (comma decimal, period thousands). Never hardcode separators.
 - **Ellipsis**: keep the source's three literal ASCII dots ("Sender...") to match the English catalog shape, per the
   catalog convention.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -90,6 +90,6 @@ English's. Danish, like English, treats only 1 as singular.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/da/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/da/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

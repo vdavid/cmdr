@@ -4,18 +4,18 @@ Working notes for translating Cmdr into Persian. Read [`README.md`](../README.md
 process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
 Persian.
 
-**RTL, and no macOS reference.** Apple does NOT ship a Persian macOS UI, so the pile has no macOS Finder (`_ignored/i18n/fa/`
-has GNOME Nautilus + MS terminology + MS style guide only; `fa-IR/` has Xfce Thunar; `prs-AF/` has MS terminology for the
-Afghan Dari variant). The highest-authority source (a real localized OS) is absent, so terms lean on GNOME + Microsoft
-and stay a notch less certain than for a macOS-backed language. RTL is a layout workstream, not just translation.
-Evidence verified against the pile on 2026-06-20.
+**RTL, and no macOS reference.** Apple does NOT ship a Persian macOS UI, so the pile has no macOS Finder
+(`_ignored/i18n/fa/` has GNOME Nautilus + MS terminology + MS style guide only; `fa-IR/` has Xfce Thunar; `prs-AF/` has
+MS terminology for the Afghan Dari variant). The highest-authority source (a real localized OS) is absent, so terms lean
+on GNOME + Microsoft and stay a notch less certain than for a macOS-backed language. RTL is a layout workstream, not
+just translation. Evidence verified against the pile on 2026-06-20.
 
 ## Decisions to confirm with David
 
 The calls a translator can't make alone. These are real open flags, not pre-settled defaults.
 
-- **RTL readiness gates shipping Persian at all (high).** This is the headline. Persian needs full UI mirroring (see
-  the RTL decision point); it's an app-code workstream separate from translation, shared with any future Arabic/Hebrew/
+- **RTL readiness gates shipping Persian at all (high).** This is the headline. Persian needs full UI mirroring (see the
+  RTL decision point); it's an app-code workstream separate from translation, shared with any future Arabic/Hebrew/
   Pashto/Urdu locale. Don't ship Persian until the app's RTL layout is verified end to end.
 - **Numerals: Western (0-9) vs Persian (۰-۹) digits (tentative).** A file manager shows counts and sizes constantly.
   Persian users mix both in practice; auto-converting everything to Persian digits is wrong. Needs a native call on what
@@ -55,12 +55,13 @@ the polite شما register**, expressed through plural verb endings rather than 
 ### RTL: the dominant concern
 
 Persian is written right-to-left in the Perso-Arabic script. This is the single biggest issue and it's a LAYOUT concern
-as much as a text one (shared verbatim with [`ps/style.md`](../ps/style.md), sd-Arabic, and any future Arabic/Hebrew/Urdu):
+as much as a text one (shared verbatim with [`ps/style.md`](../ps/style.md), sd-Arabic, and any future
+Arabic/Hebrew/Urdu):
 
 - The whole UI must mirror: panes swap sides, cursor/selection logic, progress bars, chevrons, and "back/forward"
   navigation arrows all reverse. A right-pointing "forward" arrow is wrong in RTL.
-- Cmdr is a two-pane file manager, so the left/right pane mental model itself mirrors under RTL. Confirm the app's layout
-  engine flips correctly before shipping any RTL locale; this is an app-code question, not a translation one.
+- Cmdr is a two-pane file manager, so the left/right pane mental model itself mirrors under RTL. Confirm the app's
+  layout engine flips correctly before shipping any RTL locale; this is an app-code question, not a translation one.
 - **Bidi hazard: file paths, URLs, brand names (Cmdr, macOS, SMB), and Western numbers are LTR runs embedded in RTL
   text.** Without proper Unicode bidi isolation, a `{path}` insert visually scrambles the surrounding sentence. A
   documented, concrete failure: two-digit numbers in RTL render reversed (16→61, 18→81, 20→02) when bidi handling is
@@ -77,35 +78,35 @@ several parts shall not be separated… using ZWNJ"). Examples: "می‌خواه
 
 - Translators MUST type the real ZWNJ, not a regular space and not a hyphen. Plural suffixes (ها), prefixes (می, نمی),
   and compounds attach via ZWNJ.
-- This is invisible in most editors; getting it wrong produces text that reads as broken/amateur to a native. Confidence:
-  high (it's a hard requirement, not a preference).
+- This is invisible in most editors; getting it wrong produces text that reads as broken/amateur to a native.
+  Confidence: high (it's a hard requirement, not a preference).
 
 ### Numerals: Western vs Persian digits
 
-Persian has its own digits (۰۱۲۳۴۵۶۷۸۹, U+06Fx), which are a DISTINCT Unicode block from the Eastern-Arabic digits Arabic
-uses (web sources, verified 2026-06-20), don't reuse Arabic numerals for Persian.
+Persian has its own digits (۰۱۲۳۴۵۶۷۸۹, U+06Fx), which are a DISTINCT Unicode block from the Eastern-Arabic digits
+Arabic uses (web sources, verified 2026-06-20), don't reuse Arabic numerals for Persian.
 
-- File sizes and counts appear constantly. Persian speakers commonly MIX Western and Persian digits, so
-  auto-converting everything to Persian digits is not safe (web sources, verified 2026-06-20).
+- File sizes and counts appear constantly. Persian speakers commonly MIX Western and Persian digits, so auto-converting
+  everything to Persian digits is not safe (web sources, verified 2026-06-20).
 - Recommendation: let `Intl` with the `fa` locale decide numeral shaping (it produces Persian digits by default) rather
   than hardcoding either, and confirm with a native reviewer whether the target audience prefers Persian or Western
   digits for technical values like byte counts. Confidence: tentative (a genuine audience call).
 
 ### Script and regional variant
 
-- **Script: Perso-Arabic only, no decision.** No Latin alternative in use. Persian adds four letters to Arabic (پ چ ژ
-  گ) and shapes some shared letters differently (ك→ک, ي→ی), use the Persian forms, not the Arabic ones (a common
-  encoding slip). Confidence: high.
+- **Script: Perso-Arabic only, no decision.** No Latin alternative in use. Persian adds four letters to Arabic (پ چ ژ گ)
+  and shapes some shared letters differently (ك→ک, ي→ی), use the Persian forms, not the Arabic ones (a common encoding
+  slip). Confidence: high.
 - **Variant: target Iranian Persian `fa` (`fa-IR`).** Dari (Afghanistan, `prs`/`prs-AF`) and Tajik (Cyrillic, separate)
   are distinct enough that Microsoft maintains a separate `prs-AF` terminology set. Iranian Persian is the largest
-  audience and the natural base. Don't fold Dari in; if Afghanistan demand appears, it's a separate variant.
-  Confidence: high.
+  audience and the natural base. Don't fold Dari in; if Afghanistan demand appears, it's a separate variant. Confidence:
+  high.
 
 ### Gender and inclusive language
 
-Persian is **grammatically genderless**, no gendered pronouns (او = he/she/it), no gendered verb or adjective
-agreement. This is a real advantage: none of the gender-guessing problems that plague Polish/German UI exist here.
-Nothing to engineer around. Confidence: high.
+Persian is **grammatically genderless**, no gendered pronouns (او = he/she/it), no gendered verb or adjective agreement.
+This is a real advantage: none of the gender-guessing problems that plague Polish/German UI exist here. Nothing to
+engineer around. Confidence: high.
 
 ### Capitalization
 
@@ -165,9 +166,9 @@ forms.
 
 - **one**: 0 and 1 (`i=0..1`). Persian groups 0 with the singular. "۱ پرونده" / "1 file".
 - **other**: 2 and up. "۵ پرونده".
-- **Note: the counted noun usually does NOT add a plural suffix after a numeral** in Persian ("۵ پرونده", not
-  "۵ پرونده‌ها"), the number already marks plurality. Keep both branches reading naturally; don't reflexively append
-  "ها" in the `other` branch. The `desktop-i18n-plural` check requires both categories.
+- **Note: the counted noun usually does NOT add a plural suffix after a numeral** in Persian ("۵ پرونده", not "۵
+  پرونده‌ها"), the number already marks plurality. Keep both branches reading naturally; don't reflexively append "ها"
+  in the `other` branch. The `desktop-i18n-plural` check requires both categories.
 
 ## Notes and decisions
 
@@ -182,11 +183,12 @@ forms.
   quality bug in Persian UI.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/fa/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/fa/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

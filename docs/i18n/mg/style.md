@@ -27,17 +27,20 @@ precedent to model a softer voice on. Flagged below.
 ## Decision points
 
 Dialect target, Standard (Merina-based) Official Malagasy:
+
 - Options: Standard/Official (Merina, central highlands) vs accommodating coastal dialects (Betsimisaraka, Sakalava…).
   The MS style guide and both reference sources are Merina-based.
 - Recommendation: target Standard/Official Malagasy (Merina); don't attempt dialect coverage. Confidence: high.
 
 French fallback strategy (vendor-sanctioned):
+
 - French is co-official in Madagascar and dominates computing/business. The MS style guide explicitly names French as
   Madagascar's fallback for untranslatable terms (English acronym + Malagasy or French equivalent in brackets).
 - Recommendation: allow French (or kept-English) for technical terms with no settled Malagasy equivalent, in brackets on
   first use as MS does; don't force-coin neologisms. Confidence: high.
 
 VOS word order + fragment-key assembly (real risk):
+
 - Malagasy is VOS (verb-object-subject), rare worldwide. Combined with morphologically-marked imperatives (the `-y`/`-o`
   suffixes), a button verb is not reusable inside a sentence, and the MS guide reinforces "one verb per sentence."
 - Recommendation: never build sentences by concatenating translatable fragments; give translators whole strings with
@@ -45,11 +48,12 @@ VOS word order + fragment-key assembly (real risk):
   Confidence: high.
 
 Near-absence of major-vendor localization:
+
 - Apple does NOT ship Malagasy macOS UI; Windows/Android Malagasy UI is effectively absent; Google has only partial
   web-UI/Translate coverage. The only real authority is the Microsoft style guide + the aging GNOME catalog, no
   installed-OS (Tier 1) reference.
-- Recommendation: treat the MS style guide as lead authority, GNOME .po as cross-check, and mark Malagasy a
-  "needs native review before ship" language (native review is essential, not optional). Confidence: high.
+- Recommendation: treat the MS style guide as lead authority, GNOME .po as cross-check, and mark Malagasy a "needs
+  native review before ship" language (native review is essential, not optional). Confidence: high.
 
 ## Terminology and glossary
 
@@ -76,8 +80,8 @@ Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, p
 
 ## Plurals
 
-CLDR categories: `one`, `other`, where `one` covers BOTH 0 and 1 (other = 2+). So "0 items" takes the same form as
-"1 item". Confirmed by the Nautilus header `nplurals=2; plural=n>1`, which matches CLDR. The `desktop-i18n-plural` check
+CLDR categories: `one`, `other`, where `one` covers BOTH 0 and 1 (other = 2+). So "0 items" takes the same form as "1
+item". Confirmed by the Nautilus header `nplurals=2; plural=n>1`, which matches CLDR. The `desktop-i18n-plural` check
 requires every plural message to cover the categories this language needs.
 
 ## Notes and decisions
@@ -95,11 +99,11 @@ requires every plural message to cover the categories this language needs.
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/mg/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/mg/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

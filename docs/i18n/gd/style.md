@@ -1,7 +1,7 @@
 # Scottish Gaelic (gd) translation style guide
 
-Working notes for translating Cmdr into Scottish Gaelic (Gàidhlig). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Scottish Gaelic (Gàidhlig). Read [`README.md`](../README.md) for how this fits
+the translation process.
 
 This is the language base (`gd`), the universal Scottish Gaelic set. There's a single written standard (GOC, Gnàthachas
 Litreachaidh na Gàidhlig); no region variant is needed. Scottish Gaelic has unusually strong open-source coverage thanks
@@ -19,7 +19,8 @@ crash copy reassuring and factual.
 singular "thu" from plural/polite "sibh". Software convention (GNOME, Microsoft) addresses one user with the singular
 imperative. The Microsoft style guide stresses keeping a register that's "not overly formal" (it bans formal
 slenderisation and the formal "den"), which points to direct singular address. Confidence: high (Microsoft style guide
-+ GNOME).
+
+- GNOME).
 
 **Imperatives for UI actions** (buttons, menu items): use the imperative, matching the GNOME catalog: "Dèan lethbhreac"
 (copy), "Sguab às" (delete), "Sguir dheth" (cancel). Note Gaelic often uses a verbal-noun construction ("Dèan
@@ -48,15 +49,15 @@ English). The Microsoft style guide is detailed and worth reading for grammar co
 
 ## Terminology and glossary
 
-| English term | Scottish Gaelic | Notes |
-| ------------ | --------------- | ----- |
-| Copy | Dèan lethbhreac | GNOME (verbal-noun construction) |
-| Move | Gluais | GNOME (confirm against catalog) |
-| Delete | Sguab às | GNOME ("_Sguab às") |
-| Cancel | Sguir dheth | GNOME ("_Sguir dheth") |
-| file | faidhle | Microsoft + GNOME (confirm) |
-| folder | pasgan | Microsoft + GNOME (confirm) |
-| trash | An sgudal | GNOME |
+| English term | Scottish Gaelic | Notes                            |
+| ------------ | --------------- | -------------------------------- |
+| Copy         | Dèan lethbhreac | GNOME (verbal-noun construction) |
+| Move         | Gluais          | GNOME (confirm against catalog)  |
+| Delete       | Sguab às        | GNOME ("\_Sguab às")             |
+| Cancel       | Sguir dheth     | GNOME ("\_Sguir dheth")          |
+| file         | faidhle         | Microsoft + GNOME (confirm)      |
+| folder       | pasgan          | Microsoft + GNOME (confirm)      |
+| trash        | An sgudal       | GNOME                            |
 
 ## Brand and do-not-translate
 
@@ -73,12 +74,12 @@ confirmed.
 
 ## Notes and decisions
 
-- **Diacritics**: Scottish Gaelic uses the grave accent only (à è ì ò ù), NOT the acute (unlike Irish). This is a
-  common cross-Gaelic mistake; keep graves, never substitute acutes.
+- **Diacritics**: Scottish Gaelic uses the grave accent only (à è ì ò ù), NOT the acute (unlike Irish). This is a common
+  cross-Gaelic mistake; keep graves, never substitute acutes.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -87,6 +88,6 @@ confirmed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/gd/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/gd/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

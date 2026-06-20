@@ -8,23 +8,23 @@ Somali.
 
 Somali is a low-priority, low-resource target for a macOS app, and that shapes every call below.
 
-- **Apple does not localize macOS into Somali.** Somali isn't among macOS's ~47 system languages, so there is no
-  Finder, AppKit, or System Settings reference to mirror (Apple's own language list, checked 2026-06-20). The whole
-  "prefer the macOS term" rule that anchors the Swedish guide has no anchor here.
+- **Apple does not localize macOS into Somali.** Somali isn't among macOS's ~47 system languages, so there is no Finder,
+  AppKit, or System Settings reference to mirror (Apple's own language list, checked 2026-06-20). The whole "prefer the
+  macOS term" rule that anchors the Swedish guide has no anchor here.
 - **The reference pile has only the Microsoft style guide** (no macOS, no Microsoft terminology `.tbx`, no
   GNOME/Nautilus, no Xfce/Thunar; verified against the reference pile, 2026-06-20). So term choices can't be
-  triangulated across sources the way mature languages allow. Most terminology calls below are therefore `tentative`
-  and should be flagged to David or a native reviewer rather than shipped on agent judgment.
+  triangulated across sources the way mature languages allow. Most terminology calls below are therefore `tentative` and
+  should be flagged to David or a native reviewer rather than shipped on agent judgment.
 - **Practical consequence:** treat Somali as a later-stage locale. Don't invent a full native IT vocabulary from
   scratch. Where no established Somali term exists, borrow the English word conservatively (see the borrowing decision
   point) rather than coining one, and leave the term `tentative` until a native reviewer signs off.
 
 ## Voice and tone
 
-Friendly, warm, calm, concise. The Microsoft Somali guidance matches Cmdr's English voice well: "warm and relaxed,
-crisp and clear", short easy-to-read sentences, no literal translation, conversational but not slangy (verified against
-the reference pile, 2026-06-20). Keep one verb per sentence where you can; the MS guide explicitly asks for simple
-structure read aloud as a screen reader would.
+Friendly, warm, calm, concise. The Microsoft Somali guidance matches Cmdr's English voice well: "warm and relaxed, crisp
+and clear", short easy-to-read sentences, no literal translation, conversational but not slangy (verified against the
+reference pile, 2026-06-20). Keep one verb per sentence where you can; the MS guide explicitly asks for simple structure
+read aloud as a screen reader would.
 
 Error messages stay calm and actionable, naming the problem and the next step, and avoid framing anything as a failure.
 Somali has no neat single word for "error" to avoid the way English does, so the guideline is behavioral: describe what
@@ -41,7 +41,7 @@ happened and what to try, don't lead with blame.
   Somali voice should feel more deferential, the plural-respect form is the lever, but the MS-backed default is singular
   `adiga`. `tentative` (register call, not a term).
 - **Buttons and menu items: imperative verb.** Somali imperatives are natural and short for actions ("Tirtir" delete,
-  "Jooji" cancel/stop, "Nuqul" or "Koobi" copy). Confirm exact verbs with a native reviewer; the imperative *register*
+  "Jooji" cancel/stop, "Nuqul" or "Koobi" copy). Confirm exact verbs with a native reviewer; the imperative _register_
   is the safe call, the specific verbs are `tentative`.
 - **Avoid gendered pronouns in generic references.** The MS Somali guide is explicit: don't use `isaga`/`iyada` in
   generic UI text. Rewrite to second person (`adiga`), use a plural noun, or use the article instead of a possessive
@@ -70,9 +70,8 @@ confidence, and whether only David can settle it.
   - Standard Somali (Af Soomaali) is written in the **Somali Latin alphabet** (Latin script, official since 1972). No
     other script is in play for modern standard Somali. The alphabet uses plain Latin letters plus the digraphs `dh`,
     `kh`, `sh`, and the letter `c` (for the pharyngeal `ʿayn`) and `x` (for `ḥ`); it has no `p`, `v`, or `z` natively.
-  - Recommendation: write in standard Somali Latin orthography; rely on the formatter layer for any
-    locale-specific number shaping. No script switch or transliteration is needed. `high` (well-established fact, not a
-    judgment call).
+  - Recommendation: write in standard Somali Latin orthography; rely on the formatter layer for any locale-specific
+    number shaping. No script switch or transliteration is needed. `high` (well-established fact, not a judgment call).
 
 - **Regional variant: Somalia-standard, not a diaspora dialect.**
   - Somali has dialect variation (Northern/Standard, Benadiri, Maay), and a large diaspora (including in Sweden, where
@@ -96,9 +95,9 @@ confidence, and whether only David can settle it.
 
 ## Terminology and glossary
 
-Deferred this round. No reliable multi-source anchor exists for Somali (only the MS style guide, no terminology
-glossary or OS catalog), so terms should be filled in with a native reviewer rather than guessed. When started, use the
-same `chosen · sources · confidence` shape as the Swedish guide, and expect most entries to start `tentative`.
+Deferred this round. No reliable multi-source anchor exists for Somali (only the MS style guide, no terminology glossary
+or OS catalog), so terms should be filled in with a native reviewer rather than guessed. When started, use the same
+`chosen · sources · confidence` shape as the Swedish guide, and expect most entries to start `tentative`.
 
 ## Brand and do-not-translate
 
@@ -109,9 +108,9 @@ labels keep the acronym alone.
 
 ## Plurals
 
-CLDR categories for `so`: `one`, `other` (run `new Intl.PluralRules('so').resolvedOptions().pluralCategories` to
-confirm against the shipped ICU). Write both branches. Numbers and dates come from the formatter layer
-(`formatNumber()` / `formatBytes()`); never hardcode separators in a string.
+CLDR categories for `so`: `one`, `other` (run `new Intl.PluralRules('so').resolvedOptions().pluralCategories` to confirm
+against the shipped ICU). Write both branches. Numbers and dates come from the formatter layer (`formatNumber()` /
+`formatBytes()`); never hardcode separators in a string.
 
 ## Notes and decisions
 
@@ -124,6 +123,6 @@ confirm against the shipped ICU). Write both branches. Numbers and dates come fr
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/so/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/so/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

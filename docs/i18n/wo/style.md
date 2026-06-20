@@ -1,15 +1,16 @@
 # Wolof (wo) translation style guide
 
-Working notes for translating Cmdr into Wolof. Read [`README.md`](../README.md) for how this fits the translation process.
+Working notes for translating Cmdr into Wolof. Read [`README.md`](../README.md) for how this fits the translation
+process.
 
 This is the language base (`wo`). The only reference in the pile is Microsoft terminology tagged `wo-SN` (Senegal);
 there's no GNOME or macOS Wolof, so this is a thin, low-resource target.
 
 ## Voice and tone
 
-Friendly, concise, active, and never alarmist, matching Cmdr's English voice. Wolof has very little modern software UI to
-anchor a house tone; aim for plain, modern Wolof in the standardized Latin orthography. Keep error and crash copy calm
-and factual.
+Friendly, concise, active, and never alarmist, matching Cmdr's English voice. Wolof has very little modern software UI
+to anchor a house tone; aim for plain, modern Wolof in the standardized Latin orthography. Keep error and crash copy
+calm and factual.
 
 ## Formality
 
@@ -36,8 +37,8 @@ labels for UI actions. There's no shipped convention to copy, so confirm the reg
   `booleeb`). Spelling conventions (vowel length, prenasalized consonants) vary in practice between sources.
 - Majors: Microsoft uses the doubled-vowel length convention (`booleeb denc`, `bara denc`).
 - Recommendation: follow the CLAD/Microsoft Latin convention consistently, including ñ and ŋ and doubled long vowels;
-  keep text in NFC so the special characters compare stably. Verify the app font renders ŋ (eng) and ñ without
-  fallback boxes.
+  keep text in NFC so the special characters compare stably. Verify the app font renders ŋ (eng) and ñ without fallback
+  boxes.
 - Confidence: high (orthography), medium (which exact spelling when sources are silent: needs native review).
 
 ### Region / variant
@@ -62,12 +63,12 @@ labels for UI actions. There's no shipped convention to copy, so confirm the reg
 
 Only Microsoft terminology is available, so terms are MS-sourced and need native review for Cmdr's voice.
 
-| English term | Wolof | Notes |
-| ------------ | ----- | ----- |
-| File | bara denc | MS terminology (high; literally a thing that holds saved items) |
-| Folder | booleeb denc | MS terminology (high) |
-| Copy | sotti | MS terminology (high) |
-| Delete | far | MS terminology (high) |
+| English term | Wolof        | Notes                                                           |
+| ------------ | ------------ | --------------------------------------------------------------- |
+| File         | bara denc    | MS terminology (high; literally a thing that holds saved items) |
+| Folder       | booleeb denc | MS terminology (high)                                           |
+| Copy         | sotti        | MS terminology (high)                                           |
+| Delete       | far          | MS terminology (high)                                           |
 
 ## Brand and do-not-translate
 
@@ -95,6 +96,6 @@ read naturally with the count placeholder.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/wo/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/wo/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

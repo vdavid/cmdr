@@ -1,7 +1,8 @@
 # Kyrgyz (ky) translation style guide
 
-Working notes for translating Cmdr into Kyrgyz. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Kyrgyz.
+Working notes for translating Cmdr into Kyrgyz. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Kyrgyz.
 
 ## Voice and tone
 
@@ -15,13 +16,15 @@ appear throughout, with zero informal `Сен`. Use the polite register consiste
 ## Decision points
 
 Script, Cyrillic (David should ratify):
+
 - Options: Cyrillic vs Latin. Cyrillic is the sole official script in Kyrgyzstan and both reference sources (GNOME,
-  Microsoft terminology) are Cyrillic, confirmed from the actual strings (with Kyrgyz letters Ө/Ү/Ң). The Latin debate is
-  real but dormant: in 2023 the president called a Latin switch premature; Kyrgyzstan abstained from the 2024 Turkic
+  Microsoft terminology) are Cyrillic, confirmed from the actual strings (with Kyrgyz letters Ө/Ү/Ң). The Latin debate
+  is real but dormant: in 2023 the president called a Latin switch premature; Kyrgyzstan abstained from the 2024 Turkic
   common-Latin alphabet with no timeline. No production system uses Latin.
 - Recommendation: Cyrillic only; don't build Latin. Confidence: high.
 
 Major-product localization is essentially absent (THE finding):
+
 - Apple: Kyrgyz is a keyboard/region option only, NOT a macOS UI display language, no Finder localization (hence no
   Tier-1 source). Microsoft: a terminology glossary exists, but Kyrgyz isn't a standard Windows display language.
   Google/Spotify/Netflix: no Kyrgyz UI found. There is no authoritative full-UI prior art to anchor expectations.
@@ -30,6 +33,7 @@ Major-product localization is essentially absent (THE finding):
   major-vendor precedent and a thin reference base? Confidence: high that precedent is absent; the go/no-go is David's.
 
 Placeholder + case-suffix agreement (engineering pitfall):
+
 - Kyrgyz is agglutinative with strict vowel harmony: case suffixes (6 cases) must harmonize with the final vowel of the
   preceding word (front/back, rounded/unrounded), plus consonant assimilation. A suffix attached to or following a
   `{name}` filename can't agree at translation time.
@@ -52,7 +56,7 @@ modest; native review needed.
 - delete → өчүрүү · GNOME · high
 - rename → атын өзгөртүү · GNOME · high
 - trash → Себет · GNOME (MS: Таштанды кутусу) · tentative, Себет is shorter and matches the file-manager domain
-- cancel → (button) tentative · GNOME uses "Калтыруу"; MS's "тандоону чечүү" is the *deselect* sense, not a dialog
+- cancel → (button) tentative · GNOME uses "Калтыруу"; MS's "тандоону чечүү" is the _deselect_ sense, not a dialog
   Cancel, don't use it for the button
 
 ## Brand and do-not-translate
@@ -82,11 +86,11 @@ every plural message to cover the categories this language needs.
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ky/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ky/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

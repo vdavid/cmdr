@@ -1,7 +1,7 @@
 # Manipuri / Meitei (mni) translation style guide
 
-Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the
+translation process.
 
 Manipuri (Meiteilon, autonym Meitei) is a Tibeto-Burman language of Manipur, north-east India, plus Assam, Tripura, and
 Bangladesh. The BCP-47 base tag is `mni`; the script is carried by a `-Mtei` (Meitei Mayek) or `-Beng` (Bengali) suffix
@@ -20,9 +20,9 @@ modern.
 
 Meitei has an elaborate politeness system, but only the second person carries a formal/polite variety (first and third
 person don't distinguish). Use the polite second-person pronoun অদোম / ꯑꯗꯣꯝ (adom) for the user. This matches
-Microsoft's choice and the cultural norm of addressing someone whose age and status you don't know with the polite
-form. Politeness also shows up in polite verb suffixes; apply them as the natural register, not heavily, so UI actions
-stay short. Imperatives for buttons and menu items should read as plain, direct actions. Confidence: medium-high on the
+Microsoft's choice and the cultural norm of addressing someone whose age and status you don't know with the polite form.
+Politeness also shows up in polite verb suffixes; apply them as the natural register, not heavily, so UI actions stay
+short. Imperatives for buttons and menu items should read as plain, direct actions. Confidence: medium-high on the
 pronoun (clear precedent), lower on suffix density (a native reviewer should tune it).
 
 ## Terminology and glossary
@@ -58,7 +58,7 @@ These are the calls that actually matter for Manipuri; settle them before a tran
   almost no shipped major-vendor UI to copy. macOS, Windows, Spotify, and Netflix do NOT ship a Manipuri interface in
   either script; what exists is input-method/keyboard support (Apple, Google, Microsoft SwiftKey) and machine
   translation, not localized product UI. The only real localization precedent in the reference pile is a Microsoft
-  *translation style guide* (privacy-content register), not a shipped OS. Practical effect: tiny addressable user base,
+  _translation style guide_ (privacy-content register), not a shipped OS. Practical effect: tiny addressable user base,
   no app-UI vocabulary to inherit, and the translator coins or borrows most of it. Recommendation: low priority; ship
   only with a specific reason and a native reviewer. This is a David-only call. Confidence: high.
 
@@ -81,19 +81,19 @@ These are the calls that actually matter for Manipuri; settle them before a tran
     technical one), and it determines the catalog dir tag and the per-string transliteration.
 
 - **Anglicism / tech-term borrowing.** Manipuri borrows computing terms from English heavily rather than coining native
-  words; the Microsoft examples transliterate file-manager-adjacent vocabulary directly. Expect "file", "folder",
-  "tab", "volume" and similar to become transliterations unless a clear, widely-understood native word exists. Be
-  consistent, record each call in the glossary, and have a native reviewer confirm the transliteration spelling (the
-  same word can be spelled several ways). Confidence: high that borrowing is the norm; low on individual spellings.
+  words; the Microsoft examples transliterate file-manager-adjacent vocabulary directly. Expect "file", "folder", "tab",
+  "volume" and similar to become transliterations unless a clear, widely-understood native word exists. Be consistent,
+  record each call in the glossary, and have a native reviewer confirm the transliteration spelling (the same word can
+  be spelled several ways). Confidence: high that borrowing is the norm; low on individual spellings.
 
 - **Punctuation, numbers, and dates (Microsoft conventions to reuse).** No capitalization exists in either script (a
   single form per letter). The Nuqta diacritic is strictly avoided. Spell out numbers one through ten, numerals above.
-  Microsoft uses DD/MM/YYYY and "Month YYYY"; that conflicts with Cmdr's house ISO-date default, so flag the
-  date-format choice for David rather than silently following either. No gender-specific words, so no count/gender
-  agreement to manage. Confidence: high on the script conventions, open on the date format.
+  Microsoft uses DD/MM/YYYY and "Month YYYY"; that conflicts with Cmdr's house ISO-date default, so flag the date-format
+  choice for David rather than silently following either. No gender-specific words, so no count/gender agreement to
+  manage. Confidence: high on the script conventions, open on the date format.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/mni/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/mni/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

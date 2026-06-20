@@ -15,7 +15,8 @@ imperative where it reads friendlier. Error messages stay calm and actionable; s
 **Verdict: informal `tu`, not the formal `jūs`.** Consumer brands (around 17 of 20 surveyed — Swedbank, Rimi, the
 telcos, IKEA, Coca-Cola — use `tu`; `jūs` is reserved for legal copy) address Latvian users informally, which fits
 Cmdr's friendly personal voice. Microsoft's style guide leans formal `jūs`, but Cmdr deliberately picks the warmer
-consumer-brand register. Formality decision recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+consumer-brand register. Formality decision recorded in
+[`formal-informal-decisions.md`](../formal-informal-decisions.md).
 
 - **Labels and instructions:** the pronoun-free singular imperative reads clean (saglabā, atver) and aligns with the
   `tu` register; the pronoun-free style stays the default where it works.
@@ -25,6 +26,7 @@ consumer-brand register. Formality decision recorded in [`formal-informal-decisi
 ## Decision points
 
 No macOS anchor (priority signal):
+
 - Apple does NOT ship a Latvian macOS UI; Latvian isn't among Apple's display languages (keyboard/input/spellcheck
   only). So there's no Tier-1 Finder reference. Authority: Microsoft (Tier 2: terminology + 97-page style guide) and
   GNOME/Xfce (Tier 3), both complete. Recommendation: Microsoft for terms, GNOME/Xfce for file-manager parity, and
@@ -32,6 +34,7 @@ No macOS anchor (priority signal):
   native reviewer. Confidence: high.
 
 CLDR plurals, the `zero` category gotcha:
+
 - lv categories: `zero`, `one`, `other` (three forms).
   - one: n%10=1 and n%100 != 11 (1, 21, 31; NOT 11)
   - zero: n%10=0, OR n%100 in 11..19 (so 0, 10, 11-19, 20, 30, …, 110-119), triggers genitive plural
@@ -43,6 +46,7 @@ CLDR plurals, the `zero` category gotcha:
   ship only one+other. Confidence: high.
 
 Case system vs placeholder insertion (structural risk):
+
 - Latvian nouns inflect across 7 cases x 2 genders; a `{name}`/`{count}` doesn't auto-agree with the surrounding
   sentence. "Move to {folder}" needs {folder} in a case a nominative filename can't provide; "{count} files" needs the
   noun in genitive plural when {count} hits the `zero` category.
@@ -54,6 +58,7 @@ Case system vs placeholder insertion (structural risk):
   native-review checklist item. Confidence: high (general), tentative per-string.
 
 "File" term, fails vs datne (David to settle):
+
 - Real split: Microsoft and Xfce use `fails` (everyday, colloquial); GNOME uses `datne` (the purist standard-language
   term promoted by the State Language Centre). This recurs everywhere in a file manager, so the two can't be mixed.
 - Recommendation: `fails` (Microsoft + familiarity, fits a friendly voice), but flag, a native reviewer may prefer
@@ -87,9 +92,9 @@ Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, p
 
 ## Plurals
 
-CLDR categories: `zero`, `one`, `other` (see Decision points for exact rules and the gettext-ordering gotcha). Author all
-three for any counted noun. The `desktop-i18n-plural` check requires every plural message to cover the categories this
-language needs.
+CLDR categories: `zero`, `one`, `other` (see Decision points for exact rules and the gettext-ordering gotcha). Author
+all three for any counted noun. The `desktop-i18n-plural` check requires every plural message to cover the categories
+this language needs.
 
 ## Notes and decisions
 
@@ -107,11 +112,11 @@ language needs.
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/lv/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/lv/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -13,20 +13,20 @@ cite which sources back each choice.
 
 Friendly, concise, active, calm. Hungarian software leans on a nominal style for labels (a button is a noun, "Másolás" =
 "Copying", not a command), which reads clean and native rather than cold. Conversational copy stays warm and uses the
-informal `te` address (see Formality). Error messages stay calm and actionable and
-never use "hiba" (error) or "sikertelen" (failed) as a bare label: state the problem and a next step ("Nem sikerült
-átnevezni a fájlt. Megpróbálod újra?").
+informal `te` address (see Formality). Error messages stay calm and actionable and never use "hiba" (error) or
+"sikertelen" (failed) as a bare label: state the problem and a next step ("Nem sikerült átnevezni a fájlt. Megpróbálod
+újra?").
 
 ## Formality
 
-**Verdict: informal `te` (tegezés) throughout. No önözés.** Consumer brands (IKEA, Spotify, Netflix, H&M, Coca-Cola)
-all address Hungarian users with `te`, which fits Cmdr's friendly personal voice. The OS sources lean önözés, but
-Cmdr deliberately picks the warmer consumer-brand register. Formality decision recorded in
+**Verdict: informal `te` (tegezés) throughout. No önözés.** Consumer brands (IKEA, Spotify, Netflix, H&M, Coca-Cola) all
+address Hungarian users with `te`, which fits Cmdr's friendly personal voice. The OS sources lean önözés, but Cmdr
+deliberately picks the warmer consumer-brand register. Formality decision recorded in
 [`formal-informal-decisions.md`](../formal-informal-decisions.md).
 
 - **Labels (buttons, menus, headers): nominal / infinitive, no direct address.** "Másolás", "Áthelyezés", "Törlés",
-  "Mégsem". The dominant Hungarian UI convention; macOS Finder, Microsoft, GNOME, and Xfce all do this, and it sits
-  fine under a `te` register since a label isn't direct address.
+  "Mégsem". The dominant Hungarian UI convention; macOS Finder, Microsoft, GNOME, and Xfce all do this, and it sits fine
+  under a `te` register since a label isn't direct address.
 - **Conversational copy and questions: `te` (tegezés).** Where English addresses the user directly, use the informal
   second person. A friendly question is "Megpróbálod újra?", not the önözés "Megpróbálja újra?".
 - **Cancel is "Mégsem"** (the macOS Finder button label), not "Mégse" or "Visszavonás" (that's undo). See the glossary
@@ -35,8 +35,8 @@ Cmdr deliberately picks the warmer consumer-brand register. Formality decision r
 ## Terminology and glossary
 
 Format: each line is `English: chosen · sources · confidence`. Confidence is `confirmed` (a human signed off), `high`
-(authoritative sources agree), or `tentative` (sources conflict or none had it). Sources: mac = macOS Finder/AppKit,
-ms = Microsoft terminology/style guide, gn = GNOME Nautilus, xf = Xfce Thunar. Contested terms get a short block.
+(authoritative sources agree), or `tentative` (sources conflict or none had it). Sources: mac = macOS Finder/AppKit, ms
+= Microsoft terminology/style guide, gn = GNOME Nautilus, xf = Xfce Thunar. Contested terms get a short block.
 
 - pane: `panel` · no Tier-1 source (macOS Finder is single-pane; macOS "panel" means a Settings pane) · tentative. The
   two file lists. Microsoft's literal term is "ablaktábla"; "panel" is cleaner and idiomatic for a UI region. Flagged.
@@ -70,7 +70,7 @@ Contested or split, with the per-source evidence:
 
 - mac: `Kuka` (30 occurrences), zero `Lomtár`.
 - ms: gives both `kuka` and `lomtár`, but reserves `Lomtár` specifically for the Windows "Recycle Bin" product name.
-- gn: `Kuka` ("Kukába dobva", "_Kuka ürítése").
+- gn: `Kuka` ("Kukába dobva", "\_Kuka ürítése").
 - xf: `Kuka` ("Áthelyezés a K_ukába", "Az összes fájl és mappa törlése a Kukából").
 - Chosen: `Kuka` · sources mac, gn, xf (ms agrees as common noun) · high. This corrects the earlier "confirm Kuka vs
   Lomtár" open item: `Kuka` is what every Hungarian platform calls it; `Lomtár` is a Windows-product-name artifact.
@@ -94,15 +94,15 @@ Contested or split, with the per-source evidence:
 - mac: `Kedvenc` (26x) names the Favorites sidebar; literal `könyvjelző` appears 3x.
 - ms: `kedvenc`.
 - gn: `könyvjelző` ("Hozzáadás a könyvjelzőkhöz", "Eltávolítás a könyvjelzőkből").
-- Chosen: `könyvjelző` · source gn, plus mac's literal usage · tentative. macOS/MS `Kedvenc` names a Favorites *sidebar
-  concept*, not an explicit bookmark action; for Cmdr's named bookmark feature the file-manager-native `könyvjelző`
+- Chosen: `könyvjelző` · source gn, plus mac's literal usage · tentative. macOS/MS `Kedvenc` names a Favorites _sidebar
+  concept_, not an explicit bookmark action; for Cmdr's named bookmark feature the file-manager-native `könyvjelző`
   (GNOME) is clearer. Flagged for David: pick `könyvjelző` (literal, GNOME) vs `kedvenc` (macOS sidebar feel).
 
 ### cancel → `Mégsem`
 
 - mac: `Mégsem` (52 occurrences, the actual button label), zero `Mégse`.
 - ms: `Mégse` (terminology and style-guide examples).
-- gn/xf: `Mégse` ("_Mégse", "Mé_gse").
+- gn/xf: `Mégse` ("\_Mégse", "Mé_gse").
 - Chosen: `Mégsem` · source mac (Tier 1) · high. A genuine macOS-vs-Windows/Linux split. The earlier draft asserted
   `Mégse` and explicitly rejected `Mégsem`; macOS Finder, the highest authority and what the user sees, uses `Mégsem`,
   so Cmdr follows macOS. Never "Visszavonás" (undo).
@@ -137,8 +137,8 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   placeholder needs care; prefer constructions that don't hinge on the inserted value's first sound.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
-- **Quotation marks: `„…”`** (low opening, high closing) is the standard Hungarian form. macOS Finder uses it too
-  (e.g. „^0”). Avoid English `"…"`.
+- **Quotation marks: `„…”`** (low opening, high closing) is the standard Hungarian form. macOS Finder uses it too (e.g.
+  „^0”). Avoid English `"…"`.
 - **Numbers and dates come from the formatter layer.** Hungarian uses a comma decimal and space thousands separator, and
   a native `YYYY. MM. DD.` date order; `formatNumber()`/`formatBytes()`/the date formatters produce these from the
   locale. Never hardcode separators or date order in a string.
@@ -161,6 +161,6 @@ gut-check.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/hu/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/hu/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

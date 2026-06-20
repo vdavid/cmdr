@@ -1,7 +1,8 @@
 # <Language name> (<tag>) translation style guide
 
-Working notes for translating Cmdr into this language. Copy this `_template/` folder to `<tag>/` (it has `style.md` and `glossary.md`) and fill every section
-before the first translation pass. Read [`README.md`](../README.md) for how this fits the translation process.
+Working notes for translating Cmdr into this language. Copy this `_template/` folder to `<tag>/` (it has `style.md` and
+`glossary.md`) and fill every section before the first translation pass. Read [`README.md`](../README.md) for how this
+fits the translation process.
 
 This is a living doc, and capturing is your job, not optional. Whenever you discover a convention, gotcha, decision
 point, or rule that wasn't already written where you looked for it, write it down: per-language findings go here; a
@@ -55,12 +56,13 @@ Anything else: punctuation conventions, quotation marks, number and date phrasin
 case-by-case rulings made during translation so they are not relitigated.
 
 - **ICU mechanics** (catalog-level, not language-specific, but easy to miss when handed only "translate these"): double
-  every apostrophe in a value (`'` becomes `''`; ICU treats a lone `'` as an escape and silently swallows text), and keep
-  every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  every apostrophe in a value (`'` becomes `''`; ICU treats a lone `'` as an escape and silently swallows text), and
+  keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/<tag>/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/<tag>/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

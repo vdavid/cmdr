@@ -14,7 +14,8 @@ normalization only, never region↔script remapping:
 
 - **macOS / GNOME / Xfce**: `_`→`-` (`pt_BR`→`pt-BR`, `en_GB`→`en-GB`); `@mod`→`-Subtag` (`sr@latin`→`sr-Latn`,
   `ca@valencia`→`ca-valencia`, `uz@cyrillic`→`uz-Cyrl`); legacy macOS `no`→`nb`.
-- **microsoft-terminology**: the TBX's authoritative internal `xml:lang` (already BCP-47: `zh-Hans`, `pt-BR`, `sr-Latn`).
+- **microsoft-terminology**: the TBX's authoritative internal `xml:lang` (already BCP-47: `zh-Hans`, `pt-BR`,
+  `sr-Latn`).
 - **microsoft-style-guides**: the slug→tag table in `_extract/reorg/main.go` — derived from terminology's codes by
   name-matching, plus an override map for Microsoft's regional/script splits its terminology lumps (`french-canada`→
   `fr-CA`, `spanish-mexico`→`es-MX`, `english-uk`→`en-GB`, `azerbaijani`→`az-Latn`, etc.). Unspecified-script slugs map
@@ -56,7 +57,8 @@ For de, sv, hu, and every plain base language there are no such splits: one clea
 - **What**: Microsoft Terminology Collection, the full per-language TBX glossaries.
 - **Layout**: `<tag>/microsoft-terminology/<LANGUAGE>.tbx` (e.g. `fr/microsoft-terminology/FRENCH.tbx`).
 - **Coverage**: 111 languages, ~2.6 GB. Pretty-printed XML (`xmllint --format --huge`, 111/111) so it's browsable.
-- **Provenance**: `https://download.microsoft.com/download/b/2/d/b2db7a7c-8d33-47f3-b2c1-ee5e6445cf45/MicrosoftTermCollection.zip`,
+- **Provenance**:
+  `https://download.microsoft.com/download/b/2/d/b2db7a7c-8d33-47f3-b2c1-ee5e6445cf45/MicrosoftTermCollection.zip`,
   downloaded 2026-06-19; upstream files dated 2024-11-06. The source zip is kept in `_downloads/` for re-extraction
   (note: re-extraction yields the original single-line TBX; re-run the `xmllint --format` pass after).
 - **License**: Microsoft Terminology license (reference use; see the usage rule in README.md).
@@ -65,8 +67,8 @@ For de, sv, hu, and every plain base language there are no such splits: one clea
 
 - **What**: Microsoft Localization Style Guides (tone, formality, conventions, do/don't) per language.
 - **Layout**: `<tag>/microsoft-style-guides/StyleGuide.pdf`.
-- **Coverage**: all 102 available languages, ~82 MB, 0 download failures. German (82 pp), Swedish (58 pp), Hungarian
-  (62 pp) among them.
+- **Coverage**: all 102 available languages, ~82 MB, 0 download failures. German (82 pp), Swedish (58 pp), Hungarian (62
+  pp) among them.
 - **Provenance**: `https://aka.ms/<language>-styleguide` redirects, downloaded 2026-06-19. Language list from
   https://learn.microsoft.com/en-us/globalization/reference/microsoft-style-guides.
 
@@ -85,8 +87,8 @@ For de, sv, hu, and every plain base language there are no such splits: one clea
 ## Decisions made / open items
 
 - **Lossless siblings, separate regional/script folders (2026-06-19).** Chosen over collapsing to base or force-merging
-  scripts; the cost is that CJK/Serbian/Norwegian reference is spread across siblings (`_see-also.txt` bridges them), and
-  the gain is zero data loss and no opinionated remap. Irrelevant to de/sv/hu.
+  scripts; the cost is that CJK/Serbian/Norwegian reference is spread across siblings (`_see-also.txt` bridges them),
+  and the gain is zero data loss and no opinionated remap. Irrelevant to de/sv/hu.
 - **Windows (Tier 1) — skipped, by decision (2026-06-19).** Reading the UTM VM's filesystem from here isn't feasible,
   and Microsoft Terminology + Style Guides (Tier 2) already capture Windows terminology authoritatively. Revisit only if
   a specific term needs the live Windows wording; then share a folder out of the VM (or mount its disk image) and

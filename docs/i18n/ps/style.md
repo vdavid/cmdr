@@ -1,6 +1,7 @@
 # Pashto (ps) translation style guide
 
-Working notes for translating Cmdr into Pashto. Read [`README.md`](../README.md) for how this fits the translation process.
+Working notes for translating Cmdr into Pashto. Read [`README.md`](../README.md) for how this fits the translation
+process.
 
 Low resourcing, and RTL. The pile has only GNOME Nautilus (`ps`) and Microsoft terminology (`ps-AF`); NO macOS Finder
 (Apple does not ship a Pashto macOS UI). So the highest-authority source (a real localized OS) is absent. Treat every
@@ -15,8 +16,8 @@ precedent, prioritize clarity and plain Pashto over clever phrasing. Error messa
 
 Pashto distinguishes familiar (تاسو/ته) and polite address; software convention leans polite/neutral. Use the
 imperative/command verb form for actions, addressing the user politely where running text is unavoidable. Microsoft's
-ps-AF terminology is the only software-register reference in the pile; follow its register. Confidence: tentative
-(thin evidence).
+ps-AF terminology is the only software-register reference in the pile; follow its register. Confidence: tentative (thin
+evidence).
 
 ## Decision points
 
@@ -46,8 +47,8 @@ the variant gap is minor for UI. Confidence: tentative.
 
 ### Numerals: Eastern Arabic vs Western digits
 
-Pashto can use Eastern Arabic-Indic numerals (۰۱۲۳…) or Western digits (0123). File sizes and counts appear constantly in
-a file manager. Recommendation: let `Intl` with the `ps` locale decide numeral shaping rather than hardcoding either;
+Pashto can use Eastern Arabic-Indic numerals (۰۱۲۳…) or Western digits (0123). File sizes and counts appear constantly
+in a file manager. Recommendation: let `Intl` with the `ps` locale decide numeral shaping rather than hardcoding either;
 confirm which the target audience expects with a native reviewer. Confidence: tentative.
 
 ### Gender and inclusive language
@@ -61,16 +62,16 @@ Recommendation: rephrase to avoid user-gender agreement. Confidence: tentative.
 Defer; with no macOS source, every term is tentative and needs native review. Triangulate Microsoft ps-AF terminology +
 GNOME Nautilus only.
 
-| English term | Pashto | Notes |
-| ------------ | ------ | ----- |
-| file | فایل | confirm with reviewer |
-| folder | پوښه / فولډر | tentative |
-| trash | کثافت دانی | tentative, needs native check |
+| English term | Pashto       | Notes                         |
+| ------------ | ------------ | ----------------------------- |
+| file         | فایل         | confirm with reviewer         |
+| folder       | پوښه / فولډر | tentative                     |
+| trash        | کثافت دانی   | tentative, needs native check |
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by `desktop-i18n-dont-translate`.
-Note: in RTL text these LTR brand runs need bidi isolation (see RTL decision point).
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
+`desktop-i18n-dont-translate`. Note: in RTL text these LTR brand runs need bidi isolation (see RTL decision point).
 
 ## Plurals
 
@@ -89,6 +90,6 @@ CLDR categories for `ps`: `one`, `other`. Only two plural forms needed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ps/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ps/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

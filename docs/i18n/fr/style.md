@@ -1,6 +1,7 @@
 # French (fr) translation style guide
 
-Working notes for translating Cmdr into French. Read [`README.md`](../README.md) for how this fits the translation process.
+Working notes for translating Cmdr into French. Read [`README.md`](../README.md) for how this fits the translation
+process.
 
 This is the language base (`fr`), the universal French set and the fallback for any future region variants (`fr-CA`,
 `fr-CH`). Stick to standard metropolitan French here; push region-specific phrasing into a variant only when one is
@@ -20,15 +21,18 @@ UI: respectful without being cold, and it reads naturally to every French speake
 file manager addressing an unknown adult user, and inconsistent tu/vous is jarring, so vous everywhere, no exceptions.
 
 **Imperatives for UI actions** (buttons, menu items): use the infinitive, the French UI convention ("Envoyer",
-"Annuler", "Copier", "Ignorer"), not the imperative mood. The infinitive is the neutral, label-style form Apple and
-most French macOS software use for commands.
+"Annuler", "Copier", "Ignorer"), not the imperative mood. The infinitive is the neutral, label-style form Apple and most
+French macOS software use for commands.
 
 ## Terminology and glossary
 
-- **crash report** → rapport d'incident · "incident" is the standard, non-alarmist French term (matches Apple's "rapport d'incident"); avoid "rapport de plantage" which is more colloquial
-- **crashed / quit unexpectedly** → s'est fermé(e) de façon inattendue · matches macOS French phrasing for an unexpected quit
+- **crash report** → rapport d'incident · "incident" is the standard, non-alarmist French term (matches Apple's "rapport
+  d'incident"); avoid "rapport de plantage" which is more colloquial
+- **crashed / quit unexpectedly** → s'est fermé(e) de façon inattendue · matches macOS French phrasing for an unexpected
+  quit
 - **Report ID** → identifiant du rapport
-- **Settings** → Réglages · macOS French names the app preferences pane "Réglages"; keep consistent with how the in-app Settings section is named once an `fr` catalog exists
+- **Settings** → Réglages · macOS French names the app preferences pane "Réglages"; keep consistent with how the in-app
+  Settings section is named once an `fr` catalog exists
 - **Updates** → Mises à jour · in-app navigation section; keep consistent across the catalog
 - **Send** → Envoyer
 - **Copy** → Copier
@@ -52,17 +56,17 @@ for future strings: cover the categories the message needs, not English's.
 
 - Roster: base fr (France norm) ships first; Canadian French (fr-CA) is a deferred variant. See
   [`language-selection-decisions.md`](../language-selection-decisions.md).
-- **Punctuation spacing**: French uses a narrow no-break space before `: ; ! ?`. Apply it (e.g. "Identifiant du
-  rapport :"). Use a real narrow no-break space (U+202F) where typographically correct, or accept a regular space if
-  the rendering context doesn't support it; stay consistent within the catalog.
+- **Punctuation spacing**: French uses a narrow no-break space before `: ; ! ?`. Apply it (e.g. "Identifiant du rapport
+  :"). Use a real narrow no-break space (U+202F) where typographically correct, or accept a regular space if the
+  rendering context doesn't support it; stay consistent within the catalog.
 - **Quotation marks**: use French guillemets « … » with inner spacing when quoting, not English "…".
 - **Apostrophes**: in ICU strings (everything outside `errors.*`), double every apostrophe (`d''incident`). In
   `errors.*` keys, use normal apostrophes. The crash-reporter strings are ICU, so they double.
-- **Ellipsis**: keep the source's literal three dots ("Envoi...") rather than swapping to a single … character, to
-  match the English catalog value.
+- **Ellipsis**: keep the source's literal three dots ("Envoi...") rather than swapping to a single … character, to match
+  the English catalog value.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/fr/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/fr/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -1,9 +1,9 @@
 # i18n terminology evidence pile
 
 Authoritative reference data for choosing translation terms with confidence, feeding the per-language translation style
-guides at [`/docs/i18n/`](..) (`<tag>/style.md`). Goal: every term we pick can cite what a real localized
-OS or an official vendor glossary actually says, so choices match user expectations instead of an agent's guess. Full
-inventory, provenance, layout rules, and open items: [inventory.md](inventory.md). Process and confidence model:
+guides at [`/docs/i18n/`](..) (`<tag>/style.md`). Goal: every term we pick can cite what a real localized OS or an
+official vendor glossary actually says, so choices match user expectations instead of an agent's guess. Full inventory,
+provenance, layout rules, and open items: [inventory.md](inventory.md). Process and confidence model:
 [`/docs/guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Must-knows
@@ -23,9 +23,9 @@ inventory, provenance, layout rules, and open items: [inventory.md](inventory.md
   tag convention.
 - **Gitignored, lives in the main clone.** `_ignored/` is untracked (`.gitignore` line 9), so this ~3 GB pile stays
   local, isn't subject to the doc-system checks, and belongs in the main clone, not a worktree (worktrees get cleaned).
-- **Authority tiers** (how much a source proves "user expectation"): 1 = the real installed OS (macOS; strongest),
-  2 = vendor terminology + style guides (Microsoft), 3 = broad open-source corpora (GNOME/Xfce; cross-language parity),
-  4 = native human review (the only thing that makes a term "confirmed"; out of budget for now).
+- **Authority tiers** (how much a source proves "user expectation"): 1 = the real installed OS (macOS; strongest), 2 =
+  vendor terminology + style guides (Microsoft), 3 = broad open-source corpora (GNOME/Xfce; cross-language parity), 4 =
+  native human review (the only thing that makes a term "confirmed"; out of budget for now).
 
 ## Structure
 

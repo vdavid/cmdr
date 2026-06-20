@@ -1,7 +1,7 @@
 # Central Kurdish / Sorani (ckb) translation style guide
 
-Working notes for translating Cmdr into Central Kurdish (Sorani, کوردیی ناوەندی). Read [`README.md`](../README.md) for how
-this fits the translation process.
+Working notes for translating Cmdr into Central Kurdish (Sorani, کوردیی ناوەندی). Read [`README.md`](../README.md) for
+how this fits the translation process.
 
 `ckb` is the language base, written in the Sorani Perso-Arabic script and laid out right-to-left (RTL). The reference
 pile has GNOME nautilus and Microsoft terminology for `ckb`; no macOS (Apple does not ship a Sorani macOS UI).
@@ -36,10 +36,10 @@ this batch, so the layout work matters more than usual.
   - Bidi handling where RTL Sorani text sits next to LTR runs: file paths, brand words (Cmdr, macOS, GitHub), numbers,
     and extensions stay legible and don't reorder confusingly. Wrap LTR tokens so they don't scramble the surrounding
     RTL sentence.
-  - Icons and directional controls (back/forward, "move to other pane") read correctly mirrored.
-  This is a prerequisite, not a translation step. Flag for David: does Cmdr's layout currently support RTL mirroring at
-  all? If not, Sorani (and any future RTL locale) needs that engineering before it can ship. Confidence: confirmed that
-  RTL support is required; unknown whether the app has it.
+  - Icons and directional controls (back/forward, "move to other pane") read correctly mirrored. This is a prerequisite,
+    not a translation step. Flag for David: does Cmdr's layout currently support RTL mirroring at all? If not, Sorani
+    (and any future RTL locale) needs that engineering before it can ship. Confidence: confirmed that RTL support is
+    required; unknown whether the app has it.
 - **Regional/dialect variant: target standard Sorani, no split.** Sorani has sub-dialects, but the written standard
   (centered on the Sulaymaniyah/Erbil literary norm) is what's localized. No product-level region split. Confidence:
   high.
@@ -92,6 +92,6 @@ strings to read correctly for one vs many; a native reviewer confirms number-nou
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ckb/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ckb/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

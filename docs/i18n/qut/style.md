@@ -1,10 +1,11 @@
 # K'iche' (qut) translation style guide
 
-Working notes for translating Cmdr into K'iche'. Read [`README.md`](../README.md) for how this fits the translation process.
+Working notes for translating Cmdr into K'iche'. Read [`README.md`](../README.md) for how this fits the translation
+process.
 
 VERY LOW priority. K'iche' (also Quiché) is a Mayan language of highland Guatemala (~1M speakers). The pile has ONLY
-Microsoft terminology for `qut-GT`; no macOS (Apple ships no K'iche' UI), no GNOME/Xfce. There is essentially no consumer
-software-localization precedent beyond Microsoft's Guatemala terminology effort.
+Microsoft terminology for `qut-GT`; no macOS (Apple ships no K'iche' UI), no GNOME/Xfce. There is essentially no
+consumer software-localization precedent beyond Microsoft's Guatemala terminology effort.
 
 ## Voice and tone
 
@@ -14,8 +15,8 @@ needs a native reviewer.
 ## Formality
 
 K'iche' uses Latin script (the Mayan-languages unified alphabet, ALMG standard, with the glottal-stop apostrophe ' as a
-letter, e.g. "K'iche'"). It has formal/respectful registers but no software convention to anchor to. Use plain imperative
-for actions. Confidence: tentative across the board.
+letter, e.g. "K'iche'"). It has formal/respectful registers but no software convention to anchor to. Use plain
+imperative for actions. Confidence: tentative across the board.
 
 ## Decision points
 
@@ -36,8 +37,8 @@ about ICU apostrophe doubling. Confidence: high on the orthography, high on the 
 
 ### Numerals
 
-Use Western digits (Mayan vigesimal numerals are not used in modern software). Let `Intl` handle formatting.
-Confidence: high.
+Use Western digits (Mayan vigesimal numerals are not used in modern software). Let `Intl` handle formatting. Confidence:
+high.
 
 ## Terminology and glossary
 
@@ -45,7 +46,8 @@ Defer; only Microsoft qut-GT terminology available, every term tentative pending
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by `desktop-i18n-dont-translate`.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
+`desktop-i18n-dont-translate`.
 
 ## Plurals
 
@@ -59,6 +61,6 @@ CLDR categories for `qut`: `one`, `other`. Two forms.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/qut/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/qut/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

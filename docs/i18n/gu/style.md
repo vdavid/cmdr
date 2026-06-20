@@ -33,9 +33,9 @@ Confidence: confirmed.
 - **Script: Gujarati script only, no decision.** Gujarati is written in its own Brahmic abugida. Never romanize UI
   strings. Confidence: high.
 - **Conjunct consonants and matras (vowel signs) need correct Unicode composition.** Gujarati stacks consonants into
-  conjuncts (with the virama / halant) and attaches vowel signs around the base. Translate in properly composed
-  Unicode; don't break a conjunct or strand a matra. Editors and fonts that don't shape Gujarati can silently mangle
-  this. Confidence: high.
+  conjuncts (with the virama / halant) and attaches vowel signs around the base. Translate in properly composed Unicode;
+  don't break a conjunct or strand a matra. Editors and fonts that don't shape Gujarati can silently mangle this.
+  Confidence: high.
 - **Honorific verb agreement is the formality mechanic.** With "તમે", verbs and imperatives take the polite plural-form
   ending; mixing familiar and polite forms in one flow reads inconsistently. Pick polite and apply it everywhere.
   Confidence: high.
@@ -51,15 +51,15 @@ Confidence: confirmed.
 
 ## Terminology and glossary
 
-| English term | Gujarati | Notes |
-| ------------ | -------- | ----- |
-| Copy | નકલ કરો | GNOME ("નકલ કરો (_C)") |
-| Move | ખસેડવું | Microsoft |
-| Delete | કાઢી નાખો | GNOME ("કાઢી નાખો (_D)") |
-| Cancel | રદ કરો | GNOME ("રદ કરો (_C)") |
-| file | ફાઇલ | Microsoft + GNOME (transliterated English) |
-| folder | ફોલ્ડર | Microsoft + GNOME (transliterated English) |
-| trash | કચરાપેટી | GNOME (lit. "rubbish bin") |
+| English term | Gujarati  | Notes                                      |
+| ------------ | --------- | ------------------------------------------ |
+| Copy         | નકલ કરો   | GNOME ("નકલ કરો (\_C)")                    |
+| Move         | ખસેડવું   | Microsoft                                  |
+| Delete       | કાઢી નાખો | GNOME ("કાઢી નાખો (\_D)")                  |
+| Cancel       | રદ કરો    | GNOME ("રદ કરો (\_C)")                     |
+| file         | ફાઇલ      | Microsoft + GNOME (transliterated English) |
+| folder       | ફોલ્ડર    | Microsoft + GNOME (transliterated English) |
+| trash        | કચરાપેટી  | GNOME (lit. "rubbish bin")                 |
 
 ## Brand and do-not-translate
 
@@ -79,8 +79,8 @@ covers n=1 (and 0..1 ranges for some uses), so write the `other` branch to read 
   formatter. Never hardcode digit shapes or separators; let the formatter layer decide.
 - **Dates come from the formatter layer.** Never hardcode.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -88,6 +88,6 @@ covers n=1 (and 0..1 ranges for some uses), so write the `other` branch to read 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/gu/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/gu/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

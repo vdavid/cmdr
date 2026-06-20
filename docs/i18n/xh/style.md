@@ -29,8 +29,8 @@ more honorific register is wanted.
 - Majors: intrinsic to all Nguni-language localization; vendors phrase around it with class-neutral framings.
 - Recommendation: write templates so no agreement morpheme depends on an inserted value; keep inserts in
   agreement-neutral slots (label + colon + value, or a fixed carrier noun owning the concord). This is the top
-  blind-translation risk for isiXhosa. Full reasoning in [`zu/style.md`](../zu/style.md) § noun-class. Flag to David: some
-  English source templates may need rewording to translate cleanly.
+  blind-translation risk for isiXhosa. Full reasoning in [`zu/style.md`](../zu/style.md) § noun-class. Flag to David:
+  some English source templates may need rewording to translate cleanly.
 - Confidence: high.
 
 ### Click consonants and orthography
@@ -68,16 +68,16 @@ more honorific register is wanted.
 
 ## Terminology and glossary
 
-| English term | Xhosa | Notes |
-| ------------ | ----- | ----- |
-| File | ifayile | borrowed-respelled; MS terminology (high) |
-| Folder | ifolda | GNOME + MS agree (high) |
-| Copy | kopa | MS terminology (high) |
-| Delete | cima | MS terminology + GNOME agree (high) |
-| Open | vula | GNOME (high) |
-| Rename | thiya kwakhona | GNOME (high) |
-| Cancel | rhoxisa | GNOME (high) |
-| Move to Trash | yisa emgqomeni | GNOME (high) |
+| English term  | Xhosa          | Notes                                     |
+| ------------- | -------------- | ----------------------------------------- |
+| File          | ifayile        | borrowed-respelled; MS terminology (high) |
+| Folder        | ifolda         | GNOME + MS agree (high)                   |
+| Copy          | kopa           | MS terminology (high)                     |
+| Delete        | cima           | MS terminology + GNOME agree (high)       |
+| Open          | vula           | GNOME (high)                              |
+| Rename        | thiya kwakhona | GNOME (high)                              |
+| Cancel        | rhoxisa        | GNOME (high)                              |
+| Move to Trash | yisa emgqomeni | GNOME (high)                              |
 
 ## Brand and do-not-translate
 
@@ -107,6 +107,6 @@ plural class), not just a suffix, so write both branches as full native forms.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/xh/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/xh/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

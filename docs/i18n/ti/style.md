@@ -1,7 +1,8 @@
 # Tigrinya (ti) translation style guide
 
 Working notes for translating Cmdr into Tigrinya. Read [`README.md`](../README.md) for how this fits the translation
-process, and [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) for the agent-handoff block and ICU rules.
+process, and [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) for the agent-handoff block and ICU
+rules.
 
 ## Priority signal (read first)
 
@@ -64,8 +65,8 @@ review (principle 6 matters more here than anywhere). Microsoft's catalog target
   ምረጽ). This is the same compromise other gendered languages make for software, not an ideal but the established norm.
 - A genuinely gender-neutral alternative exists: rephrase actions as verbal nouns / infinitives instead of imperatives
   (for example "copy" as the action-noun ቅዳሕ rather than the command "copy!"). Microsoft itself does this for some menu
-  labels (copy ቅዳሕ, search ምድላይ, edit ምዕራይ are noun/infinitive forms, not imperatives). Verbal-noun labels sidestep
-  the gender choice entirely and read fine on buttons and menus.
+  labels (copy ቅዳሕ, search ምድላይ, edit ምዕራይ are noun/infinitive forms, not imperatives). Verbal-noun labels sidestep the
+  gender choice entirely and read fine on buttons and menus.
 - Recommendation: prefer the verbal-noun / infinitive label form where it reads naturally (it's gender-neutral and
   matches some Microsoft menu labels); fall back to the masculine-singular imperative only where a true command tone is
   needed. Confidence: tentative. This is a David + native-reviewer call: pick ONE consistent strategy across the catalog
@@ -77,8 +78,8 @@ review (principle 6 matters more here than anywhere). Microsoft's catalog target
 
 - Tigrinya is spoken in Eritrea and in Ethiopia's Tigray region. Differences are minor (some vocabulary, loanword
   sources, a few spelling habits), not mutually unintelligible. Both write Ge'ez, both CLDR-plural identically.
-- The only evidence source (Microsoft) targets Ethiopia (`geographicalUsage=ETH`). CLDR/ICU recognize `ti`, `ti-ER`,
-  and `ti-ET`.
+- The only evidence source (Microsoft) targets Ethiopia (`geographicalUsage=ETH`). CLDR/ICU recognize `ti`, `ti-ER`, and
+  `ti-ET`.
 - Recommendation: target the base tag `ti` (per the project's base-preferred tag convention), drafting from the
   Ethiopia-tilted Microsoft evidence but keeping vocabulary as pan-Tigrinya / neutral as possible. Split to `ti-ER` /
   `ti-ET` only if a reviewer flags real divergence. Confidence: high for "use base `ti`"; the ER/ET vocabulary nuances
@@ -99,11 +100,11 @@ review (principle 6 matters more here than anywhere). Microsoft's catalog target
   Tigrinya commonly uses the plain space between words and frequently uses Western punctuation, especially in software
   UI.
 - Recommendation: use the plain ASCII space between words (matches modern digital norm and Cmdr's existing strings), and
-  Western punctuation (`.`, `,`, `:`) by default for consistency with the rest of the catalog and with placeholder-bearing
-  strings. The Ethiopic full stop ። and comma ፣ are acceptable in running sentence text if a native reviewer prefers a
-  more native feel, but keep them OUT of strings that interpolate paths/counts to avoid spacing surprises. Confidence:
-  tentative for the native-feel sentence text (reviewer call); high for "Western default in interpolated strings". Flag
-  the native-punctuation preference for the reviewer.
+  Western punctuation (`.`, `,`, `:`) by default for consistency with the rest of the catalog and with
+  placeholder-bearing strings. The Ethiopic full stop ። and comma ፣ are acceptable in running sentence text if a native
+  reviewer prefers a more native feel, but keep them OUT of strings that interpolate paths/counts to avoid spacing
+  surprises. Confidence: tentative for the native-feel sentence text (reviewer call); high for "Western default in
+  interpolated strings". Flag the native-punctuation preference for the reviewer.
 
 ## Terminology and glossary
 
@@ -112,44 +113,45 @@ reviewer confirms. Pattern observed: tech nouns split between Ge'ez-script trans
 ዲስክ, program/app ፕሮግራም) and native coinages (folder ሓቛፊ, window መስኮት, server ኣገልጋሊ). Verbs are mostly native.
 
 Watch two false-friend traps from Microsoft's general (non-file-manager) corpus:
+
 - "size" maps to መጠን, but መጠን also came up as the translation of audio "volume" (volume መጠን ድምጺ = "amount of sound").
   For a file manager, a storage "volume" (a mounted disk) is a DIFFERENT sense; don't reuse the audio-volume term.
   Resolve the storage-volume term with the reviewer.
 - "tab" returned ጽላት (a sheet/leaf sense). Confirm this reads as a UI tab, not a paper sheet, before using it.
 
-| English term | Tigrinya | Notes |
-| ------------ | -------- | ----- |
-| file | ፋይል | Microsoft; loanword in Ge'ez script. high |
-| folder | ሓቛፊ | Microsoft; native coinage. high |
-| open | ክፈት | Microsoft; masc-sg imperative (see gender decision). tentative |
-| copy | ቅዳሕ | Microsoft; verbal-noun form, gender-neutral. tentative |
-| cut | ቁረጽ | Microsoft; masc-sg imperative. tentative |
-| paste | ለጥፍ | Microsoft; masc-sg imperative. tentative |
-| delete | ሰርዝ | Microsoft. tentative |
-| move | ኣንቀሳቕስ | Microsoft. tentative |
-| rename | (none) | Not in Microsoft pile; needs reviewer. tentative |
-| cancel | ኣይትምረጽ | Microsoft (lit. "don't select"); confirm fit for a Cancel button. tentative |
-| save | ኣቐምጥ | Microsoft. tentative |
-| name | ሽም | Microsoft. high |
-| size | መጠን | Microsoft; see false-friend note vs audio volume. tentative |
-| type | ዓይነት | Microsoft. high |
-| search | ምድላይ | Microsoft; verbal-noun. high |
-| settings | ዓውደ-ኣሳልጦ | Microsoft. tentative |
-| options | ኣማራጽታት | Microsoft. high |
-| window | መስኮት | Microsoft. high |
-| view | ትርኢት | Microsoft. high |
-| properties | ባህርያት | Microsoft. high |
-| network | ዝተሓላለኸ መርበብ | Microsoft. tentative |
-| server | ኣገልጋሊ | Microsoft. high |
-| connect | ኣላግብ / ኣራኽብ | Microsoft (two forms seen); reviewer picks one. tentative |
-| download | ኣውርድ | Microsoft. tentative |
-| upload | ስቐል | Microsoft. tentative |
-| refresh | ኣሐድስ | Microsoft. tentative |
-| sort | ጎጅል | Microsoft. tentative |
-| filter | ሚሐ | Microsoft. tentative |
-| help | ሓገዝ | Microsoft. high |
-| trash | (none) | Not in Microsoft pile; the file-manager Trash needs reviewer. tentative |
-| pane / tab / volume / listing / transfer / viewer | (none) | Cmdr-specific UI nouns absent from the pile; reviewer-defined. tentative |
+| English term                                      | Tigrinya    | Notes                                                                       |
+| ------------------------------------------------- | ----------- | --------------------------------------------------------------------------- |
+| file                                              | ፋይል         | Microsoft; loanword in Ge'ez script. high                                   |
+| folder                                            | ሓቛፊ         | Microsoft; native coinage. high                                             |
+| open                                              | ክፈት         | Microsoft; masc-sg imperative (see gender decision). tentative              |
+| copy                                              | ቅዳሕ         | Microsoft; verbal-noun form, gender-neutral. tentative                      |
+| cut                                               | ቁረጽ         | Microsoft; masc-sg imperative. tentative                                    |
+| paste                                             | ለጥፍ         | Microsoft; masc-sg imperative. tentative                                    |
+| delete                                            | ሰርዝ         | Microsoft. tentative                                                        |
+| move                                              | ኣንቀሳቕስ      | Microsoft. tentative                                                        |
+| rename                                            | (none)      | Not in Microsoft pile; needs reviewer. tentative                            |
+| cancel                                            | ኣይትምረጽ      | Microsoft (lit. "don't select"); confirm fit for a Cancel button. tentative |
+| save                                              | ኣቐምጥ        | Microsoft. tentative                                                        |
+| name                                              | ሽም          | Microsoft. high                                                             |
+| size                                              | መጠን         | Microsoft; see false-friend note vs audio volume. tentative                 |
+| type                                              | ዓይነት        | Microsoft. high                                                             |
+| search                                            | ምድላይ        | Microsoft; verbal-noun. high                                                |
+| settings                                          | ዓውደ-ኣሳልጦ    | Microsoft. tentative                                                        |
+| options                                           | ኣማራጽታት      | Microsoft. high                                                             |
+| window                                            | መስኮት        | Microsoft. high                                                             |
+| view                                              | ትርኢት        | Microsoft. high                                                             |
+| properties                                        | ባህርያት       | Microsoft. high                                                             |
+| network                                           | ዝተሓላለኸ መርበብ | Microsoft. tentative                                                        |
+| server                                            | ኣገልጋሊ       | Microsoft. high                                                             |
+| connect                                           | ኣላግብ / ኣራኽብ | Microsoft (two forms seen); reviewer picks one. tentative                   |
+| download                                          | ኣውርድ        | Microsoft. tentative                                                        |
+| upload                                            | ስቐል         | Microsoft. tentative                                                        |
+| refresh                                           | ኣሐድስ        | Microsoft. tentative                                                        |
+| sort                                              | ጎጅል         | Microsoft. tentative                                                        |
+| filter                                            | ሚሐ          | Microsoft. tentative                                                        |
+| help                                              | ሓገዝ         | Microsoft. high                                                             |
+| trash                                             | (none)      | Not in Microsoft pile; the file-manager Trash needs reviewer. tentative     |
+| pane / tab / volume / listing / transfer / viewer | (none)      | Cmdr-specific UI nouns absent from the pile; reviewer-defined. tentative    |
 
 ## Brand and do-not-translate
 
@@ -185,14 +187,14 @@ expected and correct.
 ### ICU mechanics (catalog-level, not Tigrinya-specific, easy to miss)
 
 - Double every apostrophe in a value (`'` becomes `''`; ICU treats a lone `'` as an escape and silently swallows text).
-  Ge'ez script rarely uses the ASCII apostrophe, but loanword transliterations and English brand fragments can, so
-  watch for it.
+  Ge'ez script rarely uses the ASCII apostrophe, but loanword transliterations and English brand fragments can, so watch
+  for it.
 - Keep every `{placeholder}` and `<tag>` verbatim; translate only the human-readable text between them. Full rules: the
   agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ti/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ti/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

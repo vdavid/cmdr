@@ -8,16 +8,16 @@ Turkmen.
 
 Turkmen localization is very sparse. There is NO Apple Tier-1 source (Apple does not ship Turkmen as a macOS UI
 language), no Microsoft style guide, and no Google, Spotify, or Netflix Turkmen UI found. The only references are
-Microsoft terminology (a glossary, Latin, Turkmenistan-standard) and one old, partial GNOME Nautilus catalog (2004
-to 2005, ~80% translated, Iranian-Turkmen flavored). There is essentially no full-UI major-vendor prior art to anchor
-user expectations. Cmdr would be a near-first-mover. Flag for David: is shipping Turkmen worth it given near-zero
-major-vendor precedent and a thin, partly dated reference base? Treat every term below as review-gated; native review
-is needed before ship.
+Microsoft terminology (a glossary, Latin, Turkmenistan-standard) and one old, partial GNOME Nautilus catalog (2004 to
+2005, ~80% translated, Iranian-Turkmen flavored). There is essentially no full-UI major-vendor prior art to anchor user
+expectations. Cmdr would be a near-first-mover. Flag for David: is shipping Turkmen worth it given near-zero
+major-vendor precedent and a thin, partly dated reference base? Treat every term below as review-gated; native review is
+needed before ship.
 
 ## Voice and tone
 
-Friendly, concise, active, calm. Address the user politely (see Formality). Error messages stay calm and actionable,
-and never use the words "error" or "failed".
+Friendly, concise, active, calm. Address the user politely (see Formality). Error messages stay calm and actionable, and
+never use the words "error" or "failed".
 
 ## Formality
 
@@ -33,16 +33,18 @@ and never use the words "error" or "failed".
 ## Decision points
 
 Script, Latin (the #1 decision, high confidence):
-- Options: Latin vs Cyrillic. Turkmen officially switched to a Latin alphabet after independence (adopted 1993,
-  modeled on Turkish), and it is the standard script in Turkmenistan today. Cyrillic is legacy and older-generation.
+
+- Options: Latin vs Cyrillic. Turkmen officially switched to a Latin alphabet after independence (adopted 1993, modeled
+  on Turkish), and it is the standard script in Turkmenistan today. Cyrillic is legacy and older-generation.
 - Both reference sources are Latin, confirmed from the actual strings (Turkmen Latin letters present: ä, ç, ž, ň, ö, ş,
   ü, ý). Base tag `tk` = Latin.
-- The Turkmen Latin alphabet has 30 letters. Don't substitute Turkish look-alikes for the Turkmen-specific letters:
-  `ä`, `ž`, `ň`, `ý` are Turkmen-specific (Turkish uses `e`, `j`, `n`, `y`/`ı` differently). Render all eight special
-  letters correctly: ä ç ž ň ö ş ü ý (and their capitals Ä Ç Ž Ň Ö Ş Ü Ý).
+- The Turkmen Latin alphabet has 30 letters. Don't substitute Turkish look-alikes for the Turkmen-specific letters: `ä`,
+  `ž`, `ň`, `ý` are Turkmen-specific (Turkish uses `e`, `j`, `n`, `y`/`ı` differently). Render all eight special letters
+  correctly: ä ç ž ň ö ş ü ý (and their capitals Ä Ç Ž Ň Ö Ş Ü Ý).
 - Recommendation: Latin only; don't build Cyrillic. Confidence: high.
 
 Russian-loanword vs native term (high-confidence pattern, per-term call):
+
 - Tech vocabulary splits between Russian loanwords and native Turkic terms. The old GNOME catalog leans on Russian
   loanwords (`program`, `kompýuter`, `dýalog`, `desktap`, `menýu`), reflecting its era and Soviet-legacy vocabulary.
   Microsoft terminology (the modern Turkmenistan-standard glossary) tends to native or established Turkmen forms.
@@ -52,24 +54,27 @@ Russian-loanword vs native term (high-confidence pattern, per-term call):
   individual term is review-gated.
 
 Agglutination and placeholder-suffix agreement (engineering pitfall, high confidence):
+
 - Turkmen is agglutinative with vowel harmony: case and possessive suffixes harmonize with the final vowel of the
   preceding word (front/back). A suffix glued to a variable `{name}` or `{path}` can't agree at translation time, and
   the inserted value's length, case, and characters are uncontrolled.
-- How the sources cope: they attach suffixes to the fixed noun, not the variable (for example put the case suffix on
-  the word for "file"/"folder", leaving the placeholder in nominative).
+- How the sources cope: they attach suffixes to the fixed noun, not the variable (for example put the case suffix on the
+  word for "file"/"folder", leaving the placeholder in nominative).
 - Recommendation: never glue a grammatical suffix directly to a `{placeholder}`. Structure messages so suffixes land on
   fixed words, or keep the inserted value in nominative at the sentence end. The exact rewrite per string is a native
   review task. Confidence: high (grammar well-documented).
 
 Gender, none (simplifies, high confidence):
+
 - Turkmen is Turkic and has NO grammatical gender and no gendered third-person pronoun. No gender agreement to track.
   The Microsoft terminology marks `grammaticalGender = NotSelected` on essentially every entry, confirming this. Don't
   invent gendered phrasing. Confidence: high.
 
 Number and date formatting (defer to the formatter, high confidence):
-- Numbers and dates come from the `Intl` formatter layer for the locale; never hardcode separators or date order.
-  Follow Cmdr's app-wide rule (ISO dates where the UI shows raw dates, thousands separators on user-facing counts via
-  the formatter). Confidence: high (mechanism, not a Turkmen-specific call).
+
+- Numbers and dates come from the `Intl` formatter layer for the locale; never hardcode separators or date order. Follow
+  Cmdr's app-wide rule (ISO dates where the UI shows raw dates, thousands separators on user-facing counts via the
+  formatter). Confidence: high (mechanism, not a Turkmen-specific call).
 
 ## Terminology and glossary
 
@@ -102,12 +107,12 @@ Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, p
 
 ## Plurals
 
-CLDR categories: `one`, `other` (verified: `new Intl.PluralRules('tk').resolvedOptions().pluralCategories`). Author
-both branches for every plural message. Note: the old GNOME catalog declared `nplurals=2; plural=(n != 1)` (gettext
-convention), but Cmdr's intl layer is CLDR-based, so use the `one`/`other` buckets. Like other Turkic languages,
-Turkmen keeps the counted noun singular after a numeral (no plural suffix after a number), so the two forms are often
-the same word, but the framework still needs both buckets. The `desktop-i18n-plural` check requires every plural
-message to cover the categories this language needs.
+CLDR categories: `one`, `other` (verified: `new Intl.PluralRules('tk').resolvedOptions().pluralCategories`). Author both
+branches for every plural message. Note: the old GNOME catalog declared `nplurals=2; plural=(n != 1)` (gettext
+convention), but Cmdr's intl layer is CLDR-based, so use the `one`/`other` buckets. Like other Turkic languages, Turkmen
+keeps the counted noun singular after a numeral (no plural suffix after a number), so the two forms are often the same
+word, but the framework still needs both buckets. The `desktop-i18n-plural` check requires every plural message to cover
+the categories this language needs.
 
 ## Notes and decisions
 
@@ -129,11 +134,11 @@ message to cover the categories this language needs.
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/tk/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/tk/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

@@ -1,7 +1,8 @@
 # Uyghur (ug) translation style guide
 
-Working notes for translating Cmdr into Uyghur. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Uyghur.
+Working notes for translating Cmdr into Uyghur. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Uyghur.
 
 Uyghur (`ug`) is a Turkic, agglutinative language. The BCP-47 base tag `ug` resolves in CLDR to `ug-Arab-CN`: the
 Perso-Arabic Uyghur Ereb Yéziqi (UEY), written right to left. That is the script Cmdr should target (see Decision
@@ -38,13 +39,13 @@ next step. There is no macOS Uyghur precedent to copy here, so apply Cmdr's Engl
 Uyghur has a T/V-style second-person distinction: informal `sen` (سەن) versus polite/formal `siz` (سىز), with matching
 verb agreement and the polite plural/honorific imperative suffix `-ng` / `-ingiz`.
 
-- **Recommended default: polite `siz` register, but keep direct address light.** Software and formal writing lean polite;
-  `sen` reads as familiar/intimate and risks sounding curt in UI. This matches how the GNOME/Xfce catalogs phrase
-  prompts. Confidence: tentative (no vendor style guide exists for Uyghur; this is a Turkic-software-norm call, not a
-  sourced one). Flag for David / a native reviewer.
+- **Recommended default: polite `siz` register, but keep direct address light.** Software and formal writing lean
+  polite; `sen` reads as familiar/intimate and risks sounding curt in UI. This matches how the GNOME/Xfce catalogs
+  phrase prompts. Confidence: tentative (no vendor style guide exists for Uyghur; this is a Turkic-software-norm call,
+  not a sourced one). Flag for David / a native reviewer.
 - **Buttons and menu items: imperative.** The file-manager catalogs use bare imperative verbs for actions, for example
-  Open = `ئاچ` (ach), Paste = `چاپلا` (chapla), Rename = `ئات ئۆزگەرت` (at özgert), Cancel = `ۋاز كەچ` (waz kech). Use the
-  short imperative for action labels rather than a polite long form; reserve the polite register for sentences that
+  Open = `ئاچ` (ach), Paste = `چاپلا` (chapla), Rename = `ئات ئۆزگەرت` (at özgert), Cancel = `ۋاز كەچ` (waz kech). Use
+  the short imperative for action labels rather than a polite long form; reserve the polite register for sentences that
   address the user ("Do you want to …").
 - **No grammatical gender.** Uyghur, like all Turkic languages, has no grammatical gender and no gendered third-person
   pronoun (`u` covers he/she/it). This removes a whole class of agreement problems present in the Romance/Germanic
@@ -106,31 +107,32 @@ Counterintuitive but evidenced: Uyghur Arabic script uses Western digits.
 Not required for this pass. A few anchor terms verified across the Microsoft terminology glossary and the GNOME Nautilus
 catalog (both Arabic UEY), recorded so the next translator inherits them:
 
-| English term | Uyghur (UEY) | Notes |
-| ------------ | ------------ | ----- |
-| Folder | قىسقۇچ | MS terminology + GNOME agree. Confidence: high. |
-| File | ھۆججەت | GNOME. Confidence: high. |
-| Copy | كۆچۈر | GNOME. Confidence: high. |
-| Open | ئاچ | GNOME, imperative. Confidence: high. |
-| Paste | چاپلا | GNOME, imperative. Confidence: high. |
-| Rename | ئات ئۆزگەرت | GNOME, imperative. Confidence: high. |
-| Cancel | ۋاز كەچ | GNOME, imperative. Confidence: high. |
-| Trash | ئەخلەتخانا | GNOME (literally "garbage place"). Confidence: high. |
-| Properties | خاسلىق | GNOME. Confidence: high. |
+| English term | Uyghur (UEY) | Notes                                                |
+| ------------ | ------------ | ---------------------------------------------------- |
+| Folder       | قىسقۇچ       | MS terminology + GNOME agree. Confidence: high.      |
+| File         | ھۆججەت       | GNOME. Confidence: high.                             |
+| Copy         | كۆچۈر        | GNOME. Confidence: high.                             |
+| Open         | ئاچ          | GNOME, imperative. Confidence: high.                 |
+| Paste        | چاپلا        | GNOME, imperative. Confidence: high.                 |
+| Rename       | ئات ئۆزگەرت  | GNOME, imperative. Confidence: high.                 |
+| Cancel       | ۋاز كەچ      | GNOME, imperative. Confidence: high.                 |
+| Trash        | ئەخلەتخانا   | GNOME (literally "garbage place"). Confidence: high. |
+| Properties   | خاسلىق       | GNOME. Confidence: high.                             |
 
 Cmdr-specific terms (pane, tab, volume, listing, transfer, viewer) have no settled Uyghur evidence and need a native
 reviewer; leave them for the translation pass and record each choice here as it is made.
 
 ## Brand and do-not-translate
 
-Keep verbatim, same as every locale: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the
-system placeholder tokens. In RTL text these are LTR runs and must be bidi-isolated (see RTL above). The list is
-enforced by `desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.js`.
+Keep verbatim, same as every locale: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the system
+placeholder tokens. In RTL text these are LTR runs and must be bidi-isolated (see RTL above). The list is enforced by
+`desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.js`.
 
 ## Plurals
 
-CLDR plural categories for `ug`: **one, other** (verified: `new Intl.PluralRules('ug').resolvedOptions().pluralCategories`,
-2026-06-20). Every plural message must cover both branches.
+CLDR plural categories for `ug`: **one, other** (verified:
+`new Intl.PluralRules('ug').resolvedOptions().pluralCategories`, 2026-06-20). Every plural message must cover both
+branches.
 
 - Like other Turkic languages, Uyghur does not inflect the counted noun for plurality after a number (the number itself
   carries plurality), so the `one` and `other` forms are often identical or differ only in the surrounding sentence.
@@ -162,11 +164,12 @@ string length. Overflow-check against the pseudolocale as usual.
 
 Catalog-level, not Uyghur-specific, but easy to miss: double every apostrophe in a value (`'` becomes `''`; ICU treats a
 lone `'` as an escape and silently swallows text), and keep every `{placeholder}` and `<tag>` verbatim. For Uyghur,
-remember that bidi isolation marks go AROUND a placeholder, not inside its braces. Full rules: the agent-handoff block in
-[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+remember that bidi isolation marks go AROUND a placeholder, not inside its braces. Full rules: the agent-handoff block
+in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+`apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ug/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ug/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

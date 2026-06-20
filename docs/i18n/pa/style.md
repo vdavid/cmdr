@@ -21,9 +21,8 @@ register matches Cmdr.
 - **Second person: respectful `ਤੁਸੀਂ` (tusī̃).** Punjabi distinguishes familiar `ਤੂੰ` (tū̃) from respectful `ਤੁਸੀਂ`
   (tusī̃); software uses respectful `ਤੁਸੀਂ`, which reads as ordinary courtesy. GNOME and Microsoft both use
   respectful-level address. Recommendation: `ਤੁਸੀਂ` throughout. Confidence: high.
-- **UI actions use the polite imperative**, matching GNOME Punjabi ("ਕਾਪੀ ਕਰੋ" copy, "ਖੋਲ੍ਹੋ" open, "ਰੱਦ ਕਰੋ" cancel
-  all use the `-ੋ` polite command form). Recommendation: polite imperatives for buttons and menu items. Confidence:
-  high.
+- **UI actions use the polite imperative**, matching GNOME Punjabi ("ਕਾਪੀ ਕਰੋ" copy, "ਖੋਲ੍ਹੋ" open, "ਰੱਦ ਕਰੋ" cancel all
+  use the `-ੋ` polite command form). Recommendation: polite imperatives for buttons and menu items. Confidence: high.
 
 ## Decision points
 
@@ -44,23 +43,23 @@ register matches Cmdr.
 - **Numerals.** Gurmukhi has its own digits (`੦੧੨੩`) but modern UI commonly uses Western digits; `Intl` formats per
   locale at runtime. Recommendation: rely on `Intl`. Confidence: medium.
 - **Inclusive/gendered language.** Punjabi verbs and adjectives carry gender agreement. UI copy via `ਤੁਸੀਂ` and polite
-  imperatives avoids subject-gender in most strings; prefer neutral phrasing where agreement would surface.
-  Confidence: medium.
+  imperatives avoids subject-gender in most strings; prefer neutral phrasing where agreement would surface. Confidence:
+  medium.
 
 ## Terminology and glossary
 
 Confirmed against GNOME Nautilus Punjabi (Gurmukhi, Tier 3) and Microsoft terminology (Tier 2). Gurmukhi forms. Extend
 as strings come up.
 
-| English term | Punjabi (Gurmukhi) | Notes |
-| ------------ | ------------------ | ----- |
-| folder | ਫੋਲਡਰ | GNOME; loanword |
-| copy | ਕਾਪੀ ਕਰੋ | GNOME; polite imperative |
-| trash | ਰੱਦੀ | GNOME; the location noun |
-| rename | ਨਾਂ ਨੂੰ ਬਦਲੋ | GNOME |
-| paste | ਚੇਪੋ | GNOME |
-| open | ਖੋਲ੍ਹੋ | GNOME |
-| cancel | ਰੱਦ ਕਰੋ | GNOME |
+| English term | Punjabi (Gurmukhi) | Notes                    |
+| ------------ | ------------------ | ------------------------ |
+| folder       | ਫੋਲਡਰ              | GNOME; loanword          |
+| copy         | ਕਾਪੀ ਕਰੋ           | GNOME; polite imperative |
+| trash        | ਰੱਦੀ               | GNOME; the location noun |
+| rename       | ਨਾਂ ਨੂੰ ਬਦਲੋ       | GNOME                    |
+| paste        | ਚੇਪੋ               | GNOME                    |
+| open         | ਖੋਲ੍ਹੋ             | GNOME                    |
+| cancel       | ਰੱਦ ਕਰੋ            | GNOME                    |
 
 ## Brand and do-not-translate
 
@@ -86,6 +85,6 @@ two-category shape as English; every plural message needs both branches. The `de
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/pa/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/pa/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

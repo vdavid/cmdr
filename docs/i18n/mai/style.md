@@ -15,14 +15,15 @@ short sentences, no literal translation) aligns well with Cmdr's voice. Error me
 
 ## Formality
 
-Mid-honorific `अहाँ` tier (see Decision points). Use the matching verb inflections (the `-ू` imperative endings:
-खोलू "open", बनाबू "create", मेटाबू "delete"). Microsoft mandates `अहाँ` and forbids तू/तों/ओ; the 2008 Nautilus catalog
+Mid-honorific `अहाँ` tier (see Decision points). Use the matching verb inflections (the `-ू` imperative endings: खोलू
+"open", बनाबू "create", मेटाबू "delete"). Microsoft mandates `अहाँ` and forbids तू/तों/ओ; the 2008 Nautilus catalog
 independently uses the same tier. Avoid both तों (too familiar, can read as disrespectful) and the high-honorific अपने
 (too distant for an app).
 
 ## Decision points
 
 Script, Devanagari (decided):
+
 - Options: Devanagari (modern computing standard) vs Tirhuta/Mithilakshar (historical/cultural, zero software-UI
   presence). Microsoft's mai guide and the Nautilus catalog are both Devanagari.
 - Recommendation: Devanagari only; don't offer Tirhuta. Sub-rule: NO nuqta, the MS guide says the nuqta diacritic (used
@@ -30,6 +31,7 @@ Script, Devanagari (decided):
   Confidence: high.
 
 Honorific register, pick the `अहाँ` mid tier (flag for David):
+
 - Maithili verb agreement encodes honorificity: roughly non-honorific (तों/तू), mid-honorific (अहाँ), high-honorific
   (अपने). The choice propagates into every imperative button, so consistency across all action strings matters.
 - Both sources agree on `अहाँ`: Microsoft mandates it (and forbids तू/तों/ओ); Nautilus independently uses the अहाँ-tier
@@ -39,6 +41,7 @@ Honorific register, pick the `अहाँ` mid tier (flag for David):
   genuine register decision with cultural weight and ideally wants a native reviewer to confirm tone.
 
 Tech vocabulary, transliterated loans + Sanskritic, with English acronyms kept (medium confidence):
+
 - Nautilus uses फाइल (file, transliterated English), फ़ोल्डर (folder), रद्द/रद्दी (cancel/trash, via Hindi), and
   Sanskritic terms (प्रबंधन, वरीयता). MS keeps well-known English acronyms in Roman (PIN, ID, Wi-Fi), glosses others on
   first use, and translates "&" as आ/आओर.
@@ -47,6 +50,7 @@ Tech vocabulary, transliterated loans + Sanskritic, with English acronyms kept (
   choices to a native reviewer. Confidence: medium (two sources, one of them 2008-old).
 
 Near-absence of major-vendor localization (sets expectations):
+
 - Microsoft has a mai style guide (and historically a LIP). Apple does NOT localize into Maithili. Google: no general UI
   localization. Spotify's Indic expansion didn't include it. Netflix: no Maithili UI. Cmdr would be an early mover; term
   confidence stays tentative/high until native review. Confidence: high.
@@ -70,8 +74,8 @@ Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, p
 
 ## Plurals
 
-CLDR categories: `one`, `other` (rule n != 1), confirmed by the Nautilus header. The `desktop-i18n-plural` check requires
-every plural message to cover the categories this language needs.
+CLDR categories: `one`, `other` (rule n != 1), confirmed by the Nautilus header. The `desktop-i18n-plural` check
+requires every plural message to cover the categories this language needs.
 
 ## Notes and decisions
 
@@ -92,11 +96,11 @@ every plural message to cover the categories this language needs.
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/mai/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/mai/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

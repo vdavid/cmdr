@@ -1,12 +1,11 @@
 # Quechua (Cusco, quz) translation style guide
 
-Working notes for translating Cmdr into Cusco Quechua. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Cusco Quechua. Read [`README.md`](../README.md) for how this fits the
+translation process.
 
-LOW priority but better-precedented than most low-tier languages. `quz` is Cusco Quechua (Southern Quechua, Peru,
-~1.5M speakers). The pile has Microsoft terminology AND a Microsoft style guide for `quz`; no macOS (Apple ships no
-Quechua UI), no GNOME/Xfce. Microsoft localized Windows/Office into Quechua, so a real software register exists to
-anchor on.
+LOW priority but better-precedented than most low-tier languages. `quz` is Cusco Quechua (Southern Quechua, Peru, ~1.5M
+speakers). The pile has Microsoft terminology AND a Microsoft style guide for `quz`; no macOS (Apple ships no Quechua
+UI), no GNOME/Xfce. Microsoft localized Windows/Office into Quechua, so a real software register exists to anchor on.
 
 ## Voice and tone
 
@@ -16,8 +15,8 @@ software-tone reference). Keep it plain and clear; native review still required.
 ## Formality
 
 Latin script (the standardized Southern Quechua trivocalic orthography, a/i/u). Quechua has respectful registers but the
-software convention from Microsoft is plain/neutral. Use imperative for actions. Confidence: tentative-to-high (Microsoft
-style guide gives real grounding).
+software convention from Microsoft is plain/neutral. Use imperative for actions. Confidence: tentative-to-high
+(Microsoft style guide gives real grounding).
 
 ## Decision points
 
@@ -58,7 +57,8 @@ needed for confidence above tentative.
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by `desktop-i18n-dont-translate`.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
+`desktop-i18n-dont-translate`.
 
 ## Plurals
 
@@ -67,11 +67,11 @@ needs only one/other.)
 
 ## Decisions to confirm with David
 
-- Is Quechua in scope, and specifically Cusco/Southern `quz` for a Peruvian audience? Low priority overall, but Microsoft
-  precedent makes it more feasible than other low-tier languages if there's demand.
+- Is Quechua in scope, and specifically Cusco/Southern `quz` for a Peruvian audience? Low priority overall, but
+  Microsoft precedent makes it more feasible than other low-tier languages if there's demand.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/quz/`; recipes in
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/quz/`; recipes in
 `_ignored/i18n/how-to-mine.md`). Never guess a term.

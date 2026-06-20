@@ -1,7 +1,7 @@
 # Burmese (my) translation style guide
 
-Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the
+translation process.
 
 Burmese (Myanmar language, autonym မြန်မာ) is the official language of Myanmar, a Sino-Tibetan language written in the
 Myanmar abugida (Unicode block U+1000–U+109F). The BCP-47 base tag is `my`. **Read the Decision points first: the
@@ -10,11 +10,11 @@ pitfall.**
 
 ## Voice and tone
 
-Friendly, concise, active, calm. Match Cmdr's English register. Burmese signals politeness mainly through
-sentence-final particles and verb endings rather than loud wording, so a polite-but-plain register reads naturally for
-UI. Keep sentences short and clear. Error messages stay calm and actionable and avoid alarm (Cmdr's English never uses
-the words "error" or "failed"); Burmese has no fixed software-UI house style to inherit, so the translator sets a plain,
-modern tone. GNOME Files (Nautilus) has a recently maintained Unicode Burmese translation and is the closest living
+Friendly, concise, active, calm. Match Cmdr's English register. Burmese signals politeness mainly through sentence-final
+particles and verb endings rather than loud wording, so a polite-but-plain register reads naturally for UI. Keep
+sentences short and clear. Error messages stay calm and actionable and avoid alarm (Cmdr's English never uses the words
+"error" or "failed"); Burmese has no fixed software-UI house style to inherit, so the translator sets a plain, modern
+tone. GNOME Files (Nautilus) has a recently maintained Unicode Burmese translation and is the closest living
 file-manager-UI precedent for register and terminology.
 
 ## Formality
@@ -24,33 +24,33 @@ verb ending တယ်/သည်; attach ပါ to imperative UI actions to make 
 "select" reads as ရွေးပါ, "sign in" as ဝင်ရောက်ပါ in Microsoft's terminology). Burmese culturally prefers pronoun
 avoidance: don't reach for an explicit "you" pronoun where the sentence works without one, which is the norm for UI
 copy. Keep button and menu labels as short polite imperatives. There's a colloquial/formal split in subject and object
-markers (colloquial က / ကို vs formal သည် / အား); UI copy uses the everyday polite register, not the literary-formal one.
-Confidence: medium-high on the polite-particle approach (matches Microsoft and Nautilus), lower on per-string particle
-density, which a native reviewer should tune.
+markers (colloquial က / ကို vs formal သည် / အား); UI copy uses the everyday polite register, not the literary-formal
+one. Confidence: medium-high on the polite-particle approach (matches Microsoft and Nautilus), lower on per-string
+particle density, which a native reviewer should tune.
 
 ## Terminology and glossary
 
-| English term | This language | Notes |
-| ------------ | ------------- | ----- |
-| file | ဖိုင် | Transliteration of "file"; universal in Burmese computing (Nautilus, Microsoft). |
-| folder | ဖိုင်တွဲ | Literally "file-bundle"; the established Nautilus term. |
-| copy | ကူးယူ / မိတ္တူ | Native verb ကူးယူ for the action; မိတ္တူ ("duplicate/copy") also seen. Pick one and stay consistent. |
-| open | ဖွင့် | Native verb. |
-| rename | အမည်ပြောင်း | Native ("change name"). |
-| trash | အမှိုက်ပုံး | Native ("rubbish bin"). |
-| cancel | ပယ်ဖျက် | Native. |
+| English term | This language  | Notes                                                                                                |
+| ------------ | -------------- | ---------------------------------------------------------------------------------------------------- |
+| file         | ဖိုင်          | Transliteration of "file"; universal in Burmese computing (Nautilus, Microsoft).                     |
+| folder       | ဖိုင်တွဲ       | Literally "file-bundle"; the established Nautilus term.                                              |
+| copy         | ကူးယူ / မိတ္တူ | Native verb ကူးယူ for the action; မိတ္တူ ("duplicate/copy") also seen. Pick one and stay consistent. |
+| open         | ဖွင့်          | Native verb.                                                                                         |
+| rename       | အမည်ပြောင်း    | Native ("change name").                                                                              |
+| trash        | အမှိုက်ပုံး    | Native ("rubbish bin").                                                                              |
+| cancel       | ပယ်ဖျက်        | Native.                                                                                              |
 
-Fill more as they come up. Expect heavy English borrowing for tech-specific terms (file, tab, app, email →
-အီးမေးလ်, screenshot → ဖန်သားပြင်ရိုက်ချက်); use a clear native word where one is widely understood (open, rename, trash,
-copy), otherwise transliterate. Record every call here so spelling stays consistent: the same loanword can be
-transliterated several ways, so a native reviewer should confirm spelling. Microsoft's Burmese terminology
+Fill more as they come up. Expect heavy English borrowing for tech-specific terms (file, tab, app, email → အီးမေးလ်,
+screenshot → ဖန်သားပြင်ရိုက်ချက်); use a clear native word where one is widely understood (open, rename, trash, copy),
+otherwise transliterate. Record every call here so spelling stays consistent: the same loanword can be transliterated
+several ways, so a native reviewer should confirm spelling. Microsoft's Burmese terminology
 (`_ignored/i18n/my/microsoft-terminology/BURMESE.tbx`) and the Nautilus catalog are the reference pile, for DECIDING,
 never copy verbatim.
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, and the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate`; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.js`.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, and the `{system_settings}`-style tokens.
+Enforced by `desktop-i18n-dont-translate`; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.js`.
 
 ## Plurals
 
@@ -129,14 +129,14 @@ These are the calls that actually matter for Burmese; settle them before a trans
   ship a Burmese macOS/iOS interface (input and fonts only), so there's no Apple-platform precedent to mirror, which
   matters for an OS-native macOS app. Microsoft ships Burmese terminology and a privacy-content style guide but limited
   full-product UI; Google localizes Burmese (Search, Translate, Android, and the myanmar-tools investment); Facebook was
-  historically the biggest driver of the Unicode migration. Spotify and Netflix do not ship a Burmese interface
-  (Netflix offers some Burmese content/subtitles, not a localized UI; Spotify isn't officially launched in Myanmar). So
-  there's enough living Unicode UI vocabulary to translate confidently (Google, Microsoft terminology, Nautilus), but no
+  historically the biggest driver of the Unicode migration. Spotify and Netflix do not ship a Burmese interface (Netflix
+  offers some Burmese content/subtitles, not a localized UI; Spotify isn't officially launched in Myanmar). So there's
+  enough living Unicode UI vocabulary to translate confidently (Google, Microsoft terminology, Nautilus), but no
   macOS-native reference and a moderate addressable base. Recommendation: viable but not high priority; ship with a
   native reviewer and the Unicode validation guard in place. David-only call. Confidence: high.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/my/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/my/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

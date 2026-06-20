@@ -1,8 +1,8 @@
 # English (en) translation style guide
 
 English is Cmdr's **source language**: the catalog under `messages/en/` is authored, not translated, and `en` is the
-final fallback for every other locale (see [`i18n.md`](../../guides/i18n.md) § Locale-format convention). So this file is a
-short note, not a translation brief, and it has no glossary or formality call to make.
+final fallback for every other locale (see [`i18n.md`](../../guides/i18n.md) § Locale-format convention). So this file
+is a short note, not a translation brief, and it has no glossary or formality call to make.
 
 ## Voice and tone
 
@@ -50,13 +50,13 @@ template each translation re-expresses in its own categories (which may be more:
 
 ## Notes and decisions
 
-- Roster: the source is region-neutral en; a British/Australian variant (en-GB) is a wave-2 follow-on (mainly
-  Trash->Bin and -our/-ise spelling). See [`language-selection-decisions.md`](../language-selection-decisions.md).
+- Roster: the source is region-neutral en; a British/Australian variant (en-GB) is a wave-2 follow-on (mainly Trash->Bin
+  and -our/-ise spelling). See [`language-selection-decisions.md`](../language-selection-decisions.md).
 - **Ellipsis**: the catalog uses three literal ASCII dots ("Sending...") rather than the single `…` character; several
   translations match this shape deliberately. This is a source convention every locale inherits.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/en/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/en/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

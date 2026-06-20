@@ -4,9 +4,9 @@ Working notes for translating Cmdr into Azerbaijani. Read [`README.md`](../READM
 process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
 Azerbaijani.
 
-**Sparse pile, no macOS.** Apple ships no Azerbaijani macOS UI. The pile has GNOME Nautilus for `az`, plus an
-`az-Latn` folder with a Microsoft terminology glossary and a Microsoft style guide (`_ignored/i18n/az/` and
-`az-Latn/`). No Xfce, no macOS. Terms lean on GNOME + Microsoft. Evidence verified against the pile on 2026-06-20.
+**Sparse pile, no macOS.** Apple ships no Azerbaijani macOS UI. The pile has GNOME Nautilus for `az`, plus an `az-Latn`
+folder with a Microsoft terminology glossary and a Microsoft style guide (`_ignored/i18n/az/` and `az-Latn/`). No Xfce,
+no macOS. Terms lean on GNOME + Microsoft. Evidence verified against the pile on 2026-06-20.
 
 ## Decisions to confirm with David
 
@@ -105,6 +105,6 @@ both categories.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/az/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/az/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

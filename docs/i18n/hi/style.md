@@ -1,7 +1,8 @@
 # Hindi (hi) translation style guide
 
-Working notes for translating Cmdr into Hindi. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Hindi.
+Working notes for translating Cmdr into Hindi. Read [`README.md`](../README.md) for how this fits the translation
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Hindi.
 
 Hindi is a tier-1 well-localized language: Apple (Finder), Microsoft, Google, Spotify, and Netflix all ship Hindi, so
 triangulation evidence is strong. Sources mined for this guide: macOS Finder/AppKit Hindi strings, the Microsoft Hindi
@@ -63,12 +64,12 @@ phrase what happened and the next step (Hindi has neutral framings around `न�
 
 ### Tech-term strategy: follow macOS's middle register, borrow where people borrow
 
-- The genuine choice is Sanskritized native term vs naturalized English loanword. Pure-Hindi coinages (e.g. `संचिका`
-  for file, `संगणक` for computer) read as archaic/officialese to most users; full English-in-Devanagari can read as lazy.
-  macOS strikes the middle most users expect, and that's the recommended target. `tentative` on the overall lean (flagged
-  above); individual terms below are `high`.
-- macOS uses English-loanword Devanagari for the most-borrowed nouns (`फ़ोल्डर` folder, `फ़ाइल` file, `कॉपी` copy,
-  `टैब` tab, `वॉल्यूम` volume) and native Hindi for verbs and some nouns (`हटाएँ` delete, `खोलें` open, `खोज` search,
+- The genuine choice is Sanskritized native term vs naturalized English loanword. Pure-Hindi coinages (e.g. `संचिका` for
+  file, `संगणक` for computer) read as archaic/officialese to most users; full English-in-Devanagari can read as lazy.
+  macOS strikes the middle most users expect, and that's the recommended target. `tentative` on the overall lean
+  (flagged above); individual terms below are `high`.
+- macOS uses English-loanword Devanagari for the most-borrowed nouns (`फ़ोल्डर` folder, `फ़ाइल` file, `कॉपी` copy, `टैब`
+  tab, `वॉल्यूम` volume) and native Hindi for verbs and some nouns (`हटाएँ` delete, `खोलें` open, `खोज` search,
   `बाहर निकालें` eject, `रद्दी` trash). Follow that pattern: don't force a Sanskrit coinage where macOS and everyday
   speech use the loan, and don't English-ify a word that has a natural, common Hindi form.
 
@@ -78,9 +79,9 @@ phrase what happened and the next step (Hindi has neutral framings around `न�
   and second-person polite forms with `आप` are largely gender-neutral for the user (the polite plural agreement avoids
   marking the user's gender). `high`.
 - Keep strings addressed to the user in the `आप` register so verb agreement stays neutral; refer to files/items by their
-  (grammatically gendered) noun and make any adjective/verb agree with THAT noun, not with the user. Never write a string
-  that has to guess the user's gender. Where a file's noun gender would force an agreement (e.g. `फ़ाइल` is feminine,
-  `फ़ोल्डर` masculine), agree with the noun in that specific string.
+  (grammatically gendered) noun and make any adjective/verb agree with THAT noun, not with the user. Never write a
+  string that has to guess the user's gender. Where a file's noun gender would force an agreement (e.g. `फ़ाइल` is
+  feminine, `फ़ोल्डर` masculine), agree with the noun in that specific string.
 
 ### Numerals: Arabic (0-9), not Devanagari (०-९)
 
@@ -147,10 +148,11 @@ CLDR categories: **`one`, `other`** (verified with `new Intl.PluralRules('hi')`,
 - Double every apostrophe in a value (`'` becomes `''`); ICU treats a lone `'` as an escape and silently swallows text.
   Hindi rarely needs apostrophes, but any in a loanword or English fragment must be doubled.
 - Keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/hi/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/hi/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

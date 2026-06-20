@@ -73,9 +73,9 @@ voice avoids "error" / "failed".
 
 ### Gender: noun classes, no masculine/feminine (no decision)
 
-- Swahili has no grammatical gender; it has noun classes (the Bantu m-/wa-, ki-/vi-, etc. system) that drive
-  agreement, but nothing maps to "he/she" the way Tamil/Telugu third person or Romance gender does. The gendered-UI
-  pitfall (a string that has to guess the user's or a referent's gender) simply doesn't arise. `high`.
+- Swahili has no grammatical gender; it has noun classes (the Bantu m-/wa-, ki-/vi-, etc. system) that drive agreement,
+  but nothing maps to "he/she" the way Tamil/Telugu third person or Romance gender does. The gendered-UI pitfall (a
+  string that has to guess the user's or a referent's gender) simply doesn't arise. `high`.
 - What does need care: noun-class agreement on adjectives, possessives, and verb prefixes inside a counted/possessed
   phrase (see Plurals). That's grammar to get right, not a product decision.
 
@@ -92,7 +92,8 @@ strings are copyrighted). For Swahili the top source is Microsoft terminology (n
 against the reference pile (`_ignored/i18n/sw/`) on 2026-06-20.
 
 - **file: `faili`** · Microsoft terminology. Naturalized loan, universally understood. `high`.
-- **folder: `kabrasha`** · Microsoft terminology. Native coinage; keep it consistent rather than borrowing "folda". `high`.
+- **folder: `kabrasha`** · Microsoft terminology. Native coinage; keep it consistent rather than borrowing "folda".
+  `high`.
 - **directory: `saraka`** · Microsoft terminology (the filesystem-directory sense; Microsoft also lists a descriptive
   "mpangilio orodha", but `saraka` is the term to use). Use only where the technical directory sense matters, else
   `kabrasha`. `high`.
@@ -100,8 +101,8 @@ against the reference pile (`_ignored/i18n/sw/`) on 2026-06-20.
 - **move: `hamisha`** · Microsoft terminology. `high`.
 - **delete: `futa`** · Microsoft terminology. Imperative. `high`.
 - **cancel: `ghairi`** · standard Swahili UI imperative for cancel (Microsoft "Katisha" leans toward interrupt/cut-off;
-  `ghairi` is the cleaner "cancel this action"). `tentative` (sources lean differently), confirm against Google
-  Android Swahili if available.
+  `ghairi` is the cleaner "cancel this action"). `tentative` (sources lean differently), confirm against Google Android
+  Swahili if available.
 - **search: `utafutaji` (noun) / `tafuta` (verb)** · Microsoft terminology (`utafutaji`). The action button is the
   imperative `tafuta`. `high`.
 - **settings: `mipangilio`** · Microsoft terminology. `high`.
@@ -113,8 +114,8 @@ against the reference pile (`_ignored/i18n/sw/`) on 2026-06-20.
 - **server: `seva`** · Microsoft terminology. Naturalized loan. `high`.
 - **bookmark: `alamisho` (noun) / `alamisha` (verb)** · Microsoft terminology (`alamisha` verb). `high`.
 - **tab: `kichupo`** · Microsoft terminology. `high`.
-- **pane: `kidirisha`** · Microsoft terminology (literally a small window/region). The two file lists. `tentative`
-  (no file-manager source confirms the pane sense specifically).
+- **pane: `kidirisha`** · Microsoft terminology (literally a small window/region). The two file lists. `tentative` (no
+  file-manager source confirms the pane sense specifically).
 - **open: `fungua` / close: `funga`** · Microsoft terminology. `high`.
 
 Add terms as they come up, in this same `chosen · sources · confidence` shape.
@@ -148,6 +149,6 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sw')`, 202
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/sw/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/sw/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

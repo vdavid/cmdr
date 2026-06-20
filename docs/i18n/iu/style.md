@@ -19,6 +19,7 @@ conveyed by mood/affixes, not pronoun selection.
 ## Decision points
 
 ### Script: Latin vs syllabics (the defining call)
+
 - Inuktitut is written in TWO scripts: Latin (Roman orthography) and Inuktitut syllabics (ᐃᓄᒃᑎᑐᑦ, the Unified Canadian
   Aboriginal Syllabics block). These are not regional accents, they are full alternate writing systems for the same
   language.
@@ -27,11 +28,12 @@ conveyed by mood/affixes, not pronoun selection.
 - Majors: Microsoft localizes Inuktitut and ships terminology in Latin (`iu-Latn`). Syllabics is the more culturally
   prominent script in Nunavut official use, but the available localization data here is Latin.
 - Recommendation: target `iu-Latn` (the tag the reference pile uses and the form with authoritative MS data). Adding
-  `iu-Cans` syllabics would be a separate, harder effort needing a syllabics-literate reviewer and a font check. Flag the
-  script choice to David: it is the single biggest decision for Inuktitut. Confidence: high (for which data exists);
+  `iu-Cans` syllabics would be a separate, harder effort needing a syllabics-literate reviewer and a font check. Flag
+  the script choice to David: it is the single biggest decision for Inuktitut. Confidence: high (for which data exists);
   the Latn-vs-Cans product decision is David's.
 
 ### Polysynthesis: actions are single words, placeholders are hard
+
 - Inuktitut builds meaning by affixing onto a root, so "move the file to trash" is not a word-order assembly but one
   inflected verb complex. A `{name}` or `{count}` placeholder cannot be incorporated into the word the way Inuktitut
   grammar would; it has to sit beside it.
@@ -40,11 +42,13 @@ conveyed by mood/affixes, not pronoun selection.
 - Recommendation: keep placeholders separate from the action word; flag heavily for review. Confidence: high.
 
 ### Dual number (the plural surprise)
+
 - Inuktitut grammatically distinguishes singular, DUAL (exactly two), and plural (three or more). This is why its CLDR
   plural set has a `two` category most European languages lack. See Plurals.
 - Recommendation: write `one`, `two`, and `other` branches for every count. Confidence: high.
 
 ### No grammatical gender
+
 - Inuktitut has no grammatical gender. Inclusive language is a non-issue. Confidence: high.
 
 ## Terminology and glossary
@@ -90,10 +94,11 @@ flag a missing `two`. Each branch inflects the counted noun for its number.
 - **Script: `iu-Latn` (Latin) vs `iu-Cans` (syllabics)**, the defining Inuktitut decision. The reference data is Latin;
   syllabics would be a separate effort. David's call.
 - **All glossary terms** are tentative (single source, polysynthetic grammar): need a native reviewer.
-- **Priority:** very small user base, single thin source, hard grammar. Lowest-tier priority; flag whether to ship at all.
+- **Priority:** very small user base, single thin source, hard grammar. Lowest-tier priority; flag whether to ship at
+  all.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/iu/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/iu/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

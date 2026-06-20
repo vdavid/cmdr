@@ -76,8 +76,8 @@ Settled terms (sources agree):
 - **delete: `poista`** · macOS AppKit ("Poista"). `high`.
 - **open: `avaa`** · macOS AppKit ("Avaa"). `high`.
 - **save: `tallenna`** · macOS AppKit ("Tallenna"). `high`.
-- **cancel: `kumoa`** · macOS AppKit ("Kumoa"). Note: "kumoa" is literally Undo/revoke; verify the Cancel-button
-  string against macOS (macOS sometimes uses "Peruuta" for Cancel). `high` on the macOS source, but check the exact
+- **cancel: `kumoa`** · macOS AppKit ("Kumoa"). Note: "kumoa" is literally Undo/revoke; verify the Cancel-button string
+  against macOS (macOS sometimes uses "Peruuta" for Cancel). `high` on the macOS source, but check the exact
   Cancel-vs-Undo sense.
 - **search: `etsi` (verb) / `haku` (noun)** · macOS Finder ("Etsi Finderissa"). `high`.
 - **network: `verkko`** · macOS Finder ("Verkko"). `high`.
@@ -110,11 +110,12 @@ counted noun in Finnish takes the **partitive singular** after a number >1 ("3 t
   check carefully.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/fi/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/fi/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

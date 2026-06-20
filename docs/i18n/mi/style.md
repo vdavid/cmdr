@@ -1,7 +1,8 @@
 # Māori (mi) translation style guide
 
 Working notes for translating Cmdr into te reo Māori. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into Māori.
+process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
+Māori.
 
 Unusually for a low-resource language, te reo Māori has strong real localization: Microsoft ships a Windows/Office
 Language Interface Pack plus a full style guide and a maintained terminology base, all built in accordance with Te Taura
@@ -22,6 +23,7 @@ is called for (MS guidance). Register is respectful but conversational.
 ## Decision points
 
 Macrons, always use them, never double-vowel:
+
 - Modern standard te reo marks long vowels with macrons: ā ē ī ō ū. Te Taura Whiri has preferred macrons since its 1987
   founding, and Microsoft uses them throughout (including in possessives: `ā rātou mahi` vs personal `a rātou`).
 - Options: macrons / double-vowel ("aa") / no diacritics. Sole carve-out: personal/family/hapū/iwi names where the owner
@@ -30,6 +32,7 @@ Macrons, always use them, never double-vowel:
   high.
 
 Use official Te Taura Whiri / Microsoft coined native terms, not transliteration:
+
 - Te Taura Whiri coins native tech terms (rorohiko = computer, kōnae = file, kōpaki = folder), and the Microsoft pack
   uses them consistently. The old GNOME catalog diverges on several (open, delete, cancel, Trash) and is only ~20%
   complete.
@@ -37,6 +40,7 @@ Use official Te Taura Whiri / Microsoft coined native terms, not transliteration
   paste their copyrighted UI strings). When GNOME and Microsoft conflict, go Microsoft. Confidence: high.
 
 Possessive a/o categories (a real grammar trap, native review needed):
+
 - Māori distinguishes a-category vs o-category possession, with macron-on-possessive rules. Any string with possession
   ("your files", "its name") forces a choice; the MS guide defers to Harlow's Māori Reference Grammar.
 - Recommendation: don't let an agent guess a/o, flag any string with a possessive for a native reviewer. Confidence:
@@ -72,8 +76,8 @@ Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, p
 ## Plurals
 
 CLDR categories: `one`, `other`. Māori's dual/plural distinctions live in pronouns (tāua/mātou…), not in noun counting,
-so message pluralization needs only one/other. The `desktop-i18n-plural` check requires every plural message to cover the
-categories this language needs.
+so message pluralization needs only one/other. The `desktop-i18n-plural` check requires every plural message to cover
+the categories this language needs.
 
 ## Notes and decisions
 
@@ -90,11 +94,11 @@ categories this language needs.
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md)
-and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in
+[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/mi/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/mi/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

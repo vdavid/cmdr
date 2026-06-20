@@ -28,13 +28,13 @@ everyday vocabulary. That register matches Cmdr.
 - **Formality: respectful `ଆପଣ` + `-ନ୍ତୁ` imperatives.** Covered above. Confidence: high.
 - **Register: modern, not over-Sanskritized.** As with the other Indic languages, the risk is dense Sanskrit officialese
   that ordinary users don't say. Microsoft's modern voice and GNOME both favor everyday words and accepted loanwords.
-  Recommendation: everyday register; use the common loanword (e.g. "ଫୋଲଡର" for folder, as GNOME does) over a coined
-  term when that's what users say. Confidence: high.
+  Recommendation: everyday register; use the common loanword (e.g. "ଫୋଲଡର" for folder, as GNOME does) over a coined term
+  when that's what users say. Confidence: high.
 - **Anglicism handling.** Computing terms are often kept as Odia-spelled loanwords ("ଫୋଲଡର" folder). GNOME does this.
   Recommendation: keep entrenched loanwords in Odia spelling; translate where a native word is common. Confidence: high.
 - **Numerals: Western (ASCII) digits.** Odia has its own digits (`୦୧୨୩`), but modern UI commonly uses Western digits;
-  `Intl` formats per locale at runtime. Recommendation: rely on `Intl`; don't hand-type Odia digits in copy.
-  Confidence: medium. Flag for David if Odia numerals are wanted.
+  `Intl` formats per locale at runtime. Recommendation: rely on `Intl`; don't hand-type Odia digits in copy. Confidence:
+  medium. Flag for David if Odia numerals are wanted.
 - **Inclusive/gendered language.** Odia has relatively light grammatical-gender load in verb agreement compared to
   Hindi; UI copy via `ଆପଣ` and polite imperatives avoids subject-gender. Prefer neutral phrasing where agreement would
   surface. Confidence: medium.
@@ -43,11 +43,11 @@ everyday vocabulary. That register matches Cmdr.
 
 Confirmed against GNOME Nautilus Odia (Tier 3) and Microsoft terminology (Tier 2). Extend as strings come up.
 
-| English term | Odia | Notes |
-| ------------ | ---- | ----- |
-| folder | ଫୋଲଡର | GNOME; loanword |
-| trash | ଆବର୍ଜନା ପାତ୍ର | GNOME; the location noun ("refuse vessel") |
-| cancel | ବାତିଲ କରନ୍ତୁ | GNOME; polite imperative |
+| English term | Odia          | Notes                                      |
+| ------------ | ------------- | ------------------------------------------ |
+| folder       | ଫୋଲଡର         | GNOME; loanword                            |
+| trash        | ଆବର୍ଜନା ପାତ୍ର | GNOME; the location noun ("refuse vessel") |
+| cancel       | ବାତିଲ କରନ୍ତୁ  | GNOME; polite imperative                   |
 
 ## Brand and do-not-translate
 
@@ -72,6 +72,6 @@ two-category shape as English; every plural message needs both branches. The `de
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/or/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/or/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

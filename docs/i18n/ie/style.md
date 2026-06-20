@@ -1,7 +1,8 @@
 # Interlingue / Occidental (ie) translation style guide
 
-Working notes for translating Cmdr into Interlingue (historically Occidental). Read [`README.md`](../README.md) for how this
-fits the translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice.
+Working notes for translating Cmdr into Interlingue (historically Occidental). Read [`README.md`](../README.md) for how
+this fits the translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English
+voice.
 
 ## Priority: low (constructed auxiliary language)
 
@@ -22,21 +23,24 @@ Germanic); it reads close to Interlingua but with its own forms. Match Cmdr's En
 ## Decision points
 
 ### Script and variants: none to decide
+
 - Latin script, one standardized form. No regional variants, no orthography or gender decision. Confidence: high.
 
 ### No grammatical gender
+
 - No grammatical gender agreement; inclusive language is a non-issue. Confidence: high.
 
 ### Distinct from Interlingua (ia), do not mix
-- Interlingue (ie) and Interlingua (ia) are SEPARATE constructed languages with different vocabulary and spelling
-  ("New Folder" → "Nov fólder" in ie vs "Nove dossier" in ia; "Open" → "Aperter" vs "Aperir"). Use the ie catalog, never
-  copy ia strings. Confidence: high.
+
+- Interlingue (ie) and Interlingua (ia) are SEPARATE constructed languages with different vocabulary and spelling ("New
+  Folder" → "Nov fólder" in ie vs "Nove dossier" in ia; "Open" → "Aperter" vs "Aperir"). Use the ie catalog, never copy
+  ia strings. Confidence: high.
 
 ## Terminology and glossary
 
-Source: GNOME Nautilus + Xfce Thunar (`ie/`) only. `tentative` until reviewed. From the catalogs:
-copy → Copiar, rename → Renominar, trash → Paper-corb, new folder → Nov fólder, open → Aperter, cancel → Anullar,
-search → Serchar, folder → Fólder. Confirm move, delete, file, settings, volume, server against the catalogs.
+Source: GNOME Nautilus + Xfce Thunar (`ie/`) only. `tentative` until reviewed. From the catalogs: copy → Copiar, rename
+→ Renominar, trash → Paper-corb, new folder → Nov fólder, open → Aperter, cancel → Anullar, search → Serchar, folder →
+Fólder. Confirm move, delete, file, settings, volume, server against the catalogs.
 
 ## Brand and do-not-translate
 
@@ -45,7 +49,8 @@ Enforced by `desktop-i18n-dont-translate`.
 
 ## Plurals
 
-CLDR categories: `one`, `other` (verified `new Intl.PluralRules('ie')`, 2026-06-20). Regular plural; write both branches.
+CLDR categories: `one`, `other` (verified `new Intl.PluralRules('ie')`, 2026-06-20). Regular plural; write both
+branches.
 
 ## Notes and decisions
 
@@ -59,6 +64,6 @@ CLDR categories: `one`, `other` (verified `new Intl.PluralRules('ie')`, 2026-06-
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/ie/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ie/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.

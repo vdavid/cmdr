@@ -25,8 +25,8 @@ entry points; this is the playbook they assume.
 
 ## Fan-out sweeps (parallel research or generation over a list)
 
-A different shape from the refactor loop above: many independent agents each handle a slice of a long list (e.g. one
-doc per language). Hard-won rules:
+A different shape from the refactor loop above: many independent agents each handle a slice of a long list (e.g. one doc
+per language). Hard-won rules:
 
 - **Cap concurrency at ~3 subagents.** The Anthropic API rate-limits aggressively; a 14-agent burst gets throttled and
   agents silently finish partial. Keep ~3 in flight; queue the rest. Batch size per agent (3 vs 10 items) is separate

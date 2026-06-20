@@ -81,8 +81,8 @@ correct case form, not just a swapped number.
   for thousands; let the formatter decide, don't hardcode.
 - **Quotation marks.** Bosnian print uses `„…"` (low-high) or `»…«`; UI catalogs often use plain curly. Match the
   surrounding source and stay consistent.
-- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+- **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
+  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Decisions to confirm with David
 
@@ -92,6 +92,6 @@ correct case form, not just a swapped number.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and
-add to it as you settle terms, each sourced from the reference pile (`_ignored/i18n/bs/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
+you settle terms, each sourced from the reference pile (`_ignored/i18n/bs/`; recipes in `_ignored/i18n/how-to-mine.md`).
+Never guess a term.
