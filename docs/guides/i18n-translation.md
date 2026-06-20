@@ -41,6 +41,28 @@ glossary as **chosen · sources · confidence**. Confidence is `confirmed` (a hu
 sources agree), or `tentative` (sources conflict or none had it). Push every `tentative` term, and any unresolved
 formality/voice call, into the style guide's "Decisions to confirm with David" section rather than burying it.
 
+## Gender and inclusive language
+
+For gendered languages, one rule: achieve inclusivity by neutral RESTRUCTURING, never by typographic glyphs. Avoid the
+German gender star/colon (`Benutzer*innen`, `Benutzer:innen`), the French midpoint (`étudiant·e·s`), Spanish/Portuguese
+`-e`/`-x` (`todes`, `todxs`), the Italian schwa (`tuttə`), and Cyrillic/Hebrew/Arabic splits. Those forms break screen
+readers (against Cmdr's AA+ a11y principle), are receding even at Microsoft (which dropped the German gender star), and
+are politically loaded. Apple and Microsoft both prescribe restructuring instead.
+
+Restructure by naming the object or action, not the person, which dodges both gendered moments at once:
+
+- The role-noun (German's case): `mit 3 Benutzer*innen geteilt` → `Für 3 Personen freigegeben` (or the neutral
+  participle `Benutzende`).
+- User agreement (French/Spanish/Italian/Slavic): `Vous êtes connecté·e` → `Connexion établie` (the status agrees with
+  the connection, not the user); `Bienvenidos`/`Bienvenides` → `Te damos la bienvenida`.
+
+Prefer verbal-noun or imperative button labels, second person, present tense, and collective/role nouns. A file manager
+is mostly commands and status, so this is almost free.
+
+**Only restructure where it still reads naturally.** If neutral phrasing would be stilted or unidiomatic, don't ship the
+awkward version: flag it as a "Decisions to confirm with David" item instead. The generic (usually masculine) form is
+the documented last resort, used only when natural restructuring genuinely isn't available.
+
 ## Add a new language
 
 1. **Pick the BCP-47 tag.** A language base (`xx`) for the universal set, or a region variant (`xx-YY`) when a region
@@ -113,6 +135,13 @@ ERRORS ARE RAW: Any key under errors.* does NOT use ICU. There, use NORMAL apost
 keep {token} verbatim as a literal replacement target (never add ICU formatting), treat <…> as literal text, and pass
 markdown (#, **, backticks) through untouched. The catalog's @key context flags these. Full note: i18n.md § Error
 pipeline.
+
+GENDER: Achieve inclusivity by neutral RESTRUCTURING, never typographic glyphs (no German *innen/:innen, no French
+·e·, no Spanish/Portuguese -e/-x, no Italian schwa, no Cyrillic/Hebrew/Arabic splits — they break screen readers). Name
+the object or action, not the person: verbal-noun or imperative labels, second person, present tense, collective/role
+nouns, status that agrees with the object ("Connection established", not "You are connected"). Do this ONLY where the
+result still reads naturally; if neutral phrasing would be stilted, flag the string for human review rather than ship an
+awkward rewrite or an exposed gendered default.
 
 DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, Quick Look, and the
 {system_settings}-style tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in
