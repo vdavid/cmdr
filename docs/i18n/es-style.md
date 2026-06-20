@@ -116,6 +116,8 @@ strings are counted, so no plural branches are needed there.
 
 ## Notes and decisions
 
+- Roster: Cmdr ships one pan-regional Spanish (archivo not fichero, avoid ordenador, ustedes-safe); a Spain variant
+  (es-ES) is deferred. See [`language-selection-decisions.md`](language-selection-decisions.md).
 - **Quotation marks: macOS Spanish uses `“…”`** (curly), not `«…»`, in its UI strings (verified in `es/macOS/Finder/`,
   2026-06-19). Match macOS.
 - **Inverted opening marks.** Questions open with `¿` and exclamations with `¡`. (No question/exclamation strings in

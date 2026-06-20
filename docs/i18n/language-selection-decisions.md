@@ -3,25 +3,26 @@
 Which of the 139 researched languages Cmdr plans to localize, and in what order. Per-language knowledge lives in
 `<tag>-style.md`; this is the ship/skip and sequencing roster.
 
-- **wave 1-4**: implementation order. Waves 1-2 are driven by Cmdr' actual install usage (analytics, 30-day
-  country data, 2026-06-20); waves 3-4 are market-size / reach estimates, to re-rank as the user base grows.
-  `en` is the source locale (not translated).
+- **wave 1-4**: implementation order. Waves 1-2 are driven by Cmdr' 30-day install usage (analytics,
+  2026-06-20); waves 3-4 are market-size / reach estimates, to re-rank as the user base grows. `en` is the
+  source locale (not translated).
+- **deferred**: a regional/script variant added after its base, on demand (es-ES, fr-CA, zh-Hant, zh-HK).
 - **exclude RTL**: set aside until Cmdr supports right-to-left layout. Decision 2026-06-20: no RTL for now.
-- **exclude long-tail**: no major-product localization ecosystem. Decision 2026-06-20: skip the long tail for now.
+- **exclude long-tail**: no major-product localization ecosystem. Decision 2026-06-20: skip the long tail.
 
-Order: source, then waves 1 to 4, then exclusions by type. Formality and script choices per language:
+Order: source, waves 1 to 4, deferred variants, then exclusions. Formality and script choices per language:
 [formal-informal-decisions.md](formal-informal-decisions.md) and [script-decisions.md](script-decisions.md).
 
 | id | language | decision | comment |
 | -- | -------- | -------- | ------- |
-| en | English | source | Reference English, region-neutral; the source locale |
+| en | English | source | Reference English, region-neutral; the source locale; en-GB is a wave-2 variant |
 | bn | Bengali | wave 1 | MS terminology + GNOME; Google ships Bengali; no macOS |
 | de | German | wave 1 | Apple macOS + MS + Google ship German |
-| es | Spanish | wave 1 | Apple macOS + MS + Google + Netflix ship Spanish |
+| es | Spanish | wave 1 | Apple macOS + MS + Google + Netflix ship Spanish; pan-regional es, es-ES deferred |
 | fr | French | wave 1 | Apple macOS + MS + Google ship French; fr + fr-CA |
 | hu | Hungarian | wave 1 | macOS + MS + GNOME + Xfce all ship Hungarian |
 | nl | Dutch | wave 1 | macOS Tier 1 fully informal; mainstream |
-| pt | Portuguese | wave 1 | Mainstream; Apple/MS ship pt-BR/pt-PT |
+| pt | Portuguese | wave 1 | Mainstream; Apple/MS ship pt-BR/pt-PT; ships as pt-BR (pt-PT is a wave-2 variant) |
 | sv | Swedish | wave 1 | Mainstream; macOS/Windows ship Swedish |
 | vi | Vietnamese | wave 1 | Mainstream; macOS/MS ship Vietnamese |
 | zh | Chinese | wave 1 | Mainstream; macOS/MS ship zh; Simplified/Traditional split |
@@ -29,6 +30,7 @@ Order: source, then waves 1 to 4, then exclusions by type. Formality and script 
 | cs | Czech | wave 2 | Apple macOS + MS ship Czech; mainstream |
 | da | Danish | wave 2 | Apple macOS + MS + Google ship Danish |
 | el | Greek | wave 2 | Apple macOS + MS + Google ship Greek |
+| en-GB | English (UK/AU) | wave 2 | British/Australian; mainly Trash->Bin and -our/-ise spelling |
 | fi | Finnish | wave 2 | Apple macOS + MS + Google ship Finnish |
 | hi | Hindi | wave 2 | Tier-1: Apple, MS, Google, Spotify, Netflix all ship Hindi |
 | id | Indonesian | wave 2 | Apple + MS ship one Indonesian; macOS Finder reference |
@@ -38,6 +40,7 @@ Order: source, then waves 1 to 4, then exclusions by type. Formality and script 
 | ms | Malay | wave 2 | Apple macOS Finder + MS + GNOME ship Malay; well-sourced |
 | nb | Norwegian Bokmål | wave 2 | Apple, MS, Google, Spotify, Netflix all ship Bokmål |
 | pl | Polish | wave 2 | Mainstream; macOS/MS ship Polish |
+| pt-PT | Portuguese (Portugal) | wave 2 | European Portuguese; a separate pass from pt-BR |
 | ro | Romanian | wave 2 | Mainstream; macOS/MS ship Romanian |
 | ru | Russian | wave 2 | Mainstream; Apple/MS ship Russian |
 | sk | Slovak | wave 2 | Mainstream; macOS ships Slovak |
@@ -88,6 +91,10 @@ Order: source, then waves 1 to 4, then exclusions by type. Formality and script 
 | quz | Quechua (Cusco) | wave 4 | MS localized Windows/Office into Quechua |
 | sw | Swahili | wave 4 | Google Android/Search + MS Office ship Swahili |
 | uz | Uzbek | wave 4 | MS localized Windows + GNOME ship Uzbek Latin |
+| es-ES | Spanish (Spain) | deferred | only if the pan-regional es proves insufficient |
+| fr-CA | French (Canada) | deferred | Quebec French; base fr covers most |
+| zh-HK | Chinese (Traditional, HK) | deferred | later optional override of zh-Hant |
+| zh-Hant | Chinese (Traditional) | deferred | Taiwan-norm fast-follow after zh-Hans |
 | ar | Arabic | exclude RTL | Apple/MS/Google ship full mirrored RTL UIs; MSA standard |
 | ckb | Central Kurdish (Sorani) | exclude RTL | MS + GNOME localize Sorani Perso-Arabic RTL |
 | fa | Persian | exclude RTL | MS style guide + terminology + GNOME; Perso-Arabic RTL |

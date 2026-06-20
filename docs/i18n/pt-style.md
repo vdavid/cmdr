@@ -103,6 +103,8 @@ modern CLDR Portuguese (compact/large numbers), so plural messages must write a 
 
 ## Notes and decisions
 
+- Roster: Cmdr ships pt-BR for wave 1; pt-PT is a separate wave-2 variant (vocabulary, você/tu, spelling). See
+  [`language-selection-decisions.md`](language-selection-decisions.md).
 - Quotation marks: pt-BR commonly uses curly "" (like English); pt-PT traditionally uses guillemets «». Match the chosen
   variant.
 - Decimal/thousands: both use comma decimal, period (pt-PT) or period/space thousands. `Intl` handles this; don't

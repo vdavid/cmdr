@@ -50,6 +50,8 @@ for future strings: cover the categories the message needs, not English's.
 
 ## Notes and decisions
 
+- Roster: base fr (France norm) ships first; Canadian French (fr-CA) is a deferred variant. See
+  [`language-selection-decisions.md`](language-selection-decisions.md).
 - **Punctuation spacing**: French uses a narrow no-break space before `: ; ! ?`. Apply it (e.g. "Identifiant du
   rapport :"). Use a real narrow no-break space (U+202F) where typographically correct, or accept a regular space if
   the rendering context doesn't support it; stay consistent within the catalog.

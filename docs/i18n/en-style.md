@@ -50,5 +50,7 @@ template each translation re-expresses in its own categories (which may be more:
 
 ## Notes and decisions
 
+- Roster: the source is region-neutral en; a British/Australian variant (en-GB) is a wave-2 follow-on (mainly
+  Trash->Bin and -our/-ise spelling). See [`language-selection-decisions.md`](language-selection-decisions.md).
 - **Ellipsis**: the catalog uses three literal ASCII dots ("Sending...") rather than the single `…` character; several
   translations match this shape deliberately. This is a source convention every locale inherits.
