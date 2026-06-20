@@ -1,90 +1,93 @@
 # Language selection decisions
 
-Which of the 139 researched languages Cmdr plans to localize, and which are set aside for now. The per-language
-localization knowledge lives in `<tag>-style.md`; this is the ship/skip roster.
+Which of the 139 researched languages Cmdr plans to localize, and in what order. Per-language knowledge lives in
+`<tag>-style.md`; this is the ship/skip and sequencing roster.
 
-- **UNDECIDED**: a real candidate, not yet assigned to an implementation wave (waves TBD).
-- **exclude RTL**: set aside until Cmdr supports right-to-left layout (mirroring + bidi). Decision 2026-06-20: no RTL for now.
-- **exclude long-tail**: no major-product localization ecosystem (low-resource / native-review-only). Decision 2026-06-20: skip the long tail for now.
+- **wave 1-4**: implementation order. Waves 1-2 are driven by Cmdr' actual install usage (analytics, 30-day
+  country data, 2026-06-20); waves 3-4 are market-size / reach estimates, to re-rank as the user base grows.
+  `en` is the source locale (not translated).
+- **exclude RTL**: set aside until Cmdr supports right-to-left layout. Decision 2026-06-20: no RTL for now.
+- **exclude long-tail**: no major-product localization ecosystem. Decision 2026-06-20: skip the long tail for now.
 
-Order: UNDECIDED first, then future implementation waves, then exclusions by type.
+Order: source, then waves 1 to 4, then exclusions by type. Formality and script choices per language:
+[formal-informal-decisions.md](formal-informal-decisions.md) and [script-decisions.md](script-decisions.md).
 
 | id | language | decision | comment |
 | -- | -------- | -------- | ------- |
-| af | Afrikaans | UNDECIDED | MS style guide + terminology + GNOME; solid precedent |
-| am | Amharic | UNDECIDED | MS style guide + terminology + GNOME; Google ships Amharic |
-| as | Assamese | UNDECIDED | MS style guide + terminology + GNOME; honorific norm documented |
-| az | Azerbaijani | UNDECIDED | MS style guide + terminology (az-Latn) + GNOME |
-| be | Belarusian | UNDECIDED | MS style guide + terminology + GNOME |
-| bg | Bulgarian | UNDECIDED | Microsoft + Google ship Bulgarian; mainstream Cyrillic |
-| bn | Bengali | UNDECIDED | MS terminology + GNOME; Google ships Bengali; no macOS |
-| bs | Bosnian | UNDECIDED | MS ships bs-Latn UI + style guide; Latin dominant |
-| ca | Catalan | UNDECIDED | Apple macOS + MS + GNOME ship Catalan |
-| chr | Cherokee | UNDECIDED | MS shipped Windows LIP/Office, Google Gmail; syllabary UI corpus |
-| cs | Czech | UNDECIDED | Apple macOS + MS ship Czech; mainstream |
-| da | Danish | UNDECIDED | Apple macOS + MS + Google ship Danish |
-| de | German | UNDECIDED | Apple macOS + MS + Google ship German |
-| el | Greek | UNDECIDED | Apple macOS + MS + Google ship Greek |
-| en | English | UNDECIDED | Reference English, region-neutral; the source locale |
-| es | Spanish | UNDECIDED | Apple macOS + MS + Google + Netflix ship Spanish |
-| et | Estonian | UNDECIDED | MS style guide + terminology + GNOME; no macOS |
-| eu | Basque | UNDECIDED | MS style guide + GNOME ship Basque |
-| fi | Finnish | UNDECIDED | Apple macOS + MS + Google ship Finnish |
-| fil | Filipino | UNDECIDED | MS style guide + terminology; Google ships Filipino |
-| fr | French | UNDECIDED | Apple macOS + MS + Google ship French; fr + fr-CA |
-| ga | Irish | UNDECIDED | MS style guide + terminology + GNOME; no macOS |
-| gd | Scottish Gaelic | UNDECIDED | MS style guide + terminology + GNOME; no macOS |
-| gl | Galician | UNDECIDED | MS style guide + terminology + GNOME/Xfce; no macOS |
-| gu | Gujarati | UNDECIDED | MS style guide + terminology + GNOME; Google ships Gujarati |
-| hi | Hindi | UNDECIDED | Tier-1: Apple, MS, Google, Spotify, Netflix all ship Hindi |
-| hr | Croatian | UNDECIDED | macOS Finder + MS + GNOME + Xfce, well-sourced |
-| hu | Hungarian | UNDECIDED | macOS + MS + GNOME + Xfce all ship Hungarian |
-| id | Indonesian | UNDECIDED | Apple + MS ship one Indonesian; macOS Finder reference |
-| is | Icelandic | UNDECIDED | No Apple Icelandic; MS terminology + Thunar + GNOME |
-| it | Italian | UNDECIDED | macOS Finder + MS + GNOME/Xfce; strong sources |
-| ja | Japanese | UNDECIDED | Tier-1: Apple, MS, Google all ship Japanese |
-| ka | Georgian | UNDECIDED | MS + GNOME + Xfce; no macOS; conversational MS voice |
-| kk | Kazakh | UNDECIDED | MS + GNOME + Xfce; Cyrillic now, Latin transition coming |
-| km | Khmer | UNDECIDED | MS terminology + style guide + sparse GNOME; ZWSP burden |
-| kn | Kannada | UNDECIDED | MS + GNOME; no macOS; MS ships Kannada UI |
-| ko | Korean | UNDECIDED | Tier-1: Apple + MS; macOS Finder reference |
-| kok | Konkani | UNDECIDED | MS only (terminology + style guide); multi-script, Devanagari |
-| lo | Lao | UNDECIDED | MS terminology + near-complete Xfce Thunar; no macOS |
-| lt | Lithuanian | UNDECIDED | No macOS; MS terminology + style guide + GNOME/Xfce, well-sourced |
-| lv | Latvian | UNDECIDED | No macOS; MS terminology + 97pg style guide + GNOME/Xfce |
-| mk | Macedonian | UNDECIDED | No Apple; MS full localization + style guide + GNOME |
-| ml | Malayalam | UNDECIDED | MS ships UI + TBX + style guide; no Apple; Google ships too |
-| mn | Mongolian | UNDECIDED | Cyrillic; MS terminology + style guide; avoid-pronoun rule |
-| mr | Marathi | UNDECIDED | MS ships UI + TBX + style guide; no Apple; Google ships |
-| ms | Malay | UNDECIDED | Apple macOS Finder + MS + GNOME ship Malay; well-sourced |
-| mt | Maltese | UNDECIDED | EU official; thin outside MS + EU; no Apple; Latin script |
-| my | Burmese | UNDECIDED | Moderate-thin; no Apple UI; MS + Nautilus; Zawgyi/Unicode pitfall |
-| nb | Norwegian Bokmål | UNDECIDED | Apple, MS, Google, Spotify, Netflix all ship Bokmål |
-| ne | Nepali | UNDECIDED | No macOS; MS terminology + style guide + GNOME; MS modern voice |
-| nl | Dutch | UNDECIDED | macOS Tier 1 fully informal; mainstream |
-| nn | Norwegian Nynorsk | UNDECIDED | Minority written standard; Apple/MS/GNOME ship du |
-| or | Odia | UNDECIDED | Google/MS ship Odia UI; ~38M speakers |
-| pa | Punjabi | UNDECIDED | Google ships Gurmukhi Android UI; ~125M speakers |
-| pl | Polish | UNDECIDED | Mainstream; macOS/MS ship Polish |
-| pt | Portuguese | UNDECIDED | Mainstream; Apple/MS ship pt-BR/pt-PT |
-| quz | Quechua (Cusco) | UNDECIDED | MS localized Windows/Office into Quechua |
-| ro | Romanian | UNDECIDED | Mainstream; macOS/MS ship Romanian |
-| ru | Russian | UNDECIDED | Mainstream; Apple/MS ship Russian |
-| si | Sinhala | UNDECIDED | MS full Windows/Office + Google web UI |
-| sk | Slovak | UNDECIDED | Mainstream; macOS ships Slovak |
-| sl | Slovenian | UNDECIDED | Mainstream; macOS ships Slovenian |
-| sq | Albanian | UNDECIDED | MS localized Windows into Albanian |
-| sr | Serbian | UNDECIDED | Mainstream; MS+GNOME ship Serbian |
-| sv | Swedish | UNDECIDED | Mainstream; macOS/Windows ship Swedish |
-| sw | Swahili | UNDECIDED | Google Android/Search + MS Office ship Swahili |
-| ta | Tamil | UNDECIDED | Google Android/Search ships Tamil; ~80M |
-| te | Telugu | UNDECIDED | Google Android/Search ships Telugu; ~95M |
-| th | Thai | UNDECIDED | Mainstream; macOS/MS ship Thai |
-| tr | Turkish | UNDECIDED | Mainstream; macOS+MS both formal |
-| uk | Ukrainian | UNDECIDED | Mainstream; macOS ships Ukrainian |
-| uz | Uzbek | UNDECIDED | MS localized Windows + GNOME ship Uzbek Latin |
-| vi | Vietnamese | UNDECIDED | Mainstream; macOS/MS ship Vietnamese |
-| zh | Chinese | UNDECIDED | Mainstream; macOS/MS ship zh; Simplified/Traditional split |
+| en | English | source | Reference English, region-neutral; the source locale |
+| bn | Bengali | wave 1 | MS terminology + GNOME; Google ships Bengali; no macOS |
+| de | German | wave 1 | Apple macOS + MS + Google ship German |
+| es | Spanish | wave 1 | Apple macOS + MS + Google + Netflix ship Spanish |
+| fr | French | wave 1 | Apple macOS + MS + Google ship French; fr + fr-CA |
+| hu | Hungarian | wave 1 | macOS + MS + GNOME + Xfce all ship Hungarian |
+| nl | Dutch | wave 1 | macOS Tier 1 fully informal; mainstream |
+| pt | Portuguese | wave 1 | Mainstream; Apple/MS ship pt-BR/pt-PT |
+| sv | Swedish | wave 1 | Mainstream; macOS/Windows ship Swedish |
+| vi | Vietnamese | wave 1 | Mainstream; macOS/MS ship Vietnamese |
+| zh | Chinese | wave 1 | Mainstream; macOS/MS ship zh; Simplified/Traditional split |
+| ca | Catalan | wave 2 | Apple macOS + MS + GNOME ship Catalan |
+| cs | Czech | wave 2 | Apple macOS + MS ship Czech; mainstream |
+| da | Danish | wave 2 | Apple macOS + MS + Google ship Danish |
+| el | Greek | wave 2 | Apple macOS + MS + Google ship Greek |
+| fi | Finnish | wave 2 | Apple macOS + MS + Google ship Finnish |
+| hi | Hindi | wave 2 | Tier-1: Apple, MS, Google, Spotify, Netflix all ship Hindi |
+| id | Indonesian | wave 2 | Apple + MS ship one Indonesian; macOS Finder reference |
+| it | Italian | wave 2 | macOS Finder + MS + GNOME/Xfce; strong sources |
+| ja | Japanese | wave 2 | Tier-1: Apple, MS, Google all ship Japanese |
+| ko | Korean | wave 2 | Tier-1: Apple + MS; macOS Finder reference |
+| ms | Malay | wave 2 | Apple macOS Finder + MS + GNOME ship Malay; well-sourced |
+| nb | Norwegian Bokmål | wave 2 | Apple, MS, Google, Spotify, Netflix all ship Bokmål |
+| pl | Polish | wave 2 | Mainstream; macOS/MS ship Polish |
+| ro | Romanian | wave 2 | Mainstream; macOS/MS ship Romanian |
+| ru | Russian | wave 2 | Mainstream; Apple/MS ship Russian |
+| sk | Slovak | wave 2 | Mainstream; macOS ships Slovak |
+| sr | Serbian | wave 2 | Mainstream; MS+GNOME ship Serbian |
+| th | Thai | wave 2 | Mainstream; macOS/MS ship Thai |
+| tr | Turkish | wave 2 | Mainstream; macOS+MS both formal |
+| uk | Ukrainian | wave 2 | Mainstream; macOS ships Ukrainian |
+| az | Azerbaijani | wave 3 | MS style guide + terminology (az-Latn) + GNOME |
+| bg | Bulgarian | wave 3 | Microsoft + Google ship Bulgarian; mainstream Cyrillic |
+| et | Estonian | wave 3 | MS style guide + terminology + GNOME; no macOS |
+| gu | Gujarati | wave 3 | MS style guide + terminology + GNOME; Google ships Gujarati |
+| hr | Croatian | wave 3 | macOS Finder + MS + GNOME + Xfce, well-sourced |
+| kk | Kazakh | wave 3 | MS + GNOME + Xfce; Cyrillic now, Latin transition coming |
+| kn | Kannada | wave 3 | MS + GNOME; no macOS; MS ships Kannada UI |
+| lt | Lithuanian | wave 3 | No macOS; MS terminology + style guide + GNOME/Xfce, well-sourced |
+| lv | Latvian | wave 3 | No macOS; MS terminology + 97pg style guide + GNOME/Xfce |
+| mk | Macedonian | wave 3 | No Apple; MS full localization + style guide + GNOME |
+| ml | Malayalam | wave 3 | MS ships UI + TBX + style guide; no Apple; Google ships too |
+| mr | Marathi | wave 3 | MS ships UI + TBX + style guide; no Apple; Google ships |
+| ne | Nepali | wave 3 | No macOS; MS terminology + style guide + GNOME; MS modern voice |
+| or | Odia | wave 3 | Google/MS ship Odia UI; ~38M speakers |
+| pa | Punjabi | wave 3 | Google ships Gurmukhi Android UI; ~125M speakers |
+| si | Sinhala | wave 3 | MS full Windows/Office + Google web UI |
+| sl | Slovenian | wave 3 | Mainstream; macOS ships Slovenian |
+| sq | Albanian | wave 3 | MS localized Windows into Albanian |
+| ta | Tamil | wave 3 | Google Android/Search ships Tamil; ~80M |
+| te | Telugu | wave 3 | Google Android/Search ships Telugu; ~95M |
+| af | Afrikaans | wave 4 | MS style guide + terminology + GNOME; solid precedent |
+| am | Amharic | wave 4 | MS style guide + terminology + GNOME; Google ships Amharic |
+| as | Assamese | wave 4 | MS style guide + terminology + GNOME; honorific norm documented |
+| be | Belarusian | wave 4 | MS style guide + terminology + GNOME |
+| bs | Bosnian | wave 4 | MS ships bs-Latn UI + style guide; Latin dominant |
+| chr | Cherokee | wave 4 | MS shipped Windows LIP/Office, Google Gmail; syllabary UI corpus |
+| eu | Basque | wave 4 | MS style guide + GNOME ship Basque |
+| fil | Filipino | wave 4 | MS style guide + terminology; Google ships Filipino |
+| ga | Irish | wave 4 | MS style guide + terminology + GNOME; no macOS |
+| gd | Scottish Gaelic | wave 4 | MS style guide + terminology + GNOME; no macOS |
+| gl | Galician | wave 4 | MS style guide + terminology + GNOME/Xfce; no macOS |
+| is | Icelandic | wave 4 | No Apple Icelandic; MS terminology + Thunar + GNOME |
+| ka | Georgian | wave 4 | MS + GNOME + Xfce; no macOS; conversational MS voice |
+| km | Khmer | wave 4 | MS terminology + style guide + sparse GNOME; ZWSP burden |
+| kok | Konkani | wave 4 | MS only (terminology + style guide); multi-script, Devanagari |
+| lo | Lao | wave 4 | MS terminology + near-complete Xfce Thunar; no macOS |
+| mn | Mongolian | wave 4 | Cyrillic; MS terminology + style guide; avoid-pronoun rule |
+| mt | Maltese | wave 4 | EU official; thin outside MS + EU; no Apple; Latin script |
+| my | Burmese | wave 4 | Moderate-thin; no Apple UI; MS + Nautilus; Zawgyi/Unicode pitfall |
+| nn | Norwegian Nynorsk | wave 4 | Minority written standard; Apple/MS/GNOME ship du |
+| quz | Quechua (Cusco) | wave 4 | MS localized Windows/Office into Quechua |
+| sw | Swahili | wave 4 | Google Android/Search + MS Office ship Swahili |
+| uz | Uzbek | wave 4 | MS localized Windows + GNOME ship Uzbek Latin |
 | ar | Arabic | exclude RTL | Apple/MS/Google ship full mirrored RTL UIs; MSA standard |
 | ckb | Central Kurdish (Sorani) | exclude RTL | MS + GNOME localize Sorani Perso-Arabic RTL |
 | fa | Persian | exclude RTL | MS style guide + terminology + GNOME; Perso-Arabic RTL |
