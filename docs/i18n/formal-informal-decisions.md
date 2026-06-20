@@ -4,9 +4,11 @@ The formal/informal (T/V) address decision for Cmdr' 66 candidate languages that
 evidence axes: the OS-platform norm (Apple/Microsoft/GNOME, conservative) and consumer/retail brands
 (IKEA/Spotify/Netflix/Nike/Coca-Cola, warmer). Cmdr is a friendly personal app, so retail warmth carries weight.
 
-Decisions (2026-06-20): 8 languages flipped to informal on consumer-brand evidence (it, hu, pl, ro, sl, sr, bs, el);
-5 mixed (hr, zh, tr, ka, lv) UNDECIDED pending more data; the rest keep the OS/retail-confirmed register. This is
-the authoritative formality record; reconcile each `<tag>-style.md` Formality section to it.
+Decisions (2026-06-20): 12 register-flip candidates resolved to informal on consumer-brand evidence (it, hu, pl,
+ro, sl, sr, bs, el, plus hr, tr, ka, lv after a deeper second-pass dig), and zh confirmed informal 你. zh legal /
+billing copy must use formal 您. tr=sen bucks the OS-vendor norm (Apple/MS use siz) as a deliberate brand choice.
+All other languages keep the OS/retail-confirmed register. This is the authoritative formality record; reconcile
+each `<tag>-style.md` Formality section to it.
 
 | id | language | OS evidence | OS suggestion | retail evidence | retail suggestion | decision |
 | -- | -------- | ----------- | ------------- | --------------- | ----------------- | -------- |
@@ -35,11 +37,11 @@ the authoritative formality record; reconcile each `<tag>-style.md` Formality se
 | gl | Galician | MS explicit: informal, drop pronoun; infinitive labels | informal (ti) | IKEA ti (gl localized); Spotify gl form unverified; Netflix subs-only; McDonald's/Coke ES-only | informal | informal (ti) |
 | gu | Gujarati | MS polite second person; Indic-UI norm; never familiar તું | polite (તમે) | Spotify/Flipkart UI in Gujarati; Amazon EN/no-Guj; polite તમે default | formal | polite (તમે) |
 | hi | Hindi | 3-way तू/तुम/आप; macOS 617x आप, zero others; MS polite | respectful (आप) | Amazon/Flipkart/Netflix retail use આप aap; some software UIs use informal तू | formal | respectful (आप) |
-| hr | Croatian | MS uses polite vi; ti too casual; imperative labels | formal (vi) | IKEA ti, Netflix ti; Spotify vi; H&M/Booking unverified | mixed | UNDECIDED (more data) |
+| hr | Croatian | MS uses polite vi; ti too casual; imperative labels | formal (vi) | Apple-HR ti, A1/Telemach/Bolt/Glovo/Netflix ti; banks/airlines vi | mixed; tech=ti | informal (ti) |
 | hu | Hungarian | Unanimous across sources; MS polite 3rd-person; no te | impersonal (önözés) | IKEA te, Spotify te, Netflix te, H&M te, Coca-Cola te (all tegezés) | informal | informal (te) |
 | it | Italian | macOS avoids tu/Lei via infinitive; Cmdr would lean tu if forced | impersonal/infinitive | IKEA tu, Spotify tu, Netflix tu, H&M tu (all informal) | informal | informal (tu) |
 | ja | Japanese | Register decision; macOS desu-masu; avoid plain & heavy keigo | keigo / desu-masu (teinei) | Netflix/Spotify/IKEA/McDonald's/Uniqlo all polite desu-masu; warmth via お/ご, not casual | formal | keigo / desu-masu (teinei) |
-| ka | Georgian | No tu/vous split; politeness via plural verb + თქვენ | polite plural (თქვენ) | TBC/Bank of Georgia marketing informal შენ; Wolt formal თქვენ; no big-brand ka UI | mixed | UNDECIDED (more data) |
+| ka | Georgian | No tu/vous split; politeness via plural verb + თქვენ | polite plural (თქვენ) | TBC/BoG/all banks + Wolt/Bolt/Glovo შენ; no Apple/OS Georgian | informal | informal (შენ) |
 | kk | Kazakh | сіз polite vs сен familiar; MS + GNOME use сіз | polite (сіз) | Kaspi.kz, Apple Music, Google use Kazakh, all polite сіз; no informal found | formal | polite (сіз) |
 | km | Khmer | Lexical politeness (pronoun/particle), not verb T/V; polite-neutral | polite-neutral | ABA Bank, Grab, Foodpanda all polite-neutral neak (អ្នក); sparse, no familiar register | formal | polite-neutral |
 | kn | Kannada | ನೀವು polite vs ನೀನು familiar; software uses ನೀವು | polite (ನೀವು) | Amazon/Flipkart/Spotify UI in Kannada; polite ನೀವು is the safe default | formal | polite (ನೀವು) |
@@ -47,7 +49,7 @@ the authoritative formality record; reconcile each `<tag>-style.md` Formality se
 | kok | Konkani | तुमी polite vs तूं familiar; software uses polite; native confirm | polite (तुमी) | No major-brand UI (absent from Amazon/Flipkart/Spotify/Netflix); only translation-agency offerings | no-data | polite (तुमी) |
 | lo | Lao | Politeness particles/register; MS Lao style guide not in pile; defer to native | neutral-polite | BCEL One Lao-native (form unverified); LOCA/foodpanda default English; FB/Google crowdsourced | no-data | neutral-polite |
 | lt | Lithuanian | MS: 2nd-person plural jūs, usually omitted; tu too intimate | formal (jūs), pronoun dropped | IKEA jus, Coca-Cola tu; Spotify/Netflix EN-only | mixed | formal (jūs), pronoun dropped |
-| lv | Latvian | MS: pronoun-free imperatives; formal jūs when needed; never tu | formal (jūs), pronoun dropped | IKEA tu, Coca-Cola tu; Spotify/Netflix EN-only | informal | UNDECIDED (more data) |
+| lv | Latvian | MS: pronoun-free imperatives; formal jūs when needed; never tu | formal (jūs), pronoun dropped | ~17/20 brands tu (Swedbank/Rimi/telcos/IKEA/Coca-Cola); jūs only legal | informal | informal (tu) |
 | mk | Macedonian | MS + GNOME use 2nd-person plural вие; ти too casual; lowercase | polite plural (вие), lowercase | Sparse; Spotify mobile + Facebook UI localize, register unverified; IKEA/Netflix EN | no-data | polite plural (вие), lowercase |
 | ml | Malayalam | Respect via pronoun not verb; നിങ്ങൾ polite; prefer pronoun-free | polite (നിങ്ങൾ), pronoun-free | Amazon UI in Malayalam; Spotify UI; sparse beyond that; polite norm | formal | polite (നിങ്ങൾ), pronoun-free |
 | mn | Mongolian | MS: avoid та/таны, use neutral/passive; та only when essential | avoid pronoun; та (polite) if needed | Local brands UBCab, Golomt Bank use та (polite) + pronoun-free verbs; Netflix/Spotify no mn UI | formal | avoid pronoun; та (polite) if needed |
@@ -72,7 +74,7 @@ the authoritative formality record; reconcile each `<tag>-style.md` Formality se
 | ta | Tamil | MS guide mandates ningal, never ni | polite (ningal) | Netflix localizes content but UI 2nd-person mostly English; no verified ningal/nee UI | no-data | polite (ningal) |
 | te | Telugu | MS uses miru, never nuvvu | polite (miru) | Netflix content localized; UI 2nd-person mostly English; no verified miru UI | no-data | polite (miru) |
 | th | Thai | No T/V; khun, no final particles in UI | polite (khun) | IKEA-TH polite khun (verified) | formal | polite (khun) |
-| tr | Turkish | macOS Finder 409:32 siz:sen; bare-imperative labels | formal (siz) | IKEA-TR formal siz/sizin (verified); Spotify-TR informal sen | mixed | UNDECIDED (more data) |
+| tr | Turkish | macOS Finder 409:32 siz:sen; bare-imperative labels | formal (siz) | Trendyol/Spotify/Duolingo sen; IKEA/Netflix/banks/OS-vendors siz | mixed; consumer=sen | informal (sen) |
 | uk | Ukrainian | Perfective-infinitive labels; lowercase vy | formal (Vy) | IKEA-UA formal vy/u vas (verified) | formal | formal (Vy) |
 | uz | Uzbek | MS+GNOME use siz | respectful (siz) | no verified global-brand Uzbek UI 2nd-person; market sparsely localized | no-data | respectful (siz) |
-| zh | Chinese | macOS all ni (zero nin); MS leans nin; David call | neutral (ni) | Netflix style guide informal 你; IKEA-CN formal 您 | mixed | UNDECIDED (more data) |
+| zh | Chinese | macOS all ni (zero nin); MS leans nin; David call | neutral (ni) | Apple zh-CN 你, WeChat/Bilibili/Xiaohongshu/Duolingo 你; commerce/legal 您 | informal (你) | informal (你; legal copy 您) |
