@@ -11,13 +11,16 @@ and run the compositing below to regenerate the hero layers.
 
 ### Regenerate the layers
 
-Generates the 6 master PNGs and 12 shipped WebPs from the `brand/screenshots/` masters.
+Generates the 6 intermediate master PNGs (into `brand/hero-masters/`, kept as regeneration inputs, never shipped) and
+the 12 shipped WebPs (into this directory, `apps/website/public/hero/`) from the `brand/screenshots/` masters. Only the
+WebPs reach `dist/`; the PNGs stay under `brand/` so the bundle ships only the WebPs.
 
 Prerequisite: ImageMagick (`magick` CLI). From the repo root:
 
 ```bash
-cd apps/website/public/hero
-root=../../../..  # repo root, where brand/ lives
+masters=brand/hero-masters         # intermediate master PNGs (not shipped)
+shipped=apps/website/public/hero   # shipped WebPs
+mkdir -p "$masters"
 
 # Create pane mask (white = keep, black = make transparent)
 magick -size 2508x1634 xc:white \
@@ -26,33 +29,33 @@ magick -size 2508x1634 xc:white \
   /tmp/hero-mask.png
 
 for variant in dark light; do
-  src=$root/brand/screenshots/app-main-${variant}.png
+  src=brand/screenshots/app-main-${variant}.png
 
   # Left pane cutout (paste onto transparent canvas)
   magick -size 2508x1634 xc:none \
     \( "$src" -crop 1133x1107+114+281 +repage \) \
     -geometry +114+281 -composite \
-    cmdr-hero-left-pane-${variant}.png
+    "$masters"/cmdr-hero-left-pane-${variant}.png
 
   # Right pane cutout (paste onto transparent canvas)
   magick -size 2508x1634 xc:none \
     \( "$src" -crop 1133x1107+1261+281 +repage \) \
     -geometry +1261+281 -composite \
-    cmdr-hero-right-pane-${variant}.png
+    "$masters"/cmdr-hero-right-pane-${variant}.png
 
   # Frame: multiply source alpha with mask to punch transparent holes in pane areas
   magick "$src" -alpha extract /tmp/src-alpha.png
   magick /tmp/src-alpha.png /tmp/hero-mask.png -compose Multiply -composite /tmp/new-alpha.png
   magick "$src" /tmp/new-alpha.png -alpha off -compose CopyOpacity -composite \
-    cmdr-hero-frame-${variant}.png
+    "$masters"/cmdr-hero-frame-${variant}.png
 done
 
 # Shipped WebPs: lossless 2x + 1x from each master PNG
 for variant in dark light; do
   for layer in frame left-pane right-pane; do
     base=cmdr-hero-${layer}-${variant}
-    magick $base.png -define webp:lossless=true -define webp:method=6 $base.webp
-    magick $base.png -resize 50% -define webp:lossless=true -define webp:method=6 $base-1x.webp
+    magick "$masters/$base.png" -define webp:lossless=true -define webp:method=6 "$shipped/$base.webp"
+    magick "$masters/$base.png" -resize 50% -define webp:lossless=true -define webp:method=6 "$shipped/$base-1x.webp"
   done
 done
 
@@ -61,14 +64,15 @@ rm -f /tmp/hero-mask.png /tmp/src-alpha.png /tmp/new-alpha.png
 
 ### Verify
 
-Check that the six master PNGs are 2508 x 1634, the 1x WebPs are 1254 x 817, and the 2x WebP file sizes are roughly: ~85
-KB frame, ~50 KB left pane, ~20 KB right pane. To verify the frame transparency, composite on a red background:
+Check that the six master PNGs (`brand/hero-masters/`) are 2508 x 1634, the 1x WebPs are 1254 x 817, and the 2x WebP
+file sizes are roughly: ~85 KB frame, ~50 KB left pane, ~20 KB right pane. To verify the frame transparency, composite
+on a red background (from the repo root):
 
 ```bash
 magick -size 2508x1634 xc:red \
-  cmdr-hero-right-pane-dark.png -composite \
-  cmdr-hero-left-pane-dark.png -composite \
-  cmdr-hero-frame-dark.png -composite \
+  brand/hero-masters/cmdr-hero-right-pane-dark.png -composite \
+  brand/hero-masters/cmdr-hero-left-pane-dark.png -composite \
+  brand/hero-masters/cmdr-hero-frame-dark.png -composite \
   /tmp/hero-composite-test.png
 ```
 
