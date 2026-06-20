@@ -4,9 +4,24 @@ The translator-facing companion to [`i18n.md`](i18n.md). `i18n.md` is the develo
 checks work. THIS guide is the process you follow to add a language or translate new strings, plus the reusable
 agent-handoff block. Mechanism lives in `i18n.md` and the colocated docs; this guide points to it, never restates it.
 
-Translation is agent-driven and human-reviewed (principle 6: anything meeting human eyes is made or closely reviewed by
-a human, since agent translation is a draft, not a ship). No language-specific content lives in the repo docs;
-everything below talks about "the target language" and its per-language style guide.
+Translation is agent-driven. Human review is the documented ideal but **not** a ship gate (see the override below). No
+language-specific content lives in the repo docs; everything below talks about "the target language" and its
+per-language style guide.
+
+## Human review is not a ship gate (deliberate override of principle 6)
+
+Principle 6 (`AGENTS.md`: anything meeting human eyes is made or closely reviewed by a human) is **explicitly overridden
+for translations**, and only for translations. Recruiting trustworthy native reviewers across ~100 languages isn't
+feasible for the foreseeable future, so **a locale ships machine-made**: translated by the agent, passing the checks,
+overflow-checked. Human review does not block shipping.
+
+The review infrastructure stays and is used opportunistically: `@key.reviewed: true` records a human sign-off when one
+happens (and `desktop-i18n-stale` clears it when the source changes, so the flag never lies). If we get native reviewers
+for a language, wonderful — we record it and quality goes up. Until then, absence of `reviewed` is the normal shipped
+state, not a blocker. This override is the reason the steps below treat review as optional, not required.
+
+Everything else in principle 6 stands — this carve-out is translations only, not a general license to skip human review
+elsewhere.
 
 ## Treat every language the same — Hungarian included
 
@@ -98,12 +113,14 @@ the documented last resort, used only when natural restructuring genuinely isn't
    break); stale, coverage, and don't-translate are WARN class. What each catches: [`i18n.md`](i18n.md) § Enforcement.
 6. **Overflow-check the layout.** Drive the app and look for clipping; the pseudolocale (`en-XA`) is the deliberately
    long stand-in for this. See [`i18n.md`](i18n.md) § Pseudolocale.
-7. **Human review** every string (principle 6). Set `@key.reviewed: true` per key as a human signs it off; the stale
-   check clears it whenever the source changes, so review state stays honest.
+7. **Human review (optional, not a ship gate).** If a native reviewer is available, set `@key.reviewed: true` per key as
+   they sign it off; the stale check clears it whenever the source changes, so review state stays honest. Skipping this
+   is the normal case — see the override above.
 8. **Ship.** No code change is needed to make a finished locale live: the runtime resolver and the in-app picker
    (**Settings > Appearance > Language**) are built, so dropping a `messages/<tag>/` dir makes the locale load and appear
    in the picker, with the documented `<tag>` → base → `en` fallback per key. A locale ships once it's translated, passes
-   the checks, and clears human review. See [`i18n.md`](i18n.md) § Add a new locale for the runtime mechanism.
+   the checks, and is overflow-checked — human review is opportunistic, not a gate (see the override above). See
+   [`i18n.md`](i18n.md) § Add a new locale for the runtime mechanism.
 
 ## New feature → add strings and translate to ALL languages
 
@@ -117,8 +134,8 @@ The routine maintenance loop, run for every change that adds or edits user-facin
 3. **Run the checks** (same set as step 5 above). `desktop-i18n-stale` is the safety net here: editing an `en` value
    changes its hash, so EVERY locale's translation of that key reads as stale until re-translated and re-hashed. You
    can't silently leave a locale behind on a copy edit: the stale warning lists exactly which keys each locale owes.
-4. **Human-review** the changed strings and set `@key.reviewed: true` again (the stale check reset it when the source
-   changed).
+4. **Human-review (optional)** the changed strings and set `@key.reviewed: true` again if a reviewer is available (the
+   stale check reset it when the source changed). Not a gate — the re-translated strings ship without it.
 
 ### Write placeholder strings to be restructurable
 
@@ -181,8 +198,10 @@ DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB
 {system_settings}-style tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in
 apps/desktop/scripts/i18n-catalog-lib.js, and the desktop-i18n-dont-translate check enforces it.
 
-OUTPUT: For each key, return only the translated value. A human reviews everything you produce before it ships, so
-flag any string where the context was insufficient to translate confidently rather than guessing.
+OUTPUT: For each key, return only the translated value. Your output may ship without human review, so don't rely on a
+reviewer to catch mistakes: translate only what you're confident in, and flag any string where the context was
+insufficient rather than guessing. A flag is recorded for if/when a native reviewer is available, not a guarantee one
+will see it.
 ```
 
 The two "uncontrolled inserts" and "fragment keys" paragraphs come from the catalog audit: they're the two highest
