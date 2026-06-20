@@ -94,9 +94,7 @@ export function onIndexMemoryWarning(callback: (payload: IndexMemoryWarningEvent
  * Fires when a volume's index freshness changes to a NEW value (the badge
  * refreshes; the one-time stale dialog fires on the exact Fresh→Stale edge).
  */
-export function onIndexFreshnessChanged(
-  callback: (payload: IndexFreshnessChangedEvent) => void,
-): Promise<UnlistenFn> {
+export function onIndexFreshnessChanged(callback: (payload: IndexFreshnessChangedEvent) => void): Promise<UnlistenFn> {
   return events.indexFreshnessChanged.listen((event) => {
     callback(event.payload)
   })

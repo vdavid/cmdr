@@ -332,9 +332,9 @@ the dropdown trigger (reflecting the ACTIVE drive), and per-row inside the dropd
 formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated behind `prefers-reduced-motion`).
 
 - **Eligibility is `isDriveRow(volume)`** (in `drive-index-manager.svelte.ts`): every entry except favorites and the
-  synthetic `network` / `search-results` ids. SMB shares (`category: 'network'`, real id) and the local disk (`root`)
-  DO get a badge; the synthetic "Network" group entry does not. The badge is gray for any drive without a registered
-  index, so it's safe to query for every eligible row.
+  synthetic `network` / `search-results` ids. SMB shares (`category: 'network'`, real id) and the local disk (`root`) DO
+  get a badge; the synthetic "Network" group entry does not. The badge is gray for any drive without a registered index,
+  so it's safe to query for every eligible row.
 - **Status stays live by SUBSCRIPTION, not polling** (`drive-index-manager.svelte.ts`): it listens to
   `index-freshness-changed`, `index-scan-started`, and `index-scan-complete`, refetching the named volume's status on
   each (the events alone don't carry the last-scan facts). The active-drive badge also refetches when the active drive
@@ -342,9 +342,11 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
 - **The badge is a focusable `<button>`** with an `aria-label` (state ariaLabel + the tooltip text) and
   `aria-haspopup="menu"`; clicking opens a small themed popover menu (NOT a native menu) anchored to the badge. Menu
   actions (`enable`/`rescan`/`disable`/`stop`) call back to `VolumeBreadcrumb`'s `handleDriveIndexAction`, which runs
-  the per-drive IPC. ❌ Don't put `role="img"` on the button (axe rejects it; the button role + label already convey it).
-- **Refused enable/rescan is classified by TYPED variant** (`SmbIndexGateReason`), never message text: `credentials_needed`
-  routes into the existing direct-connect/login flow (`handleSubmenuAction`); the others show a friendly toast.
+  the per-drive IPC. ❌ Don't put `role="img"` on the button (axe rejects it; the button role + label already convey
+  it).
+- **Refused enable/rescan is classified by TYPED variant** (`SmbIndexGateReason`), never message text:
+  `credentials_needed` routes into the existing direct-connect/login flow (`handleSubmenuAction`); the others show a
+  friendly toast.
 - **The dropdown-row menu can be clipped by the dropdown's `overflow-y: auto`** (unlike the breadcrumb placement). The
   breadcrumb badge is the primary surface (D3) and isn't clipped; the row menu is a convenience. If this becomes a
   problem, switch the row menu to `position: fixed` from `getBoundingClientRect()` like the connection submenu.

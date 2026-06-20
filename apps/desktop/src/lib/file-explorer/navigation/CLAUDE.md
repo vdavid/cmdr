@@ -50,9 +50,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   exposed via getters, so template reads MUST go through `fav.*` (a snapshot won't stay reactive).
 - **The favorite-rename `<input>` must not leak keystrokes to the panes.** Four guards work together; don't remove any:
   `fav.handleRenameKeyDown` `stopPropagation()`s every key; `VolumeBreadcrumb.handleKeyDown` bails while
-  `fav.renamingFavoriteId !== null`; `routeToVolumeChooser` swallows keys from the pane behind an open switcher dropdown;
-  and `+page.svelte`'s `isModalDialogOpen()` reads `explorerRef.isVolumeChooserOpen()` to suppress centralized dispatch.
-  Why each: DETAILS § Editable favorites.
+  `fav.renamingFavoriteId !== null`; `routeToVolumeChooser` swallows keys from the pane behind an open switcher
+  dropdown; and `+page.svelte`'s `isModalDialogOpen()` reads `explorerRef.isVolumeChooserOpen()` to suppress centralized
+  dispatch. Why each: DETAILS § Editable favorites.
 - **Favorite reorder is POINTER-based and LOCAL-FIRST, not HTML5 drag.** HTML5 `draggable`/`ondragstart`/`ondrop` never
   fire under Tauri's `dragDropEnabled` (the OS intercepts drag gestures first). Keyboard reorder (Alt+↑ / Alt+↓) must
   run before `handleDropdownKey` consumes the bare arrows. Both paths set `optimisticFavoriteIds` synchronously, then

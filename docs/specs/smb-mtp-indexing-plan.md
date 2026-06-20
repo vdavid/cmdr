@@ -259,7 +259,7 @@ enqueues messages, it never writes directly).
    `serial_number` when present. That ripples wider than persistence: the volume id `"mtp-{device}:{storage}"` is
    _parsed by string-splitting on `:`_ in `event_loop.rs` and keys `get_listings_by_volume_prefix`, `PathHandleCache`,
    the event debouncer, and the disconnect registry. A serial containing `:` (some devices) breaks `split(':')`. M4 must
-   audit every volume_id _parser_, not just every persistence site — and this `:`-split is itself fragile under
+   audit every volume*id \_parser*, not just every persistence site — and this `:`-split is itself fragile under
    `.claude/rules/no-string-matching.md`.
 2. **MTP events are pathless (protocol), and the fix is a clean pre-step (resolved: build it, index MTP for real).** The
    handle-not-path property is the PTP wire format, not a bug; mtp-rs already exposes
@@ -456,7 +456,7 @@ Builds on the pathful pre-step (M0.5). MTP gets a real live-watched index that c
 while the connection is up and watched, Stale on any disconnect).
 
 - **MTP identity fix:** switch the MTP volume id to prefer `serial_number`; fall back to topology `location_id` with a
-  documented "same-port-only" limitation surfaced in the tooltip. **Audit every volume_id _parser_** (the `:`-split in
+  documented "same-port-only" limitation surfaced in the tooltip. **Audit every volume*id \_parser*** (the `:`-split in
   `event_loop.rs` and its keyed caches: `get_listings_by_volume_prefix`, `PathHandleCache`, the debouncer, the
   disconnect registry), not just persistence sites; a serial containing `:` must not break parsing.
 - **MTP scan** over the `Volume` trait (cancelable, timeout- and `autoreleasepool`-wrapped), storing the **MTP object

@@ -7,11 +7,7 @@
 import { SvelteMap } from 'svelte/reactivity'
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { commands, type VolumeIndexStatus } from '$lib/ipc/bindings'
-import {
-  onIndexFreshnessChanged,
-  onIndexScanStarted,
-  onIndexScanComplete,
-} from '$lib/tauri-commands/indexing'
+import { onIndexFreshnessChanged, onIndexScanStarted, onIndexScanComplete } from '$lib/tauri-commands/indexing'
 import type { VolumeInfo } from '../types'
 
 /**

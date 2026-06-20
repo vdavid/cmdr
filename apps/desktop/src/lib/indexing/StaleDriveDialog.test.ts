@@ -23,7 +23,9 @@ const setSetting = vi.fn((id: string, value: unknown) => {
 })
 vi.mock('$lib/settings', () => ({
   getSetting: (id: string) => settings[id],
-  setSetting: (id: string, value: unknown) => { setSetting(id, value); },
+  setSetting: (id: string, value: unknown) => {
+    setSetting(id, value)
+  },
 }))
 
 let firstStaleShown = false
@@ -32,7 +34,9 @@ const markFirstStaleDialogShown = vi.fn(() => {
 })
 vi.mock('./drive-index-prefs', () => ({
   hasShownFirstStaleDialog: () => firstStaleShown,
-  markFirstStaleDialogShown: () => { markFirstStaleDialogShown(); },
+  markFirstStaleDialogShown: () => {
+    markFirstStaleDialogShown()
+  },
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({
@@ -107,7 +111,7 @@ describe('StaleDriveDialog', () => {
   it('"Never show again" turns the setting off and closes', async () => {
     const target = mountDialog()
     await fire({ volumeId: 'smb-backups', freshness: 'stale' })
-    const btn = [...target.querySelectorAll('button')].find((b) => b.textContent.trim() ==='Never show again')
+    const btn = [...target.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Never show again')
     btn?.click()
     flushSync()
     expect(setSetting).toHaveBeenCalledWith('indexing.staleNotify', false)
@@ -117,7 +121,7 @@ describe('StaleDriveDialog', () => {
   it('"Close" dismisses without changing the setting', async () => {
     const target = mountDialog()
     await fire({ volumeId: 'smb-backups', freshness: 'stale' })
-    const btn = [...target.querySelectorAll('button')].find((b) => b.textContent.trim() ==='Close')
+    const btn = [...target.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Close')
     btn?.click()
     flushSync()
     expect(setSetting).not.toHaveBeenCalled()
