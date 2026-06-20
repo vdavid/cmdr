@@ -19,6 +19,8 @@ translation process and the agent prompt that consumes both live in
 
 Which languages Cmdr plans to localize vs set aside for now: [language-selection-decisions.md](language-selection-decisions.md).
 
+Formal vs informal address per language, with OS and retail evidence: [formal-informal-decisions.md](formal-informal-decisions.md).
+
 ## Current language guides
 
 One per language (BCP-47 base tag). Each may carry a "Decisions to confirm with David" section, a "Decision points" section, and a sourced glossary.
