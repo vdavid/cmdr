@@ -22,14 +22,14 @@ Registry-based user settings for Cmdr: defined once in `settings-registry.ts`, a
 - **A setting's `section` is its ONE home** (no `showInAdvanced` flag): either hand-rendered on its feature page OR
   auto-rendered in Advanced (`section[0] === 'Advanced'` + a `cardKey`), never both. The separate canonical/mirror
   pattern for a setting on two FEATURE pages is unrelated; see `sections/DETAILS.md`.
-- **Every setting MUST apply immediately without restart.** A setting that changes backend behavior needs all three:
-  (a) a Tauri command on the Rust side, (b) a typed wrapper in `$lib/tauri-commands/settings.ts`, (c) an
-  `onSettingChange` case in `settings-applier.ts`. Restart-required is a bug; even "structural" changes (reconnect,
-  rebind) must live-apply.
+- **Every setting MUST apply immediately without restart.** A setting that changes backend behavior needs all three: (a)
+  a Tauri command on the Rust side, (b) a typed wrapper in `$lib/tauri-commands/settings.ts`, (c) an `onSettingChange`
+  case in `settings-applier.ts`. Restart-required is a bug; even "structural" changes (reconnect, rebind) must
+  live-apply.
 - **Every `tauri-plugin-store` reader must go through `resolveStorePath(storeName)`** (`store-path.ts`). The plugin
-  resolves a bare name against `app_data_dir()`, which ignores `CMDR_DATA_DIR`; in isolated instances (dev, per-worktree,
-  E2E) that reads the real production store. Applies to `settings.json`, `shortcuts.json`, and `app-status.json`. The
-  backend sanitizes the name and can never escape the data dir.
+  resolves a bare name against `app_data_dir()`, which ignores `CMDR_DATA_DIR`; in isolated instances (dev,
+  per-worktree, E2E) that reads the real production store. Applies to `settings.json`, `shortcuts.json`, and
+  `app-status.json`. The backend sanitizes the name and can never escape the data dir.
 - **The viewer window has NO store capability by design** (it renders hostile file content; see
   [`capabilities/CLAUDE.md`](../../../src-tauri/capabilities/CLAUDE.md)). It runs
   `initializeSettings({ restrictedWindow: true })`: seed from `get_restricted_window_settings` (allowlist), writes
@@ -42,11 +42,11 @@ Registry-based user settings for Cmdr: defined once in `settings-registry.ts`, a
   bug); `cardKey` is search metadata only. [DETAILS.md](DETAILS.md) § Card groups.
 - **Reactive settings must live in `reactive-settings.svelte.ts`** (`.svelte.ts`, not `.ts`): `$state()` needs the
   extension.
-- **Date and locale formatting has one source of truth:** `formatDateForDisplay()` (pure) → `formattedDate()`
-  (reactive) → `<DateLabel>` (render); coloring lives only in `age-tier-utils.ts`. Add date consumers through these,
-  not a fresh formatter. The `'system'` date and
-  file-size decimals/grouping read the locale from `$lib/intl`'s `getLocale()` (iso/short/custom modes stay
-  locale-independent); don't hardcode a locale. DETAILS § Date display; [`$lib/intl/CLAUDE.md`](../intl/CLAUDE.md).
+- **Date and locale formatting has one source of truth:** `formatDateForDisplay()` (pure) → `formattedDate()` (reactive)
+  → `<DateLabel>` (render); coloring lives only in `age-tier-utils.ts`. Add date consumers through these, not a fresh
+  formatter. The `'system'` date and file-size decimals/grouping read the locale from `$lib/intl`'s `getLocale()`
+  (iso/short/custom modes stay locale-independent); don't hardcode a locale. DETAILS § Date display;
+  [`$lib/intl/CLAUDE.md`](../intl/CLAUDE.md).
 - **AI hot-apply is wired in `settings-applier.ts`**, routing `ai.provider` / `ai.cloudProvider` /
   `ai.cloudProviderConfigs` to `ai-config.ts::pushConfigToBackend()`, which re-reads every setting fresh — callers MUST
   NOT pass cached values (sections and the wizard just call `setSetting(...)`).

@@ -17,8 +17,8 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 ## Must-knows
 
 - **Adding a setting to an existing section means hand-rendering its row HERE.** A `settings-registry.ts` entry alone
-  doesn't render: add a `SettingRow` (with the matching control + a `shouldShow(id)` guard), or the setting is invisible.
-  Only `AdvancedSection` auto-renders (`section: ['Advanced']`). Checklist:
+  doesn't render: add a `SettingRow` (with the matching control + a `shouldShow(id)` guard), or the setting is
+  invisible. Only `AdvancedSection` auto-renders (`section: ['Advanced']`). Checklist:
   [adding a new setting](../../../../../../docs/guides/adding-a-new-setting.md).
 - **Adding a section: register the route in `SettingsContent.svelte` AND the top-level entry in `TOP_LEVEL_ORDER`
   (`SettingsSidebar.svelte`), and mirror it in `apps/desktop/test/e2e-playwright/settings.spec.ts`.** Sections are
@@ -42,9 +42,9 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **Cloud AI API keys never go through registry primitives.** `AiCloudSection` uses `SettingPasswordInput` in
   **controlled** mode (so the store isn't touched); keys live in the OS secret store via `saveAiApiKey` / `getAiApiKey`.
 - **The AI model picker is `ui/Combobox`, and the list loads on open.** `AiCloudSection` populates it on mount from the
-  shared `ai-model-cache.ts` (warm hit) or a debounced check (cold miss, cached on success). Don't zero `availableModels`
-  at the start of a refetch (flashes an empty list). The mount-trigger is suppressed only in automated E2E
-  (`getAppMode() === 'e2e'`); `CloudProviderSetup` gets none (it already loads on open). The cache key is a SHA-256
+  shared `ai-model-cache.ts` (warm hit) or a debounced check (cold miss, cached on success). Don't zero
+  `availableModels` at the start of a refetch (flashes an empty list). The mount-trigger is suppressed only in automated
+  E2E (`getAppMode() === 'e2e'`); `CloudProviderSetup` gets none (it already loads on open). The cache key is a SHA-256
   digest; never store/log the raw key. DETAILS § "The model picker loads on open".
 - **Don't push the AI config from a section.** Sections just call `setSetting(...)`; hot-apply is wired in
   `settings-applier.ts` → `ai-config.ts::pushConfigToBackend()` (re-reads fresh). See parent CLAUDE.md.
@@ -52,4 +52,5 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   setting's `section` is its ONE home). The canonical/mirror pattern is only for a setting that belongs on two FEATURE
   pages, never to surface an Advanced setting elsewhere.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

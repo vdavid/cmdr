@@ -4,10 +4,11 @@ The factories that turn a typed error into the title / explanation / suggestion 
 lives in Rust ([`friendly_error/CLAUDE.md`](../../../src-tauri/src/file_system/volume/friendly_error/CLAUDE.md)): it
 ships a typed, word-free `ListingError` (reason + params + category + detected provider + retry/action hints) over IPC.
 
-The literal English lives in the `errors.*` catalog ([`../intl/messages/en/errors.json`](../intl/messages/en/errors.json));
-each factory pulls its strings via `getMessage('errors.<reason>.<part>')`. Editing copy means editing `errors.json` +
-`pnpm intl:keys`, not these `.ts` files. Writing rules: [`docs/style-guide.md`](../../../../../docs/style-guide.md)
-(active voice, friendly, never the words "error" / "failed", no "just/simple/easy").
+The literal English lives in the `errors.*` catalog
+([`../intl/messages/en/errors.json`](../intl/messages/en/errors.json)); each factory pulls its strings via
+`getMessage('errors.<reason>.<part>')`. Editing copy means editing `errors.json` + `pnpm intl:keys`, not these `.ts`
+files. Writing rules: [`docs/style-guide.md`](../../../../../docs/style-guide.md) (active voice, friendly, never the
+words "error" / "failed", no "just/simple/easy").
 
 ## Module map
 
