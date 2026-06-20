@@ -1,16 +1,16 @@
 {
   "$comment": "Baseline for the website-bundle-size check (warn-only). Asset names are content-hash-normalized (About.DvK3R9p1.css → About.*.css) so rebuilds compare stably. A local run ratchets totalBytes down when dist/ shrinks; raising it needs David's OK: delete this file and run `pnpm check bundle-size` against a fresh build to regenerate.",
-  "totalBytes": 7313364,
+  "totalBytes": 5486603,
   "topAssets": {
     "_astro/no-dir-sizes-across-file-managers.*.webp": 381206,
-    "changelog/index.html": 245446,
+    "_astro/no-dir-sizes-across-file-managers.IIBRI5iX_G2UDv.webp": 164626,
+    "changelog/index.html": 279734,
+    "features/index.html": 142668,
     "fonts/inter-400.ttf": 324820,
     "fonts/inter-700.ttf": 326468,
-    "hero/cmdr-hero-frame-dark.png": 666916,
-    "hero/cmdr-hero-frame-light.png": 671348,
-    "hero/cmdr-hero-left-pane-dark.png": 340463,
-    "hero/cmdr-hero-left-pane-light.png": 351620,
+    "index.html": 136916,
     "logo-512.png": 299705,
-    "og-default.png": 604127
+    "og-default.png": 604127,
+    "roadmap/index.html": 165348
   }
 }
