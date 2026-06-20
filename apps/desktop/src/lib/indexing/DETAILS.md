@@ -82,6 +82,16 @@ has samples. Tier 2's ETA is prefixed "roughly".
 The reactive event-driven glue in `index-state.svelte.ts` is allowlisted in `coverage-allowlist.json`. Manual end-to-end
 testing runs the Rust indexer via `pnpm dev`.
 
+## Dependencies
+
+- `$lib/ipc/bindings`: `commands` (status query).
+- `$lib/tauri-commands`: the `tauri-specta`-typed indexing event wrappers (`onIndexScan*`, `onIndexAggregation*`,
+  `onIndexReplay*`, `onIndexRescanNotification`, `onIndexDirUpdated`) + `UnlistenFn`, in `tauri-commands/indexing.ts`.
+- `$lib/ui/toast`: `addToast` (rescan notification toasts).
+- `$lib/file-explorer/selection/selection-info-utils`: `formatNumber` (indicator only, `'en-US'` locale).
+- `$lib/tooltip/tooltip`: `tooltip` action with the `contentEl` live-content param (indicator only).
+- `$lib/ui/ProgressBar.svelte`: size `sm` (indicator tooltip).
+
 ## i18n
 
 All user-facing copy here lives in `$lib/intl/messages/en/indexing.json` (prefix `indexing.*`), resolved via `tString()`

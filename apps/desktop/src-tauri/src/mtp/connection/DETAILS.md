@@ -2,6 +2,12 @@
 
 Depth and rationale. `CLAUDE.md` holds the must-knows; the depth lives here.
 
+## Conventions
+
+- **Event debounce**: `EventDebouncer` collapses MTP event bursts to one frontend emit per 500 ms; cleared on disconnect.
+- **Async recursion** (`bulk_ops.rs`, recursive `delete()`): `Box::pin(async move { ... })` breaks the infinite future.
+- **Event-loop shutdown**: biased `tokio::select!` so the shutdown signal always wins over the event poll.
+
 ## Upload partial cleanup (two-phase PTP uploads)
 
 PTP uploads are two-phase: `SendObjectInfo` creates the object on the device, then `SendObject` streams the bytes. If the

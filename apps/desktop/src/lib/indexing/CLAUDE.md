@@ -50,15 +50,5 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
 - **The `IndexingStatusIndicator.a11y.test.ts` mock must include every getter the indicator imports**, or the existing
   scanning case crashes on `undefined`.
 
-## Dependencies
-
-- `$lib/ipc/bindings`: `commands` (status query).
-- `$lib/tauri-commands`: the `tauri-specta`-typed indexing event wrappers (`onIndexScan*`, `onIndexAggregation*`,
-  `onIndexReplay*`, `onIndexRescanNotification`, `onIndexDirUpdated`) + `UnlistenFn`, in `tauri-commands/indexing.ts`.
-- `$lib/ui/toast`: `addToast` (rescan notification toasts).
-- `$lib/file-explorer/selection/selection-info-utils`: `formatNumber` (indicator only, `'en-US'` locale).
-- `$lib/tooltip/tooltip`: `tooltip` action with the `contentEl` live-content param (indicator only).
-- `$lib/ui/ProgressBar.svelte`: size `sm` (indicator tooltip).
-
-Full details (full public API, the eight-event table, tooltip content per state, ETA blending, tests):
-[DETAILS.md](DETAILS.md).
+Full public API, the eight-event table, tooltip content per state, ETA blending, dependencies, and tests:
+[DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

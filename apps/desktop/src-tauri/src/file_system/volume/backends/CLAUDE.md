@@ -41,16 +41,13 @@ The trait shape, capability matrix, streaming patterns, and "Building a new volu
   mount paths) before cache lookups. See [DETAILS.md](DETAILS.md) § "Gotchas".
 - **SMB auto-upgrade is gated on `network.directSmbConnection`** and is a no-op when no SMB mounts are present (so it
   fires no macOS Local Network prompt). See [DETAILS.md](DETAILS.md) § "SMB auto-upgrade lifecycle".
-- **SMB drive INDEXING (sizes + search-data) lives in `src/indexing/`, not here.** It requires a `direct` smb2 session
-  (it walks `Volume::list_directory`, not the kernel mount) and treats an `SmbVolume` whose `smb_connection_state()` is
-  `Direct` as indexable; an `os_mount` is upgraded first. The "admittedly stale" freshness model is the index's, not the
-  backend's. See [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "SMB indexing and the freshness model".
-- **The watcher feeds the index, and its return/overflow drive index freshness — don't change its lifetime lightly.**
-  `smb_watcher.rs` calls `notify_directory_changed`, which now ALSO updates the per-volume index (`indexing::apply_smb_change`)
-  before the pane path, so the watcher's volume-lifetime scope (spawned in `n()`, canceled only by `on_unmount` /
-  reconnect — NOT by a pane close) is load-bearing: the index relies on receiving events while the share's index is live,
-  even with no pane open. On a fatal `next_events` error / failed session setup the watcher calls
-  `indexing::on_smb_watcher_died` (⇒ index Stale); on `STATUS_NOTIFY_ENUM_DIR` overflow it calls `indexing::on_smb_overflow`
-  (⇒ Stale) and keeps watching. See [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "Live SMB watch → index".
+- **SMB drive INDEXING (sizes + search-data) lives in `src/indexing/`, not here.** It needs a `direct` smb2 session, so
+  it treats an `SmbVolume` reporting `Direct` as indexable (an `os_mount` is upgraded first). See
+  [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "SMB indexing and the freshness model".
+- **The SMB watcher feeds the per-volume index; don't shorten its lifetime.** `smb_watcher.rs` →
+  `notify_directory_changed` ALSO drives `indexing::apply_smb_change` (and `on_smb_watcher_died` / `on_smb_overflow` ⇒
+  index Stale), so the index relies on events arriving for the whole volume lifetime (spawned in `connect`, canceled
+  only by `on_unmount` / `do_attempt_reconnect` — NOT a pane close), even with no pane open. See
+  [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "Live SMB watch → index".
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
