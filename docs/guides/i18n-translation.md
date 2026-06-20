@@ -8,6 +8,17 @@ Translation is agent-driven and human-reviewed (principle 6: anything meeting hu
 a human, since agent translation is a draft, not a ship). No language-specific content lives in the repo docs;
 everything below talks about "the target language" and its per-language style guide.
 
+## Treat every language the same — Hungarian included
+
+Never special-case a language. In particular, **never give Hungarian preferential treatment, extra input, or a shortcut
+the process doesn't give every other language**, even though David is a native Hungarian speaker. Hungarian is his
+fluency gauge: he reads the shipped Hungarian to judge how well the whole language-agnostic pipeline (reference pile,
+style guides, the agent process, the checks) actually performs. Any Hungarian-specific exception, hand-fed term, or
+native gut-check he injects would contaminate that gauge — he'd be measuring his own corrections instead of the system.
+So when a Hungarian term is unsettled, resolve it the same way you would for a language no one on the team speaks:
+triangulate the reference pile, pick the best-evidenced fit, record the confidence, and flag what stays `tentative`.
+Don't ask David to break the tie for Hungarian.
+
 ## Three inputs, kept separate
 
 Set a translator (human or agent) up for excellence with three inputs, never mixed:
@@ -29,17 +40,24 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
 ## Researching terms: the reference pile
 
 Checking the reference pile is MANDATORY for every term: mine it for the term and for similar sentences, reuse and cite,
-never guess. The reference pile holds authoritative localizations keyed by language: the ~3 GB of macOS, Microsoft, and
-GNOME/Xfce data sits gitignored at `_ignored/i18n/<tag>/` (one folder per language), and the docs explaining it are
-tracked in the repo. Read [`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's there and the
-authority tiers, and [`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested per-source
-recipes (greps, jq, `msggrep`, `pdftotext`).
+never guess. The reference pile holds authoritative localizations keyed by language: the ~3 GB of macOS, Microsoft,
+GNOME/Xfce, and the two orthodox file managers (Total Commander, Double Commander) sits gitignored at
+`_ignored/i18n/<tag>/` (one folder per language), and the docs explaining it are tracked in the repo. Read
+[`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's there and the authority tiers, and
+[`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested per-source recipes (greps, jq,
+`msggrep`, `pdftotext`, `.lng`).
 
-For each term or convention: triangulate across every source the language has (macOS is highest authority, then
-Microsoft, then GNOME/Xfce), pick the most native-sounding fit for Cmdr's voice, then record it in the style guide's
-glossary as **chosen · sources · confidence**. Confidence is `confirmed` (a human signed off), `high` (authoritative
-sources agree), or `tentative` (sources conflict or none had it). Push every `tentative` term, and any unresolved
-formality/voice call, into the style guide's "Decisions to confirm with David" section rather than burying it.
+For each term or convention: triangulate across every source the language has, pick the most native-sounding fit for
+Cmdr's voice, then record it in the style guide's glossary as **chosen · sources · confidence**. Weight by authority:
+macOS first, then Microsoft, then the four file-manager corpora (GNOME Nautilus, Xfce Thunar, Total Commander, Double
+Commander). The catch the file-manager sources cover: Cmdr is a two-pane orthodox manager, so the concepts Finder lacks
+(pane, file list, the command line, directory hotlist) are exactly where the orthodox pair (TC, DC) is the closest
+lineage match and the OS vendors are silent. They're community-translated, so weight them below the first-party vendors
+for general terms but lean on them for orthodox-specific ones. Confidence is `confirmed` (a human signed off), `high`
+(authoritative sources agree), or `tentative` (sources conflict or none had it). Push every `tentative` term, and any
+unresolved formality/voice call, into the style guide's "Decisions to confirm with David" section rather than burying
+it. Some terms stay `tentative` even after full triangulation (the sources genuinely disagree, or none names the
+concept Cmdr does) — that's a real outcome to record, not a failure to dig harder.
 
 ## Gender and inclusive language
 
@@ -82,10 +100,10 @@ the documented last resort, used only when natural restructuring genuinely isn't
    long stand-in for this. See [`i18n.md`](i18n.md) § Pseudolocale.
 7. **Human review** every string (principle 6). Set `@key.reviewed: true` per key as a human signs it off; the stale
    check clears it whenever the source changes, so review state stays honest.
-8. **Ship.** One piece is still missing until the first real locale: the runtime resolver (the dir-selection layer that
-   picks `messages/<tag>/` from the OS locale, plus a language selector). It's a small, contained follow-on the
-   convention keeps the seam clean for; today the loaded catalog is hardcoded to `en`. See [`i18n.md`](i18n.md) § Add a
-   new locale.
+8. **Ship.** No code change is needed to make a finished locale live: the runtime resolver and the in-app picker
+   (**Settings > Appearance > Language**) are built, so dropping a `messages/<tag>/` dir makes the locale load and appear
+   in the picker, with the documented `<tag>` → base → `en` fallback per key. A locale ships once it's translated, passes
+   the checks, and clears human review. See [`i18n.md`](i18n.md) § Add a new locale for the runtime mechanism.
 
 ## New feature → add strings and translate to ALL languages
 
@@ -157,7 +175,7 @@ nouns, status that agrees with the object ("Connection established", not "You ar
 result still reads naturally; if neutral phrasing would be stilted, flag the string for human review rather than ship an
 awkward rewrite or an exposed gendered default.
 
-REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine _ignored/i18n/[TARGET LANGUAGE TAG]/ for how Apple/Microsoft/GNOME render each term and for similar sentences to model phrasing on; reuse and cite, never guess. Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: _ignored/i18n/how-to-mine.md.
+REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine _ignored/i18n/[TARGET LANGUAGE TAG]/ for how Apple/Microsoft/GNOME/Xfce and the orthodox file managers (Total Commander, Double Commander) render each term and for similar sentences to model phrasing on; reuse and cite, never guess. For two-pane concepts the OS file managers lack (pane, file list, command line), the orthodox pair is the closest lineage match. Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: docs/i18n/reference-pile/how-to-mine.md.
 
 DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, Quick Look, and the
 {system_settings}-style tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in

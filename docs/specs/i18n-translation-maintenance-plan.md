@@ -28,10 +28,10 @@ Build it early (M1) so M2–M3 test against it.
   uses it for numbers/sizes/dates. Don't change.
 - Catalogs are keyed by BCP-47, with the **language-base** as the universal fallback: `en` (base) + optional region
   variants (`en-GB`, `pt-BR`) holding only overrides or a full set. `en` is today's base and the final fallback.
-- **Resolution** (build when the first locale lands; today it's hardcoded to `en`): OS locale `xx-YY` → try catalog
+- **Resolution** (now built; see [`i18n.md`](../guides/i18n.md) § Add a new locale): OS locale `xx-YY` → try catalog
   `xx-YY` → try `xx` → fall back to `en`. British English = add an `en-GB` catalog; the resolver prefers it over `en`.
-- No course-correction to the current structure. This plan documents the convention; the resolver itself is a small
-  follow-on at first-locale time (out of scope here except to document + leave the seam clean).
+- No course-correction to the current structure. This plan documented the convention; the resolver and the
+  Settings > Appearance > Language picker have since shipped, so a finished `messages/<tag>/` dir goes live with no code change.
 
 ### Source-of-truth hashing (#3)
 

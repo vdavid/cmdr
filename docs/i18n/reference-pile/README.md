@@ -9,8 +9,10 @@ provenance, layout rules, and open items: [inventory.md](inventory.md). Process 
 ## Must-knows
 
 - **Language-first: one folder per locale gathers every source.** To research a language, point a translator at
-  `_ignored/i18n/<tag>/` (e.g. `i18n/fr/`); inside are `macOS/`, `microsoft-terminology/`, `microsoft-style-guides/`,
-  `gnome-nautilus/`, `xfce-thunar/` for that language. de, sv, hu, fr and every plain base language have all five.
+  `_ignored/i18n/<tag>/` (e.g. `i18n/fr/`); inside are up to seven sources: `macOS/`, `microsoft-terminology/`,
+  `microsoft-style-guides/`, `gnome-nautilus/`, `xfce-thunar/`, `total-commander/`, `double-commander/`, present only
+  where that source has the language. The first five cover most languages; `total-commander/` adds 48 and
+  `double-commander/` 30 (so e.g. `sv` has TC but no DC, `hu` and `fr` have both). Check with `ls <tag>/`.
 - **Mining recipes per source** (tested greps, jq, `msggrep`, `pdftotext`): [how-to-mine.md](how-to-mine.md). Use them;
   don't reinvent the search per term.
 - **Reference for picking terms, never strings to copy.** Apple's and Microsoft's strings are copyrighted; the
@@ -24,14 +26,18 @@ provenance, layout rules, and open items: [inventory.md](inventory.md). Process 
 - **Gitignored, lives in the main clone.** `_ignored/` is untracked (`.gitignore` line 9), so this ~3 GB pile stays
   local, isn't subject to the doc-system checks, and belongs in the main clone, not a worktree (worktrees get cleaned).
 - **Authority tiers** (how much a source proves "user expectation"): 1 = the real installed OS (macOS; strongest), 2 =
-  vendor terminology + style guides (Microsoft), 3 = broad open-source corpora (GNOME/Xfce; cross-language parity), 4 =
-  native human review (the only thing that makes a term "confirmed"; out of budget for now).
+  vendor terminology + style guides (Microsoft), 3 = the file-manager-domain corpora (GNOME Nautilus, Xfce Thunar, and
+  the orthodox pair Total Commander + Double Commander; cross-language parity, and the only sources that name two-pane
+  concepts Finder lacks), 4 = native human review (the only thing that makes a term "confirmed"; out of budget for now).
+  Within Tier 3, lean on the orthodox pair (TC, DC) for two-pane-specific terms (pane, file list, command line) where
+  the OS vendors are silent.
 
 ## Structure
 
 ```
-<tag>/<source>/…           one folder per BCP-47 locale (201 of them); see inventory.md for the sources
-_extract/macos-extract/    reproducible macOS extractor — emits the <tag>/macOS/… layout (go run main.go)
-_extract/reorg/            one-shot source-first → language-first restructure (already run; kept for reference)
-_downloads/                raw MS Terminology zip, kept for re-extraction
+<tag>/<source>/…             one folder per BCP-47 locale (202 of them); see inventory.md for the sources
+_extract/macos-extract/      reproducible macOS extractor — emits the <tag>/macOS/… layout (go run main.go)
+_extract/reorg/              one-shot source-first → language-first restructure (already run; kept for reference)
+_extract/competitor-fetch/   re-runnable fetch of Total Commander + Double Commander (fetch.sh)
+_downloads/                  raw MS Terminology zip + TC installer, kept for re-extraction
 ```

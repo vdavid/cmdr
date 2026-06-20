@@ -72,6 +72,32 @@ grep -A2 'Plural-Forms' sv/gnome-nautilus/nautilus.po             # the language
 Plural entries use `msgid`/`msgid_plural` with `msgstr[0]`, `msgstr[1]`, … — good evidence for how a real catalog
 phrases counted strings in your language.
 
+## Double Commander (Tier 3, orthodox file manager) — `<tag>/double-commander/doublecmd.po`
+
+Same gettext format as GNOME/Xfce, so the same `msggrep` recipes apply — just point at `doublecmd.po`. This is the
+orthodox two-pane source, so it's where to look for terms Finder doesn't have:
+
+```sh
+msggrep --msgid -e 'panel' -i hu/double-commander/doublecmd.po | grep -E '^msg(id|str) '   # pane → "panel"
+msggrep --msgid -e 'file list' -i hu/double-commander/doublecmd.po                          # file list → "fájllista"
+```
+
+## Total Commander (Tier 3, orthodox file manager) — `<tag>/total-commander/WCMD.LNG.utf8`
+
+INI-style `ID="value"` lines (numeric string IDs), already decoded to UTF-8. The IDs aren't self-describing, so mine by
+the translated VALUE rather than by key. `WCMD.INC.utf8` is the menu file (menu labels with `&` accelerators), often the
+cleanest place to see a term in a real menu:
+
+```sh
+# Find how a concept is phrased by grepping the target value (TC is the richest source for two-pane terms):
+grep -iE 'panel' hu/total-commander/WCMD.LNG.utf8        # pane → "panel" (e.g. "az aktív panelről")
+grep -iE 'könyvjelz|kedvenc|favorit|hotlist' hu/total-commander/WCMD.INC.utf8   # bookmark/favorites framing
+```
+
+To pin an English source to a TC ID, cross-reference `TOTALCMD.INC` (the English menu reference in the installer CAB);
+TC ships no English `WCMD.LNG` (English is compiled in), so there's no English-side string file to diff against — value
+grep plus the menu file is the practical path.
+
 ## Confidence rubric (record this per term)
 
 - **confirmed**: David or a native reviewer signed off. Use freely.
