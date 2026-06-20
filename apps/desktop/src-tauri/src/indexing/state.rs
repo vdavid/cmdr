@@ -1162,6 +1162,11 @@ pub(crate) fn all_registered_volume_ids() -> Vec<VolumeId> {
 /// Stop indexing for every registered volume (the global memory-budget action).
 /// Each `stop_indexing` drains and removes one instance; we snapshot the ids
 /// first so we're not iterating the map while `stop_indexing` mutates it.
+///
+/// macOS-only: its sole caller is the memory watchdog, which only monitors
+/// resident memory on macOS (`mach_task_info`); the non-macOS watchdog is a
+/// no-op stub, so this would be dead code there.
+#[cfg(target_os = "macos")]
 pub(crate) fn stop_all_indexing() {
     for volume_id in all_registered_volume_ids() {
         if let Err(e) = stop_indexing(&volume_id) {
