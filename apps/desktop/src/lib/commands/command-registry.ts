@@ -494,7 +494,9 @@ const commandSources: CommandSource[] = [
     nameKey: 'commands.navOpen.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['Enter'],
+    // `Enter` and `⌘↓` are display entries; FilePane handles both keys directly in
+    // `handleKeyDown` (mirroring `⌘↑` = parent), the palette/MCP path uses the handler.
+    shortcuts: ['Enter', '⌘↓'],
   },
   {
     id: 'nav.parent',
@@ -679,7 +681,9 @@ const commandSources: CommandSource[] = [
     nameKey: 'commands.fileDelete.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['F8'],
+    // `⌘⌫` mirrors Finder's "Move to Trash". The menu accelerator stays `F8`
+    // (first shortcut); `⌘⌫` dispatches purely via the document keydown handler.
+    shortcuts: ['F8', '⌘⌫'],
   },
   {
     id: 'file.deletePermanently',
@@ -805,7 +809,10 @@ const commandSources: CommandSource[] = [
     nameKey: 'commands.selectionDeselectFiles.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['-'],
+    // `-` and `⇧-` both open "Deselect files…"; FilePane classifies the physical
+    // Minus key (layout-independent) in `selection-dialog-keys.ts`. The menu
+    // accelerator stays `-` (first shortcut).
+    shortcuts: ['-', '⇧-'],
     status: getBadgeStatus('select-files'),
     descriptionKey: 'commands.selectionDeselectFiles.description',
   },

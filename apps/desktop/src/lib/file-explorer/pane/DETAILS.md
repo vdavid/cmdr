@@ -103,6 +103,20 @@ Page/Home/End, Enter, Tab, Backspace, rename entry, context menu, drag start, pa
 re-sort, listing replace) all call the factory's `clearJumpState()`. The generation counter discards stale async match
 responses. Backend match runs in `apps/desktop/src-tauri/src/file_system/listing/fuzzy_jump.rs`.
 
+**Active-jump key widening.** `isTypeToJumpChar` (letters/digits) STARTS a jump. Once one is active (`isJumpActive()` —
+buffer non-empty, before the reset-timeout empties it), the intercept widens to `isPrintableJumpContinuation` (any
+single printable key, Shift allowed), so `-`, Space, etc. extend the buffer instead of firing their own single-char
+command (deselect, toggle-selection). After the reset timeout the buffer empties and a lone `-` is a command again. Both
+the DOM intercept (`DualPaneExplorer.handleKeyDown`) and the Quick Look panel mirror (`pane-commands.ts`
+`routePanelKey`) apply the same widening — landmine L9, keep them identical.
+
+**Open / parent keys are FilePane-local, not registry-dispatched.** `handleOpenOrParentKey` (in `FilePane`, above the
+view-mode split so every view inherits it) handles Enter/`⌘↓` → open and Backspace/`⌘↑` → parent. The `⌘`-variants are
+ALSO bound in the registry (`nav.open` / `nav.parent`) for Settings display and palette/MCP, so the local handler
+`stopPropagation`s them — without that, the document-level dispatcher runs the command a SECOND time (`⌘↑` →
+grandparent, `⌘↓` → double-open). `⌘Backspace` is deliberately excluded from the parent branch so it falls through to
+`file.delete` (`⌘⌫` = move to trash, alongside `F8`).
+
 **Snapshot pane (`volumeId === 'search-results'`).** Two integration points that MUST stay coupled: `computeHasParent`
 returns `false` (no `..` row), and `isCrossVolumeNavigation` routes any navigation to a real path through the
 volume-change machinery (`onVolumeChange` / `handleVolumeChange`). Skipping either breaks selection (off-by-one) or

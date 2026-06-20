@@ -104,6 +104,8 @@ export interface FilePaneAPI {
 
   /** Type-to-jump: route one printable keystroke into the pane's buffer. */
   handleJumpKeystroke(char: string): void
+  /** Type-to-jump: true while the buffer has content (before the reset timeout empties it). */
+  isJumpActive(): boolean
   /** Type-to-jump: clear the buffer + hide the indicator immediately. */
   clearJumpState(): void
 

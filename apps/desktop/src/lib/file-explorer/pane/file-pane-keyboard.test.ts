@@ -367,6 +367,93 @@ describe('FilePane keyboard handling', () => {
       // (may not fire immediately due to async loading)
       expect(handleKeyDown).toBeDefined()
     })
+
+    it('\u2318\u2191 stops propagation so the document dispatcher does not navigate to parent a SECOND time', async () => {
+      // Regression: \u2318\u2191 is bound to `nav.parent` in the registry AND handled here.
+      // Without stopPropagation, the document keydown handler would dispatch
+      // `nav.parent` after this, calling navigateToParent() twice \u2192 grandparent.
+      const component = mount(FilePane, {
+        target: getTarget(),
+        props: {
+          initialPath: '/test/subfolder',
+          volumeId: 'root',
+          volumePath: '/',
+          isFocused: true,
+          showHiddenFiles: true,
+          viewMode: 'brief',
+          onPathChange: vi.fn(),
+        },
+      })
+      await waitForUpdates(150)
+
+      const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => void }).handleKeyDown
+      const cmdUpEvent = new KeyboardEvent('keydown', { key: 'ArrowUp', metaKey: true, bubbles: true })
+      const stopProp = vi.spyOn(cmdUpEvent, 'stopPropagation')
+      handleKeyDown(cmdUpEvent)
+      await waitForUpdates(50)
+
+      expect(stopProp).toHaveBeenCalled()
+    })
+  })
+
+  describe('\u2318\u2193 (Cmd+ArrowDown) opens the entry, mirroring Enter', () => {
+    it('\u2318\u2193 stops propagation so `nav.open` is not also dispatched at document level', async () => {
+      const component = mount(FilePane, {
+        target: getTarget(),
+        props: {
+          initialPath: '/test',
+          volumeId: 'root',
+          volumePath: '/',
+          isFocused: true,
+          showHiddenFiles: true,
+          viewMode: 'brief',
+          onPathChange: vi.fn(),
+        },
+      })
+      await waitForUpdates(150)
+
+      const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => void }).handleKeyDown
+      const cmdDownEvent = new KeyboardEvent('keydown', { key: 'ArrowDown', metaKey: true, bubbles: true })
+      const stopProp = vi.spyOn(cmdDownEvent, 'stopPropagation')
+      const preventDefault = vi.spyOn(cmdDownEvent, 'preventDefault')
+      handleKeyDown(cmdDownEvent)
+      await waitForUpdates(50)
+
+      // \u2318\u2193 is always swallowed here (whether or not an entry is under the cursor)
+      // so it can neither move the cursor nor double-dispatch `nav.open`.
+      expect(stopProp).toHaveBeenCalled()
+      expect(preventDefault).toHaveBeenCalled()
+    })
+  })
+
+  describe('\u2318Backspace deletes (falls through to `file.delete`), not parent-nav', () => {
+    it('\u2318Backspace is NOT handled as parent navigation', async () => {
+      // Bare Backspace = parent. \u2318Backspace must fall through (no preventDefault /
+      // stopPropagation here) so the document dispatcher runs `file.delete` (\u2318\u232b).
+      const component = mount(FilePane, {
+        target: getTarget(),
+        props: {
+          initialPath: '/test/subfolder',
+          volumeId: 'root',
+          volumePath: '/',
+          isFocused: true,
+          showHiddenFiles: true,
+          viewMode: 'brief',
+          onPathChange: vi.fn(),
+        },
+      })
+      await waitForUpdates(150)
+
+      const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => void }).handleKeyDown
+      const cmdBackspace = new KeyboardEvent('keydown', { key: 'Backspace', metaKey: true, bubbles: true })
+      const preventDefault = vi.spyOn(cmdBackspace, 'preventDefault')
+      const stopProp = vi.spyOn(cmdBackspace, 'stopPropagation')
+      handleKeyDown(cmdBackspace)
+      await waitForUpdates(50)
+
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(stopProp).not.toHaveBeenCalled()
+    })
   })
 
   describe('Arrow keys delegation', () => {

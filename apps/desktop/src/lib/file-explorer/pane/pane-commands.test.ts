@@ -40,6 +40,7 @@ function buildPaneRef(
     listingId: string
     hasParent: boolean
     isRenaming: boolean
+    isJumpActive: boolean
     isInNetworkView: boolean
     volumeId: string
     filenameUnderCursor: string | undefined
@@ -75,6 +76,7 @@ function buildPaneRef(
     // Key-route spies
     handleKeyDown: vi.fn(),
     handleJumpKeystroke: vi.fn(),
+    isJumpActive: () => overrides.isJumpActive ?? false,
     clearJumpState: vi.fn(),
     // Delegate spies
     toggleVolumeChooser: vi.fn(),
@@ -310,6 +312,24 @@ describe('routePanelKey type-to-jump intercept mirroring', () => {
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
     cmds.routePanelKey(payload({ key: 'Enter', code: 'Enter' }))
     expect(ref.clearJumpState).toHaveBeenCalledOnce()
+    expect(ref.handleKeyDown).toHaveBeenCalledOnce()
+  })
+
+  it('while a jump is ACTIVE, a punctuation key extends the buffer instead of forwarding', () => {
+    // `-` is not a base jump char, but once the buffer has content it must extend
+    // the jump (jump to `my-file`) rather than open the deselect dialog.
+    const ref = buildPaneRef({ isJumpActive: true })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    cmds.routePanelKey(payload({ key: '-', code: 'Minus' }))
+    expect(ref.handleJumpKeystroke).toHaveBeenCalledWith('-')
+    expect(ref.handleKeyDown).not.toHaveBeenCalled()
+  })
+
+  it('while jump is INACTIVE, a punctuation key falls through to handleKeyDown', () => {
+    const ref = buildPaneRef({ isJumpActive: false })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    cmds.routePanelKey(payload({ key: '-', code: 'Minus' }))
+    expect(ref.handleJumpKeystroke).not.toHaveBeenCalled()
     expect(ref.handleKeyDown).toHaveBeenCalledOnce()
   })
 

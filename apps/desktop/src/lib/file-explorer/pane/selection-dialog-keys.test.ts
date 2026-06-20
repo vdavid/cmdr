@@ -20,9 +20,18 @@ describe('classifySelectionDialogKey', () => {
     expect(classifySelectionDialogKey(ev({ key: '-' }))).toBe('open-remove')
   })
 
+  it('opens remove on Shift+- (US QWERTY produces key === `_`, code === `Minus`)', () => {
+    expect(classifySelectionDialogKey(ev({ key: '_', code: 'Minus', shiftKey: true }))).toBe('open-remove')
+  })
+
+  it('opens remove on the physical Minus key regardless of layout (code === `Minus`)', () => {
+    expect(classifySelectionDialogKey(ev({ key: '-', code: 'Minus' }))).toBe('open-remove')
+  })
+
   it('returns null when meta is held', () => {
     expect(classifySelectionDialogKey(ev({ key: '+', metaKey: true }))).toBeNull()
     expect(classifySelectionDialogKey(ev({ key: '-', metaKey: true }))).toBeNull()
+    expect(classifySelectionDialogKey(ev({ key: '_', code: 'Minus', metaKey: true }))).toBeNull()
   })
 
   it('returns null when alt is held', () => {

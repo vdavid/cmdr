@@ -769,6 +769,15 @@
         debouncedSyncMcp.call()
     }
 
+    /**
+     * True while a type-to-jump is active: the buffer holds at least one character
+     * (i.e. before the reset timeout empties it). DualPaneExplorer reads this to
+     * decide whether a printable keystroke extends the buffer or runs its command.
+     */
+    export function isJumpActive(): boolean {
+        return typeToJump.buffer.length > 0
+    }
+
     /** Clears the type-to-jump buffer + indicator + timers. Safe to call repeatedly. */
     export function clearJumpState(): void {
         typeToJump.clear()
@@ -2138,6 +2147,48 @@
         }
     }
 
+    /**
+     * Open / parent keys, view-independent (handled before the Brief/Full split).
+     * Returns true if the key was consumed.
+     *
+     * - Enter / ⌘↓ → open the entry under the cursor (Finder parity, mirror of ⌘↑).
+     * - Backspace / ⌘↑ → go to the parent directory.
+     *
+     * `stopPropagation` is load-bearing for the ⌘-variants: ⌘↓ (`nav.open`) and ⌘↑
+     * (`nav.parent`) are ALSO bound in the registry, so without stopping here the
+     * document-level dispatcher would run the command a second time (⌘↑ → grandparent,
+     * ⌘↓ → double-open). ⌘Backspace is deliberately excluded from the parent branch:
+     * it deletes via `file.delete` (⌘⌫), so it falls through to the document dispatcher.
+     */
+    function handleOpenOrParentKey(e: KeyboardEvent): boolean {
+        if (e.key === 'Enter' || (e.key === 'ArrowDown' && e.metaKey)) {
+            const entry = getEntryUnderCursor()
+            if (entry) {
+                e.preventDefault()
+                if (e.metaKey) e.stopPropagation()
+                void handleNavigate(entry)
+                return true
+            }
+            // ⌘↓ with nothing under the cursor: swallow it so it can't fall through
+            // to cursor-move or the document dispatcher.
+            if (e.metaKey) {
+                e.preventDefault()
+                e.stopPropagation()
+                return true
+            }
+            return false
+        }
+
+        if (((e.key === 'Backspace' && !e.metaKey) || (e.key === 'ArrowUp' && e.metaKey)) && hasParent) {
+            e.preventDefault()
+            e.stopPropagation()
+            void navigateToParent()
+            return true
+        }
+
+        return false
+    }
+
     // Exported so DualPaneExplorer can forward keyboard events
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleKeyDown(e: KeyboardEvent) {
@@ -2163,22 +2214,9 @@
             return
         }
 
-        // Handle Enter key - navigate into the entry under the cursor
-        if (e.key === 'Enter') {
-            const entry = getEntryUnderCursor()
-            if (entry) {
-                e.preventDefault()
-                void handleNavigate(entry)
-                return
-            }
-        }
-
-        // Handle Backspace or ⌘↑ - go to parent directory
-        if ((e.key === 'Backspace' || (e.key === 'ArrowUp' && e.metaKey)) && hasParent) {
-            e.preventDefault()
-            void navigateToParent()
-            return
-        }
+        // Open (Enter / ⌘↓) and parent (Backspace / ⌘↑) — handled above the
+        // view-mode split so every view gets them. See `handleOpenOrParentKey`.
+        if (handleOpenOrParentKey(e)) return
 
         // Bare `+` / `-` open the Selection dialog (Total Commander parity).
         if (handleSelectionDialogKey(e)) return

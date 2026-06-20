@@ -1,6 +1,6 @@
 import { findFileIndex, findFileIndices, refreshListing } from '$lib/tauri-commands'
 import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
-import { isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
+import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
 import { capabilitiesFor } from './volume-capabilities'
 import type { SelectionAction } from '../../../routes/(main)/explorer-api'
 import type { FilePaneAPI } from './types'
@@ -153,7 +153,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     // (FilePane delegates type-to-jump to its parent — see the intercept
     // in this component's own `handleKeyDown` above).
     if (!paneRef.isRenaming()) {
-      if (isTypeToJumpChar(event)) {
+      if (isTypeToJumpChar(event) || (paneRef.isJumpActive() && isPrintableJumpContinuation(event))) {
         paneRef.handleJumpKeystroke(event.key)
         return
       }

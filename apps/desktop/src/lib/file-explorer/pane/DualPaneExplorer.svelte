@@ -105,7 +105,7 @@
         type NavigateIntent,
         type NavigateResult,
     } from './navigate'
-    import { isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
+    import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
     import { createDragDropController } from './drag-drop-controller.svelte'
     import { initPersistenceSubscriber } from './persistence-subscriber.svelte'
     import { recalculateWebviewOffset } from '../drag/drag-position'
@@ -804,9 +804,16 @@
         // active pane's buffer before any other shortcut sees them. Reset keys
         // (arrows, page nav, enter, tab, backspace, esc) clear an active buffer
         // and then fall through to their existing handlers.
+        //
+        // Once a jump is ACTIVE (buffer non-empty), the captured set widens to
+        // every printable key (`isPrintableJumpContinuation`): while you're typing
+        // a name, `-`, Space, etc. extend the buffer instead of firing their own
+        // single-char command. The widening ends when the reset timeout empties
+        // the buffer, so a lone `-` deselects again. (Mirror this in
+        // `pane-commands.ts` `routePanelKey` — landmine L9.)
         const activePaneRef = getPaneRef(focusedPane)
         if (activePaneRef && !isTypingInInput(e) && !activePaneRef.isRenaming()) {
-            if (isTypeToJumpChar(e)) {
+            if (isTypeToJumpChar(e) || (activePaneRef.isJumpActive() && isPrintableJumpContinuation(e))) {
                 activePaneRef.handleJumpKeystroke(e.key)
                 e.preventDefault()
                 e.stopPropagation()
