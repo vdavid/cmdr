@@ -83,6 +83,21 @@ async function pressWrapToggle(viewer: TauriPage): Promise<void> {
   await viewer.evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w', bubbles: true }))`)
 }
 
+/** Removes `viewer.wordWrap` from the instance's settings.json so the spec's
+ *  default-off baseline holds. No-op when the file or key is absent, or mid-write. */
+function clearWordWrapSetting(): void {
+  try {
+    const raw = fs.readFileSync(settingsFilePath, 'utf-8')
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed === 'object' && parsed !== null && 'viewer.wordWrap' in parsed) {
+      delete (parsed as Record<string, unknown>)['viewer.wordWrap']
+      fs.writeFileSync(settingsFilePath, JSON.stringify(parsed, null, 2))
+    }
+  } catch {
+    // No settings file yet, or mid-write: nothing to reset.
+  }
+}
+
 test.describe('Viewer word-wrap persistence', () => {
   // Three sequential viewer sessions plus two 500 ms-debounced disk writes.
   // `retries: 1` covers a transient open/debounce hiccup. The real hazard is a
@@ -92,19 +107,19 @@ test.describe('Viewer word-wrap persistence', () => {
   // always resets the key so a failed run can't poison the next.
   test.describe.configure({ timeout: 60000, retries: 1 })
 
+  // Guarantee the default-off baseline BEFORE each attempt. The afterEach below
+  // only self-heals a run that died mid-test; the very FIRST attempt has no prior
+  // afterEach to lean on, so a `viewer.wordWrap: true` left in the isolated
+  // settings.json by an earlier app session would fail Session 1's "default off"
+  // assertion (the historical flake here). Clearing it up front removes that.
+  test.beforeEach(() => {
+    clearWordWrapSetting()
+  })
+
   // Self-heal: clear the persisted toggle after each attempt (even on failure),
   // so the next run/retry starts from the default-off baseline this spec asserts.
   test.afterEach(() => {
-    try {
-      const raw = fs.readFileSync(settingsFilePath, 'utf-8')
-      const parsed: unknown = JSON.parse(raw)
-      if (typeof parsed === 'object' && parsed !== null && 'viewer.wordWrap' in parsed) {
-        delete (parsed as Record<string, unknown>)['viewer.wordWrap']
-        fs.writeFileSync(settingsFilePath, JSON.stringify(parsed, null, 2))
-      }
-    } catch {
-      // No settings file yet, or mid-write: nothing to reset.
-    }
+    clearWordWrapSetting()
   })
 
   test('word wrap toggled in one viewer session is on in the next', async ({ tauriPage }) => {

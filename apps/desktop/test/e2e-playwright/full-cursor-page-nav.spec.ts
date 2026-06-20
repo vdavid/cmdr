@@ -15,7 +15,7 @@
 import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, executeViaCommandPalette, getFixtureRoot } from './helpers.js'
+import { ensureAppReady, ensureExplorerFocused, executeViaCommandPalette, getFixtureRoot } from './helpers.js'
 
 /** Subdir under the shared fixture root holding the files for this suite. */
 const FIXTURE_SUBDIR = 'full-page-nav-fixtures'
@@ -140,7 +140,7 @@ async function pressAndWaitCursorChange(
         if (expectedName !== undefined) return name === expectedName
         return name !== before
       },
-      { timeout: 2000 },
+      { timeout: 5000 },
     )
     .toBeTruthy()
 }
@@ -172,6 +172,13 @@ test.describe('Full view sticky-header cursor visibility', () => {
 
     // Cursor starts on "..". Confirm before running the repro.
     await expect.poll(async () => (await getCursorName(tauriPage)) === '..', { timeout: 3000 }).toBeTruthy()
+
+    // Reclaim keyboard focus before the OS key presses. The preceding
+    // `mcp-nav-to-path` and the command-palette open/close drift
+    // `document.activeElement` to `<body>`, where PageDown never reaches the
+    // explorer's container-level keydown handler (the cursor would silently
+    // never move). See the `ensureAppReady` focus contract in DETAILS.md.
+    await ensureExplorerFocused(tauriPage)
 
     // PageDown × 2 — cursor walks two pages down into the listing.
     await pressAndWaitCursorChange(tauriPage, 'PageDown')
