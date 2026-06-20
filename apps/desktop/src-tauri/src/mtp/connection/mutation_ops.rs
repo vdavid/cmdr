@@ -62,6 +62,11 @@ impl MtpConnectionManager {
             });
         }
 
+        // Foreground priority: a user delete preempts the background scan. The
+        // recursive child deletes nest the guard count (harmless — it just keeps
+        // the scan yielded for the whole subtree delete).
+        let _fg = self.foreground_guard(device_id).await;
+
         debug!(
             "MTP delete_object: device={}, storage={}, path={}, cancel={}",
             device_id,
@@ -231,6 +236,9 @@ impl MtpConnectionManager {
         parent_path: &str,
         folder_name: &str,
     ) -> Result<MtpObjectInfo, MtpConnectionError> {
+        // Foreground priority: a user create preempts the background scan.
+        let _fg = self.foreground_guard(device_id).await;
+
         debug!(
             "MTP create_folder: device={}, storage={}, parent={}, name={}",
             device_id, storage_id, parent_path, folder_name
@@ -327,6 +335,9 @@ impl MtpConnectionManager {
         object_path: &str,
         new_name: &str,
     ) -> Result<MtpObjectInfo, MtpConnectionError> {
+        // Foreground priority: a user rename preempts the background scan.
+        let _fg = self.foreground_guard(device_id).await;
+
         debug!(
             "MTP rename_object: device={}, storage={}, path={}, new_name={}",
             device_id, storage_id, object_path, new_name
@@ -433,6 +444,9 @@ impl MtpConnectionManager {
         object_path: &str,
         new_parent_path: &str,
     ) -> Result<MtpObjectInfo, MtpConnectionError> {
+        // Foreground priority: a user move preempts the background scan.
+        let _fg = self.foreground_guard(device_id).await;
+
         debug!(
             "MTP move_object: device={}, storage={}, path={}, new_parent={}",
             device_id, storage_id, object_path, new_parent_path

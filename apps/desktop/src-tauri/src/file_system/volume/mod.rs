@@ -452,6 +452,25 @@ pub trait Volume: Send + Sync {
         self.list_directory(path, on_progress)
     }
 
+    /// List a directory for the BACKGROUND index scan.
+    ///
+    /// Same result as `list_directory_with_cancel` with no progress callback, but
+    /// backends that hold a scarce serialized resource across a listing (currently
+    /// MTP — one USB pipe shared with foreground nav/copy/delete) override this to
+    /// release that resource between bounded units and YIELD to any pending
+    /// foreground op, so a long scan of a huge folder can't starve interactive use.
+    /// Backends with no such contention (local, SMB, in-memory) use the default,
+    /// which is just `list_directory_with_cancel`. The scanner
+    /// (`indexing::volume_scanner`) calls THIS, not `list_directory`, for every
+    /// directory it walks.
+    fn list_directory_for_scan<'a>(
+        &'a self,
+        path: &'a Path,
+        cancel: Option<&'a std::sync::Arc<AtomicBool>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        self.list_directory_with_cancel(path, None, cancel)
+    }
+
     /// Gets metadata for a single path (relative to volume root).
     fn get_metadata<'a>(
         &'a self,

@@ -198,6 +198,25 @@ impl Volume for MtpVolume {
         })
     }
 
+    fn list_directory_for_scan<'a>(
+        &'a self,
+        path: &'a Path,
+        cancel: Option<&'a std::sync::Arc<std::sync::atomic::AtomicBool>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mtp_path = self.to_mtp_path(path);
+            let cancel_token = cancel.map(|c| mtp_rs::CancelToken::from_arc(std::sync::Arc::clone(c)));
+
+            // The per-unit, foreground-yielding scan listing: never holds the USB
+            // pipe across the whole folder, so a background scan can't starve
+            // foreground nav/copy/delete. See `mtp/connection/directory_ops.rs`.
+            connection_manager()
+                .list_directory_for_scan(&self.device_id, self.storage_id, &mtp_path, cancel_token.as_ref())
+                .await
+                .map_err(map_mtp_error)
+        })
+    }
+
     fn get_metadata<'a>(
         &'a self,
         path: &'a Path,

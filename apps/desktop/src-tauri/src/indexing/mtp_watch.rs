@@ -79,10 +79,24 @@ struct BufferedVolume {
     overflowed: bool,
 }
 
-/// A buffered MTP change (the resolved add/change or a pathless removal handle).
+/// A buffered MTP change.
+///
+/// During a scan we buffer the RAW object handle for adds/changes
+/// (`UpsertHandle`), NOT a resolved `MtpUpsert` — resolving means a device round
+/// trip, and the whole point of buffering during a scan is to keep the contended
+/// device free for foreground work (the gate-before-resolve fix). The handle is
+/// resolved at replay time, when the scan has ended and the device is idle.
+/// Removals already buffer the bare handle (the object is gone, nothing to
+/// resolve). The `Upsert` variant carries an already-resolved change for the
+/// non-scanning live path, which buffers nothing.
 #[derive(Debug, Clone)]
 enum BufferedChange {
+    /// A resolved add/change (live path; not used while scanning).
     Upsert(MtpUpsert),
+    /// An add/change buffered during a scan as a raw `(storage_id, handle)`,
+    /// resolved to a path + metadata at replay time.
+    UpsertHandle { storage_id: u32, handle: u32 },
+    /// A pathless removal handle (resolved against the index by stored handle).
     Remove(u32),
 }
 
@@ -134,11 +148,39 @@ impl ResolvedWrite {
     }
 }
 
+/// Decide whether an MTP `ObjectAdded` / `ObjectInfoChanged` handle should be
+/// BUFFERED (the volume is mid-scan) rather than resolved live, and buffer the
+/// RAW handle if so. Returns `true` when buffered (the caller must NOT resolve —
+/// this is the gate-before-resolve fix: no device round trip during a scan),
+/// `false` when the caller should resolve and apply the change live.
+///
+/// Synchronous and device-free: it only reads the registry's scanning flag and,
+/// when scanning, stashes `(storage_id, handle)` for post-scan replay. Returns
+/// `false` for an unindexed/absent volume too (nothing to buffer; the live path
+/// will then no-op on the missing index).
+pub(crate) fn buffer_mtp_handle_if_scanning(volume_id: &str, storage_id: u32, handle: u32) -> bool {
+    let scanning = match crate::indexing::state::get_writer_and_scanning_for(volume_id) {
+        Some((_, scanning)) => scanning,
+        None => return false,
+    };
+    if scanning {
+        buffer_change_during_scan(volume_id, BufferedChange::UpsertHandle { storage_id, handle });
+        true
+    } else {
+        false
+    }
+}
+
 /// Apply a resolved MTP `ObjectAdded` / `ObjectInfoChanged` to the volume's
 /// index, if the volume has a live (`Running`) index. BUFFERS during a scan.
 ///
 /// `upsert` carries the resolved storage-relative path + metadata + handle.
 /// Synchronous: only local DB reads off the `ReadPool` plus writer enqueues.
+///
+/// The live event path now gates BEFORE resolving (`buffer_mtp_handle_if_scanning`),
+/// so this is reached only when the volume is NOT scanning; the in-scan buffer
+/// branch here is a defensive belt-and-braces (e.g. a scan that started between
+/// the gate check and this call).
 pub(crate) fn apply_mtp_added_or_changed(volume_id: &str, upsert: MtpUpsert) {
     let (writer, scanning) = match crate::indexing::state::get_writer_and_scanning_for(volume_id) {
         Some(pair) => pair,
@@ -306,20 +348,73 @@ pub(crate) fn replay_buffered_mtp_changes(volume_id: &str) -> bool {
         return true;
     };
     let count = buffered.changes.len();
+
+    // Synchronous changes (already-resolved upserts, pathless removals) apply now;
+    // raw add/change handles need a device round trip to resolve, so they're
+    // collected and resolved off-thread (the scan has ended, so the device is
+    // idle — exactly when it's cheap to resolve them).
+    let mut handles_to_resolve: Vec<(u32, u32)> = Vec::new();
     for change in &buffered.changes {
         match change {
             BufferedChange::Upsert(u) => apply_upsert(volume_id, &writer, u),
             BufferedChange::Remove(h) => apply_remove(volume_id, &writer, *h),
+            BufferedChange::UpsertHandle { storage_id, handle } => handles_to_resolve.push((*storage_id, *handle)),
         }
     }
     if count > 0 {
         log::info!(
             target: "indexing::mtp_watch",
-            "replayed {count} mid-scan MTP change(s) into the '{volume_id}' index",
+            "replaying {count} mid-scan MTP change(s) into the '{volume_id}' index ({} need a post-scan resolve)",
+            handles_to_resolve.len(),
         );
+    }
+
+    if !handles_to_resolve.is_empty() {
+        resolve_and_apply_buffered_handles(volume_id, handles_to_resolve);
     }
     true
 }
+
+/// Resolve raw add/change handles buffered during a scan and apply them once the
+/// device is idle (post-scan). Spawns a task because resolution does USB I/O.
+/// Each resolve goes through the connection manager at FOREGROUND-equivalent
+/// timing (the scan is done, nothing contends), and a failed resolve is dropped:
+/// the scan that just completed already captured the object's then-current state,
+/// and any later change re-fires its own event.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn resolve_and_apply_buffered_handles(volume_id: &str, handles: Vec<(u32, u32)>) {
+    let Some(device_id) = crate::mtp::identity::device_id_of_volume(volume_id).map(str::to_owned) else {
+        return;
+    };
+    let volume_id = volume_id.to_string();
+    tauri::async_runtime::spawn(async move {
+        for (storage_id, handle) in handles {
+            match crate::mtp::connection::connection_manager()
+                .resolve_object_for_index(&device_id, storage_id, mtp_rs::ObjectHandle(handle))
+                .await
+            {
+                Ok(obj) => apply_mtp_added_or_changed(
+                    &volume_id,
+                    MtpUpsert {
+                        path: obj.path,
+                        handle,
+                        is_directory: obj.is_directory,
+                        size: obj.size,
+                        modified_at: obj.modified_at,
+                    },
+                ),
+                Err(e) => log::debug!(
+                    target: "indexing::mtp_watch",
+                    "post-scan replay: handle {handle} on {device_id}:{storage_id} unresolved ({e:?}); skipping",
+                ),
+            }
+        }
+    });
+}
+
+/// No-op shim on platforms without MTP (the buffer never fills there).
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+fn resolve_and_apply_buffered_handles(_volume_id: &str, _handles: Vec<(u32, u32)>) {}
 
 /// Discard any buffered mid-scan MTP changes for a volume without replaying them
 /// (the D-interrupted path: the partial index is reset to gray).
@@ -510,6 +605,61 @@ mod tests {
         assert!(
             SCAN_CHANGE_BUFFER.lock_ignore_poison().get(vid).is_none(),
             "discard must clear the buffer",
+        );
+    }
+
+    #[test]
+    fn buffer_holds_raw_upsert_handles_for_post_scan_resolve() {
+        // The gate-before-resolve fix buffers a RAW (storage_id, handle), not a
+        // resolved upsert — no device round trip during a scan. Confirm the
+        // variant accumulates and the replay-partition sees it as a to-resolve.
+        let vid = "mtp-buffer-handle-test";
+        SCAN_CHANGE_BUFFER.lock_ignore_poison().remove(vid);
+        buffer_change_during_scan(
+            vid,
+            BufferedChange::UpsertHandle {
+                storage_id: 65537,
+                handle: 42,
+            },
+        );
+        buffer_change_during_scan(
+            vid,
+            BufferedChange::UpsertHandle {
+                storage_id: 65537,
+                handle: 43,
+            },
+        );
+        buffer_change_during_scan(vid, BufferedChange::Remove(7));
+        {
+            let buf = SCAN_CHANGE_BUFFER.lock_ignore_poison();
+            let changes = &buf.get(vid).expect("buffer present").changes;
+            assert_eq!(changes.len(), 3);
+            let raw_handles: Vec<u32> = changes
+                .iter()
+                .filter_map(|c| match c {
+                    BufferedChange::UpsertHandle { handle, .. } => Some(*handle),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(raw_handles, vec![42, 43], "both raw handles buffered, in order");
+        }
+        SCAN_CHANGE_BUFFER.lock_ignore_poison().remove(vid);
+    }
+
+    #[test]
+    fn buffer_gate_returns_false_for_an_unregistered_volume() {
+        // `buffer_mtp_handle_if_scanning` must NOT buffer (and must return false,
+        // so the caller resolves live) when the volume has no Running index — the
+        // device-free fast path. A never-registered volume id exercises this.
+        let vid = "mtp-never-registered-gate:65537";
+        SCAN_CHANGE_BUFFER.lock_ignore_poison().remove(vid);
+        assert!(
+            !buffer_mtp_handle_if_scanning(vid, 65537, 99),
+            "no Running index ⇒ don't buffer, let the caller resolve live",
+        );
+        assert!(
+            SCAN_CHANGE_BUFFER.lock_ignore_poison().get(vid).is_none(),
+            "nothing buffered for an unregistered volume",
         );
     }
 

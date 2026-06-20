@@ -181,24 +181,50 @@ impl MtpConnectionManager {
     /// Feed an `ObjectAdded` / `ObjectInfoChanged` into the per-volume index, if
     /// any storage on this device is indexed.
     ///
-    /// PTP handles are device-wide but storages are separate namespaces, so we
-    /// resolve the handle against each INDEXED storage of the device and upsert
-    /// into the one where it resolves (the object lives in exactly one). Resolving
-    /// the handle on the wrong storage fails cleanly, so a non-matching storage is
-    /// skipped. Runs as a spawned task because resolution does USB I/O; the index
-    /// writes are enqueued (never blocking the event loop). No-op when the device
-    /// has no indexed storage.
+    /// **Gate-before-resolve.** During a full scan the device is contended, so we
+    /// must NOT do a device round trip just to feed the index — the scan will
+    /// capture the object anyway, and the live update can wait. So for each
+    /// indexed storage we FIRST ask `buffer_mtp_handle_if_scanning`: if that
+    /// volume is scanning, the RAW handle is buffered (zero device I/O) and
+    /// replayed after the scan, exactly like removals. Only when no scan is
+    /// running do we resolve the handle live (one bounded USB walk) and upsert.
+    /// Without this gate, every change event during a scan hit the contended
+    /// device through `resolve_object_for_index` before the buffer could spare it
+    /// (the original livelock).
+    ///
+    /// PTP handles are device-wide but storages are separate namespaces, so the
+    /// non-scanning path resolves against each indexed storage and upserts into
+    /// the one where it resolves (a non-matching storage fails cleanly). The
+    /// buffered path can't know which storage owns the handle, so it buffers per
+    /// scanning storage; the wrong one's replay resolve fails cleanly. Runs as a
+    /// spawned task because the live resolve does USB I/O.
     fn feed_index_added_or_changed(device_id: &str, handle: ObjectHandle) {
         let indexed = crate::indexing::registered_mtp_volume_ids_for_device(device_id);
         if indexed.is_empty() {
             return;
         }
+
+        // Gate first, synchronously and WITHOUT touching the device: buffer the
+        // raw handle for any scanning storage. Whatever's left needs a live resolve.
+        let mut to_resolve_live: Vec<(String, u32)> = Vec::new();
+        for volume_id in indexed {
+            let Some(storage_id) = crate::mtp::identity::storage_id_of_volume(&volume_id) else {
+                continue;
+            };
+            if crate::indexing::buffer_mtp_handle_if_scanning(&volume_id, storage_id, handle.0) {
+                // Scanning: buffered, replayed post-scan. No device hit.
+                continue;
+            }
+            to_resolve_live.push((volume_id, storage_id));
+        }
+
+        if to_resolve_live.is_empty() {
+            return;
+        }
+
         let device_id = device_id.to_string();
         tokio::spawn(async move {
-            for volume_id in indexed {
-                let Some(storage_id) = crate::mtp::identity::storage_id_of_volume(&volume_id) else {
-                    continue;
-                };
+            for (volume_id, storage_id) in to_resolve_live {
                 match connection_manager()
                     .resolve_object_for_index(&device_id, storage_id, handle)
                     .await

@@ -56,6 +56,9 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 - [x] 2026-06-19 smb-mtp-indexing-plan.md - Extended drive indexing to SMB and MTP volumes with a new "admittedly stale"
       freshness model, a per-drive status badge, and per-drive last-index duration (per-volume index registry; SMB and
       MTP both index and stay live via smb2 `CHANGE_NOTIFY` / PTP events)
+- [x] 2026-06-20 mtp-device-scheduler-plan.md - Foreground-priority MTP device scheduler: the background index scan
+      yields the single USB pipe to user nav/copy/delete per bounded unit, and the live watch→index feed buffers the raw
+      handle before any device resolve (fixes the ~30 s scan livelock)
 
 ## Later
 

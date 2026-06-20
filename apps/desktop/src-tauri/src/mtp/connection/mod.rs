@@ -20,10 +20,12 @@ mod event_loop;
 mod file_ops;
 mod handle_resolver;
 mod mutation_ops;
+mod scheduler;
 
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
 pub use errors::MtpConnectionError;
 use errors::map_mtp_error;
+use scheduler::{DevicePriorityGate, ForegroundGuard};
 
 use log::{debug, error, info, warn};
 use mtp_rs::ptp::OperationCode;
@@ -202,6 +204,11 @@ struct DeviceEntry {
     path_cache: RwLock<HashMap<u32, PathHandleCache>>,
     /// Directory listing cache per storage.
     listing_cache: RwLock<HashMap<u32, ListingCache>>,
+    /// Foreground/background priority arbiter for device access. Foreground ops
+    /// (nav, copy, delete, visible-folder resolves) take a `ForegroundGuard`
+    /// before touching the device; the background index scan yields to them at
+    /// every unit boundary. See `scheduler.rs`.
+    priority_gate: DevicePriorityGate,
 }
 
 /// Global connection manager for MTP devices.
@@ -419,6 +426,7 @@ impl MtpConnectionManager {
                     storages,
                     path_cache: RwLock::new(HashMap::new()),
                     listing_cache: RwLock::new(HashMap::new()),
+                    priority_gate: DevicePriorityGate::default(),
                 },
             );
         }
@@ -543,6 +551,32 @@ impl MtpConnectionManager {
         match self.devices.try_lock() {
             Ok(guard) => guard.contains_key(device_id),
             Err(_) => false,
+        }
+    }
+
+    /// Clone the priority gate for a connected device, or `None` if it isn't in
+    /// the registry. The gate is cheap to clone (`Arc` inside), so callers hold
+    /// the registry lock only briefly here, then use the clone unlocked.
+    async fn priority_gate(&self, device_id: &str) -> Option<DevicePriorityGate> {
+        let devices = self.devices.lock().await;
+        devices.get(device_id).map(|entry| entry.priority_gate.clone())
+    }
+
+    /// Take a foreground-priority guard for a device op, so the background scan
+    /// yields to it. Returns `None` if the device isn't connected (the op will
+    /// fail later with `NotConnected` anyway; running un-guarded is harmless).
+    /// Hold the returned guard across the whole foreground device op.
+    async fn foreground_guard(&self, device_id: &str) -> Option<ForegroundGuard> {
+        Some(self.priority_gate(device_id).await?.foreground_guard())
+    }
+
+    /// Background yield point for the index scan: park while any foreground op on
+    /// this device is pending, returning once it's clear. Called between scan
+    /// units. A no-op (returns immediately) if the device isn't connected or no
+    /// foreground op pends, so the scan never stalls on a missing gate.
+    pub(crate) async fn background_yield_point(&self, device_id: &str) {
+        if let Some(gate) = self.priority_gate(device_id).await {
+            gate.background_yield_point().await;
         }
     }
 

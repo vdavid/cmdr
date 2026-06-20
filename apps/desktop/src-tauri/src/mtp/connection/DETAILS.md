@@ -8,6 +8,74 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the depth lives here.
 - **Async recursion** (`bulk_ops.rs`, recursive `delete()`): `Box::pin(async move { ... })` breaks the infinite future.
 - **Event-loop shutdown**: biased `tokio::select!` so the shutdown signal always wins over the event poll.
 
+## Foreground-priority device scheduler
+
+**Problem.** A background MTP index scan livelocked the phone: while Cmdr indexed a storage, folder navigation, copy,
+delete, and live updates to the current folder stalled for tens of seconds. Two Cmdr POLICY bugs (not `mtp-rs`, which is
+already protocol-serial-correct via its per-transaction `operation_lock`):
+
+1. The scan held Cmdr's single per-device lock across an ENTIRE directory enumeration — one `GetObjectHandles` plus one
+   `GetObjectInfo` per child, so a 9,000-file folder pinned the device for ~30 s and any foreground op timed out
+   (`list_objects timed out after 30s`).
+2. The live watch→index feed resolved the change handle (a device round trip) BEFORE checking "are we scanning?", so
+   every change event hit the contended device during a scan (`resolve_object_for_index: timed out waiting for device
+   lock`). This was "gate-too-late".
+
+**The primitive (`scheduler.rs`).** Per connected device, `DevicePriorityGate` holds `foreground_pending: AtomicUsize`
+plus a `tokio::sync::Notify`. It owns no device handle and does no I/O, so its ordering is unit-tested with synthetic
+counters (`scheduler.rs` tests).
+
+- `foreground_guard()` (RAII): increments the counter on entry, decrements on drop, and `notify_one`s when it hits zero.
+  Every foreground device op takes one for its whole lifetime (`MtpConnectionManager::foreground_guard(device_id)`).
+- `background_yield_point()`: `while foreground_pending > 0 { drained.notified().await }`. The scan calls it between
+  units. Returns immediately at zero pending, so an idle scan never stalls.
+
+We use `notify_one`, NOT `notify_waiters`: `notify_one` STORES a permit when no waiter is parked, so a foreground drain
+that races the yield point's check-then-await is not lost (the stored permit makes the `.await` return, and the `while`
+re-reads the counter). A leftover permit at most causes one extra wake on a later yield, which re-checks and re-parks —
+never a wrong "proceed", since the loop gates on the counter, not the wake. `notify_waiters` keeps no permit and would
+deadlock on that race.
+
+**Per-unit scan listing (`list_directory_for_scan`).** Splits one folder into bounded UNITS, each a separate device-lock
+acquisition with a yield point between:
+
+- Unit 0: yield → lock → `list_objects_stream_with_cancel` (one `GetObjectHandles`) → release. The returned
+  `ObjectListing` owns its own `Arc<MtpDeviceInner>` (independent of Cmdr's lock), so it survives lock release/re-acquire.
+- Units 1..n: yield → lock → up to `SCAN_METADATA_BATCH` (32) `listing.next()` calls (each one `GetObjectInfo`) →
+  release.
+
+**Batch sizing.** Worst-case foreground wait is one in-flight unit = one metadata batch. A `GetObjectInfo` is
+single-digit-to-low-tens of ms over USB, so 32 keeps a unit well under ~1 s while keeping lock-acquire overhead
+negligible against the round trips. Retune the constant in `directory_ops.rs` if the latency target changes.
+
+**Which ops are foreground.** `list_directory*` (pane nav), `delete_object*`, `create_folder`, `rename_object`,
+`move_object`, `upload_file`, `upload_from_stream`, `download_file_with_progress`, `open_download_stream` (setup), and
+`resolve_handle_to_path` (the visible-pane live update) each take a guard. Nested guards (e.g. recursive `delete`, or
+`upload_from_stream` → `refresh_dir_handle` → `list_directory`) just stack the count — harmless, they keep the scan
+yielded for the whole op. Streaming-download per-chunk reads go through mtp-rs's own `Arc`/operation lock, not Cmdr's
+device lock, so they interleave with scan units at mtp-rs's per-transaction granularity even though the guard only
+covers the stream SETUP — no 30 s starvation either way.
+
+**Gate-before-resolve (`event_loop.rs` + `indexing/mtp_watch.rs`).** `feed_index_added_or_changed` now asks
+`indexing::buffer_mtp_handle_if_scanning(volume_id, storage_id, handle)` FIRST, per indexed storage, with NO device
+touch. If that volume is scanning it buffers the RAW handle (`BufferedChange::UpsertHandle`) and the caller skips the
+resolve; only a non-scanning storage resolves live. Removals already buffered the bare handle; now adds/changes do too.
+`replay_buffered_mtp_changes` applies the sync changes immediately, then spawns one task to resolve the buffered raw
+handles (post-scan, device idle) and upsert them — a failed resolve is dropped (the scan already captured the object;
+any later change re-fires). The buffered-handle storage can be the wrong one (we don't know which storage owns a handle
+without resolving), but the wrong storage's replay resolve fails cleanly, matching the existing per-storage skip.
+
+**Deadlock-freedom and progress.** The gate state is touched without holding the device lock, and the device lock is the
+only OS lock and always released at a unit boundary — no lock-ordering cycle. Foreground never waits on
+`background_yield_point` (it only raises the counter and contends for the device lock, which the scan holds for ≤ one
+batch). Background always progresses when idle (the yield returns at zero pending) and a parked scan is always woken (the
+last guard drop decrements to zero and `notify_one`s). No priority inversion: the scan yields at every unit boundary and
+foreground gets the device after the current in-flight transaction (mtp-rs guarantees it's atomic and bounded). The
+scan's `cancelled` flag is checked at every unit boundary AND threaded into `mtp-rs` per `GetObjectInfo`, so a cancel
+stops within one round trip; heal-to-rescan, freshness, and buffer/replay/overflow are untouched.
+
+**Plan.** `docs/specs/mtp-device-scheduler-plan.md`.
+
 ## Upload partial cleanup (two-phase PTP uploads)
 
 PTP uploads are two-phase: `SendObjectInfo` creates the object on the device, then `SendObject` streams the bytes. If the

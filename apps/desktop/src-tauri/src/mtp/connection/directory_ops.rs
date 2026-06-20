@@ -25,6 +25,14 @@ static CONCURRENT_LIST_CALLS: std::sync::atomic::AtomicU32 = std::sync::atomic::
 /// How often to call the progress callback (every N handles processed).
 const PROGRESS_INTERVAL: usize = 20;
 
+/// How many `GetObjectInfo` round trips the background scan does per device-lock
+/// hold (one scan "unit"). Between units the scan releases the lock and yields to
+/// any pending foreground op, so the worst-case foreground wait is one unit. A
+/// single `GetObjectInfo` is single-digit-to-low-tens of ms over USB, so 32 keeps
+/// a unit well under ~1 s while keeping lock-acquire overhead negligible against
+/// the round trips. Retune here if the foreground latency target changes.
+const SCAN_METADATA_BATCH: usize = 32;
+
 impl MtpConnectionManager {
     /// Lists the contents of a directory on an MTP device.
     ///
@@ -60,6 +68,11 @@ impl MtpConnectionManager {
         cancel: Option<&CancelToken>,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         use std::sync::atomic::Ordering;
+
+        // Foreground priority: a user pane listing must preempt the background
+        // scan. The guard makes this op count as foreground-pending for its whole
+        // lifetime, so the scan yields between units.
+        let _fg = self.foreground_guard(device_id).await;
 
         // Generate unique request ID for tracing this call
         let request_id = REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed);
@@ -114,6 +127,10 @@ impl MtpConnectionManager {
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         use std::sync::atomic::Ordering;
 
+        // Foreground priority (the progress variant drives interactive pane
+        // navigation): preempt the background scan for this op's lifetime.
+        let _fg = self.foreground_guard(device_id).await;
+
         let request_id = REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed);
         let call_start = Instant::now();
 
@@ -148,6 +165,164 @@ impl MtpConnectionManager {
         );
 
         result
+    }
+
+    /// List a directory for the BACKGROUND index scan, never holding the device
+    /// across the whole folder.
+    ///
+    /// This is the foreground-priority counterpart to `list_directory*`: instead
+    /// of one lock hold spanning `GetObjectHandles` + every `GetObjectInfo`
+    /// (which on a 9,000-file folder pins the device for ~30 s and starves
+    /// foreground ops), it splits the folder into bounded UNITS and yields to any
+    /// pending foreground op between them:
+    ///
+    /// - **Unit 0**: yield → lock → `list_objects_stream_with_cancel` (one
+    ///   `GetObjectHandles`) → release. The `ObjectListing` owns its own
+    ///   `Arc<MtpDeviceInner>`, so it survives across lock release/re-acquire.
+    /// - **Units 1..n**: yield → lock → up to [`SCAN_METADATA_BATCH`]
+    ///   `listing.next()` calls (each one `GetObjectInfo`) → release.
+    ///
+    /// The yield (`background_yield_point`) parks while a foreground op is
+    /// pending, so the scan auto-pauses while the user is active and resumes when
+    /// idle. The `cancel` flag is threaded into the `mtp-rs` stream (per-handle
+    /// bail) AND checked at every unit boundary, so a scan cancel stops within one
+    /// round trip. It populates the same path/listing caches as `list_directory`
+    /// via `finalize_listing`.
+    ///
+    /// Foreground listings deliberately do NOT use this path: the user wants the
+    /// whole listing now, and a foreground listing isn't the thing being starved.
+    pub async fn list_directory_for_scan(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        cancel: Option<&CancelToken>,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        let parent_path = normalize_mtp_path(path);
+
+        // Resolve the parent handle from cache (the scan walks top-down, so each
+        // dir was listed via its parent first and is cached).
+        let (device_arc, parent_handle) = {
+            let devices = self.devices.lock().await;
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+            let parent_handle = self.resolve_path_to_handle(entry, storage_id, path)?;
+            (Arc::clone(&entry.device), parent_handle)
+        };
+
+        let parent_opt = if parent_handle == ObjectHandle::ROOT {
+            None
+        } else {
+            Some(parent_handle)
+        };
+
+        // Unit 0: get the handle list (one GetObjectHandles), holding the lock
+        // only for that single transaction.
+        self.background_yield_point(device_id).await;
+        if cancel.is_some_and(CancelToken::is_cancelled) {
+            return Err(scan_cancelled(device_id));
+        }
+        let mut listing = {
+            let device = acquire_device_lock(&device_arc, device_id, "list_directory_for_scan[handles]").await?;
+            let storage = tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                device.storage(StorageId(storage_id)),
+            )
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
+
+            tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                storage.list_objects_stream_with_cancel(parent_opt, cancel),
+            )
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?
+            // `device` / `storage` drop here, releasing the lock before the
+            // metadata batches below.
+        };
+
+        let total = listing.total();
+        let mut entries = Vec::with_capacity(total);
+        let mut cache_updates: Vec<(PathBuf, ObjectHandle)> = Vec::new();
+
+        // Units 1..n: fetch metadata in bounded batches, releasing the lock and
+        // yielding to foreground between each.
+        loop {
+            self.background_yield_point(device_id).await;
+            if cancel.is_some_and(CancelToken::is_cancelled) {
+                return Err(scan_cancelled(device_id));
+            }
+
+            let device = acquire_device_lock(&device_arc, device_id, "list_directory_for_scan[meta]").await?;
+            let mut done = false;
+            for _ in 0..SCAN_METADATA_BATCH {
+                match tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), listing.next()).await {
+                    Ok(Some(Ok(info))) => {
+                        let is_dir = info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+                        let child_path = parent_path.join(&info.filename);
+                        cache_updates.push((child_path.clone(), info.handle));
+                        entries.push(FileEntry {
+                            size: if is_dir { None } else { Some(info.size) },
+                            modified_at: info.modified.map(convert_mtp_datetime),
+                            created_at: info.created.map(convert_mtp_datetime),
+                            permissions: if is_dir { 0o755 } else { 0o644 },
+                            icon_id: get_mtp_icon_id(is_dir, &info.filename),
+                            extended_metadata_loaded: true,
+                            inode: Some(u64::from(info.handle.0)),
+                            ..FileEntry::new(
+                                info.filename.clone(),
+                                child_path.to_string_lossy().to_string(),
+                                is_dir,
+                                false,
+                            )
+                        });
+                    }
+                    Ok(Some(Err(e))) => {
+                        // A per-handle failure: cancel surfaces as Cancelled;
+                        // anything else, skip this handle and keep walking (a
+                        // single bad object shouldn't abort the folder).
+                        let mapped = map_mtp_error(e, device_id);
+                        if matches!(mapped, MtpConnectionError::Cancelled { .. }) {
+                            return Err(mapped);
+                        }
+                        debug!("list_directory_for_scan: skipping a handle on {device_id}:{storage_id}: {mapped:?}");
+                    }
+                    Ok(None) => {
+                        done = true;
+                        break;
+                    }
+                    Err(_) => {
+                        return Err(MtpConnectionError::Timeout {
+                            device_id: device_id.to_string(),
+                        });
+                    }
+                }
+            }
+            drop(device);
+            if done {
+                break;
+            }
+        }
+
+        let entries = self
+            .finalize_listing(
+                u64::MAX, // scan path: a sentinel request id (not traced per-call)
+                device_id,
+                storage_id,
+                parent_path,
+                entries,
+                cache_updates,
+                Instant::now(),
+            )
+            .await;
+        Ok(entries)
     }
 
     /// Inner implementation of list_directory with detailed phase logging.
@@ -758,6 +933,16 @@ impl MtpConnectionManager {
                 device_id
             );
         }
+    }
+}
+
+/// The `Cancelled` error a scan unit returns when its cancel flag is set at a
+/// unit boundary. Matches the wording-free typed classification the write-op
+/// layer keys on (`MtpConnectionError::Cancelled`).
+fn scan_cancelled(device_id: &str) -> MtpConnectionError {
+    MtpConnectionError::Cancelled {
+        device_id: device_id.to_string(),
+        message: "scan cancelled".to_string(),
     }
 }
 

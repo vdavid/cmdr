@@ -160,6 +160,15 @@ impl MtpConnectionManager {
         storage_id: u32,
         handle: ObjectHandle,
     ) -> Result<PathBuf, MtpConnectionError> {
+        // Foreground priority: this resolve drives the live update of the
+        // CURRENTLY-VISIBLE pane (the targeted-refresh path) and the not-scanning
+        // index feed. Either way it's a small bounded walk that should preempt the
+        // background scan so the open folder updates in ~1-2 s. (During a scan the
+        // INDEX feed buffers the raw handle instead and never reaches here; this
+        // guard then only affects the visible-pane refresh and the post-scan
+        // replay, where nothing contends.)
+        let _fg = self.foreground_guard(device_id).await;
+
         // Snapshot the reverse cache for this storage once, under the registry
         // lock, then drop the lock before any USB round trip.
         let (device_arc, reverse_cache) = {

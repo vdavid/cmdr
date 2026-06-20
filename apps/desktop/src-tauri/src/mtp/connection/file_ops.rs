@@ -59,6 +59,10 @@ impl MtpConnectionManager {
         operation_id: &str,
         on_progress: Option<&(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Send + Sync)>,
     ) -> Result<MtpOperationResult, MtpConnectionError> {
+        // Foreground priority: a user download preempts the background scan for
+        // the whole transfer (the user is actively copying; the scan defers).
+        let _fg = self.foreground_guard(device_id).await;
+
         debug!(
             "MTP download_file: device={}, storage={}, path={}, dest={}",
             device_id,
@@ -234,6 +238,9 @@ impl MtpConnectionManager {
         app: Option<&AppHandle>,
         operation_id: &str,
     ) -> Result<MtpObjectInfo, MtpConnectionError> {
+        // Foreground priority: a user upload preempts the background scan.
+        let _fg = self.foreground_guard(device_id).await;
+
         debug!(
             "MTP upload_file: device={}, storage={}, local={}, dest={}",
             device_id,
@@ -425,6 +432,13 @@ impl MtpConnectionManager {
         storage_id: u32,
         path: &str,
     ) -> Result<(mtp_rs::FileDownload, u64), MtpConnectionError> {
+        // Foreground priority for the stream SETUP (handle resolve + open). The
+        // returned `FileDownload` reads chunks via mtp-rs's own `Arc`/operation
+        // lock, not Cmdr's device lock, so per-chunk reads interleave with scan
+        // units at mtp-rs's per-transaction granularity (no 30 s starvation). See
+        // DETAILS § "Foreground-priority device scheduler".
+        let _fg = self.foreground_guard(device_id).await;
+
         debug!(
             "MTP open_download_stream: device={}, storage={}, path={}",
             device_id, storage_id, path
@@ -517,6 +531,11 @@ impl MtpConnectionManager {
     where
         S: futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>> + Unpin + Send,
     {
+        // Foreground priority for the whole upload: mtp-rs drains `data_stream`
+        // within this call, so the guard covers the entire transfer (and the
+        // nested `refresh_dir_handle` re-list, which takes its own guard).
+        let _fg = self.foreground_guard(device_id).await;
+
         debug!(
             "MTP upload_from_stream: device={}, storage={}, dest={}/{}, size={}",
             device_id, storage_id, dest_folder, filename, size,

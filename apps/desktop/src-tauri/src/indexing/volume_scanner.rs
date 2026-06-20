@@ -123,8 +123,12 @@ pub(crate) async fn scan_volume_via_trait(
             return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
         }
 
-        // One round trip per directory, timeout- and autoreleasepool-wrapped.
-        let entries = match list_one_directory(volume.as_ref(), &dir_path).await {
+        // One directory per iteration, timeout- and autoreleasepool-wrapped.
+        // Goes through `list_directory_for_scan` so a backend that shares a
+        // serialized resource with foreground work (MTP's single USB pipe)
+        // releases it between bounded units and yields to pending foreground ops,
+        // rather than pinning it for the whole (possibly huge) directory.
+        let entries = match list_one_directory(volume.as_ref(), &dir_path, &cancelled).await {
             Ok(e) => e,
             Err(VolumeScanError::Volume(ref e)) if dir_path == root => {
                 // Failing to list the root itself is fatal — there's nothing to
@@ -222,12 +226,18 @@ pub(crate) async fn scan_volume_via_trait(
 /// List one directory over the `Volume` trait, wrapped in a timeout and (macOS)
 /// an autoreleasepool. The pool is drained per round trip so autoreleased ObjC
 /// objects from the SMB listing path don't accumulate across a long walk.
+///
+/// Uses `list_directory_for_scan` so a foreground-priority backend (MTP) walks
+/// the folder in yielding units; `cancelled` threads in so an in-flight listing
+/// bails within one round trip (the MTP path checks it at each unit and per
+/// `GetObjectInfo`), not just between directories.
 async fn list_one_directory(
     volume: &dyn Volume,
     dir_path: &Path,
+    cancelled: &Arc<AtomicBool>,
 ) -> Result<Vec<crate::file_system::listing::FileEntry>, VolumeScanError> {
     let fut = async {
-        let result = volume.list_directory(dir_path, None).await;
+        let result = volume.list_directory_for_scan(dir_path, Some(cancelled)).await;
         // Drain the autoreleased ObjC objects this listing created before the
         // future resolves. Cheap no-op on non-macOS.
         drain_autorelease_pool();

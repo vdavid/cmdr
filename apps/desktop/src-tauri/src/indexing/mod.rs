@@ -81,7 +81,8 @@ pub(crate) use smb_watch::{apply_smb_change, discard_buffered_changes, replay_bu
 pub(crate) use mtp_index::{on_mtp_device_disconnected, start_indexing_for_mtp};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use mtp_watch::{
-    MtpUpsert, apply_mtp_added_or_changed, apply_mtp_removed, discard_buffered_mtp_changes, replay_buffered_mtp_changes,
+    MtpUpsert, apply_mtp_added_or_changed, apply_mtp_removed, buffer_mtp_handle_if_scanning,
+    discard_buffered_mtp_changes, replay_buffered_mtp_changes,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use state::registered_mtp_volume_ids_for_device;
