@@ -96,7 +96,8 @@ Contested or split, with the per-source evidence:
 - gn: `könyvjelző` ("Hozzáadás a könyvjelzőkhöz", "Eltávolítás a könyvjelzőkből").
 - Chosen: `könyvjelző` · source gn, plus mac's literal usage · tentative. macOS/MS `Kedvenc` names a Favorites _sidebar
   concept_, not an explicit bookmark action; for Cmdr's named bookmark feature the file-manager-native `könyvjelző`
-  (GNOME) is clearer. Flagged for David: pick `könyvjelző` (literal, GNOME) vs `kedvenc` (macOS sidebar feel).
+  (GNOME) is clearer. Stays tentative — a macOS(`kedvenc`)-vs-GNOME(`könyvjelző`) split the next pass settles from the
+  file-manager sources, not a call to park for David (see Open terms below).
 
 ### cancel → `Mégsem`
 
@@ -145,22 +146,23 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **Length** runs near English; still overflow-check against the pseudolocale (`en-XA`).
 - Record case-by-case rulings here so they aren't relitigated.
 
-## Decisions to confirm with David
+## Open terms (resolved by evidence, not by David)
 
-David is the native expert here. Everything above is grounded in the sources; these are the ones still worth a native
-gut-check.
+David does NOT break ties for Hungarian. He uses shipped Hungarian as his gauge for the whole language-agnostic
+pipeline, so hand-feeding it a native gut-check would contaminate that gauge (see
+[i18n-translation.md](../../guides/i18n-translation.md) § Treat every language the same). These resolve the same way
+they'd resolve for a language no one here speaks: triangulate the reference pile (including the file-manager sources and
+the four mining gotchas in § Researching terms), pick the best-evidenced fit, record residual confidence. No
+Hungarian-specific input.
 
-- **Address style: RESOLVED to informal `te`** (consumer-brand evidence; see Formality and
-  [`formal-informal-decisions.md`](../formal-informal-decisions.md)). No longer open.
-- **bookmark → `könyvjelző` vs `kedvenc`** (tentative). `könyvjelző` is the literal, file-manager-native choice (GNOME);
-  `kedvenc` is what macOS calls its Favorites sidebar. Pick one.
-- **pane → `panel`** (tentative). No Tier-1 source (Finder is single-pane). `panel` reads clean; `ablaktábla` is the
-  Microsoft literal. Confirm `panel`.
-- **viewer → `megjelenítő`** and **listing → `fájllista`** (tentative). Both are reasonable descriptive coinages with no
-  exact Tier-1 match. Confirm or adjust.
+- **Address style: `te` (informal), high** — consumer-brand evidence; see Formality and
+  [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+- **pane, bookmark, viewer, listing — still tentative.** No Tier-1 source (Finder is single-pane and has no own viewer
+  term), so these need the file-manager sources to settle. The next glossary pass mines them like any language; until
+  then they stay open, not parked for David.
 
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/hu/`; recipes in `_ignored/i18n/how-to-mine.md`).
+you settle terms, each sourced from the reference pile (`_ignored/i18n/hu/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
 Never guess a term.
