@@ -8,7 +8,7 @@ Decisions (2026-06-20): 12 register-flip candidates resolved to informal on cons
 ro, sl, sr, bs, el, plus hr, tr, ka, lv after a deeper second-pass dig), and zh confirmed informal 你. zh legal /
 billing copy must use formal 您. tr=sen bucks the OS-vendor norm (Apple/MS use siz) as a deliberate brand choice.
 All other languages keep the OS/retail-confirmed register. This is the authoritative formality record; reconcile
-each `<tag>-style.md` Formality section to it.
+each `<tag>/style.md` Formality section to it.
 
 | id | language | OS evidence | OS suggestion | retail evidence | retail suggestion | decision |
 | -- | -------- | ----------- | ------------- | --------------- | ----------------- | -------- |

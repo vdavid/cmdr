@@ -17,7 +17,7 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
    `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` metadata schema.
 2. **Per-language style guide**: tone, voice, formality (T/V distinction if the language has one), terminology and
    glossary, how brand words are handled in this language. NOT per-string; never repeat tone on every key. It lives at
-   `docs/i18n/<tag>-style.md` (start from [`/docs/i18n/_template-style.md`](../i18n/_template-style.md); see
+   `docs/i18n/<tag>/style.md` (start from [`/docs/i18n/_template/style.md`](../i18n/_template/style.md); see
    [`/docs/i18n/README.md`](../i18n/README.md)). These are working notes, not catalog data: the app never loads them.
    **Treat it as a living doc, and capturing is part of the job**: read it before translating AND extend it as you go,
    recording each glossary choice with its sources and a confidence (see Researching terms below). This isn't only for
@@ -28,7 +28,7 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
 
 ## Researching terms: the reference pile
 
-Don't guess terms, and don't figure out the sources from scratch. A reference pile holds authoritative localizations
+Checking the reference pile is MANDATORY for every term: mine it for the term and for similar sentences, reuse and cite, never guess. The reference pile holds authoritative localizations
 keyed by language: the ~3 GB of macOS, Microsoft, and GNOME/Xfce data sits gitignored at `_ignored/i18n/<tag>/` (one
 folder per language), and the docs explaining it are tracked in the repo. Read
 [`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's there and the authority tiers, and
@@ -156,6 +156,8 @@ the object or action, not the person: verbal-noun or imperative labels, second p
 nouns, status that agrees with the object ("Connection established", not "You are connected"). Do this ONLY where the
 result still reads naturally; if neutral phrasing would be stilted, flag the string for human review rather than ship an
 awkward rewrite or an exposed gendered default.
+
+REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine _ignored/i18n/[TARGET LANGUAGE TAG]/ for how Apple/Microsoft/GNOME render each term and for similar sentences to model phrasing on; reuse and cite, never guess. Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: _ignored/i18n/how-to-mine.md.
 
 DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, Quick Look, and the
 {system_settings}-style tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in

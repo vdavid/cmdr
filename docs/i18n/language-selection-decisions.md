@@ -1,7 +1,7 @@
 # Language selection decisions
 
 Which of the 139 researched languages Cmdr plans to localize, and in what order. Per-language knowledge lives in
-`<tag>-style.md`; this is the ship/skip and sequencing roster.
+`<tag>/style.md`; this is the ship/skip and sequencing roster.
 
 - **wave 1-4**: implementation order. Waves 1-2 are driven by Cmdr' 30-day install usage (analytics,
   2026-06-20); waves 3-4 are market-size / reach estimates, to re-rank as the user base grows. `en` is the

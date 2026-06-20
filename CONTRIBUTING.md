@@ -109,7 +109,7 @@ These are slash commands for Claude Code (type `/command-name` in the CLI):
 
 Hand an agent a one-liner and let the docs carry the rest: the translator process, the reference pile, each language's style guide, and the formality and selection decisions all live in [`docs/i18n/`](docs/i18n) and [`docs/guides/i18n-translation.md`](docs/guides/i18n-translation.md). A prompt like this is enough:
 
-> Translate Cmdr into &lt;language&gt; (BCP-47 tag `<tag>`). Follow `docs/guides/i18n-translation.md` and the language's `docs/i18n/<tag>-style.md`, and check `docs/i18n/formal-informal-decisions.md` for the address register. Ground every term in the reference pile, never guesses.
+> Translate Cmdr into &lt;language&gt; (BCP-47 tag `<tag>`). Follow `docs/guides/i18n-translation.md` and the language's `docs/i18n/<tag>/style.md`, and check `docs/i18n/formal-informal-decisions.md` for the address register. Ground every term in the reference pile, never guesses.
 
 ## Tooling
 

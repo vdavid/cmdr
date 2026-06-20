@@ -3,7 +3,7 @@
 The authoritative record of which SCRIPT each digraphic or transliteration-flexible language ships in, mirroring
 [`formal-informal-decisions.md`](formal-informal-decisions.md) for register. These calls are David's, not a
 translator's: each picks one shipped script as the catalog base, with any second script a later sibling locale.
-Reconcile each `<tag>-style.md` script Decision point to this table. Decisions made 2026-06-20.
+Reconcile each `<tag>/style.md` script Decision point to this table. Decisions made 2026-06-20.
 
 | id | language | script decision | notes |
 | -- | -------- | --------------- | ----- |

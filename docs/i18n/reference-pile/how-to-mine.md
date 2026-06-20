@@ -2,7 +2,7 @@
 
 Tested recipes for extracting a term or convention from each source in `<tag>/`. The point: don't read whole files or
 reinvent the search each time. Triangulate a term across every source the language has, then record your choice with
-sources and a confidence in the per-language style guide (`docs/i18n/<tag>-style.md`). Structure and provenance of the
+sources and a confidence in the per-language style guide (`docs/i18n/<tag>/style.md`). Structure and provenance of the
 pile: [README.md](README.md) and [inventory.md](inventory.md).
 
 First check which sources your language has: `ls <tag>/` (a source is absent if its subdir is missing). Run everything
