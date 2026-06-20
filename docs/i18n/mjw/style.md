@@ -61,4 +61,4 @@ technical terms per the loan-word policy above.)
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
 you settle terms, each sourced from the reference pile (`_ignored/i18n/mjw/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

@@ -97,5 +97,5 @@ ICU can't insert "de" for you, so bake it into the `few`/`other` branch text cor
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ro/`; recipes in `_ignored/i18n/how-to-mine.md`).
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ro/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
 Never guess a term.

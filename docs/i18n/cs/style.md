@@ -136,5 +136,5 @@ CLDR categories for `cs`: `one`, `few`, `many`, `other` (verified with `new Intl
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/cs/`; recipes in `_ignored/i18n/how-to-mine.md`).
+you settle terms, each sourced from the reference pile (`_ignored/i18n/cs/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
 Never guess a term.

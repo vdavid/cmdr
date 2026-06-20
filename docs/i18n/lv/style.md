@@ -118,5 +118,5 @@ Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `'
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/lv/`; recipes in `_ignored/i18n/how-to-mine.md`).
+you settle terms, each sourced from the reference pile (`_ignored/i18n/lv/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
 Never guess a term.

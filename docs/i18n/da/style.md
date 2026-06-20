@@ -91,5 +91,5 @@ English's. Danish, like English, treats only 1 as singular.
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/da/`; recipes in `_ignored/i18n/how-to-mine.md`).
+you settle terms, each sourced from the reference pile (`_ignored/i18n/da/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
 Never guess a term.

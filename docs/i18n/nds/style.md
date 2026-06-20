@@ -79,4 +79,4 @@ message needs both branches. The `desktop-i18n-plural` check requires both.
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
 you settle terms, each sourced from the reference pile (`_ignored/i18n/nds/`; recipes in
-`_ignored/i18n/how-to-mine.md`). Never guess a term.
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
