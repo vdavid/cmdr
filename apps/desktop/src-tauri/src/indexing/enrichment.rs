@@ -209,7 +209,7 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
     // for `root`, mount-relative for an SMB volume (its index `ROOT_ID` is the
     // mount root, so a mount-absolute parent would resolve to nothing). `None`
     // means the parent isn't under this volume's mount root — skip.
-    let index_parent_path = match super::state::index_read_path(volume_id, &parent_path) {
+    let index_parent_path = match super::routing::index_read_path(volume_id, &parent_path) {
         Some(p) => p,
         None => {
             log::debug!("enrich: parent {parent_path} not under volume '{volume_id}' mount root, skipping");
@@ -322,7 +322,7 @@ pub(super) fn enrich_via_individual_paths_on(volume_id: &str, entries: &mut [Fil
     let mut id_to_path: Vec<(i64, String)> = Vec::new();
     for entry in entries.iter().filter(|e| e.is_directory && !e.is_symlink) {
         let normalized = firmlinks::normalize_path(&entry.path);
-        let Some(index_path) = super::state::index_read_path(volume_id, &normalized) else {
+        let Some(index_path) = super::routing::index_read_path(volume_id, &normalized) else {
             continue;
         };
         if let Ok(Some(id)) = store::resolve_path(conn, &index_path) {
@@ -355,7 +355,7 @@ pub(super) fn enrich_via_individual_paths_on(volume_id: &str, entries: &mut [Fil
     // Apply to entries (key on the same index-rooted path the map was built with)
     for entry in entries.iter_mut().filter(|e| e.is_directory && !e.is_symlink) {
         let normalized = firmlinks::normalize_path(&entry.path);
-        let Some(index_path) = super::state::index_read_path(volume_id, &normalized) else {
+        let Some(index_path) = super::routing::index_read_path(volume_id, &normalized) else {
             continue;
         };
         if let Some(stats) = stats_map.get(&index_path) {

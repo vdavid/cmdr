@@ -5,8 +5,9 @@ so listings can show directory sizes. Local disk, SMB shares, and MTP storages e
 
 ## Module map
 
-- **Lifecycle / state**: `state.rs` (`IndexPhase` machine, the per-volume `INDEX_REGISTRY`, public API), `manager.rs`
-  (per-volume coordinator).
+- **Lifecycle / state**: `state.rs` (`IndexPhase` machine, the per-volume `INDEX_REGISTRY`, lifecycle API),
+  `routing.rs` (path→volume id + read-path→index-path-space mapping), `queries.rs` (read-only status + dir-stats IPC
+  query surface), `manager.rs` (per-volume coordinator).
 - **Write path**: `writer/` (single writer thread + write connection), `scanner.rs` (jwalk, local only),
   `volume_scanner.rs` (`Volume`-trait scan for SMB/MTP), `aggregator.rs`, `reconciler.rs` + `event_loop.rs` (replay +
   live FSEvents).

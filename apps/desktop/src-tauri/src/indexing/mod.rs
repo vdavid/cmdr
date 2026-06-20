@@ -17,6 +17,8 @@ pub mod firmlinks;
 pub mod freshness;
 mod manager;
 mod partial_agg;
+mod queries;
+mod routing;
 mod state;
 pub mod store;
 pub mod writer;
@@ -58,10 +60,13 @@ pub use enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_vol
 pub(crate) use events::DEBUG_STATS;
 pub use events::*;
 
+pub use queries::{
+    get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
+    get_volume_index_status_for_path,
+};
 pub(crate) use state::ROOT_VOLUME_ID;
 pub use state::{
-    clear_index, force_scan, get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
-    get_volume_index_status_for_path, init, is_active, should_auto_start, should_auto_start_indexing, start_indexing,
+    clear_index, force_scan, init, is_active, should_auto_start, should_auto_start_indexing, start_indexing,
     stop_indexing, stop_scan, trigger_verification,
 };
 
