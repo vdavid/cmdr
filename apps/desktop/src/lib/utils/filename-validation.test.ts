@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { _setLocaleForTests } from '$lib/intl/locale'
 import {
   validateDisallowedChars,
   validateNotEmpty,
@@ -11,6 +12,15 @@ import {
   getExtension,
   extensionsDifferMeaningfully,
 } from './filename-validation'
+
+// Validation messages resolve through the i18n catalog (`tString`); pin the base
+// locale so the asserted en copy is deterministic.
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
 
 describe('validateDisallowedChars', () => {
   it('allows normal filenames', () => {
@@ -33,7 +43,12 @@ describe('validateDisallowedChars', () => {
 
   it('uses folder label when isDir is true', () => {
     const result = validateDisallowedChars('foo/bar', true)
-    expect(result.message).toContain('Folder name')
+    expect(result.message).toBe('Folder name can\'t contain "/" or null characters')
+  })
+
+  it('uses file label when isDir is false', () => {
+    const result = validateDisallowedChars('foo/bar', false)
+    expect(result.message).toBe('Filename can\'t contain "/" or null characters')
   })
 })
 
@@ -48,6 +63,11 @@ describe('validateNotEmpty', () => {
 
   it('allows non-empty string', () => {
     expect(validateNotEmpty('a').severity).toBe('ok')
+  })
+
+  it('uses the file-vs-folder variant for the empty message', () => {
+    expect(validateNotEmpty('', false).message).toBe("Filename can't be empty")
+    expect(validateNotEmpty('', true).message).toBe("Folder name can't be empty")
   })
 })
 
@@ -303,6 +323,7 @@ describe('validateConflict', () => {
   it('warns on case-insensitive match with a different sibling', () => {
     const result = validateConflict('README.md', ['readme.md', 'other.txt'], 'old.txt')
     expect(result.severity).toBe('warning')
+    expect(result.message).toBe('"README.md" already exists in this folder')
   })
 
   it('no warning for case-only rename of same file', () => {

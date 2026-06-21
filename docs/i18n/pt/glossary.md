@@ -42,7 +42,7 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - mount · **montar** · macOS Finder, MS · confirmed
 - hostname · **nome do host** · MS terminology · high
 - IP address · **Endereço IP** · standard · high
-- Keychain · **Keychain** · do-not-translate list (kept verbatim) · confirmed
+- Keychain · **Acesso às Chaves** · macOS Portuguese (Brazilian) · high · localized Apple feature name (the Keychain Access app / credential store); not on the don't-translate brand list. The local Finder/SystemSettings pile doesn't capture the Keychain Access bundle, so this is from Apple's macOS pt-BR localization, not the mined pile.
 - Favorites · **Favoritos** · macOS Finder · confirmed
 - Network · **Rede** · macOS Finder · confirmed
 - Volumes · **Volumes** · macOS Finder · high

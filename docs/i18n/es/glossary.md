@@ -75,7 +75,7 @@ Settled during the `settings.json` pass (mined from `_ignored/i18n/es/`, mostly 
 - read-only → solo lectura · macOS Finder/AppKit ("Solo lectura", 138/pft) · high
 - network → Red · macOS Finder ("Network"→"Red", 300516/FF22.1) · high
 - volume → volumen · macOS Finder · high
-- Keychain → Keychain · kept verbatim per style guide do-not-translate (macOS UI says "Llavero") · confirmed (style guide)
+- Keychain → Llavero (store) / Acceso a Llaveros (app) · macOS Spanish · high · localized Apple feature name; Apple ships a Spanish-localized Keychain Access app ("Acceso a Llaveros"), so use that name, not the English "Keychain" (supersedes the old "keep Keychain verbatim" rule, per i18n-translation.md § Term-choice principles)
 - credentials → credenciales · standard · high
 - symlink → enlace simbólico; "(broken symlink)" → "(enlace simbólico roto)" · standard · high
 - permission denied → permiso denegado · standard · high

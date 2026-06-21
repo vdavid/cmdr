@@ -466,5 +466,49 @@
   "fileOperations.errorDialog.close": "Fechar",
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {O nome da pasta não pode conter \"/\" nem caracteres nulos} other {O nome do arquivo não pode conter \"/\" nem caracteres nulos}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "d84512c"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {O nome da pasta não pode ficar em branco} other {O nome do arquivo não pode ficar em branco}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "e6acb43"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {O nome da pasta é muito longo ({byteCount}/{maxBytes} bytes)} other {O nome do arquivo é muito longo ({byteCount}/{maxBytes} bytes)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "O caminho completo é muito longo ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "Não é permitido alterar a extensão do arquivo (era \"{oldExt}\")",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "43c2dc1"
+  },
+  "fileOperations.validation.conflict": "\"{name}\" já existe nesta pasta",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "ba13237"
+  },
+  "fileOperations.validation.pathEmpty": "O caminho não pode ficar em branco",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "348eb60"
+  },
+  "fileOperations.validation.pathNotAbsolute": "O caminho precisa ser absoluto (começar com /)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "O caminho contém um caractere nulo",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "O caminho é muito longo ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "Um nome de pasta no caminho é muito longo ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
   }
 }

@@ -443,7 +443,7 @@
   "@fileExplorer.network.login.passwordPlaceholder": {
     "sourceHash": "7014aff"
   },
-  "fileExplorer.network.login.rememberInKeychain": "Kom ihåg i Keychain",
+  "fileExplorer.network.login.rememberInKeychain": "Kom ihåg i nyckelringen",
   "@fileExplorer.network.login.rememberInKeychain": {
     "sourceHash": "3fd7384"
   },
@@ -487,7 +487,7 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "aceb696"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "Ta bort sparat lösenord från Keychain",
+  "fileExplorer.network.share.forgetPasswordTooltip": "Ta bort sparat lösenord från nyckelringen",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
@@ -1091,7 +1091,7 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "1cb249f"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan återanvända lösenordet som macOS redan har sparat för ”{displayName}”. Du får en systemfråga om att tillåta åtkomst till Keychain. Det är väntat, så klicka på Tillåt.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan återanvända lösenordet som macOS redan har sparat för ”{displayName}”. Du får en systemfråga om att tillåta åtkomst till nyckelringen. Det är väntat, så klicka på Tillåt.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
     "sourceHash": "6bb2c1d"
   },

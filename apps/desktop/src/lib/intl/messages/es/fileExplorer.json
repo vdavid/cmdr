@@ -443,7 +443,7 @@
   "@fileExplorer.network.login.passwordPlaceholder": {
     "sourceHash": "7014aff"
   },
-  "fileExplorer.network.login.rememberInKeychain": "Recordar en Keychain",
+  "fileExplorer.network.login.rememberInKeychain": "Recordar en el Llavero",
   "@fileExplorer.network.login.rememberInKeychain": {
     "sourceHash": "3fd7384"
   },
@@ -487,7 +487,7 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "aceb696"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "Quitar la contraseña guardada de Keychain",
+  "fileExplorer.network.share.forgetPasswordTooltip": "Quitar la contraseña guardada del Llavero",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
@@ -1091,7 +1091,7 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "1cb249f"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr puede reutilizar la contraseña que macOS ya guardó para \"{displayName}\". Verás un aviso del sistema que pide permiso para acceder a Keychain. Es lo esperado, así que haz clic en Permitir.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr puede reutilizar la contraseña que macOS ya guardó para \"{displayName}\". Verás un aviso del sistema que pide permiso para acceder al Llavero. Es lo esperado, así que haz clic en Permitir.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
     "sourceHash": "6bb2c1d"
   },

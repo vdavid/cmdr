@@ -466,5 +466,49 @@
   "fileOperations.errorDialog.close": "Fermer",
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Le nom du dossier ne peut pas contenir « / » ni de caractère null} other {Le nom du fichier ne peut pas contenir « / » ni de caractère null}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "d84512c"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {Le nom du dossier ne peut pas être vide} other {Le nom du fichier ne peut pas être vide}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "e6acb43"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Le nom du dossier est trop long ({byteCount}/{maxBytes} octets)} other {Le nom du fichier est trop long ({byteCount}/{maxBytes} octets)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "Le chemin d''accès complet est trop long ({byteCount}/{maxBytes} octets)",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "La modification de l''extension du fichier n''est pas autorisée (elle était « {oldExt} »)",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "43c2dc1"
+  },
+  "fileOperations.validation.conflict": "« {name} » existe déjà dans ce dossier",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "ba13237"
+  },
+  "fileOperations.validation.pathEmpty": "Le chemin d''accès ne peut pas être vide",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "348eb60"
+  },
+  "fileOperations.validation.pathNotAbsolute": "Le chemin d''accès doit être absolu (commencer par /)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "Le chemin d''accès contient un caractère null",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "Le chemin d''accès est trop long ({byteCount}/{maxBytes} octets)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "Un nom de dossier dans le chemin d''accès est trop long ({byteCount}/{maxBytes} octets)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
   }
 }

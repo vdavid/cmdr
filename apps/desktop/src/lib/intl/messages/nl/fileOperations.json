@@ -466,5 +466,49 @@
   "fileOperations.errorDialog.close": "Sluit",
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Een mapnaam mag geen ‘/’ of null-tekens bevatten} other {Een bestandsnaam mag geen ‘/’ of null-tekens bevatten}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "d84512c"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {Een mapnaam mag niet leeg zijn} other {Een bestandsnaam mag niet leeg zijn}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "e6acb43"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Deze mapnaam is te lang ({byteCount}/{maxBytes} bytes)} other {Deze bestandsnaam is te lang ({byteCount}/{maxBytes} bytes)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "Het volledige pad is te lang ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "De bestandsextensie wijzigen is niet toegestaan (was ‘{oldExt}’)",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "43c2dc1"
+  },
+  "fileOperations.validation.conflict": "‘{name}’ bestaat al in deze map",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "ba13237"
+  },
+  "fileOperations.validation.pathEmpty": "Het pad mag niet leeg zijn",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "348eb60"
+  },
+  "fileOperations.validation.pathNotAbsolute": "Het pad moet absoluut zijn (begint met /)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "Het pad bevat een null-teken",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "Het pad is te lang ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "Een mapnaam in het pad is te lang ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
   }
 }

@@ -374,5 +374,29 @@
   "ai.local.deleteButton": "Törlés",
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
+  },
+  "ai.secretError.keychainTitle": "{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a macOS kulcskarika megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a macOS kulcskarika megtagadta a hozzáférést}}",
+  "@ai.secretError.keychainTitle": {
+    "sourceHash": "ec77588"
+  },
+  "ai.secretError.keychainBody": "{op, select, save {Nyisd meg a Kulcskarika-hozzáférést, és nézd meg a „Cmdr” bejegyzést, vagy töröld, majd próbáld újra a mentést.} other {Nyisd meg a Kulcskarika-hozzáférést, keresd meg a „Cmdr” bejegyzést, és adj hozzáférést, vagy töröld, majd add meg újra a kulcsodat.}}",
+  "@ai.secretError.keychainBody": {
+    "sourceHash": "2a0fe5e"
+  },
+  "ai.secretError.keyringTitle": "{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést}}",
+  "@ai.secretError.keyringTitle": {
+    "sourceHash": "8c9df45"
+  },
+  "ai.secretError.keyringBody": "Oldd fel a kulcstartódat (Jelszavak / Kulcstartók alkalmazás), majd próbáld újra.",
+  "@ai.secretError.keyringBody": {
+    "sourceHash": "023bde3"
+  },
+  "ai.secretError.genericTitle": "{op, select, save {Nem sikerült elmenteni az API-kulcsodat.} other {Nem sikerült beolvasni a mentett API-kulcsodat.}}",
+  "@ai.secretError.genericTitle": {
+    "sourceHash": "a93c4f0"
+  },
+  "ai.secretError.genericBody": "Ellenőrizd, hogy a rendszer kulcstartója elérhető-e, majd próbáld újra. Ha továbbra is fennáll, indítsd újra az appot.",
+  "@ai.secretError.genericBody": {
+    "sourceHash": "2ee417d"
   }
 }

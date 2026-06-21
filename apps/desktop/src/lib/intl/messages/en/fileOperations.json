@@ -818,5 +818,89 @@
   "fileOperations.errorDialog.close": "Close",
   "@fileOperations.errorDialog.close": {
     "description": "Button that dismisses the transfer-error dialog. Short control label."
+  },
+
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Folder name can''t contain \"/\" or null characters} other {Filename can''t contain \"/\" or null characters}}",
+  "@fileOperations.validation.disallowedChars": {
+    "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the name includes a slash or a null character (both forbidden on the file system). The \"/\" is a literal slash character and must stay as-is. Write each branch as a complete, natural sentence for a file versus a folder (the noun and its agreement differ across languages).",
+    "placeholders": {
+      "kind": "what is being named: \"folder\" for a folder, anything else for a file"
+    }
+  },
+
+  "fileOperations.validation.empty": "{kind, select, folder {Folder name can''t be empty} other {Filename can''t be empty}}",
+  "@fileOperations.validation.empty": {
+    "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the name is blank (or only whitespace). Write each branch as a complete, natural sentence for a file versus a folder.",
+    "placeholders": {
+      "kind": "what is being named: \"folder\" for a folder, anything else for a file"
+    }
+  },
+
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} bytes)} other {Filename is too long ({byteCount}/{maxBytes} bytes)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the name exceeds the file system''s per-name byte limit. \"bytes\" is the unit (a name can use more than one byte per character). Write each branch as a complete, natural sentence for a file versus a folder.",
+    "placeholders": {
+      "kind": "what is being named: \"folder\" for a folder, anything else for a file",
+      "byteCount": "how many bytes the typed name currently uses (e.g. 260)",
+      "maxBytes": "the maximum bytes allowed for one name (e.g. 255)"
+    }
+  },
+
+  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathTooLong": {
+    "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the resulting full path (parent folder plus the name) exceeds the file system''s total path byte limit. \"bytes\" is the unit. \"Full path\" means the entire path, parent folders included.",
+    "placeholders": {
+      "byteCount": "how many bytes the full resulting path currently uses (e.g. 1100)",
+      "maxBytes": "the maximum bytes allowed for a full path (e.g. 1024)"
+    }
+  },
+
+  "fileOperations.validation.extensionChangeBlocked": "Changing the file extension isn''t allowed (was \"{oldExt}\")",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "description": "Inline validation message shown live while renaming a file, when the user changed the file extension but their setting forbids extension changes. \"{oldExt}\" is the original extension WITH its leading dot (e.g. \".txt\"); it''s the user''s own filename text, so keep it verbatim and structure the sentence to tolerate any extension.",
+    "placeholders": {
+      "oldExt": "the original file extension including its leading dot, e.g. \".txt\" (an uncontrolled value taken from the user''s filename)"
+    }
+  },
+
+  "fileOperations.validation.conflict": "\"{name}\" already exists in this folder",
+  "@fileOperations.validation.conflict": {
+    "description": "Inline validation WARNING (not a hard error) shown live while renaming or creating, when a file or folder with the same name already exists in the target folder (matching is case-insensitive). \"{name}\" is the name the user typed; it''s uncontrolled user text, so keep it verbatim and structure the sentence to tolerate any name, casing, or length.",
+    "placeholders": {
+      "name": "the name the user typed that collides with an existing item (an uncontrolled value, shown in quotes)"
+    }
+  },
+
+  "fileOperations.validation.pathEmpty": "Path can''t be empty",
+  "@fileOperations.validation.pathEmpty": {
+    "description": "Inline validation message for a directory-path field (e.g. the transfer destination or go-to-path), shown when the path is blank or only whitespace. \"Path\" means a full file-system path."
+  },
+
+  "fileOperations.validation.pathNotAbsolute": "Path must be absolute (start with /)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "description": "Inline validation message for a directory-path field, shown when the path doesn''t start at the file-system root. \"absolute\" means a full path from the root; the \"/\" is the literal root slash and must stay as-is."
+  },
+
+  "fileOperations.validation.pathNullChar": "Path contains a null character",
+  "@fileOperations.validation.pathNullChar": {
+    "description": "Inline validation message for a directory-path field, shown when the path contains a null character (forbidden in file-system paths). \"null character\" is the technical name for the zero byte."
+  },
+
+  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "description": "Inline validation message for a directory-path field, shown when the whole path exceeds the file system''s total byte limit. \"bytes\" is the unit.",
+    "placeholders": {
+      "byteCount": "how many bytes the path currently uses (e.g. 1100)",
+      "maxBytes": "the maximum bytes allowed for a full path (e.g. 1024)"
+    }
+  },
+
+  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "description": "Inline validation message for a directory-path field, shown when one folder name inside the path exceeds the per-name byte limit (even though the whole path fits). \"bytes\" is the unit.",
+    "placeholders": {
+      "byteCount": "how many bytes the offending folder name uses (e.g. 260)",
+      "maxBytes": "the maximum bytes allowed for one name (e.g. 255)"
+    }
   }
 }

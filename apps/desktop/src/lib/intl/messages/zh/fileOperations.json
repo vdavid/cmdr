@@ -466,5 +466,49 @@
   "fileOperations.errorDialog.close": "关闭",
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {文件夹名中不能包含“/”或空字符} other {文件名中不能包含“/”或空字符}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "d84512c"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {文件夹名不能为空} other {文件名不能为空}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "e6acb43"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {文件夹名过长（{byteCount}/{maxBytes} 字节）} other {文件名过长（{byteCount}/{maxBytes} 字节）}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "完整路径过长（{byteCount}/{maxBytes} 字节）",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "不允许更改文件扩展名（原为“{oldExt}”）",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "43c2dc1"
+  },
+  "fileOperations.validation.conflict": "“{name}”已存在于此文件夹中",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "ba13237"
+  },
+  "fileOperations.validation.pathEmpty": "路径不能为空",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "348eb60"
+  },
+  "fileOperations.validation.pathNotAbsolute": "路径必须是绝对路径（以 / 开头）",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "路径中包含空字符",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "路径过长（{byteCount}/{maxBytes} 字节）",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "路径中有一个文件夹名过长（{byteCount}/{maxBytes} 字节）",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
   }
 }

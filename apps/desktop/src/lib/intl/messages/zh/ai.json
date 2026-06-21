@@ -374,5 +374,29 @@
   "ai.local.deleteButton": "删除",
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
+  },
+  "ai.secretError.keychainTitle": "{op, select, save {无法保存你的 API 密钥：macOS 钥匙串拒绝了访问} other {无法读取你保存的 API 密钥：macOS 钥匙串拒绝了访问}}",
+  "@ai.secretError.keychainTitle": {
+    "sourceHash": "ec77588"
+  },
+  "ai.secretError.keychainBody": "{op, select, save {打开“钥匙串访问”，检查“Cmdr”这一项，或将它删除后重新保存。} other {打开“钥匙串访问”，找到“Cmdr”这一项并授予访问权限，或将它删除后重新输入密钥。}}",
+  "@ai.secretError.keychainBody": {
+    "sourceHash": "2a0fe5e"
+  },
+  "ai.secretError.keyringTitle": "{op, select, save {无法保存你的 API 密钥：系统密钥环拒绝了访问} other {无法读取你保存的 API 密钥：系统密钥环拒绝了访问}}",
+  "@ai.secretError.keyringTitle": {
+    "sourceHash": "8c9df45"
+  },
+  "ai.secretError.keyringBody": "解锁你的密钥环（“密码”/“密钥环”应用），然后重试。",
+  "@ai.secretError.keyringBody": {
+    "sourceHash": "023bde3"
+  },
+  "ai.secretError.genericTitle": "{op, select, save {无法保存你的 API 密钥。} other {无法读取你保存的 API 密钥。}}",
+  "@ai.secretError.genericTitle": {
+    "sourceHash": "a93c4f0"
+  },
+  "ai.secretError.genericBody": "确认你的系统密钥环可用，然后重试。如果问题仍然存在，请重新启动应用。",
+  "@ai.secretError.genericBody": {
+    "sourceHash": "2ee417d"
   }
 }

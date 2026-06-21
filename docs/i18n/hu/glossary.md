@@ -35,7 +35,12 @@ disconnect, share, search, sort, settings, index, overwrite, server = `szerver`)
 - error (status fallback, status cell): rendered as `Probléma` (not `Hiba`) · style-guide voice rule (no bare "hiba"
   label) · high. Applies to `status.error`, `tooltip.errorWithType`.
 - scan (index): `átvizsgálás` · descriptive (ms "vizsgálat") · tentative. "Rescan now" = `Újbóli átvizsgálás`.
-- Keychain: kept verbatim (macOS brand). System keyring (generic) = `kulcstartó`.
+- Keychain → `kulcskarika` · macOS Hungarian · high. The localized Apple feature name (Decision 1: localize what Apple
+  localizes, like Quick Look — NOT a verbatim brand). Apple's Hungarian Mac User Guide uses `kulcskarika` for the store
+  (e.g. `iCloud-kulcskarika`) and `Kulcskarika-hozzáférés` for the Keychain Access app (verified on support.apple.com
+  hu-hu Mac User Guide + macmag.hu, web, 2026-06-21). The store sense declines case-by-case (`a kulcskarikában`,
+  `a kulcskarikából`, `a macOS kulcskarika`); the app name is `Kulcskarika-hozzáférés`. System keyring (generic) =
+  `kulcstartó`.
 
 UI section names captured (volume-switcher group headings, for cross-file consistency): Favorites = `Kedvencek`,
 Volumes = `Kötetek`, Cloud = `Felhő`, Mobile = `Mobil`, Network = `Hálózat`. Settings location referenced in copy:

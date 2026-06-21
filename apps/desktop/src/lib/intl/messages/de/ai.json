@@ -374,5 +374,29 @@
   "ai.local.deleteButton": "Löschen",
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
+  },
+  "ai.secretError.keychainTitle": "{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Der macOS-Schlüsselbund hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Der macOS-Schlüsselbund hat den Zugriff verweigert}}",
+  "@ai.secretError.keychainTitle": {
+    "sourceHash": "ec77588"
+  },
+  "ai.secretError.keychainBody": "{op, select, save {Öffne die Schlüsselbundverwaltung und prüfe den Eintrag „Cmdr“, oder lösche ihn und speichere noch einmal.} other {Öffne die Schlüsselbundverwaltung, suche den Eintrag „Cmdr“ und gewähre den Zugriff, oder lösche ihn und gib deinen Schlüssel neu ein.}}",
+  "@ai.secretError.keychainBody": {
+    "sourceHash": "2a0fe5e"
+  },
+  "ai.secretError.keyringTitle": "{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Dein System-Schlüsselbund hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Dein System-Schlüsselbund hat den Zugriff verweigert}}",
+  "@ai.secretError.keyringTitle": {
+    "sourceHash": "8c9df45"
+  },
+  "ai.secretError.keyringBody": "Entsperre deinen Schlüsselbund (App „Passwörter“ / „Schlüsselbunde“) und versuche es erneut.",
+  "@ai.secretError.keyringBody": {
+    "sourceHash": "023bde3"
+  },
+  "ai.secretError.genericTitle": "{op, select, save {Dein API-Schlüssel ließ sich nicht speichern.} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen.}}",
+  "@ai.secretError.genericTitle": {
+    "sourceHash": "a93c4f0"
+  },
+  "ai.secretError.genericBody": "Prüfe, ob dein System-Schlüsselbund verfügbar ist, und versuche es erneut. Wenn es weiterhin auftritt, starte die App neu.",
+  "@ai.secretError.genericBody": {
+    "sourceHash": "2ee417d"
   }
 }

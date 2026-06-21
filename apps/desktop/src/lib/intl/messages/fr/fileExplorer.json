@@ -443,7 +443,7 @@
   "@fileExplorer.network.login.passwordPlaceholder": {
     "sourceHash": "7014aff"
   },
-  "fileExplorer.network.login.rememberInKeychain": "Mémoriser dans Keychain",
+  "fileExplorer.network.login.rememberInKeychain": "Mémoriser dans le trousseau",
   "@fileExplorer.network.login.rememberInKeychain": {
     "sourceHash": "3fd7384"
   },
@@ -487,7 +487,7 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "aceb696"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "Retirer le mot de passe enregistré de Keychain",
+  "fileExplorer.network.share.forgetPasswordTooltip": "Retirer le mot de passe enregistré du trousseau",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
@@ -1091,7 +1091,7 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "1cb249f"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr peut réutiliser le mot de passe que macOS a déjà enregistré pour « {displayName} ». Vous verrez une invite système demandant d''autoriser l''accès à Keychain. C''est normal, alors cliquez sur Autoriser.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr peut réutiliser le mot de passe que macOS a déjà enregistré pour « {displayName} ». Vous verrez une invite système demandant d''autoriser l''accès au trousseau. C''est normal, alors cliquez sur Autoriser.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
     "sourceHash": "6bb2c1d"
   },

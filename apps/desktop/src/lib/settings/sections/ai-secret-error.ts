@@ -1,3 +1,4 @@
+import { tString } from '$lib/intl/messages.svelte'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { isIpcError } from '$lib/tauri-commands/ipc-types'
 
@@ -56,31 +57,27 @@ function inferKindFromMessage(msg: string): SecretErrorKind {
  *  on Linux, etc.) instead of just seeing a raw error message. */
 export function describeSecretError(e: unknown, operation: 'save' | 'read'): SecretErrorMessage {
   const { kind, message } = extractErrorShape(e)
-  const verb = operation === 'save' ? "Couldn't save API key" : "Couldn't read saved API key"
 
   if (kind === 'access_denied') {
     if (isMacOS()) {
       return {
-        title: `${verb}: macOS Keychain denied access`,
-        body:
-          operation === 'save'
-            ? 'Open Keychain Access and check the "Cmdr" entry, or delete it and try saving again.'
-            : 'Open Keychain Access, find the "Cmdr" entry, grant access, or delete it and re-enter your key.',
+        title: tString('ai.secretError.keychainTitle', { op: operation }),
+        body: tString('ai.secretError.keychainBody', { op: operation }),
         detail: message,
         level: 'error',
       }
     }
     return {
-      title: `${verb}: your system keyring denied access`,
-      body: 'Unlock your keyring (Passwords / Keyrings app) and try again.',
+      title: tString('ai.secretError.keyringTitle', { op: operation }),
+      body: tString('ai.secretError.keyringBody'),
       detail: message,
       level: 'error',
     }
   }
 
   return {
-    title: `${verb}.`,
-    body: 'Check that your system keyring is available, then try again. If it persists, restart the app.',
+    title: tString('ai.secretError.genericTitle', { op: operation }),
+    body: tString('ai.secretError.genericBody'),
     detail: message,
     level: 'error',
   }

@@ -466,5 +466,49 @@
   "fileOperations.errorDialog.close": "Cerrar",
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {El nombre de la carpeta no puede contener “/” ni caracteres nulos} other {El nombre del archivo no puede contener “/” ni caracteres nulos}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "d84512c"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {El nombre de la carpeta no puede estar vacío} other {El nombre del archivo no puede estar vacío}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "e6acb43"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {El nombre de la carpeta es demasiado largo ({byteCount}/{maxBytes} bytes)} other {El nombre del archivo es demasiado largo ({byteCount}/{maxBytes} bytes)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "La ruta completa es demasiado larga ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "No se permite cambiar la extensión del archivo (era “{oldExt}”)",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "43c2dc1"
+  },
+  "fileOperations.validation.conflict": "“{name}” ya existe en esta carpeta",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "ba13237"
+  },
+  "fileOperations.validation.pathEmpty": "La ruta no puede estar vacía",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "348eb60"
+  },
+  "fileOperations.validation.pathNotAbsolute": "La ruta debe ser absoluta (empezar por /)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "La ruta contiene un carácter nulo",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "La ruta es demasiado larga ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "Un nombre de carpeta en la ruta es demasiado largo ({byteCount}/{maxBytes} bytes)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
   }
 }

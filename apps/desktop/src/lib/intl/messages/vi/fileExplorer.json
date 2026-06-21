@@ -443,7 +443,7 @@
   "@fileExplorer.network.login.passwordPlaceholder": {
     "sourceHash": "7014aff"
   },
-  "fileExplorer.network.login.rememberInKeychain": "Ghi nhớ trong Keychain",
+  "fileExplorer.network.login.rememberInKeychain": "Ghi nhớ trong chuỗi khóa",
   "@fileExplorer.network.login.rememberInKeychain": {
     "sourceHash": "3fd7384"
   },
@@ -487,7 +487,7 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "aceb696"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "Xóa mật khẩu đã lưu khỏi Keychain",
+  "fileExplorer.network.share.forgetPasswordTooltip": "Xóa mật khẩu đã lưu khỏi chuỗi khóa",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
@@ -1091,7 +1091,7 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "1cb249f"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr có thể dùng lại mật khẩu mà macOS đã lưu cho \"{displayName}\". Bạn sẽ thấy một lời nhắc hệ thống xin phép truy cập Keychain. Điều đó là bình thường, nên hãy bấm Cho phép.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr có thể dùng lại mật khẩu mà macOS đã lưu cho \"{displayName}\". Bạn sẽ thấy một lời nhắc hệ thống xin phép truy cập chuỗi khóa. Điều đó là bình thường, nên hãy bấm Cho phép.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
     "sourceHash": "6bb2c1d"
   },

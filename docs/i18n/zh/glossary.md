@@ -117,7 +117,12 @@ settings pass).
 - **authentication failed** · `无法通过身份验证` · style guide (no bare 失败/错误); macOS "authentication needed" is
   `需要认证` (CS203) · `high`
 - **password / username** · `密码` / `用户名` · macOS (N15 密码), Microsoft 用户名 (NOT MS password→`访问代码`) · `confirmed`
-- **Keychain** · `钥匙串` · macOS standard · `confirmed`
+- **Keychain** -> `钥匙串` · macOS Chinese (Simplified) · `high` · the localized Apple FEATURE name (Apple localizes it
+  per-OS, so Cmdr uses the term the user sees, not the English "Keychain"); same Decision-1 rule as Quick Look. The
+  credential store is `钥匙串` (`macOS Keychain` → `macOS 钥匙串`); the **Keychain Access** app is `钥匙串访问`. (The
+  Finder/AppKit/SystemSettings reference pile doesn't surface the term — those apps don't mention Keychain — but `钥匙串`
+  / `钥匙串访问` are the established Apple Chinese (Simplified) names.) Supersedes any earlier "keep Keychain verbatim"
+  note.
 - **host / hostname** · `主机` / `主机名` · Microsoft TBX · `high`
 - **disconnect** · `断开连接` · macOS (N200/MR10.1) · `confirmed`
 - **read-only volume** · `只读宗卷` · macOS FI12 `read-only` → 只读, + 宗卷 · `high`

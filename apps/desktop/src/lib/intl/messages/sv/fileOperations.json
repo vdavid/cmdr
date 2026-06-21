@@ -466,5 +466,49 @@
   "fileOperations.errorDialog.close": "Stäng",
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Mappnamn får inte innehålla ”/” eller nolltecken} other {Filnamn får inte innehålla ”/” eller nolltecken}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "d84512c"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {Mappnamn får inte vara tomt} other {Filnamn får inte vara tomt}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "e6acb43"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Mappnamnet är för långt ({byteCount}/{maxBytes} byte)} other {Filnamnet är för långt ({byteCount}/{maxBytes} byte)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "Den fullständiga sökvägen är för lång ({byteCount}/{maxBytes} byte)",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "Det går inte att ändra filtillägget (var ”{oldExt}”)",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "43c2dc1"
+  },
+  "fileOperations.validation.conflict": "”{name}” finns redan i den här mappen",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "ba13237"
+  },
+  "fileOperations.validation.pathEmpty": "Sökvägen får inte vara tom",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "348eb60"
+  },
+  "fileOperations.validation.pathNotAbsolute": "Sökvägen måste vara absolut (börja med /)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "Sökvägen innehåller ett nolltecken",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "Sökvägen är för lång ({byteCount}/{maxBytes} byte)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "Ett mappnamn i sökvägen är för långt ({byteCount}/{maxBytes} byte)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
   }
 }

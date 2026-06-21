@@ -443,7 +443,7 @@
   "@fileExplorer.network.login.passwordPlaceholder": {
     "sourceHash": "7014aff"
   },
-  "fileExplorer.network.login.rememberInKeychain": "Onthoud in Keychain",
+  "fileExplorer.network.login.rememberInKeychain": "Onthoud in Sleutelhanger",
   "@fileExplorer.network.login.rememberInKeychain": {
     "sourceHash": "3fd7384"
   },
@@ -487,7 +487,7 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "aceb696"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "Verwijder opgeslagen wachtwoord uit Keychain",
+  "fileExplorer.network.share.forgetPasswordTooltip": "Verwijder opgeslagen wachtwoord uit Sleutelhanger",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
@@ -1091,7 +1091,7 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "1cb249f"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan het wachtwoord hergebruiken dat macOS al voor ‘{displayName}’ heeft opgeslagen. Je krijgt een systeemvenster te zien dat om toegang tot Keychain vraagt. Dat is normaal, dus klik op Sta toe.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan het wachtwoord hergebruiken dat macOS al voor ‘{displayName}’ heeft opgeslagen. Je krijgt een systeemvenster te zien dat om toegang tot Sleutelhanger vraagt. Dat is normaal, dus klik op Sta toe.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
     "sourceHash": "6bb2c1d"
   },

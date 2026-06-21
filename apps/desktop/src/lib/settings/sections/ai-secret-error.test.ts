@@ -1,9 +1,19 @@
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, beforeAll, afterAll } from 'vitest'
+import { _setLocaleForTests } from '$lib/intl/locale'
 import { describeSecretError } from './ai-secret-error'
 
 function setUserAgent(value: string): void {
   Object.defineProperty(navigator, 'userAgent', { value, configurable: true })
 }
+
+// The titles/bodies resolve through the i18n catalog (`tString`); pin the base
+// locale so the asserted en copy is deterministic.
+beforeAll(() => {
+  _setLocaleForTests('en-US')
+})
+afterAll(() => {
+  _setLocaleForTests(null)
+})
 
 beforeEach(() => {
   // Default to macOS for tests; overridden case-by-case below. `isMacOS()` reads `userAgent`.

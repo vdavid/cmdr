@@ -374,5 +374,29 @@
   "ai.local.deleteButton": "Xóa",
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
+  },
+  "ai.secretError.keychainTitle": "{op, select, save {Không thể lưu khóa API của bạn: chuỗi khóa macOS đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: chuỗi khóa macOS đã từ chối quyền truy cập}}",
+  "@ai.secretError.keychainTitle": {
+    "sourceHash": "ec77588"
+  },
+  "ai.secretError.keychainBody": "{op, select, save {Mở Truy cập chuỗi khóa và kiểm tra mục \"Cmdr\", hoặc xóa mục đó rồi thử lưu lại.} other {Mở Truy cập chuỗi khóa, tìm mục \"Cmdr\", cấp quyền truy cập, hoặc xóa mục đó rồi nhập lại khóa của bạn.}}",
+  "@ai.secretError.keychainBody": {
+    "sourceHash": "2a0fe5e"
+  },
+  "ai.secretError.keyringTitle": "{op, select, save {Không thể lưu khóa API của bạn: kho khóa hệ thống đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: kho khóa hệ thống đã từ chối quyền truy cập}}",
+  "@ai.secretError.keyringTitle": {
+    "sourceHash": "8c9df45"
+  },
+  "ai.secretError.keyringBody": "Mở khóa kho khóa của bạn (ứng dụng Passwords / Keyrings) rồi thử lại.",
+  "@ai.secretError.keyringBody": {
+    "sourceHash": "023bde3"
+  },
+  "ai.secretError.genericTitle": "{op, select, save {Không thể lưu khóa API của bạn.} other {Không thể đọc khóa API đã lưu của bạn.}}",
+  "@ai.secretError.genericTitle": {
+    "sourceHash": "a93c4f0"
+  },
+  "ai.secretError.genericBody": "Kiểm tra xem kho khóa hệ thống của bạn có sẵn sàng không, rồi thử lại. Nếu vẫn tiếp diễn, hãy khởi động lại ứng dụng.",
+  "@ai.secretError.genericBody": {
+    "sourceHash": "2ee417d"
   }
 }

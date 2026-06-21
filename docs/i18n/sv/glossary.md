@@ -226,6 +226,18 @@ and pure-placeholder values ({mode} · {age}, {prefix} {valueText} {unit}, etc.)
   Quick-Look mentions. The generic "quick preview"/"quick view" descriptors in `fileExplorer.quickLookHint.*` stay
   generic ("snabbtitt"), mirroring the EN source's deliberate non-feature-name wording there.
 
+- **Keychain (the credential store) -> `Nyckelring`; Keychain Access (the app) -> `Nyckelhanterare`** · macOS Swedish ·
+  `high`. The localized Apple FEATURE name, not a brand kept verbatim (same Decision-1 principle as Quick Look above; see
+  `docs/guides/i18n-translation.md` § Term-choice principles). Apple localizes both: the store noun is "Nyckelring"
+  (definite "nyckelringen"), the app is "Nyckelhanterare" (verified in `/System/Library/CoreServices/Applications/Keychain
+  Access.app/Contents/Resources/sv.lproj` — `InfoPlist.loctable` `CFBundleDisplayName` = "Nyckelhanterare";
+  `Localizable.loctable`/`MainMenu.loctable` use "Nyckelring"/"nyckelringen" throughout). Applied per sense: the store
+  noun for "macOS Keychain denied access" → "macOS Nyckelring" (`ai.secretError.keychainTitle`), "Remember in Keychain" →
+  "Kom ihåg i nyckelringen", "Remove saved password from Keychain" → "…från nyckelringen", "allow Keychain access" →
+  "åtkomst till nyckelringen"; the app name for "Open Keychain Access" → "Öppna Nyckelhanterare"
+  (`ai.secretError.keychainBody`). Supersedes the old "keep Keychain verbatim" note. Not on the enforced
+  don't-translate brand list.
+
 From the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.json` + `mtp.json` + `ui.json` pass
 (2026-06-21, wave 1 batch 2). Reuses all terms above; new ones:
 

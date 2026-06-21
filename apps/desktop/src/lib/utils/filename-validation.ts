@@ -1,5 +1,7 @@
 /** Client-side filename validation for instant keystroke feedback. */
 
+import { tString } from '$lib/intl/messages.svelte'
+
 /** Defaults match macOS. Call initPathLimits() at startup to get platform-specific values from the backend. */
 let maxNameBytes = 255
 let maxPathBytes = 1024
@@ -24,14 +26,18 @@ export interface ValidationResult {
 
 const OK_RESULT: ValidationResult = { severity: 'ok', message: '' }
 
-function nameLabel(isDir: boolean): string {
-  return isDir ? 'Folder name' : 'Filename'
+/** ICU `select` discriminator for the file-vs-folder message variants. */
+function nameKind(isDir: boolean): 'file' | 'folder' {
+  return isDir ? 'folder' : 'file'
 }
 
 /** Validates a file or dir name for disallowed characters. Operates on trimmed value. */
 export function validateDisallowedChars(name: string, isDir = false): ValidationResult {
   if (DISALLOWED_CHARS_REGEX.test(name)) {
-    return { severity: 'error', message: `${nameLabel(isDir)} can't contain "/" or null characters` }
+    return {
+      severity: 'error',
+      message: tString('fileOperations.validation.disallowedChars', { kind: nameKind(isDir) }),
+    }
   }
   return OK_RESULT
 }
@@ -39,7 +45,7 @@ export function validateDisallowedChars(name: string, isDir = false): Validation
 /** Validates that a file or dir name is not empty after trimming. */
 export function validateNotEmpty(name: string, isDir = false): ValidationResult {
   if (name.trim().length === 0) {
-    return { severity: 'error', message: `${nameLabel(isDir)} can't be empty` }
+    return { severity: 'error', message: tString('fileOperations.validation.empty', { kind: nameKind(isDir) }) }
   }
   return OK_RESULT
 }
@@ -50,7 +56,11 @@ export function validateNameLength(name: string, isDir = false): ValidationResul
   if (byteLength >= maxNameBytes) {
     return {
       severity: 'error',
-      message: `${nameLabel(isDir)} is too long (${String(byteLength)}/${String(maxNameBytes)} bytes)`,
+      message: tString('fileOperations.validation.nameTooLong', {
+        kind: nameKind(isDir),
+        byteCount: String(byteLength),
+        maxBytes: String(maxNameBytes),
+      }),
     }
   }
   return OK_RESULT
@@ -63,7 +73,10 @@ export function validatePathLength(parentPath: string, name: string): Validation
   if (byteLength >= maxPathBytes) {
     return {
       severity: 'error',
-      message: `Full path is too long (${String(byteLength)}/${String(maxPathBytes)} bytes)`,
+      message: tString('fileOperations.validation.pathTooLong', {
+        byteCount: String(byteLength),
+        maxBytes: String(maxPathBytes),
+      }),
     }
   }
   return OK_RESULT
@@ -131,7 +144,10 @@ export function validateExtensionChange(
 
   if (allowExtensionChanges === 'no') {
     const oldExt = getExtension(oldName)
-    return { severity: 'error', message: `Changing the file extension isn't allowed (was "${oldExt}")` }
+    return {
+      severity: 'error',
+      message: tString('fileOperations.validation.extensionChangeBlocked', { oldExt }),
+    }
   }
   // 'ask': no error, the dialog will handle it on save
   return OK_RESULT
@@ -150,7 +166,7 @@ export function validateConflict(newName: string, siblingNames: string[], origin
     if (sibling.toLowerCase() === trimmedLower) {
       // Case-only rename of the same file: no warning
       if (sibling.toLowerCase() === originalLower) continue
-      return { severity: 'warning', message: `"${trimmed}" already exists in this folder` }
+      return { severity: 'warning', message: tString('fileOperations.validation.conflict', { name: trimmed }) }
     }
   }
   return OK_RESULT
@@ -161,15 +177,15 @@ export function validateDirectoryPath(path: string): ValidationResult {
   const trimmed = path.trim()
 
   if (trimmed.length === 0) {
-    return { severity: 'error', message: "Path can't be empty" }
+    return { severity: 'error', message: tString('fileOperations.validation.pathEmpty') }
   }
 
   if (!trimmed.startsWith('/')) {
-    return { severity: 'error', message: 'Path must be absolute (start with /)' }
+    return { severity: 'error', message: tString('fileOperations.validation.pathNotAbsolute') }
   }
 
   if (trimmed.includes('\0')) {
-    return { severity: 'error', message: 'Path contains a null character' }
+    return { severity: 'error', message: tString('fileOperations.validation.pathNullChar') }
   }
 
   const encoder = new TextEncoder()
@@ -177,7 +193,10 @@ export function validateDirectoryPath(path: string): ValidationResult {
   if (totalBytes >= maxPathBytes) {
     return {
       severity: 'error',
-      message: `Path is too long (${String(totalBytes)}/${String(maxPathBytes)} bytes)`,
+      message: tString('fileOperations.validation.pathTotalTooLong', {
+        byteCount: String(totalBytes),
+        maxBytes: String(maxPathBytes),
+      }),
     }
   }
 
@@ -187,7 +206,10 @@ export function validateDirectoryPath(path: string): ValidationResult {
     if (segmentBytes >= maxNameBytes) {
       return {
         severity: 'error',
-        message: `A folder name in the path is too long (${String(segmentBytes)}/${String(maxNameBytes)} bytes)`,
+        message: tString('fileOperations.validation.pathSegmentTooLong', {
+          byteCount: String(segmentBytes),
+          maxBytes: String(maxNameBytes),
+        }),
       }
     }
   }

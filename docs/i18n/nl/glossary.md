@@ -156,6 +156,11 @@ From the `onboarding.json` + `fileOperations.json` pass (mined `_ignored/i18n/nl
 - provider (cloud AI) → aanbieder · matches settings.json glossary above · high
 - API key → API-sleutel · standard NL compound · high
 - model (AI) → model · kept · high
+- Keychain (macOS credential store) → Sleutelhanger · macOS Dutch · high — Apple FEATURE name Apple localizes per-OS (same Decision-1 principle as Quick Look), so use the localized term, NOT the English "Keychain". This SUPERSEDES the old "keep Keychain verbatim" rule; "Keychain" is NOT on the don't-translate brand list. The store noun is "Sleutelhanger" (app name "Sleutelhangertoegang" below). Apple's Finder/AppKit/SystemSettings pile dump lacks the Keychain Access strings, but "Sleutelhanger" is Apple's established Dutch macOS term, and Microsoft's "Windows Sleutelhanger" independently confirms it.
+- Keychain Access (macOS app) → Sleutelhangertoegang · macOS Dutch · high — Apple's Dutch name for the Keychain Access.app; use it verbatim as the app label.
+- (system) keyring (non-macOS credential store) → sleutelhanger · same Dutch noun macOS uses; the "Passwords / Keyrings app" generic gets "Wachtwoorden / Sleutelhangers" · tentative
+- null character → null-teken · MS ("null character"→"null-teken") · high
+- absolute path → absoluut pad · MS ("absolute path"→"absoluut pad"); "Pad moet absoluut zijn (begint met /)" · high
 - usage statistics → gebruiksstatistieken · standard NL compound · high
 - feedback → feedback · loanword kept (standard NL UI) · high
 - notification (toast) → melding · matches settings.json glossary above · high

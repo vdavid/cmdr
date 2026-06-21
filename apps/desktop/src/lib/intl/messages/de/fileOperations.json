@@ -466,5 +466,49 @@
   "fileOperations.errorDialog.close": "Schließen",
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Der Ordnername darf kein „/“ und keine Nullzeichen enthalten} other {Der Dateiname darf kein „/“ und keine Nullzeichen enthalten}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "d84512c"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {Der Ordnername darf nicht leer sein} other {Der Dateiname darf nicht leer sein}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "e6acb43"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Der Ordnername ist zu lang ({byteCount}/{maxBytes} Bytes)} other {Der Dateiname ist zu lang ({byteCount}/{maxBytes} Bytes)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "Der vollständige Pfad ist zu lang ({byteCount}/{maxBytes} Bytes)",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "Das Ändern der Dateiendung ist nicht erlaubt (war „{oldExt}“)",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "43c2dc1"
+  },
+  "fileOperations.validation.conflict": "„{name}“ existiert bereits in diesem Ordner",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "ba13237"
+  },
+  "fileOperations.validation.pathEmpty": "Der Pfad darf nicht leer sein",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "348eb60"
+  },
+  "fileOperations.validation.pathNotAbsolute": "Der Pfad muss absolut sein (mit / beginnen)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "Der Pfad enthält ein Nullzeichen",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "Der Pfad ist zu lang ({byteCount}/{maxBytes} Bytes)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "Ein Ordnername im Pfad ist zu lang ({byteCount}/{maxBytes} Bytes)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
   }
 }

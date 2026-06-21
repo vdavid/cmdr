@@ -466,5 +466,49 @@
   "fileOperations.errorDialog.close": "Bezárás",
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {A mappa neve nem tartalmazhat „/” vagy null karaktert} other {A fájlnév nem tartalmazhat „/” vagy null karaktert}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "d84512c"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {A mappa neve nem lehet üres} other {A fájlnév nem lehet üres}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "e6acb43"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {A mappa neve túl hosszú ({byteCount}/{maxBytes} bájt)} other {A fájlnév túl hosszú ({byteCount}/{maxBytes} bájt)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "A teljes útvonal túl hosszú ({byteCount}/{maxBytes} bájt)",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "A fájlkiterjesztés módosítása nem engedélyezett (eredeti: „{oldExt}”)",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "43c2dc1"
+  },
+  "fileOperations.validation.conflict": "Már létezik „{name}” nevű elem ebben a mappában",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "ba13237"
+  },
+  "fileOperations.validation.pathEmpty": "Az útvonal nem lehet üres",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "348eb60"
+  },
+  "fileOperations.validation.pathNotAbsolute": "Az útvonalnak abszolútnak kell lennie (/ jellel kell kezdődnie)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "Az útvonal null karaktert tartalmaz",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "Az útvonal túl hosszú ({byteCount}/{maxBytes} bájt)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "Az útvonalban egy mappanév túl hosszú ({byteCount}/{maxBytes} bájt)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
   }
 }

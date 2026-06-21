@@ -374,5 +374,29 @@
   "ai.local.deleteButton": "Eliminar",
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
+  },
+  "ai.secretError.keychainTitle": "{op, select, save {No se pudo guardar tu clave de API: el Llavero de macOS denegó el acceso} other {No se pudo leer tu clave de API guardada: el Llavero de macOS denegó el acceso}}",
+  "@ai.secretError.keychainTitle": {
+    "sourceHash": "ec77588"
+  },
+  "ai.secretError.keychainBody": "{op, select, save {Abre Acceso a Llaveros y revisa la entrada “Cmdr”, o elimínala e intenta guardar de nuevo.} other {Abre Acceso a Llaveros, busca la entrada “Cmdr”, concede el acceso o elimínala y vuelve a introducir tu clave.}}",
+  "@ai.secretError.keychainBody": {
+    "sourceHash": "2a0fe5e"
+  },
+  "ai.secretError.keyringTitle": "{op, select, save {No se pudo guardar tu clave de API: el llavero del sistema denegó el acceso} other {No se pudo leer tu clave de API guardada: el llavero del sistema denegó el acceso}}",
+  "@ai.secretError.keyringTitle": {
+    "sourceHash": "8c9df45"
+  },
+  "ai.secretError.keyringBody": "Desbloquea tu llavero (la app de Contraseñas o Llaveros) e inténtalo de nuevo.",
+  "@ai.secretError.keyringBody": {
+    "sourceHash": "023bde3"
+  },
+  "ai.secretError.genericTitle": "{op, select, save {No se pudo guardar tu clave de API.} other {No se pudo leer tu clave de API guardada.}}",
+  "@ai.secretError.genericTitle": {
+    "sourceHash": "a93c4f0"
+  },
+  "ai.secretError.genericBody": "Comprueba que el llavero del sistema esté disponible y vuelve a intentarlo. Si continúa, reinicia la app.",
+  "@ai.secretError.genericBody": {
+    "sourceHash": "2ee417d"
   }
 }

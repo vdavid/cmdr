@@ -50,7 +50,7 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 - favorites → Favoriten · macOS Finder ("Favoriten", "Keine Favoriten") · high
 - pinned (tab) → fixiert; "pin a tab" → "Tab fixieren" · macOS ("Tab fixieren", "fixierter Tab") · high
 - remove → entfernen · macOS ("Entfernen") · high
-- keychain → Keychain (kept verbatim) · the en source's @key descriptions instruct keeping the English brand name; macOS DE would say "Schlüsselbund" generically, but Cmdr keeps "Keychain". The local-store fallback string uses "System-Schlüsselbund" for the generic OS keyring · high
+- Keychain → Schlüsselbund (store) / Schlüsselbundverwaltung (the "Keychain Access" app) · macOS German · high · localized Apple feature name, not a verbatim brand (per i18n-translation.md § Term-choice principles, same rule as Quick Look). Apple ships the credential store as "Schlüsselbund" and the app as "Schlüsselbundverwaltung" in German macOS, so Cmdr shows those. The local-store fallback string uses "System-Schlüsselbund" for the generic OS keyring
 - file list → Dateiliste · style guide (listing → Dateiliste); used for the file-list aria label · high
 - file extension → Endung; tight "Ext" column header → "Erw." (abbrev. of Erweiterung) · standard DE ("Endung" common term; "Erw." the compact column form) · high
 - disk usage → Speicherbelegung · standard DE compound (Speicher + Belegung); macOS uses "Speicherplatz" for free space · high

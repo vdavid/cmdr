@@ -318,7 +318,7 @@ describe('CloudProviderSetup', () => {
     await settle()
     if (!mounted) throw new Error('not mounted')
     // The describeSecretError title for a generic failure starts with "Couldn't read".
-    expect(mounted.target.textContent).toContain('read saved API key')
+    expect(mounted.target.textContent).toContain('read your saved API key')
   })
 
   it('a secret store save failure surfaces an inline error', async () => {
@@ -331,7 +331,7 @@ describe('CloudProviderSetup', () => {
     keyInput.value = 'sk-cant-save'
     keyInput.dispatchEvent(new Event('input', { bubbles: true }))
     await advanceTimers(500)
-    expect(mounted.target.textContent).toContain('save API key')
+    expect(mounted.target.textContent).toContain('save your API key')
   })
 
   it('typing into the combobox filter updates the saved model', async () => {

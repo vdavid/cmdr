@@ -44,6 +44,7 @@ UI section names referenced (keep consistent in other files):
 - Settings → Réglages · macOS modern naming (per style guide) · high
 - Keyboard shortcuts (Settings section) → Raccourcis clavier · macOS convention · high
 - Quick Look → Coup d''œil · macOS French · high — Apple FEATURE name that Apple localizes per-OS, so use the term the user sees in their French Finder, NOT the English "Quick Look". The lowercase generic action "quick view" → "aperçu rapide".
+- Keychain (credential store) → trousseau; Keychain Access (app) → Trousseaux d''accès · macOS French · high — Apple FEATURE name that Apple localizes per-OS (same principle as Quick Look), so use the term the user sees in their French macOS, NOT the English "Keychain". "Keychain" is NOT on the don''t-translate brand list; any earlier "keep Keychain verbatim" note is superseded by this. The store sense ("saved in/access to the Keychain") → "le trousseau"; the app name ("open Keychain Access") → "Trousseaux d''accès". `ai.secretError.*` already uses "Trousseau macOS" / "Trousseaux d''accès"; `fileExplorer` store-sense strings use "le trousseau".
 
 Settled during the `settings` pass (2026-06-21):
 

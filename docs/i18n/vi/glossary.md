@@ -40,7 +40,7 @@ GNOME Nautilus Tier 3); macOS wins ties since Cmdr is a macOS app:
 - **eject: `tháo`** · macOS Finder/AppKit ("Tháo", `NSNavEjectButton` → "tháo"). Overrides the style guide's tentative "đẩy ra" — macOS Tier 1 says "tháo". `high`.
 - **credentials: `thông tin đăng nhập`** · MS terminology. `high`.
 - **guest: `khách`** · MS terminology, macOS. `high`.
-- **Keychain: `Keychain`** · kept verbatim (macOS proper noun). `high`.
+- **Keychain -> `chuỗi khóa`; Keychain Access (the app) -> `Truy cập chuỗi khóa`** · macOS Vietnamese · `high`. The localized Apple feature name: Apple localizes "Keychain" as the common noun "chuỗi khóa" and the app as "Truy cập chuỗi khóa" (Apple vi support guide, `support.apple.com/vi-vn/guide/keychain-access`, verified 2026-06-21). Not kept verbatim because Apple does localize it for vi macOS users (Decision 1; same rule as Quick Look). Supersedes the old "keep Keychain verbatim" note. Applied to `ai.secretError.keychainTitle/Body` and the three `fileExplorer.network`/`navigation` strings referencing the credential store.
 - **favorites / favorite: `mục ưa thích`** · macOS Finder ("Mục ưa thích", "Máy chủ ưa thích"). `high`.
 - **tab (UI tab): `thẻ`** · macOS Finder ("Thẻ ưa thích"), GNOME ("thẻ mới"). Resolves the style guide's tentative. `high`.
 - **refresh / rescan: `làm mới` / `quét lại`** · refresh → MS "làm mới"; rescan → "quét lại" (scan = "quét", natural). `high` / `tentative`.

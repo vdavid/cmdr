@@ -603,5 +603,59 @@
     "description": "Label of the confirm-delete button in the delete-model dialog (the destructive action).",
     "screenshot": "settings-ai.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
+  },
+
+  "ai.secretError.keychainTitle": "{op, select, save {Couldn''t save your API key: macOS Keychain denied access} other {Couldn''t read your saved API key: macOS Keychain denied access}}",
+  "@ai.secretError.keychainTitle": {
+    "description": "Title of an error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when saving or reading the API key fails because the macOS Keychain refused access. \"macOS Keychain\" and \"Keychain\" are the proper name of the Apple credential store; keep them as Apple names them in your language (Apple ships a localized Keychain Access app, so use that localized name). Write each branch as a complete, natural sentence in your language rather than a shared prefix plus a clause.",
+    "placeholders": {
+      "op": "which action failed: \"save\" when storing a new key, anything else when reading the stored key"
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
+  },
+
+  "ai.secretError.keychainBody": "{op, select, save {Open Keychain Access and check the \"Cmdr\" entry, or delete it and try saving again.} other {Open Keychain Access, find the \"Cmdr\" entry, grant access, or delete it and re-enter your key.}}",
+  "@ai.secretError.keychainBody": {
+    "description": "Guidance shown below the macOS-Keychain-denied error in the cloud-AI provider settings, telling the user how to fix it via Apple''s Keychain Access app. \"Keychain Access\" is the proper name of the macOS app (Apple ships it localized; use that localized name). \"Cmdr\" is the app name (a Keychain entry label) and must NOT be translated. Write each branch as a natural full sentence.",
+    "placeholders": {
+      "op": "which action failed: \"save\" when storing a new key, anything else when reading the stored key"
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
+  },
+
+  "ai.secretError.keyringTitle": "{op, select, save {Couldn''t save your API key: your system keyring denied access} other {Couldn''t read your saved API key: your system keyring denied access}}",
+  "@ai.secretError.keyringTitle": {
+    "description": "Title of an error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) on non-macOS systems when saving or reading the API key fails because the OS keyring (credential store) refused access. \"keyring\" is the generic term for the system credential store (on Linux, GNOME Keyring / KWallet); use whatever your platform calls it. Write each branch as a complete, natural sentence.",
+    "placeholders": {
+      "op": "which action failed: \"save\" when storing a new key, anything else when reading the stored key"
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
+  },
+
+  "ai.secretError.keyringBody": "Unlock your keyring (Passwords / Keyrings app) and try again.",
+  "@ai.secretError.keyringBody": {
+    "description": "Guidance shown below the system-keyring-denied error (non-macOS), telling the user to unlock their OS credential store. \"Passwords\" and \"Keyrings\" name the typical apps that manage it; use the names common on your platform.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
+  },
+
+  "ai.secretError.genericTitle": "{op, select, save {Couldn''t save your API key.} other {Couldn''t read your saved API key.}}",
+  "@ai.secretError.genericTitle": {
+    "description": "Title of a fall-back error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when saving or reading the API key fails for a reason that isn''t an explicit access denial. Write each branch as a complete, natural sentence.",
+    "placeholders": {
+      "op": "which action failed: \"save\" when storing a new key, anything else when reading the stored key"
+    },
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
+  },
+
+  "ai.secretError.genericBody": "Check that your system keyring is available, then try again. If it persists, restart the app.",
+  "@ai.secretError.genericBody": {
+    "description": "Guidance shown below the fall-back save/read error, suggesting the user verify their OS credential store (keyring) is available and restart the app if the problem continues. \"keyring\" is the generic term for the system credential store; use whatever your platform calls it.",
+    "screenshot": "settings-ai.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI section pictured here (and inline near AI actions). This shows the AI settings area for context."
   }
 }

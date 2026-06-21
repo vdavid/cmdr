@@ -443,7 +443,7 @@
   "@fileExplorer.network.login.passwordPlaceholder": {
     "sourceHash": "7014aff"
   },
-  "fileExplorer.network.login.rememberInKeychain": "Megjegyzés a Keychainben",
+  "fileExplorer.network.login.rememberInKeychain": "Megjegyzés a kulcskarikában",
   "@fileExplorer.network.login.rememberInKeychain": {
     "sourceHash": "3fd7384"
   },
@@ -487,7 +487,7 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "aceb696"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "Mentett jelszó eltávolítása a Keychainből",
+  "fileExplorer.network.share.forgetPasswordTooltip": "Mentett jelszó eltávolítása a kulcskarikából",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
@@ -1091,7 +1091,7 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "1cb249f"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "A Cmdr újra fel tudja használni a macOS által „{displayName}” számára már elmentett jelszót. Megjelenik egy rendszerüzenet, amely a Keychainhez való hozzáférést kéri. Ez így van rendjén, ezért kattints az Engedélyezésre.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "A Cmdr újra fel tudja használni a macOS által „{displayName}” számára már elmentett jelszót. Megjelenik egy rendszerüzenet, amely a kulcskarikához való hozzáférést kéri. Ez így van rendjén, ezért kattints az Engedélyezésre.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
     "sourceHash": "6bb2c1d"
   },

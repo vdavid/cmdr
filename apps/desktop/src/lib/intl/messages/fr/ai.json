@@ -374,5 +374,29 @@
   "ai.local.deleteButton": "Supprimer",
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
+  },
+  "ai.secretError.keychainTitle": "{op, select, save {Impossible d''enregistrer votre clé API : le Trousseau macOS a refusé l''accès} other {Impossible de lire votre clé API enregistrée : le Trousseau macOS a refusé l''accès}}",
+  "@ai.secretError.keychainTitle": {
+    "sourceHash": "ec77588"
+  },
+  "ai.secretError.keychainBody": "{op, select, save {Ouvrez Trousseaux d''accès et vérifiez l''entrée « Cmdr », ou supprimez-la puis réessayez d''enregistrer.} other {Ouvrez Trousseaux d''accès, trouvez l''entrée « Cmdr », autorisez l''accès, ou supprimez-la puis saisissez de nouveau votre clé.}}",
+  "@ai.secretError.keychainBody": {
+    "sourceHash": "2a0fe5e"
+  },
+  "ai.secretError.keyringTitle": "{op, select, save {Impossible d''enregistrer votre clé API : le trousseau du système a refusé l''accès} other {Impossible de lire votre clé API enregistrée : le trousseau du système a refusé l''accès}}",
+  "@ai.secretError.keyringTitle": {
+    "sourceHash": "8c9df45"
+  },
+  "ai.secretError.keyringBody": "Déverrouillez votre trousseau (application Mots de passe ou Trousseaux) puis réessayez.",
+  "@ai.secretError.keyringBody": {
+    "sourceHash": "023bde3"
+  },
+  "ai.secretError.genericTitle": "{op, select, save {Impossible d''enregistrer votre clé API.} other {Impossible de lire votre clé API enregistrée.}}",
+  "@ai.secretError.genericTitle": {
+    "sourceHash": "a93c4f0"
+  },
+  "ai.secretError.genericBody": "Vérifiez que le trousseau de votre système est disponible, puis réessayez. Si le problème persiste, redémarrez l''application.",
+  "@ai.secretError.genericBody": {
+    "sourceHash": "2ee417d"
   }
 }

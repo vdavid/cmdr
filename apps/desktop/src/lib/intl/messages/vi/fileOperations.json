@@ -466,5 +466,49 @@
   "fileOperations.errorDialog.close": "Đóng",
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Tên thư mục không được chứa \"/\" hoặc ký tự null} other {Tên tệp không được chứa \"/\" hoặc ký tự null}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "d84512c"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {Tên thư mục không được để trống} other {Tên tệp không được để trống}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "e6acb43"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Tên thư mục quá dài ({byteCount}/{maxBytes} byte)} other {Tên tệp quá dài ({byteCount}/{maxBytes} byte)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "Đường dẫn đầy đủ quá dài ({byteCount}/{maxBytes} byte)",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "Không được phép thay đổi phần mở rộng của tệp (trước là \"{oldExt}\")",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "43c2dc1"
+  },
+  "fileOperations.validation.conflict": "\"{name}\" đã tồn tại trong thư mục này",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "ba13237"
+  },
+  "fileOperations.validation.pathEmpty": "Đường dẫn không được để trống",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "348eb60"
+  },
+  "fileOperations.validation.pathNotAbsolute": "Đường dẫn phải là tuyệt đối (bắt đầu bằng /)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "Đường dẫn chứa một ký tự null",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "Đường dẫn quá dài ({byteCount}/{maxBytes} byte)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "Một tên thư mục trong đường dẫn quá dài ({byteCount}/{maxBytes} byte)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
   }
 }
