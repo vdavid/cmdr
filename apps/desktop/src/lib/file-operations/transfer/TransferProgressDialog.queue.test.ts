@@ -338,3 +338,56 @@ describe('TransferProgressDialog auto-queue surfacing', () => {
     expect(cancelWriteOperationMock).not.toHaveBeenCalled()
   })
 })
+
+describe('TransferProgressDialog backgrounded onDestroy stale-read regression', () => {
+  it('Queue does NOT cancel when onQueue synchronously unmounts the modal (the real teardown)', async () => {
+    // The real parent (dialog-state) reacts to `onQueue` by synchronously
+    // unmounting the modal (`showTransferProgressDialog = false`), so `onDestroy`
+    // runs in the SAME synchronous turn `handleQueue` set `backgrounded = true`.
+    // When `backgrounded` was a `$state` rune, that onDestroy read came back STALE
+    // (`false`) during the reactive-scope disposal, the safety-net guard wrongly
+    // passed, and the op was cancelled — the transfer died and the queue window
+    // opened empty. The earlier Queue tests used a no-op `onQueue` + a separate
+    // `unmount()`, so onDestroy ran in a LATER turn where the rune read fine, and
+    // they missed this. Here `onQueue` unmounts inline, reproducing the timing.
+    operationsChangedCb = null
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    let comp: ReturnType<typeof mount> | null = null
+    const onQueue = (): void => {
+      if (comp) void unmount(comp)
+    }
+    comp = mount(TransferProgressDialog, {
+      target,
+      props: {
+        operationType: 'copy',
+        sourcePaths: ['/Users/test/things'],
+        sourceFolderPath: '/Users/test',
+        destinationPath: '/Users/test/dest',
+        direction: 'right',
+        sortColumn: 'name',
+        sortOrder: 'ascending',
+        previewId: null,
+        sourceVolumeId: 'root',
+        destVolumeId: 'root',
+        conflictResolution: 'stop',
+        onComplete: () => {},
+        onCancelled: () => {},
+        onError: () => {},
+        onQueue,
+      },
+    })
+    await flushPromises()
+    emitSnapshot(snapshot('running'))
+    await tick()
+    cancelWriteOperationMock.mockClear()
+
+    queryButton(target, 'Send to the transfer queue')?.click()
+    await flushPromises()
+
+    expect(
+      cancelWriteOperationMock,
+      'a backgrounded op must survive the synchronous modal teardown',
+    ).not.toHaveBeenCalled()
+  })
+})

@@ -275,8 +275,18 @@
     /** True once this op is being managed in the queue window instead of this
      *  modal (the user hit Queue/F2, or the op was auto-queued behind a busy
      *  lane). Suppresses the onDestroy safety-net cancel: backgrounding keeps the
-     *  op running, it must NOT stop it. */
-    let backgrounded = $state(false)
+     *  op running, it must NOT stop it.
+     *
+     *  MUST be a plain `let`, NOT `$state`. `handleQueue` sets this `true` and then
+     *  synchronously unmounts the modal (via `onQueue` → the parent flips
+     *  `showTransferProgressDialog = false`). `onDestroy` reads `backgrounded` to
+     *  decide whether to fire the safety-net cancel — but a `$state` rune read
+     *  during that synchronous reactive-scope disposal returns a STALE `false`,
+     *  so the guard wrongly passes and cancels the just-backgrounded op (the
+     *  transfer dies, the queue window opens empty). A plain variable reads its
+     *  live value in `onDestroy` regardless of disposal. It's never read
+     *  reactively in the template, so it needs no reactivity. Don't convert it back. */
+    let backgrounded = false
     const isPaused = $derived(opStatus === 'paused')
     let pauseInFlight = $state(false)
     // `canPauseOrQueue` is defined below, after `conflictEvent` is declared (it
