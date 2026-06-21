@@ -28,6 +28,9 @@ contract.
 - **`OperationIntent` is a single `AtomicU8` state machine** (`Running → RollingBack/Stopped`, `Stopped` terminal).
   Drive it through the public interface in tests, never `state.intent.store(...)` (bypasses the validation guard). Cancel
   keeps copied files (deletes the last partial); Rollback deletes all copied files in reverse with progress.
+- **Pause is a separate `PauseGate`, orthogonal to `OperationIntent`.** Drivers gate between files AFTER the
+  `is_cancelled` check (cancel-before-destructive ordering); cancel wins (`cancel_*` `wake()`s a parked op). Full rules
+  + gotchas: DETAILS § "Pause / resume".
 - **Stop-mode conflict resolution must store the oneshot sender BEFORE emitting `write-conflict`** (both local-FS and
   volume branches). Emit-first races the take and hangs the recv.
 - **The conflict-dispatch mutex serializes the one human across concurrent/nested merges**; NEVER hold across the file

@@ -611,6 +611,13 @@ where
             };
         }
 
+        // Pause gate: park here (between files, after the cancel check so the
+        // data-safety ordering holds) while the op is paused. Returns
+        // immediately if cancelled — the next loop iteration's `is_cancelled`
+        // check then bails. Mid-file pause is v2; chunk callbacks stay
+        // cancel-only.
+        state.pause_gate.wait_while_paused_sync(&state.intent);
+
         // CRITICAL: pre-skip check is BEFORE any closure invocation. The
         // closure must NEVER see a pre-known-conflict source.
         if pre_skip_paths.contains(source_path) {
@@ -869,6 +876,15 @@ where
                 intent: PostLoopIntent::Cancelled,
             };
         }
+
+        // Pause gate: park here (between files, after the cancel check) while
+        // the op is paused, without blocking an executor thread. Returns
+        // immediately if cancelled — the next iteration's `is_cancelled` bails.
+        // Mid-file pause is v2; chunk callbacks stay cancel-only. The concurrent
+        // `copy_volumes_with_progress` `FuturesUnordered` path has no
+        // between-files boundary and does NOT honor mid-batch pause in v1 (see
+        // transfer/DETAILS.md § "Pause and the concurrent copy path").
+        state.pause_gate.wait_while_paused_async(&state.intent).await;
 
         if pre_skip_paths.contains(source_path) {
             continue;

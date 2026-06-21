@@ -1623,3 +1623,355 @@ async fn driver_future_is_send_across_spawn() {
     uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
+
+// ===========================================================================
+// Pause gate (M2): the driver parks between files while paused
+// ===========================================================================
+//
+// The gate sits immediately AFTER the loop-top `is_cancelled` check in both
+// drivers. These tests prove: (1) while paused, no further sources transfer and
+// no further progress fires; (2) resume continues to completion; (3) a cancel
+// while paused unblocks the gate and ends the loop as Cancelled; (4) pause never
+// perturbs `OperationIntent` (it stays Running). Each source closure throttles
+// (an artificial per-file sleep) so a pause from the controlling task lands
+// mid-loop deterministically.
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn async_driver_parks_while_paused_then_resumes_to_completion() {
+    let op_id = unique_op_id("async-pause-resume");
+    let state = make_state();
+    install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
+
+    let sources = paths(&["/a", "/b", "/c", "/d"]);
+    let transferred = Arc::new(AtomicUsize::new(0));
+
+    let state_drv = Arc::clone(&state);
+    let op = op_id.clone();
+    let transferred_drv = Arc::clone(&transferred);
+    let srcs = sources.clone();
+    let driver = tokio::spawn(async move {
+        let sink = CollectorEventSink::new();
+        let transferred_ref = &transferred_drv;
+        drive_transfer_serial_async(
+            &sink,
+            &state_drv,
+            &op,
+            &srcs,
+            Path::new("/dest"),
+            4,
+            0,
+            0,
+            0,
+            &HashSet::new(),
+            &copy_config(),
+            |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) },
+            |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
+            |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+                let t = Arc::clone(transferred_ref);
+                Box::pin(async move {
+                    // Artificial per-file throttle so the pause lands mid-loop.
+                    tokio::time::sleep(Duration::from_millis(40)).await;
+                    t.fetch_add(1, Ordering::SeqCst);
+                    Ok(TransferOutcome::Transferred { bytes: 0 })
+                })
+            },
+        )
+        .await
+    });
+
+    // Let one or two files transfer, then pause.
+    tokio::time::sleep(Duration::from_millis(60)).await;
+    state.pause_gate.pause();
+    let done_at_pause = transferred.load(Ordering::SeqCst);
+    assert!(
+        done_at_pause >= 1,
+        "at least one file should have transferred pre-pause"
+    );
+    assert!(done_at_pause < 4, "not all files should be done at pause time");
+
+    // The gate parks BETWEEN files, so an already-in-flight file (mid-throttle
+    // when pause landed) may still complete; mid-file pause is v2. After it
+    // drains, the count must hold steady at the next-file boundary. Sample, wait
+    // past several throttle intervals, sample again: the two must match (steady
+    // state reached) and still be short of completion.
+    tokio::time::sleep(Duration::from_millis(120)).await;
+    let steady = transferred.load(Ordering::SeqCst);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(
+        transferred.load(Ordering::SeqCst),
+        steady,
+        "no further sources may transfer once the in-flight file drains and the gate parks"
+    );
+    assert!(steady < 4, "the op must be parked short of completion while paused");
+    assert!(!driver.is_finished(), "the driver must still be parked while paused");
+    // Pause is orthogonal to OperationIntent.
+    assert_eq!(
+        super::super::super::state::load_intent(&state.intent),
+        OperationIntent::Running,
+        "pause must not touch OperationIntent"
+    );
+
+    // Resume → runs to completion.
+    state.pause_gate.resume();
+    let outcome = tokio::time::timeout(Duration::from_secs(5), driver)
+        .await
+        .expect("resumed op must complete")
+        .expect("driver future must be Send");
+    assert!(matches!(outcome.intent, PostLoopIntent::Completed));
+    assert_eq!(
+        transferred.load(Ordering::SeqCst),
+        4,
+        "all sources transfer after resume"
+    );
+
+    uninstall_state(&op_id);
+    unregister_operation_status(&op_id);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn async_driver_cancel_while_paused_unblocks_and_cancels() {
+    let op_id = unique_op_id("async-pause-cancel");
+    let state = make_state();
+    install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
+
+    let sources = paths(&["/a", "/b", "/c", "/d"]);
+    let transferred = Arc::new(AtomicUsize::new(0));
+
+    let state_drv = Arc::clone(&state);
+    let op = op_id.clone();
+    let transferred_drv = Arc::clone(&transferred);
+    let srcs = sources.clone();
+    let driver = tokio::spawn(async move {
+        let sink = CollectorEventSink::new();
+        let transferred_ref = &transferred_drv;
+        drive_transfer_serial_async(
+            &sink,
+            &state_drv,
+            &op,
+            &srcs,
+            Path::new("/dest"),
+            4,
+            0,
+            0,
+            0,
+            &HashSet::new(),
+            &copy_config(),
+            |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) },
+            |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
+            |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+                let t = Arc::clone(transferred_ref);
+                Box::pin(async move {
+                    tokio::time::sleep(Duration::from_millis(40)).await;
+                    t.fetch_add(1, Ordering::SeqCst);
+                    Ok(TransferOutcome::Transferred { bytes: 0 })
+                })
+            },
+        )
+        .await
+    });
+
+    tokio::time::sleep(Duration::from_millis(60)).await;
+    state.pause_gate.pause();
+    tokio::time::sleep(Duration::from_millis(80)).await;
+    let done_at_cancel = transferred.load(Ordering::SeqCst);
+    assert!(done_at_cancel < 4, "not finished while paused");
+
+    // Cancel while paused: the production cancel path flips intent AND wakes the
+    // gate. Drive it through the public cancel API (never store intent directly).
+    super::super::super::state::cancel_write_operation(&op_id, false);
+
+    let outcome = tokio::time::timeout(Duration::from_secs(5), driver)
+        .await
+        .expect("cancel-while-paused must unblock the gate and end the loop")
+        .expect("driver future must be Send");
+    assert!(
+        matches!(outcome.intent, PostLoopIntent::Cancelled),
+        "cancel wins over pause"
+    );
+    // Already-copied files are kept (the driver returns the count it reached);
+    // no further sources transferred after the cancel.
+    assert!(transferred.load(Ordering::SeqCst) <= done_at_cancel + 1);
+    assert_eq!(
+        super::super::super::state::load_intent(&state.intent),
+        OperationIntent::Stopped,
+        "keep-partials cancel lands on Stopped"
+    );
+
+    uninstall_state(&op_id);
+    unregister_operation_status(&op_id);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn sync_driver_parks_while_paused_then_resumes_to_completion() {
+    // The sync driver runs inside spawn_blocking in production; mirror that here
+    // so its condvar park happens on a real OS thread.
+    let op_id = unique_op_id("sync-pause-resume");
+    let state = make_state();
+    install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
+
+    let sources = paths(&["/a", "/b", "/c", "/d"]);
+    let transferred = Arc::new(AtomicUsize::new(0));
+
+    let state_drv = Arc::clone(&state);
+    let op = op_id.clone();
+    let transferred_drv = Arc::clone(&transferred);
+    let driver = tokio::task::spawn_blocking(move || {
+        let sink = CollectorEventSink::new();
+        drive_transfer_serial_sync(
+            &sink,
+            &state_drv,
+            &op,
+            &sources,
+            4,
+            0,
+            0,
+            0,
+            &HashSet::new(),
+            &copy_config(),
+            |_ctx: TransferContext<'_>| {
+                // Synchronous artificial throttle.
+                std::thread::sleep(Duration::from_millis(40));
+                transferred_drv.fetch_add(1, Ordering::SeqCst);
+                Ok(TransferOutcome::Transferred { bytes: 0 })
+            },
+        )
+    });
+
+    tokio::time::sleep(Duration::from_millis(60)).await;
+    state.pause_gate.pause();
+    let done_at_pause = transferred.load(Ordering::SeqCst);
+    assert!((1..4).contains(&done_at_pause));
+
+    // Let the in-flight file drain (mid-file pause is v2), then assert steady.
+    tokio::time::sleep(Duration::from_millis(120)).await;
+    let steady = transferred.load(Ordering::SeqCst);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(
+        transferred.load(Ordering::SeqCst),
+        steady,
+        "sync driver must not advance once the in-flight file drains and the gate parks"
+    );
+    assert!(steady < 4, "sync driver parked short of completion while paused");
+    assert!(!driver.is_finished(), "sync driver parked on the condvar while paused");
+
+    state.pause_gate.resume();
+    let outcome = tokio::time::timeout(Duration::from_secs(5), driver)
+        .await
+        .expect("resumed sync op completes")
+        .expect("spawn_blocking joins");
+    assert!(matches!(outcome.intent, PostLoopIntent::Completed));
+    assert_eq!(transferred.load(Ordering::SeqCst), 4);
+
+    uninstall_state(&op_id);
+    unregister_operation_status(&op_id);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn sync_driver_cancel_while_paused_unblocks_and_cancels() {
+    let op_id = unique_op_id("sync-pause-cancel");
+    let state = make_state();
+    install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
+
+    let sources = paths(&["/a", "/b", "/c", "/d"]);
+    let transferred = Arc::new(AtomicUsize::new(0));
+
+    let state_drv = Arc::clone(&state);
+    let op = op_id.clone();
+    let transferred_drv = Arc::clone(&transferred);
+    let driver = tokio::task::spawn_blocking(move || {
+        let sink = CollectorEventSink::new();
+        drive_transfer_serial_sync(
+            &sink,
+            &state_drv,
+            &op,
+            &sources,
+            4,
+            0,
+            0,
+            0,
+            &HashSet::new(),
+            &copy_config(),
+            |_ctx: TransferContext<'_>| {
+                std::thread::sleep(Duration::from_millis(40));
+                transferred_drv.fetch_add(1, Ordering::SeqCst);
+                Ok(TransferOutcome::Transferred { bytes: 0 })
+            },
+        )
+    });
+
+    tokio::time::sleep(Duration::from_millis(60)).await;
+    state.pause_gate.pause();
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    super::super::super::state::cancel_write_operation(&op_id, false);
+
+    let outcome = tokio::time::timeout(Duration::from_secs(5), driver)
+        .await
+        .expect("cancel-while-paused unblocks the condvar")
+        .expect("spawn_blocking joins");
+    assert!(matches!(outcome.intent, PostLoopIntent::Cancelled));
+    assert_eq!(
+        super::super::super::state::load_intent(&state.intent),
+        OperationIntent::Stopped
+    );
+
+    uninstall_state(&op_id);
+    unregister_operation_status(&op_id);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn concurrent_per_file_callback_is_cancel_only_not_pause_aware() {
+    // The concurrent copy path (`copy_volumes_with_progress` FuturesUnordered)
+    // has no between-files boundary, so v1 does NOT gate it for pause: its
+    // per-file progress callback breaks on cancel but ignores pause. Pin that so
+    // a future change to gate the concurrent path is a deliberate decision, not
+    // an accident. See transfer/DETAILS.md § "Pause and the concurrent copy
+    // path".
+    use super::make_concurrent_per_file_progress;
+    use std::sync::atomic::{AtomicU64, AtomicUsize};
+
+    let op_id = unique_op_id("concurrent-pause-noop");
+    let state = make_state();
+    install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
+    let sink: Arc<dyn super::super::super::types::OperationEventSink> = Arc::new(CollectorEventSink::new());
+
+    let cb = make_concurrent_per_file_progress(
+        Arc::clone(&sink),
+        Arc::clone(&state),
+        op_id.clone(),
+        WriteOperationType::Copy,
+        Some("f".to_string()),
+        Arc::new(AtomicU64::new(0)),
+        Arc::new(AtomicU64::new(0)),
+        Arc::new(AtomicUsize::new(0)),
+        1,
+        100,
+        Arc::new(Mutex::new(std::time::Instant::now())),
+        Duration::from_millis(0),
+    );
+
+    // Paused, not cancelled: the chunk callback must still Continue (pause is a
+    // no-op on the concurrent per-file path in v1).
+    state.pause_gate.pause();
+    assert_eq!(
+        cb(10, 100),
+        std::ops::ControlFlow::Continue(()),
+        "concurrent per-file callback must ignore pause (cancel-only in v1)"
+    );
+
+    // Cancelled: it must Break, exactly as before.
+    super::super::super::state::cancel_write_operation(&op_id, false);
+    assert_eq!(
+        cb(20, 100),
+        std::ops::ControlFlow::Break(()),
+        "concurrent per-file callback must still break on cancel"
+    );
+
+    uninstall_state(&op_id);
+    unregister_operation_status(&op_id);
+}

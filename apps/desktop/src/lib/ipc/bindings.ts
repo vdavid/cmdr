@@ -491,6 +491,24 @@ export const commands = {
    *  "Cancel selected".
    */
   cancelOperations: (operationIds: string[]) => __TAURI_INVOKE<void>('cancel_operations', { operationIds }),
+  /**
+   *  Pauses one Running operation. It parks at the next between-files boundary and
+   *  its lifecycle status flips to `paused` in `operations-changed`. A paused op
+   *  keeps holding its lane slots. Pausing a Queued/Done op is a no-op.
+   */
+  pauseOperation: (operationId: string) => __TAURI_INVOKE<void>('pause_operation', { operationId }),
+  /**
+   *  Resumes one paused operation: it continues from where it parked and its
+   *  status flips back to `running`. Resuming a non-paused op is a no-op.
+   */
+  resumeOperation: (operationId: string) => __TAURI_INVOKE<void>('resume_operation', { operationId }),
+  /**
+   *  Pauses every currently-running operation. Backs the queue window's global
+   *  "Pause all".
+   */
+  pauseAll: () => __TAURI_INVOKE<void>('pause_all'),
+  // Resumes every currently-paused operation. Backs "Resume all".
+  resumeAll: () => __TAURI_INVOKE<void>('resume_all'),
   // Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
   copyBetweenVolumes: (
     sourceVolumeId: string,

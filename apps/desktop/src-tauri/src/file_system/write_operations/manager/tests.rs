@@ -368,6 +368,117 @@ async fn panicking_op_releases_its_lane_without_spawning_next() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn set_paused_flips_running_op_to_paused_and_keeps_its_lane() {
+    // Pausing a Running op flips its status to Paused but does NOT free its lane
+    // slot (a paused Running op still occupies the resource). Resuming flips it
+    // back and still holds the lane.
+    let lane = unique("lane");
+    let op = unique("pause-op");
+    let (started_tx, started_rx) = oneshot::channel();
+    let (rel_tx, rel_rx) = oneshot::channel();
+    manager().spawn_managed(
+        descriptor(&op, vec![&lane]),
+        fresh_state(),
+        gated_deferred(op.clone(), started_tx, rel_rx),
+    );
+    started_rx.await.expect("started");
+    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lane_use_snapshot().get(&lane).copied(), Some(1));
+
+    assert!(manager().set_paused(&op, true), "pausing a Running op flips it");
+    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Paused));
+    assert_eq!(
+        manager().lane_use_snapshot().get(&lane).copied(),
+        Some(1),
+        "a paused Running op must keep holding its lane slot"
+    );
+
+    assert!(manager().set_paused(&op, false), "resuming a Paused op flips it back");
+    assert_eq!(manager().status_of(&op), Some(LifecycleStatus::Running));
+    assert_eq!(manager().lane_use_snapshot().get(&lane).copied(), Some(1));
+
+    let _ = rel_tx.send(());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn paused_running_op_does_not_admit_a_queued_same_lane_op() {
+    // The whole point of keeping the lane while paused: a same-lane queued op
+    // must NOT start (it would fight the paused op on resume).
+    let lane = unique("lane");
+    let op_a = unique("paused-holder");
+    let op_b = unique("waiting");
+
+    let (a_started_tx, a_started_rx) = oneshot::channel();
+    let (a_rel_tx, a_rel_rx) = oneshot::channel();
+    manager().spawn_managed(
+        descriptor(&op_a, vec![&lane]),
+        fresh_state(),
+        gated_deferred(op_a.clone(), a_started_tx, a_rel_rx),
+    );
+    a_started_rx.await.expect("A started");
+
+    let (b_started_tx, b_started_rx) = oneshot::channel();
+    let (b_rel_tx, b_rel_rx) = oneshot::channel();
+    manager().spawn_managed(
+        descriptor(&op_b, vec![&lane]),
+        fresh_state(),
+        gated_deferred(op_b.clone(), b_started_tx, b_rel_rx),
+    );
+    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
+
+    // Pause A. B must still be Queued (A kept the lane) — pause runs no admission.
+    assert!(manager().set_paused(&op_a, true));
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(
+        tokio::time::timeout(Duration::from_millis(100), b_started_rx)
+            .await
+            .is_err(),
+        "a queued same-lane op must not start while the holder is merely paused"
+    );
+    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
+
+    let _ = a_rel_tx.send(());
+    let _ = b_rel_tx.send(());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn set_paused_is_noop_for_queued_or_absent_ops() {
+    // A Queued op can't be "paused" in v1; an absent op is a no-op. Both return
+    // false and leave status untouched.
+    let lane = unique("lane");
+    let op_a = unique("holder");
+    let op_b = unique("queued");
+
+    let (a_started_tx, a_started_rx) = oneshot::channel();
+    let (a_rel_tx, a_rel_rx) = oneshot::channel();
+    manager().spawn_managed(
+        descriptor(&op_a, vec![&lane]),
+        fresh_state(),
+        gated_deferred(op_a.clone(), a_started_tx, a_rel_rx),
+    );
+    a_started_rx.await.expect("A started");
+
+    let (b_started_tx, _b_started_rx) = oneshot::channel();
+    let (_b_rel_tx, b_rel_rx) = oneshot::channel();
+    manager().spawn_managed(
+        descriptor(&op_b, vec![&lane]),
+        fresh_state(),
+        gated_deferred(op_b.clone(), b_started_tx, b_rel_rx),
+    );
+    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
+
+    assert!(!manager().set_paused(&op_b, true), "pausing a Queued op is a no-op");
+    assert_eq!(
+        manager().status_of(&op_b),
+        Some(LifecycleStatus::Queued),
+        "a Queued op stays Queued (not Paused)"
+    );
+    assert!(!manager().set_paused("does-not-exist-zzz", true));
+
+    let _ = a_rel_tx.send(());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn single_op_with_free_lanes_behaves_like_immediate_spawn() {
     // The common case: nothing else running, the op spawns at once and settles
     // cleanly, leaving the registry empty.

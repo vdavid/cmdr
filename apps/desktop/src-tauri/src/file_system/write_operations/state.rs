@@ -6,7 +6,7 @@ use crate::ignore_poison::IgnorePoison;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-use std::sync::{Arc, LazyLock, OnceLock, RwLock};
+use std::sync::{Arc, Condvar, LazyLock, OnceLock, RwLock};
 use std::time::{Duration, Instant};
 
 use super::eta::EtaEstimator;
@@ -58,6 +58,128 @@ pub(crate) fn is_cancelled(intent: &AtomicU8) -> bool {
 }
 
 // ============================================================================
+// Pause gate
+// ============================================================================
+
+/// Cooperative pause gate for a single write operation.
+///
+/// A paused op parks at a between-files boundary (the loop tops in the transfer
+/// drivers and the delete-phase walker loops, gated immediately AFTER the
+/// existing `is_cancelled` check so the data-safety ordering — cancel/skip
+/// before any destructive call — is preserved). It is **orthogonal to**
+/// [`OperationIntent`]: pausing never perturbs the validated `Running →
+/// RollingBack/Stopped` transitions. Cancellation ALWAYS wins over pause: the
+/// wait helpers return the instant cancel is observed, so the existing cancel
+/// path takes over.
+///
+/// Two waiters for two execution shapes:
+/// - `condvar` (+ its `Mutex<()>`) parks the **sync** driver, which runs inside
+///   `tokio::task::spawn_blocking` (a real OS thread — `std::sync::Condvar` is
+///   correct there, and the parked thread is the accepted resource asymmetry
+///   documented in the plan: a paused Running op legitimately holds its lane).
+/// - `notify` parks the **async** volume drivers without blocking an executor
+///   thread (`Notify::notified().await`).
+///
+/// `resume()` wakes both: `notify_all()` on the condvar and `notify_waiters()`
+/// on the `Notify`, so whichever shape is parked unblocks.
+///
+/// Mid-file (per-chunk) pause is out of scope for v1: the per-file progress
+/// callbacks stay cancel-only. A paused op therefore holds only its invisible
+/// `.cmdr-tmp-<uuid>`, never a torn target.
+pub struct PauseGate {
+    paused: AtomicBool,
+    /// Guards nothing real — `Condvar::wait` needs a held `MutexGuard`. The flag
+    /// itself is the `AtomicBool` so non-waiting readers (`is_paused`) and the
+    /// async waiter don't need the lock.
+    condvar_mutex: std::sync::Mutex<()>,
+    condvar: Condvar,
+    notify: tokio::sync::Notify,
+}
+
+impl PauseGate {
+    fn new() -> Self {
+        Self {
+            paused: AtomicBool::new(false),
+            condvar_mutex: std::sync::Mutex::new(()),
+            condvar: Condvar::new(),
+            notify: tokio::sync::Notify::new(),
+        }
+    }
+
+    /// Returns whether the op is currently paused.
+    pub fn is_paused(&self) -> bool {
+        self.paused.load(Ordering::Acquire)
+    }
+
+    /// Sets the paused flag. The op parks at its next loop-boundary gate. A
+    /// no-op-on-double-pause: setting an already-set flag changes nothing.
+    pub fn pause(&self) {
+        self.paused.store(true, Ordering::Release);
+    }
+
+    /// Clears the paused flag and wakes any waiter (sync condvar + async
+    /// notify). Safe to call when not paused (just wakes spurious waiters,
+    /// which re-check the flag and continue).
+    pub fn resume(&self) {
+        self.paused.store(false, Ordering::Release);
+        self.wake();
+    }
+
+    /// Wakes any parked waiter WITHOUT clearing the paused flag. The cancel path
+    /// calls this: a cancel must unblock a paused, parked op so it can observe
+    /// the non-`Running` intent and bail (cancellation wins over pause). The
+    /// waiters re-check `is_cancelled` on wake and return even though `paused`
+    /// is still set. Without this, a paused op parked on the condvar would never
+    /// see a cancel (the cancel path doesn't touch `paused`).
+    pub fn wake(&self) {
+        // Wake the sync waiter under the condvar mutex so a wake that races a
+        // just-about-to-`wait` thread isn't missed (the waiter re-checks under
+        // the lock).
+        {
+            let _guard = self.condvar_mutex.lock_ignore_poison();
+            self.condvar.notify_all();
+        }
+        // Wake the async waiter. `notify_waiters` only wakes tasks already
+        // parked in `notified().await`; the async helper's loop re-checks the
+        // flag on wake and after the await is registered, so no wake is lost.
+        self.notify.notify_waiters();
+    }
+
+    /// Parks the calling (blocking) thread while paused, returning as soon as
+    /// either the op resumes OR cancellation is observed. Cancellation wins:
+    /// `is_cancelled` is re-checked under the condvar lock before every wait, so
+    /// a cancel that lands during a pause unblocks the thread and the existing
+    /// cancel path takes over. Call from the sync driver, AFTER its
+    /// `is_cancelled` loop-top check.
+    pub fn wait_while_paused_sync(&self, intent: &AtomicU8) {
+        let mut guard = self.condvar_mutex.lock_ignore_poison();
+        while self.is_paused() && !is_cancelled(intent) {
+            // Recover from poison the same way `lock_ignore_poison` does: a
+            // panic elsewhere shouldn't abort the app, and this guards no real
+            // data (the flag is the `AtomicBool`).
+            guard = self.condvar.wait(guard).unwrap_or_else(|e| e.into_inner());
+        }
+    }
+
+    /// Async sibling of [`wait_while_paused_sync`]: parks the calling task
+    /// (without blocking an executor thread) while paused, returning as soon as
+    /// the op resumes OR cancellation is observed. Call from the async volume
+    /// drivers, AFTER their `is_cancelled` loop-top check.
+    pub async fn wait_while_paused_async(&self, intent: &AtomicU8) {
+        loop {
+            // Register interest BEFORE the flag check so a `resume()` /
+            // `notify_waiters()` racing between the check and the await can't be
+            // lost (tokio's documented `Notify` pattern).
+            let notified = self.notify.notified();
+            if !self.is_paused() || is_cancelled(intent) {
+                return;
+            }
+            notified.await;
+        }
+    }
+}
+
+// ============================================================================
 // Operation state
 // ============================================================================
 
@@ -106,6 +228,12 @@ pub struct WriteOperationState {
     /// layer (`mtp::connection`) builds a fresh `mtp_rs::CancelToken` from
     /// this flag at the entry point of each MTP-aware call.
     pub backend_cancel: Arc<AtomicBool>,
+    /// Cooperative pause gate. The drivers call `pause_gate.wait_while_paused_*`
+    /// at each between-files boundary, right after the `is_cancelled` check.
+    /// Pause is orthogonal to `intent` (the cancel/rollback machine); the
+    /// manager record's `LifecycleStatus` mirrors the paused bit for the UI.
+    /// See [`PauseGate`].
+    pub pause_gate: PauseGate,
 }
 
 impl WriteOperationState {
@@ -120,6 +248,7 @@ impl WriteOperationState {
             conflict_dispatch_lock: tokio::sync::Mutex::new(()),
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
             backend_cancel: Arc::new(AtomicBool::new(false)),
+            pause_gate: PauseGate::new(),
         }
     }
 
@@ -581,6 +710,10 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
         state.backend_cancel.store(true, Ordering::Release);
         // Drop the conflict resolution sender to unblock any waiting receiver
         let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
+        // Cancellation wins over pause: wake a paused, parked op so it observes
+        // the non-Running intent and bails. Leaves the paused flag set (the op
+        // is going away regardless).
+        state.pause_gate.wake();
     }
 }
 
@@ -599,9 +732,40 @@ pub fn cancel_all_write_operations() {
                 state.backend_cancel.store(true, Ordering::Release);
                 // Drop the conflict resolution sender to unblock any waiting receiver
                 let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
+                // Wake a paused, parked op so teardown's cancel is observed.
+                state.pause_gate.wake();
             }
         }
     }
+}
+
+/// Sets the pause flag on the live state for `operation_id`, if present.
+/// Returns `true` if a state existed (the op is in `WRITE_OPERATION_STATE`,
+/// i.e. Running — including pause-gated Running). The op parks at its next
+/// between-files boundary. Cancellation still wins: a paused op that's then
+/// cancelled unblocks immediately. The manager record's `LifecycleStatus` is
+/// flipped separately (see `manager::set_paused`).
+pub(super) fn pause_write_operation(operation_id: &str) -> bool {
+    if let Ok(cache) = WRITE_OPERATION_STATE.read()
+        && let Some(state) = cache.get(operation_id)
+    {
+        state.pause_gate.pause();
+        return true;
+    }
+    false
+}
+
+/// Clears the pause flag on the live state for `operation_id`, waking the gate.
+/// Returns `true` if a state existed. Resuming a not-paused op is a harmless
+/// no-op.
+pub(super) fn resume_write_operation(operation_id: &str) -> bool {
+    if let Ok(cache) = WRITE_OPERATION_STATE.read()
+        && let Some(state) = cache.get(operation_id)
+    {
+        state.pause_gate.resume();
+        return true;
+    }
+    false
 }
 
 /// Resolves a pending conflict for an in-progress write operation.
@@ -1575,5 +1739,167 @@ mod tests {
             !busy_volume_ids().contains(&dev),
             "unregister on unwind must clear the busy mark"
         );
+    }
+
+    // ---- PauseGate -----------------------------------------------------------
+
+    #[test]
+    fn pause_gate_starts_unpaused() {
+        let gate = PauseGate::new();
+        assert!(!gate.is_paused());
+    }
+
+    #[test]
+    fn pause_gate_pause_then_resume_toggles_flag() {
+        let gate = PauseGate::new();
+        gate.pause();
+        assert!(gate.is_paused());
+        gate.resume();
+        assert!(!gate.is_paused());
+    }
+
+    #[test]
+    fn wait_while_paused_sync_returns_immediately_when_not_paused() {
+        // Not paused → the wait must be a no-op (no deadlock, no condvar park).
+        let gate = PauseGate::new();
+        let intent = AtomicU8::new(OperationIntent::Running as u8);
+        gate.wait_while_paused_sync(&intent); // returns instantly or the test hangs
+    }
+
+    #[test]
+    fn wait_while_paused_sync_unblocks_on_resume() {
+        // Pause, park a worker thread on the gate, then resume from the main
+        // thread. The worker must wake. Without a working condvar notify it
+        // would hang and the test would time out.
+        let gate = Arc::new(PauseGate::new());
+        let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
+        gate.pause();
+
+        let woke = Arc::new(AtomicBool::new(false));
+        let gate_t = Arc::clone(&gate);
+        let intent_t = Arc::clone(&intent);
+        let woke_t = Arc::clone(&woke);
+        let handle = std::thread::spawn(move || {
+            gate_t.wait_while_paused_sync(&intent_t);
+            woke_t.store(true, Ordering::SeqCst);
+        });
+
+        // Give the worker time to park, then resume.
+        std::thread::sleep(Duration::from_millis(50));
+        assert!(!woke.load(Ordering::SeqCst), "worker must still be parked while paused");
+        gate.resume();
+        handle.join().expect("worker thread joins");
+        assert!(woke.load(Ordering::SeqCst), "resume must wake the parked worker");
+    }
+
+    #[test]
+    fn wait_while_paused_sync_unblocks_on_cancel() {
+        // Cancellation must win over pause: a paused, parked thread wakes when
+        // the intent flips to a non-Running state, WITHOUT a resume.
+        let gate = Arc::new(PauseGate::new());
+        let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
+        gate.pause();
+
+        let woke = Arc::new(AtomicBool::new(false));
+        let gate_t = Arc::clone(&gate);
+        let intent_t = Arc::clone(&intent);
+        let woke_t = Arc::clone(&woke);
+        let handle = std::thread::spawn(move || {
+            gate_t.wait_while_paused_sync(&intent_t);
+            woke_t.store(true, Ordering::SeqCst);
+        });
+
+        std::thread::sleep(Duration::from_millis(50));
+        assert!(!woke.load(Ordering::SeqCst), "still parked before cancel");
+        // Mirror the production cancel path: flip intent to a non-Running state,
+        // then `wake()` (NOT `resume()`) so the paused flag stays set. The
+        // parked thread must still wake — cancellation wins over pause.
+        intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+        gate.wake();
+        handle.join().expect("worker joins");
+        assert!(woke.load(Ordering::SeqCst), "cancel must unblock a paused wait");
+        assert!(
+            gate.is_paused(),
+            "cancel path leaves paused set; the waiter returned because cancel won, not because of resume"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn wait_while_paused_async_returns_immediately_when_not_paused() {
+        let gate = PauseGate::new();
+        let intent = AtomicU8::new(OperationIntent::Running as u8);
+        // Must not hang.
+        tokio::time::timeout(Duration::from_secs(1), gate.wait_while_paused_async(&intent))
+            .await
+            .expect("not-paused async wait must return immediately");
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn wait_while_paused_async_unblocks_on_resume() {
+        let gate = Arc::new(PauseGate::new());
+        let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
+        gate.pause();
+
+        let gate_t = Arc::clone(&gate);
+        let intent_t = Arc::clone(&intent);
+        let task = tokio::spawn(async move {
+            gate_t.wait_while_paused_async(&intent_t).await;
+        });
+
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        assert!(!task.is_finished(), "async waiter must still be parked while paused");
+        gate.resume();
+        tokio::time::timeout(Duration::from_secs(1), task)
+            .await
+            .expect("resume must wake the async waiter")
+            .expect("task joins");
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn wait_while_paused_async_unblocks_on_cancel() {
+        // Cancellation wins over pause for the async path too.
+        let gate = Arc::new(PauseGate::new());
+        let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
+        gate.pause();
+
+        let gate_t = Arc::clone(&gate);
+        let intent_t = Arc::clone(&intent);
+        let task = tokio::spawn(async move {
+            gate_t.wait_while_paused_async(&intent_t).await;
+        });
+
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        assert!(!task.is_finished(), "still parked before cancel");
+        // Mirror the production cancel path: flip intent, then `wake()` (NOT
+        // `resume()`) — paused stays set. The waiter must observe cancel and
+        // return anyway.
+        intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+        gate.wake();
+        tokio::time::timeout(Duration::from_secs(1), task)
+            .await
+            .expect("cancel must unblock the async waiter")
+            .expect("task joins");
+        assert!(gate.is_paused(), "cancel path leaves paused set");
+    }
+
+    #[test]
+    fn pause_resume_write_operation_flip_the_live_gate() {
+        let id = unique_id("pause-live");
+        let state = install_state(&id, OperationIntent::Running);
+        assert!(!state.pause_gate.is_paused());
+
+        assert!(pause_write_operation(&id), "should find the live state");
+        assert!(state.pause_gate.is_paused(), "pause must set the gate flag");
+
+        assert!(resume_write_operation(&id), "should find the live state");
+        assert!(!state.pause_gate.is_paused(), "resume must clear the gate flag");
+
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn pause_resume_unknown_operation_returns_false() {
+        assert!(!pause_write_operation("does-not-exist-pause"));
+        assert!(!resume_write_operation("does-not-exist-pause"));
     }
 }

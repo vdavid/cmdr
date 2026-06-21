@@ -12,7 +12,8 @@ use crate::file_system::{
     cancel_write_operation as ops_cancel_write_operation, copy_files_start as ops_copy_files_start,
     delete_files_start as ops_delete_files_start, get_operation_status as ops_get_operation_status, get_volume_manager,
     list_active_operations as ops_list_active_operations, list_operations as ops_list_operations,
-    move_files_start as ops_move_files_start, trash_files_start as ops_trash_files_start,
+    move_files_start as ops_move_files_start, pause_all as ops_pause_all, pause_operation as ops_pause_operation,
+    resume_all as ops_resume_all, resume_operation as ops_resume_operation, trash_files_start as ops_trash_files_start,
 };
 use std::path::{Path, PathBuf};
 use tokio::time::Duration;
@@ -373,6 +374,38 @@ pub fn cancel_operation(operation_id: String) {
 #[specta::specta]
 pub fn cancel_operations(operation_ids: Vec<String>) {
     ops_cancel_operations(&operation_ids);
+}
+
+/// Pauses one Running operation. It parks at the next between-files boundary and
+/// its lifecycle status flips to `paused` in `operations-changed`. A paused op
+/// keeps holding its lane slots. Pausing a Queued/Done op is a no-op.
+#[tauri::command]
+#[specta::specta]
+pub fn pause_operation(operation_id: String) {
+    ops_pause_operation(&operation_id);
+}
+
+/// Resumes one paused operation: it continues from where it parked and its
+/// status flips back to `running`. Resuming a non-paused op is a no-op.
+#[tauri::command]
+#[specta::specta]
+pub fn resume_operation(operation_id: String) {
+    ops_resume_operation(&operation_id);
+}
+
+/// Pauses every currently-running operation. Backs the queue window's global
+/// "Pause all".
+#[tauri::command]
+#[specta::specta]
+pub fn pause_all() {
+    ops_pause_all();
+}
+
+/// Resumes every currently-paused operation. Backs "Resume all".
+#[tauri::command]
+#[specta::specta]
+pub fn resume_all() {
+    ops_resume_all();
 }
 
 // ============================================================================

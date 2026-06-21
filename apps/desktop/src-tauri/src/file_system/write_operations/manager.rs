@@ -414,6 +414,70 @@ impl OperationManager {
         was_queued
     }
 
+    /// Flips a Running op's record between `Running` and `Paused` and re-emits
+    /// `operations-changed`. Pause does NOT touch lanes (a paused Running op
+    /// keeps its slots — we don't want a queued op to start and then fight it on
+    /// resume) nor `OperationIntent` (the cancel/rollback machine). It also does
+    /// NOT run an admission pass: the op was already Running/holding its lanes,
+    /// so resuming admits nobody new.
+    ///
+    /// Only the `Running`↔`Paused` pair flips; any other status (Queued, Done,
+    /// terminal) is left untouched and returns `false`. A Queued op can't be
+    /// "paused" in v1 — it simply isn't admitted yet (see the IPC layer's
+    /// no-op-for-Queued note). Returns `true` if it flipped a record.
+    pub(crate) fn set_paused(&self, operation_id: &str, paused: bool) -> bool {
+        let flipped = {
+            let mut inner = self.inner.lock_ignore_poison();
+            match inner.records.get_mut(operation_id) {
+                Some(rec) if paused && rec.status == LifecycleStatus::Running => {
+                    rec.status = LifecycleStatus::Paused;
+                    true
+                }
+                Some(rec) if !paused && rec.status == LifecycleStatus::Paused => {
+                    rec.status = LifecycleStatus::Running;
+                    true
+                }
+                _ => false,
+            }
+        };
+        if flipped {
+            self.emit_changed();
+        }
+        flipped
+    }
+
+    /// Ids of all currently `Running` (not Paused) ops, for `pause_all`.
+    fn running_ids(&self) -> Vec<String> {
+        let inner = self.inner.lock_ignore_poison();
+        inner
+            .order
+            .iter()
+            .filter(|id| {
+                inner
+                    .records
+                    .get(*id)
+                    .is_some_and(|r| r.status == LifecycleStatus::Running)
+            })
+            .cloned()
+            .collect()
+    }
+
+    /// Ids of all currently `Paused` ops, for `resume_all`.
+    fn paused_ids(&self) -> Vec<String> {
+        let inner = self.inner.lock_ignore_poison();
+        inner
+            .order
+            .iter()
+            .filter(|id| {
+                inner
+                    .records
+                    .get(*id)
+                    .is_some_and(|r| r.status == LifecycleStatus::Paused)
+            })
+            .cloned()
+            .collect()
+    }
+
     /// The thin registry snapshot (membership + status), FIFO order.
     pub(crate) fn list(&self) -> Vec<OperationSnapshot> {
         self.inner.lock_ignore_poison().snapshot()
@@ -519,6 +583,47 @@ pub fn cancel_operation(operation_id: &str) {
 pub fn cancel_operations(operation_ids: &[String]) {
     for id in operation_ids {
         cancel_operation(id);
+    }
+}
+
+/// Pauses one Running operation: parks it at its next between-files boundary and
+/// flips its `LifecycleStatus` to `Paused` (re-emitting `operations-changed`).
+/// A paused op keeps its lane slots. Pausing a Queued op is a v1 no-op (it isn't
+/// touching a device yet — it stays Queued and admits normally when its lanes
+/// free); pausing a Done/absent op is a no-op. Backs `pause_operation(id)`.
+pub fn pause_operation(operation_id: &str) {
+    // Flip the live gate (so the driver parks) and the record status (so the UI
+    // shows Paused). `set_paused` only flips a Running record, so a Queued op's
+    // gate is intentionally left untouched: parking a not-yet-spawned op would
+    // do nothing and risk a Paused-but-Queued limbo.
+    if manager().set_paused(operation_id, true) {
+        super::state::pause_write_operation(operation_id);
+    }
+}
+
+/// Resumes one Paused operation: clears its gate (waking the parked driver) and
+/// flips its `LifecycleStatus` back to `Running`. No admission pass — it never
+/// freed its lanes. Resuming a non-paused op is a no-op. Backs
+/// `resume_operation(id)`.
+pub fn resume_operation(operation_id: &str) {
+    if manager().set_paused(operation_id, false) {
+        super::state::resume_write_operation(operation_id);
+    }
+}
+
+/// Pauses every currently-Running operation. Backs `pause_all` (the queue
+/// window's global Pause all). Snapshots the running set first so the iteration
+/// is stable.
+pub fn pause_all() {
+    for id in manager().running_ids() {
+        pause_operation(&id);
+    }
+}
+
+/// Resumes every currently-Paused operation. Backs `resume_all` (Resume all).
+pub fn resume_all() {
+    for id in manager().paused_ids() {
+        resume_operation(&id);
     }
 }
 

@@ -148,6 +148,12 @@ pub(super) fn delete_files_with_progress_inner(
             });
         }
 
+        // Pause gate: park between files in the destructive phase, after the
+        // cancel check (returns immediately if cancelled). Only the delete
+        // phase is gated; the scan recursion is not, so pausing mid-scan can't
+        // freeze a half-counted "Scanning…".
+        state.pause_gate.wait_while_paused_sync(&state.intent);
+
         // Use `progress_bytes` (dedup'd per file) so the numerator stays in
         // lockstep with the `dedup_bytes` denominator: a hardlinked inode is
         // freed once, on its last unlink. See `state.rs::FileInfo` and
@@ -213,6 +219,9 @@ pub(super) fn delete_files_with_progress_inner(
                 message: "Operation cancelled by user".to_string(),
             });
         }
+
+        // Pause gate (delete phase, between dirs, after the cancel check).
+        state.pause_gate.wait_while_paused_sync(&state.intent);
 
         // Only remove if empty (files should already be deleted)
         crate::downloads::note_pending_write_for_cmdr(dir);
@@ -840,6 +849,12 @@ pub(super) async fn delete_volume_files_with_progress_inner(
             });
         }
 
+        // Pause gate: park between files in the destructive phase, after the
+        // cancel check (returns immediately if cancelled). The scan recursion
+        // above is NOT gated, so pausing mid-enumeration can't freeze a
+        // half-counted "Scanning…".
+        state.pause_gate.wait_while_paused_async(&state.intent).await;
+
         // E2E throttle so cancel-during-delete tests on fast virtual MTP have a
         // deterministic window in which to click Cancel before all files are
         // gone. Reuses the copy throttle knob (`set_test_throttle` exposes a
@@ -922,6 +937,9 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                 message: "Operation cancelled by user".to_string(),
             });
         }
+
+        // Pause gate (delete phase, between dirs, after the cancel check).
+        state.pause_gate.wait_while_paused_async(&state.intent).await;
 
         // Best-effort directory removal (may fail if not empty due to partial delete)
         let _ = volume
