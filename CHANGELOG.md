@@ -5,7 +5,7 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.29.0] - 2026-06-22
 
 Four big features: 1. Operations (copy, move, and delete) got pause/resume. 2. Operations can be queued. 3. Drive
 indexing extended to all volume types incl. SMB shares and MTP devices. 4. Cmdr is now localized into nine languages.
