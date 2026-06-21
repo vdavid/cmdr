@@ -8,7 +8,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 Four big features: 1. Operations (copy, move, and delete) got pause/resume. 2. Operations can be queued. 3. Drive
-indexing extended to all volume types incl. SMB shares and MTP devices. 4. Cmdr is now localized into nine languages. 
+indexing extended to all volume types incl. SMB shares and MTP devices. 4. Cmdr is now localized into nine languages.
 
 ### Added
 
@@ -22,16 +22,20 @@ indexing extended to all volume types incl. SMB shares and MTP devices. 4. Cmdr 
   ([c06b485d](https://github.com/vdavid/cmdr/commit/c06b485d),
   [e279945b](https://github.com/vdavid/cmdr/commit/e279945b),
   [49c7b126](https://github.com/vdavid/cmdr/commit/49c7b126))
-- Add Pause/Resume and Queue (F2) controls to transfer progress dialog ([07dd837c](https://github.com/vdavid/cmdr/commit/07dd837c))
-- Index SMB shares and MTP devices so folder sizes and search work, with scanning/fresh/stale statuses ([384bffe2](https://github.com/vdavid/cmdr/commit/384bffe2),
+- Add Pause/Resume and Queue (F2) controls to transfer progress dialog
+  ([07dd837c](https://github.com/vdavid/cmdr/commit/07dd837c))
+- Index SMB shares and MTP devices so folder sizes and search work, with scanning/fresh/stale statuses
+  ([384bffe2](https://github.com/vdavid/cmdr/commit/384bffe2),
   [7b084cdf](https://github.com/vdavid/cmdr/commit/7b084cdf),
   [049e9f49](https://github.com/vdavid/cmdr/commit/049e9f49),
   [e4cdbb8f](https://github.com/vdavid/cmdr/commit/e4cdbb8f),
   [386e9c13](https://github.com/vdavid/cmdr/commit/386e9c13),
   [fbacdbd0](https://github.com/vdavid/cmdr/commit/fbacdbd0))
-- Add a per-drive index status badge and menu in the volume switcher ([a36e7033](https://github.com/vdavid/cmdr/commit/a36e7033),
+- Add a per-drive index status badge and menu in the volume switcher
+  ([a36e7033](https://github.com/vdavid/cmdr/commit/a36e7033),
   [eaa2eea0](https://github.com/vdavid/cmdr/commit/eaa2eea0))
-- Add drive-indexing controls in Settings, a "index this drive?" prompt, and a one-time "drive stale" notice ([bcd433ae](https://github.com/vdavid/cmdr/commit/bcd433ae),
+- Add drive-indexing controls in Settings, a "index this drive?" prompt, and a one-time "drive stale" notice
+  ([bcd433ae](https://github.com/vdavid/cmdr/commit/bcd433ae),
   [0dddb45c](https://github.com/vdavid/cmdr/commit/0dddb45c))
 - Show a live file count while a drive index scans, instead of a frozen label
   ([eca50e21](https://github.com/vdavid/cmdr/commit/eca50e21))
@@ -56,8 +60,10 @@ indexing extended to all volume types incl. SMB shares and MTP devices. 4. Cmdr 
 
 ### Non-app
 
-- Speed up releases by reusing a persistent cargo build dirs and mise cache across architectures and releases ([bc2b3779](https://github.com/vdavid/cmdr/commit/bc2b3779))
-- Build the translation methodology: per-lang style guides, glossaries, and a reference-pile across 139 languages ([45b6a7dd](https://github.com/vdavid/cmdr/commit/45b6a7dd),
+- Speed up releases by reusing a persistent cargo build dirs and mise cache across architectures and releases
+  ([bc2b3779](https://github.com/vdavid/cmdr/commit/bc2b3779))
+- Build the translation methodology: per-lang style guides, glossaries, and a reference-pile across 139 languages
+  ([45b6a7dd](https://github.com/vdavid/cmdr/commit/45b6a7dd),
   [0759d720](https://github.com/vdavid/cmdr/commit/0759d720),
   [ece168ea](https://github.com/vdavid/cmdr/commit/ece168ea),
   [fbddd165](https://github.com/vdavid/cmdr/commit/fbddd165))
