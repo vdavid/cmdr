@@ -67,6 +67,14 @@
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
+  "commands.queueShow.label": "Hiện hàng đợi truyền",
+  "@commands.queueShow.label": {
+    "sourceHash": "4567973"
+  },
+  "commands.queueShow.description": "Mở cửa sổ liệt kê mọi lần truyền đang chạy và đang chờ, nơi bạn có thể tạm dừng, tiếp tục, hoặc hủy chúng",
+  "@commands.queueShow.description": {
+    "sourceHash": "9f9ea7e"
+  },
   "commands.helpWhatsNew.label": "Có gì mới",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "aa0c54f"

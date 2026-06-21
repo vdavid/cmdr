@@ -1,0 +1,78 @@
+{
+  "queue.windowTitle": "Överföringskö",
+  "@queue.windowTitle": {
+    "sourceHash": "3f728ae"
+  },
+  "queue.heading": "Överföringar",
+  "@queue.heading": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.empty.title": "Inget i kön",
+  "@queue.empty.title": {
+    "sourceHash": "ef2b1ef"
+  },
+  "queue.empty.body": "Kopieringar, flyttar och raderingar visas här medan de pågår, så att du kan pausa, återuppta eller avbryta dem.",
+  "@queue.empty.body": {
+    "sourceHash": "c24a288"
+  },
+  "queue.row.label": "{type, select, copy {Kopierar} move {Flyttar} delete {Raderar} trash {Flyttar till papperskorgen} other {Arbetar}}",
+  "@queue.row.label": {
+    "sourceHash": "d5f30f5"
+  },
+  "queue.row.status": "{status, select, queued {Väntar} running {Pågår} paused {Pausad} done {Klar} cancelled {Avbruten} failed {Gick inte att slutföra} other {Pågår}}",
+  "@queue.row.status": {
+    "sourceHash": "2bbdaaa"
+  },
+  "queue.row.etaRemaining": "{duration} kvar",
+  "@queue.row.etaRemaining": {
+    "sourceHash": "a6b154c"
+  },
+  "queue.row.pause": "Pausa",
+  "@queue.row.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "queue.row.resume": "Återuppta",
+  "@queue.row.resume": {
+    "sourceHash": "d640c74"
+  },
+  "queue.row.cancel": "Avbryt",
+  "@queue.row.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "queue.row.pauseAria": "Pausa den här överföringen",
+  "@queue.row.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "queue.row.resumeAria": "Återuppta den här överföringen",
+  "@queue.row.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "queue.row.cancelAria": "Avbryt den här överföringen",
+  "@queue.row.cancelAria": {
+    "sourceHash": "f85b066"
+  },
+  "queue.row.selectAria": "Markera den här överföringen",
+  "@queue.row.selectAria": {
+    "sourceHash": "fb8bb14"
+  },
+  "queue.list.aria": "Överföringar",
+  "@queue.list.aria": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.toolbar.pauseAll": "Pausa alla",
+  "@queue.toolbar.pauseAll": {
+    "sourceHash": "0b6258b"
+  },
+  "queue.toolbar.resumeAll": "Återuppta alla",
+  "@queue.toolbar.resumeAll": {
+    "sourceHash": "43e673c"
+  },
+  "queue.toolbar.cancelSelected": "Avbryt markerade",
+  "@queue.toolbar.cancelSelected": {
+    "sourceHash": "34e18e5"
+  },
+  "queue.toolbar.selectedCount": "{count, plural, one {# markerad} other {# markerade}}",
+  "@queue.toolbar.selectedCount": {
+    "sourceHash": "5f13640"
+  }
+}

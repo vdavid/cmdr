@@ -1,0 +1,78 @@
+{
+  "queue.windowTitle": "传输队列",
+  "@queue.windowTitle": {
+    "sourceHash": "3f728ae"
+  },
+  "queue.heading": "传输",
+  "@queue.heading": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.empty.title": "队列中没有任务",
+  "@queue.empty.title": {
+    "sourceHash": "ef2b1ef"
+  },
+  "queue.empty.body": "拷贝、移动和删除在进行时会显示在这里，你可以暂停、继续或取消它们。",
+  "@queue.empty.body": {
+    "sourceHash": "c24a288"
+  },
+  "queue.row.label": "{type, select, copy {正在拷贝} move {正在移动} delete {正在删除} trash {正在移到废纸篓} other {正在处理}}",
+  "@queue.row.label": {
+    "sourceHash": "d5f30f5"
+  },
+  "queue.row.status": "{status, select, queued {等待中} running {进行中} paused {已暂停} done {已完成} cancelled {已取消} failed {无法完成} other {进行中}}",
+  "@queue.row.status": {
+    "sourceHash": "2bbdaaa"
+  },
+  "queue.row.etaRemaining": "剩余 {duration}",
+  "@queue.row.etaRemaining": {
+    "sourceHash": "a6b154c"
+  },
+  "queue.row.pause": "暂停",
+  "@queue.row.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "queue.row.resume": "继续",
+  "@queue.row.resume": {
+    "sourceHash": "d640c74"
+  },
+  "queue.row.cancel": "取消",
+  "@queue.row.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "queue.row.pauseAria": "暂停这个传输",
+  "@queue.row.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "queue.row.resumeAria": "继续这个传输",
+  "@queue.row.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "queue.row.cancelAria": "取消这个传输",
+  "@queue.row.cancelAria": {
+    "sourceHash": "f85b066"
+  },
+  "queue.row.selectAria": "选择这个传输",
+  "@queue.row.selectAria": {
+    "sourceHash": "fb8bb14"
+  },
+  "queue.list.aria": "传输",
+  "@queue.list.aria": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.toolbar.pauseAll": "全部暂停",
+  "@queue.toolbar.pauseAll": {
+    "sourceHash": "0b6258b"
+  },
+  "queue.toolbar.resumeAll": "全部继续",
+  "@queue.toolbar.resumeAll": {
+    "sourceHash": "43e673c"
+  },
+  "queue.toolbar.cancelSelected": "取消所选",
+  "@queue.toolbar.cancelSelected": {
+    "sourceHash": "34e18e5"
+  },
+  "queue.toolbar.selectedCount": "{count, plural, other {已选 # 个}}",
+  "@queue.toolbar.selectedCount": {
+    "sourceHash": "5f13640"
+  }
+}

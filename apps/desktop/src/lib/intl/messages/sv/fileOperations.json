@@ -451,6 +451,50 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "df77f8e"
   },
+  "fileOperations.transferProgress.titlePaused": "Pausad",
+  "@fileOperations.transferProgress.titlePaused": {
+    "sourceHash": "e159b06"
+  },
+  "fileOperations.transferProgress.pause": "Pausa",
+  "@fileOperations.transferProgress.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "fileOperations.transferProgress.resume": "Återuppta",
+  "@fileOperations.transferProgress.resume": {
+    "sourceHash": "d640c74"
+  },
+  "fileOperations.transferProgress.pauseAria": "Pausa den här överföringen",
+  "@fileOperations.transferProgress.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "fileOperations.transferProgress.resumeAria": "Återuppta den här överföringen",
+  "@fileOperations.transferProgress.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "fileOperations.transferProgress.queue": "Kö",
+  "@fileOperations.transferProgress.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.transferProgress.queueAria": "Skicka till överföringskön",
+  "@fileOperations.transferProgress.queueAria": {
+    "sourceHash": "46845e8"
+  },
+  "fileOperations.transferProgress.queueTooltip": "Håll igång den här i bakgrunden och hantera den i överföringskön (F2)",
+  "@fileOperations.transferProgress.queueTooltip": {
+    "sourceHash": "f24ea59"
+  },
+  "fileOperations.transferProgress.queuedToast": "{countText} före den här, så den väntar på sin tur. Hitta den i överföringskön.",
+  "@fileOperations.transferProgress.queuedToast": {
+    "sourceHash": "9eb1406"
+  },
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# överföring} other {# överföringar}}",
+  "@fileOperations.transferProgress.queuedToastCount": {
+    "sourceHash": "b89f320"
+  },
+  "fileOperations.transferProgress.backgroundedToast": "Körs fortfarande i bakgrunden. Hitta den i överföringskön.",
+  "@fileOperations.transferProgress.backgroundedToast": {
+    "sourceHash": "fe4b733"
+  },
   "fileOperations.errorDialog.technicalDetails": "Tekniska detaljer",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

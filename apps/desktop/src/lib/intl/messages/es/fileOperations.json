@@ -451,6 +451,50 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "df77f8e"
   },
+  "fileOperations.transferProgress.titlePaused": "En pausa",
+  "@fileOperations.transferProgress.titlePaused": {
+    "sourceHash": "e159b06"
+  },
+  "fileOperations.transferProgress.pause": "Pausar",
+  "@fileOperations.transferProgress.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "fileOperations.transferProgress.resume": "Reanudar",
+  "@fileOperations.transferProgress.resume": {
+    "sourceHash": "d640c74"
+  },
+  "fileOperations.transferProgress.pauseAria": "Pausar esta transferencia",
+  "@fileOperations.transferProgress.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "fileOperations.transferProgress.resumeAria": "Reanudar esta transferencia",
+  "@fileOperations.transferProgress.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "fileOperations.transferProgress.queue": "Cola",
+  "@fileOperations.transferProgress.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.transferProgress.queueAria": "Enviar a la cola de transferencias",
+  "@fileOperations.transferProgress.queueAria": {
+    "sourceHash": "46845e8"
+  },
+  "fileOperations.transferProgress.queueTooltip": "Mantenla en ejecución en segundo plano y gestiónala en la cola de transferencias (F2)",
+  "@fileOperations.transferProgress.queueTooltip": {
+    "sourceHash": "f24ea59"
+  },
+  "fileOperations.transferProgress.queuedToast": "{countText} por delante de esta, así que está esperando su turno. La encontrarás en la cola de transferencias.",
+  "@fileOperations.transferProgress.queuedToast": {
+    "sourceHash": "9eb1406"
+  },
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# transferencia} many {# transferencias} other {# transferencias}}",
+  "@fileOperations.transferProgress.queuedToastCount": {
+    "sourceHash": "b89f320"
+  },
+  "fileOperations.transferProgress.backgroundedToast": "Sigue ejecutándose en segundo plano. La encontrarás en la cola de transferencias.",
+  "@fileOperations.transferProgress.backgroundedToast": {
+    "sourceHash": "fe4b733"
+  },
   "fileOperations.errorDialog.technicalDetails": "Detalles técnicos",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

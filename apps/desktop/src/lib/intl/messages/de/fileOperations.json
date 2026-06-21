@@ -451,6 +451,50 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "df77f8e"
   },
+  "fileOperations.transferProgress.titlePaused": "Angehalten",
+  "@fileOperations.transferProgress.titlePaused": {
+    "sourceHash": "e159b06"
+  },
+  "fileOperations.transferProgress.pause": "Pause",
+  "@fileOperations.transferProgress.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "fileOperations.transferProgress.resume": "Fortsetzen",
+  "@fileOperations.transferProgress.resume": {
+    "sourceHash": "d640c74"
+  },
+  "fileOperations.transferProgress.pauseAria": "Diese Übertragung anhalten",
+  "@fileOperations.transferProgress.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "fileOperations.transferProgress.resumeAria": "Diese Übertragung fortsetzen",
+  "@fileOperations.transferProgress.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "fileOperations.transferProgress.queue": "Warteschlange",
+  "@fileOperations.transferProgress.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.transferProgress.queueAria": "Zur Übertragungs-Warteschlange senden",
+  "@fileOperations.transferProgress.queueAria": {
+    "sourceHash": "46845e8"
+  },
+  "fileOperations.transferProgress.queueTooltip": "Im Hintergrund weiterlaufen lassen und in der Übertragungs-Warteschlange verwalten (F2)",
+  "@fileOperations.transferProgress.queueTooltip": {
+    "sourceHash": "f24ea59"
+  },
+  "fileOperations.transferProgress.queuedToast": "{countText} davor, daher wartet sie noch. Du findest sie in der Übertragungs-Warteschlange.",
+  "@fileOperations.transferProgress.queuedToast": {
+    "sourceHash": "9eb1406"
+  },
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# Übertragung} other {# Übertragungen}}",
+  "@fileOperations.transferProgress.queuedToastCount": {
+    "sourceHash": "b89f320"
+  },
+  "fileOperations.transferProgress.backgroundedToast": "Läuft weiter im Hintergrund. Du findest sie in der Übertragungs-Warteschlange.",
+  "@fileOperations.transferProgress.backgroundedToast": {
+    "sourceHash": "fe4b733"
+  },
   "fileOperations.errorDialog.technicalDetails": "Technische Details",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

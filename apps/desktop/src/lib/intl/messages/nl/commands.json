@@ -67,6 +67,14 @@
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
+  "commands.queueShow.label": "Toon overdrachtswachtrij",
+  "@commands.queueShow.label": {
+    "sourceHash": "4567973"
+  },
+  "commands.queueShow.description": "Open een venster met alle lopende en wachtende overdrachten, waar je ze kunt pauzeren, hervatten of annuleren",
+  "@commands.queueShow.description": {
+    "sourceHash": "9f9ea7e"
+  },
   "commands.helpWhatsNew.label": "Wat is er nieuw",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "aa0c54f"

@@ -451,6 +451,50 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "df77f8e"
   },
+  "fileOperations.transferProgress.titlePaused": "Pausado",
+  "@fileOperations.transferProgress.titlePaused": {
+    "sourceHash": "e159b06"
+  },
+  "fileOperations.transferProgress.pause": "Pausar",
+  "@fileOperations.transferProgress.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "fileOperations.transferProgress.resume": "Retomar",
+  "@fileOperations.transferProgress.resume": {
+    "sourceHash": "d640c74"
+  },
+  "fileOperations.transferProgress.pauseAria": "Pausar esta transferência",
+  "@fileOperations.transferProgress.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "fileOperations.transferProgress.resumeAria": "Retomar esta transferência",
+  "@fileOperations.transferProgress.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "fileOperations.transferProgress.queue": "Fila",
+  "@fileOperations.transferProgress.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.transferProgress.queueAria": "Enviar para a fila de transferências",
+  "@fileOperations.transferProgress.queueAria": {
+    "sourceHash": "46845e8"
+  },
+  "fileOperations.transferProgress.queueTooltip": "Mantenha isto rodando em segundo plano e gerencie na fila de transferências (F2)",
+  "@fileOperations.transferProgress.queueTooltip": {
+    "sourceHash": "f24ea59"
+  },
+  "fileOperations.transferProgress.queuedToast": "{countText} na frente desta, então ela está aguardando sua vez. Encontre-a na fila de transferências.",
+  "@fileOperations.transferProgress.queuedToast": {
+    "sourceHash": "9eb1406"
+  },
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# transferência} many {# transferências} other {# transferências}}",
+  "@fileOperations.transferProgress.queuedToastCount": {
+    "sourceHash": "b89f320"
+  },
+  "fileOperations.transferProgress.backgroundedToast": "Ainda rodando em segundo plano. Encontre-a na fila de transferências.",
+  "@fileOperations.transferProgress.backgroundedToast": {
+    "sourceHash": "fe4b733"
+  },
   "fileOperations.errorDialog.technicalDetails": "Detalhes técnicos",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

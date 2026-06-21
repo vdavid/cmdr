@@ -1,0 +1,78 @@
+{
+  "queue.windowTitle": "Hàng đợi truyền",
+  "@queue.windowTitle": {
+    "sourceHash": "3f728ae"
+  },
+  "queue.heading": "Các lần truyền",
+  "@queue.heading": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.empty.title": "Không có gì trong hàng đợi",
+  "@queue.empty.title": {
+    "sourceHash": "ef2b1ef"
+  },
+  "queue.empty.body": "Các thao tác sao chép, di chuyển, và xóa hiện ở đây khi đang chạy, để bạn có thể tạm dừng, tiếp tục, hoặc hủy chúng.",
+  "@queue.empty.body": {
+    "sourceHash": "c24a288"
+  },
+  "queue.row.label": "{type, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} trash {Đang chuyển vào thùng rác} other {Đang xử lý}}",
+  "@queue.row.label": {
+    "sourceHash": "d5f30f5"
+  },
+  "queue.row.status": "{status, select, queued {Đang chờ} running {Đang chạy} paused {Đã tạm dừng} done {Xong} cancelled {Đã hủy} failed {Chưa hoàn tất được} other {Đang chạy}}",
+  "@queue.row.status": {
+    "sourceHash": "2bbdaaa"
+  },
+  "queue.row.etaRemaining": "còn {duration}",
+  "@queue.row.etaRemaining": {
+    "sourceHash": "a6b154c"
+  },
+  "queue.row.pause": "Tạm dừng",
+  "@queue.row.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "queue.row.resume": "Tiếp tục",
+  "@queue.row.resume": {
+    "sourceHash": "d640c74"
+  },
+  "queue.row.cancel": "Hủy",
+  "@queue.row.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "queue.row.pauseAria": "Tạm dừng lần truyền này",
+  "@queue.row.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "queue.row.resumeAria": "Tiếp tục lần truyền này",
+  "@queue.row.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "queue.row.cancelAria": "Hủy lần truyền này",
+  "@queue.row.cancelAria": {
+    "sourceHash": "f85b066"
+  },
+  "queue.row.selectAria": "Chọn lần truyền này",
+  "@queue.row.selectAria": {
+    "sourceHash": "fb8bb14"
+  },
+  "queue.list.aria": "Các lần truyền",
+  "@queue.list.aria": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.toolbar.pauseAll": "Tạm dừng tất cả",
+  "@queue.toolbar.pauseAll": {
+    "sourceHash": "0b6258b"
+  },
+  "queue.toolbar.resumeAll": "Tiếp tục tất cả",
+  "@queue.toolbar.resumeAll": {
+    "sourceHash": "43e673c"
+  },
+  "queue.toolbar.cancelSelected": "Hủy mục đã chọn",
+  "@queue.toolbar.cancelSelected": {
+    "sourceHash": "34e18e5"
+  },
+  "queue.toolbar.selectedCount": "{count, plural, other {# đã chọn}}",
+  "@queue.toolbar.selectedCount": {
+    "sourceHash": "5f13640"
+  }
+}

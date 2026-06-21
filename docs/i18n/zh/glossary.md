@@ -343,4 +343,17 @@ macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms.
 - **trash (verb, move to trash)** · `移到废纸篓` · reused from file-ops pass; Trash noun `废纸篓` (style.md) · `high`
 - **sending… (in-progress button)** · `正在发送…` · standard · `high`
 - **`feedback.dialog.counter` kept identical** (`{currentText} / {maxText}`) · pure-placeholder fraction, no translatable text · `confirmed`
+### Transfer queue catalog (queue window + pause/resume/background, 2026-06-21)
+
+macOS zh-CN Tier 1, Total Commander zh-CN (the feature's origin: queue + background controls), Microsoft zh-Hans cross-check.
+
+- **pause** · `暂停` · macOS (`暂停`, `已暂停拷贝“^0”`), Total Commander (`暂停`), Microsoft TBX (`暂停`) · `confirmed`
+- **resume (a paused operation)** · `继续` · Microsoft TBX (`resume` → `继续`), macOS (`继续`). NOTE: NOT `恢复` (that's restore/recover, e.g. macOS `恢复` = restore version) — `继续` is the resume-an-operation sense. · `high`
+- **queue (noun)** · `传输队列` (the window/feature) / `队列` (bare) · Total Commander (`队列(&Q)`), Microsoft TBX (`队列`) · `confirmed`
+- **add to queue / send to the transfer queue (the progress-dialog F2 button)** · `加入队列` (button) / `发送到传输队列` (aria) · descriptive, built on `队列` · `high`
+- **background / running in the background** · `后台` (`在后台运行` / `在后台继续运行`) · Total Commander (`后台`, `所有上传/下载都在后台进行`), Microsoft TBX (`后台的`). NOTE: NOT `背景` (visual background, wrong sense). · `high`
+- **transfer (the queued copy/move/delete unit)** · `传输` · reused; `传输队列` = transfer queue, `这个传输` = this transfer · `high`
+- **status words (queue row)** · queued `等待中` / running `进行中` / paused `已暂停` / done `已完成` / cancelled `已取消` / failed `无法完成` (style.md: no bare 失败/错误) · macOS-style · `high`
+- **pause all / resume all / cancel selected (toolbar)** · `全部暂停` / `全部继续` / `取消所选` · built on settled verbs + `全部`/`所选` · `high`
+
 - **Ellipsis: always the single full-width `…` (U+2026), regardless of the en source''s `...` vs `…`.** Chinese typography uses `…`, not ASCII three-dots, so every zh status/label string renders `…` (`正在发送…`, `正在加载…`, `正在取消…`). This is a deliberate, locale-wide normalization (not source-faithful byte-copying): the whole zh catalog is consistent on the single `…`. (The doubled literary `……` is NOT used here, even in prose tooltips, to keep one ellipsis form across the UI.)

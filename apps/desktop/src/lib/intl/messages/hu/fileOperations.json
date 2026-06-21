@@ -451,6 +451,50 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "df77f8e"
   },
+  "fileOperations.transferProgress.titlePaused": "Szüneteltetve",
+  "@fileOperations.transferProgress.titlePaused": {
+    "sourceHash": "e159b06"
+  },
+  "fileOperations.transferProgress.pause": "Szüneteltetés",
+  "@fileOperations.transferProgress.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "fileOperations.transferProgress.resume": "Folytatás",
+  "@fileOperations.transferProgress.resume": {
+    "sourceHash": "d640c74"
+  },
+  "fileOperations.transferProgress.pauseAria": "Ennek az átvitelnek a szüneteltetése",
+  "@fileOperations.transferProgress.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "fileOperations.transferProgress.resumeAria": "Ennek az átvitelnek a folytatása",
+  "@fileOperations.transferProgress.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "fileOperations.transferProgress.queue": "Sorba",
+  "@fileOperations.transferProgress.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.transferProgress.queueAria": "Áthelyezés az átviteli sorba",
+  "@fileOperations.transferProgress.queueAria": {
+    "sourceHash": "46845e8"
+  },
+  "fileOperations.transferProgress.queueTooltip": "Hagyd futni a háttérben, és kezeld az átviteli sorban (F2)",
+  "@fileOperations.transferProgress.queueTooltip": {
+    "sourceHash": "f24ea59"
+  },
+  "fileOperations.transferProgress.queuedToast": "{countText} van előtte, így várnia kell a sorára. Megtalálod az átviteli sorban.",
+  "@fileOperations.transferProgress.queuedToast": {
+    "sourceHash": "9eb1406"
+  },
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# átvitel} other {# átvitel}}",
+  "@fileOperations.transferProgress.queuedToastCount": {
+    "sourceHash": "b89f320"
+  },
+  "fileOperations.transferProgress.backgroundedToast": "Tovább fut a háttérben. Megtalálod az átviteli sorban.",
+  "@fileOperations.transferProgress.backgroundedToast": {
+    "sourceHash": "fe4b733"
+  },
   "fileOperations.errorDialog.technicalDetails": "Technikai részletek",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

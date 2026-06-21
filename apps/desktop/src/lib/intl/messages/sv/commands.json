@@ -67,6 +67,14 @@
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
+  "commands.queueShow.label": "Visa överföringskön",
+  "@commands.queueShow.label": {
+    "sourceHash": "4567973"
+  },
+  "commands.queueShow.description": "Öppna ett fönster med alla pågående och väntande överföringar, där du kan pausa, återuppta eller avbryta dem",
+  "@commands.queueShow.description": {
+    "sourceHash": "9f9ea7e"
+  },
   "commands.helpWhatsNew.label": "Nyheter",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "aa0c54f"

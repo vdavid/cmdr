@@ -270,3 +270,17 @@ Phrasing notes for this pass:
 - `shortcuts.section.alreadyBound` quotes the command with French guillemets « {command} » (the source uses straight quotes ''{command}''); `<b>` tag preserved.
 - Regular ASCII space (0x20) before `:` / `?` / `!` / `%`, the catalog-wide settled spacing (style.md § Punctuation spacing); never U+202F.
 - Legitimately identical-to-English in fr: "Global" (downloads scopeTitle, valid FR), "OK" (mtp/ui), "macOS" (badge, brand), "Options" (ui popover, identical FR), and the Spotlight/Mission Control/Spaces brand feature names.
+
+Settled during the `queue` + new `fileOperations`/`commands` pause-queue-background keys pass (2026-06-21). ICU values, so single apostrophes doubled below to match this doc's convention:
+
+- pause (verb) → mettre en pause; pause (noun / button label) → Pause; paused (status) → en pause / En pause · macOS ("NSPauseTemplate" → "pause", "Pause" → "Pause", "Mettre en pause toutes les animations"), Double Commander ("&Pause all" → "Mettre tout en pause", "Paused" → "En pause") · high — the standalone "Pause" button label is legitimately identical to English (it's also valid FR; macOS keeps "Pause").
+- resume → reprendre · macOS Finder ("Resume" → "Reprendre", "Reprendre la copie"), Double Commander ("&Resume" → "Reprendre") · high — calm, the Apple/file-manager term for continuing a paused transfer.
+- pause all → tout mettre en pause; resume all → tout reprendre · composed from the above; "tout mettre en pause" matches Double Commander's "&Pause all" → "Mettre tout en pause" (reordered to the "Tout éjecter"/"Tout ignorer" all-variant pattern used catalog-wide) · high
+- queue (transfer queue) → file d''attente · Double Commander ("Queue" → "File d''attente", "Add To Queue" → "Ajouter à la file d''attente", pervasive), MS terminology FRA ("file d''attente", 36+ hits) · high — "Transfer queue" → "File d''attente des transferts"; the standalone Queue button on the progress dialog → "File d''attente".
+- background / send to background (keep a transfer running while the user works) → arrière-plan / en arrière-plan · Double Commander ("Work in background" → "Travailler en arrière-plan", "in the &background" → "en arrière-plan"), Total Commander ("en arrière-plan"), MS terminology FRA ("arrière-plan", 79+ hits) · high — "Keep this running in the background" → "Garder ce transfert en cours en arrière-plan".
+
+Phrasing notes for this pass:
+- `queue.row.status` "Couldn''t finish" (the gentle non-alarmist wording for a failed op) → "N''a pas pu se terminer", staying away from "erreur"/"échec" per the style guide. "Waiting" (queued) → "En attente"; "Done" → "Terminé"; "Cancelled" → "Annulé"; participles masculine (agreeing with implied "transfert").
+- `queue.row.label` mirrors the `fileOperations.transferProgress.titleActive` gerund set, dropping "en cours" since these are short row labels: copy → "Copie", move → "Déplacement", delete → "Suppression", trash → "Placement dans la corbeille".
+- FR CLDR `one`/`many`/`other` on `selectedCount` and `queuedToastCount`; `many` written identical to `other` (plain integers never select `many`, but the parity check requires the branch). `#` placeholders preserved.
+- The standalone "Pause" button (`queue.row.pause`, `fileOperations.transferProgress.pause`) is legitimately identical to English (valid FR, macOS keeps it); the coverage check flags it but it's correct.

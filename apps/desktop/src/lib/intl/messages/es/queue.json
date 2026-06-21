@@ -1,0 +1,78 @@
+{
+  "queue.windowTitle": "Cola de transferencias",
+  "@queue.windowTitle": {
+    "sourceHash": "3f728ae"
+  },
+  "queue.heading": "Transferencias",
+  "@queue.heading": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.empty.title": "No hay nada en la cola",
+  "@queue.empty.title": {
+    "sourceHash": "ef2b1ef"
+  },
+  "queue.empty.body": "Las copias, los movimientos y las eliminaciones aparecen aquí mientras se ejecutan, así puedes pausarlos, reanudarlos o cancelarlos.",
+  "@queue.empty.body": {
+    "sourceHash": "c24a288"
+  },
+  "queue.row.label": "{type, select, copy {Copiando} move {Moviendo} delete {Eliminando} trash {Moviendo a la papelera} other {Trabajando}}",
+  "@queue.row.label": {
+    "sourceHash": "d5f30f5"
+  },
+  "queue.row.status": "{status, select, queued {Esperando} running {En ejecución} paused {En pausa} done {Hecho} cancelled {Cancelado} failed {No se pudo completar} other {En ejecución}}",
+  "@queue.row.status": {
+    "sourceHash": "2bbdaaa"
+  },
+  "queue.row.etaRemaining": "Queda {duration}",
+  "@queue.row.etaRemaining": {
+    "sourceHash": "a6b154c"
+  },
+  "queue.row.pause": "Pausar",
+  "@queue.row.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "queue.row.resume": "Reanudar",
+  "@queue.row.resume": {
+    "sourceHash": "d640c74"
+  },
+  "queue.row.cancel": "Cancelar",
+  "@queue.row.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "queue.row.pauseAria": "Pausar esta transferencia",
+  "@queue.row.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "queue.row.resumeAria": "Reanudar esta transferencia",
+  "@queue.row.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "queue.row.cancelAria": "Cancelar esta transferencia",
+  "@queue.row.cancelAria": {
+    "sourceHash": "f85b066"
+  },
+  "queue.row.selectAria": "Seleccionar esta transferencia",
+  "@queue.row.selectAria": {
+    "sourceHash": "fb8bb14"
+  },
+  "queue.list.aria": "Transferencias",
+  "@queue.list.aria": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.toolbar.pauseAll": "Pausar todo",
+  "@queue.toolbar.pauseAll": {
+    "sourceHash": "0b6258b"
+  },
+  "queue.toolbar.resumeAll": "Reanudar todo",
+  "@queue.toolbar.resumeAll": {
+    "sourceHash": "43e673c"
+  },
+  "queue.toolbar.cancelSelected": "Cancelar lo seleccionado",
+  "@queue.toolbar.cancelSelected": {
+    "sourceHash": "34e18e5"
+  },
+  "queue.toolbar.selectedCount": "{count, plural, one {# seleccionada} many {# seleccionadas} other {# seleccionadas}}",
+  "@queue.toolbar.selectedCount": {
+    "sourceHash": "5f13640"
+  }
+}

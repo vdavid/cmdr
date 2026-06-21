@@ -259,3 +259,14 @@ Settled during the `settings.json` pass (mined from `_ignored/i18n/es/`, mostly 
 - disable (notifications) → desactivar · MS terminology ("disable"→"desactivar") · high
 - transfer-toast verb agreement → bake gender/number agreement into the ICU branches. "Copy complete"/"Move complete" → "Copia completada"/"Movimiento completado" (the adjective agrees: Copia fem., Movimiento masc.). Counted toasts wrap the whole clause in the `{count, plural}` so the verb agrees ("Se movió 1 archivo" / "Se movieron N archivos") · high
 - Updates & privacy (Settings section, cross-ref) → Actualizaciones y privacidad · matches the Settings section list · high
+
+### Settled during the `queue.json` + new transfer-queue keys pass (transfer-queue window + pause/resume/background; macOS Finder + double-commander + Total Commander greps, 2026-06-21)
+- pause (verb/button) → Pausar · macOS Finder ("Se ha pausado la copia de …", NE110); standard verb for the copy/transfer sense · high
+- paused (state) → En pausa · double-commander ("Paused"→"Pausado"); "En pausa" reads cleaner as a status badge and matches macOS state phrasing ("en pausa") · high. ("Paused" dialog title → "En pausa")
+- resume → Reanudar · macOS Finder ("Resume"→"Reanudar", NE101/PE108.1; "Reanudar copia", N158.1) — exact copy-resume sense, Tier 1 · high
+- queue (transfer queue) → cola · double-commander ("Queue"→"En cola"); macOS print "cola"; Total Commander "Adm. de transf. en segundo plano". "Transfer queue" → "Cola de transferencias"; per-row/dialog "Queue" button (send-to-background) → "Cola" · high
+- queued / waiting (queue status) → Esperando · matches the existing "Esperando…" waiting precedent in `fileExplorer.json`; the row sits behind another transfer on the same drive · high
+- background / send to background → en segundo plano · macOS/MS/Total Commander standard (already in glossary); "Send to the transfer queue" → "Enviar a la cola de transferencias", "keep running in the background" → "mantener … en ejecución en segundo plano" · high
+- transfer (the operation) → transferencia · reaffirmed (already used across the catalog); counted phrase "{n} transfer(s)" → "{n} transferencia(s)" (fem., so "seleccionada(s)" agrees) · high
+- "Couldn''t finish" (failed row status, no-bare-"failed" voice) → No se pudo completar · from the errors-pass "No se pudo …" pattern; calm, avoids the bare "failed" label · high
+- "Cancel selected" (toolbar) → Cancelar lo seleccionado · "lo seleccionado" for the neutral "the selection" sense · high

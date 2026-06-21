@@ -67,6 +67,14 @@
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
+  "commands.queueShow.label": "Afficher la file d''attente des transferts",
+  "@commands.queueShow.label": {
+    "sourceHash": "4567973"
+  },
+  "commands.queueShow.description": "Ouvrir une fenêtre listant chaque transfert en cours et en attente, où vous pouvez les mettre en pause, les reprendre ou les annuler",
+  "@commands.queueShow.description": {
+    "sourceHash": "9f9ea7e"
+  },
   "commands.helpWhatsNew.label": "Nouveautés",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "aa0c54f"

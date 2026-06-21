@@ -332,6 +332,19 @@ Dutch sentence like "Het bestand dat je probeerde te {verb}" renders an English 
 phrasing keeps the token in a grammatically plausible slot, but fully natural Dutch needs that verb map localized (a
 code change). Same limitation applies to every language.
 
+From the transfer-queue pass (`queue.json` + new pause/queue keys in `fileOperations.json`/`commands.json`; mined `_ignored/i18n/nl/`, 2026-06-21):
+
+- pause → Pauzeer (button) / pauzeren, gepauzeerd · macOS Finder ("Kopiëren van '^0' is gepauzeerd", "Wil je ... pauzeren"), AppKit ("Pauzeer animatie"), DC ("Pauzeer alles"); bare-stem imperative "Pauzeer" per the button rule · high
+- resume → Hervat (button) / hervatten · macOS Finder ("Hervat", "Hervat kopiëren") · high
+- queue (noun) → wachtrij (Overdrachtswachtrij for the transfer queue) · Double Commander + Total Commander + Thunar all use "wachtrij" (no macOS term); compound "overdrachtswachtrij" for "transfer queue" · high
+- transfer (copy/move/delete operation, noun) → overdracht (plural overdrachten) · standard NL ("overdracht" for a data transfer); "Transfer queue"→"Overdrachtswachtrij", the queue window title/heading · high
+- background (run in the ~) → op de achtergrond · Double Commander ("Werk op de achtergrond"); "send to background"→"naar de wachtrij sturen" / "op de achtergrond laten doorlopen" (the action sends it to the queue window) · high
+- status words (queue rows): Waiting → Wachten · macOS Finder ("Wachten"); Running → Bezig · DC ("Bezig"), matches the "Bezig met …" progress family; Done → Gereed · macOS Finder (glossary above); Cancelled → Geannuleerd · macOS Finder ("Geannuleerd"); "Couldn''t finish" (gentle failed) → Niet voltooid · macOS uses "kon niet worden voltooid"; short status "Niet voltooid" avoids a bare "mislukt" label per Cmdr voice · high
+
+REVIEW FLAGS (transfer-queue pass):
+- `queue.row.label` reuses the "Bezig met …" progress phrasing (kopiëren/verplaatsen/verwijderen) from fileOperations `titleActive`/`stageActive`, with the trash branch "Naar prullenmand verplaatsen" matching there. Consistent across files.
+- `fileOperations.transferProgress.queuedToast` + `.queuedToastCount`: the EN puts the count phrase ("1 transfer") leading; Dutch needs the verb to agree, so the count phrase carries it ("gaat # overdracht" / "gaan # overdrachten") and the host sentence wraps it as "Er {countText} deze voor, dus deze wacht op zijn beurt." Renders "Er gaat 1 overdracht deze voor" / "Er gaan 3 overdrachten deze voor". Token kept in the same slot.
+
 ## Cross-file reconciliation (2026-06-21)
 
 Drift the parallel per-file passes left behind, found and fixed in a whole-locale reconciliation. Recorded so the rulings stay single-sourced and don't drift again:

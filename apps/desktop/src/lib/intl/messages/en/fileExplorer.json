@@ -707,7 +707,7 @@
   },
   "fileExplorer.network.login.rememberInKeychain": "Remember in Keychain",
   "@fileExplorer.network.login.rememberInKeychain": {
-    "description": "Checkbox label to save the entered password in the macOS Keychain. \"Keychain\" is the macOS credential store; keep that name.",
+    "description": "Checkbox label to save the entered password in the macOS Keychain. \"Keychain\" is the macOS credential store — localize it to the term your macOS uses (Apple ships a localized Keychain Access app), per the Term-choice principles.",
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
@@ -1638,7 +1638,7 @@
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr can reuse the password macOS already saved for \"{displayName}\". You''ll see a system prompt asking to allow Keychain access. That''s expected, so click Allow.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "description": "Body of the confirmation dialog offering to reuse a network share''s saved macOS password. Warns that a macOS Keychain consent prompt (which Cmdr can''t customize) will follow. \"Keychain\" is the macOS credential store and \"Allow\" is the button on that system prompt; keep both.",
+    "description": "Body of the confirmation dialog offering to reuse a network share''s saved macOS password. Warns that a macOS Keychain consent prompt (which Cmdr can''t customize) will follow. \"Keychain\" is the macOS credential store and \"Allow\" is the button on that system prompt — localize both to the terms your macOS uses (Apple localizes Keychain Access and the Allow button), per the Term-choice principles.",
     "placeholders": {
       "displayName": "the display name of the network share whose saved password would be reused"
     }

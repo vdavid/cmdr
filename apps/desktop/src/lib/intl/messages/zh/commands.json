@@ -67,6 +67,14 @@
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
+  "commands.queueShow.label": "显示传输队列",
+  "@commands.queueShow.label": {
+    "sourceHash": "4567973"
+  },
+  "commands.queueShow.description": "打开一个窗口，列出每个正在进行和等待中的传输，你可以在其中暂停、继续或取消它们",
+  "@commands.queueShow.description": {
+    "sourceHash": "9f9ea7e"
+  },
   "commands.helpWhatsNew.label": "新增功能",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "aa0c54f"

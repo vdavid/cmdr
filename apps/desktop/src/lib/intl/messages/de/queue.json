@@ -1,0 +1,78 @@
+{
+  "queue.windowTitle": "Übertragungs-Warteschlange",
+  "@queue.windowTitle": {
+    "sourceHash": "3f728ae"
+  },
+  "queue.heading": "Übertragungen",
+  "@queue.heading": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.empty.title": "Nichts in der Warteschlange",
+  "@queue.empty.title": {
+    "sourceHash": "ef2b1ef"
+  },
+  "queue.empty.body": "Kopier-, Bewegungs- und Löschvorgänge erscheinen hier, solange sie laufen, sodass du sie anhalten, fortsetzen oder abbrechen kannst.",
+  "@queue.empty.body": {
+    "sourceHash": "c24a288"
+  },
+  "queue.row.label": "{type, select, copy {Wird kopiert} move {Wird bewegt} delete {Wird gelöscht} trash {Wird in den Papierkorb bewegt} other {In Arbeit}}",
+  "@queue.row.label": {
+    "sourceHash": "d5f30f5"
+  },
+  "queue.row.status": "{status, select, queued {Wartet} running {Läuft} paused {Angehalten} done {Fertig} cancelled {Abgebrochen} failed {Nicht abgeschlossen} other {Läuft}}",
+  "@queue.row.status": {
+    "sourceHash": "2bbdaaa"
+  },
+  "queue.row.etaRemaining": "noch {duration}",
+  "@queue.row.etaRemaining": {
+    "sourceHash": "a6b154c"
+  },
+  "queue.row.pause": "Pause",
+  "@queue.row.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "queue.row.resume": "Fortsetzen",
+  "@queue.row.resume": {
+    "sourceHash": "d640c74"
+  },
+  "queue.row.cancel": "Abbrechen",
+  "@queue.row.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "queue.row.pauseAria": "Diese Übertragung anhalten",
+  "@queue.row.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "queue.row.resumeAria": "Diese Übertragung fortsetzen",
+  "@queue.row.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "queue.row.cancelAria": "Diese Übertragung abbrechen",
+  "@queue.row.cancelAria": {
+    "sourceHash": "f85b066"
+  },
+  "queue.row.selectAria": "Diese Übertragung auswählen",
+  "@queue.row.selectAria": {
+    "sourceHash": "fb8bb14"
+  },
+  "queue.list.aria": "Übertragungen",
+  "@queue.list.aria": {
+    "sourceHash": "c417cb8"
+  },
+  "queue.toolbar.pauseAll": "Alle anhalten",
+  "@queue.toolbar.pauseAll": {
+    "sourceHash": "0b6258b"
+  },
+  "queue.toolbar.resumeAll": "Alle fortsetzen",
+  "@queue.toolbar.resumeAll": {
+    "sourceHash": "43e673c"
+  },
+  "queue.toolbar.cancelSelected": "Ausgewählte abbrechen",
+  "@queue.toolbar.cancelSelected": {
+    "sourceHash": "34e18e5"
+  },
+  "queue.toolbar.selectedCount": "{count, plural, one {# ausgewählt} other {# ausgewählt}}",
+  "@queue.toolbar.selectedCount": {
+    "sourceHash": "5f13640"
+  }
+}

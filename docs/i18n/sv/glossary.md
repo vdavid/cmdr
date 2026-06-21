@@ -305,6 +305,28 @@ passes stay consistent:
 - **restart (the app): `Starta om`** · macOS AppKit ("Starta om"), MS. The imperative on restart prompts; used across
   `errors.json`, `onboarding.json`, `settings.json`, `updates.json`. `high`.
 
+From the transfer-queue pass (`queue.json` + the new pause/queue/background keys in `fileOperations.json` +
+`commands.json`). The standalone transfer-queue window with pause/resume/cancel and send-to-background controls. Reuses
+the copy/move/delete verbs above; new ones:
+
+- **pause: `pausa` (verb/button) / `pausad` (status)** · macOS Finder shows "Pausa" and "Pausad" for a paused copy
+  ("Kopiering av ”…” har pausats"). Button "Pausa", status word "Pausad". `high`.
+- **resume: `återuppta`** · macOS Finder ("Återuppta kopiering"), Total Commander ("Återuppta avbruten överföring"). The
+  button that restarts a paused transfer. `high`.
+- **queue (the transfer queue): `kö`; transfer queue `överföringskö`; queued status `Väntar`** · Total Commander uses
+  the bare noun "Kö" for its job queue; Thunar renders "Job queued" as "Jobb köade" (verb "köa"). The window noun is
+  "överföringskö" (compound överföring + kö, definite "överföringskön"); the per-row queued state reads "Väntar"
+  (waiting its turn). The toolbar "Queue" button (send-to-background) on the progress dialog is the bare noun "Kö".
+  `high`.
+- **background / send to background: `i bakgrunden` / `skicka till …kön`** · Total Commander ("…överföringar i
+  bakgrunden", "i bakgrunden"). "Keep this running in the background" → "Håll igång den här i bakgrunden"; "Send to the
+  transfer queue" → "Skicka till överföringskön" (sending to the queue IS sending to the background here). `high`.
+- **transfer-row gerunds (queue row label): reuse `Kopierar` / `Flyttar` / `Raderar` / `Flyttar till papperskorgen`;
+  fallback `Arbetar`** · same select branches as `fileOperations.transferProgress.titleActive`, no trailing ellipsis
+  (it's a row label, not a title). "other {Working}" → "Arbetar". `high`.
+- **"Couldn''t finish" (failed-row status): `Gick inte att slutföra`** · the calm wording for a failed transfer, no bare
+  "fel"/"misslyckades" (style.md). `high`.
+
 ## Cross-file consistency reconciliation (post-fanout review, 2026-06-21)
 
 The per-file fan-out left a few same-term-rendered-differently drifts; resolved across all `sv` files:

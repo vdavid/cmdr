@@ -278,3 +278,16 @@ UI/path phrasings settled here (keep consistent across files):
 Settled term decision (2026-06-21):
 
 - **Quick Look -> `Xem nhanh`** · macOS Vietnamese · `high`. The localized Apple feature name: macOS Finder localizes it as "Xem nhanh" (`vi/macOS/Finder` `TL14`, sentence case; AppKit uses title-case "Xem Nhanh" — Cmdr follows Finder's sentence case). Applied to `commands.fileQuickLook.mac.label` and the three settings strings that reference the feature. Not kept verbatim because Apple does localize it for vi macOS users.
+
+Added during the wave-1 prep pass (2026-06-21): `queue.json` (new transfer-queue window) + the new pause/queue/background
+keys in `fileOperations.json` and `commands.json`. macOS Finder/AppKit Tier 1, MS terminology Tier 2; macOS wins ties.
+Reuses prior terms (sao chép/di chuyển/xóa, thùng rác, hủy, đóng, thử lại, đích, con trỏ, "còn {duration}" ETA framing).
+New terms below, each mined from `_ignored/i18n/vi/`:
+
+- **pause: `tạm dừng`** · macOS AppKit (`NSPauseTemplate`/`NSTouchBarPauseTemplate` → "tạm dừng"), MS terminology (verb "pause" → "tạm dừng"). "Paused" (status/title) → `Đã tạm dừng`. `high`.
+- **resume: `tiếp tục`** · macOS Finder ("Tiếp tục", the Continue/Resume action `66.title`). NOT the MS "resume" noun "sơ yếu lý lịch" (the CV/résumé sense — wrong here). `high`.
+- **queue (noun): `hàng đợi`; queue (verb, "send to the queue"): `đưa vào hàng đợi`** · MS terminology ("queue" noun → "hàng đợi", verb → "cho vào hàng"; adapted to `đưa vào hàng đợi` for the UI action). "Transfer queue" → `hàng đợi truyền`. `high`.
+- **background / run in the background: `nền` / `chạy ở chế độ nền`** · MS terminology ("background task" → "tác vụ nền"). "Keep running in the background" → `giữ chạy ở chế độ nền`. `high`.
+- **transfer (the operation, as a countable noun): `lần truyền`** · descriptive (`lần` = instance/occurrence + `truyền` = transfer); the queue lists individual copy/move/delete ops. The window/list heading "Transfers" → `Các lần truyền`. `tentative`.
+
+Wave-1-prep phrasings settled (keep consistent): "Waiting" (queued status) → `Đang chờ`; "Running" → `Đang chạy`; "Done" → `Xong`; "Cancelled" → `Đã hủy`; "Couldn''t finish" (gentle failed wording) → `Chưa hoàn tất được` (negative-capability framing per the error voice, avoids a bare "lỗi"/"thất bại"). "Cancel selected" → `Hủy mục đã chọn`. "Show transfer queue" (command) → `Hiện hàng đợi truyền`.
