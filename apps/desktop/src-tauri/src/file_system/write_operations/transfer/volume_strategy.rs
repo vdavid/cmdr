@@ -14,14 +14,64 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use std::future::Future;
+use std::pin::Pin;
+
 use super::super::conflict::ApplyToAll;
 use super::super::state::WriteOperationState;
 use super::super::types::{OperationEventSink, VolumeCopyConfig, WriteOperationError};
 use super::volume_conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::volume_preflight::SourceHint;
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{Volume, VolumeError};
+use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
 use crate::ignore_poison::IgnorePoison;
+
+/// Wraps a source read stream so a between-chunk cooperative checkpoint runs
+/// once per chunk for the cross-volume streaming path, where the per-chunk
+/// progress callback (`on_progress`) is sync and so can't `.await` to park or
+/// yield.
+///
+/// Before delegating each `next_chunk().await`, the wrapper:
+/// 1. **Parks while paused** (`pause_gate.wait_while_paused_async`) so a paused
+///    op stops advancing mid-file instead of streaming a large single file to
+///    completion. The checkpoint runs at a chunk boundary — the previous chunk
+///    is fully written and the next is not yet read — so a paused op holds only
+///    its in-flight `.cmdr-tmp-<uuid>`, never a torn target. Resume or cancel
+///    unblocks it (`wait_while_paused_async` returns the instant cancel is
+///    observed; cancellation wins over pause).
+/// 2. **Yields cooperatively** (`tokio::task::yield_now`) so a long transfer
+///    doesn't starve foreground tasks (listings, navigation, progress emits) on
+///    the runtime.
+///
+/// Cancellation is NOT enforced here: the backend's existing `on_progress`
+/// `is_cancelled` check after each write owns the cancel-then-cleanup ordering
+/// (drop the handle, remove the partial). The wrapper only gates progress; it
+/// never drops, double-writes, or reorders bytes — it passes each inner chunk
+/// through untouched.
+struct CheckpointStream {
+    inner: Box<dyn VolumeReadStream>,
+    state: Arc<WriteOperationState>,
+}
+
+impl VolumeReadStream for CheckpointStream {
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+        Box::pin(async move {
+            // Park between chunks while paused (returns immediately on cancel),
+            // then yield so foreground tasks get scheduled during a long copy.
+            self.state.pause_gate.wait_while_paused_async(&self.state.intent).await;
+            tokio::task::yield_now().await;
+            self.inner.next_chunk().await
+        })
+    }
+
+    fn total_size(&self) -> u64 {
+        self.inner.total_size()
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.inner.bytes_read()
+    }
+}
 
 /// Context threaded into the recursive merge walk so each pre-existing level can
 /// resolve its clashing children through the same conflict machinery the
@@ -152,6 +202,7 @@ pub(super) async fn copy_single_path(
             source_size_hint,
             dest_volume,
             dest_path,
+            state,
             on_file_progress,
         )
         .await?;
@@ -165,12 +216,19 @@ pub(super) async fn copy_single_path(
 /// the destination's `write_from_stream` implementation, which calls
 /// `on_progress` between chunks and returns `VolumeError::Cancelled` on
 /// `ControlFlow::Break(())`.
+///
+/// The source stream is wrapped in a [`CheckpointStream`] so a between-chunk
+/// cooperative checkpoint (park-while-paused, then `yield_now`) runs once per
+/// chunk: that's what makes a paused op stop advancing MID-FILE (the sync
+/// `on_progress` callback can't `.await` to park), and what keeps a long
+/// single-file transfer from starving foreground tasks.
 async fn stream_pipe_file(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     source_size_hint: Option<u64>,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
+    state: &Arc<WriteOperationState>,
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
 ) -> Result<u64, VolumeError> {
     log::debug!("stream_pipe_file: {} -> {}", source_path.display(), dest_path.display());
@@ -196,6 +254,13 @@ async fn stream_pipe_file(
             .open_read_stream_with_hint(source_path, source_size_hint)
             .await?;
         let size = stream.total_size();
+        // Wrap so a paused op parks (and a long copy yields) between chunks.
+        // `size` is read off the raw stream first — the wrapper forwards
+        // `total_size()` unchanged, so the destination still sees the real size.
+        let stream: Box<dyn VolumeReadStream> = Box::new(CheckpointStream {
+            inner: stream,
+            state: Arc::clone(state),
+        });
         match dest_volume
             .write_from_stream(dest_path, size, stream, on_file_progress)
             .await
@@ -418,6 +483,7 @@ async fn copy_directory_streaming(
             entry.size,
             dest_volume,
             &write_dest,
+            state,
             on_file_progress,
         )
         .await?;

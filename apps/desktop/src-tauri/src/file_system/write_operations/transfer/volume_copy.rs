@@ -848,8 +848,24 @@ pub(crate) async fn copy_volumes_with_progress(
                     dest_item_path.display()
                 );
 
-                // Mark this destination as in-flight so cancel/error can clean it up.
-                in_flight_partials.lock_ignore_poison().push(dest_item_path.clone());
+                let hint = source_hints.get(source_path).copied().unwrap_or_default();
+                let source_is_dir_hint = hint.is_directory;
+
+                // Mark this destination as in-flight so cancel/error can clean it
+                // up — but ONLY for a FILE source. A DIRECTORY source's dest is a
+                // (possibly pre-existing, merged) dir whose cleanup path is
+                // `delete_volume_path_recursive`; recording the dir ROOT here and
+                // then recursively deleting it on keep-partials/rollback would
+                // destroy pre-existing dest-only files (the merge invariant). A
+                // directory source's cleanup is owned entirely by the per-file
+                // `created`/`copied_paths` ledger threaded out of the task's
+                // result arms. (A dir task dropped mid-flight on abort leaves its
+                // in-flight `.cmdr-tmp-<uuid>` for the backend writer's abort to
+                // clean; never the merged root.) Pinned by
+                // `cancel_mid_merge_stream_concurrent_preserves_preexisting_dest_file`.
+                if !source_is_dir_hint {
+                    in_flight_partials.lock_ignore_poison().push(dest_item_path.clone());
+                }
 
                 let src_vol = Arc::clone(&source_volume);
                 let dst_vol = Arc::clone(&dest_volume);
@@ -863,8 +879,6 @@ pub(crate) async fn copy_volumes_with_progress(
                 let dest_owned = dest_item_path.clone();
                 let replace_after_write_owned = replace_after_write.clone();
                 let file_name_owned = file_name.clone();
-                let hint = source_hints.get(source_path).copied().unwrap_or_default();
-                let source_is_dir_hint = hint.is_directory;
                 let source_size_hint = if hint.is_directory { None } else { Some(hint.size) };
                 // Per-task merge context: deep file clashes inside a directory
                 // source landing on a merged dest honor the file policy, sharing

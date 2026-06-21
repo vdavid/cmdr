@@ -21,14 +21,13 @@ contract.
   touches (`Volume::lane_key()`, source AND dest), runs only when all are free (budget 1), else Queued. The next op
   admits on the explicit `on_settled`, NEVER in `Drop` (`ManagedTaskGuard` Drop frees lanes only). Full model, busy-set
   union, and deferred-start rationale: DETAILS § "Operation manager".
-- **All blocking work runs in `spawn_blocking`** (including validation), never on the async executor. The
-  `*_files_start` functions return an `operationId` immediately so the dialog opens and offers cancel even on a stalled
-  mount.
+- **All blocking work runs in `spawn_blocking`** (including validation), never on the async executor. `*_files_start`
+  returns an `operationId` immediately so the dialog opens and offers cancel even on a stalled mount.
 - **`OperationIntent` is a single `AtomicU8` state machine** (`Running → RollingBack/Stopped`, `Stopped` terminal).
   Cancel keeps copied files (deletes the last partial); Rollback deletes all copied files in reverse with progress.
   Never `state.intent.store(...)` directly: DETAILS.
 - **Pause is a separate `PauseGate`, orthogonal to `OperationIntent`.** Drivers gate between files after the
-  `is_cancelled` check (cancel-before-destructive ordering); cancel wins (it `wake()`s a parked op). Full rules:
+  `is_cancelled` check; the cross-volume streaming path also parks between chunks. Cancel wins (`wake()`s a parked op).
   DETAILS § "Pause / resume".
 - **Stop-mode conflict resolution must store the oneshot sender BEFORE emitting `write-conflict`** (both local-FS and
   volume branches). Emit-first races the take and hangs the recv.
@@ -49,8 +48,8 @@ contract.
   (`du`-equivalent, used by delete). Don't "fix" copy to the dedup'd number — it under-reserves disk space.
 - **All write ops emit via `OperationEventSink`, not `tauri::AppHandle`** (`emit_progress_via_sink`, the only
   progress-emit path, calls `enrich_progress`). Makes the pipelines testable without a Tauri runtime.
-- **The busy-volumes set disables Eject mid-op** (source AND destination volume IDs). The `eject_volume` server-side
-  guard is the real safety net; the picker disable is only UX.
+- **The busy-volumes set disables Eject mid-op** (source AND dest volume IDs). The `eject_volume` server-side guard is
+  the real safety net; the picker disable is only UX.
 - **Volume-aware ops must not emit `write-error` on `Cancelled`** (the inner handler already emitted `write-cancelled`);
   the outer wrapper matches `Cancelled` and skips.
 

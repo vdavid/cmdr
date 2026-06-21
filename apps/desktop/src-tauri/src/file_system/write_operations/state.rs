@@ -66,11 +66,14 @@ pub(crate) fn is_cancelled(intent: &AtomicU8) -> bool {
 /// A paused op parks at a between-files boundary (the loop tops in the transfer
 /// drivers and the delete-phase walker loops, gated immediately AFTER the
 /// existing `is_cancelled` check so the data-safety ordering — cancel/skip
-/// before any destructive call — is preserved). It is **orthogonal to**
-/// [`OperationIntent`]: pausing never perturbs the validated `Running →
-/// RollingBack/Stopped` transitions. Cancellation ALWAYS wins over pause: the
-/// wait helpers return the instant cancel is observed, so the existing cancel
-/// path takes over.
+/// before any destructive call — is preserved). The cross-volume streaming copy
+/// path parks at a finer grain too: BETWEEN CHUNKS, via the `CheckpointStream`
+/// wrapper in `transfer/volume_strategy.rs`, so a paused single large file (e.g.
+/// MTP→local) stops mid-stream instead of streaming to completion. It is
+/// **orthogonal to** [`OperationIntent`]: pausing never perturbs the validated
+/// `Running → RollingBack/Stopped` transitions. Cancellation ALWAYS wins over
+/// pause: the wait helpers return the instant cancel is observed, so the
+/// existing cancel path takes over.
 ///
 /// Two waiters for two execution shapes:
 /// - `condvar` (+ its `Mutex<()>`) parks the **sync** driver, which runs inside
@@ -83,9 +86,15 @@ pub(crate) fn is_cancelled(intent: &AtomicU8) -> bool {
 /// `resume()` wakes both: `notify_all()` on the condvar and `notify_waiters()`
 /// on the `Notify`, so whichever shape is parked unblocks.
 ///
-/// Mid-file (per-chunk) pause is out of scope for v1: the per-file progress
-/// callbacks stay cancel-only. A paused op therefore holds only its invisible
-/// `.cmdr-tmp-<uuid>`, never a torn target.
+/// Mid-file pause is honored on the cross-volume streaming path (the
+/// `CheckpointStream` parks between chunks before reading the next one). A paused
+/// op therefore holds only its invisible `.cmdr-tmp-<uuid>` (the previous chunk
+/// is fully written, the next isn't yet read), never a torn target. The
+/// sync `on_progress` callbacks stay cancel-only — they can't `.await` to park,
+/// so the async wrapper owns mid-file parking. The local-FS sync chunk loop
+/// (`chunked_copy.rs`) is the one path that pauses only between files (it gets
+/// the cancel atom, not this gate); see transfer/DETAILS.md § "Pause reaches
+/// between chunks".
 pub struct PauseGate {
     paused: AtomicBool,
     /// Guards nothing real — `Condvar::wait` needs a held `MutexGuard`. The flag

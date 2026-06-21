@@ -363,6 +363,283 @@ async fn test_streaming_copy_directory_recursive() {
     assert!(dest.exists(Path::new("/docs/notes.txt")).await);
 }
 
+// ========================================================================
+// Mid-file (between-chunk) pause: a multi-chunk volume copy must STOP
+// advancing while paused, then complete on resume / unblock on cancel.
+//
+// The cross-volume streaming path's per-chunk progress callback is sync, so
+// it can't `.await` to park. `stream_pipe_file` wraps the source stream in a
+// `CheckpointStream` whose `next_chunk()` parks while paused (and yields) once
+// per chunk. These tests pin that the gate now reaches MID-FILE — pre-fix the
+// gate lived only at the per-source loop top, so a single large file streamed
+// to completion while "Paused" was showing.
+//
+// The source is a `SlowSource`: its read stream sleeps a few ms per chunk so
+// the transfer spans a real wall-clock window. That makes "pause lands
+// mid-file" deterministic — an instant in-memory copy would otherwise finish
+// inside the controlling task's first sleep before any pause could land.
+// ========================================================================
+
+use super::super::super::state::{WRITE_OPERATION_STATE, cancel_write_operation, load_intent};
+
+const SLOW_CHUNK_SIZE: usize = 64 * 1024;
+const SLOW_CHUNK_COUNT: usize = 30;
+/// Per-chunk delay so the whole transfer spans ~120 ms — wide enough that a
+/// pause from the controlling task reliably lands between two chunks, short
+/// enough to keep the test from lingering across other globally-stateful tests.
+const SLOW_CHUNK_DELAY: Duration = Duration::from_millis(4);
+
+/// A read stream that yields `SLOW_CHUNK_COUNT` chunks of `SLOW_CHUNK_SIZE`
+/// bytes, sleeping `SLOW_CHUNK_DELAY` before each, so a multi-chunk copy spans a
+/// real wall-clock window for pause/cancel to land mid-stream.
+struct SlowChunkedStream {
+    chunks_left: usize,
+    fill: u8,
+    total: u64,
+    emitted: u64,
+}
+
+impl VolumeReadStream for SlowChunkedStream {
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+        Box::pin(async move {
+            if self.chunks_left == 0 {
+                return None;
+            }
+            tokio::time::sleep(SLOW_CHUNK_DELAY).await;
+            self.chunks_left -= 1;
+            self.emitted += SLOW_CHUNK_SIZE as u64;
+            Some(Ok(vec![self.fill; SLOW_CHUNK_SIZE]))
+        })
+    }
+
+    fn total_size(&self) -> u64 {
+        self.total
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.emitted
+    }
+}
+
+/// Minimal source volume whose `open_read_stream` returns a `SlowChunkedStream`.
+/// Non-local + streaming so `copy_single_path` routes through the streaming
+/// pipe (and thus the `CheckpointStream` wrapper).
+struct SlowSource;
+
+impl Volume for SlowSource {
+    fn name(&self) -> &str {
+        "slow-source"
+    }
+    fn root(&self) -> &Path {
+        Path::new("/")
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(Vec::new()) })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+    fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { true })
+    }
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(false) })
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn open_read_stream<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(async {
+            Ok(Box::new(SlowChunkedStream {
+                chunks_left: SLOW_CHUNK_COUNT,
+                fill: 0xCD,
+                total: (SLOW_CHUNK_COUNT * SLOW_CHUNK_SIZE) as u64,
+                emitted: 0,
+            }) as Box<dyn VolumeReadStream>)
+        })
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn streaming_copy_parks_mid_file_while_paused_then_resumes() {
+    let source: Arc<dyn Volume> = Arc::new(SlowSource);
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest"));
+    let total = (SLOW_CHUNK_COUNT * SLOW_CHUNK_SIZE) as u64;
+
+    let state = make_state();
+    let bytes_seen = Arc::new(AtomicU64::new(0));
+
+    let source_drv = Arc::clone(&source);
+    let dest_drv = Arc::clone(&dest);
+    let state_drv = Arc::clone(&state);
+    let bytes_seen_drv = Arc::clone(&bytes_seen);
+    let op = tokio::spawn(async move {
+        let bytes_ref = &bytes_seen_drv;
+        copy_single_path(
+            &source_drv,
+            Path::new("/big.bin"),
+            false,
+            None,
+            &dest_drv,
+            Path::new("/big.bin"),
+            &state_drv,
+            &CreatedPaths::default(),
+            &|bytes_done, _total| {
+                bytes_ref.store(bytes_done, Ordering::SeqCst);
+                ControlFlow::Continue(())
+            },
+            &|| {},
+            None,
+        )
+        .await
+    });
+
+    // Let a few chunks stream, then pause MID-FILE.
+    tokio::time::sleep(Duration::from_millis(30)).await;
+    state.pause_gate.pause();
+
+    // Sample twice across several chunk intervals: the byte count must freeze
+    // (the wrapped stream parks before reading the next chunk) and the op must
+    // not finish.
+    tokio::time::sleep(Duration::from_millis(40)).await;
+    let frozen = bytes_seen.load(Ordering::SeqCst);
+    tokio::time::sleep(Duration::from_millis(120)).await;
+    assert_eq!(
+        bytes_seen.load(Ordering::SeqCst),
+        frozen,
+        "a paused multi-chunk copy must stop advancing mid-file"
+    );
+    assert!(
+        frozen < total,
+        "the copy must be parked short of completion while paused"
+    );
+    assert!(frozen > 0, "at least one chunk should have streamed before the pause");
+    assert!(!op.is_finished(), "the copy task must still be parked while paused");
+    assert_eq!(
+        load_intent(&state.intent),
+        OperationIntent::Running,
+        "pause must not touch OperationIntent"
+    );
+
+    // Resume → completes with the full byte count.
+    state.pause_gate.resume();
+    let bytes = tokio::time::timeout(Duration::from_secs(10), op)
+        .await
+        .expect("resumed copy must complete")
+        .expect("copy task must not panic")
+        .expect("resumed copy must succeed");
+    assert_eq!(bytes, total, "resumed copy reports the full byte count");
+    assert_eq!(
+        dest.get_metadata(Path::new("/big.bin")).await.unwrap().size,
+        Some(total),
+        "resumed copy lands the full file at the destination"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
+    use std::fs;
+
+    let source: Arc<dyn Volume> = Arc::new(SlowSource);
+    // Local-FS destination — the user's real case is MTP→local, whose dest is
+    // `LocalPosixVolume`. On cancel its `write_from_stream` returns typed
+    // `VolumeError::Cancelled` and removes the in-flight partial.
+    let dst_dir = std::env::temp_dir().join(format!("cmdr_midchunk_cancel_dst_{:?}", std::thread::current().id()));
+    let _ = fs::remove_dir_all(&dst_dir);
+    fs::create_dir_all(&dst_dir).unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+
+    // Install into the global state cache so the production cancel API reaches it.
+    let op_id = format!("test-midchunk-cancel-{:?}", std::thread::current().id());
+    let state = make_state();
+    WRITE_OPERATION_STATE
+        .write()
+        .unwrap()
+        .insert(op_id.clone(), Arc::clone(&state));
+
+    let bytes_seen = Arc::new(AtomicU64::new(0));
+    let source_drv = Arc::clone(&source);
+    let dest_drv = Arc::clone(&dest);
+    let state_drv = Arc::clone(&state);
+    let bytes_seen_drv = Arc::clone(&bytes_seen);
+    let op = tokio::spawn(async move {
+        let bytes_ref = &bytes_seen_drv;
+        let state_ref = &state_drv;
+        copy_single_path(
+            &source_drv,
+            Path::new("/big.bin"),
+            false,
+            None,
+            &dest_drv,
+            Path::new("big.bin"),
+            state_ref,
+            &CreatedPaths::default(),
+            // Mirror the production per-file callback (`make_serial_per_file_progress`):
+            // break on cancel so the backend's chunk loop tears down the partial.
+            &|bytes_done, _total| {
+                bytes_ref.store(bytes_done, Ordering::SeqCst);
+                if crate::file_system::write_operations::state::is_cancelled(&state_ref.intent) {
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
+                }
+            },
+            &|| {},
+            None,
+        )
+        .await
+    });
+
+    tokio::time::sleep(Duration::from_millis(30)).await;
+    state.pause_gate.pause();
+    tokio::time::sleep(Duration::from_millis(40)).await;
+    assert!(!op.is_finished(), "parked while paused");
+
+    // Cancel (keep partials) while paused: the production cancel path flips
+    // intent AND wakes the gate, so the parked stream unblocks and the backend's
+    // on_progress cancel check breaks + cleans up the partial.
+    cancel_write_operation(&op_id, false);
+
+    let result = tokio::time::timeout(Duration::from_secs(10), op)
+        .await
+        .expect("cancel-while-paused must unblock the parked copy")
+        .expect("copy task must not panic");
+    assert!(
+        matches!(result, Err(VolumeError::Cancelled(_))),
+        "cancel wins over pause: the copy ends Cancelled, got {result:?}"
+    );
+    assert_eq!(
+        load_intent(&state.intent),
+        OperationIntent::Stopped,
+        "keep-partials cancel lands on Stopped"
+    );
+    // Keep-partials: the local sink removes its in-flight file on the cancel
+    // break, so no torn target is left behind.
+    assert!(
+        !dest.exists(Path::new("big.bin")).await,
+        "a cancelled mid-file copy leaves no partial dest file"
+    );
+
+    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
+    let _ = fs::remove_dir_all(&dst_dir);
+}
+
 /// Destination volume that rejects the first `write_from_stream` with
 /// `StaleDestinationHandle` (a re-keyed MTP folder handle) and accepts the
 /// second. Proves the transfer engine re-opens the source and retries once

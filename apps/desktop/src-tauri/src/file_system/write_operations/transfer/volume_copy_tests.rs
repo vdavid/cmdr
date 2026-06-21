@@ -717,17 +717,24 @@ async fn test_multi_file_copy_cancel_before_start() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_multi_file_copy_cancel_mid_flight() {
-    // Use a custom event sink that triggers cancellation deterministically
-    // when progress reports files_done >= 2.
+    // Custom event sink that flips intent to Stopped after a handful of
+    // `Copying` progress events. Counting EVENTS (which fire per chunk, early in
+    // the batch) rather than completed FILES makes the cancel land while tasks
+    // are still mid-stream — robust regardless of scheduler interleaving. The
+    // concurrent streaming path parks/checks between chunks, so the in-flight
+    // tasks break at their next checkpoint and not all sources finish.
     struct CancelAfterNSink {
         inner: CollectorEventSink,
         intent: Arc<AtomicU8>,
-        cancel_after_files: usize,
+        cancel_after_events: usize,
+        events_seen: AtomicUsize,
     }
 
     impl OperationEventSink for CancelAfterNSink {
         fn emit_progress(&self, event: WriteProgressEvent) {
-            if event.phase == WriteOperationPhase::Copying && event.files_done >= self.cancel_after_files {
+            if event.phase == WriteOperationPhase::Copying
+                && self.events_seen.fetch_add(1, Ordering::Relaxed) >= self.cancel_after_events
+            {
                 self.intent.store(2, Ordering::Relaxed);
             }
             self.inner.emit_progress(event);
@@ -751,9 +758,13 @@ async fn test_multi_file_copy_cancel_mid_flight() {
     }
 
     let (source, dest) = make_volumes();
+    // Files large enough (many 64 KB chunks) that the three not-yet-complete
+    // in-flight tasks reliably observe the cancel at a between-chunk checkpoint
+    // before finishing. With tiny files the whole batch can complete inside one
+    // scheduler turn, making "not all 5 land" a coin flip.
     for i in 1..=5 {
         source
-            .create_file(Path::new(&format!("/{}.bin", i)), &vec![0; 100_000])
+            .create_file(Path::new(&format!("/{}.bin", i)), &vec![0; 2_000_000])
             .await
             .unwrap();
     }
@@ -762,7 +773,8 @@ async fn test_multi_file_copy_cancel_mid_flight() {
     let events = Arc::new(CancelAfterNSink {
         inner: CollectorEventSink::new(),
         intent: Arc::clone(&state.intent),
-        cancel_after_files: 2,
+        cancel_after_events: 3,
+        events_seen: AtomicUsize::new(0),
     });
     let config = VolumeCopyConfig {
         progress_interval_ms: 0,
@@ -792,9 +804,9 @@ async fn test_multi_file_copy_cancel_mid_flight() {
     // The outer loop then detects the Stopped intent and returns Cancelled.
     assert!(result.is_err(), "expected error, got {:?}", result);
 
-    // At least 2 files should exist but not all 5
-    assert!(dest.exists(Path::new("/1.bin")).await);
-    assert!(dest.exists(Path::new("/2.bin")).await);
+    // A mid-flight cancel leaves the batch partially done: fewer than all 5
+    // sources land. Completion order under concurrency isn't deterministic, so
+    // assert on the COUNT, not on specific names.
     let mut total = 0;
     for i in 1..=5 {
         if dest.exists(Path::new(&format!("/{}.bin", i))).await {
