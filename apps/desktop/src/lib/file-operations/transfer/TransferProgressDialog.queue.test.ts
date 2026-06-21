@@ -216,6 +216,33 @@ describe('TransferProgressDialog Queue button', () => {
     await flushPromises()
     expect(cancelWriteOperationMock, 'backgrounded op keeps running on unmount').not.toHaveBeenCalled()
   })
+
+  it('closing the modal (× / Escape / focus-trap teardown) after Queue does NOT cancel the backgrounded op', async () => {
+    // Regression: in the real app the backgrounding handoff tears the modal down
+    // through `ModalDialog`'s `onclose` (× button / Escape / focus-trap teardown),
+    // which calls `handleCancel`. The original Queue test above only exercised
+    // Svelte's `unmount()` (the guarded `onDestroy` path) and missed this one, so
+    // the bug shipped: clicking Queue cancelled the op (kept partial files) and
+    // the queue window opened empty because the op had already settled out of the
+    // manager registry.
+    const { target } = await mountDialog()
+
+    queryButton(target, 'Send to the transfer queue')?.click()
+    await tick()
+    expect(openQueueWindowMock, 'Queue backgrounded the op').toHaveBeenCalledOnce()
+    cancelWriteOperationMock.mockClear()
+
+    // Fire the modal's onclose path the same way a real close does.
+    const closeBtn = target.querySelector<HTMLButtonElement>('.modal-close-button')
+    expect(closeBtn, 'modal close (×) affordance is present').not.toBeNull()
+    closeBtn?.click()
+    await flushPromises()
+
+    expect(
+      cancelWriteOperationMock,
+      'a backgrounded op must survive the modal close — it is managed by the queue window',
+    ).not.toHaveBeenCalled()
+  })
 })
 
 describe('TransferProgressDialog dialog-scoped F2', () => {

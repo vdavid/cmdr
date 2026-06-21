@@ -809,6 +809,15 @@
     }
 
     async function handleCancel(rollback: boolean) {
+        // A backgrounded op was deliberately handed off to the queue window, so NO
+        // teardown path may cancel it. The modal's `onclose` (× button, Escape, or
+        // focus-trap teardown) fires during the backgrounding handoff and routes
+        // here; without this guard it would cancel the op (keeping only partial
+        // files) and the queue window would open empty. `onDestroy` makes the same
+        // exception; the explicit Cancel/Rollback buttons always run with
+        // `backgrounded` false (the modal is gone by the time it's set).
+        if (backgrounded) return
+
         // If still waiting for scan preview, cancel the scan and close
         if (waitingForScan && previewId) {
             log.info('Cancelling scan preview during wait: previewId={previewId}', { previewId })
