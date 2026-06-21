@@ -138,7 +138,12 @@
         if (loadingScreen) loadingScreen.style.display = 'none'
 
         try {
-            await initializeSettings()
+            // The queue window has no store capability (see `src-tauri/capabilities/CLAUDE.md`
+            // § queue — no persistence in v1), so settings come from the restricted-window
+            // snapshot + cross-window change events, mirroring the viewer. Non-throwing: a
+            // plain `initializeSettings()` would reject on the store load and leave the body
+            // unrendered (the silent-perm-failure the queue's CLAUDE.md warns about).
+            await initializeSettings({ restrictedWindow: true })
             initLanguageSync()
             await initAccentColor()
             await initReduceTransparency()
