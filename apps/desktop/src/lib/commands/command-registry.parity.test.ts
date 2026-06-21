@@ -142,8 +142,7 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'app.checkForUpdates': 'Check whether a newer version of Cmdr is available, and download it if so',
   'cmdr.openOnboarding': 'Reopen the onboarding wizard to review or change first-launch setup options',
   'help.openShortcuts': 'Open a read-only window listing every keyboard shortcut, live-synced with your customizations',
-  'queue.show':
-    'Open a window listing every running and waiting transfer, where you can pause, resume, or cancel them',
+  'queue.show': 'Open a window listing every running and waiting transfer, where you can pause, resume, or cancel them',
   'help.sendErrorReport': 'Send Cmdr logs to the team to help fix something that went wrong',
   'help.whatsNew': 'See what changed in the latest releases of Cmdr',
   'feedback.send': 'Tell the maker of Cmdr what you think: ideas, wishes, anything',

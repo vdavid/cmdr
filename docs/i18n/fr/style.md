@@ -37,19 +37,19 @@ over formal register), and it's the right tonal fit for Cmdr's voice (verified a
 
 **Imperatives for UI actions** (buttons, menu items): use the infinitive, the French UI convention ("Envoyer",
 "Annuler", "Copier", "Renommer", "Ignorer"), not the imperative mood. The infinitive is the neutral, label-style form
-Apple and most French macOS software use for commands (verified against the reference pile, `fr/macOS/Finder/MenuBar.json`:
-"Copier", "Renommer", "Éjecter", "Trier par", 2026-06-21).
+Apple and most French macOS software use for commands (verified against the reference pile,
+`fr/macOS/Finder/MenuBar.json`: "Copier", "Renommer", "Éjecter", "Trier par", 2026-06-21).
 
 ## Decision points
 
 Formality is settled above (`vous`). These are the remaining French-specific calls.
 
 - **Regional variant: one base `fr` (France norm), no `fr-CA` / `fr-CH` split needed yet.** Apple and Microsoft both
-  ship a single metropolitan French for most products; Canadian French (fr-CA) is a deferred variant
-  (see [`language-selection-decisions.md`](../language-selection-decisions.md)). The UI-visible divergences are narrow
-  (fr-CA tends to translate more anglicisms, e.g. "courriel" for email, and differs on some spacing conventions), and
-  none touch the core file-manager vocabulary below. Recommendation: ship one `fr` on the France norm; only add fr-CA if
-  a Canadian user reports specific friction. Confidence: high.
+  ship a single metropolitan French for most products; Canadian French (fr-CA) is a deferred variant (see
+  [`language-selection-decisions.md`](../language-selection-decisions.md)). The UI-visible divergences are narrow (fr-CA
+  tends to translate more anglicisms, e.g. "courriel" for email, and differs on some spacing conventions), and none
+  touch the core file-manager vocabulary below. Recommendation: ship one `fr` on the France norm; only add fr-CA if a
+  Canadian user reports specific friction. Confidence: high.
 - **Gendered grammar: name the object or action, never the user, and no midpoint glyphs.** French agent and adjective
   forms are gendered ("connecté" / "connectée"). Per the global rule, achieve inclusivity by neutral RESTRUCTURING,
   never by the midpoint ("connecté·e", "utilisateur·rice·s"): those break screen readers (against Cmdr's AA+ a11y
@@ -60,8 +60,8 @@ Formality is settled above (`vous`). These are the remaining French-specific cal
   shipping the bare gendered default. Confidence: high.
 - **Capitalization: sentence case, and keep the accent on capital letters.** The app's sentence-case rule holds (only
   the first word and proper nouns capitalized; not English-style title case on every word). French additionally requires
-  accents on capitals: write "État", "Éjecter", "Écraser", "À propos", never "Etat", "Ejecter", "A propos". macOS
-  French is consistent on this ("Éjecter", "Écraser les extensions", "État", verified against the reference pile,
+  accents on capitals: write "État", "Éjecter", "Écraser", "À propos", never "Etat", "Ejecter", "A propos". macOS French
+  is consistent on this ("Éjecter", "Écraser les extensions", "État", verified against the reference pile,
   `fr/macOS/Finder/`, 2026-06-21). A translator must keep the accent even on an all-caps or sentence-initial capital.
   Confidence: confirmed (French orthography).
 - **Punctuation: a space before `: ; ! ?`, and guillemets « ».** French typography wants a thin space here; this catalog
@@ -89,7 +89,8 @@ Straightforward (sources agree, `high`):
 - delete → supprimer · macOS AppKit ("Delete"→"Supprimer", "Supprimer des favoris"); "Erase"→"Effacer" is the
   reformat/wipe sense, keep distinct · high
 - copy → copier · macOS Finder/MenuBar ("Copier", "Copier en tant que lien") · high
-- move → déplacer · macOS Finder ("Déplacer les éléments ici", "Copier et déplacer ${sources} vers ${destination}") · high
+- move → déplacer · macOS Finder ("Déplacer les éléments ici", "Copier et déplacer ${sources} vers ${destination}") ·
+  high
 - rename → renommer · macOS Finder ("Renommer", "Renommer les éléments du Finder :"), Nautilus ("Renommer") · high
 - eject → éjecter · macOS AppKit ("NSNavEjectButton"→"éjecter"), Finder ("Éjecter", "Tout éjecter"), Nautilus
   ("Éjecter") · high
@@ -140,8 +141,8 @@ Contested or sense-specific (read the block):
     sidebar/callout sense and doesn't fit a navigation pane. Use "barre latérale" (Tier 1).
 - listing → liste des fichiers / présentation par liste · sense split · high for "the file-list pane", tentative for
   "list view"
-  - For the file list a pane shows, use "liste des fichiers" (the orthodox term, see above). macOS calls the list *view
-    mode* "présentation par liste" / "Liste": that's the view-style sense, not the pane content. Keep the two senses
+  - For the file list a pane shows, use "liste des fichiers" (the orthodox term, see above). macOS calls the list _view
+    mode_ "présentation par liste" / "Liste": that's the view-style sense, not the pane content. Keep the two senses
     distinct; if a single short label is needed for the pane content and "liste des fichiers" is too long, "liste" alone
     is the fallback; confirm with David which reads best in context.
 
@@ -157,7 +158,8 @@ Existing crash-reporter term choices (keep consistent across the catalog):
 
 - crash report → rapport d'incident · "incident" is the standard, non-alarmist French term (matches Apple's "rapport
   d'incident"); avoid "rapport de plantage" which is more colloquial
-- crashed / quit unexpectedly → s'est fermé(e) de façon inattendue · matches macOS French phrasing for an unexpected quit
+- crashed / quit unexpectedly → s'est fermé(e) de façon inattendue · matches macOS French phrasing for an unexpected
+  quit
 - Report ID → identifiant du rapport
 - Updates → Mises à jour · in-app navigation section
 - Send → Envoyer
@@ -213,5 +215,5 @@ The formality (`vous`), move, and item calls are settled from the sources above;
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/fr/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+you settle terms, each sourced from the reference pile (`_ignored/i18n/fr/`; recipes in
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

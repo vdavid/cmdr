@@ -71,10 +71,10 @@ it can, but the judgment is yours.
 3. **Brand/product names may inflect.** In agglutinative/inflecting languages, let the brand take its natural
    inflectional suffix rather than forcing an unnatural bare form: Hungarian "Cmdrben" (in Cmdr), Swedish genitive
    "Cmdrs". Keep the brand recognizable but grammatical. Pick the suffix by how the name is PRONOUNCED, not spelled:
-   vowel harmony in Hungarian/Finnish/Turkish keys off the SPOKEN form, so "Cmdr" read aloud as "commander" harmonizes to
-   the vowels you'd hear, not to the bare consonant cluster. Apply your language's harmony rules to the pronunciation.
-   The don't-translate check is suffix-aware (`hasBrandPresent`), so an inflected brand passes; an omitted one is still
-   flagged.
+   vowel harmony in Hungarian/Finnish/Turkish keys off the SPOKEN form, so "Cmdr" read aloud as "commander" harmonizes
+   to the vowels you'd hear, not to the bare consonant cluster. Apply your language's harmony rules to the
+   pronunciation. The don't-translate check is suffix-aware (`hasBrandPresent`), so an inflected brand passes; an
+   omitted one is still flagged.
 
 ## Researching terms: the reference pile
 
@@ -142,10 +142,10 @@ the documented last resort, used only when natural restructuring genuinely isn't
    needs overrides. The tag is a format identifier, not translatable. The base is the fallback for its variants; `en` is
    the final fallback. Convention + resolution order: [`i18n.md`](i18n.md) § Locale-format convention.
 2. **Create the skeleton.** Run `node apps/desktop/scripts/gen-locale-skeleton.js <tag>`: it mirrors `en/`'s files and
-   keys under `messages/<tag>/` with the English values in place and each
-   `@key.sourceHash` = the 7-char hash of the exact English value it was translated from (computed by `sourceHash()` in
-   `apps/desktop/scripts/i18n-catalog-lib.js`; the pseudolocale generator does exactly this and is the reference). The
-   hash is what `desktop-i18n-stale` uses to know a translation is still current.
+   keys under `messages/<tag>/` with the English values in place and each `@key.sourceHash` = the 7-char hash of the
+   exact English value it was translated from (computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.js`;
+   the pseudolocale generator does exactly this and is the reference). The hash is what `desktop-i18n-stale` uses to
+   know a translation is still current.
 3. **Write the per-language style guide** (input 2 above).
 4. **Translate** with the agent-handoff block below, feeding each key its `@key` context + the style guide.
 5. **Run the checks**:
@@ -158,10 +158,10 @@ the documented last resort, used only when natural restructuring genuinely isn't
    they sign it off; the stale check clears it whenever the source changes, so review state stays honest. Skipping this
    is the normal case — see the override above.
 8. **Ship.** No code change is needed to make a finished locale live: the runtime resolver and the in-app picker
-   (**Settings > Appearance > Language**) are built, so dropping a `messages/<tag>/` dir makes the locale load and appear
-   in the picker, with the documented `<tag>` → base → `en` fallback per key. A locale ships once it's translated, passes
-   the checks, and is overflow-checked — human review is opportunistic, not a gate (see the override above). See
-   [`i18n.md`](i18n.md) § Add a new locale for the runtime mechanism.
+   (**Settings > Appearance > Language**) are built, so dropping a `messages/<tag>/` dir makes the locale load and
+   appear in the picker, with the documented `<tag>` → base → `en` fallback per key. A locale ships once it's
+   translated, passes the checks, and is overflow-checked — human review is opportunistic, not a gate (see the override
+   above). See [`i18n.md`](i18n.md) § Add a new locale for the runtime mechanism.
 
 ## New feature → add strings and translate to ALL languages
 

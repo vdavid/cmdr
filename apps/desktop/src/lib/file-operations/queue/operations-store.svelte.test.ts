@@ -13,7 +13,11 @@ vi.mock('$lib/tauri-commands', () => ({
 
 import { createOperationsStore, isTerminalStatus } from './operations-store.svelte'
 
-function snapshot(id: string, status: OperationSnapshot['status'], over: Partial<OperationSnapshot> = {}): OperationSnapshot {
+function snapshot(
+  id: string,
+  status: OperationSnapshot['status'],
+  over: Partial<OperationSnapshot> = {},
+): OperationSnapshot {
   return {
     operationId: id,
     operationType: 'copy',

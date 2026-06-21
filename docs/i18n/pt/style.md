@@ -74,24 +74,24 @@ conventional unmarked masculine, matching every major. Don't use "x"/"@"/"-e" ne
 
 ### "Apagar" vs "Excluir" vs "Eliminar" for delete/trash
 
-A file manager hits delete constantly, and the verb choice is variant-coded AND semantically loaded (permanent delete
-vs move-to-trash), so it's the most likely consistency bug. **Now locked in the glossary** (pt-BR): delete →
-**Excluir**, delete permanently → **Excluir permanentemente**, the trash action → **Mover para o Lixo** (trash noun =
-**Lixo**, the macOS Finder Tier-1 value). Don't use "Apagar" (Finder's own delete verb): one catalog file drifted to it
-and was reconciled back to "Excluir" for cross-file consistency. See the glossary's reconciliation note.
+A file manager hits delete constantly, and the verb choice is variant-coded AND semantically loaded (permanent delete vs
+move-to-trash), so it's the most likely consistency bug. **Now locked in the glossary** (pt-BR): delete → **Excluir**,
+delete permanently → **Excluir permanentemente**, the trash action → **Mover para o Lixo** (trash noun = **Lixo**, the
+macOS Finder Tier-1 value). Don't use "Apagar" (Finder's own delete verb): one catalog file drifted to it and was
+reconciled back to "Excluir" for cross-file consistency. See the glossary's reconciliation note.
 
 ## Terminology and glossary
 
 Defer the full glossary until the variant is chosen (every row depends on it). Triangulate pt-BR/pt-PT macOS Finder
 (highest authority, both in the pile) + Microsoft terminology + GNOME/Xfce.
 
-| English term | Portuguese (pt-BR default) | Notes                    |
-| ------------ | -------------------------- | ------------------------ |
-| file         | arquivo                    | pt-PT: ficheiro          |
-| folder       | pasta                      | shared                   |
+| English term | Portuguese (pt-BR default) | Notes                                                    |
+| ------------ | -------------------------- | -------------------------------------------------------- |
+| file         | arquivo                    | pt-PT: ficheiro                                          |
+| folder       | pasta                      | shared                                                   |
 | trash        | Lixo                       | macOS Finder Tier-1 (glossary-locked); pt-PT: Reciclagem |
-| pane         | painel                     | confirm vs Finder        |
-| tab          | aba                        | pt-BR; pt-PT: separador  |
+| pane         | painel                     | confirm vs Finder                                        |
+| tab          | aba                        | pt-BR; pt-PT: separador                                  |
 
 ## Brand and do-not-translate
 
@@ -120,5 +120,5 @@ modern CLDR Portuguese (compact/large numbers), so plural messages must write a 
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/pt/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+you settle terms, each sourced from the reference pile (`_ignored/i18n/pt/`; recipes in
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

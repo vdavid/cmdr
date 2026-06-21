@@ -195,9 +195,7 @@ test.describe('Transfer queue window', () => {
     // Click Queue → the modal unmounts and the queue window opens, the op still
     // running in the background.
     await main.click(`${PROGRESS_DIALOG} [aria-label="Send to the transfer queue"]`)
-    await expect
-      .poll(async () => !(await main.isVisible(PROGRESS_DIALOG)), { timeout: 5000 })
-      .toBeTruthy()
+    await expect.poll(async () => !(await main.isVisible(PROGRESS_DIALOG)), { timeout: 5000 }).toBeTruthy()
 
     const queuePage = await main.waitForWindow((w) => w.label === QUEUE_LABEL, { timeout: 10000 })
     await expect

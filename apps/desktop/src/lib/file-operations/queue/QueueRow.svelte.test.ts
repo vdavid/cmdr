@@ -57,7 +57,13 @@ describe('QueueRow', () => {
   })
 
   it('a queued op has Cancel but no Pause/Resume', () => {
-    render({ row: buildRow('queued'), selected: false, onToggleSelect: () => {}, onPauseResume: () => {}, onCancel: () => {} })
+    render({
+      row: buildRow('queued'),
+      selected: false,
+      onToggleSelect: () => {},
+      onPauseResume: () => {},
+      onCancel: () => {},
+    })
     expect(target.querySelector('[aria-label="Cancel this transfer"]')).not.toBeNull()
     expect(target.querySelector('[aria-label="Pause this transfer"]')).toBeNull()
     expect(target.querySelector('[aria-label="Resume this transfer"]')).toBeNull()
@@ -97,14 +103,26 @@ describe('QueueRow', () => {
       bytesDone: 25,
       bytesTotal: 100,
     }
-    render({ row: buildRow('running', 'copy', progress), selected: false, onToggleSelect: () => {}, onPauseResume: () => {}, onCancel: () => {} })
+    render({
+      row: buildRow('running', 'copy', progress),
+      selected: false,
+      onToggleSelect: () => {},
+      onPauseResume: () => {},
+      onCancel: () => {},
+    })
     const bar = target.querySelector('[role="progressbar"]')
     expect(bar).not.toBeNull()
     expect(bar?.getAttribute('aria-valuenow')).toBe('25')
   })
 
   it('exposes the lifecycle status as a data attribute for E2E', () => {
-    render({ row: buildRow('queued'), selected: false, onToggleSelect: () => {}, onPauseResume: () => {}, onCancel: () => {} })
+    render({
+      row: buildRow('queued'),
+      selected: false,
+      onToggleSelect: () => {},
+      onPauseResume: () => {},
+      onCancel: () => {},
+    })
     expect(target.querySelector('[data-status="queued"]')).not.toBeNull()
     expect(target.querySelector('[data-operation-id="op-1"]')).not.toBeNull()
   })

@@ -3,10 +3,10 @@
 The living term glossary for translating Cmdr into this language: one entry per recurring term, in the
 `chosen · sources · confidence` format. Build and extend it DURING translation, and read it before every pass.
 
-- **Source every term from the reference pile, never guess.** Cmdr's `pt` ships Brazilian, so mine `_ignored/i18n/pt-BR/`
-  (the complete Brazilian set); the bare `_ignored/i18n/pt/` is European Portuguese, a variant trap. For how Apple,
-  Microsoft, and GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the source(s) and
-  a confidence (`confirmed` / `high` / `tentative`).
+- **Source every term from the reference pile, never guess.** Cmdr's `pt` ships Brazilian, so mine
+  `_ignored/i18n/pt-BR/` (the complete Brazilian set); the bare `_ignored/i18n/pt/` is European Portuguese, a variant
+  trap. For how Apple, Microsoft, and GNOME/Xfce render the term and for similar sentences (recipes:
+  `docs/i18n/reference-pile/how-to-mine.md`). Cite the source(s) and a confidence (`confirmed` / `high` / `tentative`).
 - **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
 
 Format, the confidence scale, and the full process: [i18n-translation.md](../../guides/i18n-translation.md).
@@ -17,7 +17,10 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 
 - file · **arquivo** · macOS Finder, MS terminology (402 hits) · confirmed
 - folder · **pasta** · macOS Finder, MS terminology · confirmed
-- trash · **Lixo** · macOS Finder ("Move to Trash"→"Mover para o Lixo", "Empty Trash"→"Esvaziar Lixo", "Trash"→"Lixo", verified 2026-06-21 key-based EN→pt-BR in `LocalizableMerged.json`) · confirmed. Cmdr is a macOS app, so the Tier-1 Finder value "Lixo" wins over the generic-pt-BR "Lixeira" the style.md table suggested. Used in `errors.write.trashNotSupported.*` and the diskFull/storageFull "empty the Trash" bullets.
+- trash · **Lixo** · macOS Finder ("Move to Trash"→"Mover para o Lixo", "Empty Trash"→"Esvaziar Lixo", "Trash"→"Lixo",
+  verified 2026-06-21 key-based EN→pt-BR in `LocalizableMerged.json`) · confirmed. Cmdr is a macOS app, so the Tier-1
+  Finder value "Lixo" wins over the generic-pt-BR "Lixeira" the style.md table suggested. Used in
+  `errors.write.trashNotSupported.*` and the diskFull/storageFull "empty the Trash" bullets.
 - pane · **painel** · standard pt-BR UI · high
 - tab · **aba** · pt-BR convention · high
 - name · **Nome** · macOS Finder · confirmed
@@ -32,7 +35,8 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - Refresh · **Atualizar** · macOS Finder, MS · confirmed
 - Back · **Voltar** · macOS Finder · confirmed
 - Connect · **Conectar** · macOS Finder ConnectToWindow · confirmed
-- Connect to server · **Conectar ao servidor** · macOS Finder ("Conectar ao Servidor", title case there; sentence case here per Cmdr style) · confirmed
+- Connect to server · **Conectar ao servidor** · macOS Finder ("Conectar ao Servidor", title case there; sentence case
+  here per Cmdr style) · confirmed
 - Server address · **Endereço do servidor** · macOS Finder · confirmed
 - Sign in · **Iniciar sessão** · macOS Finder AFPUserGroupSheet · confirmed
 - Username · **Nome de usuário** · pt-BR standard · high
@@ -42,7 +46,9 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - mount · **montar** · macOS Finder, MS · confirmed
 - hostname · **nome do host** · MS terminology · high
 - IP address · **Endereço IP** · standard · high
-- Keychain · **Acesso às Chaves** · macOS Portuguese (Brazilian) · high · localized Apple feature name (the Keychain Access app / credential store); not on the don't-translate brand list. The local Finder/SystemSettings pile doesn't capture the Keychain Access bundle, so this is from Apple's macOS pt-BR localization, not the mined pile.
+- Keychain · **Acesso às Chaves** · macOS Portuguese (Brazilian) · high · localized Apple feature name (the Keychain
+  Access app / credential store); not on the don't-translate brand list. The local Finder/SystemSettings pile doesn't
+  capture the Keychain Access bundle, so this is from Apple's macOS pt-BR localization, not the mined pile.
 - Favorites · **Favoritos** · macOS Finder · confirmed
 - Network · **Rede** · macOS Finder · confirmed
 - Volumes · **Volumes** · macOS Finder · high
@@ -72,37 +78,53 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - Get Info · **Obter Informações** · macOS Finder · confirmed (errors.write permissionDenied/fileLocked suggestions)
 - Activity Monitor · **Monitor de Atividade** · standard macOS app name · high
 - Disk Utility / First Aid · **Utilitário de Disco / Primeiros Socorros** · standard macOS app/feature names · high
-- Login Items &amp; Extensions (pane) · **Itens de Início e Extensões** · inferred from macOS conventions (not directly value-mined); review · tentative
-- search / to search · **busca** / **buscar** · macOS Finder MenuBar ("Buscar", "Buscar por Nome…"); for queryUi search dialog and `commands.searchOpen` · confirmed
-- copy / paste / cut · **Copiar** / **Colar** / **Recortar** · macOS Finder MenuBar (157/300847; Finder uses "Cortar" in some menus but **Recortar** is the standard clipboard verb, MS) · high. clipboard = **área de transferência** (macOS "Área de Transferência")
+- Login Items &amp; Extensions (pane) · **Itens de Início e Extensões** · inferred from macOS conventions (not directly
+  value-mined); review · tentative
+- search / to search · **busca** / **buscar** · macOS Finder MenuBar ("Buscar", "Buscar por Nome…"); for queryUi search
+  dialog and `commands.searchOpen` · confirmed
+- copy / paste / cut · **Copiar** / **Colar** / **Recortar** · macOS Finder MenuBar (157/300847; Finder uses "Cortar" in
+  some menus but **Recortar** is the standard clipboard verb, MS) · high. clipboard = **área de transferência** (macOS
+  "Área de Transferência")
 - rename · **Renomear** · macOS Finder MenuBar (OPI-Bm-bCw) · confirmed
 - select all / deselect all · **Selecionar tudo** / **Desmarcar tudo** · macOS Finder MenuBar (172/300488) · confirmed
-- delete (to trash) / delete permanently · **Apagar** / **Apagar permanentemente** · macOS Finder term (replaces the earlier Windows-influenced "Excluir"; macOS pt-BR Finder uses "Apagar", 0 "Excluir") · high
+- delete (to trash) / delete permanently · **Apagar** / **Apagar permanentemente** · macOS Finder term (replaces the
+  earlier Windows-influenced "Excluir"; macOS pt-BR Finder uses "Apagar", 0 "Excluir") · high
 - Show in Finder · **Mostrar no Finder** · macOS Finder (A34, N207) · confirmed
-- Quick Look (mac) / Preview (other) · **Visualização rápida** / **Pré-visualizar** · macOS Finder MenuBar ("Visualização Rápida", 300780) · confirmed. Localized Apple feature name: use the term the user sees in their pt-BR Finder, never the English "Quick Look".
-- New folder / New tab / New window · **Nova pasta** / **Nova aba** / **Nova janela** · macOS Finder MenuBar (300797/300913/kZ0-FG-6vN) · confirmed
+- Quick Look (mac) / Preview (other) · **Visualização rápida** / **Pré-visualizar** · macOS Finder MenuBar
+  ("Visualização Rápida", 300780) · confirmed. Localized Apple feature name: use the term the user sees in their pt-BR
+  Finder, never the English "Quick Look".
+- New folder / New tab / New window · **Nova pasta** / **Nova aba** / **Nova janela** · macOS Finder MenuBar
+  (300797/300913/kZ0-FG-6vN) · confirmed
 - hidden files · **arquivos ocultos** · macOS Finder ("oculto"), Nautilus ("arquivos ocultos") · confirmed
 - Quit (app) · **Encerrar Cmdr** · macOS Finder "Encerrar Finder" pattern · high
 - About (app) · **Sobre o Cmdr** · macOS Finder "Sobre o Finder" pattern · confirmed
-- zoom in / out / reset · **Aumentar zoom** / **Reduzir zoom** / **redefinir o zoom** · standard pt-BR; macOS Finder uses "Aumentar/Diminuir Tamanho do Ícone" but **zoom** is kept for the UI-scale feature · high
+- zoom in / out / reset · **Aumentar zoom** / **Reduzir zoom** / **redefinir o zoom** · standard pt-BR; macOS Finder
+  uses "Aumentar/Diminuir Tamanho do Ícone" but **zoom** is kept for the UI-scale feature · high
 - command palette · **paleta de comandos** · standard pt-BR app term · high
 - onboarding · **introdução** (wizard: **assistente de introdução**) · standard pt-BR · high
 - What's new · **Novidades** · standard pt-BR app term · high
-- offline / online · **offline** (kept) / **on-line** · MS terminology keeps "offline"; "on-line" hyphenated per pt-BR · high
+- offline / online · **offline** (kept) / **on-line** · MS terminology keeps "offline"; "on-line" hyphenated per pt-BR ·
+  high
 - host (network) · **host** · MS terminology (kept verbatim) · high
 - glob · **Glob** (kept verbatim) · technical term, no common pt equivalent · high
 - regex · **Regex** (kept verbatim) · technical term · confirmed
-- view mode: Brief / Full · **visualização resumida** / **visualização completa** · descriptive (Cmdr's own view names; no direct macOS source) · tentative
+- view mode: Brief / Full · **visualização resumida** / **visualização completa** · descriptive (Cmdr's own view names;
+  no direct macOS source) · tentative
 - View (menu name) · **Visualizar** · used in `commands.handler.zoomResetHintMenu` menu path · tentative
-- verify / check (in progress) · **Verificar** / **Verificando** · macOS Finder ("Verifying"); used for license/conflict/key checks (`licensing.dialog.checking`, `fileOperations.transferDialog.checkingConflicts`, `onboarding.cloudSetup.status.checking`) · high
-- symlink · **link simbólico** · standard tech pt-BR; distinct from Finder's "atalho" (which is an alias). `fileOperations.delete.symlinkNotice*` · high
+- verify / check (in progress) · **Verificar** / **Verificando** · macOS Finder ("Verifying"); used for
+  license/conflict/key checks (`licensing.dialog.checking`, `fileOperations.transferDialog.checkingConflicts`,
+  `onboarding.cloudSetup.status.checking`) · high
+- symlink · **link simbólico** · standard tech pt-BR; distinct from Finder's "atalho" (which is an alias).
+  `fileOperations.delete.symlinkNotice*` · high
 - Replace (conflict policy) · **Substituir** · macOS Finder conflict sheet ("Substituir") · confirmed
 - Skip (conflict policy) · **Ignorar** · macOS Finder ("Ignorar") · high
 - Rollback (transfer) · **Reverter** · standard pt-BR · high
 - Empty (trash) · **Esvaziar** · macOS Finder ("Esvaziar Lixo") · confirmed
 - Move · **Mover** · macOS Finder · confirmed
-- download (verb) · **Baixar** / **Baixando** · MS, standard pt-BR. The Downloads folder name stays **Downloads** (macOS pt-BR keeps it; `settings.fileSystemWatching.cardDownloads`) · high
-- upgrade (page/CTA) · **upgrade** (kept verbatim) · naturalized pt-BR tech usage; `commands.aboutOpenUpgrade.label` "Abrir página de upgrade" · high
+- download (verb) · **Baixar** / **Baixando** · MS, standard pt-BR. The Downloads folder name stays **Downloads** (macOS
+  pt-BR keeps it; `settings.fileSystemWatching.cardDownloads`) · high
+- upgrade (page/CTA) · **upgrade** (kept verbatim) · naturalized pt-BR tech usage; `commands.aboutOpenUpgrade.label`
+  "Abrir página de upgrade" · high
 - server · **Servidor** · macOS Finder ("Conectar ao Servidor") · confirmed
 - provider (AI / cloud) · **provedor** · standard pt-BR · high
 - endpoint · **Endpoint** (kept verbatim) · matches Apple pt-BR usage; `ai.cloud.endpointLabel` · high
@@ -111,26 +133,54 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - path · **caminho** · macOS Finder; `goToPath.*` · high
 - changelog · **registro de alterações** · standard pt-BR; `whatsNew.dialog.seeFullChangelog` · high
 - crash report · **relatório de falha** · macOS pt-BR convention; `crashReporter.*` · high
-- error report · **relatório de problema** · avoids the banned bare "erro"; calm and consistent; `errorReporter.*` · high
+- error report · **relatório de problema** · avoids the banned bare "erro"; calm and consistent; `errorReporter.*` ·
+  high
 - Force Quit · **Forçar Encerramento** · macOS pt-BR · high
-- status · **Status** (kept verbatim) · naturalized in pt-BR tech UI; used consistently across pt (`licensing.section.labelStatus`, `fileExplorer.network.browser.colStatus`, `ai.local.status*`) · high
-- Ext / DIR (column tags) · **Ext** / **DIR** (kept verbatim) · short column-header abbreviations; pt-BR keeps these terse tags (matches es); `fileExplorer.columns.ext`, `fileExplorer.selectionInfo.dir` · high
-- pause (transfer) · **Pausar** (verb) / **Pausado** (status) · MS terminology (Pause→"Pausar"), Total Commander pt-BR (`2094="Pausar"`), Double Commander pt-BR ("Paused"→"Pausado", "Pausing"→"Pausando") · confirmed. `queue.json` + `fileOperations.transferProgress.pause/titlePaused`
-- resume (transfer) · **Retomar** · MS terminology (resume→"retomar", ids 639983/1262427) · high. Pairs with Pausar; Double Commander uses generic "&Continuar" for a continue button, but MS's transfer-sense "retomar" fits the pause/resume toggle better. `queue.json` + `fileOperations.transferProgress.resume`
-- queue (transfers) · **Fila** (noun) · macOS-adjacent file managers: Total Commander pt-BR (`4005="&Fila"`, "Download em fila"), Double Commander pt-BR ("Queue"→"Fila", "Add to queue"→"Adicionar à fila"), MS terminology (Queue→"Fila") · confirmed. Window title "Transfer queue"→"Fila de transferências"; `queue.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue`
-- waiting / queued (status) · **Aguardando** · Double Commander pt-BR ("Aguardando acesso à origem do arquivo", "Aguardando resposta do usuário") · high. The queued/waiting row status and the "waiting its turn" toast
-- background / send to background (running transfer) · **segundo plano** / **em segundo plano** · Total Commander pt-BR (`1185="Download em segundo plano (fila separada)"`, "Work in background"→"em segundo plano") · confirmed. Process sense, NOT MS's wallpaper-sense "tela de fundo". `fileOperations.transferProgress.queueTooltip/backgroundedToast`
+- status · **Status** (kept verbatim) · naturalized in pt-BR tech UI; used consistently across pt
+  (`licensing.section.labelStatus`, `fileExplorer.network.browser.colStatus`, `ai.local.status*`) · high
+- Ext / DIR (column tags) · **Ext** / **DIR** (kept verbatim) · short column-header abbreviations; pt-BR keeps these
+  terse tags (matches es); `fileExplorer.columns.ext`, `fileExplorer.selectionInfo.dir` · high
+- pause (transfer) · **Pausar** (verb) / **Pausado** (status) · MS terminology (Pause→"Pausar"), Total Commander pt-BR
+  (`2094="Pausar"`), Double Commander pt-BR ("Paused"→"Pausado", "Pausing"→"Pausando") · confirmed. `queue.json` +
+  `fileOperations.transferProgress.pause/titlePaused`
+- resume (transfer) · **Retomar** · MS terminology (resume→"retomar", ids 639983/1262427) · high. Pairs with Pausar;
+  Double Commander uses generic "&Continuar" for a continue button, but MS's transfer-sense "retomar" fits the
+  pause/resume toggle better. `queue.json` + `fileOperations.transferProgress.resume`
+- queue (transfers) · **Fila** (noun) · macOS-adjacent file managers: Total Commander pt-BR (`4005="&Fila"`, "Download
+  em fila"), Double Commander pt-BR ("Queue"→"Fila", "Add to queue"→"Adicionar à fila"), MS terminology (Queue→"Fila") ·
+  confirmed. Window title "Transfer queue"→"Fila de transferências"; `queue.*`, `commands.queueShow.*`,
+  `fileOperations.transferProgress.queue`
+- waiting / queued (status) · **Aguardando** · Double Commander pt-BR ("Aguardando acesso à origem do arquivo",
+  "Aguardando resposta do usuário") · high. The queued/waiting row status and the "waiting its turn" toast
+- background / send to background (running transfer) · **segundo plano** / **em segundo plano** · Total Commander pt-BR
+  (`1185="Download em segundo plano (fila separada)"`, "Work in background"→"em segundo plano") · confirmed. Process
+  sense, NOT MS's wallpaper-sense "tela de fundo". `fileOperations.transferProgress.queueTooltip/backgroundedToast`
 
 ### Reconciliation notes
-- **delete = Apagar (macOS Finder term).** The file-delete action/command is **Apagar** / **Apagar permanentemente** across `fileOperations.json`, `commands.json`, `fileExplorer.json`, and the `transferDialog` `select` `delete {Apagar}` branch, matching macOS pt-BR Finder. "Mover para o Lixo" stays for the trash variant. Don't reintroduce the Windows-influenced "Excluir" for the delete action. Two non-action senses correctly keep "excluir": query-scope **exclude** (`queryUi.scope.hint`, filter-out, not delete) and the AI-model deletion in `ai.json` (separate domain). "apagar a senha" (clearing a credential, `fileExplorer.network.deletePasswordFailed`) is a different sense, already correct.
+
+- **delete = Apagar (macOS Finder term).** The file-delete action/command is **Apagar** / **Apagar permanentemente**
+  across `fileOperations.json`, `commands.json`, `fileExplorer.json`, and the `transferDialog` `select`
+  `delete {Apagar}` branch, matching macOS pt-BR Finder. "Mover para o Lixo" stays for the trash variant. Don't
+  reintroduce the Windows-influenced "Excluir" for the delete action. Two non-action senses correctly keep "excluir":
+  query-scope **exclude** (`queryUi.scope.hint`, filter-out, not delete) and the AI-model deletion in `ai.json`
+  (separate domain). "apagar a senha" (clearing a credential, `fileExplorer.network.deletePasswordFailed`) is a
+  different sense, already correct.
 
 ### Error-copy phrasings (errors.json, for cross-file consistency)
+
 - "Here's what to try:" · **"Veja o que tentar:"**
 - "Navigate here again to retry." · **"Navegue até aqui de novo para tentar outra vez."**
-- "couldn't / failed" titles · never a bare "Erro/Falhou"; use **"Não foi possível …"** or **"A operação de {Verb} não foi possível"** (no-bare-error voice rule)
+- "couldn't / failed" titles · never a bare "Erro/Falhou"; use **"Não foi possível …"** or **"A operação de {Verb} não
+  foi possível"** (no-bare-error voice rule)
 
 ### UI section names (for cross-file consistency)
+
 - Function keys (bottom bar) · **Teclas de função**
 - File list · **Lista de arquivos**
 - Volume switcher · **alternador de volumes** (running text)
-- Settings sections (settings.json): Appearance→**Aparência**, Behavior→**Comportamento**, File operations→**Operações de arquivo**, File systems→**Sistemas de arquivos**, Search→**Busca**, Viewer→**Visualizador**, Developer→**Desenvolvedor**, Advanced→**Avançado**, License→**Licença**, Keyboard shortcuts→**Atalhos de teclado**, Updates &amp; privacy→**Atualizações e privacidade**, Logging→**Registros**, Listing→**Listagem**, Colors and formats→**Cores e formatos**, Zoom and density→**Zoom e densidade**, File and folder sizes→**Tamanhos de arquivos e pastas**
+- Settings sections (settings.json): Appearance→**Aparência**, Behavior→**Comportamento**, File operations→**Operações
+  de arquivo**, File systems→**Sistemas de arquivos**, Search→**Busca**, Viewer→**Visualizador**,
+  Developer→**Desenvolvedor**, Advanced→**Avançado**, License→**Licença**, Keyboard shortcuts→**Atalhos de teclado**,
+  Updates &amp; privacy→**Atualizações e privacidade**, Logging→**Registros**, Listing→**Listagem**, Colors and
+  formats→**Cores e formatos**, Zoom and density→**Zoom e densidade**, File and folder sizes→**Tamanhos de arquivos e
+  pastas**

@@ -4,8 +4,8 @@ The living term glossary for translating Cmdr into this language: one entry per 
 `chosen · sources · confidence` format. Build and extend it DURING translation, and read it before every pass.
 
 - **Source every term from the reference pile, never guess.** Mine `_ignored/i18n/sv/` for how Apple, Microsoft, and
-  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the source(s) and
-  a confidence (`confirmed` / `high` / `tentative`).
+  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the
+  source(s) and a confidence (`confirmed` / `high` / `tentative`).
 - **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
 
 Format, the confidence scale, and the full process: [i18n-translation.md](../../guides/i18n-translation.md).
@@ -24,8 +24,8 @@ From the first translation pass (`errors.json`). All sourced from the reference 
 - **credentials: `inloggningsuppgifter`** · MS terminology; macOS "uppgifter". The username/password pair. `high`.
 - **authentication / authenticate: `autentisering` / `autentisera`** · MS ("autentisering"), macOS. `high`.
 - **network: `nätverk`; connection `anslutning`; connect `ansluta`** · macOS ("Anslut till server"), MS. `high`.
-- **time out / timed out: `nå tidsgränsen` / `tidsgränsen nåddes`** · MS ("tidsgräns"). Natural Swedish for a
-  connection that didn't respond in time. `high`.
+- **time out / timed out: `nå tidsgränsen` / `tidsgränsen nåddes`** · MS ("tidsgräns"). Natural Swedish for a connection
+  that didn't respond in time. `high`.
 - **disk: `disk`; volume `volym`; device `enhet`** · per style guide; "disk" for the physical/logical disk in Disk
   Utility contexts. `high`.
 - **Trash (macOS feature, capitalized in copy): `papperskorgen`** · per style guide's trash entry. `high`.
@@ -40,33 +40,48 @@ From the first translation pass (`errors.json`). All sourced from the reference 
   {verb}" = the {verb} action). Titles like `{Verb} failed` → "Det gick inte att slutföra åtgärden {verb}" reads
   awkwardly long, so keep titles tight: "Åtgärden {verb} gick inte". `tentative` (forced by an un-localized slot).
 
-From the `settings.json` pass (2026-06-21). The core file-manager nouns (panel, volym, enhet, mapp, fil, papperskorgen, server, bokmärke, etc.) live in `style.md` § Terminology; this list is the settings-specific vocabulary.
+From the `settings.json` pass (2026-06-21). The core file-manager nouns (panel, volym, enhet, mapp, fil, papperskorgen,
+server, bokmärke, etc.) live in `style.md` § Terminology; this list is the settings-specific vocabulary.
 
 - **settings: `inställningar`** · macOS SystemSettings ("Inställningar", "Systeminställningar"). `high`.
-- **enable / disable: `aktivera` / `stäng av`** · macOS Finder ("Aktivera"), MS (enable → "aktivera", disable → "stänga av"). Off-state toggle label "Av". `high`.
-- **notification: `avisering`** · MS terminology (notification → "varning / avisering"); macOS SystemSettings "Aviseringar". Prefer "avisering"; avoid "notis". `high`.
+- **enable / disable: `aktivera` / `stäng av`** · macOS Finder ("Aktivera"), MS (enable → "aktivera", disable → "stänga
+  av"). Off-state toggle label "Av". `high`.
+- **notification: `avisering`** · MS terminology (notification → "varning / avisering"); macOS SystemSettings
+  "Aviseringar". Prefer "avisering"; avoid "notis". `high`.
 - **warning: `varning`** · MS terminology, macOS Finder ("Visa varningsmeddelande"). `high`.
-- **update (software): `uppdatera` (verb) / `uppdatering` (noun)** · MS ("uppdatera"). "Sök efter uppdateringar". `high`.
+- **update (software): `uppdatera` (verb) / `uppdatering` (noun)** · MS ("uppdatera"). "Sök efter uppdateringar".
+  `high`.
 - **timeout: `tidsgräns`** · MS (time-out → "tidsgräns"). Aligns with errors.json's time-out entry. `high`.
 - **cache: noun `cache`, verb `cacha`** · MS ("cache" / "cacheminne"). Keep "cache" for brief UI nouns. `high`.
 - **port: `port`** · MS ("port"). Network/MCP port. `high`.
 - **column: `kolumn`** · macOS Finder ("Som kolumner", "kolumnvy", "Visa kolumner"). Plural "kolumner". `high`.
-- **reset to default: `återställ till förval`; default value prefix `Standard:`** · macOS Finder ("Återställa till förval", "Använd som förval"). `high`.
-- **item: `objekt`** · macOS Finder/CoreTypes throughout ("Objekt", "markerade objekt"). NOT MS's "artikel". Neuter, plural unchanged ("objekt"). `high`.
-- **word wrap: `radbrytning`** · standard Swedish IT term; MS's "omslutning" is the wrong sense. `tentative` (convention, no direct UI source).
+- **reset to default: `återställ till förval`; default value prefix `Standard:`** · macOS Finder ("Återställa till
+  förval", "Använd som förval"). `high`.
+- **item: `objekt`** · macOS Finder/CoreTypes throughout ("Objekt", "markerade objekt"). NOT MS's "artikel". Neuter,
+  plural unchanged ("objekt"). `high`.
+- **word wrap: `radbrytning`** · standard Swedish IT term; MS's "omslutning" is the wrong sense. `tentative`
+  (convention, no direct UI source).
 - **branch (git): `gren`** · standard Swedish git term; MS's "förgrena" is the verb sense. `tentative`.
-- **repository (git): `git-repository`** · keep the git loanword; MS's "centrallager" is the generic-storage sense. `tentative`.
+- **repository (git): `git-repository`** · keep the git loanword; MS's "centrallager" is the generic-storage sense.
+  `tentative`.
 - **startup disk: `startskiva`** · macOS Finder ("Startskiva", "Startskivevärde"). Boot drive. `high`.
 - **Privacy & Security (macOS pane): `Integritet och säkerhet`** · macOS SystemSettings. `high`.
-- **Full Disk Access (macOS permission): `Fullständig åtkomst till skivan`** · Apple's standard Swedish name; NOT in this pile's SystemSettings bundle, taken from Apple convention. `tentative` (flag for native review).
-- **Local Network (macOS permission): `Lokalt nätverk`** · Apple's standard Swedish name; same pile-gap caveat. `tentative`.
+- **Full Disk Access (macOS permission): `Fullständig åtkomst till skivan`** · Apple's standard Swedish name; NOT in
+  this pile's SystemSettings bundle, taken from Apple convention. `tentative` (flag for native review).
+- **Local Network (macOS permission): `Lokalt nätverk`** · Apple's standard Swedish name; same pile-gap caveat.
+  `tentative`.
 
 ### Cmdr-internal UI names (keep consistent across files)
 
-- **Full view / Brief view (view modes): `Fullständig` / `Kortfattad`** · Cmdr's two file-list view modes. `tentative` (Cmdr-coined; review).
+- **Full view / Brief view (view modes): `Fullständig` / `Kortfattad`** · Cmdr's two file-list view modes. `tentative`
+  (Cmdr-coined; review).
 - **Name column / Ext column: `Namn` / `Tillägg`** · macOS uses "Namn" and "filnamnstillägg"/"tillägg". `high`.
-- **Keyboard shortcuts (section): `Tangentbordsgenvägar`** · standard Swedish (macOS "kortkommandon" is the alt). `high`.
-- Settings section titles (chosen): Appearance → `Utseende`, Behavior → `Beteende`, File operations → `Filåtgärder`, Search → `Sök`, File systems → `Filsystem`, Advanced → `Avancerat`, Developer → `Utvecklare`, Viewer → `Förhandsvisning`, Updates & privacy → `Uppdateringar och integritet`, License → `Licens`. `high` (macOS-aligned where a term exists).
+- **Keyboard shortcuts (section): `Tangentbordsgenvägar`** · standard Swedish (macOS "kortkommandon" is the alt).
+  `high`.
+- Settings section titles (chosen): Appearance → `Utseende`, Behavior → `Beteende`, File operations → `Filåtgärder`,
+  Search → `Sök`, File systems → `Filsystem`, Advanced → `Avancerat`, Developer → `Utvecklare`, Viewer →
+  `Förhandsvisning`, Updates & privacy → `Uppdateringar och integritet`, License → `Licens`. `high` (macOS-aligned where
+  a term exists).
 
 From the `fileExplorer.json` pass (2026-06-21). The bigger surface (network/SMB browser, MTP, tabs, columns, indexing,
 favorites). Reuses the terms above; new ones:
@@ -74,8 +89,8 @@ favorites). Reuses the terms above; new ones:
 - **host (SMB host in the network browser): `värd`** · MS terminology ("värddator" for host, "värddatornamn" for
   hostname). Short "värd" in tight host-list columns and tooltips; "Värddatornamn" for the explicit Hostname column
   header; "serverlista" for the saved-host list ("Ta bort {värd} från serverlistan?"). `high`.
-- **sign in / log in: `logga in`** · macOS Finder ("Logga in"), MS ("logga in"). Same verb for Cmdr''s "Sign in"/"Log in"
-  in the SMB flow. Auth-failure phrased calmly ("Det gick inte att logga in"), never a bare "fel". `high`.
+- **sign in / log in: `logga in`** · macOS Finder ("Logga in"), MS ("logga in"). Same verb for Cmdr''s "Sign in"/"Log
+  in" in the SMB flow. Auth-failure phrased calmly ("Det gick inte att logga in"), never a bare "fel". `high`.
 - **guest: `gäst`** · MS terminology ("gäst"). Connect as guest = "Anslut som gäst". `high`.
 - **share (SMB, network): `delad mapp`** · per style guide''s share entry; plural "delade mappar". The host-list column
   "Shares" (count of shares) is rendered as "Delningar" to stay short; the mounted share itself is a "delad mapp".
@@ -94,8 +109,8 @@ favorites). Reuses the terms above; new ones:
   macOS shows "Indexerar". `high`.
 - **device (phone/camera over MTP): `enhet`** · macOS ("enhet"); same word as drive, context disambiguates. MTP stays
   verbatim. `high`.
-- **reachable / unreachable: `nås` / `går inte att nå`** · phrase actively ("Det gick inte att nå {path}",
-  "Fortfarande inte nåbar"). `tentative` (composed; low risk).
+- **reachable / unreachable: `nås` / `går inte att nå`** · phrase actively ("Det gick inte att nå {path}", "Fortfarande
+  inte nåbar"). `tentative` (composed; low risk).
 - **symlink / broken symlink: `symlänk` / `(trasig symlänk)`** · "symlänk" is the standard Swedish for symbolic link;
   macOS uses "symbolisk länk" / "alias". Kept short "symlänk" for the tight placeholder. Used uniformly across
   `fileExplorer.json` + `fileOperations.json` (+ `Symlänksloop` in `errors.json`), no competing form, so promoted from
@@ -115,7 +130,7 @@ From the `onboarding.json` + `fileOperations.json` pass (2026-06-21). Reuses all
   · macOS Finder ("Kopiera", "Flytta", "Radera"). Trash variant verb "Flytta till papperskorgen" / gerund "Flyttar till
   papperskorgen". `high`.
 - **overwrite / skip / rename / merge (conflict policies): `skriv över` / `hoppa över` / `byt namn` / `slå samman`** ·
-  "skriv över" (style.md), "hoppa över" (Nautilus "_Hoppa över"), "byt namn" (macOS "Byt namn på…"), "slå samman"
+  "skriv över" (style.md), "hoppa över" (Nautilus "\_Hoppa över"), "byt namn" (macOS "Byt namn på…"), "slå samman"
   (Nautilus "Sammanfoga", but "slå samman" reads more natural for folder-merge UI). `high` except merge `tentative`
   (chose "slå samman" over Apple/GNOME "sammanfoga" for plainer voice).
 - **rollback (undo a partial transfer): `återställ` (button) / `återställning` (noun) / `återställer` (in progress)** ·
@@ -131,13 +146,13 @@ From the `onboarding.json` + `fileOperations.json` pass (2026-06-21). Reuses all
 - **onboarding (wizard): `kom igång` / `guiden`** · no single Swedish noun for "onboarding"; framed as "Kom igång med
   Cmdr" (title) and "guiden" (the wizard). `tentative` (descriptive framing).
 - **feedback: `återkoppling`** · MS terminology ("återkoppling"). "Skicka återkoppling". `high`.
-- **dir (abbrev. of directory in tight scan stats): `kat.`** · abbreviation of "katalog" (style.md katalog entry),
-  kept with a period to read as a clipped unit next to a live count, mirroring English "dir". `tentative` (abbreviation
+- **dir (abbrev. of directory in tight scan stats): `kat.`** · abbreviation of "katalog" (style.md katalog entry), kept
+  with a period to read as a clipped unit next to a live count, mirroring English "dir". `tentative` (abbreviation
   convention; review for clarity vs. spelling out "kataloger").
 
-UI section names captured (volume-switcher group headings; keep consistent across files): Favoriter (Favorites),
-Volymer (Volumes), Moln (Cloud), Mobil (Mobile), Nätverk (Network). File-list columns: Namn, Tillägg, Storlek, Ändrad,
-Skapad, Git.
+UI section names captured (volume-switcher group headings; keep consistent across files): Favoriter (Favorites), Volymer
+(Volumes), Moln (Cloud), Mobil (Mobile), Nätverk (Network). File-list columns: Namn, Tillägg, Storlek, Ändrad, Skapad,
+Git.
 
 From the `licensing.json` + `ai.json` + `viewer.json` pass (2026-06-21). Reuses all terms above (provider →
 `leverantör`, endpoint → `slutpunkt`, API key → `API-nyckel`, delete → `radera`, encoding follows below); new ones:
@@ -199,16 +214,16 @@ command labels. Reuses all terms above; new ones:
   i filhanteraren". `high`.
 - **zoom (UI text size): `zooma` (verb) / `zoom` (noun)** · macOS AppKit "Zoom" → "Zooma" (pile). "Zooma in/ut", "Zooma
   till 100 %", reset toast "Zoom återställd". Percent with a space before % per Swedish typography ("100 %"). `high`.
-- **context menu: `snabbmeny`** · macOS/Swedish standard for the right-click menu (AppKit "snabbmeny"); MS's "kontextmeny"
-  is the literal alt. `high`.
+- **context menu: `snabbmeny`** · macOS/Swedish standard for the right-click menu (AppKit "snabbmeny"); MS's
+  "kontextmeny" is the literal alt. `high`.
 - **Hide / Hide others / Show all (macOS app menu): `Göm` / `Göm andra` / `Visa alla`** · macOS AppKit app-menu
   conventions ("Göm <app>", "Visa alla" in the pile). `high`.
 - **quit (macOS app menu): `Avsluta`** · macOS AppKit ("Avsluta <app>"). `high`.
 - **scope (search-in folder limit): `omfattning`** · MS terminology ("omfattning") for scope; the chip label itself is
   "Sök i" (Search in). `high`.
 - **case-sensitive: `skiftlägeskänslig`** · standard Swedish IT term (skiftläge = letter case). `high`.
-- **ascending / descending (sort): `stigande` / `fallande`** · macOS Finder ("stigande/fallande ordning", pile),
-  Thunar. `high`.
+- **ascending / descending (sort): `stigande` / `fallande`** · macOS Finder ("stigande/fallande ordning", pile), Thunar.
+  `high`.
 - **byte (size unit): `byte`** · the Swedish word is also "byte", invariant in plural (1 byte / 2 byte), so the plural
   unit differs from English "bytes". `high`.
 - **wildcard: `jokertecken`** · standard Swedish IT term for `*`/`?` wildcards. `high`.
@@ -216,8 +231,8 @@ command labels. Reuses all terms above; new ones:
   macOS source. `tentative` (composed; review).
 - **What''s new: `Nyheter`** · standard Swedish app-menu term for the release-notes view. `high`.
 
-Brand/technical values kept verbatim and thus identical to English: Cmdr, macOS, Finder, Regex, Glob, AI,
-and pure-placeholder values ({mode} · {age}, {prefix} {valueText} {unit}, etc.).
+Brand/technical values kept verbatim and thus identical to English: Cmdr, macOS, Finder, Regex, Glob, AI, and
+pure-placeholder values ({mode} · {age}, {prefix} {valueText} {unit}, etc.).
 
 - **Quick Look -> `Överblick`** · macOS Swedish · `high`. The localized Apple FEATURE name, not a brand kept verbatim:
   Apple translates "Quick Look" to "Överblick" in Swedish Finder (pile `sv/macOS/Finder/LocalizableMerged.json` key
@@ -227,16 +242,16 @@ and pure-placeholder values ({mode} · {age}, {prefix} {valueText} {unit}, etc.)
   generic ("snabbtitt"), mirroring the EN source's deliberate non-feature-name wording there.
 
 - **Keychain (the credential store) -> `Nyckelring`; Keychain Access (the app) -> `Nyckelhanterare`** · macOS Swedish ·
-  `high`. The localized Apple FEATURE name, not a brand kept verbatim (same Decision-1 principle as Quick Look above; see
-  `docs/guides/i18n-translation.md` § Term-choice principles). Apple localizes both: the store noun is "Nyckelring"
-  (definite "nyckelringen"), the app is "Nyckelhanterare" (verified in `/System/Library/CoreServices/Applications/Keychain
-  Access.app/Contents/Resources/sv.lproj` — `InfoPlist.loctable` `CFBundleDisplayName` = "Nyckelhanterare";
-  `Localizable.loctable`/`MainMenu.loctable` use "Nyckelring"/"nyckelringen" throughout). Applied per sense: the store
-  noun for "macOS Keychain denied access" → "macOS Nyckelring" (`ai.secretError.keychainTitle`), "Remember in Keychain" →
-  "Kom ihåg i nyckelringen", "Remove saved password from Keychain" → "…från nyckelringen", "allow Keychain access" →
-  "åtkomst till nyckelringen"; the app name for "Open Keychain Access" → "Öppna Nyckelhanterare"
-  (`ai.secretError.keychainBody`). Supersedes the old "keep Keychain verbatim" note. Not on the enforced
-  don't-translate brand list.
+  `high`. The localized Apple FEATURE name, not a brand kept verbatim (same Decision-1 principle as Quick Look above;
+  see `docs/guides/i18n-translation.md` § Term-choice principles). Apple localizes both: the store noun is "Nyckelring"
+  (definite "nyckelringen"), the app is "Nyckelhanterare" (verified in
+  `/System/Library/CoreServices/Applications/Keychain Access.app/Contents/Resources/sv.lproj` — `InfoPlist.loctable`
+  `CFBundleDisplayName` = "Nyckelhanterare"; `Localizable.loctable`/`MainMenu.loctable` use "Nyckelring"/"nyckelringen"
+  throughout). Applied per sense: the store noun for "macOS Keychain denied access" → "macOS Nyckelring"
+  (`ai.secretError.keychainTitle`), "Remember in Keychain" → "Kom ihåg i nyckelringen", "Remove saved password from
+  Keychain" → "…från nyckelringen", "allow Keychain access" → "åtkomst till nyckelringen"; the app name for "Open
+  Keychain Access" → "Öppna Nyckelhanterare" (`ai.secretError.keychainBody`). Supersedes the old "keep Keychain
+  verbatim" note. Not on the enforced don't-translate brand list.
 
 From the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.json` + `mtp.json` + `ui.json` pass
 (2026-06-21, wave 1 batch 2). Reuses all terms above; new ones:
@@ -252,15 +267,14 @@ From the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.
 - **shortcut (keyboard): `genväg`** · standard Swedish (macOS also "kortkommando"); "Tangentbordsgenvägar" for the
   section (style.md), "genväg" for an individual binding. `high`.
 - **modifier (modifier key): `modifierare`** · "Lägg till en modifierare (⌘, ⌃, ⌥ eller ⇧)". macOS pile lacks the term;
-  MS's "låstangent" is the wrong (lock-key) sense, so chose the standard Swedish "modifierare". `tentative`
-  (no direct macOS source; MS sense rejected).
-- **register / registered (a global hotkey with the OS): `registrera` / `registrerad`** · MS terminology
-  ("registrera"). "Registrerad" / "Inte registrerad" status; "Det gick inte att registrera: …" for the calm failure.
-  `high`.
+  MS's "låstangent" is the wrong (lock-key) sense, so chose the standard Swedish "modifierare". `tentative` (no direct
+  macOS source; MS sense rejected).
+- **register / registered (a global hotkey with the OS): `registrera` / `registrerad`** · MS terminology ("registrera").
+  "Registrerad" / "Inte registrerad" status; "Det gick inte att registrera: …" for the calm failure. `high`.
 - **combo (key combination): `kombination`** · natural Swedish; "Välj en annan kombination", "ogiltig kombination".
   `high`.
-- **notification / toast: `avisering`** · per settings glossary (MS/macOS "avisering"); "Avfärda avisering",
-  "Gör den här aviseringen mer kompakt". `high`.
+- **notification / toast: `avisering`** · per settings glossary (MS/macOS "avisering"); "Avfärda avisering", "Gör den
+  här aviseringen mer kompakt". `high`.
 - **dismiss: `avfärda`** · toast/alert dismiss button. MS gives "stäng"; chose "avfärda" to distinguish dismissing a
   notification from closing a dialog ("Stäng"). `tentative` (MS says "stäng"; "avfärda" reads clearer for a toast).
 - **error report: `felrapport`** · standard Swedish compound (fel + rapport; MS "rapport"). "Skicka felrapport". The
@@ -282,8 +296,8 @@ From the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.
 - **camera daemon / system daemon: `kameradaemon` / `systemdaemon`** · "daemon" is the standard Swedish IT loanword;
   compound with the qualifier. `tentative` (loanword by convention).
 - **exclusive access: `exklusiv åtkomst`** · MS/standard ("exklusiv", "åtkomst"). `high`.
-- **scan through / rescan (drive index): `söka igenom` / `genomsökning`** · per fileExplorer glossary; "Söker igenom
-  din enhet…", "Gör en ny genomsökning". `high`.
+- **scan through / rescan (drive index): `söka igenom` / `genomsökning`** · per fileExplorer glossary; "Söker igenom din
+  enhet…", "Gör en ny genomsökning". `high`.
 - **entries (scanned filesystem entries): `poster`** · standard Swedish ("post" = record/entry, plural "poster").
   `high`.
 - **events (replayed change events): `händelser`** · macOS/standard ("händelse"). "{n} händelser bearbetade". `high`.
@@ -291,8 +305,8 @@ From the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.
 macOS feature names kept verbatim (brand, shown in shortcut-conflict warnings): Spotlight, Mission Control, Spaces.
 macOS feature names translated to Apple-standard Swedish (not in this pile's macOS bundle, flag for native review):
 Character Viewer → `Teckenvisare`, Force Quit → `Avsluta tvingat`, App windows → `Appfönster`, Finder search window →
-`Finders sökfönster`. `tentative`. Brand/format/cognate values kept verbatim and thus identical to English: macOS,
-Cmdr, MTP, USB, OK, App, Global, Manifest, and pure-placeholder values ({currentText} / {maxText}).
+`Finders sökfönster`. `tentative`. Brand/format/cognate values kept verbatim and thus identical to English: macOS, Cmdr,
+MTP, USB, OK, App, Global, Manifest, and pure-placeholder values ({currentText} / {maxText}).
 
 From the small-files pass (`crashReporter` + `downloads` + `errorReporter` + `whatsNew` + `updates` etc.). These terms
 were settled during translation from direct reference-pile hits but not recorded at the time; captured here so future
@@ -335,8 +349,8 @@ The per-file fan-out left a few same-term-rendered-differently drifts; resolved 
   `…` for menu-item labels), so the faithful and now-uniform rule is: each `sv` value uses the SAME ellipsis character
   its EN source uses. 56 keys that had been "upgraded" to `…` where EN used `...` were reverted; a space-before-ellipsis
   quirk in 7 `settings.json` keys (`Anpassat ...`) was removed. Don't blanket-convert to `…`.
-- **feedback → `återkoppling` everywhere.** `commands.feedbackSend.label` had drifted to the loanword `feedback`; aligned
-  to the glossary's `återkoppling` (matches `feedback.json`, `onboarding.json`).
+- **feedback → `återkoppling` everywhere.** `commands.feedbackSend.label` had drifted to the loanword `feedback`;
+  aligned to the glossary's `återkoppling` (matches `feedback.json`, `onboarding.json`).
 - **"What''s new" feature name → `Nyheter`.** The `settings.json` internal description referred to the popup as
   `”Vad är nytt”`; aligned to the feature's actual name `Nyheter` (the dialog title is "Nyheter i Cmdr").
 - **Swedish quotes `”…”`, never straight `"…"`.** `commands.handler.favoriteAdded` used ASCII quotes around `{name}`;

@@ -4,8 +4,8 @@ The living term glossary for translating Cmdr into this language: one entry per 
 `chosen · sources · confidence` format. Build and extend it DURING translation, and read it before every pass.
 
 - **Source every term from the reference pile, never guess.** Mine `_ignored/i18n/nl/` for how Apple, Microsoft, and
-  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the source(s) and
-  a confidence (`confirmed` / `high` / `tentative`).
+  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the
+  source(s) and a confidence (`confirmed` / `high` / `tentative`).
 - **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
 
 Format, the confidence scale, and the full process: [i18n-translation.md](../../guides/i18n-translation.md).
@@ -14,17 +14,22 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 
 From the `fileExplorer.json` pass (mined `_ignored/i18n/nl/`, 2026-06-21):
 
-- connect → Verbind (button) / verbinden, verbinding maken · macOS Finder ("Connect to server"→"Verbind met server", "Connect As…"→"Verbind als…") · high
+- connect → Verbind (button) / verbinden, verbinding maken · macOS Finder ("Connect to server"→"Verbind met server",
+  "Connect As…"→"Verbind als…") · high
 - connecting → Verbinden… · macOS AppKit ("Connecting…"→"Verbinden…") · high
 - connected → Verbonden · macOS AppKit ("Connected"→"Verbonden") · high
-- connection failed → Verbinding mislukt · macOS AppKit ("Connection Failed"→"Verbinding mislukt"); but Cmdr error rule avoids bare "mislukt", so phrase as "Verbinding maken lukte niet" / "Verbinding kon niet tot stand komen" in error copy · high
+- connection failed → Verbinding mislukt · macOS AppKit ("Connection Failed"→"Verbinding mislukt"); but Cmdr error rule
+  avoids bare "mislukt", so phrase as "Verbinding maken lukte niet" / "Verbinding kon niet tot stand komen" in error
+  copy · high
 - disconnect → Verbreek (button) / verbinding verbreken · macOS ("Disconnect"→"Verbreek") · high
 - server → server · macOS Finder ("Connect to server"→"Verbind met server") · high
 - share (network share, noun) → gedeelde map · macOS Finder ("Shared folder"→"Gedeelde map") · high
 - host → host · no native macOS term for SMB host; kept as the technical term (matches "hostnaam") · tentative
 - mount (verb) → aankoppelen · Double Commander ("unmounted"→"niet-aangekoppelde"); macOS uses "koppel" for disks · high
 - volume → volume · macOS Finder ("Volume"→"Volume") · high
-- eject → Werp uit (button "Werp {name} uit") / uitwerpen · Nautilus, KDE Dolphin, and Microsoft all use "Uitwerpen"; macOS Finder's own eject is "Verwijder"/"verwijder media", which collides with delete, so the corroborated "uitwerpen" is clearer for Cmdr · high
+- eject → Werp uit (button "Werp {name} uit") / uitwerpen · Nautilus, KDE Dolphin, and Microsoft all use "Uitwerpen";
+  macOS Finder's own eject is "Verwijder"/"verwijder media", which collides with delete, so the corroborated "uitwerpen"
+  is clearer for Cmdr · high
 - favorites → favorieten · macOS Finder ("favorites"→"favorieten") · high
 - password → wachtwoord · macOS ("Password"→"Wachtwoord") · high
 - username → gebruikersnaam · macOS/MS standard · high
@@ -80,11 +85,13 @@ From the `settings.json` pass (mined `_ignored/i18n/nl/`, 2026-06-21):
 - disable → uitschakelen · MS ("disable"→"uitschakelen") · high
 - word wrap → tekstterugloop · MS ("word wrap"→"tekstterugloop") · high
 - network share → netwerkshare · MS ("network share"→"netwerkshare") · high
-- share (SMB folder on a server) → share · MS "netwerkshare"; the bare "share" follows for the per-server folder list · high
+- share (SMB folder on a server) → share · MS "netwerkshare"; the bare "share" follows for the per-server folder list ·
+  high
 - cache → cache · MS (unchanged) · high
 - shortcut (keyboard) → sneltoets · common macOS/NL UI term; MS "toetsencombinatie" is the longer form · high
 - threshold → drempel(waarde) · standard NL · tentative
-- provider (AI) → aanbieder · MS first hit "synchronisatievoorziening" is the sync-specific sense (wrong); general "aanbieder" · tentative
+- provider (AI) → aanbieder · MS first hit "synchronisatievoorziening" is the sync-specific sense (wrong); general
+  "aanbieder" · tentative
 - service (AI/cloud) → service · MS ("service"→"service", unchanged) · high
 - token (AI) → token · standard AI term, kept · high
 - context window (AI) → contextvenster · compositional from "venster"; no source term · tentative
@@ -119,35 +126,58 @@ From the `errors.json` pass (mined `_ignored/i18n/nl/macOS`, 2026-06-21; mostly 
 - quota → quotum · macOS ("quotumlimiet bereikt") · high
 - not supported → niet ondersteund · macOS ("worden niet ondersteund op het doelvolume") · high
 - unexpected → onverwacht(e) · macOS ("een onverwachte fout") · high
-- "couldn't/can't" titles → "Kon … niet" / "Kan … niet"; avoid bare "fout"/"mislukt" as a label per Cmdr voice (macOS uses "fout" freely; Cmdr is stricter) · high
-- "X failed" titles/toasts → "X lukte niet" · the catalog-wide rendering for "failed" (e.g. "Inloggen lukte niet", "Gedeelde map aankoppelen lukte niet", "{volumeName} uitwerpen lukte niet"). The four `errors.write.*.title` "{Verb} failed" use "{Verb} lukte niet" to match this (NOT "mislukte", which reads as a bare failure label the voice rule discourages). "fout"/"mislukt" are fine only as descriptive words in flowing prose ("dat mislukt meestal", "wanneer er een fout optreedt"), never as an error label · high
-- "Error: {message}" prefix → "Probleem: {message}" · both `updates.checkToast.errorPrefix` and `settings.updates.errorPrefix` use "Probleem:" (the latter was "Fout:", reconciled). Cmdr voice keeps the prefix calm · high
+- "couldn't/can't" titles → "Kon … niet" / "Kan … niet"; avoid bare "fout"/"mislukt" as a label per Cmdr voice (macOS
+  uses "fout" freely; Cmdr is stricter) · high
+- "X failed" titles/toasts → "X lukte niet" · the catalog-wide rendering for "failed" (e.g. "Inloggen lukte niet",
+  "Gedeelde map aankoppelen lukte niet", "{volumeName} uitwerpen lukte niet"). The four `errors.write.*.title` "{Verb}
+  failed" use "{Verb} lukte niet" to match this (NOT "mislukte", which reads as a bare failure label the voice rule
+  discourages). "fout"/"mislukt" are fine only as descriptive words in flowing prose ("dat mislukt meestal", "wanneer er
+  een fout optreedt"), never as an error label · high
+- "Error: {message}" prefix → "Probleem: {message}" · both `updates.checkToast.errorPrefix` and
+  `settings.updates.errorPrefix` use "Probleem:" (the latter was "Fout:", reconciled). Cmdr voice keeps the prefix calm
+  · high
 - disk image → schijfkopie · macOS · high
 - symbolic link → symbolische koppeling · macOS ("koppeling") · high
 - alleen-lezen compounds → alleen-lezenvolume, alleen-lezenapparaat (no space) · macOS ("alleen-lezenvolume") · high
 - cloud mount (cmVolumes.displayName) → Cloudkoppeling · compositional ("cloud" + macOS "koppeling") · tentative
 - "your cloud provider" (genericCloudStorage.displayName) → je cloudprovider · informal `je` per style · high
-- provider display/app names (Dropbox, Google Drive, OneDrive, macFUSE, iCloud Drive, …) → kept verbatim (brand names, do-not-translate) · confirmed
-- OS pane names arrive via `{system_settings}` / `{privacy_and_security}` / `{files_and_folders}` / `{full_disk_access}` placeholders (keep the `{token}` literal); the git-error suggestions instead hardcode the English pane names ("System Settings > Privacy & Security > Files and Folders"), kept verbatim per their `@key` notes. macOS-feature literals "Disk Utility", "First Aid", "Activity Monitor", "Spotlight", "Terminal", "Finder", "Get Info" stay English (do-not-translate).
+- provider display/app names (Dropbox, Google Drive, OneDrive, macFUSE, iCloud Drive, …) → kept verbatim (brand names,
+  do-not-translate) · confirmed
+- OS pane names arrive via `{system_settings}` / `{privacy_and_security}` / `{files_and_folders}` / `{full_disk_access}`
+  placeholders (keep the `{token}` literal); the git-error suggestions instead hardcode the English pane names ("System
+  Settings > Privacy & Security > Files and Folders"), kept verbatim per their `@key` notes. macOS-feature literals
+  "Disk Utility", "First Aid", "Activity Monitor", "Spotlight", "Terminal", "Finder", "Get Info" stay English
+  (do-not-translate).
 
 From the `onboarding.json` + `fileOperations.json` pass (mined `_ignored/i18n/nl/`, 2026-06-21):
 
 - trash (noun) → prullenmand · macOS Finder ("Trash"→"Prullenmand", "to the Trash"→"naar de prullenmand") · high
 - move to trash → naar prullenmand (button) / naar de prullenmand verplaatsen · macOS Finder · high
-- delete (permanently) → definitief verwijderen · macOS uses "definitief"; "Verwijder" for the verb (glossary above) · high
-- overwrite → Overschrijf (button) / overschrijven · macOS ("Overschrijf"), Double Commander ("Overschrijven"/"Overschrijf alles") · high
-- skip → Sla over (button) / Sla alles over · Nautilus ("Overslaan"); rendered as bare-stem imperative "Sla over" per the button rule · high
+- delete (permanently) → definitief verwijderen · macOS uses "definitief"; "Verwijder" for the verb (glossary above) ·
+  high
+- overwrite → Overschrijf (button) / overschrijven · macOS ("Overschrijf"), Double Commander
+  ("Overschrijven"/"Overschrijf alles") · high
+- skip → Sla over (button) / Sla alles over · Nautilus ("Overslaan"); rendered as bare-stem imperative "Sla over" per
+  the button rule · high
 - merge → samenvoegen / samengevoegd · Nautilus ("Merge"→"Samenvoegen", "Map ‘%s’ samenvoegen?") · high
-- conflict → conflict · standard NL (no native macOS term mined; "Op deze plaats bevindt zich al …" is macOS's phrasing) · high
-- "already exists" → "bestaat al" / "Er bestaat al … op deze locatie" · macOS Finder ("Er bestaat al een onderdeel … op deze locatie") · high
-- destination → bestemming / doelmap · macOS Finder ("destination folder"→"doelmap", "at Destination"→"op bestemming") · high
-- rollback → terugdraaien · standard NL (macOS has no exact term); "terugdraaien" is the natural undo-in-progress verb · tentative
-- rename (conflict action) → Wijzig naam / Wijzig alle namen · macOS Finder ("Rename"→"Wijzig naam", glossary above) · high
+- conflict → conflict · standard NL (no native macOS term mined; "Op deze plaats bevindt zich al …" is macOS's phrasing)
+  · high
+- "already exists" → "bestaat al" / "Er bestaat al … op deze locatie" · macOS Finder ("Er bestaat al een onderdeel … op
+  deze locatie") · high
+- destination → bestemming / doelmap · macOS Finder ("destination folder"→"doelmap", "at Destination"→"op bestemming") ·
+  high
+- rollback → terugdraaien · standard NL (macOS has no exact term); "terugdraaien" is the natural undo-in-progress verb ·
+  tentative
+- rename (conflict action) → Wijzig naam / Wijzig alle namen · macOS Finder ("Rename"→"Wijzig naam", glossary above) ·
+  high
 - scanning (progress stage) → Doorzoeken · Double Commander ("Scanning"→"Doorzoeken") · high
 - verifying / checking (before op) → Controleren · Double Commander ("Controleer …") · high
-- "-ing" progress titles → "Bezig met …" ("Bezig met kopiëren/verplaatsen/verwijderen/annuleren/terugdraaien") · standard NL progress phrasing; keeps the active feel without a clumsy bare gerund · high
-- symlink (in copy/delete copy) → symbolische koppeling · matches errors.json "symbolische koppeling"; "target"→"doel" · high
-- onboarding (kept) → onboarding · loanword kept verbatim across the file (matches the untranslated app-title key "Cmdr onboarding") · tentative
+- "-ing" progress titles → "Bezig met …" ("Bezig met kopiëren/verplaatsen/verwijderen/annuleren/terugdraaien") ·
+  standard NL progress phrasing; keeps the active feel without a clumsy bare gerund · high
+- symlink (in copy/delete copy) → symbolische koppeling · matches errors.json "symbolische koppeling"; "target"→"doel" ·
+  high
+- onboarding (kept) → onboarding · loanword kept verbatim across the file (matches the untranslated app-title key "Cmdr
+  onboarding") · tentative
 - deny → Weiger · macOS AppKit ("Deny"→"Weiger") · high
 - next / back (wizard) → Volgende / Vorige · macOS ("Next"→"Volgende"); "Vorige" is the standard NL pair · high
 - finish (wizard) → Voltooi · standard NL wizard button (bare-stem imperative) · tentative
@@ -156,9 +186,16 @@ From the `onboarding.json` + `fileOperations.json` pass (mined `_ignored/i18n/nl
 - provider (cloud AI) → aanbieder · matches settings.json glossary above · high
 - API key → API-sleutel · standard NL compound · high
 - model (AI) → model · kept · high
-- Keychain (macOS credential store) → Sleutelhanger · macOS Dutch · high — Apple FEATURE name Apple localizes per-OS (same Decision-1 principle as Quick Look), so use the localized term, NOT the English "Keychain". This SUPERSEDES the old "keep Keychain verbatim" rule; "Keychain" is NOT on the don't-translate brand list. The store noun is "Sleutelhanger" (app name "Sleutelhangertoegang" below). Apple's Finder/AppKit/SystemSettings pile dump lacks the Keychain Access strings, but "Sleutelhanger" is Apple's established Dutch macOS term, and Microsoft's "Windows Sleutelhanger" independently confirms it.
-- Keychain Access (macOS app) → Sleutelhangertoegang · macOS Dutch · high — Apple's Dutch name for the Keychain Access.app; use it verbatim as the app label.
-- (system) keyring (non-macOS credential store) → sleutelhanger · same Dutch noun macOS uses; the "Passwords / Keyrings app" generic gets "Wachtwoorden / Sleutelhangers" · tentative
+- Keychain (macOS credential store) → Sleutelhanger · macOS Dutch · high — Apple FEATURE name Apple localizes per-OS
+  (same Decision-1 principle as Quick Look), so use the localized term, NOT the English "Keychain". This SUPERSEDES the
+  old "keep Keychain verbatim" rule; "Keychain" is NOT on the don't-translate brand list. The store noun is
+  "Sleutelhanger" (app name "Sleutelhangertoegang" below). Apple's Finder/AppKit/SystemSettings pile dump lacks the
+  Keychain Access strings, but "Sleutelhanger" is Apple's established Dutch macOS term, and Microsoft's "Windows
+  Sleutelhanger" independently confirms it.
+- Keychain Access (macOS app) → Sleutelhangertoegang · macOS Dutch · high — Apple's Dutch name for the Keychain
+  Access.app; use it verbatim as the app label.
+- (system) keyring (non-macOS credential store) → sleutelhanger · same Dutch noun macOS uses; the "Passwords / Keyrings
+  app" generic gets "Wachtwoorden / Sleutelhangers" · tentative
 - null character → null-teken · MS ("null character"→"null-teken") · high
 - absolute path → absoluut pad · MS ("absolute path"→"absoluut pad"); "Pad moet absoluut zijn (begint met /)" · high
 - usage statistics → gebruiksstatistieken · standard NL compound · high
@@ -178,15 +215,25 @@ From the `queryUi.json` + `commands.json` pass (mined `_ignored/i18n/nl/`, 2026-
 - quit (app) → Stop · macOS Finder ("Stop Finder"); macOS uses "Stop" for Quit, NOT "Afsluiten" · high
 - about (app) → Over · macOS Finder ("Over Finder"→"Over Cmdr") · high
 - Get Info (mac) → Toon info · macOS Finder ("Get Info"→"Toon info") · high
-- Quick Look → snelle weergave · macOS Dutch · high — Apple FEATURE name that Apple localizes per-OS, so use the term the user sees in their Dutch Finder, NOT the English "Quick Look". Apple's Dutch macOS has no fixed proper-noun: the feature noun is "snelle weergave" (AppKit "Close Quick Look"→"Sluit snelle weergave", Finder N169.20 same), and the menu-action verb is "Geef snel weer" (Finder TL14, imperative, takes an object: "Geef '^1' snel weer"). Use "snelle weergave" for the noun (what Cmdr's strings reference), "Geef snel weer" for an action label.
-- context menu → contextmenu · Double Commander ("Toon contextmenu"); MS first hit "snelmenu" is the Windows term, contextmenu is the Mac/standard form · high
-- zoom in / out → Zoom in / Zoom uit · macOS phrasing ("in- of uitzoomen"); button form "Zoom in/uit" (Zoom in stays identical to EN) · high
+- Quick Look → snelle weergave · macOS Dutch · high — Apple FEATURE name that Apple localizes per-OS, so use the term
+  the user sees in their Dutch Finder, NOT the English "Quick Look". Apple's Dutch macOS has no fixed proper-noun: the
+  feature noun is "snelle weergave" (AppKit "Close Quick Look"→"Sluit snelle weergave", Finder N169.20 same), and the
+  menu-action verb is "Geef snel weer" (Finder TL14, imperative, takes an object: "Geef '^1' snel weer"). Use "snelle
+  weergave" for the noun (what Cmdr's strings reference), "Geef snel weer" for an action label.
+- context menu → contextmenu · Double Commander ("Toon contextmenu"); MS first hit "snelmenu" is the Windows term,
+  contextmenu is the Mac/standard form · high
+- zoom in / out → Zoom in / Zoom uit · macOS phrasing ("in- of uitzoomen"); button form "Zoom in/uit" (Zoom in stays
+  identical to EN) · high
 - zoom to N% → Zoom naar N% · compositional from macOS "Zoom" · high
-- extension (file) → extensie · macOS ("extensie", "bestandsextensie"); DC uses "achtervoegsel" but macOS extensie wins · high
-- sort ascending / descending → Sorteer oplopend / Sorteer aflopend · standard NL UI; "Sorteer op" prefix from glossary · high
+- extension (file) → extensie · macOS ("extensie", "bestandsextensie"); DC uses "achtervoegsel" but macOS extensie wins
+  · high
+- sort ascending / descending → Sorteer oplopend / Sorteer aflopend · standard NL UI; "Sorteer op" prefix from glossary
+  · high
 - pin (tab) → vastzetten · MS ("pin"→"vastmaken"); "vastzetten" reads better for a tab that stays open · tentative
-- command palette → opdrachtenpalet · compositional ("opdracht" + "palet"); no source term, matches Cmdr's named UI · tentative
-- onboarding → onboarding · loanword kept (matches onboarding.json pass; "Onboarding…" command label, "onboardingwizard") · tentative
+- command palette → opdrachtenpalet · compositional ("opdracht" + "palet"); no source term, matches Cmdr's named UI ·
+  tentative
+- onboarding → onboarding · loanword kept (matches onboarding.json pass; "Onboarding…" command label,
+  "onboardingwizard") · tentative
 - offline → offline · MS ("offline", NLD/BEL); "offline beschikbaar" for "available offline" · high
 - download (noun/verb) → download / downloaden · MS ("Download", NLD/BEL) · high
 - go back / forward (history) → Ga terug / Ga vooruit · standard NL nav (macOS uses Terug/Vooruit) · high
@@ -194,13 +241,15 @@ From the `queryUi.json` + `commands.json` pass (mined `_ignored/i18n/nl/`, 2026-
 - page up / down → Pagina omhoog / Pagina omlaag · standard NL · high
 - scroll → schuiven · MS ("scroll"→"schuiven") · tentative
 - toggle (X aan/uit) → "X aan/uit" · standard NL toggle phrasing (e.g. "Verborgen bestanden aan/uit") · tentative
-- view mode: Brief / Full → Beknopte weergave / Volledige weergave · compositional ("Weergave" from glossary + beknopt/volledig) · tentative
+- view mode: Brief / Full → Beknopte weergave / Volledige weergave · compositional ("Weergave" from glossary +
+  beknopt/volledig) · tentative
 - switcher (volume/location) → wisselaar · compositional from "wissel" (no source term) · tentative
 - properties (file, non-mac) → eigenschappen · standard NL ("Bestandseigenschappen") · high
 - license key → licentiesleutel · NL compound (licentie + sleutel) · high
 - upgrade page → upgradepagina · loan "upgrade" + "pagina" · tentative
 - query / search query → zoekopdracht · macOS Finder ("zoekopdracht") · high
-- index (drive index) → index / Schijfindex · matches fileExplorer "index"; "Schijfindex" compounds with macOS "schijf" · high
+- index (drive index) → index / Schijfindex · matches fileExplorer "index"; "Schijfindex" compounds with macOS "schijf"
+  · high
 - scanning (status) → Bezig met scannen · standard NL progress phrasing (cf. fileOperations "Bezig met …") · high
 - glob → Glob · technical term kept (no Dutch equivalent) · high
 - case-sensitive → hoofdlettergevoelig · standard NL · high
@@ -210,86 +259,128 @@ From the `queryUi.json` + `commands.json` pass (mined `_ignored/i18n/nl/`, 2026-
 
 From the `licensing.json` + `ai.json` + `viewer.json` pass (mined `_ignored/i18n/nl/`, 2026-06-21):
 
-- viewer (read-only file viewer) → weergavevenster · compositional ("weergave" from glossary + "venster"); matches the Settings "Viewer" section name (glossary above) · tentative
+- viewer (read-only file viewer) → weergavevenster · compositional ("weergave" from glossary + "venster"); matches the
+  Settings "Viewer" section name (glossary above) · tentative
 - About (dialog) → Over · macOS Finder ("Over Finder"→"Over Cmdr"); glossary above · high
 - Got it (ack button) → Begrepen · macOS ("Begrepen") · high
 - Apply (button) → Pas toe · macOS ("Pas toe") · high
 - Continue (button) → Ga door · macOS ("Ga door") · high
 - Activate / activating → Activeer (button) / Activeren · macOS ("Activeer") · high
 - renew → vernieuwen / Vernieuw (button) · MS ("renew"→"vernieuwen") · high
-- perpetual (license) → eeuwigdurend · standard NL legal/license term (no source); "Eeuwigdurende commerciële licentie" · tentative
-- commercial / personal (license tiers) → commercieel / Personal · "commercieel" translated; tier proper-noun "Personal" kept (matches the capitalized EN tier label) · tentative
+- perpetual (license) → eeuwigdurend · standard NL legal/license term (no source); "Eeuwigdurende commerciële licentie"
+  · tentative
+- commercial / personal (license tiers) → commercieel / Personal · "commercieel" translated; tier proper-noun "Personal"
+  kept (matches the capitalized EN tier label) · tentative
 - valid until / validity → geldig tot / geldigheid · standard NL · high
 - expired / expired on → verlopen / Verlopen op · standard NL · high
 - clipboard → klembord · MS ("clipboard"→"klembord") · high
 - encoding (character) → codering · MS ("encoding"→"codering") · high
-- reload (file) → Laad opnieuw (button) / opnieuw laden · MS ("reload"→"opnieuw laden"); bare-stem imperative for the button · high
-- match (search result) → resultaat · "No matches"→"Geen resultaten", "Next/Previous match"→"Volgend/Vorig resultaat" (matches Finder "zoekresultaten" glossary) · high
+- reload (file) → Laad opnieuw (button) / opnieuw laden · MS ("reload"→"opnieuw laden"); bare-stem imperative for the
+  button · high
+- match (search result) → resultaat · "No matches"→"Geen resultaten", "Next/Previous match"→"Volgend/Vorig resultaat"
+  (matches Finder "zoekresultaten" glossary) · high
 - word wrap (badge/hint) → terugloop · short form of MS "tekstterugloop" for the terse status badge · tentative
-- streaming (viewer mode) → streamen / streammodus · loanword kept (no Dutch UI equivalent for the streaming-read mode) · tentative
-- tail (follow file, like `tail -f`) → Tail · technical term kept verbatim (no Dutch equivalent); aria/tooltip explain it ("volg bestandswijzigingen") · tentative
+- streaming (viewer mode) → streamen / streammodus · loanword kept (no Dutch UI equivalent for the streaming-read mode)
+  · tentative
+- tail (follow file, like `tail -f`) → Tail · technical term kept verbatim (no Dutch equivalent); aria/tooltip explain
+  it ("volg bestandswijzigingen") · tentative
 - Endpoint (API) → Endpoint · technical API term kept; MS literal "eindpunt" not used for an API URL field · tentative
 - completions (AI) → completions · loanword kept (AI-API term, no settled Dutch) · tentative
-- Stop server / Start server / Download model → identical to EN; all words valid NL (Stop/Start/Server/Download/model are standard NL UI terms), so left unchanged · high
+- Stop server / Start server / Download model → identical to EN; all words valid NL (Stop/Start/Server/Download/model
+  are standard NL UI terms), so left unchanged · high
 - line (of text) → regel · MS ("line"→"regel"); plural "regels" · high
 - character (of text) → teken · MS ("character"→"teken"); plural "tekens" · high
 
-From the wave-1 prep pass (search/feedback/crashReporter/goToPath/transfer/updates/lowDiskSpace/commandPalette/whatsNew/main/common/notifications; mined `_ignored/i18n/nl/`, 2026-06-21):
+From the wave-1 prep pass
+(search/feedback/crashReporter/goToPath/transfer/updates/lowDiskSpace/commandPalette/whatsNew/main/common/notifications;
+mined `_ignored/i18n/nl/`, 2026-06-21):
 
-- close → Sluit (button) / sluiten · macOS Finder ("Close"→"Sluit", key FR26); same form as "dismiss" → Sluit (glossary above) · high
-- send → Stuur (button) / versturen · macOS Finder ("Send"→"Verstuur"); chose "Stuur" (shorter imperative, parallel to macOS pattern) for "Send feedback"→"Stuur feedback", "Send report"→"Stuur rapport" · high
-- remove from list → Verwijder uit lijst · macOS Finder pattern ("Verwijder uit navigatiekolom"/"Verwijder uit bibliotheek") · high
+- close → Sluit (button) / sluiten · macOS Finder ("Close"→"Sluit", key FR26); same form as "dismiss" → Sluit (glossary
+  above) · high
+- send → Stuur (button) / versturen · macOS Finder ("Send"→"Verstuur"); chose "Stuur" (shorter imperative, parallel to
+  macOS pattern) for "Send feedback"→"Stuur feedback", "Send report"→"Stuur rapport" · high
+- remove from list → Verwijder uit lijst · macOS Finder pattern ("Verwijder uit navigatiekolom"/"Verwijder uit
+  bibliotheek") · high
 - path → pad · standard NL; "Ga naar pad" (macOS Finder "Ga naar map"); "~/Documents" sample kept verbatim · high
 - go to path → Ga naar pad · macOS Finder "Ga naar …" nav pattern · high
 - feedback → feedback · loanword kept (matches onboarding pass) · high
 - note (user's message) → bericht · "Your note"→"je bericht"; "note" as a written message renders as "bericht" · high
 - counter ("N / M" chars) → pure placeholders, left "{currentText} / {maxText}" · high
-- crash report → crashrapport · matches errors/style glossary; "Report ID"→"Rapport-ID", "report details"→"rapportdetails" · high
-- error report → foutrapport · NL compound (fout + rapport); used for the update-check "Send error report"→"Stuur foutrapport" button · high
-- update (noun/verb) → update / bijwerken · MS ("update"); "Restart to update"→"Herstart om bij te werken", "No updates found"→"Geen updates gevonden" · high
+- crash report → crashrapport · matches errors/style glossary; "Report ID"→"Rapport-ID", "report
+  details"→"rapportdetails" · high
+- error report → foutrapport · NL compound (fout + rapport); used for the update-check "Send error report"→"Stuur
+  foutrapport" button · high
+- update (noun/verb) → update / bijwerken · MS ("update"); "Restart to update"→"Herstart om bij te werken", "No updates
+  found"→"Geen updates gevonden" · high
 - restart → Herstart · macOS (glossary above) · high
 - later (dismiss button) → Later · same word in NL, left identical · high
-- downloading / installing → wordt gedownload / wordt geïnstalleerd · standard NL passive progress; "Download"→download (loan, MS NLD/BEL) · high
-- running low on space → raakt vol · natural NL for a disk filling up; "low disk space"→"weinig schijfruimte"; "startup disk"→"opstartschijf" (glossary above) · high
+- downloading / installing → wordt gedownload / wordt geïnstalleerd · standard NL passive progress; "Download"→download
+  (loan, MS NLD/BEL) · high
+- running low on space → raakt vol · natural NL for a disk filling up; "low disk space"→"weinig schijfruimte"; "startup
+  disk"→"opstartschijf" (glossary above) · high
 - free (space) → vrij · standard NL ("{freeText} vrij") · high
-- command (palette) → opdracht (plural opdrachten) · DC ("command line"→"opdrachtregel"); matches "opdrachtenpalet"; "Search commands"→"Zoek opdrachten" · high
-- changelog → changelog · loanword kept (casual EN voice; MS "wijzigingenlogboek" is heavier and less common in NL software UI) · tentative
+- command (palette) → opdracht (plural opdrachten) · DC ("command line"→"opdrachtregel"); matches "opdrachtenpalet";
+  "Search commands"→"Zoek opdrachten" · high
+- changelog → changelog · loanword kept (casual EN voice; MS "wijzigingenlogboek" is heavier and less common in NL
+  software UI) · tentative
 - "What''s new" → "Wat is er nieuw" · standard NL ("Wat is er nieuw in Cmdr") · high
-- complete (operation done) → voltooid · "Copy/Move/Delete complete"→"… voltooid"; macOS uses "voltooid" for completed ops · high
-- skipped → overgeslagen · matches fileOperations "Sla over"/"Overslaan" (glossary above); past participle "overgeslagen" · high
+- complete (operation done) → voltooid · "Copy/Move/Delete complete"→"… voltooid"; macOS uses "voltooid" for completed
+  ops · high
+- skipped → overgeslagen · matches fileOperations "Sla over"/"Overslaan" (glossary above); past participle
+  "overgeslagen" · high
 - "at the target" (destination) → op de bestemming · "destination"→bestemming (glossary above) · high
 - onboarding options → onboardingopties · compound of "onboarding" (loan, glossary) + "opties" · tentative
-- Full Disk Access → volledige schijftoegang · NL descriptive ("volledige schijftoegang"); the System Settings pane label per Dutch macOS · high
+- Full Disk Access → volledige schijftoegang · NL descriptive ("volledige schijftoegang"); the System Settings pane
+  label per Dutch macOS · high
 
 REVIEW FLAGS (wave-1 prep pass):
-- `transfer.split.clean`/`.skipped` reorder the verb to a sentence-final past participle ("{phrase} gekopieerd/verplaatst") — natural Dutch word order vs EN's leading "Copied/Moved {phrase}". The `{phrase}` token stays in the same grammatical slot.
+
+- `transfer.split.clean`/`.skipped` reorder the verb to a sentence-final past participle ("{phrase}
+  gekopieerd/verplaatst") — natural Dutch word order vs EN's leading "Copied/Moved {phrase}". The `{phrase}` token stays
+  in the same grammatical slot.
 
 REVIEW FLAGS (queryUi/commands pass):
-- `queryUi.mode.ai.label` "Ask anything" → "Vraag het maar" (casual, friendly; matches the playful EN). Subjective tone call.
-- `commands.tabTogglePin.label` pin → "vastzetten" (vs MS "vastmaken"); chose the tab-stays-open sense. Confirm if a Dutch macOS/Safari term is preferred.
-- `commands.appCommandPalette.label` "opdrachtenpalet" → no source term; coined from "opdracht"+"palet". Confirm it reads natural.
-- `commands.handler.zoomResetHintMenu` menu path → "Weergave > Zoom > 100%" (translated "View"→"Weergave" to match the Dutch menu bar; "Zoom" submenu kept). Verify once the menu bar is translated.
+
+- `queryUi.mode.ai.label` "Ask anything" → "Vraag het maar" (casual, friendly; matches the playful EN). Subjective tone
+  call.
+- `commands.tabTogglePin.label` pin → "vastzetten" (vs MS "vastmaken"); chose the tab-stays-open sense. Confirm if a
+  Dutch macOS/Safari term is preferred.
+- `commands.appCommandPalette.label` "opdrachtenpalet" → no source term; coined from "opdracht"+"palet". Confirm it
+  reads natural.
+- `commands.handler.zoomResetHintMenu` menu path → "Weergave > Zoom > 100%" (translated "View"→"Weergave" to match the
+  Dutch menu bar; "Zoom" submenu kept). Verify once the menu bar is translated.
 
 REVIEW FLAGS (onboarding/fileOperations pass):
-- "Quit & Reopen" (`onboarding.stepFda.step3`): macOS shows this exact button when relaunching for FDA. Not in the mined pile (no `<tag>/macOS` string captured); rendered as "Stop en open opnieuw", the standard macOS-NL FDA button label. Confirm against a live Dutch macOS.
-- "super private" (`onboarding.stepAi.local.label`): rendered "supergeprivacyd" reads playful/informal to match the casual EN ("super private"); a more neutral alternative is "extra privacy wil". Flagged as a tone/subjective call.
-- "Pro/Con" (`onboarding.stepFda.pro/con`): rendered "Voordeel/Nadeel" (full words) rather than loan "Pro/Con", which reads cleaner in Dutch.
 
-From the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.json` + `mtp.json` + `ui.json` pass (mined `_ignored/i18n/nl/`, 2026-06-21):
+- "Quit & Reopen" (`onboarding.stepFda.step3`): macOS shows this exact button when relaunching for FDA. Not in the mined
+  pile (no `<tag>/macOS` string captured); rendered as "Stop en open opnieuw", the standard macOS-NL FDA button label.
+  Confirm against a live Dutch macOS.
+- "super private" (`onboarding.stepAi.local.label`): rendered "supergeprivacyd" reads playful/informal to match the
+  casual EN ("super private"); a more neutral alternative is "extra privacy wil". Flagged as a tone/subjective call.
+- "Pro/Con" (`onboarding.stepFda.pro/con`): rendered "Voordeel/Nadeel" (full words) rather than loan "Pro/Con", which
+  reads cleaner in Dutch.
 
-- scan (drive) → doorzoeken · matches queryUi "Doorzoeken" (Double Commander "Scanning"); "Je schijf wordt doorzocht..." for the progress heading · high
+From the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.json` + `mtp.json` + `ui.json` pass
+(mined `_ignored/i18n/nl/`, 2026-06-21):
+
+- scan (drive) → doorzoeken · matches queryUi "Doorzoeken" (Double Commander "Scanning"); "Je schijf wordt doorzocht..."
+  for the progress heading · high
 - entries (scanned items) → onderdelen · matches fileExplorer "onderdelen" (macOS Finder "items") · high
-- events (filesystem changes) → wijzigingen · "wijzigingen verwerkt" reads clearer than literal "gebeurtenissen" · tentative
-- left (time remaining) → nog … · "nog 45s" / "nog 3m"; reads natural for a countdown (vs literal "resterend") · tentative
+- events (filesystem changes) → wijzigingen · "wijzigingen verwerkt" reads clearer than literal "gebeurtenissen" ·
+  tentative
+- left (time remaining) → nog … · "nog 45s" / "nog 3m"; reads natural for a countdown (vs literal "resterend") ·
+  tentative
 - almost done → Bijna klaar · standard NL · high
-- watcher (file change watcher) → bewaker · "bewaker voor bestandswijzigingen", "bewakerskanaal"; from "bewaken" · tentative
+- watcher (file change watcher) → bewaker · "bewaker voor bestandswijzigingen", "bewakerskanaal"; from "bewaken" ·
+  tentative
 - disconnected (drive) → losgekoppeld · macOS "koppel" family (cf. aankoppelen glossary) · high
 - outdated / out of date (index) → verouderd · standard NL · high
 - jump to (download) → springen naar / Spring naar · natural NL for the quick-jump action · tentative
 - global (shortcut scope) → globaal / Globaal · standard NL for system-wide hotkey scope · high
 - in-app → in de app · descriptive; no single-word NL term · high
 - modifier (key) → wijzigingstoets · macOS/standard NL term for ⌘⌃⌥⇧ · high
-- register (a global hotkey) → registreren / geregistreerd · MS; "Registreren lukte niet" avoids bare "mislukt" per Cmdr voice · high
+- register (a global hotkey) → registreren / geregistreerd · MS; "Registreren lukte niet" avoids bare "mislukt" per Cmdr
+  voice · high
 - Full Disk Access → Volledige schijftoegang · macOS Privacy pane name · high
 - redact / scrub (logs) → schonen · "lokaal geschoond", "na schonen"; natural NL for privacy-redaction · tentative
 - reference ID → referentie-ID · NL compound; "ID" kept · high
@@ -314,16 +405,21 @@ From the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.
 - udev rules → udev-regels · Linux term "udev" kept, "regels" translated · high
 - command (terminal) → opdracht · MS ("command"→"opdracht"); matches queryUi · high
 - options (popover aria) → Opties · macOS ("Options"→"Opties") · high
-- select (dropdown placeholder) → Kies... · macOS picker-prompt sense (vs "Selecteer" for select-all); settled, `ui.select.placeholder` is the canonical instance · high
+- select (dropdown placeholder) → Kies... · macOS picker-prompt sense (vs "Selecteer" for select-all); settled,
+  `ui.select.placeholder` is the canonical instance · high
 - suggestions (combobox) → suggesties · standard NL · high
 - opening (folder) → Map openen... · terse loading line, "Bezig met …" phrasing dropped here · tentative
 - dismiss (toast aria) → Sluit melding · "melding" from settings.json glossary · high
 
 REVIEW FLAGS (indexing/downloads/errorReporter/shortcuts/mtp/ui pass):
-- `errorReporter.dialog.title` "Send error report" → "Foutrapport versturen" (artifact-noun "foutrapport"; matches the existing error-report glossary row). Uses "fout" in a descriptive compound, not as a bare failure label.
-- `indexing.replay.detail` "events processed" → "wijzigingen verwerkt" (user-friendly over literal "gebeurtenissen"). Subjective.
+
+- `errorReporter.dialog.title` "Send error report" → "Foutrapport versturen" (artifact-noun "foutrapport"; matches the
+  existing error-report glossary row). Uses "fout" in a descriptive compound, not as a bare failure label.
+- `indexing.replay.detail` "events processed" → "wijzigingen verwerkt" (user-friendly over literal "gebeurtenissen").
+  Subjective.
 - `ui.select.placeholder` "Select..." → "Kies..." (macOS picker-prompt sense). Confirm vs "Selecteer...".
-- `downloads.toast.learnIntro` → "Iets leuks om te leren over snel naar je downloads springen" (kept the playful EN tone). Subjective.
+- `downloads.toast.learnIntro` → "Iets leuks om te leren over snel naar je downloads springen" (kept the playful EN
+  tone). Subjective.
 
 REVIEW FLAG (code limitation, out of scope for data-only work): `errors.write.*` strings embed `{verb}` / `{Verb}` /
 `{gerund}` placeholders that the frontend substitutes with ENGLISH literals ("copy", "move", "deleting", …) from a
@@ -332,24 +428,50 @@ Dutch sentence like "Het bestand dat je probeerde te {verb}" renders an English 
 phrasing keeps the token in a grammatically plausible slot, but fully natural Dutch needs that verb map localized (a
 code change). Same limitation applies to every language.
 
-From the transfer-queue pass (`queue.json` + new pause/queue keys in `fileOperations.json`/`commands.json`; mined `_ignored/i18n/nl/`, 2026-06-21):
+From the transfer-queue pass (`queue.json` + new pause/queue keys in `fileOperations.json`/`commands.json`; mined
+`_ignored/i18n/nl/`, 2026-06-21):
 
-- pause → Pauzeer (button) / pauzeren, gepauzeerd · macOS Finder ("Kopiëren van '^0' is gepauzeerd", "Wil je ... pauzeren"), AppKit ("Pauzeer animatie"), DC ("Pauzeer alles"); bare-stem imperative "Pauzeer" per the button rule · high
+- pause → Pauzeer (button) / pauzeren, gepauzeerd · macOS Finder ("Kopiëren van '^0' is gepauzeerd", "Wil je ...
+  pauzeren"), AppKit ("Pauzeer animatie"), DC ("Pauzeer alles"); bare-stem imperative "Pauzeer" per the button rule ·
+  high
 - resume → Hervat (button) / hervatten · macOS Finder ("Hervat", "Hervat kopiëren") · high
-- queue (noun) → wachtrij (Overdrachtswachtrij for the transfer queue) · Double Commander + Total Commander + Thunar all use "wachtrij" (no macOS term); compound "overdrachtswachtrij" for "transfer queue" · high
-- transfer (copy/move/delete operation, noun) → overdracht (plural overdrachten) · standard NL ("overdracht" for a data transfer); "Transfer queue"→"Overdrachtswachtrij", the queue window title/heading · high
-- background (run in the ~) → op de achtergrond · Double Commander ("Werk op de achtergrond"); "send to background"→"naar de wachtrij sturen" / "op de achtergrond laten doorlopen" (the action sends it to the queue window) · high
-- status words (queue rows): Waiting → Wachten · macOS Finder ("Wachten"); Running → Bezig · DC ("Bezig"), matches the "Bezig met …" progress family; Done → Gereed · macOS Finder (glossary above); Cancelled → Geannuleerd · macOS Finder ("Geannuleerd"); "Couldn''t finish" (gentle failed) → Niet voltooid · macOS uses "kon niet worden voltooid"; short status "Niet voltooid" avoids a bare "mislukt" label per Cmdr voice · high
+- queue (noun) → wachtrij (Overdrachtswachtrij for the transfer queue) · Double Commander + Total Commander + Thunar all
+  use "wachtrij" (no macOS term); compound "overdrachtswachtrij" for "transfer queue" · high
+- transfer (copy/move/delete operation, noun) → overdracht (plural overdrachten) · standard NL ("overdracht" for a data
+  transfer); "Transfer queue"→"Overdrachtswachtrij", the queue window title/heading · high
+- background (run in the ~) → op de achtergrond · Double Commander ("Werk op de achtergrond"); "send to
+  background"→"naar de wachtrij sturen" / "op de achtergrond laten doorlopen" (the action sends it to the queue window)
+  · high
+- status words (queue rows): Waiting → Wachten · macOS Finder ("Wachten"); Running → Bezig · DC ("Bezig"), matches the
+  "Bezig met …" progress family; Done → Gereed · macOS Finder (glossary above); Cancelled → Geannuleerd · macOS Finder
+  ("Geannuleerd"); "Couldn''t finish" (gentle failed) → Niet voltooid · macOS uses "kon niet worden voltooid"; short
+  status "Niet voltooid" avoids a bare "mislukt" label per Cmdr voice · high
 
 REVIEW FLAGS (transfer-queue pass):
-- `queue.row.label` reuses the "Bezig met …" progress phrasing (kopiëren/verplaatsen/verwijderen) from fileOperations `titleActive`/`stageActive`, with the trash branch "Naar prullenmand verplaatsen" matching there. Consistent across files.
-- `fileOperations.transferProgress.queuedToast` + `.queuedToastCount`: the EN puts the count phrase ("1 transfer") leading; Dutch needs the verb to agree, so the count phrase carries it ("gaat # overdracht" / "gaan # overdrachten") and the host sentence wraps it as "Er {countText} deze voor, dus deze wacht op zijn beurt." Renders "Er gaat 1 overdracht deze voor" / "Er gaan 3 overdrachten deze voor". Token kept in the same slot.
+
+- `queue.row.label` reuses the "Bezig met …" progress phrasing (kopiëren/verplaatsen/verwijderen) from fileOperations
+  `titleActive`/`stageActive`, with the trash branch "Naar prullenmand verplaatsen" matching there. Consistent across
+  files.
+- `fileOperations.transferProgress.queuedToast` + `.queuedToastCount`: the EN puts the count phrase ("1 transfer")
+  leading; Dutch needs the verb to agree, so the count phrase carries it ("gaat # overdracht" / "gaan # overdrachten")
+  and the host sentence wraps it as "Er {countText} deze voor, dus deze wacht op zijn beurt." Renders "Er gaat 1
+  overdracht deze voor" / "Er gaan 3 overdrachten deze voor". Token kept in the same slot.
 
 ## Cross-file reconciliation (2026-06-21)
 
-Drift the parallel per-file passes left behind, found and fixed in a whole-locale reconciliation. Recorded so the rulings stay single-sourced and don't drift again:
+Drift the parallel per-file passes left behind, found and fixed in a whole-locale reconciliation. Recorded so the
+rulings stay single-sourced and don't drift again:
 
-- **Ellipsis style follows the EN source per key.** EN mixes `…` and `...` deliberately (per key); match it. The ai/licensing/settings/viewer passes had silently converted 32 EN `...` to Unicode `…`; reverted to `...` to match EN (most files already preserved `...`). Don't normalize ellipses to one glyph — mirror EN.
-- **Quoted UI strings inside running text use single curly quotes `‘…’`**, never straight `"…"` (style.md). The commands/fileExplorer/settings passes left 15 values with straight `"…"` (EN's quoting); converted to `‘…’`. The fileOperations/onboarding/shortcuts passes already used `‘…’`. This is the locale-wide convention now.
-- **Brand tokens stay verbatim, so avoid the Dutch genitive-s on them.** `errorReporter.dialog.description` had "Cmdrs recente logbestanden" (the `desktop-i18n-dont-translate` check reads "Cmdrs" as a dropped "Cmdr"); rephrased to "de recente logbestanden van Cmdr". Prefer the `van X` construction over `X's`/`Xs` for brand names.
-- **Settings-section references match across files** (verified): "Instellingen > AI" ↔ `settings.section.ai`; "Instellingen > Sneltoetsen" ↔ `settings.section.keyboardShortcuts`; "Instellingen > Updates" (crashReporter) vs "Instellingen > Updates en privacy" (whatsNew) are deliberately distinct, each tracking its own EN source and the glossary section names. Menu-path separators (`>` vs `→`) mirror EN per key.
+- **Ellipsis style follows the EN source per key.** EN mixes `…` and `...` deliberately (per key); match it. The
+  ai/licensing/settings/viewer passes had silently converted 32 EN `...` to Unicode `…`; reverted to `...` to match EN
+  (most files already preserved `...`). Don't normalize ellipses to one glyph — mirror EN.
+- **Quoted UI strings inside running text use single curly quotes `‘…’`**, never straight `"…"` (style.md). The
+  commands/fileExplorer/settings passes left 15 values with straight `"…"` (EN's quoting); converted to `‘…’`. The
+  fileOperations/onboarding/shortcuts passes already used `‘…’`. This is the locale-wide convention now.
+- **Brand tokens stay verbatim, so avoid the Dutch genitive-s on them.** `errorReporter.dialog.description` had "Cmdrs
+  recente logbestanden" (the `desktop-i18n-dont-translate` check reads "Cmdrs" as a dropped "Cmdr"); rephrased to "de
+  recente logbestanden van Cmdr". Prefer the `van X` construction over `X's`/`Xs` for brand names.
+- **Settings-section references match across files** (verified): "Instellingen > AI" ↔ `settings.section.ai`;
+  "Instellingen > Sneltoetsen" ↔ `settings.section.keyboardShortcuts`; "Instellingen > Updates" (crashReporter) vs
+  "Instellingen > Updates en privacy" (whatsNew) are deliberately distinct, each tracking its own EN source and the
+  glossary section names. Menu-path separators (`>` vs `→`) mirror EN per key.

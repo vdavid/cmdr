@@ -103,5 +103,5 @@ CLDR categories for `ru`: `one`, `few`, `many`, `other`. All four are required a
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ru/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ru/`; recipes in
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

@@ -56,8 +56,8 @@ them after a pile rebuild:
 - **`zh/`** (ships Simplified): symlinks `macOS` + the file managers → `zh-CN/`, and `microsoft-terminology` +
   `microsoft-style-guides` → `zh-Hans/`.
 - **`bn/`**: symlinks `microsoft-style-guides` → `bn-IN/` (the rest is already in `bn/`).
-- **`pt`**: no composed base — Cmdr's `pt` ships Brazilian, so mine the already-complete `pt-BR/` directly (the bare `pt`
-  is European; don't mix).
+- **`pt`**: no composed base — Cmdr's `pt` ships Brazilian, so mine the already-complete `pt-BR/` directly (the bare
+  `pt` is European; don't mix).
 
 ### Scripts
 
@@ -143,8 +143,8 @@ them after a pile rebuild:
   against `TOTALCMD.INC` (the English menu reference). See [how-to-mine.md](how-to-mine.md).
 - **Coverage**: 48 languages, ~6 MB. 18 are bundled in the installer (incl. `de`, `hu`, `sv`, `fr`, `it`, `es`, `ru`,
   `ja`, …); the rest come from the per-language zips on the additional-languages page.
-- **License**: proprietary (Ghisler). Reference use only; never paste a TC string into Cmdr's catalog — same rule as
-  the vendor sources.
+- **License**: proprietary (Ghisler). Reference use only; never paste a TC string into Cmdr's catalog — same rule as the
+  vendor sources.
 - **Provenance**:
   - Bundled set: `INSTALL.CAB` inside the 11.57 combined installer `https://totalcommander.ch/1157/tcmd1157x32_64.exe`
     (downloaded 2026-06-20), extracted with `7z`, each `LANGUAGE/WCMD_*.LNG` + `.INC` decoded by its declared codepage.

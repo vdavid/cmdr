@@ -98,5 +98,5 @@ small-number boundary per the category, and write both branches as full native f
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/wa/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+you settle terms, each sourced from the reference pile (`_ignored/i18n/wa/`; recipes in
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

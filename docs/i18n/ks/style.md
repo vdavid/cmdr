@@ -111,5 +111,5 @@ return `one, other`, 2026-06-20). Write both.
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ks/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+you settle terms, each sourced from the reference pile (`_ignored/i18n/ks/`; recipes in
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

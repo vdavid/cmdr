@@ -4,64 +4,93 @@ The living term glossary for translating Cmdr into this language: one entry per 
 `chosen · sources · confidence` format. Build and extend it DURING translation, and read it before every pass.
 
 - **Source every term from the reference pile, never guess.** Mine `_ignored/i18n/de/` for how Apple, Microsoft, and
-  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the source(s) and
-  a confidence (`confirmed` / `high` / `tentative`).
+  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the
+  source(s) and a confidence (`confirmed` / `high` / `tentative`).
 - **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
 
 Format, the confidence scale, and the full process: [i18n-translation.md](../../guides/i18n-translation.md).
 
 ## Terms
 
-- crash report → Absturzbericht · macOS (Apple uses "abgestürzt" / "unerwartet beendet" for crashes; "Absturzbericht" is the standard Apple/MS rendering of "crash report") · high
-- crash (verb) → abstürzen; "quit unexpectedly" → "unerwartet beendet" · macOS Finder ("… wurde unerwartet beendet") · high
+- crash report → Absturzbericht · macOS (Apple uses "abgestürzt" / "unerwartet beendet" for crashes; "Absturzbericht" is
+  the standard Apple/MS rendering of "crash report") · high
+- crash (verb) → abstürzen; "quit unexpectedly" → "unerwartet beendet" · macOS Finder ("… wurde unerwartet beendet") ·
+  high
 - feedback → Feedback (kept; the loanword is standard in DE UI, macOS/MS both use it) · high
 - report ID → Berichts-ID · compound of Bericht (report) + ID; standard DE compound formation · high
 - email → E-Mail (-Adresse for the address) · macOS Mail, MS terminology · high
-- dismiss (button closing a dialog) → Schließen · macOS uses "Schließen" / "Ignorieren"; "Schließen" fits a close-without-action button · high
+- dismiss (button closing a dialog) → Schließen · macOS uses "Schließen" / "Ignorieren"; "Schließen" fits a
+  close-without-action button · high
 - send → senden · macOS Mail ("Senden") · high
-- permission(s) → Berechtigung / Zugriffsrechte · macOS Finder uses both ("Berechtigung", "Zugriffsrechte"; the Get Info pane is "Teilen & Zugriffsrechte"); MS terminology "Berechtigung" · high. Usage split in the catalog: "Berechtigung" for the abstract OS-grant sense ("Cmdr hat keine Berechtigung …"), "Zugriffsrechte" for a file/folder's ACL ("die Zugriffsrechte des Ordners prüfen") — both correct, keep the sense split
+- permission(s) → Berechtigung / Zugriffsrechte · macOS Finder uses both ("Berechtigung", "Zugriffsrechte"; the Get Info
+  pane is "Teilen & Zugriffsrechte"); MS terminology "Berechtigung" · high. Usage split in the catalog: "Berechtigung"
+  for the abstract OS-grant sense ("Cmdr hat keine Berechtigung …"), "Zugriffsrechte" for a file/folder's ACL ("die
+  Zugriffsrechte des Ordners prüfen") — both correct, keep the sense split
 - owner (file owner) → Eigentümer · macOS Finder Get-Info "Teilen & Zugriffsrechte" pane · high
 - read-only → schreibgeschützt · MS terminology + standard DE; macOS "schreibgeschützt" for write-protected media · high
 - write-protection switch → Schreibschutzschalter · standard DE compound (Schreibschutz + Schalter) · high
-- locked (a protected file, macOS "Locked" checkbox) → geschützt · macOS Finder ("Geschützt" is the Get Info checkbox; "Das Objekt ist … geschützt …") · high
+- locked (a protected file, macOS "Locked" checkbox) → geschützt · macOS Finder ("Geschützt" is the Get Info checkbox;
+  "Das Objekt ist … geschützt …") · high
 - Get Info (macOS context-menu item / pane) → Informationen · macOS Finder ("„Informationen“") · high
 - timed out / timeout → Zeitüberschreitung · standard DE + MS terminology · high
-- symbolic link / symlink → symbolische Verknüpfung; the loop term stays "Symlink-Schleife" · MS terminology ("symbolische Verknüpfung", AUT/DEU/CHE); "Symlink" kept in the short title for compactness · high
-- mount (verb, a volume) → einbinden; unmount → aushängen; force-unmount → zwangsweise aushängen · macOS Finder ("eingebunden"/"einbinden"); MS "Einbinden" · high
+- symbolic link / symlink → symbolische Verknüpfung; the loop term stays "Symlink-Schleife" · MS terminology
+  ("symbolische Verknüpfung", AUT/DEU/CHE); "Symlink" kept in the short title for compactness · high
+- mount (verb, a volume) → einbinden; unmount → aushängen; force-unmount → zwangsweise aushängen · macOS Finder
+  ("eingebunden"/"einbinden"); MS "Einbinden" · high
 - eject → auswerfen · macOS Finder ("Auswerfen") · high
 - handle (open file handle, OS sense) → Handle (kept; no settled DE UI term, technical context only) · tentative
 - quota → Kontingent · MS terminology ("Kontingent" for disk quota) · high
 - attribute (file attribute / metadata) → Attribut · MS terminology, standard DE · high
-- First Aid (Disk Utility feature) → Erste Hilfe · macOS Festplattendienstprogramm ("Erste Hilfe"); kept untranslated only where the en source's @key flags "Disk Utility"/"First Aid" as do-not-translate feature names — in body prose use "Erste Hilfe" · high
-- Disk Utility → Festplattendienstprogramm · macOS app name; used in body prose (the en @key allows the localized macOS pane name) · high
+- First Aid (Disk Utility feature) → Erste Hilfe · macOS Festplattendienstprogramm ("Erste Hilfe"); kept untranslated
+  only where the en source's @key flags "Disk Utility"/"First Aid" as do-not-translate feature names — in body prose use
+  "Erste Hilfe" · high
+- Disk Utility → Festplattendienstprogramm · macOS app name; used in body prose (the en @key allows the localized macOS
+  pane name) · high
 - Activity Monitor → Aktivitätsanzeige · macOS app name · high
 - repo / repository (git) → Repo / Repository · kept (git domain); "git" stays verbatim per do-not-translate · high
 - worktree (git) → Worktree · kept (git term, do-not-translate) · high
 - working tree (git) → Arbeitsbaum · DE git docs render "working tree" as "Arbeitsbaum" · high
-- cloud provider → Cloud-Anbieter; cloud mount → Cloud-Mount · standard DE compound formation (loanword "Cloud" kept, as in macOS "iCloud") · high
-- connect → verbinden; "Connect to server" → "Mit Server verbinden"; "Connecting…" → "Verbindung wird hergestellt …" · macOS Finder ("Mit Server verbinden", button "Verbinden", "Serveradresse") · high
+- cloud provider → Cloud-Anbieter; cloud mount → Cloud-Mount · standard DE compound formation (loanword "Cloud" kept, as
+  in macOS "iCloud") · high
+- connect → verbinden; "Connect to server" → "Mit Server verbinden"; "Connecting…" → "Verbindung wird hergestellt …" ·
+  macOS Finder ("Mit Server verbinden", button "Verbinden", "Serveradresse") · high
 - disconnect → trennen; "Disconnected from X" → "Verbindung zu X getrennt" · macOS Finder · high
-- reconnect → Verbindung wiederherstellen; "Reconnecting to server…" → "Verbindung zum Server wird wiederhergestellt …" · derived from macOS "Verbindung … herstellen" · high
-- sign in / log in → anmelden (verb), Anmeldung (noun); "Sign in" button → "Anmelden" · macOS Finder ("Anmelden …", "Die Anmeldung beim Server …") · high
-- credentials → Anmeldedaten · MS terminology lists "Anmeldeinfos"; "Anmeldedaten" is the more standard, natural DE UI term — use consistently · high
+- reconnect → Verbindung wiederherstellen; "Reconnecting to server…" → "Verbindung zum Server wird wiederhergestellt …"
+  · derived from macOS "Verbindung … herstellen" · high
+- sign in / log in → anmelden (verb), Anmeldung (noun); "Sign in" button → "Anmelden" · macOS Finder ("Anmelden …", "Die
+  Anmeldung beim Server …") · high
+- credentials → Anmeldedaten · MS terminology lists "Anmeldeinfos"; "Anmeldedaten" is the more standard, natural DE UI
+  term — use consistently · high
 - guest → Gast · macOS ("Gast") · high
 - host → Host (plural Hosts) · MS terminology (Host, masc., AUT/DEU/CHE/LUX) · high
 - refresh / reload → aktualisieren · macOS Finder ("Aktualisieren") · high
 - favorites → Favoriten · macOS Finder ("Favoriten", "Keine Favoriten") · high
 - pinned (tab) → fixiert; "pin a tab" → "Tab fixieren" · macOS ("Tab fixieren", "fixierter Tab") · high
 - remove → entfernen · macOS ("Entfernen") · high
-- Keychain → Schlüsselbund (store) / Schlüsselbundverwaltung (the "Keychain Access" app) · macOS German · high · localized Apple feature name, not a verbatim brand (per i18n-translation.md § Term-choice principles, same rule as Quick Look). Apple ships the credential store as "Schlüsselbund" and the app as "Schlüsselbundverwaltung" in German macOS, so Cmdr shows those. The local-store fallback string uses "System-Schlüsselbund" for the generic OS keyring
+- Keychain → Schlüsselbund (store) / Schlüsselbundverwaltung (the "Keychain Access" app) · macOS German · high ·
+  localized Apple feature name, not a verbatim brand (per i18n-translation.md § Term-choice principles, same rule as
+  Quick Look). Apple ships the credential store as "Schlüsselbund" and the app as "Schlüsselbundverwaltung" in German
+  macOS, so Cmdr shows those. The local-store fallback string uses "System-Schlüsselbund" for the generic OS keyring
 - file list → Dateiliste · style guide (listing → Dateiliste); used for the file-list aria label · high
-- file extension → Endung; tight "Ext" column header → "Erw." (abbrev. of Erweiterung) · standard DE ("Endung" common term; "Erw." the compact column form) · high
-- disk usage → Speicherbelegung · standard DE compound (Speicher + Belegung); macOS uses "Speicherplatz" for free space · high
+- file extension → Endung; tight "Ext" column header → "Erw." (abbrev. of Erweiterung) · standard DE ("Endung" common
+  term; "Erw." the compact column form) · high
+- disk usage → Speicherbelegung · standard DE compound (Speicher + Belegung); macOS uses "Speicherplatz" for free space
+  · high
 - on disk (physical size) → Auf dem Datenträger · standard DE; pairs with "Inhalt" (content size) · high
-- home folder → Persönlicher Ordner · macOS "persönlicher Ordner"/"Benutzerordner" framing; reads naturally for the home location · high
-- "Volume"/"Volumes" (mounted disk) → Volume/Volumes (kept verbatim) · macOS keeps "Volume" (style guide volume→Volume) · high
-- dir (short for directory, tight status-bar slot) → ORD (short for Ordner) · abbreviation matching the EN "DIR" tight slot; no canonical source · tentative
-- timeout (network status cell) → Zeitüberschreitung · aligns with the settled timeout→Zeitüberschreitung term above (not the MS "Timeout" loanword) · high
-- notification → Benachrichtigung; macOS system notification → macOS-Mitteilung (Apple's word for Notification Center items is "Mitteilung") · MS terminology (Benachrichtigung), macOS (Mitteilungen) · high
-- enable / turn on → aktivieren; disable / turn off → deaktivieren · macOS Finder ("… aktivieren"), MS terminology · high
-- show (a UI element/column) → anzeigen; show/hide a panel → einblenden/ausblenden · macOS Finder ("Seitenleiste einblenden", "Anzeigen") · high
+- home folder → Persönlicher Ordner · macOS "persönlicher Ordner"/"Benutzerordner" framing; reads naturally for the home
+  location · high
+- "Volume"/"Volumes" (mounted disk) → Volume/Volumes (kept verbatim) · macOS keeps "Volume" (style guide volume→Volume)
+  · high
+- dir (short for directory, tight status-bar slot) → ORD (short for Ordner) · abbreviation matching the EN "DIR" tight
+  slot; no canonical source · tentative
+- timeout (network status cell) → Zeitüberschreitung · aligns with the settled timeout→Zeitüberschreitung term above
+  (not the MS "Timeout" loanword) · high
+- notification → Benachrichtigung; macOS system notification → macOS-Mitteilung (Apple's word for Notification Center
+  items is "Mitteilung") · MS terminology (Benachrichtigung), macOS (Mitteilungen) · high
+- enable / turn on → aktivieren; disable / turn off → deaktivieren · macOS Finder ("… aktivieren"), MS terminology ·
+  high
+- show (a UI element/column) → anzeigen; show/hide a panel → einblenden/ausblenden · macOS Finder ("Seitenleiste
+  einblenden", "Anzeigen") · high
 - restart → neu starten / Neustart ("Neustart erforderlich") · MS terminology · high
 - reset → zurücksetzen ("auf Standard zurücksetzen") · MS terminology · high
 - default → Standard; system default → Systemstandard · macOS, MS terminology · high
@@ -74,63 +103,102 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 - word wrap → Zeilenumbruch · MS terminology · high
 - tint → Farbton ("einfärben" for the verb "tint panes") · MS terminology · high
 - warning → Warnung · MS terminology · high
-- toast (Cmdr's transient notification) → Hinweis (reserve "Mitteilung" for the macOS-notification sense) · no direct source · tentative
-- view mode: Full → Voll, Brief → Kompakt (mode → "Kompaktmodus") · no direct source; "Kompakt" matches macOS density wording · tentative
-- content size (logical) → Inhalt / Inhaltsgröße (pairs with on-disk "Auf dem Datenträger") · style guide; pairs with the on-disk term above · high
+- toast (Cmdr's transient notification) → Hinweis (reserve "Mitteilung" for the macOS-notification sense) · no direct
+  source · tentative
+- view mode: Full → Voll, Brief → Kompakt (mode → "Kompaktmodus") · no direct source; "Kompakt" matches macOS density
+  wording · tentative
+- content size (logical) → Inhalt / Inhaltsgröße (pairs with on-disk "Auf dem Datenträger") · style guide; pairs with
+  the on-disk term above · high
 - stale (index) → veraltet · macOS/MS common usage · high
-- pane (Cmdr file list) → Bereich (style guide pane→Bereich); "tint X panes" → "X-Bereiche einfärben" · style guide · high
-- color names: Orange, Cyan, Indigo stay identical in DE; Amber→Bernstein, Lime→Limette, Teal→Petrol, Purple→Violett, Pink→Rosa · standard DE color vocabulary · high
+- pane (Cmdr file list) → Bereich (style guide pane→Bereich); "tint X panes" → "X-Bereiche einfärben" · style guide ·
+  high
+- color names: Orange, Cyan, Indigo stay identical in DE; Amber→Bernstein, Lime→Limette, Teal→Petrol, Purple→Violett,
+  Pink→Rosa · standard DE color vocabulary · high
 - command palette → Befehlspalette · MS terminology ("Befehlspalette") · high
-- clipboard → Zwischenablage; copy to clipboard → "In die Zwischenablage kopieren"; cut → ausschneiden; paste → einsetzen · macOS (Finder/AppKit: "Zwischenablage", "Ausschneiden", "Einsetzen") · high
+- clipboard → Zwischenablage; copy to clipboard → "In die Zwischenablage kopieren"; cut → ausschneiden; paste →
+  einsetzen · macOS (Finder/AppKit: "Zwischenablage", "Ausschneiden", "Einsetzen") · high
 - pattern (match pattern) → Muster · MS terminology ("Muster"); macOS Finder ("Muster einfügen") · high
 - regular expression → regulärer Ausdruck (UI chip stays "Regex", brand/do-not-translate) · MS terminology · high
 - query (search text) → Anfrage (noun); "query" verb → abfragen · MS terminology · high
-- scope (search-in folders) → "Suchen in" for the filter label; the recent-search summary uses "Bereich: {scope}" · derived (Suchen in = the action; Bereich for the abstract scope, aligning with pane→Bereich) · high
-- zoom in / zoom out → Vergrößern / Verkleinern; "Zoom to N%" → "Auf N % zoomen"; zoom (noun) → Zoom · macOS ("vergrößern"/"verkleinern"), Nautilus ("Ansicht vergrößern") · high
+- scope (search-in folders) → "Suchen in" for the filter label; the recent-search summary uses "Bereich: {scope}" ·
+  derived (Suchen in = the action; Bereich for the abstract scope, aligning with pane→Bereich) · high
+- zoom in / zoom out → Vergrößern / Verkleinern; "Zoom to N%" → "Auf N % zoomen"; zoom (noun) → Zoom · macOS
+  ("vergrößern"/"verkleinern"), Nautilus ("Ansicht vergrößern") · high
 - context menu → Kontextmenü · macOS Finder ("Kontextmenü einblenden") · high
 - parent folder → übergeordneter Ordner · macOS Finder ("Übergeordneter Ordner") · high
-- hidden files → verborgene Dateien · standard DE; macOS "ausgeblendet" also seen, "verborgen" reads cleaner for the dotfile sense · high
-- overwrite → überschreiben; "Overwrite all"→"Alle überschreiben", "Overwrite all smaller/older"→"Alle kleineren/älteren überschreiben" · Double Commander ("&Überschreiben", "Alle überschreiben", "Alle größeren überschreiben"), MS terminology · high
-- skip → überspringen; "Skip all"→"Alle überspringen" · macOS Finder copy dialog ("Überspringen"), Double Commander, Nautilus ("Überspringen") · high
-- merge (folders) → zusammenführen ("wird mit einem bestehenden Ordner zusammengeführt") · Nautilus ("_Zusammenführen"), MS terminology · high
-- conflict → Konflikt; "Checking for conflicts"→"Konflikte werden geprüft" · MS terminology (Konflikt, AUT/DEU/CHE) · high
-- destination → Ziel (Zielvolume, Zielpfad, Zielordner); source → Quelle; target (symlink/overwrite target) → Ziel · MS terminology (Ziel, Quelle) · high
+- hidden files → verborgene Dateien · standard DE; macOS "ausgeblendet" also seen, "verborgen" reads cleaner for the
+  dotfile sense · high
+- overwrite → überschreiben; "Overwrite all"→"Alle überschreiben", "Overwrite all smaller/older"→"Alle kleineren/älteren
+  überschreiben" · Double Commander ("&Überschreiben", "Alle überschreiben", "Alle größeren überschreiben"), MS
+  terminology · high
+- skip → überspringen; "Skip all"→"Alle überspringen" · macOS Finder copy dialog ("Überspringen"), Double Commander,
+  Nautilus ("Überspringen") · high
+- merge (folders) → zusammenführen ("wird mit einem bestehenden Ordner zusammengeführt") · Nautilus
+  ("\_Zusammenführen"), MS terminology · high
+- conflict → Konflikt; "Checking for conflicts"→"Konflikte werden geprüft" · MS terminology (Konflikt, AUT/DEU/CHE) ·
+  high
+- destination → Ziel (Zielvolume, Zielpfad, Zielordner); source → Quelle; target (symlink/overwrite target) → Ziel · MS
+  terminology (Ziel, Quelle) · high
 - rename → umbenennen; "Rename all"→"Alle umbenennen" · macOS Finder, Double Commander · high
-- rollback → Rollback (kept; verb "Rollback läuft …" for "Rolling back") · MS terminology keeps "Rollback"; no settled DE UI translation, loanword standard in dev/file-op context · high
+- rollback → Rollback (kept; verb "Rollback läuft …" for "Rolling back") · MS terminology keeps "Rollback"; no settled
+  DE UI translation, loanword standard in dev/file-op context · high
 - retry / try again → erneut versuchen ("Erneut versuchen") · macOS ("Try Again"→"Erneut versuchen") · high
-- scanning (transfer scan phase) → durchsuchen ("Wird durchsucht"); "Verifying before copy"→"Prüfung vor dem Kopieren" · derived; Double Commander uses "Suche" but "durchsuchen" reads clearer for a file-tree walk, and it matches the drive-index "durchsuchen/Durchlauf" choice so "scan" renders one way everywhere · high
-- hardlink / hardlinked → Hardlink (Hardlink-Dateien) · loanword kept; MS "fester Link" exists but "Hardlink" is the common DE dev term, consistent with "Symlink" · high
-- existing / new (conflict comparison labels) → Bestehend / Neu · standard DE; pairs naturally for the side-by-side conflict rows · high
+- scanning (transfer scan phase) → durchsuchen ("Wird durchsucht"); "Verifying before copy"→"Prüfung vor dem Kopieren" ·
+  derived; Double Commander uses "Suche" but "durchsuchen" reads clearer for a file-tree walk, and it matches the
+  drive-index "durchsuchen/Durchlauf" choice so "scan" renders one way everywhere · high
+- hardlink / hardlinked → Hardlink (Hardlink-Dateien) · loanword kept; MS "fester Link" exists but "Hardlink" is the
+  common DE dev term, consistent with "Symlink" · high
+- existing / new (conflict comparison labels) → Bestehend / Neu · standard DE; pairs naturally for the side-by-side
+  conflict rows · high
 - permanently (delete) → dauerhaft ("Dauerhaft löschen", "dauerhaft gelöscht") · MS terminology, standard DE · high
 - under cursor → unter dem Cursor · standard DE; "Cursor" kept (common DE UI term) · high
-- full disk access (macOS permission) → vollständiger Festplattenzugriff; System Settings pane → "Vollständiger Festplattenzugriff", "Privacy & Security"→"Datenschutz & Sicherheit" · macOS SystemSettings (Festplattenzugriff; de macOS PRIVACY_SECTION="Datenschutz & Sicherheit") · high
-- Quit & Reopen (macOS relaunch button) → Beenden & erneut öffnen · macOS relaunch-prompt wording (beenden + erneut öffnen) · high
-- macOS folder names: Applications→Programme, Desktop→Schreibtisch, Documents→Dokumente, Downloads→Downloads · macOS standard folder names · high
-- network share → Netzwerkfreigabe; "Connect directly"→"Direkt verbinden" · style guide (share→Freigabe), derived for the direct-connect action · high
-- select all → Alles auswählen; deselect all → Auswahl aufheben; deselect (verb) → abwählen · macOS ("Alles auswählen", "Auswahl aufheben") · high
+- full disk access (macOS permission) → vollständiger Festplattenzugriff; System Settings pane → "Vollständiger
+  Festplattenzugriff", "Privacy & Security"→"Datenschutz & Sicherheit" · macOS SystemSettings (Festplattenzugriff; de
+  macOS PRIVACY_SECTION="Datenschutz & Sicherheit") · high
+- Quit & Reopen (macOS relaunch button) → Beenden & erneut öffnen · macOS relaunch-prompt wording (beenden + erneut
+  öffnen) · high
+- macOS folder names: Applications→Programme, Desktop→Schreibtisch, Documents→Dokumente, Downloads→Downloads · macOS
+  standard folder names · high
+- network share → Netzwerkfreigabe; "Connect directly"→"Direkt verbinden" · style guide (share→Freigabe), derived for
+  the direct-connect action · high
+- select all → Alles auswählen; deselect all → Auswahl aufheben; deselect (verb) → abwählen · macOS ("Alles auswählen",
+  "Auswahl aufheben") · high
 - offline (make available offline) → "Offline verfügbar machen" · MS ("offline" kept); standard DE phrasing · high
 - onboarding → Einführung (wizard → Einführungsassistent) · standard DE UI rendering of guided first-run · high
-- view modes (commands): Brief → Kompaktansicht, Full → Vollansicht (aligns with view mode glossary entry above: Voll/Kompakt) · derived · high
-- relative-time abbreviations (recent-search tooltips): "{count}m/h/d/w/mo/y ago" → "vor {count} Min./Std./T./Wo./Mon./J." (DE puts "vor" first; abbreviated to stay terse) · standard DE · high
+- view modes (commands): Brief → Kompaktansicht, Full → Vollansicht (aligns with view mode glossary entry above:
+  Voll/Kompakt) · derived · high
+- relative-time abbreviations (recent-search tooltips): "{count}m/h/d/w/mo/y ago" → "vor {count}
+  Min./Std./T./Wo./Mon./J." (DE puts "vor" first; abbreviated to stay terse) · standard DE · high
 - "boring folders" (playful) → "langweilige Ordner" (kept the playful tone per @key) · product voice · high
 - comparator (size/date filter) → Vergleichsoperator · MS terminology · high
 - clipboard → Zwischenablage · macOS AppKit ("Zwischenablage") · high
-- viewer (file viewer window) → Vorschau; "File viewer" → Dateivorschau; window title suffix keeps "| Vorschau" · style guide (viewer→Vorschau); MS "Zuschauer" is the wrong sense (a person watching), rejected · high
-- Quick Look → Übersicht · macOS German · high. The localized Apple feature name — Apple's German Finder uses "Übersicht" for Quick Look, so the user sees that, not the English term. Applies wherever the macOS Quick Look preview is named (the `commands.fileQuickLook.mac.label` palette label, the binary-warning banners, the space-key hint). Distinct from Cmdr's own file viewer (Vorschau)
-- encoding (text/character encoding) → Codierung; full compound → Zeichencodierung · MS terminology ("Codierung", AUT/DEU/CHE/LUX) · high
+- viewer (file viewer window) → Vorschau; "File viewer" → Dateivorschau; window title suffix keeps "| Vorschau" · style
+  guide (viewer→Vorschau); MS "Zuschauer" is the wrong sense (a person watching), rejected · high
+- Quick Look → Übersicht · macOS German · high. The localized Apple feature name — Apple's German Finder uses
+  "Übersicht" for Quick Look, so the user sees that, not the English term. Applies wherever the macOS Quick Look preview
+  is named (the `commands.fileQuickLook.mac.label` palette label, the binary-warning banners, the space-key hint).
+  Distinct from Cmdr's own file viewer (Vorschau)
+- encoding (text/character encoding) → Codierung; full compound → Zeichencodierung · MS terminology ("Codierung",
+  AUT/DEU/CHE/LUX) · high
 - detected (auto-detected encoding) → erkannt · MS terminology (detect→erkennen) · high
-- line (text line) → Zeile (plural Zeilen); line number → Zeilennummer · MS terminology ("Zeilennummer"); macOS "Zeile"; NOT "Linie" (geometric) · high
+- line (text line) → Zeile (plural Zeilen); line number → Zeilennummer · MS terminology ("Zeilennummer"); macOS "Zeile";
+  NOT "Linie" (geometric) · high
 - match (search result) → Treffer; "No matches" → "Keine Treffer" · GNOME Nautilus ("Keine Treffer") · high
 - case sensitive → Groß-/Kleinschreibung beachten · MS terminology (case-sensitive, AUT/DEU/CHE/LUX) · high
-- streaming (viewer streaming mode) → Streaming; "streaming mode" → Streaming-Modus · MS terminology (Streaming, kept) · high
+- streaming (viewer streaming mode) → Streaming; "streaming mode" → Streaming-Modus · MS terminology (Streaming, kept) ·
+  high
 - memory (RAM) → Speicher · MS terminology (memory→Speicher) · high
-- tail (auto-follow a growing file) → Folgen (verb folgen/verfolgen); "tail mode" → Folgemodus · no canonical source; conveys auto-follow without the Unix `tail` jargon · tentative
+- tail (auto-follow a growing file) → Folgen (verb folgen/verfolgen); "tail mode" → Folgemodus · no canonical source;
+  conveys auto-follow without the Unix `tail` jargon · tentative
 - reload (file changed on disk) → neu laden ("Neu laden") · standard DE · high
-- save (selection to a file) → sichern ("Auswahl sichern", "Als Datei sichern …") · macOS Finder ("Sichern", "Sichern unter …") · high
+- save (selection to a file) → sichern ("Auswahl sichern", "Als Datei sichern …") · macOS Finder ("Sichern", "Sichern
+  unter …") · high
 - license → Lizenz; license key → Lizenzschlüssel; license type → Lizenztyp · MS terminology (license→Lizenz) · high
 - activate (a license) → aktivieren · macOS, MS terminology · high
-- Personal (license tier) → Privat ("Privat (kostenlos)", "Privatlizenz"); private use → private Nutzung · standard DE; tier-label translation kept consistent across licensing strings · high
-- Commercial (license tier) → Gewerblich ("Gewerbliche Lizenz", "Gewerbliches Abo", "Gewerblich unbefristet") · standard DE; consistent across licensing strings · high
+- Personal (license tier) → Privat ("Privat (kostenlos)", "Privatlizenz"); private use → private Nutzung · standard DE;
+  tier-label translation kept consistent across licensing strings · high
+- Commercial (license tier) → Gewerblich ("Gewerbliche Lizenz", "Gewerbliches Abo", "Gewerblich unbefristet") · standard
+  DE; consistent across licensing strings · high
 - perpetual (license) → unbefristet · standard DE (one-time/non-expiring license) · high
 - subscription → Abo (das Abo, "gewerbliches Abo") · standard DE short form of Abonnement · high
 - organization (licensed org) → Organisation · MS terminology · high
@@ -138,47 +206,93 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 - API key → API-Schlüssel · standard DE compound (API kept) · high
 - model (AI model) → Modell · MS terminology · high
 - "Example:" (placeholder prefix) → "Beispiel:" · standard DE · high
-- startup disk (macOS boot volume) → Startvolume · macOS Finder Get-Info pane ("Startvolume:", value field key f82-Dg-tGh) · high
-- What's new (post-update dialog) → Neuheiten ("Neuheiten in Cmdr") · MS terminology (Neuheiten); macOS "Neuheiten" · high
+- startup disk (macOS boot volume) → Startvolume · macOS Finder Get-Info pane ("Startvolume:", value field key
+  f82-Dg-tGh) · high
+- What's new (post-update dialog) → Neuheiten ("Neuheiten in Cmdr") · MS terminology (Neuheiten); macOS "Neuheiten" ·
+  high
 - changelog → Änderungsprotokoll · MS terminology (Änderungsprotokoll, AUT/DEU/CHE) · high
-- command (palette item) → Befehl (plural Befehle); "Search commands" → "Befehle suchen" · macOS/MS standard ("Befehl"); aligns with command palette → Befehlspalette · high
-- "Go to path" / "Go to" (Cmd-G dialog) → "Zu Pfad gehen" · derived (macOS "Gehe zu …" / "Gehe zu Ordner"; "Zu Pfad gehen" keeps the path noun the dialog needs) · high
-- recent (recently used/visited) → Letzte ("Letzte Pfade", "Letzte {mode}-Suche"); "Recent" command-palette group → "Zuletzt verwendet" · macOS Finder ("Zuletzt benutzt"/"Letzte") · high
-- complete (operation done) → abgeschlossen ("Löschen abgeschlossen", "Kopieren abgeschlossen") · standard DE; MS terminology · high
+- command (palette item) → Befehl (plural Befehle); "Search commands" → "Befehle suchen" · macOS/MS standard ("Befehl");
+  aligns with command palette → Befehlspalette · high
+- "Go to path" / "Go to" (Cmd-G dialog) → "Zu Pfad gehen" · derived (macOS "Gehe zu …" / "Gehe zu Ordner"; "Zu Pfad
+  gehen" keeps the path noun the dialog needs) · high
+- recent (recently used/visited) → Letzte ("Letzte Pfade", "Letzte {mode}-Suche"); "Recent" command-palette group →
+  "Zuletzt verwendet" · macOS Finder ("Zuletzt benutzt"/"Letzte") · high
+- complete (operation done) → abgeschlossen ("Löschen abgeschlossen", "Kopieren abgeschlossen") · standard DE; MS
+  terminology · high
 - skip (transfer) → überspringen ("übersprungen") · already in glossary; reused for transfer toasts · high
 - "at the target" (transfer destination) → "am Ziel" · aligns with destination/target → Ziel · high
-- onboarding (menu item label "Onboarding…") → "Einführung…" · glossary onboarding→Einführung; kept the trailing ellipsis to match the literal menu item · high
-- low on space / running low → "der Speicherplatz wird knapp"; "Low disk space" (notification title) → "Wenig Speicherplatz" · standard DE; pairs with disk usage → Speicherbelegung · high
-- update check error toast → "Beim Suchen nach Updates ist etwas schiefgelaufen: {message}" · style guide voice rule (no bare "Fehler:" label for the user-facing error toast); the calm-rephrase pattern for a raw-error-prefix string · high
-- Settings sections (de): Appearance→Erscheinungsbild, Colors and formats→Farben und Formate, Zoom and density→Zoom und Dichte, File and folder sizes→Datei- und Ordnergrößen, Listing→Dateiliste, Behavior→Verhalten, File operations→Dateioperationen, File system watching→Dateisystemüberwachung, Search→Suche, AI→KI, File systems→Dateisysteme, SMB/Network shares→SMB-/Netzwerkfreigaben, MTP→MTP (Android/Kindle/Kameras), Git→Git, Viewer→Vorschau, Developer→Entwickler, MCP server→MCP-Server, Logging→Protokollierung, Updates & privacy→Updates & Datenschutz, Advanced→Erweitert, Keyboard shortcuts→Tastaturkurzbefehle, License→Lizenz · derived from glossary terms + macOS Systemeinstellungen wording · high
-- error report → Fehlerbericht; "Send error report" → "Fehlerbericht senden" · macOS/MS standard rendering (Apple "Fehlerbericht"); the bare-"Fehler"-label voice rule targets failure toasts, not this established feature name · high
-- "Couldn't X" (failure status/toast) → "X ließ sich nicht …" / "X nicht möglich" · style-guide voice rule (no bare "fehlgeschlagen"); the calm-rephrase pattern for register/prepare/send/save failures · high
-- redact (logs) → bereinigen; "redacted" → "bereinigt"; "after redaction" → "nach Bereinigung" · standard DE for privacy-scrubbing log data · high
-- log file / log lines → Protokolldatei / Protokollzeilen · macOS/MS (Protokoll); consistent with logging → Protokollierung · high
-- scan (drive indexing) → durchsuchen ("Laufwerk wird durchsucht …"); "fresh scan" → "neuer Durchlauf"; "rescan" → "erneuter Durchlauf"; the index status panel and dir-size tooltip use the same verb ("Laufwerk wird durchsucht …", not "Scan läuft") · macOS ("durchsuchen"); "Durchlauf" reads naturally for the indexing pass, distinct from the search verb. ❌ Don't keep the loanword "Scan" — the EN source says "scan" everywhere (indexing.json, queryUi.json, settings.json), all of which map to durchsuchen/Durchlauf. EN "Indexing this drive…" (the drive-node tooltip) is the distinct sense → Indizierung · high
+- onboarding (menu item label "Onboarding…") → "Einführung…" · glossary onboarding→Einführung; kept the trailing
+  ellipsis to match the literal menu item · high
+- low on space / running low → "der Speicherplatz wird knapp"; "Low disk space" (notification title) → "Wenig
+  Speicherplatz" · standard DE; pairs with disk usage → Speicherbelegung · high
+- update check error toast → "Beim Suchen nach Updates ist etwas schiefgelaufen: {message}" · style guide voice rule (no
+  bare "Fehler:" label for the user-facing error toast); the calm-rephrase pattern for a raw-error-prefix string · high
+- Settings sections (de): Appearance→Erscheinungsbild, Colors and formats→Farben und Formate, Zoom and density→Zoom und
+  Dichte, File and folder sizes→Datei- und Ordnergrößen, Listing→Dateiliste, Behavior→Verhalten, File
+  operations→Dateioperationen, File system watching→Dateisystemüberwachung, Search→Suche, AI→KI, File
+  systems→Dateisysteme, SMB/Network shares→SMB-/Netzwerkfreigaben, MTP→MTP (Android/Kindle/Kameras), Git→Git,
+  Viewer→Vorschau, Developer→Entwickler, MCP server→MCP-Server, Logging→Protokollierung, Updates & privacy→Updates &
+  Datenschutz, Advanced→Erweitert, Keyboard shortcuts→Tastaturkurzbefehle, License→Lizenz · derived from glossary
+  terms + macOS Systemeinstellungen wording · high
+- error report → Fehlerbericht; "Send error report" → "Fehlerbericht senden" · macOS/MS standard rendering (Apple
+  "Fehlerbericht"); the bare-"Fehler"-label voice rule targets failure toasts, not this established feature name · high
+- "Couldn't X" (failure status/toast) → "X ließ sich nicht …" / "X nicht möglich" · style-guide voice rule (no bare
+  "fehlgeschlagen"); the calm-rephrase pattern for register/prepare/send/save failures · high
+- redact (logs) → bereinigen; "redacted" → "bereinigt"; "after redaction" → "nach Bereinigung" · standard DE for
+  privacy-scrubbing log data · high
+- log file / log lines → Protokolldatei / Protokollzeilen · macOS/MS (Protokoll); consistent with logging →
+  Protokollierung · high
+- scan (drive indexing) → durchsuchen ("Laufwerk wird durchsucht …"); "fresh scan" → "neuer Durchlauf"; "rescan" →
+  "erneuter Durchlauf"; the index status panel and dir-size tooltip use the same verb ("Laufwerk wird durchsucht …", not
+  "Scan läuft") · macOS ("durchsuchen"); "Durchlauf" reads naturally for the indexing pass, distinct from the search
+  verb. ❌ Don't keep the loanword "Scan" — the EN source says "scan" everywhere (indexing.json, queryUi.json,
+  settings.json), all of which map to durchsuchen/Durchlauf. EN "Indexing this drive…" (the drive-node tooltip) is the
+  distinct sense → Indizierung · high
 - entries (scanned files+folders) → Einträge · MS terminology (Eintrag); the index-row sense · high
-- ETA "roughly {eta}" → "etwa {eta}"; "{n}s left" → "noch {n} s"; "{n}m left" → "noch {n} Min."; "Almost done" → "Fast fertig" · standard DE (DE puts "noch" first for remaining time) · high
-- shortcut (keyboard) → Kurzbefehl (plural Kurzbefehle); "Keyboard shortcuts" → "Tastaturkurzbefehle" · macOS ("Kurzbefehl"); aligns with Settings-section term · high
+- ETA "roughly {eta}" → "etwa {eta}"; "{n}s left" → "noch {n} s"; "{n}m left" → "noch {n} Min."; "Almost done" → "Fast
+  fertig" · standard DE (DE puts "noch" first for remaining time) · high
+- shortcut (keyboard) → Kurzbefehl (plural Kurzbefehle); "Keyboard shortcuts" → "Tastaturkurzbefehle" · macOS
+  ("Kurzbefehl"); aligns with Settings-section term · high
 - modifier (key) → Sondertaste · macOS/MS standard DE for ⌘/⌥/⌃/⇧ keys · high
-- combo / key combination → Kombination · standard DE (short for Tastenkombination); used in shortcut-conflict warnings · high
+- combo / key combination → Kombination · standard DE (short for Tastenkombination); used in shortcut-conflict warnings
+  · high
 - "Force Quit" (macOS) → Sofort beenden · macOS AppKit ("Force Quit %@" → "%@ sofort beenden") · high
 - "Character Viewer" (macOS) → Zeichenübersicht · Apple's standard DE name for the emoji/symbols picker · high
-- "Mission Control" / "Spaces" / "Spotlight" (macOS) → kept verbatim · macOS DE keeps all three untranslated (verified in macOS pile, 2026-06-21) · high
-- "input source switching" → "Wechsel der Eingabequelle"; "app switcher" → "App-Umschalter"; "App windows" → "App-Fenster" · macOS Eingabequelle wording; standard DE compounds · high
-- "logging out" → "das Abmelden"; "locking the screen" → "das Sperren des Bildschirms" · macOS ("Abmelden", "Bildschirm sperren"); nominalized to fit the mid-sentence "(…)" conflict-warning slot · high
-- "screen recording" → Bildschirmaufnahme; "screenshots" → Bildschirmfotos · macOS ("Bildschirmfoto"); MS "Bildschirmaufnahme" · high
+- "Mission Control" / "Spaces" / "Spotlight" (macOS) → kept verbatim · macOS DE keeps all three untranslated (verified
+  in macOS pile, 2026-06-21) · high
+- "input source switching" → "Wechsel der Eingabequelle"; "app switcher" → "App-Umschalter"; "App windows" →
+  "App-Fenster" · macOS Eingabequelle wording; standard DE compounds · high
+- "logging out" → "das Abmelden"; "locking the screen" → "das Sperren des Bildschirms" · macOS ("Abmelden", "Bildschirm
+  sperren"); nominalized to fit the mid-sentence "(…)" conflict-warning slot · high
+- "screen recording" → Bildschirmaufnahme; "screenshots" → Bildschirmfotos · macOS ("Bildschirmfoto"); MS
+  "Bildschirmaufnahme" · high
 - USB device → USB-Gerät · standard DE compound (USB kept) · high
-- udev / ptpcamerad / Terminal → kept verbatim (Linux/macOS process + app names); MTP/PTP stay verbatim per do-not-translate · high
-- "in use by" (device held by a process) → "wird von … verwendet"; "exclusive access" → "exklusiver Zugriff" · standard DE · high
+- udev / ptpcamerad / Terminal → kept verbatim (Linux/macOS process + app names); MTP/PTP stay verbatim per
+  do-not-translate · high
+- "in use by" (device held by a process) → "wird von … verwendet"; "exclusive access" → "exklusiver Zugriff" · standard
+  DE · high
 - preview (report preview) → Vorschau · macOS (Vorschau); distinct from the file viewer but same DE word · high
 - bundle (log/report bundle) → Bündel · standard DE for a packaged set of files · high
-- "Reveal in Finder" → "Im Finder zeigen"; "Show in Finder" → "Im Finder anzeigen" · macOS renders the two source verbs distinctly ("Finder/Reveal" → "Im Finder zeigen"; "Show in Finder" → "… im Finder anzeigen", both verified in `de/macOS/`, 2026-06-21). Keep the split: the `errorReporter` toast (Reveal) stays "zeigen", the `commands.fileShowInFinder` palette label (Show) stays "anzeigen" · high
+- "Reveal in Finder" → "Im Finder zeigen"; "Show in Finder" → "Im Finder anzeigen" · macOS renders the two source verbs
+  distinctly ("Finder/Reveal" → "Im Finder zeigen"; "Show in Finder" → "… im Finder anzeigen", both verified in
+  `de/macOS/`, 2026-06-21). Keep the split: the `errorReporter` toast (Reveal) stays "zeigen", the
+  `commands.fileShowInFinder` palette label (Show) stays "anzeigen" · high
 - suggestion(s) (combobox) → Vorschläge · MS terminology (Vorschlag) · high
-- toast scope: "in-app" → "in der App"; "globally"/"global shortcut" → "global"/"globaler Kurzbefehl"; "from any app" → "aus jeder App" · standard DE; pairs with the global-hotkey UI · high
+- toast scope: "in-app" → "in der App"; "globally"/"global shortcut" → "global"/"globaler Kurzbefehl"; "from any app" →
+  "aus jeder App" · standard DE; pairs with the global-hotkey UI · high
 - "jump to" (a file/download) → "springen zu" / "Zur Datei springen" · standard DE UI action · high
 - "Press keys…" (shortcut capture) → "Tasten drücken …" · standard DE; ellipsis kept · high
 - registered / not registered (global hotkey) → registriert / nicht registriert · MS terminology (registrieren) · high
-- pause (transfer) → button "Pause" (noun, macOS NSPauseTemplate "Pause"); verb/aria "anhalten"; status "Angehalten" (macOS "Kopieren von „^0“ wurde angehalten", paused→angehalten) · macOS Finder + AppKit · high. macOS ships the pause control as the noun "Pause" but narrates the action with the verb "anhalten"; keep the visible button "Pause", use "anhalten" in aria/tooltip and "Angehalten" as the status chip
-- resume (transfer) → fortsetzen ("Fortsetzen" button; "Kopieren fortsetzen", "Backup fortsetzen") · macOS Finder ("Kopieren fortsetzen", resume→fortsetzen) · high
-- queue (transfer queue) → Warteschlange; "Transfer queue" → Übertragungs-Warteschlange · MS terminology (queue→Warteschlange); compound with transfer→Übertragung · high. The "Queue" button on the progress dialog (send-to-background + open the queue window) renders as "Warteschlange"
-- background / send to background (a transfer) → "im Hintergrund" (running); "keep running in the background" → "im Hintergrund weiterlaufen lassen" · macOS ("Synchronisierung im Hintergrund", "Drucken im Hintergrund"), MS ("im Hintergrund") · high. Cmdr's send-to-background action routes through the queue, so its button is "Warteschlange" and its toasts say "im Hintergrund"
+- pause (transfer) → button "Pause" (noun, macOS NSPauseTemplate "Pause"); verb/aria "anhalten"; status "Angehalten"
+  (macOS "Kopieren von „^0“ wurde angehalten", paused→angehalten) · macOS Finder + AppKit · high. macOS ships the pause
+  control as the noun "Pause" but narrates the action with the verb "anhalten"; keep the visible button "Pause", use
+  "anhalten" in aria/tooltip and "Angehalten" as the status chip
+- resume (transfer) → fortsetzen ("Fortsetzen" button; "Kopieren fortsetzen", "Backup fortsetzen") · macOS Finder
+  ("Kopieren fortsetzen", resume→fortsetzen) · high
+- queue (transfer queue) → Warteschlange; "Transfer queue" → Übertragungs-Warteschlange · MS terminology
+  (queue→Warteschlange); compound with transfer→Übertragung · high. The "Queue" button on the progress dialog
+  (send-to-background + open the queue window) renders as "Warteschlange"
+- background / send to background (a transfer) → "im Hintergrund" (running); "keep running in the background" → "im
+  Hintergrund weiterlaufen lassen" · macOS ("Synchronisierung im Hintergrund", "Drucken im Hintergrund"), MS ("im
+  Hintergrund") · high. Cmdr's send-to-background action routes through the queue, so its button is "Warteschlange" and
+  its toasts say "im Hintergrund"

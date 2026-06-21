@@ -1,6 +1,7 @@
 # Transfer queue + pause — v2 follow-ups
 
-Created 2026-06-21. Status: deferred. Parent: [`../2026-06-21-transfer-queue-pause-plan.md`](../2026-06-21-transfer-queue-pause-plan.md) (shipped v1).
+Created 2026-06-21. Status: deferred. Parent:
+[`../2026-06-21-transfer-queue-pause-plan.md`](../2026-06-21-transfer-queue-pause-plan.md) (shipped v1).
 
 v1 shipped a lane-based queue (serialize per shared resource, parallelize disjoint), pause/resume between files, a
 standalone macOS queue window, and Pause + Queue (F2) controls on the progress dialog (cancel-only, no rollback). These
@@ -12,8 +13,8 @@ v1 fixes `LANE_BUDGET = 1` (one op per lane). The `lane_use` table is already a 
 lane's budget is a localized change.
 
 - Make the budget per-lane, not global: `Volume::lane_budget()` (default 1) alongside `lane_key()`.
-- The motivating case: **FTP** (when added) allows N simultaneous connections (often 5); its lane budget = min(N,
-  server limit). Local SSD could also benefit from a small budget > 1.
+- The motivating case: **FTP** (when added) allows N simultaneous connections (often 5); its lane budget = min(N, server
+  limit). Local SSD could also benefit from a small budget > 1.
 - Admission already reserves all of an op's lanes atomically; only the free-check (`lane_free`) needs to compare against
   the lane's budget instead of the constant.
 - Finer local-device detection (per physical disk vs the current per-mount-root key) so two copies on genuinely

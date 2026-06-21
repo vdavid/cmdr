@@ -26,9 +26,9 @@ manager in
   The bar-is-moving truth is the SNAPSHOT `status` (`'running'` vs `'paused'`), NEVER `is_running`. Rows read
   `snapshot.status`.
 - **Cancel keeps partials, always (rollback = false).** Per-row Cancel and "Cancel selected" both map to
-  `cancel_operation(s)` with no rollback and no confirm prompt: a queued op is dropped before it spawns; a running/paused
-  op stops keeping copied files. That's why `capabilities/queue.json` DROPS `dialog:allow-ask` (no prompt) and
-  `store:default` (no persistence in v1).
+  `cancel_operation(s)` with no rollback and no confirm prompt: a queued op is dropped before it spawns; a
+  running/paused op stops keeping copied files. That's why `capabilities/queue.json` DROPS `dialog:allow-ask` (no
+  prompt) and `store:default` (no persistence in v1).
 - **Window perms fail SILENTLY.** Every Tauri call in `queue-window.ts` and `+page.svelte` is `await`ed in try/catch
   with a `log.warn`. A missing grant must surface as a log line, not a dead window. Smoke-test with `pnpm dev` after any
   perm change.

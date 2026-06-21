@@ -19,8 +19,8 @@ The window renders from `createOperationsStore()`, which merges:
    is registered, admitted, paused, resumed, or settles. Payload is `{ operations: OperationSnapshot[] }`, where each
    `OperationSnapshot` is `{ operationId, operationType, status, source, destination }` — membership + lifecycle status
    only, NOT 200 ms progress. This decides which rows exist and each row's status.
-2. **`write-progress`** (`onWriteProgress`, the existing per-file stream): drives the live per-row progress bars and ETA.
-   The store keys the latest `WriteProgressEvent` by `operationId`.
+2. **`write-progress`** (`onWriteProgress`, the existing per-file stream): drives the live per-row progress bars and
+   ETA. The store keys the latest `WriteProgressEvent` by `operationId`.
 
 On every snapshot tick the store prunes the progress map to the new membership, so a finished op's bar can't outlive its
 row, and the map can't grow unbounded. Progress for an op not (yet) in the snapshot is ignored — the snapshot is the
@@ -39,8 +39,8 @@ spinner and an animated bar; `'paused'` shows a static bar and the Paused label.
 
 `createOperationsStore()` returns:
 
-- `operations: OperationRow[]` — reactive; each `OperationRow` is `{ snapshot: OperationSnapshot, progress:
-  WriteProgressEvent | null }`. Ordered as the backend emits them.
+- `operations: OperationRow[]` — reactive; each `OperationRow` is
+  `{ snapshot: OperationSnapshot, progress: WriteProgressEvent | null }`. Ordered as the backend emits them.
 - `hasRunning: boolean` — any op with `status === 'running'` (gates "Pause all").
 - `hasPaused: boolean` — any op with `status === 'paused'` (gates "Resume all").
 - `init(): Promise<void>` — subscribes to both streams, then seeds from `list_operations`. Subscribe-before-seed so a

@@ -28,11 +28,11 @@ provenance, layout rules, and open items: [inventory.md](inventory.md). Process 
   local, isn't subject to the doc-system checks, and belongs in the main clone, not a worktree (worktrees get cleaned).
 - **Authority tiers** (how much a source proves "user expectation"): 1 = the real installed OS (macOS; strongest), 2 =
   vendor terminology + style guides (Microsoft), 3 = the file-manager-domain corpora (the explorer family GNOME
-  Nautilus + Xfce Thunar + KDE Dolphin, and the orthodox two-pane pair Total Commander + Double Commander; cross-language
-  parity, and the only sources that name two-pane concepts Finder lacks), 4 = native human review (the only thing that
-  makes a term "confirmed"; out of budget for now). Within Tier 3, split by UI family: lean on the orthodox pair (TC, DC)
-  for two-pane-specific terms (pane, file list, command line) where the OS vendors are silent, and on the explorer trio
-  for general file operations.
+  Nautilus + Xfce Thunar + KDE Dolphin, and the orthodox two-pane pair Total Commander + Double Commander;
+  cross-language parity, and the only sources that name two-pane concepts Finder lacks), 4 = native human review (the
+  only thing that makes a term "confirmed"; out of budget for now). Within Tier 3, split by UI family: lean on the
+  orthodox pair (TC, DC) for two-pane-specific terms (pane, file list, command line) where the OS vendors are silent,
+  and on the explorer trio for general file operations.
 
 ## Structure
 

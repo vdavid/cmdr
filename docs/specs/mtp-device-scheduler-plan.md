@@ -2,24 +2,24 @@
 
 ## Problem (diagnosed)
 
-A background MTP index scan livelocks the phone. While Cmdr indexes a storage, user-initiated foreground actions
-(folder navigation, copy, delete) and live updates to the current folder stall for tens of seconds. Two distinct policy
-bugs in Cmdr (not in `mtp-rs`, which is already correct) cause it:
+A background MTP index scan livelocks the phone. While Cmdr indexes a storage, user-initiated foreground actions (folder
+navigation, copy, delete) and live updates to the current folder stall for tens of seconds. Two distinct policy bugs in
+Cmdr (not in `mtp-rs`, which is already correct) cause it:
 
 1. **Whole-folder device hold.** The scan walks one directory at a time over `Volume::list_directory`
    (`indexing/volume_scanner.rs`), which on MTP reaches `connection_manager().list_directory_with_cancel`. That call
    acquires the single per-device lock (`Arc<tokio::sync::Mutex<MtpDevice>>`) and holds it across the ENTIRE directory
-   enumeration: one `GetObjectHandles` plus one `GetObjectInfo` per child. A 9,000-file folder = ~9,000 serial USB
-   round trips under one continuous lock hold (~30 s). Any foreground op that needs the device waits the whole time, and
-   the 30 s op timeout then fires: real logs show `list_objects timed out after 30s` interleaved with
+   enumeration: one `GetObjectHandles` plus one `GetObjectInfo` per child. A 9,000-file folder = ~9,000 serial USB round
+   trips under one continuous lock hold (~30 s). Any foreground op that needs the device waits the whole time, and the
+   30 s op timeout then fires: real logs show `list_objects timed out after 30s` interleaved with
    `resolve_object_for_index: timed out waiting for device lock`.
 
 2. **Gate-too-late on the live watch→index path.** A PTP change event runs `feed_index_added_or_changed`
    (`mtp/connection/event_loop.rs`), which spawns a task that calls `resolve_object_for_index` — a device round trip
-   (handle→path walk + `GetObjectInfo`) — and ONLY THEN calls `apply_mtp_added_or_changed`
-   (`indexing/mtp_watch.rs`), where the "are we scanning? → buffer" check lives. So during a scan, every change event in
-   a non-visible folder still hits the contended device before the buffer gate can spare it. The removal path already
-   buffers the raw handle without a device hit; adds/changes don't.
+   (handle→path walk + `GetObjectInfo`) — and ONLY THEN calls `apply_mtp_added_or_changed` (`indexing/mtp_watch.rs`),
+   where the "are we scanning? → buffer" check lives. So during a scan, every change event in a non-visible folder still
+   hits the contended device before the buffer gate can spare it. The removal path already buffers the raw handle
+   without a device hit; adds/changes don't.
 
 ### What is and isn't ours
 
@@ -43,8 +43,8 @@ when no foreground work pends.
 
 ### The priority primitive: `DevicePriorityGate`
 
-One gate per connected device, owned by `MtpConnectionManager` alongside the device lock (`mtp/connection/scheduler.rs`).
-It holds:
+One gate per connected device, owned by `MtpConnectionManager` alongside the device lock
+(`mtp/connection/scheduler.rs`). It holds:
 
 - `foreground_pending: AtomicUsize` — count of foreground ops currently entered (waiting for, or holding, the device).
 - `notify: tokio::sync::Notify` — wakes a yielding background unit when foreground drains to zero.
@@ -66,8 +66,8 @@ and notifies.
 The scan gets a dedicated MTP listing path, `list_directory_for_scan`, that splits one folder into bounded units, each a
 separate lock acquisition, with a yield point between them:
 
-- **Unit 0 — handles.** Yield point → acquire device lock → `list_objects_stream_with_cancel` (one `GetObjectHandles`)
-  → release. This builds an `ObjectListing` that owns its own `Arc<MtpDeviceInner>` (independent of Cmdr's lock), so it
+- **Unit 0 — handles.** Yield point → acquire device lock → `list_objects_stream_with_cancel` (one `GetObjectHandles`) →
+  release. This builds an `ObjectListing` that owns its own `Arc<MtpDeviceInner>` (independent of Cmdr's lock), so it
   survives across lock release/re-acquire.
 - **Units 1..n — metadata batches.** Repeat: yield point → acquire device lock → call `listing.next()` up to
   `SCAN_METADATA_BATCH` times (each one `GetObjectInfo`) → release. Between batches the lock is free, so a foreground op
@@ -91,10 +91,9 @@ thing being starved).
 Move the scanning check to BEFORE the device round trip. `feed_index_added_or_changed` (event loop) first asks, per
 indexed storage, whether that volume is currently scanning AND the change is for a non-visible folder:
 
-- **Scanning + non-visible folder**: buffer the RAW HANDLE (no device hit) via a new
-  `apply_mtp_added_or_changed_handle` that records `BufferedChange::UpsertHandle(handle)` and returns without resolving.
-  The post-scan replay resolves the handle then (the device is no longer contended), mirroring how removals already
-  buffer the raw handle.
+- **Scanning + non-visible folder**: buffer the RAW HANDLE (no device hit) via a new `apply_mtp_added_or_changed_handle`
+  that records `BufferedChange::UpsertHandle(handle)` and returns without resolving. The post-scan replay resolves the
+  handle then (the device is no longer contended), mirroring how removals already buffer the raw handle.
 - **Current/visible folder OR not scanning**: resolve at FOREGROUND priority (the resolve takes a `foreground_guard()`),
   so live updates to the open pane land in ~1–2 s even while the scan runs.
 
@@ -112,17 +111,17 @@ Because buffered adds/changes now carry an unresolved handle, the replay path re
   the device lock, then releases both — never the reverse, never both held while awaiting the gate.
 - **Foreground never blocks on background.** A foreground op never waits on `background_yield_point`; it only raises the
   counter and contends for the device lock, which the scan holds for at most one batch (≤ ~1 s).
-- **Background always progresses when idle.** `background_yield_point` returns immediately when `foreground_pending == 0`.
-  The decrement-and-notify on the last foreground guard drop guarantees a parked scan is woken. A foreground op that
-  starts and ends between the scan's counter-read and its `notified().await` is handled by `Notify`'s stored-permit
-  semantics (a `notify_waiters` while no one waits is fine; the next loop iteration re-reads the counter, sees zero, and
-  proceeds), so there's no lost-wakeup stall. We re-check the counter after every wake (the `while` loop), so a spurious
-  or stale wake just re-parks.
+- **Background always progresses when idle.** `background_yield_point` returns immediately when
+  `foreground_pending == 0`. The decrement-and-notify on the last foreground guard drop guarantees a parked scan is
+  woken. A foreground op that starts and ends between the scan's counter-read and its `notified().await` is handled by
+  `Notify`'s stored-permit semantics (a `notify_waiters` while no one waits is fine; the next loop iteration re-reads
+  the counter, sees zero, and proceeds), so there's no lost-wakeup stall. We re-check the counter after every wake (the
+  `while` loop), so a spurious or stale wake just re-parks.
 - **No priority inversion.** The scan yields the device at every unit boundary; foreground gets it after the current
   in-flight transaction completes (mtp-rs's `operation_lock` guarantees that transaction is atomic and bounded).
 - **Cancellation preserved.** The scan's `cancelled: Arc<AtomicBool>` is checked at every unit boundary (already checked
-  per directory; now also between metadata batches), and the same flag is threaded into `mtp-rs` as a `CancelToken` so an
-  in-flight `listing.next()` bails within one round trip. Heal-to-rescan, the freshness model, and the
+  per directory; now also between metadata batches), and the same flag is threaded into `mtp-rs` as a `CancelToken` so
+  an in-flight `listing.next()` bails within one round trip. Heal-to-rescan, the freshness model, and the
   buffer/replay/overflow flow are untouched.
 
 ## What stays where
@@ -149,5 +148,5 @@ Pure/unit-testable (no hardware):
 
 Needs real-phone QA (full device interaction):
 
-- During a scan, nav / copy / delete start within ~1 s; a file added on the phone in the open folder appears within
-  ~1–2 s; the scan still completes (slower while the user is active, resuming when idle).
+- During a scan, nav / copy / delete start within ~1 s; a file added on the phone in the open folder appears within ~1–2
+  s; the scan still completes (slower while the user is active, resuming when idle).

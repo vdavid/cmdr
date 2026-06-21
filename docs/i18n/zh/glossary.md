@@ -4,8 +4,8 @@ The living term glossary for translating Cmdr into this language: one entry per 
 `chosen · sources · confidence` format. Build and extend it DURING translation, and read it before every pass.
 
 - **Source every term from the reference pile, never guess.** Mine `_ignored/i18n/zh/` for how Apple, Microsoft, and
-  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the source(s) and
-  a confidence (`confirmed` / `high` / `tentative`).
+  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the
+  source(s) and a confidence (`confirmed` / `high` / `tentative`).
 - **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
 
 Format, the confidence scale, and the full process: [i18n-translation.md](../../guides/i18n-translation.md).
@@ -47,7 +47,8 @@ this file adds the terms settled while translating the catalogs. All `zh-Hans` (
 - **buffer** · `缓冲区` · Microsoft TBX · `high`
 - **threshold** · `阈值` · Microsoft TBX · `confirmed`
 - **default** · `默认` · macOS · `confirmed`
-- **reset / reset to default** · `重置` (`恢复默认`) · macOS `还原`/`恢复默认`; `重置` is the common modern term · `high`
+- **reset / reset to default** · `重置` (`恢复默认`) · macOS `还原`/`恢复默认`; `重置` is the common modern term ·
+  `high`
 - **advanced** · `高级` · macOS · `confirmed`
 - **custom** · `自定义` · macOS · `confirmed`
 - **updates** · `更新` · macOS, Microsoft · `confirmed`
@@ -63,9 +64,9 @@ this file adds the terms settled while translating the catalogs. All `zh-Hans` (
 
 ### UI section names (keep consistent across catalogs)
 
-- Appearance `外观`; Behavior `行为`; AI `AI`; File systems `文件系统`; SMB/Network shares `SMB/网络共享`;
-  MTP `MTP`; Git `Git`; Viewer `查看器`; Developer `开发者`; Updates & privacy `更新与隐私`; Advanced `高级`;
-  Keyboard shortcuts `键盘快捷键`; License `许可证`.
+- Appearance `外观`; Behavior `行为`; AI `AI`; File systems `文件系统`; SMB/Network shares `SMB/网络共享`; MTP `MTP`;
+  Git `Git`; Viewer `查看器`; Developer `开发者`; Updates & privacy `更新与隐私`; Advanced `高级`; Keyboard shortcuts
+  `键盘快捷键`; License `许可证`.
 - View modes: Full `完整`; Brief `简洁`. Columns: Name `名称`; Ext `扩展名`.
 
 ### Errors catalog (first pass, 2026-06-21)
@@ -103,8 +104,8 @@ macOS Finder/AppKit zh-CN as Tier 1, Microsoft zh-Hans cross-check. Reuses setti
 ### File explorer catalog (first pass, 2026-06-21)
 
 macOS Finder/AppKit zh-CN Tier 1 (KEY-based en→zh lookup), Double Commander zh-CN for two-pane terms, Microsoft zh-Hans
-cross-check. Aligned to the settled `窗格`/`标签页` above (DC's `面板` was rejected to stay consistent with the
-settings pass).
+cross-check. Aligned to the settled `窗格`/`标签页` above (DC's `面板` was rejected to stay consistent with the settings
+pass).
 
 - **file pane** · `文件窗格` · uses settled `窗格` (NOT DC's `面板`) · `high`
 - **file list** · `文件列表` · DC (`file list` → 文件列表) · `high`
@@ -116,13 +117,14 @@ settings pass).
   surface: sign-in copy → 登录信息, low-level error copy → 凭证) · `high`
 - **authentication failed** · `无法通过身份验证` · style guide (no bare 失败/错误); macOS "authentication needed" is
   `需要认证` (CS203) · `high`
-- **password / username** · `密码` / `用户名` · macOS (N15 密码), Microsoft 用户名 (NOT MS password→`访问代码`) · `confirmed`
+- **password / username** · `密码` / `用户名` · macOS (N15 密码), Microsoft 用户名 (NOT MS password→`访问代码`) ·
+  `confirmed`
 - **Keychain** -> `钥匙串` · macOS Chinese (Simplified) · `high` · the localized Apple FEATURE name (Apple localizes it
   per-OS, so Cmdr uses the term the user sees, not the English "Keychain"); same Decision-1 rule as Quick Look. The
   credential store is `钥匙串` (`macOS Keychain` → `macOS 钥匙串`); the **Keychain Access** app is `钥匙串访问`. (The
-  Finder/AppKit/SystemSettings reference pile doesn't surface the term — those apps don't mention Keychain — but `钥匙串`
-  / `钥匙串访问` are the established Apple Chinese (Simplified) names.) Supersedes any earlier "keep Keychain verbatim"
-  note.
+  Finder/AppKit/SystemSettings reference pile doesn't surface the term — those apps don't mention Keychain — but
+  `钥匙串` / `钥匙串访问` are the established Apple Chinese (Simplified) names.) Supersedes any earlier "keep Keychain
+  verbatim" note.
 - **host / hostname** · `主机` / `主机名` · Microsoft TBX · `high`
 - **disconnect** · `断开连接` · macOS (N200/MR10.1) · `confirmed`
 - **read-only volume** · `只读宗卷` · macOS FI12 `read-only` → 只读, + 宗卷 · `high`
@@ -140,10 +142,12 @@ settings pass).
 
 ### File operations + onboarding catalog (first pass, 2026-06-21)
 
-macOS zh-CN Tier 1 (key-based en→zh), Double Commander + GNOME Nautilus zh-CN for conflict-dialog verbs, Microsoft zh-Hans cross-check.
+macOS zh-CN Tier 1 (key-based en→zh), Double Commander + GNOME Nautilus zh-CN for conflict-dialog verbs, Microsoft
+zh-Hans cross-check.
 
 - **overwrite** · `覆盖` · DC (`Confirm overwrites` → 确认覆盖), Nautilus · `high`
-- **replace** · `替换` · macOS AppKit SavePanel (`Replace` → 替换); Cmdr's transfer dialog uses `覆盖` (overwrite sense) · `high`
+- **replace** · `替换` · macOS AppKit SavePanel (`Replace` → 替换); Cmdr's transfer dialog uses `覆盖` (overwrite sense)
+  · `high`
 - **skip** · `跳过` · DC + Nautilus (`Skip` → 跳过) · `confirmed`
 - **rename** · `重命名` · DC + macOS function-key bar · `confirmed`
 - **merge** · `合并` · Nautilus (`Merge` → 合并) · `confirmed`
@@ -154,16 +158,20 @@ macOS zh-CN Tier 1 (key-based en→zh), Double Commander + GNOME Nautilus zh-CN 
 - **stop / cancel** · `停止` / `取消` · macOS AppKit · `confirmed`
 - **close** · `关闭` · macOS AppKit (`Close` → 关闭) · `confirmed`
 - **OK (affirmative button)** · `好` · macOS convention (Apple uses `好` for OK) · `high`
-- **trash (verb, move to trash)** · `移到废纸篓` · macOS Finder (`Move to Trash`) · `high`. Trash noun stays `废纸篓` (style.md).
+- **trash (verb, move to trash)** · `移到废纸篓` · macOS Finder (`Move to Trash`) · `high`. Trash noun stays `废纸篓`
+  (style.md).
 - **under cursor** · `光标所在的` · descriptive, no single macOS source · `tentative`
-- **all (in "Skip all"/"Overwrite all")** · `全部` · Chinese collapses ICU one/other to `other`, so the single-conflict case also renders `全部跳过`/`全部覆盖`; chosen because the policy radios act on the whole conflict set · `high`
+- **all (in "Skip all"/"Overwrite all")** · `全部` · Chinese collapses ICU one/other to `other`, so the single-conflict
+  case also renders `全部跳过`/`全部覆盖`; chosen because the policy radios act on the whole conflict set · `high`
 - **technical details** · `技术详情` · reused from errors pass · `high`
 
 ### Onboarding catalog terms
 
 - **onboarding** · `入门引导` · macOS-flavored (`引导`/`入门` are the Apple setup-flow words) · `high`
-- **full disk access** · `完全磁盘访问权限` · macOS Ventura+ Privacy pane label (Simplified) · `high`. Pane breadcrumb uses errors-pass `隐私与安全性` + `系统设置` (the `{systemSettings}` token).
-- **Quit & Reopen (macOS relaunch dialog button)** · `退出并重新打开` · macOS (`Quit` → 退出, `Reopen` → 重新打开) · `high`
+- **full disk access** · `完全磁盘访问权限` · macOS Ventura+ Privacy pane label (Simplified) · `high`. Pane breadcrumb
+  uses errors-pass `隐私与安全性` + `系统设置` (the `{systemSettings}` token).
+- **Quit & Reopen (macOS relaunch dialog button)** · `退出并重新打开` · macOS (`Quit` → 退出, `Reopen` → 重新打开) ·
+  `high`
 - **Applications (folder)** · `应用程序` · macOS Finder (`Applications` → 应用程序) · `confirmed`
 - **deny / allow (permission)** · `拒绝` / `允许` · macOS permission-dialog verbs · `high`
 - **agent (AI assistant)** · `代理` · standard · `high`
@@ -172,11 +180,13 @@ macOS zh-CN Tier 1 (key-based en→zh), Double Commander + GNOME Nautilus zh-CN 
 - **endpoint** · `端点` · Microsoft TBX · `high`
 - **command palette** · `命令面板` · standard · `high`
 - **open beta** · `公开测试` · standard · `high`
-- **Local network access / Accepting incoming connections (macOS prompt labels)** · `本地网络访问` / `接受传入连接` · macOS firewall/privacy prompt wording (not in this pile slice; standard macOS labels) · `tentative`
+- **Local network access / Accepting incoming connections (macOS prompt labels)** · `本地网络访问` / `接受传入连接` ·
+  macOS firewall/privacy prompt wording (not in this pile slice; standard macOS labels) · `tentative`
 
 ### Search UI + commands catalog (first pass, 2026-06-21)
 
-macOS Finder/AppKit zh-CN Tier 1 (KEY-based en→zh lookup), Microsoft zh-Hans cross-check. Reuses settings/errors/explorer terms where they overlap (`窗格`/`标签页`/`搜索`/`宗卷`/`主机`/`驱动器`/`索引`/`路径`).
+macOS Finder/AppKit zh-CN Tier 1 (KEY-based en→zh lookup), Microsoft zh-Hans cross-check. Reuses
+settings/errors/explorer terms where they overlap (`窗格`/`标签页`/`搜索`/`宗卷`/`主机`/`驱动器`/`索引`/`路径`).
 
 - **search query / query (noun)** · `查询` · standard (matches the command-palette/search domain) · `high`
 - **run (a search)** · `运行` · Microsoft TBX (`run` → 运行); reused for "run search"/"execute command" · `high`
@@ -185,17 +195,22 @@ macOS Finder/AppKit zh-CN Tier 1 (KEY-based en→zh lookup), Microsoft zh-Hans c
 - **entry (indexed file count)** · `条目` · standard measure-word noun for index entries (`{count} 个条目`) · `high`
 - **filter (noun/verb)** · `筛选` · macOS/Microsoft (`Filter` → 筛选) · `confirmed`
 - **pattern (match pattern)** · `模式` · standard · `high`
-- **glob** · `Glob` · no settled Chinese UI term; kept verbatim like the brand row label (matches en intent) · `tentative`
+- **glob** · `Glob` · no settled Chinese UI term; kept verbatim like the brand row label (matches en intent) ·
+  `tentative`
 - **comparator (filter operator)** · `比较符` · descriptive; standard math/IT term · `high`
 - **scope (search scope) / "Search in"** · `搜索范围` · descriptive; matches macOS "Search:" scope row intent · `high`
 - **case-sensitive** · `区分大小写` · macOS/Microsoft standard · `confirmed`
 - **wildcard** · `通配符` · macOS/Microsoft standard · `confirmed`
 - **coming soon** · `即将推出` · standard product phrasing · `high`
 - **refine (AI search)** · `优化` · rendered by meaning (improve the query) · `tentative`
-- **agent (AI agent, transparency-strip voice)** · `代理` · reused from onboarding pass (glossary consistency; no special case). NOTE: the en uses a deliberate first-person "agent" voice; `代理` carries it. `智能体` (the modern Chinese "AI agent" term) was considered but rejected to stay consistent with the settled `代理`. · `high`
+- **agent (AI agent, transparency-strip voice)** · `代理` · reused from onboarding pass (glossary consistency; no
+  special case). NOTE: the en uses a deliberate first-person "agent" voice; `代理` carries it. `智能体` (the modern
+  Chinese "AI agent" term) was considered but rejected to stay consistent with the settled `代理`. · `high`
 - **zoom (UI text size)** · `缩放` (verb in/out → `放大`/`缩小`) · macOS AppKit (`Zoom` → 缩放) · `confirmed`
 - **clipboard** · `剪贴板` · macOS/Microsoft standard · `confirmed`
-- **copy to clipboard / cut / paste** · `拷贝` (Finder copy verb) / `剪切` / `粘贴` · macOS AppKit MenuCommands (`Cut` → 剪切, `Paste` → 粘贴, `Select All` → 全选). NOTE: F5/F6 transfer ops keep the function-key-bar `拷贝`/`移动`; clipboard ops use `拷贝到剪贴板`/`剪切`/`粘贴`. · `confirmed`
+- **copy to clipboard / cut / paste** · `拷贝` (Finder copy verb) / `剪切` / `粘贴` · macOS AppKit MenuCommands (`Cut`
+  → 剪切, `Paste` → 粘贴, `Select All` → 全选). NOTE: F5/F6 transfer ops keep the function-key-bar `拷贝`/`移动`;
+  clipboard ops use `拷贝到剪贴板`/`剪切`/`粘贴`. · `confirmed`
 - **select all / deselect all** · `全选` / `取消全选` · macOS (`Select All` → 全选) · `confirmed`
 - **ascending / descending** · `升序` / `降序` · standard sort terms · `confirmed`
 - **sort by / sort order** · `按…排序` / `排序方向` · macOS Finder (`Sort By` → 排序方式) · `high`
@@ -205,12 +220,22 @@ macOS Finder/AppKit zh-CN Tier 1 (KEY-based en→zh lookup), Microsoft zh-Hans c
 - **parent folder** · `上层文件夹` · macOS Finder (`Enclosing Folder` → 上层文件夹) · `confirmed`
 - **page up / page down** · `向上翻页` / `向下翻页` · standard · `high`
 - **toggle** · `切换` · standard · `confirmed`
-- **make available offline / remove download (cloud)** · `设为离线可用` / `移除下载` · descriptive (cloud-file sense) · `tentative`
-- **onboarding (command label + every reference)** · `入门引导` · unified across the whole locale: the wizard noun, the `Onboarding…` menu-command label (`commands.cmdrOpenOnboarding`), the `main.upgradeNudge` references to it, the `shortcuts.scope.onboarding` scope, and the `settings.onboarding.*` internal copy all use `入门引导`. (The first-pass command label was `新手引导`; reconciled to the dominant wizard noun so the menu item and the wizard title read as one feature.) · `high`
-- **feedback / What''s new / error report (Help menu commands)** · `反馈` / `新增功能` / `错误报告` · macOS/Microsoft standard menu wording · `high`
-- **boring folders (playful)** · `无聊的文件夹` · kept the friendly/playful en tone literally (style.md: preserve deliberate casual voice) · `tentative`
+- **make available offline / remove download (cloud)** · `设为离线可用` / `移除下载` · descriptive (cloud-file sense) ·
+  `tentative`
+- **onboarding (command label + every reference)** · `入门引导` · unified across the whole locale: the wizard noun, the
+  `Onboarding…` menu-command label (`commands.cmdrOpenOnboarding`), the `main.upgradeNudge` references to it, the
+  `shortcuts.scope.onboarding` scope, and the `settings.onboarding.*` internal copy all use `入门引导`. (The first-pass
+  command label was `新手引导`; reconciled to the dominant wizard noun so the menu item and the wizard title read as one
+  feature.) · `high`
+- **feedback / What''s new / error report (Help menu commands)** · `反馈` / `新增功能` / `错误报告` · macOS/Microsoft
+  standard menu wording · `high`
+- **boring folders (playful)** · `无聊的文件夹` · kept the friendly/playful en tone literally (style.md: preserve
+  deliberate casual voice) · `tentative`
 
-UI section/label names captured (keep consistent): search modes AI `AI` / Filename `文件名` / Content `内容` / Regex `正则`; filter facets Pattern `模式` / Size `大小` / Modified `修改日期` / Search-in `搜索范围`; type toggle Both `两者` / Files `文件` / Folders `文件夹`; result columns Name `名称` / Path `路径` / Size `大小` / Modified `修改日期` / Actions `操作`.
+UI section/label names captured (keep consistent): search modes AI `AI` / Filename `文件名` / Content `内容` / Regex
+`正则`; filter facets Pattern `模式` / Size `大小` / Modified `修改日期` / Search-in `搜索范围`; type toggle Both `两者`
+/ Files `文件` / Folders `文件夹`; result columns Name `名称` / Path `路径` / Size `大小` / Modified `修改日期` /
+Actions `操作`.
 
 ### Notes (errors catalog)
 
@@ -248,12 +273,13 @@ macOS zh-CN Tier 1, Microsoft zh-Hans cross-check.
 - **clipboard** · `剪贴板` · macOS (AppKit MenuCommands `Clipboard` → 剪贴板) · `confirmed`
 - **copy / paste / select all** · `拷贝` / `粘贴` / `全选` · macOS zh-CN MenuCommands · `confirmed`
 - **encoding (text)** · `编码` · Microsoft TBX (`Encoding` → 编码) · `confirmed`
-- **Western (encoding group)** · `西文` · standard for Latin-script encodings; NOT Microsoft TBX's first hit
-  `西部电影` (Western movies, wrong sense) · `high`
+- **Western (encoding group)** · `西文` · standard for Latin-script encodings; NOT Microsoft TBX's first hit `西部电影`
+  (Western movies, wrong sense) · `high`
 - **Unicode** · `Unicode` · kept verbatim (standard name) · `confirmed`
 - **streaming (large-file mode)** · `流式` / `流式读取` · Microsoft TBX `流式处理`; shortened to `流式读取` for the
   viewer badge · `high`
-- **word wrap (viewer)** · `换行` / `自动换行` · reused from settings pass (`自动换行`); the terse badge uses `换行` · `high`
+- **word wrap (viewer)** · `换行` / `自动换行` · reused from settings pass (`自动换行`); the terse badge uses `换行` ·
+  `high`
 - **tail (auto-follow file)** · `跟随` · rendered by meaning (follow), not transliterated · `high`
 - **index / indexing (viewer)** · `索引` / `建立索引` · reused from settings pass · `high`
 - **in memory** · `已在内存中` · standard · `high`
@@ -276,8 +302,8 @@ macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms (`索
 - **directory (status/aggregation context)** · `目录` · standard; reused dir abbrev from explorer pass · `high`
 - **replay (recorded fs changes)** · `重放` · rendered by meaning (re-apply changes) · `tentative`
 - **drive (external/network drive)** · `驱动器` · reused from settings/errors · `confirmed`
-- **download (noun, the file) / Downloads (folder)** · `下载内容` (the thing) / `“下载”文件夹` (the folder, macOS
-  Finder folder name `下载`) · macOS · `high`
+- **download (noun, the file) / Downloads (folder)** · `下载内容` (the thing) / `“下载”文件夹` (the folder, macOS Finder
+  folder name `下载`) · macOS · `high`
 - **jump to (a file/download)** · `跳转到` · standard · `high`
 - **global shortcut (system-wide hotkey)** · `全局快捷键` · standard (vs `应用内` in-app) · `high`
 - **in-app (scope, vs global)** · `应用内` · standard · `high`
@@ -287,13 +313,15 @@ macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms (`索
 - **error report (the feature/bundle)** · `错误报告` · reused from search-pass Help-menu command (macOS/Microsoft).
   NOTE: this is the one place `错误` is used deliberately — it's the established product-feature noun, not a loud
   failure label; the "Couldn''t …" status strings still render `无法…`. · `high`
-- **redact / redaction (scrub logs)** · `脱敏` · standard privacy/security term (`脱敏` = remove sensitive data) · `high`
+- **redact / redaction (scrub logs)** · `脱敏` · standard privacy/security term (`脱敏` = remove sensitive data) ·
+  `high`
 - **reference ID** · `参考编号` · descriptive · `high`
 - **manifest** · `清单` · Microsoft TBX (`manifest` → 清单) · `high`
 - **bundle (report bundle)** · `报告包` · descriptive (a packaged bundle of logs) · `tentative`
 - **note (free-text field)** · `备注` · macOS/standard · `high`
 - **MTP device / USB device** · `MTP 设备` / `USB 设备` · keep MTP, USB verbatim · `confirmed`
-- **ptpcamerad / udev / Terminal** · `ptpcamerad` / `udev` kept verbatim; Terminal → `终端` (macOS zh-CN app name) · `high`
+- **ptpcamerad / udev / Terminal** · `ptpcamerad` / `udev` kept verbatim; Terminal → `终端` (macOS zh-CN app name) ·
+  `high`
 - **daemon (system daemon)** · `守护进程` · standard · `high`
 - **process** · `进程` · standard · `confirmed`
 - **exclusive access** · `独占访问权限` · standard · `high`
@@ -303,16 +331,16 @@ macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms (`索
 
 ### macOS system-feature names (shortcut-conflict warnings; reuse the localized macOS name)
 
-zh-CN macOS labels: Spotlight `聚焦`; Finder `访达`; Character Viewer `字符检视器`; Mission Control `调度中心`;
-App windows `应用程序窗口`; Spaces `空间`; Force Quit `强制退出`; input source switching `切换输入源`; app switcher
+zh-CN macOS labels: Spotlight `聚焦`; Finder `访达`; Character Viewer `字符检视器`; Mission Control `调度中心`; App
+windows `应用程序窗口`; Spaces `空间`; Force Quit `强制退出`; input source switching `切换输入源`; app switcher
 `应用切换器`; screenshots `截屏`; screen recording `录屏`; logging out `退出登录`; locking the screen `锁定屏幕`.
 `System Settings > Keyboard` → `系统设置 > 键盘` (plain literal, matching the errors-pass `系统设置`). · `high`
 
 ### UI section names (this wave; keep consistent across catalogs)
 
 - Shortcut scopes: App `应用`; Main window `主窗口`; File list `文件列表`; Brief mode `简洁模式`; Full mode `完整模式`;
-  Volume chooser `宗卷选择器`; Network `网络`; Share browser `共享浏览器`; Command palette `命令面板`;
-  About window `关于窗口`; Onboarding `入门引导`. (Brief/Full align with the explorer pass's view-mode `简洁`/`完整`.)
+  Volume chooser `宗卷选择器`; Network `网络`; Share browser `共享浏览器`; Command palette `命令面板`; About window
+  `关于窗口`; Onboarding `入门引导`. (Brief/Full align with the explorer pass's view-mode `简洁`/`完整`.)
 - Shortcut filters: All `全部`; Modified `已修改`; Conflicts `冲突`. Badges: macOS `macOS` (verbatim); Fixed `固定`.
 
 ### Wave 1 prep catalogs (search/feedback/crashReporter/goToPath/transfer/updates/lowDiskSpace/commandPalette/whatsNew/main/common/notifications, 2026-06-21)
@@ -332,7 +360,8 @@ macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms.
 - **update / updates** · `更新` · reused from settings pass · `confirmed`
 - **available (new version available)** · `可用` · standard · `high`
 - **later (dismiss-for-now button)** · `稍后` · standard · `high`
-- **checking / downloading / installing / ready (update status)** · `正在检查` / `正在下载` / `正在安装` / `已就绪` · standard progress wording · `high`
+- **checking / downloading / installing / ready (update status)** · `正在检查` / `正在下载` / `正在安装` / `已就绪` ·
+  standard progress wording · `high`
 - **go to path** · `前往路径` · macOS Finder (`Go to Folder` → 前往文件夹; path = 路径) · `high`
 - **recent (recent paths/searches)** · `最近` (`最近的路径` / `最近使用`) · macOS (`Recent` → 最近) · `high`
 - **remove from list** · `从列表中移除` · standard (`Remove` → 移除) · `high`
@@ -342,18 +371,32 @@ macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms.
 - **target (destination folder, in transfer copy)** · `目标位置` · descriptive; matches the destination sense · `high`
 - **trash (verb, move to trash)** · `移到废纸篓` · reused from file-ops pass; Trash noun `废纸篓` (style.md) · `high`
 - **sending… (in-progress button)** · `正在发送…` · standard · `high`
-- **`feedback.dialog.counter` kept identical** (`{currentText} / {maxText}`) · pure-placeholder fraction, no translatable text · `confirmed`
+- **`feedback.dialog.counter` kept identical** (`{currentText} / {maxText}`) · pure-placeholder fraction, no
+  translatable text · `confirmed`
+
 ### Transfer queue catalog (queue window + pause/resume/background, 2026-06-21)
 
-macOS zh-CN Tier 1, Total Commander zh-CN (the feature's origin: queue + background controls), Microsoft zh-Hans cross-check.
+macOS zh-CN Tier 1, Total Commander zh-CN (the feature's origin: queue + background controls), Microsoft zh-Hans
+cross-check.
 
 - **pause** · `暂停` · macOS (`暂停`, `已暂停拷贝“^0”`), Total Commander (`暂停`), Microsoft TBX (`暂停`) · `confirmed`
-- **resume (a paused operation)** · `继续` · Microsoft TBX (`resume` → `继续`), macOS (`继续`). NOTE: NOT `恢复` (that's restore/recover, e.g. macOS `恢复` = restore version) — `继续` is the resume-an-operation sense. · `high`
-- **queue (noun)** · `传输队列` (the window/feature) / `队列` (bare) · Total Commander (`队列(&Q)`), Microsoft TBX (`队列`) · `confirmed`
-- **add to queue / send to the transfer queue (the progress-dialog F2 button)** · `加入队列` (button) / `发送到传输队列` (aria) · descriptive, built on `队列` · `high`
-- **background / running in the background** · `后台` (`在后台运行` / `在后台继续运行`) · Total Commander (`后台`, `所有上传/下载都在后台进行`), Microsoft TBX (`后台的`). NOTE: NOT `背景` (visual background, wrong sense). · `high`
-- **transfer (the queued copy/move/delete unit)** · `传输` · reused; `传输队列` = transfer queue, `这个传输` = this transfer · `high`
-- **status words (queue row)** · queued `等待中` / running `进行中` / paused `已暂停` / done `已完成` / cancelled `已取消` / failed `无法完成` (style.md: no bare 失败/错误) · macOS-style · `high`
-- **pause all / resume all / cancel selected (toolbar)** · `全部暂停` / `全部继续` / `取消所选` · built on settled verbs + `全部`/`所选` · `high`
+- **resume (a paused operation)** · `继续` · Microsoft TBX (`resume` → `继续`), macOS (`继续`). NOTE: NOT `恢复` (that's
+  restore/recover, e.g. macOS `恢复` = restore version) — `继续` is the resume-an-operation sense. · `high`
+- **queue (noun)** · `传输队列` (the window/feature) / `队列` (bare) · Total Commander (`队列(&Q)`), Microsoft TBX
+  (`队列`) · `confirmed`
+- **add to queue / send to the transfer queue (the progress-dialog F2 button)** · `加入队列` (button) / `发送到传输队列`
+  (aria) · descriptive, built on `队列` · `high`
+- **background / running in the background** · `后台` (`在后台运行` / `在后台继续运行`) · Total Commander (`后台`,
+  `所有上传/下载都在后台进行`), Microsoft TBX (`后台的`). NOTE: NOT `背景` (visual background, wrong sense). · `high`
+- **transfer (the queued copy/move/delete unit)** · `传输` · reused; `传输队列` = transfer queue, `这个传输` = this
+  transfer · `high`
+- **status words (queue row)** · queued `等待中` / running `进行中` / paused `已暂停` / done `已完成` / cancelled
+  `已取消` / failed `无法完成` (style.md: no bare 失败/错误) · macOS-style · `high`
+- **pause all / resume all / cancel selected (toolbar)** · `全部暂停` / `全部继续` / `取消所选` · built on settled
+  verbs + `全部`/`所选` · `high`
 
-- **Ellipsis: always the single full-width `…` (U+2026), regardless of the en source''s `...` vs `…`.** Chinese typography uses `…`, not ASCII three-dots, so every zh status/label string renders `…` (`正在发送…`, `正在加载…`, `正在取消…`). This is a deliberate, locale-wide normalization (not source-faithful byte-copying): the whole zh catalog is consistent on the single `…`. (The doubled literary `……` is NOT used here, even in prose tooltips, to keep one ellipsis form across the UI.)
+- **Ellipsis: always the single full-width `…` (U+2026), regardless of the en source''s `...` vs `…`.** Chinese
+  typography uses `…`, not ASCII three-dots, so every zh status/label string renders `…` (`正在发送…`, `正在加载…`,
+  `正在取消…`). This is a deliberate, locale-wide normalization (not source-faithful byte-copying): the whole zh catalog
+  is consistent on the single `…`. (The doubled literary `……` is NOT used here, even in prose tooltips, to keep one
+  ellipsis form across the UI.)

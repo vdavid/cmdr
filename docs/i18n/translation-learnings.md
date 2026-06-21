@@ -14,7 +14,8 @@ go HERE or in the guide. When a learning becomes a hard rule, promote it into th
    `glossary.md` (`chosen · sources · confidence`) BEFORE translating strings, so term choices stay consistent.
 3. **Translate values in place**, file by file, following the per-language style guide + each key's `@key.description`
    (the per-string context) + the ICU rules in the guide's agent-prompt block.
-4. **Check**: `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate`.
+4. **Check**:
+   `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate`.
    Parity/ICU/plural are ERROR (must pass). Coverage (WARN) lists every value still byte-identical to English — that's
    the honest "what's left untranslated" signal; drive it to only the legitimately-identical keys.
 5. **Overflow-check** later against the pseudolocale (`en-XA`) per the guide.
@@ -40,10 +41,11 @@ first hit, per-language formality, catalog-tag ≠ pile-folder). Read that secti
 ## Orchestration gotchas (for whoever automates this)
 
 - **Don't pass the batch spec via the Workflow `args` global — hardcode it in the script.** A first batch-1 run received
-  `args` as a JSON STRING (not a parsed array); the `args && args.length` guard let the string through, the loop iterated
-  over its CHARACTERS, and every iteration spawned units with `tag = undefined` — ~848 agents, ~36M tokens, all wasted
-  (the translators safely refused to invent an `undefined` locale, so nothing corrupted). Hardcode the tag list, and
-  fail-fast: assert every tag is known AND its locale dir exists BEFORE spawning any agent, so a bad value can't fan out.
+  `args` as a JSON STRING (not a parsed array); the `args && args.length` guard let the string through, the loop
+  iterated over its CHARACTERS, and every iteration spawned units with `tag = undefined` — ~848 agents, ~36M tokens, all
+  wasted (the translators safely refused to invent an `undefined` locale, so nothing corrupted). Hardcode the tag list,
+  and fail-fast: assert every tag is known AND its locale dir exists BEFORE spawning any agent, so a bad value can't fan
+  out.
 
 ## Per-batch notes
 
@@ -59,8 +61,8 @@ clashes mid-run), and **the `many` CLDR plural category is the most common slip*
 
 Pilot (de: `feedback.json` + `crashReporter.json`, 2026-06-21) validated the pipeline. Learnings:
 
-- **Read the parallel `en/<file>.json` for each key's `@key.description`** — the skeleton carries no descriptions. This is
-  the per-string context; skipping it loses screenshot/placeholder notes. Mandatory.
+- **Read the parallel `en/<file>.json` for each key's `@key.description`** — the skeleton carries no descriptions. This
+  is the per-string context; skipping it loses screenshot/placeholder notes. Mandatory.
 - **Term home is `style.md`, not `glossary.md`.** The wave-1 guides carry their sourced glossary inline in `style.md`;
   `glossary.md` is a near-empty stub. Read `style.md` first; ADD newly-settled terms to `glossary.md` as you go.
 - **Match the English source faithfully; flag inconsistencies, don't silently fix them.** The en catalog has minor
@@ -73,6 +75,7 @@ Pilot (de: `feedback.json` + `crashReporter.json`, 2026-06-21) validated the pip
   `{email}`/`{maxText}` all survived. The parity + icu checks catch any slip.
 - **Pure-placeholder values stay identical to English** (e.g. `{currentText} / {maxText}`) and correctly remain in the
   coverage "identical" list — that's not an untranslated miss, it's nothing-to-translate. Expect a few legit identicals.
-- **Validate with the direct node scripts**, not (only) `pnpm check`: `node scripts/i18n-check-{parity,icu,plural,stale,coverage}.js`
-  from `apps/desktop`. The Go check runner's cache can serve a stale "no non-en locales" result on the first run right
-  after a new locale dir appears; the node scripts always resolve the live catalog.
+- **Validate with the direct node scripts**, not (only) `pnpm check`:
+  `node scripts/i18n-check-{parity,icu,plural,stale,coverage}.js` from `apps/desktop`. The Go check runner's cache can
+  serve a stale "no non-en locales" result on the first run right after a new locale dir appears; the node scripts
+  always resolve the live catalog.

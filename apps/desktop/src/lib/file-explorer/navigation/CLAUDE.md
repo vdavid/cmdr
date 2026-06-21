@@ -35,8 +35,8 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   favorites or the synthetic `network` / `search-results` entries). State→color/menu is the pure
   `drive-index-status.ts`; status stays live via the manager's event subscriptions, not polling. A scanning badge shows
   a LIVE count off `index-scan-progress`, per-volume via `getScanProgress` (never bleed progress across drives). The
-  badge is a `<button>` (axe rejects `role="img"`). Refused enable/rescan is classified by typed
-  `SmbIndexGateReason`, never text. Full contract: DETAILS § Drive index freshness badge.
+  badge is a `<button>` (axe rejects `role="img"`). Refused enable/rescan is classified by typed `SmbIndexGateReason`,
+  never text. Full contract: DETAILS § Drive index freshness badge.
 - **Favorites: mutate ONLY via the `commands.*` wrappers, ALWAYS stripping the `fav-` prefix** (the switcher id is
   `fav-<favoriteId>`; the commands take the bare id via `stripFavoritePrefix`). The `volume-grouping.ts` favorites group
   always renders even when empty (the placeholder row), so don't tidy it into a hide-when-empty branch. "Add to
@@ -49,9 +49,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `isModalDialogOpen()` (via `explorerRef.isVolumeChooserOpen()`) suppresses central dispatch.
 - **Favorite reorder is POINTER-based and LOCAL-FIRST, not HTML5 drag** (the OS intercepts drag gestures under Tauri's
   `dragDropEnabled`, so `draggable`/`ondrop` never fire; don't reintroduce them). Keyboard reorder (Alt+↑ / Alt+↓) runs
-  before `handleDropdownKey` consumes the bare arrows. Both paths set `optimisticFavoriteIds` synchronously, then persist
-  the FULL order via `reorderFavorites(bareIds)` in the background (don't await the IPC before updating the UI). Full
-  flow, the four-guard rationale, and the reorder mechanism: DETAILS § Editable favorites.
+  before `handleDropdownKey` consumes the bare arrows. Both paths set `optimisticFavoriteIds` synchronously, then
+  persist the FULL order via `reorderFavorites(bareIds)` in the background (don't await the IPC before updating the UI).
+  Full flow, the four-guard rationale, and the reorder mechanism: DETAILS § Editable favorites.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

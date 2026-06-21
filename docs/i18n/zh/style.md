@@ -175,5 +175,5 @@ inflection.
 ## Glossary
 
 The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/zh/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+you settle terms, each sourced from the reference pile (`_ignored/i18n/zh/`; recipes in
+`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
