@@ -5,8 +5,10 @@ import IconChevronDown from '~icons/lucide/chevron-down'
 import IconChevronRight from '~icons/lucide/chevron-right'
 import IconChevronUp from '~icons/lucide/chevron-up'
 import IconCircleAlert from '~icons/lucide/circle-alert'
+import IconCopy from '~icons/lucide/copy'
 import IconEye from '~icons/lucide/eye'
 import IconEyeOff from '~icons/lucide/eye-off'
+import IconFolderInput from '~icons/lucide/folder-input'
 import IconGitBranch from '~icons/lucide/git-branch'
 import IconGitCommitHorizontal from '~icons/lucide/git-commit-horizontal'
 import IconGitFork from '~icons/lucide/git-fork'
@@ -15,12 +17,15 @@ import IconInfo from '~icons/lucide/info'
 import IconLink from '~icons/lucide/link'
 import IconLock from '~icons/lucide/lock'
 import IconMoreHorizontal from '~icons/lucide/more-horizontal'
+import IconPause from '~icons/lucide/pause'
+import IconPlay from '~icons/lucide/play'
 import IconRotateCcw from '~icons/lucide/rotate-ccw'
 import IconSearch from '~icons/lucide/search'
 import IconShieldCheck from '~icons/lucide/shield-check'
 import IconShieldOff from '~icons/lucide/shield-off'
 import IconSparkles from '~icons/lucide/sparkles'
 import IconTag from '~icons/lucide/tag'
+import IconTrash2 from '~icons/lucide/trash-2'
 import IconTriangleAlert from '~icons/lucide/triangle-alert'
 import IconX from '~icons/lucide/x'
 import EjectIcon from './EjectIcon.svelte'
@@ -43,9 +48,11 @@ export const ICON_COMPONENTS = {
   'chevron-right': IconChevronRight,
   'chevron-up': IconChevronUp,
   'circle-alert': IconCircleAlert,
+  copy: IconCopy,
   eject: EjectIcon,
   eye: IconEye,
   'eye-off': IconEyeOff,
+  'folder-input': IconFolderInput,
   'git-branch': IconGitBranch,
   'git-commit-horizontal': IconGitCommitHorizontal,
   'git-fork': IconGitFork,
@@ -54,12 +61,15 @@ export const ICON_COMPONENTS = {
   link: IconLink,
   lock: IconLock,
   'more-horizontal': IconMoreHorizontal,
+  pause: IconPause,
+  play: IconPlay,
   'rotate-ccw': IconRotateCcw,
   search: IconSearch,
   'shield-check': IconShieldCheck,
   'shield-off': IconShieldOff,
   sparkles: IconSparkles,
   tag: IconTag,
+  'trash-2': IconTrash2,
   'triangle-alert': IconTriangleAlert,
   x: IconX,
 } satisfies Record<string, Component>

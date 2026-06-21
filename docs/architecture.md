@@ -35,6 +35,9 @@ All under `apps/desktop/src/lib/`.
 - `file-operations/delete/`: F8 / Shift+F8 delete + trash confirmation dialog and pure utilities
 - `file-operations/mkdir/`: F7 new-folder dialog with AI folder-name suggestions
 - `file-operations/mkfile/`: Shift+F4 new-file dialog
+- `file-operations/queue/`: Standalone transfer-queue window (per-row pause/resume/cancel, multi-select, global
+  pause/resume), rendered from an ops store merging `operations-changed` + `write-progress`; route at `routes/queue/`.
+  See [`apps/desktop/src/lib/file-operations/queue/CLAUDE.md`](../apps/desktop/src/lib/file-operations/queue/CLAUDE.md)
 - `file-viewer/`: Read-only file viewer (separate window, virtual scrolling)
 - `settings/`: Settings UI + registry-based architecture, reactive state
 - `intl/`: The single locale source (`getLocale`) + memoized locale-aware number/size formatters; counts, file sizes,

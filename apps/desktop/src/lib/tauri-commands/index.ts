@@ -238,6 +238,20 @@ export {
 } from './write-operations'
 export type { Event, UnlistenFn } from './write-operations'
 
+// Operation manager (queue window): list + pause/resume/cancel + the thin
+// `operations-changed` membership/status event.
+export {
+  listOperations,
+  cancelOperation,
+  cancelOperations,
+  pauseOperation,
+  resumeOperation,
+  pauseAll,
+  resumeAll,
+  onOperationsChanged,
+} from './operations'
+export type { OperationSnapshot, OperationsChanged } from './operations'
+
 // Network types
 export type { ManualConnectResult } from './networking'
 

@@ -10,6 +10,9 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
 - [`delete/`](delete/CLAUDE.md): F8 / Shift+F8 delete + trash confirmation dialog and pure utilities.
 - [`mkdir/`](mkdir/CLAUDE.md): F7 new-folder dialog with AI suggestions.
 - [`mkfile/`](mkfile/CLAUDE.md): Shift+F4 new-file dialog.
+- [`queue/`](queue/CLAUDE.md): the standalone transfer-queue window (lists every running/waiting operation with
+  per-row pause/resume/cancel, multi-select + Cancel selected, global pause/resume). Renders from the operations store
+  that merges the thin `operations-changed` snapshot with the live `write-progress` stream.
 - `scan-throughput.ts`: rolling-window scan-rate estimator (see below).
 
 ## Must-knows

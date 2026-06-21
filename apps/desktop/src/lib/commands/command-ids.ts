@@ -44,6 +44,7 @@ export const COMMAND_IDS = [
   'help.sendErrorReport',
   'help.whatsNew',
   'feedback.send',
+  'queue.show',
 
   // Search
   'search.open',

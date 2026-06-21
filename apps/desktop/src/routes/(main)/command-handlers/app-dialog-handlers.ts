@@ -10,6 +10,7 @@
 import { openExternalUrl, trackEvent } from '$lib/tauri-commands'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openShortcutsWindow } from '$lib/shortcuts/shortcuts-window'
+import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import { openFeedbackDialog } from '$lib/feedback/feedback-flow.svelte'
 import { openWhatsNew } from '$lib/whats-new/whats-new-trigger.svelte'
@@ -45,6 +46,10 @@ export const appDialogHandlers = {
 
   'help.openShortcuts': () => {
     void openShortcutsWindow()
+  },
+
+  'queue.show': () => {
+    void openQueueWindow()
   },
 
   'help.sendErrorReport': () => {

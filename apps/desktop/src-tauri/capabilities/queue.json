@@ -1,0 +1,22 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "queue",
+    "description": "Capability for the transfer-queue window. Mirrors the settings window's window perms but DROPS store:default and dialog:allow-ask: v1 has no persistence, and keep-partials cancel needs no confirm prompt. The pause/resume/cancel app commands go through the tauri_specta invoke handler, not the capability ACL, so they need no per-command grant.",
+    "windows": [
+        "queue"
+    ],
+    "permissions": [
+        "core:window:allow-close",
+        "core:window:allow-set-focus",
+        "core:window:allow-set-min-size",
+        "core:window:allow-set-max-size",
+        "core:window:allow-set-effects",
+        "core:window:allow-start-dragging",
+        "core:window:allow-outer-position",
+        "core:window:allow-outer-size",
+        "core:window:allow-scale-factor",
+        "core:event:default",
+        "core:app:allow-set-app-theme",
+        "core:webview:allow-internal-toggle-devtools"
+    ]
+}

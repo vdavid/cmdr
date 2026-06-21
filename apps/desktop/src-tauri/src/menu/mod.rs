@@ -222,6 +222,9 @@ pub const HELP_SEND_FEEDBACK_ID: &str = "help_send_feedback";
 /// Menu item ID for "Keyboard shortcuts" (opens the read-only shortcuts help window, under the Help menu).
 pub const HELP_SHORTCUTS_ID: &str = "help_shortcuts";
 
+/// Menu item ID for "Show transfer queue" (opens the transfer-queue window, under the Help menu).
+pub const QUEUE_SHOW_ID: &str = "queue_show";
+
 /// Menu item ID for "What's new" (opens the changelog popup, under the Help menu).
 pub const HELP_WHATS_NEW_ID: &str = "help_whats_new";
 
@@ -295,6 +298,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         COMMAND_PALETTE_ID => Some(("app.commandPalette", CommandScope::FileScoped)),
         SEARCH_FILES_ID => Some(("search.open", CommandScope::FileScoped)),
         HELP_SHORTCUTS_ID => Some(("help.openShortcuts", CommandScope::App)),
+        QUEUE_SHOW_ID => Some(("queue.show", CommandScope::App)),
         HELP_WHATS_NEW_ID => Some(("help.whatsNew", CommandScope::App)),
         HELP_SEND_ERROR_REPORT_ID => Some(("help.sendErrorReport", CommandScope::App)),
         HELP_SEND_FEEDBACK_ID => Some(("feedback.send", CommandScope::App)),
@@ -394,6 +398,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "app.commandPalette" => Some(COMMAND_PALETTE_ID),
         "search.open" => Some(SEARCH_FILES_ID),
         "help.openShortcuts" => Some(HELP_SHORTCUTS_ID),
+        "queue.show" => Some(QUEUE_SHOW_ID),
         "help.whatsNew" => Some(HELP_WHATS_NEW_ID),
         "help.sendErrorReport" => Some(HELP_SEND_ERROR_REPORT_ID),
         "feedback.send" => Some(HELP_SEND_FEEDBACK_ID),
@@ -754,6 +759,7 @@ mod tests {
             "selection.selectFiles",
             "selection.deselectFiles",
             "help.openShortcuts",
+            "queue.show",
             "help.whatsNew",
             "help.sendErrorReport",
             "feedback.send",

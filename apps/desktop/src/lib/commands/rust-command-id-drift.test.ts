@@ -117,6 +117,7 @@ describe('menuCommands ↔ command_id_to_menu_id drift', () => {
     'app.about': 'cmdr app-menu item, never registered in MenuState.items; no default shortcut to sync',
     'app.licenseKey': 'cmdr app-menu item, never registered in MenuState.items; no default shortcut to sync',
     'help.openShortcuts': 'Help-menu item; no default keyboard shortcut to sync',
+    'queue.show': 'Help-menu item that opens the transfer-queue window; no default keyboard shortcut to sync',
     'help.sendErrorReport': 'Help-menu item, never registered in MenuState.items; no default shortcut to sync',
     'feedback.send': 'Help-menu item, never registered in MenuState.items; no default shortcut to sync',
     'tab.togglePin':

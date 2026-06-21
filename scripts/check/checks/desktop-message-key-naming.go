@@ -51,6 +51,7 @@ var messageKeyKnownAreas = map[string]bool{
 	"lowDiskSpace":   true,
 	"notifications":  true,
 	"main":           true,
+	"queue":          true,
 }
 
 // messageKeyNamingViolation is one bad catalog key with why it's bad.

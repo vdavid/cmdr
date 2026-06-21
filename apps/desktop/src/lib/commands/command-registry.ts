@@ -159,6 +159,14 @@ const commandSources: CommandSource[] = [
     descriptionKey: 'commands.helpOpenShortcuts.description',
   },
   {
+    id: 'queue.show',
+    nameKey: 'commands.queueShow.label',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    descriptionKey: 'commands.queueShow.description',
+  },
+  {
     id: 'help.sendErrorReport',
     nameKey: 'commands.helpSendErrorReport.label',
     scope: 'App',

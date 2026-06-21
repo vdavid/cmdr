@@ -93,6 +93,15 @@
     "description": "Longer help text for the \"Send error report…\" command, shown as a secondary line in the command palette. \"Cmdr\" is the brand name, do not translate it."
   },
 
+  "commands.queueShow.label": "Show transfer queue",
+  "@commands.queueShow.label": {
+    "description": "Command name that opens the transfer queue window, which lists every running and waiting copy, move, and delete operation. Appears in the command palette and the Help menu."
+  },
+  "commands.queueShow.description": "Open a window listing every running and waiting transfer, where you can pause, resume, or cancel them",
+  "@commands.queueShow.description": {
+    "description": "Longer help text for the \"Show transfer queue\" command, shown as a secondary line in the command palette."
+  },
+
   "commands.helpWhatsNew.label": "What''s new",
   "@commands.helpWhatsNew.label": {
     "description": "Command name that shows what changed in recent releases. Appears in the command palette and the Help menu.",

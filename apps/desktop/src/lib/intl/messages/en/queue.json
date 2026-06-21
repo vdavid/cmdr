@@ -1,0 +1,108 @@
+{
+  "queue.windowTitle": "Transfer queue",
+  "@queue.windowTitle": {
+    "description": "Title of the standalone window that lists every running and queued copy, move, delete, and trash operation, with controls to pause, resume, and cancel them. Shown as the window title and the page heading."
+  },
+
+  "queue.heading": "Transfers",
+  "@queue.heading": {
+    "description": "Heading at the top of the transfer queue window, above the list of operations."
+  },
+
+  "queue.empty.title": "Nothing in the queue",
+  "@queue.empty.title": {
+    "description": "Main line of the empty state, shown when no copy, move, delete, or trash operation is running or waiting."
+  },
+
+  "queue.empty.body": "Copies, moves, and deletes show up here while they run, so you can pause, resume, or cancel them.",
+  "@queue.empty.body": {
+    "description": "Supporting line under the empty-state title, explaining what will appear in the transfer queue window and why."
+  },
+
+  "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} other {Working}}",
+  "@queue.row.label": {
+    "description": "Names what an operation row is doing, shown next to a direction arrow and the source-to-destination summary. Reads as a present-continuous action.",
+    "placeholders": {
+      "type": "the kind of operation: copy, move, delete, or trash"
+    }
+  },
+
+  "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Cancelled} failed {Couldn''t finish} other {Running}}",
+  "@queue.row.status": {
+    "description": "Short status word for an operation row in the transfer queue. \"Waiting\" means it''s queued behind another transfer on the same drive; \"Paused\" means the user paused it; \"Couldn''t finish\" is the gentle wording for a failed operation (avoid the words error/failed).",
+    "placeholders": {
+      "status": "the lifecycle status: queued, running, paused, done, cancelled, or failed"
+    }
+  },
+
+  "queue.row.etaRemaining": "{duration} left",
+  "@queue.row.etaRemaining": {
+    "description": "Estimated time remaining for a running operation row, for example \"2m 30s left\". The duration text comes in ready-made.",
+    "placeholders": {
+      "duration": "the already-formatted time remaining, for example \"2m 30s\" or \"45s\""
+    }
+  },
+
+  "queue.row.pause": "Pause",
+  "@queue.row.pause": {
+    "description": "Button on an operation row that pauses that transfer in place. It can be resumed later. Toggles to \"Resume\"."
+  },
+
+  "queue.row.resume": "Resume",
+  "@queue.row.resume": {
+    "description": "Button on a paused operation row that resumes the transfer. Toggles back from \"Pause\"."
+  },
+
+  "queue.row.cancel": "Cancel",
+  "@queue.row.cancel": {
+    "description": "Button on an operation row that stops that transfer. Files already copied are kept; only the half-written file is removed."
+  },
+
+  "queue.row.pauseAria": "Pause this transfer",
+  "@queue.row.pauseAria": {
+    "description": "Screen-reader label for the per-row Pause button (the visible button shows only \"Pause\")."
+  },
+
+  "queue.row.resumeAria": "Resume this transfer",
+  "@queue.row.resumeAria": {
+    "description": "Screen-reader label for the per-row Resume button (the visible button shows only \"Resume\")."
+  },
+
+  "queue.row.cancelAria": "Cancel this transfer",
+  "@queue.row.cancelAria": {
+    "description": "Screen-reader label for the per-row Cancel button (the visible button shows only \"Cancel\")."
+  },
+
+  "queue.row.selectAria": "Select this transfer",
+  "@queue.row.selectAria": {
+    "description": "Screen-reader label for the checkbox that selects an operation row so it can be cancelled together with others via \"Cancel selected\"."
+  },
+
+  "queue.list.aria": "Transfers",
+  "@queue.list.aria": {
+    "description": "Screen-reader label for the list of transfer operations in the queue window."
+  },
+
+  "queue.toolbar.pauseAll": "Pause all",
+  "@queue.toolbar.pauseAll": {
+    "description": "Toolbar button that pauses every running transfer at once."
+  },
+
+  "queue.toolbar.resumeAll": "Resume all",
+  "@queue.toolbar.resumeAll": {
+    "description": "Toolbar button that resumes every paused transfer at once."
+  },
+
+  "queue.toolbar.cancelSelected": "Cancel selected",
+  "@queue.toolbar.cancelSelected": {
+    "description": "Toolbar button that cancels the transfers the user has selected via the row checkboxes. Files already copied are kept."
+  },
+
+  "queue.toolbar.selectedCount": "{count, plural, one {# selected} other {# selected}}",
+  "@queue.toolbar.selectedCount": {
+    "description": "Count of currently selected operation rows, shown next to \"Cancel selected\", for example \"3 selected\".",
+    "placeholders": {
+      "count": "how many rows are selected"
+    }
+  }
+}
