@@ -51,3 +51,7 @@ matters).
 - **Menu / command** (if user-launched): a `COMMAND_IDS` entry + registry entry + handler, and a menu item if it belongs
   in the menu bar. See `lib/commands/CLAUDE.md` § "Adding a command".
 - **`await` window calls in try/catch with a `log.warn`** so a missing perm surfaces as a log line, not a dead feature.
+- **E2E reach**: if the window has Playwright tests, add its label to the `"windows"` list in the generated playwright
+  capability (`build.rs`, under `#[cfg(feature = "playwright-e2e")]`). Without it, `tauri-plugin-playwright` can't inject
+  into the window, so any `evaluate`/`waitForSelector` against it **hangs** until timeout. The window itself renders
+  fine; only the test harness can't reach it. This silently bit the `queue` window.
