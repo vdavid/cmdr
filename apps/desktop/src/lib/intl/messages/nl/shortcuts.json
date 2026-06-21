@@ -1,0 +1,218 @@
+{
+  "shortcuts.list.noShortcut": "Geen sneltoets",
+  "@shortcuts.list.noShortcut": {
+    "sourceHash": "f22dbb1"
+  },
+  "shortcuts.list.addedTooltip": "Toegevoegd",
+  "@shortcuts.list.addedTooltip": {
+    "sourceHash": "6b02e0d"
+  },
+  "shortcuts.list.disabledTooltip": "Uitgeschakeld",
+  "@shortcuts.list.disabledTooltip": {
+    "sourceHash": "75081b5"
+  },
+  "shortcuts.scope.app": "App",
+  "@shortcuts.scope.app": {
+    "sourceHash": "0d04bfe"
+  },
+  "shortcuts.scope.mainWindow": "Hoofdvenster",
+  "@shortcuts.scope.mainWindow": {
+    "sourceHash": "89dd3f3"
+  },
+  "shortcuts.scope.fileList": "Bestandenlijst",
+  "@shortcuts.scope.fileList": {
+    "sourceHash": "0728b8e"
+  },
+  "shortcuts.scope.briefMode": "Beknopte weergave",
+  "@shortcuts.scope.briefMode": {
+    "sourceHash": "b75e4b3"
+  },
+  "shortcuts.scope.fullMode": "Volledige weergave",
+  "@shortcuts.scope.fullMode": {
+    "sourceHash": "c284afc"
+  },
+  "shortcuts.scope.volumeChooser": "Volumekiezer",
+  "@shortcuts.scope.volumeChooser": {
+    "sourceHash": "250a34f"
+  },
+  "shortcuts.scope.network": "Netwerk",
+  "@shortcuts.scope.network": {
+    "sourceHash": "1744b96"
+  },
+  "shortcuts.scope.shareBrowser": "Sharebrowser",
+  "@shortcuts.scope.shareBrowser": {
+    "sourceHash": "5cec2a6"
+  },
+  "shortcuts.scope.commandPalette": "Opdrachtenpalet",
+  "@shortcuts.scope.commandPalette": {
+    "sourceHash": "0347f79"
+  },
+  "shortcuts.scope.aboutWindow": "Over-venster",
+  "@shortcuts.scope.aboutWindow": {
+    "sourceHash": "615b547"
+  },
+  "shortcuts.scope.onboarding": "Onboarding",
+  "@shortcuts.scope.onboarding": {
+    "sourceHash": "a2198f4"
+  },
+  "shortcuts.conflict.reservedByMacOs": "{combo} is gereserveerd door macOS ({command}) en bereikt Cmdr niet. Kies een andere combinatie.",
+  "@shortcuts.conflict.reservedByMacOs": {
+    "sourceHash": "4aad26f"
+  },
+  "shortcuts.conflict.fixedKey": "{combo} is een vaste toets in Cmdr ({command}) en kan niet opnieuw worden toegewezen. Kies een andere combinatie.",
+  "@shortcuts.conflict.fixedKey": {
+    "sourceHash": "2c2c76f"
+  },
+  "shortcuts.conflict.systemShortcut": "{combo} wordt meestal door macOS gebruikt ({label}), dus bereikt het Cmdr mogelijk nooit. Je kunt het vrijmaken in Systeeminstellingen > Toetsenbord.",
+  "@shortcuts.conflict.systemShortcut": {
+    "sourceHash": "9ef197f"
+  },
+  "shortcuts.system.spotlight": "Spotlight",
+  "@shortcuts.system.spotlight": {
+    "sourceHash": "fca7aa8"
+  },
+  "shortcuts.system.finderSearch": "Finder-zoekvenster",
+  "@shortcuts.system.finderSearch": {
+    "sourceHash": "8b2f1c8"
+  },
+  "shortcuts.system.characterViewer": "Emoji''s en symbolen",
+  "@shortcuts.system.characterViewer": {
+    "sourceHash": "1a43164"
+  },
+  "shortcuts.system.inputSourceSwitching": "wisselen van invoerbron",
+  "@shortcuts.system.inputSourceSwitching": {
+    "sourceHash": "11c5d7a"
+  },
+  "shortcuts.system.appSwitcher": "de app-wisselaar",
+  "@shortcuts.system.appSwitcher": {
+    "sourceHash": "5b8be44"
+  },
+  "shortcuts.system.missionControl": "Mission Control",
+  "@shortcuts.system.missionControl": {
+    "sourceHash": "1a9a658"
+  },
+  "shortcuts.system.appWindows": "App-vensters",
+  "@shortcuts.system.appWindows": {
+    "sourceHash": "a480ccd"
+  },
+  "shortcuts.system.spaces": "Spaces",
+  "@shortcuts.system.spaces": {
+    "sourceHash": "077a293"
+  },
+  "shortcuts.system.screenshots": "schermafbeeldingen",
+  "@shortcuts.system.screenshots": {
+    "sourceHash": "98d875b"
+  },
+  "shortcuts.system.screenRecording": "schermopname",
+  "@shortcuts.system.screenRecording": {
+    "sourceHash": "fac7b60"
+  },
+  "shortcuts.system.loggingOut": "uitloggen",
+  "@shortcuts.system.loggingOut": {
+    "sourceHash": "de70b14"
+  },
+  "shortcuts.system.lockingScreen": "het scherm vergrendelen",
+  "@shortcuts.system.lockingScreen": {
+    "sourceHash": "b54447c"
+  },
+  "shortcuts.system.forceQuit": "Forceer stop",
+  "@shortcuts.system.forceQuit": {
+    "sourceHash": "6f38ccf"
+  },
+  "shortcuts.section.title": "Sneltoetsen",
+  "@shortcuts.section.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.section.searchByNamePlaceholder": "Zoek op actienaam...",
+  "@shortcuts.section.searchByNamePlaceholder": {
+    "sourceHash": "3dae3b6"
+  },
+  "shortcuts.section.filterByKeysPlaceholder": "Filter op toetsen...",
+  "@shortcuts.section.filterByKeysPlaceholder": {
+    "sourceHash": "87cd416"
+  },
+  "shortcuts.section.pressEscToClear": "Druk op ESC om te wissen",
+  "@shortcuts.section.pressEscToClear": {
+    "sourceHash": "3d32f9c"
+  },
+  "shortcuts.section.filterAll": "Alle",
+  "@shortcuts.section.filterAll": {
+    "sourceHash": "a52ace4"
+  },
+  "shortcuts.section.filterModified": "Gewijzigd",
+  "@shortcuts.section.filterModified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "shortcuts.section.filterConflicts": "Conflicten",
+  "@shortcuts.section.filterConflicts": {
+    "sourceHash": "9f5ea35"
+  },
+  "shortcuts.section.cancel": "Annuleer",
+  "@shortcuts.section.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "shortcuts.section.useAnyway": "Toch gebruiken",
+  "@shortcuts.section.useAnyway": {
+    "sourceHash": "aa19f9e"
+  },
+  "shortcuts.section.keepBoth": "Behoud beide",
+  "@shortcuts.section.keepBoth": {
+    "sourceHash": "9367221"
+  },
+  "shortcuts.section.removeFromOther": "Verwijder uit andere",
+  "@shortcuts.section.removeFromOther": {
+    "sourceHash": "f154164"
+  },
+  "shortcuts.section.alreadyBound": "<b>{combo}</b> is al toegewezen aan ‘{command}’",
+  "@shortcuts.section.alreadyBound": {
+    "sourceHash": "5c29fcb"
+  },
+  "shortcuts.section.modifiedTooltip": "Gewijzigd ten opzichte van standaard",
+  "@shortcuts.section.modifiedTooltip": {
+    "sourceHash": "3d86215"
+  },
+  "shortcuts.section.hasConflictsTooltip": "Heeft conflicterende sneltoetsen",
+  "@shortcuts.section.hasConflictsTooltip": {
+    "sourceHash": "089c74f"
+  },
+  "shortcuts.section.noneShortcut": "(geen)",
+  "@shortcuts.section.noneShortcut": {
+    "sourceHash": "552e423"
+  },
+  "shortcuts.section.macOsTooltip": "macOS beheert deze sneltoets. Cmdr kan die niet wijzigen.",
+  "@shortcuts.section.macOsTooltip": {
+    "sourceHash": "262b2cc"
+  },
+  "shortcuts.section.fixedTooltip": "Deze toets zit ingebouwd in Cmdr en kan niet worden gewijzigd.",
+  "@shortcuts.section.fixedTooltip": {
+    "sourceHash": "f07b460"
+  },
+  "shortcuts.section.macOsBadge": "macOS",
+  "@shortcuts.section.macOsBadge": {
+    "sourceHash": "aed6b7a"
+  },
+  "shortcuts.section.fixedBadge": "Vast",
+  "@shortcuts.section.fixedBadge": {
+    "sourceHash": "1246fc9"
+  },
+  "shortcuts.section.pressKeys": "Druk toetsen in...",
+  "@shortcuts.section.pressKeys": {
+    "sourceHash": "37aa30c"
+  },
+  "shortcuts.section.removeShortcutTooltip": "Verwijder sneltoets",
+  "@shortcuts.section.removeShortcutTooltip": {
+    "sourceHash": "aea0ad8"
+  },
+  "shortcuts.section.addShortcutTooltip": "Voeg sneltoets toe",
+  "@shortcuts.section.addShortcutTooltip": {
+    "sourceHash": "239314a"
+  },
+  "shortcuts.section.resetToDefaultTooltip": "Herstel naar standaard",
+  "@shortcuts.section.resetToDefaultTooltip": {
+    "sourceHash": "bc5b45a"
+  },
+  "shortcuts.section.resetAll": "Herstel alles naar standaard",
+  "@shortcuts.section.resetAll": {
+    "sourceHash": "a04d9be"
+  }
+}

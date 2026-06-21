@@ -1,0 +1,90 @@
+{
+  "mtp.connectedToast.title": "Conectado a {deviceName}",
+  "@mtp.connectedToast.title": {
+    "sourceHash": "562319d"
+  },
+  "mtp.connectedToast.bodyMac": "O Cmdr pausou o daemon de câmera do macOS (ptpcamerad) para acessar este dispositivo. Para usá-lo em outro app, desative o suporte a MTP nos ajustes.",
+  "@mtp.connectedToast.bodyMac": {
+    "sourceHash": "3ace37b"
+  },
+  "mtp.connectedToast.bodyOther": "Para usar este dispositivo em outro app, desative o suporte a MTP nos ajustes.",
+  "@mtp.connectedToast.bodyOther": {
+    "sourceHash": "6f42620"
+  },
+  "mtp.connectedToast.dontShowAgain": "Não mostrar de novo",
+  "@mtp.connectedToast.dontShowAgain": {
+    "sourceHash": "d98ab77"
+  },
+  "mtp.connectedToast.disableMtp": "Desativar MTP...",
+  "@mtp.connectedToast.disableMtp": {
+    "sourceHash": "2057a3d"
+  },
+  "mtp.connectedToast.ok": "OK",
+  "@mtp.connectedToast.ok": {
+    "sourceHash": "565339b"
+  },
+  "mtp.permissionDialog.title": "Não foi possível acessar o dispositivo USB",
+  "@mtp.permissionDialog.title": {
+    "sourceHash": "96130bf"
+  },
+  "mtp.permissionDialog.description": "O Cmdr não tem permissão para acessar este dispositivo. O Linux precisa de regras udev para conceder acesso a dispositivos MTP.",
+  "@mtp.permissionDialog.description": {
+    "sourceHash": "c11f0e8"
+  },
+  "mtp.permissionDialog.explanation": "Execute este comando no seu terminal para instalar as regras e recarregá-las:",
+  "@mtp.permissionDialog.explanation": {
+    "sourceHash": "6bc70dd"
+  },
+  "mtp.permissionDialog.helpText": "Após executar o comando, desconecte e reconecte o dispositivo, depois tente novamente.",
+  "@mtp.permissionDialog.helpText": {
+    "sourceHash": "519f195"
+  },
+  "mtp.permissionDialog.close": "Fechar",
+  "@mtp.permissionDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.permissionDialog.retry": "Tentar conexão novamente",
+  "@mtp.permissionDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.ptpcameradDialog.title": "Não foi possível conectar ao dispositivo MTP",
+  "@mtp.ptpcameradDialog.title": {
+    "sourceHash": "058de77"
+  },
+  "mtp.ptpcameradDialog.inUseBy": "O dispositivo está em uso por <process>{process}</process>.",
+  "@mtp.ptpcameradDialog.inUseBy": {
+    "sourceHash": "6ec78a3"
+  },
+  "mtp.ptpcameradDialog.inUseGeneric": "Outro processo tem acesso exclusivo ao dispositivo.",
+  "@mtp.ptpcameradDialog.inUseGeneric": {
+    "sourceHash": "cfba635"
+  },
+  "mtp.ptpcameradDialog.explanation": "No macOS, o daemon de sistema <code>ptpcamerad</code> reivindica automaticamente os dispositivos Android. Para contornar isso, execute o comando a seguir no Terminal (mantenha-o em execução enquanto usa o Cmdr):",
+  "@mtp.ptpcameradDialog.explanation": {
+    "sourceHash": "65b6ee3"
+  },
+  "mtp.ptpcameradDialog.helpText": "Este comando interrompe o ptpcamerad continuamente enquanto roda. Pressione <key>Ctrl+C</key> no Terminal para pará-lo quando terminar.",
+  "@mtp.ptpcameradDialog.helpText": {
+    "sourceHash": "85b5060"
+  },
+  "mtp.ptpcameradDialog.close": "Fechar",
+  "@mtp.ptpcameradDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.ptpcameradDialog.retry": "Tentar conexão novamente",
+  "@mtp.ptpcameradDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.deviceFallbackName": "Dispositivo MTP",
+  "@mtp.deviceFallbackName": {
+    "sourceHash": "8ba7a69"
+  },
+  "mtp.error.exclusiveAccess": "Outro processo tem acesso exclusivo{blocking, select, none {} other { (bloqueado por {blocking})}}",
+  "@mtp.error.exclusiveAccess": {
+    "sourceHash": "a81f306"
+  },
+  "mtp.error.permissionDenied": "Permissão de USB negada. Instale as regras udev e reconecte",
+  "@mtp.error.permissionDenied": {
+    "sourceHash": "3362501"
+  }
+}

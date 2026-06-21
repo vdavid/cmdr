@@ -1,0 +1,62 @@
+{
+  "crashReporter.dialog.title": "Absturzbericht senden?",
+  "@crashReporter.dialog.title": {
+    "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.body": "Cmdr wurde beim letzten Mal unerwartet beendet. Hier ist ein Absturzbericht mit Details, die bei der Behebung helfen können.",
+  "@crashReporter.dialog.body": {
+    "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.privacyNote": "Er enthält die App-Version, die macOS-Version und welcher Teil des Codes abgestürzt ist. Keine Dateinamen, keine persönlichen Daten.",
+  "@crashReporter.dialog.privacyNote": {
+    "sourceHash": "7f7912a"
+  },
+  "crashReporter.dialog.reportIdLabel": "Berichts-ID:",
+  "@crashReporter.dialog.reportIdLabel": {
+    "sourceHash": "df3d47e"
+  },
+  "crashReporter.dialog.reportIdHelp": "Gib diese an, wenn du dich wegen des Problems meldest.",
+  "@crashReporter.dialog.reportIdHelp": {
+    "sourceHash": "c63b08a"
+  },
+  "crashReporter.dialog.showDetails": "Berichtsdetails anzeigen",
+  "@crashReporter.dialog.showDetails": {
+    "sourceHash": "11756f2"
+  },
+  "crashReporter.dialog.copy": "Kopieren",
+  "@crashReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "crashReporter.dialog.copied": "Kopiert",
+  "@crashReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "crashReporter.dialog.alwaysSend": "Absturzberichte immer senden",
+  "@crashReporter.dialog.alwaysSend": {
+    "sourceHash": "8306c0e"
+  },
+  "crashReporter.dialog.attachEmail": "Meine E-Mail-Adresse ({email}) anhängen, damit wir antworten können",
+  "@crashReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "crashReporter.dialog.dismiss": "Schließen",
+  "@crashReporter.dialog.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "crashReporter.dialog.send": "Bericht senden",
+  "@crashReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "crashReporter.dialog.sending": "Wird gesendet …",
+  "@crashReporter.dialog.sending": {
+    "sourceHash": "286a3af"
+  },
+  "crashReporter.sentToast.message": "Absturzbericht gesendet. Danke, dass du hilfst, Cmdr zu verbessern.",
+  "@crashReporter.sentToast.message": {
+    "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.changeSettings": "In Einstellungen > Updates ändern",
+  "@crashReporter.sentToast.changeSettings": {
+    "sourceHash": "25d151d"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "commandPalette.searchPlaceholder": "Parancsok keresése…",
+  "@commandPalette.searchPlaceholder": {
+    "sourceHash": "dd6c6ab"
+  },
+  "commandPalette.searchAriaLabel": "Parancsok keresése",
+  "@commandPalette.searchAriaLabel": {
+    "sourceHash": "00ff739"
+  },
+  "commandPalette.noResults": "Nincs találat",
+  "@commandPalette.noResults": {
+    "sourceHash": "eac0d09"
+  },
+  "commandPalette.resultsAriaLabel": "Parancsok",
+  "@commandPalette.resultsAriaLabel": {
+    "sourceHash": "b269dc4"
+  },
+  "commandPalette.groupRecent": "Legutóbbi",
+  "@commandPalette.groupRecent": {
+    "sourceHash": "690dbe9"
+  },
+  "commandPalette.groupAll": "Összes parancs",
+  "@commandPalette.groupAll": {
+    "sourceHash": "f9c4287"
+  }
+}

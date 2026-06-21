@@ -1,0 +1,378 @@
+{
+  "ai.toast.downloadingTitle": "正在下载 AI 模型…",
+  "@ai.toast.downloadingTitle": {
+    "sourceHash": "453ec3b"
+  },
+  "ai.toast.startingDownload": "正在开始下载…",
+  "@ai.toast.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · 剩余 {eta}}}",
+  "@ai.toast.progress": {
+    "sourceHash": "93d798b"
+  },
+  "ai.toast.cancel": "取消",
+  "@ai.toast.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.toast.installingTitle": "正在设置 AI…",
+  "@ai.toast.installingTitle": {
+    "sourceHash": "509f6c1"
+  },
+  "ai.toast.installingDescription": "正在启动服务器",
+  "@ai.toast.installingDescription": {
+    "sourceHash": "8a0f9d9"
+  },
+  "ai.toast.readyTitle": "AI 已就绪",
+  "@ai.toast.readyTitle": {
+    "sourceHash": "276c384"
+  },
+  "ai.toast.readyDescription": "试着新建一个文件夹（F7），看看 AI 提供的名称建议。",
+  "@ai.toast.readyDescription": {
+    "sourceHash": "b3ae1b2"
+  },
+  "ai.toast.gotIt": "知道了",
+  "@ai.toast.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "ai.toast.startingTitle": "AI 正在启动…",
+  "@ai.toast.startingTitle": {
+    "sourceHash": "29fdbca"
+  },
+  "ai.toast.startingDescription": "正在加载模型，这需要几秒钟",
+  "@ai.toast.startingDescription": {
+    "sourceHash": "94ecf6d"
+  },
+  "ai.toast.downloadCloseTooltip": "关闭此通知；下载会在后台继续",
+  "@ai.toast.downloadCloseTooltip": {
+    "sourceHash": "16db2bd"
+  },
+  "ai.translateError.off.title": "AI 已关闭",
+  "@ai.translateError.off.title": {
+    "sourceHash": "99ce709"
+  },
+  "ai.translateError.off.body": "在“设置 > AI”中开启一个提供方，即可使用 AI 搜索。",
+  "@ai.translateError.off.body": {
+    "sourceHash": "d8d6368"
+  },
+  "ai.translateError.notConfigured.title": "AI 还需要一点设置",
+  "@ai.translateError.notConfigured.title": {
+    "sourceHash": "bf5688a"
+  },
+  "ai.translateError.notConfigured.body": "在“设置 > AI”中完成提供方设置，然后重试。",
+  "@ai.translateError.notConfigured.body": {
+    "sourceHash": "65133a8"
+  },
+  "ai.translateError.authFailed.title": "那个 API 密钥被拒绝了",
+  "@ai.translateError.authFailed.title": {
+    "sourceHash": "93e6261"
+  },
+  "ai.translateError.authFailed.body": "在“设置 > AI”中检查你的密钥，它可能不对或已被吊销。",
+  "@ai.translateError.authFailed.body": {
+    "sourceHash": "2159d5e"
+  },
+  "ai.translateError.rateLimited.title": "你的 AI 提供方没有余量了",
+  "@ai.translateError.rateLimited.title": {
+    "sourceHash": "26e286e"
+  },
+  "ai.translateError.rateLimited.body": "它正在限制请求速率，或者你的套餐配额已用完。请检查你的套餐和账单，然后重试。",
+  "@ai.translateError.rateLimited.body": {
+    "sourceHash": "9b296d7"
+  },
+  "ai.translateError.timeout.title": "AI 用时太久了",
+  "@ai.translateError.timeout.title": {
+    "sourceHash": "d684e3f"
+  },
+  "ai.translateError.timeout.body": "请求超时了。过一会儿再试一次吧。",
+  "@ai.translateError.timeout.body": {
+    "sourceHash": "249b720"
+  },
+  "ai.translateError.unavailable.title": "无法连接你的 AI 提供方",
+  "@ai.translateError.unavailable.title": {
+    "sourceHash": "e684bc4"
+  },
+  "ai.translateError.unavailable.body": "请检查你的网络或提供方的状态，然后重试。",
+  "@ai.translateError.unavailable.body": {
+    "sourceHash": "ba30402"
+  },
+  "ai.translateError.emptyResponse.title": "AI 返回了空内容",
+  "@ai.translateError.emptyResponse.title": {
+    "sourceHash": "61afc33"
+  },
+  "ai.translateError.emptyResponse.body": "你的模型可能需要更大的预算才能完成这个。试试在“设置 > AI”中换一个更快的模型，比如 gpt-4.1-mini。",
+  "@ai.translateError.emptyResponse.body": {
+    "sourceHash": "f1704cc"
+  },
+  "ai.translateError.serverError.title": "你的 AI 提供方遇到了问题",
+  "@ai.translateError.serverError.title": {
+    "sourceHash": "1b98f6a"
+  },
+  "ai.translateError.serverError.body": "它返回了意外内容。过一会儿再试一次。",
+  "@ai.translateError.serverError.body": {
+    "sourceHash": "3f4af5c"
+  },
+  "ai.translateError.parseError.title": "无法读取 AI 的回答",
+  "@ai.translateError.parseError.title": {
+    "sourceHash": "a509880"
+  },
+  "ai.translateError.parseError.body": "请重试，或者在“设置 > AI”中选择另一个模型。",
+  "@ai.translateError.parseError.body": {
+    "sourceHash": "c299ec6"
+  },
+  "ai.translateError.unknownProvider.title": "无法识别那个 AI 提供方",
+  "@ai.translateError.unknownProvider.title": {
+    "sourceHash": "3b70b46"
+  },
+  "ai.translateError.unknownProvider.body": "请在“设置 > AI”中选择一个提供方。",
+  "@ai.translateError.unknownProvider.body": {
+    "sourceHash": "7042a75"
+  },
+  "ai.cloud.serviceAria": "云端 AI 服务",
+  "@ai.cloud.serviceAria": {
+    "sourceHash": "7dec1e0"
+  },
+  "ai.cloud.endpointLabel": "端点",
+  "@ai.cloud.endpointLabel": {
+    "sourceHash": "3df9726"
+  },
+  "ai.cloud.endpointDescription": "所选服务的 API 端点 URL。",
+  "@ai.cloud.endpointDescription": {
+    "sourceHash": "884632b"
+  },
+  "ai.cloud.endpointPlaceholder": "示例：https://api.example.com/v1",
+  "@ai.cloud.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "ai.cloud.endpointAria": "端点 URL",
+  "@ai.cloud.endpointAria": {
+    "sourceHash": "2578179"
+  },
+  "ai.cloud.apiKeyLabel": "API 密钥",
+  "@ai.cloud.apiKeyLabel": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.apiKeyDescription": "你用于此服务的 API 密钥。",
+  "@ai.cloud.apiKeyDescription": {
+    "sourceHash": "6a95580"
+  },
+  "ai.cloud.apiKeyPlaceholderOpenai": "示例：sk-abc123...",
+  "@ai.cloud.apiKeyPlaceholderOpenai": {
+    "sourceHash": "f9701a2"
+  },
+  "ai.cloud.apiKeyPlaceholderAnthropic": "示例：sk-ant-abc123...",
+  "@ai.cloud.apiKeyPlaceholderAnthropic": {
+    "sourceHash": "5a4d18d"
+  },
+  "ai.cloud.apiKeyPlaceholderGeneric": "API 密钥",
+  "@ai.cloud.apiKeyPlaceholderGeneric": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.modelLabel": "模型",
+  "@ai.cloud.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.cloud.modelDescription": "用于生成补全的模型名称。",
+  "@ai.cloud.modelDescription": {
+    "sourceHash": "809fa50"
+  },
+  "ai.cloud.modelPlaceholderExample": "示例：{model}",
+  "@ai.cloud.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "ai.cloud.modelPlaceholderGeneric": "模型名称",
+  "@ai.cloud.modelPlaceholderGeneric": {
+    "sourceHash": "a3c3370"
+  },
+  "ai.cloud.checking": "正在检查…",
+  "@ai.cloud.checking": {
+    "sourceHash": "2e5f79b"
+  },
+  "ai.cloud.connected": "已连接",
+  "@ai.cloud.connected": {
+    "sourceHash": "2296556"
+  },
+  "ai.cloud.connectedNoModels": "已连接（模型列表不可用）",
+  "@ai.cloud.connectedNoModels": {
+    "sourceHash": "54f2b6f"
+  },
+  "ai.cloud.recheck": "重新检查",
+  "@ai.cloud.recheck": {
+    "sourceHash": "1f47d83"
+  },
+  "ai.cloud.authError": "API 密钥无效",
+  "@ai.cloud.authError": {
+    "sourceHash": "74a88e4"
+  },
+  "ai.cloud.connectionError": "无法连接服务器",
+  "@ai.cloud.connectionError": {
+    "sourceHash": "3f378c3"
+  },
+  "ai.cloud.genericError": "出了点问题",
+  "@ai.cloud.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "ai.cloud.testConnection": "测试连接",
+  "@ai.cloud.testConnection": {
+    "sourceHash": "5bcf311"
+  },
+  "ai.cloud.unknownError": "未知问题",
+  "@ai.cloud.unknownError": {
+    "sourceHash": "27c2ccd"
+  },
+  "ai.local.memoryWarningAria": "内存警告",
+  "@ai.local.memoryWarningAria": {
+    "sourceHash": "7688d6a"
+  },
+  "ai.local.warningDanger": "这超过了你的可用内存。你的系统可能会明显变慢。",
+  "@ai.local.warningDanger": {
+    "sourceHash": "dd5c518"
+  },
+  "ai.local.warningCaution": "这会用掉你大部分可用内存。其他 App 可能会变慢。",
+  "@ai.local.warningCaution": {
+    "sourceHash": "f8070e9"
+  },
+  "ai.local.statusRestarting": "正在重新启动…",
+  "@ai.local.statusRestarting": {
+    "sourceHash": "2c5bfcb"
+  },
+  "ai.local.statusStarting": "正在启动…",
+  "@ai.local.statusStarting": {
+    "sourceHash": "82b9363"
+  },
+  "ai.local.statusRunning": "运行中",
+  "@ai.local.statusRunning": {
+    "sourceHash": "f4ccae2"
+  },
+  "ai.local.statusStopped": "已停止",
+  "@ai.local.statusStopped": {
+    "sourceHash": "1a4f630"
+  },
+  "ai.local.installStepExtracting": "第 1 步，共 4 步：正在解压运行时…",
+  "@ai.local.installStepExtracting": {
+    "sourceHash": "941db20"
+  },
+  "ai.local.installStepDownloading": "第 2 步，共 4 步：正在下载模型…",
+  "@ai.local.installStepDownloading": {
+    "sourceHash": "56596cb"
+  },
+  "ai.local.installStepVerifying": "第 3 步，共 4 步：正在校验下载…",
+  "@ai.local.installStepVerifying": {
+    "sourceHash": "4133988"
+  },
+  "ai.local.installStepStarting": "第 4 步，共 4 步：正在启动服务器…",
+  "@ai.local.installStepStarting": {
+    "sourceHash": "39acba1"
+  },
+  "ai.local.startingDownload": "正在开始下载…",
+  "@ai.local.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.local.etaSeconds": "约剩 {value} 秒",
+  "@ai.local.etaSeconds": {
+    "sourceHash": "045b712"
+  },
+  "ai.local.etaMinutes": "约剩 {value} 分钟",
+  "@ai.local.etaMinutes": {
+    "sourceHash": "978afd8"
+  },
+  "ai.local.etaHours": "约剩 {value} 小时",
+  "@ai.local.etaHours": {
+    "sourceHash": "b1944ec"
+  },
+  "ai.local.modelLabel": "模型",
+  "@ai.local.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.local.serverLabel": "服务器",
+  "@ai.local.serverLabel": {
+    "sourceHash": "aef7de2"
+  },
+  "ai.local.modelUnknown": "未知",
+  "@ai.local.modelUnknown": {
+    "sourceHash": "b764cdc"
+  },
+  "ai.local.modelSizeUnknown": "?",
+  "@ai.local.modelSizeUnknown": {
+    "sourceHash": "8a8de82"
+  },
+  "ai.local.notInstalled": "未安装。本地模型（{modelName}，{modelSize}）完全在你的设备上运行，最大限度保护隐私。需要 Apple Silicon。",
+  "@ai.local.notInstalled": {
+    "sourceHash": "163bf42"
+  },
+  "ai.local.applyContextSize": "应用",
+  "@ai.local.applyContextSize": {
+    "sourceHash": "31e392d"
+  },
+  "ai.local.ramGaugeAria": "内存使用量表",
+  "@ai.local.ramGaugeAria": {
+    "sourceHash": "d6d09e9"
+  },
+  "ai.local.ramLegendSystem": "系统 {size}",
+  "@ai.local.ramLegendSystem": {
+    "sourceHash": "1497c04"
+  },
+  "ai.local.ramLegendApps": "App {size}",
+  "@ai.local.ramLegendApps": {
+    "sourceHash": "d02b14c"
+  },
+  "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
+  "@ai.local.ramLegendCmdrAi": {
+    "sourceHash": "93e2741"
+  },
+  "ai.local.ramLegendProjected": "预计",
+  "@ai.local.ramLegendProjected": {
+    "sourceHash": "e394afa"
+  },
+  "ai.local.ramLegendFreed": "释放",
+  "@ai.local.ramLegendFreed": {
+    "sourceHash": "c8affca"
+  },
+  "ai.local.ramLegendFree": "空闲 {size}",
+  "@ai.local.ramLegendFree": {
+    "sourceHash": "afe9c0d"
+  },
+  "ai.local.cancel": "取消",
+  "@ai.local.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.local.stopServer": "停止服务器",
+  "@ai.local.stopServer": {
+    "sourceHash": "a21bf60"
+  },
+  "ai.local.startServer": "启动服务器",
+  "@ai.local.startServer": {
+    "sourceHash": "7b7da6f"
+  },
+  "ai.local.deleteModel": "删除模型",
+  "@ai.local.deleteModel": {
+    "sourceHash": "b7828ba"
+  },
+  "ai.local.downloadModel": "下载模型",
+  "@ai.local.downloadModel": {
+    "sourceHash": "9979bea"
+  },
+  "ai.local.deleteDialogTitleDeleting": "正在删除模型…",
+  "@ai.local.deleteDialogTitleDeleting": {
+    "sourceHash": "413e1b9"
+  },
+  "ai.local.deleteDialogTitle": "删除 AI 模型？",
+  "@ai.local.deleteDialogTitle": {
+    "sourceHash": "c486f0c"
+  },
+  "ai.local.deletingStatus": "正在停止服务器并移除文件…",
+  "@ai.local.deletingStatus": {
+    "sourceHash": "6671ac7"
+  },
+  "ai.local.deleteConfirmMessage": "这会释放 {modelSize} 的磁盘空间。再次使用本地 AI 时，你需要重新下载它。",
+  "@ai.local.deleteConfirmMessage": {
+    "sourceHash": "1a6ca0d"
+  },
+  "ai.local.deleteButtonDeleting": "正在删除…",
+  "@ai.local.deleteButtonDeleting": {
+    "sourceHash": "685ecb9"
+  },
+  "ai.local.deleteButton": "删除",
+  "@ai.local.deleteButton": {
+    "sourceHash": "e2d0a54"
+  }
+}

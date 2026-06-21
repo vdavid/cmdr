@@ -1,0 +1,42 @@
+{
+  "goToPath.dialog.title": "Đến đường dẫn",
+  "@goToPath.dialog.title": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.inputAriaLabel": "Đường dẫn cần đến",
+  "@goToPath.dialog.inputAriaLabel": {
+    "sourceHash": "ac4d152"
+  },
+  "goToPath.dialog.inputPlaceholder": "Nhập hoặc dán một đường dẫn, ví dụ ~/Documents",
+  "@goToPath.dialog.inputPlaceholder": {
+    "sourceHash": "d84d343"
+  },
+  "goToPath.dialog.recentsAriaLabel": "Đường dẫn gần đây",
+  "@goToPath.dialog.recentsAriaLabel": {
+    "sourceHash": "b698143"
+  },
+  "goToPath.dialog.removeFromList": "Xóa khỏi danh sách",
+  "@goToPath.dialog.removeFromList": {
+    "sourceHash": "82963c7"
+  },
+  "goToPath.dialog.cancel": "Hủy",
+  "@goToPath.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "goToPath.dialog.confirm": "Đến đường dẫn",
+  "@goToPath.dialog.confirm": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.ancestorHint": "Đường dẫn này không tồn tại. Nơi gần nhất có thể đến là {dir}.",
+  "@goToPath.dialog.ancestorHint": {
+    "sourceHash": "43db9f4"
+  },
+  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> không tồn tại, nên chúng tôi đưa bạn đến <land>{landed}</land>.",
+  "@goToPath.toast.landedOnAncestor": {
+    "sourceHash": "4ffc1e4"
+  },
+  "goToPath.toast.pressToGoBack": "Nhấn <chip></chip> để quay lại.",
+  "@goToPath.toast.pressToGoBack": {
+    "sourceHash": "ee851b2"
+  }
+}

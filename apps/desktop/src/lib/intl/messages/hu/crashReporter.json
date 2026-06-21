@@ -1,0 +1,62 @@
+{
+  "crashReporter.dialog.title": "Elküldöd az összeomlási jelentést?",
+  "@crashReporter.dialog.title": {
+    "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.body": "A Cmdr legutóbb váratlanul bezárult. Itt egy összeomlási jelentés a részletekkel, ami segíthet ezt kijavítani.",
+  "@crashReporter.dialog.body": {
+    "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.privacyNote": "Tartalmazza az app verzióját, a macOS verzióját, és hogy a kód melyik része omlott össze. Fájlnevek és személyes adatok nélkül.",
+  "@crashReporter.dialog.privacyNote": {
+    "sourceHash": "7f7912a"
+  },
+  "crashReporter.dialog.reportIdLabel": "Jelentésazonosító:",
+  "@crashReporter.dialog.reportIdLabel": {
+    "sourceHash": "df3d47e"
+  },
+  "crashReporter.dialog.reportIdHelp": "Említsd meg ezt, ha felveszed velünk a kapcsolatot a probléma miatt.",
+  "@crashReporter.dialog.reportIdHelp": {
+    "sourceHash": "c63b08a"
+  },
+  "crashReporter.dialog.showDetails": "Jelentés részleteinek megjelenítése",
+  "@crashReporter.dialog.showDetails": {
+    "sourceHash": "11756f2"
+  },
+  "crashReporter.dialog.copy": "Másolás",
+  "@crashReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "crashReporter.dialog.copied": "Másolva",
+  "@crashReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "crashReporter.dialog.alwaysSend": "Mindig küldjön összeomlási jelentéseket",
+  "@crashReporter.dialog.alwaysSend": {
+    "sourceHash": "8306c0e"
+  },
+  "crashReporter.dialog.attachEmail": "Csatold az e-mail-címemet ({email}), hogy válaszolhassunk",
+  "@crashReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "crashReporter.dialog.dismiss": "Elvetés",
+  "@crashReporter.dialog.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "crashReporter.dialog.send": "Jelentés küldése",
+  "@crashReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "crashReporter.dialog.sending": "Küldés…",
+  "@crashReporter.dialog.sending": {
+    "sourceHash": "286a3af"
+  },
+  "crashReporter.sentToast.message": "Az összeomlási jelentést elküldtük. Köszönjük, hogy segítesz jobbá tenni a Cmdrt.",
+  "@crashReporter.sentToast.message": {
+    "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.changeSettings": "Módosítás itt: Beállítások > Frissítések és adatvédelem",
+  "@crashReporter.sentToast.changeSettings": {
+    "sourceHash": "25d151d"
+  }
+}

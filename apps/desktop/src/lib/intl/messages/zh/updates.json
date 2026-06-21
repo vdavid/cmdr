@@ -1,0 +1,42 @@
+{
+  "updates.checkToast.errorPrefix": "出了点问题：{message}",
+  "@updates.checkToast.errorPrefix": {
+    "sourceHash": "020abfd"
+  },
+  "updates.checkToast.sendErrorReport": "发送错误报告",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "updates.toast.available": "有新版本可用。重新启动以更新。",
+  "@updates.toast.available": {
+    "sourceHash": "cb97574"
+  },
+  "updates.toast.later": "稍后",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "重新启动",
+  "@updates.toast.restart": {
+    "sourceHash": "6b983a8"
+  },
+  "updates.status.noUpdates": "未发现更新。当前版本：v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "正在检查…",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "发现更新，正在下载 v{next}（当前：v{prev}）…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "正在安装 v{next}（当前：v{prev}）…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.ready": "更新 v{next} 已就绪。重新启动以应用。",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

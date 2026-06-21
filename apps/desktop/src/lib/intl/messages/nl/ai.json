@@ -1,0 +1,378 @@
+{
+  "ai.toast.downloadingTitle": "AI-model downloaden...",
+  "@ai.toast.downloadingTitle": {
+    "sourceHash": "453ec3b"
+  },
+  "ai.toast.startingDownload": "Download starten...",
+  "@ai.toast.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · nog {eta}}}",
+  "@ai.toast.progress": {
+    "sourceHash": "93d798b"
+  },
+  "ai.toast.cancel": "Annuleer",
+  "@ai.toast.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.toast.installingTitle": "AI instellen...",
+  "@ai.toast.installingTitle": {
+    "sourceHash": "509f6c1"
+  },
+  "ai.toast.installingDescription": "Server starten",
+  "@ai.toast.installingDescription": {
+    "sourceHash": "8a0f9d9"
+  },
+  "ai.toast.readyTitle": "AI gereed",
+  "@ai.toast.readyTitle": {
+    "sourceHash": "276c384"
+  },
+  "ai.toast.readyDescription": "Maak een nieuwe map (F7) om door AI voorgestelde namen te zien.",
+  "@ai.toast.readyDescription": {
+    "sourceHash": "b3ae1b2"
+  },
+  "ai.toast.gotIt": "Begrepen",
+  "@ai.toast.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "ai.toast.startingTitle": "AI starten...",
+  "@ai.toast.startingTitle": {
+    "sourceHash": "29fdbca"
+  },
+  "ai.toast.startingDescription": "Het model wordt geladen, dit duurt een paar seconden",
+  "@ai.toast.startingDescription": {
+    "sourceHash": "94ecf6d"
+  },
+  "ai.toast.downloadCloseTooltip": "Sluit deze melding; de download gaat door op de achtergrond",
+  "@ai.toast.downloadCloseTooltip": {
+    "sourceHash": "16db2bd"
+  },
+  "ai.translateError.off.title": "AI is uitgeschakeld",
+  "@ai.translateError.off.title": {
+    "sourceHash": "99ce709"
+  },
+  "ai.translateError.off.body": "Schakel een aanbieder in bij Instellingen > AI om AI-zoeken te gebruiken.",
+  "@ai.translateError.off.body": {
+    "sourceHash": "d8d6368"
+  },
+  "ai.translateError.notConfigured.title": "AI heeft nog wat instellingen nodig",
+  "@ai.translateError.notConfigured.title": {
+    "sourceHash": "bf5688a"
+  },
+  "ai.translateError.notConfigured.body": "Rond de instelling van je aanbieder af bij Instellingen > AI en probeer het opnieuw.",
+  "@ai.translateError.notConfigured.body": {
+    "sourceHash": "65133a8"
+  },
+  "ai.translateError.authFailed.title": "Die API-sleutel werd geweigerd",
+  "@ai.translateError.authFailed.title": {
+    "sourceHash": "93e6261"
+  },
+  "ai.translateError.authFailed.body": "Controleer je sleutel bij Instellingen > AI - hij is mogelijk onjuist of ingetrokken.",
+  "@ai.translateError.authFailed.body": {
+    "sourceHash": "2159d5e"
+  },
+  "ai.translateError.rateLimited.title": "Je AI-aanbieder zit vol",
+  "@ai.translateError.rateLimited.title": {
+    "sourceHash": "26e286e"
+  },
+  "ai.translateError.rateLimited.body": "Het beperkt het aantal verzoeken of je abonnement is door zijn quotum heen. Controleer je abonnement en facturering en probeer het opnieuw.",
+  "@ai.translateError.rateLimited.body": {
+    "sourceHash": "9b296d7"
+  },
+  "ai.translateError.timeout.title": "De AI deed er te lang over",
+  "@ai.translateError.timeout.title": {
+    "sourceHash": "d684e3f"
+  },
+  "ai.translateError.timeout.body": "Het verzoek duurde te lang. Probeer het zo meteen nog eens.",
+  "@ai.translateError.timeout.body": {
+    "sourceHash": "249b720"
+  },
+  "ai.translateError.unavailable.title": "Je AI-aanbieder is niet bereikbaar",
+  "@ai.translateError.unavailable.title": {
+    "sourceHash": "e684bc4"
+  },
+  "ai.translateError.unavailable.body": "Controleer je internet of de status van de aanbieder en probeer het opnieuw.",
+  "@ai.translateError.unavailable.body": {
+    "sourceHash": "ba30402"
+  },
+  "ai.translateError.emptyResponse.title": "De AI gaf een leeg antwoord",
+  "@ai.translateError.emptyResponse.title": {
+    "sourceHash": "61afc33"
+  },
+  "ai.translateError.emptyResponse.body": "Je model heeft hier mogelijk een groter budget voor nodig. Probeer een sneller model zoals gpt-4.1-mini bij Instellingen > AI.",
+  "@ai.translateError.emptyResponse.body": {
+    "sourceHash": "f1704cc"
+  },
+  "ai.translateError.serverError.title": "Je AI-aanbieder liep tegen een probleem aan",
+  "@ai.translateError.serverError.title": {
+    "sourceHash": "1b98f6a"
+  },
+  "ai.translateError.serverError.body": "Het gaf iets onverwachts terug. Probeer het zo meteen opnieuw.",
+  "@ai.translateError.serverError.body": {
+    "sourceHash": "3f4af5c"
+  },
+  "ai.translateError.parseError.title": "Het antwoord van de AI was niet te lezen",
+  "@ai.translateError.parseError.title": {
+    "sourceHash": "a509880"
+  },
+  "ai.translateError.parseError.body": "Probeer het opnieuw, of kies een ander model bij Instellingen > AI.",
+  "@ai.translateError.parseError.body": {
+    "sourceHash": "c299ec6"
+  },
+  "ai.translateError.unknownProvider.title": "Die AI-aanbieder wordt niet herkend",
+  "@ai.translateError.unknownProvider.title": {
+    "sourceHash": "3b70b46"
+  },
+  "ai.translateError.unknownProvider.body": "Kies een aanbieder bij Instellingen > AI.",
+  "@ai.translateError.unknownProvider.body": {
+    "sourceHash": "7042a75"
+  },
+  "ai.cloud.serviceAria": "Cloud-AI-service",
+  "@ai.cloud.serviceAria": {
+    "sourceHash": "7dec1e0"
+  },
+  "ai.cloud.endpointLabel": "Endpoint",
+  "@ai.cloud.endpointLabel": {
+    "sourceHash": "3df9726"
+  },
+  "ai.cloud.endpointDescription": "API-endpoint-URL voor de geselecteerde service.",
+  "@ai.cloud.endpointDescription": {
+    "sourceHash": "884632b"
+  },
+  "ai.cloud.endpointPlaceholder": "Voorbeeld: https://api.example.com/v1",
+  "@ai.cloud.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "ai.cloud.endpointAria": "Endpoint-URL",
+  "@ai.cloud.endpointAria": {
+    "sourceHash": "2578179"
+  },
+  "ai.cloud.apiKeyLabel": "API-sleutel",
+  "@ai.cloud.apiKeyLabel": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.apiKeyDescription": "Je API-sleutel voor deze service.",
+  "@ai.cloud.apiKeyDescription": {
+    "sourceHash": "6a95580"
+  },
+  "ai.cloud.apiKeyPlaceholderOpenai": "Voorbeeld: sk-abc123...",
+  "@ai.cloud.apiKeyPlaceholderOpenai": {
+    "sourceHash": "f9701a2"
+  },
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Voorbeeld: sk-ant-abc123...",
+  "@ai.cloud.apiKeyPlaceholderAnthropic": {
+    "sourceHash": "5a4d18d"
+  },
+  "ai.cloud.apiKeyPlaceholderGeneric": "API-sleutel",
+  "@ai.cloud.apiKeyPlaceholderGeneric": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.modelLabel": "Model",
+  "@ai.cloud.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.cloud.modelDescription": "De modelnaam die voor completions wordt gebruikt.",
+  "@ai.cloud.modelDescription": {
+    "sourceHash": "809fa50"
+  },
+  "ai.cloud.modelPlaceholderExample": "Voorbeeld: {model}",
+  "@ai.cloud.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "ai.cloud.modelPlaceholderGeneric": "Modelnaam",
+  "@ai.cloud.modelPlaceholderGeneric": {
+    "sourceHash": "a3c3370"
+  },
+  "ai.cloud.checking": "Controleren...",
+  "@ai.cloud.checking": {
+    "sourceHash": "2e5f79b"
+  },
+  "ai.cloud.connected": "Verbonden",
+  "@ai.cloud.connected": {
+    "sourceHash": "2296556"
+  },
+  "ai.cloud.connectedNoModels": "Verbonden (modellijst niet beschikbaar)",
+  "@ai.cloud.connectedNoModels": {
+    "sourceHash": "54f2b6f"
+  },
+  "ai.cloud.recheck": "Controleer opnieuw",
+  "@ai.cloud.recheck": {
+    "sourceHash": "1f47d83"
+  },
+  "ai.cloud.authError": "API-sleutel is ongeldig",
+  "@ai.cloud.authError": {
+    "sourceHash": "74a88e4"
+  },
+  "ai.cloud.connectionError": "Server niet bereikbaar",
+  "@ai.cloud.connectionError": {
+    "sourceHash": "3f378c3"
+  },
+  "ai.cloud.genericError": "Er ging iets mis",
+  "@ai.cloud.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "ai.cloud.testConnection": "Test verbinding",
+  "@ai.cloud.testConnection": {
+    "sourceHash": "5bcf311"
+  },
+  "ai.cloud.unknownError": "Onbekend probleem",
+  "@ai.cloud.unknownError": {
+    "sourceHash": "27c2ccd"
+  },
+  "ai.local.memoryWarningAria": "Geheugenwaarschuwing",
+  "@ai.local.memoryWarningAria": {
+    "sourceHash": "7688d6a"
+  },
+  "ai.local.warningDanger": "Dit overschrijdt je beschikbare geheugen. Je systeem kan flink trager worden.",
+  "@ai.local.warningDanger": {
+    "sourceHash": "dd5c518"
+  },
+  "ai.local.warningCaution": "Dit gebruikt het grootste deel van je beschikbare geheugen. Andere apps kunnen trager worden.",
+  "@ai.local.warningCaution": {
+    "sourceHash": "f8070e9"
+  },
+  "ai.local.statusRestarting": "Opnieuw starten...",
+  "@ai.local.statusRestarting": {
+    "sourceHash": "2c5bfcb"
+  },
+  "ai.local.statusStarting": "Starten...",
+  "@ai.local.statusStarting": {
+    "sourceHash": "82b9363"
+  },
+  "ai.local.statusRunning": "Actief",
+  "@ai.local.statusRunning": {
+    "sourceHash": "f4ccae2"
+  },
+  "ai.local.statusStopped": "Gestopt",
+  "@ai.local.statusStopped": {
+    "sourceHash": "1a4f630"
+  },
+  "ai.local.installStepExtracting": "Stap 1 van 4: Runtime uitpakken...",
+  "@ai.local.installStepExtracting": {
+    "sourceHash": "941db20"
+  },
+  "ai.local.installStepDownloading": "Stap 2 van 4: Model downloaden...",
+  "@ai.local.installStepDownloading": {
+    "sourceHash": "56596cb"
+  },
+  "ai.local.installStepVerifying": "Stap 3 van 4: Download verifiëren...",
+  "@ai.local.installStepVerifying": {
+    "sourceHash": "4133988"
+  },
+  "ai.local.installStepStarting": "Stap 4 van 4: Server starten...",
+  "@ai.local.installStepStarting": {
+    "sourceHash": "39acba1"
+  },
+  "ai.local.startingDownload": "Download starten...",
+  "@ai.local.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.local.etaSeconds": "~nog {value} sec",
+  "@ai.local.etaSeconds": {
+    "sourceHash": "045b712"
+  },
+  "ai.local.etaMinutes": "~nog {value} min",
+  "@ai.local.etaMinutes": {
+    "sourceHash": "978afd8"
+  },
+  "ai.local.etaHours": "~nog {value} uur",
+  "@ai.local.etaHours": {
+    "sourceHash": "b1944ec"
+  },
+  "ai.local.modelLabel": "Model",
+  "@ai.local.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.local.serverLabel": "Server",
+  "@ai.local.serverLabel": {
+    "sourceHash": "aef7de2"
+  },
+  "ai.local.modelUnknown": "Onbekend",
+  "@ai.local.modelUnknown": {
+    "sourceHash": "b764cdc"
+  },
+  "ai.local.modelSizeUnknown": "?",
+  "@ai.local.modelSizeUnknown": {
+    "sourceHash": "8a8de82"
+  },
+  "ai.local.notInstalled": "Niet geïnstalleerd. Het lokale model ({modelName}, {modelSize}) draait volledig op je apparaat voor maximale privacy. Vereist Apple Silicon.",
+  "@ai.local.notInstalled": {
+    "sourceHash": "163bf42"
+  },
+  "ai.local.applyContextSize": "Pas toe",
+  "@ai.local.applyContextSize": {
+    "sourceHash": "31e392d"
+  },
+  "ai.local.ramGaugeAria": "Meter voor geheugengebruik",
+  "@ai.local.ramGaugeAria": {
+    "sourceHash": "d6d09e9"
+  },
+  "ai.local.ramLegendSystem": "Systeem {size}",
+  "@ai.local.ramLegendSystem": {
+    "sourceHash": "1497c04"
+  },
+  "ai.local.ramLegendApps": "Apps {size}",
+  "@ai.local.ramLegendApps": {
+    "sourceHash": "d02b14c"
+  },
+  "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
+  "@ai.local.ramLegendCmdrAi": {
+    "sourceHash": "93e2741"
+  },
+  "ai.local.ramLegendProjected": "Verwacht",
+  "@ai.local.ramLegendProjected": {
+    "sourceHash": "e394afa"
+  },
+  "ai.local.ramLegendFreed": "Vrijgemaakt",
+  "@ai.local.ramLegendFreed": {
+    "sourceHash": "c8affca"
+  },
+  "ai.local.ramLegendFree": "Vrij {size}",
+  "@ai.local.ramLegendFree": {
+    "sourceHash": "afe9c0d"
+  },
+  "ai.local.cancel": "Annuleer",
+  "@ai.local.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.local.stopServer": "Stop server",
+  "@ai.local.stopServer": {
+    "sourceHash": "a21bf60"
+  },
+  "ai.local.startServer": "Start server",
+  "@ai.local.startServer": {
+    "sourceHash": "7b7da6f"
+  },
+  "ai.local.deleteModel": "Verwijder model",
+  "@ai.local.deleteModel": {
+    "sourceHash": "b7828ba"
+  },
+  "ai.local.downloadModel": "Download model",
+  "@ai.local.downloadModel": {
+    "sourceHash": "9979bea"
+  },
+  "ai.local.deleteDialogTitleDeleting": "Model verwijderen...",
+  "@ai.local.deleteDialogTitleDeleting": {
+    "sourceHash": "413e1b9"
+  },
+  "ai.local.deleteDialogTitle": "AI-model verwijderen?",
+  "@ai.local.deleteDialogTitle": {
+    "sourceHash": "c486f0c"
+  },
+  "ai.local.deletingStatus": "Server stoppen en bestanden verwijderen...",
+  "@ai.local.deletingStatus": {
+    "sourceHash": "6671ac7"
+  },
+  "ai.local.deleteConfirmMessage": "Dit maakt {modelSize} schijfruimte vrij. Je moet het opnieuw downloaden om lokale AI weer te gebruiken.",
+  "@ai.local.deleteConfirmMessage": {
+    "sourceHash": "1a6ca0d"
+  },
+  "ai.local.deleteButtonDeleting": "Verwijderen...",
+  "@ai.local.deleteButtonDeleting": {
+    "sourceHash": "685ecb9"
+  },
+  "ai.local.deleteButton": "Verwijder",
+  "@ai.local.deleteButton": {
+    "sourceHash": "e2d0a54"
+  }
+}

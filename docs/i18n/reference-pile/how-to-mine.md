@@ -8,6 +8,47 @@ pile: [README.md](README.md) and [inventory.md](inventory.md).
 First check which sources your language has: `ls <tag>/` (a source is absent if its subdir is missing). Run everything
 below from `_ignored/i18n/`.
 
+## Source-quality traps (read before mining ANY language)
+
+These are evidence-quality pitfalls found while preparing wave 1 (2026-06-21). Each has burned a translation pass; check
+for them before trusting a source.
+
+1. **The base tag can be incomplete, or the WRONG variant — always look for siblings.** Run `ls -d <tag>*` and read any
+   `_see-also.txt`, not just `ls <tag>/`. A language's evidence is often split across region/script siblings:
+   - **pt**: bare `pt/` is EUROPEAN (`Language: pt`, and an AppKit-only macOS with no Finder). The complete Brazilian set
+     is `pt-BR/`. Cmdr's `pt` ships Brazilian, so mining bare `pt/` is a variant trap — mine `pt-BR/`.
+   - **zh**: there is no bare `zh/` from the sources; Simplified is split across `zh-Hans/` (Microsoft) + `zh-CN/`
+     (macOS, file managers), Traditional across `zh-Hant/` + `zh-TW/`. A composed `zh/` base (symlinks to the Simplified
+     sources) exists for convenience — see [inventory.md](inventory.md) § Composed base folders.
+   - **bn**: bare `bn/` has Microsoft terminology + the file managers; the Microsoft style guide is under `bn-IN/`.
+2. **No macOS tier for every language.** Apple doesn't localize into some languages (e.g. Bengali: `bn/macOS/` doesn't
+   exist). When `<tag>/macOS/` is absent, the Tier-1 "macOS wins" tiebreak is gone — Microsoft terminology becomes the
+   anchor, the file managers carry the file-manager domain, and more terms honestly stay `tentative`. Don't read the
+   absence as a pile gap; it's the source ceiling.
+3. **macOS bundles contain English-valued files (Siri intents).** A non-`en` `<tag>/macOS/Finder/` mixes in
+   English-valued Siri-intent phrase files (`AssistantIntents`, `#!SET#!_`-prefixed keys), so a naive value-grep on the
+   target folder returns English and looks like a missing translation. Use the KEY-based cross-reference: find the key in
+   `en/macOS/`, then read the SAME key in `<tag>/macOS/` (keys are stable across languages). The macOS recipe below does
+   this.
+4. **Microsoft terminology's first hit is often the wrong SENSE.** A `.tbx` term has multiple senses and the first match
+   isn't always the UI one. Seen in fr: item → "article" (publishing sense) where the UI wants macOS "élément"; sidebar →
+   "encadré" (callout) vs macOS "barre latérale"; share → "part" vs macOS "partage". Disambiguate against macOS Tier-1
+   (Cmdr is a macOS app) and record which sense you took.
+5. **Formality is per-language and OS-driven — never carry one language's call to another.** German macOS is informal
+   `du` (Microsoft's formal `Sie` is the Windows convention, not Cmdr's); French macOS AND Microsoft are both `vous`.
+   Mine the actual native-OS register for each language; don't generalize.
+6. **A Cmdr catalog tag may not equal the pile folder to mine.** `pt` → mine `pt-BR/`; `zh` → mine the composed `zh/`
+   (Simplified). When substituting the tag into the translator-agent prompt's "mine `_ignored/i18n/<tag>/`" line, use the
+   variant-correct folder, which each language's `style.md` names.
+
+For WHICH term to pick once you've mined the candidates (localize the Apple feature names Apple localizes; prefer the
+macOS Finder term over the Windows/Microsoft one; let brand names inflect), see
+[`/docs/guides/i18n-translation.md`](../../guides/i18n-translation.md) § Term-choice principles. Trap 5 above is the
+formality instance of the macOS-over-Windows rule.
+
+(Trap 1's "Double Commander directory hotlist is a different feature, not a bookmark" lives in the four mining gotchas in
+[`/docs/guides/i18n-translation.md`](../../guides/i18n-translation.md) § Researching terms.)
+
 ## macOS (Tier 1, strongest) — `<tag>/macOS/<bundle>/*.json`
 
 Flat `key: value` JSON per bundle (`Finder`, `AppKit`, `CoreTypes`, `SystemSettings`). Keys are stable across languages,

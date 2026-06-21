@@ -1,0 +1,142 @@
+{
+  "errorReporter.dialog.title": "Hibajelentés küldése",
+  "@errorReporter.dialog.title": {
+    "sourceHash": "c327e68"
+  },
+  "errorReporter.dialog.description": "Ez elküldi a Cmdr legutóbbi naplófájljait a csapatnak, hogy kijavíthassuk, ami elromlott. A naplók a gépeden lesznek kitakarva: a fájlútvonalak, gépnevek, IP-címek és e-mailek mind eltávolításra kerülnek küldés előtt.",
+  "@errorReporter.dialog.description": {
+    "sourceHash": "dd11284"
+  },
+  "errorReporter.dialog.referenceIdLabel": "Hivatkozási azonosító:",
+  "@errorReporter.dialog.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.dialog.copy": "Másolás",
+  "@errorReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "errorReporter.dialog.copied": "Másolva",
+  "@errorReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.dialog.noteLabel": "Megjegyzés hozzáadása (nem kötelező)",
+  "@errorReporter.dialog.noteLabel": {
+    "sourceHash": "6bb0c6b"
+  },
+  "errorReporter.dialog.counter": "{currentText} / {maxText}",
+  "@errorReporter.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "errorReporter.dialog.notePlaceholder": "Mit próbáltál csinálni? Mire számítottál?",
+  "@errorReporter.dialog.notePlaceholder": {
+    "sourceHash": "003300b"
+  },
+  "errorReporter.dialog.noteTooLong": "A megjegyzés túl hosszú. A maximum {maxText} karakter.",
+  "@errorReporter.dialog.noteTooLong": {
+    "sourceHash": "835aa78"
+  },
+  "errorReporter.dialog.attachEmail": "Csatold az e-mail-címemet ({email}), hogy válaszolhassatok",
+  "@errorReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "errorReporter.dialog.detailsToggle": "Mi kerül elküldésre",
+  "@errorReporter.dialog.detailsToggle": {
+    "sourceHash": "b1069f7"
+  },
+  "errorReporter.dialog.manifestHeading": "Jegyzék",
+  "@errorReporter.dialog.manifestHeading": {
+    "sourceHash": "3c99f1f"
+  },
+  "errorReporter.dialog.sampleFirstHeading": "Az első {count, plural, one {# sor} other {# sor}} mintája",
+  "@errorReporter.dialog.sampleFirstHeading": {
+    "sourceHash": "7a2e538"
+  },
+  "errorReporter.dialog.sampleLastHeading": "Az utolsó {count, plural, one {# sor} other {# sor}} mintája",
+  "@errorReporter.dialog.sampleLastHeading": {
+    "sourceHash": "a36f420"
+  },
+  "errorReporter.dialog.noLogLines": "(nincs megjeleníthető naplósor)",
+  "@errorReporter.dialog.noLogLines": {
+    "sourceHash": "a2d54fd"
+  },
+  "errorReporter.dialog.totalLines": "Naplósorok száma összesen (kitakarás után): {countText}",
+  "@errorReporter.dialog.totalLines": {
+    "sourceHash": "9c5cab7"
+  },
+  "errorReporter.dialog.preparing": "Előnézet előkészítése…",
+  "@errorReporter.dialog.preparing": {
+    "sourceHash": "11e66e1"
+  },
+  "errorReporter.dialog.prepareFailed": "Nem sikerült előkészíteni az előnézetet: {error}",
+  "@errorReporter.dialog.prepareFailed": {
+    "sourceHash": "21c4dd4"
+  },
+  "errorReporter.dialog.saveToDisk": "Csomag mentése lemezre (debug)",
+  "@errorReporter.dialog.saveToDisk": {
+    "sourceHash": "36d6589"
+  },
+  "errorReporter.dialog.cancel": "Mégsem",
+  "@errorReporter.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "errorReporter.dialog.send": "Jelentés küldése",
+  "@errorReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "errorReporter.dialog.sending": "Küldés…",
+  "@errorReporter.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "errorReporter.dialog.sendFailedToast": "Nem sikerült elküldeni a hibajelentést: {error}",
+  "@errorReporter.dialog.sendFailedToast": {
+    "sourceHash": "38c0695"
+  },
+  "errorReporter.dialog.saveFailedToast": "Nem sikerült menteni a csomagot: {error}",
+  "@errorReporter.dialog.saveFailedToast": {
+    "sourceHash": "34cf2b4"
+  },
+  "errorReporter.sentToast.message": "A hibajelentés elment. A hivatkozási azonosítód:",
+  "@errorReporter.sentToast.message": {
+    "sourceHash": "75be6ba"
+  },
+  "errorReporter.sentToast.dismiss": "Elvetés",
+  "@errorReporter.sentToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.sentToast.copyId": "Azonosító másolása",
+  "@errorReporter.sentToast.copyId": {
+    "sourceHash": "72ac0d5"
+  },
+  "errorReporter.sentToast.copied": "Másolva",
+  "@errorReporter.sentToast.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.bundleSavedToast.message": "Csomag mentve lemezre",
+  "@errorReporter.bundleSavedToast.message": {
+    "sourceHash": "7c1604d"
+  },
+  "errorReporter.bundleSavedToast.dismiss": "Elvetés",
+  "@errorReporter.bundleSavedToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.bundleSavedToast.reveal": "Megjelenítés a Finderben",
+  "@errorReporter.bundleSavedToast.reveal": {
+    "sourceHash": "cc84938"
+  },
+  "errorReporter.autoSentToast.title": "A hibajelentés elment",
+  "@errorReporter.autoSentToast.title": {
+    "sourceHash": "b69ee37"
+  },
+  "errorReporter.autoSentToast.referenceIdLabel": "Hivatkozási azonosító:",
+  "@errorReporter.autoSentToast.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.autoSentToast.changeSettings": "Beállítások módosítása",
+  "@errorReporter.autoSentToast.changeSettings": {
+    "sourceHash": "873512a"
+  },
+  "errorReporter.autoSentToast.view": "Megtekintés",
+  "@errorReporter.autoSentToast.view": {
+    "sourceHash": "dcc839a"
+  }
+}

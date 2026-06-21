@@ -1,0 +1,78 @@
+{
+  "ui.alertDialog.defaultButton": "Aceptar",
+  "@ui.alertDialog.defaultButton": {
+    "sourceHash": "565339b"
+  },
+  "ui.modalDialog.close": "Cerrar",
+  "@ui.modalDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "ui.popover.defaultAriaLabel": "Opciones",
+  "@ui.popover.defaultAriaLabel": {
+    "sourceHash": "d0db8b5"
+  },
+  "ui.select.placeholder": "Seleccionar...",
+  "@ui.select.placeholder": {
+    "sourceHash": "1339bdd"
+  },
+  "ui.combobox.emptyText": "No hay coincidencias. Sigue escribiendo para usar tu propio valor.",
+  "@ui.combobox.emptyText": {
+    "sourceHash": "d41f776"
+  },
+  "ui.combobox.loadingSuggestions": "Cargando sugerencias",
+  "@ui.combobox.loadingSuggestions": {
+    "sourceHash": "6fcf509"
+  },
+  "ui.combobox.showSuggestions": "Mostrar sugerencias",
+  "@ui.combobox.showSuggestions": {
+    "sourceHash": "a80b6a6"
+  },
+  "ui.commandBox.copyAria": "Copiar el comando al portapapeles",
+  "@ui.commandBox.copyAria": {
+    "sourceHash": "334c24c"
+  },
+  "ui.commandBox.copy": "Copiar",
+  "@ui.commandBox.copy": {
+    "sourceHash": "e21f935"
+  },
+  "ui.commandBox.copied": "¡Copiado!",
+  "@ui.commandBox.copied": {
+    "sourceHash": "ea61bc1"
+  },
+  "ui.shortcutChip.customizeAria": "Personalizar el atajo de {commandName}",
+  "@ui.shortcutChip.customizeAria": {
+    "sourceHash": "a1d00b2"
+  },
+  "ui.shortcutChip.customizeTooltip": "Personalizar este atajo",
+  "@ui.shortcutChip.customizeTooltip": {
+    "sourceHash": "9a7817d"
+  },
+  "ui.toast.sendErrorReport": "Enviar informe de error…",
+  "@ui.toast.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "ui.toast.dismissAria": "Descartar notificación",
+  "@ui.toast.dismissAria": {
+    "sourceHash": "b7bb3f3"
+  },
+  "ui.loadingIcon.finalizing": "{count, plural, one {Se cargó {countText} archivo} many {Se cargaron {countText} archivos} other {Se cargaron {countText} archivos}}. Ordenando tus archivos, preparando la vista...",
+  "@ui.loadingIcon.finalizing": {
+    "sourceHash": "2aac2cb"
+  },
+  "ui.loadingIcon.loaded": "{count, plural, one {Se cargó {countText} archivo} many {Se cargaron {countText} archivos} other {Se cargaron {countText} archivos}}...",
+  "@ui.loadingIcon.loaded": {
+    "sourceHash": "93e45fc"
+  },
+  "ui.loadingIcon.openingFolder": "Abriendo la carpeta...",
+  "@ui.loadingIcon.openingFolder": {
+    "sourceHash": "818cbbb"
+  },
+  "ui.loadingIcon.loading": "Cargando...",
+  "@ui.loadingIcon.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "ui.loadingIcon.cancelHint": "Pulsa <key></key> para cancelar y volver",
+  "@ui.loadingIcon.cancelHint": {
+    "sourceHash": "400dd28"
+  }
+}

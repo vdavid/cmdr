@@ -1,0 +1,42 @@
+{
+  "updates.checkToast.errorPrefix": "Beim Suchen nach Updates ist etwas schiefgelaufen: {message}",
+  "@updates.checkToast.errorPrefix": {
+    "sourceHash": "020abfd"
+  },
+  "updates.checkToast.sendErrorReport": "Fehlerbericht senden",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "updates.toast.available": "Neue Version verfügbar. Zum Aktualisieren neu starten.",
+  "@updates.toast.available": {
+    "sourceHash": "cb97574"
+  },
+  "updates.toast.later": "Später",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "Neu starten",
+  "@updates.toast.restart": {
+    "sourceHash": "6b983a8"
+  },
+  "updates.status.noUpdates": "Keine Updates gefunden. Aktuelle Version: v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "Wird gesucht …",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "Update gefunden, v{next} wird geladen (aktuell: v{prev})…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "v{next} wird installiert (aktuell: v{prev})…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.ready": "Update v{next} bereit. Zum Anwenden neu starten.",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

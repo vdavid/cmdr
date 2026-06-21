@@ -1,0 +1,58 @@
+{
+  "feedback.dialog.title": "Enviar comentarios",
+  "@feedback.dialog.title": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.description": "¿Qué funciona? ¿Qué echas de menos? Tu nota llega directa a quien crea Cmdr.",
+  "@feedback.dialog.description": {
+    "sourceHash": "fe435e3"
+  },
+  "feedback.dialog.label": "Tus comentarios",
+  "@feedback.dialog.label": {
+    "sourceHash": "cdb1c0a"
+  },
+  "feedback.dialog.placeholder": "Ejemplo: Me encantaría un atajo para saltar entre pestañas.",
+  "@feedback.dialog.placeholder": {
+    "sourceHash": "dd0214b"
+  },
+  "feedback.dialog.counter": "{currentText} / {maxText}",
+  "@feedback.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "feedback.dialog.tooLong": "Lo sentimos, es demasiado largo. El máximo es de {maxText} caracteres.",
+  "@feedback.dialog.tooLong": {
+    "sourceHash": "60a59ec"
+  },
+  "feedback.dialog.attachEmail": "Adjuntar mi correo ({email}) para que podamos responder",
+  "@feedback.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "feedback.dialog.moreWays": "También puedes <github>explorar y votar en GitHub</github> o <call>reservar una llamada</call> con David.",
+  "@feedback.dialog.moreWays": {
+    "sourceHash": "5a26a7c"
+  },
+  "feedback.dialog.invalid": "Esa nota no se envió. ¿La acortas y la vuelves a enviar?",
+  "@feedback.dialog.invalid": {
+    "sourceHash": "c379ff8"
+  },
+  "feedback.dialog.softFailure": "Lo sentimos, no pudimos enviar tus comentarios ahora mismo. ¿Lo intentas de nuevo?",
+  "@feedback.dialog.softFailure": {
+    "sourceHash": "21012f3"
+  },
+  "feedback.dialog.cancel": "Cancelar",
+  "@feedback.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "feedback.dialog.send": "Enviar comentarios",
+  "@feedback.dialog.send": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.sending": "Enviando…",
+  "@feedback.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "feedback.sentToast": "¡Gracias por tus comentarios! Leemos todas las notas.",
+  "@feedback.sentToast": {
+    "sourceHash": "6092c03"
+  }
+}

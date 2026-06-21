@@ -1,0 +1,1218 @@
+{
+  "errors.listing.interrupted.title": "Bị gián đoạn",
+  "@errors.listing.interrupted.title": {
+    "sourceHash": "132d124"
+  },
+  "errors.listing.interrupted.explanation": "Một thao tác hệ thống bị gián đoạn trước khi hoàn tất. Hầu như lúc nào đây cũng chỉ là chuyện một lần, do một tín hiệu hoặc tiến trình nền tạm thời chen ngang.",
+  "@errors.listing.interrupted.explanation": {
+    "sourceHash": "7f88a37"
+  },
+  "errors.listing.interrupted.suggestion": "Mở lại nơi này để thử lại. Kiểu gián đoạn này gần như không bao giờ xảy ra hai lần liên tiếp.",
+  "@errors.listing.interrupted.suggestion": {
+    "sourceHash": "2fe74e8"
+  },
+  "errors.listing.notEnoughMemory.title": "Không đủ bộ nhớ",
+  "@errors.listing.notEnoughMemory.title": {
+    "sourceHash": "96dc194"
+  },
+  "errors.listing.notEnoughMemory.explanation": "Hệ thống đã hết bộ nhớ khả dụng (RAM) khi đang đọc thư mục này. Điều này có thể xảy ra khi nhiều ứng dụng cùng mở một lúc, hoặc khi một thư mục chứa rất nhiều tệp.",
+  "@errors.listing.notEnoughMemory.explanation": {
+    "sourceHash": "ff103cd"
+  },
+  "errors.listing.notEnoughMemory.suggestion": "Đây là những cách để thử:\n- Đóng bớt vài ứng dụng để giải phóng bộ nhớ, nhất là những ứng dụng dùng nhiều tài nguyên (trình duyệt mở nhiều tab, trình soạn thảo, ứng dụng đa phương tiện)\n- Kiểm tra mức dùng bộ nhớ trong **Activity Monitor** (tìm nó trong Spotlight)\n- Mở lại nơi này để thử lại",
+  "@errors.listing.notEnoughMemory.suggestion": {
+    "sourceHash": "26a7a46"
+  },
+  "errors.listing.resourceBusy.title": "Tài nguyên đang bận",
+  "@errors.listing.resourceBusy.title": {
+    "sourceHash": "3ad6486"
+  },
+  "errors.listing.resourceBusy.explanation": "Cmdr không truy cập được `{path}` vì một ứng dụng hoặc tiến trình khác đang dùng riêng nó. Điều này thường chỉ là tạm thời.",
+  "@errors.listing.resourceBusy.explanation": {
+    "sourceHash": "8c7bdd4"
+  },
+  "errors.listing.resourceBusy.suggestion": "Đợi một chút, rồi mở lại nơi này. Nếu vẫn cứ vậy, hãy xem ứng dụng nào đang giữ tệp ở trạng thái mở (trong Terminal, chạy `lsof +D <folder-path>` để xem tiến trình nào đang dùng thư mục này).",
+  "@errors.listing.resourceBusy.suggestion": {
+    "sourceHash": "fa266e6"
+  },
+  "errors.listing.temporarilyUnavailable.title": "Tạm thời chưa khả dụng",
+  "@errors.listing.temporarilyUnavailable.title": {
+    "sourceHash": "3c86be3"
+  },
+  "errors.listing.temporarilyUnavailable.explanation": "Hệ thống đang bận trong chốc lát nên chưa xử lý được yêu cầu này. Đây là tình trạng thoáng qua, thường tự hết trong vài giây.",
+  "@errors.listing.temporarilyUnavailable.explanation": {
+    "sourceHash": "2193876"
+  },
+  "errors.listing.temporarilyUnavailable.suggestion": "Mở lại nơi này để thử lại. Việc này thường tự ổn lại. Nếu vẫn cứ vậy, có thể hệ thống đang chịu tải nặng. Hãy xem **Activity Monitor** để tìm ứng dụng đang ngốn nhiều tài nguyên.",
+  "@errors.listing.temporarilyUnavailable.suggestion": {
+    "sourceHash": "1ec4aef"
+  },
+  "errors.listing.networkDown.title": "Mạng đang ngừng hoạt động",
+  "@errors.listing.networkDown.title": {
+    "sourceHash": "399ab40"
+  },
+  "errors.listing.networkDown.explanation": "Kết nối mạng trên máy Mac của bạn đang ngừng hoạt động, nên Cmdr không tới được ổ đĩa này. Có thể Wi-Fi đã ngắt, cáp Ethernet bị rút, hoặc giao tiếp mạng đã bị tắt.",
+  "@errors.listing.networkDown.explanation": {
+    "sourceHash": "e2106be"
+  },
+  "errors.listing.networkDown.suggestion": "Đây là những cách để thử:\n- Kiểm tra trạng thái Wi-Fi hoặc Ethernet trong **{system_settings} > Network**\n- Nếu bạn đang dùng Wi-Fi, thử tắt rồi bật lại\n- Trong Terminal, chạy `ping google.com` để kiểm tra kết nối\n- Mở lại nơi này khi bạn đã trực tuyến lại",
+  "@errors.listing.networkDown.suggestion": {
+    "sourceHash": "3fe671d"
+  },
+  "errors.listing.networkConnectionDropped.title": "Kết nối mạng bị rớt",
+  "@errors.listing.networkConnectionDropped.title": {
+    "sourceHash": "5654be9"
+  },
+  "errors.listing.networkConnectionDropped.explanation": "Kết nối mạng bất ngờ bị đặt lại khi Cmdr đang đọc thư mục này. Điều này có thể xảy ra khi bộ định tuyến khởi động lại, VPN kết nối lại, hoặc mạng tạm thời chập chờn.",
+  "@errors.listing.networkConnectionDropped.explanation": {
+    "sourceHash": "b155930"
+  },
+  "errors.listing.networkConnectionDropped.suggestion": "Đây là những cách để thử:\n- Kiểm tra kết nối mạng của bạn\n- Nếu bạn đang dùng VPN, đảm bảo nó vẫn còn kết nối\n- Mở lại nơi này để thử lại",
+  "@errors.listing.networkConnectionDropped.suggestion": {
+    "sourceHash": "17c6bb8"
+  },
+  "errors.listing.connectionDropped.title": "Kết nối bị rớt",
+  "@errors.listing.connectionDropped.title": {
+    "sourceHash": "9049f3d"
+  },
+  "errors.listing.connectionDropped.explanation": "Kết nối bị máy chủ hoặc mạng làm rớt trước khi Cmdr đọc xong. Điều này thường có nghĩa là máy chủ đang quá tải hoặc đang khởi động lại.",
+  "@errors.listing.connectionDropped.explanation": {
+    "sourceHash": "2d447c3"
+  },
+  "errors.listing.connectionDropped.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem máy chủ có đang chạy và phản hồi không\n- Kiểm tra kết nối mạng của bạn\n- Mở lại nơi này để thử lại",
+  "@errors.listing.connectionDropped.suggestion": {
+    "sourceHash": "d8fba7b"
+  },
+  "errors.listing.connectionReset.title": "Kết nối bị đặt lại",
+  "@errors.listing.connectionReset.title": {
+    "sourceHash": "6346f08"
+  },
+  "errors.listing.connectionReset.explanation": "Máy chủ từ xa đã đóng kết nối một cách bất ngờ. Điều này có thể xảy ra khi máy chủ khởi động lại, hết thời gian chờ, hoặc gặp trục trặc nội bộ.",
+  "@errors.listing.connectionReset.explanation": {
+    "sourceHash": "3ccfa1c"
+  },
+  "errors.listing.connectionReset.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem máy chủ có đang chạy không\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được máy chủ không\n- Mở lại nơi này để thử lại",
+  "@errors.listing.connectionReset.suggestion": {
+    "sourceHash": "0ee3d15"
+  },
+  "errors.listing.connectionTimedOutErrno.title": "Kết nối hết thời gian chờ",
+  "@errors.listing.connectionTimedOutErrno.title": {
+    "sourceHash": "2e0b4a7"
+  },
+  "errors.listing.connectionTimedOutErrno.explanation": "Cmdr đã thử đọc thư mục này nhưng kết nối không phản hồi kịp. Điều này thường có nghĩa là máy chủ hoặc thiết bị chậm, không tới được, hoặc mạng giữa bạn và nó đang tắc nghẽn.",
+  "@errors.listing.connectionTimedOutErrno.explanation": {
+    "sourceHash": "33612d4"
+  },
+  "errors.listing.connectionTimedOutErrno.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem thiết bị hoặc máy chủ có đang bật và tới được không\n- Kiểm tra kết nối Wi-Fi hoặc Ethernet của bạn\n- Trong Terminal, thử `ping <hostname>` để kiểm tra kết nối\n- Mở lại nơi này để thử lại",
+  "@errors.listing.connectionTimedOutErrno.suggestion": {
+    "sourceHash": "4172538"
+  },
+  "errors.listing.hostDown.title": "Máy chủ đang ngừng hoạt động",
+  "@errors.listing.hostDown.title": {
+    "sourceHash": "a99606a"
+  },
+  "errors.listing.hostDown.explanation": "Máy chủ từ xa (máy tính hoặc máy chủ chứa ổ đĩa này) không phản hồi. Có thể nó đang tắt nguồn, đang ngủ, hoặc tạm thời không tới được.",
+  "@errors.listing.hostDown.explanation": {
+    "sourceHash": "cf59cab"
+  },
+  "errors.listing.hostDown.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem máy chủ có đang bật và kết nối với mạng không\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được không\n- Nếu đó là một NAS hoặc máy chủ, hãy xem giao diện quản lý của nó\n- Mở lại nơi này khi máy chủ hoạt động trở lại",
+  "@errors.listing.hostDown.suggestion": {
+    "sourceHash": "4a09e8e"
+  },
+  "errors.listing.staleConnection.title": "Kết nối đã cũ",
+  "@errors.listing.staleConnection.title": {
+    "sourceHash": "f03c43c"
+  },
+  "errors.listing.staleConnection.explanation": "Cmdr đang cố truy cập thư mục này bằng một tham chiếu cũ mà máy chủ không còn nhận ra. Điều này hay xảy ra với ổ đĩa mạng (NFS, SMB) sau khi máy chủ khởi động lại, thư mục chia sẻ được gắn kết lại, hoặc kết nối bị gián đoạn.",
+  "@errors.listing.staleConnection.explanation": {
+    "sourceHash": "3712df2"
+  },
+  "errors.listing.staleConnection.suggestion": "Đây là những cách để thử:\n- Rời khỏi thư mục này rồi quay lại\n- Nếu đây là ổ đĩa mạng, thử bỏ gắn kết rồi gắn kết lại trong Finder\n- Kiểm tra xem máy chủ chứa thư mục này có đang chạy không\n- Trong Terminal, chạy `mount` để xem các ổ đĩa đang gắn kết",
+  "@errors.listing.staleConnection.suggestion": {
+    "sourceHash": "05960c8"
+  },
+  "errors.listing.lockUnavailable.title": "Không còn khóa tệp khả dụng",
+  "@errors.listing.lockUnavailable.title": {
+    "sourceHash": "3123ad5"
+  },
+  "errors.listing.lockUnavailable.explanation": "Hệ thống đã hết khóa tệp. Khóa tệp là cách các ứng dụng phối hợp truy cập tệp dùng chung (ngăn hai ứng dụng cùng ghi vào một tệp một lúc). Hết khóa thường có nghĩa là quá nhiều ứng dụng đang truy cập tệp cùng lúc.",
+  "@errors.listing.lockUnavailable.explanation": {
+    "sourceHash": "154df3c"
+  },
+  "errors.listing.lockUnavailable.suggestion": "Đây là những cách để thử:\n- Đóng bớt vài ứng dụng, nhất là những ứng dụng làm việc với nhiều tệp (trình soạn thảo, IDE, công cụ sao lưu)\n- Trong Terminal, chạy `lsof | wc -l` để xem có bao nhiêu tệp đang mở trên tất cả ứng dụng\n- Nếu vấn đề cứ tiếp diễn, bạn có thể nâng giới hạn bằng `ulimit -n 4096` trong Terminal\n- Mở lại nơi này để thử lại",
+  "@errors.listing.lockUnavailable.suggestion": {
+    "sourceHash": "f9c9f8d"
+  },
+  "errors.listing.cancelledErrno.title": "Đã hủy",
+  "@errors.listing.cancelledErrno.title": {
+    "sourceHash": "d353a99"
+  },
+  "errors.listing.cancelledErrno.explanation": "Thao tác đã bị hủy trước khi hoàn tất.",
+  "@errors.listing.cancelledErrno.explanation": {
+    "sourceHash": "2b85cbc"
+  },
+  "errors.listing.cancelledErrno.suggestion": "Mở lại nơi này bất cứ khi nào bạn sẵn sàng thử lại.",
+  "@errors.listing.cancelledErrno.suggestion": {
+    "sourceHash": "e21161b"
+  },
+  "errors.listing.notPermitted.title": "Không được phép",
+  "@errors.listing.notPermitted.title": {
+    "sourceHash": "8ec5f4b"
+  },
+  "errors.listing.notPermitted.explanation": "macOS đã chặn Cmdr truy cập `{path}`. Điều này thường có nghĩa là thư mục được bảo vệ bởi chính sách bảo mật của macOS, hoặc Cmdr chưa được cấp đúng quyền.",
+  "@errors.listing.notPermitted.explanation": {
+    "sourceHash": "ddf8a5d"
+  },
+  "errors.listing.notPermitted.suggestion": "Đây là những cách để thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Nếu đây là thư mục được hệ thống bảo vệ (như thư mục hệ thống), bạn có thể cần cấp cho Cmdr **{full_disk_access}** trong {privacy_and_security}\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để kiểm tra quyền sở hữu và quyền truy cập",
+  "@errors.listing.notPermitted.suggestion": {
+    "sourceHash": "32e9d74"
+  },
+  "errors.listing.pathNotFoundErrno.title": "Không tìm thấy đường dẫn",
+  "@errors.listing.pathNotFoundErrno.title": {
+    "sourceHash": "cce25f6"
+  },
+  "errors.listing.pathNotFoundErrno.explanation": "Cmdr không tìm thấy `{path}`. Có thể nó đã được di chuyển, đổi tên, hoặc xóa khi Cmdr đang cố truy cập.",
+  "@errors.listing.pathNotFoundErrno.explanation": {
+    "sourceHash": "0c4bb13"
+  },
+  "errors.listing.pathNotFoundErrno.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem đường dẫn có viết đúng không\n- Nếu nó nằm trên ổ đĩa mạng, đảm bảo ổ đĩa đã kết nối và thư mục chia sẻ truy cập được\n- Đi tới thư mục cha và tìm mục đó ở đấy\n- Trong Terminal, chạy `ls -la` trên thư mục cha để xem có gì trong đó",
+  "@errors.listing.pathNotFoundErrno.suggestion": {
+    "sourceHash": "d25f62b"
+  },
+  "errors.listing.noPermissionErrno.title": "Không có quyền",
+  "@errors.listing.noPermissionErrno.title": {
+    "sourceHash": "201c89b"
+  },
+  "errors.listing.noPermissionErrno.explanation": "Cmdr không có quyền truy cập `{path}`. macOS kiểm soát ứng dụng nào được truy cập thư mục nào, và Cmdr chưa được cấp quyền truy cập thư mục này.",
+  "@errors.listing.noPermissionErrno.explanation": {
+    "sourceHash": "a2955dc"
+  },
+  "errors.listing.noPermissionErrno.suggestion": "Đây là những cách để thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải, chọn Get Info, và xem mục Sharing & Permissions\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại",
+  "@errors.listing.noPermissionErrno.suggestion": {
+    "sourceHash": "ea316e7"
+  },
+  "errors.listing.alreadyExistsErrno.title": "Đã tồn tại",
+  "@errors.listing.alreadyExistsErrno.title": {
+    "sourceHash": "2dbc546"
+  },
+  "errors.listing.alreadyExistsErrno.explanation": "Đã có một tệp hoặc thư mục tại `{path}`, nên Cmdr không tạo được mục mới ở đó.",
+  "@errors.listing.alreadyExistsErrno.explanation": {
+    "sourceHash": "487aee7"
+  },
+  "errors.listing.alreadyExistsErrno.suggestion": "Đổi tên mục hiện có hoặc chọn một tên khác cho mục mới.",
+  "@errors.listing.alreadyExistsErrno.suggestion": {
+    "sourceHash": "8761a72"
+  },
+  "errors.listing.crossDeviceOperation.title": "Thao tác liên ổ đĩa",
+  "@errors.listing.crossDeviceOperation.title": {
+    "sourceHash": "a50dc58"
+  },
+  "errors.listing.crossDeviceOperation.explanation": "Cmdr không di chuyển trực tiếp mục này được vì nguồn và đích nằm trên các ổ đĩa khác nhau (ví dụ một ổ đĩa trong máy và một USB). Di chuyển giữa các ổ đĩa cần sao chép dữ liệu rồi gỡ bỏ bản gốc.",
+  "@errors.listing.crossDeviceOperation.explanation": {
+    "sourceHash": "4762369"
+  },
+  "errors.listing.crossDeviceOperation.suggestion": "Hãy sao chép mục này tới đích thay vì di chuyển. Cmdr sẽ tự lo phần sao chép.",
+  "@errors.listing.crossDeviceOperation.suggestion": {
+    "sourceHash": "7700cc3"
+  },
+  "errors.listing.notAFolder.title": "Không phải là thư mục",
+  "@errors.listing.notAFolder.title": {
+    "sourceHash": "78a92a5"
+  },
+  "errors.listing.notAFolder.explanation": "Cmdr mong `{path}` là một thư mục, nhưng nó lại là một tệp. Điều này có thể xảy ra nếu gần đây có thứ gì đó được đổi tên hoặc thay thế.",
+  "@errors.listing.notAFolder.explanation": {
+    "sourceHash": "45d8f76"
+  },
+  "errors.listing.notAFolder.suggestion": "Kiểm tra đường dẫn và đảm bảo nó trỏ tới một thư mục, không phải một tệp.",
+  "@errors.listing.notAFolder.suggestion": {
+    "sourceHash": "433a2d7"
+  },
+  "errors.listing.isAFolderErrno.title": "Là một thư mục",
+  "@errors.listing.isAFolderErrno.title": {
+    "sourceHash": "6deee63"
+  },
+  "errors.listing.isAFolderErrno.explanation": "Cmdr mong `{path}` là một tệp, nhưng nó lại là một thư mục. Điều này có thể xảy ra nếu gần đây có thứ gì đó được đổi tên hoặc thay thế.",
+  "@errors.listing.isAFolderErrno.explanation": {
+    "sourceHash": "009d220"
+  },
+  "errors.listing.isAFolderErrno.suggestion": "Kiểm tra đường dẫn và đảm bảo nó trỏ tới một tệp, không phải một thư mục.",
+  "@errors.listing.isAFolderErrno.suggestion": {
+    "sourceHash": "c12c3c1"
+  },
+  "errors.listing.diskFullErrno.title": "Đĩa đã đầy",
+  "@errors.listing.diskFullErrno.title": {
+    "sourceHash": "293beb8"
+  },
+  "errors.listing.diskFullErrno.explanation": "Không còn đủ dung lượng trống trên ổ đĩa này để hoàn tất thao tác.",
+  "@errors.listing.diskFullErrno.explanation": {
+    "sourceHash": "30d0741"
+  },
+  "errors.listing.diskFullErrno.suggestion": "Đây là những cách để thử:\n- Giải phóng dung lượng bằng cách di chuyển hoặc xóa các tệp bạn không cần nữa\n- Dọn Thùng rác (bấm chuột phải vào biểu tượng Thùng rác trên Dock)\n- Trong Terminal, chạy `df -h` để xem mỗi ổ đĩa còn bao nhiêu dung lượng\n- Xem **{system_settings} > General > Storage** để biết chi tiết những gì đang chiếm dung lượng",
+  "@errors.listing.diskFullErrno.suggestion": {
+    "sourceHash": "bf54d66"
+  },
+  "errors.listing.readOnlyVolumeErrno.title": "Ổ đĩa chỉ đọc",
+  "@errors.listing.readOnlyVolumeErrno.title": {
+    "sourceHash": "e2d3bf1"
+  },
+  "errors.listing.readOnlyVolumeErrno.explanation": "Ổ đĩa này được gắn kết ở chế độ chỉ đọc, nên Cmdr không thay đổi gì trên nó được. Có thể do thiết bị có công tắc chống ghi vật lý, ảnh đĩa được gắn kết ở chế độ chỉ đọc, hoặc hệ thống tệp không hỗ trợ ghi.",
+  "@errors.listing.readOnlyVolumeErrno.explanation": {
+    "sourceHash": "cb19e8c"
+  },
+  "errors.listing.readOnlyVolumeErrno.suggestion": "Đây là những cách để thử:\n- Nếu thiết bị có công tắc chống ghi vật lý (thường thấy trên thẻ SD), hãy gạt nó về tắt\n- Nếu đây là ảnh đĩa, gắn kết lại với quyền ghi\n- Nếu không, hãy sao chép các tệp tới một nơi có thể ghi trước",
+  "@errors.listing.readOnlyVolumeErrno.suggestion": {
+    "sourceHash": "6ce54da"
+  },
+  "errors.listing.notSupportedErrno.title": "Không được hỗ trợ",
+  "@errors.listing.notSupportedErrno.title": {
+    "sourceHash": "74e8477"
+  },
+  "errors.listing.notSupportedErrno.explanation": "Thao tác này không được hỗ trợ trên hệ thống tệp này. Mỗi hệ thống tệp (như FAT32, NTFS, hay thư mục chia sẻ mạng) hỗ trợ những tính năng khác nhau, và hệ thống tệp này không hỗ trợ điều Cmdr đang cố làm.",
+  "@errors.listing.notSupportedErrno.explanation": {
+    "sourceHash": "198aa15"
+  },
+  "errors.listing.notSupportedErrno.suggestion": "Thử một cách khác, hoặc dùng Finder cho thao tác này. Nếu bạn đang làm việc với một ổ đĩa ngoài, có thể nó được định dạng bằng một hệ thống tệp có giới hạn (ví dụ FAT32 không lưu được tệp lớn hơn 4 GB).",
+  "@errors.listing.notSupportedErrno.suggestion": {
+    "sourceHash": "169d5cf"
+  },
+  "errors.listing.networkUnreachable.title": "Không tới được mạng",
+  "@errors.listing.networkUnreachable.title": {
+    "sourceHash": "7b83c7c"
+  },
+  "errors.listing.networkUnreachable.explanation": "Cmdr không tới được mạng mà ổ đĩa này thuộc về. Điều này thường có nghĩa là bạn chưa kết nối đúng mạng, hoặc một VPN chưa hoạt động.",
+  "@errors.listing.networkUnreachable.explanation": {
+    "sourceHash": "f92dedc"
+  },
+  "errors.listing.networkUnreachable.suggestion": "Đây là những cách để thử:\n- Kiểm tra kết nối Wi-Fi hoặc Ethernet của bạn\n- Đảm bảo bạn đang ở đúng mạng (ví dụ Wi-Fi văn phòng hoặc VPN)\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được máy chủ không\n- Mở lại nơi này khi bạn đã kết nối",
+  "@errors.listing.networkUnreachable.suggestion": {
+    "sourceHash": "b1754b4"
+  },
+  "errors.listing.connectionRefused.title": "Kết nối bị từ chối",
+  "@errors.listing.connectionRefused.title": {
+    "sourceHash": "1a28032"
+  },
+  "errors.listing.connectionRefused.explanation": "Máy chủ chủ động từ chối kết nối. Điều này thường có nghĩa là phần mềm máy chủ (ví dụ dịch vụ SMB hoặc NFS) không đang chạy, hoặc nó được cấu hình để từ chối kết nối từ máy Mac này.",
+  "@errors.listing.connectionRefused.explanation": {
+    "sourceHash": "537cf4e"
+  },
+  "errors.listing.connectionRefused.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem máy chủ có đang chạy và dịch vụ chia sẻ tệp của nó có đang bật không\n- Xác nhận địa chỉ và cổng máy chủ là đúng\n- Trong Terminal, thử `ping <hostname>` để xem có tới được máy chủ không\n- Mở lại nơi này để thử lại",
+  "@errors.listing.connectionRefused.suggestion": {
+    "sourceHash": "4afa12d"
+  },
+  "errors.listing.symlinkLoopErrno.title": "Vòng lặp liên kết tượng trưng",
+  "@errors.listing.symlinkLoopErrno.title": {
+    "sourceHash": "3d41981"
+  },
+  "errors.listing.symlinkLoopErrno.explanation": "Cmdr tìm thấy một chuỗi liên kết tượng trưng vòng tròn (các lối tắt trỏ tới các lối tắt khác) tại `{path}`. Đi theo các liên kết này sẽ dẫn thành vòng tròn, nên Cmdr không tới được tệp hay thư mục thật.",
+  "@errors.listing.symlinkLoopErrno.explanation": {
+    "sourceHash": "cb728c1"
+  },
+  "errors.listing.symlinkLoopErrno.suggestion": "Đây là những cách để thử:\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem các liên kết tượng trưng trỏ tới đâu\n- Tìm và sửa liên kết tạo ra vòng lặp\n- Nếu bạn không chắc liên kết nào là vấn đề, hãy lần theo từng cái một bằng `readlink <path>`",
+  "@errors.listing.symlinkLoopErrno.suggestion": {
+    "sourceHash": "0a439fb"
+  },
+  "errors.listing.nameTooLongErrno.title": "Tên quá dài",
+  "@errors.listing.nameTooLongErrno.title": {
+    "sourceHash": "de4bc1d"
+  },
+  "errors.listing.nameTooLongErrno.explanation": "Tên tệp hoặc thư mục vượt quá giới hạn của hệ thống (255 ký tự trên hầu hết ổ đĩa Mac). Điều này cũng có thể xảy ra khi toàn bộ đường dẫn (tất cả thư mục gộp lại) vượt quá độ dài đường dẫn tối đa của hệ thống.",
+  "@errors.listing.nameTooLongErrno.explanation": {
+    "sourceHash": "d6f7a03"
+  },
+  "errors.listing.nameTooLongErrno.suggestion": "Đổi tên mục thành một tên ngắn hơn. Nếu tên trông đã hợp lý, có thể toàn bộ đường dẫn (gồm cả các thư mục cha) đang quá dài. Thử di chuyển nó tới một đường dẫn ngắn hơn.",
+  "@errors.listing.nameTooLongErrno.suggestion": {
+    "sourceHash": "a0497b1"
+  },
+  "errors.listing.hostUnreachable.title": "Không tới được máy chủ",
+  "@errors.listing.hostUnreachable.title": {
+    "sourceHash": "eae08c7"
+  },
+  "errors.listing.hostUnreachable.explanation": "Cmdr không tìm được tuyến mạng tới máy chủ mà ổ đĩa này thuộc về. Điều này thường có nghĩa là máy chủ ở một mạng khác, nằm sau tường lửa, hoặc cấu hình định tuyến cần cập nhật.",
+  "@errors.listing.hostUnreachable.explanation": {
+    "sourceHash": "3e5e6f9"
+  },
+  "errors.listing.hostUnreachable.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem máy chủ có đang bật và ở cùng mạng không\n- Nếu bạn cần VPN để tới được nó, đảm bảo VPN đã kết nối\n- Trong Terminal, thử `ping <hostname>` để kiểm tra kết nối\n- Mở lại nơi này khi máy chủ tới được",
+  "@errors.listing.hostUnreachable.suggestion": {
+    "sourceHash": "8e7a1cf"
+  },
+  "errors.listing.folderNotEmpty.title": "Thư mục không trống",
+  "@errors.listing.folderNotEmpty.title": {
+    "sourceHash": "a8c9ac6"
+  },
+  "errors.listing.folderNotEmpty.explanation": "Cmdr không gỡ bỏ `{path}` được vì nó vẫn còn chứa tệp hoặc thư mục con. Hệ thống yêu cầu thư mục phải trống trước khi gỡ bỏ theo cách này.",
+  "@errors.listing.folderNotEmpty.explanation": {
+    "sourceHash": "c16ac41"
+  },
+  "errors.listing.folderNotEmpty.suggestion": "Hãy xóa nội dung của thư mục trước, rồi thử gỡ bỏ thư mục lại.",
+  "@errors.listing.folderNotEmpty.suggestion": {
+    "sourceHash": "a440845"
+  },
+  "errors.listing.quotaExceeded.title": "Vượt hạn ngạch",
+  "@errors.listing.quotaExceeded.title": {
+    "sourceHash": "a940827"
+  },
+  "errors.listing.quotaExceeded.explanation": "Bạn đã chạm hạn ngạch đĩa (dung lượng tối đa được cấp cho tài khoản người dùng của bạn) trên ổ đĩa này. Điều này thường gặp trên máy chủ dùng chung và ổ đĩa mạng, nơi quản trị viên đặt giới hạn cho từng người dùng.",
+  "@errors.listing.quotaExceeded.explanation": {
+    "sourceHash": "6fa75c0"
+  },
+  "errors.listing.quotaExceeded.suggestion": "Đây là những cách để thử:\n- Giải phóng dung lượng bằng cách gỡ bỏ các tệp bạn không cần nữa trên ổ đĩa này\n- Nhờ quản trị viên hệ thống tăng hạn ngạch cho bạn\n- Trong Terminal, chạy `quota` để xem mức dùng và giới hạn hiện tại của bạn",
+  "@errors.listing.quotaExceeded.suggestion": {
+    "sourceHash": "e24428a"
+  },
+  "errors.listing.authRequiredEauth.title": "Cần xác thực",
+  "@errors.listing.authRequiredEauth.title": {
+    "sourceHash": "0fcfb12"
+  },
+  "errors.listing.authRequiredEauth.explanation": "Cmdr không xác thực được với ổ đĩa này. Có thể thông tin đăng nhập đã lưu của bạn đã hết hạn, hoặc máy chủ đang từ chối lần đăng nhập hiện tại.",
+  "@errors.listing.authRequiredEauth.explanation": {
+    "sourceHash": "7b51115"
+  },
+  "errors.listing.authRequiredEauth.suggestion": "Đây là những cách để thử:\n- Ngắt kết nối rồi kết nối lại ổ đĩa, và nhập lại tên người dùng cùng mật khẩu\n- Kiểm tra xem mật khẩu của bạn có thay đổi hay hết hạn không\n- Nếu đây là máy chủ của công ty, hãy liên hệ nhóm IT của bạn",
+  "@errors.listing.authRequiredEauth.suggestion": {
+    "sourceHash": "9ba659e"
+  },
+  "errors.listing.authRequiredEneedauth.title": "Cần xác thực",
+  "@errors.listing.authRequiredEneedauth.title": {
+    "sourceHash": "0fcfb12"
+  },
+  "errors.listing.authRequiredEneedauth.explanation": "Ổ đĩa này yêu cầu bạn đăng nhập, nhưng chưa có thông tin đăng nhập nào được cung cấp.",
+  "@errors.listing.authRequiredEneedauth.explanation": {
+    "sourceHash": "b4e86e5"
+  },
+  "errors.listing.authRequiredEneedauth.suggestion": "Đây là những cách để thử:\n- Ngắt kết nối rồi kết nối lại ổ đĩa trong Finder\n- Nhập tên người dùng và mật khẩu khi được hỏi\n- Nếu bạn không chắc về thông tin đăng nhập, hãy liên hệ quản trị viên của máy chủ",
+  "@errors.listing.authRequiredEneedauth.suggestion": {
+    "sourceHash": "0b61f53"
+  },
+  "errors.listing.devicePoweredOff.title": "Thiết bị đã tắt nguồn",
+  "@errors.listing.devicePoweredOff.title": {
+    "sourceHash": "d0b7a88"
+  },
+  "errors.listing.devicePoweredOff.explanation": "Thiết bị đang tắt nguồn hoặc ở trạng thái ngủ sâu, nên Cmdr không giao tiếp được với nó.",
+  "@errors.listing.devicePoweredOff.explanation": {
+    "sourceHash": "ae9c029"
+  },
+  "errors.listing.devicePoweredOff.suggestion": "Bật thiết bị lên, đợi nó khởi động xong, rồi mở lại nơi này.",
+  "@errors.listing.devicePoweredOff.suggestion": {
+    "sourceHash": "39fc3b5"
+  },
+  "errors.listing.attributeNotFound.title": "Không tìm thấy thuộc tính",
+  "@errors.listing.attributeNotFound.title": {
+    "sourceHash": "e12f4be"
+  },
+  "errors.listing.attributeNotFound.explanation": "Cmdr đã cố đọc một thuộc tính tệp (siêu dữ liệu bổ sung như nhãn hay quyền) không tồn tại trên mục này. Điều này có thể xảy ra khi hệ thống tệp không hỗ trợ thuộc tính mở rộng, hoặc khi thuộc tính đã bị gỡ bỏ.",
+  "@errors.listing.attributeNotFound.explanation": {
+    "sourceHash": "ee5c696"
+  },
+  "errors.listing.attributeNotFound.suggestion": "Hệ thống tệp này có thể không hỗ trợ siêu dữ liệu mà Cmdr cần. Thử thao tác trên một ổ đĩa khác, hoặc sao chép tệp tới ổ đĩa trong máy Mac của bạn trước.",
+  "@errors.listing.attributeNotFound.suggestion": {
+    "sourceHash": "3c357ac"
+  },
+  "errors.listing.diskReadProblem.title": "Trục trặc đọc đĩa",
+  "@errors.listing.diskReadProblem.title": {
+    "sourceHash": "b953ef4"
+  },
+  "errors.listing.diskReadProblem.explanation": "Cmdr gặp trục trặc đọc ở mức phần cứng tại `{path}`. Điều này có nghĩa là đĩa hoặc thiết bị gặp khó khi đọc dữ liệu, có thể là một trục trặc tạm thời hoặc dấu hiệu của một đĩa đang hỏng dần.",
+  "@errors.listing.diskReadProblem.explanation": {
+    "sourceHash": "9e9cd43"
+  },
+  "errors.listing.diskReadProblem.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối đúng cách không\n- Mở **Disk Utility** (tìm nó trong Spotlight) và chạy **First Aid** trên ổ đĩa này\n- Nếu việc này cứ tiếp diễn, hãy sao lưu dữ liệu của bạn càng sớm càng tốt. Đĩa có thể đang sinh các vùng hỏng hoặc bắt đầu xuống cấp.",
+  "@errors.listing.diskReadProblem.suggestion": {
+    "sourceHash": "792c921"
+  },
+  "errors.listing.unexpectedSystemResponse.title": "Phản hồi hệ thống bất ngờ",
+  "@errors.listing.unexpectedSystemResponse.title": {
+    "sourceHash": "e854b77"
+  },
+  "errors.listing.unexpectedSystemResponse.explanation": "Hệ thống trả về một phản hồi bất ngờ cho thao tác này. Điều này có thể xảy ra khi hệ thống tệp của một ổ đĩa có chỗ không nhất quán, hoặc khi ổ đĩa ở trạng thái bất thường.",
+  "@errors.listing.unexpectedSystemResponse.explanation": {
+    "sourceHash": "eeddaa7"
+  },
+  "errors.listing.unexpectedSystemResponse.suggestion": "Đây là những cách để thử:\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Disk Utility** (tìm nó trong Spotlight) và chạy **First Aid** trên ổ đĩa này để kiểm tra hệ thống tệp",
+  "@errors.listing.unexpectedSystemResponse.suggestion": {
+    "sourceHash": "4e5a9bb"
+  },
+  "errors.listing.deviceProblem.title": "Trục trặc thiết bị",
+  "@errors.listing.deviceProblem.title": {
+    "sourceHash": "3febba2"
+  },
+  "errors.listing.deviceProblem.explanation": "Thiết bị báo một trục trặc ở mức phần cứng. Có thể là kết nối lỏng, cáp đã mòn, hoặc một vấn đề với chính thiết bị.",
+  "@errors.listing.deviceProblem.explanation": {
+    "sourceHash": "a809613"
+  },
+  "errors.listing.deviceProblem.suggestion": "Đây là những cách để thử:\n- Ngắt kết nối rồi kết nối lại thiết bị\n- Thử một cổng USB hoặc cáp khác\n- Nếu là ổ đĩa ngoài, thử cắm nó vào một máy tính khác để xem trục trặc có theo thiết bị không\n- Nếu việc này cứ tiếp diễn, có thể thiết bị cần sửa chữa hoặc thay thế",
+  "@errors.listing.deviceProblem.suggestion": {
+    "sourceHash": "2cbb1cf"
+  },
+  "errors.listing.couldntReadUnknown.title": "Không đọc được thư mục này",
+  "@errors.listing.couldntReadUnknown.title": {
+    "sourceHash": "1334729"
+  },
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr gặp một trục trặc bất ngờ khi đọc `{path}`. Hãy xem chi tiết kỹ thuật bên dưới để biết mã hệ thống cụ thể, điều này có thể giúp khắc phục sự cố.",
+  "@errors.listing.couldntReadUnknown.explanation": {
+    "sourceHash": "80b9ff5"
+  },
+  "errors.listing.couldntReadUnknown.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Disk Utility** và chạy **First Aid** trên ổ đĩa này",
+  "@errors.listing.couldntReadUnknown.suggestion": {
+    "sourceHash": "0073987"
+  },
+  "errors.listing.notFound.title": "Không tìm thấy đường dẫn",
+  "@errors.listing.notFound.title": {
+    "sourceHash": "cce25f6"
+  },
+  "errors.listing.notFound.explanation": "Cmdr không tìm thấy `{path}`. Có thể nó đã được di chuyển, đổi tên, hoặc xóa khi Cmdr đang cố truy cập.",
+  "@errors.listing.notFound.explanation": {
+    "sourceHash": "0c4bb13"
+  },
+  "errors.listing.notFound.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem đường dẫn có viết đúng không\n- Nếu nó nằm trên ổ đĩa mạng, đảm bảo ổ đĩa đã kết nối và thư mục chia sẻ truy cập được\n- Đi tới thư mục cha và tìm mục đó ở đấy\n- Trong Terminal, chạy `ls -la` trên thư mục cha để xem có gì trong đó",
+  "@errors.listing.notFound.suggestion": {
+    "sourceHash": "d25f62b"
+  },
+  "errors.listing.tccRestricted.title": "Thư mục này bị macOS hạn chế",
+  "@errors.listing.tccRestricted.title": {
+    "sourceHash": "26b5166"
+  },
+  "errors.listing.tccRestricted.explanation": "Cmdr không đọc được `{path}` vì macOS chưa cấp quyền truy cập thư mục này. Đây là một cổng riêng tư, không phải lỗi của Cmdr.",
+  "@errors.listing.tccRestricted.explanation": {
+    "sourceHash": "027470f"
+  },
+  "errors.listing.tccRestricted.suggestion": "Hai cách khắc phục:\n- Cấp cho Cmdr **{full_disk_access}** trong **{system_settings} → {privacy_and_security} → {full_disk_access}** để gỡ bỏ mọi hạn chế kiểu này cùng một lúc.\n- Hoặc cấp quyền truy cập riêng cho mỗi thư mục, chỉ cho thư mục này, trong **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr**.",
+  "@errors.listing.tccRestricted.suggestion": {
+    "sourceHash": "6d9d93d"
+  },
+  "errors.listing.permissionDenied.title": "Không có quyền",
+  "@errors.listing.permissionDenied.title": {
+    "sourceHash": "201c89b"
+  },
+  "errors.listing.permissionDenied.explanation": "Cmdr không có quyền truy cập `{path}`. macOS kiểm soát ứng dụng nào được truy cập thư mục nào, và Cmdr chưa được cấp quyền truy cập thư mục này.",
+  "@errors.listing.permissionDenied.explanation": {
+    "sourceHash": "a2955dc"
+  },
+  "errors.listing.permissionDenied.suggestion": "Đây là những cách để thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải vào thư mục, chọn Get Info, và xem mục Sharing & Permissions\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại",
+  "@errors.listing.permissionDenied.suggestion": {
+    "sourceHash": "0fa0829"
+  },
+  "errors.listing.alreadyExists.title": "Đã tồn tại",
+  "@errors.listing.alreadyExists.title": {
+    "sourceHash": "2dbc546"
+  },
+  "errors.listing.alreadyExists.explanation": "Đã có một tệp hoặc thư mục tại `{path}`, nên Cmdr không tạo được mục mới ở đó.",
+  "@errors.listing.alreadyExists.explanation": {
+    "sourceHash": "487aee7"
+  },
+  "errors.listing.alreadyExists.suggestion": "Đổi tên mục hiện có hoặc chọn một tên khác cho mục mới.",
+  "@errors.listing.alreadyExists.suggestion": {
+    "sourceHash": "8761a72"
+  },
+  "errors.listing.cancelled.title": "Đã hủy",
+  "@errors.listing.cancelled.title": {
+    "sourceHash": "d353a99"
+  },
+  "errors.listing.cancelled.explanation": "Thao tác đã bị hủy trước khi hoàn tất.",
+  "@errors.listing.cancelled.explanation": {
+    "sourceHash": "2b85cbc"
+  },
+  "errors.listing.cancelled.suggestion": "Mở lại nơi này bất cứ khi nào bạn sẵn sàng thử lại.",
+  "@errors.listing.cancelled.suggestion": {
+    "sourceHash": "e21161b"
+  },
+  "errors.listing.deviceDisconnected.title": "Thiết bị đã ngắt kết nối",
+  "@errors.listing.deviceDisconnected.title": {
+    "sourceHash": "f0acd34"
+  },
+  "errors.listing.deviceDisconnected.explanation": "Thiết bị chứa `{path}` đã ngắt kết nối trong lúc thao tác. Điều này có thể xảy ra nếu cáp USB bị lỏng, điện thoại vào chế độ ngủ, hoặc ổ đĩa mạng rớt kết nối.",
+  "@errors.listing.deviceDisconnected.explanation": {
+    "sourceHash": "c8b7b10"
+  },
+  "errors.listing.deviceDisconnected.suggestion": "Đây là những cách để thử:\n- Kết nối lại thiết bị và đảm bảo cáp đã chắc chắn\n- Nếu là điện thoại, hãy mở khóa và đảm bảo chế độ truyền tệp đang bật\n- Mở lại nơi này khi thiết bị hoạt động trở lại",
+  "@errors.listing.deviceDisconnected.suggestion": {
+    "sourceHash": "9f6c9a0"
+  },
+  "errors.listing.readOnly.title": "Chỉ đọc",
+  "@errors.listing.readOnly.title": {
+    "sourceHash": "72bb908"
+  },
+  "errors.listing.readOnly.explanation": "Ổ đĩa này là chỉ đọc, nên Cmdr không thay đổi gì trên nó được. Có thể do thiết bị có công tắc chống ghi vật lý, ảnh đĩa được gắn kết ở chế độ chỉ đọc, hoặc hệ thống tệp không hỗ trợ ghi.",
+  "@errors.listing.readOnly.explanation": {
+    "sourceHash": "99924c3"
+  },
+  "errors.listing.readOnly.suggestion": "Đây là những cách để thử:\n- Nếu thiết bị có công tắc chống ghi vật lý (thường thấy trên thẻ SD), hãy gạt nó về tắt\n- Nếu đây là ảnh đĩa, gắn kết lại với quyền ghi\n- Nếu không, hãy sao chép các tệp tới một nơi có thể ghi trước",
+  "@errors.listing.readOnly.suggestion": {
+    "sourceHash": "6ce54da"
+  },
+  "errors.listing.storageFull.title": "Đĩa đã đầy",
+  "@errors.listing.storageFull.title": {
+    "sourceHash": "293beb8"
+  },
+  "errors.listing.storageFull.explanation": "Không còn đủ dung lượng trống trên ổ đĩa này để hoàn tất thao tác.",
+  "@errors.listing.storageFull.explanation": {
+    "sourceHash": "30d0741"
+  },
+  "errors.listing.storageFull.suggestion": "Đây là những cách để thử:\n- Giải phóng dung lượng bằng cách di chuyển hoặc xóa các tệp bạn không cần nữa\n- Dọn Thùng rác (bấm chuột phải vào biểu tượng Thùng rác trên Dock)\n- Trong Terminal, chạy `df -h` để xem mỗi ổ đĩa còn bao nhiêu dung lượng",
+  "@errors.listing.storageFull.suggestion": {
+    "sourceHash": "fcdd42d"
+  },
+  "errors.listing.connectionTimedOut.title": "Kết nối hết thời gian chờ",
+  "@errors.listing.connectionTimedOut.title": {
+    "sourceHash": "2e0b4a7"
+  },
+  "errors.listing.connectionTimedOut.explanation": "Cmdr đã thử truy cập tài nguyên này nhưng kết nối không phản hồi kịp. Điều này thường có nghĩa là máy chủ hoặc thiết bị phản hồi chậm, hoặc kết nối mạng chập chờn.",
+  "@errors.listing.connectionTimedOut.explanation": {
+    "sourceHash": "5b3f8b2"
+  },
+  "errors.listing.connectionTimedOut.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem thiết bị hoặc máy chủ có đang bật và tới được không\n- Kiểm tra kết nối Wi-Fi hoặc Ethernet của bạn\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được máy chủ không\n- Thử lại",
+  "@errors.listing.connectionTimedOut.suggestion": {
+    "sourceHash": "f9b8a2d"
+  },
+  "errors.listing.notSupported.title": "Không được hỗ trợ",
+  "@errors.listing.notSupported.title": {
+    "sourceHash": "74e8477"
+  },
+  "errors.listing.notSupported.explanation": "Thao tác này không được hỗ trợ trên loại ổ đĩa này. Một số ổ đĩa (như bộ nhớ điện thoại hay một số ổ đĩa mạng) không hỗ trợ tất cả thao tác.",
+  "@errors.listing.notSupported.explanation": {
+    "sourceHash": "9ecb575"
+  },
+  "errors.listing.notSupported.suggestion": "Thử một cách khác, hoặc dùng Finder cho thao tác này.",
+  "@errors.listing.notSupported.suggestion": {
+    "sourceHash": "d4e3965"
+  },
+  "errors.listing.deletePending.title": "Tệp đang được gỡ bỏ",
+  "@errors.listing.deletePending.title": {
+    "sourceHash": "1e5741a"
+  },
+  "errors.listing.deletePending.explanation": "`{path}` sắp bị gỡ bỏ. Máy chủ đã đánh dấu nó để xóa, nhưng một handle đang mở khác giữ nó lại cho đến khi handle đó đóng.",
+  "@errors.listing.deletePending.explanation": {
+    "sourceHash": "047ad2f"
+  },
+  "errors.listing.deletePending.suggestion": "Đây là những cách để thử:\n- Đợi một chút rồi thử lại — khi handle cuối cùng đóng, tệp sẽ biến mất\n- Đóng bất kỳ ứng dụng nào khác có thể đang mở tệp này\n- Nếu nó vẫn còn đó, hãy khởi động lại Cmdr để nhả mọi handle nó có thể còn giữ",
+  "@errors.listing.deletePending.suggestion": {
+    "sourceHash": "6dbe760"
+  },
+  "errors.listing.ioSerious.title": "Không đọc được thư mục này",
+  "@errors.listing.ioSerious.title": {
+    "sourceHash": "1334729"
+  },
+  "errors.listing.ioSerious.explanation": "Cmdr gặp trục trặc với `{path}`: {osMessage}. Đây có thể là một trục trặc tạm thời hoặc dấu hiệu cho thấy đĩa hay thiết bị cần được chú ý.",
+  "@errors.listing.ioSerious.explanation": {
+    "sourceHash": "6c3b625"
+  },
+  "errors.listing.ioSerious.suggestion": "Đây là những cách để thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Thử lại\n- Nếu việc này cứ tiếp diễn, thử chạy **Disk Utility > First Aid** trên ổ đĩa này",
+  "@errors.listing.ioSerious.suggestion": {
+    "sourceHash": "6c5be6d"
+  },
+  "errors.listing.isADirectory.title": "Đây là thư mục, không phải tệp",
+  "@errors.listing.isADirectory.title": {
+    "sourceHash": "7ca2cdd"
+  },
+  "errors.listing.isADirectory.explanation": "Cmdr đã cố mở `{path}` như một tệp, nhưng nó lại là một thư mục.",
+  "@errors.listing.isADirectory.explanation": {
+    "sourceHash": "61f5ddb"
+  },
+  "errors.listing.isADirectory.suggestion": "Hãy đi vào trong thư mục thay vì mở nó như một tệp.",
+  "@errors.listing.isADirectory.suggestion": {
+    "sourceHash": "fcf6f9d"
+  },
+  "errors.listing.emptyRootICloud.title": "iCloud Drive trông như trống",
+  "@errors.listing.emptyRootICloud.title": {
+    "sourceHash": "413a7d1"
+  },
+  "errors.listing.emptyRootICloud.explanation": "Cmdr đã mở iCloud Drive nhưng nó không trả về tệp nào. macOS ẩn nội dung iCloud Drive khỏi các ứng dụng không có **{full_disk_access}**, nên cấp quyền đó cho Cmdr là cách khắc phục có khả năng nhất.\n\nNếu iCloud Drive của bạn thật sự trống, bạn có thể bỏ qua gợi ý này.",
+  "@errors.listing.emptyRootICloud.explanation": {
+    "sourceHash": "d095f83"
+  },
+  "errors.listing.emptyRootICloud.suggestion": "Đây là những cách để thử:\n- Mở [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) và chọn **{full_disk_access}**\n- Thêm Cmdr (dùng nút **+**) rồi bật nó lên\n- Thoát rồi mở lại Cmdr\n- Quay lại đây để thử lại",
+  "@errors.listing.emptyRootICloud.suggestion": {
+    "sourceHash": "25cac98"
+  },
+  "errors.git.notARepo.title": "Không có git repo ở đây",
+  "@errors.git.notARepo.title": {
+    "sourceHash": "e2b31ec"
+  },
+  "errors.git.notARepo.message": "Cmdr đã dò ngược cây thư mục và không tìm thấy `.git` nào ở đây.",
+  "@errors.git.notARepo.message": {
+    "sourceHash": "f5b0d17"
+  },
+  "errors.git.notARepo.suggestion": "Mở một thư mục bên trong một git clone để thấy chip repo.",
+  "@errors.git.notARepo.suggestion": {
+    "sourceHash": "f50fd0b"
+  },
+  "errors.git.orphanedWorktree.title": "Worktree này bị mồ côi",
+  "@errors.git.orphanedWorktree.title": {
+    "sourceHash": "158755e"
+  },
+  "errors.git.orphanedWorktree.message": "Đây là một worktree được liên kết nhưng repo chính của nó đã mất, nên git không lần theo liên kết được.",
+  "@errors.git.orphanedWorktree.message": {
+    "sourceHash": "5b5433e"
+  },
+  "errors.git.orphanedWorktree.suggestion": "Thử mở repo chính, hoặc gỡ bỏ mục mồ côi bằng `git worktree prune`.",
+  "@errors.git.orphanedWorktree.suggestion": {
+    "sourceHash": "5da694d"
+  },
+  "errors.git.corruptRepo.title": "Repo này trông như đã hỏng",
+  "@errors.git.corruptRepo.title": {
+    "sourceHash": "b270cef"
+  },
+  "errors.git.corruptRepo.message": "Một phần dữ liệu repo trên đĩa không đọc được. Có thể thư mục đã bị chỉnh sửa bên ngoài git.",
+  "@errors.git.corruptRepo.message": {
+    "sourceHash": "6dd5095"
+  },
+  "errors.git.corruptRepo.suggestion": "Chạy `git fsck` để kiểm tra repo. Một bản clone mới thường giải quyết được.",
+  "@errors.git.corruptRepo.suggestion": {
+    "sourceHash": "fa12c36"
+  },
+  "errors.git.indexLocked.title": "Một git khác đang ghi dở",
+  "@errors.git.indexLocked.title": {
+    "sourceHash": "2b4fd84"
+  },
+  "errors.git.indexLocked.message": "Index của Git đang bị khóa, thường có nghĩa là một lệnh git khác vẫn đang chạy.",
+  "@errors.git.indexLocked.message": {
+    "sourceHash": "2f86cb3"
+  },
+  "errors.git.indexLocked.suggestion": "Đợi lệnh git đang chạy hoàn tất, rồi mở lại nơi này.",
+  "@errors.git.indexLocked.suggestion": {
+    "sourceHash": "deba96c"
+  },
+  "errors.git.permissionDenied.title": "Cmdr không đọc được repo này",
+  "@errors.git.permissionDenied.title": {
+    "sourceHash": "b92716b"
+  },
+  "errors.git.permissionDenied.message": "Hệ điều hành không cho Cmdr mở thư mục `.git`, nên thông tin git không khả dụng.",
+  "@errors.git.permissionDenied.message": {
+    "sourceHash": "0a9e8f1"
+  },
+  "errors.git.permissionDenied.suggestion": "Mở **System Settings > Privacy & Security > Files and Folders** và cấp cho Cmdr quyền truy cập thư mục.",
+  "@errors.git.permissionDenied.suggestion": {
+    "sourceHash": "a3be51a"
+  },
+  "errors.git.bareRepo.title": "Bare repo chưa được hỗ trợ",
+  "@errors.git.bareRepo.title": {
+    "sourceHash": "554f310"
+  },
+  "errors.git.bareRepo.message": "Bare repo không có working tree, mà trình duyệt git lại được xây dựng quanh một working tree.",
+  "@errors.git.bareRepo.message": {
+    "sourceHash": "e7af7c6"
+  },
+  "errors.git.bareRepo.suggestion": "Clone repo vào một thư mục làm việc để dùng trình duyệt git.",
+  "@errors.git.bareRepo.suggestion": {
+    "sourceHash": "8ae4757"
+  },
+  "errors.git.blobTooLarge.title": "Tệp này quá lớn để nạp từ lịch sử",
+  "@errors.git.blobTooLarge.title": {
+    "sourceHash": "aa5a29b"
+  },
+  "errors.git.blobTooLarge.message": "Cmdr đọc các git blob theo từng tệp trọn vẹn một lúc, và tệp này vượt quá giới hạn an toàn.",
+  "@errors.git.blobTooLarge.message": {
+    "sourceHash": "6d93691"
+  },
+  "errors.git.blobTooLarge.suggestion": "Check out tệp từ một working tree nếu bạn muốn đọc nó.",
+  "@errors.git.blobTooLarge.suggestion": {
+    "sourceHash": "cae2b3d"
+  },
+  "errors.git.shallowBoundary.title": "Vượt ranh giới shallow-clone",
+  "@errors.git.shallowBoundary.title": {
+    "sourceHash": "9fc0175"
+  },
+  "errors.git.shallowBoundary.message": "Commit này nằm bên kia ranh giới của shallow clone của bạn, nên dữ liệu của nó không có trên đĩa.",
+  "@errors.git.shallowBoundary.message": {
+    "sourceHash": "447704c"
+  },
+  "errors.git.shallowBoundary.suggestion": "Chạy `git fetch --unshallow` (hoặc `--depth=N`) để mang thêm lịch sử vào clone.",
+  "@errors.git.shallowBoundary.suggestion": {
+    "sourceHash": "7b8888e"
+  },
+  "errors.git.missingObject.title": "Thiếu một git object",
+  "@errors.git.missingObject.title": {
+    "sourceHash": "c12863e"
+  },
+  "errors.git.missingObject.message": "Git đang tìm một object không còn trong các pack file. Repo có thể đã được fetch một phần hoặc bị hỏng.",
+  "@errors.git.missingObject.message": {
+    "sourceHash": "15b0c32"
+  },
+  "errors.git.missingObject.suggestion": "Thử `git fetch` để nạp lại object còn thiếu, hoặc `git fsck` để kiểm tra chỗ hỏng.",
+  "@errors.git.missingObject.suggestion": {
+    "sourceHash": "b221f85"
+  },
+  "errors.git.gitDirPermissionDenied.title": "Cmdr không mở được thư mục `.git`",
+  "@errors.git.gitDirPermissionDenied.title": {
+    "sourceHash": "f6e2595"
+  },
+  "errors.git.gitDirPermissionDenied.message": "Hệ điều hành từ chối truy cập thư mục `.git`, dù working tree vẫn đọc được.",
+  "@errors.git.gitDirPermissionDenied.message": {
+    "sourceHash": "2db5cf0"
+  },
+  "errors.git.gitDirPermissionDenied.suggestion": "Mở **System Settings > Privacy & Security > Files and Folders** và cấp quyền truy cập cho Cmdr. Trong Terminal, `ls -la .git` cho thấy chủ sở hữu và chế độ hiện tại.",
+  "@errors.git.gitDirPermissionDenied.suggestion": {
+    "sourceHash": "42f2c07"
+  },
+  "errors.provider.dropbox.displayName": "Dropbox",
+  "@errors.provider.dropbox.displayName": {
+    "sourceHash": "4750d0a"
+  },
+  "errors.provider.dropbox.appName": "Dropbox",
+  "@errors.provider.dropbox.appName": {
+    "sourceHash": "4750d0a"
+  },
+  "errors.provider.googleDrive.displayName": "Google Drive",
+  "@errors.provider.googleDrive.displayName": {
+    "sourceHash": "915ef4b"
+  },
+  "errors.provider.googleDrive.appName": "Google Drive",
+  "@errors.provider.googleDrive.appName": {
+    "sourceHash": "915ef4b"
+  },
+  "errors.provider.oneDrive.displayName": "OneDrive",
+  "@errors.provider.oneDrive.displayName": {
+    "sourceHash": "8a7a54d"
+  },
+  "errors.provider.oneDrive.appName": "OneDrive",
+  "@errors.provider.oneDrive.appName": {
+    "sourceHash": "8a7a54d"
+  },
+  "errors.provider.box.displayName": "Box",
+  "@errors.provider.box.displayName": {
+    "sourceHash": "512fd3c"
+  },
+  "errors.provider.box.appName": "Box Drive",
+  "@errors.provider.box.appName": {
+    "sourceHash": "93fe945"
+  },
+  "errors.provider.pCloud.displayName": "pCloud",
+  "@errors.provider.pCloud.displayName": {
+    "sourceHash": "8cfc474"
+  },
+  "errors.provider.pCloud.appName": "pCloud Drive",
+  "@errors.provider.pCloud.appName": {
+    "sourceHash": "bfaba70"
+  },
+  "errors.provider.nextcloud.displayName": "Nextcloud",
+  "@errors.provider.nextcloud.displayName": {
+    "sourceHash": "337128a"
+  },
+  "errors.provider.nextcloud.appName": "Nextcloud",
+  "@errors.provider.nextcloud.appName": {
+    "sourceHash": "337128a"
+  },
+  "errors.provider.synologyDrive.displayName": "Synology Drive",
+  "@errors.provider.synologyDrive.displayName": {
+    "sourceHash": "118537c"
+  },
+  "errors.provider.synologyDrive.appName": "Synology Drive",
+  "@errors.provider.synologyDrive.appName": {
+    "sourceHash": "118537c"
+  },
+  "errors.provider.tresorit.displayName": "Tresorit",
+  "@errors.provider.tresorit.displayName": {
+    "sourceHash": "9189473"
+  },
+  "errors.provider.tresorit.appName": "Tresorit",
+  "@errors.provider.tresorit.appName": {
+    "sourceHash": "9189473"
+  },
+  "errors.provider.protonDrive.displayName": "Proton Drive",
+  "@errors.provider.protonDrive.displayName": {
+    "sourceHash": "ae94a23"
+  },
+  "errors.provider.protonDrive.appName": "Proton Drive",
+  "@errors.provider.protonDrive.appName": {
+    "sourceHash": "ae94a23"
+  },
+  "errors.provider.sync.displayName": "Sync.com",
+  "@errors.provider.sync.displayName": {
+    "sourceHash": "31eb68b"
+  },
+  "errors.provider.sync.appName": "Sync.com",
+  "@errors.provider.sync.appName": {
+    "sourceHash": "31eb68b"
+  },
+  "errors.provider.egnyte.displayName": "Egnyte",
+  "@errors.provider.egnyte.displayName": {
+    "sourceHash": "daa69d3"
+  },
+  "errors.provider.egnyte.appName": "Egnyte Connect",
+  "@errors.provider.egnyte.appName": {
+    "sourceHash": "6beb18f"
+  },
+  "errors.provider.macDroid.displayName": "MacDroid",
+  "@errors.provider.macDroid.displayName": {
+    "sourceHash": "99388b1"
+  },
+  "errors.provider.macDroid.appName": "MacDroid",
+  "@errors.provider.macDroid.appName": {
+    "sourceHash": "99388b1"
+  },
+  "errors.provider.iCloud.displayName": "iCloud Drive",
+  "@errors.provider.iCloud.displayName": {
+    "sourceHash": "416264f"
+  },
+  "errors.provider.pCloudFuse.displayName": "pCloud",
+  "@errors.provider.pCloudFuse.displayName": {
+    "sourceHash": "8cfc474"
+  },
+  "errors.provider.pCloudFuse.appName": "pCloud Drive",
+  "@errors.provider.pCloudFuse.appName": {
+    "sourceHash": "bfaba70"
+  },
+  "errors.provider.macFuse.displayName": "macFUSE",
+  "@errors.provider.macFuse.displayName": {
+    "sourceHash": "229fed1"
+  },
+  "errors.provider.veraCrypt.displayName": "VeraCrypt",
+  "@errors.provider.veraCrypt.displayName": {
+    "sourceHash": "46eeb7a"
+  },
+  "errors.provider.veraCrypt.appName": "VeraCrypt",
+  "@errors.provider.veraCrypt.appName": {
+    "sourceHash": "46eeb7a"
+  },
+  "errors.provider.cmVolumes.displayName": "Mục gắn kết đám mây",
+  "@errors.provider.cmVolumes.displayName": {
+    "sourceHash": "8dabeba"
+  },
+  "errors.provider.genericCloudStorage.displayName": "nhà cung cấp đám mây của bạn",
+  "@errors.provider.genericCloudStorage.displayName": {
+    "sourceHash": "1066349"
+  },
+  "errors.provider.macDroid.transient": "Thư mục này do **MacDroid** quản lý. Đây là những cách để thử:\n- Mở MacDroid và kiểm tra xem điện thoại của bạn đã kết nối chưa\n- Đảm bảo điện thoại đã mở khóa và đang ở chế độ truyền tệp\n- Rút rồi cắm lại cáp USB, rồi mở lại nơi này",
+  "@errors.provider.macDroid.transient": {
+    "sourceHash": "994b8b8"
+  },
+  "errors.provider.macDroid.needsAction": "Thư mục này do **MacDroid** quản lý. Đây là những cách để thử:\n- Mở MacDroid và kiểm tra xem điện thoại của bạn đã kết nối chưa\n- Đảm bảo điện thoại đã mở khóa với màn hình đang bật\n- Kiểm tra xem chế độ truyền tệp qua USB đã được bật trên điện thoại chưa",
+  "@errors.provider.macDroid.needsAction": {
+    "sourceHash": "a2c4d13"
+  },
+  "errors.provider.macDroid.serious": "Thư mục này do **MacDroid** quản lý. Đây là những cách để thử:\n- Rút rồi cắm lại cáp USB\n- Khởi động lại MacDroid\n- Thử một cổng USB hoặc cáp khác",
+  "@errors.provider.macDroid.serious": {
+    "sourceHash": "a4ab4fe"
+  },
+  "errors.provider.iCloud.transient": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Kiểm tra kết nối internet của bạn\n- Đảm bảo bạn đã đăng nhập vào iCloud trong System Settings\n- Mở lại nơi này để thử lại",
+  "@errors.provider.iCloud.transient": {
+    "sourceHash": "57bec3c"
+  },
+  "errors.provider.iCloud.needsAction": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Kiểm tra xem iCloud Drive đã được bật trong **System Settings > Apple Account > iCloud** chưa\n- Đảm bảo bạn đã đăng nhập đúng tài khoản Apple\n- Kiểm tra xem dung lượng iCloud của bạn có đầy không",
+  "@errors.provider.iCloud.needsAction": {
+    "sourceHash": "241cd65"
+  },
+  "errors.provider.iCloud.serious": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Đăng xuất rồi đăng nhập lại iCloud trong System Settings\n- Xem [trang trạng thái hệ thống](https://www.apple.com/support/systemstatus/) của Apple",
+  "@errors.provider.iCloud.serious": {
+    "sourceHash": "0a32a1b"
+  },
+  "errors.provider.macFuse.transient": "Đây là một mục gắn kết **macFUSE**. Máy chủ từ xa có thể chậm hoặc không tới được. Đây là những cách để thử:\n- Kiểm tra kết nối mạng của bạn\n- Kiểm tra xem máy chủ từ xa có đang chạy không\n- Mở lại nơi này để thử lại",
+  "@errors.provider.macFuse.transient": {
+    "sourceHash": "06d9019"
+  },
+  "errors.provider.macFuse.needsAction": "Đây là một mục gắn kết **macFUSE**. Đây là những cách để thử:\n- Kiểm tra xem tiến trình FUSE đứng sau mục gắn kết này có còn chạy không\n- Buộc bỏ gắn kết rồi gắn kết lại ổ đĩa nếu cần\n- Đảm bảo macFUSE đã được cập nhật trong **System Settings > General > Login Items & Extensions**",
+  "@errors.provider.macFuse.needsAction": {
+    "sourceHash": "65457a8"
+  },
+  "errors.provider.macFuse.serious": "Đây là một mục gắn kết **macFUSE**. Tiến trình FUSE đứng sau nó có khả năng đã sập hoặc ngắt kết nối. Đây là những cách để thử:\n- Buộc bỏ gắn kết ổ đĩa: chạy `umount -f /Volumes/<name>` trong Terminal\n- Gắn kết lại bằng lệnh gắn kết ban đầu\n- Nếu việc này cứ tiếp diễn, hãy kiểm tra xem macFUSE đã được cập nhật chưa",
+  "@errors.provider.macFuse.serious": {
+    "sourceHash": "71d42da"
+  },
+  "errors.provider.pCloudFuse.transient": "Thư mục này nằm trên ổ đĩa ảo của **pCloud**. Đây là những cách để thử:\n- Kiểm tra kết nối internet của bạn\n- Đảm bảo ứng dụng pCloud đang chạy\n- Mở lại nơi này để thử lại",
+  "@errors.provider.pCloudFuse.transient": {
+    "sourceHash": "1afbd51"
+  },
+  "errors.provider.pCloudFuse.needsAction": "Thư mục này nằm trên ổ đĩa ảo của **pCloud**. Đây là những cách để thử:\n- Đảm bảo ứng dụng pCloud đang chạy và bạn đã đăng nhập\n- Kiểm tra kết nối internet của bạn\n- Sau khi cập nhật macOS, hãy phê duyệt lại phần mở rộng hệ thống của pCloud trong **System Settings > General > Login Items & Extensions**",
+  "@errors.provider.pCloudFuse.needsAction": {
+    "sourceHash": "afea03d"
+  },
+  "errors.provider.pCloudFuse.serious": "Thư mục này nằm trên ổ đĩa ảo của **pCloud**. Tiến trình FUSE của pCloud có thể đã sập. Đây là những cách để thử:\n- Thoát rồi mở lại ứng dụng pCloud\n- Nếu ổ đĩa không xuất hiện lại, hãy buộc bỏ gắn kết: chạy `umount -f /Volumes/pCloudDrive` trong Terminal\n- Sau khi cập nhật macOS, hãy phê duyệt lại phần mở rộng hệ thống của pCloud trong **System Settings > General > Login Items & Extensions**",
+  "@errors.provider.pCloudFuse.serious": {
+    "sourceHash": "d7e6926"
+  },
+  "errors.provider.veraCrypt.transient": "Đây là một ổ đĩa được mã hóa **{name}**. Đây là những cách để thử:\n- Kiểm tra xem ổ đĩa VeraCrypt có còn được gắn kết không\n- Mở lại nơi này để thử lại",
+  "@errors.provider.veraCrypt.transient": {
+    "sourceHash": "fe408ae"
+  },
+  "errors.provider.veraCrypt.needsAction": "Đây là một ổ đĩa được mã hóa **{name}**. Đây là những cách để thử:\n- Mở VeraCrypt và kiểm tra xem ổ đĩa này đã được gắn kết chưa\n- Bỏ gắn kết rồi gắn kết lại ổ đĩa nếu cần",
+  "@errors.provider.veraCrypt.needsAction": {
+    "sourceHash": "08dec65"
+  },
+  "errors.provider.veraCrypt.serious": "Đây là một ổ đĩa được mã hóa **{name}**. Đây là những cách để thử:\n- Bỏ gắn kết rồi gắn kết lại ổ đĩa trong VeraCrypt\n- Nếu ổ đĩa cứ gặp trục trặc, hãy kiểm tra nó bằng các công cụ sửa chữa của VeraCrypt",
+  "@errors.provider.veraCrypt.serious": {
+    "sourceHash": "a5c41a1"
+  },
+  "errors.provider.cmVolumes.transient": "Đây là một mục gắn kết đám mây. Đây là những cách để thử:\n- Kiểm tra kết nối internet của bạn\n- Kiểm tra xem phần mềm gắn kết (CloudMounter, Mountain Duck, v.v.) có đang chạy không\n- Mở lại nơi này để thử lại",
+  "@errors.provider.cmVolumes.transient": {
+    "sourceHash": "f0165b3"
+  },
+  "errors.provider.cmVolumes.nonTransient": "Đây là một mục gắn kết đám mây. Đây là những cách để thử:\n- Kiểm tra xem phần mềm gắn kết (CloudMounter, Mountain Duck, v.v.) có đang chạy không\n- Ngắt kết nối rồi kết nối lại mục gắn kết\n- Kiểm tra xem thông tin đăng nhập của bạn có hết hạn không",
+  "@errors.provider.cmVolumes.nonTransient": {
+    "sourceHash": "752c7e4"
+  },
+  "errors.provider.genericCloudStorage.transient": "Thư mục này do một nhà cung cấp đám mây quản lý. Đây là những cách để thử:\n- Kiểm tra kết nối internet của bạn\n- Kiểm tra xem ứng dụng đồng bộ có đang chạy không\n- Mở lại nơi này để thử lại",
+  "@errors.provider.genericCloudStorage.transient": {
+    "sourceHash": "9398792"
+  },
+  "errors.provider.genericCloudStorage.nonTransient": "Thư mục này do một nhà cung cấp đám mây quản lý. Đây là những cách để thử:\n- Kiểm tra xem ứng dụng đồng bộ có đang chạy không\n- Đăng xuất rồi đăng nhập lại vào ứng dụng đám mây\n- Kiểm tra kết nối internet của bạn",
+  "@errors.provider.genericCloudStorage.nonTransient": {
+    "sourceHash": "ce8a112"
+  },
+  "errors.provider.appBased.transient": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Kiểm tra kết nối internet của bạn\n- Mở {app} và đảm bảo nó đang chạy và đã đồng bộ\n- Mở lại nơi này để thử lại",
+  "@errors.provider.appBased.transient": {
+    "sourceHash": "e3ef8b8"
+  },
+  "errors.provider.appBased.needsAction": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Mở {app} và kiểm tra trạng thái đồng bộ của bạn\n- Đảm bảo bạn đã đăng nhập vào {app}\n- Kiểm tra xem bạn có quyền truy cập thư mục này trong {name} không",
+  "@errors.provider.appBased.needsAction": {
+    "sourceHash": "88009fd"
+  },
+  "errors.provider.appBased.serious": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Thoát rồi mở lại {app}\n- Đăng xuất rồi đăng nhập lại vào {app}\n- Xem trang trạng thái của {name} để biết về sự cố",
+  "@errors.provider.appBased.serious": {
+    "sourceHash": "64baea5"
+  },
+  "errors.write.sourceNotFound.title": "Không tìm thấy tệp",
+  "@errors.write.sourceNotFound.title": {
+    "sourceHash": "2003305"
+  },
+  "errors.write.sourceNotFound.message": "Tệp hoặc thư mục bạn đã thử {verb} không còn tồn tại nữa.",
+  "@errors.write.sourceNotFound.message": {
+    "sourceHash": "036df5c"
+  },
+  "errors.write.sourceNotFound.suggestion": "Có thể nó đã được di chuyển, đổi tên, hoặc xóa. Thử làm mới danh sách tệp.",
+  "@errors.write.sourceNotFound.suggestion": {
+    "sourceHash": "1a6cd17"
+  },
+  "errors.write.destinationExists.title": "Tệp đã tồn tại",
+  "@errors.write.destinationExists.title": {
+    "sourceHash": "ae71a9a"
+  },
+  "errors.write.destinationExists.message": "Đã có một tệp trùng tên này tại đích.",
+  "@errors.write.destinationExists.message": {
+    "sourceHash": "50d9094"
+  },
+  "errors.write.destinationExists.suggestion": "Chọn một tên hoặc vị trí khác, hoặc xóa tệp hiện có trước.",
+  "@errors.write.destinationExists.suggestion": {
+    "sourceHash": "37d7702"
+  },
+  "errors.write.sameLocation.title": "Không thể {verb} về cùng một vị trí",
+  "@errors.write.sameLocation.title": {
+    "sourceHash": "6491841"
+  },
+  "errors.write.sameLocation.message": "Nguồn và đích là một.",
+  "@errors.write.sameLocation.message": {
+    "sourceHash": "d163db2"
+  },
+  "errors.write.sameLocation.suggestion": "Chọn một thư mục đích khác.",
+  "@errors.write.sameLocation.suggestion": {
+    "sourceHash": "a41f65a"
+  },
+  "errors.write.destinationInsideSource.title": "Không thể {verb} một thư mục vào chính nó",
+  "@errors.write.destinationInsideSource.title": {
+    "sourceHash": "724e37e"
+  },
+  "errors.write.destinationInsideSource.message": "Bạn đang cố {verb} một thư mục vào một trong các thư mục con của chính nó.",
+  "@errors.write.destinationInsideSource.message": {
+    "sourceHash": "e65efd9"
+  },
+  "errors.write.destinationInsideSource.suggestion": "Chọn một đích nằm ngoài thư mục bạn đang {gerund}.",
+  "@errors.write.destinationInsideSource.suggestion": {
+    "sourceHash": "e6b34cf"
+  },
+  "errors.write.symlinkLoop.title": "Phát hiện vòng lặp liên kết",
+  "@errors.write.symlinkLoop.title": {
+    "sourceHash": "0bbdc9c"
+  },
+  "errors.write.symlinkLoop.message": "Thư mục này chứa các liên kết tượng trưng tạo thành một vòng lặp vô tận.",
+  "@errors.write.symlinkLoop.message": {
+    "sourceHash": "00931eb"
+  },
+  "errors.write.symlinkLoop.suggestion": "Cấu trúc thư mục chứa các tham chiếu vòng tròn. Bạn có thể cần gỡ bỏ một số liên kết tượng trưng.",
+  "@errors.write.symlinkLoop.suggestion": {
+    "sourceHash": "87ddbca"
+  },
+  "errors.write.cancelled.title": "Đã hủy {Verb}",
+  "@errors.write.cancelled.title": {
+    "sourceHash": "d1ed9a3"
+  },
+  "errors.write.cancelled.message": "Thao tác {verb} đã bị hủy.",
+  "@errors.write.cancelled.message": {
+    "sourceHash": "93434af"
+  },
+  "errors.write.cancelled.suggestion": "Bạn có thể thử lại khi sẵn sàng.",
+  "@errors.write.cancelled.suggestion": {
+    "sourceHash": "21cafca"
+  },
+  "errors.write.deviceDisconnected.title": "Thiết bị đã ngắt kết nối",
+  "@errors.write.deviceDisconnected.title": {
+    "sourceHash": "f0acd34"
+  },
+  "errors.write.deviceDisconnected.message": "Thiết bị đã ngắt kết nối trong lúc {verb}.",
+  "@errors.write.deviceDisconnected.message": {
+    "sourceHash": "cf868ce"
+  },
+  "errors.write.deviceDisconnected.suggestion": "Đảm bảo thiết bị đã kết nối đúng cách rồi thử lại.",
+  "@errors.write.deviceDisconnected.suggestion": {
+    "sourceHash": "f003d9c"
+  },
+  "errors.write.trashNotSupported.title": "Không hỗ trợ thùng rác",
+  "@errors.write.trashNotSupported.title": {
+    "sourceHash": "af90a02"
+  },
+  "errors.write.trashNotSupported.message": "Ổ đĩa này không hỗ trợ thùng rác.",
+  "@errors.write.trashNotSupported.message": {
+    "sourceHash": "45cf0c6"
+  },
+  "errors.write.trashNotSupported.suggestion": "Dùng {deletePermanentlyKey} để xóa vĩnh viễn thay vào đó.",
+  "@errors.write.trashNotSupported.suggestion": {
+    "sourceHash": "450dd8f"
+  },
+  "errors.write.connectionInterrupted.title": "Kết nối bị gián đoạn",
+  "@errors.write.connectionInterrupted.title": {
+    "sourceHash": "183383d"
+  },
+  "errors.write.connectionInterrupted.message": "Kết nối đã bị gián đoạn.",
+  "@errors.write.connectionInterrupted.message": {
+    "sourceHash": "286af83"
+  },
+  "errors.write.connectionInterrupted.suggestion": "Kiểm tra kết nối của bạn rồi thử lại. Nếu đang sao chép tới một vị trí mạng, hãy đảm bảo máy chủ tới được.",
+  "@errors.write.connectionInterrupted.suggestion": {
+    "sourceHash": "d8d3c79"
+  },
+  "errors.write.readError.title": "{Verb} không thành công",
+  "@errors.write.readError.title": {
+    "sourceHash": "d532d2f"
+  },
+  "errors.write.readError.message": "Không đọc được từ nguồn.",
+  "@errors.write.readError.message": {
+    "sourceHash": "b3b10d6"
+  },
+  "errors.write.readError.suggestion": "Thử lại. Nếu vấn đề vẫn còn, hãy xem chi tiết kỹ thuật bên dưới.",
+  "@errors.write.readError.suggestion": {
+    "sourceHash": "791f737"
+  },
+  "errors.write.writeError.title": "{Verb} không thành công",
+  "@errors.write.writeError.title": {
+    "sourceHash": "d532d2f"
+  },
+  "errors.write.writeError.message": "Không ghi được tới đích.",
+  "@errors.write.writeError.message": {
+    "sourceHash": "cb458f0"
+  },
+  "errors.write.writeError.suggestion": "Thử lại. Nếu vấn đề vẫn còn, hãy xem chi tiết kỹ thuật bên dưới.",
+  "@errors.write.writeError.suggestion": {
+    "sourceHash": "791f737"
+  },
+  "errors.write.nameTooLong.title": "Tên quá dài",
+  "@errors.write.nameTooLong.title": {
+    "sourceHash": "de4bc1d"
+  },
+  "errors.write.nameTooLong.message": "Tên tệp quá dài đối với đích.",
+  "@errors.write.nameTooLong.message": {
+    "sourceHash": "03258f0"
+  },
+  "errors.write.nameTooLong.suggestion": "Thử đổi tên tệp thành một tên ngắn hơn.",
+  "@errors.write.nameTooLong.suggestion": {
+    "sourceHash": "840936a"
+  },
+  "errors.write.invalidName.title": "Tên tệp không hợp lệ",
+  "@errors.write.invalidName.title": {
+    "sourceHash": "1fb1e45"
+  },
+  "errors.write.invalidName.message": "Tên tệp chứa các ký tự không được cho phép tại đích.",
+  "@errors.write.invalidName.message": {
+    "sourceHash": "6a95bb8"
+  },
+  "errors.write.invalidName.suggestion": "Thử đổi tên tệp để bỏ các ký tự đặc biệt.",
+  "@errors.write.invalidName.suggestion": {
+    "sourceHash": "bdac1ea"
+  },
+  "errors.write.ioError.title": "{Verb} không thành công",
+  "@errors.write.ioError.title": {
+    "sourceHash": "d532d2f"
+  },
+  "errors.write.ioError.message": "Không thể {verb} tệp.",
+  "@errors.write.ioError.message": {
+    "sourceHash": "f008917"
+  },
+  "errors.write.ioError.suggestion": "Thử lại. Nếu vấn đề vẫn còn, hãy xem chi tiết kỹ thuật bên dưới.",
+  "@errors.write.ioError.suggestion": {
+    "sourceHash": "791f737"
+  },
+  "errors.write.permissionDenied.title": "Không truy cập được vị trí này",
+  "@errors.write.permissionDenied.title": {
+    "sourceHash": "be62ad2"
+  },
+  "errors.write.permissionDenied.message": "Bạn không có quyền {verb} tệp ở đây.",
+  "@errors.write.permissionDenied.message": {
+    "sourceHash": "896d3c8"
+  },
+  "errors.write.permissionDenied.suggestion.deleteMac": "Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang bị khóa. Mở khóa nó trong Finder (Get Info > bỏ chọn Locked) rồi thử lại.",
+  "@errors.write.permissionDenied.suggestion.deleteMac": {
+    "sourceHash": "1e6e123"
+  },
+  "errors.write.permissionDenied.suggestion.deleteOther": "Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang được bảo vệ. Kiểm tra quyền của nó (ví dụ qua chmod hoặc trình quản lý tệp của bạn) rồi thử lại.",
+  "@errors.write.permissionDenied.suggestion.deleteOther": {
+    "sourceHash": "650bb53"
+  },
+  "errors.write.permissionDenied.suggestion.default": "Kiểm tra xem bạn có quyền ghi vào thư mục đích không. Bạn có thể cần mở khóa thiết bị hoặc thay đổi quyền của thư mục.",
+  "@errors.write.permissionDenied.suggestion.default": {
+    "sourceHash": "ec02093"
+  },
+  "errors.write.insufficientSpace.title": "Không đủ dung lượng",
+  "@errors.write.insufficientSpace.title": {
+    "sourceHash": "c5f8c45"
+  },
+  "errors.write.insufficientSpace.message": "Đích cần {required} nhưng chỉ còn {available} khả dụng.",
+  "@errors.write.insufficientSpace.message": {
+    "sourceHash": "582f30a"
+  },
+  "errors.write.insufficientSpace.suggestion": "Giải phóng dung lượng tại đích bằng cách xóa các tệp không cần thiết, hoặc chọn một vị trí khác.",
+  "@errors.write.insufficientSpace.suggestion": {
+    "sourceHash": "257f1d9"
+  },
+  "errors.write.readOnlyDevice.title": "Thiết bị chỉ đọc",
+  "@errors.write.readOnlyDevice.title": {
+    "sourceHash": "3f79690"
+  },
+  "errors.write.readOnlyDevice.message": "{deviceName} là chỉ đọc. Bạn có thể sao chép tệp từ nó, nhưng không sao chép tới nó được.",
+  "@errors.write.readOnlyDevice.message": {
+    "sourceHash": "932e2ed"
+  },
+  "errors.write.readOnlyDevice.suggestion": "Chọn một đích khác có hỗ trợ ghi.",
+  "@errors.write.readOnlyDevice.suggestion": {
+    "sourceHash": "caced4a"
+  },
+  "errors.write.readOnlyDevice.fallbackName": "Thiết bị đích",
+  "@errors.write.readOnlyDevice.fallbackName": {
+    "sourceHash": "ef2429e"
+  },
+  "errors.write.fileLocked.title": "Tệp đang bị khóa",
+  "@errors.write.fileLocked.title": {
+    "sourceHash": "5a38c61"
+  },
+  "errors.write.fileLocked.message": "Tệp đang bị khóa và không xóa được.",
+  "@errors.write.fileLocked.message": {
+    "sourceHash": "62b1038"
+  },
+  "errors.write.fileLocked.suggestion.mac": "Mở khóa nó trong Finder (Get Info > bỏ chọn Locked) rồi thử lại.",
+  "@errors.write.fileLocked.suggestion.mac": {
+    "sourceHash": "8f84de5"
+  },
+  "errors.write.fileLocked.suggestion.other": "Tệp có thể đang được bảo vệ. Kiểm tra quyền của nó (ví dụ qua chmod hoặc trình quản lý tệp của bạn) rồi thử lại.",
+  "@errors.write.fileLocked.suggestion.other": {
+    "sourceHash": "6856879"
+  },
+  "errors.write.deletePending.title": "Tệp đang được gỡ bỏ",
+  "@errors.write.deletePending.title": {
+    "sourceHash": "1e5741a"
+  },
+  "errors.write.deletePending.message": "Tệp này sắp bị gỡ bỏ. Máy chủ đã đánh dấu nó để xóa, nhưng một handle đang mở khác giữ nó lại cho đến khi handle đó đóng.",
+  "@errors.write.deletePending.message": {
+    "sourceHash": "e580e20"
+  },
+  "errors.write.deletePending.suggestion": "Đợi một chút rồi thử lại. Khi handle cuối cùng đóng, tệp sẽ biến mất. Nếu nó vẫn còn đó, hãy đóng bất kỳ ứng dụng nào khác có thể đang mở nó.",
+  "@errors.write.deletePending.suggestion": {
+    "sourceHash": "39e64a9"
+  },
+  "errors.write.fallback.title": "{Verb} không thành công",
+  "@errors.write.fallback.title": {
+    "sourceHash": "d532d2f"
+  },
+  "errors.write.fallback.message": "Đã xảy ra một trục trặc bất ngờ khi đang {gerund}.",
+  "@errors.write.fallback.message": {
+    "sourceHash": "e487f3d"
+  },
+  "errors.write.fallback.suggestion": "Thử lại, hoặc xem chi tiết kỹ thuật bên dưới để biết thêm thông tin.",
+  "@errors.write.fallback.suggestion": {
+    "sourceHash": "23de5a9"
+  }
+}

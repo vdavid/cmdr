@@ -1,0 +1,42 @@
+{
+  "transfer.trash": "{countText} {count, plural, one {Datei} other {Dateien}} in den Papierkorb bewegt",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "Löschen abgeschlossen: {countText} {count, plural, one {Datei} other {Dateien}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {Datei} other {Dateien}} und {foldersText} {folders, plural, one {Ordner} other {Ordner}}} foldersOnly {{foldersText} {folders, plural, one {Ordner} other {Ordner}}} other {{filesText} {files, plural, one {Datei} other {Dateien}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "{verb, select, copy {{phrase} kopiert} other {{phrase} bewegt}}.",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "{verb, select, copy {{phrase} kopiert} other {{phrase} bewegt}}, {skippedText} {skipped, plural, one {Datei} other {Dateien}} übersprungen (bereits am Ziel).",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {Kopieren} other {Bewegen}} abgeschlossen: {transferredText} {transferred, plural, one {Datei} other {Dateien}} {verb, select, copy {kopiert} other {bewegt}}.",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Kopieren} other {Bewegen}} abgeschlossen: Datei bereits am Ziel, nicht {verb, select, copy {kopiert} other {bewegt}}.",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopieren} other {Bewegen}} abgeschlossen: alle {skippedText} Dateien übersprungen (bereits am Ziel), nichts {verb, select, copy {kopiert} other {bewegt}}.",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "ae39c4b"
+  },
+  "transfer.fileOnly.mixedCopy": "Kopieren abgeschlossen: {transferredText} kopiert, {skippedText} übersprungen. Alle {processedText} deiner ausgewählten {processed, plural, one {Datei} other {Dateien}} sind jetzt am Ziel.",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "Bewegen abgeschlossen: {transferredText} bewegt, {skippedText} übersprungen. {skippedText} {skipped, plural, one {Datei war} other {Dateien waren}} bereits am Ziel.",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "lowDiskSpace.toast.message": "Az indítólemezeden kevés a szabad hely: {freeText} szabad ({percentText}%).",
+  "@lowDiskSpace.toast.message": {
+    "sourceHash": "44b701f"
+  },
+  "lowDiskSpace.toast.disable": "Értesítések kikapcsolása",
+  "@lowDiskSpace.toast.disable": {
+    "sourceHash": "1b085f6"
+  },
+  "lowDiskSpace.toast.closeTooltip": "Elvetés",
+  "@lowDiskSpace.toast.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
+  "lowDiskSpace.notification.title": "Kevés a szabad lemezterület",
+  "@lowDiskSpace.notification.title": {
+    "sourceHash": "5b1f5bf"
+  },
+  "lowDiskSpace.notification.body": "{freeText} szabad ({percentText}%) az indítólemezeden.",
+  "@lowDiskSpace.notification.body": {
+    "sourceHash": "b17ee43"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "search.dialog.title": "Suche",
+  "@search.dialog.title": {
+    "sourceHash": "49c266b"
+  },
+  "search.runHint": "Zum Suchen Enter drücken",
+  "@search.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "search.action.showAll.label": "Alle im Hauptfenster anzeigen",
+  "@search.action.showAll.label": {
+    "sourceHash": "782075a"
+  },
+  "search.action.showAll.tooltip": "Die Suchergebnisse im aktiven Bereich öffnen",
+  "@search.action.showAll.tooltip": {
+    "sourceHash": "4e8c58a"
+  },
+  "search.action.goToFile.label": "Zur Datei",
+  "@search.action.goToFile.label": {
+    "sourceHash": "70299e6"
+  },
+  "search.action.goToFile.tooltip": "Die Datei im aktiven Bereich öffnen",
+  "@search.action.goToFile.tooltip": {
+    "sourceHash": "2627d2e"
+  },
+  "search.recent.runAria": "Letzte {mode}-Suche ausführen: {query}",
+  "@search.recent.runAria": {
+    "sourceHash": "fb0939c"
+  },
+  "search.systemDirExclude.default": "Schließt übliche System- und Build-Ordner aus",
+  "@search.systemDirExclude.default": {
+    "sourceHash": "dcdf28a"
+  },
+  "search.systemDirExclude.heading": "Diese Ordner werden ausgeblendet:",
+  "@search.systemDirExclude.heading": {
+    "sourceHash": "5ee8d52"
+  },
+  "search.notAFolderToast": "Suchergebnisse sind kein Ordner. Füge stattdessen in einen echten Ordner ein.",
+  "@search.notAFolderToast": {
+    "sourceHash": "c449358"
+  },
+  "search.searchableFolder.disabledTooltip": "Der aktuelle Ordner sind Suchergebnisse, die nicht durchsuchbar sind. Öffne zuerst einen echten Ordner.",
+  "@search.searchableFolder.disabledTooltip": {
+    "sourceHash": "a90d24e"
+  },
+  "search.snapshot.defaultLabel": "Suche",
+  "@search.snapshot.defaultLabel": {
+    "sourceHash": "49c266b"
+  },
+  "search.snapshot.cappedLabel": "{label} (erste {capText} von {totalText})",
+  "@search.snapshot.cappedLabel": {
+    "sourceHash": "35523ac"
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "downloads.toast.downloaded": "<file>{fileName}</file> gedownload",
+  "@downloads.toast.downloaded": {
+    "sourceHash": "7bc4ace"
+  },
+  "downloads.toast.inSubdir": "in {subdir}",
+  "@downloads.toast.inSubdir": {
+    "sourceHash": "eea56f4"
+  },
+  "downloads.toast.learnIntro": "Iets leuks om te leren over snel naar je downloads springen",
+  "@downloads.toast.learnIntro": {
+    "sourceHash": "3a06888"
+  },
+  "downloads.toast.inAppHint": "In de app: druk op <chip>{key}</chip> om hierheen te springen",
+  "@downloads.toast.inAppHint": {
+    "sourceHash": "5b70d9c"
+  },
+  "downloads.toast.globalHint": "In <em>elke</em> app (globale sneltoets): druk op <chip>{key}</chip>",
+  "@downloads.toast.globalHint": {
+    "sourceHash": "785e1f3"
+  },
+  "downloads.toast.summaryBoth": "Spring met <inApp>{inAppKey}</inApp> in de app, <global>{globalKey}</global> globaal.",
+  "@downloads.toast.summaryBoth": {
+    "sourceHash": "59c4131"
+  },
+  "downloads.toast.summaryInApp": "Spring met <inApp>{inAppKey}</inApp> in de app.",
+  "@downloads.toast.summaryInApp": {
+    "sourceHash": "2c0fd22"
+  },
+  "downloads.toast.summaryGlobal": "Spring met <global>{globalKey}</global> globaal.",
+  "@downloads.toast.summaryGlobal": {
+    "sourceHash": "1bd00be"
+  },
+  "downloads.toast.expandTip": "Toon de sneltoetstip",
+  "@downloads.toast.expandTip": {
+    "sourceHash": "9dfbe32"
+  },
+  "downloads.toast.collapseTip": "Maak deze melding compacter",
+  "@downloads.toast.collapseTip": {
+    "sourceHash": "b404794"
+  },
+  "downloads.toast.stopShowing": "Stop met tonen",
+  "@downloads.toast.stopShowing": {
+    "sourceHash": "36faf9f"
+  },
+  "downloads.toast.jumpToFile": "Spring naar bestand",
+  "@downloads.toast.jumpToFile": {
+    "sourceHash": "4511f65"
+  },
+  "downloads.notification.title": "{fileName} gedownload",
+  "@downloads.notification.title": {
+    "sourceHash": "a2b74bc"
+  },
+  "downloads.empty.message": "Je map Downloads is leeg. Toch erheen?",
+  "@downloads.empty.message": {
+    "sourceHash": "83e7e07"
+  },
+  "downloads.empty.dismiss": "Sluit",
+  "@downloads.empty.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.empty.goToDownloads": "Ga naar Downloads",
+  "@downloads.empty.goToDownloads": {
+    "sourceHash": "5c72aeb"
+  },
+  "downloads.fda.message": "Cmdr heeft Volledige schijftoegang nodig om je map Downloads te volgen.",
+  "@downloads.fda.message": {
+    "sourceHash": "82c82c6"
+  },
+  "downloads.fda.dismiss": "Sluit",
+  "@downloads.fda.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.fda.openSystemSettings": "Open Systeeminstellingen",
+  "@downloads.fda.openSystemSettings": {
+    "sourceHash": "18196b3"
+  },
+  "downloads.warnToast.message": "Met de sneltoets {binding} spring je vanuit elke app naar je laatste download. Aan laten staan?",
+  "@downloads.warnToast.message": {
+    "sourceHash": "b174604"
+  },
+  "downloads.warnToast.turnOff": "Zet uit",
+  "@downloads.warnToast.turnOff": {
+    "sourceHash": "74039ed"
+  },
+  "downloads.warnToast.keepOn": "Laat aan",
+  "@downloads.warnToast.keepOn": {
+    "sourceHash": "cbfff78"
+  },
+  "downloads.shortcutRow.scopeTitle": "Globaal",
+  "@downloads.shortcutRow.scopeTitle": {
+    "sourceHash": "a258b30"
+  },
+  "downloads.shortcutRow.commandName": "Ga naar laatste download <marker>(globaal)</marker>",
+  "@downloads.shortcutRow.commandName": {
+    "sourceHash": "83f6d4b"
+  },
+  "downloads.shortcutRow.modifiedTooltip": "Gewijzigd ten opzichte van standaard",
+  "@downloads.shortcutRow.modifiedTooltip": {
+    "sourceHash": "3d86215"
+  },
+  "downloads.shortcutRow.resetTooltip": "Herstel naar standaard",
+  "@downloads.shortcutRow.resetTooltip": {
+    "sourceHash": "bc5b45a"
+  },
+  "downloads.shortcutRow.pressKeys": "Druk toetsen in...",
+  "@downloads.shortcutRow.pressKeys": {
+    "sourceHash": "37aa30c"
+  },
+  "downloads.shortcutRow.registered": "Geregistreerd",
+  "@downloads.shortcutRow.registered": {
+    "sourceHash": "2351ee9"
+  },
+  "downloads.shortcutRow.notRegistered": "Niet geregistreerd",
+  "@downloads.shortcutRow.notRegistered": {
+    "sourceHash": "ca374c2"
+  },
+  "downloads.shortcutRow.invalidCombo": "Registreren lukte niet: ongeldige combinatie",
+  "@downloads.shortcutRow.invalidCombo": {
+    "sourceHash": "32c3532"
+  },
+  "downloads.shortcutRow.registerFailed": "Registreren lukte niet: {reason}",
+  "@downloads.shortcutRow.registerFailed": {
+    "sourceHash": "2e6fb97"
+  },
+  "downloads.shortcutRow.addModifier": "Voeg een wijzigingstoets toe (⌘, ⌃, ⌥ of ⇧)",
+  "@downloads.shortcutRow.addModifier": {
+    "sourceHash": "28a5ba2"
+  },
+  "downloads.toggleDescription.bound": "Druk op {binding} vanuit elke app om naar je meest recente download te springen.",
+  "@downloads.toggleDescription.bound": {
+    "sourceHash": "be43b35"
+  },
+  "downloads.toggleDescription.unbound": "Spring vanuit elke app naar je meest recente download.",
+  "@downloads.toggleDescription.unbound": {
+    "sourceHash": "187cdec"
+  }
+}

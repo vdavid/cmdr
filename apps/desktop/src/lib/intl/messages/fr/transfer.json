@@ -1,0 +1,42 @@
+{
+  "transfer.trash": "{count, plural, one {{countText} fichier placé} many {{countText} fichiers placés} other {{countText} fichiers placés}} dans la corbeille",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "Suppression terminée : {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {fichier} many {fichiers} other {fichiers}} et {foldersText} {folders, plural, one {dossier} many {dossiers} other {dossiers}}} foldersOnly {{foldersText} {folders, plural, one {dossier} many {dossiers} other {dossiers}}} other {{filesText} {files, plural, one {fichier} many {fichiers} other {fichiers}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "{verb, select, copy {{phrase} copiés} other {{phrase} déplacés}}.",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "{verb, select, copy {{phrase} copiés} other {{phrase} déplacés}}, {skipped, plural, one {{skippedText} fichier ignoré} many {{skippedText} fichiers ignorés} other {{skippedText} fichiers ignorés}} (déjà à destination).",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {Copie terminée : {transferredText} {transferred, plural, one {fichier copié} many {fichiers copiés} other {fichiers copiés}}} other {Déplacement terminé : {transferredText} {transferred, plural, one {fichier déplacé} many {fichiers déplacés} other {fichiers déplacés}}}}.",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Copie terminée : le fichier est déjà à destination, non copié.} other {Déplacement terminé : le fichier est déjà à destination, non déplacé.}}",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copie terminée : les {skippedText} fichiers ont été ignorés (déjà à destination), rien n''a été copié.} other {Déplacement terminé : les {skippedText} fichiers ont été ignorés (déjà à destination), rien n''a été déplacé.}}",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "ae39c4b"
+  },
+  "transfer.fileOnly.mixedCopy": "Copie terminée : {transferredText} copiés, {skippedText} ignorés. Vos {processedText} {processed, plural, one {fichier sélectionné est maintenant} many {fichiers sélectionnés sont maintenant} other {fichiers sélectionnés sont maintenant}} à destination.",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "Déplacement terminé : {transferredText} déplacés, {skippedText} ignorés. {skipped, plural, one {{skippedText} fichier était déjà} many {{skippedText} fichiers étaient déjà} other {{skippedText} fichiers étaient déjà}} à destination.",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  }
+}

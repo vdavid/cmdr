@@ -1,0 +1,22 @@
+{
+  "lowDiskSpace.toast.message": "Tu disco de arranque se está quedando sin espacio: {freeText} libres ({percentText}%).",
+  "@lowDiskSpace.toast.message": {
+    "sourceHash": "44b701f"
+  },
+  "lowDiskSpace.toast.disable": "Desactivar estas notificaciones",
+  "@lowDiskSpace.toast.disable": {
+    "sourceHash": "1b085f6"
+  },
+  "lowDiskSpace.toast.closeTooltip": "Descartar",
+  "@lowDiskSpace.toast.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
+  "lowDiskSpace.notification.title": "Poco espacio en disco",
+  "@lowDiskSpace.notification.title": {
+    "sourceHash": "5b1f5bf"
+  },
+  "lowDiskSpace.notification.body": "{freeText} libres ({percentText}%) en tu disco de arranque.",
+  "@lowDiskSpace.notification.body": {
+    "sourceHash": "b17ee43"
+  }
+}

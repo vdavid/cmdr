@@ -1,0 +1,26 @@
+{
+  "commandPalette.searchPlaceholder": "Buscar comandos...",
+  "@commandPalette.searchPlaceholder": {
+    "sourceHash": "dd6c6ab"
+  },
+  "commandPalette.searchAriaLabel": "Buscar comandos",
+  "@commandPalette.searchAriaLabel": {
+    "sourceHash": "00ff739"
+  },
+  "commandPalette.noResults": "Nenhum comando encontrado",
+  "@commandPalette.noResults": {
+    "sourceHash": "eac0d09"
+  },
+  "commandPalette.resultsAriaLabel": "Comandos",
+  "@commandPalette.resultsAriaLabel": {
+    "sourceHash": "b269dc4"
+  },
+  "commandPalette.groupRecent": "Recentes",
+  "@commandPalette.groupRecent": {
+    "sourceHash": "690dbe9"
+  },
+  "commandPalette.groupAll": "Todos os comandos",
+  "@commandPalette.groupAll": {
+    "sourceHash": "f9c4287"
+  }
+}

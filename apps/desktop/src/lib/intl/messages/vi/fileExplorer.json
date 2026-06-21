@@ -1,0 +1,1242 @@
+{
+  "fileExplorer.pane.filePaneAriaLabel": "Khung tệp {side, select, left {bên trái} other {bên phải}}",
+  "@fileExplorer.pane.filePaneAriaLabel": {
+    "sourceHash": "77f3961"
+  },
+  "fileExplorer.pane.diskUsageAriaLabel": "Dung lượng đĩa",
+  "@fileExplorer.pane.diskUsageAriaLabel": {
+    "sourceHash": "4fe60c1"
+  },
+  "fileExplorer.pane.resizePanesAriaLabel": "Đổi kích thước khung",
+  "@fileExplorer.pane.resizePanesAriaLabel": {
+    "sourceHash": "ff22a46"
+  },
+  "fileExplorer.pane.fileExplorerAriaLabel": "Trình duyệt tệp",
+  "@fileExplorer.pane.fileExplorerAriaLabel": {
+    "sourceHash": "bfd3c67"
+  },
+  "fileExplorer.pane.disconnectFailedToast": "Không thể ngắt kết nối: {message}",
+  "@fileExplorer.pane.disconnectFailedToast": {
+    "sourceHash": "ac9e8e0"
+  },
+  "fileExplorer.pane.connectedDirectlyToast": "Đã kết nối trực tiếp để truy cập nhanh hơn",
+  "@fileExplorer.pane.connectedDirectlyToast": {
+    "sourceHash": "5c6bcd2"
+  },
+  "fileExplorer.pane.directConnectionFailedToast": "Kết nối trực tiếp không thành công: {message}",
+  "@fileExplorer.pane.directConnectionFailedToast": {
+    "sourceHash": "3c6d599"
+  },
+  "fileExplorer.pane.trashUnconfirmedToast": "Không thể xác nhận tệp đã được chuyển vào Thùng rác. Ổ đĩa có thể đang chậm, nhưng tệp có lẽ vẫn đã được chuyển. Hãy kiểm tra Thùng rác để chắc chắn.",
+  "@fileExplorer.pane.trashUnconfirmedToast": {
+    "sourceHash": "844ccc1"
+  },
+  "fileExplorer.pane.ejectFailedToast": "Không thể tháo {volumeName}: {message}",
+  "@fileExplorer.pane.ejectFailedToast": {
+    "sourceHash": "b22501d"
+  },
+  "fileExplorer.errorPane.tryAgain": "Thử lại",
+  "@fileExplorer.errorPane.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.errorPane.openSystemSettings": "Mở {systemSettings}",
+  "@fileExplorer.errorPane.openSystemSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "fileExplorer.errorPane.technicalDetails": "Chi tiết kỹ thuật",
+  "@fileExplorer.errorPane.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileExplorer.errorPane.aMomentAgo": "vừa xong",
+  "@fileExplorer.errorPane.aMomentAgo": {
+    "sourceHash": "65b0cae"
+  },
+  "fileExplorer.errorPane.secondsAgo": "{seconds} giây trước",
+  "@fileExplorer.errorPane.secondsAgo": {
+    "sourceHash": "b5907e4"
+  },
+  "fileExplorer.errorPane.minutesAgo": "{minutes} phút trước",
+  "@fileExplorer.errorPane.minutesAgo": {
+    "sourceHash": "0e91828"
+  },
+  "fileExplorer.errorPane.hoursAgo": "{hours} giờ trước",
+  "@fileExplorer.errorPane.hoursAgo": {
+    "sourceHash": "bbfb1e5"
+  },
+  "fileExplorer.errorPane.retryInfo": "Lần thử lại #{count} · lần đầu {firstAgo}",
+  "@fileExplorer.errorPane.retryInfo": {
+    "sourceHash": "03bb746"
+  },
+  "fileExplorer.errorPane.retryInfoWithLast": "Lần thử lại #{count} · lần đầu {firstAgo} · lần cuối {lastAgo}",
+  "@fileExplorer.errorPane.retryInfoWithLast": {
+    "sourceHash": "e11bb94"
+  },
+  "fileExplorer.functionKeyBar.toolbarAriaLabel": "Phím chức năng",
+  "@fileExplorer.functionKeyBar.toolbarAriaLabel": {
+    "sourceHash": "f69e00d"
+  },
+  "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
+  "@fileExplorer.functionKeyBar.actionWithShortcut": {
+    "sourceHash": "49e258f"
+  },
+  "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (không có tác vụ shift)",
+  "@fileExplorer.functionKeyBar.noShiftAction": {
+    "sourceHash": "83b9f17"
+  },
+  "fileExplorer.functionKeyBar.newFileLabel": "Tệp mới",
+  "@fileExplorer.functionKeyBar.newFileLabel": {
+    "sourceHash": "44dedd0"
+  },
+  "fileExplorer.functionKeyBar.newFileAction": "Tạo tệp mới",
+  "@fileExplorer.functionKeyBar.newFileAction": {
+    "sourceHash": "6e70b95"
+  },
+  "fileExplorer.functionKeyBar.renameLabel": "Đổi tên",
+  "@fileExplorer.functionKeyBar.renameLabel": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.renameAction": "Đổi tên",
+  "@fileExplorer.functionKeyBar.renameAction": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.permanentlyLabel": "Vĩnh viễn",
+  "@fileExplorer.functionKeyBar.permanentlyLabel": {
+    "sourceHash": "d06138e"
+  },
+  "fileExplorer.functionKeyBar.deletePermanentlyAction": "Xóa vĩnh viễn",
+  "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
+    "sourceHash": "280b10c"
+  },
+  "fileExplorer.functionKeyBar.viewLabel": "Xem",
+  "@fileExplorer.functionKeyBar.viewLabel": {
+    "sourceHash": "dcc839a"
+  },
+  "fileExplorer.functionKeyBar.viewAction": "Xem tệp",
+  "@fileExplorer.functionKeyBar.viewAction": {
+    "sourceHash": "6ef3f36"
+  },
+  "fileExplorer.functionKeyBar.editLabel": "Sửa",
+  "@fileExplorer.functionKeyBar.editLabel": {
+    "sourceHash": "464c4ff"
+  },
+  "fileExplorer.functionKeyBar.editAction": "Sửa tệp",
+  "@fileExplorer.functionKeyBar.editAction": {
+    "sourceHash": "9608dd1"
+  },
+  "fileExplorer.functionKeyBar.copyLabel": "Sao chép",
+  "@fileExplorer.functionKeyBar.copyLabel": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.copyAction": "Sao chép",
+  "@fileExplorer.functionKeyBar.copyAction": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.moveLabel": "Di chuyển",
+  "@fileExplorer.functionKeyBar.moveLabel": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.moveAction": "Di chuyển",
+  "@fileExplorer.functionKeyBar.moveAction": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.newFolderLabel": "Thư mục mới",
+  "@fileExplorer.functionKeyBar.newFolderLabel": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.newFolderAction": "Thư mục mới",
+  "@fileExplorer.functionKeyBar.newFolderAction": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.deleteLabel": "Xóa",
+  "@fileExplorer.functionKeyBar.deleteLabel": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.functionKeyBar.deleteAction": "Xóa",
+  "@fileExplorer.functionKeyBar.deleteAction": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.typeToJump.ariaLabel": "Nhảy tới {buffer}",
+  "@fileExplorer.typeToJump.ariaLabel": {
+    "sourceHash": "da879a5"
+  },
+  "fileExplorer.typeToJump.prefix": "Nhảy tới: ",
+  "@fileExplorer.typeToJump.prefix": {
+    "sourceHash": "e9e3412"
+  },
+  "fileExplorer.searchResults.unavailableTitle": "Kết quả tìm kiếm không còn khả dụng",
+  "@fileExplorer.searchResults.unavailableTitle": {
+    "sourceHash": "ebcc5a7"
+  },
+  "fileExplorer.searchResults.unavailableBody": "Tập kết quả cho lần tìm kiếm này đã được xóa. Hãy mở một tìm kiếm mới để bắt đầu lại.",
+  "@fileExplorer.searchResults.unavailableBody": {
+    "sourceHash": "3e4cfa2"
+  },
+  "fileExplorer.network.cancel": "Hủy",
+  "@fileExplorer.network.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.network.connect": "Kết nối",
+  "@fileExplorer.network.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "fileExplorer.network.connecting": "Đang kết nối...",
+  "@fileExplorer.network.connecting": {
+    "sourceHash": "5f04ae9"
+  },
+  "fileExplorer.network.back": "Quay lại",
+  "@fileExplorer.network.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.network.retry": "Thử lại",
+  "@fileExplorer.network.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.network.signIn": "Đăng nhập",
+  "@fileExplorer.network.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "fileExplorer.network.authFailed": "Xác thực không thành công",
+  "@fileExplorer.network.authFailed": {
+    "sourceHash": "93821eb"
+  },
+  "fileExplorer.network.connectDialog.title": "Kết nối với máy chủ",
+  "@fileExplorer.network.connectDialog.title": {
+    "sourceHash": "de6cce0"
+  },
+  "fileExplorer.network.connectDialog.addressAriaLabel": "Địa chỉ máy chủ",
+  "@fileExplorer.network.connectDialog.addressAriaLabel": {
+    "sourceHash": "8be8971"
+  },
+  "fileExplorer.network.connectDialog.addressPlaceholder": "tên máy chủ, địa chỉ IP, hoặc URL smb://",
+  "@fileExplorer.network.connectDialog.addressPlaceholder": {
+    "sourceHash": "60c33b2"
+  },
+  "fileExplorer.network.connectDialog.examples": "Ví dụ: mynas.local, 192.168.1.100, smb://server/share",
+  "@fileExplorer.network.connectDialog.examples": {
+    "sourceHash": "10794ec"
+  },
+  "fileExplorer.network.browser.colName": "Tên",
+  "@fileExplorer.network.browser.colName": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.network.browser.colIp": "Địa chỉ IP",
+  "@fileExplorer.network.browser.colIp": {
+    "sourceHash": "0302a46"
+  },
+  "fileExplorer.network.browser.colHostname": "Tên máy chủ",
+  "@fileExplorer.network.browser.colHostname": {
+    "sourceHash": "2db5335"
+  },
+  "fileExplorer.network.browser.colShares": "Mục chia sẻ",
+  "@fileExplorer.network.browser.colShares": {
+    "sourceHash": "d4ea333"
+  },
+  "fileExplorer.network.browser.colStatus": "Trạng thái",
+  "@fileExplorer.network.browser.colStatus": {
+    "sourceHash": "920e413"
+  },
+  "fileExplorer.network.browser.fetching": "đang lấy...",
+  "@fileExplorer.network.browser.fetching": {
+    "sourceHash": "9e6ab8c"
+  },
+  "fileExplorer.network.browser.unknown": "(không rõ)",
+  "@fileExplorer.network.browser.unknown": {
+    "sourceHash": "8fe7794"
+  },
+  "fileExplorer.network.browser.searching": "Đang tìm kiếm...",
+  "@fileExplorer.network.browser.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "fileExplorer.network.browser.connectToServerRow": "Kết nối với máy chủ...",
+  "@fileExplorer.network.browser.connectToServerRow": {
+    "sourceHash": "1bf4858"
+  },
+  "fileExplorer.network.browser.noHostsTitle": "Không tìm thấy máy chủ nào trên mạng",
+  "@fileExplorer.network.browser.noHostsTitle": {
+    "sourceHash": "e8dfaf2"
+  },
+  "fileExplorer.network.browser.noHostsMessage": "Hãy chắc chắn bạn đang ở trong mạng có các thiết bị hỗ trợ SMB.",
+  "@fileExplorer.network.browser.noHostsMessage": {
+    "sourceHash": "b1cb7ba"
+  },
+  "fileExplorer.network.browser.refresh": "Làm mới",
+  "@fileExplorer.network.browser.refresh": {
+    "sourceHash": "0e91610"
+  },
+  "fileExplorer.network.browser.refreshAriaLabel": "Làm mới danh sách máy chủ trên mạng",
+  "@fileExplorer.network.browser.refreshAriaLabel": {
+    "sourceHash": "73966bd"
+  },
+  "fileExplorer.network.browser.refreshHint": "Nhấn <key></key> hoặc bấm vào đây để làm mới",
+  "@fileExplorer.network.browser.refreshHint": {
+    "sourceHash": "7f65c7d"
+  },
+  "fileExplorer.network.browser.hostCount": "{count, plural, other {{countText} máy chủ}}",
+  "@fileExplorer.network.browser.hostCount": {
+    "sourceHash": "41843ee"
+  },
+  "fileExplorer.network.browser.status.resolving": "Đang phân giải...",
+  "@fileExplorer.network.browser.status.resolving": {
+    "sourceHash": "0660108"
+  },
+  "fileExplorer.network.browser.status.waitingForNetwork": "Đang chờ mạng...",
+  "@fileExplorer.network.browser.status.waitingForNetwork": {
+    "sourceHash": "78199e3"
+  },
+  "fileExplorer.network.browser.status.notChecked": "Chưa kiểm tra",
+  "@fileExplorer.network.browser.status.notChecked": {
+    "sourceHash": "d16948e"
+  },
+  "fileExplorer.network.browser.status.loggedIn": "🔑 Đã đăng nhập{infoIcon}",
+  "@fileExplorer.network.browser.status.loggedIn": {
+    "sourceHash": "1e386ce"
+  },
+  "fileExplorer.network.browser.status.loginFailed": "⚠️ Đăng nhập không thành công{infoIcon}",
+  "@fileExplorer.network.browser.status.loginFailed": {
+    "sourceHash": "1659c9c"
+  },
+  "fileExplorer.network.browser.status.loginNeeded": "🔒 Cần đăng nhập{infoIcon}",
+  "@fileExplorer.network.browser.status.loginNeeded": {
+    "sourceHash": "bd7375e"
+  },
+  "fileExplorer.network.browser.status.timeout": "⏱️ Hết thời gian chờ{infoIcon}",
+  "@fileExplorer.network.browser.status.timeout": {
+    "sourceHash": "3673628"
+  },
+  "fileExplorer.network.browser.status.unreachable": "❌ Không kết nối được{infoIcon}",
+  "@fileExplorer.network.browser.status.unreachable": {
+    "sourceHash": "1198fd4"
+  },
+  "fileExplorer.network.browser.status.error": "⚠️ Sự cố{infoIcon}",
+  "@fileExplorer.network.browser.status.error": {
+    "sourceHash": "de7c260"
+  },
+  "fileExplorer.network.browser.status.loggedInOk": "✓ Đã đăng nhập",
+  "@fileExplorer.network.browser.status.loggedInOk": {
+    "sourceHash": "205adc9"
+  },
+  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Đã đăng nhập 🔄",
+  "@fileExplorer.network.browser.status.loggedInOkStale": {
+    "sourceHash": "f83f6a1"
+  },
+  "fileExplorer.network.browser.status.guest": "✓ Khách",
+  "@fileExplorer.network.browser.status.guest": {
+    "sourceHash": "aaa35d1"
+  },
+  "fileExplorer.network.browser.status.guestStale": "✓ Khách 🔄",
+  "@fileExplorer.network.browser.status.guestStale": {
+    "sourceHash": "1e2b875"
+  },
+  "fileExplorer.network.browser.status.connected": "✓ Đã kết nối",
+  "@fileExplorer.network.browser.status.connected": {
+    "sourceHash": "c8c8815"
+  },
+  "fileExplorer.network.browser.status.connectedStale": "✓ Đã kết nối 🔄",
+  "@fileExplorer.network.browser.status.connectedStale": {
+    "sourceHash": "0cf4d3d"
+  },
+  "fileExplorer.network.browser.tooltip.resolving": "Đang phân giải tên máy chủ và địa chỉ IP...",
+  "@fileExplorer.network.browser.tooltip.resolving": {
+    "sourceHash": "1dc4c96"
+  },
+  "fileExplorer.network.browser.tooltip.waitingForNetwork": "Đang chờ phân giải tên trên mạng",
+  "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
+    "sourceHash": "81ac569"
+  },
+  "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Bấm đúp để kết nối và xem các mục chia sẻ",
+  "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
+    "sourceHash": "a068f74"
+  },
+  "fileExplorer.network.browser.tooltip.credsStored": "Đã lưu thông tin đăng nhập. Bấm đúp để kết nối.",
+  "@fileExplorer.network.browser.tooltip.credsStored": {
+    "sourceHash": "ff82a32"
+  },
+  "fileExplorer.network.browser.tooltip.credsRejected": "Thông tin đăng nhập đã lưu bị từ chối. Hãy đăng nhập bằng thông tin mới.",
+  "@fileExplorer.network.browser.tooltip.credsRejected": {
+    "sourceHash": "a3d55a2"
+  },
+  "fileExplorer.network.browser.tooltip.requiresLogin": "Máy chủ này yêu cầu đăng nhập. Bấm đúp để nhập thông tin đăng nhập.",
+  "@fileExplorer.network.browser.tooltip.requiresLogin": {
+    "sourceHash": "8e64ac0"
+  },
+  "fileExplorer.network.browser.tooltip.authFailed": "Xác thực không thành công. Hãy kiểm tra thông tin đăng nhập và thử lại.",
+  "@fileExplorer.network.browser.tooltip.authFailed": {
+    "sourceHash": "b8620ab"
+  },
+  "fileExplorer.network.browser.tooltip.errorWithType": "Sự cố: {reason}",
+  "@fileExplorer.network.browser.tooltip.errorWithType": {
+    "sourceHash": "ee0fd6d"
+  },
+  "fileExplorer.network.browser.cannotRemoveDiscovered": "Không thể xóa máy chủ được phát hiện tự động",
+  "@fileExplorer.network.browser.cannotRemoveDiscovered": {
+    "sourceHash": "03fabd6"
+  },
+  "fileExplorer.network.browser.removeHostConfirm": "Xóa {hostName} khỏi danh sách máy chủ?",
+  "@fileExplorer.network.browser.removeHostConfirm": {
+    "sourceHash": "8ecdf1a"
+  },
+  "fileExplorer.network.browser.removeHostConfirmButton": "Xóa",
+  "@fileExplorer.network.browser.removeHostConfirmButton": {
+    "sourceHash": "c3812fc"
+  },
+  "fileExplorer.network.browser.hostRemoved": "Đã xóa {hostName}",
+  "@fileExplorer.network.browser.hostRemoved": {
+    "sourceHash": "9e02382"
+  },
+  "fileExplorer.network.browser.hostRemoveFailed": "Không thể xóa {hostName}",
+  "@fileExplorer.network.browser.hostRemoveFailed": {
+    "sourceHash": "9120dd2"
+  },
+  "fileExplorer.network.forgotPassword": "Đã quên mật khẩu đã lưu cho {hostName}",
+  "@fileExplorer.network.forgotPassword": {
+    "sourceHash": "6b53741"
+  },
+  "fileExplorer.network.deletePasswordFailed": "Không thể xóa mật khẩu đã lưu",
+  "@fileExplorer.network.deletePasswordFailed": {
+    "sourceHash": "0ff57cb"
+  },
+  "fileExplorer.network.browser.disconnected": "Đã ngắt kết nối khỏi {hostName}",
+  "@fileExplorer.network.browser.disconnected": {
+    "sourceHash": "6cb30d3"
+  },
+  "fileExplorer.network.browser.noMountedShares": "Không có mục chia sẻ nào đang gắn kết từ {hostName}",
+  "@fileExplorer.network.browser.noMountedShares": {
+    "sourceHash": "913c7e6"
+  },
+  "fileExplorer.network.browser.disconnectFailed": "Không thể ngắt kết nối: {message}",
+  "@fileExplorer.network.browser.disconnectFailed": {
+    "sourceHash": "ac9e8e0"
+  },
+  "fileExplorer.network.login.title": "Đăng nhập vào \"{target}\"",
+  "@fileExplorer.network.login.title": {
+    "sourceHash": "53a4feb"
+  },
+  "fileExplorer.network.login.guestNowAuth": "Bạn đã kết nối với tư cách khách trước đó. Giờ bạn có thể đăng nhập để có thêm quyền truy cập.",
+  "@fileExplorer.network.login.guestNowAuth": {
+    "sourceHash": "4a0ed4d"
+  },
+  "fileExplorer.network.login.connectionModeLegend": "Chế độ kết nối",
+  "@fileExplorer.network.login.connectionModeLegend": {
+    "sourceHash": "72c0943"
+  },
+  "fileExplorer.network.login.connectAsGuest": "Kết nối với tư cách khách",
+  "@fileExplorer.network.login.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "fileExplorer.network.login.signInWithCredentials": "Đăng nhập bằng thông tin đăng nhập",
+  "@fileExplorer.network.login.signInWithCredentials": {
+    "sourceHash": "dda85fa"
+  },
+  "fileExplorer.network.login.username": "Tên người dùng",
+  "@fileExplorer.network.login.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "fileExplorer.network.login.usernamePlaceholderDefault": "Ví dụ: barry",
+  "@fileExplorer.network.login.usernamePlaceholderDefault": {
+    "sourceHash": "1b5b09c"
+  },
+  "fileExplorer.network.login.password": "Mật khẩu",
+  "@fileExplorer.network.login.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileExplorer.network.login.passwordPlaceholder": "Nhập mật khẩu",
+  "@fileExplorer.network.login.passwordPlaceholder": {
+    "sourceHash": "7014aff"
+  },
+  "fileExplorer.network.login.rememberInKeychain": "Ghi nhớ trong Keychain",
+  "@fileExplorer.network.login.rememberInKeychain": {
+    "sourceHash": "3fd7384"
+  },
+  "fileExplorer.network.share.credentialsStoredLocally": "Thông tin đăng nhập được lưu cục bộ (không phát hiện thấy kho khóa hệ thống)",
+  "@fileExplorer.network.share.credentialsStoredLocally": {
+    "sourceHash": "18dd24e"
+  },
+  "fileExplorer.network.share.notFound": "Không tìm thấy mục chia sẻ ''{shareName}'' trên {hostName}",
+  "@fileExplorer.network.share.notFound": {
+    "sourceHash": "bc3d29a"
+  },
+  "fileExplorer.network.share.invalidCredentials": "Tên người dùng hoặc mật khẩu không đúng. Hãy thử lại.",
+  "@fileExplorer.network.share.invalidCredentials": {
+    "sourceHash": "846d862"
+  },
+  "fileExplorer.network.share.authRequired": "Cần xác thực. Hãy nhập thông tin đăng nhập của bạn.",
+  "@fileExplorer.network.share.authRequired": {
+    "sourceHash": "0bb6039"
+  },
+  "fileExplorer.network.share.connectionFailed": "Kết nối không thành công: {reason}",
+  "@fileExplorer.network.share.connectionFailed": {
+    "sourceHash": "800132e"
+  },
+  "fileExplorer.network.share.connecting": "Đang kết nối tới {hostName}...",
+  "@fileExplorer.network.share.connecting": {
+    "sourceHash": "633622a"
+  },
+  "fileExplorer.network.share.connectFailedTitle": "Không thể kết nối tới {hostName}",
+  "@fileExplorer.network.share.connectFailedTitle": {
+    "sourceHash": "06f5c62"
+  },
+  "fileExplorer.network.share.noSharesTitle": "Không có mục chia sẻ nào",
+  "@fileExplorer.network.share.noSharesTitle": {
+    "sourceHash": "56890aa"
+  },
+  "fileExplorer.network.share.noSharesMessage": "Máy chủ này không có mục chia sẻ nào truy cập được, hoặc cần xác thực.",
+  "@fileExplorer.network.share.noSharesMessage": {
+    "sourceHash": "6633416"
+  },
+  "fileExplorer.network.share.backArrow": "← Quay lại",
+  "@fileExplorer.network.share.backArrow": {
+    "sourceHash": "aceb696"
+  },
+  "fileExplorer.network.share.forgetPasswordTooltip": "Xóa mật khẩu đã lưu khỏi Keychain",
+  "@fileExplorer.network.share.forgetPasswordTooltip": {
+    "sourceHash": "f067186"
+  },
+  "fileExplorer.network.share.forgetPassword": "🔑 Quên mật khẩu đã lưu",
+  "@fileExplorer.network.share.forgetPassword": {
+    "sourceHash": "aa3dca3"
+  },
+  "fileExplorer.network.share.shareCount": "{count, plural, other {{countText} mục chia sẻ}}",
+  "@fileExplorer.network.share.shareCount": {
+    "sourceHash": "4cc6002"
+  },
+  "fileExplorer.network.reconnect.once": "một lần",
+  "@fileExplorer.network.reconnect.once": {
+    "sourceHash": "200651a"
+  },
+  "fileExplorer.network.reconnect.twice": "hai lần",
+  "@fileExplorer.network.reconnect.twice": {
+    "sourceHash": "dc8ffdb"
+  },
+  "fileExplorer.network.reconnect.times": "{count, plural, other {{countText} lần}}",
+  "@fileExplorer.network.reconnect.times": {
+    "sourceHash": "bf5fc9c"
+  },
+  "fileExplorer.network.reconnect.finalAttempt": "Đã thử lại {retried}, đây là lần thử cuối. Kết nối sẽ bị bỏ nếu không thành công.",
+  "@fileExplorer.network.reconnect.finalAttempt": {
+    "sourceHash": "7418a78"
+  },
+  "fileExplorer.network.reconnect.willTryMore": "Đã thử lại {retried}, sẽ thử thêm {remaining} sau lần này.",
+  "@fileExplorer.network.reconnect.willTryMore": {
+    "sourceHash": "a7d887a"
+  },
+  "fileExplorer.mtp.connectTimedOut": "Kết nối đã hết thời gian chờ. Thiết bị có thể đang chậm hoặc không phản hồi.",
+  "@fileExplorer.mtp.connectTimedOut": {
+    "sourceHash": "cc01ae7"
+  },
+  "fileExplorer.mtp.exclusiveAccess": "Một ứng dụng khác đang sử dụng thiết bị này. Hãy chạy cách khắc phục ptpcamerad.",
+  "@fileExplorer.mtp.exclusiveAccess": {
+    "sourceHash": "1fac18c"
+  },
+  "fileExplorer.mtp.deviceNotFound": "Không tìm thấy thiết bị. Thiết bị có thể đã bị rút ra.",
+  "@fileExplorer.mtp.deviceNotFound": {
+    "sourceHash": "15d2382"
+  },
+  "fileExplorer.mtp.disconnected": "Thiết bị đã bị ngắt kết nối.",
+  "@fileExplorer.mtp.disconnected": {
+    "sourceHash": "57e823a"
+  },
+  "fileExplorer.mtp.deviceBusy": "Thiết bị đang bận. Hãy thử lại.",
+  "@fileExplorer.mtp.deviceBusy": {
+    "sourceHash": "7199b1d"
+  },
+  "fileExplorer.mtp.noStorage": "Thiết bị không có bộ nhớ nào truy cập được",
+  "@fileExplorer.mtp.noStorage": {
+    "sourceHash": "ff30402"
+  },
+  "fileExplorer.mtp.connecting": "Đang kết nối tới thiết bị...",
+  "@fileExplorer.mtp.connecting": {
+    "sourceHash": "ad85006"
+  },
+  "fileExplorer.mtp.tryAgain": "Thử lại",
+  "@fileExplorer.mtp.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.mounting": "Đang gắn kết {target}...",
+  "@fileExplorer.networkMount.mounting": {
+    "sourceHash": "222982d"
+  },
+  "fileExplorer.networkMount.shareFallback": "mục chia sẻ",
+  "@fileExplorer.networkMount.shareFallback": {
+    "sourceHash": "c3bc45a"
+  },
+  "fileExplorer.networkMount.mountFailedTitle": "Không thể gắn kết mục chia sẻ",
+  "@fileExplorer.networkMount.mountFailedTitle": {
+    "sourceHash": "d59f414"
+  },
+  "fileExplorer.networkMount.tryAgain": "Thử lại",
+  "@fileExplorer.networkMount.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.back": "Quay lại",
+  "@fileExplorer.networkMount.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.smbReauth.savedPasswordFailed": "Mật khẩu đã lưu của bạn không hoạt động. Hãy đăng nhập để kết nối lại.",
+  "@fileExplorer.smbReauth.savedPasswordFailed": {
+    "sourceHash": "4561fa9"
+  },
+  "fileExplorer.smbReauth.passwordFailed": "Vẫn chưa được. Hãy kiểm tra mật khẩu và thử lại.",
+  "@fileExplorer.smbReauth.passwordFailed": {
+    "sourceHash": "5e11a2f"
+  },
+  "fileExplorer.smbReconnect.totalSeconds": "{seconds} giây",
+  "@fileExplorer.smbReconnect.totalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "fileExplorer.smbReconnect.totalMinutes": "{minutes} phút",
+  "@fileExplorer.smbReconnect.totalMinutes": {
+    "sourceHash": "fc339ba"
+  },
+  "fileExplorer.smbReconnect.title": "Đang kết nối lại với máy chủ…",
+  "@fileExplorer.smbReconnect.title": {
+    "sourceHash": "7562773"
+  },
+  "fileExplorer.smbReconnect.progressBarAriaLabel": "Thời gian đến lần thử kết nối lại tiếp theo",
+  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "fileExplorer.smbReconnect.willKeepTrying": "Sẽ tiếp tục thử trong tổng cộng {duration}.",
+  "@fileExplorer.smbReconnect.willKeepTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "fileExplorer.smbReconnect.retryNowTooltip": "Thử kết nối lại ngay.",
+  "@fileExplorer.smbReconnect.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "fileExplorer.smbReconnect.retryNow": "Thử lại ngay",
+  "@fileExplorer.smbReconnect.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "fileExplorer.smbReconnect.cancelTooltip": "Tạm ngừng thử. Kết nối vẫn khả dụng. Chuyển lại để thử lại.",
+  "@fileExplorer.smbReconnect.cancelTooltip": {
+    "sourceHash": "377638b"
+  },
+  "fileExplorer.smbReconnect.cancel": "Hủy",
+  "@fileExplorer.smbReconnect.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.smbReconnect.disconnectTooltip": "Ngừng thử và ngắt kết nối khỏi máy chủ.",
+  "@fileExplorer.smbReconnect.disconnectTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "fileExplorer.smbReconnect.disconnect": "Ngắt kết nối",
+  "@fileExplorer.smbReconnect.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.title": "Không thể truy cập {path}",
+  "@fileExplorer.unreachable.title": {
+    "sourceHash": "586e44c"
+  },
+  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr đã thử kết nối lại vài lần nhưng máy chủ vẫn chưa trở lại. Kết nối hiện vẫn khả dụng. Hãy thử lại, hoặc ngắt kết nối để bỏ nó.",
+  "@fileExplorer.unreachable.detailSmbGaveUp": {
+    "sourceHash": "7d8c5fc"
+  },
+  "fileExplorer.unreachable.detailTimeout": "Ổ đĩa cho đường dẫn này đã không phản hồi kịp thời. Đây có thể là một ổ đĩa mạng hiện không khả dụng.",
+  "@fileExplorer.unreachable.detailTimeout": {
+    "sourceHash": "61bf814"
+  },
+  "fileExplorer.unreachable.retrying": "Đang thử lại...",
+  "@fileExplorer.unreachable.retrying": {
+    "sourceHash": "84a657b"
+  },
+  "fileExplorer.unreachable.retry": "Thử lại",
+  "@fileExplorer.unreachable.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.unreachable.disconnect": "Ngắt kết nối",
+  "@fileExplorer.unreachable.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.openHome": "Mở thư mục chính",
+  "@fileExplorer.unreachable.openHome": {
+    "sourceHash": "a178b4d"
+  },
+  "fileExplorer.clipboard.copied": "Đã sao chép {countText} {count, plural, other {mục}}",
+  "@fileExplorer.clipboard.copied": {
+    "sourceHash": "1c25075"
+  },
+  "fileExplorer.clipboard.cutReady": "{countText} {count, plural, other {mục}} sẵn sàng để di chuyển. Dán để hoàn tất.",
+  "@fileExplorer.clipboard.cutReady": {
+    "sourceHash": "846d8af"
+  },
+  "fileExplorer.clipboard.useF5FromMtp": "Dùng F5 để sao chép tệp từ thiết bị MTP",
+  "@fileExplorer.clipboard.useF5FromMtp": {
+    "sourceHash": "e0dd2b5"
+  },
+  "fileExplorer.clipboard.useF6FromMtp": "Dùng F6 để di chuyển tệp từ thiết bị MTP",
+  "@fileExplorer.clipboard.useF6FromMtp": {
+    "sourceHash": "cd6f83f"
+  },
+  "fileExplorer.clipboard.useF5ToMtp": "Dùng F5 để sao chép tệp vào thiết bị MTP",
+  "@fileExplorer.clipboard.useF5ToMtp": {
+    "sourceHash": "8c20d0e"
+  },
+  "fileExplorer.clipboard.empty": "Không có tệp nào trên bảng nhớ tạm. Hãy sao chép tệp trước bằng ⌘C.",
+  "@fileExplorer.clipboard.empty": {
+    "sourceHash": "0cbe304"
+  },
+  "fileExplorer.tabs.limitReached": "Đã đạt giới hạn thẻ",
+  "@fileExplorer.tabs.limitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "fileExplorer.tabs.closePinnedConfirm": "Thẻ này đã được ghim. Vẫn đóng?",
+  "@fileExplorer.tabs.closePinnedConfirm": {
+    "sourceHash": "d5757f9"
+  },
+  "fileExplorer.tabs.closePinnedTitle": "Đóng thẻ đã ghim",
+  "@fileExplorer.tabs.closePinnedTitle": {
+    "sourceHash": "5d22e58"
+  },
+  "fileExplorer.readOnly.volumeTitle": "Ổ đĩa chỉ đọc",
+  "@fileExplorer.readOnly.volumeTitle": {
+    "sourceHash": "e2d3bf1"
+  },
+  "fileExplorer.readOnly.renameMessage": "Đây là ổ đĩa chỉ đọc. Không thể đổi tên ở đây.",
+  "@fileExplorer.readOnly.renameMessage": {
+    "sourceHash": "2f68994"
+  },
+  "fileExplorer.readOnly.mkdirMessage": "Đây là ổ đĩa chỉ đọc. Không thể tạo thư mục ở đây.",
+  "@fileExplorer.readOnly.mkdirMessage": {
+    "sourceHash": "01957f0"
+  },
+  "fileExplorer.readOnly.mkfileMessage": "Đây là ổ đĩa chỉ đọc. Không thể tạo tệp ở đây.",
+  "@fileExplorer.readOnly.mkfileMessage": {
+    "sourceHash": "c5c28e2"
+  },
+  "fileExplorer.readOnly.deleteMessage": "Đây là ổ đĩa chỉ đọc. Không thể xóa tệp ở đây.",
+  "@fileExplorer.readOnly.deleteMessage": {
+    "sourceHash": "965a635"
+  },
+  "fileExplorer.readOnly.deviceTitle": "Thiết bị chỉ đọc",
+  "@fileExplorer.readOnly.deviceTitle": {
+    "sourceHash": "3f79690"
+  },
+  "fileExplorer.readOnly.deviceMessage": "\"{name}\" ở chế độ chỉ đọc. Bạn có thể sao chép tệp từ nó, nhưng không thể sao chép vào nó.",
+  "@fileExplorer.readOnly.deviceMessage": {
+    "sourceHash": "039488f"
+  },
+  "fileExplorer.rename.hiddenAfterRename": "Tệp của bạn đã biến mất khỏi khung nhìn vì các tệp ẩn không được hiển thị.",
+  "@fileExplorer.rename.hiddenAfterRename": {
+    "sourceHash": "445d02a"
+  },
+  "fileExplorer.columns.name": "Tên",
+  "@fileExplorer.columns.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.columns.ext": "Đuôi",
+  "@fileExplorer.columns.ext": {
+    "sourceHash": "8c92eec"
+  },
+  "fileExplorer.columns.size": "Kích cỡ",
+  "@fileExplorer.columns.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.columns.modified": "Đã sửa đổi",
+  "@fileExplorer.columns.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.columns.created": "Đã tạo",
+  "@fileExplorer.columns.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.columns.git": "Git",
+  "@fileExplorer.columns.git": {
+    "sourceHash": "b949c92"
+  },
+  "fileExplorer.columns.gitTitle": "Trạng thái Git của từng tệp",
+  "@fileExplorer.columns.gitTitle": {
+    "sourceHash": "c4cc002"
+  },
+  "fileExplorer.list.empty": "Thư mục trống",
+  "@fileExplorer.list.empty": {
+    "sourceHash": "ca1fd45"
+  },
+  "fileExplorer.list.fileListAriaLabel": "Danh sách tệp",
+  "@fileExplorer.list.fileListAriaLabel": {
+    "sourceHash": "0728b8e"
+  },
+  "fileExplorer.list.sortColumnsAriaLabel": "Sắp xếp cột",
+  "@fileExplorer.list.sortColumnsAriaLabel": {
+    "sourceHash": "21f76f8"
+  },
+  "fileExplorer.dirSize.updatingIndexTooltip": "Đang cập nhật chỉ mục: kích cỡ có thể thay đổi.",
+  "@fileExplorer.dirSize.updatingIndexTooltip": {
+    "sourceHash": "2689358"
+  },
+  "fileExplorer.dirSize.scanProgressTooltip": "Kích cỡ sẽ xuất hiện khi quá trình quét tiến triển",
+  "@fileExplorer.dirSize.scanProgressTooltip": {
+    "sourceHash": "8151629"
+  },
+  "fileExplorer.dirSize.contentLabel": "Nội dung",
+  "@fileExplorer.dirSize.contentLabel": {
+    "sourceHash": "47bd290"
+  },
+  "fileExplorer.dirSize.onDiskLabel": "Trên đĩa",
+  "@fileExplorer.dirSize.onDiskLabel": {
+    "sourceHash": "00ca4da"
+  },
+  "fileExplorer.dirSize.noPerms": "'<'không có quyền>",
+  "@fileExplorer.dirSize.noPerms": {
+    "sourceHash": "bf8fb9d"
+  },
+  "fileExplorer.dirSize.noPermsTooltip": "Cmdr không có quyền đọc thư mục này",
+  "@fileExplorer.dirSize.noPermsTooltip": {
+    "sourceHash": "4920b4f"
+  },
+  "fileExplorer.dirSize.noFiles": "Không có tệp",
+  "@fileExplorer.dirSize.noFiles": {
+    "sourceHash": "c219d96"
+  },
+  "fileExplorer.dirSize.noFolders": "không có thư mục",
+  "@fileExplorer.dirSize.noFolders": {
+    "sourceHash": "055fa42"
+  },
+  "fileExplorer.dirSize.fileCount": "{count, plural, other {{countText} tệp}}",
+  "@fileExplorer.dirSize.fileCount": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.dirSize.folderCount": "{count, plural, other {{countText} thư mục}}",
+  "@fileExplorer.dirSize.folderCount": {
+    "sourceHash": "3c46f04"
+  },
+  "fileExplorer.dirSize.updatingIndexLine": "Đang cập nhật chỉ mục, nên kích cỡ có thể thay đổi.",
+  "@fileExplorer.dirSize.updatingIndexLine": {
+    "sourceHash": "ddb01a2"
+  },
+  "fileExplorer.dirSize.dirPlaceholder": "'<'thư mục>",
+  "@fileExplorer.dirSize.dirPlaceholder": {
+    "sourceHash": "1cb5400"
+  },
+  "fileExplorer.dirSize.mismatchTooltipPrefix": "Kích cỡ nội dung và kích cỡ trên đĩa chênh lệch đáng kể.",
+  "@fileExplorer.dirSize.mismatchTooltipPrefix": {
+    "sourceHash": "3ff9147"
+  },
+  "fileExplorer.selectionTooltip.selected": "Đã chọn",
+  "@fileExplorer.selectionTooltip.selected": {
+    "sourceHash": "57fd7a0"
+  },
+  "fileExplorer.selectionTooltip.ofTotal": "Trên tổng",
+  "@fileExplorer.selectionTooltip.ofTotal": {
+    "sourceHash": "1269b5a"
+  },
+  "fileExplorer.selectionTooltip.onDiskHeader": "Trên đĩa:",
+  "@fileExplorer.selectionTooltip.onDiskHeader": {
+    "sourceHash": "9795f99"
+  },
+  "fileExplorer.entry.brokenSymlink": "(symlink hỏng)",
+  "@fileExplorer.entry.brokenSymlink": {
+    "sourceHash": "a7ffd43"
+  },
+  "fileExplorer.entry.permissionDenied": "(không có quyền)",
+  "@fileExplorer.entry.permissionDenied": {
+    "sourceHash": "88cb526"
+  },
+  "fileExplorer.dateTooltip.created": "Đã tạo",
+  "@fileExplorer.dateTooltip.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.dateTooltip.lastOpened": "Lần mở gần nhất",
+  "@fileExplorer.dateTooltip.lastOpened": {
+    "sourceHash": "e300685"
+  },
+  "fileExplorer.dateTooltip.lastMoved": "Lần di chuyển gần nhất (\"đã thêm\")",
+  "@fileExplorer.dateTooltip.lastMoved": {
+    "sourceHash": "450ebc0"
+  },
+  "fileExplorer.dateTooltip.lastModified": "Lần sửa đổi gần nhất",
+  "@fileExplorer.dateTooltip.lastModified": {
+    "sourceHash": "0fe1058"
+  },
+  "fileExplorer.selectionInfo.nothingHere": "Không có gì ở đây.",
+  "@fileExplorer.selectionInfo.nothingHere": {
+    "sourceHash": "140a431"
+  },
+  "fileExplorer.selectionInfo.dir": "THƯ MỤC",
+  "@fileExplorer.selectionInfo.dir": {
+    "sourceHash": "d313ad9"
+  },
+  "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Kích cỡ chưa sẵn sàng",
+  "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
+    "sourceHash": "4f2542d"
+  },
+  "fileExplorer.selectionInfo.sizeUpdatingAriaLabel": "Đang cập nhật kích cỡ",
+  "@fileExplorer.selectionInfo.sizeUpdatingAriaLabel": {
+    "sourceHash": "f237144"
+  },
+  "fileExplorer.selectionInfo.indexUpdatingTooltip": "Đang cập nhật chỉ mục, kích cỡ có thể thay đổi.",
+  "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
+    "sourceHash": "2f69a1b"
+  },
+  "fileExplorer.selectionInfo.symlinkHint": "Thư mục này chứa các symlink. Nội dung được liên kết bằng symlink không được tính vào tổng để tránh đếm trùng.",
+  "@fileExplorer.selectionInfo.symlinkHint": {
+    "sourceHash": "414ed75"
+  },
+  "fileExplorer.selectionInfo.noSelectionFiles": "{count, plural, other {{countText} tệp}}",
+  "@fileExplorer.selectionInfo.noSelectionFiles": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.selectionInfo.noSelectionDirs": " và {count, plural, other {{countText} thư mục}}",
+  "@fileExplorer.selectionInfo.noSelectionDirs": {
+    "sourceHash": "e1259ef"
+  },
+  "fileExplorer.selectionInfo.noSelection": "Chưa chọn gì, {files}{dirs}.",
+  "@fileExplorer.selectionInfo.noSelection": {
+    "sourceHash": "beea8ac"
+  },
+  "fileExplorer.tabBar.paneTabsAriaLabel": "Thẻ của khung {paneId}",
+  "@fileExplorer.tabBar.paneTabsAriaLabel": {
+    "sourceHash": "d641870"
+  },
+  "fileExplorer.tabBar.unreachableAriaLabel": "Không truy cập được",
+  "@fileExplorer.tabBar.unreachableAriaLabel": {
+    "sourceHash": "abaa46a"
+  },
+  "fileExplorer.tabBar.pinnedAriaLabel": "Đã ghim",
+  "@fileExplorer.tabBar.pinnedAriaLabel": {
+    "sourceHash": "f20c879"
+  },
+  "fileExplorer.tabBar.closeTabTooltip": "Đóng thẻ",
+  "@fileExplorer.tabBar.closeTabTooltip": {
+    "sourceHash": "50a3f95"
+  },
+  "fileExplorer.tabBar.newTabAriaLabel": "Thẻ mới",
+  "@fileExplorer.tabBar.newTabAriaLabel": {
+    "sourceHash": "1e08fda"
+  },
+  "fileExplorer.summary.fileNoun": "{count, plural, other {tệp}}",
+  "@fileExplorer.summary.fileNoun": {
+    "sourceHash": "46012b1"
+  },
+  "fileExplorer.summary.dirNoun": "{count, plural, other {thư mục}}",
+  "@fileExplorer.summary.dirNoun": {
+    "sourceHash": "1c5273d"
+  },
+  "fileExplorer.summary.of": "trên",
+  "@fileExplorer.summary.of": {
+    "sourceHash": "28391d3"
+  },
+  "fileExplorer.summary.percentSelectedIn": "({percent}%) đã chọn trong",
+  "@fileExplorer.summary.percentSelectedIn": {
+    "sourceHash": "7e01a02"
+  },
+  "fileExplorer.summary.and": "và",
+  "@fileExplorer.summary.and": {
+    "sourceHash": "6201111"
+  },
+  "fileExplorer.summary.selectedSuffix": "đã chọn",
+  "@fileExplorer.summary.selectedSuffix": {
+    "sourceHash": "d7cbbb6"
+  },
+  "fileExplorer.renameConflict.title": "Đã có tệp trùng tên này",
+  "@fileExplorer.renameConflict.title": {
+    "sourceHash": "92ae292"
+  },
+  "fileExplorer.renameConflict.description": "\"{name}\" đã tồn tại trong thư mục này. Bạn muốn làm gì?",
+  "@fileExplorer.renameConflict.description": {
+    "sourceHash": "ded53e8"
+  },
+  "fileExplorer.renameConflict.yours": "{name} (của bạn)",
+  "@fileExplorer.renameConflict.yours": {
+    "sourceHash": "e907024"
+  },
+  "fileExplorer.renameConflict.existing": "{name} (hiện có)",
+  "@fileExplorer.renameConflict.existing": {
+    "sourceHash": "0ff925b"
+  },
+  "fileExplorer.renameConflict.size": "Kích cỡ",
+  "@fileExplorer.renameConflict.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.renameConflict.modified": "Đã sửa đổi",
+  "@fileExplorer.renameConflict.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.renameConflict.overwriteTrash": "Ghi đè và chuyển tệp cũ vào thùng rác",
+  "@fileExplorer.renameConflict.overwriteTrash": {
+    "sourceHash": "e0192f6"
+  },
+  "fileExplorer.renameConflict.overwriteDelete": "Ghi đè và xóa tệp cũ",
+  "@fileExplorer.renameConflict.overwriteDelete": {
+    "sourceHash": "02093d5"
+  },
+  "fileExplorer.renameConflict.cancel": "Hủy",
+  "@fileExplorer.renameConflict.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.renameConflict.continueRenaming": "Tiếp tục đổi tên",
+  "@fileExplorer.renameConflict.continueRenaming": {
+    "sourceHash": "96480ec"
+  },
+  "fileExplorer.extensionChange.title": "Đổi đuôi tệp?",
+  "@fileExplorer.extensionChange.title": {
+    "sourceHash": "799828d"
+  },
+  "fileExplorer.extensionChange.description": "Bạn có chắc muốn đổi đuôi từ \".{oldExt}\" sang \".{newExt}\"? Tệp của bạn có thể mở bằng một ứng dụng khác trong lần mở tới.",
+  "@fileExplorer.extensionChange.description": {
+    "sourceHash": "d0f428b"
+  },
+  "fileExplorer.extensionChange.alwaysAllow": "Luôn cho phép đổi đuôi tệp",
+  "@fileExplorer.extensionChange.alwaysAllow": {
+    "sourceHash": "52a5c5e"
+  },
+  "fileExplorer.extensionChange.keepOld": "Giữ .{oldExt}",
+  "@fileExplorer.extensionChange.keepOld": {
+    "sourceHash": "08808e4"
+  },
+  "fileExplorer.extensionChange.useNew": "Dùng .{newExt}",
+  "@fileExplorer.extensionChange.useNew": {
+    "sourceHash": "b1c0e92"
+  },
+  "fileExplorer.quickLookHint.spaceSelects": "Trong Cmdr, <space></space> theo mặc định sẽ chọn tệp đang ở dưới con trỏ.",
+  "@fileExplorer.quickLookHint.spaceSelects": {
+    "sourceHash": "192689a"
+  },
+  "fileExplorer.quickLookHint.finderComparison": "Nếu bạn đến từ Finder, điều này có thể lạ vì Finder kích hoạt tác vụ \"Xem nhanh\" khi nhấn <space></space>.",
+  "@fileExplorer.quickLookHint.finderComparison": {
+    "sourceHash": "2089192"
+  },
+  "fileExplorer.quickLookHint.quickView": "Trong Cmdr, bạn có thể kích hoạt xem nhanh qua <key></key>. (<key></key> cũng hoạt động trong Finder nhé!)",
+  "@fileExplorer.quickLookHint.quickView": {
+    "sourceHash": "7e4cf33"
+  },
+  "fileExplorer.quickLookHint.enterOpens": "Bạn cũng có thể dùng <enter></enter> để mở tệp trong ứng dụng mặc định.",
+  "@fileExplorer.quickLookHint.enterOpens": {
+    "sourceHash": "5c1f2a3"
+  },
+  "fileExplorer.quickLookHint.configurable": "Tất cả điều này có thể tùy chỉnh trong <settingsLink>Cài đặt > Phím tắt</settingsLink>.",
+  "@fileExplorer.quickLookHint.configurable": {
+    "sourceHash": "a382250"
+  },
+  "fileExplorer.quickLookHint.dontShowAgain": "Không hiển thị lại",
+  "@fileExplorer.quickLookHint.dontShowAgain": {
+    "sourceHash": "d98ab77"
+  },
+  "fileExplorer.navigation.groupFavorites": "Mục ưa thích",
+  "@fileExplorer.navigation.groupFavorites": {
+    "sourceHash": "7a1f2a8"
+  },
+  "fileExplorer.navigation.groupVolumes": "Ổ đĩa",
+  "@fileExplorer.navigation.groupVolumes": {
+    "sourceHash": "53a480e"
+  },
+  "fileExplorer.navigation.groupCloud": "Đám mây",
+  "@fileExplorer.navigation.groupCloud": {
+    "sourceHash": "b977b95"
+  },
+  "fileExplorer.navigation.groupMobile": "Thiết bị di động",
+  "@fileExplorer.navigation.groupMobile": {
+    "sourceHash": "cbaad3c"
+  },
+  "fileExplorer.navigation.groupNetwork": "Mạng",
+  "@fileExplorer.navigation.groupNetwork": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolume": "Mạng",
+  "@fileExplorer.navigation.networkVolume": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolumeDisabled": "Mạng (đã tắt)",
+  "@fileExplorer.navigation.networkVolumeDisabled": {
+    "sourceHash": "4ccfa47"
+  },
+  "fileExplorer.navigation.searchResultsVolume": "Kết quả tìm kiếm",
+  "@fileExplorer.navigation.searchResultsVolume": {
+    "sourceHash": "e978b00"
+  },
+  "fileExplorer.navigation.volumeFallback": "Ổ đĩa",
+  "@fileExplorer.navigation.volumeFallback": {
+    "sourceHash": "b10fb96"
+  },
+  "fileExplorer.navigation.favoritesEmpty": "(Mục ưa thích của bạn sẽ hiển thị ở đây)",
+  "@fileExplorer.navigation.favoritesEmpty": {
+    "sourceHash": "b4f099e"
+  },
+  "fileExplorer.navigation.favoriteTooltip": "{path}\nKéo để sắp xếp lại, hoặc {reorder}. Bấm chuột phải để đổi tên hoặc xóa.",
+  "@fileExplorer.navigation.favoriteTooltip": {
+    "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.renameFavoriteAriaLabel": "Đổi tên mục ưa thích",
+  "@fileExplorer.navigation.renameFavoriteAriaLabel": {
+    "sourceHash": "5f4fcbb"
+  },
+  "fileExplorer.navigation.removeFavoriteFailed": "Không thể xóa mục ưa thích đó. Thử lại?",
+  "@fileExplorer.navigation.removeFavoriteFailed": {
+    "sourceHash": "181bf36"
+  },
+  "fileExplorer.navigation.renameFavoriteFailed": "Không thể đổi tên mục ưa thích đó. Thử lại?",
+  "@fileExplorer.navigation.renameFavoriteFailed": {
+    "sourceHash": "33e06cd"
+  },
+  "fileExplorer.navigation.reorderFavoritesFailed": "Không thể sắp xếp lại mục ưa thích. Thử lại?",
+  "@fileExplorer.navigation.reorderFavoritesFailed": {
+    "sourceHash": "1b16941"
+  },
+  "fileExplorer.navigation.connectionTooltipDirect": "Đã kết nối trực tiếp để thao tác tệp nhanh",
+  "@fileExplorer.navigation.connectionTooltipDirect": {
+    "sourceHash": "a69a3ad"
+  },
+  "fileExplorer.navigation.connectionTooltipSystem": "Đang dùng kết nối hệ thống. Hãy dùng mục menu \"Kết nối trực tiếp để truy cập nhanh hơn\" để truy cập nhanh hơn.",
+  "@fileExplorer.navigation.connectionTooltipSystem": {
+    "sourceHash": "0cbfa05"
+  },
+  "fileExplorer.navigation.connectDirectly": "Kết nối trực tiếp để truy cập nhanh hơn",
+  "@fileExplorer.navigation.connectDirectly": {
+    "sourceHash": "3fbb55a"
+  },
+  "fileExplorer.navigation.connectingDirectly": "Đang kết nối trực tiếp...",
+  "@fileExplorer.navigation.connectingDirectly": {
+    "sourceHash": "2c431fc"
+  },
+  "fileExplorer.navigation.connectingWithSavedPassword": "Đang kết nối bằng mật khẩu đã lưu...",
+  "@fileExplorer.navigation.connectingWithSavedPassword": {
+    "sourceHash": "1cb249f"
+  },
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr có thể dùng lại mật khẩu mà macOS đã lưu cho \"{displayName}\". Bạn sẽ thấy một lời nhắc hệ thống xin phép truy cập Keychain. Điều đó là bình thường, nên hãy bấm Cho phép.",
+  "@fileExplorer.navigation.useSavedPasswordMessage": {
+    "sourceHash": "6bb2c1d"
+  },
+  "fileExplorer.navigation.useSavedPasswordTitle": "Dùng mật khẩu đã lưu?",
+  "@fileExplorer.navigation.useSavedPasswordTitle": {
+    "sourceHash": "44b60f6"
+  },
+  "fileExplorer.navigation.useSavedPasswordConfirm": "Dùng mật khẩu đã lưu",
+  "@fileExplorer.navigation.useSavedPasswordConfirm": {
+    "sourceHash": "95f07b4"
+  },
+  "fileExplorer.navigation.useSavedPasswordCancel": "Nhập mật khẩu thay thế",
+  "@fileExplorer.navigation.useSavedPasswordCancel": {
+    "sourceHash": "d54c488"
+  },
+  "fileExplorer.navigation.readOnlyTooltip": "Chỉ đọc",
+  "@fileExplorer.navigation.readOnlyTooltip": {
+    "sourceHash": "72bb908"
+  },
+  "fileExplorer.navigation.volumeOptionsTooltip": "Tùy chọn ổ đĩa",
+  "@fileExplorer.navigation.volumeOptionsTooltip": {
+    "sourceHash": "570fb94"
+  },
+  "fileExplorer.navigation.ejectVolumeAriaLabel": "Tháo {name}",
+  "@fileExplorer.navigation.ejectVolumeAriaLabel": {
+    "sourceHash": "61db18b"
+  },
+  "fileExplorer.navigation.ejectBusyTooltip": "Không thể tháo trong khi có thao tác đang diễn ra trên thiết bị này",
+  "@fileExplorer.navigation.ejectBusyTooltip": {
+    "sourceHash": "7165c58"
+  },
+  "fileExplorer.navigation.usbSpeed": "{label} (Tối đa {mbps} MB/s)",
+  "@fileExplorer.navigation.usbSpeed": {
+    "sourceHash": "07cb80b"
+  },
+  "fileExplorer.navigation.usbSpeedNegotiated": "Được thương lượng cho cáp, cổng, và thiết bị này",
+  "@fileExplorer.navigation.usbSpeedNegotiated": {
+    "sourceHash": "3731939"
+  },
+  "fileExplorer.navigation.spaceRetryingAuto": "Đang tự động thử lại…",
+  "@fileExplorer.navigation.spaceRetryingAuto": {
+    "sourceHash": "aa9f4b8"
+  },
+  "fileExplorer.navigation.spaceRetrying": "Đang thử lại…",
+  "@fileExplorer.navigation.spaceRetrying": {
+    "sourceHash": "a16c8b1"
+  },
+  "fileExplorer.navigation.spaceRetryingText": "Đang thử lại",
+  "@fileExplorer.navigation.spaceRetryingText": {
+    "sourceHash": "f8fe6f8"
+  },
+  "fileExplorer.navigation.spaceStillUnavailable": "Vẫn không khả dụng. Bấm để thử lại",
+  "@fileExplorer.navigation.spaceStillUnavailable": {
+    "sourceHash": "1c37064"
+  },
+  "fileExplorer.navigation.spaceFetchFailed": "Không thể lấy dung lượng đĩa. Bấm để thử lại",
+  "@fileExplorer.navigation.spaceFetchFailed": {
+    "sourceHash": "6fe88d7"
+  },
+  "fileExplorer.navigation.spaceUnavailableText": "Không khả dụng",
+  "@fileExplorer.navigation.spaceUnavailableText": {
+    "sourceHash": "ca18449"
+  },
+  "fileExplorer.navigation.volumesStillUnreachable": "Vẫn không truy cập được. Hãy thử lại sau",
+  "@fileExplorer.navigation.volumesStillUnreachable": {
+    "sourceHash": "e4661d2"
+  },
+  "fileExplorer.navigation.volumesMayBeMissing": "Một số ổ đĩa có thể bị thiếu",
+  "@fileExplorer.navigation.volumesMayBeMissing": {
+    "sourceHash": "a5b5792"
+  },
+  "fileExplorer.navigation.refreshVolumeList": "Làm mới danh sách ổ đĩa",
+  "@fileExplorer.navigation.refreshVolumeList": {
+    "sourceHash": "f668a8c"
+  },
+  "fileExplorer.navigation.driveIndex.ariaLabel": "Trạng thái chỉ mục ổ đĩa",
+  "@fileExplorer.navigation.driveIndex.ariaLabel": {
+    "sourceHash": "ff831be"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "Lập chỉ mục đang tắt cho ổ đĩa này. Hãy bật để xem kích cỡ thư mục và tìm kiếm tại đây.",
+  "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
+    "sourceHash": "61d11e9"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanning": "Đang lập chỉ mục ổ đĩa này…",
+  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
+    "sourceHash": "a17d737"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanningCount": "Đang lập chỉ mục… {countText} {count, plural, other {tệp}}",
+  "@fileExplorer.navigation.driveIndex.tooltipScanningCount": {
+    "sourceHash": "1449e6e"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": "Đang lập chỉ mục… {countText} {count, plural, other {tệp}} · {elapsed}",
+  "@fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": {
+    "sourceHash": "e4344e1"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFresh": "Đã lập chỉ mục và cập nhật. Lần lập chỉ mục gần nhất {date}, mất {duration}.",
+  "@fileExplorer.navigation.driveIndex.tooltipFresh": {
+    "sourceHash": "d036851"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFreshNoScan": "Đã lập chỉ mục và cập nhật.",
+  "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
+    "sourceHash": "fedc5ae"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStale": "Ổ đĩa này có thể đã thay đổi khi nó bị ngắt kết nối. Kích cỡ và tìm kiếm có thể hơi lệch. Hãy quét lại để làm mới.",
+  "@fileExplorer.navigation.driveIndex.tooltipStale": {
+    "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.menuEnable": "Bật lập chỉ mục cho ổ đĩa này",
+  "@fileExplorer.navigation.driveIndex.menuEnable": {
+    "sourceHash": "4e06151"
+  },
+  "fileExplorer.navigation.driveIndex.menuRescan": "Quét lại ngay",
+  "@fileExplorer.navigation.driveIndex.menuRescan": {
+    "sourceHash": "c07d16a"
+  },
+  "fileExplorer.navigation.driveIndex.menuDisable": "Tắt lập chỉ mục cho ổ đĩa này",
+  "@fileExplorer.navigation.driveIndex.menuDisable": {
+    "sourceHash": "d14cf11"
+  },
+  "fileExplorer.navigation.driveIndex.menuStop": "Dừng lập chỉ mục",
+  "@fileExplorer.navigation.driveIndex.menuStop": {
+    "sourceHash": "70ae907"
+  },
+  "fileExplorer.navigation.driveIndex.footer": "Lần lập chỉ mục gần nhất: {date} · mất {duration}",
+  "@fileExplorer.navigation.driveIndex.footer": {
+    "sourceHash": "9877397"
+  },
+  "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} phút, {seconds} giây",
+  "@fileExplorer.navigation.driveIndex.durationMinSec": {
+    "sourceHash": "57a57d1"
+  },
+  "fileExplorer.navigation.driveIndex.durationSec": "{seconds} giây",
+  "@fileExplorer.navigation.driveIndex.durationSec": {
+    "sourceHash": "fde82d3"
+  },
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr không thể kết nối trực tiếp tới {name}, điều cần thiết để lập chỉ mục mục chia sẻ này. Hãy kiểm tra mục chia sẻ có truy cập được không và thử lại.",
+  "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
+    "sourceHash": "e7ac9b4"
+  },
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} đã bị ngắt kết nối. Hãy kết nối lại, rồi bật lập chỉ mục.",
+  "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
+    "sourceHash": "0cf83a1"
+  },
+  "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr không thể lập chỉ mục {name} ngay lúc này. Hãy kết nối lại ổ đĩa và thử lại.",
+  "@fileExplorer.navigation.driveIndex.refusedGeneric": {
+    "sourceHash": "ac46209"
+  }
+}

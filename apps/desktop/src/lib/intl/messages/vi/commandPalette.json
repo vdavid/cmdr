@@ -1,0 +1,26 @@
+{
+  "commandPalette.searchPlaceholder": "Tìm lệnh...",
+  "@commandPalette.searchPlaceholder": {
+    "sourceHash": "dd6c6ab"
+  },
+  "commandPalette.searchAriaLabel": "Tìm lệnh",
+  "@commandPalette.searchAriaLabel": {
+    "sourceHash": "00ff739"
+  },
+  "commandPalette.noResults": "Không tìm thấy lệnh nào",
+  "@commandPalette.noResults": {
+    "sourceHash": "eac0d09"
+  },
+  "commandPalette.resultsAriaLabel": "Lệnh",
+  "@commandPalette.resultsAriaLabel": {
+    "sourceHash": "b269dc4"
+  },
+  "commandPalette.groupRecent": "Gần đây",
+  "@commandPalette.groupRecent": {
+    "sourceHash": "690dbe9"
+  },
+  "commandPalette.groupAll": "Tất cả lệnh",
+  "@commandPalette.groupAll": {
+    "sourceHash": "f9c4287"
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "indexing.status.ariaLabel": "Status da indexação do disco",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.scan.label": "Examinando seu disco...",
+  "@indexing.scan.label": {
+    "sourceHash": "e7d6d6a"
+  },
+  "indexing.scan.labelFirst": "Examinando seu disco (primeira análise)...",
+  "@indexing.scan.labelFirst": {
+    "sourceHash": "2431d85"
+  },
+  "indexing.scan.counters": "{entriesText} itens, {dirsText} pastas",
+  "@indexing.scan.counters": {
+    "sourceHash": "fd4d242"
+  },
+  "indexing.scan.etaRough": "cerca de {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.aggregation.savingEntries": "Salvando itens...",
+  "@indexing.aggregation.savingEntries": {
+    "sourceHash": "16fa321"
+  },
+  "indexing.aggregation.loading": "Carregando pastas...",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "37b34d4"
+  },
+  "indexing.aggregation.sorting": "Ordenando pastas...",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "9018980"
+  },
+  "indexing.aggregation.computing": "Calculando tamanhos das pastas...",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "ee6ba9a"
+  },
+  "indexing.aggregation.writing": "Salvando tamanhos das pastas...",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "ff59fa5"
+  },
+  "indexing.replay.label": "Atualizando o índice...",
+  "@indexing.replay.label": {
+    "sourceHash": "2920134"
+  },
+  "indexing.replay.detail": "{eventsText} eventos processados",
+  "@indexing.replay.detail": {
+    "sourceHash": "e80c077"
+  },
+  "indexing.eta.almostDone": "Quase pronto",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.secondsLeft": "{secondsText}s restantes",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "{minutesText}min restantes",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.rescan.staleIndex": "O índice do seu disco está desatualizado. Parece que o app não foi aberto há um tempo. Examinando o disco de novo para colocar tudo em dia.",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "ddac60e"
+  },
+  "indexing.rescan.journalGap": "O registro de alterações de arquivos do sistema não vai longe o suficiente. Examinando o disco de novo para reconstruir o índice.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "5f1075b"
+  },
+  "indexing.rescan.replayOverflow": "Muitos arquivos mudaram desde a última vez. Examinando o disco de novo em vez de reaplicar as mudanças uma a uma.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.tooManySubdirRescans": "Muitas pastas mudaram bastante desde a última vez. Examinando o disco de novo para deixar tudo em dia.",
+  "@indexing.rescan.tooManySubdirRescans": {
+    "sourceHash": "06d04a0"
+  },
+  "indexing.rescan.watcherStartFailed": "Não foi possível iniciar o monitor de alterações de arquivos. Examinando o disco de novo para colocar o índice em dia.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "831e44d"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "A intensa atividade no sistema de arquivos sobrecarregou o buffer de eventos. Examinando o disco de novo para manter tudo preciso.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "A análise anterior não terminou (o app pode ter sido fechado). Reiniciando a análise do zero.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "3ca5217"
+  },
+  "indexing.rescan.watcherChannelOverflow": "Uma rajada de atividade no sistema de arquivos sobrecarregou o canal do monitor. Examinando o disco de novo para manter tudo preciso.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Examinando o disco de novo para manter o índice preciso.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.firstConnect.title": "Indexar {name}?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "O Cmdr pode indexar este disco em segundo plano para que os tamanhos das pastas e a busca funcionem aqui. Isso só roda enquanto o disco está conectado.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Ativar indexação",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "Não perguntar de novo para este disco",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "99bed41"
+  },
+  "indexing.firstConnect.silenceAll": "Não perguntar de novo para nenhum disco",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "511c970"
+  },
+  "indexing.staleDialog.title": "O índice deste disco pode estar desatualizado",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "21a78ee"
+  },
+  "indexing.staleDialog.body": "Enquanto {name} esteve desconectado, arquivos nele podem ter mudado. Os tamanhos das pastas e os resultados da busca podem ficar um pouco imprecisos até você examinar o disco de novo. O status amarelo ao lado do disco sempre mostra quando isso acontece, e uma nova análise o atualiza.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.neverShowAgain": "Nunca mais mostrar",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Fechar",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

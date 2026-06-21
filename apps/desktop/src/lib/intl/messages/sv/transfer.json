@@ -1,0 +1,42 @@
+{
+  "transfer.trash": "Flyttade {countText} {count, plural, one {fil} other {filer}} till papperskorgen",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "Radering klar: {countText} {count, plural, one {fil} other {filer}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {fil} other {filer}} och {foldersText} {folders, plural, one {mapp} other {mappar}}} foldersOnly {{foldersText} {folders, plural, one {mapp} other {mappar}}} other {{filesText} {files, plural, one {fil} other {filer}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "{verb, select, copy {Kopierade} other {Flyttade}} {phrase}.",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "{verb, select, copy {Kopierade} other {Flyttade}} {phrase}, hoppade över {skippedText} {skipped, plural, one {fil} other {filer}} (fanns redan på målet).",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {Kopiering} other {Flyttning}} klar: {verb, select, copy {kopierade} other {flyttade}} {transferredText} {transferred, plural, one {fil} other {filer}}.",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Kopiering} other {Flyttning}} klar: filen fanns redan på målet, {verb, select, copy {kopierades} other {flyttades}} inte.",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopiering} other {Flyttning}} klar: hoppade över alla {skippedText} filer (fanns redan på målet), inget {verb, select, copy {kopierades} other {flyttades}}.",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "ae39c4b"
+  },
+  "transfer.fileOnly.mixedCopy": "Kopiering klar: kopierade {transferredText}, hoppade över {skippedText}. Alla {processedText} {processed, plural, one {fil} other {filer}} du valde finns nu på målet.",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "Flyttning klar: flyttade {transferredText}, hoppade över {skippedText}. {skippedText} {skipped, plural, one {fil} other {filer}} {skipped, plural, one {fanns} other {fanns}} redan på målet.",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  }
+}

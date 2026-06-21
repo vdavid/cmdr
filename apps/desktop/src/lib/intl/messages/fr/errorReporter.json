@@ -1,0 +1,142 @@
+{
+  "errorReporter.dialog.title": "Envoyer un rapport d''incident",
+  "@errorReporter.dialog.title": {
+    "sourceHash": "c327e68"
+  },
+  "errorReporter.dialog.description": "Ceci envoie les fichiers journaux récents de Cmdr à l''équipe pour que nous puissions corriger ce qui a mal tourné. Les journaux sont expurgés côté client : chemins de fichiers, noms d''hôte, adresses IP et e-mails sont tous effacés avant l''envoi.",
+  "@errorReporter.dialog.description": {
+    "sourceHash": "dd11284"
+  },
+  "errorReporter.dialog.referenceIdLabel": "Identifiant de référence :",
+  "@errorReporter.dialog.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.dialog.copy": "Copier",
+  "@errorReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "errorReporter.dialog.copied": "Copié",
+  "@errorReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.dialog.noteLabel": "Ajouter une note (facultatif)",
+  "@errorReporter.dialog.noteLabel": {
+    "sourceHash": "6bb0c6b"
+  },
+  "errorReporter.dialog.counter": "{currentText} / {maxText}",
+  "@errorReporter.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "errorReporter.dialog.notePlaceholder": "Qu''essayiez-vous de faire ? À quoi vous attendiez-vous ?",
+  "@errorReporter.dialog.notePlaceholder": {
+    "sourceHash": "003300b"
+  },
+  "errorReporter.dialog.noteTooLong": "La note est trop longue. Le maximum est de {maxText} caractères.",
+  "@errorReporter.dialog.noteTooLong": {
+    "sourceHash": "835aa78"
+  },
+  "errorReporter.dialog.attachEmail": "Joindre mon e-mail ({email}) pour que nous puissions vous répondre",
+  "@errorReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "errorReporter.dialog.detailsToggle": "Ce qui va être envoyé",
+  "@errorReporter.dialog.detailsToggle": {
+    "sourceHash": "b1069f7"
+  },
+  "errorReporter.dialog.manifestHeading": "Manifeste",
+  "@errorReporter.dialog.manifestHeading": {
+    "sourceHash": "3c99f1f"
+  },
+  "errorReporter.dialog.sampleFirstHeading": "Échantillon {count, plural, one {de la première ligne} many {des # premières lignes} other {des # premières lignes}}",
+  "@errorReporter.dialog.sampleFirstHeading": {
+    "sourceHash": "7a2e538"
+  },
+  "errorReporter.dialog.sampleLastHeading": "Échantillon {count, plural, one {de la dernière ligne} many {des # dernières lignes} other {des # dernières lignes}}",
+  "@errorReporter.dialog.sampleLastHeading": {
+    "sourceHash": "a36f420"
+  },
+  "errorReporter.dialog.noLogLines": "(aucune ligne de journal disponible)",
+  "@errorReporter.dialog.noLogLines": {
+    "sourceHash": "a2d54fd"
+  },
+  "errorReporter.dialog.totalLines": "Total des lignes de journal (après expurgation) : {countText}",
+  "@errorReporter.dialog.totalLines": {
+    "sourceHash": "9c5cab7"
+  },
+  "errorReporter.dialog.preparing": "Préparation de l''aperçu…",
+  "@errorReporter.dialog.preparing": {
+    "sourceHash": "11e66e1"
+  },
+  "errorReporter.dialog.prepareFailed": "Préparation de l''aperçu impossible : {error}",
+  "@errorReporter.dialog.prepareFailed": {
+    "sourceHash": "21c4dd4"
+  },
+  "errorReporter.dialog.saveToDisk": "Enregistrer le lot sur le disque (debug)",
+  "@errorReporter.dialog.saveToDisk": {
+    "sourceHash": "36d6589"
+  },
+  "errorReporter.dialog.cancel": "Annuler",
+  "@errorReporter.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "errorReporter.dialog.send": "Envoyer le rapport",
+  "@errorReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "errorReporter.dialog.sending": "Envoi…",
+  "@errorReporter.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "errorReporter.dialog.sendFailedToast": "Envoi du rapport d''incident impossible : {error}",
+  "@errorReporter.dialog.sendFailedToast": {
+    "sourceHash": "38c0695"
+  },
+  "errorReporter.dialog.saveFailedToast": "Enregistrement du lot impossible : {error}",
+  "@errorReporter.dialog.saveFailedToast": {
+    "sourceHash": "34cf2b4"
+  },
+  "errorReporter.sentToast.message": "Rapport d''incident envoyé. Votre identifiant de référence est",
+  "@errorReporter.sentToast.message": {
+    "sourceHash": "75be6ba"
+  },
+  "errorReporter.sentToast.dismiss": "Ignorer",
+  "@errorReporter.sentToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.sentToast.copyId": "Copier l''identifiant",
+  "@errorReporter.sentToast.copyId": {
+    "sourceHash": "72ac0d5"
+  },
+  "errorReporter.sentToast.copied": "Copié",
+  "@errorReporter.sentToast.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.bundleSavedToast.message": "Lot enregistré sur le disque",
+  "@errorReporter.bundleSavedToast.message": {
+    "sourceHash": "7c1604d"
+  },
+  "errorReporter.bundleSavedToast.dismiss": "Ignorer",
+  "@errorReporter.bundleSavedToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.bundleSavedToast.reveal": "Afficher dans le Finder",
+  "@errorReporter.bundleSavedToast.reveal": {
+    "sourceHash": "cc84938"
+  },
+  "errorReporter.autoSentToast.title": "Rapport d''incident envoyé",
+  "@errorReporter.autoSentToast.title": {
+    "sourceHash": "b69ee37"
+  },
+  "errorReporter.autoSentToast.referenceIdLabel": "Identifiant de référence :",
+  "@errorReporter.autoSentToast.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.autoSentToast.changeSettings": "Modifier les réglages",
+  "@errorReporter.autoSentToast.changeSettings": {
+    "sourceHash": "873512a"
+  },
+  "errorReporter.autoSentToast.view": "Afficher",
+  "@errorReporter.autoSentToast.view": {
+    "sourceHash": "dcc839a"
+  }
+}

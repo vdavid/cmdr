@@ -1,0 +1,134 @@
+{
+  "indexing.status.ariaLabel": "Trạng thái lập chỉ mục ổ đĩa",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.scan.label": "Đang quét ổ đĩa của bạn...",
+  "@indexing.scan.label": {
+    "sourceHash": "e7d6d6a"
+  },
+  "indexing.scan.labelFirst": "Đang quét ổ đĩa của bạn (lần quét đầu tiên)...",
+  "@indexing.scan.labelFirst": {
+    "sourceHash": "2431d85"
+  },
+  "indexing.scan.counters": "{entriesText} mục, {dirsText} thư mục",
+  "@indexing.scan.counters": {
+    "sourceHash": "fd4d242"
+  },
+  "indexing.scan.etaRough": "khoảng {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.aggregation.savingEntries": "Đang lưu các mục...",
+  "@indexing.aggregation.savingEntries": {
+    "sourceHash": "16fa321"
+  },
+  "indexing.aggregation.loading": "Đang tải các thư mục...",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "37b34d4"
+  },
+  "indexing.aggregation.sorting": "Đang sắp xếp các thư mục...",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "9018980"
+  },
+  "indexing.aggregation.computing": "Đang tính kích thước thư mục...",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "ee6ba9a"
+  },
+  "indexing.aggregation.writing": "Đang lưu kích thước thư mục...",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "ff59fa5"
+  },
+  "indexing.replay.label": "Đang cập nhật chỉ mục...",
+  "@indexing.replay.label": {
+    "sourceHash": "2920134"
+  },
+  "indexing.replay.detail": "Đã xử lý {eventsText} sự kiện",
+  "@indexing.replay.detail": {
+    "sourceHash": "e80c077"
+  },
+  "indexing.eta.almostDone": "Sắp xong",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.secondsLeft": "còn {secondsText}s",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "còn {minutesText}m",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.rescan.staleIndex": "Chỉ mục ổ đĩa của bạn đã lỗi thời. Có vẻ như ứng dụng chưa chạy một thời gian. Đang chạy một lần quét mới để bắt kịp.",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "ddac60e"
+  },
+  "indexing.rescan.journalGap": "Nhật ký thay đổi tệp của hệ thống không lưu đủ xa về trước. Đang chạy một lần quét mới để dựng lại chỉ mục.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "5f1075b"
+  },
+  "indexing.rescan.replayOverflow": "Có rất nhiều thay đổi tệp kể từ lần chạy trước. Đang chạy một lần quét mới thay vì phát lại từng thay đổi một.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.tooManySubdirRescans": "Nhiều thư mục đã thay đổi đáng kể kể từ lần chạy trước. Đang chạy một lần quét mới để cập nhật mọi thứ.",
+  "@indexing.rescan.tooManySubdirRescans": {
+    "sourceHash": "06d04a0"
+  },
+  "indexing.rescan.watcherStartFailed": "Không thể khởi động bộ theo dõi thay đổi tệp. Đang chạy một lần quét mới để cập nhật chỉ mục.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "831e44d"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "Hoạt động hệ thống tệp dồn dập đã làm tràn bộ đệm sự kiện. Đang chạy một lần quét mới để giữ độ chính xác.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "Lần quét trước chưa hoàn tất (ứng dụng có thể đã bị đóng). Đang khởi động lại lần quét từ đầu.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "3ca5217"
+  },
+  "indexing.rescan.watcherChannelOverflow": "Một đợt hoạt động hệ thống tệp dồn dập đã làm tràn kênh của bộ theo dõi. Đang chạy một lần quét mới để giữ độ chính xác.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Đang chạy một lần quét ổ đĩa mới để giữ chỉ mục chính xác.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.firstConnect.title": "Lập chỉ mục {name}?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "Cmdr có thể lập chỉ mục ổ đĩa này ở chế độ nền để kích thước thư mục và tìm kiếm hoạt động ở đây. Nó chỉ chạy khi ổ đĩa được kết nối.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Bật lập chỉ mục",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "Đừng hỏi lại cho ổ đĩa này",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "99bed41"
+  },
+  "indexing.firstConnect.silenceAll": "Đừng hỏi lại cho bất kỳ ổ đĩa nào",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "511c970"
+  },
+  "indexing.staleDialog.title": "Chỉ mục của ổ đĩa này có thể đã lỗi thời",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "21a78ee"
+  },
+  "indexing.staleDialog.body": "Trong khi {name} bị ngắt kết nối, các tệp trên đó có thể đã thay đổi. Kích thước thư mục và kết quả tìm kiếm có thể hơi lệch cho đến khi bạn quét lại. Trạng thái màu vàng bên cạnh ổ đĩa luôn hiện ra khi điều này xảy ra, và một lần quét lại sẽ làm mới nó.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.neverShowAgain": "Không bao giờ hiện lại",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Đóng",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

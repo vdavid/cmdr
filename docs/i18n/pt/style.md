@@ -74,11 +74,11 @@ conventional unmarked masculine, matching every major. Don't use "x"/"@"/"-e" ne
 
 ### "Apagar" vs "Excluir" vs "Eliminar" for delete/trash
 
-A file manager hits delete constantly, and the verb choice is variant-coded (see above) AND semantically loaded
-(permanent delete vs move-to-trash). Recommendation (pt-BR): **Mover para a Lixeira** for the safe trash action,
-**Excluir** / **Apagar** for permanent delete, mirroring Finder's distinction. Lock the exact pair in the glossary once
-the variant is settled, because mixing them mid-catalog is the most likely consistency bug. Confidence: high that the
-distinction matters; the exact verbs are tentative until the variant is fixed.
+A file manager hits delete constantly, and the verb choice is variant-coded AND semantically loaded (permanent delete
+vs move-to-trash), so it's the most likely consistency bug. **Now locked in the glossary** (pt-BR): delete →
+**Excluir**, delete permanently → **Excluir permanentemente**, the trash action → **Mover para o Lixo** (trash noun =
+**Lixo**, the macOS Finder Tier-1 value). Don't use "Apagar" (Finder's own delete verb): one catalog file drifted to it
+and was reconciled back to "Excluir" for cross-file consistency. See the glossary's reconciliation note.
 
 ## Terminology and glossary
 
@@ -89,7 +89,7 @@ Defer the full glossary until the variant is chosen (every row depends on it). T
 | ------------ | -------------------------- | ------------------------ |
 | file         | arquivo                    | pt-PT: ficheiro          |
 | folder       | pasta                      | shared                   |
-| trash        | Lixeira                    | pt-PT: Lixo / Reciclagem |
+| trash        | Lixo                       | macOS Finder Tier-1 (glossary-locked); pt-PT: Reciclagem |
 | pane         | painel                     | confirm vs Finder        |
 | tab          | aba                        | pt-BR; pt-PT: separador  |
 

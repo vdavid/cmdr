@@ -1,0 +1,78 @@
+{
+  "ui.alertDialog.defaultButton": "OK",
+  "@ui.alertDialog.defaultButton": {
+    "sourceHash": "565339b"
+  },
+  "ui.modalDialog.close": "Schließen",
+  "@ui.modalDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "ui.popover.defaultAriaLabel": "Optionen",
+  "@ui.popover.defaultAriaLabel": {
+    "sourceHash": "d0db8b5"
+  },
+  "ui.select.placeholder": "Auswählen …",
+  "@ui.select.placeholder": {
+    "sourceHash": "1339bdd"
+  },
+  "ui.combobox.emptyText": "Keine Treffer. Tippe weiter, um deinen eigenen Wert zu verwenden.",
+  "@ui.combobox.emptyText": {
+    "sourceHash": "d41f776"
+  },
+  "ui.combobox.loadingSuggestions": "Vorschläge werden geladen",
+  "@ui.combobox.loadingSuggestions": {
+    "sourceHash": "6fcf509"
+  },
+  "ui.combobox.showSuggestions": "Vorschläge anzeigen",
+  "@ui.combobox.showSuggestions": {
+    "sourceHash": "a80b6a6"
+  },
+  "ui.commandBox.copyAria": "Befehl in die Zwischenablage kopieren",
+  "@ui.commandBox.copyAria": {
+    "sourceHash": "334c24c"
+  },
+  "ui.commandBox.copy": "Kopieren",
+  "@ui.commandBox.copy": {
+    "sourceHash": "e21f935"
+  },
+  "ui.commandBox.copied": "Kopiert!",
+  "@ui.commandBox.copied": {
+    "sourceHash": "ea61bc1"
+  },
+  "ui.shortcutChip.customizeAria": "Kurzbefehl für {commandName} anpassen",
+  "@ui.shortcutChip.customizeAria": {
+    "sourceHash": "a1d00b2"
+  },
+  "ui.shortcutChip.customizeTooltip": "Diesen Kurzbefehl anpassen",
+  "@ui.shortcutChip.customizeTooltip": {
+    "sourceHash": "9a7817d"
+  },
+  "ui.toast.sendErrorReport": "Fehlerbericht senden …",
+  "@ui.toast.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "ui.toast.dismissAria": "Hinweis schließen",
+  "@ui.toast.dismissAria": {
+    "sourceHash": "b7bb3f3"
+  },
+  "ui.loadingIcon.finalizing": "Alle {countText} {count, plural, one {Datei} other {Dateien}} geladen. Dateien werden sortiert, Ansicht wird vorbereitet …",
+  "@ui.loadingIcon.finalizing": {
+    "sourceHash": "2aac2cb"
+  },
+  "ui.loadingIcon.loaded": "{countText} {count, plural, one {Datei} other {Dateien}} geladen …",
+  "@ui.loadingIcon.loaded": {
+    "sourceHash": "93e45fc"
+  },
+  "ui.loadingIcon.openingFolder": "Ordner wird geöffnet …",
+  "@ui.loadingIcon.openingFolder": {
+    "sourceHash": "818cbbb"
+  },
+  "ui.loadingIcon.loading": "Wird geladen …",
+  "@ui.loadingIcon.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "ui.loadingIcon.cancelHint": "Drücke <key></key> zum Abbrechen und Zurückgehen",
+  "@ui.loadingIcon.cancelHint": {
+    "sourceHash": "400dd28"
+  }
+}

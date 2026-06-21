@@ -1,0 +1,134 @@
+{
+  "indexing.status.ariaLabel": "Meghajtó indexelési állapota",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.scan.label": "Meghajtó átvizsgálása…",
+  "@indexing.scan.label": {
+    "sourceHash": "e7d6d6a"
+  },
+  "indexing.scan.labelFirst": "Meghajtó átvizsgálása (első alkalom)…",
+  "@indexing.scan.labelFirst": {
+    "sourceHash": "2431d85"
+  },
+  "indexing.scan.counters": "{entriesText} bejegyzés, {dirsText} mappa",
+  "@indexing.scan.counters": {
+    "sourceHash": "fd4d242"
+  },
+  "indexing.scan.etaRough": "kb. {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.aggregation.savingEntries": "Bejegyzések mentése…",
+  "@indexing.aggregation.savingEntries": {
+    "sourceHash": "16fa321"
+  },
+  "indexing.aggregation.loading": "Mappák betöltése…",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "37b34d4"
+  },
+  "indexing.aggregation.sorting": "Mappák rendezése…",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "9018980"
+  },
+  "indexing.aggregation.computing": "Mappaméretek számítása…",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "ee6ba9a"
+  },
+  "indexing.aggregation.writing": "Mappaméretek mentése…",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "ff59fa5"
+  },
+  "indexing.replay.label": "Index frissítése…",
+  "@indexing.replay.label": {
+    "sourceHash": "2920134"
+  },
+  "indexing.replay.detail": "{eventsText} esemény feldolgozva",
+  "@indexing.replay.detail": {
+    "sourceHash": "e80c077"
+  },
+  "indexing.eta.almostDone": "Mindjárt kész",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.secondsLeft": "{secondsText} mp",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "{minutesText} p",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.rescan.staleIndex": "A meghajtó indexe elavult. Úgy tűnik, az app egy ideje nem futott. Friss átvizsgálás indul, hogy behozza a lemaradást.",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "ddac60e"
+  },
+  "indexing.rescan.journalGap": "A rendszer fájlváltozás-naplója nem nyúlik vissza eléggé. Friss átvizsgálás indul az index újraépítéséhez.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "5f1075b"
+  },
+  "indexing.rescan.replayOverflow": "Sok fájlváltozás történt a legutóbbi futás óta. Friss átvizsgálás indul ahelyett, hogy egyenként visszajátszanánk őket.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.tooManySubdirRescans": "Sok mappa jelentősen megváltozott a legutóbbi futás óta. Friss átvizsgálás indul, hogy minden naprakész legyen.",
+  "@indexing.rescan.tooManySubdirRescans": {
+    "sourceHash": "06d04a0"
+  },
+  "indexing.rescan.watcherStartFailed": "A fájlváltozás-figyelőt nem sikerült elindítani. Friss átvizsgálás indul, hogy az index naprakész legyen.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "831e44d"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "A nagy fájlrendszer-aktivitás túlterhelte az eseménytárolót. Friss átvizsgálás indul a pontosság érdekében.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "Az előző átvizsgálás nem fejeződött be (lehet, hogy bezárult az app). Az átvizsgálás újraindul az elejéről.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "3ca5217"
+  },
+  "indexing.rescan.watcherChannelOverflow": "A hirtelen fájlrendszer-aktivitás túlterhelte a figyelő csatornáját. Friss átvizsgálás indul a pontosság érdekében.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Friss meghajtó-átvizsgálás indul, hogy az index pontos maradjon.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.firstConnect.title": "Indexeljük a(z) {name} meghajtót?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "A Cmdr a háttérben tudja indexelni ezt a meghajtót, hogy itt is működjenek a mappaméretek és a keresés. Csak akkor fut, amíg a meghajtó csatlakoztatva van.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Indexelés bekapcsolása",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "Ennél a meghajtónál ne kérdezd újra",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "99bed41"
+  },
+  "indexing.firstConnect.silenceAll": "Egyik meghajtónál se kérdezd újra",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "511c970"
+  },
+  "indexing.staleDialog.title": "Ennek a meghajtónak az indexe elavulhatott",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "21a78ee"
+  },
+  "indexing.staleDialog.body": "Amíg a(z) {name} le volt választva, a rajta lévő fájlok megváltozhattak. A mappaméretek és a keresési találatok kissé pontatlanok lehetnek, amíg újra nem vizsgálod át. A meghajtó melletti sárga állapot mindig jelzi, ha ez történik, és egy újbóli átvizsgálás frissíti.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.neverShowAgain": "Soha ne jelenjen meg újra",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Bezárás",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "main.upgradeNudge.mac": "Új bevezető beállításokat adtunk hozzá. Nézd át őket itt: Cmdr > Bevezető….",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "477f3a5"
+  },
+  "main.upgradeNudge.other": "Új bevezető beállításokat adtunk hozzá. Az átnézésükhöz nyisd meg a parancspalettát, és futtasd a Bevezető… parancsot.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "4b0b39e"
+  }
+}

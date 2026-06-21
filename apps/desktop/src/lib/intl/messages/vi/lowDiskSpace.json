@@ -1,0 +1,22 @@
+{
+  "lowDiskSpace.toast.message": "Đĩa khởi động của bạn sắp hết dung lượng: còn trống {freeText} ({percentText}%).",
+  "@lowDiskSpace.toast.message": {
+    "sourceHash": "44b701f"
+  },
+  "lowDiskSpace.toast.disable": "Tắt các thông báo này",
+  "@lowDiskSpace.toast.disable": {
+    "sourceHash": "1b085f6"
+  },
+  "lowDiskSpace.toast.closeTooltip": "Bỏ qua",
+  "@lowDiskSpace.toast.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
+  "lowDiskSpace.notification.title": "Sắp hết dung lượng đĩa",
+  "@lowDiskSpace.notification.title": {
+    "sourceHash": "5b1f5bf"
+  },
+  "lowDiskSpace.notification.body": "Còn trống {freeText} ({percentText}%) trên đĩa khởi động của bạn.",
+  "@lowDiskSpace.notification.body": {
+    "sourceHash": "b17ee43"
+  }
+}

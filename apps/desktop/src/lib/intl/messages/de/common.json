@@ -1,0 +1,6 @@
+{
+  "common.downloadsFdaHint": "Cmdr braucht vollständigen Festplattenzugriff, um deinen Downloads-Ordner zu überwachen. <settingsLink>Systemeinstellungen öffnen</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "sourceHash": "315e1d8"
+  }
+}

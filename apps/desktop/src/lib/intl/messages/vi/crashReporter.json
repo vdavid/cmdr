@@ -1,0 +1,62 @@
+{
+  "crashReporter.dialog.title": "Gửi báo cáo sự cố?",
+  "@crashReporter.dialog.title": {
+    "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.body": "Lần trước Cmdr đã thoát đột ngột. Đây là báo cáo sự cố kèm chi tiết có thể giúp khắc phục việc này.",
+  "@crashReporter.dialog.body": {
+    "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.privacyNote": "Báo cáo gồm phiên bản ứng dụng, phiên bản macOS, và phần mã nào đã gặp sự cố. Không có tên tệp hay dữ liệu cá nhân.",
+  "@crashReporter.dialog.privacyNote": {
+    "sourceHash": "7f7912a"
+  },
+  "crashReporter.dialog.reportIdLabel": "Mã báo cáo:",
+  "@crashReporter.dialog.reportIdLabel": {
+    "sourceHash": "df3d47e"
+  },
+  "crashReporter.dialog.reportIdHelp": "Hãy nhắc đến mã này nếu bạn liên hệ về vấn đề này.",
+  "@crashReporter.dialog.reportIdHelp": {
+    "sourceHash": "c63b08a"
+  },
+  "crashReporter.dialog.showDetails": "Hiện chi tiết báo cáo",
+  "@crashReporter.dialog.showDetails": {
+    "sourceHash": "11756f2"
+  },
+  "crashReporter.dialog.copy": "Sao chép",
+  "@crashReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "crashReporter.dialog.copied": "Đã sao chép",
+  "@crashReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "crashReporter.dialog.alwaysSend": "Luôn gửi báo cáo sự cố",
+  "@crashReporter.dialog.alwaysSend": {
+    "sourceHash": "8306c0e"
+  },
+  "crashReporter.dialog.attachEmail": "Đính kèm email của tôi ({email}) để chúng tôi trả lời",
+  "@crashReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "crashReporter.dialog.dismiss": "Bỏ qua",
+  "@crashReporter.dialog.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "crashReporter.dialog.send": "Gửi báo cáo",
+  "@crashReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "crashReporter.dialog.sending": "Đang gửi...",
+  "@crashReporter.dialog.sending": {
+    "sourceHash": "286a3af"
+  },
+  "crashReporter.sentToast.message": "Đã gửi báo cáo sự cố. Cảm ơn bạn đã giúp Cmdr tốt hơn.",
+  "@crashReporter.sentToast.message": {
+    "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.changeSettings": "Thay đổi trong Cài đặt > Cập nhật",
+  "@crashReporter.sentToast.changeSettings": {
+    "sourceHash": "25d151d"
+  }
+}

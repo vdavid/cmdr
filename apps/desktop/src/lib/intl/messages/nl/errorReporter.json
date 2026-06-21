@@ -1,0 +1,142 @@
+{
+  "errorReporter.dialog.title": "Foutrapport versturen",
+  "@errorReporter.dialog.title": {
+    "sourceHash": "c327e68"
+  },
+  "errorReporter.dialog.description": "Hiermee stuur je de recente logbestanden van Cmdr naar het team, zodat we kunnen oplossen wat er misging. De logbestanden worden lokaal geschoond: bestandspaden, hostnamen, IP-adressen en e-mailadressen worden allemaal verwijderd voordat ze worden verstuurd.",
+  "@errorReporter.dialog.description": {
+    "sourceHash": "dd11284"
+  },
+  "errorReporter.dialog.referenceIdLabel": "Referentie-ID:",
+  "@errorReporter.dialog.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.dialog.copy": "Kopieer",
+  "@errorReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "errorReporter.dialog.copied": "Gekopieerd",
+  "@errorReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.dialog.noteLabel": "Voeg een notitie toe (optioneel)",
+  "@errorReporter.dialog.noteLabel": {
+    "sourceHash": "6bb0c6b"
+  },
+  "errorReporter.dialog.counter": "{currentText} / {maxText}",
+  "@errorReporter.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "errorReporter.dialog.notePlaceholder": "Wat probeerde je te doen? Wat verwachtte je dat er zou gebeuren?",
+  "@errorReporter.dialog.notePlaceholder": {
+    "sourceHash": "003300b"
+  },
+  "errorReporter.dialog.noteTooLong": "De notitie is te lang. Het maximum is {maxText} tekens.",
+  "@errorReporter.dialog.noteTooLong": {
+    "sourceHash": "835aa78"
+  },
+  "errorReporter.dialog.attachEmail": "Voeg mijn e-mailadres ({email}) toe, zodat we kunnen reageren",
+  "@errorReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "errorReporter.dialog.detailsToggle": "Wat er verstuurd gaat worden",
+  "@errorReporter.dialog.detailsToggle": {
+    "sourceHash": "b1069f7"
+  },
+  "errorReporter.dialog.manifestHeading": "Manifest",
+  "@errorReporter.dialog.manifestHeading": {
+    "sourceHash": "3c99f1f"
+  },
+  "errorReporter.dialog.sampleFirstHeading": "Voorbeeld van de eerste {count, plural, one {# regel} other {# regels}}",
+  "@errorReporter.dialog.sampleFirstHeading": {
+    "sourceHash": "7a2e538"
+  },
+  "errorReporter.dialog.sampleLastHeading": "Voorbeeld van de laatste {count, plural, one {# regel} other {# regels}}",
+  "@errorReporter.dialog.sampleLastHeading": {
+    "sourceHash": "a36f420"
+  },
+  "errorReporter.dialog.noLogLines": "(geen logregels beschikbaar)",
+  "@errorReporter.dialog.noLogLines": {
+    "sourceHash": "a2d54fd"
+  },
+  "errorReporter.dialog.totalLines": "Totaal aantal logregels (na schonen): {countText}",
+  "@errorReporter.dialog.totalLines": {
+    "sourceHash": "9c5cab7"
+  },
+  "errorReporter.dialog.preparing": "Voorvertoning voorbereiden…",
+  "@errorReporter.dialog.preparing": {
+    "sourceHash": "11e66e1"
+  },
+  "errorReporter.dialog.prepareFailed": "Voorvertoning voorbereiden lukte niet: {error}",
+  "@errorReporter.dialog.prepareFailed": {
+    "sourceHash": "21c4dd4"
+  },
+  "errorReporter.dialog.saveToDisk": "Bewaar bundel op schijf (debug)",
+  "@errorReporter.dialog.saveToDisk": {
+    "sourceHash": "36d6589"
+  },
+  "errorReporter.dialog.cancel": "Annuleer",
+  "@errorReporter.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "errorReporter.dialog.send": "Verstuur rapport",
+  "@errorReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "errorReporter.dialog.sending": "Versturen…",
+  "@errorReporter.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "errorReporter.dialog.sendFailedToast": "Foutrapport versturen lukte niet: {error}",
+  "@errorReporter.dialog.sendFailedToast": {
+    "sourceHash": "38c0695"
+  },
+  "errorReporter.dialog.saveFailedToast": "Bundel bewaren lukte niet: {error}",
+  "@errorReporter.dialog.saveFailedToast": {
+    "sourceHash": "34cf2b4"
+  },
+  "errorReporter.sentToast.message": "Foutrapport verstuurd. Je referentie-ID is",
+  "@errorReporter.sentToast.message": {
+    "sourceHash": "75be6ba"
+  },
+  "errorReporter.sentToast.dismiss": "Sluit",
+  "@errorReporter.sentToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.sentToast.copyId": "Kopieer ID",
+  "@errorReporter.sentToast.copyId": {
+    "sourceHash": "72ac0d5"
+  },
+  "errorReporter.sentToast.copied": "Gekopieerd",
+  "@errorReporter.sentToast.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.bundleSavedToast.message": "Bundel bewaard op schijf",
+  "@errorReporter.bundleSavedToast.message": {
+    "sourceHash": "7c1604d"
+  },
+  "errorReporter.bundleSavedToast.dismiss": "Sluit",
+  "@errorReporter.bundleSavedToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.bundleSavedToast.reveal": "Toon in Finder",
+  "@errorReporter.bundleSavedToast.reveal": {
+    "sourceHash": "cc84938"
+  },
+  "errorReporter.autoSentToast.title": "Foutrapport verstuurd",
+  "@errorReporter.autoSentToast.title": {
+    "sourceHash": "b69ee37"
+  },
+  "errorReporter.autoSentToast.referenceIdLabel": "Referentie-ID:",
+  "@errorReporter.autoSentToast.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.autoSentToast.changeSettings": "Wijzig instellingen",
+  "@errorReporter.autoSentToast.changeSettings": {
+    "sourceHash": "873512a"
+  },
+  "errorReporter.autoSentToast.view": "Bekijk",
+  "@errorReporter.autoSentToast.view": {
+    "sourceHash": "dcc839a"
+  }
+}

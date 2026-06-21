@@ -1,0 +1,366 @@
+{
+  "viewer.window.fallbackTitle": "Trình xem",
+  "@viewer.window.fallbackTitle": {
+    "sourceHash": "678bfa6"
+  },
+  "viewer.window.titleSuffix": "{fileName} | Trình xem",
+  "@viewer.window.titleSuffix": {
+    "sourceHash": "5ebd7f4"
+  },
+  "viewer.srHeading": "Trình xem tệp",
+  "@viewer.srHeading": {
+    "sourceHash": "b32f632"
+  },
+  "viewer.loading": "Đang tải...",
+  "@viewer.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "viewer.error.noPath": "Chưa chỉ định đường dẫn tệp",
+  "@viewer.error.noPath": {
+    "sourceHash": "2b069fc"
+  },
+  "viewer.error.readFailed": "Không thể đọc tệp",
+  "@viewer.error.readFailed": {
+    "sourceHash": "ea7d976"
+  },
+  "viewer.error.timeout": "Không thể tải tệp. Ổ đĩa có thể đang chậm hoặc không phản hồi.",
+  "@viewer.error.timeout": {
+    "sourceHash": "d163618"
+  },
+  "viewer.error.retry": "Thử lại",
+  "@viewer.error.retry": {
+    "sourceHash": "942087c"
+  },
+  "viewer.error.cancel": "Hủy",
+  "@viewer.error.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.content.ariaLabel": "Nội dung tệp: {fileName}",
+  "@viewer.content.ariaLabel": {
+    "sourceHash": "57b8613"
+  },
+  "viewer.binaryWarning.body": "Đây là chế độ xem thô của tệp. Bạn có thể muốn xem <kind>{kind}</kind> thực tế thay vì vậy. Để làm điều đó, hãy đóng cửa sổ này và nhấn <quickLookKey></quickLookKey> để mở chế độ xem nhanh, hoặc nhấn <openKey></openKey> (hoặc nhấp đúp vào tệp) để mở bằng ứng dụng liên kết.",
+  "@viewer.binaryWarning.body": {
+    "sourceHash": "42eda71"
+  },
+  "viewer.binaryWarning.kind.image": "hình ảnh",
+  "@viewer.binaryWarning.kind.image": {
+    "sourceHash": "6105d6c"
+  },
+  "viewer.binaryWarning.kind.document": "tài liệu",
+  "@viewer.binaryWarning.kind.document": {
+    "sourceHash": "43cc23f"
+  },
+  "viewer.binaryWarning.dismiss": "Đóng",
+  "@viewer.binaryWarning.dismiss": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.binaryWarning.suppressForever": "Không hiện cảnh báo này nữa",
+  "@viewer.binaryWarning.suppressForever": {
+    "sourceHash": "b85b92b"
+  },
+  "viewer.search.placeholder": "Tìm trong tệp...",
+  "@viewer.search.placeholder": {
+    "sourceHash": "c1dc89b"
+  },
+  "viewer.search.ariaLabel": "Tìm kiếm văn bản",
+  "@viewer.search.ariaLabel": {
+    "sourceHash": "38d268a"
+  },
+  "viewer.search.caseSensitive": "Phân biệt chữ hoa/thường",
+  "@viewer.search.caseSensitive": {
+    "sourceHash": "e124ba4"
+  },
+  "viewer.search.regex": "Regex",
+  "@viewer.search.regex": {
+    "sourceHash": "0f27125"
+  },
+  "viewer.search.matchPosition": "{current} / {total}{more, select, yes {+} other {}}",
+  "@viewer.search.matchPosition": {
+    "sourceHash": "ec24db4"
+  },
+  "viewer.search.searching": "Đang tìm...",
+  "@viewer.search.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "viewer.search.partial": "(một phần)",
+  "@viewer.search.partial": {
+    "sourceHash": "d0ffde3"
+  },
+  "viewer.search.noMatches": "Không có kết quả khớp",
+  "@viewer.search.noMatches": {
+    "sourceHash": "2df01a0"
+  },
+  "viewer.search.stop": "Dừng tìm kiếm",
+  "@viewer.search.stop": {
+    "sourceHash": "c48cf72"
+  },
+  "viewer.search.stopTooltip": "Dừng quét và giữ lại kết quả",
+  "@viewer.search.stopTooltip": {
+    "sourceHash": "b86629c"
+  },
+  "viewer.search.previous": "Kết quả trước",
+  "@viewer.search.previous": {
+    "sourceHash": "daa2f8c"
+  },
+  "viewer.search.next": "Kết quả tiếp theo",
+  "@viewer.search.next": {
+    "sourceHash": "825e5ab"
+  },
+  "viewer.search.close": "Đóng tìm kiếm",
+  "@viewer.search.close": {
+    "sourceHash": "55656b5"
+  },
+  "viewer.search.closeTooltip": "Đóng",
+  "@viewer.search.closeTooltip": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.toolbar.viewMode.ariaLabel": "Chế độ xem",
+  "@viewer.toolbar.viewMode.ariaLabel": {
+    "sourceHash": "18997f2"
+  },
+  "viewer.toolbar.viewMode.text": "Văn bản",
+  "@viewer.toolbar.viewMode.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.viewMode.viewAsText": "Xem dưới dạng văn bản",
+  "@viewer.toolbar.viewMode.viewAsText": {
+    "sourceHash": "a0059b8"
+  },
+  "viewer.toolbar.viewMode.viewAsImage": "Xem dưới dạng hình ảnh",
+  "@viewer.toolbar.viewMode.viewAsImage": {
+    "sourceHash": "ae04259"
+  },
+  "viewer.toolbar.viewMode.viewAsPdf": "Xem dưới dạng PDF",
+  "@viewer.toolbar.viewMode.viewAsPdf": {
+    "sourceHash": "ee89800"
+  },
+  "viewer.kind.image": "Hình ảnh",
+  "@viewer.kind.image": {
+    "sourceHash": "1aa4cb0"
+  },
+  "viewer.kind.pdf": "PDF",
+  "@viewer.kind.pdf": {
+    "sourceHash": "1d393b0"
+  },
+  "viewer.kind.text": "Văn bản",
+  "@viewer.kind.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.encoding.placeholder": "Mã hóa ký tự",
+  "@viewer.toolbar.encoding.placeholder": {
+    "sourceHash": "4d25a47"
+  },
+  "viewer.toolbar.encoding.group.unicode": "Unicode",
+  "@viewer.toolbar.encoding.group.unicode": {
+    "sourceHash": "f922e0d"
+  },
+  "viewer.toolbar.encoding.group.western": "Tây Âu",
+  "@viewer.toolbar.encoding.group.western": {
+    "sourceHash": "d7d2f0f"
+  },
+  "viewer.toolbar.encoding.detectedSuffix": "{label} (Đã phát hiện)",
+  "@viewer.toolbar.encoding.detectedSuffix": {
+    "sourceHash": "2096536"
+  },
+  "viewer.toolbar.tail.label": "Theo dõi",
+  "@viewer.toolbar.tail.label": {
+    "sourceHash": "ae9c3bd"
+  },
+  "viewer.toolbar.tail.ariaLabel": "Chế độ theo dõi: bám theo thay đổi của tệp",
+  "@viewer.toolbar.tail.ariaLabel": {
+    "sourceHash": "af0477f"
+  },
+  "viewer.toolbar.tail.tooltip": "Tự động bám theo thay đổi của tệp",
+  "@viewer.toolbar.tail.tooltip": {
+    "sourceHash": "733e57f"
+  },
+  "viewer.toolbar.reindexing": "Đang lập chỉ mục lại…",
+  "@viewer.toolbar.reindexing": {
+    "sourceHash": "f668818"
+  },
+  "viewer.statusBar.ariaLabel": "Thông tin tệp",
+  "@viewer.statusBar.ariaLabel": {
+    "sourceHash": "375b97d"
+  },
+  "viewer.statusBar.lineCount": "{count} {count, plural, other {dòng}}",
+  "@viewer.statusBar.lineCount": {
+    "sourceHash": "1af08ec"
+  },
+  "viewer.statusBar.badge.inMemory": "trong bộ nhớ",
+  "@viewer.statusBar.badge.inMemory": {
+    "sourceHash": "d9b8483"
+  },
+  "viewer.statusBar.badge.inMemoryTooltip": "Bạn đang có toàn bộ tệp trong bộ nhớ. Bạn có thể cuộn nhanh đến bất kỳ dòng nào.",
+  "@viewer.statusBar.badge.inMemoryTooltip": {
+    "sourceHash": "4eb50b8"
+  },
+  "viewer.statusBar.badge.indexed": "đã lập chỉ mục",
+  "@viewer.statusBar.badge.indexed": {
+    "sourceHash": "658a3e8"
+  },
+  "viewer.statusBar.badge.indexedTooltip": "Tệp đã được lập chỉ mục, nên số dòng chính xác và bạn có thể cuộn nhanh đến bất kỳ điểm nào.",
+  "@viewer.statusBar.badge.indexedTooltip": {
+    "sourceHash": "2604f1a"
+  },
+  "viewer.statusBar.badge.streamingIndexing": "phát trực tiếp, đang lập chỉ mục...",
+  "@viewer.statusBar.badge.streamingIndexing": {
+    "sourceHash": "506ef27"
+  },
+  "viewer.statusBar.badge.streamingIndexingTooltip": "Đây là tệp lớn ở chế độ phát trực tiếp. Cmdr đang lập chỉ mục ở chế độ nền (tối đa {seconds} giây)... Số dòng hiện tại là gần đúng.",
+  "@viewer.statusBar.badge.streamingIndexingTooltip": {
+    "sourceHash": "6407733"
+  },
+  "viewer.statusBar.badge.streaming": "phát trực tiếp",
+  "@viewer.statusBar.badge.streaming": {
+    "sourceHash": "b304adc"
+  },
+  "viewer.statusBar.badge.streamingTooltip": "Đây là tệp lớn ở chế độ phát trực tiếp. Việc lập chỉ mục sẽ mất hơn {seconds} giây, nên Cmdr đã bỏ qua. Số dòng là ước lượng.",
+  "@viewer.statusBar.badge.streamingTooltip": {
+    "sourceHash": "1752e59"
+  },
+  "viewer.statusBar.badge.wrap": "ngắt dòng",
+  "@viewer.statusBar.badge.wrap": {
+    "sourceHash": "f0a2899"
+  },
+  "viewer.statusBar.badge.wrapTooltip": "Các dòng ngắt tại mép cửa sổ",
+  "@viewer.statusBar.badge.wrapTooltip": {
+    "sourceHash": "af2ca76"
+  },
+  "viewer.statusBar.hint.image": "Nhấp 100% / vừa khít · Cuộn để thu phóng · Kéo để di chuyển",
+  "@viewer.statusBar.hint.image": {
+    "sourceHash": "bca0205"
+  },
+  "viewer.statusBar.hint.text": "W ngắt dòng · F theo dõi · ⌘F tìm kiếm",
+  "@viewer.statusBar.hint.text": {
+    "sourceHash": "3ecf215"
+  },
+  "viewer.media.dimensions": "{width} × {height}",
+  "@viewer.media.dimensions": {
+    "sourceHash": "ece2cad"
+  },
+  "viewer.image.loading": "Đang tải hình ảnh",
+  "@viewer.image.loading": {
+    "sourceHash": "65999b8"
+  },
+  "viewer.image.error": "Rất tiếc, Cmdr không thể hiển thị hình ảnh này. Tệp có thể bị hỏng hoặc ở định dạng không hiển thị được.",
+  "@viewer.image.error": {
+    "sourceHash": "9a24fe8"
+  },
+  "viewer.pdf.loading": "Đang tải PDF",
+  "@viewer.pdf.loading": {
+    "sourceHash": "7f9acf3"
+  },
+  "viewer.contextMenu.ariaLabel": "Thao tác trình xem",
+  "@viewer.contextMenu.ariaLabel": {
+    "sourceHash": "4cf8e51"
+  },
+  "viewer.contextMenu.copy": "Sao chép",
+  "@viewer.contextMenu.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.contextMenu.selectAll": "Chọn tất cả",
+  "@viewer.contextMenu.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "viewer.copyDialog.confirmTitleKnown": "Sao chép {size} vào bảng nhớ tạm?",
+  "@viewer.copyDialog.confirmTitleKnown": {
+    "sourceHash": "7f97ebf"
+  },
+  "viewer.copyDialog.confirmTitleUnknown": "Sao chép vùng chọn này vào bảng nhớ tạm?",
+  "@viewer.copyDialog.confirmTitleUnknown": {
+    "sourceHash": "0956c8b"
+  },
+  "viewer.copyDialog.confirmBody": "Dán lượng lớn có thể làm chậm các ứng dụng khác. Hãy thử tìm kiếm (⌘F) để thu hẹp lại.",
+  "@viewer.copyDialog.confirmBody": {
+    "sourceHash": "c1f2927"
+  },
+  "viewer.copyDialog.cancel": "Hủy",
+  "@viewer.copyDialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.copyDialog.saveAsFile": "Lưu thành tệp…",
+  "@viewer.copyDialog.saveAsFile": {
+    "sourceHash": "7b9b279"
+  },
+  "viewer.copyDialog.copy": "Sao chép",
+  "@viewer.copyDialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseBody": "Vùng chọn này lớn hơn giới hạn 100 MB của bảng nhớ tạm. Hãy thử tìm kiếm (⌘F) để tìm thứ bạn cần, hoặc lưu vùng chọn thành tệp.",
+  "@viewer.copyDialog.refuseBody": {
+    "sourceHash": "75f3043"
+  },
+  "viewer.reloadToast.grew": "Tệp đã thay đổi trên đĩa. Tải lại?",
+  "@viewer.reloadToast.grew": {
+    "sourceHash": "d66b013"
+  },
+  "viewer.reloadToast.rotated": "Tệp đã được thay thế trên đĩa. Tải lại để xem nội dung mới.",
+  "@viewer.reloadToast.rotated": {
+    "sourceHash": "50804c2"
+  },
+  "viewer.reloadToast.reload": "Tải lại",
+  "@viewer.reloadToast.reload": {
+    "sourceHash": "bdc090e"
+  },
+  "viewer.reloadToast.dismissTooltip": "Bỏ qua mà không tải lại",
+  "@viewer.reloadToast.dismissTooltip": {
+    "sourceHash": "7f829ed"
+  },
+  "viewer.copy.onClipboard": "{size} trên bảng nhớ tạm của bạn",
+  "@viewer.copy.onClipboard": {
+    "sourceHash": "45934ed"
+  },
+  "viewer.copy.clipboardUnreachable": "Không thể truy cập bảng nhớ tạm. Thử lại?",
+  "@viewer.copy.clipboardUnreachable": {
+    "sourceHash": "c0382ba"
+  },
+  "viewer.copy.readTooLong": "Việc đọc mất quá lâu. Thử vùng chọn nhỏ hơn?",
+  "@viewer.copy.readTooLong": {
+    "sourceHash": "2275e83"
+  },
+  "viewer.copy.copyFailed": "Không thể sao chép vùng chọn. Thử lại?",
+  "@viewer.copy.copyFailed": {
+    "sourceHash": "6a1ab41"
+  },
+  "viewer.copy.readFailed": "Không thể đọc vùng chọn. Thử lại?",
+  "@viewer.copy.readFailed": {
+    "sourceHash": "bde5f85"
+  },
+  "viewer.saveAs.title": "Lưu vùng chọn",
+  "@viewer.saveAs.title": {
+    "sourceHash": "dd183ea"
+  },
+  "viewer.saveAs.defaultName": "vung-chon",
+  "@viewer.saveAs.defaultName": {
+    "sourceHash": "6504513"
+  },
+  "viewer.saveAs.panelFailed": "Không thể mở bảng lưu. Thử lại?",
+  "@viewer.saveAs.panelFailed": {
+    "sourceHash": "70c3f76"
+  },
+  "viewer.saveAs.saved": "Đã lưu vùng chọn vào {name}",
+  "@viewer.saveAs.saved": {
+    "sourceHash": "5083c12"
+  },
+  "viewer.saveAs.tooLong": "Việc lưu mất quá lâu. Thử vùng chọn nhỏ hơn?",
+  "@viewer.saveAs.tooLong": {
+    "sourceHash": "f31d7f4"
+  },
+  "viewer.saveAs.saveFailed": "Không thể lưu vùng chọn. Thử lại?",
+  "@viewer.saveAs.saveFailed": {
+    "sourceHash": "2d85642"
+  },
+  "viewer.selection.toEndOfFile": "Đã chọn từ dòng {line} đến cuối tệp",
+  "@viewer.selection.toEndOfFile": {
+    "sourceHash": "62d95be"
+  },
+  "viewer.selection.singleLine": "Đã chọn {chars} ký tự trên dòng {line}",
+  "@viewer.selection.singleLine": {
+    "sourceHash": "bb320d5"
+  },
+  "viewer.selection.multiLine": "Đã chọn dòng {startLine} đến {endLine}, {chars} ký tự",
+  "@viewer.selection.multiLine": {
+    "sourceHash": "074c687"
+  }
+}

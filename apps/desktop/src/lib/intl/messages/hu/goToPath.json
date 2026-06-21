@@ -1,0 +1,42 @@
+{
+  "goToPath.dialog.title": "Ugrás útvonalra",
+  "@goToPath.dialog.title": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.inputAriaLabel": "Cél útvonal",
+  "@goToPath.dialog.inputAriaLabel": {
+    "sourceHash": "ac4d152"
+  },
+  "goToPath.dialog.inputPlaceholder": "Írj be vagy illessz be egy útvonalat, például ~/Documents",
+  "@goToPath.dialog.inputPlaceholder": {
+    "sourceHash": "d84d343"
+  },
+  "goToPath.dialog.recentsAriaLabel": "Legutóbbi útvonalak",
+  "@goToPath.dialog.recentsAriaLabel": {
+    "sourceHash": "b698143"
+  },
+  "goToPath.dialog.removeFromList": "Eltávolítás a listából",
+  "@goToPath.dialog.removeFromList": {
+    "sourceHash": "82963c7"
+  },
+  "goToPath.dialog.cancel": "Mégsem",
+  "@goToPath.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "goToPath.dialog.confirm": "Ugrás útvonalra",
+  "@goToPath.dialog.confirm": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.ancestorHint": "Ez az útvonal nem létezik. A legközelebbi hely, ahová ugorhatsz: {dir}.",
+  "@goToPath.dialog.ancestorHint": {
+    "sourceHash": "43db9f4"
+  },
+  "goToPath.toast.landedOnAncestor": "A(z) <req>{requested}</req> nem létezik, ezért ide hoztunk: <land>{landed}</land>.",
+  "@goToPath.toast.landedOnAncestor": {
+    "sourceHash": "4ffc1e4"
+  },
+  "goToPath.toast.pressToGoBack": "A visszalépéshez nyomd meg ezt: <chip></chip>.",
+  "@goToPath.toast.pressToGoBack": {
+    "sourceHash": "ee851b2"
+  }
+}

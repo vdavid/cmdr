@@ -1,0 +1,54 @@
+{
+  "search.dialog.title": "Tìm kiếm",
+  "@search.dialog.title": {
+    "sourceHash": "49c266b"
+  },
+  "search.runHint": "Nhấn Enter để tìm kiếm",
+  "@search.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "search.action.showAll.label": "Hiện tất cả trong cửa sổ chính",
+  "@search.action.showAll.label": {
+    "sourceHash": "782075a"
+  },
+  "search.action.showAll.tooltip": "Mở kết quả tìm kiếm trong khung đang hoạt động",
+  "@search.action.showAll.tooltip": {
+    "sourceHash": "4e8c58a"
+  },
+  "search.action.goToFile.label": "Đến tệp",
+  "@search.action.goToFile.label": {
+    "sourceHash": "70299e6"
+  },
+  "search.action.goToFile.tooltip": "Mở tệp trong khung đang hoạt động",
+  "@search.action.goToFile.tooltip": {
+    "sourceHash": "2627d2e"
+  },
+  "search.recent.runAria": "Chạy lại tìm kiếm {mode} gần đây: {query}",
+  "@search.recent.runAria": {
+    "sourceHash": "fb0939c"
+  },
+  "search.systemDirExclude.default": "Loại trừ các thư mục hệ thống và thư mục build thường gặp",
+  "@search.systemDirExclude.default": {
+    "sourceHash": "dcdf28a"
+  },
+  "search.systemDirExclude.heading": "Các thư mục này được ẩn:",
+  "@search.systemDirExclude.heading": {
+    "sourceHash": "5ee8d52"
+  },
+  "search.notAFolderToast": "Kết quả tìm kiếm không phải là một thư mục. Hãy dán vào một thư mục thật sự.",
+  "@search.notAFolderToast": {
+    "sourceHash": "c449358"
+  },
+  "search.searchableFolder.disabledTooltip": "Thư mục hiện tại là kết quả tìm kiếm, không thể tìm kiếm trong đó. Hãy mở một thư mục thật sự trước.",
+  "@search.searchableFolder.disabledTooltip": {
+    "sourceHash": "a90d24e"
+  },
+  "search.snapshot.defaultLabel": "Tìm kiếm",
+  "@search.snapshot.defaultLabel": {
+    "sourceHash": "49c266b"
+  },
+  "search.snapshot.cappedLabel": "{label} ({capText} đầu tiên trong tổng {totalText})",
+  "@search.snapshot.cappedLabel": {
+    "sourceHash": "35523ac"
+  }
+}

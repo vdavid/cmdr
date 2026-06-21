@@ -1,0 +1,26 @@
+{
+  "whatsNew.dialog.title": "Nyheter i Cmdr",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "Inget att se här ännu. Nya ändringar dyker upp här efter en uppdatering.",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.dialog.seeFullChangelog": "Visa hela ändringsloggen",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "Inte intresserad av ändringsloggar",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "Stäng",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "Uppfattat, inga fler uppdateringsnoteringar. Slå på dem igen när du vill under Inställningar > Uppdateringar och integritet.",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

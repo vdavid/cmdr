@@ -1,0 +1,502 @@
+{
+  "onboarding.wizard.title": "Cmdr bevezető",
+  "@onboarding.wizard.title": {
+    "sourceHash": "3b97a1b"
+  },
+  "onboarding.wizard.progressLabel": "A bevezető előrehaladása",
+  "@onboarding.wizard.progressLabel": {
+    "sourceHash": "ad8a0da"
+  },
+  "onboarding.wizard.stepProgress": "{step}. lépés a(z) {total}-ból{isOptional, select, true { (választható)} other {}}",
+  "@onboarding.wizard.stepProgress": {
+    "sourceHash": "41705d0"
+  },
+  "onboarding.wizard.back": "Vissza",
+  "@onboarding.wizard.back": {
+    "sourceHash": "76900f1"
+  },
+  "onboarding.wizard.backAria": "Ugrás az előző lépésre",
+  "@onboarding.wizard.backAria": {
+    "sourceHash": "a729451"
+  },
+  "onboarding.wizard.next": "Tovább",
+  "@onboarding.wizard.next": {
+    "sourceHash": "1ff57a2"
+  },
+  "onboarding.wizard.finish": "Befejezés",
+  "@onboarding.wizard.finish": {
+    "sourceHash": "a6c7a84"
+  },
+  "onboarding.wizard.restart": "Cmdr újraindítása",
+  "@onboarding.wizard.restart": {
+    "sourceHash": "e62c550"
+  },
+  "onboarding.stepFda.granted.title": "Megadtad a teljes lemezhozzáférést!",
+  "@onboarding.stepFda.granted.title": {
+    "sourceHash": "6740141"
+  },
+  "onboarding.stepFda.granted.body": "Remek, ennél többre nincs is szüksége a Cmdrnek. Indítsd újra most, és máris indulhat minden.",
+  "@onboarding.stepFda.granted.body": {
+    "sourceHash": "32acf9d"
+  },
+  "onboarding.stepFda.granted.hint": "A Cmdr a következő indításkor érzékeli az új engedélyt. A bevezetőben tartott helyed elmentettük, így pontosan ide kerülsz vissza.",
+  "@onboarding.stepFda.granted.hint": {
+    "sourceHash": "e0e33a3"
+  },
+  "onboarding.stepFda.alreadyGranted.title": "A Cmdr most rendelkezik teljes lemezhozzáféréssel",
+  "@onboarding.stepFda.alreadyGranted.title": {
+    "sourceHash": "403273d"
+  },
+  "onboarding.stepFda.alreadyGranted.body": "Bármikor visszavonhatod itt: {systemSettings}.",
+  "@onboarding.stepFda.alreadyGranted.body": {
+    "sourceHash": "98fb9f4"
+  },
+  "onboarding.stepFda.welcome.title": "Üdv a Cmdrben!",
+  "@onboarding.stepFda.welcome.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepFda.revoked.intro": "Úgy tűnik, korábban elfogadtad a teljes lemezhozzáférést, de aztán visszavontad.",
+  "@onboarding.stepFda.revoked.intro": {
+    "sourceHash": "9087914"
+  },
+  "onboarding.stepFda.revoked.noAccess": "Az appnak jelenleg nincs teljes lemezhozzáférése.",
+  "@onboarding.stepFda.revoked.noAccess": {
+    "sourceHash": "415a3f3"
+  },
+  "onboarding.stepFda.revoked.ifIntentional": "Ha ez szándékos volt, kattints a <deny>Elutasítás</deny> gombra, és az app többé nem zavar vele.",
+  "@onboarding.stepFda.revoked.ifIntentional": {
+    "sourceHash": "9709b73"
+  },
+  "onboarding.stepFda.revoked.ifNot": "Ha <em>nem</em> volt szándékos, érdemes újra engedélyezned a teljes lemezhozzáférést. Íme az előnyök és hátrányok:",
+  "@onboarding.stepFda.revoked.ifNot": {
+    "sourceHash": "24667ee"
+  },
+  "onboarding.stepFda.firstAsk.lede": "<strong>Valószínűleg csak el szeretnéd kezdeni használni az appot.</strong> Bocs, hogy ezzel zavarunk elsőként, de szükség van rá.",
+  "@onboarding.stepFda.firstAsk.lede": {
+    "sourceHash": "7f19b2a"
+  },
+  "onboarding.stepFda.firstAsk.explain": "Tudod, a Cmdr egy fájlkezelő, és hozzá kell férnie a lemezedhez, hogy lássa az összes fájlodat. A macOS ezt nem adja meg automatikusan.",
+  "@onboarding.stepFda.firstAsk.explain": {
+    "sourceHash": "f60c41b"
+  },
+  "onboarding.stepFda.firstAsk.askPermission": "Szeretnél teljes lemezhozzáférést adni ennek az appnak? Íme, mit jelent ez:",
+  "@onboarding.stepFda.firstAsk.askPermission": {
+    "sourceHash": "94e5db7"
+  },
+  "onboarding.stepFda.pro": "<strong>Előny:</strong> Az app a teljes lemezedhez hozzáfér anélkül, hogy minden egyes mappához (Letöltések, Dokumentumok, Asztal) külön engedélyért zaklatna.",
+  "@onboarding.stepFda.pro": {
+    "sourceHash": "e00bada"
+  },
+  "onboarding.stepFda.con": "<strong>Hátrány:</strong> A teljes lemezhozzáférés elég erős jogosultság. Lehetővé teszi, hogy az app bármelyik fájlt elolvassa a Mac-eden. Csak akkor add meg, ha megbízol a Cmdrben. A Cmdr tisztelettel él ezzel a joggal, és <sourceLink>nyílt forráskódú</sourceLink>, ha bizonytalan lennél.",
+  "@onboarding.stepFda.con": {
+    "sourceHash": "745753e"
+  },
+  "onboarding.stepFda.ifAllow": "Ha az engedélyezés mellett döntesz:",
+  "@onboarding.stepFda.ifAllow": {
+    "sourceHash": "09c5053"
+  },
+  "onboarding.stepFda.openSettings": "{systemSettings} megnyitása",
+  "@onboarding.stepFda.openSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "onboarding.stepFda.step1": "Kattints lent a <strong>{systemSettings} megnyitása</strong> gombra",
+  "@onboarding.stepFda.step1": {
+    "sourceHash": "1e462a1"
+  },
+  "onboarding.stepFda.step2.ventura": "Keresd meg a <strong>Cmdr</strong> appot a listában, és kapcsold be",
+  "@onboarding.stepFda.step2.ventura": {
+    "sourceHash": "03e71c6"
+  },
+  "onboarding.stepFda.step2.older": "Keresd meg a <strong>Cmdr</strong> appot a lista végén, és kapcsold be",
+  "@onboarding.stepFda.step2.older": {
+    "sourceHash": "0dd40f1"
+  },
+  "onboarding.stepFda.step2.tip": "Tipp: Nincs a listában a Cmdr? Kattints alul a „+” gombra, és válaszd ki a <strong>Cmdr</strong> appot a <strong>Programok</strong> mappádból.",
+  "@onboarding.stepFda.step2.tip": {
+    "sourceHash": "1bdc656"
+  },
+  "onboarding.stepFda.step3": "Erősítsd meg, és kattints a <strong>Kilépés és újranyitás</strong> gombra",
+  "@onboarding.stepFda.step3": {
+    "sourceHash": "cf59f30"
+  },
+  "onboarding.stepFda.deny": "Elutasítás",
+  "@onboarding.stepFda.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "onboarding.stepFda.postAction.intro": "A Cmdrnek újra kell indulnia, hogy az új engedély életbe lépjen.",
+  "@onboarding.stepFda.postAction.intro": {
+    "sourceHash": "cac5247"
+  },
+  "onboarding.stepFda.postAction.body": "Ha készen állsz, kattints lent a <restart>Cmdr újraindítása</restart> gombra. Ha meggondolnád magad, kattints fent az <deny>Elutasítás</deny> gombra.",
+  "@onboarding.stepFda.postAction.body": {
+    "sourceHash": "f87a5fc"
+  },
+  "onboarding.stepAi.bannerTitle.granted": "Teljes lemezhozzáférés megadva",
+  "@onboarding.stepAi.bannerTitle.granted": {
+    "sourceHash": "f5872be"
+  },
+  "onboarding.stepAi.bannerBody.granted": "Köszönjük a teljes lemezhozzáférést! Mostantól az app hozzáfér a lemezedhez. Remek!",
+  "@onboarding.stepAi.bannerBody.granted": {
+    "sourceHash": "236f3f5"
+  },
+  "onboarding.stepAi.bannerTitle.denied": "Nincs teljes lemezhozzáférés",
+  "@onboarding.stepAi.bannerTitle.denied": {
+    "sourceHash": "0aa10cf"
+  },
+  "onboarding.stepAi.bannerBody.denied": "Úgy döntöttél, hogy nem engedélyezed a teljes lemezhozzáférést. Ezt tiszteletben tartjuk. Hamarosan kapsz néhány engedélykérést a macOS-től, hogy a Cmdr hozzáférhessen az Asztal, a Letöltések és hasonló mappáidhoz. Ezeket tetszés szerint elfogadhatod vagy elutasíthatod. Mindezt később bármikor módosíthatod itt: {systemSettings}.",
+  "@onboarding.stepAi.bannerBody.denied": {
+    "sourceHash": "ccb4ae5"
+  },
+  "onboarding.stepAi.bannerTitle.stuck": "Úgy tűnik, a Cmdrnek még nincs teljes lemezhozzáférése",
+  "@onboarding.stepAi.bannerTitle.stuck": {
+    "sourceHash": "88c9c19"
+  },
+  "onboarding.stepAi.bannerBody.stuck": "Azt mondtad, engedélyezni szeretnéd a teljes lemezhozzáférést, de úgy tűnik, a Cmdr még nem kapta meg. Lehet, hogy újra kell indítanod az appot (tedd meg most, innen folytatjuk!), vagy nyisd meg a <settingsLink>{systemSettings} &gt; Adatvédelem és biztonság &gt; Teljes lemezhozzáférés</settingsLink> menüt, és keresd meg a Cmdr appot, vagy add hozzá kézzel alul a kis „+” gombbal.",
+  "@onboarding.stepAi.bannerBody.stuck": {
+    "sourceHash": "9b83d53"
+  },
+  "onboarding.stepAi.welcomeLinux.title": "Üdv a Cmdrben!",
+  "@onboarding.stepAi.welcomeLinux.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepAi.welcomeLinux.subtitle": "Állítsuk be az AI-t.",
+  "@onboarding.stepAi.welcomeLinux.subtitle": {
+    "sourceHash": "a96e109"
+  },
+  "onboarding.stepAi.title": "Most pedig beszéljünk az AI-ról",
+  "@onboarding.stepAi.title": {
+    "sourceHash": "a580449"
+  },
+  "onboarding.stepAi.intro": "A Cmdrben egy csomó AI-funkció van, amit <em>lehet</em>, hogy szeretnél, lehet, hogy nem. Az AI mostanában vitatott téma.",
+  "@onboarding.stepAi.intro": {
+    "sourceHash": "3b6b6c6"
+  },
+  "onboarding.stepAi.comparisonIntro": "Így végzed el a gyakori műveleteket AI-jal és anélkül:",
+  "@onboarding.stepAi.comparisonIntro": {
+    "sourceHash": "440ea64"
+  },
+  "onboarding.stepAi.table.colFeature": "Funkció",
+  "@onboarding.stepAi.table.colFeature": {
+    "sourceHash": "3d377ae"
+  },
+  "onboarding.stepAi.table.colWithout": "AI nélkül",
+  "@onboarding.stepAi.table.colWithout": {
+    "sourceHash": "aadb0ba"
+  },
+  "onboarding.stepAi.table.colWith": "AI-jal",
+  "@onboarding.stepAi.table.colWith": {
+    "sourceHash": "c83835a"
+  },
+  "onboarding.stepAi.table.rowSearch": "Keresés",
+  "@onboarding.stepAi.table.rowSearch": {
+    "sourceHash": "49c266b"
+  },
+  "onboarding.stepAi.table.searchWithout": "Beírsz valami ilyesmit: <code>*hal*.ppt</code>, és kiválasztod a „hónap 1-je után” szűrőt.",
+  "@onboarding.stepAi.table.searchWithout": {
+    "sourceHash": "872cb1e"
+  },
+  "onboarding.stepAi.table.searchWith": "Azt mondod: „a halakkal kapcsolatos friss prezentációim”, és az ágens beállítja a szűrőket.",
+  "@onboarding.stepAi.table.searchWith": {
+    "sourceHash": "b69cd82"
+  },
+  "onboarding.stepAi.table.rowRename": "Tömeges átnevezés",
+  "@onboarding.stepAi.table.rowRename": {
+    "sourceHash": "9246b56"
+  },
+  "onboarding.stepAi.table.renameWithout": "A kötegelt átnevezés felületén kézzel állítod be az átnevezési mintát, átnézed és alkalmazod.",
+  "@onboarding.stepAi.table.renameWithout": {
+    "sourceHash": "b12d997"
+  },
+  "onboarding.stepAi.table.renameWith": "Azt mondod: „adj ISO dátum-előtagot”, az ágens beállítja az átnevezési mintát, te pedig tetszés szerint átnézed és alkalmazod.",
+  "@onboarding.stepAi.table.renameWith": {
+    "sourceHash": "7fba3f5"
+  },
+  "onboarding.stepAi.table.rowSelect": "Kijelölés",
+  "@onboarding.stepAi.table.rowSelect": {
+    "sourceHash": "2a78025"
+  },
+  "onboarding.stepAi.table.selectWithoutBound": "Lenyomod a(z) <chip></chip> billentyűt, és beírsz valami ilyesmit: <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, átnézed és alkalmazod.",
+  "@onboarding.stepAi.table.selectWithoutBound": {
+    "sourceHash": "83f83b9"
+  },
+  "onboarding.stepAi.table.selectWithoutUnbound": "Megnyitod a „Fájlok kijelölése…” menüpontot, és beírsz valami ilyesmit: <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, átnézed és alkalmazod.",
+  "@onboarding.stepAi.table.selectWithoutUnbound": {
+    "sourceHash": "4cdc972"
+  },
+  "onboarding.stepAi.table.selectWith": "Azt mondod: „jelöld ki az összes képfájlt”, az ágens javasol egy kijelölést, te pedig tetszés szerint átnézed és alkalmazod.",
+  "@onboarding.stepAi.table.selectWith": {
+    "sourceHash": "07f1063"
+  },
+  "onboarding.stepAi.resumeCue": "Legutóbb ezt választottad. Erősítsd meg, vagy módosítsd lent.",
+  "@onboarding.stepAi.resumeCue": {
+    "sourceHash": "586e2ae"
+  },
+  "onboarding.stepAi.choiceLegend": "Ezek alapján szeretnél AI-t, vagy sem?",
+  "@onboarding.stepAi.choiceLegend": {
+    "sourceHash": "0748af8"
+  },
+  "onboarding.stepAi.choiceGroupAria": "AI-választás",
+  "@onboarding.stepAi.choiceGroupAria": {
+    "sourceHash": "9083caa"
+  },
+  "onboarding.stepAi.cloud.label": "Igen, szeretnék AI-t",
+  "@onboarding.stepAi.cloud.label": {
+    "sourceHash": "ba08450"
+  },
+  "onboarding.stepAi.cloud.recommended": "(ajánlott)",
+  "@onboarding.stepAi.cloud.recommended": {
+    "sourceHash": "1185133"
+  },
+  "onboarding.stepAi.cloud.help": "Használj bármilyen felhőszolgáltatót a saját API-kulcsoddal. Gyors, jó minőségű modellek. Válassz lent egy szolgáltatót.",
+  "@onboarding.stepAi.cloud.help": {
+    "sourceHash": "96f3940"
+  },
+  "onboarding.stepAi.cloud.pickerTitle": "Válassz szolgáltatót",
+  "@onboarding.stepAi.cloud.pickerTitle": {
+    "sourceHash": "71e2ca7"
+  },
+  "onboarding.stepAi.local.label": "Igen, szeretnék AI-t, de szuper diszkrét akarok maradni",
+  "@onboarding.stepAi.local.label": {
+    "sourceHash": "f371401"
+  },
+  "onboarding.stepAi.local.help": "Egy kicsit butább modell, ami nagyjából 2 GB helyet és minden használatkor egy kis CPU-t igényel. Még mindig oké megoldás. Egyetlen adat sem hagyja el a gépedet. A Cmdr igyekszik az elérhető legjobb kis helyi modellhez frissítéseket biztosítani.",
+  "@onboarding.stepAi.local.help": {
+    "sourceHash": "fd47d34"
+  },
+  "onboarding.stepAi.local.note": "A helyi modell letöltése elindult a háttérben. Most már befejezheted a bevezetőt; a sarokban lévő buborék tájékoztat majd.",
+  "@onboarding.stepAi.local.note": {
+    "sourceHash": "af89d60"
+  },
+  "onboarding.stepAi.localTooltip": "A helyi LLM-hez Apple Silicon szükséges. A felhő Intelen is működik.",
+  "@onboarding.stepAi.localTooltip": {
+    "sourceHash": "dc194e8"
+  },
+  "onboarding.stepAi.off.label": "Kösz, de nem kérek, AI-t nem nekem való",
+  "@onboarding.stepAi.off.label": {
+    "sourceHash": "c2a8322"
+  },
+  "onboarding.stepAi.off.help": "A Cmdr AI nélkül is teljesen működik. Később bekapcsolhatod a Beállításokban.",
+  "@onboarding.stepAi.off.help": {
+    "sourceHash": "3f261be"
+  },
+  "onboarding.stepBeta.footer.start": "Kezdd el használni a Cmdrt!",
+  "@onboarding.stepBeta.footer.start": {
+    "sourceHash": "e29bbc7"
+  },
+  "onboarding.stepBeta.footer.continue": "Még egy választható beállítási lépés",
+  "@onboarding.stepBeta.footer.continue": {
+    "sourceHash": "4024130"
+  },
+  "onboarding.stepBeta.title": "Segíts jobbá tenni a Cmdrt!",
+  "@onboarding.stepBeta.title": {
+    "sourceHash": "6e8be73"
+  },
+  "onboarding.stepBeta.greeting": "Szia, <david>David</david> vagyok! Én építem a Cmdrt, és te az egyik legelső ember vagy, aki használja. Köszönöm a bizalmadat! ❤️",
+  "@onboarding.stepBeta.greeting": {
+    "sourceHash": "f7ade14"
+  },
+  "onboarding.stepBeta.openBeta": "A Cmdr nyílt bétában van, ami azt jelenti, hogy összességében stabil és használható, de néhány része még döcög. A leginkább munka alatt álló területeket <alpha></alpha> jelvények jelölik.",
+  "@onboarding.stepBeta.openBeta": {
+    "sourceHash": "5b0a107"
+  },
+  "onboarding.stepBeta.feedbackIntro": "A visszajelzésed segít, hogy észrevegyem a hibákat és rangsoroljam a funkciókat. Így kapcsolódhatsz be:",
+  "@onboarding.stepBeta.feedbackIntro": {
+    "sourceHash": "4e238dd"
+  },
+  "onboarding.stepBeta.feedback.inAppBound": "<strong>Az appon belül:</strong> A menüben a <strong>Súgó &gt; Visszajelzés küldése…</strong> menüpontnál, vagy a parancspalettában a(z) <chip></chip> billentyűvel.",
+  "@onboarding.stepBeta.feedback.inAppBound": {
+    "sourceHash": "88ec070"
+  },
+  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>Az appon belül:</strong> A menüben a <strong>Súgó &gt; Visszajelzés küldése…</strong> menüpontnál, vagy a parancspalettában.",
+  "@onboarding.stepBeta.feedback.inAppUnbound": {
+    "sourceHash": "b7f7fb3"
+  },
+  "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Vegyél fel hibajegyeket, szavazz rájuk.",
+  "@onboarding.stepBeta.feedback.github": {
+    "sourceHash": "f4fb26a"
+  },
+  "onboarding.stepBeta.feedback.discord": "<discord>Discord</discord>: Kattints a linkre, ugorj be a szerverre, ismerj meg engem és a többieket.",
+  "@onboarding.stepBeta.feedback.discord": {
+    "sourceHash": "c899232"
+  },
+  "onboarding.stepBeta.feedback.call": "<call>Foglalj velem egy beszélgetést</call>: Nem fogom ezt sokáig csinálni, de amíg a Cmdr nyílt bétában van, szívesen beszélgetnék veled a fájljaidról!",
+  "@onboarding.stepBeta.feedback.call": {
+    "sourceHash": "5e198ee"
+  },
+  "onboarding.stepBeta.star": "És még egy nagyon fontos módja annak, hogyan segíthetsz egy perc alatt: csillagozd, kövesd és forkold a repót <github>itt a GitHubon</github>. A Homebrew 225 csillagot, 50 forkot és 50 követést kér tőlem, hogy engedélyezze a(z) <code>brew install cmdr</code> parancsot.",
+  "@onboarding.stepBeta.star": {
+    "sourceHash": "6e978a7"
+  },
+  "onboarding.stepBeta.analyticsLede": "Hogy megtudjuk, mi működik és mi nem, a Cmdr a nyílt béta alatt névtelen használati statisztikát küld: mely funkciókat használják és milyen gyakran, soha semmit a fájljaidból. Most be van kapcsolva, és bármikor kikapcsolhatod.",
+  "@onboarding.stepBeta.analyticsLede": {
+    "sourceHash": "2f5b897"
+  },
+  "onboarding.stepBeta.analyticsTitle": "Névtelen használati statisztika küldése",
+  "@onboarding.stepBeta.analyticsTitle": {
+    "sourceHash": "4620960"
+  },
+  "onboarding.stepBeta.analyticsCaption": "Vedd figyelembe, hogy alapból BE van kapcsolva, hogy a béta alatt ösztönözzem az adatküldést. Ezt bármikor módosíthatod a Beállításokban.",
+  "@onboarding.stepBeta.analyticsCaption": {
+    "sourceHash": "9821e5d"
+  },
+  "onboarding.stepBeta.emailTitle": "Maradjunk kapcsolatban (választható)",
+  "@onboarding.stepBeta.emailTitle": {
+    "sourceHash": "cf691fa"
+  },
+  "onboarding.stepBeta.emailPlaceholder": "you@example.com",
+  "@onboarding.stepBeta.emailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "onboarding.stepBeta.signup.success": "Nézd meg a postaládádat, és erősítsd meg az e-mail-címedet. Köszönjük a segítséget!",
+  "@onboarding.stepBeta.signup.success": {
+    "sourceHash": "b96010e"
+  },
+  "onboarding.stepBeta.signup.failure": "Bocs, most nem sikerült feliratkoztatnunk. Megpróbálod újra?",
+  "@onboarding.stepBeta.signup.failure": {
+    "sourceHash": "0aac3a9"
+  },
+  "onboarding.stepBeta.emailNote": "Add meg az e-mail-címedet, és időnként megkereslek egy-egy kérdéssel vagy hírrel. Az itt megadott e-mail-cím csak a Mac-eden tárolódik, és soha nem kapcsolódik a használati statisztikádhoz: a kettő szándékosan két külön alrendszer.",
+  "@onboarding.stepBeta.emailNote": {
+    "sourceHash": "9d262c8"
+  },
+  "onboarding.stepOptional.footer.start": "Kezdd el használni a Cmdrt",
+  "@onboarding.stepOptional.footer.start": {
+    "sourceHash": "d11e058"
+  },
+  "onboarding.stepOptional.title": "Már majdnem készen állsz",
+  "@onboarding.stepOptional.title": {
+    "sourceHash": "6ad977a"
+  },
+  "onboarding.stepOptional.lede": "Úgy döntöttél, hogy végigmész a részletes beállításon, így íme néhány egyszerű választás. Ha nem nagyon érdekel, csak kattints lent a gombra. Ezek mind opciók, és az alapértékek a te érdekedben lettek megválasztva.",
+  "@onboarding.stepOptional.lede": {
+    "sourceHash": "b1242c9"
+  },
+  "onboarding.stepOptional.recommendedOn": "Ajánlott: bekapcsolva. Ezt bármikor módosíthatod a Beállításokban.",
+  "@onboarding.stepOptional.recommendedOn": {
+    "sourceHash": "05e5598"
+  },
+  "onboarding.stepOptional.networking.title": "Hálózat",
+  "@onboarding.stepOptional.networking.title": {
+    "sourceHash": "204de4b"
+  },
+  "onboarding.stepOptional.networking.desc": "Ha ez <em>be</em> van kapcsolva, csatlakozhatsz SMB-szerverekhez, például céges hálózati megosztásokhoz, otthoni NAS-hoz és hasonlókhoz. Az egyetlen ára egy macOS engedélykérő ablak, amely felugrik, és a „Helyi hálózat elérése” engedélyezését kéri, plusz egy a „Bejövő kapcsolatok elfogadásához”. Mindkét ablak ártalmatlan, de ha nem tudod, mik ezek, ijesztőek vagy bosszantóak lehetnek.",
+  "@onboarding.stepOptional.networking.desc": {
+    "sourceHash": "a27866b"
+  },
+  "onboarding.stepOptional.indexing.title": "Meghajtó indexelése",
+  "@onboarding.stepOptional.indexing.title": {
+    "sourceHash": "38d916b"
+  },
+  "onboarding.stepOptional.indexing.descIntro": "A meghajtó indexelése kifejezetten klassz! Két fő dolgot ad:",
+  "@onboarding.stepOptional.indexing.descIntro": {
+    "sourceHash": "6b86a1f"
+  },
+  "onboarding.stepOptional.indexing.benefit1": "Azonnali keresés a teljes meghajtódon. Mint a Spotlight, csak még gyorsabban.",
+  "@onboarding.stepOptional.indexing.benefit1": {
+    "sourceHash": "5fa0e9f"
+  },
+  "onboarding.stepOptional.indexing.benefit2": "Valós idejű mappaméretek a teljes meghajtódra. Mindig tudod, mennyi cucc van az egyes mappákban.",
+  "@onboarding.stepOptional.indexing.benefit2": {
+    "sourceHash": "6fe5223"
+  },
+  "onboarding.stepOptional.indexing.descCost": "Ha ezt kikapcsolod, a méretek helyett csak <code>&lt;DIR&gt;</code> jelenik meg. Az ára egy 300 MB-os index a meghajtódon, de nincs extra CPU- vagy memóriahasználat, miután lefutott az app első indításakor (vagy hosszú szünet utáni indításkor) az első 2&ndash;3 perc. Az előnyökhöz képest olcsó funkció.",
+  "@onboarding.stepOptional.indexing.descCost": {
+    "sourceHash": "197ffd2"
+  },
+  "onboarding.stepOptional.updates.title": "Automatikus frissítések",
+  "@onboarding.stepOptional.updates.title": {
+    "sourceHash": "147b1b6"
+  },
+  "onboarding.stepOptional.updates.desc": "Ha ezt engedélyezed, a Cmdr minden appindításkor, plusz 24 óránként egyszer egy apró hálózati kérést küld egy központi licencszervernek, és mindig megkapod a legfrissebb frissítéseket. Ha letiltod, megtartod a jelenlegi verziódat, és nulla automatikus hálózati kérés indul (kivéve az időszakos licencellenőrzéseket, ha van kereskedelmi licenced).",
+  "@onboarding.stepOptional.updates.desc": {
+    "sourceHash": "81147a5"
+  },
+  "onboarding.stepOptional.mtp.title": "MTP (Android-telefonok, Kindle-ök, kamerák)",
+  "@onboarding.stepOptional.mtp.title": {
+    "sourceHash": "473e8e9"
+  },
+  "onboarding.stepOptional.mtp.desc": "Ha ezt engedélyezed, a Cmdr <strong>csatlakozhat Android-telefonokhoz, Kindle-ökhöz, kamerákhoz</strong>, néhány zenelejátszóhoz és bármilyen más eszközhöz, amely támogatja az MTP vagy PTP nevű protokollt. Az ára az, hogy a macOS <em>is</em> csatlakozni szeretne ezekhez (és ez általában nem sikerül neki, ezért nem tudsz csak úgy a Finderrel fotókat másolni Android-telefonokról), így a Cmdrnek el kell nyomnia azt a macOS folyamatot, amíg fut. Amikor kilépsz a Cmdrből, ezt udvariasan visszaállítja. De ennek azért van némi ára, szóval:",
+  "@onboarding.stepOptional.mtp.desc": {
+    "sourceHash": "ba2265d"
+  },
+  "onboarding.cloudPicker.listAria": "Felhőalapú AI-szolgáltatók",
+  "@onboarding.cloudPicker.listAria": {
+    "sourceHash": "9494a49"
+  },
+  "onboarding.cloudSetup.title": "{provider} beállítása",
+  "@onboarding.cloudSetup.title": {
+    "sourceHash": "c10333a"
+  },
+  "onboarding.cloudSetup.step.signup": "Regisztrálj itt: <signupLink>{provider}</signupLink> (ha még nincs fiókod)",
+  "@onboarding.cloudSetup.step.signup": {
+    "sourceHash": "d89f1e1"
+  },
+  "onboarding.cloudSetup.step.createKey": "Hozz létre egy API-kulcsot <keyLink>itt</keyLink>",
+  "@onboarding.cloudSetup.step.createKey": {
+    "sourceHash": "5705da6"
+  },
+  "onboarding.cloudSetup.step.endpoint": "Végpont URL-címe",
+  "@onboarding.cloudSetup.step.endpoint": {
+    "sourceHash": "2578179"
+  },
+  "onboarding.cloudSetup.step.endpointPlaceholder": "Példa: https://api.example.com/v1",
+  "@onboarding.cloudSetup.step.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "onboarding.cloudSetup.step.pasteKey": "Illeszd be az API-kulcsodat",
+  "@onboarding.cloudSetup.step.pasteKey": {
+    "sourceHash": "e35b296"
+  },
+  "onboarding.cloudSetup.apiKeyAria": "API-kulcs",
+  "@onboarding.cloudSetup.apiKeyAria": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Példa: sk-abc123…",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
+    "sourceHash": "f9701a2"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Példa: sk-ant-abc123…",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
+    "sourceHash": "5a4d18d"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.generic": "API-kulcs",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.status.checking": "A kulcsod ellenőrzése…",
+  "@onboarding.cloudSetup.status.checking": {
+    "sourceHash": "e8c3a83"
+  },
+  "onboarding.cloudSetup.status.authError": "Ez a kulcs nem működött",
+  "@onboarding.cloudSetup.status.authError": {
+    "sourceHash": "2f23f3b"
+  },
+  "onboarding.cloudSetup.status.connectionError": "Most nem érhető el a szolgáltatás",
+  "@onboarding.cloudSetup.status.connectionError": {
+    "sourceHash": "67cb2e5"
+  },
+  "onboarding.cloudSetup.status.genericError": "Valami nem sikerült",
+  "@onboarding.cloudSetup.status.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "onboarding.cloudSetup.status.connected": "Kapcsolódva!",
+  "@onboarding.cloudSetup.status.connected": {
+    "sourceHash": "78ae377"
+  },
+  "onboarding.cloudSetup.step.pickModel": "Válassz modellt",
+  "@onboarding.cloudSetup.step.pickModel": {
+    "sourceHash": "f159730"
+  },
+  "onboarding.cloudSetup.modelAria": "Modell",
+  "@onboarding.cloudSetup.modelAria": {
+    "sourceHash": "5e2c614"
+  },
+  "onboarding.cloudSetup.modelPlaceholderExample": "Például: {model}",
+  "@onboarding.cloudSetup.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "onboarding.cloudSetup.modelPlaceholder": "Modell neve",
+  "@onboarding.cloudSetup.modelPlaceholder": {
+    "sourceHash": "a3c3370"
+  }
+}

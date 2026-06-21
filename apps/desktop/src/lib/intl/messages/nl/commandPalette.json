@@ -1,0 +1,26 @@
+{
+  "commandPalette.searchPlaceholder": "Zoek opdrachten...",
+  "@commandPalette.searchPlaceholder": {
+    "sourceHash": "dd6c6ab"
+  },
+  "commandPalette.searchAriaLabel": "Zoek opdrachten",
+  "@commandPalette.searchAriaLabel": {
+    "sourceHash": "00ff739"
+  },
+  "commandPalette.noResults": "Geen opdrachten gevonden",
+  "@commandPalette.noResults": {
+    "sourceHash": "eac0d09"
+  },
+  "commandPalette.resultsAriaLabel": "Opdrachten",
+  "@commandPalette.resultsAriaLabel": {
+    "sourceHash": "b269dc4"
+  },
+  "commandPalette.groupRecent": "Recent",
+  "@commandPalette.groupRecent": {
+    "sourceHash": "690dbe9"
+  },
+  "commandPalette.groupAll": "Alle opdrachten",
+  "@commandPalette.groupAll": {
+    "sourceHash": "f9c4287"
+  }
+}

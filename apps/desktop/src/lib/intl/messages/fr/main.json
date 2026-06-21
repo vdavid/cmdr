@@ -1,0 +1,10 @@
+{
+  "main.upgradeNudge.mac": "Nous avons ajouté de nouvelles options de configuration. Ouvrez Cmdr > Prise en main… pour les découvrir.",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "477f3a5"
+  },
+  "main.upgradeNudge.other": "Nous avons ajouté de nouvelles options de configuration. Ouvrez la palette de commandes et lancez Prise en main… pour les découvrir.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "4b0b39e"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "whatsNew.dialog.title": "Újdonságok a Cmdrben",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "Itt még nincs semmi. Az új változások egy frissítés után jelennek meg itt.",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.dialog.seeFullChangelog": "Teljes változásnapló megtekintése",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "Nem érdekelnek a változásnaplók",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "Bezárás",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "Rendben, nincs több frissítési jegyzet. Bármikor visszakapcsolhatod itt: Beállítások > Frissítések és adatvédelem.",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

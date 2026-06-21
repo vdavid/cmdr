@@ -40,8 +40,24 @@ sibling folders, each with a `_see-also.txt` listing the set:
 - **Chinese**: `zh-Hans`/`zh-Hant` (Microsoft, script) vs `zh-CN`/`zh-TW`/`zh-HK` (macOS/GNOME, region).
 - **Serbian**: `sr-Cyrl`/`sr-Latn`/`sr-Cyrl-BA` (Microsoft) vs `sr`/`sr-Latn`/`sr-ije` (GNOME).
 - **Norwegian**: `nb`/`nn` (macOS/GNOME) vs `nb-NO`/`nn-NO` (Microsoft).
+- **Portuguese**: `pt-BR` (Brazilian, complete) vs bare `pt` (European file-manager catalogs, `Language: pt`, plus an
+  AppKit-only macOS) vs `pt-PT` (European macOS + Microsoft, no file managers). The bare `pt` is NOT a superset.
+- **Bengali**: `bn` (Microsoft terminology + GNOME/Xfce/Dolphin) vs `bn-IN` (the Microsoft style guide). No macOS tier
+  exists (Apple doesn't localize Bengali).
 
 For de, sv, hu, and every plain base language there are no such splits: one clean folder each.
+
+### Composed base folders for split catalog tags
+
+Where a Cmdr catalog tag's evidence is split across the siblings above, the base folder is made mineable so the
+how-to-mine recipes run verbatim against `<tag>/`. These are local conveniences (symlinks + a `_see-also.txt`); recreate
+them after a pile rebuild:
+
+- **`zh/`** (ships Simplified): symlinks `macOS` + the file managers → `zh-CN/`, and `microsoft-terminology` +
+  `microsoft-style-guides` → `zh-Hans/`.
+- **`bn/`**: symlinks `microsoft-style-guides` → `bn-IN/` (the rest is already in `bn/`).
+- **`pt`**: no composed base — Cmdr's `pt` ships Brazilian, so mine the already-complete `pt-BR/` directly (the bare `pt`
+  is European; don't mix).
 
 ### Scripts
 

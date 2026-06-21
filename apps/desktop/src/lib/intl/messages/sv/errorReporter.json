@@ -1,0 +1,142 @@
+{
+  "errorReporter.dialog.title": "Skicka felrapport",
+  "@errorReporter.dialog.title": {
+    "sourceHash": "c327e68"
+  },
+  "errorReporter.dialog.description": "Det här skickar Cmdrs senaste loggfiler till teamet så att vi kan åtgärda det som gick snett. Loggarna maskeras lokalt: sökvägar, värdnamn, IP-adresser och e-postadresser rensas bort innan de skickas.",
+  "@errorReporter.dialog.description": {
+    "sourceHash": "dd11284"
+  },
+  "errorReporter.dialog.referenceIdLabel": "Referens-ID:",
+  "@errorReporter.dialog.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.dialog.copy": "Kopiera",
+  "@errorReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "errorReporter.dialog.copied": "Kopierad",
+  "@errorReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.dialog.noteLabel": "Lägg till en notering (valfritt)",
+  "@errorReporter.dialog.noteLabel": {
+    "sourceHash": "6bb0c6b"
+  },
+  "errorReporter.dialog.counter": "{currentText} / {maxText}",
+  "@errorReporter.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "errorReporter.dialog.notePlaceholder": "Vad försökte du göra? Vad förväntade du dig skulle hända?",
+  "@errorReporter.dialog.notePlaceholder": {
+    "sourceHash": "003300b"
+  },
+  "errorReporter.dialog.noteTooLong": "Noteringen är för lång. Högst {maxText} tecken.",
+  "@errorReporter.dialog.noteTooLong": {
+    "sourceHash": "835aa78"
+  },
+  "errorReporter.dialog.attachEmail": "Bifoga min e-postadress ({email}) så att vi kan svara",
+  "@errorReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "errorReporter.dialog.detailsToggle": "Det här är på väg att skickas",
+  "@errorReporter.dialog.detailsToggle": {
+    "sourceHash": "b1069f7"
+  },
+  "errorReporter.dialog.manifestHeading": "Manifest",
+  "@errorReporter.dialog.manifestHeading": {
+    "sourceHash": "3c99f1f"
+  },
+  "errorReporter.dialog.sampleFirstHeading": "Exempel på {count, plural, one {första raden} other {första # raderna}}",
+  "@errorReporter.dialog.sampleFirstHeading": {
+    "sourceHash": "7a2e538"
+  },
+  "errorReporter.dialog.sampleLastHeading": "Exempel på {count, plural, one {sista raden} other {sista # raderna}}",
+  "@errorReporter.dialog.sampleLastHeading": {
+    "sourceHash": "a36f420"
+  },
+  "errorReporter.dialog.noLogLines": "(inga loggrader tillgängliga)",
+  "@errorReporter.dialog.noLogLines": {
+    "sourceHash": "a2d54fd"
+  },
+  "errorReporter.dialog.totalLines": "Totalt antal loggrader (efter maskering): {countText}",
+  "@errorReporter.dialog.totalLines": {
+    "sourceHash": "9c5cab7"
+  },
+  "errorReporter.dialog.preparing": "Förbereder förhandsvisning…",
+  "@errorReporter.dialog.preparing": {
+    "sourceHash": "11e66e1"
+  },
+  "errorReporter.dialog.prepareFailed": "Det gick inte att förbereda förhandsvisningen: {error}",
+  "@errorReporter.dialog.prepareFailed": {
+    "sourceHash": "21c4dd4"
+  },
+  "errorReporter.dialog.saveToDisk": "Spara paketet på disk (debug)",
+  "@errorReporter.dialog.saveToDisk": {
+    "sourceHash": "36d6589"
+  },
+  "errorReporter.dialog.cancel": "Avbryt",
+  "@errorReporter.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "errorReporter.dialog.send": "Skicka rapport",
+  "@errorReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "errorReporter.dialog.sending": "Skickar…",
+  "@errorReporter.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "errorReporter.dialog.sendFailedToast": "Det gick inte att skicka felrapporten: {error}",
+  "@errorReporter.dialog.sendFailedToast": {
+    "sourceHash": "38c0695"
+  },
+  "errorReporter.dialog.saveFailedToast": "Det gick inte att spara paketet: {error}",
+  "@errorReporter.dialog.saveFailedToast": {
+    "sourceHash": "34cf2b4"
+  },
+  "errorReporter.sentToast.message": "Felrapporten har skickats. Ditt referens-ID är",
+  "@errorReporter.sentToast.message": {
+    "sourceHash": "75be6ba"
+  },
+  "errorReporter.sentToast.dismiss": "Avfärda",
+  "@errorReporter.sentToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.sentToast.copyId": "Kopiera ID",
+  "@errorReporter.sentToast.copyId": {
+    "sourceHash": "72ac0d5"
+  },
+  "errorReporter.sentToast.copied": "Kopierad",
+  "@errorReporter.sentToast.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.bundleSavedToast.message": "Sparade paketet på disk",
+  "@errorReporter.bundleSavedToast.message": {
+    "sourceHash": "7c1604d"
+  },
+  "errorReporter.bundleSavedToast.dismiss": "Avfärda",
+  "@errorReporter.bundleSavedToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.bundleSavedToast.reveal": "Visa i Finder",
+  "@errorReporter.bundleSavedToast.reveal": {
+    "sourceHash": "cc84938"
+  },
+  "errorReporter.autoSentToast.title": "Felrapporten har skickats",
+  "@errorReporter.autoSentToast.title": {
+    "sourceHash": "b69ee37"
+  },
+  "errorReporter.autoSentToast.referenceIdLabel": "Referens-ID:",
+  "@errorReporter.autoSentToast.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.autoSentToast.changeSettings": "Ändra inställningar",
+  "@errorReporter.autoSentToast.changeSettings": {
+    "sourceHash": "873512a"
+  },
+  "errorReporter.autoSentToast.view": "Visa",
+  "@errorReporter.autoSentToast.view": {
+    "sourceHash": "dcc839a"
+  }
+}

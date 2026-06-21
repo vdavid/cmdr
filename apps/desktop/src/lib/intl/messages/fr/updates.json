@@ -1,0 +1,42 @@
+{
+  "updates.checkToast.errorPrefix": "Problème : {message}",
+  "@updates.checkToast.errorPrefix": {
+    "sourceHash": "020abfd"
+  },
+  "updates.checkToast.sendErrorReport": "Envoyer un rapport d''incident",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "updates.toast.available": "Nouvelle version disponible. Redémarrez pour mettre à jour.",
+  "@updates.toast.available": {
+    "sourceHash": "cb97574"
+  },
+  "updates.toast.later": "Plus tard",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "Redémarrer",
+  "@updates.toast.restart": {
+    "sourceHash": "6b983a8"
+  },
+  "updates.status.noUpdates": "Aucune mise à jour trouvée. Version actuelle : v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "Vérification…",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "Mise à jour trouvée, téléchargement de la v{next} (actuelle : v{prev})…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "Installation de la v{next} (actuelle : v{prev})…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.ready": "Mise à jour v{next} prête. Redémarrez pour l''appliquer.",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

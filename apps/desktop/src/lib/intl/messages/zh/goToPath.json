@@ -1,0 +1,42 @@
+{
+  "goToPath.dialog.title": "前往路径",
+  "@goToPath.dialog.title": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.inputAriaLabel": "前往的路径",
+  "@goToPath.dialog.inputAriaLabel": {
+    "sourceHash": "ac4d152"
+  },
+  "goToPath.dialog.inputPlaceholder": "输入或粘贴路径，例如 ~/Documents",
+  "@goToPath.dialog.inputPlaceholder": {
+    "sourceHash": "d84d343"
+  },
+  "goToPath.dialog.recentsAriaLabel": "最近的路径",
+  "@goToPath.dialog.recentsAriaLabel": {
+    "sourceHash": "b698143"
+  },
+  "goToPath.dialog.removeFromList": "从列表中移除",
+  "@goToPath.dialog.removeFromList": {
+    "sourceHash": "82963c7"
+  },
+  "goToPath.dialog.cancel": "取消",
+  "@goToPath.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "goToPath.dialog.confirm": "前往路径",
+  "@goToPath.dialog.confirm": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.ancestorHint": "此路径不存在。最接近的目标是 {dir}。",
+  "@goToPath.dialog.ancestorHint": {
+    "sourceHash": "43db9f4"
+  },
+  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> 不存在，所以我们带你前往了 <land>{landed}</land>。",
+  "@goToPath.toast.landedOnAncestor": {
+    "sourceHash": "4ffc1e4"
+  },
+  "goToPath.toast.pressToGoBack": "按 <chip></chip> 返回。",
+  "@goToPath.toast.pressToGoBack": {
+    "sourceHash": "ee851b2"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "mtp.connectedToast.title": "Đã kết nối với {deviceName}",
+  "@mtp.connectedToast.title": {
+    "sourceHash": "562319d"
+  },
+  "mtp.connectedToast.bodyMac": "Cmdr đã tạm dừng daemon máy ảnh của macOS (ptpcamerad) để truy cập thiết bị này. Để dùng nó trong ứng dụng khác, hãy tắt hỗ trợ MTP trong cài đặt.",
+  "@mtp.connectedToast.bodyMac": {
+    "sourceHash": "3ace37b"
+  },
+  "mtp.connectedToast.bodyOther": "Để dùng thiết bị này trong ứng dụng khác, hãy tắt hỗ trợ MTP trong cài đặt.",
+  "@mtp.connectedToast.bodyOther": {
+    "sourceHash": "6f42620"
+  },
+  "mtp.connectedToast.dontShowAgain": "Không hiện lại",
+  "@mtp.connectedToast.dontShowAgain": {
+    "sourceHash": "d98ab77"
+  },
+  "mtp.connectedToast.disableMtp": "Tắt MTP...",
+  "@mtp.connectedToast.disableMtp": {
+    "sourceHash": "2057a3d"
+  },
+  "mtp.connectedToast.ok": "OK",
+  "@mtp.connectedToast.ok": {
+    "sourceHash": "565339b"
+  },
+  "mtp.permissionDialog.title": "Không thể truy cập thiết bị USB",
+  "@mtp.permissionDialog.title": {
+    "sourceHash": "96130bf"
+  },
+  "mtp.permissionDialog.description": "Cmdr không có quyền truy cập thiết bị này. Linux cần các quy tắc udev để cấp quyền truy cập thiết bị MTP.",
+  "@mtp.permissionDialog.description": {
+    "sourceHash": "c11f0e8"
+  },
+  "mtp.permissionDialog.explanation": "Chạy lệnh này trong terminal của bạn để cài các quy tắc và tải lại chúng:",
+  "@mtp.permissionDialog.explanation": {
+    "sourceHash": "6bc70dd"
+  },
+  "mtp.permissionDialog.helpText": "Sau khi chạy lệnh, hãy rút và cắm lại thiết bị, rồi thử lại.",
+  "@mtp.permissionDialog.helpText": {
+    "sourceHash": "519f195"
+  },
+  "mtp.permissionDialog.close": "Đóng",
+  "@mtp.permissionDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.permissionDialog.retry": "Thử kết nối lại",
+  "@mtp.permissionDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.ptpcameradDialog.title": "Không thể kết nối với thiết bị MTP",
+  "@mtp.ptpcameradDialog.title": {
+    "sourceHash": "058de77"
+  },
+  "mtp.ptpcameradDialog.inUseBy": "Thiết bị đang được <process>{process}</process> sử dụng.",
+  "@mtp.ptpcameradDialog.inUseBy": {
+    "sourceHash": "6ec78a3"
+  },
+  "mtp.ptpcameradDialog.inUseGeneric": "Một tiến trình khác đang giữ quyền truy cập độc quyền thiết bị này.",
+  "@mtp.ptpcameradDialog.inUseGeneric": {
+    "sourceHash": "cfba635"
+  },
+  "mtp.ptpcameradDialog.explanation": "Trên macOS, daemon hệ thống <code>ptpcamerad</code> tự động chiếm các thiết bị Android. Để khắc phục, hãy chạy lệnh sau trong Terminal (giữ cho nó chạy trong khi dùng Cmdr):",
+  "@mtp.ptpcameradDialog.explanation": {
+    "sourceHash": "65b6ee3"
+  },
+  "mtp.ptpcameradDialog.helpText": "Lệnh này liên tục dừng ptpcamerad trong khi chạy. Nhấn <key>Ctrl+C</key> trong Terminal để dừng nó khi xong.",
+  "@mtp.ptpcameradDialog.helpText": {
+    "sourceHash": "85b5060"
+  },
+  "mtp.ptpcameradDialog.close": "Đóng",
+  "@mtp.ptpcameradDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.ptpcameradDialog.retry": "Thử kết nối lại",
+  "@mtp.ptpcameradDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.deviceFallbackName": "Thiết bị MTP",
+  "@mtp.deviceFallbackName": {
+    "sourceHash": "8ba7a69"
+  },
+  "mtp.error.exclusiveAccess": "Một tiến trình khác đang giữ quyền truy cập độc quyền{blocking, select, none {} other { (bị chặn bởi {blocking})}}",
+  "@mtp.error.exclusiveAccess": {
+    "sourceHash": "a81f306"
+  },
+  "mtp.error.permissionDenied": "Quyền truy cập USB bị từ chối. Hãy cài các quy tắc udev và kết nối lại",
+  "@mtp.error.permissionDenied": {
+    "sourceHash": "3362501"
+  }
+}

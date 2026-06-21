@@ -1,0 +1,6 @@
+{
+  "notifications.permissionDenied": "Aviseringar från macOS är avstängda. Öppna Systeminställningar för att tillåta dem.",
+  "@notifications.permissionDenied": {
+    "sourceHash": "4fef9ce"
+  }
+}

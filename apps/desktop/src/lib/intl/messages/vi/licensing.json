@@ -1,0 +1,390 @@
+{
+  "licensing.about.srTitle": "Giới thiệu Cmdr",
+  "@licensing.about.srTitle": {
+    "sourceHash": "efe010f"
+  },
+  "licensing.about.appName": "Cmdr",
+  "@licensing.about.appName": {
+    "sourceHash": "40c6a1b"
+  },
+  "licensing.about.tagline": "Trình quản lý tệp điều khiển bằng bàn phím",
+  "@licensing.about.tagline": {
+    "sourceHash": "e399865"
+  },
+  "licensing.about.version": "Phiên bản {version} (beta công khai)",
+  "@licensing.about.version": {
+    "sourceHash": "1496c81"
+  },
+  "licensing.about.betaNote": "Thấy điều gì chưa ổn? Hãy cho tôi biết trên <github>GitHub</github>. Tôi đọc mọi báo cáo!",
+  "@licensing.about.betaNote": {
+    "sourceHash": "49a09cb"
+  },
+  "licensing.about.noLicense": "Không có giấy phép – chỉ cho phép dùng cá nhân",
+  "@licensing.about.noLicense": {
+    "sourceHash": "e2ce8da"
+  },
+  "licensing.about.perpetual": "Giấy phép thương mại vĩnh viễn cho {org}",
+  "@licensing.about.perpetual": {
+    "sourceHash": "591d7a8"
+  },
+  "licensing.about.commercial": "Giấy phép thương mại cho {org}",
+  "@licensing.about.commercial": {
+    "sourceHash": "577f55b"
+  },
+  "licensing.about.commercialUntil": "Giấy phép thương mại cho {org}, có hiệu lực đến {date}",
+  "@licensing.about.commercialUntil": {
+    "sourceHash": "eb44f8d"
+  },
+  "licensing.about.fallbackOrg": "tổ chức của bạn",
+  "@licensing.about.fallbackOrg": {
+    "sourceHash": "bb0bdf0"
+  },
+  "licensing.about.aiAttribution": "AI được hỗ trợ bởi Falcon-H1R-7B của Technology Innovation Institute (TII)",
+  "@licensing.about.aiAttribution": {
+    "sourceHash": "54d9ac4"
+  },
+  "licensing.about.linkWebsite": "Trang web",
+  "@licensing.about.linkWebsite": {
+    "sourceHash": "b5a229a"
+  },
+  "licensing.about.linkGetLicense": "Mua giấy phép",
+  "@licensing.about.linkGetLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.about.linkGithub": "GitHub",
+  "@licensing.about.linkGithub": {
+    "sourceHash": "f911e41"
+  },
+  "licensing.about.linkDiscord": "Discord",
+  "@licensing.about.linkDiscord": {
+    "sourceHash": "053bc65"
+  },
+  "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
+  "@licensing.about.copyright": {
+    "sourceHash": "e6ab7e3"
+  },
+  "licensing.commercialReminder.title": "Cảm ơn bạn đã dùng Cmdr!",
+  "@licensing.commercialReminder.title": {
+    "sourceHash": "6898650"
+  },
+  "licensing.commercialReminder.usingPersonal": "Bạn đang dùng giấy phép Cá nhân.",
+  "@licensing.commercialReminder.usingPersonal": {
+    "sourceHash": "508c17d"
+  },
+  "licensing.commercialReminder.askCommercial": "Nếu bạn dùng Cmdr cho công việc, hãy mua giấy phép Thương mại để tuân thủ.",
+  "@licensing.commercialReminder.askCommercial": {
+    "sourceHash": "6bf4031"
+  },
+  "licensing.commercialReminder.priceInfo": "Giấy phép thương mại có giá $59/năm/người dùng và giúp duy trì việc phát triển.",
+  "@licensing.commercialReminder.priceInfo": {
+    "sourceHash": "a7099b3"
+  },
+  "licensing.commercialReminder.declinePersonal": "Tôi chỉ dùng Cmdr<break></break>cho mục đích cá nhân",
+  "@licensing.commercialReminder.declinePersonal": {
+    "sourceHash": "49641ff"
+  },
+  "licensing.commercialReminder.getCommercial": "Mua giấy phép thương mại",
+  "@licensing.commercialReminder.getCommercial": {
+    "sourceHash": "07f081b"
+  },
+  "licensing.expiration.title": "Giấy phép thương mại của bạn đã hết hạn",
+  "@licensing.expiration.title": {
+    "sourceHash": "7067c40"
+  },
+  "licensing.expiration.orgName": "Giấy phép cho: <strong>{org}</strong>",
+  "@licensing.expiration.orgName": {
+    "sourceHash": "a5f0bab"
+  },
+  "licensing.expiration.message": "Gói đăng ký thương mại của bạn đã hết hạn vào <strong>{date}</strong>.",
+  "@licensing.expiration.message": {
+    "sourceHash": "92b6b97"
+  },
+  "licensing.expiration.info": "Cmdr giờ đang chạy ở chế độ dùng cá nhân. Nếu bạn vẫn dùng cho công việc, hãy gia hạn giấy phép.",
+  "@licensing.expiration.info": {
+    "sourceHash": "5fcebb5"
+  },
+  "licensing.expiration.renew": "Gia hạn giấy phép",
+  "@licensing.expiration.renew": {
+    "sourceHash": "1ee8746"
+  },
+  "licensing.expiration.continue": "Tiếp tục ở chế độ cá nhân",
+  "@licensing.expiration.continue": {
+    "sourceHash": "b5c90b4"
+  },
+  "licensing.dialog.loading": "Đang tải...",
+  "@licensing.dialog.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "licensing.dialog.detailsTitle": "Chi tiết giấy phép",
+  "@licensing.dialog.detailsTitle": {
+    "sourceHash": "57327bb"
+  },
+  "licensing.dialog.enterTitle": "Nhập khóa giấy phép",
+  "@licensing.dialog.enterTitle": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.dialog.serverInvalidBanner": "Không thể xác minh khóa này với máy chủ. Hãy thử khóa khác hoặc gửi email cho chúng tôi tại <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.serverInvalidBanner": {
+    "sourceHash": "616b906"
+  },
+  "licensing.dialog.labelType": "Loại giấy phép",
+  "@licensing.dialog.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.dialog.labelOrganization": "Tổ chức",
+  "@licensing.dialog.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.dialog.labelValidity": "Hiệu lực",
+  "@licensing.dialog.labelValidity": {
+    "sourceHash": "9c3050e"
+  },
+  "licensing.dialog.labelKey": "Khóa giấy phép",
+  "@licensing.dialog.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.dialog.typeCommercialPerpetual": "Thương mại vĩnh viễn",
+  "@licensing.dialog.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.dialog.typeCommercialSubscription": "Đăng ký thương mại",
+  "@licensing.dialog.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.dialog.validityNotYetVerified": "Chưa xác minh",
+  "@licensing.dialog.validityNotYetVerified": {
+    "sourceHash": "5b2f7a6"
+  },
+  "licensing.dialog.validityPerpetualUntil": "Vĩnh viễn: cập nhật đến {date}",
+  "@licensing.dialog.validityPerpetualUntil": {
+    "sourceHash": "cde0711"
+  },
+  "licensing.dialog.validityPerpetual": "Vĩnh viễn",
+  "@licensing.dialog.validityPerpetual": {
+    "sourceHash": "2d34320"
+  },
+  "licensing.dialog.validityValidUntil": "Có hiệu lực đến {date}",
+  "@licensing.dialog.validityValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.dialog.validityActive": "Đang hoạt động",
+  "@licensing.dialog.validityActive": {
+    "sourceHash": "9234069"
+  },
+  "licensing.dialog.validityExpiredOn": "Hết hạn vào {date}",
+  "@licensing.dialog.validityExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.dialog.pendingHint": "Chúng tôi sẽ tự động xác minh với máy chủ trong vòng {days} ngày.",
+  "@licensing.dialog.pendingHint": {
+    "sourceHash": "8d9801b"
+  },
+  "licensing.dialog.useDifferentKey": "Dùng khóa khác",
+  "@licensing.dialog.useDifferentKey": {
+    "sourceHash": "b0a5362"
+  },
+  "licensing.dialog.close": "Đóng",
+  "@licensing.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "licensing.dialog.resetConfirm": "Việc này sẽ hủy kích hoạt giấy phép hiện tại trên thiết bị này. Bạn có thể kích hoạt lại bất cứ lúc nào bằng một khóa hợp lệ.",
+  "@licensing.dialog.resetConfirm": {
+    "sourceHash": "2d77d69"
+  },
+  "licensing.dialog.cancel": "Hủy",
+  "@licensing.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.continue": "Tiếp tục",
+  "@licensing.dialog.continue": {
+    "sourceHash": "31fbef1"
+  },
+  "licensing.dialog.enterPrompt": "Dán khóa giấy phép từ email bạn nhận được sau khi mua. Chưa có khóa? <getLicense>Mua giấy phép</getLicense>.",
+  "@licensing.dialog.enterPrompt": {
+    "sourceHash": "f6fb47a"
+  },
+  "licensing.dialog.inputPlaceholder": "Ví dụ: CMDR-ABCD-EFGH-1234",
+  "@licensing.dialog.inputPlaceholder": {
+    "sourceHash": "3fb5cf9"
+  },
+  "licensing.dialog.retryExhausted": "Chúng tôi đã thử {count} lần mà vẫn chưa được. Rất tiếc vì sự bất tiện này. Hãy nhắn cho chúng tôi tại <supportEmail>{email}</supportEmail> và chúng tôi sẽ xử lý.",
+  "@licensing.dialog.retryExhausted": {
+    "sourceHash": "4f3331b"
+  },
+  "licensing.dialog.serverInvalidHelp": "Nếu bạn nghĩ đây là nhầm lẫn, hãy gửi email cho chúng tôi tại <supportEmail>{email}</supportEmail> và chúng tôi sẽ xử lý.",
+  "@licensing.dialog.serverInvalidHelp": {
+    "sourceHash": "90471d2"
+  },
+  "licensing.dialog.genericHelp": "Nếu bạn cần trợ giúp, hãy liên hệ chúng tôi tại <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.genericHelp": {
+    "sourceHash": "145df34"
+  },
+  "licensing.dialog.cancelButton": "Hủy",
+  "@licensing.dialog.cancelButton": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.checking": "Đang kiểm tra...",
+  "@licensing.dialog.checking": {
+    "sourceHash": "2e5f79b"
+  },
+  "licensing.dialog.tryAgain": "Thử lại",
+  "@licensing.dialog.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "licensing.dialog.activating": "Đang kích hoạt...",
+  "@licensing.dialog.activating": {
+    "sourceHash": "fd2db6a"
+  },
+  "licensing.dialog.activate": "Kích hoạt",
+  "@licensing.dialog.activate": {
+    "sourceHash": "24433c7"
+  },
+  "licensing.dialog.activatedToast": "Đã kích hoạt giấy phép. Cảm ơn bạn đã ủng hộ! ❤️",
+  "@licensing.dialog.activatedToast": {
+    "sourceHash": "af76e26"
+  },
+  "licensing.dialog.activatedToastNamed": "Chào mừng {org}! Cảm ơn bạn đã ủng hộ. ❤️",
+  "@licensing.dialog.activatedToastNamed": {
+    "sourceHash": "d0c136a"
+  },
+  "licensing.dialog.networkFallbackError": "Không thể xác minh giấy phép của bạn với máy chủ. Vui lòng thử lại sau.",
+  "@licensing.dialog.networkFallbackError": {
+    "sourceHash": "cb2b8e0"
+  },
+  "licensing.dialog.expiredOnError": "Giấy phép này đã hết hạn vào {date}.",
+  "@licensing.dialog.expiredOnError": {
+    "sourceHash": "130a045"
+  },
+  "licensing.dialog.expiredOnHelp": "Bạn có thể gia hạn gói đăng ký hoặc mua giấy phép mới tại getcmdr.com.",
+  "@licensing.dialog.expiredOnHelp": {
+    "sourceHash": "036bb88"
+  },
+  "licensing.dialog.serverInvalidError": "Chúng tôi nhận ra khóa này, nhưng khi kiểm tra với nhà cung cấp thanh toán thì họ không nhận ra nó. Điều này có thể xảy ra nếu giao dịch đã được hoàn tiền hoặc chưa hoàn tất.",
+  "@licensing.dialog.serverInvalidError": {
+    "sourceHash": "4beeef1"
+  },
+  "licensing.dialog.emptyKeyError": "Vui lòng nhập khóa giấy phép",
+  "@licensing.dialog.emptyKeyError": {
+    "sourceHash": "2b36779"
+  },
+  "licensing.dialog.mailtoSubject": "Vấn đề về khóa giấy phép",
+  "@licensing.dialog.mailtoSubject": {
+    "sourceHash": "685a80d"
+  },
+  "licensing.dialog.mailtoBody": "Chào,\n\nTôi gặp trục trặc khi kích hoạt khóa giấy phép của mình:\n{key}\n\n",
+  "@licensing.dialog.mailtoBody": {
+    "sourceHash": "bcdc2b6"
+  },
+  "licensing.error.badSignature": "Khóa giấy phép này không vượt qua bước xác minh chữ ký của chúng tôi, nghĩa là nó trông không giống một khóa hợp lệ.",
+  "@licensing.error.badSignature": {
+    "sourceHash": "e9842df"
+  },
+  "licensing.error.badSignatureHint": "Hãy kiểm tra kỹ lỗi gõ nhầm và thử dán lại từ email mua hàng của bạn.",
+  "@licensing.error.badSignatureHint": {
+    "sourceHash": "8734aa5"
+  },
+  "licensing.error.badFormat": "Định dạng khóa giấy phép của chúng tôi khác với khóa này.",
+  "@licensing.error.badFormat": {
+    "sourceHash": "6012f8b"
+  },
+  "licensing.error.badFormatHint": "Khóa giấy phép là một mã ngắn (CMDR-XXXX-XXXX-XXXX) hoặc một khóa mật mã dài hơn từ email mua hàng của bạn.",
+  "@licensing.error.badFormatHint": {
+    "sourceHash": "a62b901"
+  },
+  "licensing.error.shortCodeNotFound": "Giấy phép này trông ổn, nhưng chúng tôi đã tìm kỹ mà không thấy nó trong cơ sở dữ liệu.",
+  "@licensing.error.shortCodeNotFound": {
+    "sourceHash": "c123af8"
+  },
+  "licensing.error.shortCodeNotFoundHint": "Hãy kiểm tra lại xem bạn đã dán đúng khóa từ email mua hàng chưa.",
+  "@licensing.error.shortCodeNotFoundHint": {
+    "sourceHash": "a2f07d2"
+  },
+  "licensing.error.network": "Ối, lần này chúng tôi không kết nối được tới máy chủ giấy phép.",
+  "@licensing.error.network": {
+    "sourceHash": "63da44b"
+  },
+  "licensing.error.networkHint": "Hãy kiểm tra kết nối internet của bạn và thử lại.",
+  "@licensing.error.networkHint": {
+    "sourceHash": "67cba62"
+  },
+  "licensing.error.server": "Hừm, máy chủ giấy phép phản hồi điều gì đó lạ. Chúng tôi xin lỗi về việc này.",
+  "@licensing.error.server": {
+    "sourceHash": "6ca76c0"
+  },
+  "licensing.error.serverHint": "Vui lòng thử lại sau.",
+  "@licensing.error.serverHint": {
+    "sourceHash": "386b914"
+  },
+  "licensing.error.generic": "Có gì đó không ổn khi kích hoạt khóa này.",
+  "@licensing.error.generic": {
+    "sourceHash": "436e264"
+  },
+  "licensing.error.genericHint": "Vui lòng thử lại. Nếu vấn đề vẫn còn, hãy gửi email cho chúng tôi và chúng tôi sẽ giúp.",
+  "@licensing.error.genericHint": {
+    "sourceHash": "9108b68"
+  },
+  "licensing.section.title": "Giấy phép",
+  "@licensing.section.title": {
+    "sourceHash": "c011d60"
+  },
+  "licensing.section.loading": "Đang tải...",
+  "@licensing.section.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "licensing.section.labelType": "Loại giấy phép",
+  "@licensing.section.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.section.labelOrganization": "Tổ chức",
+  "@licensing.section.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.section.labelStatus": "Trạng thái",
+  "@licensing.section.labelStatus": {
+    "sourceHash": "920e413"
+  },
+  "licensing.section.labelKey": "Khóa giấy phép",
+  "@licensing.section.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.section.manageKey": "Quản lý khóa giấy phép",
+  "@licensing.section.manageKey": {
+    "sourceHash": "501cc54"
+  },
+  "licensing.section.enterKey": "Nhập khóa giấy phép",
+  "@licensing.section.enterKey": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.section.getLicense": "Mua giấy phép",
+  "@licensing.section.getLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.section.typePersonal": "Cá nhân (miễn phí)",
+  "@licensing.section.typePersonal": {
+    "sourceHash": "4af5ca9"
+  },
+  "licensing.section.typeCommercialPerpetual": "Thương mại vĩnh viễn",
+  "@licensing.section.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.section.typeCommercialSubscription": "Đăng ký thương mại",
+  "@licensing.section.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.section.statusExpiredOn": "Hết hạn vào {date}",
+  "@licensing.section.statusExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.section.statusUpdatesUntil": "Cập nhật đến {date}",
+  "@licensing.section.statusUpdatesUntil": {
+    "sourceHash": "7b84d1c"
+  },
+  "licensing.section.statusValidUntil": "Có hiệu lực đến {date}",
+  "@licensing.section.statusValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.section.statusActive": "Đang hoạt động",
+  "@licensing.section.statusActive": {
+    "sourceHash": "9234069"
+  }
+}

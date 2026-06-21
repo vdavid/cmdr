@@ -52,6 +52,30 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
    style guide; a missing cross-language rule (like an ICU mechanic) goes in this guide or the template.
 3. **One ICU instruction**: given once in the agent system prompt, not per string (see the block below).
 
+## Term-choice principles
+
+Three settled decisions about WHICH term to pick. They apply to every language; the don't-translate check enforces what
+it can, but the judgment is yours.
+
+1. **Apple feature names — localize what Apple localizes.** Some Apple feature names are translated per-OS (Quick Look →
+   fr "Coup d’œil", de "Übersicht", es "Vista rápida"); others Apple keeps English in every locale (Spotlight, Mission
+   Control, AirDrop, Siri, Time Machine, Finder). To decide, check `<tag>/macOS/` in the reference pile: if Apple's
+   localized macOS uses a translated term, use it; if it keeps the English name, keep it. Match what the user actually
+   sees in their Finder. (This is why `BRAND_WORDS` in `apps/desktop/scripts/i18n-catalog-lib.js` lists the kept-English
+   names but NOT Quick Look — a translated Quick Look must not read as a dropped brand.)
+2. **Prefer the macOS Finder term when macOS and Windows/Microsoft differ.** Cmdr is a macOS app, so the native-OS term
+   wins over the Windows convention. For example, pt-BR delete = "Apagar" (Finder), not "Excluir" (Windows); German move
+   = "Bewegen" (Finder), not "Verschieben" (Microsoft). The Microsoft terminology entry is the Windows wording, not ours
+   — use it only as a tiebreak below macOS. (Same shape as the formality trap in
+   [`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) § Source-quality traps trap 5.)
+3. **Brand/product names may inflect.** In agglutinative/inflecting languages, let the brand take its natural
+   inflectional suffix rather than forcing an unnatural bare form: Hungarian "Cmdrben" (in Cmdr), Swedish genitive
+   "Cmdrs". Keep the brand recognizable but grammatical. Pick the suffix by how the name is PRONOUNCED, not spelled:
+   vowel harmony in Hungarian/Finnish/Turkish keys off the SPOKEN form, so "Cmdr" read aloud as "commander" harmonizes to
+   the vowels you'd hear, not to the bare consonant cluster. Apply your language's harmony rules to the pronunciation.
+   The don't-translate check is suffix-aware (`hasBrandPresent`), so an inflected brand passes; an omitted one is still
+   flagged.
+
 ## Researching terms: the reference pile
 
 Checking the reference pile is MANDATORY for every term: mine it for the term and for similar sentences, reuse and cite,
@@ -210,9 +234,20 @@ awkward rewrite or an exposed gendered default.
 
 REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine _ignored/i18n/[TARGET LANGUAGE TAG]/ for how Apple/Microsoft, the explorer file managers (GNOME Nautilus, Xfce Thunar, KDE Dolphin), and the orthodox two-pane pair (Total Commander, Double Commander) render each term and for similar sentences to model phrasing on; reuse and cite, never guess. Match the source to Cmdr's UI: for two-pane concepts the OS/explorer managers lack (pane, file list, command line), the orthodox pair is the closest lineage match. Mind the four mining gotchas in the guide's "Researching terms" section (wrong-family terms, a source naming a different concept, brand names that yield no generic term, shared-root signal). Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: docs/i18n/reference-pile/how-to-mine.md.
 
-DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, Quick Look, and the
-{system_settings}-style tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in
-apps/desktop/scripts/i18n-catalog-lib.js, and the desktop-i18n-dont-translate check enforces it.
+DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, and the {system_settings}-style
+tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in apps/desktop/scripts/i18n-catalog-lib.js, and the
+desktop-i18n-dont-translate check enforces it.
+
+TERM CHOICE (three principles):
+1. APPLE FEATURE NAMES — localize what Apple localizes. Some Apple feature names are translated per-OS (Quick Look ->
+   "Coup d'oeil"/"Übersicht"/"Vista rápida"); others Apple keeps English everywhere (Spotlight, Mission Control,
+   AirDrop, Siri, Time Machine, Finder). Decide by checking <tag>/macOS/ in the pile: use the term Apple's localized
+   macOS shows, so it matches the user's Finder. (That's why Quick Look is NOT in the don't-translate list.)
+2. PREFER THE macOS FINDER TERM when macOS and Windows/Microsoft differ — Cmdr is a macOS app. E.g. pt-BR delete =
+   "Apagar" (Finder), not "Excluir" (Windows); German move = "Bewegen" (Finder), not "Verschieben" (Microsoft).
+3. BRANDS MAY INFLECT. In inflecting languages, let the brand take its natural suffix ("Cmdrben" in Hungarian, "Cmdrs"
+   in Swedish) rather than an unnatural bare form. Choose the suffix by PRONUNCIATION, not spelling (vowel harmony keys
+   off the spoken form). The check is suffix-aware, so an inflected brand passes.
 
 OUTPUT: For each key, return only the translated value. Your output may ship without human review, so don't rely on a
 reviewer to catch mistakes: translate only what you're confident in, and flag any string where the context was

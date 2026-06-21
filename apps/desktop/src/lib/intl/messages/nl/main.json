@@ -1,0 +1,10 @@
+{
+  "main.upgradeNudge.mac": "We hebben nieuwe onboardingopties toegevoegd. Open Cmdr > Onboarding… om ze te bekijken.",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "477f3a5"
+  },
+  "main.upgradeNudge.other": "We hebben nieuwe onboardingopties toegevoegd. Open het opdrachtenpalet en voer Onboarding… uit om ze te bekijken.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "4b0b39e"
+  }
+}

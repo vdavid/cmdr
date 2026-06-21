@@ -12,4 +12,269 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 
 ## Terms
 
-(empty - populate during the first translation pass)
+Settled during the `errors.json` pass (2026-06-21), each mined from `_ignored/i18n/vi/`:
+
+- **network: `mạng`** · macOS AppKit (`NSNetwork` → "mạng"). `high`.
+- **server: `máy chủ`** · macOS AppKit (`Servers` → "Máy chủ"), GNOME ("máy chủ"). `high`.
+- **computer: `máy tính`** · macOS AppKit (`NSComputer` → "máy tính"). `high`.
+- **connection: `kết nối`** · Xfce Thunar ("kết nối mạng"), macOS ("Ngắt kết nối"). The verb connect/disconnect pair is `kết nối` / `ngắt kết nối`. `high`.
+- **device: `thiết bị`** · GNOME ("thiết bị này"), Xfce Thunar ("Ngắt kết nối thiết bị"). `high`.
+- **permission / access: `quyền`** · Xfce Thunar ("Quyền hạn", "không có quyền"). "Write access" → `quyền ghi`; "don't have permission" → `không có quyền`. `high`.
+- **password: `mật khẩu`** · GNOME ("bằng mật khẩu"). `high`.
+- **username: `tên người dùng`** · standard MS/GNOME convention. `tentative` (not directly grepped, but unambiguous).
+- **mount / unmount: `gắn kết` / `bỏ gắn kết`** · Xfce Thunar ("Gắn kết", "_Bỏ gắn kết"). Remount → `gắn kết lại`. `high`.
+- **read-only: `chỉ đọc`** · Xfce Thunar, GNOME ("Chỉ đọc"). `high`.
+- **try again / retry: `thử lại`** · GNOME ("Thử _lại"). `high`.
+- **sign in / log in: `đăng nhập`** · MS terminology (`sign in` → "đăng nhập", VNM). `high`.
+- **internet: `internet`** (loanword, lowercase) · kept as-is; "internet connection" → `kết nối internet`. `tentative`.
+- **couldn't / can't / unable to: `không thể`** · GNOME ("Không thể"), Xfce Thunar ("Không thể gắn kết"). The calm negative-capability framing Cmdr's error voice wants (avoids a bare "lỗi"/"failed"). `high`.
+
+Added during the `fileExplorer.json` pass (2026-06-21), triangulated (macOS Finder/AppKit Tier 1, MS terminology Tier 2,
+GNOME Nautilus Tier 3); macOS wins ties since Cmdr is a macOS app:
+
+- **host: `máy chủ`** · macOS Finder ("Kết nối với máy chủ"), MS terminology. Same word as server; vi doesn't distinguish. `high`.
+- **hostname: `tên máy chủ`** · MS terminology, macOS ("Máy chủ:"). `high`.
+- **connect to server: `kết nối với máy chủ`** · macOS Finder verbatim ("Kết nối với máy chủ"). `high`.
+- **server address: `địa chỉ máy chủ`** · macOS Finder ("Địa chỉ máy chủ"). `high`.
+- **share (network share, noun): `chia sẻ`; shared folder: `thư mục chia sẻ`** · macOS Finder ("Thư mục được chia sẻ", "chia sẻ"). NOT MS's first hit "cổ phần" (financial sense, wrong). `high`.
+- **eject: `tháo`** · macOS Finder/AppKit ("Tháo", `NSNavEjectButton` → "tháo"). Overrides the style guide's tentative "đẩy ra" — macOS Tier 1 says "tháo". `high`.
+- **credentials: `thông tin đăng nhập`** · MS terminology. `high`.
+- **guest: `khách`** · MS terminology, macOS. `high`.
+- **Keychain: `Keychain`** · kept verbatim (macOS proper noun). `high`.
+- **favorites / favorite: `mục ưa thích`** · macOS Finder ("Mục ưa thích", "Máy chủ ưa thích"). `high`.
+- **tab (UI tab): `thẻ`** · macOS Finder ("Thẻ ưa thích"), GNOME ("thẻ mới"). Resolves the style guide's tentative. `high`.
+- **refresh / rescan: `làm mới` / `quét lại`** · refresh → MS "làm mới"; rescan → "quét lại" (scan = "quét", natural). `high` / `tentative`.
+- **index (noun): `chỉ mục`; indexing (verb): `lập chỉ mục`; indexed/up to date: `đã lập chỉ mục`** · macOS ("chỉ mục", "Đang cập nhật chỉ mục", "Đã lập chỉ mục"), MS terminology. `high`.
+- **drive / volume: `ổ đĩa`** · macOS ("Ổ đĩa khởi động"), MS terminology. `high` (drive); `tentative` (volume reuse).
+- **browse: `duyệt`** · macOS Finder ("Duyệt các máy chủ khả dụng"). `high`.
+- **pane: `khung`** · the two file lists; style-guide tentative kept. `tentative`.
+- **timeout (verb): `hết thời gian chờ`** · phrased naturally; no single term. `tentative`.
+- **disk usage / disk space: `dung lượng đĩa`** · "dung lượng" (capacity) per macOS ("Giá trị dung lượng"). `tentative`.
+- **read-only device/volume: `chỉ đọc`** · MS terminology, GNOME. `high`.
+
+UI section/group names used (keep consistent across files):
+
+- Favorites → **Mục ưa thích**; Volumes → **Ổ đĩa**; Cloud → **Đám mây**; Mobile → **Thiết bị di động**; Network → **Mạng**.
+
+UI/section phrasings settled here (for consistency in other files):
+
+- **"Here's what to try" (error-list lead-in): `Bạn có thể thử:`** · natural friendly framing, ends in a colon before the bullet list. `tentative`.
+- **Terminal, Disk Utility, First Aid, Activity Monitor, Spotlight, Finder, Get Info, System Settings** · macOS feature/app names; kept in English per the do-not-translate rule (these match what a Vietnamese macOS may localize, but Cmdr's error copy references them as proper names alongside literal commands).
+
+Added during the `settings.json` pass (2026-06-21). Reuses the prior-pass terms above (eject → `tháo`, tab → `thẻ`,
+pane → `khung`, share → `chia sẻ`, mount → `gắn kết`, index → `chỉ mục`/`lập chỉ mục`, drive/volume → `ổ đĩa`); new
+terms below:
+
+- **theme (light/dark/system): `Sáng` / `Tối` / `Hệ thống`** · MS ("Sáng"/"tối"), macOS ("Hệ thống"). `high`.
+- **download (verb): `tải xuống`; Downloads (folder): `Tải về`** · MS verb ("tải xuống"), macOS folder ("Tải về"). `high`.
+- **notification: `thông báo`** · macOS/MS. `high`.
+- **update(s): `cập nhật`** · macOS ("Cập nhật"), MS. `high`.
+- **port: `cổng`** · MS ("cổng"). `high`.
+- **cache (noun/verb): `bộ đệm` / `lưu vào bộ đệm`** · MS ("bộ đệm ẩn"); plain "bộ đệm" for UI brevity. `high`.
+- **timeout: `thời gian chờ`** · standard MS phrasing. `high`.
+- **threshold: `ngưỡng`** · MS ("ngưỡng"). `high`.
+- **provider: `nhà cung cấp`** · MS. `high`.
+- **service: `dịch vụ`** · MS. `high`.
+- **context window: `cửa sổ ngữ cảnh`** · literal, no single source. `tentative`.
+- **token (LLM): `token`** (loanword) · MS lists "token"/"mã thông báo"; keep `token` for the LLM sense. `tentative`.
+- **binary / decimal (size base): `nhị phân` / `thập phân`** · MS. `high`.
+- **reset: `đặt lại`** · macOS ("Đặt lại"). `high`.
+- **restart: `khởi động lại`** · macOS ("Khởi động lại"). `high`.
+- **preview: `xem trước`** · macOS ("Xem trước"). `high`.
+- **sidebar: `thanh bên`** · macOS ("Thanh bên"), MS. (Overrides the style guide's GNOME "khung bên" — macOS wins.) `high`.
+- **git terms — branch: `nhánh`, commit: `commit`, tag: `thẻ`, repository: `kho`, worktree: `worktree`** · MS ("nhánh", "kho lưu trữ"); commit/worktree kept as loanwords (dev audience, no clean native UI source). `tentative`.
+- **stale (index): `lỗi thời`** · natural phrasing for an out-of-date index. `tentative`.
+- **toast / chip / banner (UI): `thông báo nhỏ` / `huy hiệu` / `biểu ngữ`** · descriptive renderings; no single source. `tentative`.
+
+Settings section/UI names (keep consistent across files):
+
+- Appearance: `Giao diện` · Behavior: `Hành vi` · File systems: `Hệ thống tệp` · Search: `Tìm kiếm` · Viewer: `Trình xem` · Developer: `Nhà phát triển` · Advanced: `Nâng cao` · Keyboard shortcuts: `Phím tắt` · License: `Giấy phép` · Updates & privacy: `Cập nhật & quyền riêng tư`.
+- View modes — Full: `Đầy đủ` · Brief: `Rút gọn`. Columns — Name: `Tên` · Ext: `Đuôi`.
+- Commands — Rename: `Đổi tên` · View: `Xem` · Copy: `Sao chép` (keep aligned with other catalog files).
+
+Added during the `licensing.json` + `ai.json` + `viewer.json` pass (2026-06-21). Reuses prior terms (server →
+`máy chủ`, organization → `tổ chức`, model → `mô hình`, download → `tải xuống`, restart → `khởi động lại`, cancel →
+`hủy`, close → `đóng`, retry/try again → `thử lại`); new terms below, each mined from `_ignored/i18n/vi/`:
+
+- **license (noun): `giấy phép`; license key: `khóa giấy phép`** · MS terminology ("digital license" → "giấy phép kỹ thuật số"; "product key" → "khóa sản phẩm", adapted to "khóa giấy phép" for the license sense). macOS Tier 1 has no clean "License" string. `high` (giấy phép); `high` (khóa giấy phép).
+- **activate / deactivate: `kích hoạt` / `hủy kích hoạt`** · MS terminology ("activate" → "kích hoạt", "deactivate" → "hủy kích hoạt"). `high`.
+- **subscription: `đăng ký`** · MS terminology ("subscription" → "đăng ký"). Note: also the verb "subscribe"; context disambiguates. `high`.
+- **renew: `gia hạn`** · MS terminology ("renew" → "gia hạn"). `high`.
+- **expire / expired: `hết hạn`** · MS terminology ("expire" → "hết hạn"). `high`.
+- **verify: `xác minh`** · MS terminology ("verify" → "xác minh"). `high`.
+- **perpetual (license): `vĩnh viễn`** · no source term; natural rendering for a one-time/forever license. `tentative`.
+- **valid / validity: `có hiệu lực` / `hiệu lực`** · natural legal-doc phrasing; no single source term. `tentative`.
+- **commercial / personal (license tiers): `Thương mại` / `Cá nhân`** · standard rendering; kept capitalized as tier names. `high`.
+- **(open) beta: `beta` (loanword)** · kept as-is, lowercase; "open beta" → "beta công khai". `tentative`.
+- **clipboard: `bảng nhớ tạm`** · macOS Finder/AppKit verbatim ("Clipboard" → "bảng nhớ tạm"). `high`.
+- **select all: `chọn tất cả`** · macOS AppKit ("Select All" → "Chọn Tất cả"; sentence-cased to "Chọn tất cả"). `high`.
+- **viewer (file viewer): `trình xem`; file viewer: `trình xem tệp`** · Total Commander ("trình xem", "trình xem tập tin"; orthodox file-manager lineage). NOT MS's first hit "người xem" (audience sense, wrong). `high`.
+- **view (verb) / view mode: `xem` / `chế độ xem`** · macOS Finder ("chế độ xem"), TC ("Xem"). `high`.
+- **image: `hình ảnh`; document: `tài liệu`** · MS ("hình ảnh"), GNOME/Dolphin ("Tài liệu"). `high`.
+- **(character) encoding: `mã hóa ký tự`** · MS terminology ("character encoding" → "mã hóa ký tự"). `high`.
+- **regex: `Regex` (loanword)** · kept as the short form per the EN copy; "regular expression" has no clean native UI term. `tentative`.
+- **line / character (of text): `dòng` / `ký tự`** · GNOME ("dòng"), standard. `high`.
+- **memory (RAM): `bộ nhớ`** · MS ("memory" → "bộ nhớ"). `high`.
+- **word wrap: `ngắt dòng`** · natural rendering (wrap at edge); no single source. `tentative`.
+- **streaming (large-file mode): `phát trực tiếp`** · MS-style rendering for streaming. `tentative`.
+- **zoom / pan / fit: `thu phóng` / `di chuyển` / `vừa khít`** · MS ("zoom" → "thu phóng"); pan/fit are natural renderings. `high` (zoom); `tentative` (pan, fit).
+- **clipboard limit / paste: `dán`** · macOS AppKit ("Dán"). `high`.
+- **endpoint: `điểm cuối`** · MS terminology ("endpoint" → "điểm cuối"). `high`.
+- **API key: `khóa API`** · standard; "API" kept verbatim. `high`.
+- **quota: `hạn ngạch`; rate-limit: `giới hạn tần suất`** · MS ("quota" → "hạn ngạch"); rate-limit is a natural rendering. `high` (quota); `tentative` (rate-limit).
+- **provider (AI/sync): `nhà cung cấp`** · MS, reused from settings pass. `high`.
+- **AI: `AI`** (loanword, kept verbatim) · universal in vi tech UI; "AI-powered" → "do AI hỗ trợ". `high`.
+- **model (AI/ML): `mô hình`** · MS "model" lists "mô hình 3D" for the 3D sense; the bare ML sense is "mô hình". `high`.
+- **endpoint URL / cloud: `URL điểm cuối` / `đám mây`** · cloud reused from settings (`Đám mây`). `high`.
+
+UI/section phrasings settled here (for consistency in other files):
+
+- **Settings > AI (nav path): `Cài đặt > AI`** · "Cài đặt" per macOS; "AI" kept verbatim; the `>` separator preserved.
+- **Viewer window name: `Trình xem`** (matches the settings-pass Viewer section `Trình xem`).
+
+Added during the `queryUi.json` + `commands.json` pass (2026-06-21), macOS Finder/AppKit Tier 1 (`vi/macOS/`), MS
+terminology Tier 2 (`VIETNAMESE.tbx`); macOS wins ties:
+
+- **search / search (the action): `tìm kiếm`** · macOS Finder ("Tìm kiếm"), MS. `high`.
+- **query (noun, e.g. "Query:"): `truy vấn`** · macOS Finder ("Truy vấn để tìm kiếm trong Finder"), MS. `high`.
+- **results: `kết quả`** · MS ("kết quả"). `high`.
+- **scan / scanning: `quét` / `đang quét`** · MS ("quét"). "Scan in progress" → `Đang quét`. `high`.
+- **pattern: `mẫu`** · MS ("mẫu hình"); short UI form `mẫu`. `high`.
+- **wildcard: `ký tự đại diện`** · MS ("kí tự đại diện"; standard spelling `ký`). `high`.
+- **glob / regex: kept verbatim (`Glob`, `Regex`)** · technical loanwords, no native UI source. `tentative`.
+- **case-sensitive: `phân biệt chữ hoa/thường`** · macOS Finder ("Phân biệt Chữ hoa/thường"). `high`.
+- **ascending / descending: `tăng dần` / `giảm dần`** · MS ("thứ tự tăng dần", "thứ tự giảm dần"). `high`.
+- **sort by: `sắp xếp theo`** · macOS Finder ("sắp xếp theo tên"). `high`.
+- **zoom in / out: `phóng to` / `thu nhỏ`; zoom level: `mức phóng`** · macOS AppKit ("thu phóng"), GNOME ("Phóng to"/"Thu nhỏ"). `high`.
+- **clipboard: `bảng nhớ tạm`** · macOS AppKit ("Bảng nhớ tạm"). `high`.
+- **context menu: `menu chuột phải`** · MS ("menu chuột phải"). `high`.
+- **quit: `thoát`; hide: `ẩn`** · macOS AppKit/MS. `high`.
+- **offline (cloud): `ngoại tuyến`; "make available offline": `tải xuống để dùng ngoại tuyến`** · standard MS/macOS convention; reworded for clarity. `tentative`.
+- **command palette: `bảng lệnh`** · descriptive (no single source); `bảng` (panel) + `lệnh` (command). `tentative`.
+- **onboarding (the first-launch wizard, noun): `thiết lập ban đầu`** · the setup sense (the wizard walks through FDA, AI, and optional setup), matching the wizard's own title `Thiết lập ban đầu Cmdr`. Unified app-wide post-translation (the earlier `hướng dẫn ban đầu` / "guide" rendering in `queryUi`/`commands`/`shortcuts` was retired so the menu item, command-palette entry, shortcut scope, and wizard title all match). MS "triển khai" is the deployment sense, wrong here. `high`.
+- **scope (search scope): `phạm vi`** · macOS Finder ("phạm vi tìm kiếm"). `high`.
+- **cursor (file-list cursor): `con trỏ`** · standard. `high`.
+- **toggle (verb prefix): `bật/tắt`** · standard MS UI form for on/off commands. `high`.
+- **Recents / recent: `gần đây`** · macOS Finder ("Gần đây"). `high`.
+- **byte/bytes (unit): `byte`** (loanword, no plural inflection) · MS, macOS. `high`.
+
+`queryUi`/`commands` phrasings settled (for consistency):
+
+- **"Coming soon": `Sắp ra mắt`** · natural friendly framing. `tentative`.
+- **"Hide boring folders" (playful): `Ẩn các thư mục nhàm chán`** · keeps the casual product voice per the en `@key` note. `tentative`.
+- **agent (AI agent): `tác nhân`** · MS sense for software agent. Used in the `queryUi.ai.*` strip and the `onboarding.stepAi.*` comparison table. Unified app-wide post-translation (the onboarding pass's loanword `agent` was retired in favor of this). `high`.
+- **`View > Zoom > 100%` (literal menu path in `commands.handler.zoomResetHintMenu`)** kept in English per the en `@key`: it's a literal menu-bar path, not prose.
+
+Added during the `onboarding.json` + `fileOperations.json` pass (2026-06-21), triangulated (macOS Finder/AppKit Tier 1,
+MS Tier 2, GNOME Nautilus/Xfce Thunar Tier 3); macOS wins ties. Reuses prior-pass terms (trash → `thùng rác`, delete →
+`xóa`, copy → `sao chép`, move → `di chuyển`, rename → `đổi tên`, cancel → `hủy`, drive/volume → `ổ đĩa`, share →
+`chia sẻ`, scan → `quét`/`đang quét`, cursor → `con trỏ`, network → `mạng`, server → `máy chủ`, restart →
+`khởi động lại`, download → `tải xuống`, provider → `nhà cung cấp`, toast → `thông báo nhỏ`, quit → `thoát`); new terms
+below:
+
+- **overwrite / replace: `ghi đè`** · macOS Finder ("Ghi đè hay giữ lại phần mở rộng tệp"), GNOME ("ghi đè"). Cmdr uses `ghi đè` (overwrite) consistently; GNOME's "thay thế" (replace) not used. `high`.
+- **permanently delete: `xóa vĩnh viễn`** · GNOME ("xóa vĩnh viễn"). `high`.
+- **move to trash: `chuyển vào thùng rác`** · macOS Finder ("Di chuyển các mục vào Thùng rác"), GNOME. `high`.
+- **skip: `bỏ qua`** · GNOME ("_Bỏ qua"). Also used for Dismiss (timeout warning button) → `bỏ qua`. `high`.
+- **merge (folders): `hòa trộn`** · GNOME ("_Hòa trộn", "Hòa trộn thư mục"). `high`.
+- **symlink / symbolic link: `liên kết mềm`** · GNOME ("liên kết mềm"). Link "target" → `đích`. `high`.
+- **hardlink: `liên kết cứng`** · descriptive (parallels `liên kết mềm`); no single UI source. `tentative`.
+- **destination: `đích` / `đích đến`; source: `nguồn`** · GNOME ("thư mục đích", "thư mục nguồn", "đích đến"). Destination volume/path → `ổ đĩa đích` / `đường dẫn đích`. `high`.
+- **rollback (undo an operation's partial work): `hoàn tác`** · natural Vietnamese; no single UI source (GNOME uses "_Hoàn lại" for plain undo). Conflict-step Rollback button + tooltips use `hoàn tác`. `tentative`.
+- **conflict (file clash): `xung đột`; "file already exists": `tệp đã tồn tại`** · standard MS/dev phrasing. `high`.
+- **verify (before copy/move): `xác minh`** · "Verifying before copy" → `Đang xác minh trước khi sao chép`. `tentative`.
+- **technical details: `chi tiết kỹ thuật`** · MS/standard. `high`.
+- **retry / try again: `thử lại`** · macOS Finder ("Thử lại"). `high`.
+- **close: `đóng`** · macOS ("Đóng"). `high`.
+- **endpoint (URL): `điểm cuối`** · descriptive; "Endpoint URL" → `URL điểm cuối`. `tentative`.
+- **API key: `khóa API`** · "API" verbatim, "key" → `khóa`. `high`.
+- **model (AI/LLM): `mô hình`** · MS ("model" Noun sense). LLM kept verbatim. `high`.
+- **full disk access: `truy cập toàn bộ đĩa`** · descriptive (no macOS TCC-pane string in the pile). Privacy & Security pane → `Quyền riêng tư & Bảo mật` (macOS SystemSettings verbatim). `tentative` (FDA phrase); `high` (Privacy & Security).
+- **review and apply / at will: `xem lại rồi áp dụng` / `tùy ý`** · the with/without-AI table's recurring phrasing. `tentative`.
+
+**Cross-pass terms resolved post-translation** (2026-06-21 reconciliation pass; both unified app-wide):
+- **onboarding** → `thiết lập ban đầu` (setup sense), matching the wizard title `Thiết lập ban đầu Cmdr`. The
+  `queryUi`/`commands`/`shortcuts` `hướng dẫn ban đầu` was retired. See the `onboarding` term entry above.
+- **agent** → `tác nhân` (MS sense). The onboarding loanword `agent` was retired. See the `agent` term entry above.
+
+macOS proper-name labels referenced in onboarding instructions (Vietnamese macOS wording where the pile has it, else
+best-effort + `tentative`): Quit & Reopen → `Thoát & Mở lại` (macOS "Reopen" → `Mở lại`); Applications → `Ứng dụng`;
+Documents → `Tài liệu`; Downloads → `Tải về`; Desktop → `Màn hình nền` (all macOS Finder); Full Disk Access →
+`Truy cập toàn bộ đĩa`, Local network access → `Truy cập mạng cục bộ`, Accepting incoming connections →
+`Chấp nhận kết nối đến` (no pile string; best-effort, `tentative`).
+
+File-operation toggle/action names (keep consistent across files): Trash/Delete toggle → `Thùng rác` / `Xóa`;
+Copy/Move toggle → `Sao chép` / `Di chuyển`; conflict actions — Skip → `Bỏ qua`, Overwrite → `Ghi đè`, Rename →
+`Đổi tên`, Rollback → `Hoàn tác`.
+
+Added during the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.json` + `mtp.json` + `ui.json`
+pass (2026-06-21, wave 1 vi batch 3). Reuses prior terms (index/indexing → `chỉ mục`/`lập chỉ mục`, scan → `quét`,
+drive/volume → `ổ đĩa`, stale → `lỗi thời`, download → `tải xuống`/Tải về folder, default → `mặc định`, reset →
+`đặt lại`, retry → `thử lại`, close → `đóng`, dismiss → `bỏ qua`, preview → `xem trước`, clipboard → `bảng nhớ tạm`,
+network → `mạng`, server/hostname → `máy chủ`/`tên máy chủ`, device → `thiết bị`, permission → `quyền`, command palette
+→ `bảng lệnh`, file list → `danh sách tệp`); new terms below, each mined from `_ignored/i18n/vi/`:
+
+- **report (error report): `báo cáo`; error report: `báo cáo sự cố`** · MS terminology ("report" → "báo cáo"). "Error report" rendered `báo cáo sự cố` (sự cố = incident/issue) to keep the calm voice — avoids a bare "lỗi" status label per the style guide. `high` (báo cáo); `tentative` (sự cố framing for "error").
+- **log / log file / logs: `nhật ký` / `tệp nhật ký`** · standard vi convention for logs (MS's `.tbx` "log" hit is a fragment; `nhật ký` is canonical). "Log lines" → `dòng nhật ký`; "file change log" (FS journal) → `nhật ký thay đổi tệp`. `high`.
+- **redact / scrub (privacy): `lược bỏ` / `xóa`** · descriptive; no single source. "Redacted client-side" → `lược bỏ phía máy của bạn`. `tentative`.
+- **send: `gửi`** · MS terminology ("send" → "gửi"). `high`.
+- **process (OS process): `tiến trình`** · standard vi OS term (NOT MS's first hit "quy trình", which is the business-process sense — wrong here). `high`.
+- **daemon: `daemon`** (loanword, kept) · no clean native UI term; macOS system-daemon names (ptpcamerad) kept literal alongside. `tentative`.
+- **bundle (log bundle): `gói`** · natural rendering for a packaged set of files. `tentative`.
+- **manifest: `bản kê`** · descriptive (a listing of contents); no single source. `tentative`.
+- **event (filesystem/change event): `sự kiện`** · standard MS/vi. "events processed" → `đã xử lý ... sự kiện`. `high`.
+- **buffer / channel (internal): `bộ đệm` / `kênh`** · buffer reused from settings pass (`bộ đệm`); channel → `kênh` (standard). `high` (buffer); `tentative` (channel).
+- **watcher (file-change watcher): `bộ theo dõi`** · descriptive ("watch" → `theo dõi`, reused from downloads "watch your Downloads folder"). `tentative`.
+- **shortcut (keyboard): `phím tắt`; modifier (key): `phím bổ trợ`** · MS terminology ("shortcut" → "phím tắt"); modifier → `phím bổ trợ` (the ⌘/⌃/⌥/⇧ keys; descriptive, glyphs kept literal). `high` (phím tắt); `tentative` (phím bổ trợ).
+- **register (a shortcut): `đăng ký`** · MS terminology ("register" → "đăng ký"). Reuses the sign-in word; context disambiguates. `high`.
+- **combo / key combination: `tổ hợp` / `tổ hợp phím`** · descriptive (tổ hợp = combination); no single UI source. `tentative`.
+- **conflict (shortcut clash): `xung đột`** · MS terminology, reused from fileOperations pass. `high`.
+- **scope (shortcut group): `phạm vi`** · reused from queryUi pass; here used as section-heading framing for shortcut groups. `high`.
+- **bind / bound (shortcut → command): `gán`** · descriptive ("bound to" → `được gán cho`). `tentative`.
+- **global (shortcut scope): `toàn cục`** · standard vi for system-wide. "global shortcut" → `phím tắt toàn cục`. `high`.
+- **jump (to a file/download): `nhảy đến`** · natural friendly rendering for the "jump to" action. `tentative`.
+- **reference ID: `ID tham chiếu`** · "ID" kept verbatim; "reference" → `tham chiếu` (MS). `high`.
+- **note (free-text): `ghi chú`; optional: `tùy chọn`** · MS/standard. `high`.
+- **MTP / PTP / udev / USB / ptpcamerad / Terminal / daemon names: kept verbatim** · protocol/system proper names per the do-not-translate rule; surrounding prose translated.
+
+`shortcuts`/`indexing`/`downloads` phrasings settled here (for consistency in other files):
+
+- **Shortcut scope/group names**: App → `Ứng dụng`; Main window → `Cửa sổ chính`; File list → `Danh sách tệp`; Brief mode → `Chế độ rút gọn`; Full mode → `Chế độ đầy đủ`; Volume chooser → `Bộ chọn ổ đĩa`; Network → `Mạng`; Share browser → `Trình duyệt chia sẻ`; Command palette → `Bảng lệnh`; About window → `Cửa sổ Giới thiệu`; Onboarding → `Thiết lập ban đầu` (unified app-wide; see the `onboarding` term entry).
+- **macOS feature names inside conflict warnings kept in English** (Spotlight, Mission Control, Spaces, App windows, Force Quit, Character Viewer): they read as proper nouns and match what a vi macOS often shows. Descriptive lowercase mid-sentence phrases ARE translated (the app switcher → `bộ chuyển ứng dụng`, screenshots → `chụp màn hình`, screen recording → `quay màn hình`, logging out → `đăng xuất`, locking the screen → `khóa màn hình`, input source switching → `chuyển nguồn nhập`). Finder kept verbatim; "Finder search window" → `Cửa sổ tìm kiếm Finder`.
+- **System Settings > Keyboard** (macOS settings path) kept in English (matches `downloads.fda.openSystemSettings` → "Mở System Settings"; the pile has no clean vi string for the Keyboard pane).
+- **"Almost done" → `Sắp xong`; ETA `Ns left`/`Nm left` → `còn Ns`/`còn Nm`** (the `s`/`m` abbreviations kept attached, "còn" = remaining, leading word per vi grammar).
+
+**Onboarding** here was unified to `Thiết lập ban đầu` in the 2026-06-21 reconciliation pass (see the `onboarding` term entry).
+
+Added during the wave-1 prep pass (2026-06-21): `search` + `feedback` + `crashReporter` + `goToPath` + `transfer` +
+`updates` + `lowDiskSpace` + `commandPalette` + `whatsNew` + `main` + `common` + `notifications`. Reuses prior terms
+(tìm kiếm, thư mục/tệp, thùng rác, sao chép/di chuyển/đổi tên, hủy, đóng, thử lại, bảng lệnh, lệnh, đường dẫn, tải về,
+khởi động lại, cập nhật, thông báo, đích, gần đây, ổ đĩa/dung lượng đĩa, Truy cập toàn bộ đĩa, Cài đặt hệ thống); new
+terms below, each mined from `_ignored/i18n/vi/`:
+
+- **crash / crash report: `sự cố` / `báo cáo sự cố`** · macOS ("problem" → "sự cố", verbatim in Finder/AppKit), MS ("crash" → "sự cố"). The calm framing Cmdr's error voice wants — avoids a bare "lỗi". `high`.
+- **report (noun): `báo cáo`; report ID: `mã báo cáo`** · MS terminology ("report" → "báo cáo"). `high`.
+- **send: `gửi`** · MS terminology ("send" → "gửi"). `high`.
+- **feedback: `phản hồi`** · MS ("feedback" → "ý kiến phản hồi"; shortened to `phản hồi` for UI brevity). `high`.
+- **version: `phiên bản`** · macOS Finder/AppKit ("version" → "phiên bản", verbatim). `high`.
+- **changelog: `nhật ký thay đổi`** · MS terminology ("changelog" → "nhật ký thay đổi"). `high`.
+- **attach: `đính kèm`** · MS terminology ("attach" → "đính kèm"). `high`.
+- **character (text length): `ký tự`** · MS terminology, reused from viewer pass. `high`.
+- **dismiss (close-without-action button): `bỏ qua`** · reuses the file-ops Skip/Dismiss → `bỏ qua`. macOS "dismiss" has no clean single string; `bỏ qua` reads natural. `high`.
+- **restart: `khởi động lại`** · macOS AppKit ("Restart" → "Khởi động lại"), reused from settings pass. `high`.
+- **startup disk: `đĩa khởi động`** · descriptive (boot volume); no single macOS string. `tentative`.
+- **command (palette item): `lệnh`; command palette: `bảng lệnh`** · MS ("command" → "lệnh"); `bảng lệnh` reused from queryUi pass. `high` (lệnh); `tentative` (bảng lệnh).
+- **"quit unexpectedly" (crash body): `thoát đột ngột`** · `thoát` (quit, macOS) + `đột ngột` (sudden). No single source; natural rendering. `tentative`.
+- **build folder (e.g. node_modules): `thư mục build`** · `build` kept as a dev loanword (no clean native term; dev audience). `tentative`.
+
+UI/path phrasings settled here (keep consistent across files):
+
+- **Onboarding (menu item / wizard): `Thiết lập ban đầu`** · the unified app-wide rendering (setup sense). The menu path `Cmdr > Thiết lập ban đầu…` keeps the trailing ellipsis. `high`.
+- **"What's new in Cmdr" (dialog title): `Có gì mới trong Cmdr`** · natural friendly framing. `tentative`.
+- **Settings > Updates & privacy: `Cài đặt > Cập nhật & quyền riêng tư`** · reuses the settings-pass section name. `high`.
+- **Settings > Updates (crash-toast button): `Cài đặt > Cập nhật`** · matches the settings-pass Updates section. `high`.
+- **"Error:" prefix on a raw update-check error (`updates.checkToast.errorPrefix`): `Sự cố:`** · uses `sự cố` (problem/issue) not a bare "Lỗi", keeping the calm error voice. `tentative`.
+
+Settled term decision (2026-06-21):
+
+- **Quick Look -> `Xem nhanh`** · macOS Vietnamese · `high`. The localized Apple feature name: macOS Finder localizes it as "Xem nhanh" (`vi/macOS/Finder` `TL14`, sentence case; AppKit uses title-case "Xem Nhanh" — Cmdr follows Finder's sentence case). Applied to `commands.fileQuickLook.mac.label` and the three settings strings that reference the feature. Not kept verbatim because Apple does localize it for vi macOS users.

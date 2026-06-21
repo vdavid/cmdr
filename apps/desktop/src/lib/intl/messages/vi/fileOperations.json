@@ -1,0 +1,470 @@
+{
+  "fileOperations.button.cancel": "Hủy",
+  "@fileOperations.button.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileOperations.button.ok": "OK",
+  "@fileOperations.button.ok": {
+    "sourceHash": "565339b"
+  },
+  "fileOperations.delete.fromPath": "Từ: {path}",
+  "@fileOperations.delete.fromPath": {
+    "sourceHash": "12851d4"
+  },
+  "fileOperations.delete.noTrashWarningStrong": "Ổ đĩa này không hỗ trợ thùng rác.",
+  "@fileOperations.delete.noTrashWarningStrong": {
+    "sourceHash": "ef122e2"
+  },
+  "fileOperations.delete.noTrashWarningRest": "Các tệp sẽ bị xóa vĩnh viễn.",
+  "@fileOperations.delete.noTrashWarningRest": {
+    "sourceHash": "0d73f99"
+  },
+  "fileOperations.delete.toggleTrash": "Thùng rác",
+  "@fileOperations.delete.toggleTrash": {
+    "sourceHash": "c560122"
+  },
+  "fileOperations.delete.toggleDelete": "Xóa",
+  "@fileOperations.delete.toggleDelete": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileOperations.delete.overflowMore": "... và thêm {countText} {count, plural, other {mục}}",
+  "@fileOperations.delete.overflowMore": {
+    "sourceHash": "2fb7f0e"
+  },
+  "fileOperations.delete.scanFile": "{count, plural, other {tệp}}",
+  "@fileOperations.delete.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.delete.scanDir": "{count, plural, other {thư mục}}",
+  "@fileOperations.delete.scanDir": {
+    "sourceHash": "1c5273d"
+  },
+  "fileOperations.delete.throughputFiles": "{rateText} tệp/giây",
+  "@fileOperations.delete.throughputFiles": {
+    "sourceHash": "c3b28a4"
+  },
+  "fileOperations.delete.confirmDeletePermanently": "Xóa vĩnh viễn",
+  "@fileOperations.delete.confirmDeletePermanently": {
+    "sourceHash": "280b10c"
+  },
+  "fileOperations.delete.confirmMoveToTrash": "Chuyển vào thùng rác",
+  "@fileOperations.delete.confirmMoveToTrash": {
+    "sourceHash": "b250a45"
+  },
+  "fileOperations.delete.titleCursorFile": "Xóa 1 tệp dưới con trỏ",
+  "@fileOperations.delete.titleCursorFile": {
+    "sourceHash": "ab3d591"
+  },
+  "fileOperations.delete.titleCursorFolder": "Xóa 1 thư mục dưới con trỏ",
+  "@fileOperations.delete.titleCursorFolder": {
+    "sourceHash": "91acb54"
+  },
+  "fileOperations.delete.titleFallback": "Xóa",
+  "@fileOperations.delete.titleFallback": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileOperations.delete.titleSelected": "Xóa {phrase}",
+  "@fileOperations.delete.titleSelected": {
+    "sourceHash": "66cbe54"
+  },
+  "fileOperations.delete.selectedFilesPart": "{countText} {count, plural, other {tệp}} đã chọn",
+  "@fileOperations.delete.selectedFilesPart": {
+    "sourceHash": "c444d06"
+  },
+  "fileOperations.delete.foldersPart": "{countText} {count, plural, other {thư mục}}",
+  "@fileOperations.delete.foldersPart": {
+    "sourceHash": "9bd56b2"
+  },
+  "fileOperations.delete.symlinkNoticeSingle": "Mục này là một liên kết mềm. Chỉ liên kết bị xóa, không phải đích của nó.",
+  "@fileOperations.delete.symlinkNoticeSingle": {
+    "sourceHash": "c5a4259"
+  },
+  "fileOperations.delete.symlinkNoticeMany": "Lựa chọn của bạn gồm {countText} {count, plural, other {liên kết mềm}}. Chỉ bản thân các liên kết bị xóa, không phải đích của chúng.",
+  "@fileOperations.delete.symlinkNoticeMany": {
+    "sourceHash": "56b3f52"
+  },
+  "fileOperations.mkfile.title": "Tệp mới",
+  "@fileOperations.mkfile.title": {
+    "sourceHash": "44dedd0"
+  },
+  "fileOperations.mkfile.createIn": "Tạo tệp trong <dir>{name}</dir>",
+  "@fileOperations.mkfile.createIn": {
+    "sourceHash": "20f4a68"
+  },
+  "fileOperations.mkfile.nameAria": "Tên tệp",
+  "@fileOperations.mkfile.nameAria": {
+    "sourceHash": "3efed3d"
+  },
+  "fileOperations.mkfile.placeholder": "Ví dụ: ghi-chu.txt",
+  "@fileOperations.mkfile.placeholder": {
+    "sourceHash": "f6b4613"
+  },
+  "fileOperations.mkdir.title": "Thư mục mới",
+  "@fileOperations.mkdir.title": {
+    "sourceHash": "cf28f49"
+  },
+  "fileOperations.mkdir.createIn": "Tạo thư mục trong <dir>{name}</dir>",
+  "@fileOperations.mkdir.createIn": {
+    "sourceHash": "392aa18"
+  },
+  "fileOperations.mkdir.nameAria": "Tên thư mục",
+  "@fileOperations.mkdir.nameAria": {
+    "sourceHash": "14d34ed"
+  },
+  "fileOperations.mkdir.placeholder": "Ví dụ: du-an-cua-toi",
+  "@fileOperations.mkdir.placeholder": {
+    "sourceHash": "7612b56"
+  },
+  "fileOperations.mkdir.timeoutMessage": "Chưa xác nhận được thư mục đã được tạo. Ổ đĩa có thể chậm, nên thư mục vẫn có thể đã được tạo.",
+  "@fileOperations.mkdir.timeoutMessage": {
+    "sourceHash": "751aec6"
+  },
+  "fileOperations.mkdir.timeoutRefresh": "Tải lại danh sách tệp",
+  "@fileOperations.mkdir.timeoutRefresh": {
+    "sourceHash": "b0e5436"
+  },
+  "fileOperations.mkdir.timeoutDismiss": "Bỏ qua",
+  "@fileOperations.mkdir.timeoutDismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileOperations.mkdir.aiSuggestionsAria": "Gợi ý AI",
+  "@fileOperations.mkdir.aiSuggestionsAria": {
+    "sourceHash": "1a1f5b9"
+  },
+  "fileOperations.mkdir.aiSuggestionsHeader": "Gợi ý AI:",
+  "@fileOperations.mkdir.aiSuggestionsHeader": {
+    "sourceHash": "5232616"
+  },
+  "fileOperations.shared.conflictExistsFolder": "Đã có một thư mục trùng tên này trong thư mục này.",
+  "@fileOperations.shared.conflictExistsFolder": {
+    "sourceHash": "32999f3"
+  },
+  "fileOperations.shared.conflictExistsFile": "Đã có một tệp trùng tên này trong thư mục này.",
+  "@fileOperations.shared.conflictExistsFile": {
+    "sourceHash": "3046c16"
+  },
+  "fileOperations.shared.byteRate": "<size></size>/giây",
+  "@fileOperations.shared.byteRate": {
+    "sourceHash": "4a55710"
+  },
+  "fileOperations.shared.andJoin": "{a} và {b}",
+  "@fileOperations.shared.andJoin": {
+    "sourceHash": "04f767b"
+  },
+  "fileOperations.transferDialog.toggleCopy": "Sao chép",
+  "@fileOperations.transferDialog.toggleCopy": {
+    "sourceHash": "e21f935"
+  },
+  "fileOperations.transferDialog.toggleMove": "Di chuyển",
+  "@fileOperations.transferDialog.toggleMove": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.destVolumeAria": "Ổ đĩa đích",
+  "@fileOperations.transferDialog.destVolumeAria": {
+    "sourceHash": "e13cc1d"
+  },
+  "fileOperations.transferDialog.destPathAria": "Đường dẫn đích",
+  "@fileOperations.transferDialog.destPathAria": {
+    "sourceHash": "b7c2fd2"
+  },
+  "fileOperations.transferDialog.spaceInfo": "Còn trống {free} trên {total}",
+  "@fileOperations.transferDialog.spaceInfo": {
+    "sourceHash": "a46cd4e"
+  },
+  "fileOperations.transferDialog.smbNativeNote": "Chia sẻ này dùng kết nối hệ thống. Việc hủy có thể bị trễ. Dùng \"Kết nối trực tiếp\" trong bộ chọn ổ đĩa để truyền nhanh hơn và hủy đáng tin cậy.",
+  "@fileOperations.transferDialog.smbNativeNote": {
+    "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.scanFile": "{count, plural, other {tệp}}",
+  "@fileOperations.transferDialog.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.transferDialog.scanDir": "{count, plural, other {thư mục}}",
+  "@fileOperations.transferDialog.scanDir": {
+    "sourceHash": "1c5273d"
+  },
+  "fileOperations.transferDialog.hardlinkNote": "Sẽ ghi <written></written>. Nguồn là <ondisk></ondisk> trên đĩa – phần dôi ra là các tệp liên kết cứng, vốn không thể giữ liên kết khi qua ổ đĩa khác.",
+  "@fileOperations.transferDialog.hardlinkNote": {
+    "sourceHash": "af8a4c9"
+  },
+  "fileOperations.transferDialog.checkingConflicts": "Đang kiểm tra xung đột...",
+  "@fileOperations.transferDialog.checkingConflicts": {
+    "sourceHash": "bc10126"
+  },
+  "fileOperations.transferDialog.mergeInfoSingle": "1 thư mục sẽ hòa trộn với một thư mục hiện có",
+  "@fileOperations.transferDialog.mergeInfoSingle": {
+    "sourceHash": "c8cff01"
+  },
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} thư mục sẽ hòa trộn với các thư mục hiện có",
+  "@fileOperations.transferDialog.mergeInfoMany": {
+    "sourceHash": "6d734ce"
+  },
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, other {tệp đã tồn tại}}",
+  "@fileOperations.transferDialog.conflictsSummary": {
+    "sourceHash": "e3ae41e"
+  },
+  "fileOperations.transferDialog.policySkip": "{count, plural, other {Bỏ qua tất cả}}",
+  "@fileOperations.transferDialog.policySkip": {
+    "sourceHash": "af89aba"
+  },
+  "fileOperations.transferDialog.policyOverwrite": "{count, plural, other {Ghi đè tất cả}}",
+  "@fileOperations.transferDialog.policyOverwrite": {
+    "sourceHash": "e81a8ec"
+  },
+  "fileOperations.transferDialog.policyOverwriteSmaller": "{count, plural, other {Ghi đè tất cả nhỏ hơn}}",
+  "@fileOperations.transferDialog.policyOverwriteSmaller": {
+    "sourceHash": "6b53558"
+  },
+  "fileOperations.transferDialog.policyOverwriteOlder": "{count, plural, other {Ghi đè tất cả cũ hơn}}",
+  "@fileOperations.transferDialog.policyOverwriteOlder": {
+    "sourceHash": "97128f3"
+  },
+  "fileOperations.transferDialog.policyStop": "{count, plural, other {Hỏi cho từng cái}}",
+  "@fileOperations.transferDialog.policyStop": {
+    "sourceHash": "61a6295"
+  },
+  "fileOperations.transferDialog.typeMismatchWarning": "Một số xung đột lẫn lộn một tệp và một thư mục trùng tên. Việc ghi đè sẽ thay thế các mục khác loại, bao gồm toàn bộ nội dung của một thư mục.",
+  "@fileOperations.transferDialog.typeMismatchWarning": {
+    "sourceHash": "76f1ab1"
+  },
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Sao chép} move {Di chuyển} delete {Xóa} other {Chuyển vào thùng rác}}",
+  "@fileOperations.transferDialog.titleVerbOnly": {
+    "sourceHash": "3f4ca13"
+  },
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Sao chép} move {Di chuyển} delete {Xóa} other {Chuyển vào thùng rác}} {phrase}",
+  "@fileOperations.transferDialog.titleWithCounts": {
+    "sourceHash": "3cf7a5e"
+  },
+  "fileOperations.transferDialog.filesPart": "{countText} {count, plural, other {tệp}}",
+  "@fileOperations.transferDialog.filesPart": {
+    "sourceHash": "76ef0a6"
+  },
+  "fileOperations.transferDialog.foldersPart": "{countText} {count, plural, other {thư mục}}",
+  "@fileOperations.transferDialog.foldersPart": {
+    "sourceHash": "9bd56b2"
+  },
+  "fileOperations.transferDialog.pathErrorSubfolder": "Không thể {verb, select, copy {sao chép} other {di chuyển}} \"{name}\" vào thư mục con của chính nó",
+  "@fileOperations.transferDialog.pathErrorSubfolder": {
+    "sourceHash": "4ad1eaf"
+  },
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "\"{name}\" đã ở vị trí này rồi",
+  "@fileOperations.transferDialog.pathErrorAlreadyThere": {
+    "sourceHash": "1030a7a"
+  },
+  "fileOperations.transferDialog.confirmCopy": "Sao chép",
+  "@fileOperations.transferDialog.confirmCopy": {
+    "sourceHash": "e21f935"
+  },
+  "fileOperations.transferDialog.confirmMove": "Di chuyển",
+  "@fileOperations.transferDialog.confirmMove": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileOperations.scanPhase.fromLabel": "Từ:",
+  "@fileOperations.scanPhase.fromLabel": {
+    "sourceHash": "dc45d36"
+  },
+  "fileOperations.scanPhase.scanFile": "{count, plural, other {tệp}}",
+  "@fileOperations.scanPhase.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.scanPhase.scanDir": "{count, plural, other {thư mục}}",
+  "@fileOperations.scanPhase.scanDir": {
+    "sourceHash": "1c5273d"
+  },
+  "fileOperations.scanPhase.throughputFiles": "{rateText} tệp/giây",
+  "@fileOperations.scanPhase.throughputFiles": {
+    "sourceHash": "c3b28a4"
+  },
+  "fileOperations.transferProgress.scanTitleCopy": "Đang xác minh trước khi sao chép...",
+  "@fileOperations.transferProgress.scanTitleCopy": {
+    "sourceHash": "fd21ea9"
+  },
+  "fileOperations.transferProgress.scanTitleMove": "Đang xác minh trước khi di chuyển...",
+  "@fileOperations.transferProgress.scanTitleMove": {
+    "sourceHash": "5e79da2"
+  },
+  "fileOperations.transferProgress.scanTitleDelete": "Đang đếm các mục cần xóa...",
+  "@fileOperations.transferProgress.scanTitleDelete": {
+    "sourceHash": "1bb559a"
+  },
+  "fileOperations.transferProgress.scanTitleTrash": "Đang đếm các mục cần chuyển vào thùng rác...",
+  "@fileOperations.transferProgress.scanTitleTrash": {
+    "sourceHash": "d11467e"
+  },
+  "fileOperations.transferProgress.rollbackUnavailableTooltip": "Không thể hoàn tác khi di chuyển trong cùng một ổ đĩa",
+  "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
+    "sourceHash": "da6af1f"
+  },
+  "fileOperations.transferProgress.titleRollingBack": "Đang hoàn tác...",
+  "@fileOperations.transferProgress.titleRollingBack": {
+    "sourceHash": "c3fed24"
+  },
+  "fileOperations.transferProgress.titleCancelling": "Đang hủy...",
+  "@fileOperations.transferProgress.titleCancelling": {
+    "sourceHash": "7b26131"
+  },
+  "fileOperations.transferProgress.titleCancellingSlow": "Đang hủy... (đang hoàn tất các lần truyền qua USB)",
+  "@fileOperations.transferProgress.titleCancellingSlow": {
+    "sourceHash": "f849d68"
+  },
+  "fileOperations.transferProgress.titleConflict": "Tệp đã tồn tại",
+  "@fileOperations.transferProgress.titleConflict": {
+    "sourceHash": "ae71a9a"
+  },
+  "fileOperations.transferProgress.titleFlushing": "Đang ghi phần cuối cùng...",
+  "@fileOperations.transferProgress.titleFlushing": {
+    "sourceHash": "e0ba096"
+  },
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} other {Đang chuyển vào thùng rác}}...",
+  "@fileOperations.transferProgress.titleActive": {
+    "sourceHash": "8aed5dc"
+  },
+  "fileOperations.transferProgress.stageScanning": "Đang quét",
+  "@fileOperations.transferProgress.stageScanning": {
+    "sourceHash": "474ad81"
+  },
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} other {Đang chuyển vào thùng rác}}",
+  "@fileOperations.transferProgress.stageActive": {
+    "sourceHash": "4f1aa07"
+  },
+  "fileOperations.transferProgress.warningFileOverFolder": "Đích đã tồn tại và là một <strong>thư mục</strong>. Bạn sắp ghi đè nó bằng một <strong>tệp</strong> trùng tên. Toàn bộ nội dung của thư mục đích sẽ bị xóa và thay bằng tệp đó. Làm gì đây?",
+  "@fileOperations.transferProgress.warningFileOverFolder": {
+    "sourceHash": "c560c0f"
+  },
+  "fileOperations.transferProgress.existingFolderLabel": "Hiện có (thư mục):",
+  "@fileOperations.transferProgress.existingFolderLabel": {
+    "sourceHash": "44cab6d"
+  },
+  "fileOperations.transferProgress.existingFileLabel": "Hiện có (tệp):",
+  "@fileOperations.transferProgress.existingFileLabel": {
+    "sourceHash": "64142a0"
+  },
+  "fileOperations.transferProgress.existingLabel": "Hiện có:",
+  "@fileOperations.transferProgress.existingLabel": {
+    "sourceHash": "4dda67f"
+  },
+  "fileOperations.transferProgress.newFolderLabel": "Mới (thư mục):",
+  "@fileOperations.transferProgress.newFolderLabel": {
+    "sourceHash": "aa1efc0"
+  },
+  "fileOperations.transferProgress.newFileLabel": "Mới (tệp):",
+  "@fileOperations.transferProgress.newFileLabel": {
+    "sourceHash": "a0c9782"
+  },
+  "fileOperations.transferProgress.newLabel": "Mới:",
+  "@fileOperations.transferProgress.newLabel": {
+    "sourceHash": "46dafc1"
+  },
+  "fileOperations.transferProgress.sizeUnknown": "(không rõ)",
+  "@fileOperations.transferProgress.sizeUnknown": {
+    "sourceHash": "8fe7794"
+  },
+  "fileOperations.transferProgress.annotationLarger": "(lớn hơn)",
+  "@fileOperations.transferProgress.annotationLarger": {
+    "sourceHash": "71a1ffa"
+  },
+  "fileOperations.transferProgress.annotationNewer": "(mới hơn)",
+  "@fileOperations.transferProgress.annotationNewer": {
+    "sourceHash": "92afdbd"
+  },
+  "fileOperations.transferProgress.smallerDisabledTooltip": "Không thể so sánh: không rõ kích thước thư mục đích.",
+  "@fileOperations.transferProgress.smallerDisabledTooltip": {
+    "sourceHash": "3bb25be"
+  },
+  "fileOperations.transferProgress.conflictSkip": "Bỏ qua",
+  "@fileOperations.transferProgress.conflictSkip": {
+    "sourceHash": "28d0359"
+  },
+  "fileOperations.transferProgress.conflictSkipAll": "Bỏ qua tất cả",
+  "@fileOperations.transferProgress.conflictSkipAll": {
+    "sourceHash": "5fc4280"
+  },
+  "fileOperations.transferProgress.conflictRename": "Đổi tên",
+  "@fileOperations.transferProgress.conflictRename": {
+    "sourceHash": "3064d79"
+  },
+  "fileOperations.transferProgress.conflictRenameAll": "Đổi tên tất cả",
+  "@fileOperations.transferProgress.conflictRenameAll": {
+    "sourceHash": "c58387b"
+  },
+  "fileOperations.transferProgress.conflictOverwrite": "Ghi đè",
+  "@fileOperations.transferProgress.conflictOverwrite": {
+    "sourceHash": "b24963e"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAll": "Ghi đè tất cả",
+  "@fileOperations.transferProgress.conflictOverwriteAll": {
+    "sourceHash": "4662d17"
+  },
+  "fileOperations.transferProgress.conflictOverwriteFolderWithFile": "Ghi đè thư mục bằng tệp",
+  "@fileOperations.transferProgress.conflictOverwriteFolderWithFile": {
+    "sourceHash": "0589e60"
+  },
+  "fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": "Ghi đè các thư mục bằng các tệp",
+  "@fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": {
+    "sourceHash": "9f4661a"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAllSmaller": "Ghi đè tất cả nhỏ hơn",
+  "@fileOperations.transferProgress.conflictOverwriteAllSmaller": {
+    "sourceHash": "2c9bbed"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAllOlder": "Ghi đè tất cả cũ hơn",
+  "@fileOperations.transferProgress.conflictOverwriteAllOlder": {
+    "sourceHash": "b07b06a"
+  },
+  "fileOperations.transferProgress.conflictCancel": "Hủy",
+  "@fileOperations.transferProgress.conflictCancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileOperations.transferProgress.conflictRollback": "Hoàn tác",
+  "@fileOperations.transferProgress.conflictRollback": {
+    "sourceHash": "c591f55"
+  },
+  "fileOperations.transferProgress.progressSize": "Kích thước",
+  "@fileOperations.transferProgress.progressSize": {
+    "sourceHash": "1af8519"
+  },
+  "fileOperations.transferProgress.progressItems": "Mục",
+  "@fileOperations.transferProgress.progressItems": {
+    "sourceHash": "fb8e7a1"
+  },
+  "fileOperations.transferProgress.progressFiles": "Tệp",
+  "@fileOperations.transferProgress.progressFiles": {
+    "sourceHash": "abc7e98"
+  },
+  "fileOperations.transferProgress.sizeProgressAria": "Tiến trình theo kích thước",
+  "@fileOperations.transferProgress.sizeProgressAria": {
+    "sourceHash": "60ec57d"
+  },
+  "fileOperations.transferProgress.fileProgressAria": "Tiến trình theo tệp",
+  "@fileOperations.transferProgress.fileProgressAria": {
+    "sourceHash": "07db117"
+  },
+  "fileOperations.transferProgress.etaRemaining": "còn ~{duration}",
+  "@fileOperations.transferProgress.etaRemaining": {
+    "sourceHash": "5bbf895"
+  },
+  "fileOperations.transferProgress.smbNativeNote": "Chia sẻ này dùng kết nối hệ thống. Việc hủy và hoàn tác có thể bị trễ.",
+  "@fileOperations.transferProgress.smbNativeNote": {
+    "sourceHash": "5344d07"
+  },
+  "fileOperations.transferProgress.rollbackTooltip": "Hủy và xóa mọi tệp đích dở dang đã được tạo",
+  "@fileOperations.transferProgress.rollbackTooltip": {
+    "sourceHash": "df77f8e"
+  },
+  "fileOperations.errorDialog.technicalDetails": "Chi tiết kỹ thuật",
+  "@fileOperations.errorDialog.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileOperations.errorDialog.technicalDetailsAria": "Chi tiết kỹ thuật của sự cố",
+  "@fileOperations.errorDialog.technicalDetailsAria": {
+    "sourceHash": "708186c"
+  },
+  "fileOperations.errorDialog.retry": "Thử lại",
+  "@fileOperations.errorDialog.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.close": "Đóng",
+  "@fileOperations.errorDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

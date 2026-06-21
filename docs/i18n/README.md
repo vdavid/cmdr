@@ -26,6 +26,9 @@ Formal vs informal address per language, with OS and retail evidence:
 
 Which script each digraphic language ships in: [script-decisions.md](script-decisions.md).
 
+Cross-language process learnings discovered while translating (the pipeline, catalog mechanics, pile traps), shared
+across batches: [translation-learnings.md](translation-learnings.md).
+
 ## Current language guides
 
 One per language (BCP-47 base tag). Each may carry a "Decisions to confirm with David" section, a "Decision points"

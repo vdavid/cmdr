@@ -1,0 +1,42 @@
+{
+  "updates.checkToast.errorPrefix": "Erro: {message}",
+  "@updates.checkToast.errorPrefix": {
+    "sourceHash": "020abfd"
+  },
+  "updates.checkToast.sendErrorReport": "Enviar relatório de erro",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "updates.toast.available": "Nova versão disponível. Reinicie para atualizar.",
+  "@updates.toast.available": {
+    "sourceHash": "cb97574"
+  },
+  "updates.toast.later": "Depois",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "Reiniciar",
+  "@updates.toast.restart": {
+    "sourceHash": "6b983a8"
+  },
+  "updates.status.noUpdates": "Nenhuma atualização encontrada. Versão atual: v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "Verificando…",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "Atualização encontrada, baixando v{next} (atual: v{prev})…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "Instalando v{next} (atual: v{prev})…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.ready": "Atualização v{next} pronta. Reinicie para aplicar.",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

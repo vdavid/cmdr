@@ -1,0 +1,10 @@
+{
+  "main.upgradeNudge.mac": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở Cmdr > Thiết lập ban đầu… để xem qua.",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "477f3a5"
+  },
+  "main.upgradeNudge.other": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở bảng lệnh và chạy Thiết lập ban đầu… để xem qua.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "4b0b39e"
+  }
+}

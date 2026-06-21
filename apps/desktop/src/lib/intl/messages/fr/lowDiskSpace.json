@@ -1,0 +1,22 @@
+{
+  "lowDiskSpace.toast.message": "L''espace libre de votre disque de démarrage devient faible : {freeText} libres ({percentText} %).",
+  "@lowDiskSpace.toast.message": {
+    "sourceHash": "44b701f"
+  },
+  "lowDiskSpace.toast.disable": "Désactiver ces notifications",
+  "@lowDiskSpace.toast.disable": {
+    "sourceHash": "1b085f6"
+  },
+  "lowDiskSpace.toast.closeTooltip": "Ignorer",
+  "@lowDiskSpace.toast.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
+  "lowDiskSpace.notification.title": "Espace disque faible",
+  "@lowDiskSpace.notification.title": {
+    "sourceHash": "5b1f5bf"
+  },
+  "lowDiskSpace.notification.body": "{freeText} libres ({percentText} %) sur votre disque de démarrage.",
+  "@lowDiskSpace.notification.body": {
+    "sourceHash": "b17ee43"
+  }
+}

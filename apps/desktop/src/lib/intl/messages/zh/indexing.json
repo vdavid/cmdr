@@ -1,0 +1,134 @@
+{
+  "indexing.status.ariaLabel": "驱动器索引状态",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.scan.label": "正在扫描你的驱动器…",
+  "@indexing.scan.label": {
+    "sourceHash": "e7d6d6a"
+  },
+  "indexing.scan.labelFirst": "正在扫描你的驱动器（首次扫描）…",
+  "@indexing.scan.labelFirst": {
+    "sourceHash": "2431d85"
+  },
+  "indexing.scan.counters": "{entriesText} 个条目，{dirsText} 个目录",
+  "@indexing.scan.counters": {
+    "sourceHash": "fd4d242"
+  },
+  "indexing.scan.etaRough": "大约 {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.aggregation.savingEntries": "正在保存条目…",
+  "@indexing.aggregation.savingEntries": {
+    "sourceHash": "16fa321"
+  },
+  "indexing.aggregation.loading": "正在加载目录…",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "37b34d4"
+  },
+  "indexing.aggregation.sorting": "正在排序目录…",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "9018980"
+  },
+  "indexing.aggregation.computing": "正在计算目录大小…",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "ee6ba9a"
+  },
+  "indexing.aggregation.writing": "正在保存目录大小…",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "ff59fa5"
+  },
+  "indexing.replay.label": "正在更新索引…",
+  "@indexing.replay.label": {
+    "sourceHash": "2920134"
+  },
+  "indexing.replay.detail": "已处理 {eventsText} 个事件",
+  "@indexing.replay.detail": {
+    "sourceHash": "e80c077"
+  },
+  "indexing.eta.almostDone": "即将完成",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.secondsLeft": "剩余 {secondsText} 秒",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "剩余 {minutesText} 分钟",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.rescan.staleIndex": "你的驱动器索引已过期。看起来应用有一阵子没运行了。正在重新扫描以跟上变化。",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "ddac60e"
+  },
+  "indexing.rescan.journalGap": "系统的文件更改日志记录得不够久远。正在重新扫描以重建索引。",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "5f1075b"
+  },
+  "indexing.rescan.replayOverflow": "自上次运行以来发生了大量文件更改。正在重新扫描，而不是逐条重放这些更改。",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.tooManySubdirRescans": "自上次运行以来许多目录有了较大变化。正在重新扫描，让一切保持最新。",
+  "@indexing.rescan.tooManySubdirRescans": {
+    "sourceHash": "06d04a0"
+  },
+  "indexing.rescan.watcherStartFailed": "无法启动文件更改监视器。正在重新扫描，让索引保持最新。",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "831e44d"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "频繁的文件系统活动占满了事件缓冲区。正在重新扫描，以保持准确。",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "上一次扫描没有完成（应用可能被关闭了）。正在从头开始重新扫描。",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "3ca5217"
+  },
+  "indexing.rescan.watcherChannelOverflow": "一阵密集的文件系统活动占满了监视器通道。正在重新扫描，以保持准确。",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "正在重新扫描驱动器，让索引保持准确。",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.firstConnect.title": "为 {name} 建立索引？",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "Cmdr 可以在后台为这个驱动器建立索引，让目录大小和搜索在这里也能用。它只在驱动器连接时运行。",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "启用索引",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "不再为此驱动器询问",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "99bed41"
+  },
+  "indexing.firstConnect.silenceAll": "不再为任何驱动器询问",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "511c970"
+  },
+  "indexing.staleDialog.title": "这个驱动器的索引可能已过期",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "21a78ee"
+  },
+  "indexing.staleDialog.body": "在 {name} 断开连接期间，上面的文件可能有过更改。在你重新扫描之前，目录大小和搜索结果可能会有些偏差。出现这种情况时，驱动器旁边始终会显示黄色状态，重新扫描即可刷新。",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.neverShowAgain": "不再显示",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "关闭",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

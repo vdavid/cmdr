@@ -1,0 +1,602 @@
+{
+  "commands.appQuit.label": "Cmdr beenden",
+  "@commands.appQuit.label": {
+    "sourceHash": "b3455b4"
+  },
+  "commands.appHide.label": "Cmdr ausblenden",
+  "@commands.appHide.label": {
+    "sourceHash": "8f86f89"
+  },
+  "commands.appHideOthers.label": "Andere ausblenden",
+  "@commands.appHideOthers.label": {
+    "sourceHash": "74376e4"
+  },
+  "commands.appShowAll.label": "Alle einblenden",
+  "@commands.appShowAll.label": {
+    "sourceHash": "2150d8d"
+  },
+  "commands.appAbout.label": "Über Cmdr",
+  "@commands.appAbout.label": {
+    "sourceHash": "efe010f"
+  },
+  "commands.appLicenseKey.seeDetails.label": "Lizenzdetails anzeigen",
+  "@commands.appLicenseKey.seeDetails.label": {
+    "sourceHash": "0e660e8"
+  },
+  "commands.appLicenseKey.enterKey.label": "Lizenzschlüssel eingeben",
+  "@commands.appLicenseKey.enterKey.label": {
+    "sourceHash": "357d05e"
+  },
+  "commands.appCommandPalette.label": "Befehlspalette öffnen",
+  "@commands.appCommandPalette.label": {
+    "sourceHash": "c022b19"
+  },
+  "commands.appSettings.label": "Einstellungen öffnen",
+  "@commands.appSettings.label": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.appCheckForUpdates.label": "Nach Updates suchen…",
+  "@commands.appCheckForUpdates.label": {
+    "sourceHash": "52d6f7d"
+  },
+  "commands.appCheckForUpdates.description": "Prüfen, ob eine neuere Version von Cmdr verfügbar ist, und sie gegebenenfalls laden",
+  "@commands.appCheckForUpdates.description": {
+    "sourceHash": "c53dab0"
+  },
+  "commands.cmdrOpenOnboarding.label": "Einführung…",
+  "@commands.cmdrOpenOnboarding.label": {
+    "sourceHash": "c4cc4aa"
+  },
+  "commands.cmdrOpenOnboarding.description": "Den Einführungsassistenten erneut öffnen, um die Optionen beim ersten Start zu prüfen oder zu ändern",
+  "@commands.cmdrOpenOnboarding.description": {
+    "sourceHash": "a45c542"
+  },
+  "commands.helpOpenShortcuts.label": "Tastaturkurzbefehle",
+  "@commands.helpOpenShortcuts.label": {
+    "sourceHash": "e9bef0b"
+  },
+  "commands.helpOpenShortcuts.description": "Ein schreibgeschütztes Fenster mit allen Tastaturkurzbefehlen öffnen, live mit deinen Anpassungen synchronisiert",
+  "@commands.helpOpenShortcuts.description": {
+    "sourceHash": "a9a1e0d"
+  },
+  "commands.helpSendErrorReport.label": "Fehlerbericht senden…",
+  "@commands.helpSendErrorReport.label": {
+    "sourceHash": "063c94e"
+  },
+  "commands.helpSendErrorReport.description": "Cmdr-Protokolle an das Team senden, um bei der Behebung eines Problems zu helfen",
+  "@commands.helpSendErrorReport.description": {
+    "sourceHash": "021d333"
+  },
+  "commands.helpWhatsNew.label": "Neuigkeiten",
+  "@commands.helpWhatsNew.label": {
+    "sourceHash": "aa0c54f"
+  },
+  "commands.helpWhatsNew.description": "Sieh, was sich in den neuesten Versionen von Cmdr geändert hat",
+  "@commands.helpWhatsNew.description": {
+    "sourceHash": "f8ad411"
+  },
+  "commands.feedbackSend.label": "Feedback senden",
+  "@commands.feedbackSend.label": {
+    "sourceHash": "8235980"
+  },
+  "commands.feedbackSend.description": "Sag dem Macher von Cmdr, was du denkst: Ideen, Wünsche, alles",
+  "@commands.feedbackSend.description": {
+    "sourceHash": "89d08a8"
+  },
+  "commands.searchOpen.label": "Dateien suchen",
+  "@commands.searchOpen.label": {
+    "sourceHash": "179fed8"
+  },
+  "commands.navGoToPath.label": "Zu Pfad gehen…",
+  "@commands.navGoToPath.label": {
+    "sourceHash": "936edc5"
+  },
+  "commands.navGoToPath.description": "Den fokussierten Bereich zu einem getippten, eingefügten oder zuletzt verwendeten Pfad springen lassen.",
+  "@commands.navGoToPath.description": {
+    "sourceHash": "fc6a00c"
+  },
+  "commands.favoritesAdd.label": "Zu Favoriten hinzufügen",
+  "@commands.favoritesAdd.label": {
+    "sourceHash": "7f3c078"
+  },
+  "commands.favoritesAdd.description": "Den aktuellen Ordner des fokussierten Bereichs zu den Favoriten des Umschalters hinzufügen.",
+  "@commands.favoritesAdd.description": {
+    "sourceHash": "84dcbf8"
+  },
+  "commands.downloadsGoToLatest.label": "Zum neuesten Download gehen",
+  "@commands.downloadsGoToLatest.label": {
+    "sourceHash": "492d0b6"
+  },
+  "commands.downloadsGoToLatest.description": "~/Downloads öffnen und die neueste Datei auswählen.",
+  "@commands.downloadsGoToLatest.description": {
+    "sourceHash": "42a26a2"
+  },
+  "commands.viewShowHidden.label": "Verborgene Dateien ein-/ausblenden",
+  "@commands.viewShowHidden.label": {
+    "sourceHash": "6aa9b55"
+  },
+  "commands.viewBriefMode.label": "Zu Kompaktansicht wechseln",
+  "@commands.viewBriefMode.label": {
+    "sourceHash": "bcf6636"
+  },
+  "commands.viewFullMode.label": "Zu Vollansicht wechseln",
+  "@commands.viewFullMode.label": {
+    "sourceHash": "b44150e"
+  },
+  "commands.viewSetMode.label": "Ansichtsmodus des Bereichs festlegen",
+  "@commands.viewSetMode.label": {
+    "sourceHash": "1e050a6"
+  },
+  "commands.viewZoomSet75.label": "Auf 75 % zoomen",
+  "@commands.viewZoomSet75.label": {
+    "sourceHash": "70ac915"
+  },
+  "commands.viewZoomSet100.label": "Auf 100 % zoomen",
+  "@commands.viewZoomSet100.label": {
+    "sourceHash": "c23bdb4"
+  },
+  "commands.viewZoomSet125.label": "Auf 125 % zoomen",
+  "@commands.viewZoomSet125.label": {
+    "sourceHash": "9191980"
+  },
+  "commands.viewZoomSet150.label": "Auf 150 % zoomen",
+  "@commands.viewZoomSet150.label": {
+    "sourceHash": "2e247da"
+  },
+  "commands.viewZoomIn.label": "Vergrößern",
+  "@commands.viewZoomIn.label": {
+    "sourceHash": "0e47f09"
+  },
+  "commands.viewZoomOut.label": "Verkleinern",
+  "@commands.viewZoomOut.label": {
+    "sourceHash": "bc7b631"
+  },
+  "commands.sortByName.label": "Nach Name sortieren",
+  "@commands.sortByName.label": {
+    "sourceHash": "588a082"
+  },
+  "commands.sortByExtension.label": "Nach Endung sortieren",
+  "@commands.sortByExtension.label": {
+    "sourceHash": "bb899db"
+  },
+  "commands.sortByModified.label": "Nach Änderungsdatum sortieren",
+  "@commands.sortByModified.label": {
+    "sourceHash": "d9349cb"
+  },
+  "commands.sortBySize.label": "Nach Größe sortieren",
+  "@commands.sortBySize.label": {
+    "sourceHash": "b5fa7af"
+  },
+  "commands.sortByCreated.label": "Nach Erstellungsdatum sortieren",
+  "@commands.sortByCreated.label": {
+    "sourceHash": "9bdaf4e"
+  },
+  "commands.sortAscending.label": "Aufsteigend sortieren",
+  "@commands.sortAscending.label": {
+    "sourceHash": "ec3c9c7"
+  },
+  "commands.sortDescending.label": "Absteigend sortieren",
+  "@commands.sortDescending.label": {
+    "sourceHash": "8993b78"
+  },
+  "commands.sortToggleOrder.label": "Sortierreihenfolge umschalten",
+  "@commands.sortToggleOrder.label": {
+    "sourceHash": "e0eb85f"
+  },
+  "commands.sortSet.label": "Sortierung des Bereichs festlegen",
+  "@commands.sortSet.label": {
+    "sourceHash": "64232ef"
+  },
+  "commands.paneSwitch.label": "Bereich wechseln",
+  "@commands.paneSwitch.label": {
+    "sourceHash": "377471f"
+  },
+  "commands.paneSwap.label": "Bereiche tauschen",
+  "@commands.paneSwap.label": {
+    "sourceHash": "cc29396"
+  },
+  "commands.paneLeftVolumeChooser.label": "Linke Volume-Auswahl öffnen",
+  "@commands.paneLeftVolumeChooser.label": {
+    "sourceHash": "8682140"
+  },
+  "commands.paneRightVolumeChooser.label": "Rechte Volume-Auswahl öffnen",
+  "@commands.paneRightVolumeChooser.label": {
+    "sourceHash": "7a0268f"
+  },
+  "commands.paneCopyPathLeftToRight.label": "Pfad vom linken in den rechten Bereich kopieren",
+  "@commands.paneCopyPathLeftToRight.label": {
+    "sourceHash": "d1376f6"
+  },
+  "commands.paneCopyPathLeftToRight.description": "Den Ort des linken Bereichs rechts öffnen. Wenn der linke Bereich fokussiert ist und der Cursor auf einem Ordner steht, wird stattdessen dieser Ordner rechts geöffnet.",
+  "@commands.paneCopyPathLeftToRight.description": {
+    "sourceHash": "07ac6a1"
+  },
+  "commands.paneCopyPathRightToLeft.label": "Pfad vom rechten in den linken Bereich kopieren",
+  "@commands.paneCopyPathRightToLeft.label": {
+    "sourceHash": "266a30d"
+  },
+  "commands.paneCopyPathRightToLeft.description": "Den Ort des rechten Bereichs links öffnen. Wenn der rechte Bereich fokussiert ist und der Cursor auf einem Ordner steht, wird stattdessen dieser Ordner links geöffnet.",
+  "@commands.paneCopyPathRightToLeft.description": {
+    "sourceHash": "95c566f"
+  },
+  "commands.paneRefresh.label": "Bereich aktualisieren",
+  "@commands.paneRefresh.label": {
+    "sourceHash": "42ce075"
+  },
+  "commands.tabNew.label": "Neuer Tab",
+  "@commands.tabNew.label": {
+    "sourceHash": "1e08fda"
+  },
+  "commands.tabClose.label": "Tab schließen",
+  "@commands.tabClose.label": {
+    "sourceHash": "50a3f95"
+  },
+  "commands.tabReopen.label": "Geschlossenen Tab wieder öffnen",
+  "@commands.tabReopen.label": {
+    "sourceHash": "5ca5397"
+  },
+  "commands.tabNext.label": "Nächster Tab",
+  "@commands.tabNext.label": {
+    "sourceHash": "1ef9522"
+  },
+  "commands.tabPrev.label": "Vorheriger Tab",
+  "@commands.tabPrev.label": {
+    "sourceHash": "c88d5e7"
+  },
+  "commands.tabTogglePin.label": "Tab fixieren/lösen",
+  "@commands.tabTogglePin.label": {
+    "sourceHash": "3fdfcd1"
+  },
+  "commands.tabCloseOthers.label": "Andere Tabs schließen",
+  "@commands.tabCloseOthers.label": {
+    "sourceHash": "0ddc2c5"
+  },
+  "commands.tabMcpAction.label": "Tab-Aktion im Bereich",
+  "@commands.tabMcpAction.label": {
+    "sourceHash": "405ed9c"
+  },
+  "commands.navUp.label": "Vorherige Datei auswählen",
+  "@commands.navUp.label": {
+    "sourceHash": "40dca00"
+  },
+  "commands.navDown.label": "Nächste Datei auswählen",
+  "@commands.navDown.label": {
+    "sourceHash": "61e81ee"
+  },
+  "commands.navOpen.label": "Datei oder Ordner öffnen",
+  "@commands.navOpen.label": {
+    "sourceHash": "ef8d6a5"
+  },
+  "commands.navParent.label": "Zum übergeordneten Ordner gehen",
+  "@commands.navParent.label": {
+    "sourceHash": "7d4c500"
+  },
+  "commands.navHome.label": "Zur ersten Datei gehen",
+  "@commands.navHome.label": {
+    "sourceHash": "5750de6"
+  },
+  "commands.navEnd.label": "Zur letzten Datei gehen",
+  "@commands.navEnd.label": {
+    "sourceHash": "f39205a"
+  },
+  "commands.navPageUp.label": "Seite nach oben",
+  "@commands.navPageUp.label": {
+    "sourceHash": "43f41b5"
+  },
+  "commands.navPageDown.label": "Seite nach unten",
+  "@commands.navPageDown.label": {
+    "sourceHash": "72a825f"
+  },
+  "commands.navBack.label": "Zurück",
+  "@commands.navBack.label": {
+    "sourceHash": "6aadac2"
+  },
+  "commands.navForward.label": "Vor",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
+  "commands.navOpenUnderCursor.label": "Objekt unter Cursor öffnen",
+  "@commands.navOpenUnderCursor.label": {
+    "sourceHash": "6b54df9"
+  },
+  "commands.cursorMoveTo.label": "Cursor im Bereich bewegen",
+  "@commands.cursorMoveTo.label": {
+    "sourceHash": "4c196ef"
+  },
+  "commands.cursorScrollTo.label": "Bereich zu Index scrollen",
+  "@commands.cursorScrollTo.label": {
+    "sourceHash": "98ca70c"
+  },
+  "commands.navLeft.label": "Zur linken Spalte wechseln",
+  "@commands.navLeft.label": {
+    "sourceHash": "db46f08"
+  },
+  "commands.navRight.label": "Zur rechten Spalte wechseln",
+  "@commands.navRight.label": {
+    "sourceHash": "21b59f0"
+  },
+  "commands.navFirstInFull.label": "Zur ersten Datei springen",
+  "@commands.navFirstInFull.label": {
+    "sourceHash": "f0ea135"
+  },
+  "commands.navLastInFull.label": "Zur letzten Datei springen",
+  "@commands.navLastInFull.label": {
+    "sourceHash": "e6d6a52"
+  },
+  "commands.fileRename.label": "Umbenennen",
+  "@commands.fileRename.label": {
+    "sourceHash": "3064d79"
+  },
+  "commands.fileView.label": "Vorschau",
+  "@commands.fileView.label": {
+    "sourceHash": "dcc839a"
+  },
+  "commands.fileEdit.label": "Im Standardeditor bearbeiten",
+  "@commands.fileEdit.label": {
+    "sourceHash": "badc768"
+  },
+  "commands.fileCopy.label": "Kopieren",
+  "@commands.fileCopy.label": {
+    "sourceHash": "e21f935"
+  },
+  "commands.fileMove.label": "Bewegen",
+  "@commands.fileMove.label": {
+    "sourceHash": "6ecc3df"
+  },
+  "commands.editCopy.label": "In die Zwischenablage kopieren",
+  "@commands.editCopy.label": {
+    "sourceHash": "b749e20"
+  },
+  "commands.editCopy.description": "Ausgewählte Dateien zum Einsetzen in die Zwischenablage kopieren",
+  "@commands.editCopy.description": {
+    "sourceHash": "5c769a7"
+  },
+  "commands.editCut.label": "In die Zwischenablage ausschneiden",
+  "@commands.editCut.label": {
+    "sourceHash": "a954b4a"
+  },
+  "commands.editCut.description": "Ausgewählte Dateien ausschneiden (beim Einsetzen werden sie bewegt)",
+  "@commands.editCut.description": {
+    "sourceHash": "5bc3870"
+  },
+  "commands.editPaste.label": "Einsetzen",
+  "@commands.editPaste.label": {
+    "sourceHash": "f3380f7"
+  },
+  "commands.editPaste.description": "Dateien aus der Zwischenablage in den aktuellen Ordner einsetzen",
+  "@commands.editPaste.description": {
+    "sourceHash": "32545d7"
+  },
+  "commands.editPasteAsMove.label": "Hierher bewegen",
+  "@commands.editPasteAsMove.label": {
+    "sourceHash": "56f1247"
+  },
+  "commands.editPasteAsMove.description": "Dateien aus der Zwischenablage als Bewegung einsetzen",
+  "@commands.editPasteAsMove.description": {
+    "sourceHash": "961316d"
+  },
+  "commands.fileNewFolder.label": "Neuer Ordner",
+  "@commands.fileNewFolder.label": {
+    "sourceHash": "cf28f49"
+  },
+  "commands.fileNewFile.label": "Neue Datei erstellen",
+  "@commands.fileNewFile.label": {
+    "sourceHash": "6e70b95"
+  },
+  "commands.fileDelete.label": "Löschen",
+  "@commands.fileDelete.label": {
+    "sourceHash": "e2d0a54"
+  },
+  "commands.fileDeletePermanently.label": "Endgültig löschen",
+  "@commands.fileDeletePermanently.label": {
+    "sourceHash": "280b10c"
+  },
+  "commands.dialogConfirm.label": "Öffnen-Dialog bestätigen",
+  "@commands.dialogConfirm.label": {
+    "sourceHash": "b58a959"
+  },
+  "commands.fileShowInFinder.mac.label": "Im Finder anzeigen",
+  "@commands.fileShowInFinder.mac.label": {
+    "sourceHash": "c2a9c77"
+  },
+  "commands.fileShowInFinder.other.label": "Im Dateimanager anzeigen",
+  "@commands.fileShowInFinder.other.label": {
+    "sourceHash": "3ca4dad"
+  },
+  "commands.fileCopyPath.label": "Pfad in die Zwischenablage kopieren",
+  "@commands.fileCopyPath.label": {
+    "sourceHash": "333608a"
+  },
+  "commands.fileCopyCurrentDirectoryPath.label": "Pfad des aktuellen Ordners kopieren",
+  "@commands.fileCopyCurrentDirectoryPath.label": {
+    "sourceHash": "ae360d1"
+  },
+  "commands.fileCopyFilename.label": "Dateinamen kopieren",
+  "@commands.fileCopyFilename.label": {
+    "sourceHash": "5cdf7f8"
+  },
+  "commands.fileGetInfo.mac.label": "Informationen",
+  "@commands.fileGetInfo.mac.label": {
+    "sourceHash": "91c64ca"
+  },
+  "commands.fileGetInfo.other.label": "Dateieigenschaften",
+  "@commands.fileGetInfo.other.label": {
+    "sourceHash": "5d9ebf2"
+  },
+  "commands.fileQuickLook.mac.label": "Übersicht",
+  "@commands.fileQuickLook.mac.label": {
+    "sourceHash": "f5616ce"
+  },
+  "commands.fileQuickLook.other.label": "Vorschau",
+  "@commands.fileQuickLook.other.label": {
+    "sourceHash": "324b134"
+  },
+  "commands.fileContextMenu.label": "Kontextmenü öffnen",
+  "@commands.fileContextMenu.label": {
+    "sourceHash": "c07efaf"
+  },
+  "commands.fileContextMenu.description": "Öffnet das Kontextmenü für die Datei unter dem Cursor",
+  "@commands.fileContextMenu.description": {
+    "sourceHash": "8fb1721"
+  },
+  "commands.cloudMakeOffline.label": "Offline verfügbar machen",
+  "@commands.cloudMakeOffline.label": {
+    "sourceHash": "b75c09f"
+  },
+  "commands.cloudMakeOffline.description": "Lädt eine in der Cloud gespeicherte Datei, damit sie ohne Internetverbindung verfügbar bleibt",
+  "@commands.cloudMakeOffline.description": {
+    "sourceHash": "d5cd793"
+  },
+  "commands.cloudRemoveDownload.label": "Download entfernen",
+  "@commands.cloudRemoveDownload.label": {
+    "sourceHash": "5dfc369"
+  },
+  "commands.cloudRemoveDownload.description": "Entfernt die lokale Kopie einer Cloud-Datei, sodass sie nur noch online verfügbar ist",
+  "@commands.cloudRemoveDownload.description": {
+    "sourceHash": "470afd2"
+  },
+  "commands.selectionToggle.label": "Auswahl umschalten",
+  "@commands.selectionToggle.label": {
+    "sourceHash": "6cb5515"
+  },
+  "commands.selectionToggleAndDown.label": "Auswahl umschalten und nach unten",
+  "@commands.selectionToggleAndDown.label": {
+    "sourceHash": "72ccb36"
+  },
+  "commands.selectionToggleAndDown.description": "Wählt die Datei unter dem Cursor aus oder ab und bewegt sich dann nach unten (Total Commander-Stil)",
+  "@commands.selectionToggleAndDown.description": {
+    "sourceHash": "378bb7a"
+  },
+  "commands.selectionSelectAll.label": "Alles auswählen",
+  "@commands.selectionSelectAll.label": {
+    "sourceHash": "1fc9a38"
+  },
+  "commands.selectionDeselectAll.label": "Auswahl aufheben",
+  "@commands.selectionDeselectAll.label": {
+    "sourceHash": "9675494"
+  },
+  "commands.selectionSelectFiles.label": "Dateien auswählen…",
+  "@commands.selectionSelectFiles.label": {
+    "sourceHash": "b7f202e"
+  },
+  "commands.selectionSelectFiles.description": "Öffnet den Dialog „Dateien auswählen“, um passende Dateien zur Auswahl hinzuzufügen",
+  "@commands.selectionSelectFiles.description": {
+    "sourceHash": "7695f3e"
+  },
+  "commands.selectionDeselectFiles.label": "Dateien abwählen…",
+  "@commands.selectionDeselectFiles.label": {
+    "sourceHash": "6fb10d5"
+  },
+  "commands.selectionDeselectFiles.description": "Öffnet den Dialog „Dateien abwählen“, um passende Dateien aus der Auswahl zu entfernen",
+  "@commands.selectionDeselectFiles.description": {
+    "sourceHash": "2a6f82f"
+  },
+  "commands.selectionMcpSelect.label": "Bereich im Bereich auswählen",
+  "@commands.selectionMcpSelect.label": {
+    "sourceHash": "d8bb646"
+  },
+  "commands.selectionMcpSelectByNames.label": "Dateien nach Name im Bereich auswählen",
+  "@commands.selectionMcpSelectByNames.label": {
+    "sourceHash": "8cfc75d"
+  },
+  "commands.networkSelectHost.label": "Netzwerk-Host auswählen",
+  "@commands.networkSelectHost.label": {
+    "sourceHash": "4a9ede5"
+  },
+  "commands.networkRefresh.label": "Netzwerk-Hosts aktualisieren",
+  "@commands.networkRefresh.label": {
+    "sourceHash": "73966bd"
+  },
+  "commands.shareBack.label": "Zurück zur Hostliste",
+  "@commands.shareBack.label": {
+    "sourceHash": "42c44d5"
+  },
+  "commands.shareSelectShare.label": "Mit Freigabe verbinden",
+  "@commands.shareSelectShare.label": {
+    "sourceHash": "6c48c8c"
+  },
+  "commands.volumeSelect.label": "Volume auswählen",
+  "@commands.volumeSelect.label": {
+    "sourceHash": "60f5ce1"
+  },
+  "commands.volumeClose.label": "Volume-Auswahl schließen",
+  "@commands.volumeClose.label": {
+    "sourceHash": "aa6a29b"
+  },
+  "commands.volumeSelectByName.label": "Volume des Bereichs nach Name auswählen",
+  "@commands.volumeSelectByName.label": {
+    "sourceHash": "9f16865"
+  },
+  "commands.aboutOpenWebsite.label": "Website öffnen",
+  "@commands.aboutOpenWebsite.label": {
+    "sourceHash": "3451735"
+  },
+  "commands.aboutOpenUpgrade.label": "Upgrade-Seite öffnen",
+  "@commands.aboutOpenUpgrade.label": {
+    "sourceHash": "9df3bf0"
+  },
+  "commands.aboutClose.label": "Über-Fenster schließen",
+  "@commands.aboutClose.label": {
+    "sourceHash": "d0096c3"
+  },
+  "commands.paletteUp.label": "Vorheriges Ergebnis",
+  "@commands.paletteUp.label": {
+    "sourceHash": "965bc32"
+  },
+  "commands.paletteDown.label": "Nächstes Ergebnis",
+  "@commands.paletteDown.label": {
+    "sourceHash": "bf56a19"
+  },
+  "commands.paletteExecute.label": "Befehl ausführen",
+  "@commands.paletteExecute.label": {
+    "sourceHash": "20f9b97"
+  },
+  "commands.paletteClose.label": "Palette schließen",
+  "@commands.paletteClose.label": {
+    "sourceHash": "2e75050"
+  },
+  "commands.handler.favoriteAdded": "„{name}“ zu Favoriten hinzugefügt",
+  "@commands.handler.favoriteAdded": {
+    "sourceHash": "a68dd8f"
+  },
+  "commands.handler.favoriteAddFailed": "Dieser Ordner konnte nicht zu den Favoriten hinzugefügt werden. Erneut versuchen?",
+  "@commands.handler.favoriteAddFailed": {
+    "sourceHash": "3f85e99"
+  },
+  "commands.handler.tabLimitReached": "Tab-Limit erreicht",
+  "@commands.handler.tabLimitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "commands.handler.noRecentlyClosedTabs": "Keine kürzlich geschlossenen Tabs in diesem Bereich.",
+  "@commands.handler.noRecentlyClosedTabs": {
+    "sourceHash": "e560789"
+  },
+  "commands.handler.cloudDownloadFailed": "Laden aus der Cloud nicht möglich. {detail}",
+  "@commands.handler.cloudDownloadFailed": {
+    "sourceHash": "70792cf"
+  },
+  "commands.handler.cloudRemoveDownloadFailed": "Der Download konnte nicht entfernt werden. {detail}",
+  "@commands.handler.cloudRemoveDownloadFailed": {
+    "sourceHash": "425280d"
+  },
+  "commands.handler.zoomResetHintShortcut": "Du kannst die Zoomstufe mit {shortcut} auf 100 % zurücksetzen.",
+  "@commands.handler.zoomResetHintShortcut": {
+    "sourceHash": "efdd715"
+  },
+  "commands.handler.zoomResetHintMenu": "Du kannst die Zoomstufe unter Ansicht > Zoom > 100 % auf 100 % zurücksetzen.",
+  "@commands.handler.zoomResetHintMenu": {
+    "sourceHash": "f10315d"
+  },
+  "commands.handler.zoomReset": "Zoom auf 100 % zurückgesetzt.",
+  "@commands.handler.zoomReset": {
+    "sourceHash": "8c6bf82"
+  },
+  "commands.handler.zoomIncreased": "Zoom auf {size} % erhöht. {hint}",
+  "@commands.handler.zoomIncreased": {
+    "sourceHash": "39fea10"
+  },
+  "commands.handler.zoomDecreased": "Zoom auf {size} % verringert. {hint}",
+  "@commands.handler.zoomDecreased": {
+    "sourceHash": "71404cb"
+  }
+}

@@ -22,6 +22,8 @@ import {
   isMetadataKey,
   isRawKey,
   rawTokens,
+  hasWholeWord,
+  hasBrandPresent,
 } from './i18n-catalog-lib.js'
 
 describe('isMetadataKey', () => {
@@ -207,5 +209,34 @@ describe('rawTokens', () => {
 
   it('returns an empty set when there are no tokens', () => {
     expect([...rawTokens('No tokens here, just `code` and <literal>')]).toEqual([])
+  })
+})
+
+describe('hasWholeWord', () => {
+  it('matches the bare word but not a substring or compound', () => {
+    expect(hasWholeWord('Built for macOS.', 'macOS')).toBe(true)
+    expect(hasWholeWord('Runs on macOSes', 'macOS')).toBe(false)
+    expect(hasWholeWord('See Cmdrs', 'Cmdr')).toBe(false)
+  })
+})
+
+describe('hasBrandPresent (suffix-aware locale-side test)', () => {
+  it('matches the bare brand', () => {
+    expect(hasBrandPresent('Megnyitás Cmdr', 'Cmdr')).toBe(true)
+  })
+
+  it('matches a brand with a lowercase inflectional suffix (incl. accented)', () => {
+    expect(hasBrandPresent('Megnyitás Cmdrben', 'Cmdr')).toBe(true) // Hungarian inessive
+    expect(hasBrandPresent('Cmdrs fönster', 'Cmdr')).toBe(true) // Swedish genitive
+    expect(hasBrandPresent('A Cmdrről', 'Cmdr')).toBe(true) // Hungarian delative, accented
+  })
+
+  it('does NOT match an embedded or uppercase-compounded brand', () => {
+    expect(hasBrandPresent('Open in MacCmdr', 'Cmdr')).toBe(false) // letter before
+    expect(hasBrandPresent('Open in CmdrFoo', 'Cmdr')).toBe(false) // uppercase compound
+  })
+
+  it('does NOT match when the brand is absent', () => {
+    expect(hasBrandPresent('Megnyitás a fájlkezelőben', 'Cmdr')).toBe(false)
   })
 })

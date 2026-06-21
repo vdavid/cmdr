@@ -1,0 +1,6 @@
+{
+  "notifications.permissionDenied": "Las notificaciones de macOS están desactivadas. Abre Ajustes del Sistema para permitirlas.",
+  "@notifications.permissionDenied": {
+    "sourceHash": "4fef9ce"
+  }
+}

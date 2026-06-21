@@ -1,0 +1,378 @@
+{
+  "ai.toast.downloadingTitle": "KI-Modell wird heruntergeladen …",
+  "@ai.toast.downloadingTitle": {
+    "sourceHash": "453ec3b"
+  },
+  "ai.toast.startingDownload": "Download wird gestartet …",
+  "@ai.toast.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · noch {eta}}}",
+  "@ai.toast.progress": {
+    "sourceHash": "93d798b"
+  },
+  "ai.toast.cancel": "Abbrechen",
+  "@ai.toast.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.toast.installingTitle": "KI wird eingerichtet …",
+  "@ai.toast.installingTitle": {
+    "sourceHash": "509f6c1"
+  },
+  "ai.toast.installingDescription": "Server wird gestartet",
+  "@ai.toast.installingDescription": {
+    "sourceHash": "8a0f9d9"
+  },
+  "ai.toast.readyTitle": "KI bereit",
+  "@ai.toast.readyTitle": {
+    "sourceHash": "276c384"
+  },
+  "ai.toast.readyDescription": "Erstelle einen neuen Ordner (F7), um KI-gestützte Namensvorschläge zu sehen.",
+  "@ai.toast.readyDescription": {
+    "sourceHash": "b3ae1b2"
+  },
+  "ai.toast.gotIt": "Verstanden",
+  "@ai.toast.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "ai.toast.startingTitle": "KI wird gestartet …",
+  "@ai.toast.startingTitle": {
+    "sourceHash": "29fdbca"
+  },
+  "ai.toast.startingDescription": "Das Modell wird geladen, das dauert ein paar Sekunden",
+  "@ai.toast.startingDescription": {
+    "sourceHash": "94ecf6d"
+  },
+  "ai.toast.downloadCloseTooltip": "Diesen Hinweis schließen; der Download läuft im Hintergrund weiter",
+  "@ai.toast.downloadCloseTooltip": {
+    "sourceHash": "16db2bd"
+  },
+  "ai.translateError.off.title": "KI ist deaktiviert",
+  "@ai.translateError.off.title": {
+    "sourceHash": "99ce709"
+  },
+  "ai.translateError.off.body": "Aktiviere unter Einstellungen > KI einen Anbieter, um die KI-Suche zu nutzen.",
+  "@ai.translateError.off.body": {
+    "sourceHash": "d8d6368"
+  },
+  "ai.translateError.notConfigured.title": "Die KI braucht noch etwas Einrichtung",
+  "@ai.translateError.notConfigured.title": {
+    "sourceHash": "bf5688a"
+  },
+  "ai.translateError.notConfigured.body": "Schließe die Einrichtung deines Anbieters unter Einstellungen > KI ab und versuche es dann erneut.",
+  "@ai.translateError.notConfigured.body": {
+    "sourceHash": "65133a8"
+  },
+  "ai.translateError.authFailed.title": "Dieser API-Schlüssel wurde abgelehnt",
+  "@ai.translateError.authFailed.title": {
+    "sourceHash": "93e6261"
+  },
+  "ai.translateError.authFailed.body": "Prüfe deinen Schlüssel unter Einstellungen > KI – er ist möglicherweise falsch oder widerrufen.",
+  "@ai.translateError.authFailed.body": {
+    "sourceHash": "2159d5e"
+  },
+  "ai.translateError.rateLimited.title": "Dein KI-Anbieter hat keine Kapazität mehr",
+  "@ai.translateError.rateLimited.title": {
+    "sourceHash": "26e286e"
+  },
+  "ai.translateError.rateLimited.body": "Er drosselt Anfragen oder dein Tarif hat das Kontingent ausgeschöpft. Prüfe deinen Tarif und die Abrechnung und versuche es dann erneut.",
+  "@ai.translateError.rateLimited.body": {
+    "sourceHash": "9b296d7"
+  },
+  "ai.translateError.timeout.title": "Die KI hat zu lange gebraucht",
+  "@ai.translateError.timeout.title": {
+    "sourceHash": "d684e3f"
+  },
+  "ai.translateError.timeout.body": "Bei der Anfrage gab es eine Zeitüberschreitung. Versuche es gleich noch einmal.",
+  "@ai.translateError.timeout.body": {
+    "sourceHash": "249b720"
+  },
+  "ai.translateError.unavailable.title": "Dein KI-Anbieter ist nicht erreichbar",
+  "@ai.translateError.unavailable.title": {
+    "sourceHash": "e684bc4"
+  },
+  "ai.translateError.unavailable.body": "Prüfe deine Internetverbindung oder den Status des Anbieters und versuche es dann erneut.",
+  "@ai.translateError.unavailable.body": {
+    "sourceHash": "ba30402"
+  },
+  "ai.translateError.emptyResponse.title": "Die KI kam leer zurück",
+  "@ai.translateError.emptyResponse.title": {
+    "sourceHash": "61afc33"
+  },
+  "ai.translateError.emptyResponse.body": "Dein Modell braucht dafür möglicherweise ein größeres Budget. Probiere unter Einstellungen > KI ein schnelleres Modell wie gpt-4.1-mini.",
+  "@ai.translateError.emptyResponse.body": {
+    "sourceHash": "f1704cc"
+  },
+  "ai.translateError.serverError.title": "Dein KI-Anbieter hatte ein Problem",
+  "@ai.translateError.serverError.title": {
+    "sourceHash": "1b98f6a"
+  },
+  "ai.translateError.serverError.body": "Er hat etwas Unerwartetes zurückgegeben. Versuche es gleich noch einmal.",
+  "@ai.translateError.serverError.body": {
+    "sourceHash": "3f4af5c"
+  },
+  "ai.translateError.parseError.title": "Die Antwort der KI war nicht lesbar",
+  "@ai.translateError.parseError.title": {
+    "sourceHash": "a509880"
+  },
+  "ai.translateError.parseError.body": "Versuche es erneut oder wähle unter Einstellungen > KI ein anderes Modell.",
+  "@ai.translateError.parseError.body": {
+    "sourceHash": "c299ec6"
+  },
+  "ai.translateError.unknownProvider.title": "Dieser KI-Anbieter wird nicht erkannt",
+  "@ai.translateError.unknownProvider.title": {
+    "sourceHash": "3b70b46"
+  },
+  "ai.translateError.unknownProvider.body": "Wähle unter Einstellungen > KI einen Anbieter.",
+  "@ai.translateError.unknownProvider.body": {
+    "sourceHash": "7042a75"
+  },
+  "ai.cloud.serviceAria": "Cloud-KI-Dienst",
+  "@ai.cloud.serviceAria": {
+    "sourceHash": "7dec1e0"
+  },
+  "ai.cloud.endpointLabel": "Endpunkt",
+  "@ai.cloud.endpointLabel": {
+    "sourceHash": "3df9726"
+  },
+  "ai.cloud.endpointDescription": "URL des API-Endpunkts für den ausgewählten Dienst.",
+  "@ai.cloud.endpointDescription": {
+    "sourceHash": "884632b"
+  },
+  "ai.cloud.endpointPlaceholder": "Beispiel: https://api.example.com/v1",
+  "@ai.cloud.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "ai.cloud.endpointAria": "Endpunkt-URL",
+  "@ai.cloud.endpointAria": {
+    "sourceHash": "2578179"
+  },
+  "ai.cloud.apiKeyLabel": "API-Schlüssel",
+  "@ai.cloud.apiKeyLabel": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.apiKeyDescription": "Dein API-Schlüssel für diesen Dienst.",
+  "@ai.cloud.apiKeyDescription": {
+    "sourceHash": "6a95580"
+  },
+  "ai.cloud.apiKeyPlaceholderOpenai": "Beispiel: sk-abc123...",
+  "@ai.cloud.apiKeyPlaceholderOpenai": {
+    "sourceHash": "f9701a2"
+  },
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Beispiel: sk-ant-abc123...",
+  "@ai.cloud.apiKeyPlaceholderAnthropic": {
+    "sourceHash": "5a4d18d"
+  },
+  "ai.cloud.apiKeyPlaceholderGeneric": "API-Schlüssel",
+  "@ai.cloud.apiKeyPlaceholderGeneric": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.modelLabel": "Modell",
+  "@ai.cloud.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.cloud.modelDescription": "Der Name des Modells für Vervollständigungen.",
+  "@ai.cloud.modelDescription": {
+    "sourceHash": "809fa50"
+  },
+  "ai.cloud.modelPlaceholderExample": "Beispiel: {model}",
+  "@ai.cloud.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "ai.cloud.modelPlaceholderGeneric": "Modellname",
+  "@ai.cloud.modelPlaceholderGeneric": {
+    "sourceHash": "a3c3370"
+  },
+  "ai.cloud.checking": "Wird geprüft …",
+  "@ai.cloud.checking": {
+    "sourceHash": "2e5f79b"
+  },
+  "ai.cloud.connected": "Verbunden",
+  "@ai.cloud.connected": {
+    "sourceHash": "2296556"
+  },
+  "ai.cloud.connectedNoModels": "Verbunden (Modellliste nicht verfügbar)",
+  "@ai.cloud.connectedNoModels": {
+    "sourceHash": "54f2b6f"
+  },
+  "ai.cloud.recheck": "Erneut prüfen",
+  "@ai.cloud.recheck": {
+    "sourceHash": "1f47d83"
+  },
+  "ai.cloud.authError": "API-Schlüssel ist ungültig",
+  "@ai.cloud.authError": {
+    "sourceHash": "74a88e4"
+  },
+  "ai.cloud.connectionError": "Server nicht erreichbar",
+  "@ai.cloud.connectionError": {
+    "sourceHash": "3f378c3"
+  },
+  "ai.cloud.genericError": "Etwas ist schiefgelaufen",
+  "@ai.cloud.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "ai.cloud.testConnection": "Verbindung testen",
+  "@ai.cloud.testConnection": {
+    "sourceHash": "5bcf311"
+  },
+  "ai.cloud.unknownError": "Unbekanntes Problem",
+  "@ai.cloud.unknownError": {
+    "sourceHash": "27c2ccd"
+  },
+  "ai.local.memoryWarningAria": "Speicherwarnung",
+  "@ai.local.memoryWarningAria": {
+    "sourceHash": "7688d6a"
+  },
+  "ai.local.warningDanger": "Das übersteigt deinen verfügbaren Speicher. Dein System könnte erheblich langsamer werden.",
+  "@ai.local.warningDanger": {
+    "sourceHash": "dd5c518"
+  },
+  "ai.local.warningCaution": "Das nutzt den größten Teil deines verfügbaren Speichers. Andere Apps könnten langsamer werden.",
+  "@ai.local.warningCaution": {
+    "sourceHash": "f8070e9"
+  },
+  "ai.local.statusRestarting": "Wird neu gestartet …",
+  "@ai.local.statusRestarting": {
+    "sourceHash": "2c5bfcb"
+  },
+  "ai.local.statusStarting": "Wird gestartet …",
+  "@ai.local.statusStarting": {
+    "sourceHash": "82b9363"
+  },
+  "ai.local.statusRunning": "Läuft",
+  "@ai.local.statusRunning": {
+    "sourceHash": "f4ccae2"
+  },
+  "ai.local.statusStopped": "Gestoppt",
+  "@ai.local.statusStopped": {
+    "sourceHash": "1a4f630"
+  },
+  "ai.local.installStepExtracting": "Schritt 1 von 4: Runtime wird entpackt …",
+  "@ai.local.installStepExtracting": {
+    "sourceHash": "941db20"
+  },
+  "ai.local.installStepDownloading": "Schritt 2 von 4: Modell wird heruntergeladen …",
+  "@ai.local.installStepDownloading": {
+    "sourceHash": "56596cb"
+  },
+  "ai.local.installStepVerifying": "Schritt 3 von 4: Download wird überprüft …",
+  "@ai.local.installStepVerifying": {
+    "sourceHash": "4133988"
+  },
+  "ai.local.installStepStarting": "Schritt 4 von 4: Server wird gestartet …",
+  "@ai.local.installStepStarting": {
+    "sourceHash": "39acba1"
+  },
+  "ai.local.startingDownload": "Download wird gestartet …",
+  "@ai.local.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.local.etaSeconds": "noch ~{value} Sek.",
+  "@ai.local.etaSeconds": {
+    "sourceHash": "045b712"
+  },
+  "ai.local.etaMinutes": "noch ~{value} Min.",
+  "@ai.local.etaMinutes": {
+    "sourceHash": "978afd8"
+  },
+  "ai.local.etaHours": "noch ~{value} Std.",
+  "@ai.local.etaHours": {
+    "sourceHash": "b1944ec"
+  },
+  "ai.local.modelLabel": "Modell",
+  "@ai.local.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.local.serverLabel": "Server",
+  "@ai.local.serverLabel": {
+    "sourceHash": "aef7de2"
+  },
+  "ai.local.modelUnknown": "Unbekannt",
+  "@ai.local.modelUnknown": {
+    "sourceHash": "b764cdc"
+  },
+  "ai.local.modelSizeUnknown": "?",
+  "@ai.local.modelSizeUnknown": {
+    "sourceHash": "8a8de82"
+  },
+  "ai.local.notInstalled": "Nicht installiert. Das lokale Modell ({modelName}, {modelSize}) läuft für maximalen Datenschutz vollständig auf deinem Gerät. Erfordert Apple Silicon.",
+  "@ai.local.notInstalled": {
+    "sourceHash": "163bf42"
+  },
+  "ai.local.applyContextSize": "Anwenden",
+  "@ai.local.applyContextSize": {
+    "sourceHash": "31e392d"
+  },
+  "ai.local.ramGaugeAria": "Speicherauslastungsanzeige",
+  "@ai.local.ramGaugeAria": {
+    "sourceHash": "d6d09e9"
+  },
+  "ai.local.ramLegendSystem": "System {size}",
+  "@ai.local.ramLegendSystem": {
+    "sourceHash": "1497c04"
+  },
+  "ai.local.ramLegendApps": "Apps {size}",
+  "@ai.local.ramLegendApps": {
+    "sourceHash": "d02b14c"
+  },
+  "ai.local.ramLegendCmdrAi": "Cmdr-KI {size}",
+  "@ai.local.ramLegendCmdrAi": {
+    "sourceHash": "93e2741"
+  },
+  "ai.local.ramLegendProjected": "Voraussichtlich",
+  "@ai.local.ramLegendProjected": {
+    "sourceHash": "e394afa"
+  },
+  "ai.local.ramLegendFreed": "Freigegeben",
+  "@ai.local.ramLegendFreed": {
+    "sourceHash": "c8affca"
+  },
+  "ai.local.ramLegendFree": "Frei {size}",
+  "@ai.local.ramLegendFree": {
+    "sourceHash": "afe9c0d"
+  },
+  "ai.local.cancel": "Abbrechen",
+  "@ai.local.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.local.stopServer": "Server stoppen",
+  "@ai.local.stopServer": {
+    "sourceHash": "a21bf60"
+  },
+  "ai.local.startServer": "Server starten",
+  "@ai.local.startServer": {
+    "sourceHash": "7b7da6f"
+  },
+  "ai.local.deleteModel": "Modell löschen",
+  "@ai.local.deleteModel": {
+    "sourceHash": "b7828ba"
+  },
+  "ai.local.downloadModel": "Modell herunterladen",
+  "@ai.local.downloadModel": {
+    "sourceHash": "9979bea"
+  },
+  "ai.local.deleteDialogTitleDeleting": "Modell wird gelöscht …",
+  "@ai.local.deleteDialogTitleDeleting": {
+    "sourceHash": "413e1b9"
+  },
+  "ai.local.deleteDialogTitle": "KI-Modell löschen?",
+  "@ai.local.deleteDialogTitle": {
+    "sourceHash": "c486f0c"
+  },
+  "ai.local.deletingStatus": "Server wird gestoppt und Dateien werden entfernt …",
+  "@ai.local.deletingStatus": {
+    "sourceHash": "6671ac7"
+  },
+  "ai.local.deleteConfirmMessage": "Das gibt {modelSize} Speicherplatz frei. Du musst es erneut herunterladen, um die lokale KI wieder zu nutzen.",
+  "@ai.local.deleteConfirmMessage": {
+    "sourceHash": "1a6ca0d"
+  },
+  "ai.local.deleteButtonDeleting": "Wird gelöscht …",
+  "@ai.local.deleteButtonDeleting": {
+    "sourceHash": "685ecb9"
+  },
+  "ai.local.deleteButton": "Löschen",
+  "@ai.local.deleteButton": {
+    "sourceHash": "e2d0a54"
+  }
+}

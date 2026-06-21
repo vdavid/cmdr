@@ -1,0 +1,42 @@
+{
+  "transfer.trash": "{countText} {count, plural, one {fájl} other {fájl}} áthelyezve a Kukába",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "Törlés kész: {countText} {count, plural, one {fájl} other {fájl}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {fájl} other {fájl}} és {foldersText} {folders, plural, one {mappa} other {mappa}}} foldersOnly {{foldersText} {folders, plural, one {mappa} other {mappa}}} other {{filesText} {files, plural, one {fájl} other {fájl}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "{verb, select, copy {Másolva} other {Áthelyezve}}: {phrase}.",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "{verb, select, copy {Másolva} other {Áthelyezve}}: {phrase}, {skippedText} {skipped, plural, one {fájl} other {fájl}} kihagyva (már a célhelyen volt).",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {Másolás} other {Áthelyezés}} kész: {transferredText} {transferred, plural, one {fájl} other {fájl}} {verb, select, copy {másolva} other {áthelyezve}}.",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Másolás} other {Áthelyezés}} kész: a fájl már a célhelyen volt, nem lett {verb, select, copy {másolva} other {áthelyezve}}.",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Másolás} other {Áthelyezés}} kész: mind a(z) {skippedText} fájl kihagyva (már a célhelyen volt), semmi sem lett {verb, select, copy {másolva} other {áthelyezve}}.",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "ae39c4b"
+  },
+  "transfer.fileOnly.mixedCopy": "Másolás kész: {transferredText} másolva, {skippedText} kihagyva. A kiválasztott {processedText} {processed, plural, one {fájl} other {fájl}} mind a célhelyen van.",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "Áthelyezés kész: {transferredText} áthelyezve, {skippedText} kihagyva. {skippedText} {skipped, plural, one {fájl} other {fájl}} már a célhelyen volt.",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  }
+}

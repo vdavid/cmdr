@@ -33,7 +33,7 @@ pattern.
 - **`du`, lowercase**, throughout (see Formality above).
 - **Buttons and menu items: imperative.** "Speichern", "Abbrechen", "Löschen", "Umbenennen", "Kopieren". This matches
   macOS Finder ("Umbenennen", "Auswerfen", "Kopieren").
-- Keep direct address light; German UI often phrases neutrally ("Wird geladen…") where English would say "Loading your
+- Keep direct address light; German UI often phrases neutrally ("Wird geladen …") where English would say "Loading your
   files". Don't force `du` into every line.
 
 ## Decision points
@@ -147,6 +147,14 @@ Dateien".
   strings: see Length below.
 - **Quotation marks: `„…“`** (low opening, high closing) is the standard German form, and macOS uses it consistently
   ("Möchtest du „%@“ … bewegen?"). Avoid English `"…"`.
+- **Ellipsis: always the single character `…`, never three ASCII dots (`...`).** Two placements, settled across the
+  catalog: progress / gerund status lines take a SPACE before it ("Wird geladen …", "Laufwerk wird durchsucht …",
+  "Verbindung wird hergestellt …"); menu-item and button labels that open a dialog attach it with NO space, the macOS
+  menu convention ("Einführung…", "Befehle suchen…", "Fehlerbericht senden…"). The English source mixes `...` and `…`
+  freely; normalize to `…` either way.
+- **Don't decline the brand `Cmdr` to a genitive `Cmdrs`.** Use the analytic genitive "… von Cmdr" ("die
+  Protokolldateien von Cmdr", "die Vorschau von Cmdr"), matching how Apple leaves product names undeclined. A declined
+  "Cmdrs" also trips `desktop-i18n-dont-translate` (it scans for the verbatim token "Cmdr").
 - **Length: German is the worst overflow risk of the three** (often 20–35% longer than English, plus long compounds).
   Overflow-check the layout hard against the pseudolocale (`en-XA`); look for clipped buttons, labels, and toasts.
 - **Case-marked placeholders are a trap.** A `{name}` that lands in a genitive/dative slot can't be inflected by the

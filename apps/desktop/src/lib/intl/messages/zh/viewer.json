@@ -1,0 +1,366 @@
+{
+  "viewer.window.fallbackTitle": "查看器",
+  "@viewer.window.fallbackTitle": {
+    "sourceHash": "678bfa6"
+  },
+  "viewer.window.titleSuffix": "{fileName} | 查看器",
+  "@viewer.window.titleSuffix": {
+    "sourceHash": "5ebd7f4"
+  },
+  "viewer.srHeading": "文件查看器",
+  "@viewer.srHeading": {
+    "sourceHash": "b32f632"
+  },
+  "viewer.loading": "正在加载…",
+  "@viewer.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "viewer.error.noPath": "未指定文件路径",
+  "@viewer.error.noPath": {
+    "sourceHash": "2b069fc"
+  },
+  "viewer.error.readFailed": "无法读取文件",
+  "@viewer.error.readFailed": {
+    "sourceHash": "ea7d976"
+  },
+  "viewer.error.timeout": "无法加载文件。该宗卷可能很慢或无响应。",
+  "@viewer.error.timeout": {
+    "sourceHash": "d163618"
+  },
+  "viewer.error.retry": "重试",
+  "@viewer.error.retry": {
+    "sourceHash": "942087c"
+  },
+  "viewer.error.cancel": "取消",
+  "@viewer.error.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.content.ariaLabel": "文件内容：{fileName}",
+  "@viewer.content.ariaLabel": {
+    "sourceHash": "57b8613"
+  },
+  "viewer.binaryWarning.body": "这是该文件的原始视图。你可能更想查看实际的<kind>{kind}</kind>。要这样做，请关闭此窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
+  "@viewer.binaryWarning.body": {
+    "sourceHash": "42eda71"
+  },
+  "viewer.binaryWarning.kind.image": "图像",
+  "@viewer.binaryWarning.kind.image": {
+    "sourceHash": "6105d6c"
+  },
+  "viewer.binaryWarning.kind.document": "文稿",
+  "@viewer.binaryWarning.kind.document": {
+    "sourceHash": "43cc23f"
+  },
+  "viewer.binaryWarning.dismiss": "关闭",
+  "@viewer.binaryWarning.dismiss": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.binaryWarning.suppressForever": "不再显示此警告",
+  "@viewer.binaryWarning.suppressForever": {
+    "sourceHash": "b85b92b"
+  },
+  "viewer.search.placeholder": "在文件中查找…",
+  "@viewer.search.placeholder": {
+    "sourceHash": "c1dc89b"
+  },
+  "viewer.search.ariaLabel": "搜索文本",
+  "@viewer.search.ariaLabel": {
+    "sourceHash": "38d268a"
+  },
+  "viewer.search.caseSensitive": "区分大小写",
+  "@viewer.search.caseSensitive": {
+    "sourceHash": "e124ba4"
+  },
+  "viewer.search.regex": "正则表达式",
+  "@viewer.search.regex": {
+    "sourceHash": "0f27125"
+  },
+  "viewer.search.matchPosition": "第 {current} 个，共 {total} 个{more, select, yes {+} other {}}",
+  "@viewer.search.matchPosition": {
+    "sourceHash": "ec24db4"
+  },
+  "viewer.search.searching": "正在搜索…",
+  "@viewer.search.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "viewer.search.partial": "（部分）",
+  "@viewer.search.partial": {
+    "sourceHash": "d0ffde3"
+  },
+  "viewer.search.noMatches": "无匹配项",
+  "@viewer.search.noMatches": {
+    "sourceHash": "2df01a0"
+  },
+  "viewer.search.stop": "停止搜索",
+  "@viewer.search.stop": {
+    "sourceHash": "c48cf72"
+  },
+  "viewer.search.stopTooltip": "停止扫描并保留结果",
+  "@viewer.search.stopTooltip": {
+    "sourceHash": "b86629c"
+  },
+  "viewer.search.previous": "上一个匹配项",
+  "@viewer.search.previous": {
+    "sourceHash": "daa2f8c"
+  },
+  "viewer.search.next": "下一个匹配项",
+  "@viewer.search.next": {
+    "sourceHash": "825e5ab"
+  },
+  "viewer.search.close": "关闭搜索",
+  "@viewer.search.close": {
+    "sourceHash": "55656b5"
+  },
+  "viewer.search.closeTooltip": "关闭",
+  "@viewer.search.closeTooltip": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.toolbar.viewMode.ariaLabel": "查看模式",
+  "@viewer.toolbar.viewMode.ariaLabel": {
+    "sourceHash": "18997f2"
+  },
+  "viewer.toolbar.viewMode.text": "文本",
+  "@viewer.toolbar.viewMode.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.viewMode.viewAsText": "以文本查看",
+  "@viewer.toolbar.viewMode.viewAsText": {
+    "sourceHash": "a0059b8"
+  },
+  "viewer.toolbar.viewMode.viewAsImage": "以图像查看",
+  "@viewer.toolbar.viewMode.viewAsImage": {
+    "sourceHash": "ae04259"
+  },
+  "viewer.toolbar.viewMode.viewAsPdf": "以 PDF 查看",
+  "@viewer.toolbar.viewMode.viewAsPdf": {
+    "sourceHash": "ee89800"
+  },
+  "viewer.kind.image": "图像",
+  "@viewer.kind.image": {
+    "sourceHash": "1aa4cb0"
+  },
+  "viewer.kind.pdf": "PDF",
+  "@viewer.kind.pdf": {
+    "sourceHash": "1d393b0"
+  },
+  "viewer.kind.text": "文本",
+  "@viewer.kind.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.encoding.placeholder": "编码",
+  "@viewer.toolbar.encoding.placeholder": {
+    "sourceHash": "4d25a47"
+  },
+  "viewer.toolbar.encoding.group.unicode": "Unicode",
+  "@viewer.toolbar.encoding.group.unicode": {
+    "sourceHash": "f922e0d"
+  },
+  "viewer.toolbar.encoding.group.western": "西文",
+  "@viewer.toolbar.encoding.group.western": {
+    "sourceHash": "d7d2f0f"
+  },
+  "viewer.toolbar.encoding.detectedSuffix": "{label}（已检测）",
+  "@viewer.toolbar.encoding.detectedSuffix": {
+    "sourceHash": "2096536"
+  },
+  "viewer.toolbar.tail.label": "跟随",
+  "@viewer.toolbar.tail.label": {
+    "sourceHash": "ae9c3bd"
+  },
+  "viewer.toolbar.tail.ariaLabel": "跟随模式：跟随文件变化",
+  "@viewer.toolbar.tail.ariaLabel": {
+    "sourceHash": "af0477f"
+  },
+  "viewer.toolbar.tail.tooltip": "自动跟随文件变化",
+  "@viewer.toolbar.tail.tooltip": {
+    "sourceHash": "733e57f"
+  },
+  "viewer.toolbar.reindexing": "正在重建索引…",
+  "@viewer.toolbar.reindexing": {
+    "sourceHash": "f668818"
+  },
+  "viewer.statusBar.ariaLabel": "文件信息",
+  "@viewer.statusBar.ariaLabel": {
+    "sourceHash": "375b97d"
+  },
+  "viewer.statusBar.lineCount": "{count} {count, plural, other {行}}",
+  "@viewer.statusBar.lineCount": {
+    "sourceHash": "1af08ec"
+  },
+  "viewer.statusBar.badge.inMemory": "已在内存中",
+  "@viewer.statusBar.badge.inMemory": {
+    "sourceHash": "d9b8483"
+  },
+  "viewer.statusBar.badge.inMemoryTooltip": "整个文件都在内存中。你可以快速滚动到任意行。",
+  "@viewer.statusBar.badge.inMemoryTooltip": {
+    "sourceHash": "4eb50b8"
+  },
+  "viewer.statusBar.badge.indexed": "已建立索引",
+  "@viewer.statusBar.badge.indexed": {
+    "sourceHash": "658a3e8"
+  },
+  "viewer.statusBar.badge.indexedTooltip": "文件已建立索引，因此行号准确，你可以快速滚动到任意位置。",
+  "@viewer.statusBar.badge.indexedTooltip": {
+    "sourceHash": "2604f1a"
+  },
+  "viewer.statusBar.badge.streamingIndexing": "流式读取，正在建立索引…",
+  "@viewer.statusBar.badge.streamingIndexing": {
+    "sourceHash": "506ef27"
+  },
+  "viewer.statusBar.badge.streamingIndexingTooltip": "这是一个以流式模式打开的大文件。我们正在后台建立索引（最长 {seconds} 秒）…当前行号为近似值。",
+  "@viewer.statusBar.badge.streamingIndexingTooltip": {
+    "sourceHash": "6407733"
+  },
+  "viewer.statusBar.badge.streaming": "流式读取",
+  "@viewer.statusBar.badge.streaming": {
+    "sourceHash": "b304adc"
+  },
+  "viewer.statusBar.badge.streamingTooltip": "这是一个以流式模式打开的大文件。建立索引会超过 {seconds} 秒，因此我们没有建立。行号为估算值。",
+  "@viewer.statusBar.badge.streamingTooltip": {
+    "sourceHash": "1752e59"
+  },
+  "viewer.statusBar.badge.wrap": "换行",
+  "@viewer.statusBar.badge.wrap": {
+    "sourceHash": "f0a2899"
+  },
+  "viewer.statusBar.badge.wrapTooltip": "行在窗口边缘自动换行",
+  "@viewer.statusBar.badge.wrapTooltip": {
+    "sourceHash": "af2ca76"
+  },
+  "viewer.statusBar.hint.image": "点按 100% / 适应 · 滚动缩放 · 拖移平移",
+  "@viewer.statusBar.hint.image": {
+    "sourceHash": "bca0205"
+  },
+  "viewer.statusBar.hint.text": "W 换行 · F 跟随 · ⌘F 搜索",
+  "@viewer.statusBar.hint.text": {
+    "sourceHash": "3ecf215"
+  },
+  "viewer.media.dimensions": "{width} × {height}",
+  "@viewer.media.dimensions": {
+    "sourceHash": "ece2cad"
+  },
+  "viewer.image.loading": "正在加载图像",
+  "@viewer.image.loading": {
+    "sourceHash": "65999b8"
+  },
+  "viewer.image.error": "抱歉，我们无法显示这张图像。文件可能已损坏，或者格式我们无法显示。",
+  "@viewer.image.error": {
+    "sourceHash": "9a24fe8"
+  },
+  "viewer.pdf.loading": "正在加载 PDF",
+  "@viewer.pdf.loading": {
+    "sourceHash": "7f9acf3"
+  },
+  "viewer.contextMenu.ariaLabel": "查看器操作",
+  "@viewer.contextMenu.ariaLabel": {
+    "sourceHash": "4cf8e51"
+  },
+  "viewer.contextMenu.copy": "拷贝",
+  "@viewer.contextMenu.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.contextMenu.selectAll": "全选",
+  "@viewer.contextMenu.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "viewer.copyDialog.confirmTitleKnown": "将 {size} 拷贝到剪贴板？",
+  "@viewer.copyDialog.confirmTitleKnown": {
+    "sourceHash": "7f97ebf"
+  },
+  "viewer.copyDialog.confirmTitleUnknown": "将所选内容拷贝到剪贴板？",
+  "@viewer.copyDialog.confirmTitleUnknown": {
+    "sourceHash": "0956c8b"
+  },
+  "viewer.copyDialog.confirmBody": "大量粘贴可能会拖慢其他 App。试试用搜索（⌘F）来缩小范围。",
+  "@viewer.copyDialog.confirmBody": {
+    "sourceHash": "c1f2927"
+  },
+  "viewer.copyDialog.cancel": "取消",
+  "@viewer.copyDialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.copyDialog.saveAsFile": "存储为文件…",
+  "@viewer.copyDialog.saveAsFile": {
+    "sourceHash": "7b9b279"
+  },
+  "viewer.copyDialog.copy": "拷贝",
+  "@viewer.copyDialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseBody": "这超过了 100 MB 的剪贴板上限。试试用搜索（⌘F）找到你需要的内容，或者把所选内容存储为文件。",
+  "@viewer.copyDialog.refuseBody": {
+    "sourceHash": "75f3043"
+  },
+  "viewer.reloadToast.grew": "文件在磁盘上已变化。要重新加载吗？",
+  "@viewer.reloadToast.grew": {
+    "sourceHash": "d66b013"
+  },
+  "viewer.reloadToast.rotated": "文件在磁盘上已被替换。重新加载以查看新内容。",
+  "@viewer.reloadToast.rotated": {
+    "sourceHash": "50804c2"
+  },
+  "viewer.reloadToast.reload": "重新加载",
+  "@viewer.reloadToast.reload": {
+    "sourceHash": "bdc090e"
+  },
+  "viewer.reloadToast.dismissTooltip": "关闭但不重新加载",
+  "@viewer.reloadToast.dismissTooltip": {
+    "sourceHash": "7f829ed"
+  },
+  "viewer.copy.onClipboard": "{size} 已在你的剪贴板上",
+  "@viewer.copy.onClipboard": {
+    "sourceHash": "45934ed"
+  },
+  "viewer.copy.clipboardUnreachable": "无法访问剪贴板。要重试吗？",
+  "@viewer.copy.clipboardUnreachable": {
+    "sourceHash": "c0382ba"
+  },
+  "viewer.copy.readTooLong": "读取耗时过长。试试选择少一些内容？",
+  "@viewer.copy.readTooLong": {
+    "sourceHash": "2275e83"
+  },
+  "viewer.copy.copyFailed": "无法拷贝所选内容。要重试吗？",
+  "@viewer.copy.copyFailed": {
+    "sourceHash": "6a1ab41"
+  },
+  "viewer.copy.readFailed": "无法读取所选内容。要重试吗？",
+  "@viewer.copy.readFailed": {
+    "sourceHash": "bde5f85"
+  },
+  "viewer.saveAs.title": "存储所选内容",
+  "@viewer.saveAs.title": {
+    "sourceHash": "dd183ea"
+  },
+  "viewer.saveAs.defaultName": "selection",
+  "@viewer.saveAs.defaultName": {
+    "sourceHash": "6504513"
+  },
+  "viewer.saveAs.panelFailed": "无法打开存储面板。要重试吗？",
+  "@viewer.saveAs.panelFailed": {
+    "sourceHash": "70c3f76"
+  },
+  "viewer.saveAs.saved": "所选内容已存储到 {name}",
+  "@viewer.saveAs.saved": {
+    "sourceHash": "5083c12"
+  },
+  "viewer.saveAs.tooLong": "存储耗时过长。试试选择少一些内容？",
+  "@viewer.saveAs.tooLong": {
+    "sourceHash": "f31d7f4"
+  },
+  "viewer.saveAs.saveFailed": "无法存储所选内容。要重试吗？",
+  "@viewer.saveAs.saveFailed": {
+    "sourceHash": "2d85642"
+  },
+  "viewer.selection.toEndOfFile": "已选择从第 {line} 行到文件末尾的内容",
+  "@viewer.selection.toEndOfFile": {
+    "sourceHash": "62d95be"
+  },
+  "viewer.selection.singleLine": "已在第 {line} 行选择 {chars} 个字符",
+  "@viewer.selection.singleLine": {
+    "sourceHash": "bb320d5"
+  },
+  "viewer.selection.multiLine": "已选择第 {startLine} 行到第 {endLine} 行，共 {chars} 个字符",
+  "@viewer.selection.multiLine": {
+    "sourceHash": "074c687"
+  }
+}

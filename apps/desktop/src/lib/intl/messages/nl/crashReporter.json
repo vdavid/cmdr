@@ -1,0 +1,62 @@
+{
+  "crashReporter.dialog.title": "Crashrapport versturen?",
+  "@crashReporter.dialog.title": {
+    "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.body": "Cmdr is de vorige keer onverwachts gestopt. Hier is een crashrapport met details die kunnen helpen dit op te lossen.",
+  "@crashReporter.dialog.body": {
+    "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.privacyNote": "Het bevat de appversie, de macOS-versie en welk deel van de code crashte. Geen bestandsnamen of persoonlijke gegevens.",
+  "@crashReporter.dialog.privacyNote": {
+    "sourceHash": "7f7912a"
+  },
+  "crashReporter.dialog.reportIdLabel": "Rapport-ID:",
+  "@crashReporter.dialog.reportIdLabel": {
+    "sourceHash": "df3d47e"
+  },
+  "crashReporter.dialog.reportIdHelp": "Noem dit als je contact opneemt over het probleem.",
+  "@crashReporter.dialog.reportIdHelp": {
+    "sourceHash": "c63b08a"
+  },
+  "crashReporter.dialog.showDetails": "Toon rapportdetails",
+  "@crashReporter.dialog.showDetails": {
+    "sourceHash": "11756f2"
+  },
+  "crashReporter.dialog.copy": "Kopieer",
+  "@crashReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "crashReporter.dialog.copied": "Gekopieerd",
+  "@crashReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "crashReporter.dialog.alwaysSend": "Stuur altijd crashrapporten",
+  "@crashReporter.dialog.alwaysSend": {
+    "sourceHash": "8306c0e"
+  },
+  "crashReporter.dialog.attachEmail": "Voeg mijn e-mailadres ({email}) toe zodat we kunnen reageren",
+  "@crashReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "crashReporter.dialog.dismiss": "Sluit",
+  "@crashReporter.dialog.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "crashReporter.dialog.send": "Stuur rapport",
+  "@crashReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "crashReporter.dialog.sending": "Versturen...",
+  "@crashReporter.dialog.sending": {
+    "sourceHash": "286a3af"
+  },
+  "crashReporter.sentToast.message": "Crashrapport verstuurd. Bedankt dat je helpt Cmdr te verbeteren.",
+  "@crashReporter.sentToast.message": {
+    "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.changeSettings": "Wijzig in Instellingen > Updates",
+  "@crashReporter.sentToast.changeSettings": {
+    "sourceHash": "25d151d"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "goToPath.dialog.title": "Ir para o caminho",
+  "@goToPath.dialog.title": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.inputAriaLabel": "Caminho de destino",
+  "@goToPath.dialog.inputAriaLabel": {
+    "sourceHash": "ac4d152"
+  },
+  "goToPath.dialog.inputPlaceholder": "Digite ou cole um caminho, ex.: ~/Documents",
+  "@goToPath.dialog.inputPlaceholder": {
+    "sourceHash": "d84d343"
+  },
+  "goToPath.dialog.recentsAriaLabel": "Caminhos recentes",
+  "@goToPath.dialog.recentsAriaLabel": {
+    "sourceHash": "b698143"
+  },
+  "goToPath.dialog.removeFromList": "Remover da lista",
+  "@goToPath.dialog.removeFromList": {
+    "sourceHash": "82963c7"
+  },
+  "goToPath.dialog.cancel": "Cancelar",
+  "@goToPath.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "goToPath.dialog.confirm": "Ir para o caminho",
+  "@goToPath.dialog.confirm": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.ancestorHint": "Este caminho não existe. O lugar mais próximo para ir é {dir}.",
+  "@goToPath.dialog.ancestorHint": {
+    "sourceHash": "43db9f4"
+  },
+  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> não existe, então levamos você para <land>{landed}</land>.",
+  "@goToPath.toast.landedOnAncestor": {
+    "sourceHash": "4ffc1e4"
+  },
+  "goToPath.toast.pressToGoBack": "Pressione <chip></chip> para voltar.",
+  "@goToPath.toast.pressToGoBack": {
+    "sourceHash": "ee851b2"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "whatsNew.dialog.title": "Nouveautés de Cmdr",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "Rien à voir ici pour l''instant. Les nouveautés apparaîtront ici après une mise à jour.",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.dialog.seeFullChangelog": "Voir le journal des modifications complet",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "Les journaux des modifications ne m''intéressent pas",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "Fermer",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "Compris, plus de notes de mise à jour. Réactivez-les quand vous voulez dans Réglages > Mises à jour et confidentialité.",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

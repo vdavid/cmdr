@@ -1,0 +1,142 @@
+{
+  "errorReporter.dialog.title": "Enviar relatório de problema",
+  "@errorReporter.dialog.title": {
+    "sourceHash": "c327e68"
+  },
+  "errorReporter.dialog.description": "Isto envia os arquivos de registro recentes do Cmdr para a equipe, para que possamos corrigir o que deu errado. Os registros são limpos no seu computador: caminhos de arquivo, nomes de host, IPs e e-mails são todos removidos antes do envio.",
+  "@errorReporter.dialog.description": {
+    "sourceHash": "dd11284"
+  },
+  "errorReporter.dialog.referenceIdLabel": "ID de referência:",
+  "@errorReporter.dialog.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.dialog.copy": "Copiar",
+  "@errorReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "errorReporter.dialog.copied": "Copiado",
+  "@errorReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.dialog.noteLabel": "Adicionar uma nota (opcional)",
+  "@errorReporter.dialog.noteLabel": {
+    "sourceHash": "6bb0c6b"
+  },
+  "errorReporter.dialog.counter": "{currentText} / {maxText}",
+  "@errorReporter.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "errorReporter.dialog.notePlaceholder": "O que você estava tentando fazer? O que esperava que acontecesse?",
+  "@errorReporter.dialog.notePlaceholder": {
+    "sourceHash": "003300b"
+  },
+  "errorReporter.dialog.noteTooLong": "A nota é longa demais. O máximo é {maxText} caracteres.",
+  "@errorReporter.dialog.noteTooLong": {
+    "sourceHash": "835aa78"
+  },
+  "errorReporter.dialog.attachEmail": "Anexar meu e-mail ({email}) para que possamos responder",
+  "@errorReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "errorReporter.dialog.detailsToggle": "O que está prestes a ser enviado",
+  "@errorReporter.dialog.detailsToggle": {
+    "sourceHash": "b1069f7"
+  },
+  "errorReporter.dialog.manifestHeading": "Manifesto",
+  "@errorReporter.dialog.manifestHeading": {
+    "sourceHash": "3c99f1f"
+  },
+  "errorReporter.dialog.sampleFirstHeading": "Amostra das primeiras {count, plural, one {# linha} many {# linhas} other {# linhas}}",
+  "@errorReporter.dialog.sampleFirstHeading": {
+    "sourceHash": "7a2e538"
+  },
+  "errorReporter.dialog.sampleLastHeading": "Amostra das últimas {count, plural, one {# linha} many {# linhas} other {# linhas}}",
+  "@errorReporter.dialog.sampleLastHeading": {
+    "sourceHash": "a36f420"
+  },
+  "errorReporter.dialog.noLogLines": "(nenhuma linha de registro disponível)",
+  "@errorReporter.dialog.noLogLines": {
+    "sourceHash": "a2d54fd"
+  },
+  "errorReporter.dialog.totalLines": "Total de linhas de registro (após a limpeza): {countText}",
+  "@errorReporter.dialog.totalLines": {
+    "sourceHash": "9c5cab7"
+  },
+  "errorReporter.dialog.preparing": "Preparando a prévia…",
+  "@errorReporter.dialog.preparing": {
+    "sourceHash": "11e66e1"
+  },
+  "errorReporter.dialog.prepareFailed": "Não foi possível preparar a prévia: {error}",
+  "@errorReporter.dialog.prepareFailed": {
+    "sourceHash": "21c4dd4"
+  },
+  "errorReporter.dialog.saveToDisk": "Salvar pacote no disco (debug)",
+  "@errorReporter.dialog.saveToDisk": {
+    "sourceHash": "36d6589"
+  },
+  "errorReporter.dialog.cancel": "Cancelar",
+  "@errorReporter.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "errorReporter.dialog.send": "Enviar relatório",
+  "@errorReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "errorReporter.dialog.sending": "Enviando…",
+  "@errorReporter.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "errorReporter.dialog.sendFailedToast": "Não foi possível enviar o relatório de problema: {error}",
+  "@errorReporter.dialog.sendFailedToast": {
+    "sourceHash": "38c0695"
+  },
+  "errorReporter.dialog.saveFailedToast": "Não foi possível salvar o pacote: {error}",
+  "@errorReporter.dialog.saveFailedToast": {
+    "sourceHash": "34cf2b4"
+  },
+  "errorReporter.sentToast.message": "Relatório de problema enviado. Seu ID de referência é",
+  "@errorReporter.sentToast.message": {
+    "sourceHash": "75be6ba"
+  },
+  "errorReporter.sentToast.dismiss": "Dispensar",
+  "@errorReporter.sentToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.sentToast.copyId": "Copiar ID",
+  "@errorReporter.sentToast.copyId": {
+    "sourceHash": "72ac0d5"
+  },
+  "errorReporter.sentToast.copied": "Copiado",
+  "@errorReporter.sentToast.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.bundleSavedToast.message": "Pacote salvo no disco",
+  "@errorReporter.bundleSavedToast.message": {
+    "sourceHash": "7c1604d"
+  },
+  "errorReporter.bundleSavedToast.dismiss": "Dispensar",
+  "@errorReporter.bundleSavedToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.bundleSavedToast.reveal": "Mostrar no Finder",
+  "@errorReporter.bundleSavedToast.reveal": {
+    "sourceHash": "cc84938"
+  },
+  "errorReporter.autoSentToast.title": "Relatório de problema enviado",
+  "@errorReporter.autoSentToast.title": {
+    "sourceHash": "b69ee37"
+  },
+  "errorReporter.autoSentToast.referenceIdLabel": "ID de referência:",
+  "@errorReporter.autoSentToast.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.autoSentToast.changeSettings": "Alterar ajustes",
+  "@errorReporter.autoSentToast.changeSettings": {
+    "sourceHash": "873512a"
+  },
+  "errorReporter.autoSentToast.view": "Ver",
+  "@errorReporter.autoSentToast.view": {
+    "sourceHash": "dcc839a"
+  }
+}

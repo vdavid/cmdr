@@ -1,0 +1,58 @@
+{
+  "feedback.dialog.title": "Stuur feedback",
+  "@feedback.dialog.title": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.description": "Wat werkt er goed? Wat mis je? Je bericht gaat rechtstreeks naar de maker van Cmdr.",
+  "@feedback.dialog.description": {
+    "sourceHash": "fe435e3"
+  },
+  "feedback.dialog.label": "Je feedback",
+  "@feedback.dialog.label": {
+    "sourceHash": "cdb1c0a"
+  },
+  "feedback.dialog.placeholder": "Voorbeeld: ik zou graag een sneltoets willen om tussen tabbladen te springen.",
+  "@feedback.dialog.placeholder": {
+    "sourceHash": "dd0214b"
+  },
+  "feedback.dialog.counter": "{currentText} / {maxText}",
+  "@feedback.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "feedback.dialog.tooLong": "Sorry, dat is te lang. Maximaal {maxText} tekens.",
+  "@feedback.dialog.tooLong": {
+    "sourceHash": "60a59ec"
+  },
+  "feedback.dialog.attachEmail": "Voeg mijn e-mailadres ({email}) toe zodat we kunnen reageren",
+  "@feedback.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "feedback.dialog.moreWays": "Je kunt ook <github>bladeren en stemmen op GitHub</github> of <call>een gesprek boeken</call> met David.",
+  "@feedback.dialog.moreWays": {
+    "sourceHash": "5a26a7c"
+  },
+  "feedback.dialog.invalid": "Dat bericht kwam niet door. Maak het korter en probeer opnieuw?",
+  "@feedback.dialog.invalid": {
+    "sourceHash": "c379ff8"
+  },
+  "feedback.dialog.softFailure": "Sorry, je feedback kon nu niet verstuurd worden. Probeer opnieuw?",
+  "@feedback.dialog.softFailure": {
+    "sourceHash": "21012f3"
+  },
+  "feedback.dialog.cancel": "Annuleer",
+  "@feedback.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "feedback.dialog.send": "Stuur feedback",
+  "@feedback.dialog.send": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.sending": "Versturen…",
+  "@feedback.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "feedback.sentToast": "Bedankt voor je feedback! We lezen elk bericht.",
+  "@feedback.sentToast": {
+    "sourceHash": "6092c03"
+  }
+}

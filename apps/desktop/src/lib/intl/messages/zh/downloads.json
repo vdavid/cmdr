@@ -1,0 +1,138 @@
+{
+  "downloads.toast.downloaded": "已下载 <file>{fileName}</file>",
+  "@downloads.toast.downloaded": {
+    "sourceHash": "7bc4ace"
+  },
+  "downloads.toast.inSubdir": "位于 {subdir}",
+  "@downloads.toast.inSubdir": {
+    "sourceHash": "eea56f4"
+  },
+  "downloads.toast.learnIntro": "教你一个跳转到下载内容的妙招",
+  "@downloads.toast.learnIntro": {
+    "sourceHash": "3a06888"
+  },
+  "downloads.toast.inAppHint": "应用内：按 <chip>{key}</chip> 跳转到这里",
+  "@downloads.toast.inAppHint": {
+    "sourceHash": "5b70d9c"
+  },
+  "downloads.toast.globalHint": "在<em>任意</em>应用中（全局快捷键），按 <chip>{key}</chip>",
+  "@downloads.toast.globalHint": {
+    "sourceHash": "785e1f3"
+  },
+  "downloads.toast.summaryBoth": "应用内按 <inApp>{inAppKey}</inApp> 跳转，全局按 <global>{globalKey}</global>。",
+  "@downloads.toast.summaryBoth": {
+    "sourceHash": "59c4131"
+  },
+  "downloads.toast.summaryInApp": "应用内按 <inApp>{inAppKey}</inApp> 跳转。",
+  "@downloads.toast.summaryInApp": {
+    "sourceHash": "2c0fd22"
+  },
+  "downloads.toast.summaryGlobal": "全局按 <global>{globalKey}</global> 跳转。",
+  "@downloads.toast.summaryGlobal": {
+    "sourceHash": "1bd00be"
+  },
+  "downloads.toast.expandTip": "显示快捷键提示",
+  "@downloads.toast.expandTip": {
+    "sourceHash": "9dfbe32"
+  },
+  "downloads.toast.collapseTip": "让这条通知更紧凑",
+  "@downloads.toast.collapseTip": {
+    "sourceHash": "b404794"
+  },
+  "downloads.toast.stopShowing": "不再显示这些",
+  "@downloads.toast.stopShowing": {
+    "sourceHash": "36faf9f"
+  },
+  "downloads.toast.jumpToFile": "跳转到文件",
+  "@downloads.toast.jumpToFile": {
+    "sourceHash": "4511f65"
+  },
+  "downloads.notification.title": "已下载 {fileName}",
+  "@downloads.notification.title": {
+    "sourceHash": "a2b74bc"
+  },
+  "downloads.empty.message": "你的“下载”文件夹是空的。仍要前往吗？",
+  "@downloads.empty.message": {
+    "sourceHash": "83e7e07"
+  },
+  "downloads.empty.dismiss": "忽略",
+  "@downloads.empty.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.empty.goToDownloads": "前往“下载”",
+  "@downloads.empty.goToDownloads": {
+    "sourceHash": "5c72aeb"
+  },
+  "downloads.fda.message": "Cmdr 需要完全磁盘访问权限才能监视你的“下载”文件夹。",
+  "@downloads.fda.message": {
+    "sourceHash": "82c82c6"
+  },
+  "downloads.fda.dismiss": "忽略",
+  "@downloads.fda.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.fda.openSystemSettings": "打开系统设置",
+  "@downloads.fda.openSystemSettings": {
+    "sourceHash": "18196b3"
+  },
+  "downloads.warnToast.message": "{binding} 快捷键可以从任何地方跳转到你最新的下载内容。要保持开启吗？",
+  "@downloads.warnToast.message": {
+    "sourceHash": "b174604"
+  },
+  "downloads.warnToast.turnOff": "关闭它",
+  "@downloads.warnToast.turnOff": {
+    "sourceHash": "74039ed"
+  },
+  "downloads.warnToast.keepOn": "保持开启",
+  "@downloads.warnToast.keepOn": {
+    "sourceHash": "cbfff78"
+  },
+  "downloads.shortcutRow.scopeTitle": "全局",
+  "@downloads.shortcutRow.scopeTitle": {
+    "sourceHash": "a258b30"
+  },
+  "downloads.shortcutRow.commandName": "跳转到最新下载 <marker>（全局）</marker>",
+  "@downloads.shortcutRow.commandName": {
+    "sourceHash": "83f6d4b"
+  },
+  "downloads.shortcutRow.modifiedTooltip": "已从默认值更改",
+  "@downloads.shortcutRow.modifiedTooltip": {
+    "sourceHash": "3d86215"
+  },
+  "downloads.shortcutRow.resetTooltip": "重置为默认",
+  "@downloads.shortcutRow.resetTooltip": {
+    "sourceHash": "bc5b45a"
+  },
+  "downloads.shortcutRow.pressKeys": "请按键…",
+  "@downloads.shortcutRow.pressKeys": {
+    "sourceHash": "37aa30c"
+  },
+  "downloads.shortcutRow.registered": "已注册",
+  "@downloads.shortcutRow.registered": {
+    "sourceHash": "2351ee9"
+  },
+  "downloads.shortcutRow.notRegistered": "未注册",
+  "@downloads.shortcutRow.notRegistered": {
+    "sourceHash": "ca374c2"
+  },
+  "downloads.shortcutRow.invalidCombo": "无法注册：按键组合无效",
+  "@downloads.shortcutRow.invalidCombo": {
+    "sourceHash": "32c3532"
+  },
+  "downloads.shortcutRow.registerFailed": "无法注册：{reason}",
+  "@downloads.shortcutRow.registerFailed": {
+    "sourceHash": "2e6fb97"
+  },
+  "downloads.shortcutRow.addModifier": "请添加一个修饰键（⌘、⌃、⌥ 或 ⇧）",
+  "@downloads.shortcutRow.addModifier": {
+    "sourceHash": "28a5ba2"
+  },
+  "downloads.toggleDescription.bound": "在任意应用中按 {binding} 即可跳转到你最近的下载内容。",
+  "@downloads.toggleDescription.bound": {
+    "sourceHash": "be43b35"
+  },
+  "downloads.toggleDescription.unbound": "从任意应用跳转到你最近的下载内容。",
+  "@downloads.toggleDescription.unbound": {
+    "sourceHash": "187cdec"
+  }
+}

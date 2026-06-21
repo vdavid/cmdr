@@ -1,0 +1,1242 @@
+{
+  "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Linker} other {Rechter}}bestandspaneel",
+  "@fileExplorer.pane.filePaneAriaLabel": {
+    "sourceHash": "77f3961"
+  },
+  "fileExplorer.pane.diskUsageAriaLabel": "Schijfgebruik",
+  "@fileExplorer.pane.diskUsageAriaLabel": {
+    "sourceHash": "4fe60c1"
+  },
+  "fileExplorer.pane.resizePanesAriaLabel": "Panelen vergroten of verkleinen",
+  "@fileExplorer.pane.resizePanesAriaLabel": {
+    "sourceHash": "ff22a46"
+  },
+  "fileExplorer.pane.fileExplorerAriaLabel": "Bestandsverkenner",
+  "@fileExplorer.pane.fileExplorerAriaLabel": {
+    "sourceHash": "bfd3c67"
+  },
+  "fileExplorer.pane.disconnectFailedToast": "Verbinding verbreken lukte niet: {message}",
+  "@fileExplorer.pane.disconnectFailedToast": {
+    "sourceHash": "ac9e8e0"
+  },
+  "fileExplorer.pane.connectedDirectlyToast": "Direct verbonden voor snellere toegang",
+  "@fileExplorer.pane.connectedDirectlyToast": {
+    "sourceHash": "5c6bcd2"
+  },
+  "fileExplorer.pane.directConnectionFailedToast": "Directe verbinding lukte niet: {message}",
+  "@fileExplorer.pane.directConnectionFailedToast": {
+    "sourceHash": "3c6d599"
+  },
+  "fileExplorer.pane.trashUnconfirmedToast": "We konden niet bevestigen dat het bestand naar de prullenmand is verplaatst. Het volume is misschien traag, maar het bestand is mogelijk wel verplaatst. Controleer je prullenmand voor de zekerheid.",
+  "@fileExplorer.pane.trashUnconfirmedToast": {
+    "sourceHash": "844ccc1"
+  },
+  "fileExplorer.pane.ejectFailedToast": "{volumeName} uitwerpen lukte niet: {message}",
+  "@fileExplorer.pane.ejectFailedToast": {
+    "sourceHash": "b22501d"
+  },
+  "fileExplorer.errorPane.tryAgain": "Probeer opnieuw",
+  "@fileExplorer.errorPane.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.errorPane.openSystemSettings": "Open {systemSettings}",
+  "@fileExplorer.errorPane.openSystemSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "fileExplorer.errorPane.technicalDetails": "Technische details",
+  "@fileExplorer.errorPane.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileExplorer.errorPane.aMomentAgo": "zojuist",
+  "@fileExplorer.errorPane.aMomentAgo": {
+    "sourceHash": "65b0cae"
+  },
+  "fileExplorer.errorPane.secondsAgo": "{seconds}s geleden",
+  "@fileExplorer.errorPane.secondsAgo": {
+    "sourceHash": "b5907e4"
+  },
+  "fileExplorer.errorPane.minutesAgo": "{minutes}m geleden",
+  "@fileExplorer.errorPane.minutesAgo": {
+    "sourceHash": "0e91828"
+  },
+  "fileExplorer.errorPane.hoursAgo": "{hours}u geleden",
+  "@fileExplorer.errorPane.hoursAgo": {
+    "sourceHash": "bbfb1e5"
+  },
+  "fileExplorer.errorPane.retryInfo": "Poging #{count} · eerste poging {firstAgo}",
+  "@fileExplorer.errorPane.retryInfo": {
+    "sourceHash": "03bb746"
+  },
+  "fileExplorer.errorPane.retryInfoWithLast": "Poging #{count} · eerste poging {firstAgo} · laatste poging {lastAgo}",
+  "@fileExplorer.errorPane.retryInfoWithLast": {
+    "sourceHash": "e11bb94"
+  },
+  "fileExplorer.functionKeyBar.toolbarAriaLabel": "Functietoetsen",
+  "@fileExplorer.functionKeyBar.toolbarAriaLabel": {
+    "sourceHash": "f69e00d"
+  },
+  "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
+  "@fileExplorer.functionKeyBar.actionWithShortcut": {
+    "sourceHash": "49e258f"
+  },
+  "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (geen Shift-actie)",
+  "@fileExplorer.functionKeyBar.noShiftAction": {
+    "sourceHash": "83b9f17"
+  },
+  "fileExplorer.functionKeyBar.newFileLabel": "Nieuw bestand",
+  "@fileExplorer.functionKeyBar.newFileLabel": {
+    "sourceHash": "44dedd0"
+  },
+  "fileExplorer.functionKeyBar.newFileAction": "Nieuw bestand aanmaken",
+  "@fileExplorer.functionKeyBar.newFileAction": {
+    "sourceHash": "6e70b95"
+  },
+  "fileExplorer.functionKeyBar.renameLabel": "Wijzig naam",
+  "@fileExplorer.functionKeyBar.renameLabel": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.renameAction": "Wijzig naam",
+  "@fileExplorer.functionKeyBar.renameAction": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.permanentlyLabel": "Definitief",
+  "@fileExplorer.functionKeyBar.permanentlyLabel": {
+    "sourceHash": "d06138e"
+  },
+  "fileExplorer.functionKeyBar.deletePermanentlyAction": "Definitief verwijderen",
+  "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
+    "sourceHash": "280b10c"
+  },
+  "fileExplorer.functionKeyBar.viewLabel": "Toon",
+  "@fileExplorer.functionKeyBar.viewLabel": {
+    "sourceHash": "dcc839a"
+  },
+  "fileExplorer.functionKeyBar.viewAction": "Toon bestand",
+  "@fileExplorer.functionKeyBar.viewAction": {
+    "sourceHash": "6ef3f36"
+  },
+  "fileExplorer.functionKeyBar.editLabel": "Bewerk",
+  "@fileExplorer.functionKeyBar.editLabel": {
+    "sourceHash": "464c4ff"
+  },
+  "fileExplorer.functionKeyBar.editAction": "Bewerk bestand",
+  "@fileExplorer.functionKeyBar.editAction": {
+    "sourceHash": "9608dd1"
+  },
+  "fileExplorer.functionKeyBar.copyLabel": "Kopieer",
+  "@fileExplorer.functionKeyBar.copyLabel": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.copyAction": "Kopieer",
+  "@fileExplorer.functionKeyBar.copyAction": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.moveLabel": "Verplaats",
+  "@fileExplorer.functionKeyBar.moveLabel": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.moveAction": "Verplaats",
+  "@fileExplorer.functionKeyBar.moveAction": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.newFolderLabel": "Nieuwe map",
+  "@fileExplorer.functionKeyBar.newFolderLabel": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.newFolderAction": "Nieuwe map",
+  "@fileExplorer.functionKeyBar.newFolderAction": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.deleteLabel": "Verwijder",
+  "@fileExplorer.functionKeyBar.deleteLabel": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.functionKeyBar.deleteAction": "Verwijder",
+  "@fileExplorer.functionKeyBar.deleteAction": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.typeToJump.ariaLabel": "Ga naar {buffer}",
+  "@fileExplorer.typeToJump.ariaLabel": {
+    "sourceHash": "da879a5"
+  },
+  "fileExplorer.typeToJump.prefix": "Ga naar: ",
+  "@fileExplorer.typeToJump.prefix": {
+    "sourceHash": "e9e3412"
+  },
+  "fileExplorer.searchResults.unavailableTitle": "Zoekresultaten zijn niet meer beschikbaar",
+  "@fileExplorer.searchResults.unavailableTitle": {
+    "sourceHash": "ebcc5a7"
+  },
+  "fileExplorer.searchResults.unavailableBody": "De resultaten van deze zoekopdracht zijn gewist. Start een nieuwe zoekopdracht om opnieuw te beginnen.",
+  "@fileExplorer.searchResults.unavailableBody": {
+    "sourceHash": "3e4cfa2"
+  },
+  "fileExplorer.network.cancel": "Annuleer",
+  "@fileExplorer.network.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.network.connect": "Verbind",
+  "@fileExplorer.network.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "fileExplorer.network.connecting": "Verbinden...",
+  "@fileExplorer.network.connecting": {
+    "sourceHash": "5f04ae9"
+  },
+  "fileExplorer.network.back": "Terug",
+  "@fileExplorer.network.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.network.retry": "Probeer opnieuw",
+  "@fileExplorer.network.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.network.signIn": "Log in",
+  "@fileExplorer.network.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "fileExplorer.network.authFailed": "Inloggen lukte niet",
+  "@fileExplorer.network.authFailed": {
+    "sourceHash": "93821eb"
+  },
+  "fileExplorer.network.connectDialog.title": "Verbind met server",
+  "@fileExplorer.network.connectDialog.title": {
+    "sourceHash": "de6cce0"
+  },
+  "fileExplorer.network.connectDialog.addressAriaLabel": "Serveradres",
+  "@fileExplorer.network.connectDialog.addressAriaLabel": {
+    "sourceHash": "8be8971"
+  },
+  "fileExplorer.network.connectDialog.addressPlaceholder": "hostnaam, IP-adres of smb://-URL",
+  "@fileExplorer.network.connectDialog.addressPlaceholder": {
+    "sourceHash": "60c33b2"
+  },
+  "fileExplorer.network.connectDialog.examples": "Voorbeelden: mynas.local, 192.168.1.100, smb://server/share",
+  "@fileExplorer.network.connectDialog.examples": {
+    "sourceHash": "10794ec"
+  },
+  "fileExplorer.network.browser.colName": "Naam",
+  "@fileExplorer.network.browser.colName": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.network.browser.colIp": "IP-adres",
+  "@fileExplorer.network.browser.colIp": {
+    "sourceHash": "0302a46"
+  },
+  "fileExplorer.network.browser.colHostname": "Hostnaam",
+  "@fileExplorer.network.browser.colHostname": {
+    "sourceHash": "2db5335"
+  },
+  "fileExplorer.network.browser.colShares": "Gedeelde mappen",
+  "@fileExplorer.network.browser.colShares": {
+    "sourceHash": "d4ea333"
+  },
+  "fileExplorer.network.browser.colStatus": "Status",
+  "@fileExplorer.network.browser.colStatus": {
+    "sourceHash": "920e413"
+  },
+  "fileExplorer.network.browser.fetching": "ophalen...",
+  "@fileExplorer.network.browser.fetching": {
+    "sourceHash": "9e6ab8c"
+  },
+  "fileExplorer.network.browser.unknown": "(onbekend)",
+  "@fileExplorer.network.browser.unknown": {
+    "sourceHash": "8fe7794"
+  },
+  "fileExplorer.network.browser.searching": "Zoeken...",
+  "@fileExplorer.network.browser.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "fileExplorer.network.browser.connectToServerRow": "Verbind met server...",
+  "@fileExplorer.network.browser.connectToServerRow": {
+    "sourceHash": "1bf4858"
+  },
+  "fileExplorer.network.browser.noHostsTitle": "Geen netwerkhosts gevonden",
+  "@fileExplorer.network.browser.noHostsTitle": {
+    "sourceHash": "e8dfaf2"
+  },
+  "fileExplorer.network.browser.noHostsMessage": "Zorg dat je op een netwerk zit met SMB-apparaten.",
+  "@fileExplorer.network.browser.noHostsMessage": {
+    "sourceHash": "b1cb7ba"
+  },
+  "fileExplorer.network.browser.refresh": "Ververs",
+  "@fileExplorer.network.browser.refresh": {
+    "sourceHash": "0e91610"
+  },
+  "fileExplorer.network.browser.refreshAriaLabel": "Ververs netwerkhosts",
+  "@fileExplorer.network.browser.refreshAriaLabel": {
+    "sourceHash": "73966bd"
+  },
+  "fileExplorer.network.browser.refreshHint": "Druk op <key></key> of klik hier om te verversen",
+  "@fileExplorer.network.browser.refreshHint": {
+    "sourceHash": "7f65c7d"
+  },
+  "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} host} other {{countText} hosts}}",
+  "@fileExplorer.network.browser.hostCount": {
+    "sourceHash": "41843ee"
+  },
+  "fileExplorer.network.browser.status.resolving": "Omzetten...",
+  "@fileExplorer.network.browser.status.resolving": {
+    "sourceHash": "0660108"
+  },
+  "fileExplorer.network.browser.status.waitingForNetwork": "Wachten op netwerk...",
+  "@fileExplorer.network.browser.status.waitingForNetwork": {
+    "sourceHash": "78199e3"
+  },
+  "fileExplorer.network.browser.status.notChecked": "Niet gecontroleerd",
+  "@fileExplorer.network.browser.status.notChecked": {
+    "sourceHash": "d16948e"
+  },
+  "fileExplorer.network.browser.status.loggedIn": "🔑 Ingelogd{infoIcon}",
+  "@fileExplorer.network.browser.status.loggedIn": {
+    "sourceHash": "1e386ce"
+  },
+  "fileExplorer.network.browser.status.loginFailed": "⚠️ Inloggen lukte niet{infoIcon}",
+  "@fileExplorer.network.browser.status.loginFailed": {
+    "sourceHash": "1659c9c"
+  },
+  "fileExplorer.network.browser.status.loginNeeded": "🔒 Inloggen vereist{infoIcon}",
+  "@fileExplorer.network.browser.status.loginNeeded": {
+    "sourceHash": "bd7375e"
+  },
+  "fileExplorer.network.browser.status.timeout": "⏱️ Time-out{infoIcon}",
+  "@fileExplorer.network.browser.status.timeout": {
+    "sourceHash": "3673628"
+  },
+  "fileExplorer.network.browser.status.unreachable": "❌ Onbereikbaar{infoIcon}",
+  "@fileExplorer.network.browser.status.unreachable": {
+    "sourceHash": "1198fd4"
+  },
+  "fileExplorer.network.browser.status.error": "⚠️ Probleem{infoIcon}",
+  "@fileExplorer.network.browser.status.error": {
+    "sourceHash": "de7c260"
+  },
+  "fileExplorer.network.browser.status.loggedInOk": "✓ Ingelogd",
+  "@fileExplorer.network.browser.status.loggedInOk": {
+    "sourceHash": "205adc9"
+  },
+  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Ingelogd 🔄",
+  "@fileExplorer.network.browser.status.loggedInOkStale": {
+    "sourceHash": "f83f6a1"
+  },
+  "fileExplorer.network.browser.status.guest": "✓ Gast",
+  "@fileExplorer.network.browser.status.guest": {
+    "sourceHash": "aaa35d1"
+  },
+  "fileExplorer.network.browser.status.guestStale": "✓ Gast 🔄",
+  "@fileExplorer.network.browser.status.guestStale": {
+    "sourceHash": "1e2b875"
+  },
+  "fileExplorer.network.browser.status.connected": "✓ Verbonden",
+  "@fileExplorer.network.browser.status.connected": {
+    "sourceHash": "c8c8815"
+  },
+  "fileExplorer.network.browser.status.connectedStale": "✓ Verbonden 🔄",
+  "@fileExplorer.network.browser.status.connectedStale": {
+    "sourceHash": "0cf4d3d"
+  },
+  "fileExplorer.network.browser.tooltip.resolving": "Hostnaam en IP-adres omzetten...",
+  "@fileExplorer.network.browser.tooltip.resolving": {
+    "sourceHash": "1dc4c96"
+  },
+  "fileExplorer.network.browser.tooltip.waitingForNetwork": "Wachten tot het netwerk de naam omzet",
+  "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
+    "sourceHash": "81ac569"
+  },
+  "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Dubbelklik om te verbinden en gedeelde mappen te bekijken",
+  "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
+    "sourceHash": "a068f74"
+  },
+  "fileExplorer.network.browser.tooltip.credsStored": "Inloggegevens opgeslagen. Dubbelklik om te verbinden.",
+  "@fileExplorer.network.browser.tooltip.credsStored": {
+    "sourceHash": "ff82a32"
+  },
+  "fileExplorer.network.browser.tooltip.credsRejected": "Opgeslagen inloggegevens werden geweigerd. Log in met bijgewerkte inloggegevens.",
+  "@fileExplorer.network.browser.tooltip.credsRejected": {
+    "sourceHash": "a3d55a2"
+  },
+  "fileExplorer.network.browser.tooltip.requiresLogin": "Voor deze host is inloggen vereist. Dubbelklik om je inloggegevens in te voeren.",
+  "@fileExplorer.network.browser.tooltip.requiresLogin": {
+    "sourceHash": "8e64ac0"
+  },
+  "fileExplorer.network.browser.tooltip.authFailed": "Inloggen lukte niet. Controleer je inloggegevens en probeer opnieuw.",
+  "@fileExplorer.network.browser.tooltip.authFailed": {
+    "sourceHash": "b8620ab"
+  },
+  "fileExplorer.network.browser.tooltip.errorWithType": "Probleem: {reason}",
+  "@fileExplorer.network.browser.tooltip.errorWithType": {
+    "sourceHash": "ee0fd6d"
+  },
+  "fileExplorer.network.browser.cannotRemoveDiscovered": "Ontdekte hosts kun je niet verwijderen",
+  "@fileExplorer.network.browser.cannotRemoveDiscovered": {
+    "sourceHash": "03fabd6"
+  },
+  "fileExplorer.network.browser.removeHostConfirm": "{hostName} uit de serverlijst verwijderen?",
+  "@fileExplorer.network.browser.removeHostConfirm": {
+    "sourceHash": "8ecdf1a"
+  },
+  "fileExplorer.network.browser.removeHostConfirmButton": "Verwijder",
+  "@fileExplorer.network.browser.removeHostConfirmButton": {
+    "sourceHash": "c3812fc"
+  },
+  "fileExplorer.network.browser.hostRemoved": "{hostName} verwijderd",
+  "@fileExplorer.network.browser.hostRemoved": {
+    "sourceHash": "9e02382"
+  },
+  "fileExplorer.network.browser.hostRemoveFailed": "{hostName} verwijderen lukte niet",
+  "@fileExplorer.network.browser.hostRemoveFailed": {
+    "sourceHash": "9120dd2"
+  },
+  "fileExplorer.network.forgotPassword": "Opgeslagen wachtwoord voor {hostName} vergeten",
+  "@fileExplorer.network.forgotPassword": {
+    "sourceHash": "6b53741"
+  },
+  "fileExplorer.network.deletePasswordFailed": "Opgeslagen wachtwoord verwijderen lukte niet",
+  "@fileExplorer.network.deletePasswordFailed": {
+    "sourceHash": "0ff57cb"
+  },
+  "fileExplorer.network.browser.disconnected": "Verbinding met {hostName} verbroken",
+  "@fileExplorer.network.browser.disconnected": {
+    "sourceHash": "6cb30d3"
+  },
+  "fileExplorer.network.browser.noMountedShares": "Geen aangekoppelde gedeelde mappen van {hostName}",
+  "@fileExplorer.network.browser.noMountedShares": {
+    "sourceHash": "913c7e6"
+  },
+  "fileExplorer.network.browser.disconnectFailed": "Verbinding verbreken lukte niet: {message}",
+  "@fileExplorer.network.browser.disconnectFailed": {
+    "sourceHash": "ac9e8e0"
+  },
+  "fileExplorer.network.login.title": "Inloggen op ‘{target}’",
+  "@fileExplorer.network.login.title": {
+    "sourceHash": "53a4feb"
+  },
+  "fileExplorer.network.login.guestNowAuth": "Je was eerder als gast verbonden. Je kunt nu inloggen voor meer toegang.",
+  "@fileExplorer.network.login.guestNowAuth": {
+    "sourceHash": "4a0ed4d"
+  },
+  "fileExplorer.network.login.connectionModeLegend": "Verbindingsmodus",
+  "@fileExplorer.network.login.connectionModeLegend": {
+    "sourceHash": "72c0943"
+  },
+  "fileExplorer.network.login.connectAsGuest": "Verbind als gast",
+  "@fileExplorer.network.login.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "fileExplorer.network.login.signInWithCredentials": "Log in met inloggegevens",
+  "@fileExplorer.network.login.signInWithCredentials": {
+    "sourceHash": "dda85fa"
+  },
+  "fileExplorer.network.login.username": "Gebruikersnaam",
+  "@fileExplorer.network.login.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "fileExplorer.network.login.usernamePlaceholderDefault": "Voorbeeld: bram",
+  "@fileExplorer.network.login.usernamePlaceholderDefault": {
+    "sourceHash": "1b5b09c"
+  },
+  "fileExplorer.network.login.password": "Wachtwoord",
+  "@fileExplorer.network.login.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileExplorer.network.login.passwordPlaceholder": "Voer wachtwoord in",
+  "@fileExplorer.network.login.passwordPlaceholder": {
+    "sourceHash": "7014aff"
+  },
+  "fileExplorer.network.login.rememberInKeychain": "Onthoud in Keychain",
+  "@fileExplorer.network.login.rememberInKeychain": {
+    "sourceHash": "3fd7384"
+  },
+  "fileExplorer.network.share.credentialsStoredLocally": "Inloggegevens lokaal opgeslagen (geen systeemsleutelhanger gevonden)",
+  "@fileExplorer.network.share.credentialsStoredLocally": {
+    "sourceHash": "18dd24e"
+  },
+  "fileExplorer.network.share.notFound": "Gedeelde map ''{shareName}'' niet gevonden op {hostName}",
+  "@fileExplorer.network.share.notFound": {
+    "sourceHash": "bc3d29a"
+  },
+  "fileExplorer.network.share.invalidCredentials": "Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.",
+  "@fileExplorer.network.share.invalidCredentials": {
+    "sourceHash": "846d862"
+  },
+  "fileExplorer.network.share.authRequired": "Inloggen vereist. Voer je inloggegevens in.",
+  "@fileExplorer.network.share.authRequired": {
+    "sourceHash": "0bb6039"
+  },
+  "fileExplorer.network.share.connectionFailed": "Verbinding kwam niet tot stand: {reason}",
+  "@fileExplorer.network.share.connectionFailed": {
+    "sourceHash": "800132e"
+  },
+  "fileExplorer.network.share.connecting": "Verbinden met {hostName}...",
+  "@fileExplorer.network.share.connecting": {
+    "sourceHash": "633622a"
+  },
+  "fileExplorer.network.share.connectFailedTitle": "Verbinden met {hostName} lukte niet",
+  "@fileExplorer.network.share.connectFailedTitle": {
+    "sourceHash": "06f5c62"
+  },
+  "fileExplorer.network.share.noSharesTitle": "Geen gedeelde mappen beschikbaar",
+  "@fileExplorer.network.share.noSharesTitle": {
+    "sourceHash": "56890aa"
+  },
+  "fileExplorer.network.share.noSharesMessage": "Deze host heeft geen toegankelijke gedeelde mappen, of inloggen is vereist.",
+  "@fileExplorer.network.share.noSharesMessage": {
+    "sourceHash": "6633416"
+  },
+  "fileExplorer.network.share.backArrow": "← Terug",
+  "@fileExplorer.network.share.backArrow": {
+    "sourceHash": "aceb696"
+  },
+  "fileExplorer.network.share.forgetPasswordTooltip": "Verwijder opgeslagen wachtwoord uit Keychain",
+  "@fileExplorer.network.share.forgetPasswordTooltip": {
+    "sourceHash": "f067186"
+  },
+  "fileExplorer.network.share.forgetPassword": "🔑 Vergeet opgeslagen wachtwoord",
+  "@fileExplorer.network.share.forgetPassword": {
+    "sourceHash": "aa3dca3"
+  },
+  "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} gedeelde map} other {{countText} gedeelde mappen}}",
+  "@fileExplorer.network.share.shareCount": {
+    "sourceHash": "4cc6002"
+  },
+  "fileExplorer.network.reconnect.once": "één keer",
+  "@fileExplorer.network.reconnect.once": {
+    "sourceHash": "200651a"
+  },
+  "fileExplorer.network.reconnect.twice": "twee keer",
+  "@fileExplorer.network.reconnect.twice": {
+    "sourceHash": "dc8ffdb"
+  },
+  "fileExplorer.network.reconnect.times": "{count, plural, other {{countText} keer}}",
+  "@fileExplorer.network.reconnect.times": {
+    "sourceHash": "bf5fc9c"
+  },
+  "fileExplorer.network.reconnect.finalAttempt": "{retried} geprobeerd, dit is de laatste poging. De verbinding valt weg als deze niet lukt.",
+  "@fileExplorer.network.reconnect.finalAttempt": {
+    "sourceHash": "7418a78"
+  },
+  "fileExplorer.network.reconnect.willTryMore": "{retried} geprobeerd, na deze poging proberen we het nog {remaining}.",
+  "@fileExplorer.network.reconnect.willTryMore": {
+    "sourceHash": "a7d887a"
+  },
+  "fileExplorer.mtp.connectTimedOut": "De verbinding overschreed de tijdslimiet. Het apparaat is mogelijk traag of reageert niet.",
+  "@fileExplorer.mtp.connectTimedOut": {
+    "sourceHash": "cc01ae7"
+  },
+  "fileExplorer.mtp.exclusiveAccess": "Een andere app gebruikt dit apparaat. Voer de ptpcamerad-tijdelijke oplossing uit.",
+  "@fileExplorer.mtp.exclusiveAccess": {
+    "sourceHash": "1fac18c"
+  },
+  "fileExplorer.mtp.deviceNotFound": "Apparaat niet gevonden. Het is misschien losgekoppeld.",
+  "@fileExplorer.mtp.deviceNotFound": {
+    "sourceHash": "15d2382"
+  },
+  "fileExplorer.mtp.disconnected": "Het apparaat is losgekoppeld.",
+  "@fileExplorer.mtp.disconnected": {
+    "sourceHash": "57e823a"
+  },
+  "fileExplorer.mtp.deviceBusy": "Het apparaat is bezig. Probeer opnieuw.",
+  "@fileExplorer.mtp.deviceBusy": {
+    "sourceHash": "7199b1d"
+  },
+  "fileExplorer.mtp.noStorage": "Het apparaat heeft geen toegankelijke opslag",
+  "@fileExplorer.mtp.noStorage": {
+    "sourceHash": "ff30402"
+  },
+  "fileExplorer.mtp.connecting": "Verbinden met apparaat...",
+  "@fileExplorer.mtp.connecting": {
+    "sourceHash": "ad85006"
+  },
+  "fileExplorer.mtp.tryAgain": "Probeer opnieuw",
+  "@fileExplorer.mtp.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.mounting": "{target} aankoppelen...",
+  "@fileExplorer.networkMount.mounting": {
+    "sourceHash": "222982d"
+  },
+  "fileExplorer.networkMount.shareFallback": "gedeelde map",
+  "@fileExplorer.networkMount.shareFallback": {
+    "sourceHash": "c3bc45a"
+  },
+  "fileExplorer.networkMount.mountFailedTitle": "Gedeelde map aankoppelen lukte niet",
+  "@fileExplorer.networkMount.mountFailedTitle": {
+    "sourceHash": "d59f414"
+  },
+  "fileExplorer.networkMount.tryAgain": "Probeer opnieuw",
+  "@fileExplorer.networkMount.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.back": "Terug",
+  "@fileExplorer.networkMount.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.smbReauth.savedPasswordFailed": "Je opgeslagen wachtwoord werkte niet. Log in om opnieuw te verbinden.",
+  "@fileExplorer.smbReauth.savedPasswordFailed": {
+    "sourceHash": "4561fa9"
+  },
+  "fileExplorer.smbReauth.passwordFailed": "Dat werkte niet. Controleer je wachtwoord en probeer opnieuw.",
+  "@fileExplorer.smbReauth.passwordFailed": {
+    "sourceHash": "5e11a2f"
+  },
+  "fileExplorer.smbReconnect.totalSeconds": "{seconds} seconden",
+  "@fileExplorer.smbReconnect.totalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "fileExplorer.smbReconnect.totalMinutes": "{minutes} minuten",
+  "@fileExplorer.smbReconnect.totalMinutes": {
+    "sourceHash": "fc339ba"
+  },
+  "fileExplorer.smbReconnect.title": "Opnieuw verbinden met server…",
+  "@fileExplorer.smbReconnect.title": {
+    "sourceHash": "7562773"
+  },
+  "fileExplorer.smbReconnect.progressBarAriaLabel": "Tijd tot de volgende verbindingspoging",
+  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "fileExplorer.smbReconnect.willKeepTrying": "We blijven het in totaal {duration} proberen.",
+  "@fileExplorer.smbReconnect.willKeepTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "fileExplorer.smbReconnect.retryNowTooltip": "Probeer meteen opnieuw te verbinden.",
+  "@fileExplorer.smbReconnect.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "fileExplorer.smbReconnect.retryNow": "Probeer nu opnieuw",
+  "@fileExplorer.smbReconnect.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "fileExplorer.smbReconnect.cancelTooltip": "Stop voorlopig met proberen. De verbinding blijft beschikbaar. Schakel terug om het opnieuw te proberen.",
+  "@fileExplorer.smbReconnect.cancelTooltip": {
+    "sourceHash": "377638b"
+  },
+  "fileExplorer.smbReconnect.cancel": "Annuleer",
+  "@fileExplorer.smbReconnect.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.smbReconnect.disconnectTooltip": "Stop met proberen en verbreek de verbinding met de server.",
+  "@fileExplorer.smbReconnect.disconnectTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "fileExplorer.smbReconnect.disconnect": "Verbreek",
+  "@fileExplorer.smbReconnect.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.title": "{path} is onbereikbaar",
+  "@fileExplorer.unreachable.title": {
+    "sourceHash": "586e44c"
+  },
+  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr probeerde meerdere keren opnieuw te verbinden, maar de server kwam niet terug. De verbinding blijft voorlopig beschikbaar. Probeer opnieuw, of verbreek de verbinding om hem los te laten.",
+  "@fileExplorer.unreachable.detailSmbGaveUp": {
+    "sourceHash": "7d8c5fc"
+  },
+  "fileExplorer.unreachable.detailTimeout": "Het volume voor dit pad reageerde niet op tijd. Het is mogelijk een netwerkschijf die momenteel niet beschikbaar is.",
+  "@fileExplorer.unreachable.detailTimeout": {
+    "sourceHash": "61bf814"
+  },
+  "fileExplorer.unreachable.retrying": "Opnieuw proberen...",
+  "@fileExplorer.unreachable.retrying": {
+    "sourceHash": "84a657b"
+  },
+  "fileExplorer.unreachable.retry": "Probeer opnieuw",
+  "@fileExplorer.unreachable.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.unreachable.disconnect": "Verbreek",
+  "@fileExplorer.unreachable.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.openHome": "Open thuismap",
+  "@fileExplorer.unreachable.openHome": {
+    "sourceHash": "a178b4d"
+  },
+  "fileExplorer.clipboard.copied": "{countText} {count, plural, one {onderdeel} other {onderdelen}} gekopieerd",
+  "@fileExplorer.clipboard.copied": {
+    "sourceHash": "1c25075"
+  },
+  "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {onderdeel} other {onderdelen}} klaar om te verplaatsen. Plak om te voltooien.",
+  "@fileExplorer.clipboard.cutReady": {
+    "sourceHash": "846d8af"
+  },
+  "fileExplorer.clipboard.useF5FromMtp": "Gebruik F5 om bestanden van MTP-apparaten te kopiëren",
+  "@fileExplorer.clipboard.useF5FromMtp": {
+    "sourceHash": "e0dd2b5"
+  },
+  "fileExplorer.clipboard.useF6FromMtp": "Gebruik F6 om bestanden van MTP-apparaten te verplaatsen",
+  "@fileExplorer.clipboard.useF6FromMtp": {
+    "sourceHash": "cd6f83f"
+  },
+  "fileExplorer.clipboard.useF5ToMtp": "Gebruik F5 om bestanden naar MTP-apparaten te kopiëren",
+  "@fileExplorer.clipboard.useF5ToMtp": {
+    "sourceHash": "8c20d0e"
+  },
+  "fileExplorer.clipboard.empty": "Geen bestanden op het klembord. Kopieer eerst bestanden met ⌘C.",
+  "@fileExplorer.clipboard.empty": {
+    "sourceHash": "0cbe304"
+  },
+  "fileExplorer.tabs.limitReached": "Tabbladlimiet bereikt",
+  "@fileExplorer.tabs.limitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "fileExplorer.tabs.closePinnedConfirm": "Dit tabblad is vastgezet. Toch sluiten?",
+  "@fileExplorer.tabs.closePinnedConfirm": {
+    "sourceHash": "d5757f9"
+  },
+  "fileExplorer.tabs.closePinnedTitle": "Vastgezet tabblad sluiten",
+  "@fileExplorer.tabs.closePinnedTitle": {
+    "sourceHash": "5d22e58"
+  },
+  "fileExplorer.readOnly.volumeTitle": "Alleen-lezen volume",
+  "@fileExplorer.readOnly.volumeTitle": {
+    "sourceHash": "e2d3bf1"
+  },
+  "fileExplorer.readOnly.renameMessage": "Dit is een alleen-lezen volume. Hier kun je geen naam wijzigen.",
+  "@fileExplorer.readOnly.renameMessage": {
+    "sourceHash": "2f68994"
+  },
+  "fileExplorer.readOnly.mkdirMessage": "Dit is een alleen-lezen volume. Hier kun je geen mappen aanmaken.",
+  "@fileExplorer.readOnly.mkdirMessage": {
+    "sourceHash": "01957f0"
+  },
+  "fileExplorer.readOnly.mkfileMessage": "Dit is een alleen-lezen volume. Hier kun je geen bestanden aanmaken.",
+  "@fileExplorer.readOnly.mkfileMessage": {
+    "sourceHash": "c5c28e2"
+  },
+  "fileExplorer.readOnly.deleteMessage": "Dit is een alleen-lezen volume. Hier kun je geen bestanden verwijderen.",
+  "@fileExplorer.readOnly.deleteMessage": {
+    "sourceHash": "965a635"
+  },
+  "fileExplorer.readOnly.deviceTitle": "Alleen-lezen apparaat",
+  "@fileExplorer.readOnly.deviceTitle": {
+    "sourceHash": "3f79690"
+  },
+  "fileExplorer.readOnly.deviceMessage": "‘{name}’ is alleen-lezen. Je kunt er bestanden van kopiëren, maar niet naartoe.",
+  "@fileExplorer.readOnly.deviceMessage": {
+    "sourceHash": "039488f"
+  },
+  "fileExplorer.rename.hiddenAfterRename": "Je bestand is uit beeld verdwenen omdat verborgen bestanden niet worden getoond.",
+  "@fileExplorer.rename.hiddenAfterRename": {
+    "sourceHash": "445d02a"
+  },
+  "fileExplorer.columns.name": "Naam",
+  "@fileExplorer.columns.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.columns.ext": "Ext",
+  "@fileExplorer.columns.ext": {
+    "sourceHash": "8c92eec"
+  },
+  "fileExplorer.columns.size": "Grootte",
+  "@fileExplorer.columns.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.columns.modified": "Bewerkingsdatum",
+  "@fileExplorer.columns.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.columns.created": "Aanmaakdatum",
+  "@fileExplorer.columns.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.columns.git": "Git",
+  "@fileExplorer.columns.git": {
+    "sourceHash": "b949c92"
+  },
+  "fileExplorer.columns.gitTitle": "Git-status van elk bestand",
+  "@fileExplorer.columns.gitTitle": {
+    "sourceHash": "c4cc002"
+  },
+  "fileExplorer.list.empty": "Lege map",
+  "@fileExplorer.list.empty": {
+    "sourceHash": "ca1fd45"
+  },
+  "fileExplorer.list.fileListAriaLabel": "Bestandenlijst",
+  "@fileExplorer.list.fileListAriaLabel": {
+    "sourceHash": "0728b8e"
+  },
+  "fileExplorer.list.sortColumnsAriaLabel": "Sorteerkolommen",
+  "@fileExplorer.list.sortColumnsAriaLabel": {
+    "sourceHash": "21f76f8"
+  },
+  "fileExplorer.dirSize.updatingIndexTooltip": "Index wordt bijgewerkt: grootte kan veranderen.",
+  "@fileExplorer.dirSize.updatingIndexTooltip": {
+    "sourceHash": "2689358"
+  },
+  "fileExplorer.dirSize.scanProgressTooltip": "Groottes verschijnen naarmate de scan vordert",
+  "@fileExplorer.dirSize.scanProgressTooltip": {
+    "sourceHash": "8151629"
+  },
+  "fileExplorer.dirSize.contentLabel": "Inhoud",
+  "@fileExplorer.dirSize.contentLabel": {
+    "sourceHash": "47bd290"
+  },
+  "fileExplorer.dirSize.onDiskLabel": "Op schijf",
+  "@fileExplorer.dirSize.onDiskLabel": {
+    "sourceHash": "00ca4da"
+  },
+  "fileExplorer.dirSize.noPerms": "'<'geen rechten>",
+  "@fileExplorer.dirSize.noPerms": {
+    "sourceHash": "bf8fb9d"
+  },
+  "fileExplorer.dirSize.noPermsTooltip": "Cmdr heeft geen toestemming om deze map te lezen",
+  "@fileExplorer.dirSize.noPermsTooltip": {
+    "sourceHash": "4920b4f"
+  },
+  "fileExplorer.dirSize.noFiles": "Geen bestanden",
+  "@fileExplorer.dirSize.noFiles": {
+    "sourceHash": "c219d96"
+  },
+  "fileExplorer.dirSize.noFolders": "geen mappen",
+  "@fileExplorer.dirSize.noFolders": {
+    "sourceHash": "055fa42"
+  },
+  "fileExplorer.dirSize.fileCount": "{count, plural, one {{countText} bestand} other {{countText} bestanden}}",
+  "@fileExplorer.dirSize.fileCount": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.dirSize.folderCount": "{count, plural, one {{countText} map} other {{countText} mappen}}",
+  "@fileExplorer.dirSize.folderCount": {
+    "sourceHash": "3c46f04"
+  },
+  "fileExplorer.dirSize.updatingIndexLine": "Index wordt bijgewerkt, dus de grootte kan veranderen.",
+  "@fileExplorer.dirSize.updatingIndexLine": {
+    "sourceHash": "ddb01a2"
+  },
+  "fileExplorer.dirSize.dirPlaceholder": "'<'map>",
+  "@fileExplorer.dirSize.dirPlaceholder": {
+    "sourceHash": "1cb5400"
+  },
+  "fileExplorer.dirSize.mismatchTooltipPrefix": "Inhoud en grootte op schijf verschillen aanzienlijk.",
+  "@fileExplorer.dirSize.mismatchTooltipPrefix": {
+    "sourceHash": "3ff9147"
+  },
+  "fileExplorer.selectionTooltip.selected": "Geselecteerd",
+  "@fileExplorer.selectionTooltip.selected": {
+    "sourceHash": "57fd7a0"
+  },
+  "fileExplorer.selectionTooltip.ofTotal": "Van totaal",
+  "@fileExplorer.selectionTooltip.ofTotal": {
+    "sourceHash": "1269b5a"
+  },
+  "fileExplorer.selectionTooltip.onDiskHeader": "Op schijf:",
+  "@fileExplorer.selectionTooltip.onDiskHeader": {
+    "sourceHash": "9795f99"
+  },
+  "fileExplorer.entry.brokenSymlink": "(gebroken symlink)",
+  "@fileExplorer.entry.brokenSymlink": {
+    "sourceHash": "a7ffd43"
+  },
+  "fileExplorer.entry.permissionDenied": "(toegang geweigerd)",
+  "@fileExplorer.entry.permissionDenied": {
+    "sourceHash": "88cb526"
+  },
+  "fileExplorer.dateTooltip.created": "Aangemaakt",
+  "@fileExplorer.dateTooltip.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.dateTooltip.lastOpened": "Laatst geopend",
+  "@fileExplorer.dateTooltip.lastOpened": {
+    "sourceHash": "e300685"
+  },
+  "fileExplorer.dateTooltip.lastMoved": "Laatst verplaatst (‘toegevoegd’)",
+  "@fileExplorer.dateTooltip.lastMoved": {
+    "sourceHash": "450ebc0"
+  },
+  "fileExplorer.dateTooltip.lastModified": "Laatst gewijzigd",
+  "@fileExplorer.dateTooltip.lastModified": {
+    "sourceHash": "0fe1058"
+  },
+  "fileExplorer.selectionInfo.nothingHere": "Hier staat niets.",
+  "@fileExplorer.selectionInfo.nothingHere": {
+    "sourceHash": "140a431"
+  },
+  "fileExplorer.selectionInfo.dir": "MAP",
+  "@fileExplorer.selectionInfo.dir": {
+    "sourceHash": "d313ad9"
+  },
+  "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Grootte nog niet klaar",
+  "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
+    "sourceHash": "4f2542d"
+  },
+  "fileExplorer.selectionInfo.sizeUpdatingAriaLabel": "Grootte wordt bijgewerkt",
+  "@fileExplorer.selectionInfo.sizeUpdatingAriaLabel": {
+    "sourceHash": "f237144"
+  },
+  "fileExplorer.selectionInfo.indexUpdatingTooltip": "Index wordt bijgewerkt, grootte kan veranderen.",
+  "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
+    "sourceHash": "2f69a1b"
+  },
+  "fileExplorer.selectionInfo.symlinkHint": "Deze map bevat symlinks. Inhoud waarnaar een symlink wijst telt niet mee in het totaal om dubbel tellen te voorkomen.",
+  "@fileExplorer.selectionInfo.symlinkHint": {
+    "sourceHash": "414ed75"
+  },
+  "fileExplorer.selectionInfo.noSelectionFiles": "{count, plural, one {{countText} bestand} other {{countText} bestanden}}",
+  "@fileExplorer.selectionInfo.noSelectionFiles": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.selectionInfo.noSelectionDirs": " en {count, plural, one {{countText} map} other {{countText} mappen}}",
+  "@fileExplorer.selectionInfo.noSelectionDirs": {
+    "sourceHash": "e1259ef"
+  },
+  "fileExplorer.selectionInfo.noSelection": "Geen selectie, {files}{dirs}.",
+  "@fileExplorer.selectionInfo.noSelection": {
+    "sourceHash": "beea8ac"
+  },
+  "fileExplorer.tabBar.paneTabsAriaLabel": "Tabbladen van {paneId} paneel",
+  "@fileExplorer.tabBar.paneTabsAriaLabel": {
+    "sourceHash": "d641870"
+  },
+  "fileExplorer.tabBar.unreachableAriaLabel": "Onbereikbaar",
+  "@fileExplorer.tabBar.unreachableAriaLabel": {
+    "sourceHash": "abaa46a"
+  },
+  "fileExplorer.tabBar.pinnedAriaLabel": "Vastgezet",
+  "@fileExplorer.tabBar.pinnedAriaLabel": {
+    "sourceHash": "f20c879"
+  },
+  "fileExplorer.tabBar.closeTabTooltip": "Sluit tabblad",
+  "@fileExplorer.tabBar.closeTabTooltip": {
+    "sourceHash": "50a3f95"
+  },
+  "fileExplorer.tabBar.newTabAriaLabel": "Nieuw tabblad",
+  "@fileExplorer.tabBar.newTabAriaLabel": {
+    "sourceHash": "1e08fda"
+  },
+  "fileExplorer.summary.fileNoun": "{count, plural, one {bestand} other {bestanden}}",
+  "@fileExplorer.summary.fileNoun": {
+    "sourceHash": "46012b1"
+  },
+  "fileExplorer.summary.dirNoun": "{count, plural, one {map} other {mappen}}",
+  "@fileExplorer.summary.dirNoun": {
+    "sourceHash": "1c5273d"
+  },
+  "fileExplorer.summary.of": "van",
+  "@fileExplorer.summary.of": {
+    "sourceHash": "28391d3"
+  },
+  "fileExplorer.summary.percentSelectedIn": "({percent}%) geselecteerd in",
+  "@fileExplorer.summary.percentSelectedIn": {
+    "sourceHash": "7e01a02"
+  },
+  "fileExplorer.summary.and": "en",
+  "@fileExplorer.summary.and": {
+    "sourceHash": "6201111"
+  },
+  "fileExplorer.summary.selectedSuffix": "geselecteerd",
+  "@fileExplorer.summary.selectedSuffix": {
+    "sourceHash": "d7cbbb6"
+  },
+  "fileExplorer.renameConflict.title": "Er bestaat al een bestand met deze naam",
+  "@fileExplorer.renameConflict.title": {
+    "sourceHash": "92ae292"
+  },
+  "fileExplorer.renameConflict.description": "‘{name}’ bestaat al in deze map. Wat wil je doen?",
+  "@fileExplorer.renameConflict.description": {
+    "sourceHash": "ded53e8"
+  },
+  "fileExplorer.renameConflict.yours": "{name} (van jou)",
+  "@fileExplorer.renameConflict.yours": {
+    "sourceHash": "e907024"
+  },
+  "fileExplorer.renameConflict.existing": "{name} (bestaand)",
+  "@fileExplorer.renameConflict.existing": {
+    "sourceHash": "0ff925b"
+  },
+  "fileExplorer.renameConflict.size": "Grootte",
+  "@fileExplorer.renameConflict.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.renameConflict.modified": "Bewerkingsdatum",
+  "@fileExplorer.renameConflict.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.renameConflict.overwriteTrash": "Overschrijf en verplaats oud bestand naar prullenmand",
+  "@fileExplorer.renameConflict.overwriteTrash": {
+    "sourceHash": "e0192f6"
+  },
+  "fileExplorer.renameConflict.overwriteDelete": "Overschrijf en verwijder oud bestand",
+  "@fileExplorer.renameConflict.overwriteDelete": {
+    "sourceHash": "02093d5"
+  },
+  "fileExplorer.renameConflict.cancel": "Annuleer",
+  "@fileExplorer.renameConflict.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.renameConflict.continueRenaming": "Ga door met naam wijzigen",
+  "@fileExplorer.renameConflict.continueRenaming": {
+    "sourceHash": "96480ec"
+  },
+  "fileExplorer.extensionChange.title": "Bestandsextensie wijzigen?",
+  "@fileExplorer.extensionChange.title": {
+    "sourceHash": "799828d"
+  },
+  "fileExplorer.extensionChange.description": "Weet je zeker dat je de extensie wilt wijzigen van ‘.{oldExt}’ naar ‘.{newExt}’? Je bestand opent de volgende keer mogelijk in een andere app.",
+  "@fileExplorer.extensionChange.description": {
+    "sourceHash": "d0f428b"
+  },
+  "fileExplorer.extensionChange.alwaysAllow": "Sta extensiewijzigingen altijd toe",
+  "@fileExplorer.extensionChange.alwaysAllow": {
+    "sourceHash": "52a5c5e"
+  },
+  "fileExplorer.extensionChange.keepOld": "Behoud .{oldExt}",
+  "@fileExplorer.extensionChange.keepOld": {
+    "sourceHash": "08808e4"
+  },
+  "fileExplorer.extensionChange.useNew": "Gebruik .{newExt}",
+  "@fileExplorer.extensionChange.useNew": {
+    "sourceHash": "b1c0e92"
+  },
+  "fileExplorer.quickLookHint.spaceSelects": "In Cmdr selecteert <space></space> standaard het bestand onder de cursor.",
+  "@fileExplorer.quickLookHint.spaceSelects": {
+    "sourceHash": "192689a"
+  },
+  "fileExplorer.quickLookHint.finderComparison": "Als je van Finder komt, is dit misschien onverwacht, omdat Finder bij <space></space> een ‘Snelle weergave’-actie start.",
+  "@fileExplorer.quickLookHint.finderComparison": {
+    "sourceHash": "2089192"
+  },
+  "fileExplorer.quickLookHint.quickView": "In Cmdr start je een snelle weergave via <key></key>. (<key></key> werkt trouwens ook in Finder!)",
+  "@fileExplorer.quickLookHint.quickView": {
+    "sourceHash": "7e4cf33"
+  },
+  "fileExplorer.quickLookHint.enterOpens": "Je kunt ook <enter></enter> gebruiken om bestanden in de standaardapp te openen.",
+  "@fileExplorer.quickLookHint.enterOpens": {
+    "sourceHash": "5c1f2a3"
+  },
+  "fileExplorer.quickLookHint.configurable": "Dit alles is in te stellen in <settingsLink>Instellingen > Sneltoetsen</settingsLink>.",
+  "@fileExplorer.quickLookHint.configurable": {
+    "sourceHash": "a382250"
+  },
+  "fileExplorer.quickLookHint.dontShowAgain": "Niet meer tonen",
+  "@fileExplorer.quickLookHint.dontShowAgain": {
+    "sourceHash": "d98ab77"
+  },
+  "fileExplorer.navigation.groupFavorites": "Favorieten",
+  "@fileExplorer.navigation.groupFavorites": {
+    "sourceHash": "7a1f2a8"
+  },
+  "fileExplorer.navigation.groupVolumes": "Volumes",
+  "@fileExplorer.navigation.groupVolumes": {
+    "sourceHash": "53a480e"
+  },
+  "fileExplorer.navigation.groupCloud": "Cloud",
+  "@fileExplorer.navigation.groupCloud": {
+    "sourceHash": "b977b95"
+  },
+  "fileExplorer.navigation.groupMobile": "Mobiel",
+  "@fileExplorer.navigation.groupMobile": {
+    "sourceHash": "cbaad3c"
+  },
+  "fileExplorer.navigation.groupNetwork": "Netwerk",
+  "@fileExplorer.navigation.groupNetwork": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolume": "Netwerk",
+  "@fileExplorer.navigation.networkVolume": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolumeDisabled": "Netwerk (uitgeschakeld)",
+  "@fileExplorer.navigation.networkVolumeDisabled": {
+    "sourceHash": "4ccfa47"
+  },
+  "fileExplorer.navigation.searchResultsVolume": "Zoekresultaten",
+  "@fileExplorer.navigation.searchResultsVolume": {
+    "sourceHash": "e978b00"
+  },
+  "fileExplorer.navigation.volumeFallback": "Volume",
+  "@fileExplorer.navigation.volumeFallback": {
+    "sourceHash": "b10fb96"
+  },
+  "fileExplorer.navigation.favoritesEmpty": "(Je favorieten verschijnen hier)",
+  "@fileExplorer.navigation.favoritesEmpty": {
+    "sourceHash": "b4f099e"
+  },
+  "fileExplorer.navigation.favoriteTooltip": "{path}\nSleep om de volgorde te wijzigen, of {reorder}. Klik met de rechtermuisknop om de naam te wijzigen of te verwijderen.",
+  "@fileExplorer.navigation.favoriteTooltip": {
+    "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.renameFavoriteAriaLabel": "Wijzig naam van favoriet",
+  "@fileExplorer.navigation.renameFavoriteAriaLabel": {
+    "sourceHash": "5f4fcbb"
+  },
+  "fileExplorer.navigation.removeFavoriteFailed": "Die favoriet verwijderen lukte niet. Opnieuw proberen?",
+  "@fileExplorer.navigation.removeFavoriteFailed": {
+    "sourceHash": "181bf36"
+  },
+  "fileExplorer.navigation.renameFavoriteFailed": "De naam van die favoriet wijzigen lukte niet. Opnieuw proberen?",
+  "@fileExplorer.navigation.renameFavoriteFailed": {
+    "sourceHash": "33e06cd"
+  },
+  "fileExplorer.navigation.reorderFavoritesFailed": "De volgorde van favorieten wijzigen lukte niet. Opnieuw proberen?",
+  "@fileExplorer.navigation.reorderFavoritesFailed": {
+    "sourceHash": "1b16941"
+  },
+  "fileExplorer.navigation.connectionTooltipDirect": "Direct verbonden voor snelle bestandsbewerkingen",
+  "@fileExplorer.navigation.connectionTooltipDirect": {
+    "sourceHash": "a69a3ad"
+  },
+  "fileExplorer.navigation.connectionTooltipSystem": "Systeemverbinding in gebruik. Gebruik het menu-item ‘Verbind direct voor snellere toegang’ voor snellere toegang.",
+  "@fileExplorer.navigation.connectionTooltipSystem": {
+    "sourceHash": "0cbfa05"
+  },
+  "fileExplorer.navigation.connectDirectly": "Verbind direct voor snellere toegang",
+  "@fileExplorer.navigation.connectDirectly": {
+    "sourceHash": "3fbb55a"
+  },
+  "fileExplorer.navigation.connectingDirectly": "Direct verbinden...",
+  "@fileExplorer.navigation.connectingDirectly": {
+    "sourceHash": "2c431fc"
+  },
+  "fileExplorer.navigation.connectingWithSavedPassword": "Verbinden met het opgeslagen wachtwoord...",
+  "@fileExplorer.navigation.connectingWithSavedPassword": {
+    "sourceHash": "1cb249f"
+  },
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan het wachtwoord hergebruiken dat macOS al voor ‘{displayName}’ heeft opgeslagen. Je krijgt een systeemvenster te zien dat om toegang tot Keychain vraagt. Dat is normaal, dus klik op Sta toe.",
+  "@fileExplorer.navigation.useSavedPasswordMessage": {
+    "sourceHash": "6bb2c1d"
+  },
+  "fileExplorer.navigation.useSavedPasswordTitle": "Het opgeslagen wachtwoord gebruiken?",
+  "@fileExplorer.navigation.useSavedPasswordTitle": {
+    "sourceHash": "44b60f6"
+  },
+  "fileExplorer.navigation.useSavedPasswordConfirm": "Gebruik opgeslagen wachtwoord",
+  "@fileExplorer.navigation.useSavedPasswordConfirm": {
+    "sourceHash": "95f07b4"
+  },
+  "fileExplorer.navigation.useSavedPasswordCancel": "Voer het zelf in",
+  "@fileExplorer.navigation.useSavedPasswordCancel": {
+    "sourceHash": "d54c488"
+  },
+  "fileExplorer.navigation.readOnlyTooltip": "Alleen-lezen",
+  "@fileExplorer.navigation.readOnlyTooltip": {
+    "sourceHash": "72bb908"
+  },
+  "fileExplorer.navigation.volumeOptionsTooltip": "Volume-opties",
+  "@fileExplorer.navigation.volumeOptionsTooltip": {
+    "sourceHash": "570fb94"
+  },
+  "fileExplorer.navigation.ejectVolumeAriaLabel": "Werp {name} uit",
+  "@fileExplorer.navigation.ejectVolumeAriaLabel": {
+    "sourceHash": "61db18b"
+  },
+  "fileExplorer.navigation.ejectBusyTooltip": "Uitwerpen kan niet terwijl er bewerkingen op dit apparaat bezig zijn",
+  "@fileExplorer.navigation.ejectBusyTooltip": {
+    "sourceHash": "7165c58"
+  },
+  "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
+  "@fileExplorer.navigation.usbSpeed": {
+    "sourceHash": "07cb80b"
+  },
+  "fileExplorer.navigation.usbSpeedNegotiated": "Onderhandeld voor deze kabel, poort en dit apparaat",
+  "@fileExplorer.navigation.usbSpeedNegotiated": {
+    "sourceHash": "3731939"
+  },
+  "fileExplorer.navigation.spaceRetryingAuto": "Automatisch opnieuw proberen…",
+  "@fileExplorer.navigation.spaceRetryingAuto": {
+    "sourceHash": "aa9f4b8"
+  },
+  "fileExplorer.navigation.spaceRetrying": "Opnieuw proberen…",
+  "@fileExplorer.navigation.spaceRetrying": {
+    "sourceHash": "a16c8b1"
+  },
+  "fileExplorer.navigation.spaceRetryingText": "Opnieuw proberen",
+  "@fileExplorer.navigation.spaceRetryingText": {
+    "sourceHash": "f8fe6f8"
+  },
+  "fileExplorer.navigation.spaceStillUnavailable": "Nog steeds niet beschikbaar. Klik om opnieuw te proberen",
+  "@fileExplorer.navigation.spaceStillUnavailable": {
+    "sourceHash": "1c37064"
+  },
+  "fileExplorer.navigation.spaceFetchFailed": "Schijfruimte ophalen lukte niet. Klik om opnieuw te proberen",
+  "@fileExplorer.navigation.spaceFetchFailed": {
+    "sourceHash": "6fe88d7"
+  },
+  "fileExplorer.navigation.spaceUnavailableText": "Niet beschikbaar",
+  "@fileExplorer.navigation.spaceUnavailableText": {
+    "sourceHash": "ca18449"
+  },
+  "fileExplorer.navigation.volumesStillUnreachable": "Nog steeds onbereikbaar. Probeer het later opnieuw",
+  "@fileExplorer.navigation.volumesStillUnreachable": {
+    "sourceHash": "e4661d2"
+  },
+  "fileExplorer.navigation.volumesMayBeMissing": "Sommige volumes ontbreken mogelijk",
+  "@fileExplorer.navigation.volumesMayBeMissing": {
+    "sourceHash": "a5b5792"
+  },
+  "fileExplorer.navigation.refreshVolumeList": "Ververs volumelijst",
+  "@fileExplorer.navigation.refreshVolumeList": {
+    "sourceHash": "f668a8c"
+  },
+  "fileExplorer.navigation.driveIndex.ariaLabel": "Status van schijfindex",
+  "@fileExplorer.navigation.driveIndex.ariaLabel": {
+    "sourceHash": "ff831be"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "Indexeren staat uit voor deze schijf. Zet het aan om hier mapgroottes te zien en te zoeken.",
+  "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
+    "sourceHash": "61d11e9"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanning": "Deze schijf wordt geïndexeerd…",
+  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
+    "sourceHash": "a17d737"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanningCount": "Indexeren… {countText} {count, plural, one {bestand} other {bestanden}}",
+  "@fileExplorer.navigation.driveIndex.tooltipScanningCount": {
+    "sourceHash": "1449e6e"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": "Indexeren… {countText} {count, plural, one {bestand} other {bestanden}} · {elapsed}",
+  "@fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": {
+    "sourceHash": "e4344e1"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFresh": "Geïndexeerd en up-to-date. Laatst geïndexeerd op {date}, duurde {duration}.",
+  "@fileExplorer.navigation.driveIndex.tooltipFresh": {
+    "sourceHash": "d036851"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFreshNoScan": "Geïndexeerd en up-to-date.",
+  "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
+    "sourceHash": "fedc5ae"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStale": "Deze schijf is misschien veranderd terwijl hij losgekoppeld was. Groottes en zoeken kunnen wat afwijken. Scan opnieuw om te verversen.",
+  "@fileExplorer.navigation.driveIndex.tooltipStale": {
+    "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.menuEnable": "Zet indexeren aan voor deze schijf",
+  "@fileExplorer.navigation.driveIndex.menuEnable": {
+    "sourceHash": "4e06151"
+  },
+  "fileExplorer.navigation.driveIndex.menuRescan": "Scan nu opnieuw",
+  "@fileExplorer.navigation.driveIndex.menuRescan": {
+    "sourceHash": "c07d16a"
+  },
+  "fileExplorer.navigation.driveIndex.menuDisable": "Zet indexeren uit voor deze schijf",
+  "@fileExplorer.navigation.driveIndex.menuDisable": {
+    "sourceHash": "d14cf11"
+  },
+  "fileExplorer.navigation.driveIndex.menuStop": "Stop met indexeren",
+  "@fileExplorer.navigation.driveIndex.menuStop": {
+    "sourceHash": "70ae907"
+  },
+  "fileExplorer.navigation.driveIndex.footer": "Laatst geïndexeerd: {date} · duurde {duration}",
+  "@fileExplorer.navigation.driveIndex.footer": {
+    "sourceHash": "9877397"
+  },
+  "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationMinSec": {
+    "sourceHash": "57a57d1"
+  },
+  "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationSec": {
+    "sourceHash": "fde82d3"
+  },
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr kon niet direct met {name} verbinden, wat nodig is om deze gedeelde map te indexeren. Controleer of de gedeelde map bereikbaar is en probeer opnieuw.",
+  "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
+    "sourceHash": "e7ac9b4"
+  },
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} is losgekoppeld. Verbind opnieuw en zet dan indexeren aan.",
+  "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
+    "sourceHash": "0cf83a1"
+  },
+  "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr kan {name} nu niet indexeren. Verbind de schijf opnieuw en probeer het opnieuw.",
+  "@fileExplorer.navigation.driveIndex.refusedGeneric": {
+    "sourceHash": "ac46209"
+  }
+}

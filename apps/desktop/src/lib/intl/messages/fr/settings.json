@@ -1,0 +1,1514 @@
+{
+  "settings.appearance.language.label": "Langue",
+  "@settings.appearance.language.label": {
+    "sourceHash": "a4fe652"
+  },
+  "settings.appearance.language.description": "Choisissez la langue utilisée par Cmdr. « Réglages Système » suit la langue de votre Mac.",
+  "@settings.appearance.language.description": {
+    "sourceHash": "a290add"
+  },
+  "settings.appearance.language.opt.system": "Réglages Système",
+  "@settings.appearance.language.opt.system": {
+    "sourceHash": "b045921"
+  },
+  "settings.theme.mode.label": "Mode de thème",
+  "@settings.theme.mode.label": {
+    "sourceHash": "0f79f19"
+  },
+  "settings.theme.mode.description": "Choisissez entre un thème clair, sombre, ou suivant le système.",
+  "@settings.theme.mode.description": {
+    "sourceHash": "42b18b9"
+  },
+  "settings.theme.mode.opt.light": "☀️ Clair",
+  "@settings.theme.mode.opt.light": {
+    "sourceHash": "89c7766"
+  },
+  "settings.theme.mode.opt.dark": "🌙 Sombre",
+  "@settings.theme.mode.opt.dark": {
+    "sourceHash": "93362ff"
+  },
+  "settings.theme.mode.opt.system": "💻 Système",
+  "@settings.theme.mode.opt.system": {
+    "sourceHash": "0c12227"
+  },
+  "settings.appearance.appColor.label": "Couleur de l''app",
+  "@settings.appearance.appColor.label": {
+    "sourceHash": "b1107c8"
+  },
+  "settings.appearance.appColor.description": "Pour changer la couleur de votre thème système, allez dans Réglages Système > Apparence.",
+  "@settings.appearance.appColor.description": {
+    "sourceHash": "7dc4ab7"
+  },
+  "settings.appearance.appColor.opt.system": "Couleur du thème système",
+  "@settings.appearance.appColor.opt.system": {
+    "sourceHash": "5a7bc86"
+  },
+  "settings.appearance.appColor.opt.cmdrGold": "Or Cmdr",
+  "@settings.appearance.appColor.opt.cmdrGold": {
+    "sourceHash": "3ae5711"
+  },
+  "settings.appearance.sizeColors.label": "Couleurs des tailles",
+  "@settings.appearance.sizeColors.label": {
+    "sourceHash": "7598e9a"
+  },
+  "settings.appearance.sizeColors.description": "Colore les tailles de fichiers dans la liste par palier. Arc-en-ciel utilise vert/jaune/orange/rouge/violet. App utilise des nuances de la couleur de l''app.",
+  "@settings.appearance.sizeColors.description": {
+    "sourceHash": "ecb064a"
+  },
+  "settings.appearance.sizeColors.opt.none": "Aucune",
+  "@settings.appearance.sizeColors.opt.none": {
+    "sourceHash": "dc937b5"
+  },
+  "settings.appearance.sizeColors.opt.app": "App",
+  "@settings.appearance.sizeColors.opt.app": {
+    "sourceHash": "0d04bfe"
+  },
+  "settings.appearance.sizeColors.opt.rainbow": "Arc-en-ciel",
+  "@settings.appearance.sizeColors.opt.rainbow": {
+    "sourceHash": "b1f7b2e"
+  },
+  "settings.appearance.dateColors.label": "Couleurs des dates",
+  "@settings.appearance.dateColors.label": {
+    "sourceHash": "25e5672"
+  },
+  "settings.appearance.dateColors.description": "Colore les dates de modification dans la liste par ancienneté. App estompe les dates anciennes vers la couleur de texte par défaut. Flétrissement va du vert pour les fichiers récents, au jaune pour ceux qui vieillissent, puis au brun pour les anciens.",
+  "@settings.appearance.dateColors.description": {
+    "sourceHash": "382ce25"
+  },
+  "settings.appearance.dateColors.opt.none": "Aucune",
+  "@settings.appearance.dateColors.opt.none": {
+    "sourceHash": "dc937b5"
+  },
+  "settings.appearance.dateColors.opt.app": "App",
+  "@settings.appearance.dateColors.opt.app": {
+    "sourceHash": "0d04bfe"
+  },
+  "settings.appearance.dateColors.opt.wilting": "Flétrissement",
+  "@settings.appearance.dateColors.opt.wilting": {
+    "sourceHash": "2aa30f1"
+  },
+  "settings.appearance.dateTimeFormat.label": "Format de date et d''heure",
+  "@settings.appearance.dateTimeFormat.label": {
+    "sourceHash": "fcfc2a6"
+  },
+  "settings.appearance.dateTimeFormat.description": "Comment afficher les dates et les heures dans la liste des fichiers.",
+  "@settings.appearance.dateTimeFormat.description": {
+    "sourceHash": "628571a"
+  },
+  "settings.appearance.dateTimeFormat.opt.system": "Réglages Système",
+  "@settings.appearance.dateTimeFormat.opt.system": {
+    "sourceHash": "b045921"
+  },
+  "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
+  "@settings.appearance.dateTimeFormat.opt.iso": {
+    "sourceHash": "408dd66"
+  },
+  "settings.appearance.dateTimeFormat.optDesc.iso": "ex. : 2025-01-25 14:30",
+  "@settings.appearance.dateTimeFormat.optDesc.iso": {
+    "sourceHash": "63c1f1d"
+  },
+  "settings.appearance.dateTimeFormat.opt.short": "Court",
+  "@settings.appearance.dateTimeFormat.opt.short": {
+    "sourceHash": "f5d61ea"
+  },
+  "settings.appearance.dateTimeFormat.optDesc.short": "ex. : 01/25 14:30",
+  "@settings.appearance.dateTimeFormat.optDesc.short": {
+    "sourceHash": "4475197"
+  },
+  "settings.appearance.dateTimeFormat.opt.custom": "Personnalisé...",
+  "@settings.appearance.dateTimeFormat.opt.custom": {
+    "sourceHash": "b497c0b"
+  },
+  "settings.appearance.customDateTimeFormat.label": "Format de date/heure personnalisé",
+  "@settings.appearance.customDateTimeFormat.label": {
+    "sourceHash": "620b7a0"
+  },
+  "settings.appearance.customDateTimeFormat.description": "Chaîne de format pour l''affichage personnalisé de la date/heure. Utilisez des marqueurs comme YYYY, MM, DD, HH, mm, ss.",
+  "@settings.appearance.customDateTimeFormat.description": {
+    "sourceHash": "577dee6"
+  },
+  "settings.listing.stripedRows.label": "Lignes alternées",
+  "@settings.listing.stripedRows.label": {
+    "sourceHash": "c1537df"
+  },
+  "settings.listing.stripedRows.description": "Alterne l''ombrage des lignes pour suivre plus facilement. S''applique aux modes Complet et Bref.",
+  "@settings.listing.stripedRows.description": {
+    "sourceHash": "e95776a"
+  },
+  "settings.appearance.tintLocal.label": "Teinter les panneaux de volume local",
+  "@settings.appearance.tintLocal.label": {
+    "sourceHash": "d907724"
+  },
+  "settings.appearance.tintLocal.description": "Teinte de fond appliquée aux panneaux affichant un disque local.",
+  "@settings.appearance.tintLocal.description": {
+    "sourceHash": "3c86b48"
+  },
+  "settings.appearance.tintSmb.label": "Teinter les panneaux SMB/réseau",
+  "@settings.appearance.tintSmb.label": {
+    "sourceHash": "66fd4a8"
+  },
+  "settings.appearance.tintSmb.description": "Teinte de fond appliquée aux panneaux affichant un partage SMB ou réseau.",
+  "@settings.appearance.tintSmb.description": {
+    "sourceHash": "cf3a857"
+  },
+  "settings.appearance.tintMtp.label": "Teinter les panneaux MTP",
+  "@settings.appearance.tintMtp.label": {
+    "sourceHash": "2054351"
+  },
+  "settings.appearance.tintMtp.description": "Teinte de fond appliquée aux panneaux affichant un appareil Android, Kindle, ou un appareil photo.",
+  "@settings.appearance.tintMtp.description": {
+    "sourceHash": "a09d99a"
+  },
+  "settings.appearance.textSize.label": "Taille du texte",
+  "@settings.appearance.textSize.label": {
+    "sourceHash": "d68761c"
+  },
+  "settings.appearance.textSize.description": "Met à l''échelle le texte et l''interface dans toute l''app. Se cumule avec la taille du texte de l''Accessibilité macOS, où 100 % correspond exactement à la taille système.",
+  "@settings.appearance.textSize.description": {
+    "sourceHash": "232df24"
+  },
+  "settings.appearance.uiDensity.label": "Densité de l''interface",
+  "@settings.appearance.uiDensity.label": {
+    "sourceHash": "81344d8"
+  },
+  "settings.appearance.uiDensity.description": "Contrôle l''espacement et la taille des éléments de l''interface dans toute l''app.",
+  "@settings.appearance.uiDensity.description": {
+    "sourceHash": "e7ead7a"
+  },
+  "settings.appearance.uiDensity.opt.compact": "Compact",
+  "@settings.appearance.uiDensity.opt.compact": {
+    "sourceHash": "9945264"
+  },
+  "settings.appearance.uiDensity.opt.comfortable": "Confortable",
+  "@settings.appearance.uiDensity.opt.comfortable": {
+    "sourceHash": "459a23a"
+  },
+  "settings.appearance.uiDensity.opt.spacious": "Spacieux",
+  "@settings.appearance.uiDensity.opt.spacious": {
+    "sourceHash": "57edf23"
+  },
+  "settings.listing.sizeDisplay.label": "Affichage de la taille",
+  "@settings.listing.sizeDisplay.label": {
+    "sourceHash": "114b4a5"
+  },
+  "settings.listing.sizeDisplay.description": "Intelligent affiche la plus petite des deux tailles, contenu et sur le disque. Utile pour les images disque et les fichiers compressés, où les deux diffèrent.",
+  "@settings.listing.sizeDisplay.description": {
+    "sourceHash": "52567b4"
+  },
+  "settings.listing.sizeDisplay.opt.smart": "Intelligent",
+  "@settings.listing.sizeDisplay.opt.smart": {
+    "sourceHash": "9e6ad6d"
+  },
+  "settings.listing.sizeDisplay.opt.logical": "Contenu",
+  "@settings.listing.sizeDisplay.opt.logical": {
+    "sourceHash": "47bd290"
+  },
+  "settings.listing.sizeDisplay.opt.physical": "Sur le disque",
+  "@settings.listing.sizeDisplay.opt.physical": {
+    "sourceHash": "00ca4da"
+  },
+  "settings.listing.sizeUnit.label": "Unité de taille",
+  "@settings.listing.sizeUnit.label": {
+    "sourceHash": "2a817d3"
+  },
+  "settings.listing.sizeUnit.description": "Dynamique choisit l''unité la plus lisible par fichier (1,02 Mo). Les unités fixes rendent les tailles comparables dans toute la liste. Octets affiche le décompte exact pour une comparaison précise.",
+  "@settings.listing.sizeUnit.description": {
+    "sourceHash": "702a201"
+  },
+  "settings.listing.sizeUnit.opt.dynamic": "Dynamique",
+  "@settings.listing.sizeUnit.opt.dynamic": {
+    "sourceHash": "b6ee7b3"
+  },
+  "settings.listing.sizeUnit.opt.bytes": "Octets",
+  "@settings.listing.sizeUnit.opt.bytes": {
+    "sourceHash": "4d80003"
+  },
+  "settings.listing.sizeUnit.opt.kB": "kB",
+  "@settings.listing.sizeUnit.opt.kB": {
+    "sourceHash": "591e59c"
+  },
+  "settings.listing.sizeUnit.opt.mB": "MB",
+  "@settings.listing.sizeUnit.opt.mB": {
+    "sourceHash": "1d09f6f"
+  },
+  "settings.listing.sizeUnit.opt.gB": "GB",
+  "@settings.listing.sizeUnit.opt.gB": {
+    "sourceHash": "b4043b0"
+  },
+  "settings.appearance.fileSizeFormat.label": "Format de taille de fichier",
+  "@settings.appearance.fileSizeFormat.label": {
+    "sourceHash": "355c89b"
+  },
+  "settings.appearance.fileSizeFormat.description": "Comment afficher les tailles de fichiers dans la liste.",
+  "@settings.appearance.fileSizeFormat.description": {
+    "sourceHash": "0ffee96"
+  },
+  "settings.appearance.fileSizeFormat.opt.binary": "Binaire (KiB, MiB, GiB)",
+  "@settings.appearance.fileSizeFormat.opt.binary": {
+    "sourceHash": "0a4ce4e"
+  },
+  "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 octets",
+  "@settings.appearance.fileSizeFormat.optDesc.binary": {
+    "sourceHash": "ee2d07b"
+  },
+  "settings.appearance.fileSizeFormat.opt.si": "Décimal SI (KB, MB, GB)",
+  "@settings.appearance.fileSizeFormat.opt.si": {
+    "sourceHash": "8984a13"
+  },
+  "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 octets",
+  "@settings.appearance.fileSizeFormat.optDesc.si": {
+    "sourceHash": "04b2c3b"
+  },
+  "settings.listing.sizeMismatchWarning.label": "Avertissement d''écart de taille",
+  "@settings.listing.sizeMismatchWarning.label": {
+    "sourceHash": "791c344"
+  },
+  "settings.listing.sizeMismatchWarning.description": "Affiche une icône d''avertissement sur les dossiers où les tailles du contenu et sur le disque diffèrent de plus de 50 % et 200 MB.",
+  "@settings.listing.sizeMismatchWarning.description": {
+    "sourceHash": "1b232eb"
+  },
+  "settings.appearance.useAppIconsForDocuments.label": "Utiliser les icônes des apps pour les documents",
+  "@settings.appearance.useAppIconsForDocuments.label": {
+    "sourceHash": "71561ae"
+  },
+  "settings.appearance.useAppIconsForDocuments.description": "Affiche l''icône de l''app pour les documents au lieu des icônes génériques de type de fichier. Plus coloré mais légèrement plus lent.",
+  "@settings.appearance.useAppIconsForDocuments.description": {
+    "sourceHash": "9ae8a9c"
+  },
+  "settings.appearance.showFunctionKeyBar.label": "Afficher la barre des touches de fonction",
+  "@settings.appearance.showFunctionKeyBar.label": {
+    "sourceHash": "e80f18d"
+  },
+  "settings.appearance.showFunctionKeyBar.description": "Affiche la rangée de boutons de commande des touches F (Renommer, Afficher, Copier, etc.) en bas de la fenêtre.",
+  "@settings.appearance.showFunctionKeyBar.description": {
+    "sourceHash": "138b56b"
+  },
+  "settings.listing.showExtensionInName.label": "Afficher les extensions de fichier dans la colonne du nom",
+  "@settings.listing.showExtensionInName.label": {
+    "sourceHash": "cce9a4d"
+  },
+  "settings.listing.showExtensionInName.description": "Affiche le nom de fichier complet (comme launch.json) dans la colonne Nom et masque la colonne Ext séparée. N''affecte que le mode Complet.",
+  "@settings.listing.showExtensionInName.description": {
+    "sourceHash": "e7c361c"
+  },
+  "settings.listing.directorySortMode.label": "Trier les dossiers",
+  "@settings.listing.directorySortMode.label": {
+    "sourceHash": "7f0a1e4"
+  },
+  "settings.listing.directorySortMode.description": "Comment les dossiers sont triés lors du changement de colonne de tri.",
+  "@settings.listing.directorySortMode.description": {
+    "sourceHash": "fe5f12a"
+  },
+  "settings.listing.directorySortMode.opt.likeFiles": "Comme les fichiers",
+  "@settings.listing.directorySortMode.opt.likeFiles": {
+    "sourceHash": "d888403"
+  },
+  "settings.listing.directorySortMode.opt.alwaysByName": "Toujours par nom",
+  "@settings.listing.directorySortMode.opt.alwaysByName": {
+    "sourceHash": "7687e38"
+  },
+  "settings.listing.briefColumnWidthMode.label": "Largeur de colonne maximale en mode Bref",
+  "@settings.listing.briefColumnWidthMode.label": {
+    "sourceHash": "bbcab33"
+  },
+  "settings.listing.briefColumnWidthMode.description": "Limite la largeur que les colonnes du mode Bref peuvent atteindre pour les longs noms de fichiers. Les colonnes sont de toute façon plafonnées à la largeur du panneau ; la limite choisie ne prend effet que lorsqu''elle serait inférieure au panneau.",
+  "@settings.listing.briefColumnWidthMode.description": {
+    "sourceHash": "d4a47b0"
+  },
+  "settings.listing.briefColumnWidthMode.opt.paneWidth": "Largeur du panneau (sans limite)",
+  "@settings.listing.briefColumnWidthMode.opt.paneWidth": {
+    "sourceHash": "8127854"
+  },
+  "settings.listing.briefColumnWidthMode.opt.limited": "Limiter à",
+  "@settings.listing.briefColumnWidthMode.opt.limited": {
+    "sourceHash": "01a089f"
+  },
+  "settings.listing.briefColumnWidthMaxPx.label": "Limite de largeur de colonne en mode Bref",
+  "@settings.listing.briefColumnWidthMaxPx.label": {
+    "sourceHash": "9d045cd"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.label": "Autoriser les changements d''extension de fichier",
+  "@settings.fileOperations.allowFileExtensionChanges.label": {
+    "sourceHash": "9bc0b3a"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.description": "Que faire quand vous renommez un fichier et que l''extension change.",
+  "@settings.fileOperations.allowFileExtensionChanges.description": {
+    "sourceHash": "e331325"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.opt.yes": "Toujours autoriser",
+  "@settings.fileOperations.allowFileExtensionChanges.opt.yes": {
+    "sourceHash": "977618b"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.opt.no": "Ne jamais autoriser",
+  "@settings.fileOperations.allowFileExtensionChanges.opt.no": {
+    "sourceHash": "bbf0cfa"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.opt.ask": "Toujours demander",
+  "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
+    "sourceHash": "3c42771"
+  },
+  "settings.indexing.enabled.label": "Indexation du disque",
+  "@settings.indexing.enabled.label": {
+    "sourceHash": "38d916b"
+  },
+  "settings.indexing.enabled.description": "Indexe votre disque en arrière-plan pour des tailles de dossiers instantanées.",
+  "@settings.indexing.enabled.description": {
+    "sourceHash": "559ec69"
+  },
+  "settings.indexing.askForEachDrive.label": "Demander pour chaque disque",
+  "@settings.indexing.askForEachDrive.label": {
+    "sourceHash": "774f72c"
+  },
+  "settings.indexing.askForEachDrive.description": "Quand vous ouvrez un partage réseau ou un appareil pour la première fois, demande s''il faut l''indexer.",
+  "@settings.indexing.askForEachDrive.description": {
+    "sourceHash": "189552c"
+  },
+  "settings.indexing.staleNotify.label": "Me prévenir si l''index d''un disque externe devient obsolète",
+  "@settings.indexing.staleNotify.label": {
+    "sourceHash": "690692a"
+  },
+  "settings.indexing.staleNotify.description": "Vous verrez toujours le statut jaune si vous désactivez cette option.",
+  "@settings.indexing.staleNotify.description": {
+    "sourceHash": "c4216d8"
+  },
+  "settings.indexing.reEnableNotifications.label": "Réactiver les notifications pour tous les disques",
+  "@settings.indexing.reEnableNotifications.label": {
+    "sourceHash": "d1cc5fa"
+  },
+  "settings.indexing.reEnableNotifications.button": "Réactiver",
+  "@settings.indexing.reEnableNotifications.button": {
+    "sourceHash": "63de421"
+  },
+  "settings.indexing.reEnableNotifications.description": "Redemander pour l''indexation de chaque disque pour lequel vous aviez désactivé la demande.",
+  "@settings.indexing.reEnableNotifications.description": {
+    "sourceHash": "a332527"
+  },
+  "settings.indexing.reEnableNotifications.disabledTooltip": "Vous n''avez encore désactivé la demande pour aucun disque.",
+  "@settings.indexing.reEnableNotifications.disabledTooltip": {
+    "sourceHash": "3a5a54b"
+  },
+  "settings.indexing.silencedDrives.label": "Demandes d''indexation masquées",
+  "@settings.indexing.silencedDrives.label": {
+    "sourceHash": "b7b9bc4"
+  },
+  "settings.indexing.silencedDrives.description": "Interne : disques pour lesquels l''utilisateur a masqué la demande d''indexation.",
+  "@settings.indexing.silencedDrives.description": {
+    "sourceHash": "dc3defb"
+  },
+  "settings.indexing.firstStaleDialogShown.label": "Boîte de dialogue d''obsolescence affichée",
+  "@settings.indexing.firstStaleDialogShown.label": {
+    "sourceHash": "5734f1a"
+  },
+  "settings.indexing.firstStaleDialogShown.description": "Interne : si la boîte de dialogue unique d''obsolescence de disque a été affichée.",
+  "@settings.indexing.firstStaleDialogShown.description": {
+    "sourceHash": "a879dbb"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.label": "Notifier les téléchargements",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.label": {
+    "sourceHash": "55efff7"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.description": "Comment signaler les nouveaux fichiers arrivant dans votre dossier Téléchargements.",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.description": {
+    "sourceHash": "dd701c5"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": "Dans l''app",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
+    "sourceHash": "a2de156"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "Notifications macOS",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
+    "sourceHash": "d2f2b45"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Les deux",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
+    "sourceHash": "b6c1d86"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": "Aucune",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
+    "sourceHash": "9957d09"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Aller au dernier téléchargement",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
+    "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Appuyez sur ⌃⌥⌘J depuis n''importe quelle app pour accéder à votre téléchargement le plus récent. Nécessite l''Accès complet au disque.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
+    "sourceHash": "ed2f65d"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": "Raccourci global « aller au dernier téléchargement »",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": {
+    "sourceHash": "cf811fe"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "La combinaison à l''échelle du système qui déclenche « aller au dernier téléchargement ». Modifiée sous Raccourcis clavier.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": {
+    "sourceHash": "77e5c31"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Notification d''avertissement « aller au dernier téléchargement » global confirmée",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
+    "sourceHash": "f45f095"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Interne. Supprime la notification d''avertissement au premier déclenchement.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
+    "sourceHash": "5f4247c"
+  },
+  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": "Notification de téléchargements réduite",
+  "@settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": {
+    "sourceHash": "8294731"
+  },
+  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.description": "Interne. Mémorise si la notification de téléchargements était réduite la dernière fois.",
+  "@settings.behavior.fileSystemWatching.downloadsToastCollapsed.description": {
+    "sourceHash": "aab60b8"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "Avertissement d''espace disque faible",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
+    "sourceHash": "911b74b"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "Comment vous avertir quand votre disque de démarrage manque d''espace libre.",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
+    "sourceHash": "32b852d"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "Dans l''app",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
+    "sourceHash": "a2de156"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "Notification macOS",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
+    "sourceHash": "d594ece"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Désactivé",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "Seuil d''avertissement",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
+    "sourceHash": "fd1382f"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "Avertir quand l''espace libre descend sous ce pourcentage de votre disque de démarrage.",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
+    "sourceHash": "9ed41b8"
+  },
+  "settings.search.autoApply.label": "Appliquer les recherches automatiquement",
+  "@settings.search.autoApply.label": {
+    "sourceHash": "06b0f9f"
+  },
+  "settings.search.autoApply.description": "Lance les recherches par nom de fichier et par regex automatiquement pendant la frappe (1 seconde après l''arrêt). Les recherches par IA attendent toujours la touche Entrée, car elles ont un coût. Quand cette option est désactivée, appuyez sur Entrée ou cliquez sur le bouton de lancement pour rechercher.",
+  "@settings.search.autoApply.description": {
+    "sourceHash": "19fcaf7"
+  },
+  "settings.ai.provider.label": "Fournisseur",
+  "@settings.ai.provider.label": {
+    "sourceHash": "472590a"
+  },
+  "settings.ai.provider.description": "Choisissez comment les fonctionnalités d''IA sont alimentées.",
+  "@settings.ai.provider.description": {
+    "sourceHash": "f8c0f5d"
+  },
+  "settings.ai.provider.opt.off": "Désactivé",
+  "@settings.ai.provider.opt.off": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.ai.provider.opt.cloud": "IA dans le cloud",
+  "@settings.ai.provider.opt.cloud": {
+    "sourceHash": "457588a"
+  },
+  "settings.ai.provider.opt.local": "LLM local",
+  "@settings.ai.provider.opt.local": {
+    "sourceHash": "6689271"
+  },
+  "settings.ai.cloudProvider.label": "Service",
+  "@settings.ai.cloudProvider.label": {
+    "sourceHash": "d677190"
+  },
+  "settings.ai.cloudProvider.description": "Quel service d''IA dans le cloud utiliser.",
+  "@settings.ai.cloudProvider.description": {
+    "sourceHash": "3300ce9"
+  },
+  "settings.ai.cloudProviderConfigs.label": "Configurations des fournisseurs",
+  "@settings.ai.cloudProviderConfigs.label": {
+    "sourceHash": "7b73e56"
+  },
+  "settings.ai.cloudProviderConfigs.description": "Clés API et réglages de modèle par fournisseur.",
+  "@settings.ai.cloudProviderConfigs.description": {
+    "sourceHash": "21132a2"
+  },
+  "settings.ai.localContextSize.label": "Fenêtre de contexte",
+  "@settings.ai.localContextSize.label": {
+    "sourceHash": "7696d08"
+  },
+  "settings.ai.localContextSize.description": "Nombre de tokens que le modèle local peut traiter à la fois. Des valeurs plus élevées utilisent plus de mémoire.",
+  "@settings.ai.localContextSize.description": {
+    "sourceHash": "14256da"
+  },
+  "settings.network.enabled.label": "Activer le réseau",
+  "@settings.network.enabled.label": {
+    "sourceHash": "10f5de9"
+  },
+  "settings.network.enabled.description": "Découvre les serveurs SMB sur votre réseau local et s''y connecte. Quand cette option est désactivée, Cmdr peut toujours lire et écrire des fichiers sur les partages déjà montés, mais ne demande pas à macOS l''accès au Réseau local.",
+  "@settings.network.enabled.description": {
+    "sourceHash": "3500345"
+  },
+  "settings.network.firstTriggerDone.label": "Découverte réseau lancée",
+  "@settings.network.firstTriggerDone.label": {
+    "sourceHash": "06aa851"
+  },
+  "settings.network.firstTriggerDone.description": "Interne : indique si la découverte a été déclenchée au moins une fois. Masqué dans l''interface.",
+  "@settings.network.firstTriggerDone.description": {
+    "sourceHash": "7982e11"
+  },
+  "settings.network.directSmbConnection.label": "Se connecter directement aux partages SMB",
+  "@settings.network.directSmbConnection.label": {
+    "sourceHash": "407c4f1"
+  },
+  "settings.network.directSmbConnection.description": "Quand cette option est activée, Cmdr établit une connexion directe aux partages SMB pour des opérations de fichiers plus rapides. Le montage système reste pour le Finder et les autres apps.",
+  "@settings.network.directSmbConnection.description": {
+    "sourceHash": "44a5a6d"
+  },
+  "settings.network.shareCacheDuration.label": "Durée du cache des partages",
+  "@settings.network.shareCacheDuration.label": {
+    "sourceHash": "ff627cd"
+  },
+  "settings.network.shareCacheDuration.description": "Pendant combien de temps mettre en cache la liste des partages disponibles sur un serveur avant de l''actualiser.",
+  "@settings.network.shareCacheDuration.description": {
+    "sourceHash": "18190c5"
+  },
+  "settings.network.shareCacheDuration.opt.s30": "30 secondes",
+  "@settings.network.shareCacheDuration.opt.s30": {
+    "sourceHash": "f3d1954"
+  },
+  "settings.network.shareCacheDuration.opt.min5": "5 minutes",
+  "@settings.network.shareCacheDuration.opt.min5": {
+    "sourceHash": "3170543"
+  },
+  "settings.network.shareCacheDuration.opt.hour1": "1 heure",
+  "@settings.network.shareCacheDuration.opt.hour1": {
+    "sourceHash": "f8b8883"
+  },
+  "settings.network.shareCacheDuration.opt.day1": "1 jour",
+  "@settings.network.shareCacheDuration.opt.day1": {
+    "sourceHash": "fa665d9"
+  },
+  "settings.network.shareCacheDuration.opt.days30": "30 jours",
+  "@settings.network.shareCacheDuration.opt.days30": {
+    "sourceHash": "ffd7280"
+  },
+  "settings.network.timeoutMode.label": "Mode de délai d''attente réseau",
+  "@settings.network.timeoutMode.label": {
+    "sourceHash": "5d1c989"
+  },
+  "settings.network.timeoutMode.description": "Combien de temps attendre lors de la connexion aux partages réseau.",
+  "@settings.network.timeoutMode.description": {
+    "sourceHash": "9f6de9d"
+  },
+  "settings.network.timeoutMode.opt.normal": "Normal",
+  "@settings.network.timeoutMode.opt.normal": {
+    "sourceHash": "a7248ee"
+  },
+  "settings.network.timeoutMode.optDesc.normal": "Pour les réseaux locaux typiques (délai de 15 s)",
+  "@settings.network.timeoutMode.optDesc.normal": {
+    "sourceHash": "e20eca1"
+  },
+  "settings.network.timeoutMode.opt.slow": "Réseau lent",
+  "@settings.network.timeoutMode.opt.slow": {
+    "sourceHash": "3f940f4"
+  },
+  "settings.network.timeoutMode.optDesc.slow": "Pour les VPN ou les connexions à latence élevée (délai de 45 s)",
+  "@settings.network.timeoutMode.optDesc.slow": {
+    "sourceHash": "f8ebf3c"
+  },
+  "settings.network.timeoutMode.opt.custom": "Personnalisé",
+  "@settings.network.timeoutMode.opt.custom": {
+    "sourceHash": "494ca78"
+  },
+  "settings.network.customTimeout.label": "Délai d''attente personnalisé",
+  "@settings.network.customTimeout.label": {
+    "sourceHash": "ea49e01"
+  },
+  "settings.network.customTimeout.description": "Délai d''attente personnalisé en secondes pour les opérations réseau.",
+  "@settings.network.customTimeout.description": {
+    "sourceHash": "28a8d46"
+  },
+  "settings.network.smbConcurrency.label": "Opérations simultanées par connexion SMB",
+  "@settings.network.smbConcurrency.label": {
+    "sourceHash": "339933f"
+  },
+  "settings.network.smbConcurrency.description": "Combien de transferts de fichiers Cmdr exécute en parallèle sur une seule connexion SMB. Des valeurs plus élevées accélèrent les copies par lot de nombreux fichiers (surtout de nombreux petits fichiers) mais utilisent plus de ressources serveur. La valeur par défaut de 10 convient à la plupart des NAS domestiques. Les changements s''appliquent à la prochaine copie par lot.",
+  "@settings.network.smbConcurrency.description": {
+    "sourceHash": "49a590b"
+  },
+  "settings.fileOperations.mtpEnabled.label": "Prise en charge Android/Kindle/appareil photo (PTP et MTP)",
+  "@settings.fileOperations.mtpEnabled.label": {
+    "sourceHash": "6a315a8"
+  },
+  "settings.fileOperations.mtpEnabled.description": "Détecte et se connecte aux appareils Android et autres via un câble USB pour parcourir et transférer des fichiers. Pour utiliser cette fonctionnalité sur un téléphone Android, branchez un câble USB, puis sur votre téléphone, allez dans quelque chose comme Réglages > Préférences USB, et réglez la connexion sur « Transfert de fichiers », « Android Auto », ou similaire. (Varie selon l''appareil.)",
+  "@settings.fileOperations.mtpEnabled.description": {
+    "sourceHash": "834ea99"
+  },
+  "settings.fileOperations.mtpConnectionWarning.label": "Avertir quand un appareil se connecte",
+  "@settings.fileOperations.mtpConnectionWarning.label": {
+    "sourceHash": "070b984"
+  },
+  "settings.fileOperations.mtpConnectionWarning.description": "Affiche une notification quand un appareil Android ou un appareil photo se connecte via USB.",
+  "@settings.fileOperations.mtpConnectionWarning.description": {
+    "sourceHash": "9c7a648"
+  },
+  "settings.fileExplorer.git.showRepoChip.label": "Afficher la pastille de dépôt",
+  "@settings.fileExplorer.git.showRepoChip.label": {
+    "sourceHash": "7504b23"
+  },
+  "settings.fileExplorer.git.showRepoChip.description": "Affiche la branche actuelle, l''avance/le retard, et l''état modifié au-dessus de la liste des fichiers quand vous êtes dans un dépôt git.",
+  "@settings.fileExplorer.git.showRepoChip.description": {
+    "sourceHash": "7b8a9ba"
+  },
+  "settings.fileExplorer.git.showStatusColumn.label": "Afficher la colonne d''état git",
+  "@settings.fileExplorer.git.showStatusColumn.label": {
+    "sourceHash": "0f6a836"
+  },
+  "settings.fileExplorer.git.showStatusColumn.description": "Ajoute une colonne montrant l''état git par fichier (modifié, non suivi, etc.) en mode Complet.",
+  "@settings.fileExplorer.git.showStatusColumn.description": {
+    "sourceHash": "7ff07e4"
+  },
+  "settings.fileExplorer.git.showVirtualGitPortal.label": "Afficher le portail git virtuel",
+  "@settings.fileExplorer.git.showVirtualGitPortal.label": {
+    "sourceHash": "40d9fa1"
+  },
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "À l''entrée dans `.git`, affiche les branches, tags, commits, et worktrees comme des dossiers virtuels navigables. Désactivez pour voir plutôt le contenu brut de `.git`.",
+  "@settings.fileExplorer.git.showVirtualGitPortal.description": {
+    "sourceHash": "70eae72"
+  },
+  "settings.viewer.wordWrap.label": "Retour automatique à la ligne",
+  "@settings.viewer.wordWrap.label": {
+    "sourceHash": "9e210f3"
+  },
+  "settings.viewer.wordWrap.description": "Renvoie les longues lignes au bord de la fenêtre dans la visionneuse de fichiers au lieu de défiler horizontalement.",
+  "@settings.viewer.wordWrap.description": {
+    "sourceHash": "8a87bd2"
+  },
+  "settings.developer.mcpEnabled.label": "Activer le serveur MCP",
+  "@settings.developer.mcpEnabled.label": {
+    "sourceHash": "32b62ff"
+  },
+  "settings.developer.mcpEnabled.description": "Démarre un serveur Model Context Protocol pour l''intégration d''un assistant IA.",
+  "@settings.developer.mcpEnabled.description": {
+    "sourceHash": "10f4102"
+  },
+  "settings.developer.mcpPort.label": "Port",
+  "@settings.developer.mcpPort.label": {
+    "sourceHash": "72e9a59"
+  },
+  "settings.developer.mcpPort.description": "Port préféré pour le serveur MCP. Laissez à 0 pour laisser le système choisir un port éphémère (recommandé ; le port réel est affiché ci-dessous une fois en cours d''exécution). Fixez un port précis si un outil externe le nécessite.",
+  "@settings.developer.mcpPort.description": {
+    "sourceHash": "174e807"
+  },
+  "settings.developer.verboseLogging.label": "Sortie console détaillée (développeur)",
+  "@settings.developer.verboseLogging.label": {
+    "sourceHash": "036a824"
+  },
+  "settings.developer.verboseLogging.description": "Passe la console du terminal de dev et des devtools du navigateur au niveau debug. Le fichier journal sur le disque capture toujours le détail debug quoi qu''il arrive, donc les rapports d''erreur ne sont pas affectés par cette option. RUST_LOG l''emporte toujours pour le terminal.",
+  "@settings.developer.verboseLogging.description": {
+    "sourceHash": "5c69c0d"
+  },
+  "settings.updates.autoCheck.label": "Vérifier automatiquement les mises à jour",
+  "@settings.updates.autoCheck.label": {
+    "sourceHash": "409e6a1"
+  },
+  "settings.updates.autoCheck.description": "Vérifie périodiquement les nouvelles versions en arrière-plan.",
+  "@settings.updates.autoCheck.description": {
+    "sourceHash": "1ff0b1a"
+  },
+  "settings.whatsNew.showOnUpdate.label": "Afficher les nouveautés après les mises à jour",
+  "@settings.whatsNew.showOnUpdate.label": {
+    "sourceHash": "991a90b"
+  },
+  "settings.whatsNew.showOnUpdate.description": "Après que Cmdr s''est mis à jour, affiche un résumé rapide des changements.",
+  "@settings.whatsNew.showOnUpdate.description": {
+    "sourceHash": "4d4d7e6"
+  },
+  "settings.whatsNew.lastSeenVersion.label": "Dernière version de journal des modifications vue",
+  "@settings.whatsNew.lastSeenVersion.label": {
+    "sourceHash": "4790ce6"
+  },
+  "settings.whatsNew.lastSeenVersion.description": "Interne : la version que nous avons affichée pour la dernière fois dans le popover « Nouveautés ». Avance silencieusement à chaque lancement pour que la réactivation du popover ne rejoue jamais un arriéré de plusieurs mois. Masqué dans l''interface.",
+  "@settings.whatsNew.lastSeenVersion.description": {
+    "sourceHash": "d4f7a52"
+  },
+  "settings.analytics.enabled.label": "Envoyer des stats d''usage anonymes",
+  "@settings.analytics.enabled.label": {
+    "sourceHash": "4620960"
+  },
+  "settings.analytics.enabled.description": "Nous aide à voir quelles fonctionnalités comptent pendant la bêta ouverte. N''inclut jamais les noms de fichiers, les chemins, les termes de recherche, ou les prompts. Désactivez-le et Cmdr cesse de tout envoyer.",
+  "@settings.analytics.enabled.description": {
+    "sourceHash": "be45383"
+  },
+  "settings.analytics.email.label": "E-mail de contact bêta",
+  "@settings.analytics.email.label": {
+    "sourceHash": "71e5c9a"
+  },
+  "settings.analytics.email.description": "Exemple : you@example.com",
+  "@settings.analytics.email.description": {
+    "sourceHash": "03574f9"
+  },
+  "settings.updates.crashReports.label": "Envoyer les rapports d''incident",
+  "@settings.updates.crashReports.label": {
+    "sourceHash": "2b8f06d"
+  },
+  "settings.updates.crashReports.description": "Envoie automatiquement les rapports d''incident quand Cmdr se ferme de façon inattendue. Inclut la version de l''app, la version de macOS, et l''emplacement de l''incident. Jamais les noms de fichiers ni les données personnelles.",
+  "@settings.updates.crashReports.description": {
+    "sourceHash": "6c74422"
+  },
+  "settings.updates.errorReports.label": "Envoyer les rapports d''erreur automatiquement",
+  "@settings.updates.errorReports.label": {
+    "sourceHash": "471575d"
+  },
+  "settings.updates.errorReports.description": "Envoie un court extrait de journal au développeur lorsqu''un problème survient. Aide à corriger les bugs plus vite. Désactivé par défaut. Vous pouvez toujours envoyer un rapport manuel depuis le menu Aide.",
+  "@settings.updates.errorReports.description": {
+    "sourceHash": "f3e41eb"
+  },
+  "settings.updates.attachEmailToReports.label": "Joindre mon e-mail aux rapports par défaut",
+  "@settings.updates.attachEmailToReports.label": {
+    "sourceHash": "76c512e"
+  },
+  "settings.updates.attachEmailToReports.description": "Quand vous envoyez un rapport d''incident ou d''erreur, inclut votre e-mail de contact bêta pour que nous puissions répondre. Vous pouvez le changer pour chaque rapport.",
+  "@settings.updates.attachEmailToReports.description": {
+    "sourceHash": "dd23637"
+  },
+  "settings.advanced.prefetchBufferSize.label": "Taille du tampon de préchargement",
+  "@settings.advanced.prefetchBufferSize.label": {
+    "sourceHash": "4043154"
+  },
+  "settings.advanced.prefetchBufferSize.description": "Nombre d''éléments à précharger autour de la plage visible pour un défilement plus fluide.",
+  "@settings.advanced.prefetchBufferSize.description": {
+    "sourceHash": "39f13c9"
+  },
+  "settings.advanced.virtualizationBufferRows.label": "Tampon de virtualisation (lignes)",
+  "@settings.advanced.virtualizationBufferRows.label": {
+    "sourceHash": "07b7869"
+  },
+  "settings.advanced.virtualizationBufferRows.description": "Lignes supplémentaires à afficher au-dessus et en dessous de la zone visible.",
+  "@settings.advanced.virtualizationBufferRows.description": {
+    "sourceHash": "82a0e9a"
+  },
+  "settings.advanced.virtualizationBufferColumns.label": "Tampon de virtualisation (colonnes)",
+  "@settings.advanced.virtualizationBufferColumns.label": {
+    "sourceHash": "a9e8dba"
+  },
+  "settings.advanced.virtualizationBufferColumns.description": "Colonnes supplémentaires à afficher en mode Bref.",
+  "@settings.advanced.virtualizationBufferColumns.description": {
+    "sourceHash": "a1cbd98"
+  },
+  "settings.advanced.fileWatcherDebounce.label": "Anti-rebond du surveillant de fichiers",
+  "@settings.advanced.fileWatcherDebounce.label": {
+    "sourceHash": "6a3842d"
+  },
+  "settings.advanced.fileWatcherDebounce.description": "Délai après les changements du système de fichiers avant l''actualisation.",
+  "@settings.advanced.fileWatcherDebounce.description": {
+    "sourceHash": "084a2a7"
+  },
+  "settings.advanced.diskSpaceChangeThreshold.label": "Seuil de changement d''espace disque (MB)",
+  "@settings.advanced.diskSpaceChangeThreshold.label": {
+    "sourceHash": "1d95fc6"
+  },
+  "settings.advanced.diskSpaceChangeThreshold.description": "Changement minimal d''espace disque disponible avant de mettre à jour la barre d''état. La barre d''état interroge l''espace disque toutes les quelques secondes ; les petits changements sous ce seuil sont ignorés pour réduire le bruit visuel.",
+  "@settings.advanced.diskSpaceChangeThreshold.description": {
+    "sourceHash": "f09c3cb"
+  },
+  "settings.fileViewer.suppressBinaryWarning.label": "Masquer l''avertissement d''affichage brut pour les fichiers binaires",
+  "@settings.fileViewer.suppressBinaryWarning.label": {
+    "sourceHash": "8cdaada"
+  },
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 ouvre la visionneuse de fichiers de Cmdr, qui affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive, ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que ⇧Espace (Coup d''œil) ou Entrée (ouvrir dans l''app associée) est probablement ce que vous vouliez. Activez ceci (ou cliquez sur « Ne plus jamais afficher cet avertissement » dans la bannière) pour masquer l''avertissement définitivement.",
+  "@settings.fileViewer.suppressBinaryWarning.description": {
+    "sourceHash": "b3711da"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.label": "Masquer l''astuce Coup d''œil de la touche Espace",
+  "@settings.fileExplorer.suppressQuickLookHint.label": {
+    "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr utilise Espace pour basculer la sélection de fichiers et ⇧Espace pour Coup d''œil (le Finder utilise Espace seul pour Coup d''œil). Chaque fois que vous appuyez sur Espace dans la liste des fichiers, Cmdr affiche un rappel d''un paragraphe de cette différence. Activez ceci (ou cliquez sur « Ne plus afficher » dans la notification) pour masquer le rappel définitivement.",
+  "@settings.fileExplorer.suppressQuickLookHint.description": {
+    "sourceHash": "e78809d"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.label": "Nombre d''onglets fermés à mémoriser par panneau",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
+    "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Combien d''onglets récemment fermés conserver par panneau pour « Rouvrir l''onglet fermé » (⌘⇧T). Des valeurs plus élevées vous laissent rouvrir plus loin dans l''historique ; des valeurs plus basses libèrent la mémoire plus tôt. Ne s''applique qu''aux onglets fermés dans la session en cours.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
+    "sourceHash": "fe01a43"
+  },
+  "settings.advanced.dragThreshold.label": "Seuil de glissement",
+  "@settings.advanced.dragThreshold.label": {
+    "sourceHash": "d624e2a"
+  },
+  "settings.advanced.dragThreshold.description": "Distance minimale en pixels avant qu''une opération de glissement ne commence.",
+  "@settings.advanced.dragThreshold.description": {
+    "sourceHash": "7704bfa"
+  },
+  "settings.fileExplorer.typeToJump.resetDelay.label": "Délai de réinitialisation du saut par frappe",
+  "@settings.fileExplorer.typeToJump.resetDelay.label": {
+    "sourceHash": "16ac047"
+  },
+  "settings.fileExplorer.typeToJump.resetDelay.description": "Combien de temps le tampon du saut par frappe reste actif après la dernière frappe. Des valeurs plus basses réinitialisent plus vite entre les recherches ; des valeurs plus élevées sont plus indulgentes pour les frappeurs lents.",
+  "@settings.fileExplorer.typeToJump.resetDelay.description": {
+    "sourceHash": "ff59a6a"
+  },
+  "settings.fileOperations.maxConflictsToShow.label": "Nombre maximal de conflits à afficher",
+  "@settings.fileOperations.maxConflictsToShow.label": {
+    "sourceHash": "d9cdb0c"
+  },
+  "settings.fileOperations.maxConflictsToShow.description": "Nombre maximal de conflits de fichiers à afficher dans l''aperçu avant une opération.",
+  "@settings.fileOperations.maxConflictsToShow.description": {
+    "sourceHash": "1f6bcb9"
+  },
+  "settings.fileOperations.progressUpdateInterval.label": "Intervalle de mise à jour de la progression",
+  "@settings.fileOperations.progressUpdateInterval.label": {
+    "sourceHash": "6bcefed"
+  },
+  "settings.fileOperations.progressUpdateInterval.description": "À quelle fréquence actualiser la progression pendant les opérations de fichiers. Des valeurs plus basses semblent plus réactives mais utilisent plus de CPU.",
+  "@settings.fileOperations.progressUpdateInterval.description": {
+    "sourceHash": "84e4876"
+  },
+  "settings.advanced.maxLogStorageMb.label": "Espace disque maximal pour les fichiers journaux (MB)",
+  "@settings.advanced.maxLogStorageMb.label": {
+    "sourceHash": "d6af6b4"
+  },
+  "settings.advanced.maxLogStorageMb.description": "Espace disque maximal pour les fichiers journaux. Réglez à 0 pour désactiver le stockage des journaux ; les rapports d''erreur ne peuvent pas être envoyés sans journaux. Les changements vers une valeur non nulle prennent effet au prochain lancement de l''app.",
+  "@settings.advanced.maxLogStorageMb.description": {
+    "sourceHash": "725bb26"
+  },
+  "settings.advanced.mountTimeout.label": "Délai d''attente de montage",
+  "@settings.advanced.mountTimeout.label": {
+    "sourceHash": "b5bce4f"
+  },
+  "settings.advanced.mountTimeout.description": "Délai d''attente pour le montage des partages réseau.",
+  "@settings.advanced.mountTimeout.description": {
+    "sourceHash": "3da30e1"
+  },
+  "settings.advanced.filterSafeSaveArtifacts.label": "Filtrer les artefacts d''enregistrement sécurisé sur SMB",
+  "@settings.advanced.filterSafeSaveArtifacts.label": {
+    "sourceHash": "1763df4"
+  },
+  "settings.advanced.filterSafeSaveArtifacts.description": "Masque les fichiers temporaires créés par l''enregistrement sécurisé de macOS (comme les fichiers « .sb- » de TextEdit) dans le surveillant de fichiers SMB. Ils sont transitoires et normalement invisibles.",
+  "@settings.advanced.filterSafeSaveArtifacts.description": {
+    "sourceHash": "681b1dc"
+  },
+  "settings.advanced.serviceResolveTimeout.label": "Délai d''attente de résolution de service",
+  "@settings.advanced.serviceResolveTimeout.label": {
+    "sourceHash": "a4b4e3e"
+  },
+  "settings.advanced.serviceResolveTimeout.description": "Délai d''attente pour la résolution des services réseau via Bonjour.",
+  "@settings.advanced.serviceResolveTimeout.description": {
+    "sourceHash": "5cf231d"
+  },
+  "settings.search.recentSearches.maxCount.label": "Recherches récentes à mémoriser",
+  "@settings.search.recentSearches.maxCount.label": {
+    "sourceHash": "51ad13d"
+  },
+  "settings.search.recentSearches.maxCount.description": "Combien de recherches récentes conserver pour le pied de page dans la boîte de dialogue et le popover d''historique. Les entrées plus anciennes disparaissent à mesure que de nouvelles arrivent. 0 désactive l''historique (le pied de page et le popover se masquent et aucune nouvelle entrée n''est enregistrée).",
+  "@settings.search.recentSearches.maxCount.description": {
+    "sourceHash": "d21b038"
+  },
+  "settings.selection.recentSelections.maxCount.label": "Sélections récentes à mémoriser",
+  "@settings.selection.recentSelections.maxCount.label": {
+    "sourceHash": "e8a5d37"
+  },
+  "settings.selection.recentSelections.maxCount.description": "Combien de sélections récentes conserver pour le pied de page de la boîte de dialogue Sélectionner / Désélectionner des fichiers et le popover d''historique. Les entrées plus anciennes disparaissent à mesure que de nouvelles arrivent. 0 désactive l''historique (le pied de page et le popover se masquent et aucune nouvelle entrée n''est enregistrée).",
+  "@settings.selection.recentSelections.maxCount.description": {
+    "sourceHash": "ae04ef0"
+  },
+  "settings.onboarding.upgradeNudgeShown.label": "Incitation de mise à niveau d''accueil affichée",
+  "@settings.onboarding.upgradeNudgeShown.label": {
+    "sourceHash": "d34a727"
+  },
+  "settings.onboarding.upgradeNudgeShown.description": "Interne : indique si la notification unique « l''élément de menu Accueil existe désormais » a été déclenchée pour un utilisateur existant après la refonte de l''assistant. Masqué dans l''interface.",
+  "@settings.onboarding.upgradeNudgeShown.description": {
+    "sourceHash": "5cfb2b5"
+  },
+  "settings.advanced.updateCheckInterval.label": "Intervalle de vérification des mises à jour",
+  "@settings.advanced.updateCheckInterval.label": {
+    "sourceHash": "91912bc"
+  },
+  "settings.advanced.updateCheckInterval.description": "À quelle fréquence vérifier les mises à jour en arrière-plan.",
+  "@settings.advanced.updateCheckInterval.description": {
+    "sourceHash": "2bdd38a"
+  },
+  "settings.tint.none": "Aucune teinte",
+  "@settings.tint.none": {
+    "sourceHash": "ac86605"
+  },
+  "settings.tint.red": "Rouge",
+  "@settings.tint.red": {
+    "sourceHash": "ba19e9c"
+  },
+  "settings.tint.orange": "Orange",
+  "@settings.tint.orange": {
+    "sourceHash": "78e7771"
+  },
+  "settings.tint.amber": "Ambre",
+  "@settings.tint.amber": {
+    "sourceHash": "a5cccbc"
+  },
+  "settings.tint.lime": "Vert citron",
+  "@settings.tint.lime": {
+    "sourceHash": "c9665c9"
+  },
+  "settings.tint.green": "Vert",
+  "@settings.tint.green": {
+    "sourceHash": "d486dfb"
+  },
+  "settings.tint.teal": "Sarcelle",
+  "@settings.tint.teal": {
+    "sourceHash": "fa15a5c"
+  },
+  "settings.tint.cyan": "Cyan",
+  "@settings.tint.cyan": {
+    "sourceHash": "e95bb22"
+  },
+  "settings.tint.blue": "Bleu",
+  "@settings.tint.blue": {
+    "sourceHash": "ec7d56a"
+  },
+  "settings.tint.indigo": "Indigo",
+  "@settings.tint.indigo": {
+    "sourceHash": "d81ab14"
+  },
+  "settings.tint.purple": "Violet",
+  "@settings.tint.purple": {
+    "sourceHash": "7d465fb"
+  },
+  "settings.tint.pink": "Rose",
+  "@settings.tint.pink": {
+    "sourceHash": "bd38ed7"
+  },
+  "settings.tint.brown": "Brun",
+  "@settings.tint.brown": {
+    "sourceHash": "18f2855"
+  },
+  "settings.section.appearance": "Apparence",
+  "@settings.section.appearance": {
+    "sourceHash": "3907fa7"
+  },
+  "settings.section.colorsAndFormats": "Couleurs et formats",
+  "@settings.section.colorsAndFormats": {
+    "sourceHash": "c5e0ce4"
+  },
+  "settings.section.zoomAndDensity": "Zoom et densité",
+  "@settings.section.zoomAndDensity": {
+    "sourceHash": "7af249b"
+  },
+  "settings.section.fileAndFolderSizes": "Tailles de fichiers et de dossiers",
+  "@settings.section.fileAndFolderSizes": {
+    "sourceHash": "37d2ca1"
+  },
+  "settings.section.listing": "Liste",
+  "@settings.section.listing": {
+    "sourceHash": "fc7f1aa"
+  },
+  "settings.section.behavior": "Comportement",
+  "@settings.section.behavior": {
+    "sourceHash": "edf8d3f"
+  },
+  "settings.section.fileOperations": "Opérations sur les fichiers",
+  "@settings.section.fileOperations": {
+    "sourceHash": "ed23515"
+  },
+  "settings.section.fileSystemWatching": "Surveillance du système de fichiers",
+  "@settings.section.fileSystemWatching": {
+    "sourceHash": "4fa805f"
+  },
+  "settings.section.search": "Recherche",
+  "@settings.section.search": {
+    "sourceHash": "49c266b"
+  },
+  "settings.section.ai": "IA",
+  "@settings.section.ai": {
+    "sourceHash": "11fb682"
+  },
+  "settings.section.fileSystems": "Systèmes de fichiers",
+  "@settings.section.fileSystems": {
+    "sourceHash": "d1fad23"
+  },
+  "settings.section.smbNetworkShares": "Partages SMB/réseau",
+  "@settings.section.smbNetworkShares": {
+    "sourceHash": "d971dec"
+  },
+  "settings.section.mtp": "MTP (Android/Kindle/appareils photo)",
+  "@settings.section.mtp": {
+    "sourceHash": "a68fa47"
+  },
+  "settings.section.git": "Git",
+  "@settings.section.git": {
+    "sourceHash": "b949c92"
+  },
+  "settings.section.viewer": "Visionneuse",
+  "@settings.section.viewer": {
+    "sourceHash": "678bfa6"
+  },
+  "settings.section.developer": "Développeur",
+  "@settings.section.developer": {
+    "sourceHash": "3fb7b39"
+  },
+  "settings.section.mcpServer": "Serveur MCP",
+  "@settings.section.mcpServer": {
+    "sourceHash": "d938c81"
+  },
+  "settings.section.logging": "Journalisation",
+  "@settings.section.logging": {
+    "sourceHash": "d3ef01b"
+  },
+  "settings.section.updatesAndPrivacy": "Mises à jour et confidentialité",
+  "@settings.section.updatesAndPrivacy": {
+    "sourceHash": "74062eb"
+  },
+  "settings.section.advanced": "Avancé",
+  "@settings.section.advanced": {
+    "sourceHash": "9f088db"
+  },
+  "settings.section.keyboardShortcuts": "Raccourcis clavier",
+  "@settings.section.keyboardShortcuts": {
+    "sourceHash": "e9bef0b"
+  },
+  "settings.section.license": "Licence",
+  "@settings.section.license": {
+    "sourceHash": "c011d60"
+  },
+  "settings.summary.colorsAndFormats": "Thème, couleur de l''app, coloration des dates et des tailles, et format de date/heure.",
+  "@settings.summary.colorsAndFormats": {
+    "sourceHash": "ad30daf"
+  },
+  "settings.summary.zoomAndDensity": "Taille du texte et densité de l''interface pour toute l''app.",
+  "@settings.summary.zoomAndDensity": {
+    "sourceHash": "e32bbcf"
+  },
+  "settings.summary.fileAndFolderSizes": "Comment les tailles sont affichées dans la liste des fichiers et les avertissements d''écart de taille.",
+  "@settings.summary.fileAndFolderSizes": {
+    "sourceHash": "cdd8214"
+  },
+  "settings.summary.listing": "Icônes de documents, tri des dossiers, et largeur de colonne en mode Bref.",
+  "@settings.summary.listing": {
+    "sourceHash": "7756e95"
+  },
+  "settings.summary.fileOperations": "Comportement lors du renommage des fichiers (ex. : changements d''extension).",
+  "@settings.summary.fileOperations": {
+    "sourceHash": "a81b164"
+  },
+  "settings.summary.fileSystemWatching": "Indexation du disque, notifications de téléchargements, et raccourci global « aller au dernier téléchargement ». Nécessite l''Accès complet au disque.",
+  "@settings.summary.fileSystemWatching": {
+    "sourceHash": "00181bd"
+  },
+  "settings.summary.search": "Recherches par nom de fichier et par regex appliquées en direct, et limite des recherches récentes.",
+  "@settings.summary.search": {
+    "sourceHash": "0e1d70f"
+  },
+  "settings.summary.smbNetworkShares": "Activer le réseau, connexions SMB directes, cache des partages, et délais d''attente.",
+  "@settings.summary.smbNetworkShares": {
+    "sourceHash": "10604ac"
+  },
+  "settings.summary.mtp": "Détecter les appareils Android, Kindle, et appareils photo via USB.",
+  "@settings.summary.mtp": {
+    "sourceHash": "f01960a"
+  },
+  "settings.summary.git": "Pastille de dépôt, colonne d''état par fichier, et portail `.git` virtuel.",
+  "@settings.summary.git": {
+    "sourceHash": "fa23394"
+  },
+  "settings.summary.mcpServer": "Configurer le serveur Model Context Protocol pour les intégrations d''IA.",
+  "@settings.summary.mcpServer": {
+    "sourceHash": "4cde8a6"
+  },
+  "settings.summary.logging": "Sortie console détaillée, accès au fichier journal, et infos de diagnostic.",
+  "@settings.summary.logging": {
+    "sourceHash": "6fce936"
+  },
+  "settings.summary.noSubsections": "Cette section n''a aucune sous-section.",
+  "@settings.summary.noSubsections": {
+    "sourceHash": "ba4b5b5"
+  },
+  "settings.control.resetToDefault": "Réinitialiser par défaut",
+  "@settings.control.resetToDefault": {
+    "sourceHash": "bc5b45a"
+  },
+  "settings.control.restartRequired": "Redémarrage requis",
+  "@settings.control.restartRequired": {
+    "sourceHash": "b468711"
+  },
+  "settings.control.decrease": "Diminuer {label}",
+  "@settings.control.decrease": {
+    "sourceHash": "995a5d6"
+  },
+  "settings.control.increase": "Augmenter {label}",
+  "@settings.control.increase": {
+    "sourceHash": "bbf5fc9"
+  },
+  "settings.control.customValuePlaceholder": "Saisir une valeur personnalisée",
+  "@settings.control.customValuePlaceholder": {
+    "sourceHash": "999a63f"
+  },
+  "settings.control.customOption": "Personnalisé...",
+  "@settings.control.customOption": {
+    "sourceHash": "b497c0b"
+  },
+  "settings.control.customPrefix": "Personnalisé : {value}",
+  "@settings.control.customPrefix": {
+    "sourceHash": "58c3782"
+  },
+  "settings.sidebar.searchPlaceholder": "Rechercher dans les réglages...",
+  "@settings.sidebar.searchPlaceholder": {
+    "sourceHash": "6801207"
+  },
+  "settings.sidebar.clearSearch": "Effacer la recherche",
+  "@settings.sidebar.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "settings.sidebar.sections": "Sections de réglages",
+  "@settings.sidebar.sections": {
+    "sourceHash": "e26d51d"
+  },
+  "settings.appearance.themeColorSwatchAria": "Ouvrir Réglages Système pour changer la couleur du thème système",
+  "@settings.appearance.themeColorSwatchAria": {
+    "sourceHash": "4cad022"
+  },
+  "settings.appearance.appColorHintPrefix": "Pour changer la couleur de votre thème système, allez dans",
+  "@settings.appearance.appColorHintPrefix": {
+    "sourceHash": "748470a"
+  },
+  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
+  "@settings.appearance.appColorHintLinkMac": {
+    "sourceHash": "5c94206"
+  },
+  "settings.appearance.appColorHintLinkOther": "les réglages d''apparence de votre système",
+  "@settings.appearance.appColorHintLinkOther": {
+    "sourceHash": "0aad057"
+  },
+  "settings.appearance.datePreviewLabel": "Aperçu :",
+  "@settings.appearance.datePreviewLabel": {
+    "sourceHash": "75954c5"
+  },
+  "settings.appearance.dateInvalidFormat": "Format non valide",
+  "@settings.appearance.dateInvalidFormat": {
+    "sourceHash": "b14c1c9"
+  },
+  "settings.appearance.hideFormatHelp": "Masquer l''aide sur le format",
+  "@settings.appearance.hideFormatHelp": {
+    "sourceHash": "391c6b3"
+  },
+  "settings.appearance.showFormatHelp": "Afficher l''aide sur le format",
+  "@settings.appearance.showFormatHelp": {
+    "sourceHash": "01cb92f"
+  },
+  "settings.appearance.formatPlaceholdersTitle": "Marqueurs de format",
+  "@settings.appearance.formatPlaceholdersTitle": {
+    "sourceHash": "9099bde"
+  },
+  "settings.appearance.formatHelpYear": "année à 4 chiffres (2025)",
+  "@settings.appearance.formatHelpYear": {
+    "sourceHash": "467ff57"
+  },
+  "settings.appearance.formatHelpMonth": "mois à 2 chiffres (01-12)",
+  "@settings.appearance.formatHelpMonth": {
+    "sourceHash": "b11b1a6"
+  },
+  "settings.appearance.formatHelpDay": "jour à 2 chiffres (01-31)",
+  "@settings.appearance.formatHelpDay": {
+    "sourceHash": "cb5c2d8"
+  },
+  "settings.appearance.formatHelpHour": "heure à 2 chiffres (00-23)",
+  "@settings.appearance.formatHelpHour": {
+    "sourceHash": "01feb4d"
+  },
+  "settings.appearance.formatHelpMinute": "minute à 2 chiffres (00-59)",
+  "@settings.appearance.formatHelpMinute": {
+    "sourceHash": "6dffd33"
+  },
+  "settings.appearance.formatHelpSecond": "seconde à 2 chiffres (00-59)",
+  "@settings.appearance.formatHelpSecond": {
+    "sourceHash": "982834c"
+  },
+  "settings.appearance.tintGroupDescription": "Ajoute une légère teinte de fond aux panneaux pour distinguer les types de volumes d''un coup d''œil.",
+  "@settings.appearance.tintGroupDescription": {
+    "sourceHash": "fae3040"
+  },
+  "settings.appearance.tintSwatchAria": "Choisir une couleur de teinte pour {label}",
+  "@settings.appearance.tintSwatchAria": {
+    "sourceHash": "b9030b5"
+  },
+  "settings.appearance.tintColorsAria": "Couleurs de teinte",
+  "@settings.appearance.tintColorsAria": {
+    "sourceHash": "c649cd7"
+  },
+  "settings.appearance.tintTriggerAria": "{label} (actuellement : {colorName})",
+  "@settings.appearance.tintTriggerAria": {
+    "sourceHash": "d9a874a"
+  },
+  "settings.ai.providerAria": "Fournisseur d''IA",
+  "@settings.ai.providerAria": {
+    "sourceHash": "8791254"
+  },
+  "settings.ai.loading": "Chargement...",
+  "@settings.ai.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "settings.ai.tooltipOff": "Les fonctionnalités d''IA sont désactivées. Cmdr fonctionne pleinement sans IA : les suggestions et les fonctionnalités intelligentes sont simplement masquées.",
+  "@settings.ai.tooltipOff": {
+    "sourceHash": "2b31468"
+  },
+  "settings.ai.tooltipCloud": "Apportez votre propre clé API pour une IA rapide et de haute qualité. Fonctionne avec OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, ou tout serveur local que vous exécutez (Ollama, LM Studio, etc.). Nécessite une connexion internet (sauf avec un serveur local). Aucun espace disque ni mémoire utilisés par Cmdr.",
+  "@settings.ai.tooltipCloud": {
+    "sourceHash": "1f63e66"
+  },
+  "settings.ai.tooltipLocal": "Exécute un petit modèle de langage entièrement sur votre appareil. Confidentialité maximale : rien ne quitte votre ordinateur. Fonctionne hors ligne. Utilise ~2 GB d''espace disque et ~400 MB de mémoire (varie selon la taille du contexte). Nécessite Apple Silicon (M1+).",
+  "@settings.ai.tooltipLocal": {
+    "sourceHash": "bf83043"
+  },
+  "settings.ai.tooltipLocalDisabled": "L''IA locale nécessite Apple Silicon (M1 ou ultérieur). Utilisez plutôt l''IA dans le cloud.",
+  "@settings.ai.tooltipLocalDisabled": {
+    "sourceHash": "147cb2e"
+  },
+  "settings.fileSystemWatching.indexSize": "Taille de l''index",
+  "@settings.fileSystemWatching.indexSize": {
+    "sourceHash": "adbb92c"
+  },
+  "settings.fileSystemWatching.clearing": "Effacement...",
+  "@settings.fileSystemWatching.clearing": {
+    "sourceHash": "07a8243"
+  },
+  "settings.fileSystemWatching.clearIndex": "Effacer l''index",
+  "@settings.fileSystemWatching.clearIndex": {
+    "sourceHash": "14e9925"
+  },
+  "settings.fileSystemWatching.noIndex": "Aucun index",
+  "@settings.fileSystemWatching.noIndex": {
+    "sourceHash": "14eee3b"
+  },
+  "settings.fileSystemWatching.clearIndexDescription": "Supprime la base de données d''index. Un nouveau balayage démarre la prochaine fois que l''indexation est activée.",
+  "@settings.fileSystemWatching.clearIndexDescription": {
+    "sourceHash": "61d9b4e"
+  },
+  "settings.fileSystemWatching.cardDownloads": "Téléchargements",
+  "@settings.fileSystemWatching.cardDownloads": {
+    "sourceHash": "d5fdc1a"
+  },
+  "settings.fileSystemWatching.cardLowDiskSpace": "Espace disque faible",
+  "@settings.fileSystemWatching.cardLowDiskSpace": {
+    "sourceHash": "5b1f5bf"
+  },
+  "settings.appearance.card.language": "Langue",
+  "@settings.appearance.card.language": {
+    "sourceHash": "a4fe652"
+  },
+  "settings.appearance.card.theme": "Thème",
+  "@settings.appearance.card.theme": {
+    "sourceHash": "efb52e7"
+  },
+  "settings.appearance.card.listColoring": "Coloration de la liste",
+  "@settings.appearance.card.listColoring": {
+    "sourceHash": "6e50578"
+  },
+  "settings.appearance.card.dateAndTime": "Date et heure",
+  "@settings.appearance.card.dateAndTime": {
+    "sourceHash": "a079c3b"
+  },
+  "settings.appearance.card.paneTints": "Teintes des panneaux",
+  "@settings.appearance.card.paneTints": {
+    "sourceHash": "8bc83d1"
+  },
+  "settings.appearance.card.namesAndIcons": "Noms et icônes",
+  "@settings.appearance.card.namesAndIcons": {
+    "sourceHash": "8386169"
+  },
+  "settings.appearance.card.briefMode": "Mode Bref",
+  "@settings.appearance.card.briefMode": {
+    "sourceHash": "b75e4b3"
+  },
+  "settings.fileOperations.card.renaming": "Renommage",
+  "@settings.fileOperations.card.renaming": {
+    "sourceHash": "ba6aeb3"
+  },
+  "settings.network.card.connection": "Connexion",
+  "@settings.network.card.connection": {
+    "sourceHash": "639a40e"
+  },
+  "settings.network.card.performanceAndTimeouts": "Performance et délais d''attente",
+  "@settings.network.card.performanceAndTimeouts": {
+    "sourceHash": "51014ee"
+  },
+  "settings.advanced.card.performance": "Performance",
+  "@settings.advanced.card.performance": {
+    "sourceHash": "442aded"
+  },
+  "settings.advanced.card.fileWatching": "Surveillance des fichiers",
+  "@settings.advanced.card.fileWatching": {
+    "sourceHash": "c65b844"
+  },
+  "settings.advanced.card.networkAndMounts": "Réseau et montages",
+  "@settings.advanced.card.networkAndMounts": {
+    "sourceHash": "cdde638"
+  },
+  "settings.advanced.card.hintsAndWarnings": "Astuces et avertissements",
+  "@settings.advanced.card.hintsAndWarnings": {
+    "sourceHash": "8754216"
+  },
+  "settings.advanced.card.input": "Saisie",
+  "@settings.advanced.card.input": {
+    "sourceHash": "36ecb4f"
+  },
+  "settings.advanced.card.fileOperations": "Opérations sur les fichiers",
+  "@settings.advanced.card.fileOperations": {
+    "sourceHash": "ed23515"
+  },
+  "settings.advanced.card.historyAndLimits": "Historique et limites",
+  "@settings.advanced.card.historyAndLimits": {
+    "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.loggingAndDiagnostics": "Journalisation et diagnostics",
+  "@settings.advanced.card.loggingAndDiagnostics": {
+    "sourceHash": "5d74805"
+  },
+  "settings.advanced.card.updates": "Mises à jour",
+  "@settings.advanced.card.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.updates.card.updates": "Mises à jour",
+  "@settings.updates.card.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.updates.card.privacyAndDataSharing": "Confidentialité et partage de données",
+  "@settings.updates.card.privacyAndDataSharing": {
+    "sourceHash": "ae4aabf"
+  },
+  "settings.fileSystemWatching.globalShortcutHint": "Modifiez le raccourci sous Raccourcis clavier → Aller au dernier téléchargement (global).",
+  "@settings.fileSystemWatching.globalShortcutHint": {
+    "sourceHash": "1af3da4"
+  },
+  "settings.network.localNetworkAccessLabel": "Accès {localNetwork}",
+  "@settings.network.localNetworkAccessLabel": {
+    "sourceHash": "61ce300"
+  },
+  "settings.network.permissionIntroPrefix": "Cmdr a besoin de {localNetwork} pour trouver les serveurs SMB, lister les partages disponibles, et se connecter directement pour des transferts de fichiers plus rapides. La première fois que vous ouvrez Réseau ou utilisez ",
+  "@settings.network.permissionIntroPrefix": {
+    "sourceHash": "4f7f54f"
+  },
+  "settings.network.permissionIntroConnectLink": "Se connecter au serveur…",
+  "@settings.network.permissionIntroConnectLink": {
+    "sourceHash": "6188f47"
+  },
+  "settings.network.permissionIntroSuffix": ", macOS vous demandera. Dites oui.",
+  "@settings.network.permissionIntroSuffix": {
+    "sourceHash": "657bee8"
+  },
+  "settings.network.manageAnytimePrefix": "Gérez ceci à tout moment dans",
+  "@settings.network.manageAnytimePrefix": {
+    "sourceHash": "10b34d4"
+  },
+  "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
+  "@settings.network.permissionPath": {
+    "sourceHash": "b87dc1e"
+  },
+  "settings.network.permissionWithout": "Sans cela, Cmdr peut toujours lire et écrire des fichiers sur les partages déjà montés, mais vous ne pouvez pas découvrir de nouveaux serveurs ni utiliser notre connexion directe plus rapide.",
+  "@settings.network.permissionWithout": {
+    "sourceHash": "4beca45"
+  },
+  "settings.network.customTimeoutUnit": "secondes",
+  "@settings.network.customTimeoutUnit": {
+    "sourceHash": "59f006d"
+  },
+  "settings.updates.emailPlaceholder": "you@example.com",
+  "@settings.updates.emailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "settings.updates.checkForUpdates": "Vérifier les mises à jour",
+  "@settings.updates.checkForUpdates": {
+    "sourceHash": "f26f327"
+  },
+  "settings.updates.errorPrefix": "Erreur :",
+  "@settings.updates.errorPrefix": {
+    "sourceHash": "6170629"
+  },
+  "settings.updates.sendErrorReport": "Envoyer un rapport d''erreur",
+  "@settings.updates.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "settings.updates.emailConfirmHint": "Vérifiez votre boîte de réception pour confirmer votre e-mail. Merci de votre aide !",
+  "@settings.updates.emailConfirmHint": {
+    "sourceHash": "b96010e"
+  },
+  "settings.updates.emailSignupError": "Désolé, nous n''avons pas pu vous inscrire pour le moment. Réessayer ?",
+  "@settings.updates.emailSignupError": {
+    "sourceHash": "0aac3a9"
+  },
+  "settings.updates.emailPrivacyNote": "Stocké uniquement sur votre Mac. Nous ne l''envoyons jamais avec vos données d''usage anonymes, donc vos stats ne peuvent pas être reliées à vous. Utilisé uniquement pour vous contacter et, en option, pour joindre à un rapport que vous envoyez. Pour cesser de recevoir des e-mails, utilisez le lien de désabonnement dans tout message que nous envoyons.",
+  "@settings.updates.emailPrivacyNote": {
+    "sourceHash": "5dd1e94"
+  },
+  "settings.logging.openLogFile": "Ouvrir le fichier journal",
+  "@settings.logging.openLogFile": {
+    "sourceHash": "ec1bc04"
+  },
+  "settings.logging.copied": "Copié !",
+  "@settings.logging.copied": {
+    "sourceHash": "ea61bc1"
+  },
+  "settings.logging.copyDiagnostics": "Copier les infos de diagnostic",
+  "@settings.logging.copyDiagnostics": {
+    "sourceHash": "b8e7644"
+  },
+  "settings.mcp.checkPort": "Vérifier le port",
+  "@settings.mcp.checkPort": {
+    "sourceHash": "de685bf"
+  },
+  "settings.mcp.runningOnPort": "Le serveur s''exécute sur le port {runningPort}",
+  "@settings.mcp.runningOnPort": {
+    "sourceHash": "a9dd980"
+  },
+  "settings.mcp.ephemeral": "(éphémère)",
+  "@settings.mcp.ephemeral": {
+    "sourceHash": "42fb229"
+  },
+  "settings.mcp.portInUseFallback": "(le port {port} était utilisé)",
+  "@settings.mcp.portInUseFallback": {
+    "sourceHash": "bf23daa"
+  },
+  "settings.mcp.checkingPort": "Vérification de la disponibilité du port...",
+  "@settings.mcp.checkingPort": {
+    "sourceHash": "c5432bf"
+  },
+  "settings.mcp.portAvailable": "Le port {port} est disponible",
+  "@settings.mcp.portAvailable": {
+    "sourceHash": "4559f69"
+  },
+  "settings.mcp.portInUseStillRunning": "Le port {port} est utilisé, toujours en cours d''exécution sur le port {runningPort}",
+  "@settings.mcp.portInUseStillRunning": {
+    "sourceHash": "e188629"
+  },
+  "settings.mcp.portInUse": "Le port {port} est utilisé",
+  "@settings.mcp.portInUse": {
+    "sourceHash": "4f746de"
+  },
+  "settings.mcp.usePortInstead": "Utiliser le port {suggestedPort} à la place",
+  "@settings.mcp.usePortInstead": {
+    "sourceHash": "a0d7a0d"
+  },
+  "settings.advanced.warningBanner": "Ces réglages sont destinés aux utilisateurs avancés. Des valeurs incorrectes peuvent entraîner des problèmes de performance ou un comportement inattendu.",
+  "@settings.advanced.warningBanner": {
+    "sourceHash": "b1dbbf4"
+  },
+  "settings.advanced.resetAll": "Tout réinitialiser par défaut",
+  "@settings.advanced.resetAll": {
+    "sourceHash": "a04d9be"
+  },
+  "settings.advanced.resetAllConfirm": "Réinitialiser tous les réglages avancés à leurs valeurs par défaut ? Cette action est irréversible.",
+  "@settings.advanced.resetAllConfirm": {
+    "sourceHash": "be08f2a"
+  },
+  "settings.advanced.resetAllConfirmTitle": "Réinitialiser les réglages avancés",
+  "@settings.advanced.resetAllConfirmTitle": {
+    "sourceHash": "a1d9808"
+  },
+  "settings.advanced.defaultPrefix": "Par défaut :",
+  "@settings.advanced.defaultPrefix": {
+    "sourceHash": "d1f6d9e"
+  },
+  "settings.applier.logStorageRestart": "Redémarrez Cmdr pour appliquer le changement de stockage des journaux.",
+  "@settings.applier.logStorageRestart": {
+    "sourceHash": "b833dee"
+  }
+}

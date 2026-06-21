@@ -1,0 +1,26 @@
+{
+  "whatsNew.dialog.title": "Wat is er nieuw in Cmdr",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "Hier is nog niets te zien. Nieuwe wijzigingen verschijnen hier na een update.",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.dialog.seeFullChangelog": "Bekijk volledige changelog",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "Geen interesse in changelogs",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "Sluit",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "Begrepen, geen updatenotities meer. Schakel ze altijd weer in via Instellingen > Updates en privacy.",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

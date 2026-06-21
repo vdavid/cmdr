@@ -1,0 +1,26 @@
+{
+  "whatsNew.dialog.title": "Cmdr 新增功能",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "这里暂时还没有内容。有新变化时，更新后会显示在这里。",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.dialog.seeFullChangelog": "查看完整更新日志",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "不想看更新日志",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "关闭",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "明白了，不再显示更新说明。你随时可以在“设置 > 更新与隐私”中重新开启。",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

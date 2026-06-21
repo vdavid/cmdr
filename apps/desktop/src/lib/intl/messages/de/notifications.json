@@ -1,0 +1,6 @@
+{
+  "notifications.permissionDenied": "macOS-Mitteilungen sind aus. Öffne die Systemeinstellungen, um sie zu erlauben.",
+  "@notifications.permissionDenied": {
+    "sourceHash": "4fef9ce"
+  }
+}

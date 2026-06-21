@@ -1,0 +1,6 @@
+{
+  "common.downloadsFdaHint": "Cmdr a besoin de l''accès complet au disque pour surveiller votre dossier Téléchargements. <settingsLink>Ouvrir les Réglages Système</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "sourceHash": "315e1d8"
+  }
+}

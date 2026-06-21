@@ -1,0 +1,138 @@
+{
+  "downloads.toast.downloaded": "Đã tải xuống <file>{fileName}</file>",
+  "@downloads.toast.downloaded": {
+    "sourceHash": "7bc4ace"
+  },
+  "downloads.toast.inSubdir": "trong {subdir}",
+  "@downloads.toast.inSubdir": {
+    "sourceHash": "eea56f4"
+  },
+  "downloads.toast.learnIntro": "Một mẹo hay để nhảy đến mục tải về",
+  "@downloads.toast.learnIntro": {
+    "sourceHash": "3a06888"
+  },
+  "downloads.toast.inAppHint": "Trong ứng dụng: Nhấn <chip>{key}</chip> để nhảy đến đây",
+  "@downloads.toast.inAppHint": {
+    "sourceHash": "5b70d9c"
+  },
+  "downloads.toast.globalHint": "Trong <em>bất kỳ</em> ứng dụng nào (phím tắt toàn cục), nhấn <chip>{key}</chip>",
+  "@downloads.toast.globalHint": {
+    "sourceHash": "785e1f3"
+  },
+  "downloads.toast.summaryBoth": "Nhảy đến bằng <inApp>{inAppKey}</inApp> trong ứng dụng, <global>{globalKey}</global> toàn cục.",
+  "@downloads.toast.summaryBoth": {
+    "sourceHash": "59c4131"
+  },
+  "downloads.toast.summaryInApp": "Nhảy đến bằng <inApp>{inAppKey}</inApp> trong ứng dụng.",
+  "@downloads.toast.summaryInApp": {
+    "sourceHash": "2c0fd22"
+  },
+  "downloads.toast.summaryGlobal": "Nhảy đến bằng <global>{globalKey}</global> toàn cục.",
+  "@downloads.toast.summaryGlobal": {
+    "sourceHash": "1bd00be"
+  },
+  "downloads.toast.expandTip": "Hiện mẹo phím tắt",
+  "@downloads.toast.expandTip": {
+    "sourceHash": "9dfbe32"
+  },
+  "downloads.toast.collapseTip": "Thu gọn thông báo này",
+  "@downloads.toast.collapseTip": {
+    "sourceHash": "b404794"
+  },
+  "downloads.toast.stopShowing": "Ngừng hiện những thông báo này",
+  "@downloads.toast.stopShowing": {
+    "sourceHash": "36faf9f"
+  },
+  "downloads.toast.jumpToFile": "Nhảy đến tệp",
+  "@downloads.toast.jumpToFile": {
+    "sourceHash": "4511f65"
+  },
+  "downloads.notification.title": "Đã tải xuống {fileName}",
+  "@downloads.notification.title": {
+    "sourceHash": "a2b74bc"
+  },
+  "downloads.empty.message": "Thư mục Tải về của bạn trống. Vẫn đến đó chứ?",
+  "@downloads.empty.message": {
+    "sourceHash": "83e7e07"
+  },
+  "downloads.empty.dismiss": "Bỏ qua",
+  "@downloads.empty.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.empty.goToDownloads": "Đến thư mục Tải về",
+  "@downloads.empty.goToDownloads": {
+    "sourceHash": "5c72aeb"
+  },
+  "downloads.fda.message": "Cmdr cần Full Disk Access để theo dõi thư mục Tải về của bạn.",
+  "@downloads.fda.message": {
+    "sourceHash": "82c82c6"
+  },
+  "downloads.fda.dismiss": "Bỏ qua",
+  "@downloads.fda.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.fda.openSystemSettings": "Mở System Settings",
+  "@downloads.fda.openSystemSettings": {
+    "sourceHash": "18196b3"
+  },
+  "downloads.warnToast.message": "Phím tắt {binding} nhảy đến mục tải xuống mới nhất của bạn từ bất cứ đâu. Giữ bật chứ?",
+  "@downloads.warnToast.message": {
+    "sourceHash": "b174604"
+  },
+  "downloads.warnToast.turnOff": "Tắt đi",
+  "@downloads.warnToast.turnOff": {
+    "sourceHash": "74039ed"
+  },
+  "downloads.warnToast.keepOn": "Giữ bật",
+  "@downloads.warnToast.keepOn": {
+    "sourceHash": "cbfff78"
+  },
+  "downloads.shortcutRow.scopeTitle": "Toàn cục",
+  "@downloads.shortcutRow.scopeTitle": {
+    "sourceHash": "a258b30"
+  },
+  "downloads.shortcutRow.commandName": "Đến mục tải xuống mới nhất <marker>(toàn cục)</marker>",
+  "@downloads.shortcutRow.commandName": {
+    "sourceHash": "83f6d4b"
+  },
+  "downloads.shortcutRow.modifiedTooltip": "Đã thay đổi so với mặc định",
+  "@downloads.shortcutRow.modifiedTooltip": {
+    "sourceHash": "3d86215"
+  },
+  "downloads.shortcutRow.resetTooltip": "Đặt lại về mặc định",
+  "@downloads.shortcutRow.resetTooltip": {
+    "sourceHash": "bc5b45a"
+  },
+  "downloads.shortcutRow.pressKeys": "Nhấn phím...",
+  "@downloads.shortcutRow.pressKeys": {
+    "sourceHash": "37aa30c"
+  },
+  "downloads.shortcutRow.registered": "Đã đăng ký",
+  "@downloads.shortcutRow.registered": {
+    "sourceHash": "2351ee9"
+  },
+  "downloads.shortcutRow.notRegistered": "Chưa đăng ký",
+  "@downloads.shortcutRow.notRegistered": {
+    "sourceHash": "ca374c2"
+  },
+  "downloads.shortcutRow.invalidCombo": "Không thể đăng ký: tổ hợp phím không hợp lệ",
+  "@downloads.shortcutRow.invalidCombo": {
+    "sourceHash": "32c3532"
+  },
+  "downloads.shortcutRow.registerFailed": "Không thể đăng ký: {reason}",
+  "@downloads.shortcutRow.registerFailed": {
+    "sourceHash": "2e6fb97"
+  },
+  "downloads.shortcutRow.addModifier": "Thêm một phím bổ trợ (⌘, ⌃, ⌥, hoặc ⇧)",
+  "@downloads.shortcutRow.addModifier": {
+    "sourceHash": "28a5ba2"
+  },
+  "downloads.toggleDescription.bound": "Nhấn {binding} từ bất kỳ ứng dụng nào để nhảy đến mục tải xuống gần đây nhất của bạn.",
+  "@downloads.toggleDescription.bound": {
+    "sourceHash": "be43b35"
+  },
+  "downloads.toggleDescription.unbound": "Nhảy đến mục tải xuống gần đây nhất của bạn từ bất kỳ ứng dụng nào.",
+  "@downloads.toggleDescription.unbound": {
+    "sourceHash": "187cdec"
+  }
+}

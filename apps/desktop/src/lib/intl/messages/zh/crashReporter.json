@@ -1,0 +1,62 @@
+{
+  "crashReporter.dialog.title": "发送崩溃报告？",
+  "@crashReporter.dialog.title": {
+    "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.body": "Cmdr 上次意外退出了。这是一份崩溃报告，里面的详情有助于修复这个问题。",
+  "@crashReporter.dialog.body": {
+    "sourceHash": "a9661e3"
+  },
+  "crashReporter.dialog.privacyNote": "它包含应用版本、macOS 版本，以及代码中崩溃的部分。不含文件名或个人数据。",
+  "@crashReporter.dialog.privacyNote": {
+    "sourceHash": "7f7912a"
+  },
+  "crashReporter.dialog.reportIdLabel": "报告 ID：",
+  "@crashReporter.dialog.reportIdLabel": {
+    "sourceHash": "df3d47e"
+  },
+  "crashReporter.dialog.reportIdHelp": "如果你就此问题联系我们，请提及这个 ID。",
+  "@crashReporter.dialog.reportIdHelp": {
+    "sourceHash": "c63b08a"
+  },
+  "crashReporter.dialog.showDetails": "显示报告详情",
+  "@crashReporter.dialog.showDetails": {
+    "sourceHash": "11756f2"
+  },
+  "crashReporter.dialog.copy": "拷贝",
+  "@crashReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "crashReporter.dialog.copied": "已拷贝",
+  "@crashReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "crashReporter.dialog.alwaysSend": "始终发送崩溃报告",
+  "@crashReporter.dialog.alwaysSend": {
+    "sourceHash": "8306c0e"
+  },
+  "crashReporter.dialog.attachEmail": "附上我的邮箱（{email}）以便回复",
+  "@crashReporter.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "crashReporter.dialog.dismiss": "关闭",
+  "@crashReporter.dialog.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "crashReporter.dialog.send": "发送报告",
+  "@crashReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "crashReporter.dialog.sending": "正在发送…",
+  "@crashReporter.dialog.sending": {
+    "sourceHash": "286a3af"
+  },
+  "crashReporter.sentToast.message": "崩溃报告已发送。感谢你帮助改进 Cmdr。",
+  "@crashReporter.sentToast.message": {
+    "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.changeSettings": "在“设置 > 更新”中更改",
+  "@crashReporter.sentToast.changeSettings": {
+    "sourceHash": "25d151d"
+  }
+}

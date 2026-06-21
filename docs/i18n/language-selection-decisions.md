@@ -3,7 +3,7 @@
 Which of the 139 researched languages Cmdr plans to localize, and in what order. Per-language knowledge lives in
 `<tag>/style.md`; this is the ship/skip and sequencing roster.
 
-- **wave 1-4**: implementation order. Waves 1-2 are driven by Cmdr' 30-day install usage (analytics, 2026-06-20); waves
+- **wave 1-4**: implementation order. Waves 1-2 are driven by Cmdr's 30-day install usage (analytics, 2026-06-20); waves
   3-4 are market-size / reach estimates, to re-rank as the user base grows. `en` is the source locale (not translated).
 - **deferred**: a regional/script variant added after its base, on demand (es-ES, fr-CA, zh-Hant, zh-HK).
 - **exclude RTL**: set aside until Cmdr supports right-to-left layout. Decision 2026-06-20: no RTL for now.

@@ -1,0 +1,6 @@
+{
+  "common.downloadsFdaHint": "O Cmdr precisa de Acesso Total ao Disco para monitorar sua pasta Downloads. <settingsLink>Abrir os Ajustes do Sistema</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "sourceHash": "315e1d8"
+  }
+}

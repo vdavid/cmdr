@@ -1,0 +1,10 @@
+{
+  "main.upgradeNudge.mac": "我们新增了入门引导选项。打开 Cmdr > 入门引导… 来查看。",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "477f3a5"
+  },
+  "main.upgradeNudge.other": "我们新增了入门引导选项。打开命令面板并运行入门引导… 来查看。",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "4b0b39e"
+  }
+}

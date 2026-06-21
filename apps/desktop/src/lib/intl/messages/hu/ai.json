@@ -1,0 +1,378 @@
+{
+  "ai.toast.downloadingTitle": "AI-modell letöltése…",
+  "@ai.toast.downloadingTitle": {
+    "sourceHash": "453ec3b"
+  },
+  "ai.toast.startingDownload": "Letöltés indítása…",
+  "@ai.toast.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · {eta} van hátra}}",
+  "@ai.toast.progress": {
+    "sourceHash": "93d798b"
+  },
+  "ai.toast.cancel": "Mégsem",
+  "@ai.toast.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.toast.installingTitle": "AI beállítása…",
+  "@ai.toast.installingTitle": {
+    "sourceHash": "509f6c1"
+  },
+  "ai.toast.installingDescription": "Szerver indítása",
+  "@ai.toast.installingDescription": {
+    "sourceHash": "8a0f9d9"
+  },
+  "ai.toast.readyTitle": "Az AI készen áll",
+  "@ai.toast.readyTitle": {
+    "sourceHash": "276c384"
+  },
+  "ai.toast.readyDescription": "Hozz létre egy új mappát (F7), és nézd meg az AI-alapú névjavaslatokat.",
+  "@ai.toast.readyDescription": {
+    "sourceHash": "b3ae1b2"
+  },
+  "ai.toast.gotIt": "Értem",
+  "@ai.toast.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "ai.toast.startingTitle": "Az AI indul…",
+  "@ai.toast.startingTitle": {
+    "sourceHash": "29fdbca"
+  },
+  "ai.toast.startingDescription": "A modell betöltése néhány másodpercet vesz igénybe",
+  "@ai.toast.startingDescription": {
+    "sourceHash": "94ecf6d"
+  },
+  "ai.toast.downloadCloseTooltip": "Ez az értesítés bezárható; a letöltés a háttérben folytatódik",
+  "@ai.toast.downloadCloseTooltip": {
+    "sourceHash": "16db2bd"
+  },
+  "ai.translateError.off.title": "Az AI ki van kapcsolva",
+  "@ai.translateError.off.title": {
+    "sourceHash": "99ce709"
+  },
+  "ai.translateError.off.body": "Kapcsolj be egy szolgáltatót itt: Beállítások > AI, hogy használd az AI-keresést.",
+  "@ai.translateError.off.body": {
+    "sourceHash": "d8d6368"
+  },
+  "ai.translateError.notConfigured.title": "Az AI még egy kis beállítást igényel",
+  "@ai.translateError.notConfigured.title": {
+    "sourceHash": "bf5688a"
+  },
+  "ai.translateError.notConfigured.body": "Fejezd be a szolgáltató beállítását itt: Beállítások > AI, majd próbáld újra.",
+  "@ai.translateError.notConfigured.body": {
+    "sourceHash": "65133a8"
+  },
+  "ai.translateError.authFailed.title": "Az API-kulcsot elutasították",
+  "@ai.translateError.authFailed.title": {
+    "sourceHash": "93e6261"
+  },
+  "ai.translateError.authFailed.body": "Ellenőrizd a kulcsodat itt: Beállítások > AI – lehet, hogy hibás vagy visszavont.",
+  "@ai.translateError.authFailed.body": {
+    "sourceHash": "2159d5e"
+  },
+  "ai.translateError.rateLimited.title": "Az AI-szolgáltatódnál elfogyott a hely",
+  "@ai.translateError.rateLimited.title": {
+    "sourceHash": "26e286e"
+  },
+  "ai.translateError.rateLimited.body": "Korlátozza a kéréseket, vagy elfogyott a csomagod kerete. Ellenőrizd a csomagodat és a számlázást, majd próbáld újra.",
+  "@ai.translateError.rateLimited.body": {
+    "sourceHash": "9b296d7"
+  },
+  "ai.translateError.timeout.title": "Az AI túl sokáig dolgozott",
+  "@ai.translateError.timeout.title": {
+    "sourceHash": "d684e3f"
+  },
+  "ai.translateError.timeout.body": "A kérés túllépte az időkorlátot. Próbáld újra egy pillanat múlva.",
+  "@ai.translateError.timeout.body": {
+    "sourceHash": "249b720"
+  },
+  "ai.translateError.unavailable.title": "Nem érhető el az AI-szolgáltatód",
+  "@ai.translateError.unavailable.title": {
+    "sourceHash": "e684bc4"
+  },
+  "ai.translateError.unavailable.body": "Ellenőrizd az internetkapcsolatodat vagy a szolgáltató állapotát, majd próbáld újra.",
+  "@ai.translateError.unavailable.body": {
+    "sourceHash": "ba30402"
+  },
+  "ai.translateError.emptyResponse.title": "Az AI üres választ adott",
+  "@ai.translateError.emptyResponse.title": {
+    "sourceHash": "61afc33"
+  },
+  "ai.translateError.emptyResponse.body": "Lehet, hogy a modellednek nagyobb keret kell ehhez. Próbálj egy gyorsabb modellt, például a gpt-4.1-mini-t itt: Beállítások > AI.",
+  "@ai.translateError.emptyResponse.body": {
+    "sourceHash": "f1704cc"
+  },
+  "ai.translateError.serverError.title": "Az AI-szolgáltatód gondba ütközött",
+  "@ai.translateError.serverError.title": {
+    "sourceHash": "1b98f6a"
+  },
+  "ai.translateError.serverError.body": "Valami váratlant adott vissza. Próbáld újra egy pillanat múlva.",
+  "@ai.translateError.serverError.body": {
+    "sourceHash": "3f4af5c"
+  },
+  "ai.translateError.parseError.title": "Nem sikerült értelmezni az AI válaszát",
+  "@ai.translateError.parseError.title": {
+    "sourceHash": "a509880"
+  },
+  "ai.translateError.parseError.body": "Próbáld újra, vagy válassz másik modellt itt: Beállítások > AI.",
+  "@ai.translateError.parseError.body": {
+    "sourceHash": "c299ec6"
+  },
+  "ai.translateError.unknownProvider.title": "Ez az AI-szolgáltató nem ismerős",
+  "@ai.translateError.unknownProvider.title": {
+    "sourceHash": "3b70b46"
+  },
+  "ai.translateError.unknownProvider.body": "Válassz egy szolgáltatót itt: Beállítások > AI.",
+  "@ai.translateError.unknownProvider.body": {
+    "sourceHash": "7042a75"
+  },
+  "ai.cloud.serviceAria": "Felhőalapú AI-szolgáltatás",
+  "@ai.cloud.serviceAria": {
+    "sourceHash": "7dec1e0"
+  },
+  "ai.cloud.endpointLabel": "Végpont",
+  "@ai.cloud.endpointLabel": {
+    "sourceHash": "3df9726"
+  },
+  "ai.cloud.endpointDescription": "A kiválasztott szolgáltatás API-végpontjának URL-címe.",
+  "@ai.cloud.endpointDescription": {
+    "sourceHash": "884632b"
+  },
+  "ai.cloud.endpointPlaceholder": "Példa: https://api.example.com/v1",
+  "@ai.cloud.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "ai.cloud.endpointAria": "Végpont URL-címe",
+  "@ai.cloud.endpointAria": {
+    "sourceHash": "2578179"
+  },
+  "ai.cloud.apiKeyLabel": "API-kulcs",
+  "@ai.cloud.apiKeyLabel": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.apiKeyDescription": "Az API-kulcsod ehhez a szolgáltatáshoz.",
+  "@ai.cloud.apiKeyDescription": {
+    "sourceHash": "6a95580"
+  },
+  "ai.cloud.apiKeyPlaceholderOpenai": "Példa: sk-abc123…",
+  "@ai.cloud.apiKeyPlaceholderOpenai": {
+    "sourceHash": "f9701a2"
+  },
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Példa: sk-ant-abc123…",
+  "@ai.cloud.apiKeyPlaceholderAnthropic": {
+    "sourceHash": "5a4d18d"
+  },
+  "ai.cloud.apiKeyPlaceholderGeneric": "API-kulcs",
+  "@ai.cloud.apiKeyPlaceholderGeneric": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.modelLabel": "Modell",
+  "@ai.cloud.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.cloud.modelDescription": "A kiegészítésekhez használandó modell neve.",
+  "@ai.cloud.modelDescription": {
+    "sourceHash": "809fa50"
+  },
+  "ai.cloud.modelPlaceholderExample": "Példa: {model}",
+  "@ai.cloud.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "ai.cloud.modelPlaceholderGeneric": "Modell neve",
+  "@ai.cloud.modelPlaceholderGeneric": {
+    "sourceHash": "a3c3370"
+  },
+  "ai.cloud.checking": "Ellenőrzés…",
+  "@ai.cloud.checking": {
+    "sourceHash": "2e5f79b"
+  },
+  "ai.cloud.connected": "Csatlakozva",
+  "@ai.cloud.connected": {
+    "sourceHash": "2296556"
+  },
+  "ai.cloud.connectedNoModels": "Csatlakozva (a modell-lista nem érhető el)",
+  "@ai.cloud.connectedNoModels": {
+    "sourceHash": "54f2b6f"
+  },
+  "ai.cloud.recheck": "Újraellenőrzés",
+  "@ai.cloud.recheck": {
+    "sourceHash": "1f47d83"
+  },
+  "ai.cloud.authError": "Az API-kulcs érvénytelen",
+  "@ai.cloud.authError": {
+    "sourceHash": "74a88e4"
+  },
+  "ai.cloud.connectionError": "Nem érhető el a szerver",
+  "@ai.cloud.connectionError": {
+    "sourceHash": "3f378c3"
+  },
+  "ai.cloud.genericError": "Valami nem sikerült",
+  "@ai.cloud.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "ai.cloud.testConnection": "Kapcsolat tesztelése",
+  "@ai.cloud.testConnection": {
+    "sourceHash": "5bcf311"
+  },
+  "ai.cloud.unknownError": "Ismeretlen probléma",
+  "@ai.cloud.unknownError": {
+    "sourceHash": "27c2ccd"
+  },
+  "ai.local.memoryWarningAria": "Memóriafigyelmeztetés",
+  "@ai.local.memoryWarningAria": {
+    "sourceHash": "7688d6a"
+  },
+  "ai.local.warningDanger": "Ez túllépi a rendelkezésre álló memóriát. A rendszered jelentősen lelassulhat.",
+  "@ai.local.warningDanger": {
+    "sourceHash": "dd5c518"
+  },
+  "ai.local.warningCaution": "Ez a rendelkezésre álló memória nagy részét lefoglalja. Más alkalmazások lelassulhatnak.",
+  "@ai.local.warningCaution": {
+    "sourceHash": "f8070e9"
+  },
+  "ai.local.statusRestarting": "Újraindítás…",
+  "@ai.local.statusRestarting": {
+    "sourceHash": "2c5bfcb"
+  },
+  "ai.local.statusStarting": "Indítás…",
+  "@ai.local.statusStarting": {
+    "sourceHash": "82b9363"
+  },
+  "ai.local.statusRunning": "Fut",
+  "@ai.local.statusRunning": {
+    "sourceHash": "f4ccae2"
+  },
+  "ai.local.statusStopped": "Leállítva",
+  "@ai.local.statusStopped": {
+    "sourceHash": "1a4f630"
+  },
+  "ai.local.installStepExtracting": "1/4. lépés: Futtatókörnyezet kicsomagolása…",
+  "@ai.local.installStepExtracting": {
+    "sourceHash": "941db20"
+  },
+  "ai.local.installStepDownloading": "2/4. lépés: Modell letöltése…",
+  "@ai.local.installStepDownloading": {
+    "sourceHash": "56596cb"
+  },
+  "ai.local.installStepVerifying": "3/4. lépés: Letöltés ellenőrzése…",
+  "@ai.local.installStepVerifying": {
+    "sourceHash": "4133988"
+  },
+  "ai.local.installStepStarting": "4/4. lépés: Szerver indítása…",
+  "@ai.local.installStepStarting": {
+    "sourceHash": "39acba1"
+  },
+  "ai.local.startingDownload": "Letöltés indítása…",
+  "@ai.local.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.local.etaSeconds": "~{value} mp van hátra",
+  "@ai.local.etaSeconds": {
+    "sourceHash": "045b712"
+  },
+  "ai.local.etaMinutes": "~{value} perc van hátra",
+  "@ai.local.etaMinutes": {
+    "sourceHash": "978afd8"
+  },
+  "ai.local.etaHours": "~{value} óra van hátra",
+  "@ai.local.etaHours": {
+    "sourceHash": "b1944ec"
+  },
+  "ai.local.modelLabel": "Modell",
+  "@ai.local.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.local.serverLabel": "Szerver",
+  "@ai.local.serverLabel": {
+    "sourceHash": "aef7de2"
+  },
+  "ai.local.modelUnknown": "Ismeretlen",
+  "@ai.local.modelUnknown": {
+    "sourceHash": "b764cdc"
+  },
+  "ai.local.modelSizeUnknown": "?",
+  "@ai.local.modelSizeUnknown": {
+    "sourceHash": "8a8de82"
+  },
+  "ai.local.notInstalled": "Nincs telepítve. A helyi modell ({modelName}, {modelSize}) teljes egészében az eszközödön fut a maximális adatvédelemért. Apple Silicon szükséges hozzá.",
+  "@ai.local.notInstalled": {
+    "sourceHash": "163bf42"
+  },
+  "ai.local.applyContextSize": "Alkalmaz",
+  "@ai.local.applyContextSize": {
+    "sourceHash": "31e392d"
+  },
+  "ai.local.ramGaugeAria": "Memóriahasználat-mérő",
+  "@ai.local.ramGaugeAria": {
+    "sourceHash": "d6d09e9"
+  },
+  "ai.local.ramLegendSystem": "Rendszer {size}",
+  "@ai.local.ramLegendSystem": {
+    "sourceHash": "1497c04"
+  },
+  "ai.local.ramLegendApps": "Alkalmazások {size}",
+  "@ai.local.ramLegendApps": {
+    "sourceHash": "d02b14c"
+  },
+  "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
+  "@ai.local.ramLegendCmdrAi": {
+    "sourceHash": "93e2741"
+  },
+  "ai.local.ramLegendProjected": "Várható",
+  "@ai.local.ramLegendProjected": {
+    "sourceHash": "e394afa"
+  },
+  "ai.local.ramLegendFreed": "Felszabadul",
+  "@ai.local.ramLegendFreed": {
+    "sourceHash": "c8affca"
+  },
+  "ai.local.ramLegendFree": "Szabad {size}",
+  "@ai.local.ramLegendFree": {
+    "sourceHash": "afe9c0d"
+  },
+  "ai.local.cancel": "Mégsem",
+  "@ai.local.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.local.stopServer": "Szerver leállítása",
+  "@ai.local.stopServer": {
+    "sourceHash": "a21bf60"
+  },
+  "ai.local.startServer": "Szerver indítása",
+  "@ai.local.startServer": {
+    "sourceHash": "7b7da6f"
+  },
+  "ai.local.deleteModel": "Modell törlése",
+  "@ai.local.deleteModel": {
+    "sourceHash": "b7828ba"
+  },
+  "ai.local.downloadModel": "Modell letöltése",
+  "@ai.local.downloadModel": {
+    "sourceHash": "9979bea"
+  },
+  "ai.local.deleteDialogTitleDeleting": "Modell törlése…",
+  "@ai.local.deleteDialogTitleDeleting": {
+    "sourceHash": "413e1b9"
+  },
+  "ai.local.deleteDialogTitle": "Törlöd az AI-modellt?",
+  "@ai.local.deleteDialogTitle": {
+    "sourceHash": "c486f0c"
+  },
+  "ai.local.deletingStatus": "Szerver leállítása és fájlok eltávolítása…",
+  "@ai.local.deletingStatus": {
+    "sourceHash": "6671ac7"
+  },
+  "ai.local.deleteConfirmMessage": "Ezzel {modelSize} lemezterület szabadul fel. A helyi AI újbóli használatához újra le kell töltened.",
+  "@ai.local.deleteConfirmMessage": {
+    "sourceHash": "1a6ca0d"
+  },
+  "ai.local.deleteButtonDeleting": "Törlés…",
+  "@ai.local.deleteButtonDeleting": {
+    "sourceHash": "685ecb9"
+  },
+  "ai.local.deleteButton": "Törlés",
+  "@ai.local.deleteButton": {
+    "sourceHash": "e2d0a54"
+  }
+}

@@ -1,0 +1,366 @@
+{
+  "viewer.window.fallbackTitle": "Megjelenítő",
+  "@viewer.window.fallbackTitle": {
+    "sourceHash": "678bfa6"
+  },
+  "viewer.window.titleSuffix": "{fileName} | Megjelenítő",
+  "@viewer.window.titleSuffix": {
+    "sourceHash": "5ebd7f4"
+  },
+  "viewer.srHeading": "Fájlmegjelenítő",
+  "@viewer.srHeading": {
+    "sourceHash": "b32f632"
+  },
+  "viewer.loading": "Betöltés…",
+  "@viewer.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "viewer.error.noPath": "Nincs megadva fájlútvonal",
+  "@viewer.error.noPath": {
+    "sourceHash": "2b069fc"
+  },
+  "viewer.error.readFailed": "Nem sikerült beolvasni a fájlt",
+  "@viewer.error.readFailed": {
+    "sourceHash": "ea7d976"
+  },
+  "viewer.error.timeout": "Nem sikerült betölteni a fájlt. Lehet, hogy a kötet lassú, vagy nem válaszol.",
+  "@viewer.error.timeout": {
+    "sourceHash": "d163618"
+  },
+  "viewer.error.retry": "Újra",
+  "@viewer.error.retry": {
+    "sourceHash": "942087c"
+  },
+  "viewer.error.cancel": "Mégsem",
+  "@viewer.error.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.content.ariaLabel": "Fájltartalom: {fileName}",
+  "@viewer.content.ariaLabel": {
+    "sourceHash": "57b8613"
+  },
+  "viewer.binaryWarning.body": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kind>{kind}</kind> nézetét szeretnéd. Ehhez zárd be ezt az ablakot, és nyomd meg a <quickLookKey></quickLookKey> gombot a gyors nézethez, vagy az <openKey></openKey> gombot (vagy kattints duplán a fájlra), hogy a társított alkalmazásban nyisd meg.",
+  "@viewer.binaryWarning.body": {
+    "sourceHash": "42eda71"
+  },
+  "viewer.binaryWarning.kind.image": "képet",
+  "@viewer.binaryWarning.kind.image": {
+    "sourceHash": "6105d6c"
+  },
+  "viewer.binaryWarning.kind.document": "dokumentumot",
+  "@viewer.binaryWarning.kind.document": {
+    "sourceHash": "43cc23f"
+  },
+  "viewer.binaryWarning.dismiss": "Bezárás",
+  "@viewer.binaryWarning.dismiss": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.binaryWarning.suppressForever": "Ne jelenjen meg többé ez a figyelmeztetés",
+  "@viewer.binaryWarning.suppressForever": {
+    "sourceHash": "b85b92b"
+  },
+  "viewer.search.placeholder": "Keresés a fájlban…",
+  "@viewer.search.placeholder": {
+    "sourceHash": "c1dc89b"
+  },
+  "viewer.search.ariaLabel": "Szöveg keresése",
+  "@viewer.search.ariaLabel": {
+    "sourceHash": "38d268a"
+  },
+  "viewer.search.caseSensitive": "Kis- és nagybetűk megkülönböztetése",
+  "@viewer.search.caseSensitive": {
+    "sourceHash": "e124ba4"
+  },
+  "viewer.search.regex": "Regex",
+  "@viewer.search.regex": {
+    "sourceHash": "0f27125"
+  },
+  "viewer.search.matchPosition": "{current} / {total}{more, select, yes {+} other {}}",
+  "@viewer.search.matchPosition": {
+    "sourceHash": "ec24db4"
+  },
+  "viewer.search.searching": "Keresés…",
+  "@viewer.search.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "viewer.search.partial": "(részleges)",
+  "@viewer.search.partial": {
+    "sourceHash": "d0ffde3"
+  },
+  "viewer.search.noMatches": "Nincs találat",
+  "@viewer.search.noMatches": {
+    "sourceHash": "2df01a0"
+  },
+  "viewer.search.stop": "Keresés leállítása",
+  "@viewer.search.stop": {
+    "sourceHash": "c48cf72"
+  },
+  "viewer.search.stopTooltip": "Vizsgálat leállítása az eddigi találatok megtartásával",
+  "@viewer.search.stopTooltip": {
+    "sourceHash": "b86629c"
+  },
+  "viewer.search.previous": "Előző találat",
+  "@viewer.search.previous": {
+    "sourceHash": "daa2f8c"
+  },
+  "viewer.search.next": "Következő találat",
+  "@viewer.search.next": {
+    "sourceHash": "825e5ab"
+  },
+  "viewer.search.close": "Keresés bezárása",
+  "@viewer.search.close": {
+    "sourceHash": "55656b5"
+  },
+  "viewer.search.closeTooltip": "Bezárás",
+  "@viewer.search.closeTooltip": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.toolbar.viewMode.ariaLabel": "Nézet módja",
+  "@viewer.toolbar.viewMode.ariaLabel": {
+    "sourceHash": "18997f2"
+  },
+  "viewer.toolbar.viewMode.text": "Szöveg",
+  "@viewer.toolbar.viewMode.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.viewMode.viewAsText": "Megnyitás szövegként",
+  "@viewer.toolbar.viewMode.viewAsText": {
+    "sourceHash": "a0059b8"
+  },
+  "viewer.toolbar.viewMode.viewAsImage": "Megnyitás képként",
+  "@viewer.toolbar.viewMode.viewAsImage": {
+    "sourceHash": "ae04259"
+  },
+  "viewer.toolbar.viewMode.viewAsPdf": "Megnyitás PDF-ként",
+  "@viewer.toolbar.viewMode.viewAsPdf": {
+    "sourceHash": "ee89800"
+  },
+  "viewer.kind.image": "Kép",
+  "@viewer.kind.image": {
+    "sourceHash": "1aa4cb0"
+  },
+  "viewer.kind.pdf": "PDF",
+  "@viewer.kind.pdf": {
+    "sourceHash": "1d393b0"
+  },
+  "viewer.kind.text": "Szöveg",
+  "@viewer.kind.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.encoding.placeholder": "Kódolás",
+  "@viewer.toolbar.encoding.placeholder": {
+    "sourceHash": "4d25a47"
+  },
+  "viewer.toolbar.encoding.group.unicode": "Unicode",
+  "@viewer.toolbar.encoding.group.unicode": {
+    "sourceHash": "f922e0d"
+  },
+  "viewer.toolbar.encoding.group.western": "Nyugati",
+  "@viewer.toolbar.encoding.group.western": {
+    "sourceHash": "d7d2f0f"
+  },
+  "viewer.toolbar.encoding.detectedSuffix": "{label} (felismert)",
+  "@viewer.toolbar.encoding.detectedSuffix": {
+    "sourceHash": "2096536"
+  },
+  "viewer.toolbar.tail.label": "Követés",
+  "@viewer.toolbar.tail.label": {
+    "sourceHash": "ae9c3bd"
+  },
+  "viewer.toolbar.tail.ariaLabel": "Követés mód: a fájl változásainak figyelése",
+  "@viewer.toolbar.tail.ariaLabel": {
+    "sourceHash": "af0477f"
+  },
+  "viewer.toolbar.tail.tooltip": "A fájl változásainak automatikus követése",
+  "@viewer.toolbar.tail.tooltip": {
+    "sourceHash": "733e57f"
+  },
+  "viewer.toolbar.reindexing": "Újraindexelés…",
+  "@viewer.toolbar.reindexing": {
+    "sourceHash": "f668818"
+  },
+  "viewer.statusBar.ariaLabel": "Fájladatok",
+  "@viewer.statusBar.ariaLabel": {
+    "sourceHash": "375b97d"
+  },
+  "viewer.statusBar.lineCount": "{count} {count, plural, one {sor} other {sor}}",
+  "@viewer.statusBar.lineCount": {
+    "sourceHash": "1af08ec"
+  },
+  "viewer.statusBar.badge.inMemory": "memóriában",
+  "@viewer.statusBar.badge.inMemory": {
+    "sourceHash": "d9b8483"
+  },
+  "viewer.statusBar.badge.inMemoryTooltip": "A teljes fájl a memóriában van. Bármelyik sorhoz gyorsan görgethetsz.",
+  "@viewer.statusBar.badge.inMemoryTooltip": {
+    "sourceHash": "4eb50b8"
+  },
+  "viewer.statusBar.badge.indexed": "indexelt",
+  "@viewer.statusBar.badge.indexed": {
+    "sourceHash": "658a3e8"
+  },
+  "viewer.statusBar.badge.indexedTooltip": "A fájl indexelve van, így a sorszámok pontosak, és bármelyik ponthoz gyorsan görgethetsz.",
+  "@viewer.statusBar.badge.indexedTooltip": {
+    "sourceHash": "2604f1a"
+  },
+  "viewer.statusBar.badge.streamingIndexing": "streamelés, indexelés…",
+  "@viewer.statusBar.badge.streamingIndexing": {
+    "sourceHash": "506ef27"
+  },
+  "viewer.statusBar.badge.streamingIndexingTooltip": "Ez egy nagy fájl streamelési módban. A háttérben indexet építünk (legfeljebb {seconds} mp)… A sorszámok jelenleg közelítőek.",
+  "@viewer.statusBar.badge.streamingIndexingTooltip": {
+    "sourceHash": "6407733"
+  },
+  "viewer.statusBar.badge.streaming": "streamelés",
+  "@viewer.statusBar.badge.streaming": {
+    "sourceHash": "b304adc"
+  },
+  "viewer.statusBar.badge.streamingTooltip": "Ez egy nagy fájl streamelési módban. Az indexelés tovább tartott volna {seconds} mp-nél, ezért kihagytuk. A sorszámok becslések.",
+  "@viewer.statusBar.badge.streamingTooltip": {
+    "sourceHash": "1752e59"
+  },
+  "viewer.statusBar.badge.wrap": "tördelés",
+  "@viewer.statusBar.badge.wrap": {
+    "sourceHash": "f0a2899"
+  },
+  "viewer.statusBar.badge.wrapTooltip": "A sorok az ablak szélénél törnek meg",
+  "@viewer.statusBar.badge.wrapTooltip": {
+    "sourceHash": "af2ca76"
+  },
+  "viewer.statusBar.hint.image": "Kattintás 100% / illesztés · Görgetés nagyít · Húzás mozgat",
+  "@viewer.statusBar.hint.image": {
+    "sourceHash": "bca0205"
+  },
+  "viewer.statusBar.hint.text": "W tördelés · F követés · ⌘F keresés",
+  "@viewer.statusBar.hint.text": {
+    "sourceHash": "3ecf215"
+  },
+  "viewer.media.dimensions": "{width} × {height}",
+  "@viewer.media.dimensions": {
+    "sourceHash": "ece2cad"
+  },
+  "viewer.image.loading": "Kép betöltése",
+  "@viewer.image.loading": {
+    "sourceHash": "65999b8"
+  },
+  "viewer.image.error": "Sajnáljuk, ezt a képet nem tudjuk megjeleníteni. Lehet, hogy a fájl sérült, vagy olyan formátumú, amit nem tudunk megjeleníteni.",
+  "@viewer.image.error": {
+    "sourceHash": "9a24fe8"
+  },
+  "viewer.pdf.loading": "PDF betöltése",
+  "@viewer.pdf.loading": {
+    "sourceHash": "7f9acf3"
+  },
+  "viewer.contextMenu.ariaLabel": "Megjelenítő műveletei",
+  "@viewer.contextMenu.ariaLabel": {
+    "sourceHash": "4cf8e51"
+  },
+  "viewer.contextMenu.copy": "Másolás",
+  "@viewer.contextMenu.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.contextMenu.selectAll": "Összes kijelölése",
+  "@viewer.contextMenu.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "viewer.copyDialog.confirmTitleKnown": "Lemásolod a vágólapra ezt: {size}?",
+  "@viewer.copyDialog.confirmTitleKnown": {
+    "sourceHash": "7f97ebf"
+  },
+  "viewer.copyDialog.confirmTitleUnknown": "Lemásolod ezt a kijelölést a vágólapra?",
+  "@viewer.copyDialog.confirmTitleUnknown": {
+    "sourceHash": "0956c8b"
+  },
+  "viewer.copyDialog.confirmBody": "A nagy beillesztések lelassíthatnak más alkalmazásokat. Próbáld a keresést (⌘F), hogy leszűkítsd.",
+  "@viewer.copyDialog.confirmBody": {
+    "sourceHash": "c1f2927"
+  },
+  "viewer.copyDialog.cancel": "Mégsem",
+  "@viewer.copyDialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.copyDialog.saveAsFile": "Mentés fájlként…",
+  "@viewer.copyDialog.saveAsFile": {
+    "sourceHash": "7b9b279"
+  },
+  "viewer.copyDialog.copy": "Másolás",
+  "@viewer.copyDialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseBody": "Ez nagyobb a 100 MB-os vágólapkorlátnál. Próbáld a keresést (⌘F), hogy megtaláld, amire szükséged van, vagy mentsd a kijelölést fájlként.",
+  "@viewer.copyDialog.refuseBody": {
+    "sourceHash": "75f3043"
+  },
+  "viewer.reloadToast.grew": "A fájl megváltozott a lemezen. Újratöltöd?",
+  "@viewer.reloadToast.grew": {
+    "sourceHash": "d66b013"
+  },
+  "viewer.reloadToast.rotated": "A fájlt lecserélték a lemezen. Töltsd újra, hogy lásd az új tartalmat.",
+  "@viewer.reloadToast.rotated": {
+    "sourceHash": "50804c2"
+  },
+  "viewer.reloadToast.reload": "Újratöltés",
+  "@viewer.reloadToast.reload": {
+    "sourceHash": "bdc090e"
+  },
+  "viewer.reloadToast.dismissTooltip": "Eltüntetés újratöltés nélkül",
+  "@viewer.reloadToast.dismissTooltip": {
+    "sourceHash": "7f829ed"
+  },
+  "viewer.copy.onClipboard": "{size} a vágólapodon",
+  "@viewer.copy.onClipboard": {
+    "sourceHash": "45934ed"
+  },
+  "viewer.copy.clipboardUnreachable": "Nem sikerült elérni a vágólapot. Megpróbálod újra?",
+  "@viewer.copy.clipboardUnreachable": {
+    "sourceHash": "c0382ba"
+  },
+  "viewer.copy.readTooLong": "A beolvasás túl sokáig tartott. Kipróbálsz egy kisebb kijelölést?",
+  "@viewer.copy.readTooLong": {
+    "sourceHash": "2275e83"
+  },
+  "viewer.copy.copyFailed": "Nem sikerült lemásolni a kijelölést. Megpróbálod újra?",
+  "@viewer.copy.copyFailed": {
+    "sourceHash": "6a1ab41"
+  },
+  "viewer.copy.readFailed": "Nem sikerült beolvasni a kijelölést. Megpróbálod újra?",
+  "@viewer.copy.readFailed": {
+    "sourceHash": "bde5f85"
+  },
+  "viewer.saveAs.title": "Kijelölés mentése",
+  "@viewer.saveAs.title": {
+    "sourceHash": "dd183ea"
+  },
+  "viewer.saveAs.defaultName": "kijeloles",
+  "@viewer.saveAs.defaultName": {
+    "sourceHash": "6504513"
+  },
+  "viewer.saveAs.panelFailed": "Nem sikerült megnyitni a mentési panelt. Megpróbálod újra?",
+  "@viewer.saveAs.panelFailed": {
+    "sourceHash": "70c3f76"
+  },
+  "viewer.saveAs.saved": "A kijelölés ide mentve: {name}",
+  "@viewer.saveAs.saved": {
+    "sourceHash": "5083c12"
+  },
+  "viewer.saveAs.tooLong": "A mentés túl sokáig tartott. Kipróbálsz egy kisebb kijelölést?",
+  "@viewer.saveAs.tooLong": {
+    "sourceHash": "f31d7f4"
+  },
+  "viewer.saveAs.saveFailed": "Nem sikerült menteni a kijelölést. Megpróbálod újra?",
+  "@viewer.saveAs.saveFailed": {
+    "sourceHash": "2d85642"
+  },
+  "viewer.selection.toEndOfFile": "Kijelölve a(z) {line}. sortól a fájl végéig",
+  "@viewer.selection.toEndOfFile": {
+    "sourceHash": "62d95be"
+  },
+  "viewer.selection.singleLine": "{chars} karakter kijelölve a(z) {line}. sorban",
+  "@viewer.selection.singleLine": {
+    "sourceHash": "bb320d5"
+  },
+  "viewer.selection.multiLine": "Kijelölve a(z) {startLine}. sortól a(z) {endLine}. sorig, {chars} karakter",
+  "@viewer.selection.multiLine": {
+    "sourceHash": "074c687"
+  }
+}

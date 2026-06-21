@@ -1,0 +1,602 @@
+{
+  "commands.appQuit.label": "Cmdr bezárása",
+  "@commands.appQuit.label": {
+    "sourceHash": "b3455b4"
+  },
+  "commands.appHide.label": "Cmdr elrejtése",
+  "@commands.appHide.label": {
+    "sourceHash": "8f86f89"
+  },
+  "commands.appHideOthers.label": "Többi elrejtése",
+  "@commands.appHideOthers.label": {
+    "sourceHash": "74376e4"
+  },
+  "commands.appShowAll.label": "Összes megjelenítése",
+  "@commands.appShowAll.label": {
+    "sourceHash": "2150d8d"
+  },
+  "commands.appAbout.label": "A Cmdr névjegye",
+  "@commands.appAbout.label": {
+    "sourceHash": "efe010f"
+  },
+  "commands.appLicenseKey.seeDetails.label": "Licencadatok megtekintése",
+  "@commands.appLicenseKey.seeDetails.label": {
+    "sourceHash": "0e660e8"
+  },
+  "commands.appLicenseKey.enterKey.label": "Licenckulcs megadása",
+  "@commands.appLicenseKey.enterKey.label": {
+    "sourceHash": "357d05e"
+  },
+  "commands.appCommandPalette.label": "Parancspaletta megnyitása",
+  "@commands.appCommandPalette.label": {
+    "sourceHash": "c022b19"
+  },
+  "commands.appSettings.label": "Beállítások megnyitása",
+  "@commands.appSettings.label": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.appCheckForUpdates.label": "Frissítések keresése…",
+  "@commands.appCheckForUpdates.label": {
+    "sourceHash": "52d6f7d"
+  },
+  "commands.appCheckForUpdates.description": "Megnézi, elérhető-e újabb Cmdr-verzió, és letölti, ha igen",
+  "@commands.appCheckForUpdates.description": {
+    "sourceHash": "c53dab0"
+  },
+  "commands.cmdrOpenOnboarding.label": "Bevezető…",
+  "@commands.cmdrOpenOnboarding.label": {
+    "sourceHash": "c4cc4aa"
+  },
+  "commands.cmdrOpenOnboarding.description": "Újra megnyitja a bevezető varázslót az első indításkori beállítások áttekintéséhez vagy módosításához",
+  "@commands.cmdrOpenOnboarding.description": {
+    "sourceHash": "a45c542"
+  },
+  "commands.helpOpenShortcuts.label": "Billentyűparancsok",
+  "@commands.helpOpenShortcuts.label": {
+    "sourceHash": "e9bef0b"
+  },
+  "commands.helpOpenShortcuts.description": "Megnyit egy csak olvasható ablakot az összes billentyűparanccsal, élőben szinkronban a testreszabásaiddal",
+  "@commands.helpOpenShortcuts.description": {
+    "sourceHash": "a9a1e0d"
+  },
+  "commands.helpSendErrorReport.label": "Hibajelentés küldése…",
+  "@commands.helpSendErrorReport.label": {
+    "sourceHash": "063c94e"
+  },
+  "commands.helpSendErrorReport.description": "Elküldi a Cmdr naplóit a csapatnak, hogy segítsen kijavítani, ami félresikerült",
+  "@commands.helpSendErrorReport.description": {
+    "sourceHash": "021d333"
+  },
+  "commands.helpWhatsNew.label": "Újdonságok",
+  "@commands.helpWhatsNew.label": {
+    "sourceHash": "aa0c54f"
+  },
+  "commands.helpWhatsNew.description": "Megnézheted, mi változott a Cmdr legutóbbi kiadásaiban",
+  "@commands.helpWhatsNew.description": {
+    "sourceHash": "f8ad411"
+  },
+  "commands.feedbackSend.label": "Visszajelzés küldése",
+  "@commands.feedbackSend.label": {
+    "sourceHash": "8235980"
+  },
+  "commands.feedbackSend.description": "Mondd el a Cmdr készítőjének, mit gondolsz: ötletek, kívánságok, bármi",
+  "@commands.feedbackSend.description": {
+    "sourceHash": "89d08a8"
+  },
+  "commands.searchOpen.label": "Fájlok keresése",
+  "@commands.searchOpen.label": {
+    "sourceHash": "179fed8"
+  },
+  "commands.navGoToPath.label": "Ugrás útvonalra…",
+  "@commands.navGoToPath.label": {
+    "sourceHash": "936edc5"
+  },
+  "commands.navGoToPath.description": "A fókuszált panelt egy beírt, beillesztett vagy korábbi útvonalra ugratja.",
+  "@commands.navGoToPath.description": {
+    "sourceHash": "fc6a00c"
+  },
+  "commands.favoritesAdd.label": "Hozzáadás a kedvencekhez",
+  "@commands.favoritesAdd.label": {
+    "sourceHash": "7f3c078"
+  },
+  "commands.favoritesAdd.description": "A fókuszált panel aktuális mappáját hozzáadja a váltó Kedvencek listájához.",
+  "@commands.favoritesAdd.description": {
+    "sourceHash": "84dcbf8"
+  },
+  "commands.downloadsGoToLatest.label": "Ugrás a legutóbbi letöltéshez",
+  "@commands.downloadsGoToLatest.label": {
+    "sourceHash": "492d0b6"
+  },
+  "commands.downloadsGoToLatest.description": "Megnyitja a ~/Downloads mappát, és kijelöli a legutóbbi fájlt.",
+  "@commands.downloadsGoToLatest.description": {
+    "sourceHash": "42a26a2"
+  },
+  "commands.viewShowHidden.label": "Rejtett fájlok ki-be",
+  "@commands.viewShowHidden.label": {
+    "sourceHash": "6aa9b55"
+  },
+  "commands.viewBriefMode.label": "Váltás Rövid nézetre",
+  "@commands.viewBriefMode.label": {
+    "sourceHash": "bcf6636"
+  },
+  "commands.viewFullMode.label": "Váltás Teljes nézetre",
+  "@commands.viewFullMode.label": {
+    "sourceHash": "b44150e"
+  },
+  "commands.viewSetMode.label": "Panel nézetmódjának beállítása",
+  "@commands.viewSetMode.label": {
+    "sourceHash": "1e050a6"
+  },
+  "commands.viewZoomSet75.label": "Nagyítás 75%-ra",
+  "@commands.viewZoomSet75.label": {
+    "sourceHash": "70ac915"
+  },
+  "commands.viewZoomSet100.label": "Nagyítás 100%-ra",
+  "@commands.viewZoomSet100.label": {
+    "sourceHash": "c23bdb4"
+  },
+  "commands.viewZoomSet125.label": "Nagyítás 125%-ra",
+  "@commands.viewZoomSet125.label": {
+    "sourceHash": "9191980"
+  },
+  "commands.viewZoomSet150.label": "Nagyítás 150%-ra",
+  "@commands.viewZoomSet150.label": {
+    "sourceHash": "2e247da"
+  },
+  "commands.viewZoomIn.label": "Nagyítás",
+  "@commands.viewZoomIn.label": {
+    "sourceHash": "0e47f09"
+  },
+  "commands.viewZoomOut.label": "Kicsinyítés",
+  "@commands.viewZoomOut.label": {
+    "sourceHash": "bc7b631"
+  },
+  "commands.sortByName.label": "Rendezés név szerint",
+  "@commands.sortByName.label": {
+    "sourceHash": "588a082"
+  },
+  "commands.sortByExtension.label": "Rendezés kiterjesztés szerint",
+  "@commands.sortByExtension.label": {
+    "sourceHash": "bb899db"
+  },
+  "commands.sortByModified.label": "Rendezés módosítás dátuma szerint",
+  "@commands.sortByModified.label": {
+    "sourceHash": "d9349cb"
+  },
+  "commands.sortBySize.label": "Rendezés méret szerint",
+  "@commands.sortBySize.label": {
+    "sourceHash": "b5fa7af"
+  },
+  "commands.sortByCreated.label": "Rendezés létrehozás dátuma szerint",
+  "@commands.sortByCreated.label": {
+    "sourceHash": "9bdaf4e"
+  },
+  "commands.sortAscending.label": "Rendezés növekvő sorrendbe",
+  "@commands.sortAscending.label": {
+    "sourceHash": "ec3c9c7"
+  },
+  "commands.sortDescending.label": "Rendezés csökkenő sorrendbe",
+  "@commands.sortDescending.label": {
+    "sourceHash": "8993b78"
+  },
+  "commands.sortToggleOrder.label": "Rendezési sorrend váltása",
+  "@commands.sortToggleOrder.label": {
+    "sourceHash": "e0eb85f"
+  },
+  "commands.sortSet.label": "Panel rendezésének beállítása",
+  "@commands.sortSet.label": {
+    "sourceHash": "64232ef"
+  },
+  "commands.paneSwitch.label": "Panelváltás",
+  "@commands.paneSwitch.label": {
+    "sourceHash": "377471f"
+  },
+  "commands.paneSwap.label": "Panelek felcserélése",
+  "@commands.paneSwap.label": {
+    "sourceHash": "cc29396"
+  },
+  "commands.paneLeftVolumeChooser.label": "Bal oldali kötetválasztó megnyitása",
+  "@commands.paneLeftVolumeChooser.label": {
+    "sourceHash": "8682140"
+  },
+  "commands.paneRightVolumeChooser.label": "Jobb oldali kötetválasztó megnyitása",
+  "@commands.paneRightVolumeChooser.label": {
+    "sourceHash": "7a0268f"
+  },
+  "commands.paneCopyPathLeftToRight.label": "Útvonal másolása a bal panelről a jobbra",
+  "@commands.paneCopyPathLeftToRight.label": {
+    "sourceHash": "d1376f6"
+  },
+  "commands.paneCopyPathLeftToRight.description": "Megnyitja a bal panel helyét a jobb oldalon. Ha a bal panel van fókuszban, és a kurzor egy mappán áll, helyette az a mappa nyílik meg a jobb oldalon.",
+  "@commands.paneCopyPathLeftToRight.description": {
+    "sourceHash": "07ac6a1"
+  },
+  "commands.paneCopyPathRightToLeft.label": "Útvonal másolása a jobb panelről a balra",
+  "@commands.paneCopyPathRightToLeft.label": {
+    "sourceHash": "266a30d"
+  },
+  "commands.paneCopyPathRightToLeft.description": "Megnyitja a jobb panel helyét a bal oldalon. Ha a jobb panel van fókuszban, és a kurzor egy mappán áll, helyette az a mappa nyílik meg a bal oldalon.",
+  "@commands.paneCopyPathRightToLeft.description": {
+    "sourceHash": "95c566f"
+  },
+  "commands.paneRefresh.label": "Panel frissítése",
+  "@commands.paneRefresh.label": {
+    "sourceHash": "42ce075"
+  },
+  "commands.tabNew.label": "Új lap",
+  "@commands.tabNew.label": {
+    "sourceHash": "1e08fda"
+  },
+  "commands.tabClose.label": "Lap bezárása",
+  "@commands.tabClose.label": {
+    "sourceHash": "50a3f95"
+  },
+  "commands.tabReopen.label": "Bezárt lap újranyitása",
+  "@commands.tabReopen.label": {
+    "sourceHash": "5ca5397"
+  },
+  "commands.tabNext.label": "Következő lap",
+  "@commands.tabNext.label": {
+    "sourceHash": "1ef9522"
+  },
+  "commands.tabPrev.label": "Előző lap",
+  "@commands.tabPrev.label": {
+    "sourceHash": "c88d5e7"
+  },
+  "commands.tabTogglePin.label": "Lap rögzítése ki-be",
+  "@commands.tabTogglePin.label": {
+    "sourceHash": "3fdfcd1"
+  },
+  "commands.tabCloseOthers.label": "Többi lap bezárása",
+  "@commands.tabCloseOthers.label": {
+    "sourceHash": "0ddc2c5"
+  },
+  "commands.tabMcpAction.label": "Panellap-művelet",
+  "@commands.tabMcpAction.label": {
+    "sourceHash": "405ed9c"
+  },
+  "commands.navUp.label": "Előző fájl kijelölése",
+  "@commands.navUp.label": {
+    "sourceHash": "40dca00"
+  },
+  "commands.navDown.label": "Következő fájl kijelölése",
+  "@commands.navDown.label": {
+    "sourceHash": "61e81ee"
+  },
+  "commands.navOpen.label": "Fájl vagy mappa megnyitása",
+  "@commands.navOpen.label": {
+    "sourceHash": "ef8d6a5"
+  },
+  "commands.navParent.label": "Ugrás a szülőmappára",
+  "@commands.navParent.label": {
+    "sourceHash": "7d4c500"
+  },
+  "commands.navHome.label": "Ugrás az első fájlra",
+  "@commands.navHome.label": {
+    "sourceHash": "5750de6"
+  },
+  "commands.navEnd.label": "Ugrás az utolsó fájlra",
+  "@commands.navEnd.label": {
+    "sourceHash": "f39205a"
+  },
+  "commands.navPageUp.label": "Lapozás felfelé",
+  "@commands.navPageUp.label": {
+    "sourceHash": "43f41b5"
+  },
+  "commands.navPageDown.label": "Lapozás lefelé",
+  "@commands.navPageDown.label": {
+    "sourceHash": "72a825f"
+  },
+  "commands.navBack.label": "Vissza",
+  "@commands.navBack.label": {
+    "sourceHash": "6aadac2"
+  },
+  "commands.navForward.label": "Előre",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
+  "commands.navOpenUnderCursor.label": "Kurzor alatti elem megnyitása",
+  "@commands.navOpenUnderCursor.label": {
+    "sourceHash": "6b54df9"
+  },
+  "commands.cursorMoveTo.label": "Panelkurzor mozgatása",
+  "@commands.cursorMoveTo.label": {
+    "sourceHash": "4c196ef"
+  },
+  "commands.cursorScrollTo.label": "Panel görgetése egy sorhoz",
+  "@commands.cursorScrollTo.label": {
+    "sourceHash": "98ca70c"
+  },
+  "commands.navLeft.label": "Ugrás a bal oszlopra",
+  "@commands.navLeft.label": {
+    "sourceHash": "db46f08"
+  },
+  "commands.navRight.label": "Ugrás a jobb oszlopra",
+  "@commands.navRight.label": {
+    "sourceHash": "21b59f0"
+  },
+  "commands.navFirstInFull.label": "Ugrás az első fájlra",
+  "@commands.navFirstInFull.label": {
+    "sourceHash": "f0ea135"
+  },
+  "commands.navLastInFull.label": "Ugrás az utolsó fájlra",
+  "@commands.navLastInFull.label": {
+    "sourceHash": "e6d6a52"
+  },
+  "commands.fileRename.label": "Átnevezés",
+  "@commands.fileRename.label": {
+    "sourceHash": "3064d79"
+  },
+  "commands.fileView.label": "Megtekintés",
+  "@commands.fileView.label": {
+    "sourceHash": "dcc839a"
+  },
+  "commands.fileEdit.label": "Szerkesztés az alapértelmezett szerkesztőben",
+  "@commands.fileEdit.label": {
+    "sourceHash": "badc768"
+  },
+  "commands.fileCopy.label": "Másolás",
+  "@commands.fileCopy.label": {
+    "sourceHash": "e21f935"
+  },
+  "commands.fileMove.label": "Áthelyezés",
+  "@commands.fileMove.label": {
+    "sourceHash": "6ecc3df"
+  },
+  "commands.editCopy.label": "Másolás a vágólapra",
+  "@commands.editCopy.label": {
+    "sourceHash": "b749e20"
+  },
+  "commands.editCopy.description": "Kijelölt fájlok másolása a vágólapra beillesztéshez",
+  "@commands.editCopy.description": {
+    "sourceHash": "5c769a7"
+  },
+  "commands.editCut.label": "Kivágás a vágólapra",
+  "@commands.editCut.label": {
+    "sourceHash": "a954b4a"
+  },
+  "commands.editCut.description": "Kijelölt fájlok kivágása (a beillesztés áthelyezi őket)",
+  "@commands.editCut.description": {
+    "sourceHash": "5bc3870"
+  },
+  "commands.editPaste.label": "Beillesztés",
+  "@commands.editPaste.label": {
+    "sourceHash": "f3380f7"
+  },
+  "commands.editPaste.description": "Fájlok beillesztése a vágólapról az aktuális mappába",
+  "@commands.editPaste.description": {
+    "sourceHash": "32545d7"
+  },
+  "commands.editPasteAsMove.label": "Áthelyezés ide",
+  "@commands.editPasteAsMove.label": {
+    "sourceHash": "56f1247"
+  },
+  "commands.editPasteAsMove.description": "Fájlok beillesztése a vágólapról áthelyezésként",
+  "@commands.editPasteAsMove.description": {
+    "sourceHash": "961316d"
+  },
+  "commands.fileNewFolder.label": "Új mappa",
+  "@commands.fileNewFolder.label": {
+    "sourceHash": "cf28f49"
+  },
+  "commands.fileNewFile.label": "Új fájl létrehozása",
+  "@commands.fileNewFile.label": {
+    "sourceHash": "6e70b95"
+  },
+  "commands.fileDelete.label": "Törlés",
+  "@commands.fileDelete.label": {
+    "sourceHash": "e2d0a54"
+  },
+  "commands.fileDeletePermanently.label": "Végleges törlés",
+  "@commands.fileDeletePermanently.label": {
+    "sourceHash": "280b10c"
+  },
+  "commands.dialogConfirm.label": "Megnyitási párbeszéd megerősítése",
+  "@commands.dialogConfirm.label": {
+    "sourceHash": "b58a959"
+  },
+  "commands.fileShowInFinder.mac.label": "Megjelenítés a Finderben",
+  "@commands.fileShowInFinder.mac.label": {
+    "sourceHash": "c2a9c77"
+  },
+  "commands.fileShowInFinder.other.label": "Megjelenítés a fájlkezelőben",
+  "@commands.fileShowInFinder.other.label": {
+    "sourceHash": "3ca4dad"
+  },
+  "commands.fileCopyPath.label": "Útvonal másolása a vágólapra",
+  "@commands.fileCopyPath.label": {
+    "sourceHash": "333608a"
+  },
+  "commands.fileCopyCurrentDirectoryPath.label": "Aktuális könyvtár útvonalának másolása",
+  "@commands.fileCopyCurrentDirectoryPath.label": {
+    "sourceHash": "ae360d1"
+  },
+  "commands.fileCopyFilename.label": "Fájlnév másolása",
+  "@commands.fileCopyFilename.label": {
+    "sourceHash": "5cdf7f8"
+  },
+  "commands.fileGetInfo.mac.label": "Infó megjelenítése",
+  "@commands.fileGetInfo.mac.label": {
+    "sourceHash": "91c64ca"
+  },
+  "commands.fileGetInfo.other.label": "Fájl tulajdonságai",
+  "@commands.fileGetInfo.other.label": {
+    "sourceHash": "5d9ebf2"
+  },
+  "commands.fileQuickLook.mac.label": "Gyorsnézet",
+  "@commands.fileQuickLook.mac.label": {
+    "sourceHash": "f5616ce"
+  },
+  "commands.fileQuickLook.other.label": "Előnézet",
+  "@commands.fileQuickLook.other.label": {
+    "sourceHash": "324b134"
+  },
+  "commands.fileContextMenu.label": "Helyi menü megnyitása",
+  "@commands.fileContextMenu.label": {
+    "sourceHash": "c07efaf"
+  },
+  "commands.fileContextMenu.description": "Megnyitja a kurzor alatti fájl helyi menüjét",
+  "@commands.fileContextMenu.description": {
+    "sourceHash": "8fb1721"
+  },
+  "commands.cloudMakeOffline.label": "Elérhetővé tétel offline",
+  "@commands.cloudMakeOffline.label": {
+    "sourceHash": "b75c09f"
+  },
+  "commands.cloudMakeOffline.description": "Letölt egy felhőben tárolt fájlt, hogy internetkapcsolat nélkül is elérhető maradjon",
+  "@commands.cloudMakeOffline.description": {
+    "sourceHash": "d5cd793"
+  },
+  "commands.cloudRemoveDownload.label": "Letöltés eltávolítása",
+  "@commands.cloudRemoveDownload.label": {
+    "sourceHash": "5dfc369"
+  },
+  "commands.cloudRemoveDownload.description": "Eltávolítja egy felhőfájl helyi másolatát, így az már csak online lesz elérhető",
+  "@commands.cloudRemoveDownload.description": {
+    "sourceHash": "470afd2"
+  },
+  "commands.selectionToggle.label": "Kijelölés ki-be",
+  "@commands.selectionToggle.label": {
+    "sourceHash": "6cb5515"
+  },
+  "commands.selectionToggleAndDown.label": "Kijelölés ki-be és lefelé lépés",
+  "@commands.selectionToggleAndDown.label": {
+    "sourceHash": "72ccb36"
+  },
+  "commands.selectionToggleAndDown.description": "Ki- vagy kijelöli a kurzor alatti fájlt, majd lefelé lép (Total Commander módra)",
+  "@commands.selectionToggleAndDown.description": {
+    "sourceHash": "378bb7a"
+  },
+  "commands.selectionSelectAll.label": "Összes kijelölése",
+  "@commands.selectionSelectAll.label": {
+    "sourceHash": "1fc9a38"
+  },
+  "commands.selectionDeselectAll.label": "Kijelölés megszüntetése",
+  "@commands.selectionDeselectAll.label": {
+    "sourceHash": "9675494"
+  },
+  "commands.selectionSelectFiles.label": "Fájlok kijelölése…",
+  "@commands.selectionSelectFiles.label": {
+    "sourceHash": "b7f202e"
+  },
+  "commands.selectionSelectFiles.description": "Megnyitja a Fájlok kijelölése párbeszédet az illeszkedő fájlok kijelöléséhez",
+  "@commands.selectionSelectFiles.description": {
+    "sourceHash": "7695f3e"
+  },
+  "commands.selectionDeselectFiles.label": "Fájlok kijelölésének megszüntetése…",
+  "@commands.selectionDeselectFiles.label": {
+    "sourceHash": "6fb10d5"
+  },
+  "commands.selectionDeselectFiles.description": "Megnyitja a Fájlok kijelölésének megszüntetése párbeszédet az illeszkedő fájlok kijelölésének megszüntetéséhez",
+  "@commands.selectionDeselectFiles.description": {
+    "sourceHash": "2a6f82f"
+  },
+  "commands.selectionMcpSelect.label": "Tartomány kijelölése a panelen",
+  "@commands.selectionMcpSelect.label": {
+    "sourceHash": "d8bb646"
+  },
+  "commands.selectionMcpSelectByNames.label": "Fájlok kijelölése név szerint a panelen",
+  "@commands.selectionMcpSelectByNames.label": {
+    "sourceHash": "8cfc75d"
+  },
+  "commands.networkSelectHost.label": "Hálózati gép kiválasztása",
+  "@commands.networkSelectHost.label": {
+    "sourceHash": "4a9ede5"
+  },
+  "commands.networkRefresh.label": "Hálózati gépek frissítése",
+  "@commands.networkRefresh.label": {
+    "sourceHash": "73966bd"
+  },
+  "commands.shareBack.label": "Vissza a géplistához",
+  "@commands.shareBack.label": {
+    "sourceHash": "42c44d5"
+  },
+  "commands.shareSelectShare.label": "Kapcsolódás megosztáshoz",
+  "@commands.shareSelectShare.label": {
+    "sourceHash": "6c48c8c"
+  },
+  "commands.volumeSelect.label": "Kötet kiválasztása",
+  "@commands.volumeSelect.label": {
+    "sourceHash": "60f5ce1"
+  },
+  "commands.volumeClose.label": "Kötetválasztó bezárása",
+  "@commands.volumeClose.label": {
+    "sourceHash": "aa6a29b"
+  },
+  "commands.volumeSelectByName.label": "Panelkötet kiválasztása név szerint",
+  "@commands.volumeSelectByName.label": {
+    "sourceHash": "9f16865"
+  },
+  "commands.aboutOpenWebsite.label": "Webhely megnyitása",
+  "@commands.aboutOpenWebsite.label": {
+    "sourceHash": "3451735"
+  },
+  "commands.aboutOpenUpgrade.label": "Frissítési oldal megnyitása",
+  "@commands.aboutOpenUpgrade.label": {
+    "sourceHash": "9df3bf0"
+  },
+  "commands.aboutClose.label": "Névjegyablak bezárása",
+  "@commands.aboutClose.label": {
+    "sourceHash": "d0096c3"
+  },
+  "commands.paletteUp.label": "Előző találat",
+  "@commands.paletteUp.label": {
+    "sourceHash": "965bc32"
+  },
+  "commands.paletteDown.label": "Következő találat",
+  "@commands.paletteDown.label": {
+    "sourceHash": "bf56a19"
+  },
+  "commands.paletteExecute.label": "Parancs végrehajtása",
+  "@commands.paletteExecute.label": {
+    "sourceHash": "20f9b97"
+  },
+  "commands.paletteClose.label": "Paletta bezárása",
+  "@commands.paletteClose.label": {
+    "sourceHash": "2e75050"
+  },
+  "commands.handler.favoriteAdded": "A(z) „{name}” hozzáadva a kedvencekhez",
+  "@commands.handler.favoriteAdded": {
+    "sourceHash": "a68dd8f"
+  },
+  "commands.handler.favoriteAddFailed": "Nem sikerült hozzáadni azt a mappát a kedvencekhez. Megpróbálod újra?",
+  "@commands.handler.favoriteAddFailed": {
+    "sourceHash": "3f85e99"
+  },
+  "commands.handler.tabLimitReached": "Elérted a lapok korlátját",
+  "@commands.handler.tabLimitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "commands.handler.noRecentlyClosedTabs": "Nincs nemrég bezárt lap ezen a panelen.",
+  "@commands.handler.noRecentlyClosedTabs": {
+    "sourceHash": "e560789"
+  },
+  "commands.handler.cloudDownloadFailed": "Nem sikerült letölteni a felhőből. {detail}",
+  "@commands.handler.cloudDownloadFailed": {
+    "sourceHash": "70792cf"
+  },
+  "commands.handler.cloudRemoveDownloadFailed": "Nem sikerült eltávolítani a letöltést. {detail}",
+  "@commands.handler.cloudRemoveDownloadFailed": {
+    "sourceHash": "425280d"
+  },
+  "commands.handler.zoomResetHintShortcut": "A nagyítási szintet 100%-ra állíthatod vissza így: {shortcut}.",
+  "@commands.handler.zoomResetHintShortcut": {
+    "sourceHash": "efdd715"
+  },
+  "commands.handler.zoomResetHintMenu": "A nagyítási szintet 100%-ra állíthatod vissza itt: View > Zoom > 100%.",
+  "@commands.handler.zoomResetHintMenu": {
+    "sourceHash": "f10315d"
+  },
+  "commands.handler.zoomReset": "Nagyítás visszaállítva 100%-ra.",
+  "@commands.handler.zoomReset": {
+    "sourceHash": "8c6bf82"
+  },
+  "commands.handler.zoomIncreased": "Nagyítás növelve {size}%-ra. {hint}",
+  "@commands.handler.zoomIncreased": {
+    "sourceHash": "39fea10"
+  },
+  "commands.handler.zoomDecreased": "Nagyítás csökkentve {size}%-ra. {hint}",
+  "@commands.handler.zoomDecreased": {
+    "sourceHash": "71404cb"
+  }
+}

@@ -1,0 +1,390 @@
+{
+  "licensing.about.srTitle": "A Cmdr névjegye",
+  "@licensing.about.srTitle": {
+    "sourceHash": "efe010f"
+  },
+  "licensing.about.appName": "Cmdr",
+  "@licensing.about.appName": {
+    "sourceHash": "40c6a1b"
+  },
+  "licensing.about.tagline": "Billentyűvezérelt fájlkezelő",
+  "@licensing.about.tagline": {
+    "sourceHash": "e399865"
+  },
+  "licensing.about.version": "{version} verzió (nyílt béta)",
+  "@licensing.about.version": {
+    "sourceHash": "1496c81"
+  },
+  "licensing.about.betaNote": "Találtál valami rosszat? Írd meg itt: <github>GitHub</github>. Minden jelzést elolvasok!",
+  "@licensing.about.betaNote": {
+    "sourceHash": "49a09cb"
+  },
+  "licensing.about.noLicense": "Nincs licenc – csak személyes használat engedélyezett",
+  "@licensing.about.noLicense": {
+    "sourceHash": "e2ce8da"
+  },
+  "licensing.about.perpetual": "Végleges kereskedelmi licenc ehhez: {org}",
+  "@licensing.about.perpetual": {
+    "sourceHash": "591d7a8"
+  },
+  "licensing.about.commercial": "Kereskedelmi licenc ehhez: {org}",
+  "@licensing.about.commercial": {
+    "sourceHash": "577f55b"
+  },
+  "licensing.about.commercialUntil": "Kereskedelmi licenc ehhez: {org}, érvényes eddig: {date}",
+  "@licensing.about.commercialUntil": {
+    "sourceHash": "eb44f8d"
+  },
+  "licensing.about.fallbackOrg": "a szervezeted",
+  "@licensing.about.fallbackOrg": {
+    "sourceHash": "bb0bdf0"
+  },
+  "licensing.about.aiAttribution": "Az AI-t a Technology Innovation Institute (TII) Falcon-H1R-7B modellje hajtja",
+  "@licensing.about.aiAttribution": {
+    "sourceHash": "54d9ac4"
+  },
+  "licensing.about.linkWebsite": "Weboldal",
+  "@licensing.about.linkWebsite": {
+    "sourceHash": "b5a229a"
+  },
+  "licensing.about.linkGetLicense": "Licenc beszerzése",
+  "@licensing.about.linkGetLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.about.linkGithub": "GitHub",
+  "@licensing.about.linkGithub": {
+    "sourceHash": "f911e41"
+  },
+  "licensing.about.linkDiscord": "Discord",
+  "@licensing.about.linkDiscord": {
+    "sourceHash": "053bc65"
+  },
+  "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
+  "@licensing.about.copyright": {
+    "sourceHash": "e6ab7e3"
+  },
+  "licensing.commercialReminder.title": "Köszönöm, hogy a Cmdr-t használod!",
+  "@licensing.commercialReminder.title": {
+    "sourceHash": "6898650"
+  },
+  "licensing.commercialReminder.usingPersonal": "Személyes licencet használsz.",
+  "@licensing.commercialReminder.usingPersonal": {
+    "sourceHash": "508c17d"
+  },
+  "licensing.commercialReminder.askCommercial": "Ha munkahelyi környezetben használod a Cmdr-t, kérlek, szerezz be egy Kereskedelmi licencet, hogy szabályosan használhasd.",
+  "@licensing.commercialReminder.askCommercial": {
+    "sourceHash": "6bf4031"
+  },
+  "licensing.commercialReminder.priceInfo": "A kereskedelmi licenc 59 $/év/felhasználó, és a folyamatos fejlesztést támogatja.",
+  "@licensing.commercialReminder.priceInfo": {
+    "sourceHash": "a7099b3"
+  },
+  "licensing.commercialReminder.declinePersonal": "Csak személyes célra<break></break>használom a Cmdr-t",
+  "@licensing.commercialReminder.declinePersonal": {
+    "sourceHash": "49641ff"
+  },
+  "licensing.commercialReminder.getCommercial": "Kereskedelmi licenc beszerzése",
+  "@licensing.commercialReminder.getCommercial": {
+    "sourceHash": "07f081b"
+  },
+  "licensing.expiration.title": "A kereskedelmi licenced lejárt",
+  "@licensing.expiration.title": {
+    "sourceHash": "7067c40"
+  },
+  "licensing.expiration.orgName": "Licenc tulajdonosa: <strong>{org}</strong>",
+  "@licensing.expiration.orgName": {
+    "sourceHash": "a5f0bab"
+  },
+  "licensing.expiration.message": "A kereskedelmi előfizetésed ekkor járt le: <strong>{date}</strong>.",
+  "@licensing.expiration.message": {
+    "sourceHash": "92b6b97"
+  },
+  "licensing.expiration.info": "A Cmdr mostantól személyes használati módban fut. Ha továbbra is munkára használod, kérlek, újítsd meg a licenced.",
+  "@licensing.expiration.info": {
+    "sourceHash": "5fcebb5"
+  },
+  "licensing.expiration.renew": "Licenc megújítása",
+  "@licensing.expiration.renew": {
+    "sourceHash": "1ee8746"
+  },
+  "licensing.expiration.continue": "Folytatás személyes módban",
+  "@licensing.expiration.continue": {
+    "sourceHash": "b5c90b4"
+  },
+  "licensing.dialog.loading": "Betöltés…",
+  "@licensing.dialog.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "licensing.dialog.detailsTitle": "Licenc részletei",
+  "@licensing.dialog.detailsTitle": {
+    "sourceHash": "57327bb"
+  },
+  "licensing.dialog.enterTitle": "Licenckulcs megadása",
+  "@licensing.dialog.enterTitle": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.dialog.serverInvalidBanner": "Ezt a kulcsot nem sikerült ellenőrizni a szerverrel. Próbálj egy másik kulcsot, vagy írj nekünk ide: <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.serverInvalidBanner": {
+    "sourceHash": "616b906"
+  },
+  "licensing.dialog.labelType": "Licenc típusa",
+  "@licensing.dialog.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.dialog.labelOrganization": "Szervezet",
+  "@licensing.dialog.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.dialog.labelValidity": "Érvényesség",
+  "@licensing.dialog.labelValidity": {
+    "sourceHash": "9c3050e"
+  },
+  "licensing.dialog.labelKey": "Licenckulcs",
+  "@licensing.dialog.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.dialog.typeCommercialPerpetual": "Kereskedelmi, végleges",
+  "@licensing.dialog.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.dialog.typeCommercialSubscription": "Kereskedelmi előfizetés",
+  "@licensing.dialog.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.dialog.validityNotYetVerified": "Még nincs ellenőrizve",
+  "@licensing.dialog.validityNotYetVerified": {
+    "sourceHash": "5b2f7a6"
+  },
+  "licensing.dialog.validityPerpetualUntil": "Végleges: frissítések eddig: {date}",
+  "@licensing.dialog.validityPerpetualUntil": {
+    "sourceHash": "cde0711"
+  },
+  "licensing.dialog.validityPerpetual": "Végleges",
+  "@licensing.dialog.validityPerpetual": {
+    "sourceHash": "2d34320"
+  },
+  "licensing.dialog.validityValidUntil": "Érvényes eddig: {date}",
+  "@licensing.dialog.validityValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.dialog.validityActive": "Aktív",
+  "@licensing.dialog.validityActive": {
+    "sourceHash": "9234069"
+  },
+  "licensing.dialog.validityExpiredOn": "Lejárt ekkor: {date}",
+  "@licensing.dialog.validityExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.dialog.pendingHint": "Automatikusan ellenőrizzük a szerverrel {days} napon belül.",
+  "@licensing.dialog.pendingHint": {
+    "sourceHash": "8d9801b"
+  },
+  "licensing.dialog.useDifferentKey": "Másik kulcs használata",
+  "@licensing.dialog.useDifferentKey": {
+    "sourceHash": "b0a5362"
+  },
+  "licensing.dialog.close": "Bezárás",
+  "@licensing.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "licensing.dialog.resetConfirm": "Ezzel kikapcsolod a jelenlegi licenced ezen az eszközön. Bármikor újra aktiválhatod egy érvényes kulccsal.",
+  "@licensing.dialog.resetConfirm": {
+    "sourceHash": "2d77d69"
+  },
+  "licensing.dialog.cancel": "Mégsem",
+  "@licensing.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.continue": "Folytatás",
+  "@licensing.dialog.continue": {
+    "sourceHash": "31fbef1"
+  },
+  "licensing.dialog.enterPrompt": "Illeszd be a licenckulcsot a vásárlás után kapott e-mailből. Még nincs kulcsod? <getLicense>Licenc beszerzése</getLicense>.",
+  "@licensing.dialog.enterPrompt": {
+    "sourceHash": "f6fb47a"
+  },
+  "licensing.dialog.inputPlaceholder": "Példa: CMDR-ABCD-EFGH-1234",
+  "@licensing.dialog.inputPlaceholder": {
+    "sourceHash": "3fb5cf9"
+  },
+  "licensing.dialog.retryExhausted": "{count} alkalommal próbálkoztunk, és nem sikerült. Sajnáljuk a kellemetlenséget. Kérlek, írj nekünk ide: <supportEmail>{email}</supportEmail>, és megoldjuk.",
+  "@licensing.dialog.retryExhausted": {
+    "sourceHash": "4f3331b"
+  },
+  "licensing.dialog.serverInvalidHelp": "Ha úgy gondolod, hogy ez tévedés, írj nekünk ide: <supportEmail>{email}</supportEmail>, és megoldjuk.",
+  "@licensing.dialog.serverInvalidHelp": {
+    "sourceHash": "90471d2"
+  },
+  "licensing.dialog.genericHelp": "Ha segítségre van szükséged, írj nekünk ide: <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.genericHelp": {
+    "sourceHash": "145df34"
+  },
+  "licensing.dialog.cancelButton": "Mégsem",
+  "@licensing.dialog.cancelButton": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.checking": "Ellenőrzés…",
+  "@licensing.dialog.checking": {
+    "sourceHash": "2e5f79b"
+  },
+  "licensing.dialog.tryAgain": "Próbáld újra",
+  "@licensing.dialog.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "licensing.dialog.activating": "Aktiválás…",
+  "@licensing.dialog.activating": {
+    "sourceHash": "fd2db6a"
+  },
+  "licensing.dialog.activate": "Aktiválás",
+  "@licensing.dialog.activate": {
+    "sourceHash": "24433c7"
+  },
+  "licensing.dialog.activatedToast": "Licenc aktiválva. Köszönöm a támogatásod! ❤️",
+  "@licensing.dialog.activatedToast": {
+    "sourceHash": "af76e26"
+  },
+  "licensing.dialog.activatedToastNamed": "Üdv a fedélzeten, {org}! Köszönöm a támogatásod. ❤️",
+  "@licensing.dialog.activatedToastNamed": {
+    "sourceHash": "d0c136a"
+  },
+  "licensing.dialog.networkFallbackError": "Nem sikerült ellenőrizni a licenced a szerverrel. Kérlek, próbáld újra később.",
+  "@licensing.dialog.networkFallbackError": {
+    "sourceHash": "cb2b8e0"
+  },
+  "licensing.dialog.expiredOnError": "Ez a licenc ekkor járt le: {date}.",
+  "@licensing.dialog.expiredOnError": {
+    "sourceHash": "130a045"
+  },
+  "licensing.dialog.expiredOnHelp": "Megújíthatod az előfizetésed, vagy vásárolhatsz új licencet a getcmdr.com oldalon.",
+  "@licensing.dialog.expiredOnHelp": {
+    "sourceHash": "036bb88"
+  },
+  "licensing.dialog.serverInvalidError": "Ismerjük ezt a kulcsot, de amikor ellenőriztük a fizetési szolgáltatónknál, ő nem ismerte fel. Ez akkor fordulhat elő, ha a vásárlást visszatérítették, vagy nem teljesült.",
+  "@licensing.dialog.serverInvalidError": {
+    "sourceHash": "4beeef1"
+  },
+  "licensing.dialog.emptyKeyError": "Kérlek, adj meg egy licenckulcsot",
+  "@licensing.dialog.emptyKeyError": {
+    "sourceHash": "2b36779"
+  },
+  "licensing.dialog.mailtoSubject": "Probléma a licenckulccsal",
+  "@licensing.dialog.mailtoSubject": {
+    "sourceHash": "685a80d"
+  },
+  "licensing.dialog.mailtoBody": "Üdv,\n\nProblémám van a licenckulcsom aktiválásával:\n{key}\n\n",
+  "@licensing.dialog.mailtoBody": {
+    "sourceHash": "bcdc2b6"
+  },
+  "licensing.error.badSignature": "Ez a licenckulcs nem ment át az aláírás-ellenőrzésünkön, vagyis nem tűnik érvényes kulcsnak.",
+  "@licensing.error.badSignature": {
+    "sourceHash": "e9842df"
+  },
+  "licensing.error.badSignatureHint": "Kérlek, ellenőrizd a gépelési hibákat, és próbáld újra beilleszteni a vásárlási e-mailedből.",
+  "@licensing.error.badSignatureHint": {
+    "sourceHash": "8734aa5"
+  },
+  "licensing.error.badFormat": "A mi licenckulcs-formátumunk ettől eltér.",
+  "@licensing.error.badFormat": {
+    "sourceHash": "6012f8b"
+  },
+  "licensing.error.badFormatHint": "A licenckulcsok vagy egy rövid kód (CMDR-XXXX-XXXX-XXXX), vagy egy hosszabb kriptográfiai kulcs a vásárlási e-mailedből.",
+  "@licensing.error.badFormatHint": {
+    "sourceHash": "a62b901"
+  },
+  "licensing.error.shortCodeNotFound": "Ez a licenc jól néz ki, de alaposan kerestük, és nem találtuk az adatbázisunkban.",
+  "@licensing.error.shortCodeNotFound": {
+    "sourceHash": "c123af8"
+  },
+  "licensing.error.shortCodeNotFoundHint": "Kérlek, ellenőrizd, hogy a helyes kulcsot illesztetted be a vásárlási e-mailedből.",
+  "@licensing.error.shortCodeNotFoundHint": {
+    "sourceHash": "a2f07d2"
+  },
+  "licensing.error.network": "Hoppá, ezúttal nem sikerült elérni a licencszervert.",
+  "@licensing.error.network": {
+    "sourceHash": "63da44b"
+  },
+  "licensing.error.networkHint": "Kérlek, ellenőrizd az internetkapcsolatod, és próbáld újra.",
+  "@licensing.error.networkHint": {
+    "sourceHash": "67cba62"
+  },
+  "licensing.error.server": "Hmm, a licencszerver valami furcsát válaszolt. Sajnáljuk.",
+  "@licensing.error.server": {
+    "sourceHash": "6ca76c0"
+  },
+  "licensing.error.serverHint": "Kérlek, próbáld újra később.",
+  "@licensing.error.serverHint": {
+    "sourceHash": "386b914"
+  },
+  "licensing.error.generic": "Valami nem sikerült ennek a kulcsnak az aktiválása közben.",
+  "@licensing.error.generic": {
+    "sourceHash": "436e264"
+  },
+  "licensing.error.genericHint": "Kérlek, próbáld újra. Ha a probléma továbbra is fennáll, írj nekünk, és segítünk.",
+  "@licensing.error.genericHint": {
+    "sourceHash": "9108b68"
+  },
+  "licensing.section.title": "Licenc",
+  "@licensing.section.title": {
+    "sourceHash": "c011d60"
+  },
+  "licensing.section.loading": "Betöltés…",
+  "@licensing.section.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "licensing.section.labelType": "Licenc típusa",
+  "@licensing.section.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.section.labelOrganization": "Szervezet",
+  "@licensing.section.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.section.labelStatus": "Állapot",
+  "@licensing.section.labelStatus": {
+    "sourceHash": "920e413"
+  },
+  "licensing.section.labelKey": "Licenckulcs",
+  "@licensing.section.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.section.manageKey": "Licenckulcs kezelése",
+  "@licensing.section.manageKey": {
+    "sourceHash": "501cc54"
+  },
+  "licensing.section.enterKey": "Licenckulcs megadása",
+  "@licensing.section.enterKey": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.section.getLicense": "Licenc beszerzése",
+  "@licensing.section.getLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.section.typePersonal": "Személyes (ingyenes)",
+  "@licensing.section.typePersonal": {
+    "sourceHash": "4af5ca9"
+  },
+  "licensing.section.typeCommercialPerpetual": "Kereskedelmi, végleges",
+  "@licensing.section.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.section.typeCommercialSubscription": "Kereskedelmi előfizetés",
+  "@licensing.section.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.section.statusExpiredOn": "Lejárt ekkor: {date}",
+  "@licensing.section.statusExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.section.statusUpdatesUntil": "Frissítések eddig: {date}",
+  "@licensing.section.statusUpdatesUntil": {
+    "sourceHash": "7b84d1c"
+  },
+  "licensing.section.statusValidUntil": "Érvényes eddig: {date}",
+  "@licensing.section.statusValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.section.statusActive": "Aktív",
+  "@licensing.section.statusActive": {
+    "sourceHash": "9234069"
+  }
+}

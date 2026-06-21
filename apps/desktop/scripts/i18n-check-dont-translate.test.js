@@ -39,10 +39,28 @@ describe('droppedTokens: pure detector', () => {
     expect(droppedTokens('Open {system_settings}', 'Abrir ajustes')).toEqual(['{system_settings}'])
   })
   it('matches brand words whole-word only (no substring false positive)', () => {
-    // "Cmdr" is not present as a whole word in "Cmdrs", but the English here has no
-    // whole-word Cmdr either, so nothing to drop.
     expect(droppedTokens('See Cmdr docs', 'Ver Cmdr docs')).toEqual([])
     expect(droppedTokens('See Cmdr docs', 'Ver documentos')).toEqual(['Cmdr'])
+  })
+
+  it('accepts an inflected brand on the locale side (suffix-aware, not a drop)', () => {
+    // Hungarian case suffix and Swedish genitive are correct translations of "Cmdr",
+    // not a dropped brand.
+    expect(droppedTokens('Open in Cmdr', 'Megnyitás Cmdrben')).toEqual([])
+    expect(droppedTokens("Cmdr's window", 'Cmdrs fönster')).toEqual([])
+    expect(droppedTokens('About Cmdr', 'A Cmdrről')).toEqual([])
+  })
+
+  it('still flags a brand entirely missing from the locale value', () => {
+    expect(droppedTokens('Open in Cmdr', 'Megnyitás a fájlkezelőben')).toEqual(['Cmdr'])
+  })
+
+  it('does not count an embedded or compounded brand as present', () => {
+    // "MacCmdr" embeds the brand (letter before it) and "CmdrFoo" is an uppercase
+    // compound (a new capital starts a new word, not an inflection) — neither is the
+    // bare/inflected brand, so the brand still reads as dropped.
+    expect(droppedTokens('Open in Cmdr', 'Open in MacCmdr')).toEqual(['Cmdr'])
+    expect(droppedTokens('Open in Cmdr', 'Open in CmdrFoo')).toEqual(['Cmdr'])
   })
 })
 

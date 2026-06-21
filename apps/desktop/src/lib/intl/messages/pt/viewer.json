@@ -1,0 +1,366 @@
+{
+  "viewer.window.fallbackTitle": "Visualizador",
+  "@viewer.window.fallbackTitle": {
+    "sourceHash": "678bfa6"
+  },
+  "viewer.window.titleSuffix": "{fileName} | Visualizador",
+  "@viewer.window.titleSuffix": {
+    "sourceHash": "5ebd7f4"
+  },
+  "viewer.srHeading": "Visualizador de arquivos",
+  "@viewer.srHeading": {
+    "sourceHash": "b32f632"
+  },
+  "viewer.loading": "Carregando…",
+  "@viewer.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "viewer.error.noPath": "Nenhum caminho de arquivo especificado",
+  "@viewer.error.noPath": {
+    "sourceHash": "2b069fc"
+  },
+  "viewer.error.readFailed": "Não foi possível ler o arquivo",
+  "@viewer.error.readFailed": {
+    "sourceHash": "ea7d976"
+  },
+  "viewer.error.timeout": "Não foi possível carregar o arquivo. O volume pode estar lento ou sem resposta.",
+  "@viewer.error.timeout": {
+    "sourceHash": "d163618"
+  },
+  "viewer.error.retry": "Tentar novamente",
+  "@viewer.error.retry": {
+    "sourceHash": "942087c"
+  },
+  "viewer.error.cancel": "Cancelar",
+  "@viewer.error.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.content.ariaLabel": "Conteúdo do arquivo: {fileName}",
+  "@viewer.content.ariaLabel": {
+    "sourceHash": "57b8613"
+  },
+  "viewer.binaryWarning.body": "Esta é a visualização bruta do arquivo. Talvez você prefira ver o arquivo como <kind>{kind}</kind> de verdade. Para isso, feche esta janela e pressione <quickLookKey></quickLookKey> para abrir a visualização rápida, ou pressione <openKey></openKey> (ou dê um duplo clique no arquivo) para abri-lo no app associado.",
+  "@viewer.binaryWarning.body": {
+    "sourceHash": "42eda71"
+  },
+  "viewer.binaryWarning.kind.image": "imagem",
+  "@viewer.binaryWarning.kind.image": {
+    "sourceHash": "6105d6c"
+  },
+  "viewer.binaryWarning.kind.document": "documento",
+  "@viewer.binaryWarning.kind.document": {
+    "sourceHash": "43cc23f"
+  },
+  "viewer.binaryWarning.dismiss": "Fechar",
+  "@viewer.binaryWarning.dismiss": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.binaryWarning.suppressForever": "Não mostrar este aviso novamente",
+  "@viewer.binaryWarning.suppressForever": {
+    "sourceHash": "b85b92b"
+  },
+  "viewer.search.placeholder": "Localizar no arquivo…",
+  "@viewer.search.placeholder": {
+    "sourceHash": "c1dc89b"
+  },
+  "viewer.search.ariaLabel": "Pesquisar texto",
+  "@viewer.search.ariaLabel": {
+    "sourceHash": "38d268a"
+  },
+  "viewer.search.caseSensitive": "Diferenciar maiúsculas de minúsculas",
+  "@viewer.search.caseSensitive": {
+    "sourceHash": "e124ba4"
+  },
+  "viewer.search.regex": "Regex",
+  "@viewer.search.regex": {
+    "sourceHash": "0f27125"
+  },
+  "viewer.search.matchPosition": "{current} de {total}{more, select, yes {+} other {}}",
+  "@viewer.search.matchPosition": {
+    "sourceHash": "ec24db4"
+  },
+  "viewer.search.searching": "Pesquisando…",
+  "@viewer.search.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "viewer.search.partial": "(parcial)",
+  "@viewer.search.partial": {
+    "sourceHash": "d0ffde3"
+  },
+  "viewer.search.noMatches": "Nenhuma correspondência",
+  "@viewer.search.noMatches": {
+    "sourceHash": "2df01a0"
+  },
+  "viewer.search.stop": "Parar pesquisa",
+  "@viewer.search.stop": {
+    "sourceHash": "c48cf72"
+  },
+  "viewer.search.stopTooltip": "Parar a varredura e manter os resultados",
+  "@viewer.search.stopTooltip": {
+    "sourceHash": "b86629c"
+  },
+  "viewer.search.previous": "Correspondência anterior",
+  "@viewer.search.previous": {
+    "sourceHash": "daa2f8c"
+  },
+  "viewer.search.next": "Próxima correspondência",
+  "@viewer.search.next": {
+    "sourceHash": "825e5ab"
+  },
+  "viewer.search.close": "Fechar pesquisa",
+  "@viewer.search.close": {
+    "sourceHash": "55656b5"
+  },
+  "viewer.search.closeTooltip": "Fechar",
+  "@viewer.search.closeTooltip": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.toolbar.viewMode.ariaLabel": "Modo de visualização",
+  "@viewer.toolbar.viewMode.ariaLabel": {
+    "sourceHash": "18997f2"
+  },
+  "viewer.toolbar.viewMode.text": "Texto",
+  "@viewer.toolbar.viewMode.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.viewMode.viewAsText": "Ver como texto",
+  "@viewer.toolbar.viewMode.viewAsText": {
+    "sourceHash": "a0059b8"
+  },
+  "viewer.toolbar.viewMode.viewAsImage": "Ver como imagem",
+  "@viewer.toolbar.viewMode.viewAsImage": {
+    "sourceHash": "ae04259"
+  },
+  "viewer.toolbar.viewMode.viewAsPdf": "Ver como PDF",
+  "@viewer.toolbar.viewMode.viewAsPdf": {
+    "sourceHash": "ee89800"
+  },
+  "viewer.kind.image": "Imagem",
+  "@viewer.kind.image": {
+    "sourceHash": "1aa4cb0"
+  },
+  "viewer.kind.pdf": "PDF",
+  "@viewer.kind.pdf": {
+    "sourceHash": "1d393b0"
+  },
+  "viewer.kind.text": "Texto",
+  "@viewer.kind.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.encoding.placeholder": "Codificação",
+  "@viewer.toolbar.encoding.placeholder": {
+    "sourceHash": "4d25a47"
+  },
+  "viewer.toolbar.encoding.group.unicode": "Unicode",
+  "@viewer.toolbar.encoding.group.unicode": {
+    "sourceHash": "f922e0d"
+  },
+  "viewer.toolbar.encoding.group.western": "Ocidental",
+  "@viewer.toolbar.encoding.group.western": {
+    "sourceHash": "d7d2f0f"
+  },
+  "viewer.toolbar.encoding.detectedSuffix": "{label} (Detectada)",
+  "@viewer.toolbar.encoding.detectedSuffix": {
+    "sourceHash": "2096536"
+  },
+  "viewer.toolbar.tail.label": "Acompanhar",
+  "@viewer.toolbar.tail.label": {
+    "sourceHash": "ae9c3bd"
+  },
+  "viewer.toolbar.tail.ariaLabel": "Modo de acompanhamento: seguir as alterações do arquivo",
+  "@viewer.toolbar.tail.ariaLabel": {
+    "sourceHash": "af0477f"
+  },
+  "viewer.toolbar.tail.tooltip": "Seguir automaticamente as alterações do arquivo",
+  "@viewer.toolbar.tail.tooltip": {
+    "sourceHash": "733e57f"
+  },
+  "viewer.toolbar.reindexing": "Reindexando…",
+  "@viewer.toolbar.reindexing": {
+    "sourceHash": "f668818"
+  },
+  "viewer.statusBar.ariaLabel": "Informações do arquivo",
+  "@viewer.statusBar.ariaLabel": {
+    "sourceHash": "375b97d"
+  },
+  "viewer.statusBar.lineCount": "{count} {count, plural, one {linha} many {linhas} other {linhas}}",
+  "@viewer.statusBar.lineCount": {
+    "sourceHash": "1af08ec"
+  },
+  "viewer.statusBar.badge.inMemory": "na memória",
+  "@viewer.statusBar.badge.inMemory": {
+    "sourceHash": "d9b8483"
+  },
+  "viewer.statusBar.badge.inMemoryTooltip": "Você tem o arquivo inteiro na memória. Dá para rolar rapidamente até qualquer linha.",
+  "@viewer.statusBar.badge.inMemoryTooltip": {
+    "sourceHash": "4eb50b8"
+  },
+  "viewer.statusBar.badge.indexed": "indexado",
+  "@viewer.statusBar.badge.indexed": {
+    "sourceHash": "658a3e8"
+  },
+  "viewer.statusBar.badge.indexedTooltip": "Você tem o arquivo indexado, então os números das linhas são exatos e dá para rolar rapidamente até qualquer ponto.",
+  "@viewer.statusBar.badge.indexedTooltip": {
+    "sourceHash": "2604f1a"
+  },
+  "viewer.statusBar.badge.streamingIndexing": "transmitindo, indexando…",
+  "@viewer.statusBar.badge.streamingIndexing": {
+    "sourceHash": "506ef27"
+  },
+  "viewer.statusBar.badge.streamingIndexingTooltip": "Este é um arquivo grande em modo de transmissão. Estamos criando um índice em segundo plano (no máximo {seconds} seg)… Os números das linhas são aproximados por enquanto.",
+  "@viewer.statusBar.badge.streamingIndexingTooltip": {
+    "sourceHash": "6407733"
+  },
+  "viewer.statusBar.badge.streaming": "transmitindo",
+  "@viewer.statusBar.badge.streaming": {
+    "sourceHash": "b304adc"
+  },
+  "viewer.statusBar.badge.streamingTooltip": "Este é um arquivo grande em modo de transmissão. A indexação levaria mais de {seconds} seg, então não a fizemos. Os números das linhas são estimativas.",
+  "@viewer.statusBar.badge.streamingTooltip": {
+    "sourceHash": "1752e59"
+  },
+  "viewer.statusBar.badge.wrap": "quebra",
+  "@viewer.statusBar.badge.wrap": {
+    "sourceHash": "f0a2899"
+  },
+  "viewer.statusBar.badge.wrapTooltip": "As linhas quebram na borda da janela",
+  "@viewer.statusBar.badge.wrapTooltip": {
+    "sourceHash": "af2ca76"
+  },
+  "viewer.statusBar.hint.image": "Clicar 100% / ajustar · Rolar para dar zoom · Arrastar para mover",
+  "@viewer.statusBar.hint.image": {
+    "sourceHash": "bca0205"
+  },
+  "viewer.statusBar.hint.text": "W quebra · F acompanhar · ⌘F pesquisar",
+  "@viewer.statusBar.hint.text": {
+    "sourceHash": "3ecf215"
+  },
+  "viewer.media.dimensions": "{width} × {height}",
+  "@viewer.media.dimensions": {
+    "sourceHash": "ece2cad"
+  },
+  "viewer.image.loading": "Carregando imagem",
+  "@viewer.image.loading": {
+    "sourceHash": "65999b8"
+  },
+  "viewer.image.error": "Desculpe, não foi possível mostrar esta imagem. O arquivo pode estar danificado ou em um formato que não conseguimos exibir.",
+  "@viewer.image.error": {
+    "sourceHash": "9a24fe8"
+  },
+  "viewer.pdf.loading": "Carregando PDF",
+  "@viewer.pdf.loading": {
+    "sourceHash": "7f9acf3"
+  },
+  "viewer.contextMenu.ariaLabel": "Ações do visualizador",
+  "@viewer.contextMenu.ariaLabel": {
+    "sourceHash": "4cf8e51"
+  },
+  "viewer.contextMenu.copy": "Copiar",
+  "@viewer.contextMenu.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.contextMenu.selectAll": "Selecionar tudo",
+  "@viewer.contextMenu.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "viewer.copyDialog.confirmTitleKnown": "Copiar {size} para a área de transferência?",
+  "@viewer.copyDialog.confirmTitleKnown": {
+    "sourceHash": "7f97ebf"
+  },
+  "viewer.copyDialog.confirmTitleUnknown": "Copiar esta seleção para a área de transferência?",
+  "@viewer.copyDialog.confirmTitleUnknown": {
+    "sourceHash": "0956c8b"
+  },
+  "viewer.copyDialog.confirmBody": "Colagens grandes podem deixar outros apps lentos. Tente a pesquisa (⌘F) para reduzir a seleção.",
+  "@viewer.copyDialog.confirmBody": {
+    "sourceHash": "c1f2927"
+  },
+  "viewer.copyDialog.cancel": "Cancelar",
+  "@viewer.copyDialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.copyDialog.saveAsFile": "Salvar como arquivo…",
+  "@viewer.copyDialog.saveAsFile": {
+    "sourceHash": "7b9b279"
+  },
+  "viewer.copyDialog.copy": "Copiar",
+  "@viewer.copyDialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseBody": "Isso é maior que o limite de 100 MB da área de transferência. Tente a pesquisa (⌘F) para encontrar o que você precisa, ou salve a seleção como arquivo.",
+  "@viewer.copyDialog.refuseBody": {
+    "sourceHash": "75f3043"
+  },
+  "viewer.reloadToast.grew": "O arquivo mudou no disco. Recarregar?",
+  "@viewer.reloadToast.grew": {
+    "sourceHash": "d66b013"
+  },
+  "viewer.reloadToast.rotated": "O arquivo foi substituído no disco. Recarregue para ver o novo conteúdo.",
+  "@viewer.reloadToast.rotated": {
+    "sourceHash": "50804c2"
+  },
+  "viewer.reloadToast.reload": "Recarregar",
+  "@viewer.reloadToast.reload": {
+    "sourceHash": "bdc090e"
+  },
+  "viewer.reloadToast.dismissTooltip": "Dispensar sem recarregar",
+  "@viewer.reloadToast.dismissTooltip": {
+    "sourceHash": "7f829ed"
+  },
+  "viewer.copy.onClipboard": "{size} na sua área de transferência",
+  "@viewer.copy.onClipboard": {
+    "sourceHash": "45934ed"
+  },
+  "viewer.copy.clipboardUnreachable": "Não foi possível acessar a área de transferência. Tentar de novo?",
+  "@viewer.copy.clipboardUnreachable": {
+    "sourceHash": "c0382ba"
+  },
+  "viewer.copy.readTooLong": "A leitura demorou demais. Que tal uma seleção menor?",
+  "@viewer.copy.readTooLong": {
+    "sourceHash": "2275e83"
+  },
+  "viewer.copy.copyFailed": "Não foi possível copiar a seleção. Tentar de novo?",
+  "@viewer.copy.copyFailed": {
+    "sourceHash": "6a1ab41"
+  },
+  "viewer.copy.readFailed": "Não foi possível ler a seleção. Tentar de novo?",
+  "@viewer.copy.readFailed": {
+    "sourceHash": "bde5f85"
+  },
+  "viewer.saveAs.title": "Salvar seleção",
+  "@viewer.saveAs.title": {
+    "sourceHash": "dd183ea"
+  },
+  "viewer.saveAs.defaultName": "selecao",
+  "@viewer.saveAs.defaultName": {
+    "sourceHash": "6504513"
+  },
+  "viewer.saveAs.panelFailed": "Não foi possível abrir o painel de salvamento. Tentar de novo?",
+  "@viewer.saveAs.panelFailed": {
+    "sourceHash": "70c3f76"
+  },
+  "viewer.saveAs.saved": "Seleção salva em {name}",
+  "@viewer.saveAs.saved": {
+    "sourceHash": "5083c12"
+  },
+  "viewer.saveAs.tooLong": "O salvamento demorou demais. Que tal uma seleção menor?",
+  "@viewer.saveAs.tooLong": {
+    "sourceHash": "f31d7f4"
+  },
+  "viewer.saveAs.saveFailed": "Não foi possível salvar a seleção. Tentar de novo?",
+  "@viewer.saveAs.saveFailed": {
+    "sourceHash": "2d85642"
+  },
+  "viewer.selection.toEndOfFile": "Selecionado da linha {line} até o fim do arquivo",
+  "@viewer.selection.toEndOfFile": {
+    "sourceHash": "62d95be"
+  },
+  "viewer.selection.singleLine": "Selecionados {chars} caracteres na linha {line}",
+  "@viewer.selection.singleLine": {
+    "sourceHash": "bb320d5"
+  },
+  "viewer.selection.multiLine": "Selecionadas as linhas de {startLine} a {endLine}, {chars} caracteres",
+  "@viewer.selection.multiLine": {
+    "sourceHash": "074c687"
+  }
+}

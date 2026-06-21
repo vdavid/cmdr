@@ -1,0 +1,54 @@
+{
+  "search.dialog.title": "Rechercher",
+  "@search.dialog.title": {
+    "sourceHash": "49c266b"
+  },
+  "search.runHint": "Appuyez sur Entrée pour lancer la recherche",
+  "@search.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "search.action.showAll.label": "Tout afficher dans la fenêtre principale",
+  "@search.action.showAll.label": {
+    "sourceHash": "782075a"
+  },
+  "search.action.showAll.tooltip": "Ouvrir les résultats de la recherche dans le panneau actif",
+  "@search.action.showAll.tooltip": {
+    "sourceHash": "4e8c58a"
+  },
+  "search.action.goToFile.label": "Aller au fichier",
+  "@search.action.goToFile.label": {
+    "sourceHash": "70299e6"
+  },
+  "search.action.goToFile.tooltip": "Ouvrir le fichier dans le panneau actif",
+  "@search.action.goToFile.tooltip": {
+    "sourceHash": "2627d2e"
+  },
+  "search.recent.runAria": "Relancer la recherche {mode} récente : {query}",
+  "@search.recent.runAria": {
+    "sourceHash": "fb0939c"
+  },
+  "search.systemDirExclude.default": "Exclut les dossiers système et de compilation courants",
+  "@search.systemDirExclude.default": {
+    "sourceHash": "dcdf28a"
+  },
+  "search.systemDirExclude.heading": "Ces dossiers sont masqués :",
+  "@search.systemDirExclude.heading": {
+    "sourceHash": "5ee8d52"
+  },
+  "search.notAFolderToast": "Les résultats de recherche ne sont pas un dossier. Collez plutôt dans un vrai dossier.",
+  "@search.notAFolderToast": {
+    "sourceHash": "c449358"
+  },
+  "search.searchableFolder.disabledTooltip": "Le dossier actuel affiche des résultats de recherche, dans lesquels on ne peut pas rechercher. Ouvrez d''abord un vrai dossier.",
+  "@search.searchableFolder.disabledTooltip": {
+    "sourceHash": "a90d24e"
+  },
+  "search.snapshot.defaultLabel": "Rechercher",
+  "@search.snapshot.defaultLabel": {
+    "sourceHash": "49c266b"
+  },
+  "search.snapshot.cappedLabel": "{label} ({capText} premiers sur {totalText})",
+  "@search.snapshot.cappedLabel": {
+    "sourceHash": "35523ac"
+  }
+}

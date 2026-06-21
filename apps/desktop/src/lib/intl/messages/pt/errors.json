@@ -1,0 +1,1218 @@
+{
+  "errors.listing.interrupted.title": "Interrompido",
+  "@errors.listing.interrupted.title": {
+    "sourceHash": "132d124"
+  },
+  "errors.listing.interrupted.explanation": "Uma operação do sistema foi interrompida antes de terminar. Quase sempre é algo pontual, causado por um sinal ou um processo em segundo plano que atravessou o caminho por um instante.",
+  "@errors.listing.interrupted.explanation": {
+    "sourceHash": "7f88a37"
+  },
+  "errors.listing.interrupted.suggestion": "Navegue até aqui de novo para tentar outra vez. Esse tipo de interrupção quase nunca acontece duas vezes seguidas.",
+  "@errors.listing.interrupted.suggestion": {
+    "sourceHash": "2fe74e8"
+  },
+  "errors.listing.notEnoughMemory.title": "Memória insuficiente",
+  "@errors.listing.notEnoughMemory.title": {
+    "sourceHash": "96dc194"
+  },
+  "errors.listing.notEnoughMemory.explanation": "O sistema ficou sem memória disponível (RAM) ao ler esta pasta. Isso pode acontecer quando muitos apps estão abertos ao mesmo tempo, ou quando uma pasta contém um número muito grande de arquivos.",
+  "@errors.listing.notEnoughMemory.explanation": {
+    "sourceHash": "ff103cd"
+  },
+  "errors.listing.notEnoughMemory.suggestion": "Veja o que tentar:\n- Feche alguns apps para liberar memória, principalmente os que usam muitos recursos (navegadores com muitas abas, editores, apps de mídia)\n- Verifique o uso de memória no **Monitor de Atividade** (busque por ele no Spotlight)\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.listing.notEnoughMemory.suggestion": {
+    "sourceHash": "26a7a46"
+  },
+  "errors.listing.resourceBusy.title": "Recurso ocupado",
+  "@errors.listing.resourceBusy.title": {
+    "sourceHash": "3ad6486"
+  },
+  "errors.listing.resourceBusy.explanation": "O Cmdr não conseguiu acessar `{path}` porque outro app ou processo está usando o recurso com exclusividade no momento. Em geral isso é temporário.",
+  "@errors.listing.resourceBusy.explanation": {
+    "sourceHash": "8c7bdd4"
+  },
+  "errors.listing.resourceBusy.suggestion": "Espere um momento e navegue até aqui de novo. Se continuar acontecendo, veja qual app pode estar mantendo o arquivo aberto (no Terminal, execute `lsof +D <folder-path>` para ver quais processos estão usando esta pasta).",
+  "@errors.listing.resourceBusy.suggestion": {
+    "sourceHash": "fa266e6"
+  },
+  "errors.listing.temporarilyUnavailable.title": "Temporariamente indisponível",
+  "@errors.listing.temporarilyUnavailable.title": {
+    "sourceHash": "3c86be3"
+  },
+  "errors.listing.temporarilyUnavailable.explanation": "O sistema está ocupado demais por um instante para atender a esta solicitação. É uma condição passageira que costuma se resolver sozinha em segundos.",
+  "@errors.listing.temporarilyUnavailable.explanation": {
+    "sourceHash": "2193876"
+  },
+  "errors.listing.temporarilyUnavailable.suggestion": "Navegue até aqui de novo para tentar outra vez. Em geral isso se resolve sozinho. Se continuar acontecendo, o sistema pode estar sob carga pesada. Veja no **Monitor de Atividade** quais apps estão consumindo muitos recursos.",
+  "@errors.listing.temporarilyUnavailable.suggestion": {
+    "sourceHash": "1ec4aef"
+  },
+  "errors.listing.networkDown.title": "A rede está fora do ar",
+  "@errors.listing.networkDown.title": {
+    "sourceHash": "399ab40"
+  },
+  "errors.listing.networkDown.explanation": "A conexão de rede do seu Mac está fora do ar, então o Cmdr não consegue alcançar este volume. Pode ser que o Wi-Fi esteja desconectado, que um cabo Ethernet esteja desligado, ou que a interface de rede esteja desativada.",
+  "@errors.listing.networkDown.explanation": {
+    "sourceHash": "e2106be"
+  },
+  "errors.listing.networkDown.suggestion": "Veja o que tentar:\n- Verifique o status do Wi-Fi ou Ethernet em **{system_settings} > Rede**\n- Se estiver no Wi-Fi, tente desligá-lo e ligá-lo de novo\n- No Terminal, execute `ping google.com` para testar sua conexão\n- Navegue até aqui de novo assim que estiver online",
+  "@errors.listing.networkDown.suggestion": {
+    "sourceHash": "3fe671d"
+  },
+  "errors.listing.networkConnectionDropped.title": "Conexão de rede perdida",
+  "@errors.listing.networkConnectionDropped.title": {
+    "sourceHash": "5654be9"
+  },
+  "errors.listing.networkConnectionDropped.explanation": "A conexão de rede foi reiniciada de forma inesperada enquanto o Cmdr lia esta pasta. Isso pode acontecer quando um roteador reinicia, uma VPN reconecta, ou a rede fica instável por um tempo.",
+  "@errors.listing.networkConnectionDropped.explanation": {
+    "sourceHash": "b155930"
+  },
+  "errors.listing.networkConnectionDropped.suggestion": "Veja o que tentar:\n- Verifique sua conexão de rede\n- Se estiver numa VPN, confirme que ela continua conectada\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.listing.networkConnectionDropped.suggestion": {
+    "sourceHash": "17c6bb8"
+  },
+  "errors.listing.connectionDropped.title": "Conexão perdida",
+  "@errors.listing.connectionDropped.title": {
+    "sourceHash": "9049f3d"
+  },
+  "errors.listing.connectionDropped.explanation": "A conexão foi encerrada pelo servidor ou pela rede antes de o Cmdr terminar de ler. Isso costuma significar que o servidor está sobrecarregado ou reiniciando.",
+  "@errors.listing.connectionDropped.explanation": {
+    "sourceHash": "2d447c3"
+  },
+  "errors.listing.connectionDropped.suggestion": "Veja o que tentar:\n- Verifique se o servidor está em execução e respondendo\n- Verifique sua conexão de rede\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.listing.connectionDropped.suggestion": {
+    "sourceHash": "d8fba7b"
+  },
+  "errors.listing.connectionReset.title": "Conexão reiniciada",
+  "@errors.listing.connectionReset.title": {
+    "sourceHash": "6346f08"
+  },
+  "errors.listing.connectionReset.explanation": "O servidor remoto encerrou a conexão de forma inesperada. Isso pode acontecer quando o servidor reinicia, atinge um tempo limite, ou enfrenta um problema interno.",
+  "@errors.listing.connectionReset.explanation": {
+    "sourceHash": "3ccfa1c"
+  },
+  "errors.listing.connectionReset.suggestion": "Veja o que tentar:\n- Verifique se o servidor está em execução\n- No Terminal, tente `ping <hostname>` para testar se o servidor está acessível\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.listing.connectionReset.suggestion": {
+    "sourceHash": "0ee3d15"
+  },
+  "errors.listing.connectionTimedOutErrno.title": "Tempo de conexão esgotado",
+  "@errors.listing.connectionTimedOutErrno.title": {
+    "sourceHash": "2e0b4a7"
+  },
+  "errors.listing.connectionTimedOutErrno.explanation": "O Cmdr tentou ler esta pasta, mas a conexão não respondeu a tempo. Em geral isso significa que o servidor ou dispositivo está lento, inacessível, ou que a rede entre você e ele está congestionada.",
+  "@errors.listing.connectionTimedOutErrno.explanation": {
+    "sourceHash": "33612d4"
+  },
+  "errors.listing.connectionTimedOutErrno.suggestion": "Veja o que tentar:\n- Verifique se o dispositivo ou servidor está ligado e acessível\n- Verifique sua conexão de Wi-Fi ou Ethernet\n- No Terminal, tente `ping <hostname>` para testar a conectividade\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.listing.connectionTimedOutErrno.suggestion": {
+    "sourceHash": "4172538"
+  },
+  "errors.listing.hostDown.title": "O host está fora do ar",
+  "@errors.listing.hostDown.title": {
+    "sourceHash": "a99606a"
+  },
+  "errors.listing.hostDown.explanation": "O host remoto (o computador ou servidor que hospeda este volume) não está respondendo. Ele pode estar desligado, em repouso, ou inacessível por um tempo.",
+  "@errors.listing.hostDown.explanation": {
+    "sourceHash": "cf59cab"
+  },
+  "errors.listing.hostDown.suggestion": "Veja o que tentar:\n- Verifique se o host está ligado e conectado à rede\n- No Terminal, tente `ping <hostname>` para testar se ele está acessível\n- Se for um NAS ou servidor, confira a interface de gerenciamento dele\n- Navegue até aqui de novo assim que o host voltar",
+  "@errors.listing.hostDown.suggestion": {
+    "sourceHash": "4a09e8e"
+  },
+  "errors.listing.staleConnection.title": "Conexão obsoleta",
+  "@errors.listing.staleConnection.title": {
+    "sourceHash": "f03c43c"
+  },
+  "errors.listing.staleConnection.explanation": "O Cmdr está tentando acessar esta pasta usando uma referência antiga que o servidor não reconhece mais. Isso costuma acontecer com drives de rede (NFS, SMB) depois que o servidor reinicia, o compartilhamento é remontado, ou a conexão foi interrompida.",
+  "@errors.listing.staleConnection.explanation": {
+    "sourceHash": "3712df2"
+  },
+  "errors.listing.staleConnection.suggestion": "Veja o que tentar:\n- Saia desta pasta e volte\n- Se for um drive de rede, tente desmontá-lo e montá-lo de novo no Finder\n- Verifique se o servidor que hospeda esta pasta está em execução\n- No Terminal, execute `mount` para ver os volumes montados no momento",
+  "@errors.listing.staleConnection.suggestion": {
+    "sourceHash": "05960c8"
+  },
+  "errors.listing.lockUnavailable.title": "Bloqueio indisponível",
+  "@errors.listing.lockUnavailable.title": {
+    "sourceHash": "3123ad5"
+  },
+  "errors.listing.lockUnavailable.explanation": "O sistema ficou sem bloqueios de arquivo. Bloqueios de arquivo são como os apps coordenam o acesso a arquivos compartilhados (impedindo que dois apps gravem no mesmo arquivo ao mesmo tempo). Ficar sem eles costuma significar que apps demais estão acessando arquivos ao mesmo tempo.",
+  "@errors.listing.lockUnavailable.explanation": {
+    "sourceHash": "154df3c"
+  },
+  "errors.listing.lockUnavailable.suggestion": "Veja o que tentar:\n- Feche alguns apps, principalmente os que trabalham com muitos arquivos (editores, IDEs, ferramentas de backup)\n- No Terminal, execute `lsof | wc -l` para ver quantos arquivos estão abertos em todos os apps\n- Se o problema continuar, você pode aumentar o limite com `ulimit -n 4096` no Terminal\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.listing.lockUnavailable.suggestion": {
+    "sourceHash": "f9c9f8d"
+  },
+  "errors.listing.cancelledErrno.title": "Cancelado",
+  "@errors.listing.cancelledErrno.title": {
+    "sourceHash": "d353a99"
+  },
+  "errors.listing.cancelledErrno.explanation": "A operação foi cancelada antes de terminar.",
+  "@errors.listing.cancelledErrno.explanation": {
+    "sourceHash": "2b85cbc"
+  },
+  "errors.listing.cancelledErrno.suggestion": "Navegue até aqui de novo quando quiser tentar outra vez.",
+  "@errors.listing.cancelledErrno.suggestion": {
+    "sourceHash": "e21161b"
+  },
+  "errors.listing.notPermitted.title": "Não permitido",
+  "@errors.listing.notPermitted.title": {
+    "sourceHash": "8ec5f4b"
+  },
+  "errors.listing.notPermitted.explanation": "O macOS impediu o Cmdr de acessar `{path}`. Em geral isso significa que a pasta está protegida pelas políticas de segurança do macOS, ou que o Cmdr ainda não recebeu as permissões certas.",
+  "@errors.listing.notPermitted.explanation": {
+    "sourceHash": "ddf8a5d"
+  },
+  "errors.listing.notPermitted.suggestion": "Veja o que tentar:\n- Abra **{system_settings} > {privacy_and_security} > {files_and_folders}** e conceda acesso ao Cmdr\n- Se for uma pasta protegida pelo sistema (como diretórios do sistema), talvez você precise conceder ao Cmdr **{full_disk_access}** em {privacy_and_security}\n- No Terminal, execute `ls -la` neste caminho para verificar o dono e as permissões",
+  "@errors.listing.notPermitted.suggestion": {
+    "sourceHash": "32e9d74"
+  },
+  "errors.listing.pathNotFoundErrno.title": "Caminho não encontrado",
+  "@errors.listing.pathNotFoundErrno.title": {
+    "sourceHash": "cce25f6"
+  },
+  "errors.listing.pathNotFoundErrno.explanation": "O Cmdr não encontrou `{path}`. Ele pode ter sido movido, renomeado, ou excluído enquanto o Cmdr tentava acessá-lo.",
+  "@errors.listing.pathNotFoundErrno.explanation": {
+    "sourceHash": "0c4bb13"
+  },
+  "errors.listing.pathNotFoundErrno.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num drive de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta principal e procure o item por lá\n- No Terminal, execute `ls -la` na pasta principal para ver o que há nela",
+  "@errors.listing.pathNotFoundErrno.suggestion": {
+    "sourceHash": "d25f62b"
+  },
+  "errors.listing.noPermissionErrno.title": "Sem permissão",
+  "@errors.listing.noPermissionErrno.title": {
+    "sourceHash": "201c89b"
+  },
+  "errors.listing.noPermissionErrno.explanation": "O Cmdr não tem permissão para acessar `{path}`. O macOS controla quais apps podem acessar quais pastas, e o Cmdr ainda não recebeu acesso a esta.",
+  "@errors.listing.noPermissionErrno.explanation": {
+    "sourceHash": "a2955dc"
+  },
+  "errors.listing.noPermissionErrno.suggestion": "Veja o que tentar:\n- Abra **{system_settings} > {privacy_and_security} > {files_and_folders}** e conceda acesso ao Cmdr\n- Verifique as permissões da pasta no Finder: clique nela com o botão direito, escolha Obter Informações, e veja em Compartilhamento e Permissões\n- Se for uma pasta compartilhada, peça ao dono que atualize as permissões\n- No Terminal, execute `ls -la` neste caminho para ver as permissões atuais",
+  "@errors.listing.noPermissionErrno.suggestion": {
+    "sourceHash": "ea316e7"
+  },
+  "errors.listing.alreadyExistsErrno.title": "Já existe",
+  "@errors.listing.alreadyExistsErrno.title": {
+    "sourceHash": "2dbc546"
+  },
+  "errors.listing.alreadyExistsErrno.explanation": "Já existe um arquivo ou pasta em `{path}`, então o Cmdr não pode criar um novo ali.",
+  "@errors.listing.alreadyExistsErrno.explanation": {
+    "sourceHash": "487aee7"
+  },
+  "errors.listing.alreadyExistsErrno.suggestion": "Renomeie o item existente ou escolha um nome diferente para o novo.",
+  "@errors.listing.alreadyExistsErrno.suggestion": {
+    "sourceHash": "8761a72"
+  },
+  "errors.listing.crossDeviceOperation.title": "Operação entre dispositivos",
+  "@errors.listing.crossDeviceOperation.title": {
+    "sourceHash": "a50dc58"
+  },
+  "errors.listing.crossDeviceOperation.explanation": "O Cmdr não pode mover este item diretamente porque a origem e o destino estão em volumes diferentes (por exemplo, um drive interno e um pendrive USB). Mover entre volumes exige copiar os dados e depois remover o original.",
+  "@errors.listing.crossDeviceOperation.explanation": {
+    "sourceHash": "4762369"
+  },
+  "errors.listing.crossDeviceOperation.suggestion": "Copie o item para o destino em vez de movê-lo. O Cmdr cuida da cópia automaticamente.",
+  "@errors.listing.crossDeviceOperation.suggestion": {
+    "sourceHash": "7700cc3"
+  },
+  "errors.listing.notAFolder.title": "Não é uma pasta",
+  "@errors.listing.notAFolder.title": {
+    "sourceHash": "78a92a5"
+  },
+  "errors.listing.notAFolder.explanation": "O Cmdr esperava que `{path}` fosse uma pasta, mas é um arquivo. Isso pode acontecer se algo foi renomeado ou substituído há pouco.",
+  "@errors.listing.notAFolder.explanation": {
+    "sourceHash": "45d8f76"
+  },
+  "errors.listing.notAFolder.suggestion": "Verifique o caminho e confirme que ele aponta para uma pasta, não para um arquivo.",
+  "@errors.listing.notAFolder.suggestion": {
+    "sourceHash": "433a2d7"
+  },
+  "errors.listing.isAFolderErrno.title": "É uma pasta",
+  "@errors.listing.isAFolderErrno.title": {
+    "sourceHash": "6deee63"
+  },
+  "errors.listing.isAFolderErrno.explanation": "O Cmdr esperava que `{path}` fosse um arquivo, mas é uma pasta. Isso pode acontecer se algo foi renomeado ou substituído há pouco.",
+  "@errors.listing.isAFolderErrno.explanation": {
+    "sourceHash": "009d220"
+  },
+  "errors.listing.isAFolderErrno.suggestion": "Verifique o caminho e confirme que ele aponta para um arquivo, não para uma pasta.",
+  "@errors.listing.isAFolderErrno.suggestion": {
+    "sourceHash": "c12c3c1"
+  },
+  "errors.listing.diskFullErrno.title": "O disco está cheio",
+  "@errors.listing.diskFullErrno.title": {
+    "sourceHash": "293beb8"
+  },
+  "errors.listing.diskFullErrno.explanation": "Não há espaço livre suficiente neste volume para concluir a operação.",
+  "@errors.listing.diskFullErrno.explanation": {
+    "sourceHash": "30d0741"
+  },
+  "errors.listing.diskFullErrno.suggestion": "Veja o que tentar:\n- Libere espaço movendo ou excluindo arquivos de que você não precisa mais\n- Esvazie o Lixo (clique no ícone do Lixo no Dock com o botão direito)\n- No Terminal, execute `df -h` para ver quanto espaço resta em cada volume\n- Veja **{system_settings} > Geral > Armazenamento** para um detalhamento do que está usando espaço",
+  "@errors.listing.diskFullErrno.suggestion": {
+    "sourceHash": "bf54d66"
+  },
+  "errors.listing.readOnlyVolumeErrno.title": "Volume somente leitura",
+  "@errors.listing.readOnlyVolumeErrno.title": {
+    "sourceHash": "e2d3bf1"
+  },
+  "errors.listing.readOnlyVolumeErrno.explanation": "Este volume está montado como somente leitura, então o Cmdr não pode fazer alterações nele. Isso pode ser porque o dispositivo tem uma chave física de proteção contra gravação, porque a imagem de disco foi montada como somente leitura, ou porque o sistema de arquivos não permite gravação.",
+  "@errors.listing.readOnlyVolumeErrno.explanation": {
+    "sourceHash": "cb19e8c"
+  },
+  "errors.listing.readOnlyVolumeErrno.suggestion": "Veja o que tentar:\n- Se o dispositivo tiver uma chave física de proteção contra gravação (comum em cartões SD), desligue-a\n- Se for uma imagem de disco, monte-a de novo com acesso de gravação\n- Caso contrário, copie os arquivos para um local gravável primeiro",
+  "@errors.listing.readOnlyVolumeErrno.suggestion": {
+    "sourceHash": "6ce54da"
+  },
+  "errors.listing.notSupportedErrno.title": "Sem suporte",
+  "@errors.listing.notSupportedErrno.title": {
+    "sourceHash": "74e8477"
+  },
+  "errors.listing.notSupportedErrno.explanation": "Esta operação não tem suporte neste sistema de arquivos. Sistemas de arquivos diferentes (como FAT32, NTFS, ou compartilhamentos de rede) oferecem suporte a recursos diferentes, e este não oferece suporte ao que o Cmdr está tentando fazer.",
+  "@errors.listing.notSupportedErrno.explanation": {
+    "sourceHash": "198aa15"
+  },
+  "errors.listing.notSupportedErrno.suggestion": "Tente uma abordagem diferente, ou use o Finder para esta operação. Se estiver trabalhando com um drive externo, ele pode estar formatado com um sistema de arquivos que tem limitações (por exemplo, o FAT32 não armazena arquivos maiores que 4 GB).",
+  "@errors.listing.notSupportedErrno.suggestion": {
+    "sourceHash": "169d5cf"
+  },
+  "errors.listing.networkUnreachable.title": "Rede inacessível",
+  "@errors.listing.networkUnreachable.title": {
+    "sourceHash": "7b83c7c"
+  },
+  "errors.listing.networkUnreachable.explanation": "O Cmdr não consegue alcançar a rede em que este volume está. Isso costuma significar que você não está conectado à rede certa, ou que uma VPN não está ativa.",
+  "@errors.listing.networkUnreachable.explanation": {
+    "sourceHash": "f92dedc"
+  },
+  "errors.listing.networkUnreachable.suggestion": "Veja o que tentar:\n- Verifique sua conexão de Wi-Fi ou Ethernet\n- Confirme que você está na rede certa (por exemplo, o Wi-Fi do escritório ou a VPN)\n- No Terminal, tente `ping <hostname>` para testar se o servidor está acessível\n- Navegue até aqui de novo assim que estiver conectado",
+  "@errors.listing.networkUnreachable.suggestion": {
+    "sourceHash": "b1754b4"
+  },
+  "errors.listing.connectionRefused.title": "Conexão recusada",
+  "@errors.listing.connectionRefused.title": {
+    "sourceHash": "1a28032"
+  },
+  "errors.listing.connectionRefused.explanation": "O servidor recusou a conexão ativamente. Em geral isso significa que o software do servidor (por exemplo, um serviço SMB ou NFS) não está em execução, ou que ele está configurado para rejeitar conexões deste Mac.",
+  "@errors.listing.connectionRefused.explanation": {
+    "sourceHash": "537cf4e"
+  },
+  "errors.listing.connectionRefused.suggestion": "Veja o que tentar:\n- Verifique se o servidor está em execução e se o serviço de compartilhamento de arquivos dele está ativo\n- Confira se o endereço e a porta do servidor estão corretos\n- No Terminal, tente `ping <hostname>` para verificar se o servidor está acessível\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.listing.connectionRefused.suggestion": {
+    "sourceHash": "4afa12d"
+  },
+  "errors.listing.symlinkLoopErrno.title": "Loop de link simbólico",
+  "@errors.listing.symlinkLoopErrno.title": {
+    "sourceHash": "3d41981"
+  },
+  "errors.listing.symlinkLoopErrno.explanation": "O Cmdr encontrou uma cadeia circular de links simbólicos (atalhos que apontam para outros atalhos) em `{path}`. Seguir esses links anda em círculos, então o Cmdr não consegue chegar ao arquivo ou pasta de verdade.",
+  "@errors.listing.symlinkLoopErrno.explanation": {
+    "sourceHash": "cb728c1"
+  },
+  "errors.listing.symlinkLoopErrno.suggestion": "Veja o que tentar:\n- No Terminal, execute `ls -la` neste caminho para ver para onde os links simbólicos apontam\n- Encontre e corrija o link que cria o loop\n- Se não tiver certeza de qual link é o problema, siga-os um a um com `readlink <path>`",
+  "@errors.listing.symlinkLoopErrno.suggestion": {
+    "sourceHash": "0a439fb"
+  },
+  "errors.listing.nameTooLongErrno.title": "Nome longo demais",
+  "@errors.listing.nameTooLongErrno.title": {
+    "sourceHash": "de4bc1d"
+  },
+  "errors.listing.nameTooLongErrno.explanation": "O nome do arquivo ou pasta passa do limite do sistema (255 caracteres na maioria dos volumes do Mac). Isso também pode acontecer quando o caminho completo (todas as pastas juntas) passa do comprimento máximo de caminho do sistema.",
+  "@errors.listing.nameTooLongErrno.explanation": {
+    "sourceHash": "d6f7a03"
+  },
+  "errors.listing.nameTooLongErrno.suggestion": "Renomeie o item para usar um nome mais curto. Se o nome parecer razoável, o caminho completo (incluindo todas as pastas principais) pode ser longo demais. Tente movê-lo para um caminho mais curto.",
+  "@errors.listing.nameTooLongErrno.suggestion": {
+    "sourceHash": "a0497b1"
+  },
+  "errors.listing.hostUnreachable.title": "Host inacessível",
+  "@errors.listing.hostUnreachable.title": {
+    "sourceHash": "eae08c7"
+  },
+  "errors.listing.hostUnreachable.explanation": "O Cmdr não consegue encontrar uma rota de rede até o host em que este volume está. Em geral isso significa que o host está em outra rede, atrás de um firewall, ou que a configuração de roteamento precisa ser atualizada.",
+  "@errors.listing.hostUnreachable.explanation": {
+    "sourceHash": "3e5e6f9"
+  },
+  "errors.listing.hostUnreachable.suggestion": "Veja o que tentar:\n- Verifique se o host está ligado e na mesma rede\n- Se você precisa de uma VPN para alcançá-lo, confirme que a VPN está conectada\n- No Terminal, tente `ping <hostname>` para testar a conectividade\n- Navegue até aqui de novo assim que o host estiver acessível",
+  "@errors.listing.hostUnreachable.suggestion": {
+    "sourceHash": "8e7a1cf"
+  },
+  "errors.listing.folderNotEmpty.title": "Pasta não vazia",
+  "@errors.listing.folderNotEmpty.title": {
+    "sourceHash": "a8c9ac6"
+  },
+  "errors.listing.folderNotEmpty.explanation": "O Cmdr não pode remover `{path}` porque ela ainda contém arquivos ou subpastas. O sistema exige que uma pasta esteja vazia para que ela possa ser removida desta forma.",
+  "@errors.listing.folderNotEmpty.explanation": {
+    "sourceHash": "c16ac41"
+  },
+  "errors.listing.folderNotEmpty.suggestion": "Exclua o conteúdo da pasta primeiro e depois tente remover a pasta de novo.",
+  "@errors.listing.folderNotEmpty.suggestion": {
+    "sourceHash": "a440845"
+  },
+  "errors.listing.quotaExceeded.title": "Cota excedida",
+  "@errors.listing.quotaExceeded.title": {
+    "sourceHash": "a940827"
+  },
+  "errors.listing.quotaExceeded.explanation": "Você atingiu sua cota de disco (o máximo de espaço alocado à sua conta de usuário) neste volume. Isso é comum em servidores compartilhados e drives de rede, onde um administrador define limites por usuário.",
+  "@errors.listing.quotaExceeded.explanation": {
+    "sourceHash": "6fa75c0"
+  },
+  "errors.listing.quotaExceeded.suggestion": "Veja o que tentar:\n- Libere espaço removendo arquivos de que você não precisa mais neste volume\n- Peça ao administrador do sistema para aumentar sua cota\n- No Terminal, execute `quota` para ver seu uso e limite atuais",
+  "@errors.listing.quotaExceeded.suggestion": {
+    "sourceHash": "e24428a"
+  },
+  "errors.listing.authRequiredEauth.title": "Autenticação necessária",
+  "@errors.listing.authRequiredEauth.title": {
+    "sourceHash": "0fcfb12"
+  },
+  "errors.listing.authRequiredEauth.explanation": "O Cmdr não conseguiu se autenticar com este volume. Suas credenciais salvas podem ter expirado, ou o servidor está rejeitando o login atual.",
+  "@errors.listing.authRequiredEauth.explanation": {
+    "sourceHash": "7b51115"
+  },
+  "errors.listing.authRequiredEauth.suggestion": "Veja o que tentar:\n- Desconecte e reconecte o volume, e digite seu nome de usuário e senha de novo\n- Verifique se sua senha não mudou ou expirou\n- Se for um servidor da empresa, fale com sua equipe de TI",
+  "@errors.listing.authRequiredEauth.suggestion": {
+    "sourceHash": "9ba659e"
+  },
+  "errors.listing.authRequiredEneedauth.title": "Autenticação necessária",
+  "@errors.listing.authRequiredEneedauth.title": {
+    "sourceHash": "0fcfb12"
+  },
+  "errors.listing.authRequiredEneedauth.explanation": "Este volume exige que você faça login, mas nenhuma credencial foi fornecida ainda.",
+  "@errors.listing.authRequiredEneedauth.explanation": {
+    "sourceHash": "b4e86e5"
+  },
+  "errors.listing.authRequiredEneedauth.suggestion": "Veja o que tentar:\n- Desconecte e reconecte o volume no Finder\n- Digite seu nome de usuário e senha quando solicitado\n- Se não tiver certeza das credenciais, fale com o administrador do servidor",
+  "@errors.listing.authRequiredEneedauth.suggestion": {
+    "sourceHash": "0b61f53"
+  },
+  "errors.listing.devicePoweredOff.title": "Dispositivo desligado",
+  "@errors.listing.devicePoweredOff.title": {
+    "sourceHash": "d0b7a88"
+  },
+  "errors.listing.devicePoweredOff.explanation": "O dispositivo está desligado ou em repouso profundo, então o Cmdr não consegue se comunicar com ele.",
+  "@errors.listing.devicePoweredOff.explanation": {
+    "sourceHash": "ae9c029"
+  },
+  "errors.listing.devicePoweredOff.suggestion": "Ligue o dispositivo, espere ele iniciar por completo, e navegue até aqui de novo.",
+  "@errors.listing.devicePoweredOff.suggestion": {
+    "sourceHash": "39fc3b5"
+  },
+  "errors.listing.attributeNotFound.title": "Atributo não encontrado",
+  "@errors.listing.attributeNotFound.title": {
+    "sourceHash": "e12f4be"
+  },
+  "errors.listing.attributeNotFound.explanation": "O Cmdr tentou ler um atributo de arquivo (metadados extras, como etiquetas ou permissões) que não existe neste item. Isso pode acontecer quando o sistema de arquivos não oferece suporte a atributos estendidos, ou quando o atributo foi removido.",
+  "@errors.listing.attributeNotFound.explanation": {
+    "sourceHash": "ee5c696"
+  },
+  "errors.listing.attributeNotFound.suggestion": "Este sistema de arquivos pode não oferecer suporte aos metadados de que o Cmdr precisa. Tente a operação em outro volume, ou copie o arquivo para o drive interno do seu Mac primeiro.",
+  "@errors.listing.attributeNotFound.suggestion": {
+    "sourceHash": "3c357ac"
+  },
+  "errors.listing.diskReadProblem.title": "Problema de leitura do disco",
+  "@errors.listing.diskReadProblem.title": {
+    "sourceHash": "b953ef4"
+  },
+  "errors.listing.diskReadProblem.explanation": "O Cmdr encontrou um problema de leitura no nível do hardware em `{path}`. Isso significa que o disco ou dispositivo teve dificuldade para ler os dados, o que pode ser uma falha temporária ou um sinal de um disco com defeito.",
+  "@errors.listing.diskReadProblem.explanation": {
+    "sourceHash": "9e9cd43"
+  },
+  "errors.listing.diskReadProblem.suggestion": "Veja o que tentar:\n- Verifique se o disco ou dispositivo ainda está bem conectado\n- Abra o **Utilitário de Disco** (busque por ele no Spotlight) e execute os **Primeiros Socorros** neste volume\n- Se isso continuar acontecendo, faça backup dos seus dados o quanto antes. O disco pode estar desenvolvendo setores defeituosos ou começando a se desgastar.",
+  "@errors.listing.diskReadProblem.suggestion": {
+    "sourceHash": "792c921"
+  },
+  "errors.listing.unexpectedSystemResponse.title": "Resposta inesperada do sistema",
+  "@errors.listing.unexpectedSystemResponse.title": {
+    "sourceHash": "e854b77"
+  },
+  "errors.listing.unexpectedSystemResponse.explanation": "O sistema retornou uma resposta inesperada para esta operação. Isso pode acontecer quando o sistema de arquivos de um volume tem inconsistências, ou quando o volume está num estado incomum.",
+  "@errors.listing.unexpectedSystemResponse.explanation": {
+    "sourceHash": "eeddaa7"
+  },
+  "errors.listing.unexpectedSystemResponse.suggestion": "Veja o que tentar:\n- Navegue até aqui de novo para tentar outra vez\n- Se isso continuar acontecendo, abra o **Utilitário de Disco** (busque por ele no Spotlight) e execute os **Primeiros Socorros** neste volume para verificar problemas no sistema de arquivos",
+  "@errors.listing.unexpectedSystemResponse.suggestion": {
+    "sourceHash": "4e5a9bb"
+  },
+  "errors.listing.deviceProblem.title": "Problema no dispositivo",
+  "@errors.listing.deviceProblem.title": {
+    "sourceHash": "3febba2"
+  },
+  "errors.listing.deviceProblem.explanation": "O dispositivo relatou um problema no nível do hardware. Pode ser uma conexão solta, um cabo desgastado, ou um problema no próprio dispositivo.",
+  "@errors.listing.deviceProblem.explanation": {
+    "sourceHash": "a809613"
+  },
+  "errors.listing.deviceProblem.suggestion": "Veja o que tentar:\n- Desconecte e reconecte o dispositivo\n- Tente outra porta USB ou outro cabo\n- Se for um drive externo, tente conectá-lo a outro computador para ver se o problema acompanha o dispositivo\n- Se isso continuar acontecendo, o dispositivo pode precisar de reparo ou substituição",
+  "@errors.listing.deviceProblem.suggestion": {
+    "sourceHash": "2cbb1cf"
+  },
+  "errors.listing.couldntReadUnknown.title": "Não foi possível ler esta pasta",
+  "@errors.listing.couldntReadUnknown.title": {
+    "sourceHash": "1334729"
+  },
+  "errors.listing.couldntReadUnknown.explanation": "O Cmdr encontrou um problema inesperado ao ler `{path}`. Veja os detalhes técnicos abaixo para o código específico do sistema, que pode ajudar na resolução.",
+  "@errors.listing.couldntReadUnknown.explanation": {
+    "sourceHash": "80b9ff5"
+  },
+  "errors.listing.couldntReadUnknown.suggestion": "Veja o que tentar:\n- Verifique se o disco ou dispositivo ainda está conectado\n- Navegue até aqui de novo para tentar outra vez\n- Se isso continuar acontecendo, abra o **Utilitário de Disco** e execute os **Primeiros Socorros** neste volume",
+  "@errors.listing.couldntReadUnknown.suggestion": {
+    "sourceHash": "0073987"
+  },
+  "errors.listing.notFound.title": "Caminho não encontrado",
+  "@errors.listing.notFound.title": {
+    "sourceHash": "cce25f6"
+  },
+  "errors.listing.notFound.explanation": "O Cmdr não encontrou `{path}`. Ele pode ter sido movido, renomeado, ou excluído enquanto o Cmdr tentava acessá-lo.",
+  "@errors.listing.notFound.explanation": {
+    "sourceHash": "0c4bb13"
+  },
+  "errors.listing.notFound.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num drive de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta principal e procure o item por lá\n- No Terminal, execute `ls -la` na pasta principal para ver o que há nela",
+  "@errors.listing.notFound.suggestion": {
+    "sourceHash": "d25f62b"
+  },
+  "errors.listing.tccRestricted.title": "Esta pasta é restrita pelo macOS",
+  "@errors.listing.tccRestricted.title": {
+    "sourceHash": "26b5166"
+  },
+  "errors.listing.tccRestricted.explanation": "O Cmdr não consegue ler `{path}` porque o macOS ainda não concedeu acesso a esta pasta. Isso é uma barreira de privacidade, não um defeito do Cmdr.",
+  "@errors.listing.tccRestricted.explanation": {
+    "sourceHash": "027470f"
+  },
+  "errors.listing.tccRestricted.suggestion": "Duas formas de resolver:\n- Conceda ao Cmdr **{full_disk_access}** em **{system_settings} → {privacy_and_security} → {full_disk_access}** para remover todos esses limites de uma vez.\n- Ou conceda acesso por pasta só para esta pasta em **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr**.",
+  "@errors.listing.tccRestricted.suggestion": {
+    "sourceHash": "6d9d93d"
+  },
+  "errors.listing.permissionDenied.title": "Sem permissão",
+  "@errors.listing.permissionDenied.title": {
+    "sourceHash": "201c89b"
+  },
+  "errors.listing.permissionDenied.explanation": "O Cmdr não tem permissão para acessar `{path}`. O macOS controla quais apps podem acessar quais pastas, e o Cmdr ainda não recebeu acesso a esta.",
+  "@errors.listing.permissionDenied.explanation": {
+    "sourceHash": "a2955dc"
+  },
+  "errors.listing.permissionDenied.suggestion": "Veja o que tentar:\n- Abra **{system_settings} > {privacy_and_security} > {files_and_folders}** e conceda acesso ao Cmdr\n- Verifique as permissões da pasta no Finder: clique na pasta com o botão direito, escolha Obter Informações, e veja em Compartilhamento e Permissões\n- Se for uma pasta compartilhada, peça ao dono que atualize as permissões\n- No Terminal, execute `ls -la` no caminho para ver as permissões atuais",
+  "@errors.listing.permissionDenied.suggestion": {
+    "sourceHash": "0fa0829"
+  },
+  "errors.listing.alreadyExists.title": "Já existe",
+  "@errors.listing.alreadyExists.title": {
+    "sourceHash": "2dbc546"
+  },
+  "errors.listing.alreadyExists.explanation": "Já existe um arquivo ou pasta em `{path}`, então o Cmdr não pode criar um novo ali.",
+  "@errors.listing.alreadyExists.explanation": {
+    "sourceHash": "487aee7"
+  },
+  "errors.listing.alreadyExists.suggestion": "Renomeie o item existente ou escolha um nome diferente para o novo.",
+  "@errors.listing.alreadyExists.suggestion": {
+    "sourceHash": "8761a72"
+  },
+  "errors.listing.cancelled.title": "Cancelado",
+  "@errors.listing.cancelled.title": {
+    "sourceHash": "d353a99"
+  },
+  "errors.listing.cancelled.explanation": "A operação foi cancelada antes de terminar.",
+  "@errors.listing.cancelled.explanation": {
+    "sourceHash": "2b85cbc"
+  },
+  "errors.listing.cancelled.suggestion": "Navegue até aqui de novo quando quiser tentar outra vez.",
+  "@errors.listing.cancelled.suggestion": {
+    "sourceHash": "e21161b"
+  },
+  "errors.listing.deviceDisconnected.title": "Dispositivo desconectado",
+  "@errors.listing.deviceDisconnected.title": {
+    "sourceHash": "f0acd34"
+  },
+  "errors.listing.deviceDisconnected.explanation": "O dispositivo que guarda `{path}` foi desconectado durante a operação. Isso pode acontecer se um cabo USB se soltar, um celular entrar em repouso, ou um drive de rede perder a conexão.",
+  "@errors.listing.deviceDisconnected.explanation": {
+    "sourceHash": "c8b7b10"
+  },
+  "errors.listing.deviceDisconnected.suggestion": "Veja o que tentar:\n- Reconecte o dispositivo e confirme que o cabo está firme\n- Se for um celular, desbloqueie-o e confirme que o modo de transferência de arquivos está ativo\n- Navegue até aqui de novo assim que o dispositivo voltar",
+  "@errors.listing.deviceDisconnected.suggestion": {
+    "sourceHash": "9f6c9a0"
+  },
+  "errors.listing.readOnly.title": "Somente leitura",
+  "@errors.listing.readOnly.title": {
+    "sourceHash": "72bb908"
+  },
+  "errors.listing.readOnly.explanation": "Este volume é somente leitura, então o Cmdr não pode fazer alterações nele. Isso pode ser porque o dispositivo tem uma chave física de proteção contra gravação, porque a imagem de disco foi montada como somente leitura, ou porque o sistema de arquivos não permite gravação.",
+  "@errors.listing.readOnly.explanation": {
+    "sourceHash": "99924c3"
+  },
+  "errors.listing.readOnly.suggestion": "Veja o que tentar:\n- Se o dispositivo tiver uma chave física de proteção contra gravação (comum em cartões SD), desligue-a\n- Se for uma imagem de disco, monte-a de novo com acesso de gravação\n- Caso contrário, copie os arquivos para um local gravável primeiro",
+  "@errors.listing.readOnly.suggestion": {
+    "sourceHash": "6ce54da"
+  },
+  "errors.listing.storageFull.title": "O disco está cheio",
+  "@errors.listing.storageFull.title": {
+    "sourceHash": "293beb8"
+  },
+  "errors.listing.storageFull.explanation": "Não há espaço livre suficiente neste volume para concluir a operação.",
+  "@errors.listing.storageFull.explanation": {
+    "sourceHash": "30d0741"
+  },
+  "errors.listing.storageFull.suggestion": "Veja o que tentar:\n- Libere espaço movendo ou excluindo arquivos de que você não precisa mais\n- Esvazie o Lixo (clique no ícone do Lixo no Dock com o botão direito)\n- No Terminal, execute `df -h` para ver quanto espaço resta em cada volume",
+  "@errors.listing.storageFull.suggestion": {
+    "sourceHash": "fcdd42d"
+  },
+  "errors.listing.connectionTimedOut.title": "Tempo de conexão esgotado",
+  "@errors.listing.connectionTimedOut.title": {
+    "sourceHash": "2e0b4a7"
+  },
+  "errors.listing.connectionTimedOut.explanation": "O Cmdr tentou acessar este recurso, mas a conexão não respondeu a tempo. Em geral isso significa que o servidor ou dispositivo está lento para responder, ou que a conexão de rede está instável.",
+  "@errors.listing.connectionTimedOut.explanation": {
+    "sourceHash": "5b3f8b2"
+  },
+  "errors.listing.connectionTimedOut.suggestion": "Veja o que tentar:\n- Verifique se o dispositivo ou servidor está ligado e acessível\n- Verifique sua conexão de Wi-Fi ou Ethernet\n- No Terminal, tente `ping <hostname>` para testar se o servidor está acessível\n- Tente de novo",
+  "@errors.listing.connectionTimedOut.suggestion": {
+    "sourceHash": "f9b8a2d"
+  },
+  "errors.listing.notSupported.title": "Sem suporte",
+  "@errors.listing.notSupported.title": {
+    "sourceHash": "74e8477"
+  },
+  "errors.listing.notSupported.explanation": "Esta operação não tem suporte neste tipo de volume. Alguns volumes (como o armazenamento de celulares ou certos drives de rede) não oferecem suporte a todas as operações.",
+  "@errors.listing.notSupported.explanation": {
+    "sourceHash": "9ecb575"
+  },
+  "errors.listing.notSupported.suggestion": "Tente uma abordagem diferente, ou use o Finder para esta operação.",
+  "@errors.listing.notSupported.suggestion": {
+    "sourceHash": "d4e3965"
+  },
+  "errors.listing.deletePending.title": "O arquivo está sendo removido",
+  "@errors.listing.deletePending.title": {
+    "sourceHash": "1e5741a"
+  },
+  "errors.listing.deletePending.explanation": "`{path}` está a caminho da saída. O servidor o marcou para exclusão, mas outro identificador aberto o mantém por aqui até que esse identificador feche.",
+  "@errors.listing.deletePending.explanation": {
+    "sourceHash": "047ad2f"
+  },
+  "errors.listing.deletePending.suggestion": "Veja o que tentar:\n- Espere um momento e tente de novo — assim que o último identificador fechar, o arquivo desaparece\n- Feche quaisquer outros apps que possam estar com este arquivo aberto\n- Se ele continuar por aqui, reinicie o Cmdr para liberar quaisquer identificadores que ele ainda possa estar mantendo",
+  "@errors.listing.deletePending.suggestion": {
+    "sourceHash": "6dbe760"
+  },
+  "errors.listing.ioSerious.title": "Não foi possível ler esta pasta",
+  "@errors.listing.ioSerious.title": {
+    "sourceHash": "1334729"
+  },
+  "errors.listing.ioSerious.explanation": "O Cmdr encontrou um problema com `{path}`: {osMessage}. Pode ser uma falha temporária ou um sinal de que o disco ou dispositivo precisa de atenção.",
+  "@errors.listing.ioSerious.explanation": {
+    "sourceHash": "6c3b625"
+  },
+  "errors.listing.ioSerious.suggestion": "Veja o que tentar:\n- Verifique se o disco ou dispositivo ainda está conectado\n- Tente de novo\n- Se isso continuar acontecendo, tente executar **Utilitário de Disco > Primeiros Socorros** neste volume",
+  "@errors.listing.ioSerious.suggestion": {
+    "sourceHash": "6c5be6d"
+  },
+  "errors.listing.isADirectory.title": "Isto é uma pasta, não um arquivo",
+  "@errors.listing.isADirectory.title": {
+    "sourceHash": "7ca2cdd"
+  },
+  "errors.listing.isADirectory.explanation": "O Cmdr tentou abrir `{path}` como um arquivo, mas é uma pasta.",
+  "@errors.listing.isADirectory.explanation": {
+    "sourceHash": "61f5ddb"
+  },
+  "errors.listing.isADirectory.suggestion": "Entre na pasta em vez de abri-la como um arquivo.",
+  "@errors.listing.isADirectory.suggestion": {
+    "sourceHash": "fcf6f9d"
+  },
+  "errors.listing.emptyRootICloud.title": "O iCloud Drive parece vazio",
+  "@errors.listing.emptyRootICloud.title": {
+    "sourceHash": "413a7d1"
+  },
+  "errors.listing.emptyRootICloud.explanation": "O Cmdr abriu o iCloud Drive, mas ele voltou sem arquivos. O macOS oculta o conteúdo do iCloud Drive de apps que não têm **{full_disk_access}**, então conceder essa permissão ao Cmdr é a solução mais provável.\n\nSe o seu iCloud Drive estiver mesmo vazio, você pode ignorar esta dica.",
+  "@errors.listing.emptyRootICloud.explanation": {
+    "sourceHash": "d095f83"
+  },
+  "errors.listing.emptyRootICloud.suggestion": "Veja o que tentar:\n- Abra [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) e escolha **{full_disk_access}**\n- Adicione o Cmdr (use o botão **+**) e ative-o\n- Saia e reabra o Cmdr\n- Volte aqui para tentar outra vez",
+  "@errors.listing.emptyRootICloud.suggestion": {
+    "sourceHash": "25cac98"
+  },
+  "errors.git.notARepo.title": "Nenhum repo git aqui",
+  "@errors.git.notARepo.title": {
+    "sourceHash": "e2b31ec"
+  },
+  "errors.git.notARepo.message": "O Cmdr percorreu a árvore de pastas para cima e não encontrou um `.git` aqui.",
+  "@errors.git.notARepo.message": {
+    "sourceHash": "f5b0d17"
+  },
+  "errors.git.notARepo.suggestion": "Abra uma pasta dentro de um clone git para ver o chip do repo.",
+  "@errors.git.notARepo.suggestion": {
+    "sourceHash": "f50fd0b"
+  },
+  "errors.git.orphanedWorktree.title": "Este worktree está órfão",
+  "@errors.git.orphanedWorktree.title": {
+    "sourceHash": "158755e"
+  },
+  "errors.git.orphanedWorktree.message": "Este é um worktree vinculado, mas o repo principal dele está faltando, então o git não consegue seguir o vínculo.",
+  "@errors.git.orphanedWorktree.message": {
+    "sourceHash": "5b5433e"
+  },
+  "errors.git.orphanedWorktree.suggestion": "Tente abrir o repo principal, ou remova o órfão com `git worktree prune`.",
+  "@errors.git.orphanedWorktree.suggestion": {
+    "sourceHash": "5da694d"
+  },
+  "errors.git.corruptRepo.title": "Este repo parece danificado",
+  "@errors.git.corruptRepo.title": {
+    "sourceHash": "b270cef"
+  },
+  "errors.git.corruptRepo.message": "Parte dos dados do repo no disco está ilegível. A pasta pode ter sido editada fora do git.",
+  "@errors.git.corruptRepo.message": {
+    "sourceHash": "6dd5095"
+  },
+  "errors.git.corruptRepo.suggestion": "Execute `git fsck` para inspecionar o repo. Um clone novo costuma resolver.",
+  "@errors.git.corruptRepo.suggestion": {
+    "sourceHash": "fa12c36"
+  },
+  "errors.git.indexLocked.title": "Outro git está gravando",
+  "@errors.git.indexLocked.title": {
+    "sourceHash": "2b4fd84"
+  },
+  "errors.git.indexLocked.message": "O índice do Git está bloqueado, o que costuma significar que outro comando git ainda está em execução.",
+  "@errors.git.indexLocked.message": {
+    "sourceHash": "2f86cb3"
+  },
+  "errors.git.indexLocked.suggestion": "Espere o comando git em execução terminar e navegue até aqui de novo.",
+  "@errors.git.indexLocked.suggestion": {
+    "sourceHash": "deba96c"
+  },
+  "errors.git.permissionDenied.title": "O Cmdr não consegue ler este repo",
+  "@errors.git.permissionDenied.title": {
+    "sourceHash": "b92716b"
+  },
+  "errors.git.permissionDenied.message": "O sistema operacional não deixa o Cmdr abrir a pasta `.git`, então as informações do git não estão disponíveis.",
+  "@errors.git.permissionDenied.message": {
+    "sourceHash": "0a9e8f1"
+  },
+  "errors.git.permissionDenied.suggestion": "Abra **Ajustes do Sistema > Privacidade e Segurança > Arquivos e Pastas** e conceda acesso à pasta ao Cmdr.",
+  "@errors.git.permissionDenied.suggestion": {
+    "sourceHash": "a3be51a"
+  },
+  "errors.git.bareRepo.title": "Repos bare ainda não têm suporte",
+  "@errors.git.bareRepo.title": {
+    "sourceHash": "554f310"
+  },
+  "errors.git.bareRepo.message": "Repos bare não têm árvore de trabalho, e o navegador git é construído em torno de uma.",
+  "@errors.git.bareRepo.message": {
+    "sourceHash": "e7af7c6"
+  },
+  "errors.git.bareRepo.suggestion": "Clone o repo em um diretório de trabalho para usar o navegador git.",
+  "@errors.git.bareRepo.suggestion": {
+    "sourceHash": "8ae4757"
+  },
+  "errors.git.blobTooLarge.title": "Este arquivo é grande demais para carregar do histórico",
+  "@errors.git.blobTooLarge.title": {
+    "sourceHash": "aa5a29b"
+  },
+  "errors.git.blobTooLarge.message": "O Cmdr lê blobs do git arquivo inteiro de cada vez, e este passou do limite de segurança.",
+  "@errors.git.blobTooLarge.message": {
+    "sourceHash": "6d93691"
+  },
+  "errors.git.blobTooLarge.suggestion": "Faça checkout do arquivo a partir de uma árvore de trabalho se quiser lê-lo.",
+  "@errors.git.blobTooLarge.suggestion": {
+    "sourceHash": "cae2b3d"
+  },
+  "errors.git.shallowBoundary.title": "Além do limite do clone raso",
+  "@errors.git.shallowBoundary.title": {
+    "sourceHash": "9fc0175"
+  },
+  "errors.git.shallowBoundary.message": "Este commit fica além do limite do seu clone raso, então os dados dele não estão no disco.",
+  "@errors.git.shallowBoundary.message": {
+    "sourceHash": "447704c"
+  },
+  "errors.git.shallowBoundary.suggestion": "Execute `git fetch --unshallow` (ou `--depth=N`) para trazer mais histórico para o clone.",
+  "@errors.git.shallowBoundary.suggestion": {
+    "sourceHash": "7b8888e"
+  },
+  "errors.git.missingObject.title": "Um objeto git está faltando",
+  "@errors.git.missingObject.title": {
+    "sourceHash": "c12863e"
+  },
+  "errors.git.missingObject.message": "O Git está procurando um objeto que não está mais nos arquivos de pacote. O repo pode ter sido buscado parcialmente ou estar danificado.",
+  "@errors.git.missingObject.message": {
+    "sourceHash": "15b0c32"
+  },
+  "errors.git.missingObject.suggestion": "Tente `git fetch` para repovoar o objeto que falta, ou `git fsck` para inspecionar o dano.",
+  "@errors.git.missingObject.suggestion": {
+    "sourceHash": "b221f85"
+  },
+  "errors.git.gitDirPermissionDenied.title": "O Cmdr não consegue abrir a pasta `.git`",
+  "@errors.git.gitDirPermissionDenied.title": {
+    "sourceHash": "f6e2595"
+  },
+  "errors.git.gitDirPermissionDenied.message": "O sistema operacional negou acesso à pasta `.git`, mesmo que a árvore de trabalho seja legível.",
+  "@errors.git.gitDirPermissionDenied.message": {
+    "sourceHash": "2db5cf0"
+  },
+  "errors.git.gitDirPermissionDenied.suggestion": "Abra **Ajustes do Sistema > Privacidade e Segurança > Arquivos e Pastas** e conceda acesso ao Cmdr. No Terminal, `ls -la .git` mostra o dono e o modo atuais.",
+  "@errors.git.gitDirPermissionDenied.suggestion": {
+    "sourceHash": "42f2c07"
+  },
+  "errors.provider.dropbox.displayName": "Dropbox",
+  "@errors.provider.dropbox.displayName": {
+    "sourceHash": "4750d0a"
+  },
+  "errors.provider.dropbox.appName": "Dropbox",
+  "@errors.provider.dropbox.appName": {
+    "sourceHash": "4750d0a"
+  },
+  "errors.provider.googleDrive.displayName": "Google Drive",
+  "@errors.provider.googleDrive.displayName": {
+    "sourceHash": "915ef4b"
+  },
+  "errors.provider.googleDrive.appName": "Google Drive",
+  "@errors.provider.googleDrive.appName": {
+    "sourceHash": "915ef4b"
+  },
+  "errors.provider.oneDrive.displayName": "OneDrive",
+  "@errors.provider.oneDrive.displayName": {
+    "sourceHash": "8a7a54d"
+  },
+  "errors.provider.oneDrive.appName": "OneDrive",
+  "@errors.provider.oneDrive.appName": {
+    "sourceHash": "8a7a54d"
+  },
+  "errors.provider.box.displayName": "Box",
+  "@errors.provider.box.displayName": {
+    "sourceHash": "512fd3c"
+  },
+  "errors.provider.box.appName": "Box Drive",
+  "@errors.provider.box.appName": {
+    "sourceHash": "93fe945"
+  },
+  "errors.provider.pCloud.displayName": "pCloud",
+  "@errors.provider.pCloud.displayName": {
+    "sourceHash": "8cfc474"
+  },
+  "errors.provider.pCloud.appName": "pCloud Drive",
+  "@errors.provider.pCloud.appName": {
+    "sourceHash": "bfaba70"
+  },
+  "errors.provider.nextcloud.displayName": "Nextcloud",
+  "@errors.provider.nextcloud.displayName": {
+    "sourceHash": "337128a"
+  },
+  "errors.provider.nextcloud.appName": "Nextcloud",
+  "@errors.provider.nextcloud.appName": {
+    "sourceHash": "337128a"
+  },
+  "errors.provider.synologyDrive.displayName": "Synology Drive",
+  "@errors.provider.synologyDrive.displayName": {
+    "sourceHash": "118537c"
+  },
+  "errors.provider.synologyDrive.appName": "Synology Drive",
+  "@errors.provider.synologyDrive.appName": {
+    "sourceHash": "118537c"
+  },
+  "errors.provider.tresorit.displayName": "Tresorit",
+  "@errors.provider.tresorit.displayName": {
+    "sourceHash": "9189473"
+  },
+  "errors.provider.tresorit.appName": "Tresorit",
+  "@errors.provider.tresorit.appName": {
+    "sourceHash": "9189473"
+  },
+  "errors.provider.protonDrive.displayName": "Proton Drive",
+  "@errors.provider.protonDrive.displayName": {
+    "sourceHash": "ae94a23"
+  },
+  "errors.provider.protonDrive.appName": "Proton Drive",
+  "@errors.provider.protonDrive.appName": {
+    "sourceHash": "ae94a23"
+  },
+  "errors.provider.sync.displayName": "Sync.com",
+  "@errors.provider.sync.displayName": {
+    "sourceHash": "31eb68b"
+  },
+  "errors.provider.sync.appName": "Sync.com",
+  "@errors.provider.sync.appName": {
+    "sourceHash": "31eb68b"
+  },
+  "errors.provider.egnyte.displayName": "Egnyte",
+  "@errors.provider.egnyte.displayName": {
+    "sourceHash": "daa69d3"
+  },
+  "errors.provider.egnyte.appName": "Egnyte Connect",
+  "@errors.provider.egnyte.appName": {
+    "sourceHash": "6beb18f"
+  },
+  "errors.provider.macDroid.displayName": "MacDroid",
+  "@errors.provider.macDroid.displayName": {
+    "sourceHash": "99388b1"
+  },
+  "errors.provider.macDroid.appName": "MacDroid",
+  "@errors.provider.macDroid.appName": {
+    "sourceHash": "99388b1"
+  },
+  "errors.provider.iCloud.displayName": "iCloud Drive",
+  "@errors.provider.iCloud.displayName": {
+    "sourceHash": "416264f"
+  },
+  "errors.provider.pCloudFuse.displayName": "pCloud",
+  "@errors.provider.pCloudFuse.displayName": {
+    "sourceHash": "8cfc474"
+  },
+  "errors.provider.pCloudFuse.appName": "pCloud Drive",
+  "@errors.provider.pCloudFuse.appName": {
+    "sourceHash": "bfaba70"
+  },
+  "errors.provider.macFuse.displayName": "macFUSE",
+  "@errors.provider.macFuse.displayName": {
+    "sourceHash": "229fed1"
+  },
+  "errors.provider.veraCrypt.displayName": "VeraCrypt",
+  "@errors.provider.veraCrypt.displayName": {
+    "sourceHash": "46eeb7a"
+  },
+  "errors.provider.veraCrypt.appName": "VeraCrypt",
+  "@errors.provider.veraCrypt.appName": {
+    "sourceHash": "46eeb7a"
+  },
+  "errors.provider.cmVolumes.displayName": "Montagem na nuvem",
+  "@errors.provider.cmVolumes.displayName": {
+    "sourceHash": "8dabeba"
+  },
+  "errors.provider.genericCloudStorage.displayName": "seu provedor de nuvem",
+  "@errors.provider.genericCloudStorage.displayName": {
+    "sourceHash": "1066349"
+  },
+  "errors.provider.macDroid.transient": "Esta pasta é gerenciada pelo **MacDroid**. Veja o que tentar:\n- Abra o MacDroid e verifique se o seu celular está conectado\n- Confirme que o seu celular está desbloqueado e no modo de transferência de arquivos\n- Desconecte e reconecte o cabo USB, e navegue até aqui de novo",
+  "@errors.provider.macDroid.transient": {
+    "sourceHash": "994b8b8"
+  },
+  "errors.provider.macDroid.needsAction": "Esta pasta é gerenciada pelo **MacDroid**. Veja o que tentar:\n- Abra o MacDroid e verifique se o seu celular está conectado\n- Confirme que o seu celular está desbloqueado e com a tela ligada\n- Verifique se o modo de transferência de arquivos por USB está ativado no seu celular",
+  "@errors.provider.macDroid.needsAction": {
+    "sourceHash": "a2c4d13"
+  },
+  "errors.provider.macDroid.serious": "Esta pasta é gerenciada pelo **MacDroid**. Veja o que tentar:\n- Desconecte e reconecte o cabo USB\n- Reinicie o MacDroid\n- Tente outra porta USB ou outro cabo",
+  "@errors.provider.macDroid.serious": {
+    "sourceHash": "a4ab4fe"
+  },
+  "errors.provider.iCloud.transient": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Verifique sua conexão com a internet\n- Confirme que você está conectado ao iCloud nos Ajustes do Sistema\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.provider.iCloud.transient": {
+    "sourceHash": "57bec3c"
+  },
+  "errors.provider.iCloud.needsAction": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Verifique se o iCloud Drive está ativado em **Ajustes do Sistema > Conta da Apple > iCloud**\n- Confirme que você está conectado à conta Apple certa\n- Verifique se o seu armazenamento do iCloud não está cheio",
+  "@errors.provider.iCloud.needsAction": {
+    "sourceHash": "241cd65"
+  },
+  "errors.provider.iCloud.serious": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Saia e entre de novo no iCloud nos Ajustes do Sistema\n- Veja a [página de status do sistema](https://www.apple.com/support/systemstatus/) da Apple",
+  "@errors.provider.iCloud.serious": {
+    "sourceHash": "0a32a1b"
+  },
+  "errors.provider.macFuse.transient": "Esta é uma montagem do **macFUSE**. O servidor remoto pode estar lento ou inacessível. Veja o que tentar:\n- Verifique sua conexão de rede\n- Verifique se o servidor remoto está em execução\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.provider.macFuse.transient": {
+    "sourceHash": "06d9019"
+  },
+  "errors.provider.macFuse.needsAction": "Esta é uma montagem do **macFUSE**. Veja o que tentar:\n- Verifique se o processo FUSE por trás desta montagem ainda está em execução\n- Force a desmontagem e monte o volume de novo, se preciso\n- Confirme que o macFUSE está atualizado em **Ajustes do Sistema > Geral > Itens de Início e Extensões**",
+  "@errors.provider.macFuse.needsAction": {
+    "sourceHash": "65457a8"
+  },
+  "errors.provider.macFuse.serious": "Esta é uma montagem do **macFUSE**. O processo FUSE por trás dela provavelmente travou ou desconectou. Veja o que tentar:\n- Force a desmontagem do volume: execute `umount -f /Volumes/<name>` no Terminal\n- Monte de novo usando o comando de montagem original\n- Se isso continuar acontecendo, confirme que o macFUSE está atualizado",
+  "@errors.provider.macFuse.serious": {
+    "sourceHash": "71d42da"
+  },
+  "errors.provider.pCloudFuse.transient": "Esta pasta está no drive virtual do **pCloud**. Veja o que tentar:\n- Verifique sua conexão com a internet\n- Confirme que o app do pCloud está em execução\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.provider.pCloudFuse.transient": {
+    "sourceHash": "1afbd51"
+  },
+  "errors.provider.pCloudFuse.needsAction": "Esta pasta está no drive virtual do **pCloud**. Veja o que tentar:\n- Confirme que o app do pCloud está em execução e que você está conectado\n- Verifique sua conexão com a internet\n- Após uma atualização do macOS, reaprove a extensão de sistema do pCloud em **Ajustes do Sistema > Geral > Itens de Início e Extensões**",
+  "@errors.provider.pCloudFuse.needsAction": {
+    "sourceHash": "afea03d"
+  },
+  "errors.provider.pCloudFuse.serious": "Esta pasta está no drive virtual do **pCloud**. O processo FUSE do pCloud pode ter travado. Veja o que tentar:\n- Saia e reabra o app do pCloud\n- Se o drive não reaparecer, force a desmontagem dele: execute `umount -f /Volumes/pCloudDrive` no Terminal\n- Após uma atualização do macOS, reaprove a extensão de sistema do pCloud em **Ajustes do Sistema > Geral > Itens de Início e Extensões**",
+  "@errors.provider.pCloudFuse.serious": {
+    "sourceHash": "d7e6926"
+  },
+  "errors.provider.veraCrypt.transient": "Este é um volume criptografado do **{name}**. Veja o que tentar:\n- Verifique se o volume do VeraCrypt ainda está montado\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.provider.veraCrypt.transient": {
+    "sourceHash": "fe408ae"
+  },
+  "errors.provider.veraCrypt.needsAction": "Este é um volume criptografado do **{name}**. Veja o que tentar:\n- Abra o VeraCrypt e verifique se este volume está montado\n- Desmonte e monte o volume de novo, se preciso",
+  "@errors.provider.veraCrypt.needsAction": {
+    "sourceHash": "08dec65"
+  },
+  "errors.provider.veraCrypt.serious": "Este é um volume criptografado do **{name}**. Veja o que tentar:\n- Desmonte e monte o volume de novo no VeraCrypt\n- Se o volume continuar com problemas, verifique-o com as ferramentas de reparo do VeraCrypt",
+  "@errors.provider.veraCrypt.serious": {
+    "sourceHash": "a5c41a1"
+  },
+  "errors.provider.cmVolumes.transient": "Esta é uma montagem na nuvem. Veja o que tentar:\n- Verifique sua conexão com a internet\n- Verifique se o software de montagem (CloudMounter, Mountain Duck, etc.) está em execução\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.provider.cmVolumes.transient": {
+    "sourceHash": "f0165b3"
+  },
+  "errors.provider.cmVolumes.nonTransient": "Esta é uma montagem na nuvem. Veja o que tentar:\n- Verifique se o software de montagem (CloudMounter, Mountain Duck, etc.) está em execução\n- Desconecte e reconecte a montagem\n- Verifique se suas credenciais não expiraram",
+  "@errors.provider.cmVolumes.nonTransient": {
+    "sourceHash": "752c7e4"
+  },
+  "errors.provider.genericCloudStorage.transient": "Esta pasta é gerenciada por um provedor de nuvem. Veja o que tentar:\n- Verifique sua conexão com a internet\n- Verifique se o app de sincronização está em execução\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.provider.genericCloudStorage.transient": {
+    "sourceHash": "9398792"
+  },
+  "errors.provider.genericCloudStorage.nonTransient": "Esta pasta é gerenciada por um provedor de nuvem. Veja o que tentar:\n- Verifique se o app de sincronização está em execução\n- Saia e entre de novo no app de nuvem\n- Verifique sua conexão com a internet",
+  "@errors.provider.genericCloudStorage.nonTransient": {
+    "sourceHash": "ce8a112"
+  },
+  "errors.provider.appBased.transient": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Verifique sua conexão com a internet\n- Abra o {app} e confirme que ele está em execução e sincronizado\n- Navegue até aqui de novo para tentar outra vez",
+  "@errors.provider.appBased.transient": {
+    "sourceHash": "e3ef8b8"
+  },
+  "errors.provider.appBased.needsAction": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Abra o {app} e verifique seu status de sincronização\n- Confirme que você está conectado ao {app}\n- Verifique se você tem acesso a esta pasta no {name}",
+  "@errors.provider.appBased.needsAction": {
+    "sourceHash": "88009fd"
+  },
+  "errors.provider.appBased.serious": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Saia e reabra o {app}\n- Saia e entre de novo no {app}\n- Veja a página de status do {name} para conferir interrupções",
+  "@errors.provider.appBased.serious": {
+    "sourceHash": "64baea5"
+  },
+  "errors.write.sourceNotFound.title": "Não foi possível encontrar o arquivo",
+  "@errors.write.sourceNotFound.title": {
+    "sourceHash": "2003305"
+  },
+  "errors.write.sourceNotFound.message": "O arquivo ou pasta que você tentou {verb} não existe mais.",
+  "@errors.write.sourceNotFound.message": {
+    "sourceHash": "036df5c"
+  },
+  "errors.write.sourceNotFound.suggestion": "Ele pode ter sido movido, renomeado, ou excluído. Tente atualizar a lista de arquivos.",
+  "@errors.write.sourceNotFound.suggestion": {
+    "sourceHash": "1a6cd17"
+  },
+  "errors.write.destinationExists.title": "O arquivo já existe",
+  "@errors.write.destinationExists.title": {
+    "sourceHash": "ae71a9a"
+  },
+  "errors.write.destinationExists.message": "Já existe um arquivo com este nome no destino.",
+  "@errors.write.destinationExists.message": {
+    "sourceHash": "50d9094"
+  },
+  "errors.write.destinationExists.suggestion": "Escolha um nome ou local diferente, ou exclua o arquivo existente primeiro.",
+  "@errors.write.destinationExists.suggestion": {
+    "sourceHash": "37d7702"
+  },
+  "errors.write.sameLocation.title": "Não é possível {verb} para o mesmo local",
+  "@errors.write.sameLocation.title": {
+    "sourceHash": "6491841"
+  },
+  "errors.write.sameLocation.message": "A origem e o destino são o mesmo.",
+  "@errors.write.sameLocation.message": {
+    "sourceHash": "d163db2"
+  },
+  "errors.write.sameLocation.suggestion": "Escolha uma pasta de destino diferente.",
+  "@errors.write.sameLocation.suggestion": {
+    "sourceHash": "a41f65a"
+  },
+  "errors.write.destinationInsideSource.title": "Não é possível {verb} uma pasta para dentro de si mesma",
+  "@errors.write.destinationInsideSource.title": {
+    "sourceHash": "724e37e"
+  },
+  "errors.write.destinationInsideSource.message": "Você está tentando {verb} uma pasta para dentro de uma das suas próprias subpastas.",
+  "@errors.write.destinationInsideSource.message": {
+    "sourceHash": "e65efd9"
+  },
+  "errors.write.destinationInsideSource.suggestion": "Escolha um destino fora da pasta que você está {gerund}.",
+  "@errors.write.destinationInsideSource.suggestion": {
+    "sourceHash": "e6b34cf"
+  },
+  "errors.write.symlinkLoop.title": "Loop de link detectado",
+  "@errors.write.symlinkLoop.title": {
+    "sourceHash": "0bbdc9c"
+  },
+  "errors.write.symlinkLoop.message": "Esta pasta contém links simbólicos que criam um loop infinito.",
+  "@errors.write.symlinkLoop.message": {
+    "sourceHash": "00931eb"
+  },
+  "errors.write.symlinkLoop.suggestion": "A estrutura de pastas contém referências circulares. Talvez você precise remover alguns links simbólicos.",
+  "@errors.write.symlinkLoop.suggestion": {
+    "sourceHash": "87ddbca"
+  },
+  "errors.write.cancelled.title": "{Verb} cancelado",
+  "@errors.write.cancelled.title": {
+    "sourceHash": "d1ed9a3"
+  },
+  "errors.write.cancelled.message": "A operação de {verb} foi cancelada.",
+  "@errors.write.cancelled.message": {
+    "sourceHash": "93434af"
+  },
+  "errors.write.cancelled.suggestion": "Você pode tentar de novo quando quiser.",
+  "@errors.write.cancelled.suggestion": {
+    "sourceHash": "21cafca"
+  },
+  "errors.write.deviceDisconnected.title": "Dispositivo desconectado",
+  "@errors.write.deviceDisconnected.title": {
+    "sourceHash": "f0acd34"
+  },
+  "errors.write.deviceDisconnected.message": "O dispositivo foi desconectado durante a operação de {verb}.",
+  "@errors.write.deviceDisconnected.message": {
+    "sourceHash": "cf868ce"
+  },
+  "errors.write.deviceDisconnected.suggestion": "Confirme que o dispositivo está bem conectado e tente de novo.",
+  "@errors.write.deviceDisconnected.suggestion": {
+    "sourceHash": "f003d9c"
+  },
+  "errors.write.trashNotSupported.title": "O Lixo não tem suporte",
+  "@errors.write.trashNotSupported.title": {
+    "sourceHash": "af90a02"
+  },
+  "errors.write.trashNotSupported.message": "Este volume não oferece suporte ao Lixo.",
+  "@errors.write.trashNotSupported.message": {
+    "sourceHash": "45cf0c6"
+  },
+  "errors.write.trashNotSupported.suggestion": "Use {deletePermanentlyKey} para apagar permanentemente.",
+  "@errors.write.trashNotSupported.suggestion": {
+    "sourceHash": "450dd8f"
+  },
+  "errors.write.connectionInterrupted.title": "Conexão interrompida",
+  "@errors.write.connectionInterrupted.title": {
+    "sourceHash": "183383d"
+  },
+  "errors.write.connectionInterrupted.message": "A conexão foi interrompida.",
+  "@errors.write.connectionInterrupted.message": {
+    "sourceHash": "286af83"
+  },
+  "errors.write.connectionInterrupted.suggestion": "Verifique sua conexão e tente de novo. Se estiver copiando para um local de rede, confirme que o servidor está acessível.",
+  "@errors.write.connectionInterrupted.suggestion": {
+    "sourceHash": "d8d3c79"
+  },
+  "errors.write.readError.title": "A operação de {Verb} não foi possível",
+  "@errors.write.readError.title": {
+    "sourceHash": "d532d2f"
+  },
+  "errors.write.readError.message": "Não foi possível ler da origem.",
+  "@errors.write.readError.message": {
+    "sourceHash": "b3b10d6"
+  },
+  "errors.write.readError.suggestion": "Tente de novo. Se o problema continuar, veja os detalhes técnicos abaixo.",
+  "@errors.write.readError.suggestion": {
+    "sourceHash": "791f737"
+  },
+  "errors.write.writeError.title": "A operação de {Verb} não foi possível",
+  "@errors.write.writeError.title": {
+    "sourceHash": "d532d2f"
+  },
+  "errors.write.writeError.message": "Não foi possível gravar no destino.",
+  "@errors.write.writeError.message": {
+    "sourceHash": "cb458f0"
+  },
+  "errors.write.writeError.suggestion": "Tente de novo. Se o problema continuar, veja os detalhes técnicos abaixo.",
+  "@errors.write.writeError.suggestion": {
+    "sourceHash": "791f737"
+  },
+  "errors.write.nameTooLong.title": "Nome longo demais",
+  "@errors.write.nameTooLong.title": {
+    "sourceHash": "de4bc1d"
+  },
+  "errors.write.nameTooLong.message": "O nome do arquivo é longo demais para o destino.",
+  "@errors.write.nameTooLong.message": {
+    "sourceHash": "03258f0"
+  },
+  "errors.write.nameTooLong.suggestion": "Tente renomear o arquivo para usar um nome mais curto.",
+  "@errors.write.nameTooLong.suggestion": {
+    "sourceHash": "840936a"
+  },
+  "errors.write.invalidName.title": "Nome de arquivo inválido",
+  "@errors.write.invalidName.title": {
+    "sourceHash": "1fb1e45"
+  },
+  "errors.write.invalidName.message": "O nome do arquivo contém caracteres não permitidos no destino.",
+  "@errors.write.invalidName.message": {
+    "sourceHash": "6a95bb8"
+  },
+  "errors.write.invalidName.suggestion": "Tente renomear o arquivo para remover os caracteres especiais.",
+  "@errors.write.invalidName.suggestion": {
+    "sourceHash": "bdac1ea"
+  },
+  "errors.write.ioError.title": "A operação de {Verb} não foi possível",
+  "@errors.write.ioError.title": {
+    "sourceHash": "d532d2f"
+  },
+  "errors.write.ioError.message": "Não foi possível {verb} o arquivo.",
+  "@errors.write.ioError.message": {
+    "sourceHash": "f008917"
+  },
+  "errors.write.ioError.suggestion": "Tente de novo. Se o problema continuar, veja os detalhes técnicos abaixo.",
+  "@errors.write.ioError.suggestion": {
+    "sourceHash": "791f737"
+  },
+  "errors.write.permissionDenied.title": "Não foi possível acessar este local",
+  "@errors.write.permissionDenied.title": {
+    "sourceHash": "be62ad2"
+  },
+  "errors.write.permissionDenied.message": "Você não tem permissão para {verb} arquivos aqui.",
+  "@errors.write.permissionDenied.message": {
+    "sourceHash": "896d3c8"
+  },
+  "errors.write.permissionDenied.suggestion.deleteMac": "Verifique se você tem acesso de gravação à pasta principal. O arquivo pode estar bloqueado. Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.",
+  "@errors.write.permissionDenied.suggestion.deleteMac": {
+    "sourceHash": "1e6e123"
+  },
+  "errors.write.permissionDenied.suggestion.deleteOther": "Verifique se você tem acesso de gravação à pasta principal. O arquivo pode estar protegido. Verifique as permissões dele (por exemplo, via chmod ou seu gerenciador de arquivos) e tente de novo.",
+  "@errors.write.permissionDenied.suggestion.deleteOther": {
+    "sourceHash": "650bb53"
+  },
+  "errors.write.permissionDenied.suggestion.default": "Verifique se você tem acesso de gravação à pasta de destino. Talvez você precise desbloquear o dispositivo ou alterar as permissões da pasta.",
+  "@errors.write.permissionDenied.suggestion.default": {
+    "sourceHash": "ec02093"
+  },
+  "errors.write.insufficientSpace.title": "Espaço insuficiente",
+  "@errors.write.insufficientSpace.title": {
+    "sourceHash": "c5f8c45"
+  },
+  "errors.write.insufficientSpace.message": "O destino precisa de {required}, mas só tem {available} disponíveis.",
+  "@errors.write.insufficientSpace.message": {
+    "sourceHash": "582f30a"
+  },
+  "errors.write.insufficientSpace.suggestion": "Libere algum espaço no destino excluindo arquivos desnecessários, ou escolha um local diferente.",
+  "@errors.write.insufficientSpace.suggestion": {
+    "sourceHash": "257f1d9"
+  },
+  "errors.write.readOnlyDevice.title": "Dispositivo somente leitura",
+  "@errors.write.readOnlyDevice.title": {
+    "sourceHash": "3f79690"
+  },
+  "errors.write.readOnlyDevice.message": "{deviceName} é somente leitura. Você pode copiar arquivos dele, mas não para ele.",
+  "@errors.write.readOnlyDevice.message": {
+    "sourceHash": "932e2ed"
+  },
+  "errors.write.readOnlyDevice.suggestion": "Escolha um destino diferente que permita gravação.",
+  "@errors.write.readOnlyDevice.suggestion": {
+    "sourceHash": "caced4a"
+  },
+  "errors.write.readOnlyDevice.fallbackName": "O dispositivo de destino",
+  "@errors.write.readOnlyDevice.fallbackName": {
+    "sourceHash": "ef2429e"
+  },
+  "errors.write.fileLocked.title": "O arquivo está bloqueado",
+  "@errors.write.fileLocked.title": {
+    "sourceHash": "5a38c61"
+  },
+  "errors.write.fileLocked.message": "O arquivo está bloqueado e não pode ser excluído.",
+  "@errors.write.fileLocked.message": {
+    "sourceHash": "62b1038"
+  },
+  "errors.write.fileLocked.suggestion.mac": "Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.",
+  "@errors.write.fileLocked.suggestion.mac": {
+    "sourceHash": "8f84de5"
+  },
+  "errors.write.fileLocked.suggestion.other": "O arquivo pode estar protegido. Verifique as permissões dele (por exemplo, via chmod ou seu gerenciador de arquivos) e tente de novo.",
+  "@errors.write.fileLocked.suggestion.other": {
+    "sourceHash": "6856879"
+  },
+  "errors.write.deletePending.title": "O arquivo está sendo removido",
+  "@errors.write.deletePending.title": {
+    "sourceHash": "1e5741a"
+  },
+  "errors.write.deletePending.message": "Este arquivo está a caminho da saída. O servidor o marcou para exclusão, mas outro identificador aberto o mantém por aqui até que esse identificador feche.",
+  "@errors.write.deletePending.message": {
+    "sourceHash": "e580e20"
+  },
+  "errors.write.deletePending.suggestion": "Espere um momento e tente de novo. Assim que o último identificador fechar, o arquivo desaparece. Se ele continuar por aqui, feche quaisquer outros apps que possam estar com ele aberto.",
+  "@errors.write.deletePending.suggestion": {
+    "sourceHash": "39e64a9"
+  },
+  "errors.write.fallback.title": "A operação de {Verb} não foi possível",
+  "@errors.write.fallback.title": {
+    "sourceHash": "d532d2f"
+  },
+  "errors.write.fallback.message": "Um problema inesperado ocorreu ao {gerund}.",
+  "@errors.write.fallback.message": {
+    "sourceHash": "e487f3d"
+  },
+  "errors.write.fallback.suggestion": "Tente de novo, ou veja os detalhes técnicos abaixo para mais informações.",
+  "@errors.write.fallback.suggestion": {
+    "sourceHash": "23de5a9"
+  }
+}

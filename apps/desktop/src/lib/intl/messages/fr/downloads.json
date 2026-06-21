@@ -1,0 +1,138 @@
+{
+  "downloads.toast.downloaded": "Téléchargé <file>{fileName}</file>",
+  "@downloads.toast.downloaded": {
+    "sourceHash": "7bc4ace"
+  },
+  "downloads.toast.inSubdir": "dans {subdir}",
+  "@downloads.toast.inSubdir": {
+    "sourceHash": "eea56f4"
+  },
+  "downloads.toast.learnIntro": "Une astuce sympa pour accéder à vos téléchargements",
+  "@downloads.toast.learnIntro": {
+    "sourceHash": "3a06888"
+  },
+  "downloads.toast.inAppHint": "Dans l''app : appuyez sur <chip>{key}</chip> pour venir ici",
+  "@downloads.toast.inAppHint": {
+    "sourceHash": "5b70d9c"
+  },
+  "downloads.toast.globalHint": "Dans <em>n''importe quelle</em> app (raccourci global), appuyez sur <chip>{key}</chip>",
+  "@downloads.toast.globalHint": {
+    "sourceHash": "785e1f3"
+  },
+  "downloads.toast.summaryBoth": "Accédez-y avec <inApp>{inAppKey}</inApp> dans l''app, <global>{globalKey}</global> globalement.",
+  "@downloads.toast.summaryBoth": {
+    "sourceHash": "59c4131"
+  },
+  "downloads.toast.summaryInApp": "Accédez-y avec <inApp>{inAppKey}</inApp> dans l''app.",
+  "@downloads.toast.summaryInApp": {
+    "sourceHash": "2c0fd22"
+  },
+  "downloads.toast.summaryGlobal": "Accédez-y avec <global>{globalKey}</global> globalement.",
+  "@downloads.toast.summaryGlobal": {
+    "sourceHash": "1bd00be"
+  },
+  "downloads.toast.expandTip": "Afficher l''astuce de raccourci",
+  "@downloads.toast.expandTip": {
+    "sourceHash": "9dfbe32"
+  },
+  "downloads.toast.collapseTip": "Rendre cette notification plus compacte",
+  "@downloads.toast.collapseTip": {
+    "sourceHash": "b404794"
+  },
+  "downloads.toast.stopShowing": "Ne plus afficher",
+  "@downloads.toast.stopShowing": {
+    "sourceHash": "36faf9f"
+  },
+  "downloads.toast.jumpToFile": "Aller au fichier",
+  "@downloads.toast.jumpToFile": {
+    "sourceHash": "4511f65"
+  },
+  "downloads.notification.title": "Téléchargé {fileName}",
+  "@downloads.notification.title": {
+    "sourceHash": "a2b74bc"
+  },
+  "downloads.empty.message": "Votre dossier Téléchargements est vide. Y aller quand même ?",
+  "@downloads.empty.message": {
+    "sourceHash": "83e7e07"
+  },
+  "downloads.empty.dismiss": "Ignorer",
+  "@downloads.empty.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.empty.goToDownloads": "Aller aux Téléchargements",
+  "@downloads.empty.goToDownloads": {
+    "sourceHash": "5c72aeb"
+  },
+  "downloads.fda.message": "Cmdr a besoin de l''accès complet au disque pour surveiller votre dossier Téléchargements.",
+  "@downloads.fda.message": {
+    "sourceHash": "82c82c6"
+  },
+  "downloads.fda.dismiss": "Ignorer",
+  "@downloads.fda.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.fda.openSystemSettings": "Ouvrir les Réglages Système",
+  "@downloads.fda.openSystemSettings": {
+    "sourceHash": "18196b3"
+  },
+  "downloads.warnToast.message": "Le raccourci {binding} vous amène à votre dernier téléchargement depuis n''importe où. Le garder activé ?",
+  "@downloads.warnToast.message": {
+    "sourceHash": "b174604"
+  },
+  "downloads.warnToast.turnOff": "Le désactiver",
+  "@downloads.warnToast.turnOff": {
+    "sourceHash": "74039ed"
+  },
+  "downloads.warnToast.keepOn": "Le garder activé",
+  "@downloads.warnToast.keepOn": {
+    "sourceHash": "cbfff78"
+  },
+  "downloads.shortcutRow.scopeTitle": "Global",
+  "@downloads.shortcutRow.scopeTitle": {
+    "sourceHash": "a258b30"
+  },
+  "downloads.shortcutRow.commandName": "Aller au dernier téléchargement <marker>(global)</marker>",
+  "@downloads.shortcutRow.commandName": {
+    "sourceHash": "83f6d4b"
+  },
+  "downloads.shortcutRow.modifiedTooltip": "Modifié par rapport au réglage par défaut",
+  "@downloads.shortcutRow.modifiedTooltip": {
+    "sourceHash": "3d86215"
+  },
+  "downloads.shortcutRow.resetTooltip": "Réinitialiser au réglage par défaut",
+  "@downloads.shortcutRow.resetTooltip": {
+    "sourceHash": "bc5b45a"
+  },
+  "downloads.shortcutRow.pressKeys": "Appuyez sur des touches...",
+  "@downloads.shortcutRow.pressKeys": {
+    "sourceHash": "37aa30c"
+  },
+  "downloads.shortcutRow.registered": "Enregistré",
+  "@downloads.shortcutRow.registered": {
+    "sourceHash": "2351ee9"
+  },
+  "downloads.shortcutRow.notRegistered": "Non enregistré",
+  "@downloads.shortcutRow.notRegistered": {
+    "sourceHash": "ca374c2"
+  },
+  "downloads.shortcutRow.invalidCombo": "Enregistrement impossible : combinaison non valide",
+  "@downloads.shortcutRow.invalidCombo": {
+    "sourceHash": "32c3532"
+  },
+  "downloads.shortcutRow.registerFailed": "Enregistrement impossible : {reason}",
+  "@downloads.shortcutRow.registerFailed": {
+    "sourceHash": "2e6fb97"
+  },
+  "downloads.shortcutRow.addModifier": "Ajoutez une touche de modification (⌘, ⌃, ⌥ ou ⇧)",
+  "@downloads.shortcutRow.addModifier": {
+    "sourceHash": "28a5ba2"
+  },
+  "downloads.toggleDescription.bound": "Appuyez sur {binding} depuis n''importe quelle app pour aller à votre téléchargement le plus récent.",
+  "@downloads.toggleDescription.bound": {
+    "sourceHash": "be43b35"
+  },
+  "downloads.toggleDescription.unbound": "Allez à votre téléchargement le plus récent depuis n''importe quelle app.",
+  "@downloads.toggleDescription.unbound": {
+    "sourceHash": "187cdec"
+  }
+}

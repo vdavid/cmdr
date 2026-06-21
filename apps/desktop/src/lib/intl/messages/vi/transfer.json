@@ -1,0 +1,42 @@
+{
+  "transfer.trash": "Đã chuyển {countText} {count, plural, other {tệp}} vào thùng rác",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "Xóa hoàn tất: {countText} {count, plural, other {tệp}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, other {tệp}} và {foldersText} {folders, plural, other {thư mục}}} foldersOnly {{foldersText} {folders, plural, other {thư mục}}} other {{filesText} {files, plural, other {tệp}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "{verb, select, copy {Đã sao chép} other {Đã di chuyển}} {phrase}.",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "{verb, select, copy {Đã sao chép} other {Đã di chuyển}} {phrase}, đã bỏ qua {skippedText} {skipped, plural, other {tệp}} (đã có sẵn ở đích).",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {Sao chép} other {Di chuyển}} hoàn tất: đã {verb, select, copy {sao chép} other {di chuyển}} {transferredText} {transferred, plural, other {tệp}}.",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Sao chép} other {Di chuyển}} hoàn tất: tệp đã có sẵn ở đích, không {verb, select, copy {sao chép} other {di chuyển}}.",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Sao chép} other {Di chuyển}} hoàn tất: đã bỏ qua toàn bộ {skippedText} tệp (đã có sẵn ở đích), không có gì được {verb, select, copy {sao chép} other {di chuyển}}.",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "ae39c4b"
+  },
+  "transfer.fileOnly.mixedCopy": "Sao chép hoàn tất: đã sao chép {transferredText}, đã bỏ qua {skippedText}. Toàn bộ {processedText} {processed, plural, other {tệp}} bạn chọn giờ đã có ở đích.",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "Di chuyển hoàn tất: đã di chuyển {transferredText}, đã bỏ qua {skippedText}. {skippedText} {skipped, plural, other {tệp}} đã có sẵn ở đích.",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  }
+}

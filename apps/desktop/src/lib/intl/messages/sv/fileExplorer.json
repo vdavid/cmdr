@@ -1,0 +1,1242 @@
+{
+  "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Vänster} other {Höger}} filpanel",
+  "@fileExplorer.pane.filePaneAriaLabel": {
+    "sourceHash": "77f3961"
+  },
+  "fileExplorer.pane.diskUsageAriaLabel": "Diskanvändning",
+  "@fileExplorer.pane.diskUsageAriaLabel": {
+    "sourceHash": "4fe60c1"
+  },
+  "fileExplorer.pane.resizePanesAriaLabel": "Ändra storlek på paneler",
+  "@fileExplorer.pane.resizePanesAriaLabel": {
+    "sourceHash": "ff22a46"
+  },
+  "fileExplorer.pane.fileExplorerAriaLabel": "Filhanterare",
+  "@fileExplorer.pane.fileExplorerAriaLabel": {
+    "sourceHash": "bfd3c67"
+  },
+  "fileExplorer.pane.disconnectFailedToast": "Det gick inte att koppla från: {message}",
+  "@fileExplorer.pane.disconnectFailedToast": {
+    "sourceHash": "ac9e8e0"
+  },
+  "fileExplorer.pane.connectedDirectlyToast": "Ansluten direkt för snabbare åtkomst",
+  "@fileExplorer.pane.connectedDirectlyToast": {
+    "sourceHash": "5c6bcd2"
+  },
+  "fileExplorer.pane.directConnectionFailedToast": "Den direkta anslutningen gick inte att upprätta: {message}",
+  "@fileExplorer.pane.directConnectionFailedToast": {
+    "sourceHash": "3c6d599"
+  },
+  "fileExplorer.pane.trashUnconfirmedToast": "Det gick inte att bekräfta att filen flyttades till papperskorgen. Volymen kan vara långsam, men filen kan ändå ha flyttats. Kolla papperskorgen för att vara säker.",
+  "@fileExplorer.pane.trashUnconfirmedToast": {
+    "sourceHash": "844ccc1"
+  },
+  "fileExplorer.pane.ejectFailedToast": "Det gick inte att mata ut {volumeName}: {message}",
+  "@fileExplorer.pane.ejectFailedToast": {
+    "sourceHash": "b22501d"
+  },
+  "fileExplorer.errorPane.tryAgain": "Försök igen",
+  "@fileExplorer.errorPane.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.errorPane.openSystemSettings": "Öppna {systemSettings}",
+  "@fileExplorer.errorPane.openSystemSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "fileExplorer.errorPane.technicalDetails": "Tekniska detaljer",
+  "@fileExplorer.errorPane.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileExplorer.errorPane.aMomentAgo": "nyss",
+  "@fileExplorer.errorPane.aMomentAgo": {
+    "sourceHash": "65b0cae"
+  },
+  "fileExplorer.errorPane.secondsAgo": "{seconds} s sedan",
+  "@fileExplorer.errorPane.secondsAgo": {
+    "sourceHash": "b5907e4"
+  },
+  "fileExplorer.errorPane.minutesAgo": "{minutes} min sedan",
+  "@fileExplorer.errorPane.minutesAgo": {
+    "sourceHash": "0e91828"
+  },
+  "fileExplorer.errorPane.hoursAgo": "{hours} tim sedan",
+  "@fileExplorer.errorPane.hoursAgo": {
+    "sourceHash": "bbfb1e5"
+  },
+  "fileExplorer.errorPane.retryInfo": "Försök #{count} · första försöket {firstAgo}",
+  "@fileExplorer.errorPane.retryInfo": {
+    "sourceHash": "03bb746"
+  },
+  "fileExplorer.errorPane.retryInfoWithLast": "Försök #{count} · första försöket {firstAgo} · senaste försöket {lastAgo}",
+  "@fileExplorer.errorPane.retryInfoWithLast": {
+    "sourceHash": "e11bb94"
+  },
+  "fileExplorer.functionKeyBar.toolbarAriaLabel": "Funktionstangenter",
+  "@fileExplorer.functionKeyBar.toolbarAriaLabel": {
+    "sourceHash": "f69e00d"
+  },
+  "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
+  "@fileExplorer.functionKeyBar.actionWithShortcut": {
+    "sourceHash": "49e258f"
+  },
+  "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (ingen skift-åtgärd)",
+  "@fileExplorer.functionKeyBar.noShiftAction": {
+    "sourceHash": "83b9f17"
+  },
+  "fileExplorer.functionKeyBar.newFileLabel": "Ny fil",
+  "@fileExplorer.functionKeyBar.newFileLabel": {
+    "sourceHash": "44dedd0"
+  },
+  "fileExplorer.functionKeyBar.newFileAction": "Skapa ny fil",
+  "@fileExplorer.functionKeyBar.newFileAction": {
+    "sourceHash": "6e70b95"
+  },
+  "fileExplorer.functionKeyBar.renameLabel": "Byt namn",
+  "@fileExplorer.functionKeyBar.renameLabel": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.renameAction": "Byt namn",
+  "@fileExplorer.functionKeyBar.renameAction": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.permanentlyLabel": "Permanent",
+  "@fileExplorer.functionKeyBar.permanentlyLabel": {
+    "sourceHash": "d06138e"
+  },
+  "fileExplorer.functionKeyBar.deletePermanentlyAction": "Radera permanent",
+  "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
+    "sourceHash": "280b10c"
+  },
+  "fileExplorer.functionKeyBar.viewLabel": "Visa",
+  "@fileExplorer.functionKeyBar.viewLabel": {
+    "sourceHash": "dcc839a"
+  },
+  "fileExplorer.functionKeyBar.viewAction": "Visa fil",
+  "@fileExplorer.functionKeyBar.viewAction": {
+    "sourceHash": "6ef3f36"
+  },
+  "fileExplorer.functionKeyBar.editLabel": "Redigera",
+  "@fileExplorer.functionKeyBar.editLabel": {
+    "sourceHash": "464c4ff"
+  },
+  "fileExplorer.functionKeyBar.editAction": "Redigera fil",
+  "@fileExplorer.functionKeyBar.editAction": {
+    "sourceHash": "9608dd1"
+  },
+  "fileExplorer.functionKeyBar.copyLabel": "Kopiera",
+  "@fileExplorer.functionKeyBar.copyLabel": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.copyAction": "Kopiera",
+  "@fileExplorer.functionKeyBar.copyAction": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.moveLabel": "Flytta",
+  "@fileExplorer.functionKeyBar.moveLabel": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.moveAction": "Flytta",
+  "@fileExplorer.functionKeyBar.moveAction": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.newFolderLabel": "Ny mapp",
+  "@fileExplorer.functionKeyBar.newFolderLabel": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.newFolderAction": "Ny mapp",
+  "@fileExplorer.functionKeyBar.newFolderAction": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.deleteLabel": "Radera",
+  "@fileExplorer.functionKeyBar.deleteLabel": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.functionKeyBar.deleteAction": "Radera",
+  "@fileExplorer.functionKeyBar.deleteAction": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.typeToJump.ariaLabel": "Hoppa till {buffer}",
+  "@fileExplorer.typeToJump.ariaLabel": {
+    "sourceHash": "da879a5"
+  },
+  "fileExplorer.typeToJump.prefix": "Hoppa: ",
+  "@fileExplorer.typeToJump.prefix": {
+    "sourceHash": "e9e3412"
+  },
+  "fileExplorer.searchResults.unavailableTitle": "Sökresultaten är inte längre tillgängliga",
+  "@fileExplorer.searchResults.unavailableTitle": {
+    "sourceHash": "ebcc5a7"
+  },
+  "fileExplorer.searchResults.unavailableBody": "Resultaten för den här sökningen rensades. Öppna en ny sökning för att börja om.",
+  "@fileExplorer.searchResults.unavailableBody": {
+    "sourceHash": "3e4cfa2"
+  },
+  "fileExplorer.network.cancel": "Avbryt",
+  "@fileExplorer.network.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.network.connect": "Anslut",
+  "@fileExplorer.network.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "fileExplorer.network.connecting": "Ansluter...",
+  "@fileExplorer.network.connecting": {
+    "sourceHash": "5f04ae9"
+  },
+  "fileExplorer.network.back": "Tillbaka",
+  "@fileExplorer.network.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.network.retry": "Försök igen",
+  "@fileExplorer.network.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.network.signIn": "Logga in",
+  "@fileExplorer.network.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "fileExplorer.network.authFailed": "Det gick inte att logga in",
+  "@fileExplorer.network.authFailed": {
+    "sourceHash": "93821eb"
+  },
+  "fileExplorer.network.connectDialog.title": "Anslut till server",
+  "@fileExplorer.network.connectDialog.title": {
+    "sourceHash": "de6cce0"
+  },
+  "fileExplorer.network.connectDialog.addressAriaLabel": "Serveradress",
+  "@fileExplorer.network.connectDialog.addressAriaLabel": {
+    "sourceHash": "8be8971"
+  },
+  "fileExplorer.network.connectDialog.addressPlaceholder": "värdnamn, IP-adress eller smb://-URL",
+  "@fileExplorer.network.connectDialog.addressPlaceholder": {
+    "sourceHash": "60c33b2"
+  },
+  "fileExplorer.network.connectDialog.examples": "Exempel: mynas.local, 192.168.1.100, smb://server/share",
+  "@fileExplorer.network.connectDialog.examples": {
+    "sourceHash": "10794ec"
+  },
+  "fileExplorer.network.browser.colName": "Namn",
+  "@fileExplorer.network.browser.colName": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.network.browser.colIp": "IP-adress",
+  "@fileExplorer.network.browser.colIp": {
+    "sourceHash": "0302a46"
+  },
+  "fileExplorer.network.browser.colHostname": "Värdnamn",
+  "@fileExplorer.network.browser.colHostname": {
+    "sourceHash": "2db5335"
+  },
+  "fileExplorer.network.browser.colShares": "Delningar",
+  "@fileExplorer.network.browser.colShares": {
+    "sourceHash": "d4ea333"
+  },
+  "fileExplorer.network.browser.colStatus": "Status",
+  "@fileExplorer.network.browser.colStatus": {
+    "sourceHash": "920e413"
+  },
+  "fileExplorer.network.browser.fetching": "hämtar...",
+  "@fileExplorer.network.browser.fetching": {
+    "sourceHash": "9e6ab8c"
+  },
+  "fileExplorer.network.browser.unknown": "(okänt)",
+  "@fileExplorer.network.browser.unknown": {
+    "sourceHash": "8fe7794"
+  },
+  "fileExplorer.network.browser.searching": "Söker...",
+  "@fileExplorer.network.browser.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "fileExplorer.network.browser.connectToServerRow": "Anslut till server...",
+  "@fileExplorer.network.browser.connectToServerRow": {
+    "sourceHash": "1bf4858"
+  },
+  "fileExplorer.network.browser.noHostsTitle": "Inga nätverksvärdar hittades",
+  "@fileExplorer.network.browser.noHostsTitle": {
+    "sourceHash": "e8dfaf2"
+  },
+  "fileExplorer.network.browser.noHostsMessage": "Se till att du är på ett nätverk med SMB-kapabla enheter.",
+  "@fileExplorer.network.browser.noHostsMessage": {
+    "sourceHash": "b1cb7ba"
+  },
+  "fileExplorer.network.browser.refresh": "Uppdatera",
+  "@fileExplorer.network.browser.refresh": {
+    "sourceHash": "0e91610"
+  },
+  "fileExplorer.network.browser.refreshAriaLabel": "Uppdatera nätverksvärdar",
+  "@fileExplorer.network.browser.refreshAriaLabel": {
+    "sourceHash": "73966bd"
+  },
+  "fileExplorer.network.browser.refreshHint": "Tryck på <key></key> eller klicka här för att uppdatera",
+  "@fileExplorer.network.browser.refreshHint": {
+    "sourceHash": "7f65c7d"
+  },
+  "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} värd} other {{countText} värdar}}",
+  "@fileExplorer.network.browser.hostCount": {
+    "sourceHash": "41843ee"
+  },
+  "fileExplorer.network.browser.status.resolving": "Slår upp...",
+  "@fileExplorer.network.browser.status.resolving": {
+    "sourceHash": "0660108"
+  },
+  "fileExplorer.network.browser.status.waitingForNetwork": "Väntar på nätverk...",
+  "@fileExplorer.network.browser.status.waitingForNetwork": {
+    "sourceHash": "78199e3"
+  },
+  "fileExplorer.network.browser.status.notChecked": "Inte kontrollerad",
+  "@fileExplorer.network.browser.status.notChecked": {
+    "sourceHash": "d16948e"
+  },
+  "fileExplorer.network.browser.status.loggedIn": "🔑 Inloggad{infoIcon}",
+  "@fileExplorer.network.browser.status.loggedIn": {
+    "sourceHash": "1e386ce"
+  },
+  "fileExplorer.network.browser.status.loginFailed": "⚠️ Inloggningen gick inte{infoIcon}",
+  "@fileExplorer.network.browser.status.loginFailed": {
+    "sourceHash": "1659c9c"
+  },
+  "fileExplorer.network.browser.status.loginNeeded": "🔒 Inloggning krävs{infoIcon}",
+  "@fileExplorer.network.browser.status.loginNeeded": {
+    "sourceHash": "bd7375e"
+  },
+  "fileExplorer.network.browser.status.timeout": "⏱️ Tidsgränsen nåddes{infoIcon}",
+  "@fileExplorer.network.browser.status.timeout": {
+    "sourceHash": "3673628"
+  },
+  "fileExplorer.network.browser.status.unreachable": "❌ Kan inte nås{infoIcon}",
+  "@fileExplorer.network.browser.status.unreachable": {
+    "sourceHash": "1198fd4"
+  },
+  "fileExplorer.network.browser.status.error": "⚠️ Problem{infoIcon}",
+  "@fileExplorer.network.browser.status.error": {
+    "sourceHash": "de7c260"
+  },
+  "fileExplorer.network.browser.status.loggedInOk": "✓ Inloggad",
+  "@fileExplorer.network.browser.status.loggedInOk": {
+    "sourceHash": "205adc9"
+  },
+  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Inloggad 🔄",
+  "@fileExplorer.network.browser.status.loggedInOkStale": {
+    "sourceHash": "f83f6a1"
+  },
+  "fileExplorer.network.browser.status.guest": "✓ Gäst",
+  "@fileExplorer.network.browser.status.guest": {
+    "sourceHash": "aaa35d1"
+  },
+  "fileExplorer.network.browser.status.guestStale": "✓ Gäst 🔄",
+  "@fileExplorer.network.browser.status.guestStale": {
+    "sourceHash": "1e2b875"
+  },
+  "fileExplorer.network.browser.status.connected": "✓ Ansluten",
+  "@fileExplorer.network.browser.status.connected": {
+    "sourceHash": "c8c8815"
+  },
+  "fileExplorer.network.browser.status.connectedStale": "✓ Ansluten 🔄",
+  "@fileExplorer.network.browser.status.connectedStale": {
+    "sourceHash": "0cf4d3d"
+  },
+  "fileExplorer.network.browser.tooltip.resolving": "Slår upp värdnamn och IP-adress...",
+  "@fileExplorer.network.browser.tooltip.resolving": {
+    "sourceHash": "1dc4c96"
+  },
+  "fileExplorer.network.browser.tooltip.waitingForNetwork": "Väntar på namnuppslag i nätverket",
+  "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
+    "sourceHash": "81ac569"
+  },
+  "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Dubbelklicka för att ansluta och visa delningar",
+  "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
+    "sourceHash": "a068f74"
+  },
+  "fileExplorer.network.browser.tooltip.credsStored": "Inloggningsuppgifter sparade. Dubbelklicka för att ansluta.",
+  "@fileExplorer.network.browser.tooltip.credsStored": {
+    "sourceHash": "ff82a32"
+  },
+  "fileExplorer.network.browser.tooltip.credsRejected": "De sparade inloggningsuppgifterna godtogs inte. Logga in med uppdaterade uppgifter.",
+  "@fileExplorer.network.browser.tooltip.credsRejected": {
+    "sourceHash": "a3d55a2"
+  },
+  "fileExplorer.network.browser.tooltip.requiresLogin": "Den här värden kräver inloggning. Dubbelklicka för att ange inloggningsuppgifter.",
+  "@fileExplorer.network.browser.tooltip.requiresLogin": {
+    "sourceHash": "8e64ac0"
+  },
+  "fileExplorer.network.browser.tooltip.authFailed": "Det gick inte att logga in. Kontrollera dina inloggningsuppgifter och försök igen.",
+  "@fileExplorer.network.browser.tooltip.authFailed": {
+    "sourceHash": "b8620ab"
+  },
+  "fileExplorer.network.browser.tooltip.errorWithType": "Problem: {reason}",
+  "@fileExplorer.network.browser.tooltip.errorWithType": {
+    "sourceHash": "ee0fd6d"
+  },
+  "fileExplorer.network.browser.cannotRemoveDiscovered": "Det går inte att ta bort upptäckta värdar",
+  "@fileExplorer.network.browser.cannotRemoveDiscovered": {
+    "sourceHash": "03fabd6"
+  },
+  "fileExplorer.network.browser.removeHostConfirm": "Ta bort {hostName} från serverlistan?",
+  "@fileExplorer.network.browser.removeHostConfirm": {
+    "sourceHash": "8ecdf1a"
+  },
+  "fileExplorer.network.browser.removeHostConfirmButton": "Ta bort",
+  "@fileExplorer.network.browser.removeHostConfirmButton": {
+    "sourceHash": "c3812fc"
+  },
+  "fileExplorer.network.browser.hostRemoved": "Tog bort {hostName}",
+  "@fileExplorer.network.browser.hostRemoved": {
+    "sourceHash": "9e02382"
+  },
+  "fileExplorer.network.browser.hostRemoveFailed": "Det gick inte att ta bort {hostName}",
+  "@fileExplorer.network.browser.hostRemoveFailed": {
+    "sourceHash": "9120dd2"
+  },
+  "fileExplorer.network.forgotPassword": "Glömde det sparade lösenordet för {hostName}",
+  "@fileExplorer.network.forgotPassword": {
+    "sourceHash": "6b53741"
+  },
+  "fileExplorer.network.deletePasswordFailed": "Det gick inte att radera det sparade lösenordet",
+  "@fileExplorer.network.deletePasswordFailed": {
+    "sourceHash": "0ff57cb"
+  },
+  "fileExplorer.network.browser.disconnected": "Frånkopplad från {hostName}",
+  "@fileExplorer.network.browser.disconnected": {
+    "sourceHash": "6cb30d3"
+  },
+  "fileExplorer.network.browser.noMountedShares": "Inga monterade delningar från {hostName}",
+  "@fileExplorer.network.browser.noMountedShares": {
+    "sourceHash": "913c7e6"
+  },
+  "fileExplorer.network.browser.disconnectFailed": "Det gick inte att koppla från: {message}",
+  "@fileExplorer.network.browser.disconnectFailed": {
+    "sourceHash": "ac9e8e0"
+  },
+  "fileExplorer.network.login.title": "Logga in på ”{target}”",
+  "@fileExplorer.network.login.title": {
+    "sourceHash": "53a4feb"
+  },
+  "fileExplorer.network.login.guestNowAuth": "Du anslöt som gäst tidigare. Nu kan du logga in för mer åtkomst.",
+  "@fileExplorer.network.login.guestNowAuth": {
+    "sourceHash": "4a0ed4d"
+  },
+  "fileExplorer.network.login.connectionModeLegend": "Anslutningsläge",
+  "@fileExplorer.network.login.connectionModeLegend": {
+    "sourceHash": "72c0943"
+  },
+  "fileExplorer.network.login.connectAsGuest": "Anslut som gäst",
+  "@fileExplorer.network.login.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "fileExplorer.network.login.signInWithCredentials": "Logga in med inloggningsuppgifter",
+  "@fileExplorer.network.login.signInWithCredentials": {
+    "sourceHash": "dda85fa"
+  },
+  "fileExplorer.network.login.username": "Användarnamn",
+  "@fileExplorer.network.login.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "fileExplorer.network.login.usernamePlaceholderDefault": "Exempel: barry",
+  "@fileExplorer.network.login.usernamePlaceholderDefault": {
+    "sourceHash": "1b5b09c"
+  },
+  "fileExplorer.network.login.password": "Lösenord",
+  "@fileExplorer.network.login.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileExplorer.network.login.passwordPlaceholder": "Ange lösenord",
+  "@fileExplorer.network.login.passwordPlaceholder": {
+    "sourceHash": "7014aff"
+  },
+  "fileExplorer.network.login.rememberInKeychain": "Kom ihåg i Keychain",
+  "@fileExplorer.network.login.rememberInKeychain": {
+    "sourceHash": "3fd7384"
+  },
+  "fileExplorer.network.share.credentialsStoredLocally": "Inloggningsuppgifter sparade lokalt (ingen systemnyckelring upptäcktes)",
+  "@fileExplorer.network.share.credentialsStoredLocally": {
+    "sourceHash": "18dd24e"
+  },
+  "fileExplorer.network.share.notFound": "Delningen ''{shareName}'' hittades inte på {hostName}",
+  "@fileExplorer.network.share.notFound": {
+    "sourceHash": "bc3d29a"
+  },
+  "fileExplorer.network.share.invalidCredentials": "Ogiltigt användarnamn eller lösenord. Försök igen.",
+  "@fileExplorer.network.share.invalidCredentials": {
+    "sourceHash": "846d862"
+  },
+  "fileExplorer.network.share.authRequired": "Inloggning krävs. Ange dina inloggningsuppgifter.",
+  "@fileExplorer.network.share.authRequired": {
+    "sourceHash": "0bb6039"
+  },
+  "fileExplorer.network.share.connectionFailed": "Anslutningen gick inte att upprätta: {reason}",
+  "@fileExplorer.network.share.connectionFailed": {
+    "sourceHash": "800132e"
+  },
+  "fileExplorer.network.share.connecting": "Ansluter till {hostName}...",
+  "@fileExplorer.network.share.connecting": {
+    "sourceHash": "633622a"
+  },
+  "fileExplorer.network.share.connectFailedTitle": "Det gick inte att ansluta till {hostName}",
+  "@fileExplorer.network.share.connectFailedTitle": {
+    "sourceHash": "06f5c62"
+  },
+  "fileExplorer.network.share.noSharesTitle": "Inga delningar tillgängliga",
+  "@fileExplorer.network.share.noSharesTitle": {
+    "sourceHash": "56890aa"
+  },
+  "fileExplorer.network.share.noSharesMessage": "Den här värden har inga åtkomliga delningar, eller så krävs inloggning.",
+  "@fileExplorer.network.share.noSharesMessage": {
+    "sourceHash": "6633416"
+  },
+  "fileExplorer.network.share.backArrow": "← Tillbaka",
+  "@fileExplorer.network.share.backArrow": {
+    "sourceHash": "aceb696"
+  },
+  "fileExplorer.network.share.forgetPasswordTooltip": "Ta bort sparat lösenord från Keychain",
+  "@fileExplorer.network.share.forgetPasswordTooltip": {
+    "sourceHash": "f067186"
+  },
+  "fileExplorer.network.share.forgetPassword": "🔑 Glöm sparat lösenord",
+  "@fileExplorer.network.share.forgetPassword": {
+    "sourceHash": "aa3dca3"
+  },
+  "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} delning} other {{countText} delningar}}",
+  "@fileExplorer.network.share.shareCount": {
+    "sourceHash": "4cc6002"
+  },
+  "fileExplorer.network.reconnect.once": "en gång",
+  "@fileExplorer.network.reconnect.once": {
+    "sourceHash": "200651a"
+  },
+  "fileExplorer.network.reconnect.twice": "två gånger",
+  "@fileExplorer.network.reconnect.twice": {
+    "sourceHash": "dc8ffdb"
+  },
+  "fileExplorer.network.reconnect.times": "{count, plural, other {{countText} gånger}}",
+  "@fileExplorer.network.reconnect.times": {
+    "sourceHash": "bf5fc9c"
+  },
+  "fileExplorer.network.reconnect.finalAttempt": "Försökte {retried}, det här är sista försöket. Anslutningen släpps om det inte går.",
+  "@fileExplorer.network.reconnect.finalAttempt": {
+    "sourceHash": "7418a78"
+  },
+  "fileExplorer.network.reconnect.willTryMore": "Försökte {retried}, försöker {remaining} till efter det här.",
+  "@fileExplorer.network.reconnect.willTryMore": {
+    "sourceHash": "a7d887a"
+  },
+  "fileExplorer.mtp.connectTimedOut": "Anslutningen nådde tidsgränsen. Enheten kan vara långsam eller svara inte.",
+  "@fileExplorer.mtp.connectTimedOut": {
+    "sourceHash": "cc01ae7"
+  },
+  "fileExplorer.mtp.exclusiveAccess": "En annan app använder den här enheten. Kör ptpcamerad-lösningen.",
+  "@fileExplorer.mtp.exclusiveAccess": {
+    "sourceHash": "1fac18c"
+  },
+  "fileExplorer.mtp.deviceNotFound": "Enheten hittades inte. Den kan ha kopplats ur.",
+  "@fileExplorer.mtp.deviceNotFound": {
+    "sourceHash": "15d2382"
+  },
+  "fileExplorer.mtp.disconnected": "Enheten kopplades från.",
+  "@fileExplorer.mtp.disconnected": {
+    "sourceHash": "57e823a"
+  },
+  "fileExplorer.mtp.deviceBusy": "Enheten är upptagen. Försök igen.",
+  "@fileExplorer.mtp.deviceBusy": {
+    "sourceHash": "7199b1d"
+  },
+  "fileExplorer.mtp.noStorage": "Enheten har ingen åtkomlig lagring",
+  "@fileExplorer.mtp.noStorage": {
+    "sourceHash": "ff30402"
+  },
+  "fileExplorer.mtp.connecting": "Ansluter till enheten...",
+  "@fileExplorer.mtp.connecting": {
+    "sourceHash": "ad85006"
+  },
+  "fileExplorer.mtp.tryAgain": "Försök igen",
+  "@fileExplorer.mtp.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.mounting": "Monterar {target}...",
+  "@fileExplorer.networkMount.mounting": {
+    "sourceHash": "222982d"
+  },
+  "fileExplorer.networkMount.shareFallback": "delning",
+  "@fileExplorer.networkMount.shareFallback": {
+    "sourceHash": "c3bc45a"
+  },
+  "fileExplorer.networkMount.mountFailedTitle": "Det gick inte att montera delningen",
+  "@fileExplorer.networkMount.mountFailedTitle": {
+    "sourceHash": "d59f414"
+  },
+  "fileExplorer.networkMount.tryAgain": "Försök igen",
+  "@fileExplorer.networkMount.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.back": "Tillbaka",
+  "@fileExplorer.networkMount.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.smbReauth.savedPasswordFailed": "Ditt sparade lösenord fungerade inte. Logga in för att återansluta.",
+  "@fileExplorer.smbReauth.savedPasswordFailed": {
+    "sourceHash": "4561fa9"
+  },
+  "fileExplorer.smbReauth.passwordFailed": "Det fungerade inte. Kontrollera lösenordet och försök igen.",
+  "@fileExplorer.smbReauth.passwordFailed": {
+    "sourceHash": "5e11a2f"
+  },
+  "fileExplorer.smbReconnect.totalSeconds": "{seconds} sekunder",
+  "@fileExplorer.smbReconnect.totalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "fileExplorer.smbReconnect.totalMinutes": "{minutes} minuter",
+  "@fileExplorer.smbReconnect.totalMinutes": {
+    "sourceHash": "fc339ba"
+  },
+  "fileExplorer.smbReconnect.title": "Återansluter till servern…",
+  "@fileExplorer.smbReconnect.title": {
+    "sourceHash": "7562773"
+  },
+  "fileExplorer.smbReconnect.progressBarAriaLabel": "Tid till nästa återanslutningsförsök",
+  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "fileExplorer.smbReconnect.willKeepTrying": "Fortsätter försöka i totalt {duration}.",
+  "@fileExplorer.smbReconnect.willKeepTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "fileExplorer.smbReconnect.retryNowTooltip": "Försök återansluta direkt.",
+  "@fileExplorer.smbReconnect.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "fileExplorer.smbReconnect.retryNow": "Försök igen nu",
+  "@fileExplorer.smbReconnect.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "fileExplorer.smbReconnect.cancelTooltip": "Sluta försöka tills vidare. Anslutningen finns kvar. Växla tillbaka för att försöka igen.",
+  "@fileExplorer.smbReconnect.cancelTooltip": {
+    "sourceHash": "377638b"
+  },
+  "fileExplorer.smbReconnect.cancel": "Avbryt",
+  "@fileExplorer.smbReconnect.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.smbReconnect.disconnectTooltip": "Sluta försöka och koppla från servern.",
+  "@fileExplorer.smbReconnect.disconnectTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "fileExplorer.smbReconnect.disconnect": "Koppla från",
+  "@fileExplorer.smbReconnect.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.title": "Det gick inte att nå {path}",
+  "@fileExplorer.unreachable.title": {
+    "sourceHash": "586e44c"
+  },
+  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr försökte återansluta flera gånger men servern kom inte tillbaka. Anslutningen finns kvar tills vidare. Försök igen, eller koppla från för att släppa den.",
+  "@fileExplorer.unreachable.detailSmbGaveUp": {
+    "sourceHash": "7d8c5fc"
+  },
+  "fileExplorer.unreachable.detailTimeout": "Volymen för den här sökvägen svarade inte i tid. Det kan vara en nätverksenhet som för tillfället inte är tillgänglig.",
+  "@fileExplorer.unreachable.detailTimeout": {
+    "sourceHash": "61bf814"
+  },
+  "fileExplorer.unreachable.retrying": "Försöker igen...",
+  "@fileExplorer.unreachable.retrying": {
+    "sourceHash": "84a657b"
+  },
+  "fileExplorer.unreachable.retry": "Försök igen",
+  "@fileExplorer.unreachable.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.unreachable.disconnect": "Koppla från",
+  "@fileExplorer.unreachable.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.openHome": "Öppna hemmappen",
+  "@fileExplorer.unreachable.openHome": {
+    "sourceHash": "a178b4d"
+  },
+  "fileExplorer.clipboard.copied": "Kopierade {countText} {count, plural, one {objekt} other {objekt}}",
+  "@fileExplorer.clipboard.copied": {
+    "sourceHash": "1c25075"
+  },
+  "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {objekt} other {objekt}} redo att flyttas. Klistra in för att slutföra.",
+  "@fileExplorer.clipboard.cutReady": {
+    "sourceHash": "846d8af"
+  },
+  "fileExplorer.clipboard.useF5FromMtp": "Använd F5 för att kopiera filer från MTP-enheter",
+  "@fileExplorer.clipboard.useF5FromMtp": {
+    "sourceHash": "e0dd2b5"
+  },
+  "fileExplorer.clipboard.useF6FromMtp": "Använd F6 för att flytta filer från MTP-enheter",
+  "@fileExplorer.clipboard.useF6FromMtp": {
+    "sourceHash": "cd6f83f"
+  },
+  "fileExplorer.clipboard.useF5ToMtp": "Använd F5 för att kopiera filer till MTP-enheter",
+  "@fileExplorer.clipboard.useF5ToMtp": {
+    "sourceHash": "8c20d0e"
+  },
+  "fileExplorer.clipboard.empty": "Inga filer i urklipp. Kopiera filer först med ⌘C.",
+  "@fileExplorer.clipboard.empty": {
+    "sourceHash": "0cbe304"
+  },
+  "fileExplorer.tabs.limitReached": "Gränsen för antal flikar nådd",
+  "@fileExplorer.tabs.limitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "fileExplorer.tabs.closePinnedConfirm": "Den här fliken är fäst. Stäng den ändå?",
+  "@fileExplorer.tabs.closePinnedConfirm": {
+    "sourceHash": "d5757f9"
+  },
+  "fileExplorer.tabs.closePinnedTitle": "Stäng fäst flik",
+  "@fileExplorer.tabs.closePinnedTitle": {
+    "sourceHash": "5d22e58"
+  },
+  "fileExplorer.readOnly.volumeTitle": "Skrivskyddad volym",
+  "@fileExplorer.readOnly.volumeTitle": {
+    "sourceHash": "e2d3bf1"
+  },
+  "fileExplorer.readOnly.renameMessage": "Det här är en skrivskyddad volym. Det går inte att byta namn här.",
+  "@fileExplorer.readOnly.renameMessage": {
+    "sourceHash": "2f68994"
+  },
+  "fileExplorer.readOnly.mkdirMessage": "Det här är en skrivskyddad volym. Det går inte att skapa mappar här.",
+  "@fileExplorer.readOnly.mkdirMessage": {
+    "sourceHash": "01957f0"
+  },
+  "fileExplorer.readOnly.mkfileMessage": "Det här är en skrivskyddad volym. Det går inte att skapa filer här.",
+  "@fileExplorer.readOnly.mkfileMessage": {
+    "sourceHash": "c5c28e2"
+  },
+  "fileExplorer.readOnly.deleteMessage": "Det här är en skrivskyddad volym. Det går inte att radera filer här.",
+  "@fileExplorer.readOnly.deleteMessage": {
+    "sourceHash": "965a635"
+  },
+  "fileExplorer.readOnly.deviceTitle": "Skrivskyddad enhet",
+  "@fileExplorer.readOnly.deviceTitle": {
+    "sourceHash": "3f79690"
+  },
+  "fileExplorer.readOnly.deviceMessage": "”{name}” är skrivskyddad. Du kan kopiera filer från den, men inte till den.",
+  "@fileExplorer.readOnly.deviceMessage": {
+    "sourceHash": "039488f"
+  },
+  "fileExplorer.rename.hiddenAfterRename": "Din fil försvann från vyn eftersom dolda filer inte visas.",
+  "@fileExplorer.rename.hiddenAfterRename": {
+    "sourceHash": "445d02a"
+  },
+  "fileExplorer.columns.name": "Namn",
+  "@fileExplorer.columns.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.columns.ext": "Tillägg",
+  "@fileExplorer.columns.ext": {
+    "sourceHash": "8c92eec"
+  },
+  "fileExplorer.columns.size": "Storlek",
+  "@fileExplorer.columns.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.columns.modified": "Ändrad",
+  "@fileExplorer.columns.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.columns.created": "Skapad",
+  "@fileExplorer.columns.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.columns.git": "Git",
+  "@fileExplorer.columns.git": {
+    "sourceHash": "b949c92"
+  },
+  "fileExplorer.columns.gitTitle": "Git-status för varje fil",
+  "@fileExplorer.columns.gitTitle": {
+    "sourceHash": "c4cc002"
+  },
+  "fileExplorer.list.empty": "Tom mapp",
+  "@fileExplorer.list.empty": {
+    "sourceHash": "ca1fd45"
+  },
+  "fileExplorer.list.fileListAriaLabel": "Fillista",
+  "@fileExplorer.list.fileListAriaLabel": {
+    "sourceHash": "0728b8e"
+  },
+  "fileExplorer.list.sortColumnsAriaLabel": "Sortera kolumner",
+  "@fileExplorer.list.sortColumnsAriaLabel": {
+    "sourceHash": "21f76f8"
+  },
+  "fileExplorer.dirSize.updatingIndexTooltip": "Uppdaterar index: storleken kan ändras.",
+  "@fileExplorer.dirSize.updatingIndexTooltip": {
+    "sourceHash": "2689358"
+  },
+  "fileExplorer.dirSize.scanProgressTooltip": "Storlekar visas allt eftersom genomsökningen fortskrider",
+  "@fileExplorer.dirSize.scanProgressTooltip": {
+    "sourceHash": "8151629"
+  },
+  "fileExplorer.dirSize.contentLabel": "Innehåll",
+  "@fileExplorer.dirSize.contentLabel": {
+    "sourceHash": "47bd290"
+  },
+  "fileExplorer.dirSize.onDiskLabel": "På disk",
+  "@fileExplorer.dirSize.onDiskLabel": {
+    "sourceHash": "00ca4da"
+  },
+  "fileExplorer.dirSize.noPerms": "'<'ingen behörighet>",
+  "@fileExplorer.dirSize.noPerms": {
+    "sourceHash": "bf8fb9d"
+  },
+  "fileExplorer.dirSize.noPermsTooltip": "Cmdr saknar behörighet att läsa den här mappen",
+  "@fileExplorer.dirSize.noPermsTooltip": {
+    "sourceHash": "4920b4f"
+  },
+  "fileExplorer.dirSize.noFiles": "Inga filer",
+  "@fileExplorer.dirSize.noFiles": {
+    "sourceHash": "c219d96"
+  },
+  "fileExplorer.dirSize.noFolders": "inga mappar",
+  "@fileExplorer.dirSize.noFolders": {
+    "sourceHash": "055fa42"
+  },
+  "fileExplorer.dirSize.fileCount": "{count, plural, one {{countText} fil} other {{countText} filer}}",
+  "@fileExplorer.dirSize.fileCount": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.dirSize.folderCount": "{count, plural, one {{countText} mapp} other {{countText} mappar}}",
+  "@fileExplorer.dirSize.folderCount": {
+    "sourceHash": "3c46f04"
+  },
+  "fileExplorer.dirSize.updatingIndexLine": "Uppdaterar index, så storleken kan ändras.",
+  "@fileExplorer.dirSize.updatingIndexLine": {
+    "sourceHash": "ddb01a2"
+  },
+  "fileExplorer.dirSize.dirPlaceholder": "'<'mapp>",
+  "@fileExplorer.dirSize.dirPlaceholder": {
+    "sourceHash": "1cb5400"
+  },
+  "fileExplorer.dirSize.mismatchTooltipPrefix": "Innehålls- och diskstorlek skiljer sig avsevärt.",
+  "@fileExplorer.dirSize.mismatchTooltipPrefix": {
+    "sourceHash": "3ff9147"
+  },
+  "fileExplorer.selectionTooltip.selected": "Markerat",
+  "@fileExplorer.selectionTooltip.selected": {
+    "sourceHash": "57fd7a0"
+  },
+  "fileExplorer.selectionTooltip.ofTotal": "Av totalt",
+  "@fileExplorer.selectionTooltip.ofTotal": {
+    "sourceHash": "1269b5a"
+  },
+  "fileExplorer.selectionTooltip.onDiskHeader": "På disk:",
+  "@fileExplorer.selectionTooltip.onDiskHeader": {
+    "sourceHash": "9795f99"
+  },
+  "fileExplorer.entry.brokenSymlink": "(trasig symlänk)",
+  "@fileExplorer.entry.brokenSymlink": {
+    "sourceHash": "a7ffd43"
+  },
+  "fileExplorer.entry.permissionDenied": "(behörighet nekad)",
+  "@fileExplorer.entry.permissionDenied": {
+    "sourceHash": "88cb526"
+  },
+  "fileExplorer.dateTooltip.created": "Skapad",
+  "@fileExplorer.dateTooltip.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.dateTooltip.lastOpened": "Senast öppnad",
+  "@fileExplorer.dateTooltip.lastOpened": {
+    "sourceHash": "e300685"
+  },
+  "fileExplorer.dateTooltip.lastMoved": "Senast flyttad (”tillagd”)",
+  "@fileExplorer.dateTooltip.lastMoved": {
+    "sourceHash": "450ebc0"
+  },
+  "fileExplorer.dateTooltip.lastModified": "Senast ändrad",
+  "@fileExplorer.dateTooltip.lastModified": {
+    "sourceHash": "0fe1058"
+  },
+  "fileExplorer.selectionInfo.nothingHere": "Inget här.",
+  "@fileExplorer.selectionInfo.nothingHere": {
+    "sourceHash": "140a431"
+  },
+  "fileExplorer.selectionInfo.dir": "MAPP",
+  "@fileExplorer.selectionInfo.dir": {
+    "sourceHash": "d313ad9"
+  },
+  "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Storleken är inte klar än",
+  "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
+    "sourceHash": "4f2542d"
+  },
+  "fileExplorer.selectionInfo.sizeUpdatingAriaLabel": "Storleken uppdateras",
+  "@fileExplorer.selectionInfo.sizeUpdatingAriaLabel": {
+    "sourceHash": "f237144"
+  },
+  "fileExplorer.selectionInfo.indexUpdatingTooltip": "Uppdaterar index, storleken kan ändras.",
+  "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
+    "sourceHash": "2f69a1b"
+  },
+  "fileExplorer.selectionInfo.symlinkHint": "Den här mappen innehåller symlänkar. Symlänkat innehåll räknas inte med i totalen för att undvika dubbelräkning.",
+  "@fileExplorer.selectionInfo.symlinkHint": {
+    "sourceHash": "414ed75"
+  },
+  "fileExplorer.selectionInfo.noSelectionFiles": "{count, plural, one {{countText} fil} other {{countText} filer}}",
+  "@fileExplorer.selectionInfo.noSelectionFiles": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.selectionInfo.noSelectionDirs": " och {count, plural, one {{countText} mapp} other {{countText} mappar}}",
+  "@fileExplorer.selectionInfo.noSelectionDirs": {
+    "sourceHash": "e1259ef"
+  },
+  "fileExplorer.selectionInfo.noSelection": "Inget markerat, {files}{dirs}.",
+  "@fileExplorer.selectionInfo.noSelection": {
+    "sourceHash": "beea8ac"
+  },
+  "fileExplorer.tabBar.paneTabsAriaLabel": "Flikar för {paneId} panel",
+  "@fileExplorer.tabBar.paneTabsAriaLabel": {
+    "sourceHash": "d641870"
+  },
+  "fileExplorer.tabBar.unreachableAriaLabel": "Kan inte nås",
+  "@fileExplorer.tabBar.unreachableAriaLabel": {
+    "sourceHash": "abaa46a"
+  },
+  "fileExplorer.tabBar.pinnedAriaLabel": "Fäst",
+  "@fileExplorer.tabBar.pinnedAriaLabel": {
+    "sourceHash": "f20c879"
+  },
+  "fileExplorer.tabBar.closeTabTooltip": "Stäng flik",
+  "@fileExplorer.tabBar.closeTabTooltip": {
+    "sourceHash": "50a3f95"
+  },
+  "fileExplorer.tabBar.newTabAriaLabel": "Ny flik",
+  "@fileExplorer.tabBar.newTabAriaLabel": {
+    "sourceHash": "1e08fda"
+  },
+  "fileExplorer.summary.fileNoun": "{count, plural, one {fil} other {filer}}",
+  "@fileExplorer.summary.fileNoun": {
+    "sourceHash": "46012b1"
+  },
+  "fileExplorer.summary.dirNoun": "{count, plural, one {mapp} other {mappar}}",
+  "@fileExplorer.summary.dirNoun": {
+    "sourceHash": "1c5273d"
+  },
+  "fileExplorer.summary.of": "av",
+  "@fileExplorer.summary.of": {
+    "sourceHash": "28391d3"
+  },
+  "fileExplorer.summary.percentSelectedIn": "({percent} %) markerat i",
+  "@fileExplorer.summary.percentSelectedIn": {
+    "sourceHash": "7e01a02"
+  },
+  "fileExplorer.summary.and": "och",
+  "@fileExplorer.summary.and": {
+    "sourceHash": "6201111"
+  },
+  "fileExplorer.summary.selectedSuffix": "markerade",
+  "@fileExplorer.summary.selectedSuffix": {
+    "sourceHash": "d7cbbb6"
+  },
+  "fileExplorer.renameConflict.title": "En fil med det här namnet finns redan",
+  "@fileExplorer.renameConflict.title": {
+    "sourceHash": "92ae292"
+  },
+  "fileExplorer.renameConflict.description": "”{name}” finns redan i den här mappen. Vad vill du göra?",
+  "@fileExplorer.renameConflict.description": {
+    "sourceHash": "ded53e8"
+  },
+  "fileExplorer.renameConflict.yours": "{name} (din)",
+  "@fileExplorer.renameConflict.yours": {
+    "sourceHash": "e907024"
+  },
+  "fileExplorer.renameConflict.existing": "{name} (befintlig)",
+  "@fileExplorer.renameConflict.existing": {
+    "sourceHash": "0ff925b"
+  },
+  "fileExplorer.renameConflict.size": "Storlek",
+  "@fileExplorer.renameConflict.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.renameConflict.modified": "Ändrad",
+  "@fileExplorer.renameConflict.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.renameConflict.overwriteTrash": "Skriv över och flytta gamla filen till papperskorgen",
+  "@fileExplorer.renameConflict.overwriteTrash": {
+    "sourceHash": "e0192f6"
+  },
+  "fileExplorer.renameConflict.overwriteDelete": "Skriv över och radera gamla filen",
+  "@fileExplorer.renameConflict.overwriteDelete": {
+    "sourceHash": "02093d5"
+  },
+  "fileExplorer.renameConflict.cancel": "Avbryt",
+  "@fileExplorer.renameConflict.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.renameConflict.continueRenaming": "Fortsätt byta namn",
+  "@fileExplorer.renameConflict.continueRenaming": {
+    "sourceHash": "96480ec"
+  },
+  "fileExplorer.extensionChange.title": "Ändra filtillägg?",
+  "@fileExplorer.extensionChange.title": {
+    "sourceHash": "799828d"
+  },
+  "fileExplorer.extensionChange.description": "Är du säker på att du vill ändra tillägget från ”.{oldExt}” till ”.{newExt}”? Din fil kan öppnas i en annan app nästa gång du öppnar den.",
+  "@fileExplorer.extensionChange.description": {
+    "sourceHash": "d0f428b"
+  },
+  "fileExplorer.extensionChange.alwaysAllow": "Tillåt alltid ändringar av tillägg",
+  "@fileExplorer.extensionChange.alwaysAllow": {
+    "sourceHash": "52a5c5e"
+  },
+  "fileExplorer.extensionChange.keepOld": "Behåll .{oldExt}",
+  "@fileExplorer.extensionChange.keepOld": {
+    "sourceHash": "08808e4"
+  },
+  "fileExplorer.extensionChange.useNew": "Använd .{newExt}",
+  "@fileExplorer.extensionChange.useNew": {
+    "sourceHash": "b1c0e92"
+  },
+  "fileExplorer.quickLookHint.spaceSelects": "I Cmdr markerar <space></space> som standard filen under markören.",
+  "@fileExplorer.quickLookHint.spaceSelects": {
+    "sourceHash": "192689a"
+  },
+  "fileExplorer.quickLookHint.finderComparison": "Om du kommer från Finder kan det här kännas ovant, eftersom Finder utlöser en ”Snabbtitt”-åtgärd på <space></space>.",
+  "@fileExplorer.quickLookHint.finderComparison": {
+    "sourceHash": "2089192"
+  },
+  "fileExplorer.quickLookHint.quickView": "I Cmdr kan du utlösa snabbtitt med <key></key>. (<key></key> funkar förresten i Finder också!)",
+  "@fileExplorer.quickLookHint.quickView": {
+    "sourceHash": "7e4cf33"
+  },
+  "fileExplorer.quickLookHint.enterOpens": "Du kan också använda <enter></enter> för att öppna filer i standardappen.",
+  "@fileExplorer.quickLookHint.enterOpens": {
+    "sourceHash": "5c1f2a3"
+  },
+  "fileExplorer.quickLookHint.configurable": "Allt det här går att ställa in under <settingsLink>Inställningar > Tangentbordsgenvägar</settingsLink>.",
+  "@fileExplorer.quickLookHint.configurable": {
+    "sourceHash": "a382250"
+  },
+  "fileExplorer.quickLookHint.dontShowAgain": "Visa inte igen",
+  "@fileExplorer.quickLookHint.dontShowAgain": {
+    "sourceHash": "d98ab77"
+  },
+  "fileExplorer.navigation.groupFavorites": "Favoriter",
+  "@fileExplorer.navigation.groupFavorites": {
+    "sourceHash": "7a1f2a8"
+  },
+  "fileExplorer.navigation.groupVolumes": "Volymer",
+  "@fileExplorer.navigation.groupVolumes": {
+    "sourceHash": "53a480e"
+  },
+  "fileExplorer.navigation.groupCloud": "Moln",
+  "@fileExplorer.navigation.groupCloud": {
+    "sourceHash": "b977b95"
+  },
+  "fileExplorer.navigation.groupMobile": "Mobil",
+  "@fileExplorer.navigation.groupMobile": {
+    "sourceHash": "cbaad3c"
+  },
+  "fileExplorer.navigation.groupNetwork": "Nätverk",
+  "@fileExplorer.navigation.groupNetwork": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolume": "Nätverk",
+  "@fileExplorer.navigation.networkVolume": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolumeDisabled": "Nätverk (avstängt)",
+  "@fileExplorer.navigation.networkVolumeDisabled": {
+    "sourceHash": "4ccfa47"
+  },
+  "fileExplorer.navigation.searchResultsVolume": "Sökresultat",
+  "@fileExplorer.navigation.searchResultsVolume": {
+    "sourceHash": "e978b00"
+  },
+  "fileExplorer.navigation.volumeFallback": "Volym",
+  "@fileExplorer.navigation.volumeFallback": {
+    "sourceHash": "b10fb96"
+  },
+  "fileExplorer.navigation.favoritesEmpty": "(Dina favoriter visas här)",
+  "@fileExplorer.navigation.favoritesEmpty": {
+    "sourceHash": "b4f099e"
+  },
+  "fileExplorer.navigation.favoriteTooltip": "{path}\nDra för att ändra ordning, eller {reorder}. Högerklicka för att byta namn eller ta bort.",
+  "@fileExplorer.navigation.favoriteTooltip": {
+    "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.renameFavoriteAriaLabel": "Byt namn på favorit",
+  "@fileExplorer.navigation.renameFavoriteAriaLabel": {
+    "sourceHash": "5f4fcbb"
+  },
+  "fileExplorer.navigation.removeFavoriteFailed": "Det gick inte att ta bort den favoriten. Försök igen?",
+  "@fileExplorer.navigation.removeFavoriteFailed": {
+    "sourceHash": "181bf36"
+  },
+  "fileExplorer.navigation.renameFavoriteFailed": "Det gick inte att byta namn på den favoriten. Försök igen?",
+  "@fileExplorer.navigation.renameFavoriteFailed": {
+    "sourceHash": "33e06cd"
+  },
+  "fileExplorer.navigation.reorderFavoritesFailed": "Det gick inte att ändra ordning på favoriterna. Försök igen?",
+  "@fileExplorer.navigation.reorderFavoritesFailed": {
+    "sourceHash": "1b16941"
+  },
+  "fileExplorer.navigation.connectionTooltipDirect": "Ansluten direkt för snabba filåtgärder",
+  "@fileExplorer.navigation.connectionTooltipDirect": {
+    "sourceHash": "a69a3ad"
+  },
+  "fileExplorer.navigation.connectionTooltipSystem": "Använder systemanslutning. Använd menyalternativet ”Anslut direkt för snabbare åtkomst” för snabbare åtkomst.",
+  "@fileExplorer.navigation.connectionTooltipSystem": {
+    "sourceHash": "0cbfa05"
+  },
+  "fileExplorer.navigation.connectDirectly": "Anslut direkt för snabbare åtkomst",
+  "@fileExplorer.navigation.connectDirectly": {
+    "sourceHash": "3fbb55a"
+  },
+  "fileExplorer.navigation.connectingDirectly": "Ansluter direkt...",
+  "@fileExplorer.navigation.connectingDirectly": {
+    "sourceHash": "2c431fc"
+  },
+  "fileExplorer.navigation.connectingWithSavedPassword": "Ansluter med det sparade lösenordet...",
+  "@fileExplorer.navigation.connectingWithSavedPassword": {
+    "sourceHash": "1cb249f"
+  },
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan återanvända lösenordet som macOS redan har sparat för ”{displayName}”. Du får en systemfråga om att tillåta åtkomst till Keychain. Det är väntat, så klicka på Tillåt.",
+  "@fileExplorer.navigation.useSavedPasswordMessage": {
+    "sourceHash": "6bb2c1d"
+  },
+  "fileExplorer.navigation.useSavedPasswordTitle": "Använda det sparade lösenordet?",
+  "@fileExplorer.navigation.useSavedPasswordTitle": {
+    "sourceHash": "44b60f6"
+  },
+  "fileExplorer.navigation.useSavedPasswordConfirm": "Använd sparat lösenord",
+  "@fileExplorer.navigation.useSavedPasswordConfirm": {
+    "sourceHash": "95f07b4"
+  },
+  "fileExplorer.navigation.useSavedPasswordCancel": "Ange det i stället",
+  "@fileExplorer.navigation.useSavedPasswordCancel": {
+    "sourceHash": "d54c488"
+  },
+  "fileExplorer.navigation.readOnlyTooltip": "Skrivskyddad",
+  "@fileExplorer.navigation.readOnlyTooltip": {
+    "sourceHash": "72bb908"
+  },
+  "fileExplorer.navigation.volumeOptionsTooltip": "Volymalternativ",
+  "@fileExplorer.navigation.volumeOptionsTooltip": {
+    "sourceHash": "570fb94"
+  },
+  "fileExplorer.navigation.ejectVolumeAriaLabel": "Mata ut {name}",
+  "@fileExplorer.navigation.ejectVolumeAriaLabel": {
+    "sourceHash": "61db18b"
+  },
+  "fileExplorer.navigation.ejectBusyTooltip": "Det går inte att mata ut medan åtgärder pågår på den här enheten",
+  "@fileExplorer.navigation.ejectBusyTooltip": {
+    "sourceHash": "7165c58"
+  },
+  "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
+  "@fileExplorer.navigation.usbSpeed": {
+    "sourceHash": "07cb80b"
+  },
+  "fileExplorer.navigation.usbSpeedNegotiated": "Förhandlad för den här kabeln, porten och enheten",
+  "@fileExplorer.navigation.usbSpeedNegotiated": {
+    "sourceHash": "3731939"
+  },
+  "fileExplorer.navigation.spaceRetryingAuto": "Försöker igen automatiskt…",
+  "@fileExplorer.navigation.spaceRetryingAuto": {
+    "sourceHash": "aa9f4b8"
+  },
+  "fileExplorer.navigation.spaceRetrying": "Försöker igen…",
+  "@fileExplorer.navigation.spaceRetrying": {
+    "sourceHash": "a16c8b1"
+  },
+  "fileExplorer.navigation.spaceRetryingText": "Försöker igen",
+  "@fileExplorer.navigation.spaceRetryingText": {
+    "sourceHash": "f8fe6f8"
+  },
+  "fileExplorer.navigation.spaceStillUnavailable": "Fortfarande otillgänglig. Klicka för att försöka igen",
+  "@fileExplorer.navigation.spaceStillUnavailable": {
+    "sourceHash": "1c37064"
+  },
+  "fileExplorer.navigation.spaceFetchFailed": "Det gick inte att hämta diskutrymme. Klicka för att försöka igen",
+  "@fileExplorer.navigation.spaceFetchFailed": {
+    "sourceHash": "6fe88d7"
+  },
+  "fileExplorer.navigation.spaceUnavailableText": "Otillgänglig",
+  "@fileExplorer.navigation.spaceUnavailableText": {
+    "sourceHash": "ca18449"
+  },
+  "fileExplorer.navigation.volumesStillUnreachable": "Kan fortfarande inte nås. Försök igen senare",
+  "@fileExplorer.navigation.volumesStillUnreachable": {
+    "sourceHash": "e4661d2"
+  },
+  "fileExplorer.navigation.volumesMayBeMissing": "Vissa volymer kan saknas",
+  "@fileExplorer.navigation.volumesMayBeMissing": {
+    "sourceHash": "a5b5792"
+  },
+  "fileExplorer.navigation.refreshVolumeList": "Uppdatera volymlistan",
+  "@fileExplorer.navigation.refreshVolumeList": {
+    "sourceHash": "f668a8c"
+  },
+  "fileExplorer.navigation.driveIndex.ariaLabel": "Indexeringsstatus för enhet",
+  "@fileExplorer.navigation.driveIndex.ariaLabel": {
+    "sourceHash": "ff831be"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "Indexering är avstängd för den här enheten. Slå på den för att se mappstorlekar och söka här.",
+  "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
+    "sourceHash": "61d11e9"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanning": "Indexerar den här enheten…",
+  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
+    "sourceHash": "a17d737"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanningCount": "Indexerar… {countText} {count, plural, one {fil} other {filer}}",
+  "@fileExplorer.navigation.driveIndex.tooltipScanningCount": {
+    "sourceHash": "1449e6e"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": "Indexerar… {countText} {count, plural, one {fil} other {filer}} · {elapsed}",
+  "@fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": {
+    "sourceHash": "e4344e1"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFresh": "Indexerad och uppdaterad. Senast indexerad {date}, tog {duration}.",
+  "@fileExplorer.navigation.driveIndex.tooltipFresh": {
+    "sourceHash": "d036851"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFreshNoScan": "Indexerad och uppdaterad.",
+  "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
+    "sourceHash": "fedc5ae"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStale": "Den här enheten kan ha ändrats medan den var frånkopplad. Storlekar och sökning kan vara lite fel. Sök igenom på nytt för att uppdatera.",
+  "@fileExplorer.navigation.driveIndex.tooltipStale": {
+    "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.menuEnable": "Slå på indexering för den här enheten",
+  "@fileExplorer.navigation.driveIndex.menuEnable": {
+    "sourceHash": "4e06151"
+  },
+  "fileExplorer.navigation.driveIndex.menuRescan": "Sök igenom på nytt nu",
+  "@fileExplorer.navigation.driveIndex.menuRescan": {
+    "sourceHash": "c07d16a"
+  },
+  "fileExplorer.navigation.driveIndex.menuDisable": "Stäng av indexering för den här enheten",
+  "@fileExplorer.navigation.driveIndex.menuDisable": {
+    "sourceHash": "d14cf11"
+  },
+  "fileExplorer.navigation.driveIndex.menuStop": "Stoppa indexering",
+  "@fileExplorer.navigation.driveIndex.menuStop": {
+    "sourceHash": "70ae907"
+  },
+  "fileExplorer.navigation.driveIndex.footer": "Senast indexerad: {date} · tog {duration}",
+  "@fileExplorer.navigation.driveIndex.footer": {
+    "sourceHash": "9877397"
+  },
+  "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationMinSec": {
+    "sourceHash": "57a57d1"
+  },
+  "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationSec": {
+    "sourceHash": "fde82d3"
+  },
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr kunde inte ansluta direkt till {name}, vilket krävs för att indexera den här delningen. Kontrollera att delningen går att nå och försök igen.",
+  "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
+    "sourceHash": "e7ac9b4"
+  },
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} är frånkopplad. Återanslut den och slå sedan på indexering.",
+  "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
+    "sourceHash": "0cf83a1"
+  },
+  "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr kan inte indexera {name} just nu. Återanslut enheten och försök igen.",
+  "@fileExplorer.navigation.driveIndex.refusedGeneric": {
+    "sourceHash": "ac46209"
+  }
+}

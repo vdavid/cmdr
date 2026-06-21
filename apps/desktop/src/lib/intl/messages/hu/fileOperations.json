@@ -1,0 +1,470 @@
+{
+  "fileOperations.button.cancel": "Mégsem",
+  "@fileOperations.button.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileOperations.button.ok": "OK",
+  "@fileOperations.button.ok": {
+    "sourceHash": "565339b"
+  },
+  "fileOperations.delete.fromPath": "Innen: {path}",
+  "@fileOperations.delete.fromPath": {
+    "sourceHash": "12851d4"
+  },
+  "fileOperations.delete.noTrashWarningStrong": "Ez a kötet nem támogatja a Kukát.",
+  "@fileOperations.delete.noTrashWarningStrong": {
+    "sourceHash": "ef122e2"
+  },
+  "fileOperations.delete.noTrashWarningRest": "A fájlok véglegesen törlődnek.",
+  "@fileOperations.delete.noTrashWarningRest": {
+    "sourceHash": "0d73f99"
+  },
+  "fileOperations.delete.toggleTrash": "Kuka",
+  "@fileOperations.delete.toggleTrash": {
+    "sourceHash": "c560122"
+  },
+  "fileOperations.delete.toggleDelete": "Törlés",
+  "@fileOperations.delete.toggleDelete": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileOperations.delete.overflowMore": "… és még {countText} {count, plural, one {elem} other {elem}}",
+  "@fileOperations.delete.overflowMore": {
+    "sourceHash": "2fb7f0e"
+  },
+  "fileOperations.delete.scanFile": "{count, plural, one {fájl} other {fájl}}",
+  "@fileOperations.delete.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.delete.scanDir": "{count, plural, one {mappa} other {mappa}}",
+  "@fileOperations.delete.scanDir": {
+    "sourceHash": "1c5273d"
+  },
+  "fileOperations.delete.throughputFiles": "{rateText} fájl/s",
+  "@fileOperations.delete.throughputFiles": {
+    "sourceHash": "c3b28a4"
+  },
+  "fileOperations.delete.confirmDeletePermanently": "Végleges törlés",
+  "@fileOperations.delete.confirmDeletePermanently": {
+    "sourceHash": "280b10c"
+  },
+  "fileOperations.delete.confirmMoveToTrash": "Áthelyezés a Kukába",
+  "@fileOperations.delete.confirmMoveToTrash": {
+    "sourceHash": "b250a45"
+  },
+  "fileOperations.delete.titleCursorFile": "A kurzor alatti 1 fájl törlése",
+  "@fileOperations.delete.titleCursorFile": {
+    "sourceHash": "ab3d591"
+  },
+  "fileOperations.delete.titleCursorFolder": "A kurzor alatti 1 mappa törlése",
+  "@fileOperations.delete.titleCursorFolder": {
+    "sourceHash": "91acb54"
+  },
+  "fileOperations.delete.titleFallback": "Törlés",
+  "@fileOperations.delete.titleFallback": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileOperations.delete.titleSelected": "{phrase} törlése",
+  "@fileOperations.delete.titleSelected": {
+    "sourceHash": "66cbe54"
+  },
+  "fileOperations.delete.selectedFilesPart": "{countText} kijelölt {count, plural, one {fájl} other {fájl}}",
+  "@fileOperations.delete.selectedFilesPart": {
+    "sourceHash": "c444d06"
+  },
+  "fileOperations.delete.foldersPart": "{countText} {count, plural, one {mappa} other {mappa}}",
+  "@fileOperations.delete.foldersPart": {
+    "sourceHash": "9bd56b2"
+  },
+  "fileOperations.delete.symlinkNoticeSingle": "Ez az elem egy szimbolikus link. Csak a link törlődik, a célja nem.",
+  "@fileOperations.delete.symlinkNoticeSingle": {
+    "sourceHash": "c5a4259"
+  },
+  "fileOperations.delete.symlinkNoticeMany": "A kijelölésed {countText} {count, plural, one {szimbolikus linket} other {szimbolikus linket}} tartalmaz. Csak maguk a linkek törlődnek, a céljaik nem.",
+  "@fileOperations.delete.symlinkNoticeMany": {
+    "sourceHash": "56b3f52"
+  },
+  "fileOperations.mkfile.title": "Új fájl",
+  "@fileOperations.mkfile.title": {
+    "sourceHash": "44dedd0"
+  },
+  "fileOperations.mkfile.createIn": "Fájl létrehozása itt: <dir>{name}</dir>",
+  "@fileOperations.mkfile.createIn": {
+    "sourceHash": "20f4a68"
+  },
+  "fileOperations.mkfile.nameAria": "Fájlnév",
+  "@fileOperations.mkfile.nameAria": {
+    "sourceHash": "3efed3d"
+  },
+  "fileOperations.mkfile.placeholder": "Például: jegyzetek.txt",
+  "@fileOperations.mkfile.placeholder": {
+    "sourceHash": "f6b4613"
+  },
+  "fileOperations.mkdir.title": "Új mappa",
+  "@fileOperations.mkdir.title": {
+    "sourceHash": "cf28f49"
+  },
+  "fileOperations.mkdir.createIn": "Mappa létrehozása itt: <dir>{name}</dir>",
+  "@fileOperations.mkdir.createIn": {
+    "sourceHash": "392aa18"
+  },
+  "fileOperations.mkdir.nameAria": "Mappanév",
+  "@fileOperations.mkdir.nameAria": {
+    "sourceHash": "14d34ed"
+  },
+  "fileOperations.mkdir.placeholder": "Például: uj-projekt",
+  "@fileOperations.mkdir.placeholder": {
+    "sourceHash": "7612b56"
+  },
+  "fileOperations.mkdir.timeoutMessage": "Nem sikerült megerősíteni, hogy a mappa létrejött. Lehet, hogy a kötet lassú, így a mappa attól még létrejöhetett.",
+  "@fileOperations.mkdir.timeoutMessage": {
+    "sourceHash": "751aec6"
+  },
+  "fileOperations.mkdir.timeoutRefresh": "Fájllista frissítése",
+  "@fileOperations.mkdir.timeoutRefresh": {
+    "sourceHash": "b0e5436"
+  },
+  "fileOperations.mkdir.timeoutDismiss": "Elvetés",
+  "@fileOperations.mkdir.timeoutDismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileOperations.mkdir.aiSuggestionsAria": "AI-javaslatok",
+  "@fileOperations.mkdir.aiSuggestionsAria": {
+    "sourceHash": "1a1f5b9"
+  },
+  "fileOperations.mkdir.aiSuggestionsHeader": "AI-javaslatok:",
+  "@fileOperations.mkdir.aiSuggestionsHeader": {
+    "sourceHash": "5232616"
+  },
+  "fileOperations.shared.conflictExistsFolder": "Már van ilyen nevű mappa ebben a mappában.",
+  "@fileOperations.shared.conflictExistsFolder": {
+    "sourceHash": "32999f3"
+  },
+  "fileOperations.shared.conflictExistsFile": "Már van ilyen nevű fájl ebben a mappában.",
+  "@fileOperations.shared.conflictExistsFile": {
+    "sourceHash": "3046c16"
+  },
+  "fileOperations.shared.byteRate": "<size></size>/s",
+  "@fileOperations.shared.byteRate": {
+    "sourceHash": "4a55710"
+  },
+  "fileOperations.shared.andJoin": "{a} és {b}",
+  "@fileOperations.shared.andJoin": {
+    "sourceHash": "04f767b"
+  },
+  "fileOperations.transferDialog.toggleCopy": "Másolás",
+  "@fileOperations.transferDialog.toggleCopy": {
+    "sourceHash": "e21f935"
+  },
+  "fileOperations.transferDialog.toggleMove": "Áthelyezés",
+  "@fileOperations.transferDialog.toggleMove": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.destVolumeAria": "Célkötet",
+  "@fileOperations.transferDialog.destVolumeAria": {
+    "sourceHash": "e13cc1d"
+  },
+  "fileOperations.transferDialog.destPathAria": "Célútvonal",
+  "@fileOperations.transferDialog.destPathAria": {
+    "sourceHash": "b7c2fd2"
+  },
+  "fileOperations.transferDialog.spaceInfo": "{free} szabad a(z) {total} méretből",
+  "@fileOperations.transferDialog.spaceInfo": {
+    "sourceHash": "a46cd4e"
+  },
+  "fileOperations.transferDialog.smbNativeNote": "Ez a megosztás a rendszerkapcsolatot használja. A megszakítás késhet. A gyorsabb átvitelhez és a megbízható megszakításhoz használd a kötetválasztóban a „Közvetlen csatlakozás” lehetőséget.",
+  "@fileOperations.transferDialog.smbNativeNote": {
+    "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.scanFile": "{count, plural, one {fájl} other {fájl}}",
+  "@fileOperations.transferDialog.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.transferDialog.scanDir": "{count, plural, one {mappa} other {mappa}}",
+  "@fileOperations.transferDialog.scanDir": {
+    "sourceHash": "1c5273d"
+  },
+  "fileOperations.transferDialog.hardlinkNote": "<written></written> kerül kiírásra. A forrás <ondisk></ondisk> a lemezen – a többlet hardlinkelt fájlokból adódik, amelyek nem maradhatnak összelinkelve a meghajtók között.",
+  "@fileOperations.transferDialog.hardlinkNote": {
+    "sourceHash": "af8a4c9"
+  },
+  "fileOperations.transferDialog.checkingConflicts": "Ütközések keresése…",
+  "@fileOperations.transferDialog.checkingConflicts": {
+    "sourceHash": "bc10126"
+  },
+  "fileOperations.transferDialog.mergeInfoSingle": "1 mappa egyesül egy meglévő mappával",
+  "@fileOperations.transferDialog.mergeInfoSingle": {
+    "sourceHash": "c8cff01"
+  },
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} mappa egyesül meglévő mappákkal",
+  "@fileOperations.transferDialog.mergeInfoMany": {
+    "sourceHash": "6d734ce"
+  },
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fájl már létezik} other {fájl már létezik}}",
+  "@fileOperations.transferDialog.conflictsSummary": {
+    "sourceHash": "e3ae41e"
+  },
+  "fileOperations.transferDialog.policySkip": "{count, plural, one {Átugrás} other {Összes átugrása}}",
+  "@fileOperations.transferDialog.policySkip": {
+    "sourceHash": "af89aba"
+  },
+  "fileOperations.transferDialog.policyOverwrite": "{count, plural, one {Felülírás} other {Összes felülírása}}",
+  "@fileOperations.transferDialog.policyOverwrite": {
+    "sourceHash": "e81a8ec"
+  },
+  "fileOperations.transferDialog.policyOverwriteSmaller": "{count, plural, one {Felülírás, ha kisebb} other {Összes kisebb felülírása}}",
+  "@fileOperations.transferDialog.policyOverwriteSmaller": {
+    "sourceHash": "6b53558"
+  },
+  "fileOperations.transferDialog.policyOverwriteOlder": "{count, plural, one {Felülírás, ha régebbi} other {Összes régebbi felülírása}}",
+  "@fileOperations.transferDialog.policyOverwriteOlder": {
+    "sourceHash": "97128f3"
+  },
+  "fileOperations.transferDialog.policyStop": "{count, plural, one {Kérdezz később} other {Kérdezz mindegyiknél}}",
+  "@fileOperations.transferDialog.policyStop": {
+    "sourceHash": "61a6295"
+  },
+  "fileOperations.transferDialog.typeMismatchWarning": "Néhány ütközésben egy fájl és egy azonos nevű mappa keveredik. A felülírás eltérő típusú elemeket cserél le, beleértve egy mappa teljes tartalmát is.",
+  "@fileOperations.transferDialog.typeMismatchWarning": {
+    "sourceHash": "76f1ab1"
+  },
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Másolás} move {Áthelyezés} delete {Törlés} other {Áthelyezés a Kukába}}",
+  "@fileOperations.transferDialog.titleVerbOnly": {
+    "sourceHash": "3f4ca13"
+  },
+  "fileOperations.transferDialog.titleWithCounts": "{phrase} {verb, select, copy {másolása} move {áthelyezése} delete {törlése} other {áthelyezése a Kukába}}",
+  "@fileOperations.transferDialog.titleWithCounts": {
+    "sourceHash": "3cf7a5e"
+  },
+  "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {fájl} other {fájl}}",
+  "@fileOperations.transferDialog.filesPart": {
+    "sourceHash": "76ef0a6"
+  },
+  "fileOperations.transferDialog.foldersPart": "{countText} {count, plural, one {mappa} other {mappa}}",
+  "@fileOperations.transferDialog.foldersPart": {
+    "sourceHash": "9bd56b2"
+  },
+  "fileOperations.transferDialog.pathErrorSubfolder": "A(z) „{name}” nem {verb, select, copy {másolható} other {helyezhető át}} a saját almappájába",
+  "@fileOperations.transferDialog.pathErrorSubfolder": {
+    "sourceHash": "4ad1eaf"
+  },
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "A(z) „{name}” már ezen a helyen van",
+  "@fileOperations.transferDialog.pathErrorAlreadyThere": {
+    "sourceHash": "1030a7a"
+  },
+  "fileOperations.transferDialog.confirmCopy": "Másolás",
+  "@fileOperations.transferDialog.confirmCopy": {
+    "sourceHash": "e21f935"
+  },
+  "fileOperations.transferDialog.confirmMove": "Áthelyezés",
+  "@fileOperations.transferDialog.confirmMove": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileOperations.scanPhase.fromLabel": "Innen:",
+  "@fileOperations.scanPhase.fromLabel": {
+    "sourceHash": "dc45d36"
+  },
+  "fileOperations.scanPhase.scanFile": "{count, plural, one {fájl} other {fájl}}",
+  "@fileOperations.scanPhase.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.scanPhase.scanDir": "{count, plural, one {mappa} other {mappa}}",
+  "@fileOperations.scanPhase.scanDir": {
+    "sourceHash": "1c5273d"
+  },
+  "fileOperations.scanPhase.throughputFiles": "{rateText} fájl/s",
+  "@fileOperations.scanPhase.throughputFiles": {
+    "sourceHash": "c3b28a4"
+  },
+  "fileOperations.transferProgress.scanTitleCopy": "Ellenőrzés a másolás előtt…",
+  "@fileOperations.transferProgress.scanTitleCopy": {
+    "sourceHash": "fd21ea9"
+  },
+  "fileOperations.transferProgress.scanTitleMove": "Ellenőrzés az áthelyezés előtt…",
+  "@fileOperations.transferProgress.scanTitleMove": {
+    "sourceHash": "5e79da2"
+  },
+  "fileOperations.transferProgress.scanTitleDelete": "Törlendő elemek számolása…",
+  "@fileOperations.transferProgress.scanTitleDelete": {
+    "sourceHash": "1bb559a"
+  },
+  "fileOperations.transferProgress.scanTitleTrash": "Kukába helyezendő elemek számolása…",
+  "@fileOperations.transferProgress.scanTitleTrash": {
+    "sourceHash": "d11467e"
+  },
+  "fileOperations.transferProgress.rollbackUnavailableTooltip": "A visszagörgetés nem érhető el az azonos köteten belüli áthelyezéseknél",
+  "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
+    "sourceHash": "da6af1f"
+  },
+  "fileOperations.transferProgress.titleRollingBack": "Visszagörgetés…",
+  "@fileOperations.transferProgress.titleRollingBack": {
+    "sourceHash": "c3fed24"
+  },
+  "fileOperations.transferProgress.titleCancelling": "Megszakítás…",
+  "@fileOperations.transferProgress.titleCancelling": {
+    "sourceHash": "7b26131"
+  },
+  "fileOperations.transferProgress.titleCancellingSlow": "Megszakítás… (USB-átvitelek befejezése)",
+  "@fileOperations.transferProgress.titleCancellingSlow": {
+    "sourceHash": "f849d68"
+  },
+  "fileOperations.transferProgress.titleConflict": "A fájl már létezik",
+  "@fileOperations.transferProgress.titleConflict": {
+    "sourceHash": "ae71a9a"
+  },
+  "fileOperations.transferProgress.titleFlushing": "Az utolsó darab kiírása…",
+  "@fileOperations.transferProgress.titleFlushing": {
+    "sourceHash": "e0ba096"
+  },
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Másolás} move {Áthelyezés} delete {Törlés} other {Áthelyezés a Kukába}}…",
+  "@fileOperations.transferProgress.titleActive": {
+    "sourceHash": "8aed5dc"
+  },
+  "fileOperations.transferProgress.stageScanning": "Átvizsgálás",
+  "@fileOperations.transferProgress.stageScanning": {
+    "sourceHash": "474ad81"
+  },
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Másolás} move {Áthelyezés} delete {Törlés} other {Áthelyezés a Kukába}}",
+  "@fileOperations.transferProgress.stageActive": {
+    "sourceHash": "4f1aa07"
+  },
+  "fileOperations.transferProgress.warningFileOverFolder": "A cél létezik, és egy <strong>mappa</strong>. Egy azonos nevű <strong>fájllal</strong> készülsz felülírni. A célmappa teljes tartalma törlődne, és a fájl lépne a helyébe. Mi legyen?",
+  "@fileOperations.transferProgress.warningFileOverFolder": {
+    "sourceHash": "c560c0f"
+  },
+  "fileOperations.transferProgress.existingFolderLabel": "Meglévő (mappa):",
+  "@fileOperations.transferProgress.existingFolderLabel": {
+    "sourceHash": "44cab6d"
+  },
+  "fileOperations.transferProgress.existingFileLabel": "Meglévő (fájl):",
+  "@fileOperations.transferProgress.existingFileLabel": {
+    "sourceHash": "64142a0"
+  },
+  "fileOperations.transferProgress.existingLabel": "Meglévő:",
+  "@fileOperations.transferProgress.existingLabel": {
+    "sourceHash": "4dda67f"
+  },
+  "fileOperations.transferProgress.newFolderLabel": "Új (mappa):",
+  "@fileOperations.transferProgress.newFolderLabel": {
+    "sourceHash": "aa1efc0"
+  },
+  "fileOperations.transferProgress.newFileLabel": "Új (fájl):",
+  "@fileOperations.transferProgress.newFileLabel": {
+    "sourceHash": "a0c9782"
+  },
+  "fileOperations.transferProgress.newLabel": "Új:",
+  "@fileOperations.transferProgress.newLabel": {
+    "sourceHash": "46dafc1"
+  },
+  "fileOperations.transferProgress.sizeUnknown": "(ismeretlen)",
+  "@fileOperations.transferProgress.sizeUnknown": {
+    "sourceHash": "8fe7794"
+  },
+  "fileOperations.transferProgress.annotationLarger": "(nagyobb)",
+  "@fileOperations.transferProgress.annotationLarger": {
+    "sourceHash": "71a1ffa"
+  },
+  "fileOperations.transferProgress.annotationNewer": "(újabb)",
+  "@fileOperations.transferProgress.annotationNewer": {
+    "sourceHash": "92afdbd"
+  },
+  "fileOperations.transferProgress.smallerDisabledTooltip": "Nem hasonlítható össze: a célmappa mérete ismeretlen.",
+  "@fileOperations.transferProgress.smallerDisabledTooltip": {
+    "sourceHash": "3bb25be"
+  },
+  "fileOperations.transferProgress.conflictSkip": "Átugrás",
+  "@fileOperations.transferProgress.conflictSkip": {
+    "sourceHash": "28d0359"
+  },
+  "fileOperations.transferProgress.conflictSkipAll": "Összes átugrása",
+  "@fileOperations.transferProgress.conflictSkipAll": {
+    "sourceHash": "5fc4280"
+  },
+  "fileOperations.transferProgress.conflictRename": "Átnevezés",
+  "@fileOperations.transferProgress.conflictRename": {
+    "sourceHash": "3064d79"
+  },
+  "fileOperations.transferProgress.conflictRenameAll": "Összes átnevezése",
+  "@fileOperations.transferProgress.conflictRenameAll": {
+    "sourceHash": "c58387b"
+  },
+  "fileOperations.transferProgress.conflictOverwrite": "Felülírás",
+  "@fileOperations.transferProgress.conflictOverwrite": {
+    "sourceHash": "b24963e"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAll": "Összes felülírása",
+  "@fileOperations.transferProgress.conflictOverwriteAll": {
+    "sourceHash": "4662d17"
+  },
+  "fileOperations.transferProgress.conflictOverwriteFolderWithFile": "Mappa felülírása fájllal",
+  "@fileOperations.transferProgress.conflictOverwriteFolderWithFile": {
+    "sourceHash": "0589e60"
+  },
+  "fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": "Mappák felülírása fájlokkal",
+  "@fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": {
+    "sourceHash": "9f4661a"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAllSmaller": "Összes kisebb felülírása",
+  "@fileOperations.transferProgress.conflictOverwriteAllSmaller": {
+    "sourceHash": "2c9bbed"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAllOlder": "Összes régebbi felülírása",
+  "@fileOperations.transferProgress.conflictOverwriteAllOlder": {
+    "sourceHash": "b07b06a"
+  },
+  "fileOperations.transferProgress.conflictCancel": "Mégsem",
+  "@fileOperations.transferProgress.conflictCancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileOperations.transferProgress.conflictRollback": "Visszagörgetés",
+  "@fileOperations.transferProgress.conflictRollback": {
+    "sourceHash": "c591f55"
+  },
+  "fileOperations.transferProgress.progressSize": "Méret",
+  "@fileOperations.transferProgress.progressSize": {
+    "sourceHash": "1af8519"
+  },
+  "fileOperations.transferProgress.progressItems": "Elemek",
+  "@fileOperations.transferProgress.progressItems": {
+    "sourceHash": "fb8e7a1"
+  },
+  "fileOperations.transferProgress.progressFiles": "Fájlok",
+  "@fileOperations.transferProgress.progressFiles": {
+    "sourceHash": "abc7e98"
+  },
+  "fileOperations.transferProgress.sizeProgressAria": "Méret-előrehaladás",
+  "@fileOperations.transferProgress.sizeProgressAria": {
+    "sourceHash": "60ec57d"
+  },
+  "fileOperations.transferProgress.fileProgressAria": "Fájl-előrehaladás",
+  "@fileOperations.transferProgress.fileProgressAria": {
+    "sourceHash": "07db117"
+  },
+  "fileOperations.transferProgress.etaRemaining": "~{duration} van hátra",
+  "@fileOperations.transferProgress.etaRemaining": {
+    "sourceHash": "5bbf895"
+  },
+  "fileOperations.transferProgress.smbNativeNote": "Ez a megosztás a rendszerkapcsolatot használja. A megszakítás és a visszagörgetés késhet.",
+  "@fileOperations.transferProgress.smbNativeNote": {
+    "sourceHash": "5344d07"
+  },
+  "fileOperations.transferProgress.rollbackTooltip": "Megszakítás, és a létrehozott részleges célfájlok törlése",
+  "@fileOperations.transferProgress.rollbackTooltip": {
+    "sourceHash": "df77f8e"
+  },
+  "fileOperations.errorDialog.technicalDetails": "Technikai részletek",
+  "@fileOperations.errorDialog.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileOperations.errorDialog.technicalDetailsAria": "Technikai hibarészletek",
+  "@fileOperations.errorDialog.technicalDetailsAria": {
+    "sourceHash": "708186c"
+  },
+  "fileOperations.errorDialog.retry": "Újra",
+  "@fileOperations.errorDialog.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.close": "Bezárás",
+  "@fileOperations.errorDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

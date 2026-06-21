@@ -1,0 +1,1242 @@
+{
+  "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Linker} other {Rechter}} Dateibereich",
+  "@fileExplorer.pane.filePaneAriaLabel": {
+    "sourceHash": "77f3961"
+  },
+  "fileExplorer.pane.diskUsageAriaLabel": "Speicherbelegung",
+  "@fileExplorer.pane.diskUsageAriaLabel": {
+    "sourceHash": "4fe60c1"
+  },
+  "fileExplorer.pane.resizePanesAriaLabel": "Bereiche anpassen",
+  "@fileExplorer.pane.resizePanesAriaLabel": {
+    "sourceHash": "ff22a46"
+  },
+  "fileExplorer.pane.fileExplorerAriaLabel": "Dateimanager",
+  "@fileExplorer.pane.fileExplorerAriaLabel": {
+    "sourceHash": "bfd3c67"
+  },
+  "fileExplorer.pane.disconnectFailedToast": "Trennen nicht möglich: {message}",
+  "@fileExplorer.pane.disconnectFailedToast": {
+    "sourceHash": "ac9e8e0"
+  },
+  "fileExplorer.pane.connectedDirectlyToast": "Direkt verbunden für schnelleren Zugriff",
+  "@fileExplorer.pane.connectedDirectlyToast": {
+    "sourceHash": "5c6bcd2"
+  },
+  "fileExplorer.pane.directConnectionFailedToast": "Direkte Verbindung nicht möglich: {message}",
+  "@fileExplorer.pane.directConnectionFailedToast": {
+    "sourceHash": "3c6d599"
+  },
+  "fileExplorer.pane.trashUnconfirmedToast": "Es ließ sich nicht bestätigen, dass die Datei in den Papierkorb bewegt wurde. Das Volume ist vielleicht langsam, aber die Datei wurde möglicherweise trotzdem bewegt. Sieh zur Sicherheit im Papierkorb nach.",
+  "@fileExplorer.pane.trashUnconfirmedToast": {
+    "sourceHash": "844ccc1"
+  },
+  "fileExplorer.pane.ejectFailedToast": "{volumeName} ließ sich nicht auswerfen: {message}",
+  "@fileExplorer.pane.ejectFailedToast": {
+    "sourceHash": "b22501d"
+  },
+  "fileExplorer.errorPane.tryAgain": "Erneut versuchen",
+  "@fileExplorer.errorPane.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.errorPane.openSystemSettings": "{systemSettings} öffnen",
+  "@fileExplorer.errorPane.openSystemSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "fileExplorer.errorPane.technicalDetails": "Technische Details",
+  "@fileExplorer.errorPane.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileExplorer.errorPane.aMomentAgo": "gerade eben",
+  "@fileExplorer.errorPane.aMomentAgo": {
+    "sourceHash": "65b0cae"
+  },
+  "fileExplorer.errorPane.secondsAgo": "vor {seconds} s",
+  "@fileExplorer.errorPane.secondsAgo": {
+    "sourceHash": "b5907e4"
+  },
+  "fileExplorer.errorPane.minutesAgo": "vor {minutes} min",
+  "@fileExplorer.errorPane.minutesAgo": {
+    "sourceHash": "0e91828"
+  },
+  "fileExplorer.errorPane.hoursAgo": "vor {hours} h",
+  "@fileExplorer.errorPane.hoursAgo": {
+    "sourceHash": "bbfb1e5"
+  },
+  "fileExplorer.errorPane.retryInfo": "Versuch #{count} · erster Versuch {firstAgo}",
+  "@fileExplorer.errorPane.retryInfo": {
+    "sourceHash": "03bb746"
+  },
+  "fileExplorer.errorPane.retryInfoWithLast": "Versuch #{count} · erster Versuch {firstAgo} · letzter Versuch {lastAgo}",
+  "@fileExplorer.errorPane.retryInfoWithLast": {
+    "sourceHash": "e11bb94"
+  },
+  "fileExplorer.functionKeyBar.toolbarAriaLabel": "Funktionstasten",
+  "@fileExplorer.functionKeyBar.toolbarAriaLabel": {
+    "sourceHash": "f69e00d"
+  },
+  "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
+  "@fileExplorer.functionKeyBar.actionWithShortcut": {
+    "sourceHash": "49e258f"
+  },
+  "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (keine Umschalt-Aktion)",
+  "@fileExplorer.functionKeyBar.noShiftAction": {
+    "sourceHash": "83b9f17"
+  },
+  "fileExplorer.functionKeyBar.newFileLabel": "Neue Datei",
+  "@fileExplorer.functionKeyBar.newFileLabel": {
+    "sourceHash": "44dedd0"
+  },
+  "fileExplorer.functionKeyBar.newFileAction": "Neue Datei erstellen",
+  "@fileExplorer.functionKeyBar.newFileAction": {
+    "sourceHash": "6e70b95"
+  },
+  "fileExplorer.functionKeyBar.renameLabel": "Umbenennen",
+  "@fileExplorer.functionKeyBar.renameLabel": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.renameAction": "Umbenennen",
+  "@fileExplorer.functionKeyBar.renameAction": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.permanentlyLabel": "Endgültig",
+  "@fileExplorer.functionKeyBar.permanentlyLabel": {
+    "sourceHash": "d06138e"
+  },
+  "fileExplorer.functionKeyBar.deletePermanentlyAction": "Endgültig löschen",
+  "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
+    "sourceHash": "280b10c"
+  },
+  "fileExplorer.functionKeyBar.viewLabel": "Anzeigen",
+  "@fileExplorer.functionKeyBar.viewLabel": {
+    "sourceHash": "dcc839a"
+  },
+  "fileExplorer.functionKeyBar.viewAction": "Datei anzeigen",
+  "@fileExplorer.functionKeyBar.viewAction": {
+    "sourceHash": "6ef3f36"
+  },
+  "fileExplorer.functionKeyBar.editLabel": "Bearbeiten",
+  "@fileExplorer.functionKeyBar.editLabel": {
+    "sourceHash": "464c4ff"
+  },
+  "fileExplorer.functionKeyBar.editAction": "Datei bearbeiten",
+  "@fileExplorer.functionKeyBar.editAction": {
+    "sourceHash": "9608dd1"
+  },
+  "fileExplorer.functionKeyBar.copyLabel": "Kopieren",
+  "@fileExplorer.functionKeyBar.copyLabel": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.copyAction": "Kopieren",
+  "@fileExplorer.functionKeyBar.copyAction": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.moveLabel": "Bewegen",
+  "@fileExplorer.functionKeyBar.moveLabel": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.moveAction": "Bewegen",
+  "@fileExplorer.functionKeyBar.moveAction": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.newFolderLabel": "Neuer Ordner",
+  "@fileExplorer.functionKeyBar.newFolderLabel": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.newFolderAction": "Neuer Ordner",
+  "@fileExplorer.functionKeyBar.newFolderAction": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.deleteLabel": "Löschen",
+  "@fileExplorer.functionKeyBar.deleteLabel": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.functionKeyBar.deleteAction": "Löschen",
+  "@fileExplorer.functionKeyBar.deleteAction": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.typeToJump.ariaLabel": "Springe zu {buffer}",
+  "@fileExplorer.typeToJump.ariaLabel": {
+    "sourceHash": "da879a5"
+  },
+  "fileExplorer.typeToJump.prefix": "Springen: ",
+  "@fileExplorer.typeToJump.prefix": {
+    "sourceHash": "e9e3412"
+  },
+  "fileExplorer.searchResults.unavailableTitle": "Suchergebnisse nicht mehr verfügbar",
+  "@fileExplorer.searchResults.unavailableTitle": {
+    "sourceHash": "ebcc5a7"
+  },
+  "fileExplorer.searchResults.unavailableBody": "Die Ergebnisse dieser Suche wurden verworfen. Öffne eine neue Suche, um von vorn zu beginnen.",
+  "@fileExplorer.searchResults.unavailableBody": {
+    "sourceHash": "3e4cfa2"
+  },
+  "fileExplorer.network.cancel": "Abbrechen",
+  "@fileExplorer.network.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.network.connect": "Verbinden",
+  "@fileExplorer.network.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "fileExplorer.network.connecting": "Verbindung wird hergestellt …",
+  "@fileExplorer.network.connecting": {
+    "sourceHash": "5f04ae9"
+  },
+  "fileExplorer.network.back": "Zurück",
+  "@fileExplorer.network.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.network.retry": "Erneut versuchen",
+  "@fileExplorer.network.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.network.signIn": "Anmelden",
+  "@fileExplorer.network.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "fileExplorer.network.authFailed": "Anmeldung nicht möglich",
+  "@fileExplorer.network.authFailed": {
+    "sourceHash": "93821eb"
+  },
+  "fileExplorer.network.connectDialog.title": "Mit Server verbinden",
+  "@fileExplorer.network.connectDialog.title": {
+    "sourceHash": "de6cce0"
+  },
+  "fileExplorer.network.connectDialog.addressAriaLabel": "Serveradresse",
+  "@fileExplorer.network.connectDialog.addressAriaLabel": {
+    "sourceHash": "8be8971"
+  },
+  "fileExplorer.network.connectDialog.addressPlaceholder": "Hostname, IP-Adresse oder smb://-URL",
+  "@fileExplorer.network.connectDialog.addressPlaceholder": {
+    "sourceHash": "60c33b2"
+  },
+  "fileExplorer.network.connectDialog.examples": "Beispiele: mynas.local, 192.168.1.100, smb://server/share",
+  "@fileExplorer.network.connectDialog.examples": {
+    "sourceHash": "10794ec"
+  },
+  "fileExplorer.network.browser.colName": "Name",
+  "@fileExplorer.network.browser.colName": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.network.browser.colIp": "IP-Adresse",
+  "@fileExplorer.network.browser.colIp": {
+    "sourceHash": "0302a46"
+  },
+  "fileExplorer.network.browser.colHostname": "Hostname",
+  "@fileExplorer.network.browser.colHostname": {
+    "sourceHash": "2db5335"
+  },
+  "fileExplorer.network.browser.colShares": "Freigaben",
+  "@fileExplorer.network.browser.colShares": {
+    "sourceHash": "d4ea333"
+  },
+  "fileExplorer.network.browser.colStatus": "Status",
+  "@fileExplorer.network.browser.colStatus": {
+    "sourceHash": "920e413"
+  },
+  "fileExplorer.network.browser.fetching": "wird abgerufen …",
+  "@fileExplorer.network.browser.fetching": {
+    "sourceHash": "9e6ab8c"
+  },
+  "fileExplorer.network.browser.unknown": "(unbekannt)",
+  "@fileExplorer.network.browser.unknown": {
+    "sourceHash": "8fe7794"
+  },
+  "fileExplorer.network.browser.searching": "Suche läuft …",
+  "@fileExplorer.network.browser.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "fileExplorer.network.browser.connectToServerRow": "Mit Server verbinden …",
+  "@fileExplorer.network.browser.connectToServerRow": {
+    "sourceHash": "1bf4858"
+  },
+  "fileExplorer.network.browser.noHostsTitle": "Keine Netzwerk-Hosts gefunden",
+  "@fileExplorer.network.browser.noHostsTitle": {
+    "sourceHash": "e8dfaf2"
+  },
+  "fileExplorer.network.browser.noHostsMessage": "Stell sicher, dass du in einem Netzwerk mit SMB-fähigen Geräten bist.",
+  "@fileExplorer.network.browser.noHostsMessage": {
+    "sourceHash": "b1cb7ba"
+  },
+  "fileExplorer.network.browser.refresh": "Aktualisieren",
+  "@fileExplorer.network.browser.refresh": {
+    "sourceHash": "0e91610"
+  },
+  "fileExplorer.network.browser.refreshAriaLabel": "Netzwerk-Hosts aktualisieren",
+  "@fileExplorer.network.browser.refreshAriaLabel": {
+    "sourceHash": "73966bd"
+  },
+  "fileExplorer.network.browser.refreshHint": "Drücke <key></key> oder klicke hier zum Aktualisieren",
+  "@fileExplorer.network.browser.refreshHint": {
+    "sourceHash": "7f65c7d"
+  },
+  "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} Host} other {{countText} Hosts}}",
+  "@fileExplorer.network.browser.hostCount": {
+    "sourceHash": "41843ee"
+  },
+  "fileExplorer.network.browser.status.resolving": "Wird aufgelöst …",
+  "@fileExplorer.network.browser.status.resolving": {
+    "sourceHash": "0660108"
+  },
+  "fileExplorer.network.browser.status.waitingForNetwork": "Warte auf Netzwerk …",
+  "@fileExplorer.network.browser.status.waitingForNetwork": {
+    "sourceHash": "78199e3"
+  },
+  "fileExplorer.network.browser.status.notChecked": "Nicht geprüft",
+  "@fileExplorer.network.browser.status.notChecked": {
+    "sourceHash": "d16948e"
+  },
+  "fileExplorer.network.browser.status.loggedIn": "🔑 Angemeldet{infoIcon}",
+  "@fileExplorer.network.browser.status.loggedIn": {
+    "sourceHash": "1e386ce"
+  },
+  "fileExplorer.network.browser.status.loginFailed": "⚠️ Anmeldung nicht möglich{infoIcon}",
+  "@fileExplorer.network.browser.status.loginFailed": {
+    "sourceHash": "1659c9c"
+  },
+  "fileExplorer.network.browser.status.loginNeeded": "🔒 Anmeldung erforderlich{infoIcon}",
+  "@fileExplorer.network.browser.status.loginNeeded": {
+    "sourceHash": "bd7375e"
+  },
+  "fileExplorer.network.browser.status.timeout": "⏱️ Zeitüberschreitung{infoIcon}",
+  "@fileExplorer.network.browser.status.timeout": {
+    "sourceHash": "3673628"
+  },
+  "fileExplorer.network.browser.status.unreachable": "❌ Nicht erreichbar{infoIcon}",
+  "@fileExplorer.network.browser.status.unreachable": {
+    "sourceHash": "1198fd4"
+  },
+  "fileExplorer.network.browser.status.error": "⚠️ Problem{infoIcon}",
+  "@fileExplorer.network.browser.status.error": {
+    "sourceHash": "de7c260"
+  },
+  "fileExplorer.network.browser.status.loggedInOk": "✓ Angemeldet",
+  "@fileExplorer.network.browser.status.loggedInOk": {
+    "sourceHash": "205adc9"
+  },
+  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Angemeldet 🔄",
+  "@fileExplorer.network.browser.status.loggedInOkStale": {
+    "sourceHash": "f83f6a1"
+  },
+  "fileExplorer.network.browser.status.guest": "✓ Gast",
+  "@fileExplorer.network.browser.status.guest": {
+    "sourceHash": "aaa35d1"
+  },
+  "fileExplorer.network.browser.status.guestStale": "✓ Gast 🔄",
+  "@fileExplorer.network.browser.status.guestStale": {
+    "sourceHash": "1e2b875"
+  },
+  "fileExplorer.network.browser.status.connected": "✓ Verbunden",
+  "@fileExplorer.network.browser.status.connected": {
+    "sourceHash": "c8c8815"
+  },
+  "fileExplorer.network.browser.status.connectedStale": "✓ Verbunden 🔄",
+  "@fileExplorer.network.browser.status.connectedStale": {
+    "sourceHash": "0cf4d3d"
+  },
+  "fileExplorer.network.browser.tooltip.resolving": "Hostname und IP-Adresse werden aufgelöst …",
+  "@fileExplorer.network.browser.tooltip.resolving": {
+    "sourceHash": "1dc4c96"
+  },
+  "fileExplorer.network.browser.tooltip.waitingForNetwork": "Warte auf die Namensauflösung im Netzwerk",
+  "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
+    "sourceHash": "81ac569"
+  },
+  "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Doppelklicke, um zu verbinden und Freigaben anzuzeigen",
+  "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
+    "sourceHash": "a068f74"
+  },
+  "fileExplorer.network.browser.tooltip.credsStored": "Anmeldedaten gespeichert. Doppelklicke zum Verbinden.",
+  "@fileExplorer.network.browser.tooltip.credsStored": {
+    "sourceHash": "ff82a32"
+  },
+  "fileExplorer.network.browser.tooltip.credsRejected": "Die gespeicherten Anmeldedaten wurden abgelehnt. Melde dich mit aktualisierten Anmeldedaten an.",
+  "@fileExplorer.network.browser.tooltip.credsRejected": {
+    "sourceHash": "a3d55a2"
+  },
+  "fileExplorer.network.browser.tooltip.requiresLogin": "Dieser Host erfordert eine Anmeldung. Doppelklicke, um Anmeldedaten einzugeben.",
+  "@fileExplorer.network.browser.tooltip.requiresLogin": {
+    "sourceHash": "8e64ac0"
+  },
+  "fileExplorer.network.browser.tooltip.authFailed": "Anmeldung nicht möglich. Prüfe deine Anmeldedaten und versuche es erneut.",
+  "@fileExplorer.network.browser.tooltip.authFailed": {
+    "sourceHash": "b8620ab"
+  },
+  "fileExplorer.network.browser.tooltip.errorWithType": "Problem: {reason}",
+  "@fileExplorer.network.browser.tooltip.errorWithType": {
+    "sourceHash": "ee0fd6d"
+  },
+  "fileExplorer.network.browser.cannotRemoveDiscovered": "Erkannte Hosts können nicht entfernt werden",
+  "@fileExplorer.network.browser.cannotRemoveDiscovered": {
+    "sourceHash": "03fabd6"
+  },
+  "fileExplorer.network.browser.removeHostConfirm": "{hostName} aus der Serverliste entfernen?",
+  "@fileExplorer.network.browser.removeHostConfirm": {
+    "sourceHash": "8ecdf1a"
+  },
+  "fileExplorer.network.browser.removeHostConfirmButton": "Entfernen",
+  "@fileExplorer.network.browser.removeHostConfirmButton": {
+    "sourceHash": "c3812fc"
+  },
+  "fileExplorer.network.browser.hostRemoved": "{hostName} entfernt",
+  "@fileExplorer.network.browser.hostRemoved": {
+    "sourceHash": "9e02382"
+  },
+  "fileExplorer.network.browser.hostRemoveFailed": "{hostName} ließ sich nicht entfernen",
+  "@fileExplorer.network.browser.hostRemoveFailed": {
+    "sourceHash": "9120dd2"
+  },
+  "fileExplorer.network.forgotPassword": "Gespeichertes Passwort für {hostName} gelöscht",
+  "@fileExplorer.network.forgotPassword": {
+    "sourceHash": "6b53741"
+  },
+  "fileExplorer.network.deletePasswordFailed": "Gespeichertes Passwort ließ sich nicht löschen",
+  "@fileExplorer.network.deletePasswordFailed": {
+    "sourceHash": "0ff57cb"
+  },
+  "fileExplorer.network.browser.disconnected": "Verbindung zu {hostName} getrennt",
+  "@fileExplorer.network.browser.disconnected": {
+    "sourceHash": "6cb30d3"
+  },
+  "fileExplorer.network.browser.noMountedShares": "Keine eingebundenen Freigaben von {hostName}",
+  "@fileExplorer.network.browser.noMountedShares": {
+    "sourceHash": "913c7e6"
+  },
+  "fileExplorer.network.browser.disconnectFailed": "Trennen nicht möglich: {message}",
+  "@fileExplorer.network.browser.disconnectFailed": {
+    "sourceHash": "ac9e8e0"
+  },
+  "fileExplorer.network.login.title": "Bei „{target}“ anmelden",
+  "@fileExplorer.network.login.title": {
+    "sourceHash": "53a4feb"
+  },
+  "fileExplorer.network.login.guestNowAuth": "Du hast dich zuvor als Gast verbunden. Du kannst dich jetzt anmelden, um mehr Zugriff zu erhalten.",
+  "@fileExplorer.network.login.guestNowAuth": {
+    "sourceHash": "4a0ed4d"
+  },
+  "fileExplorer.network.login.connectionModeLegend": "Verbindungsmodus",
+  "@fileExplorer.network.login.connectionModeLegend": {
+    "sourceHash": "72c0943"
+  },
+  "fileExplorer.network.login.connectAsGuest": "Als Gast verbinden",
+  "@fileExplorer.network.login.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "fileExplorer.network.login.signInWithCredentials": "Mit Anmeldedaten anmelden",
+  "@fileExplorer.network.login.signInWithCredentials": {
+    "sourceHash": "dda85fa"
+  },
+  "fileExplorer.network.login.username": "Benutzername",
+  "@fileExplorer.network.login.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "fileExplorer.network.login.usernamePlaceholderDefault": "Beispiel: barry",
+  "@fileExplorer.network.login.usernamePlaceholderDefault": {
+    "sourceHash": "1b5b09c"
+  },
+  "fileExplorer.network.login.password": "Passwort",
+  "@fileExplorer.network.login.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileExplorer.network.login.passwordPlaceholder": "Passwort eingeben",
+  "@fileExplorer.network.login.passwordPlaceholder": {
+    "sourceHash": "7014aff"
+  },
+  "fileExplorer.network.login.rememberInKeychain": "Im Keychain merken",
+  "@fileExplorer.network.login.rememberInKeychain": {
+    "sourceHash": "3fd7384"
+  },
+  "fileExplorer.network.share.credentialsStoredLocally": "Anmeldedaten lokal gespeichert (kein System-Schlüsselbund erkannt)",
+  "@fileExplorer.network.share.credentialsStoredLocally": {
+    "sourceHash": "18dd24e"
+  },
+  "fileExplorer.network.share.notFound": "Freigabe ''{shareName}'' auf {hostName} nicht gefunden",
+  "@fileExplorer.network.share.notFound": {
+    "sourceHash": "bc3d29a"
+  },
+  "fileExplorer.network.share.invalidCredentials": "Benutzername oder Passwort ungültig. Versuche es erneut.",
+  "@fileExplorer.network.share.invalidCredentials": {
+    "sourceHash": "846d862"
+  },
+  "fileExplorer.network.share.authRequired": "Anmeldung erforderlich. Gib deine Anmeldedaten ein.",
+  "@fileExplorer.network.share.authRequired": {
+    "sourceHash": "0bb6039"
+  },
+  "fileExplorer.network.share.connectionFailed": "Verbindung nicht möglich: {reason}",
+  "@fileExplorer.network.share.connectionFailed": {
+    "sourceHash": "800132e"
+  },
+  "fileExplorer.network.share.connecting": "Verbindung zu {hostName} wird hergestellt …",
+  "@fileExplorer.network.share.connecting": {
+    "sourceHash": "633622a"
+  },
+  "fileExplorer.network.share.connectFailedTitle": "Verbindung zu {hostName} nicht möglich",
+  "@fileExplorer.network.share.connectFailedTitle": {
+    "sourceHash": "06f5c62"
+  },
+  "fileExplorer.network.share.noSharesTitle": "Keine Freigaben verfügbar",
+  "@fileExplorer.network.share.noSharesTitle": {
+    "sourceHash": "56890aa"
+  },
+  "fileExplorer.network.share.noSharesMessage": "Dieser Host hat keine zugänglichen Freigaben, oder eine Anmeldung ist erforderlich.",
+  "@fileExplorer.network.share.noSharesMessage": {
+    "sourceHash": "6633416"
+  },
+  "fileExplorer.network.share.backArrow": "← Zurück",
+  "@fileExplorer.network.share.backArrow": {
+    "sourceHash": "aceb696"
+  },
+  "fileExplorer.network.share.forgetPasswordTooltip": "Gespeichertes Passwort aus dem Keychain entfernen",
+  "@fileExplorer.network.share.forgetPasswordTooltip": {
+    "sourceHash": "f067186"
+  },
+  "fileExplorer.network.share.forgetPassword": "🔑 Gespeichertes Passwort vergessen",
+  "@fileExplorer.network.share.forgetPassword": {
+    "sourceHash": "aa3dca3"
+  },
+  "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} Freigabe} other {{countText} Freigaben}}",
+  "@fileExplorer.network.share.shareCount": {
+    "sourceHash": "4cc6002"
+  },
+  "fileExplorer.network.reconnect.once": "einmal",
+  "@fileExplorer.network.reconnect.once": {
+    "sourceHash": "200651a"
+  },
+  "fileExplorer.network.reconnect.twice": "zweimal",
+  "@fileExplorer.network.reconnect.twice": {
+    "sourceHash": "dc8ffdb"
+  },
+  "fileExplorer.network.reconnect.times": "{count, plural, other {{countText}-mal}}",
+  "@fileExplorer.network.reconnect.times": {
+    "sourceHash": "bf5fc9c"
+  },
+  "fileExplorer.network.reconnect.finalAttempt": "{retried} erneut versucht, dies ist der letzte Versuch. Bei einem Fehlschlag wird die Verbindung getrennt.",
+  "@fileExplorer.network.reconnect.finalAttempt": {
+    "sourceHash": "7418a78"
+  },
+  "fileExplorer.network.reconnect.willTryMore": "{retried} erneut versucht, danach folgen noch {remaining} weitere Versuche.",
+  "@fileExplorer.network.reconnect.willTryMore": {
+    "sourceHash": "a7d887a"
+  },
+  "fileExplorer.mtp.connectTimedOut": "Zeitüberschreitung bei der Verbindung. Das Gerät ist vielleicht langsam oder reagiert nicht.",
+  "@fileExplorer.mtp.connectTimedOut": {
+    "sourceHash": "cc01ae7"
+  },
+  "fileExplorer.mtp.exclusiveAccess": "Eine andere App nutzt dieses Gerät. Führe die ptpcamerad-Lösung aus.",
+  "@fileExplorer.mtp.exclusiveAccess": {
+    "sourceHash": "1fac18c"
+  },
+  "fileExplorer.mtp.deviceNotFound": "Gerät nicht gefunden. Es wurde vielleicht abgesteckt.",
+  "@fileExplorer.mtp.deviceNotFound": {
+    "sourceHash": "15d2382"
+  },
+  "fileExplorer.mtp.disconnected": "Das Gerät wurde getrennt.",
+  "@fileExplorer.mtp.disconnected": {
+    "sourceHash": "57e823a"
+  },
+  "fileExplorer.mtp.deviceBusy": "Gerät ist beschäftigt. Versuche es erneut.",
+  "@fileExplorer.mtp.deviceBusy": {
+    "sourceHash": "7199b1d"
+  },
+  "fileExplorer.mtp.noStorage": "Das Gerät hat keinen zugänglichen Speicher",
+  "@fileExplorer.mtp.noStorage": {
+    "sourceHash": "ff30402"
+  },
+  "fileExplorer.mtp.connecting": "Verbindung zum Gerät wird hergestellt …",
+  "@fileExplorer.mtp.connecting": {
+    "sourceHash": "ad85006"
+  },
+  "fileExplorer.mtp.tryAgain": "Erneut versuchen",
+  "@fileExplorer.mtp.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.mounting": "{target} wird eingebunden …",
+  "@fileExplorer.networkMount.mounting": {
+    "sourceHash": "222982d"
+  },
+  "fileExplorer.networkMount.shareFallback": "Freigabe",
+  "@fileExplorer.networkMount.shareFallback": {
+    "sourceHash": "c3bc45a"
+  },
+  "fileExplorer.networkMount.mountFailedTitle": "Freigabe ließ sich nicht einbinden",
+  "@fileExplorer.networkMount.mountFailedTitle": {
+    "sourceHash": "d59f414"
+  },
+  "fileExplorer.networkMount.tryAgain": "Erneut versuchen",
+  "@fileExplorer.networkMount.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.back": "Zurück",
+  "@fileExplorer.networkMount.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.smbReauth.savedPasswordFailed": "Dein gespeichertes Passwort hat nicht funktioniert. Melde dich an, um die Verbindung wiederherzustellen.",
+  "@fileExplorer.smbReauth.savedPasswordFailed": {
+    "sourceHash": "4561fa9"
+  },
+  "fileExplorer.smbReauth.passwordFailed": "Das hat nicht funktioniert. Prüfe dein Passwort und versuche es erneut.",
+  "@fileExplorer.smbReauth.passwordFailed": {
+    "sourceHash": "5e11a2f"
+  },
+  "fileExplorer.smbReconnect.totalSeconds": "{seconds} Sekunden",
+  "@fileExplorer.smbReconnect.totalSeconds": {
+    "sourceHash": "86d62ab"
+  },
+  "fileExplorer.smbReconnect.totalMinutes": "{minutes} Minuten",
+  "@fileExplorer.smbReconnect.totalMinutes": {
+    "sourceHash": "fc339ba"
+  },
+  "fileExplorer.smbReconnect.title": "Verbindung zum Server wird wiederhergestellt …",
+  "@fileExplorer.smbReconnect.title": {
+    "sourceHash": "7562773"
+  },
+  "fileExplorer.smbReconnect.progressBarAriaLabel": "Zeit bis zum nächsten Verbindungsversuch",
+  "@fileExplorer.smbReconnect.progressBarAriaLabel": {
+    "sourceHash": "d4341c3"
+  },
+  "fileExplorer.smbReconnect.willKeepTrying": "Es wird insgesamt {duration} lang weiterversucht.",
+  "@fileExplorer.smbReconnect.willKeepTrying": {
+    "sourceHash": "e4d25b7"
+  },
+  "fileExplorer.smbReconnect.retryNowTooltip": "Sofort erneut verbinden.",
+  "@fileExplorer.smbReconnect.retryNowTooltip": {
+    "sourceHash": "11525f0"
+  },
+  "fileExplorer.smbReconnect.retryNow": "Jetzt erneut versuchen",
+  "@fileExplorer.smbReconnect.retryNow": {
+    "sourceHash": "5148c3e"
+  },
+  "fileExplorer.smbReconnect.cancelTooltip": "Vorerst aufhören. Die Verbindung bleibt verfügbar. Wechsle zurück, um es erneut zu versuchen.",
+  "@fileExplorer.smbReconnect.cancelTooltip": {
+    "sourceHash": "377638b"
+  },
+  "fileExplorer.smbReconnect.cancel": "Abbrechen",
+  "@fileExplorer.smbReconnect.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.smbReconnect.disconnectTooltip": "Aufhören und die Verbindung zum Server trennen.",
+  "@fileExplorer.smbReconnect.disconnectTooltip": {
+    "sourceHash": "8fba8b0"
+  },
+  "fileExplorer.smbReconnect.disconnect": "Trennen",
+  "@fileExplorer.smbReconnect.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.title": "{path} nicht erreichbar",
+  "@fileExplorer.unreachable.title": {
+    "sourceHash": "586e44c"
+  },
+  "fileExplorer.unreachable.detailSmbGaveUp": "Cmdr hat mehrmals versucht, die Verbindung wiederherzustellen, aber der Server kam nicht zurück. Die Verbindung bleibt vorerst verfügbar. Versuche es erneut oder trenne die Verbindung, um sie zu verwerfen.",
+  "@fileExplorer.unreachable.detailSmbGaveUp": {
+    "sourceHash": "7d8c5fc"
+  },
+  "fileExplorer.unreachable.detailTimeout": "Das Volume für diesen Pfad hat nicht rechtzeitig geantwortet. Es ist vielleicht ein Netzlaufwerk, das gerade nicht verfügbar ist.",
+  "@fileExplorer.unreachable.detailTimeout": {
+    "sourceHash": "61bf814"
+  },
+  "fileExplorer.unreachable.retrying": "Erneuter Versuch läuft …",
+  "@fileExplorer.unreachable.retrying": {
+    "sourceHash": "84a657b"
+  },
+  "fileExplorer.unreachable.retry": "Erneut versuchen",
+  "@fileExplorer.unreachable.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.unreachable.disconnect": "Trennen",
+  "@fileExplorer.unreachable.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.openHome": "Persönlichen Ordner öffnen",
+  "@fileExplorer.unreachable.openHome": {
+    "sourceHash": "a178b4d"
+  },
+  "fileExplorer.clipboard.copied": "{countText} {count, plural, one {Objekt} other {Objekte}} kopiert",
+  "@fileExplorer.clipboard.copied": {
+    "sourceHash": "1c25075"
+  },
+  "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {Objekt} other {Objekte}} bereit zum Bewegen. Zum Abschließen einfügen.",
+  "@fileExplorer.clipboard.cutReady": {
+    "sourceHash": "846d8af"
+  },
+  "fileExplorer.clipboard.useF5FromMtp": "Nutze F5, um Dateien von MTP-Geräten zu kopieren",
+  "@fileExplorer.clipboard.useF5FromMtp": {
+    "sourceHash": "e0dd2b5"
+  },
+  "fileExplorer.clipboard.useF6FromMtp": "Nutze F6, um Dateien von MTP-Geräten zu bewegen",
+  "@fileExplorer.clipboard.useF6FromMtp": {
+    "sourceHash": "cd6f83f"
+  },
+  "fileExplorer.clipboard.useF5ToMtp": "Nutze F5, um Dateien auf MTP-Geräte zu kopieren",
+  "@fileExplorer.clipboard.useF5ToMtp": {
+    "sourceHash": "8c20d0e"
+  },
+  "fileExplorer.clipboard.empty": "Keine Dateien in der Zwischenablage. Kopiere zuerst Dateien mit ⌘C.",
+  "@fileExplorer.clipboard.empty": {
+    "sourceHash": "0cbe304"
+  },
+  "fileExplorer.tabs.limitReached": "Tab-Limit erreicht",
+  "@fileExplorer.tabs.limitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "fileExplorer.tabs.closePinnedConfirm": "Dieser Tab ist fixiert. Trotzdem schließen?",
+  "@fileExplorer.tabs.closePinnedConfirm": {
+    "sourceHash": "d5757f9"
+  },
+  "fileExplorer.tabs.closePinnedTitle": "Fixierten Tab schließen",
+  "@fileExplorer.tabs.closePinnedTitle": {
+    "sourceHash": "5d22e58"
+  },
+  "fileExplorer.readOnly.volumeTitle": "Schreibgeschütztes Volume",
+  "@fileExplorer.readOnly.volumeTitle": {
+    "sourceHash": "e2d3bf1"
+  },
+  "fileExplorer.readOnly.renameMessage": "Dies ist ein schreibgeschütztes Volume. Umbenennen ist hier nicht möglich.",
+  "@fileExplorer.readOnly.renameMessage": {
+    "sourceHash": "2f68994"
+  },
+  "fileExplorer.readOnly.mkdirMessage": "Dies ist ein schreibgeschütztes Volume. Ordner erstellen ist hier nicht möglich.",
+  "@fileExplorer.readOnly.mkdirMessage": {
+    "sourceHash": "01957f0"
+  },
+  "fileExplorer.readOnly.mkfileMessage": "Dies ist ein schreibgeschütztes Volume. Dateien erstellen ist hier nicht möglich.",
+  "@fileExplorer.readOnly.mkfileMessage": {
+    "sourceHash": "c5c28e2"
+  },
+  "fileExplorer.readOnly.deleteMessage": "Dies ist ein schreibgeschütztes Volume. Dateien löschen ist hier nicht möglich.",
+  "@fileExplorer.readOnly.deleteMessage": {
+    "sourceHash": "965a635"
+  },
+  "fileExplorer.readOnly.deviceTitle": "Schreibgeschütztes Gerät",
+  "@fileExplorer.readOnly.deviceTitle": {
+    "sourceHash": "3f79690"
+  },
+  "fileExplorer.readOnly.deviceMessage": "„{name}“ ist schreibgeschützt. Du kannst Dateien davon kopieren, aber nicht darauf.",
+  "@fileExplorer.readOnly.deviceMessage": {
+    "sourceHash": "039488f"
+  },
+  "fileExplorer.rename.hiddenAfterRename": "Deine Datei ist aus der Ansicht verschwunden, weil ausgeblendete Dateien nicht angezeigt werden.",
+  "@fileExplorer.rename.hiddenAfterRename": {
+    "sourceHash": "445d02a"
+  },
+  "fileExplorer.columns.name": "Name",
+  "@fileExplorer.columns.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.columns.ext": "Erw.",
+  "@fileExplorer.columns.ext": {
+    "sourceHash": "8c92eec"
+  },
+  "fileExplorer.columns.size": "Größe",
+  "@fileExplorer.columns.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.columns.modified": "Geändert",
+  "@fileExplorer.columns.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.columns.created": "Erstellt",
+  "@fileExplorer.columns.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.columns.git": "Git",
+  "@fileExplorer.columns.git": {
+    "sourceHash": "b949c92"
+  },
+  "fileExplorer.columns.gitTitle": "Git-Status jeder Datei",
+  "@fileExplorer.columns.gitTitle": {
+    "sourceHash": "c4cc002"
+  },
+  "fileExplorer.list.empty": "Leerer Ordner",
+  "@fileExplorer.list.empty": {
+    "sourceHash": "ca1fd45"
+  },
+  "fileExplorer.list.fileListAriaLabel": "Dateiliste",
+  "@fileExplorer.list.fileListAriaLabel": {
+    "sourceHash": "0728b8e"
+  },
+  "fileExplorer.list.sortColumnsAriaLabel": "Spalten sortieren",
+  "@fileExplorer.list.sortColumnsAriaLabel": {
+    "sourceHash": "21f76f8"
+  },
+  "fileExplorer.dirSize.updatingIndexTooltip": "Index wird aktualisiert: Größe kann sich ändern.",
+  "@fileExplorer.dirSize.updatingIndexTooltip": {
+    "sourceHash": "2689358"
+  },
+  "fileExplorer.dirSize.scanProgressTooltip": "Größen erscheinen, während das Laufwerk durchsucht wird",
+  "@fileExplorer.dirSize.scanProgressTooltip": {
+    "sourceHash": "8151629"
+  },
+  "fileExplorer.dirSize.contentLabel": "Inhalt",
+  "@fileExplorer.dirSize.contentLabel": {
+    "sourceHash": "47bd290"
+  },
+  "fileExplorer.dirSize.onDiskLabel": "Auf dem Datenträger",
+  "@fileExplorer.dirSize.onDiskLabel": {
+    "sourceHash": "00ca4da"
+  },
+  "fileExplorer.dirSize.noPerms": "'<'keine Rechte>",
+  "@fileExplorer.dirSize.noPerms": {
+    "sourceHash": "bf8fb9d"
+  },
+  "fileExplorer.dirSize.noPermsTooltip": "Cmdr fehlt die Berechtigung, diesen Ordner zu lesen",
+  "@fileExplorer.dirSize.noPermsTooltip": {
+    "sourceHash": "4920b4f"
+  },
+  "fileExplorer.dirSize.noFiles": "Keine Dateien",
+  "@fileExplorer.dirSize.noFiles": {
+    "sourceHash": "c219d96"
+  },
+  "fileExplorer.dirSize.noFolders": "keine Ordner",
+  "@fileExplorer.dirSize.noFolders": {
+    "sourceHash": "055fa42"
+  },
+  "fileExplorer.dirSize.fileCount": "{count, plural, one {{countText} Datei} other {{countText} Dateien}}",
+  "@fileExplorer.dirSize.fileCount": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.dirSize.folderCount": "{count, plural, one {{countText} Ordner} other {{countText} Ordner}}",
+  "@fileExplorer.dirSize.folderCount": {
+    "sourceHash": "3c46f04"
+  },
+  "fileExplorer.dirSize.updatingIndexLine": "Index wird aktualisiert, daher kann sich die Größe ändern.",
+  "@fileExplorer.dirSize.updatingIndexLine": {
+    "sourceHash": "ddb01a2"
+  },
+  "fileExplorer.dirSize.dirPlaceholder": "'<'Ordner>",
+  "@fileExplorer.dirSize.dirPlaceholder": {
+    "sourceHash": "1cb5400"
+  },
+  "fileExplorer.dirSize.mismatchTooltipPrefix": "Inhalts- und Datenträgergröße unterscheiden sich deutlich.",
+  "@fileExplorer.dirSize.mismatchTooltipPrefix": {
+    "sourceHash": "3ff9147"
+  },
+  "fileExplorer.selectionTooltip.selected": "Ausgewählt",
+  "@fileExplorer.selectionTooltip.selected": {
+    "sourceHash": "57fd7a0"
+  },
+  "fileExplorer.selectionTooltip.ofTotal": "Von gesamt",
+  "@fileExplorer.selectionTooltip.ofTotal": {
+    "sourceHash": "1269b5a"
+  },
+  "fileExplorer.selectionTooltip.onDiskHeader": "Auf dem Datenträger:",
+  "@fileExplorer.selectionTooltip.onDiskHeader": {
+    "sourceHash": "9795f99"
+  },
+  "fileExplorer.entry.brokenSymlink": "(defekter Symlink)",
+  "@fileExplorer.entry.brokenSymlink": {
+    "sourceHash": "a7ffd43"
+  },
+  "fileExplorer.entry.permissionDenied": "(Zugriff verweigert)",
+  "@fileExplorer.entry.permissionDenied": {
+    "sourceHash": "88cb526"
+  },
+  "fileExplorer.dateTooltip.created": "Erstellt",
+  "@fileExplorer.dateTooltip.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.dateTooltip.lastOpened": "Zuletzt geöffnet",
+  "@fileExplorer.dateTooltip.lastOpened": {
+    "sourceHash": "e300685"
+  },
+  "fileExplorer.dateTooltip.lastMoved": "Zuletzt bewegt („hinzugefügt“)",
+  "@fileExplorer.dateTooltip.lastMoved": {
+    "sourceHash": "450ebc0"
+  },
+  "fileExplorer.dateTooltip.lastModified": "Zuletzt geändert",
+  "@fileExplorer.dateTooltip.lastModified": {
+    "sourceHash": "0fe1058"
+  },
+  "fileExplorer.selectionInfo.nothingHere": "Hier ist nichts.",
+  "@fileExplorer.selectionInfo.nothingHere": {
+    "sourceHash": "140a431"
+  },
+  "fileExplorer.selectionInfo.dir": "ORD",
+  "@fileExplorer.selectionInfo.dir": {
+    "sourceHash": "d313ad9"
+  },
+  "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Größe noch nicht bereit",
+  "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
+    "sourceHash": "4f2542d"
+  },
+  "fileExplorer.selectionInfo.sizeUpdatingAriaLabel": "Größe wird aktualisiert",
+  "@fileExplorer.selectionInfo.sizeUpdatingAriaLabel": {
+    "sourceHash": "f237144"
+  },
+  "fileExplorer.selectionInfo.indexUpdatingTooltip": "Index wird aktualisiert, Größe kann sich ändern.",
+  "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
+    "sourceHash": "2f69a1b"
+  },
+  "fileExplorer.selectionInfo.symlinkHint": "Dieser Ordner enthält symbolische Verknüpfungen. Verlinkter Inhalt wird nicht in die Gesamtsumme einberechnet, um Doppelzählungen zu vermeiden.",
+  "@fileExplorer.selectionInfo.symlinkHint": {
+    "sourceHash": "414ed75"
+  },
+  "fileExplorer.selectionInfo.noSelectionFiles": "{count, plural, one {{countText} Datei} other {{countText} Dateien}}",
+  "@fileExplorer.selectionInfo.noSelectionFiles": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.selectionInfo.noSelectionDirs": " und {count, plural, one {{countText} Ordner} other {{countText} Ordnern}}",
+  "@fileExplorer.selectionInfo.noSelectionDirs": {
+    "sourceHash": "e1259ef"
+  },
+  "fileExplorer.selectionInfo.noSelection": "Keine Auswahl, {files}{dirs}.",
+  "@fileExplorer.selectionInfo.noSelection": {
+    "sourceHash": "beea8ac"
+  },
+  "fileExplorer.tabBar.paneTabsAriaLabel": "Tabs im {paneId} Bereich",
+  "@fileExplorer.tabBar.paneTabsAriaLabel": {
+    "sourceHash": "d641870"
+  },
+  "fileExplorer.tabBar.unreachableAriaLabel": "Nicht erreichbar",
+  "@fileExplorer.tabBar.unreachableAriaLabel": {
+    "sourceHash": "abaa46a"
+  },
+  "fileExplorer.tabBar.pinnedAriaLabel": "Fixiert",
+  "@fileExplorer.tabBar.pinnedAriaLabel": {
+    "sourceHash": "f20c879"
+  },
+  "fileExplorer.tabBar.closeTabTooltip": "Tab schließen",
+  "@fileExplorer.tabBar.closeTabTooltip": {
+    "sourceHash": "50a3f95"
+  },
+  "fileExplorer.tabBar.newTabAriaLabel": "Neuer Tab",
+  "@fileExplorer.tabBar.newTabAriaLabel": {
+    "sourceHash": "1e08fda"
+  },
+  "fileExplorer.summary.fileNoun": "{count, plural, one {Datei} other {Dateien}}",
+  "@fileExplorer.summary.fileNoun": {
+    "sourceHash": "46012b1"
+  },
+  "fileExplorer.summary.dirNoun": "{count, plural, one {Ordner} other {Ordner}}",
+  "@fileExplorer.summary.dirNoun": {
+    "sourceHash": "1c5273d"
+  },
+  "fileExplorer.summary.of": "von",
+  "@fileExplorer.summary.of": {
+    "sourceHash": "28391d3"
+  },
+  "fileExplorer.summary.percentSelectedIn": "({percent} %) ausgewählt in",
+  "@fileExplorer.summary.percentSelectedIn": {
+    "sourceHash": "7e01a02"
+  },
+  "fileExplorer.summary.and": "und",
+  "@fileExplorer.summary.and": {
+    "sourceHash": "6201111"
+  },
+  "fileExplorer.summary.selectedSuffix": "ausgewählt",
+  "@fileExplorer.summary.selectedSuffix": {
+    "sourceHash": "d7cbbb6"
+  },
+  "fileExplorer.renameConflict.title": "Eine Datei mit diesem Namen existiert bereits",
+  "@fileExplorer.renameConflict.title": {
+    "sourceHash": "92ae292"
+  },
+  "fileExplorer.renameConflict.description": "„{name}“ existiert bereits in diesem Ordner. Was möchtest du tun?",
+  "@fileExplorer.renameConflict.description": {
+    "sourceHash": "ded53e8"
+  },
+  "fileExplorer.renameConflict.yours": "{name} (deine)",
+  "@fileExplorer.renameConflict.yours": {
+    "sourceHash": "e907024"
+  },
+  "fileExplorer.renameConflict.existing": "{name} (vorhanden)",
+  "@fileExplorer.renameConflict.existing": {
+    "sourceHash": "0ff925b"
+  },
+  "fileExplorer.renameConflict.size": "Größe",
+  "@fileExplorer.renameConflict.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.renameConflict.modified": "Geändert",
+  "@fileExplorer.renameConflict.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.renameConflict.overwriteTrash": "Überschreiben und alte Datei in den Papierkorb bewegen",
+  "@fileExplorer.renameConflict.overwriteTrash": {
+    "sourceHash": "e0192f6"
+  },
+  "fileExplorer.renameConflict.overwriteDelete": "Überschreiben und alte Datei löschen",
+  "@fileExplorer.renameConflict.overwriteDelete": {
+    "sourceHash": "02093d5"
+  },
+  "fileExplorer.renameConflict.cancel": "Abbrechen",
+  "@fileExplorer.renameConflict.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.renameConflict.continueRenaming": "Weiter umbenennen",
+  "@fileExplorer.renameConflict.continueRenaming": {
+    "sourceHash": "96480ec"
+  },
+  "fileExplorer.extensionChange.title": "Dateiendung ändern?",
+  "@fileExplorer.extensionChange.title": {
+    "sourceHash": "799828d"
+  },
+  "fileExplorer.extensionChange.description": "Möchtest du die Endung wirklich von „.{oldExt}“ zu „.{newExt}“ ändern? Deine Datei wird beim nächsten Öffnen vielleicht in einer anderen App geöffnet.",
+  "@fileExplorer.extensionChange.description": {
+    "sourceHash": "d0f428b"
+  },
+  "fileExplorer.extensionChange.alwaysAllow": "Endungsänderungen immer erlauben",
+  "@fileExplorer.extensionChange.alwaysAllow": {
+    "sourceHash": "52a5c5e"
+  },
+  "fileExplorer.extensionChange.keepOld": ".{oldExt} behalten",
+  "@fileExplorer.extensionChange.keepOld": {
+    "sourceHash": "08808e4"
+  },
+  "fileExplorer.extensionChange.useNew": ".{newExt} verwenden",
+  "@fileExplorer.extensionChange.useNew": {
+    "sourceHash": "b1c0e92"
+  },
+  "fileExplorer.quickLookHint.spaceSelects": "In Cmdr wählt <space></space> standardmäßig die Datei unter dem Cursor aus.",
+  "@fileExplorer.quickLookHint.spaceSelects": {
+    "sourceHash": "192689a"
+  },
+  "fileExplorer.quickLookHint.finderComparison": "Wenn du von Finder kommst, ist das vielleicht ungewohnt, weil Finder mit <space></space> eine „Übersicht“ auslöst.",
+  "@fileExplorer.quickLookHint.finderComparison": {
+    "sourceHash": "2089192"
+  },
+  "fileExplorer.quickLookHint.quickView": "In Cmdr kannst du die Übersicht mit <key></key> auslösen. (<key></key> funktioniert übrigens auch in Finder!)",
+  "@fileExplorer.quickLookHint.quickView": {
+    "sourceHash": "7e4cf33"
+  },
+  "fileExplorer.quickLookHint.enterOpens": "Du kannst auch <enter></enter> verwenden, um Dateien in der Standard-App zu öffnen.",
+  "@fileExplorer.quickLookHint.enterOpens": {
+    "sourceHash": "5c1f2a3"
+  },
+  "fileExplorer.quickLookHint.configurable": "All das lässt sich unter <settingsLink>Einstellungen > Tastaturkurzbefehle</settingsLink> anpassen.",
+  "@fileExplorer.quickLookHint.configurable": {
+    "sourceHash": "a382250"
+  },
+  "fileExplorer.quickLookHint.dontShowAgain": "Nicht mehr anzeigen",
+  "@fileExplorer.quickLookHint.dontShowAgain": {
+    "sourceHash": "d98ab77"
+  },
+  "fileExplorer.navigation.groupFavorites": "Favoriten",
+  "@fileExplorer.navigation.groupFavorites": {
+    "sourceHash": "7a1f2a8"
+  },
+  "fileExplorer.navigation.groupVolumes": "Volumes",
+  "@fileExplorer.navigation.groupVolumes": {
+    "sourceHash": "53a480e"
+  },
+  "fileExplorer.navigation.groupCloud": "Cloud",
+  "@fileExplorer.navigation.groupCloud": {
+    "sourceHash": "b977b95"
+  },
+  "fileExplorer.navigation.groupMobile": "Mobil",
+  "@fileExplorer.navigation.groupMobile": {
+    "sourceHash": "cbaad3c"
+  },
+  "fileExplorer.navigation.groupNetwork": "Netzwerk",
+  "@fileExplorer.navigation.groupNetwork": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolume": "Netzwerk",
+  "@fileExplorer.navigation.networkVolume": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolumeDisabled": "Netzwerk (deaktiviert)",
+  "@fileExplorer.navigation.networkVolumeDisabled": {
+    "sourceHash": "4ccfa47"
+  },
+  "fileExplorer.navigation.searchResultsVolume": "Suchergebnisse",
+  "@fileExplorer.navigation.searchResultsVolume": {
+    "sourceHash": "e978b00"
+  },
+  "fileExplorer.navigation.volumeFallback": "Volume",
+  "@fileExplorer.navigation.volumeFallback": {
+    "sourceHash": "b10fb96"
+  },
+  "fileExplorer.navigation.favoritesEmpty": "(Deine Favoriten erscheinen hier)",
+  "@fileExplorer.navigation.favoritesEmpty": {
+    "sourceHash": "b4f099e"
+  },
+  "fileExplorer.navigation.favoriteTooltip": "{path}\nZum Umsortieren ziehen oder {reorder}. Rechtsklick zum Umbenennen oder Entfernen.",
+  "@fileExplorer.navigation.favoriteTooltip": {
+    "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.renameFavoriteAriaLabel": "Favorit umbenennen",
+  "@fileExplorer.navigation.renameFavoriteAriaLabel": {
+    "sourceHash": "5f4fcbb"
+  },
+  "fileExplorer.navigation.removeFavoriteFailed": "Dieser Favorit ließ sich nicht entfernen. Erneut versuchen?",
+  "@fileExplorer.navigation.removeFavoriteFailed": {
+    "sourceHash": "181bf36"
+  },
+  "fileExplorer.navigation.renameFavoriteFailed": "Dieser Favorit ließ sich nicht umbenennen. Erneut versuchen?",
+  "@fileExplorer.navigation.renameFavoriteFailed": {
+    "sourceHash": "33e06cd"
+  },
+  "fileExplorer.navigation.reorderFavoritesFailed": "Favoriten ließen sich nicht umsortieren. Erneut versuchen?",
+  "@fileExplorer.navigation.reorderFavoritesFailed": {
+    "sourceHash": "1b16941"
+  },
+  "fileExplorer.navigation.connectionTooltipDirect": "Direkt verbunden für schnelle Dateioperationen",
+  "@fileExplorer.navigation.connectionTooltipDirect": {
+    "sourceHash": "a69a3ad"
+  },
+  "fileExplorer.navigation.connectionTooltipSystem": "Systemverbindung wird genutzt. Nutze den Menüpunkt „Direkt verbinden für schnelleren Zugriff“ für schnelleren Zugriff.",
+  "@fileExplorer.navigation.connectionTooltipSystem": {
+    "sourceHash": "0cbfa05"
+  },
+  "fileExplorer.navigation.connectDirectly": "Direkt verbinden für schnelleren Zugriff",
+  "@fileExplorer.navigation.connectDirectly": {
+    "sourceHash": "3fbb55a"
+  },
+  "fileExplorer.navigation.connectingDirectly": "Direkte Verbindung wird hergestellt …",
+  "@fileExplorer.navigation.connectingDirectly": {
+    "sourceHash": "2c431fc"
+  },
+  "fileExplorer.navigation.connectingWithSavedPassword": "Verbindung mit dem gespeicherten Passwort wird hergestellt …",
+  "@fileExplorer.navigation.connectingWithSavedPassword": {
+    "sourceHash": "1cb249f"
+  },
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kann das Passwort wiederverwenden, das macOS bereits für „{displayName}“ gespeichert hat. Du siehst eine Systemabfrage, die um Zugriff auf den Keychain bittet. Das ist zu erwarten, klicke also auf „Erlauben“.",
+  "@fileExplorer.navigation.useSavedPasswordMessage": {
+    "sourceHash": "6bb2c1d"
+  },
+  "fileExplorer.navigation.useSavedPasswordTitle": "Gespeichertes Passwort verwenden?",
+  "@fileExplorer.navigation.useSavedPasswordTitle": {
+    "sourceHash": "44b60f6"
+  },
+  "fileExplorer.navigation.useSavedPasswordConfirm": "Gespeichertes Passwort verwenden",
+  "@fileExplorer.navigation.useSavedPasswordConfirm": {
+    "sourceHash": "95f07b4"
+  },
+  "fileExplorer.navigation.useSavedPasswordCancel": "Stattdessen eingeben",
+  "@fileExplorer.navigation.useSavedPasswordCancel": {
+    "sourceHash": "d54c488"
+  },
+  "fileExplorer.navigation.readOnlyTooltip": "Schreibgeschützt",
+  "@fileExplorer.navigation.readOnlyTooltip": {
+    "sourceHash": "72bb908"
+  },
+  "fileExplorer.navigation.volumeOptionsTooltip": "Volume-Optionen",
+  "@fileExplorer.navigation.volumeOptionsTooltip": {
+    "sourceHash": "570fb94"
+  },
+  "fileExplorer.navigation.ejectVolumeAriaLabel": "{name} auswerfen",
+  "@fileExplorer.navigation.ejectVolumeAriaLabel": {
+    "sourceHash": "61db18b"
+  },
+  "fileExplorer.navigation.ejectBusyTooltip": "Auswerfen nicht möglich, während Operationen auf diesem Gerät laufen",
+  "@fileExplorer.navigation.ejectBusyTooltip": {
+    "sourceHash": "7165c58"
+  },
+  "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
+  "@fileExplorer.navigation.usbSpeed": {
+    "sourceHash": "07cb80b"
+  },
+  "fileExplorer.navigation.usbSpeedNegotiated": "Ausgehandelt für dieses Kabel, diesen Port und dieses Gerät",
+  "@fileExplorer.navigation.usbSpeedNegotiated": {
+    "sourceHash": "3731939"
+  },
+  "fileExplorer.navigation.spaceRetryingAuto": "Automatischer erneuter Versuch …",
+  "@fileExplorer.navigation.spaceRetryingAuto": {
+    "sourceHash": "aa9f4b8"
+  },
+  "fileExplorer.navigation.spaceRetrying": "Erneuter Versuch …",
+  "@fileExplorer.navigation.spaceRetrying": {
+    "sourceHash": "a16c8b1"
+  },
+  "fileExplorer.navigation.spaceRetryingText": "Erneuter Versuch",
+  "@fileExplorer.navigation.spaceRetryingText": {
+    "sourceHash": "f8fe6f8"
+  },
+  "fileExplorer.navigation.spaceStillUnavailable": "Weiterhin nicht verfügbar. Zum erneuten Versuch klicken",
+  "@fileExplorer.navigation.spaceStillUnavailable": {
+    "sourceHash": "1c37064"
+  },
+  "fileExplorer.navigation.spaceFetchFailed": "Speicherplatz ließ sich nicht abrufen. Zum erneuten Versuch klicken",
+  "@fileExplorer.navigation.spaceFetchFailed": {
+    "sourceHash": "6fe88d7"
+  },
+  "fileExplorer.navigation.spaceUnavailableText": "Nicht verfügbar",
+  "@fileExplorer.navigation.spaceUnavailableText": {
+    "sourceHash": "ca18449"
+  },
+  "fileExplorer.navigation.volumesStillUnreachable": "Weiterhin nicht erreichbar. Versuche es später erneut",
+  "@fileExplorer.navigation.volumesStillUnreachable": {
+    "sourceHash": "e4661d2"
+  },
+  "fileExplorer.navigation.volumesMayBeMissing": "Einige Volumes fehlen möglicherweise",
+  "@fileExplorer.navigation.volumesMayBeMissing": {
+    "sourceHash": "a5b5792"
+  },
+  "fileExplorer.navigation.refreshVolumeList": "Volume-Liste aktualisieren",
+  "@fileExplorer.navigation.refreshVolumeList": {
+    "sourceHash": "f668a8c"
+  },
+  "fileExplorer.navigation.driveIndex.ariaLabel": "Laufwerk-Index-Status",
+  "@fileExplorer.navigation.driveIndex.ariaLabel": {
+    "sourceHash": "ff831be"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "Die Indizierung ist für dieses Laufwerk aus. Schalte sie ein, um hier Ordnergrößen und die Suche zu nutzen.",
+  "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
+    "sourceHash": "61d11e9"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanning": "Dieses Laufwerk wird indiziert …",
+  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
+    "sourceHash": "a17d737"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanningCount": "Indizierung … {countText} {count, plural, one {Datei} other {Dateien}}",
+  "@fileExplorer.navigation.driveIndex.tooltipScanningCount": {
+    "sourceHash": "1449e6e"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": "Indizierung … {countText} {count, plural, one {Datei} other {Dateien}} · {elapsed}",
+  "@fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": {
+    "sourceHash": "e4344e1"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFresh": "Indiziert und aktuell. Zuletzt indiziert {date}, dauerte {duration}.",
+  "@fileExplorer.navigation.driveIndex.tooltipFresh": {
+    "sourceHash": "d036851"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFreshNoScan": "Indiziert und aktuell.",
+  "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
+    "sourceHash": "fedc5ae"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStale": "Dieses Laufwerk hat sich vielleicht geändert, während es getrennt war. Größen und Suche sind möglicherweise etwas ungenau. Erneut scannen, um zu aktualisieren.",
+  "@fileExplorer.navigation.driveIndex.tooltipStale": {
+    "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.menuEnable": "Indizierung für dieses Laufwerk einschalten",
+  "@fileExplorer.navigation.driveIndex.menuEnable": {
+    "sourceHash": "4e06151"
+  },
+  "fileExplorer.navigation.driveIndex.menuRescan": "Jetzt erneut scannen",
+  "@fileExplorer.navigation.driveIndex.menuRescan": {
+    "sourceHash": "c07d16a"
+  },
+  "fileExplorer.navigation.driveIndex.menuDisable": "Indizierung für dieses Laufwerk ausschalten",
+  "@fileExplorer.navigation.driveIndex.menuDisable": {
+    "sourceHash": "d14cf11"
+  },
+  "fileExplorer.navigation.driveIndex.menuStop": "Indizierung stoppen",
+  "@fileExplorer.navigation.driveIndex.menuStop": {
+    "sourceHash": "70ae907"
+  },
+  "fileExplorer.navigation.driveIndex.footer": "Zuletzt indiziert: {date} · dauerte {duration}",
+  "@fileExplorer.navigation.driveIndex.footer": {
+    "sourceHash": "9877397"
+  },
+  "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationMinSec": {
+    "sourceHash": "57a57d1"
+  },
+  "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationSec": {
+    "sourceHash": "fde82d3"
+  },
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr konnte sich nicht direkt mit {name} verbinden, was zum Indizieren dieser Freigabe nötig ist. Prüfe, ob die Freigabe erreichbar ist, und versuche es erneut.",
+  "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
+    "sourceHash": "e7ac9b4"
+  },
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} ist getrennt. Verbinde es erneut und schalte dann die Indizierung ein.",
+  "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
+    "sourceHash": "0cf83a1"
+  },
+  "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr kann {name} gerade nicht indizieren. Verbinde das Laufwerk erneut und versuche es erneut.",
+  "@fileExplorer.navigation.driveIndex.refusedGeneric": {
+    "sourceHash": "ac46209"
+  }
+}

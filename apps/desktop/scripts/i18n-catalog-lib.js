@@ -302,7 +302,12 @@ export const BRAND_WORDS = Object.freeze([
   'Tauri', // tech name (appears in About/credits)
   'Rust', // tech name
   'Svelte', // tech name
-  'Quick Look', // macOS feature name
+  // NOT here: "Quick Look" and other Apple FEATURE names Apple localizes per-OS
+  // (fr "Coup d’œil", de "Übersicht", es "Vista rápida"). They must be translated
+  // to match the user's macOS, not kept verbatim. Only Apple feature/product names
+  // Apple itself keeps English (Spotlight, Mission Control, AirDrop, Siri, Time
+  // Machine, Finder, ...) belong in this list — and none of those appear in copy
+  // yet. See docs/guides/i18n-translation.md § Term-choice principles, principle 1.
 ])
 
 /**
@@ -344,6 +349,30 @@ export function hasWholeWord(value, word) {
 export function wholeWordRegExp(word) {
   const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return new RegExp(`(?<![A-Za-z0-9])${escaped}(?![A-Za-z0-9])`, 'g')
+}
+
+/**
+ * Whether `word` is PRESENT in `value`, allowing a brand to take a natural
+ * inflectional suffix. Inflecting languages append case/possessive endings to a
+ * name (Hungarian "Cmdrben" = "in Cmdr", Swedish genitive "Cmdrs", Hungarian
+ * "Cmdrről"); those are CORRECT translations, not a dropped brand. So we accept
+ * `word` at a word start (no letter/digit immediately before) optionally followed
+ * by a run of LOWERCASE letters (the suffix — including accented, via `\p{Ll}`
+ * with the `u` flag) and then a non-letter/digit boundary.
+ *
+ * The suffix must be lowercase so an UPPERCASE compound ("CmdrFoo") doesn't count
+ * as the brand: a new capital starts a new word, not an inflection. "MacCmdr"
+ * (embedded, letter before) doesn't count either — the brand must be at a word
+ * start. This is intentionally looser than `hasWholeWord`: use it for the
+ * LOCALE-side presence test, where inflection is legitimate; keep `hasWholeWord`
+ * for the ENGLISH side, where the brand appears bare.
+ * @param {string} value
+ * @param {string} word
+ * @returns {boolean}
+ */
+export function hasBrandPresent(value, word) {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}\\p{Ll}*(?![\\p{L}\\p{N}])`, 'u').test(value)
 }
 
 /**

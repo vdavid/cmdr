@@ -1,0 +1,366 @@
+{
+  "viewer.window.fallbackTitle": "Weergavevenster",
+  "@viewer.window.fallbackTitle": {
+    "sourceHash": "678bfa6"
+  },
+  "viewer.window.titleSuffix": "{fileName} | Weergavevenster",
+  "@viewer.window.titleSuffix": {
+    "sourceHash": "5ebd7f4"
+  },
+  "viewer.srHeading": "Bestandsweergave",
+  "@viewer.srHeading": {
+    "sourceHash": "b32f632"
+  },
+  "viewer.loading": "Laden...",
+  "@viewer.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "viewer.error.noPath": "Geen bestandspad opgegeven",
+  "@viewer.error.noPath": {
+    "sourceHash": "2b069fc"
+  },
+  "viewer.error.readFailed": "Het bestand kon niet worden gelezen",
+  "@viewer.error.readFailed": {
+    "sourceHash": "ea7d976"
+  },
+  "viewer.error.timeout": "Het bestand kon niet worden geladen. Het volume is mogelijk traag of reageert niet.",
+  "@viewer.error.timeout": {
+    "sourceHash": "d163618"
+  },
+  "viewer.error.retry": "Probeer opnieuw",
+  "@viewer.error.retry": {
+    "sourceHash": "942087c"
+  },
+  "viewer.error.cancel": "Annuleer",
+  "@viewer.error.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.content.ariaLabel": "Bestandsinhoud: {fileName}",
+  "@viewer.content.ariaLabel": {
+    "sourceHash": "57b8613"
+  },
+  "viewer.binaryWarning.body": "Dit is de ruwe weergave van het bestand. Je wilt waarschijnlijk liever de eigenlijke <kind>{kind}</kind> bekijken. Sluit hiervoor dit venster en druk op <quickLookKey></quickLookKey> om de snelle weergave te openen, of druk op <openKey></openKey> (of dubbelklik op het bestand) om het in de bijbehorende app te openen.",
+  "@viewer.binaryWarning.body": {
+    "sourceHash": "42eda71"
+  },
+  "viewer.binaryWarning.kind.image": "afbeelding",
+  "@viewer.binaryWarning.kind.image": {
+    "sourceHash": "6105d6c"
+  },
+  "viewer.binaryWarning.kind.document": "document",
+  "@viewer.binaryWarning.kind.document": {
+    "sourceHash": "43cc23f"
+  },
+  "viewer.binaryWarning.dismiss": "Sluit",
+  "@viewer.binaryWarning.dismiss": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.binaryWarning.suppressForever": "Toon deze waarschuwing niet meer",
+  "@viewer.binaryWarning.suppressForever": {
+    "sourceHash": "b85b92b"
+  },
+  "viewer.search.placeholder": "Zoek in bestand...",
+  "@viewer.search.placeholder": {
+    "sourceHash": "c1dc89b"
+  },
+  "viewer.search.ariaLabel": "Zoek tekst",
+  "@viewer.search.ariaLabel": {
+    "sourceHash": "38d268a"
+  },
+  "viewer.search.caseSensitive": "Hoofdlettergevoelig",
+  "@viewer.search.caseSensitive": {
+    "sourceHash": "e124ba4"
+  },
+  "viewer.search.regex": "Regex",
+  "@viewer.search.regex": {
+    "sourceHash": "0f27125"
+  },
+  "viewer.search.matchPosition": "{current} van {total}{more, select, yes {+} other {}}",
+  "@viewer.search.matchPosition": {
+    "sourceHash": "ec24db4"
+  },
+  "viewer.search.searching": "Zoeken...",
+  "@viewer.search.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "viewer.search.partial": "(gedeeltelijk)",
+  "@viewer.search.partial": {
+    "sourceHash": "d0ffde3"
+  },
+  "viewer.search.noMatches": "Geen resultaten",
+  "@viewer.search.noMatches": {
+    "sourceHash": "2df01a0"
+  },
+  "viewer.search.stop": "Stop met zoeken",
+  "@viewer.search.stop": {
+    "sourceHash": "c48cf72"
+  },
+  "viewer.search.stopTooltip": "Stop met scannen en bewaar de resultaten",
+  "@viewer.search.stopTooltip": {
+    "sourceHash": "b86629c"
+  },
+  "viewer.search.previous": "Vorig resultaat",
+  "@viewer.search.previous": {
+    "sourceHash": "daa2f8c"
+  },
+  "viewer.search.next": "Volgend resultaat",
+  "@viewer.search.next": {
+    "sourceHash": "825e5ab"
+  },
+  "viewer.search.close": "Sluit zoeken",
+  "@viewer.search.close": {
+    "sourceHash": "55656b5"
+  },
+  "viewer.search.closeTooltip": "Sluit",
+  "@viewer.search.closeTooltip": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.toolbar.viewMode.ariaLabel": "Weergavemodus",
+  "@viewer.toolbar.viewMode.ariaLabel": {
+    "sourceHash": "18997f2"
+  },
+  "viewer.toolbar.viewMode.text": "Tekst",
+  "@viewer.toolbar.viewMode.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.viewMode.viewAsText": "Toon als tekst",
+  "@viewer.toolbar.viewMode.viewAsText": {
+    "sourceHash": "a0059b8"
+  },
+  "viewer.toolbar.viewMode.viewAsImage": "Toon als afbeelding",
+  "@viewer.toolbar.viewMode.viewAsImage": {
+    "sourceHash": "ae04259"
+  },
+  "viewer.toolbar.viewMode.viewAsPdf": "Toon als PDF",
+  "@viewer.toolbar.viewMode.viewAsPdf": {
+    "sourceHash": "ee89800"
+  },
+  "viewer.kind.image": "Afbeelding",
+  "@viewer.kind.image": {
+    "sourceHash": "1aa4cb0"
+  },
+  "viewer.kind.pdf": "PDF",
+  "@viewer.kind.pdf": {
+    "sourceHash": "1d393b0"
+  },
+  "viewer.kind.text": "Tekst",
+  "@viewer.kind.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.encoding.placeholder": "Codering",
+  "@viewer.toolbar.encoding.placeholder": {
+    "sourceHash": "4d25a47"
+  },
+  "viewer.toolbar.encoding.group.unicode": "Unicode",
+  "@viewer.toolbar.encoding.group.unicode": {
+    "sourceHash": "f922e0d"
+  },
+  "viewer.toolbar.encoding.group.western": "Westers",
+  "@viewer.toolbar.encoding.group.western": {
+    "sourceHash": "d7d2f0f"
+  },
+  "viewer.toolbar.encoding.detectedSuffix": "{label} (Gedetecteerd)",
+  "@viewer.toolbar.encoding.detectedSuffix": {
+    "sourceHash": "2096536"
+  },
+  "viewer.toolbar.tail.label": "Tail",
+  "@viewer.toolbar.tail.label": {
+    "sourceHash": "ae9c3bd"
+  },
+  "viewer.toolbar.tail.ariaLabel": "Tail-modus: volg bestandswijzigingen",
+  "@viewer.toolbar.tail.ariaLabel": {
+    "sourceHash": "af0477f"
+  },
+  "viewer.toolbar.tail.tooltip": "Volg bestandswijzigingen automatisch",
+  "@viewer.toolbar.tail.tooltip": {
+    "sourceHash": "733e57f"
+  },
+  "viewer.toolbar.reindexing": "Opnieuw indexeren…",
+  "@viewer.toolbar.reindexing": {
+    "sourceHash": "f668818"
+  },
+  "viewer.statusBar.ariaLabel": "Bestandsinformatie",
+  "@viewer.statusBar.ariaLabel": {
+    "sourceHash": "375b97d"
+  },
+  "viewer.statusBar.lineCount": "{count} {count, plural, one {regel} other {regels}}",
+  "@viewer.statusBar.lineCount": {
+    "sourceHash": "1af08ec"
+  },
+  "viewer.statusBar.badge.inMemory": "in geheugen",
+  "@viewer.statusBar.badge.inMemory": {
+    "sourceHash": "d9b8483"
+  },
+  "viewer.statusBar.badge.inMemoryTooltip": "Het hele bestand staat in het geheugen. Je kunt snel naar elke regel scrollen.",
+  "@viewer.statusBar.badge.inMemoryTooltip": {
+    "sourceHash": "4eb50b8"
+  },
+  "viewer.statusBar.badge.indexed": "geïndexeerd",
+  "@viewer.statusBar.badge.indexed": {
+    "sourceHash": "658a3e8"
+  },
+  "viewer.statusBar.badge.indexedTooltip": "Het bestand is geïndexeerd, dus de regelnummers kloppen en je kunt snel naar elk punt scrollen.",
+  "@viewer.statusBar.badge.indexedTooltip": {
+    "sourceHash": "2604f1a"
+  },
+  "viewer.statusBar.badge.streamingIndexing": "streamen, indexeren...",
+  "@viewer.statusBar.badge.streamingIndexing": {
+    "sourceHash": "506ef27"
+  },
+  "viewer.statusBar.badge.streamingIndexingTooltip": "Dit is een groot bestand in streammodus. We bouwen op de achtergrond een index op (max. {seconds} sec)... De regelnummers zijn voorlopig bij benadering.",
+  "@viewer.statusBar.badge.streamingIndexingTooltip": {
+    "sourceHash": "6407733"
+  },
+  "viewer.statusBar.badge.streaming": "streamen",
+  "@viewer.statusBar.badge.streaming": {
+    "sourceHash": "b304adc"
+  },
+  "viewer.statusBar.badge.streamingTooltip": "Dit is een groot bestand in streammodus. Indexeren zou langer dan {seconds} sec hebben geduurd, dus dat hebben we niet gedaan. De regelnummers zijn schattingen.",
+  "@viewer.statusBar.badge.streamingTooltip": {
+    "sourceHash": "1752e59"
+  },
+  "viewer.statusBar.badge.wrap": "terugloop",
+  "@viewer.statusBar.badge.wrap": {
+    "sourceHash": "f0a2899"
+  },
+  "viewer.statusBar.badge.wrapTooltip": "Regels lopen terug aan de rand van het venster",
+  "@viewer.statusBar.badge.wrapTooltip": {
+    "sourceHash": "af2ca76"
+  },
+  "viewer.statusBar.hint.image": "Klik 100% / passend · Scroll om te zoomen · Sleep om te verschuiven",
+  "@viewer.statusBar.hint.image": {
+    "sourceHash": "bca0205"
+  },
+  "viewer.statusBar.hint.text": "W terugloop · F tail · ⌘F zoeken",
+  "@viewer.statusBar.hint.text": {
+    "sourceHash": "3ecf215"
+  },
+  "viewer.media.dimensions": "{width} × {height}",
+  "@viewer.media.dimensions": {
+    "sourceHash": "ece2cad"
+  },
+  "viewer.image.loading": "Afbeelding laden",
+  "@viewer.image.loading": {
+    "sourceHash": "65999b8"
+  },
+  "viewer.image.error": "Sorry, we konden deze afbeelding niet tonen. Het bestand is mogelijk beschadigd of in een formaat dat we niet kunnen weergeven.",
+  "@viewer.image.error": {
+    "sourceHash": "9a24fe8"
+  },
+  "viewer.pdf.loading": "PDF laden",
+  "@viewer.pdf.loading": {
+    "sourceHash": "7f9acf3"
+  },
+  "viewer.contextMenu.ariaLabel": "Acties weergavevenster",
+  "@viewer.contextMenu.ariaLabel": {
+    "sourceHash": "4cf8e51"
+  },
+  "viewer.contextMenu.copy": "Kopieer",
+  "@viewer.contextMenu.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.contextMenu.selectAll": "Selecteer alles",
+  "@viewer.contextMenu.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "viewer.copyDialog.confirmTitleKnown": "{size} naar het klembord kopiëren?",
+  "@viewer.copyDialog.confirmTitleKnown": {
+    "sourceHash": "7f97ebf"
+  },
+  "viewer.copyDialog.confirmTitleUnknown": "Deze selectie naar het klembord kopiëren?",
+  "@viewer.copyDialog.confirmTitleUnknown": {
+    "sourceHash": "0956c8b"
+  },
+  "viewer.copyDialog.confirmBody": "Grote plakacties kunnen andere apps vertragen. Gebruik zoeken (⌘F) om het te beperken.",
+  "@viewer.copyDialog.confirmBody": {
+    "sourceHash": "c1f2927"
+  },
+  "viewer.copyDialog.cancel": "Annuleer",
+  "@viewer.copyDialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.copyDialog.saveAsFile": "Bewaar als bestand…",
+  "@viewer.copyDialog.saveAsFile": {
+    "sourceHash": "7b9b279"
+  },
+  "viewer.copyDialog.copy": "Kopieer",
+  "@viewer.copyDialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseBody": "Dat is groter dan de klembordlimiet van 100 MB. Gebruik zoeken (⌘F) om te vinden wat je nodig hebt, of bewaar de selectie als bestand.",
+  "@viewer.copyDialog.refuseBody": {
+    "sourceHash": "75f3043"
+  },
+  "viewer.reloadToast.grew": "Bestand op schijf gewijzigd. Opnieuw laden?",
+  "@viewer.reloadToast.grew": {
+    "sourceHash": "d66b013"
+  },
+  "viewer.reloadToast.rotated": "Bestand op schijf vervangen. Laad opnieuw om de nieuwe inhoud te zien.",
+  "@viewer.reloadToast.rotated": {
+    "sourceHash": "50804c2"
+  },
+  "viewer.reloadToast.reload": "Laad opnieuw",
+  "@viewer.reloadToast.reload": {
+    "sourceHash": "bdc090e"
+  },
+  "viewer.reloadToast.dismissTooltip": "Sluit zonder opnieuw te laden",
+  "@viewer.reloadToast.dismissTooltip": {
+    "sourceHash": "7f829ed"
+  },
+  "viewer.copy.onClipboard": "{size} op je klembord",
+  "@viewer.copy.onClipboard": {
+    "sourceHash": "45934ed"
+  },
+  "viewer.copy.clipboardUnreachable": "Het klembord was niet bereikbaar. Opnieuw proberen?",
+  "@viewer.copy.clipboardUnreachable": {
+    "sourceHash": "c0382ba"
+  },
+  "viewer.copy.readTooLong": "Het lezen duurde te lang. Probeer een kleinere selectie?",
+  "@viewer.copy.readTooLong": {
+    "sourceHash": "2275e83"
+  },
+  "viewer.copy.copyFailed": "De selectie kon niet worden gekopieerd. Opnieuw proberen?",
+  "@viewer.copy.copyFailed": {
+    "sourceHash": "6a1ab41"
+  },
+  "viewer.copy.readFailed": "De selectie kon niet worden gelezen. Opnieuw proberen?",
+  "@viewer.copy.readFailed": {
+    "sourceHash": "bde5f85"
+  },
+  "viewer.saveAs.title": "Bewaar selectie",
+  "@viewer.saveAs.title": {
+    "sourceHash": "dd183ea"
+  },
+  "viewer.saveAs.defaultName": "selectie",
+  "@viewer.saveAs.defaultName": {
+    "sourceHash": "6504513"
+  },
+  "viewer.saveAs.panelFailed": "Het bewaarvenster kon niet worden geopend. Opnieuw proberen?",
+  "@viewer.saveAs.panelFailed": {
+    "sourceHash": "70c3f76"
+  },
+  "viewer.saveAs.saved": "Selectie bewaard in {name}",
+  "@viewer.saveAs.saved": {
+    "sourceHash": "5083c12"
+  },
+  "viewer.saveAs.tooLong": "Het bewaren duurde te lang. Probeer een kleinere selectie?",
+  "@viewer.saveAs.tooLong": {
+    "sourceHash": "f31d7f4"
+  },
+  "viewer.saveAs.saveFailed": "De selectie kon niet worden bewaard. Opnieuw proberen?",
+  "@viewer.saveAs.saveFailed": {
+    "sourceHash": "2d85642"
+  },
+  "viewer.selection.toEndOfFile": "Geselecteerd van regel {line} tot het einde van het bestand",
+  "@viewer.selection.toEndOfFile": {
+    "sourceHash": "62d95be"
+  },
+  "viewer.selection.singleLine": "{chars} tekens geselecteerd op regel {line}",
+  "@viewer.selection.singleLine": {
+    "sourceHash": "bb320d5"
+  },
+  "viewer.selection.multiLine": "Regels {startLine} tot {endLine} geselecteerd, {chars} tekens",
+  "@viewer.selection.multiLine": {
+    "sourceHash": "074c687"
+  }
+}

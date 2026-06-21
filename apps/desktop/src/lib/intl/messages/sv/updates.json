@@ -1,0 +1,42 @@
+{
+  "updates.checkToast.errorPrefix": "Det gick inte att söka efter uppdateringar: {message}",
+  "@updates.checkToast.errorPrefix": {
+    "sourceHash": "020abfd"
+  },
+  "updates.checkToast.sendErrorReport": "Skicka felrapport",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "updates.toast.available": "Ny version finns. Starta om för att uppdatera.",
+  "@updates.toast.available": {
+    "sourceHash": "cb97574"
+  },
+  "updates.toast.later": "Senare",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "Starta om",
+  "@updates.toast.restart": {
+    "sourceHash": "6b983a8"
+  },
+  "updates.status.noUpdates": "Inga uppdateringar hittades. Nuvarande version: v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "Söker…",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "Uppdatering hittad, hämtar v{next} (nuvarande: v{prev})…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "Installerar v{next} (nuvarande: v{prev})…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.ready": "Uppdatering v{next} är klar. Starta om för att tillämpa.",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

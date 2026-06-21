@@ -1,0 +1,610 @@
+{
+  "queryUi.bar.placeholder.ai": "Décrivez ce que vous cherchez",
+  "@queryUi.bar.placeholder.ai": {
+    "sourceHash": "fbfb9a8"
+  },
+  "queryUi.bar.placeholder.regex": "Motif d''expression régulière",
+  "@queryUi.bar.placeholder.regex": {
+    "sourceHash": "342a120"
+  },
+  "queryUi.bar.placeholder.filename": "Motif de nom de fichier (utilisez * et ? comme caractères génériques)",
+  "@queryUi.bar.placeholder.filename": {
+    "sourceHash": "bafb340"
+  },
+  "queryUi.bar.aria.ai": "Requête de recherche en langage naturel",
+  "@queryUi.bar.aria.ai": {
+    "sourceHash": "05ac017"
+  },
+  "queryUi.bar.aria.regex": "Motif de recherche par expression régulière",
+  "@queryUi.bar.aria.regex": {
+    "sourceHash": "9c7754a"
+  },
+  "queryUi.bar.aria.filename": "Motif de recherche par nom de fichier",
+  "@queryUi.bar.aria.filename": {
+    "sourceHash": "de1e4cf"
+  },
+  "queryUi.bar.runTitle.ai": "Lancer la recherche IA",
+  "@queryUi.bar.runTitle.ai": {
+    "sourceHash": "8a25dfd"
+  },
+  "queryUi.bar.runTitle.default": "Lancer la recherche",
+  "@queryUi.bar.runTitle.default": {
+    "sourceHash": "63714be"
+  },
+  "queryUi.bar.runHint": "Appuyez sur Entrée pour rechercher",
+  "@queryUi.bar.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "queryUi.bar.runLabel": "Rechercher",
+  "@queryUi.bar.runLabel": {
+    "sourceHash": "49c266b"
+  },
+  "queryUi.mode.ai.label": "Tout demander",
+  "@queryUi.mode.ai.label": {
+    "sourceHash": "4aff15d"
+  },
+  "queryUi.mode.ai.aria": "Mode IA : tout demander (Alt+A)",
+  "@queryUi.mode.ai.aria": {
+    "sourceHash": "1708462"
+  },
+  "queryUi.mode.filename.label": "Nom de fichier",
+  "@queryUi.mode.filename.label": {
+    "sourceHash": "971b974"
+  },
+  "queryUi.mode.filename.aria": "Mode nom de fichier (Alt+F)",
+  "@queryUi.mode.filename.aria": {
+    "sourceHash": "62a5f87"
+  },
+  "queryUi.mode.content.label": "Contenu",
+  "@queryUi.mode.content.label": {
+    "sourceHash": "47bd290"
+  },
+  "queryUi.mode.content.tooltip": "Bientôt disponible : recherche plein texte dans les fichiers",
+  "@queryUi.mode.content.tooltip": {
+    "sourceHash": "ff69d7a"
+  },
+  "queryUi.mode.content.aria": "Mode contenu (bientôt disponible)",
+  "@queryUi.mode.content.aria": {
+    "sourceHash": "5bce643"
+  },
+  "queryUi.mode.regex.label": "Regex",
+  "@queryUi.mode.regex.label": {
+    "sourceHash": "0f27125"
+  },
+  "queryUi.mode.regex.aria": "Mode regex (Alt+R)",
+  "@queryUi.mode.regex.aria": {
+    "sourceHash": "7c0b401"
+  },
+  "queryUi.mode.groupAria": "Mode de recherche",
+  "@queryUi.mode.groupAria": {
+    "sourceHash": "75f00aa"
+  },
+  "queryUi.empty.tryLine": "Essayez…",
+  "@queryUi.empty.tryLine": {
+    "sourceHash": "469fb7f"
+  },
+  "queryUi.empty.tip": "Astuce : <newKey>⌘N</newKey> repart à zéro, <historyKey>⌘H</historyKey> affiche les recherches récentes.",
+  "@queryUi.empty.tip": {
+    "sourceHash": "6d00976"
+  },
+  "queryUi.empty.tipAi": "Astuce : <newKey>⌘N</newKey> repart à zéro, <historyKey>⌘H</historyKey> affiche les recherches récentes, <aiKey>⌘Enter</aiKey> lance une recherche IA.",
+  "@queryUi.empty.tipAi": {
+    "sourceHash": "e83a0d6"
+  },
+  "queryUi.empty.indexReady": "Index prêt · {countText} {count, plural, one {entrée} many {entrées} other {entrées}}",
+  "@queryUi.empty.indexReady": {
+    "sourceHash": "838fcf8"
+  },
+  "queryUi.ai.lead": "Voici ce que l''agent a fait :",
+  "@queryUi.ai.lead": {
+    "sourceHash": "bf7c5a2"
+  },
+  "queryUi.ai.empty": "Rien à filtrer pour l''instant. Reformuler ?",
+  "@queryUi.ai.empty": {
+    "sourceHash": "df836a8"
+  },
+  "queryUi.ai.refine": "Affiner…",
+  "@queryUi.ai.refine": {
+    "sourceHash": "488102b"
+  },
+  "queryUi.ai.refineAria": "Affiner la recherche IA (bientôt disponible)",
+  "@queryUi.ai.refineAria": {
+    "sourceHash": "fc95971"
+  },
+  "queryUi.ai.refineTooltip": "Bientôt disponible : dialoguer avec l''agent",
+  "@queryUi.ai.refineTooltip": {
+    "sourceHash": "4846194"
+  },
+  "queryUi.ai.stripAria": "Ce que l''agent a fait avec votre dernière recherche IA",
+  "@queryUi.ai.stripAria": {
+    "sourceHash": "53ffa17"
+  },
+  "queryUi.ai.patternLabel.glob": "Glob",
+  "@queryUi.ai.patternLabel.glob": {
+    "sourceHash": "18d00f7"
+  },
+  "queryUi.ai.patternLabel.regex": "Regex",
+  "@queryUi.ai.patternLabel.regex": {
+    "sourceHash": "0f27125"
+  },
+  "queryUi.ai.patternLabel.generic": "Motif",
+  "@queryUi.ai.patternLabel.generic": {
+    "sourceHash": "4288ade"
+  },
+  "queryUi.ai.filter.size": "Taille",
+  "@queryUi.ai.filter.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.ai.filter.modified": "Modifié",
+  "@queryUi.ai.filter.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.ai.filter.type": "Type",
+  "@queryUi.ai.filter.type": {
+    "sourceHash": "baaddf7"
+  },
+  "queryUi.ai.typeSummary.filesOnly": "Fichiers uniquement",
+  "@queryUi.ai.typeSummary.filesOnly": {
+    "sourceHash": "4bae1c3"
+  },
+  "queryUi.ai.typeSummary.foldersOnly": "Dossiers uniquement",
+  "@queryUi.ai.typeSummary.foldersOnly": {
+    "sourceHash": "ad851fb"
+  },
+  "queryUi.results.col.name": "Nom",
+  "@queryUi.results.col.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "queryUi.results.col.path": "Chemin",
+  "@queryUi.results.col.path": {
+    "sourceHash": "62fa5a5"
+  },
+  "queryUi.results.col.size": "Taille",
+  "@queryUi.results.col.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.results.col.modified": "Modifié",
+  "@queryUi.results.col.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.results.col.actions": "Actions",
+  "@queryUi.results.col.actions": {
+    "sourceHash": "ff8059d"
+  },
+  "queryUi.results.listboxAria": "Résultats de recherche",
+  "@queryUi.results.listboxAria": {
+    "sourceHash": "e978b00"
+  },
+  "queryUi.results.scanningWithCount": "Analyse en cours ({countText} entrées)...",
+  "@queryUi.results.scanningWithCount": {
+    "sourceHash": "0c05667"
+  },
+  "queryUi.results.scanning": "Analyse en cours...",
+  "@queryUi.results.scanning": {
+    "sourceHash": "091ba9a"
+  },
+  "queryUi.results.indexUnavailable": "Index du disque indisponible",
+  "@queryUi.results.indexUnavailable": {
+    "sourceHash": "80e98d0"
+  },
+  "queryUi.results.indexReadyStatus": "Index prêt ({countText} entrées)",
+  "@queryUi.results.indexReadyStatus": {
+    "sourceHash": "b8febe6"
+  },
+  "queryUi.results.resultCount": "{shownText} résultats sur {totalText}",
+  "@queryUi.results.resultCount": {
+    "sourceHash": "8725496"
+  },
+  "queryUi.results.criteria.query": "Requête : {query}",
+  "@queryUi.results.criteria.query": {
+    "sourceHash": "4877824"
+  },
+  "queryUi.results.criteria.size": "Filtre de taille actif",
+  "@queryUi.results.criteria.size": {
+    "sourceHash": "24f552d"
+  },
+  "queryUi.results.criteria.modified": "Filtre de date de modification actif",
+  "@queryUi.results.criteria.modified": {
+    "sourceHash": "fc2268a"
+  },
+  "queryUi.results.indexNotReady": "Index du disque pas encore prêt. La recherche sera disponible une fois l''analyse initiale terminée.",
+  "@queryUi.results.indexNotReady": {
+    "sourceHash": "9efe161"
+  },
+  "queryUi.results.scanProgressWithCount": "Analyse en cours ({countText} entrées)...",
+  "@queryUi.results.scanProgressWithCount": {
+    "sourceHash": "3c5b987"
+  },
+  "queryUi.results.scanProgress": "Analyse en cours...",
+  "@queryUi.results.scanProgress": {
+    "sourceHash": "091ba9a"
+  },
+  "queryUi.results.loadingIndex": "Chargement de l''index du disque...",
+  "@queryUi.results.loadingIndex": {
+    "sourceHash": "ab62214"
+  },
+  "queryUi.results.searching": "Recherche...",
+  "@queryUi.results.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "queryUi.results.noMatchHeading": "Aucun fichier ne correspond à ces critères :",
+  "@queryUi.results.noMatchHeading": {
+    "sourceHash": "15383e2"
+  },
+  "queryUi.results.rowMenuAria": "Plus d''actions",
+  "@queryUi.results.rowMenuAria": {
+    "sourceHash": "f8d46c2"
+  },
+  "queryUi.pathPills.hiddenAria": "Segments de chemin masqués : {segments}",
+  "@queryUi.pathPills.hiddenAria": {
+    "sourceHash": "f62e273"
+  },
+  "queryUi.recent.leadingLabel": "Recherches récentes :",
+  "@queryUi.recent.leadingLabel": {
+    "sourceHash": "dd53364"
+  },
+  "queryUi.recent.trailingLabel": "Toutes les recherches…",
+  "@queryUi.recent.trailingLabel": {
+    "sourceHash": "820b77b"
+  },
+  "queryUi.recent.trailingTooltip": "Afficher toutes les recherches récentes",
+  "@queryUi.recent.trailingTooltip": {
+    "sourceHash": "e0de323"
+  },
+  "queryUi.recent.regionAria": "Recherches récentes",
+  "@queryUi.recent.regionAria": {
+    "sourceHash": "228c84b"
+  },
+  "queryUi.recent.allButtonAria": "Toutes les recherches récentes",
+  "@queryUi.recent.allButtonAria": {
+    "sourceHash": "c4faef7"
+  },
+  "queryUi.recent.filterPlaceholder": "Filtrer les recherches récentes",
+  "@queryUi.recent.filterPlaceholder": {
+    "sourceHash": "37e55fe"
+  },
+  "queryUi.recent.emptyMessage": "Aucune recherche récente ne correspond à ce filtre.",
+  "@queryUi.recent.emptyMessage": {
+    "sourceHash": "7007fba"
+  },
+  "queryUi.recent.popoverAria": "Toutes les recherches récentes",
+  "@queryUi.recent.popoverAria": {
+    "sourceHash": "c4faef7"
+  },
+  "queryUi.recent.listboxAria": "Recherches récentes",
+  "@queryUi.recent.listboxAria": {
+    "sourceHash": "228c84b"
+  },
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> pour naviguer · <runKey>Enter</runKey> pour lancer · clic droit pour retirer",
+  "@queryUi.recent.popoverHint": {
+    "sourceHash": "11e1b46"
+  },
+  "queryUi.recent.mode.ai": "IA",
+  "@queryUi.recent.mode.ai": {
+    "sourceHash": "11fb682"
+  },
+  "queryUi.recent.mode.regex": "Regex",
+  "@queryUi.recent.mode.regex": {
+    "sourceHash": "0f27125"
+  },
+  "queryUi.recent.mode.filename": "Nom de fichier",
+  "@queryUi.recent.mode.filename": {
+    "sourceHash": "971b974"
+  },
+  "queryUi.age.justNow": "à l''instant",
+  "@queryUi.age.justNow": {
+    "sourceHash": "7ddb44d"
+  },
+  "queryUi.age.minutes": "il y a {count} min",
+  "@queryUi.age.minutes": {
+    "sourceHash": "0a03167"
+  },
+  "queryUi.age.hours": "il y a {count} h",
+  "@queryUi.age.hours": {
+    "sourceHash": "520c737"
+  },
+  "queryUi.age.days": "il y a {count} j",
+  "@queryUi.age.days": {
+    "sourceHash": "a412343"
+  },
+  "queryUi.age.weeks": "il y a {count} sem",
+  "@queryUi.age.weeks": {
+    "sourceHash": "7c7a56d"
+  },
+  "queryUi.age.months": "il y a {count} mois",
+  "@queryUi.age.months": {
+    "sourceHash": "e3ca968"
+  },
+  "queryUi.age.years": "il y a {count} ans",
+  "@queryUi.age.years": {
+    "sourceHash": "e0d32e9"
+  },
+  "queryUi.recent.scopeSummary": "portée : {scope}",
+  "@queryUi.recent.scopeSummary": {
+    "sourceHash": "e5e6dff"
+  },
+  "queryUi.recent.caseSensitive": "sensible à la casse",
+  "@queryUi.recent.caseSensitive": {
+    "sourceHash": "3934758"
+  },
+  "queryUi.recent.systemDirsIncluded": "dossiers système inclus",
+  "@queryUi.recent.systemDirsIncluded": {
+    "sourceHash": "b7996cc"
+  },
+  "queryUi.recent.resultCount": "{countText} résultats la dernière fois",
+  "@queryUi.recent.resultCount": {
+    "sourceHash": "d048174"
+  },
+  "queryUi.recent.sizeRange": "taille {minText}–{maxText}",
+  "@queryUi.recent.sizeRange": {
+    "sourceHash": "96bd04f"
+  },
+  "queryUi.recent.sizeMin": "taille > {minText}",
+  "@queryUi.recent.sizeMin": {
+    "sourceHash": "0aab700"
+  },
+  "queryUi.recent.sizeMax": "taille < {maxText}",
+  "@queryUi.recent.sizeMax": {
+    "sourceHash": "7850b6e"
+  },
+  "queryUi.recent.modifiedRange": "modifié {after}…{before}",
+  "@queryUi.recent.modifiedRange": {
+    "sourceHash": "e99ce85"
+  },
+  "queryUi.recent.modifiedAfter": "après {after}",
+  "@queryUi.recent.modifiedAfter": {
+    "sourceHash": "4135ddf"
+  },
+  "queryUi.recent.modifiedBefore": "avant {before}",
+  "@queryUi.recent.modifiedBefore": {
+    "sourceHash": "f0a5bd6"
+  },
+  "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
+  "@queryUi.recent.chipTooltipHeader": {
+    "sourceHash": "54a225b"
+  },
+  "queryUi.dialog.actionsAria": "Actions de la boîte de dialogue",
+  "@queryUi.dialog.actionsAria": {
+    "sourceHash": "62d23d5"
+  },
+  "queryUi.dialog.aiTranslateFailedToast": "Impossible de lancer la recherche IA pour le moment. Réessayer ?",
+  "@queryUi.dialog.aiTranslateFailedToast": {
+    "sourceHash": "6856c79"
+  },
+  "queryUi.filters.toolbarAria": "Filtres de recherche",
+  "@queryUi.filters.toolbarAria": {
+    "sourceHash": "f484e72"
+  },
+  "queryUi.filters.type.both": "Les deux",
+  "@queryUi.filters.type.both": {
+    "sourceHash": "b6c1d86"
+  },
+  "queryUi.filters.type.files": "Fichiers",
+  "@queryUi.filters.type.files": {
+    "sourceHash": "abc7e98"
+  },
+  "queryUi.filters.type.folders": "Dossiers",
+  "@queryUi.filters.type.folders": {
+    "sourceHash": "c4d6bb2"
+  },
+  "queryUi.filters.type.aria": "Filtrer par type",
+  "@queryUi.filters.type.aria": {
+    "sourceHash": "51035b5"
+  },
+  "queryUi.filters.chip.pattern": "Motif",
+  "@queryUi.filters.chip.pattern": {
+    "sourceHash": "4288ade"
+  },
+  "queryUi.filters.chip.size": "Taille",
+  "@queryUi.filters.chip.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.filters.chip.modified": "Modifié",
+  "@queryUi.filters.chip.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.filters.chip.scope": "Rechercher dans",
+  "@queryUi.filters.chip.scope": {
+    "sourceHash": "fa79255"
+  },
+  "queryUi.filters.scope.includesSystemFolders": "inclut les dossiers système",
+  "@queryUi.filters.scope.includesSystemFolders": {
+    "sourceHash": "3bb9784"
+  },
+  "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
+  "@queryUi.filters.size.summary.single": {
+    "sourceHash": "bbd5deb"
+  },
+  "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
+  "@queryUi.filters.size.summary.range": {
+    "sourceHash": "ba7eadc"
+  },
+  "queryUi.filters.date.summary.after": "après {date}",
+  "@queryUi.filters.date.summary.after": {
+    "sourceHash": "f70f7dc"
+  },
+  "queryUi.filters.date.summary.before": "avant {date}",
+  "@queryUi.filters.date.summary.before": {
+    "sourceHash": "e503949"
+  },
+  "queryUi.filters.date.summary.range": "{after} – {before}",
+  "@queryUi.filters.date.summary.range": {
+    "sourceHash": "801560e"
+  },
+  "queryUi.size.comparator.any": "tout",
+  "@queryUi.size.comparator.any": {
+    "sourceHash": "d6a7cd2"
+  },
+  "queryUi.size.comparator.between": "entre",
+  "@queryUi.size.comparator.between": {
+    "sourceHash": "fbb27fb"
+  },
+  "queryUi.size.unit.byte": "octet",
+  "@queryUi.size.unit.byte": {
+    "sourceHash": "1c31626"
+  },
+  "queryUi.size.unit.bytes": "octets",
+  "@queryUi.size.unit.bytes": {
+    "sourceHash": "277089d"
+  },
+  "queryUi.size.customCell": "personnalisé…",
+  "@queryUi.size.customCell": {
+    "sourceHash": "564a4d3"
+  },
+  "queryUi.size.customInputPlaceholder": "personnalisé",
+  "@queryUi.size.customInputPlaceholder": {
+    "sourceHash": "6cdfd27"
+  },
+  "queryUi.size.popover.label": "Taille",
+  "@queryUi.size.popover.label": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.size.popover.aria": "Options de filtre de taille",
+  "@queryUi.size.popover.aria": {
+    "sourceHash": "087d449"
+  },
+  "queryUi.size.aria.comparator": "Comparateur",
+  "@queryUi.size.aria.comparator": {
+    "sourceHash": "9a348d5"
+  },
+  "queryUi.size.aria.minValue": "Valeur de taille minimale",
+  "@queryUi.size.aria.minValue": {
+    "sourceHash": "242e7b0"
+  },
+  "queryUi.size.aria.minUnit": "Unité de taille minimale",
+  "@queryUi.size.aria.minUnit": {
+    "sourceHash": "4803db9"
+  },
+  "queryUi.size.aria.maxValue": "Valeur de taille maximale",
+  "@queryUi.size.aria.maxValue": {
+    "sourceHash": "a79a52b"
+  },
+  "queryUi.size.aria.maxUnit": "Unité de taille maximale",
+  "@queryUi.size.aria.maxUnit": {
+    "sourceHash": "7ab449b"
+  },
+  "queryUi.size.aria.customMin": "Valeur de taille minimale personnalisée",
+  "@queryUi.size.aria.customMin": {
+    "sourceHash": "d841b6a"
+  },
+  "queryUi.size.aria.customMax": "Valeur de taille maximale personnalisée",
+  "@queryUi.size.aria.customMax": {
+    "sourceHash": "4761acf"
+  },
+  "queryUi.date.comparator.any": "tout",
+  "@queryUi.date.comparator.any": {
+    "sourceHash": "d6a7cd2"
+  },
+  "queryUi.date.comparator.after": "après",
+  "@queryUi.date.comparator.after": {
+    "sourceHash": "f395923"
+  },
+  "queryUi.date.comparator.before": "avant",
+  "@queryUi.date.comparator.before": {
+    "sourceHash": "6db7d80"
+  },
+  "queryUi.date.comparator.between": "entre",
+  "@queryUi.date.comparator.between": {
+    "sourceHash": "fbb27fb"
+  },
+  "queryUi.date.customCell": "personnalisé…",
+  "@queryUi.date.customCell": {
+    "sourceHash": "564a4d3"
+  },
+  "queryUi.date.popover.label": "Modifié",
+  "@queryUi.date.popover.label": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.date.popover.aria": "Options de filtre de modification",
+  "@queryUi.date.popover.aria": {
+    "sourceHash": "e0fd68c"
+  },
+  "queryUi.date.aria.comparator": "Comparateur",
+  "@queryUi.date.aria.comparator": {
+    "sourceHash": "9a348d5"
+  },
+  "queryUi.date.aria.value": "Valeur de date",
+  "@queryUi.date.aria.value": {
+    "sourceHash": "8696a46"
+  },
+  "queryUi.date.aria.maxValue": "Valeur de date maximale",
+  "@queryUi.date.aria.maxValue": {
+    "sourceHash": "733e9f1"
+  },
+  "queryUi.date.aria.custom": "Valeur de date personnalisée",
+  "@queryUi.date.aria.custom": {
+    "sourceHash": "531707c"
+  },
+  "queryUi.date.aria.customMax": "Valeur de date maximale personnalisée",
+  "@queryUi.date.aria.customMax": {
+    "sourceHash": "fae3317"
+  },
+  "queryUi.date.preset.today": "aujourd''hui {time}",
+  "@queryUi.date.preset.today": {
+    "sourceHash": "171a27d"
+  },
+  "queryUi.date.preset.yesterday": "hier {time}",
+  "@queryUi.date.preset.yesterday": {
+    "sourceHash": "b40b2e7"
+  },
+  "queryUi.date.preset.thisWeek": "ce {weekday} {time}",
+  "@queryUi.date.preset.thisWeek": {
+    "sourceHash": "9259c67"
+  },
+  "queryUi.date.preset.lastWeek": "{weekday} dernier {time}",
+  "@queryUi.date.preset.lastWeek": {
+    "sourceHash": "1e4419c"
+  },
+  "queryUi.date.preset.thisMonth": "1er {month} {time}",
+  "@queryUi.date.preset.thisMonth": {
+    "sourceHash": "030ee23"
+  },
+  "queryUi.date.preset.lastMonth": "1er {month} {year}, {time}",
+  "@queryUi.date.preset.lastMonth": {
+    "sourceHash": "0838509"
+  },
+  "queryUi.date.preset.yearStart": "1er janvier {year}, {time}",
+  "@queryUi.date.preset.yearStart": {
+    "sourceHash": "f86a864"
+  },
+  "queryUi.scope.popover.label": "Rechercher dans",
+  "@queryUi.scope.popover.label": {
+    "sourceHash": "fa79255"
+  },
+  "queryUi.scope.popover.aria": "Rechercher dans les dossiers",
+  "@queryUi.scope.popover.aria": {
+    "sourceHash": "989db5d"
+  },
+  "queryUi.scope.placeholder": "Tous les dossiers",
+  "@queryUi.scope.placeholder": {
+    "sourceHash": "226fd0e"
+  },
+  "queryUi.scope.hint": "Chemins séparés par des virgules. Préfixez avec <bang>!</bang> pour exclure. Les caractères génériques <star>*</star> et <question>?</question> fonctionnent.",
+  "@queryUi.scope.hint": {
+    "sourceHash": "3335512"
+  },
+  "queryUi.scope.textareaAria": "Dossiers de portée",
+  "@queryUi.scope.textareaAria": {
+    "sourceHash": "0d82c92"
+  },
+  "queryUi.scope.toggle.hideBoring": "Masquer les dossiers sans intérêt",
+  "@queryUi.scope.toggle.hideBoring": {
+    "sourceHash": "972df96"
+  },
+  "queryUi.scope.toggle.caseSensitive": "Sensible à la casse",
+  "@queryUi.scope.toggle.caseSensitive": {
+    "sourceHash": "9d15f82"
+  },
+  "queryUi.scope.toggle.caseSensitiveAria": "Correspondance sensible à la casse",
+  "@queryUi.scope.toggle.caseSensitiveAria": {
+    "sourceHash": "2700434"
+  },
+  "queryUi.scope.useCurrentFolder": "Utiliser le dossier actuel",
+  "@queryUi.scope.useCurrentFolder": {
+    "sourceHash": "3df292c"
+  },
+  "queryUi.scope.allFolders": "Tous les dossiers",
+  "@queryUi.scope.allFolders": {
+    "sourceHash": "226fd0e"
+  }
+}

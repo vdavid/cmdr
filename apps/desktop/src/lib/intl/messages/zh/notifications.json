@@ -1,0 +1,6 @@
+{
+  "notifications.permissionDenied": "macOS 通知已关闭。打开系统设置以允许通知。",
+  "@notifications.permissionDenied": {
+    "sourceHash": "4fef9ce"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "whatsNew.dialog.title": "Novidades no Cmdr",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "Nada para ver aqui ainda. As novas mudanças vão aparecer aqui depois de uma atualização.",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.dialog.seeFullChangelog": "Ver registro completo de alterações",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "Não tenho interesse em registros de alterações",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "Fechar",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "Entendido, sem mais notas de atualização. Você pode reativá-las quando quiser em Ajustes > Atualizações e privacidade.",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

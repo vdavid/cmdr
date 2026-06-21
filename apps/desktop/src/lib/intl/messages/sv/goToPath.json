@@ -1,0 +1,42 @@
+{
+  "goToPath.dialog.title": "Gå till sökväg",
+  "@goToPath.dialog.title": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.inputAriaLabel": "Sökväg att gå till",
+  "@goToPath.dialog.inputAriaLabel": {
+    "sourceHash": "ac4d152"
+  },
+  "goToPath.dialog.inputPlaceholder": "Skriv eller klistra in en sökväg, t.ex. ~/Documents",
+  "@goToPath.dialog.inputPlaceholder": {
+    "sourceHash": "d84d343"
+  },
+  "goToPath.dialog.recentsAriaLabel": "Senaste sökvägar",
+  "@goToPath.dialog.recentsAriaLabel": {
+    "sourceHash": "b698143"
+  },
+  "goToPath.dialog.removeFromList": "Ta bort från listan",
+  "@goToPath.dialog.removeFromList": {
+    "sourceHash": "82963c7"
+  },
+  "goToPath.dialog.cancel": "Avbryt",
+  "@goToPath.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "goToPath.dialog.confirm": "Gå till sökväg",
+  "@goToPath.dialog.confirm": {
+    "sourceHash": "fb65702"
+  },
+  "goToPath.dialog.ancestorHint": "Den här sökvägen finns inte. Närmaste plats att gå till är {dir}.",
+  "@goToPath.dialog.ancestorHint": {
+    "sourceHash": "43db9f4"
+  },
+  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> finns inte, så vi tog dig till <land>{landed}</land>.",
+  "@goToPath.toast.landedOnAncestor": {
+    "sourceHash": "4ffc1e4"
+  },
+  "goToPath.toast.pressToGoBack": "Tryck på <chip></chip> för att gå tillbaka.",
+  "@goToPath.toast.pressToGoBack": {
+    "sourceHash": "ee851b2"
+  }
+}

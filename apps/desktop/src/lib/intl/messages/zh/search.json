@@ -1,0 +1,54 @@
+{
+  "search.dialog.title": "搜索",
+  "@search.dialog.title": {
+    "sourceHash": "49c266b"
+  },
+  "search.runHint": "按回车键搜索",
+  "@search.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "search.action.showAll.label": "在主窗口中显示全部",
+  "@search.action.showAll.label": {
+    "sourceHash": "782075a"
+  },
+  "search.action.showAll.tooltip": "在当前窗格中打开搜索结果",
+  "@search.action.showAll.tooltip": {
+    "sourceHash": "4e8c58a"
+  },
+  "search.action.goToFile.label": "前往文件",
+  "@search.action.goToFile.label": {
+    "sourceHash": "70299e6"
+  },
+  "search.action.goToFile.tooltip": "在当前窗格中打开该文件",
+  "@search.action.goToFile.tooltip": {
+    "sourceHash": "2627d2e"
+  },
+  "search.recent.runAria": "运行最近的{mode}搜索：{query}",
+  "@search.recent.runAria": {
+    "sourceHash": "fb0939c"
+  },
+  "search.systemDirExclude.default": "排除常见的系统和构建文件夹",
+  "@search.systemDirExclude.default": {
+    "sourceHash": "dcdf28a"
+  },
+  "search.systemDirExclude.heading": "以下文件夹已隐藏：",
+  "@search.systemDirExclude.heading": {
+    "sourceHash": "5ee8d52"
+  },
+  "search.notAFolderToast": "搜索结果不是文件夹。请改为粘贴到真正的文件夹中。",
+  "@search.notAFolderToast": {
+    "sourceHash": "c449358"
+  },
+  "search.searchableFolder.disabledTooltip": "当前文件夹是搜索结果，无法在其中搜索。请先打开一个真正的文件夹。",
+  "@search.searchableFolder.disabledTooltip": {
+    "sourceHash": "a90d24e"
+  },
+  "search.snapshot.defaultLabel": "搜索",
+  "@search.snapshot.defaultLabel": {
+    "sourceHash": "49c266b"
+  },
+  "search.snapshot.cappedLabel": "{label}（共 {totalText} 个，前 {capText} 个）",
+  "@search.snapshot.cappedLabel": {
+    "sourceHash": "35523ac"
+  }
+}

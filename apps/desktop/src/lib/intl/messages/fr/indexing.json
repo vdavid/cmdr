@@ -1,0 +1,134 @@
+{
+  "indexing.status.ariaLabel": "État de l''indexation du disque",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.scan.label": "Analyse de votre disque...",
+  "@indexing.scan.label": {
+    "sourceHash": "e7d6d6a"
+  },
+  "indexing.scan.labelFirst": "Analyse de votre disque (première analyse)...",
+  "@indexing.scan.labelFirst": {
+    "sourceHash": "2431d85"
+  },
+  "indexing.scan.counters": "{entriesText} éléments, {dirsText} rép.",
+  "@indexing.scan.counters": {
+    "sourceHash": "fd4d242"
+  },
+  "indexing.scan.etaRough": "environ {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.aggregation.savingEntries": "Enregistrement des éléments...",
+  "@indexing.aggregation.savingEntries": {
+    "sourceHash": "16fa321"
+  },
+  "indexing.aggregation.loading": "Chargement des répertoires...",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "37b34d4"
+  },
+  "indexing.aggregation.sorting": "Tri des répertoires...",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "9018980"
+  },
+  "indexing.aggregation.computing": "Calcul de la taille des répertoires...",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "ee6ba9a"
+  },
+  "indexing.aggregation.writing": "Enregistrement de la taille des répertoires...",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "ff59fa5"
+  },
+  "indexing.replay.label": "Mise à jour de l''index...",
+  "@indexing.replay.label": {
+    "sourceHash": "2920134"
+  },
+  "indexing.replay.detail": "{eventsText} évènements traités",
+  "@indexing.replay.detail": {
+    "sourceHash": "e80c077"
+  },
+  "indexing.eta.almostDone": "Bientôt terminé",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.secondsLeft": "{secondsText} s restantes",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "{minutesText} min restantes",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.rescan.staleIndex": "L''index de votre disque est obsolète. L''application n''a pas été ouverte depuis un moment, semble-t-il. Une nouvelle analyse est en cours pour se remettre à jour.",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "ddac60e"
+  },
+  "indexing.rescan.journalGap": "Le journal des modifications de fichiers du système ne remonte pas assez loin. Une nouvelle analyse est en cours pour reconstruire l''index.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "5f1075b"
+  },
+  "indexing.rescan.replayOverflow": "Beaucoup de fichiers ont changé depuis la dernière exécution. Une nouvelle analyse est en cours plutôt que de rejouer les changements un à un.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.tooManySubdirRescans": "De nombreux répertoires ont beaucoup changé depuis la dernière exécution. Une nouvelle analyse est en cours pour tout remettre à jour.",
+  "@indexing.rescan.tooManySubdirRescans": {
+    "sourceHash": "06d04a0"
+  },
+  "indexing.rescan.watcherStartFailed": "Le surveillant des modifications de fichiers n''a pas pu démarrer. Une nouvelle analyse est en cours pour remettre l''index à jour.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "831e44d"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "Une forte activité du système de fichiers a saturé le tampon d''évènements. Une nouvelle analyse est en cours pour rester exact.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "L''analyse précédente ne s''est pas terminée (l''application a peut-être été fermée). L''analyse repart de zéro.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "3ca5217"
+  },
+  "indexing.rescan.watcherChannelOverflow": "Une rafale d''activité du système de fichiers a saturé le canal du surveillant. Une nouvelle analyse est en cours pour rester exact.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Une nouvelle analyse du disque est en cours pour garder l''index exact.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.firstConnect.title": "Indexer {name} ?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "Cmdr peut indexer ce disque en arrière-plan pour que la taille des dossiers et la recherche fonctionnent ici. Cela ne s''exécute que pendant que le disque est connecté.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Activer l''indexation",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "Ne plus demander pour ce disque",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "99bed41"
+  },
+  "indexing.firstConnect.silenceAll": "Ne plus demander pour aucun disque",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "511c970"
+  },
+  "indexing.staleDialog.title": "L''index de ce disque est peut-être obsolète",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "21a78ee"
+  },
+  "indexing.staleDialog.body": "Pendant que {name} était déconnecté, des fichiers qui s''y trouvent ont pu changer. La taille des dossiers et les résultats de recherche peuvent être un peu décalés jusqu''à une nouvelle analyse. Le statut jaune à côté du disque le signale toujours, et une nouvelle analyse le rafraîchit.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.neverShowAgain": "Ne plus jamais afficher",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Fermer",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

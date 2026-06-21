@@ -1,0 +1,26 @@
+{
+  "whatsNew.dialog.title": "Có gì mới trong Cmdr",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "Chưa có gì ở đây. Các thay đổi mới sẽ xuất hiện ở đây sau một bản cập nhật.",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.dialog.seeFullChangelog": "Xem toàn bộ nhật ký thay đổi",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "Không quan tâm đến nhật ký thay đổi",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "Đóng",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "Đã rõ, sẽ không còn ghi chú cập nhật nữa. Bật lại bất cứ lúc nào trong Cài đặt > Cập nhật & quyền riêng tư.",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

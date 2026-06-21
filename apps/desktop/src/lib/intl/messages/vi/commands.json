@@ -1,0 +1,602 @@
+{
+  "commands.appQuit.label": "Thoát Cmdr",
+  "@commands.appQuit.label": {
+    "sourceHash": "b3455b4"
+  },
+  "commands.appHide.label": "Ẩn Cmdr",
+  "@commands.appHide.label": {
+    "sourceHash": "8f86f89"
+  },
+  "commands.appHideOthers.label": "Ẩn các ứng dụng khác",
+  "@commands.appHideOthers.label": {
+    "sourceHash": "74376e4"
+  },
+  "commands.appShowAll.label": "Hiện tất cả",
+  "@commands.appShowAll.label": {
+    "sourceHash": "2150d8d"
+  },
+  "commands.appAbout.label": "Giới thiệu về Cmdr",
+  "@commands.appAbout.label": {
+    "sourceHash": "efe010f"
+  },
+  "commands.appLicenseKey.seeDetails.label": "Xem chi tiết giấy phép",
+  "@commands.appLicenseKey.seeDetails.label": {
+    "sourceHash": "0e660e8"
+  },
+  "commands.appLicenseKey.enterKey.label": "Nhập khóa giấy phép",
+  "@commands.appLicenseKey.enterKey.label": {
+    "sourceHash": "357d05e"
+  },
+  "commands.appCommandPalette.label": "Mở bảng lệnh",
+  "@commands.appCommandPalette.label": {
+    "sourceHash": "c022b19"
+  },
+  "commands.appSettings.label": "Mở cài đặt",
+  "@commands.appSettings.label": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.appCheckForUpdates.label": "Kiểm tra cập nhật…",
+  "@commands.appCheckForUpdates.label": {
+    "sourceHash": "52d6f7d"
+  },
+  "commands.appCheckForUpdates.description": "Kiểm tra xem có phiên bản Cmdr mới hơn không, và tải về nếu có",
+  "@commands.appCheckForUpdates.description": {
+    "sourceHash": "c53dab0"
+  },
+  "commands.cmdrOpenOnboarding.label": "Thiết lập ban đầu…",
+  "@commands.cmdrOpenOnboarding.label": {
+    "sourceHash": "c4cc4aa"
+  },
+  "commands.cmdrOpenOnboarding.description": "Mở lại trình thiết lập ban đầu để xem lại hoặc thay đổi các tùy chọn thiết lập lần đầu",
+  "@commands.cmdrOpenOnboarding.description": {
+    "sourceHash": "a45c542"
+  },
+  "commands.helpOpenShortcuts.label": "Phím tắt",
+  "@commands.helpOpenShortcuts.label": {
+    "sourceHash": "e9bef0b"
+  },
+  "commands.helpOpenShortcuts.description": "Mở một cửa sổ chỉ đọc liệt kê mọi phím tắt, đồng bộ trực tiếp với các tùy chỉnh của bạn",
+  "@commands.helpOpenShortcuts.description": {
+    "sourceHash": "a9a1e0d"
+  },
+  "commands.helpSendErrorReport.label": "Gửi báo cáo sự cố…",
+  "@commands.helpSendErrorReport.label": {
+    "sourceHash": "063c94e"
+  },
+  "commands.helpSendErrorReport.description": "Gửi nhật ký Cmdr cho nhóm để giúp khắc phục sự cố",
+  "@commands.helpSendErrorReport.description": {
+    "sourceHash": "021d333"
+  },
+  "commands.helpWhatsNew.label": "Có gì mới",
+  "@commands.helpWhatsNew.label": {
+    "sourceHash": "aa0c54f"
+  },
+  "commands.helpWhatsNew.description": "Xem những thay đổi trong các bản phát hành Cmdr mới nhất",
+  "@commands.helpWhatsNew.description": {
+    "sourceHash": "f8ad411"
+  },
+  "commands.feedbackSend.label": "Gửi phản hồi",
+  "@commands.feedbackSend.label": {
+    "sourceHash": "8235980"
+  },
+  "commands.feedbackSend.description": "Cho người làm ra Cmdr biết bạn nghĩ gì: ý tưởng, mong muốn, bất cứ điều gì",
+  "@commands.feedbackSend.description": {
+    "sourceHash": "89d08a8"
+  },
+  "commands.searchOpen.label": "Tìm kiếm tệp",
+  "@commands.searchOpen.label": {
+    "sourceHash": "179fed8"
+  },
+  "commands.navGoToPath.label": "Đi tới đường dẫn…",
+  "@commands.navGoToPath.label": {
+    "sourceHash": "936edc5"
+  },
+  "commands.navGoToPath.description": "Đưa khung đang chọn đến một đường dẫn được gõ, dán, hoặc gần đây.",
+  "@commands.navGoToPath.description": {
+    "sourceHash": "fc6a00c"
+  },
+  "commands.favoritesAdd.label": "Thêm vào mục ưa thích",
+  "@commands.favoritesAdd.label": {
+    "sourceHash": "7f3c078"
+  },
+  "commands.favoritesAdd.description": "Thêm thư mục hiện tại của khung đang chọn vào Mục ưa thích của bộ chuyển đổi.",
+  "@commands.favoritesAdd.description": {
+    "sourceHash": "84dcbf8"
+  },
+  "commands.downloadsGoToLatest.label": "Đi tới tệp tải về mới nhất",
+  "@commands.downloadsGoToLatest.label": {
+    "sourceHash": "492d0b6"
+  },
+  "commands.downloadsGoToLatest.description": "Mở ~/Downloads và chọn tệp gần đây nhất.",
+  "@commands.downloadsGoToLatest.description": {
+    "sourceHash": "42a26a2"
+  },
+  "commands.viewShowHidden.label": "Bật/tắt tệp ẩn",
+  "@commands.viewShowHidden.label": {
+    "sourceHash": "6aa9b55"
+  },
+  "commands.viewBriefMode.label": "Chuyển sang dạng xem Rút gọn",
+  "@commands.viewBriefMode.label": {
+    "sourceHash": "bcf6636"
+  },
+  "commands.viewFullMode.label": "Chuyển sang dạng xem Đầy đủ",
+  "@commands.viewFullMode.label": {
+    "sourceHash": "b44150e"
+  },
+  "commands.viewSetMode.label": "Đặt chế độ xem của khung",
+  "@commands.viewSetMode.label": {
+    "sourceHash": "1e050a6"
+  },
+  "commands.viewZoomSet75.label": "Phóng to 75%",
+  "@commands.viewZoomSet75.label": {
+    "sourceHash": "70ac915"
+  },
+  "commands.viewZoomSet100.label": "Phóng to 100%",
+  "@commands.viewZoomSet100.label": {
+    "sourceHash": "c23bdb4"
+  },
+  "commands.viewZoomSet125.label": "Phóng to 125%",
+  "@commands.viewZoomSet125.label": {
+    "sourceHash": "9191980"
+  },
+  "commands.viewZoomSet150.label": "Phóng to 150%",
+  "@commands.viewZoomSet150.label": {
+    "sourceHash": "2e247da"
+  },
+  "commands.viewZoomIn.label": "Phóng to",
+  "@commands.viewZoomIn.label": {
+    "sourceHash": "0e47f09"
+  },
+  "commands.viewZoomOut.label": "Thu nhỏ",
+  "@commands.viewZoomOut.label": {
+    "sourceHash": "bc7b631"
+  },
+  "commands.sortByName.label": "Sắp xếp theo tên",
+  "@commands.sortByName.label": {
+    "sourceHash": "588a082"
+  },
+  "commands.sortByExtension.label": "Sắp xếp theo đuôi",
+  "@commands.sortByExtension.label": {
+    "sourceHash": "bb899db"
+  },
+  "commands.sortByModified.label": "Sắp xếp theo ngày sửa đổi",
+  "@commands.sortByModified.label": {
+    "sourceHash": "d9349cb"
+  },
+  "commands.sortBySize.label": "Sắp xếp theo kích thước",
+  "@commands.sortBySize.label": {
+    "sourceHash": "b5fa7af"
+  },
+  "commands.sortByCreated.label": "Sắp xếp theo ngày tạo",
+  "@commands.sortByCreated.label": {
+    "sourceHash": "9bdaf4e"
+  },
+  "commands.sortAscending.label": "Sắp xếp tăng dần",
+  "@commands.sortAscending.label": {
+    "sourceHash": "ec3c9c7"
+  },
+  "commands.sortDescending.label": "Sắp xếp giảm dần",
+  "@commands.sortDescending.label": {
+    "sourceHash": "8993b78"
+  },
+  "commands.sortToggleOrder.label": "Bật/tắt thứ tự sắp xếp",
+  "@commands.sortToggleOrder.label": {
+    "sourceHash": "e0eb85f"
+  },
+  "commands.sortSet.label": "Đặt cách sắp xếp của khung",
+  "@commands.sortSet.label": {
+    "sourceHash": "64232ef"
+  },
+  "commands.paneSwitch.label": "Chuyển khung",
+  "@commands.paneSwitch.label": {
+    "sourceHash": "377471f"
+  },
+  "commands.paneSwap.label": "Hoán đổi khung",
+  "@commands.paneSwap.label": {
+    "sourceHash": "cc29396"
+  },
+  "commands.paneLeftVolumeChooser.label": "Mở bộ chọn ổ đĩa bên trái",
+  "@commands.paneLeftVolumeChooser.label": {
+    "sourceHash": "8682140"
+  },
+  "commands.paneRightVolumeChooser.label": "Mở bộ chọn ổ đĩa bên phải",
+  "@commands.paneRightVolumeChooser.label": {
+    "sourceHash": "7a0268f"
+  },
+  "commands.paneCopyPathLeftToRight.label": "Sao chép đường dẫn từ khung trái sang phải",
+  "@commands.paneCopyPathLeftToRight.label": {
+    "sourceHash": "d1376f6"
+  },
+  "commands.paneCopyPathLeftToRight.description": "Mở vị trí của khung trái ở bên phải. Khi khung trái đang được chọn và con trỏ đang ở trên một thư mục, thư mục đó sẽ mở ở bên phải.",
+  "@commands.paneCopyPathLeftToRight.description": {
+    "sourceHash": "07ac6a1"
+  },
+  "commands.paneCopyPathRightToLeft.label": "Sao chép đường dẫn từ khung phải sang trái",
+  "@commands.paneCopyPathRightToLeft.label": {
+    "sourceHash": "266a30d"
+  },
+  "commands.paneCopyPathRightToLeft.description": "Mở vị trí của khung phải ở bên trái. Khi khung phải đang được chọn và con trỏ đang ở trên một thư mục, thư mục đó sẽ mở ở bên trái.",
+  "@commands.paneCopyPathRightToLeft.description": {
+    "sourceHash": "95c566f"
+  },
+  "commands.paneRefresh.label": "Làm mới khung",
+  "@commands.paneRefresh.label": {
+    "sourceHash": "42ce075"
+  },
+  "commands.tabNew.label": "Thẻ mới",
+  "@commands.tabNew.label": {
+    "sourceHash": "1e08fda"
+  },
+  "commands.tabClose.label": "Đóng thẻ",
+  "@commands.tabClose.label": {
+    "sourceHash": "50a3f95"
+  },
+  "commands.tabReopen.label": "Mở lại thẻ đã đóng",
+  "@commands.tabReopen.label": {
+    "sourceHash": "5ca5397"
+  },
+  "commands.tabNext.label": "Thẻ tiếp theo",
+  "@commands.tabNext.label": {
+    "sourceHash": "1ef9522"
+  },
+  "commands.tabPrev.label": "Thẻ trước",
+  "@commands.tabPrev.label": {
+    "sourceHash": "c88d5e7"
+  },
+  "commands.tabTogglePin.label": "Bật/tắt ghim thẻ",
+  "@commands.tabTogglePin.label": {
+    "sourceHash": "3fdfcd1"
+  },
+  "commands.tabCloseOthers.label": "Đóng các thẻ khác",
+  "@commands.tabCloseOthers.label": {
+    "sourceHash": "0ddc2c5"
+  },
+  "commands.tabMcpAction.label": "Tác vụ thẻ của khung",
+  "@commands.tabMcpAction.label": {
+    "sourceHash": "405ed9c"
+  },
+  "commands.navUp.label": "Chọn tệp trước đó",
+  "@commands.navUp.label": {
+    "sourceHash": "40dca00"
+  },
+  "commands.navDown.label": "Chọn tệp tiếp theo",
+  "@commands.navDown.label": {
+    "sourceHash": "61e81ee"
+  },
+  "commands.navOpen.label": "Mở tệp hoặc thư mục",
+  "@commands.navOpen.label": {
+    "sourceHash": "ef8d6a5"
+  },
+  "commands.navParent.label": "Đi tới thư mục cha",
+  "@commands.navParent.label": {
+    "sourceHash": "7d4c500"
+  },
+  "commands.navHome.label": "Đi tới tệp đầu tiên",
+  "@commands.navHome.label": {
+    "sourceHash": "5750de6"
+  },
+  "commands.navEnd.label": "Đi tới tệp cuối cùng",
+  "@commands.navEnd.label": {
+    "sourceHash": "f39205a"
+  },
+  "commands.navPageUp.label": "Lên một trang",
+  "@commands.navPageUp.label": {
+    "sourceHash": "43f41b5"
+  },
+  "commands.navPageDown.label": "Xuống một trang",
+  "@commands.navPageDown.label": {
+    "sourceHash": "72a825f"
+  },
+  "commands.navBack.label": "Quay lại",
+  "@commands.navBack.label": {
+    "sourceHash": "6aadac2"
+  },
+  "commands.navForward.label": "Đi tới",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
+  "commands.navOpenUnderCursor.label": "Mở mục dưới con trỏ",
+  "@commands.navOpenUnderCursor.label": {
+    "sourceHash": "6b54df9"
+  },
+  "commands.cursorMoveTo.label": "Di chuyển con trỏ của khung",
+  "@commands.cursorMoveTo.label": {
+    "sourceHash": "4c196ef"
+  },
+  "commands.cursorScrollTo.label": "Cuộn khung đến chỉ mục",
+  "@commands.cursorScrollTo.label": {
+    "sourceHash": "98ca70c"
+  },
+  "commands.navLeft.label": "Chuyển sang cột bên trái",
+  "@commands.navLeft.label": {
+    "sourceHash": "db46f08"
+  },
+  "commands.navRight.label": "Chuyển sang cột bên phải",
+  "@commands.navRight.label": {
+    "sourceHash": "21b59f0"
+  },
+  "commands.navFirstInFull.label": "Nhảy tới tệp đầu tiên",
+  "@commands.navFirstInFull.label": {
+    "sourceHash": "f0ea135"
+  },
+  "commands.navLastInFull.label": "Nhảy tới tệp cuối cùng",
+  "@commands.navLastInFull.label": {
+    "sourceHash": "e6d6a52"
+  },
+  "commands.fileRename.label": "Đổi tên",
+  "@commands.fileRename.label": {
+    "sourceHash": "3064d79"
+  },
+  "commands.fileView.label": "Xem",
+  "@commands.fileView.label": {
+    "sourceHash": "dcc839a"
+  },
+  "commands.fileEdit.label": "Chỉnh sửa bằng trình soạn thảo mặc định",
+  "@commands.fileEdit.label": {
+    "sourceHash": "badc768"
+  },
+  "commands.fileCopy.label": "Sao chép",
+  "@commands.fileCopy.label": {
+    "sourceHash": "e21f935"
+  },
+  "commands.fileMove.label": "Di chuyển",
+  "@commands.fileMove.label": {
+    "sourceHash": "6ecc3df"
+  },
+  "commands.editCopy.label": "Sao chép vào bảng nhớ tạm",
+  "@commands.editCopy.label": {
+    "sourceHash": "b749e20"
+  },
+  "commands.editCopy.description": "Sao chép các tệp đã chọn vào bảng nhớ tạm để dán",
+  "@commands.editCopy.description": {
+    "sourceHash": "5c769a7"
+  },
+  "commands.editCut.label": "Cắt vào bảng nhớ tạm",
+  "@commands.editCut.label": {
+    "sourceHash": "a954b4a"
+  },
+  "commands.editCut.description": "Cắt các tệp đã chọn (dán sẽ di chuyển chúng)",
+  "@commands.editCut.description": {
+    "sourceHash": "5bc3870"
+  },
+  "commands.editPaste.label": "Dán",
+  "@commands.editPaste.label": {
+    "sourceHash": "f3380f7"
+  },
+  "commands.editPaste.description": "Dán các tệp từ bảng nhớ tạm vào thư mục hiện tại",
+  "@commands.editPaste.description": {
+    "sourceHash": "32545d7"
+  },
+  "commands.editPasteAsMove.label": "Di chuyển vào đây",
+  "@commands.editPasteAsMove.label": {
+    "sourceHash": "56f1247"
+  },
+  "commands.editPasteAsMove.description": "Dán các tệp từ bảng nhớ tạm dưới dạng di chuyển",
+  "@commands.editPasteAsMove.description": {
+    "sourceHash": "961316d"
+  },
+  "commands.fileNewFolder.label": "Thư mục mới",
+  "@commands.fileNewFolder.label": {
+    "sourceHash": "cf28f49"
+  },
+  "commands.fileNewFile.label": "Tạo tệp mới",
+  "@commands.fileNewFile.label": {
+    "sourceHash": "6e70b95"
+  },
+  "commands.fileDelete.label": "Xóa",
+  "@commands.fileDelete.label": {
+    "sourceHash": "e2d0a54"
+  },
+  "commands.fileDeletePermanently.label": "Xóa vĩnh viễn",
+  "@commands.fileDeletePermanently.label": {
+    "sourceHash": "280b10c"
+  },
+  "commands.dialogConfirm.label": "Xác nhận hộp thoại mở",
+  "@commands.dialogConfirm.label": {
+    "sourceHash": "b58a959"
+  },
+  "commands.fileShowInFinder.mac.label": "Hiện trong Finder",
+  "@commands.fileShowInFinder.mac.label": {
+    "sourceHash": "c2a9c77"
+  },
+  "commands.fileShowInFinder.other.label": "Hiện trong trình quản lý tệp",
+  "@commands.fileShowInFinder.other.label": {
+    "sourceHash": "3ca4dad"
+  },
+  "commands.fileCopyPath.label": "Sao chép đường dẫn vào bảng nhớ tạm",
+  "@commands.fileCopyPath.label": {
+    "sourceHash": "333608a"
+  },
+  "commands.fileCopyCurrentDirectoryPath.label": "Sao chép đường dẫn thư mục hiện tại",
+  "@commands.fileCopyCurrentDirectoryPath.label": {
+    "sourceHash": "ae360d1"
+  },
+  "commands.fileCopyFilename.label": "Sao chép tên tệp",
+  "@commands.fileCopyFilename.label": {
+    "sourceHash": "5cdf7f8"
+  },
+  "commands.fileGetInfo.mac.label": "Lấy thông tin",
+  "@commands.fileGetInfo.mac.label": {
+    "sourceHash": "91c64ca"
+  },
+  "commands.fileGetInfo.other.label": "Thuộc tính tệp",
+  "@commands.fileGetInfo.other.label": {
+    "sourceHash": "5d9ebf2"
+  },
+  "commands.fileQuickLook.mac.label": "Xem nhanh",
+  "@commands.fileQuickLook.mac.label": {
+    "sourceHash": "f5616ce"
+  },
+  "commands.fileQuickLook.other.label": "Xem trước",
+  "@commands.fileQuickLook.other.label": {
+    "sourceHash": "324b134"
+  },
+  "commands.fileContextMenu.label": "Mở menu chuột phải",
+  "@commands.fileContextMenu.label": {
+    "sourceHash": "c07efaf"
+  },
+  "commands.fileContextMenu.description": "Mở menu chuột phải cho tệp dưới con trỏ",
+  "@commands.fileContextMenu.description": {
+    "sourceHash": "8fb1721"
+  },
+  "commands.cloudMakeOffline.label": "Tải xuống để dùng ngoại tuyến",
+  "@commands.cloudMakeOffline.label": {
+    "sourceHash": "b75c09f"
+  },
+  "commands.cloudMakeOffline.description": "Tải xuống một tệp lưu trên đám mây để vẫn dùng được khi không có kết nối internet",
+  "@commands.cloudMakeOffline.description": {
+    "sourceHash": "d5cd793"
+  },
+  "commands.cloudRemoveDownload.label": "Xóa bản tải về",
+  "@commands.cloudRemoveDownload.label": {
+    "sourceHash": "5dfc369"
+  },
+  "commands.cloudRemoveDownload.description": "Xóa bản sao cục bộ của một tệp đám mây, chỉ để lại bản trực tuyến",
+  "@commands.cloudRemoveDownload.description": {
+    "sourceHash": "470afd2"
+  },
+  "commands.selectionToggle.label": "Bật/tắt lựa chọn",
+  "@commands.selectionToggle.label": {
+    "sourceHash": "6cb5515"
+  },
+  "commands.selectionToggleAndDown.label": "Bật/tắt lựa chọn và di chuyển xuống",
+  "@commands.selectionToggleAndDown.label": {
+    "sourceHash": "72ccb36"
+  },
+  "commands.selectionToggleAndDown.description": "Chọn hoặc bỏ chọn tệp dưới con trỏ, rồi di chuyển xuống (kiểu Total Commander)",
+  "@commands.selectionToggleAndDown.description": {
+    "sourceHash": "378bb7a"
+  },
+  "commands.selectionSelectAll.label": "Chọn tất cả",
+  "@commands.selectionSelectAll.label": {
+    "sourceHash": "1fc9a38"
+  },
+  "commands.selectionDeselectAll.label": "Bỏ chọn tất cả",
+  "@commands.selectionDeselectAll.label": {
+    "sourceHash": "9675494"
+  },
+  "commands.selectionSelectFiles.label": "Chọn tệp…",
+  "@commands.selectionSelectFiles.label": {
+    "sourceHash": "b7f202e"
+  },
+  "commands.selectionSelectFiles.description": "Mở hộp thoại Chọn tệp để thêm các tệp khớp vào lựa chọn",
+  "@commands.selectionSelectFiles.description": {
+    "sourceHash": "7695f3e"
+  },
+  "commands.selectionDeselectFiles.label": "Bỏ chọn tệp…",
+  "@commands.selectionDeselectFiles.label": {
+    "sourceHash": "6fb10d5"
+  },
+  "commands.selectionDeselectFiles.description": "Mở hộp thoại Bỏ chọn tệp để loại các tệp khớp khỏi lựa chọn",
+  "@commands.selectionDeselectFiles.description": {
+    "sourceHash": "2a6f82f"
+  },
+  "commands.selectionMcpSelect.label": "Chọn dải trong khung",
+  "@commands.selectionMcpSelect.label": {
+    "sourceHash": "d8bb646"
+  },
+  "commands.selectionMcpSelectByNames.label": "Chọn tệp theo tên trong khung",
+  "@commands.selectionMcpSelectByNames.label": {
+    "sourceHash": "8cfc75d"
+  },
+  "commands.networkSelectHost.label": "Chọn máy chủ mạng",
+  "@commands.networkSelectHost.label": {
+    "sourceHash": "4a9ede5"
+  },
+  "commands.networkRefresh.label": "Làm mới các máy chủ mạng",
+  "@commands.networkRefresh.label": {
+    "sourceHash": "73966bd"
+  },
+  "commands.shareBack.label": "Quay lại danh sách máy chủ",
+  "@commands.shareBack.label": {
+    "sourceHash": "42c44d5"
+  },
+  "commands.shareSelectShare.label": "Kết nối với mục chia sẻ",
+  "@commands.shareSelectShare.label": {
+    "sourceHash": "6c48c8c"
+  },
+  "commands.volumeSelect.label": "Chọn ổ đĩa",
+  "@commands.volumeSelect.label": {
+    "sourceHash": "60f5ce1"
+  },
+  "commands.volumeClose.label": "Đóng bộ chọn ổ đĩa",
+  "@commands.volumeClose.label": {
+    "sourceHash": "aa6a29b"
+  },
+  "commands.volumeSelectByName.label": "Chọn ổ đĩa của khung theo tên",
+  "@commands.volumeSelectByName.label": {
+    "sourceHash": "9f16865"
+  },
+  "commands.aboutOpenWebsite.label": "Mở trang web",
+  "@commands.aboutOpenWebsite.label": {
+    "sourceHash": "3451735"
+  },
+  "commands.aboutOpenUpgrade.label": "Mở trang nâng cấp",
+  "@commands.aboutOpenUpgrade.label": {
+    "sourceHash": "9df3bf0"
+  },
+  "commands.aboutClose.label": "Đóng cửa sổ Giới thiệu",
+  "@commands.aboutClose.label": {
+    "sourceHash": "d0096c3"
+  },
+  "commands.paletteUp.label": "Kết quả trước",
+  "@commands.paletteUp.label": {
+    "sourceHash": "965bc32"
+  },
+  "commands.paletteDown.label": "Kết quả tiếp theo",
+  "@commands.paletteDown.label": {
+    "sourceHash": "bf56a19"
+  },
+  "commands.paletteExecute.label": "Chạy lệnh",
+  "@commands.paletteExecute.label": {
+    "sourceHash": "20f9b97"
+  },
+  "commands.paletteClose.label": "Đóng bảng lệnh",
+  "@commands.paletteClose.label": {
+    "sourceHash": "2e75050"
+  },
+  "commands.handler.favoriteAdded": "Đã thêm \"{name}\" vào mục ưa thích",
+  "@commands.handler.favoriteAdded": {
+    "sourceHash": "a68dd8f"
+  },
+  "commands.handler.favoriteAddFailed": "Chưa thêm được thư mục đó vào mục ưa thích. Thử lại nhé?",
+  "@commands.handler.favoriteAddFailed": {
+    "sourceHash": "3f85e99"
+  },
+  "commands.handler.tabLimitReached": "Đã đạt giới hạn số thẻ",
+  "@commands.handler.tabLimitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "commands.handler.noRecentlyClosedTabs": "Không có thẻ nào vừa đóng trong khung này.",
+  "@commands.handler.noRecentlyClosedTabs": {
+    "sourceHash": "e560789"
+  },
+  "commands.handler.cloudDownloadFailed": "Chưa tải được từ đám mây. {detail}",
+  "@commands.handler.cloudDownloadFailed": {
+    "sourceHash": "70792cf"
+  },
+  "commands.handler.cloudRemoveDownloadFailed": "Chưa xóa được bản tải về. {detail}",
+  "@commands.handler.cloudRemoveDownloadFailed": {
+    "sourceHash": "425280d"
+  },
+  "commands.handler.zoomResetHintShortcut": "Bạn có thể đặt lại mức phóng về 100% bằng {shortcut}.",
+  "@commands.handler.zoomResetHintShortcut": {
+    "sourceHash": "efdd715"
+  },
+  "commands.handler.zoomResetHintMenu": "Bạn có thể đặt lại mức phóng về 100% tại View > Zoom > 100%.",
+  "@commands.handler.zoomResetHintMenu": {
+    "sourceHash": "f10315d"
+  },
+  "commands.handler.zoomReset": "Đã đặt lại mức phóng về 100%.",
+  "@commands.handler.zoomReset": {
+    "sourceHash": "8c6bf82"
+  },
+  "commands.handler.zoomIncreased": "Đã tăng mức phóng lên {size}%. {hint}",
+  "@commands.handler.zoomIncreased": {
+    "sourceHash": "39fea10"
+  },
+  "commands.handler.zoomDecreased": "Đã giảm mức phóng xuống {size}%. {hint}",
+  "@commands.handler.zoomDecreased": {
+    "sourceHash": "71404cb"
+  }
+}

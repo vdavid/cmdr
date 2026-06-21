@@ -1,0 +1,22 @@
+{
+  "lowDiskSpace.toast.message": "Auf deinem Startvolume wird der Speicherplatz knapp: {freeText} frei ({percentText} %).",
+  "@lowDiskSpace.toast.message": {
+    "sourceHash": "44b701f"
+  },
+  "lowDiskSpace.toast.disable": "Diese Benachrichtigungen deaktivieren",
+  "@lowDiskSpace.toast.disable": {
+    "sourceHash": "1b085f6"
+  },
+  "lowDiskSpace.toast.closeTooltip": "Schließen",
+  "@lowDiskSpace.toast.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
+  "lowDiskSpace.notification.title": "Wenig Speicherplatz",
+  "@lowDiskSpace.notification.title": {
+    "sourceHash": "5b1f5bf"
+  },
+  "lowDiskSpace.notification.body": "{freeText} frei ({percentText} %) auf deinem Startvolume.",
+  "@lowDiskSpace.notification.body": {
+    "sourceHash": "b17ee43"
+  }
+}

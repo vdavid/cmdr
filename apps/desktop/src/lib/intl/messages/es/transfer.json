@@ -1,0 +1,42 @@
+{
+  "transfer.trash": "{count, plural, one {Se movió {countText} archivo a la papelera} many {Se movieron {countText} archivos a la papelera} other {Se movieron {countText} archivos a la papelera}}",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "Eliminación completada: {count, plural, one {{countText} archivo} many {{countText} archivos} other {{countText} archivos}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {archivo} many {archivos} other {archivos}} y {foldersText} {folders, plural, one {carpeta} many {carpetas} other {carpetas}}} foldersOnly {{foldersText} {folders, plural, one {carpeta} many {carpetas} other {carpetas}}} other {{filesText} {files, plural, one {archivo} many {archivos} other {archivos}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "{verb, select, copy {Se copió} other {Se movió}}: {phrase}.",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "{verb, select, copy {Se copió} other {Se movió}}: {phrase}; {skipped, plural, one {se omitió {skippedText} archivo} many {se omitieron {skippedText} archivos} other {se omitieron {skippedText} archivos}} (ya en el destino).",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {Copia completada} other {Movimiento completado}}: {transferred, plural, one {se {verb, select, copy {copió} other {movió}} {transferredText} archivo} many {se {verb, select, copy {copiaron} other {movieron}} {transferredText} archivos} other {se {verb, select, copy {copiaron} other {movieron}} {transferredText} archivos}}.",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Copia completada} other {Movimiento completado}}: el archivo ya estaba en el destino, no se {verb, select, copy {copió} other {movió}}.",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copia completada} other {Movimiento completado}}: se omitieron los {skippedText} archivos (ya en el destino), no se {verb, select, copy {copió} other {movió}} nada.",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "ae39c4b"
+  },
+  "transfer.fileOnly.mixedCopy": "Copia completada: se copiaron {transferredText}, se omitieron {skippedText}. {processed, plural, one {Tu {processedText} archivo seleccionado ya está en el destino} many {Tus {processedText} archivos seleccionados ya están en el destino} other {Tus {processedText} archivos seleccionados ya están en el destino}}.",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "Movimiento completado: se movieron {transferredText}, se omitieron {skippedText}. {skipped, plural, one {{skippedText} archivo ya estaba en el destino} many {{skippedText} archivos ya estaban en el destino} other {{skippedText} archivos ya estaban en el destino}}.",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  }
+}

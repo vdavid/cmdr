@@ -1,0 +1,602 @@
+{
+  "commands.appQuit.label": "Stop Cmdr",
+  "@commands.appQuit.label": {
+    "sourceHash": "b3455b4"
+  },
+  "commands.appHide.label": "Verberg Cmdr",
+  "@commands.appHide.label": {
+    "sourceHash": "8f86f89"
+  },
+  "commands.appHideOthers.label": "Verberg andere",
+  "@commands.appHideOthers.label": {
+    "sourceHash": "74376e4"
+  },
+  "commands.appShowAll.label": "Toon alles",
+  "@commands.appShowAll.label": {
+    "sourceHash": "2150d8d"
+  },
+  "commands.appAbout.label": "Over Cmdr",
+  "@commands.appAbout.label": {
+    "sourceHash": "efe010f"
+  },
+  "commands.appLicenseKey.seeDetails.label": "Toon licentiegegevens",
+  "@commands.appLicenseKey.seeDetails.label": {
+    "sourceHash": "0e660e8"
+  },
+  "commands.appLicenseKey.enterKey.label": "Voer licentiesleutel in",
+  "@commands.appLicenseKey.enterKey.label": {
+    "sourceHash": "357d05e"
+  },
+  "commands.appCommandPalette.label": "Open opdrachtenpalet",
+  "@commands.appCommandPalette.label": {
+    "sourceHash": "c022b19"
+  },
+  "commands.appSettings.label": "Open instellingen",
+  "@commands.appSettings.label": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.appCheckForUpdates.label": "Zoek naar updates…",
+  "@commands.appCheckForUpdates.label": {
+    "sourceHash": "52d6f7d"
+  },
+  "commands.appCheckForUpdates.description": "Kijk of er een nieuwere versie van Cmdr is, en download die als dat zo is",
+  "@commands.appCheckForUpdates.description": {
+    "sourceHash": "c53dab0"
+  },
+  "commands.cmdrOpenOnboarding.label": "Onboarding…",
+  "@commands.cmdrOpenOnboarding.label": {
+    "sourceHash": "c4cc4aa"
+  },
+  "commands.cmdrOpenOnboarding.description": "Open de onboardingwizard opnieuw om de instellingen van de eerste start te bekijken of te wijzigen",
+  "@commands.cmdrOpenOnboarding.description": {
+    "sourceHash": "a45c542"
+  },
+  "commands.helpOpenShortcuts.label": "Sneltoetsen",
+  "@commands.helpOpenShortcuts.label": {
+    "sourceHash": "e9bef0b"
+  },
+  "commands.helpOpenShortcuts.description": "Open een alleen-lezenvenster met alle sneltoetsen, live gesynchroniseerd met je aanpassingen",
+  "@commands.helpOpenShortcuts.description": {
+    "sourceHash": "a9a1e0d"
+  },
+  "commands.helpSendErrorReport.label": "Verstuur foutrapport…",
+  "@commands.helpSendErrorReport.label": {
+    "sourceHash": "063c94e"
+  },
+  "commands.helpSendErrorReport.description": "Verstuur Cmdr-logs naar het team om iets dat misging te helpen oplossen",
+  "@commands.helpSendErrorReport.description": {
+    "sourceHash": "021d333"
+  },
+  "commands.helpWhatsNew.label": "Wat is er nieuw",
+  "@commands.helpWhatsNew.label": {
+    "sourceHash": "aa0c54f"
+  },
+  "commands.helpWhatsNew.description": "Bekijk wat er is veranderd in de nieuwste versies van Cmdr",
+  "@commands.helpWhatsNew.description": {
+    "sourceHash": "f8ad411"
+  },
+  "commands.feedbackSend.label": "Verstuur feedback",
+  "@commands.feedbackSend.label": {
+    "sourceHash": "8235980"
+  },
+  "commands.feedbackSend.description": "Vertel de maker van Cmdr wat je denkt: ideeën, wensen, alles",
+  "@commands.feedbackSend.description": {
+    "sourceHash": "89d08a8"
+  },
+  "commands.searchOpen.label": "Zoek bestanden",
+  "@commands.searchOpen.label": {
+    "sourceHash": "179fed8"
+  },
+  "commands.navGoToPath.label": "Ga naar pad…",
+  "@commands.navGoToPath.label": {
+    "sourceHash": "936edc5"
+  },
+  "commands.navGoToPath.description": "Spring met het actieve paneel naar een getypt, geplakt of recent pad.",
+  "@commands.navGoToPath.description": {
+    "sourceHash": "fc6a00c"
+  },
+  "commands.favoritesAdd.label": "Voeg toe aan favorieten",
+  "@commands.favoritesAdd.label": {
+    "sourceHash": "7f3c078"
+  },
+  "commands.favoritesAdd.description": "Voeg de huidige map van het actieve paneel toe aan de favorieten van de wisselaar.",
+  "@commands.favoritesAdd.description": {
+    "sourceHash": "84dcbf8"
+  },
+  "commands.downloadsGoToLatest.label": "Ga naar laatste download",
+  "@commands.downloadsGoToLatest.label": {
+    "sourceHash": "492d0b6"
+  },
+  "commands.downloadsGoToLatest.description": "Open ~/Downloads en selecteer het meest recente bestand.",
+  "@commands.downloadsGoToLatest.description": {
+    "sourceHash": "42a26a2"
+  },
+  "commands.viewShowHidden.label": "Verborgen bestanden aan/uit",
+  "@commands.viewShowHidden.label": {
+    "sourceHash": "6aa9b55"
+  },
+  "commands.viewBriefMode.label": "Schakel naar Beknopte weergave",
+  "@commands.viewBriefMode.label": {
+    "sourceHash": "bcf6636"
+  },
+  "commands.viewFullMode.label": "Schakel naar Volledige weergave",
+  "@commands.viewFullMode.label": {
+    "sourceHash": "b44150e"
+  },
+  "commands.viewSetMode.label": "Stel weergavemodus van paneel in",
+  "@commands.viewSetMode.label": {
+    "sourceHash": "1e050a6"
+  },
+  "commands.viewZoomSet75.label": "Zoom naar 75%",
+  "@commands.viewZoomSet75.label": {
+    "sourceHash": "70ac915"
+  },
+  "commands.viewZoomSet100.label": "Zoom naar 100%",
+  "@commands.viewZoomSet100.label": {
+    "sourceHash": "c23bdb4"
+  },
+  "commands.viewZoomSet125.label": "Zoom naar 125%",
+  "@commands.viewZoomSet125.label": {
+    "sourceHash": "9191980"
+  },
+  "commands.viewZoomSet150.label": "Zoom naar 150%",
+  "@commands.viewZoomSet150.label": {
+    "sourceHash": "2e247da"
+  },
+  "commands.viewZoomIn.label": "Zoom in",
+  "@commands.viewZoomIn.label": {
+    "sourceHash": "0e47f09"
+  },
+  "commands.viewZoomOut.label": "Zoom uit",
+  "@commands.viewZoomOut.label": {
+    "sourceHash": "bc7b631"
+  },
+  "commands.sortByName.label": "Sorteer op naam",
+  "@commands.sortByName.label": {
+    "sourceHash": "588a082"
+  },
+  "commands.sortByExtension.label": "Sorteer op extensie",
+  "@commands.sortByExtension.label": {
+    "sourceHash": "bb899db"
+  },
+  "commands.sortByModified.label": "Sorteer op bewerkingsdatum",
+  "@commands.sortByModified.label": {
+    "sourceHash": "d9349cb"
+  },
+  "commands.sortBySize.label": "Sorteer op grootte",
+  "@commands.sortBySize.label": {
+    "sourceHash": "b5fa7af"
+  },
+  "commands.sortByCreated.label": "Sorteer op aanmaakdatum",
+  "@commands.sortByCreated.label": {
+    "sourceHash": "9bdaf4e"
+  },
+  "commands.sortAscending.label": "Sorteer oplopend",
+  "@commands.sortAscending.label": {
+    "sourceHash": "ec3c9c7"
+  },
+  "commands.sortDescending.label": "Sorteer aflopend",
+  "@commands.sortDescending.label": {
+    "sourceHash": "8993b78"
+  },
+  "commands.sortToggleOrder.label": "Sorteervolgorde omkeren",
+  "@commands.sortToggleOrder.label": {
+    "sourceHash": "e0eb85f"
+  },
+  "commands.sortSet.label": "Stel paneelsortering in",
+  "@commands.sortSet.label": {
+    "sourceHash": "64232ef"
+  },
+  "commands.paneSwitch.label": "Wissel paneel",
+  "@commands.paneSwitch.label": {
+    "sourceHash": "377471f"
+  },
+  "commands.paneSwap.label": "Verwissel panelen",
+  "@commands.paneSwap.label": {
+    "sourceHash": "cc29396"
+  },
+  "commands.paneLeftVolumeChooser.label": "Open linkse volumekiezer",
+  "@commands.paneLeftVolumeChooser.label": {
+    "sourceHash": "8682140"
+  },
+  "commands.paneRightVolumeChooser.label": "Open rechtse volumekiezer",
+  "@commands.paneRightVolumeChooser.label": {
+    "sourceHash": "7a0268f"
+  },
+  "commands.paneCopyPathLeftToRight.label": "Kopieer pad van linker- naar rechterpaneel",
+  "@commands.paneCopyPathLeftToRight.label": {
+    "sourceHash": "d1376f6"
+  },
+  "commands.paneCopyPathLeftToRight.description": "Open de locatie van het linkerpaneel rechts. Wanneer het linkerpaneel actief is en de cursor op een map staat, wordt die map in plaats daarvan rechts geopend.",
+  "@commands.paneCopyPathLeftToRight.description": {
+    "sourceHash": "07ac6a1"
+  },
+  "commands.paneCopyPathRightToLeft.label": "Kopieer pad van rechter- naar linkerpaneel",
+  "@commands.paneCopyPathRightToLeft.label": {
+    "sourceHash": "266a30d"
+  },
+  "commands.paneCopyPathRightToLeft.description": "Open de locatie van het rechterpaneel links. Wanneer het rechterpaneel actief is en de cursor op een map staat, wordt die map in plaats daarvan links geopend.",
+  "@commands.paneCopyPathRightToLeft.description": {
+    "sourceHash": "95c566f"
+  },
+  "commands.paneRefresh.label": "Ververs paneel",
+  "@commands.paneRefresh.label": {
+    "sourceHash": "42ce075"
+  },
+  "commands.tabNew.label": "Nieuw tabblad",
+  "@commands.tabNew.label": {
+    "sourceHash": "1e08fda"
+  },
+  "commands.tabClose.label": "Sluit tabblad",
+  "@commands.tabClose.label": {
+    "sourceHash": "50a3f95"
+  },
+  "commands.tabReopen.label": "Heropen gesloten tabblad",
+  "@commands.tabReopen.label": {
+    "sourceHash": "5ca5397"
+  },
+  "commands.tabNext.label": "Volgend tabblad",
+  "@commands.tabNext.label": {
+    "sourceHash": "1ef9522"
+  },
+  "commands.tabPrev.label": "Vorig tabblad",
+  "@commands.tabPrev.label": {
+    "sourceHash": "c88d5e7"
+  },
+  "commands.tabTogglePin.label": "Tabblad vastzetten aan/uit",
+  "@commands.tabTogglePin.label": {
+    "sourceHash": "3fdfcd1"
+  },
+  "commands.tabCloseOthers.label": "Sluit andere tabbladen",
+  "@commands.tabCloseOthers.label": {
+    "sourceHash": "0ddc2c5"
+  },
+  "commands.tabMcpAction.label": "Tabbladactie paneel",
+  "@commands.tabMcpAction.label": {
+    "sourceHash": "405ed9c"
+  },
+  "commands.navUp.label": "Selecteer vorig bestand",
+  "@commands.navUp.label": {
+    "sourceHash": "40dca00"
+  },
+  "commands.navDown.label": "Selecteer volgend bestand",
+  "@commands.navDown.label": {
+    "sourceHash": "61e81ee"
+  },
+  "commands.navOpen.label": "Open bestand of map",
+  "@commands.navOpen.label": {
+    "sourceHash": "ef8d6a5"
+  },
+  "commands.navParent.label": "Ga naar bovenliggende map",
+  "@commands.navParent.label": {
+    "sourceHash": "7d4c500"
+  },
+  "commands.navHome.label": "Ga naar eerste bestand",
+  "@commands.navHome.label": {
+    "sourceHash": "5750de6"
+  },
+  "commands.navEnd.label": "Ga naar laatste bestand",
+  "@commands.navEnd.label": {
+    "sourceHash": "f39205a"
+  },
+  "commands.navPageUp.label": "Pagina omhoog",
+  "@commands.navPageUp.label": {
+    "sourceHash": "43f41b5"
+  },
+  "commands.navPageDown.label": "Pagina omlaag",
+  "@commands.navPageDown.label": {
+    "sourceHash": "72a825f"
+  },
+  "commands.navBack.label": "Ga terug",
+  "@commands.navBack.label": {
+    "sourceHash": "6aadac2"
+  },
+  "commands.navForward.label": "Ga vooruit",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
+  "commands.navOpenUnderCursor.label": "Open onderdeel onder cursor",
+  "@commands.navOpenUnderCursor.label": {
+    "sourceHash": "6b54df9"
+  },
+  "commands.cursorMoveTo.label": "Verplaats paneelcursor",
+  "@commands.cursorMoveTo.label": {
+    "sourceHash": "4c196ef"
+  },
+  "commands.cursorScrollTo.label": "Schuif paneel naar index",
+  "@commands.cursorScrollTo.label": {
+    "sourceHash": "98ca70c"
+  },
+  "commands.navLeft.label": "Ga naar linkerkolom",
+  "@commands.navLeft.label": {
+    "sourceHash": "db46f08"
+  },
+  "commands.navRight.label": "Ga naar rechterkolom",
+  "@commands.navRight.label": {
+    "sourceHash": "21b59f0"
+  },
+  "commands.navFirstInFull.label": "Spring naar eerste bestand",
+  "@commands.navFirstInFull.label": {
+    "sourceHash": "f0ea135"
+  },
+  "commands.navLastInFull.label": "Spring naar laatste bestand",
+  "@commands.navLastInFull.label": {
+    "sourceHash": "e6d6a52"
+  },
+  "commands.fileRename.label": "Wijzig naam",
+  "@commands.fileRename.label": {
+    "sourceHash": "3064d79"
+  },
+  "commands.fileView.label": "Toon",
+  "@commands.fileView.label": {
+    "sourceHash": "dcc839a"
+  },
+  "commands.fileEdit.label": "Bewerk in standaardeditor",
+  "@commands.fileEdit.label": {
+    "sourceHash": "badc768"
+  },
+  "commands.fileCopy.label": "Kopieer",
+  "@commands.fileCopy.label": {
+    "sourceHash": "e21f935"
+  },
+  "commands.fileMove.label": "Verplaats",
+  "@commands.fileMove.label": {
+    "sourceHash": "6ecc3df"
+  },
+  "commands.editCopy.label": "Kopieer naar klembord",
+  "@commands.editCopy.label": {
+    "sourceHash": "b749e20"
+  },
+  "commands.editCopy.description": "Kopieer geselecteerde bestanden naar het klembord om te plakken",
+  "@commands.editCopy.description": {
+    "sourceHash": "5c769a7"
+  },
+  "commands.editCut.label": "Knip naar klembord",
+  "@commands.editCut.label": {
+    "sourceHash": "a954b4a"
+  },
+  "commands.editCut.description": "Knip geselecteerde bestanden (plakken verplaatst ze)",
+  "@commands.editCut.description": {
+    "sourceHash": "5bc3870"
+  },
+  "commands.editPaste.label": "Plak",
+  "@commands.editPaste.label": {
+    "sourceHash": "f3380f7"
+  },
+  "commands.editPaste.description": "Plak bestanden van het klembord in de huidige map",
+  "@commands.editPaste.description": {
+    "sourceHash": "32545d7"
+  },
+  "commands.editPasteAsMove.label": "Verplaats hierheen",
+  "@commands.editPasteAsMove.label": {
+    "sourceHash": "56f1247"
+  },
+  "commands.editPasteAsMove.description": "Plak bestanden van het klembord als een verplaatsing",
+  "@commands.editPasteAsMove.description": {
+    "sourceHash": "961316d"
+  },
+  "commands.fileNewFolder.label": "Nieuwe map",
+  "@commands.fileNewFolder.label": {
+    "sourceHash": "cf28f49"
+  },
+  "commands.fileNewFile.label": "Maak nieuw bestand",
+  "@commands.fileNewFile.label": {
+    "sourceHash": "6e70b95"
+  },
+  "commands.fileDelete.label": "Verwijder",
+  "@commands.fileDelete.label": {
+    "sourceHash": "e2d0a54"
+  },
+  "commands.fileDeletePermanently.label": "Verwijder permanent",
+  "@commands.fileDeletePermanently.label": {
+    "sourceHash": "280b10c"
+  },
+  "commands.dialogConfirm.label": "Bevestig open dialoogvenster",
+  "@commands.dialogConfirm.label": {
+    "sourceHash": "b58a959"
+  },
+  "commands.fileShowInFinder.mac.label": "Toon in Finder",
+  "@commands.fileShowInFinder.mac.label": {
+    "sourceHash": "c2a9c77"
+  },
+  "commands.fileShowInFinder.other.label": "Toon in bestandsbeheer",
+  "@commands.fileShowInFinder.other.label": {
+    "sourceHash": "3ca4dad"
+  },
+  "commands.fileCopyPath.label": "Kopieer pad naar klembord",
+  "@commands.fileCopyPath.label": {
+    "sourceHash": "333608a"
+  },
+  "commands.fileCopyCurrentDirectoryPath.label": "Kopieer pad van huidige map",
+  "@commands.fileCopyCurrentDirectoryPath.label": {
+    "sourceHash": "ae360d1"
+  },
+  "commands.fileCopyFilename.label": "Kopieer bestandsnaam",
+  "@commands.fileCopyFilename.label": {
+    "sourceHash": "5cdf7f8"
+  },
+  "commands.fileGetInfo.mac.label": "Toon info",
+  "@commands.fileGetInfo.mac.label": {
+    "sourceHash": "91c64ca"
+  },
+  "commands.fileGetInfo.other.label": "Bestandseigenschappen",
+  "@commands.fileGetInfo.other.label": {
+    "sourceHash": "5d9ebf2"
+  },
+  "commands.fileQuickLook.mac.label": "Geef snel weer",
+  "@commands.fileQuickLook.mac.label": {
+    "sourceHash": "f5616ce"
+  },
+  "commands.fileQuickLook.other.label": "Voorvertoning",
+  "@commands.fileQuickLook.other.label": {
+    "sourceHash": "324b134"
+  },
+  "commands.fileContextMenu.label": "Open contextmenu",
+  "@commands.fileContextMenu.label": {
+    "sourceHash": "c07efaf"
+  },
+  "commands.fileContextMenu.description": "Opent het contextmenu voor het bestand onder de cursor",
+  "@commands.fileContextMenu.description": {
+    "sourceHash": "8fb1721"
+  },
+  "commands.cloudMakeOffline.label": "Maak offline beschikbaar",
+  "@commands.cloudMakeOffline.label": {
+    "sourceHash": "b75c09f"
+  },
+  "commands.cloudMakeOffline.description": "Downloadt een in de cloud opgeslagen bestand zodat het beschikbaar blijft zonder internetverbinding",
+  "@commands.cloudMakeOffline.description": {
+    "sourceHash": "d5cd793"
+  },
+  "commands.cloudRemoveDownload.label": "Verwijder download",
+  "@commands.cloudRemoveDownload.label": {
+    "sourceHash": "5dfc369"
+  },
+  "commands.cloudRemoveDownload.description": "Verwijdert de lokale kopie van een cloudbestand, zodat het alleen online beschikbaar blijft",
+  "@commands.cloudRemoveDownload.description": {
+    "sourceHash": "470afd2"
+  },
+  "commands.selectionToggle.label": "Selectie aan/uit",
+  "@commands.selectionToggle.label": {
+    "sourceHash": "6cb5515"
+  },
+  "commands.selectionToggleAndDown.label": "Selectie aan/uit en omlaag",
+  "@commands.selectionToggleAndDown.label": {
+    "sourceHash": "72ccb36"
+  },
+  "commands.selectionToggleAndDown.description": "Selecteert of deselecteert het bestand onder de cursor en gaat dan omlaag (Total Commander-stijl)",
+  "@commands.selectionToggleAndDown.description": {
+    "sourceHash": "378bb7a"
+  },
+  "commands.selectionSelectAll.label": "Selecteer alles",
+  "@commands.selectionSelectAll.label": {
+    "sourceHash": "1fc9a38"
+  },
+  "commands.selectionDeselectAll.label": "Deselecteer alles",
+  "@commands.selectionDeselectAll.label": {
+    "sourceHash": "9675494"
+  },
+  "commands.selectionSelectFiles.label": "Selecteer bestanden…",
+  "@commands.selectionSelectFiles.label": {
+    "sourceHash": "b7f202e"
+  },
+  "commands.selectionSelectFiles.description": "Opent het venster 'Selecteer bestanden' om overeenkomende bestanden aan de selectie toe te voegen",
+  "@commands.selectionSelectFiles.description": {
+    "sourceHash": "7695f3e"
+  },
+  "commands.selectionDeselectFiles.label": "Deselecteer bestanden…",
+  "@commands.selectionDeselectFiles.label": {
+    "sourceHash": "6fb10d5"
+  },
+  "commands.selectionDeselectFiles.description": "Opent het venster 'Deselecteer bestanden' om overeenkomende bestanden uit de selectie te verwijderen",
+  "@commands.selectionDeselectFiles.description": {
+    "sourceHash": "2a6f82f"
+  },
+  "commands.selectionMcpSelect.label": "Selecteer bereik in paneel",
+  "@commands.selectionMcpSelect.label": {
+    "sourceHash": "d8bb646"
+  },
+  "commands.selectionMcpSelectByNames.label": "Selecteer bestanden op naam in paneel",
+  "@commands.selectionMcpSelectByNames.label": {
+    "sourceHash": "8cfc75d"
+  },
+  "commands.networkSelectHost.label": "Selecteer netwerkhost",
+  "@commands.networkSelectHost.label": {
+    "sourceHash": "4a9ede5"
+  },
+  "commands.networkRefresh.label": "Ververs netwerkhosts",
+  "@commands.networkRefresh.label": {
+    "sourceHash": "73966bd"
+  },
+  "commands.shareBack.label": "Terug naar hostlijst",
+  "@commands.shareBack.label": {
+    "sourceHash": "42c44d5"
+  },
+  "commands.shareSelectShare.label": "Verbind met share",
+  "@commands.shareSelectShare.label": {
+    "sourceHash": "6c48c8c"
+  },
+  "commands.volumeSelect.label": "Selecteer volume",
+  "@commands.volumeSelect.label": {
+    "sourceHash": "60f5ce1"
+  },
+  "commands.volumeClose.label": "Sluit volumekiezer",
+  "@commands.volumeClose.label": {
+    "sourceHash": "aa6a29b"
+  },
+  "commands.volumeSelectByName.label": "Selecteer paneelvolume op naam",
+  "@commands.volumeSelectByName.label": {
+    "sourceHash": "9f16865"
+  },
+  "commands.aboutOpenWebsite.label": "Open website",
+  "@commands.aboutOpenWebsite.label": {
+    "sourceHash": "3451735"
+  },
+  "commands.aboutOpenUpgrade.label": "Open upgradepagina",
+  "@commands.aboutOpenUpgrade.label": {
+    "sourceHash": "9df3bf0"
+  },
+  "commands.aboutClose.label": "Sluit Over-venster",
+  "@commands.aboutClose.label": {
+    "sourceHash": "d0096c3"
+  },
+  "commands.paletteUp.label": "Vorig resultaat",
+  "@commands.paletteUp.label": {
+    "sourceHash": "965bc32"
+  },
+  "commands.paletteDown.label": "Volgend resultaat",
+  "@commands.paletteDown.label": {
+    "sourceHash": "bf56a19"
+  },
+  "commands.paletteExecute.label": "Voer opdracht uit",
+  "@commands.paletteExecute.label": {
+    "sourceHash": "20f9b97"
+  },
+  "commands.paletteClose.label": "Sluit palet",
+  "@commands.paletteClose.label": {
+    "sourceHash": "2e75050"
+  },
+  "commands.handler.favoriteAdded": "‘{name}’ toegevoegd aan favorieten",
+  "@commands.handler.favoriteAdded": {
+    "sourceHash": "a68dd8f"
+  },
+  "commands.handler.favoriteAddFailed": "Die map kon niet aan favorieten worden toegevoegd. Probeer het opnieuw?",
+  "@commands.handler.favoriteAddFailed": {
+    "sourceHash": "3f85e99"
+  },
+  "commands.handler.tabLimitReached": "Tabbladlimiet bereikt",
+  "@commands.handler.tabLimitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "commands.handler.noRecentlyClosedTabs": "Geen recent gesloten tabbladen in dit paneel.",
+  "@commands.handler.noRecentlyClosedTabs": {
+    "sourceHash": "e560789"
+  },
+  "commands.handler.cloudDownloadFailed": "Downloaden uit de cloud lukte niet. {detail}",
+  "@commands.handler.cloudDownloadFailed": {
+    "sourceHash": "70792cf"
+  },
+  "commands.handler.cloudRemoveDownloadFailed": "De download kon niet worden verwijderd. {detail}",
+  "@commands.handler.cloudRemoveDownloadFailed": {
+    "sourceHash": "425280d"
+  },
+  "commands.handler.zoomResetHintShortcut": "Je kunt het zoomniveau terugzetten naar 100% met {shortcut}.",
+  "@commands.handler.zoomResetHintShortcut": {
+    "sourceHash": "efdd715"
+  },
+  "commands.handler.zoomResetHintMenu": "Je kunt het zoomniveau terugzetten naar 100% via Weergave > Zoom > 100%.",
+  "@commands.handler.zoomResetHintMenu": {
+    "sourceHash": "f10315d"
+  },
+  "commands.handler.zoomReset": "Zoom teruggezet naar 100%.",
+  "@commands.handler.zoomReset": {
+    "sourceHash": "8c6bf82"
+  },
+  "commands.handler.zoomIncreased": "Zoom verhoogd naar {size}%. {hint}",
+  "@commands.handler.zoomIncreased": {
+    "sourceHash": "39fea10"
+  },
+  "commands.handler.zoomDecreased": "Zoom verlaagd naar {size}%. {hint}",
+  "@commands.handler.zoomDecreased": {
+    "sourceHash": "71404cb"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "transfer.trash": "已将 {countText} {count, plural, other {个文件}}移到废纸篓",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "删除完成：{countText} {count, plural, other {个文件}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, other {个文件}}和 {foldersText} {folders, plural, other {个文件夹}}} foldersOnly {{foldersText} {folders, plural, other {个文件夹}}} other {{filesText} {files, plural, other {个文件}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "已{verb, select, copy {拷贝} other {移动}} {phrase}。",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "已{verb, select, copy {拷贝} other {移动}} {phrase}，跳过 {skippedText} {skipped, plural, other {个文件}}（已在目标位置）。",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {拷贝} other {移动}}完成：已{verb, select, copy {拷贝} other {移动}} {transferredText} {transferred, plural, other {个文件}}。",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {拷贝} other {移动}}完成：文件已在目标位置，未{verb, select, copy {拷贝} other {移动}}。",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {拷贝} other {移动}}完成：已跳过全部 {skippedText} 个文件（已在目标位置），未{verb, select, copy {拷贝} other {移动}}任何内容。",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "ae39c4b"
+  },
+  "transfer.fileOnly.mixedCopy": "拷贝完成：已拷贝 {transferredText}，跳过 {skippedText}。你所选的全部 {processedText} {processed, plural, other {个文件}}现已都在目标位置。",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "移动完成：已移动 {transferredText}，跳过 {skippedText}。{skippedText} {skipped, plural, other {个文件}}已在目标位置。",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  }
+}

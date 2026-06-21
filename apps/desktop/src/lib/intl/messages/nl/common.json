@@ -1,0 +1,6 @@
+{
+  "common.downloadsFdaHint": "Cmdr heeft volledige schijftoegang nodig om je map Downloads te volgen. <settingsLink>Open Systeeminstellingen</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "sourceHash": "315e1d8"
+  }
+}

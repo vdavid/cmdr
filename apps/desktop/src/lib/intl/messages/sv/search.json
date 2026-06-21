@@ -1,0 +1,54 @@
+{
+  "search.dialog.title": "Sök",
+  "@search.dialog.title": {
+    "sourceHash": "49c266b"
+  },
+  "search.runHint": "Tryck på Retur för att söka",
+  "@search.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "search.action.showAll.label": "Visa alla i huvudfönstret",
+  "@search.action.showAll.label": {
+    "sourceHash": "782075a"
+  },
+  "search.action.showAll.tooltip": "Öppna sökresultaten i den aktiva panelen",
+  "@search.action.showAll.tooltip": {
+    "sourceHash": "4e8c58a"
+  },
+  "search.action.goToFile.label": "Gå till fil",
+  "@search.action.goToFile.label": {
+    "sourceHash": "70299e6"
+  },
+  "search.action.goToFile.tooltip": "Öppna filen i den aktiva panelen",
+  "@search.action.goToFile.tooltip": {
+    "sourceHash": "2627d2e"
+  },
+  "search.recent.runAria": "Kör senaste {mode}-sökning: {query}",
+  "@search.recent.runAria": {
+    "sourceHash": "fb0939c"
+  },
+  "search.systemDirExclude.default": "Utesluter vanliga system- och byggmappar",
+  "@search.systemDirExclude.default": {
+    "sourceHash": "dcdf28a"
+  },
+  "search.systemDirExclude.heading": "Dessa mappar är dolda:",
+  "@search.systemDirExclude.heading": {
+    "sourceHash": "5ee8d52"
+  },
+  "search.notAFolderToast": "Sökresultat är inte en mapp. Klistra in i en riktig mapp i stället.",
+  "@search.notAFolderToast": {
+    "sourceHash": "c449358"
+  },
+  "search.searchableFolder.disabledTooltip": "Nuvarande mapp är sökresultat, som inte går att söka i. Öppna en riktig mapp först.",
+  "@search.searchableFolder.disabledTooltip": {
+    "sourceHash": "a90d24e"
+  },
+  "search.snapshot.defaultLabel": "Sök",
+  "@search.snapshot.defaultLabel": {
+    "sourceHash": "49c266b"
+  },
+  "search.snapshot.cappedLabel": "{label} (första {capText} av {totalText})",
+  "@search.snapshot.cappedLabel": {
+    "sourceHash": "35523ac"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "mtp.connectedToast.title": "Verbonden met {deviceName}",
+  "@mtp.connectedToast.title": {
+    "sourceHash": "562319d"
+  },
+  "mtp.connectedToast.bodyMac": "Cmdr heeft de macOS-cameradaemon (ptpcamerad) gepauzeerd om dit apparaat te benaderen. Wil je het in een andere app gebruiken, schakel dan MTP-ondersteuning uit in de instellingen.",
+  "@mtp.connectedToast.bodyMac": {
+    "sourceHash": "3ace37b"
+  },
+  "mtp.connectedToast.bodyOther": "Wil je dit apparaat in een andere app gebruiken, schakel dan MTP-ondersteuning uit in de instellingen.",
+  "@mtp.connectedToast.bodyOther": {
+    "sourceHash": "6f42620"
+  },
+  "mtp.connectedToast.dontShowAgain": "Niet meer tonen",
+  "@mtp.connectedToast.dontShowAgain": {
+    "sourceHash": "d98ab77"
+  },
+  "mtp.connectedToast.disableMtp": "Schakel MTP uit...",
+  "@mtp.connectedToast.disableMtp": {
+    "sourceHash": "2057a3d"
+  },
+  "mtp.connectedToast.ok": "OK",
+  "@mtp.connectedToast.ok": {
+    "sourceHash": "565339b"
+  },
+  "mtp.permissionDialog.title": "Geen toegang tot USB-apparaat",
+  "@mtp.permissionDialog.title": {
+    "sourceHash": "96130bf"
+  },
+  "mtp.permissionDialog.description": "Cmdr heeft geen toestemming om dit apparaat te benaderen. Linux heeft udev-regels nodig om toegang tot MTP-apparaten te verlenen.",
+  "@mtp.permissionDialog.description": {
+    "sourceHash": "c11f0e8"
+  },
+  "mtp.permissionDialog.explanation": "Voer deze opdracht uit in je terminal om de regels te installeren en opnieuw te laden:",
+  "@mtp.permissionDialog.explanation": {
+    "sourceHash": "6bc70dd"
+  },
+  "mtp.permissionDialog.helpText": "Koppel het apparaat na het uitvoeren van de opdracht los en weer aan, en probeer het opnieuw.",
+  "@mtp.permissionDialog.helpText": {
+    "sourceHash": "519f195"
+  },
+  "mtp.permissionDialog.close": "Sluit",
+  "@mtp.permissionDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.permissionDialog.retry": "Verbind opnieuw",
+  "@mtp.permissionDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.ptpcameradDialog.title": "Kan niet verbinden met MTP-apparaat",
+  "@mtp.ptpcameradDialog.title": {
+    "sourceHash": "058de77"
+  },
+  "mtp.ptpcameradDialog.inUseBy": "Het apparaat is in gebruik door <process>{process}</process>.",
+  "@mtp.ptpcameradDialog.inUseBy": {
+    "sourceHash": "6ec78a3"
+  },
+  "mtp.ptpcameradDialog.inUseGeneric": "Een ander proces heeft exclusieve toegang tot het apparaat.",
+  "@mtp.ptpcameradDialog.inUseGeneric": {
+    "sourceHash": "cfba635"
+  },
+  "mtp.ptpcameradDialog.explanation": "Op macOS claimt de systeemdaemon <code>ptpcamerad</code> automatisch Android-apparaten. Als oplossing kun je de volgende opdracht uitvoeren in Terminal (laat die draaien terwijl je Cmdr gebruikt):",
+  "@mtp.ptpcameradDialog.explanation": {
+    "sourceHash": "65b6ee3"
+  },
+  "mtp.ptpcameradDialog.helpText": "Deze opdracht stopt ptpcamerad doorlopend zolang die draait. Druk op <key>Ctrl+C</key> in Terminal om die te stoppen als je klaar bent.",
+  "@mtp.ptpcameradDialog.helpText": {
+    "sourceHash": "85b5060"
+  },
+  "mtp.ptpcameradDialog.close": "Sluit",
+  "@mtp.ptpcameradDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.ptpcameradDialog.retry": "Verbind opnieuw",
+  "@mtp.ptpcameradDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.deviceFallbackName": "MTP-apparaat",
+  "@mtp.deviceFallbackName": {
+    "sourceHash": "8ba7a69"
+  },
+  "mtp.error.exclusiveAccess": "Een ander proces heeft exclusieve toegang{blocking, select, none {} other { (geblokkeerd door {blocking})}}",
+  "@mtp.error.exclusiveAccess": {
+    "sourceHash": "a81f306"
+  },
+  "mtp.error.permissionDenied": "Geen USB-toegang. Installeer udev-regels en verbind opnieuw",
+  "@mtp.error.permissionDenied": {
+    "sourceHash": "3362501"
+  }
+}

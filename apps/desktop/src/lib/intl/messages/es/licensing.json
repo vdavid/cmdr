@@ -1,0 +1,390 @@
+{
+  "licensing.about.srTitle": "Acerca de Cmdr",
+  "@licensing.about.srTitle": {
+    "sourceHash": "efe010f"
+  },
+  "licensing.about.appName": "Cmdr",
+  "@licensing.about.appName": {
+    "sourceHash": "40c6a1b"
+  },
+  "licensing.about.tagline": "Gestor de archivos controlado por teclado",
+  "@licensing.about.tagline": {
+    "sourceHash": "e399865"
+  },
+  "licensing.about.version": "Versión {version} (beta abierta)",
+  "@licensing.about.version": {
+    "sourceHash": "1496c81"
+  },
+  "licensing.about.betaNote": "¿Encontraste algo raro? Cuéntamelo en <github>GitHub</github>. ¡Leo todos los informes!",
+  "@licensing.about.betaNote": {
+    "sourceHash": "49a09cb"
+  },
+  "licensing.about.noLicense": "Sin licencia – solo se permite el uso personal",
+  "@licensing.about.noLicense": {
+    "sourceHash": "e2ce8da"
+  },
+  "licensing.about.perpetual": "Licencia comercial perpetua para {org}",
+  "@licensing.about.perpetual": {
+    "sourceHash": "591d7a8"
+  },
+  "licensing.about.commercial": "Licencia comercial para {org}",
+  "@licensing.about.commercial": {
+    "sourceHash": "577f55b"
+  },
+  "licensing.about.commercialUntil": "Licencia comercial para {org}, válida hasta el {date}",
+  "@licensing.about.commercialUntil": {
+    "sourceHash": "eb44f8d"
+  },
+  "licensing.about.fallbackOrg": "tu organización",
+  "@licensing.about.fallbackOrg": {
+    "sourceHash": "bb0bdf0"
+  },
+  "licensing.about.aiAttribution": "IA con tecnología de Falcon-H1R-7B de Technology Innovation Institute (TII)",
+  "@licensing.about.aiAttribution": {
+    "sourceHash": "54d9ac4"
+  },
+  "licensing.about.linkWebsite": "Sitio web",
+  "@licensing.about.linkWebsite": {
+    "sourceHash": "b5a229a"
+  },
+  "licensing.about.linkGetLicense": "Conseguir una licencia",
+  "@licensing.about.linkGetLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.about.linkGithub": "GitHub",
+  "@licensing.about.linkGithub": {
+    "sourceHash": "f911e41"
+  },
+  "licensing.about.linkDiscord": "Discord",
+  "@licensing.about.linkDiscord": {
+    "sourceHash": "053bc65"
+  },
+  "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
+  "@licensing.about.copyright": {
+    "sourceHash": "e6ab7e3"
+  },
+  "licensing.commercialReminder.title": "¡Gracias por usar Cmdr!",
+  "@licensing.commercialReminder.title": {
+    "sourceHash": "6898650"
+  },
+  "licensing.commercialReminder.usingPersonal": "Estás usando una licencia Personal.",
+  "@licensing.commercialReminder.usingPersonal": {
+    "sourceHash": "508c17d"
+  },
+  "licensing.commercialReminder.askCommercial": "Si usas Cmdr en el trabajo, consigue una licencia Commercial para cumplir las condiciones.",
+  "@licensing.commercialReminder.askCommercial": {
+    "sourceHash": "6bf4031"
+  },
+  "licensing.commercialReminder.priceInfo": "Las licencias comerciales cuestan $59/año/usuario y financian el desarrollo continuo.",
+  "@licensing.commercialReminder.priceInfo": {
+    "sourceHash": "a7099b3"
+  },
+  "licensing.commercialReminder.declinePersonal": "Solo uso Cmdr<break></break>con fines personales",
+  "@licensing.commercialReminder.declinePersonal": {
+    "sourceHash": "49641ff"
+  },
+  "licensing.commercialReminder.getCommercial": "Conseguir licencia comercial",
+  "@licensing.commercialReminder.getCommercial": {
+    "sourceHash": "07f081b"
+  },
+  "licensing.expiration.title": "Tu licencia comercial ha caducado",
+  "@licensing.expiration.title": {
+    "sourceHash": "7067c40"
+  },
+  "licensing.expiration.orgName": "Licencia para: <strong>{org}</strong>",
+  "@licensing.expiration.orgName": {
+    "sourceHash": "a5f0bab"
+  },
+  "licensing.expiration.message": "Tu suscripción comercial caducó el <strong>{date}</strong>.",
+  "@licensing.expiration.message": {
+    "sourceHash": "92b6b97"
+  },
+  "licensing.expiration.info": "Cmdr ahora funciona en modo de uso personal. Si lo sigues usando para el trabajo, renueva tu licencia.",
+  "@licensing.expiration.info": {
+    "sourceHash": "5fcebb5"
+  },
+  "licensing.expiration.renew": "Renovar licencia",
+  "@licensing.expiration.renew": {
+    "sourceHash": "1ee8746"
+  },
+  "licensing.expiration.continue": "Continuar en modo personal",
+  "@licensing.expiration.continue": {
+    "sourceHash": "b5c90b4"
+  },
+  "licensing.dialog.loading": "Cargando...",
+  "@licensing.dialog.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "licensing.dialog.detailsTitle": "Detalles de la licencia",
+  "@licensing.dialog.detailsTitle": {
+    "sourceHash": "57327bb"
+  },
+  "licensing.dialog.enterTitle": "Introducir clave de licencia",
+  "@licensing.dialog.enterTitle": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.dialog.serverInvalidBanner": "No se pudo verificar esta clave con el servidor. Prueba con otra clave o escríbenos a <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.serverInvalidBanner": {
+    "sourceHash": "616b906"
+  },
+  "licensing.dialog.labelType": "Tipo de licencia",
+  "@licensing.dialog.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.dialog.labelOrganization": "Organización",
+  "@licensing.dialog.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.dialog.labelValidity": "Validez",
+  "@licensing.dialog.labelValidity": {
+    "sourceHash": "9c3050e"
+  },
+  "licensing.dialog.labelKey": "Clave de licencia",
+  "@licensing.dialog.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.dialog.typeCommercialPerpetual": "Commercial perpetua",
+  "@licensing.dialog.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.dialog.typeCommercialSubscription": "Suscripción Commercial",
+  "@licensing.dialog.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.dialog.validityNotYetVerified": "Aún sin verificar",
+  "@licensing.dialog.validityNotYetVerified": {
+    "sourceHash": "5b2f7a6"
+  },
+  "licensing.dialog.validityPerpetualUntil": "Perpetua: actualizaciones hasta el {date}",
+  "@licensing.dialog.validityPerpetualUntil": {
+    "sourceHash": "cde0711"
+  },
+  "licensing.dialog.validityPerpetual": "Perpetua",
+  "@licensing.dialog.validityPerpetual": {
+    "sourceHash": "2d34320"
+  },
+  "licensing.dialog.validityValidUntil": "Válida hasta el {date}",
+  "@licensing.dialog.validityValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.dialog.validityActive": "Activa",
+  "@licensing.dialog.validityActive": {
+    "sourceHash": "9234069"
+  },
+  "licensing.dialog.validityExpiredOn": "Caducó el {date}",
+  "@licensing.dialog.validityExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.dialog.pendingHint": "Lo verificaremos automáticamente con el servidor dentro de {days} días.",
+  "@licensing.dialog.pendingHint": {
+    "sourceHash": "8d9801b"
+  },
+  "licensing.dialog.useDifferentKey": "Usar otra clave",
+  "@licensing.dialog.useDifferentKey": {
+    "sourceHash": "b0a5362"
+  },
+  "licensing.dialog.close": "Cerrar",
+  "@licensing.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "licensing.dialog.resetConfirm": "Esto desactivará tu licencia actual en este dispositivo. Puedes reactivarla en cualquier momento con una clave válida.",
+  "@licensing.dialog.resetConfirm": {
+    "sourceHash": "2d77d69"
+  },
+  "licensing.dialog.cancel": "Cancelar",
+  "@licensing.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.continue": "Continuar",
+  "@licensing.dialog.continue": {
+    "sourceHash": "31fbef1"
+  },
+  "licensing.dialog.enterPrompt": "Pega tu clave de licencia del correo que recibiste tras la compra. ¿Aún no tienes una? <getLicense>Conseguir una licencia</getLicense>.",
+  "@licensing.dialog.enterPrompt": {
+    "sourceHash": "f6fb47a"
+  },
+  "licensing.dialog.inputPlaceholder": "Ejemplo: CMDR-ABCD-EFGH-1234",
+  "@licensing.dialog.inputPlaceholder": {
+    "sourceHash": "3fb5cf9"
+  },
+  "licensing.dialog.retryExhausted": "Lo intentamos {count} veces y no funcionó. Sentimos las molestias. Escríbenos a <supportEmail>{email}</supportEmail> y lo resolveremos.",
+  "@licensing.dialog.retryExhausted": {
+    "sourceHash": "4f3331b"
+  },
+  "licensing.dialog.serverInvalidHelp": "Si crees que es un fallo, escríbenos a <supportEmail>{email}</supportEmail> y lo resolveremos.",
+  "@licensing.dialog.serverInvalidHelp": {
+    "sourceHash": "90471d2"
+  },
+  "licensing.dialog.genericHelp": "Si necesitas ayuda, escríbenos a <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.genericHelp": {
+    "sourceHash": "145df34"
+  },
+  "licensing.dialog.cancelButton": "Cancelar",
+  "@licensing.dialog.cancelButton": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.checking": "Comprobando...",
+  "@licensing.dialog.checking": {
+    "sourceHash": "2e5f79b"
+  },
+  "licensing.dialog.tryAgain": "Reintentar",
+  "@licensing.dialog.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "licensing.dialog.activating": "Activando...",
+  "@licensing.dialog.activating": {
+    "sourceHash": "fd2db6a"
+  },
+  "licensing.dialog.activate": "Activar",
+  "@licensing.dialog.activate": {
+    "sourceHash": "24433c7"
+  },
+  "licensing.dialog.activatedToast": "Licencia activada. ¡Gracias por tu apoyo! ❤️",
+  "@licensing.dialog.activatedToast": {
+    "sourceHash": "af76e26"
+  },
+  "licensing.dialog.activatedToastNamed": "¡Bienvenida, {org}! Gracias por tu apoyo. ❤️",
+  "@licensing.dialog.activatedToastNamed": {
+    "sourceHash": "d0c136a"
+  },
+  "licensing.dialog.networkFallbackError": "No se pudo verificar tu licencia con el servidor. Inténtalo de nuevo más tarde.",
+  "@licensing.dialog.networkFallbackError": {
+    "sourceHash": "cb2b8e0"
+  },
+  "licensing.dialog.expiredOnError": "Esta licencia caducó el {date}.",
+  "@licensing.dialog.expiredOnError": {
+    "sourceHash": "130a045"
+  },
+  "licensing.dialog.expiredOnHelp": "Puedes renovar tu suscripción o comprar una nueva licencia en getcmdr.com.",
+  "@licensing.dialog.expiredOnHelp": {
+    "sourceHash": "036bb88"
+  },
+  "licensing.dialog.serverInvalidError": "Conocemos esta clave, pero al comprobarla con nuestro proveedor de pagos, no la reconoció. Esto puede pasar si la compra se reembolsó o no se completó.",
+  "@licensing.dialog.serverInvalidError": {
+    "sourceHash": "4beeef1"
+  },
+  "licensing.dialog.emptyKeyError": "Introduce una clave de licencia",
+  "@licensing.dialog.emptyKeyError": {
+    "sourceHash": "2b36779"
+  },
+  "licensing.dialog.mailtoSubject": "Problema con la clave de licencia",
+  "@licensing.dialog.mailtoSubject": {
+    "sourceHash": "685a80d"
+  },
+  "licensing.dialog.mailtoBody": "Hola:\n\nTengo problemas para activar mi clave de licencia:\n{key}\n\n",
+  "@licensing.dialog.mailtoBody": {
+    "sourceHash": "bcdc2b6"
+  },
+  "licensing.error.badSignature": "Esta clave de licencia no superó nuestra verificación de firma, lo que significa que no parece una clave válida.",
+  "@licensing.error.badSignature": {
+    "sourceHash": "e9842df"
+  },
+  "licensing.error.badSignatureHint": "Revisa que no haya erratas y prueba a pegarla de nuevo desde tu correo de compra.",
+  "@licensing.error.badSignatureHint": {
+    "sourceHash": "8734aa5"
+  },
+  "licensing.error.badFormat": "El formato de nuestras claves de licencia es distinto de este.",
+  "@licensing.error.badFormat": {
+    "sourceHash": "6012f8b"
+  },
+  "licensing.error.badFormatHint": "Las claves de licencia son o bien un código corto (CMDR-XXXX-XXXX-XXXX) o bien una clave criptográfica más larga de tu correo de compra.",
+  "@licensing.error.badFormatHint": {
+    "sourceHash": "a62b901"
+  },
+  "licensing.error.shortCodeNotFound": "Esta licencia tiene buena pinta, pero buscamos a fondo y no la encontramos en nuestra base de datos.",
+  "@licensing.error.shortCodeNotFound": {
+    "sourceHash": "c123af8"
+  },
+  "licensing.error.shortCodeNotFoundHint": "Verifica que pegaste la clave correcta de tu correo de compra.",
+  "@licensing.error.shortCodeNotFoundHint": {
+    "sourceHash": "a2f07d2"
+  },
+  "licensing.error.network": "Vaya, esta vez no pudimos conectar con el servidor de licencias.",
+  "@licensing.error.network": {
+    "sourceHash": "63da44b"
+  },
+  "licensing.error.networkHint": "Revisa tu conexión a internet e inténtalo de nuevo.",
+  "@licensing.error.networkHint": {
+    "sourceHash": "67cba62"
+  },
+  "licensing.error.server": "Mmm, el servidor de licencias respondió con algo raro. Lo sentimos.",
+  "@licensing.error.server": {
+    "sourceHash": "6ca76c0"
+  },
+  "licensing.error.serverHint": "Inténtalo de nuevo más tarde.",
+  "@licensing.error.serverHint": {
+    "sourceHash": "386b914"
+  },
+  "licensing.error.generic": "Algo salió mal al activar esta clave.",
+  "@licensing.error.generic": {
+    "sourceHash": "436e264"
+  },
+  "licensing.error.genericHint": "Inténtalo de nuevo. Si el problema continúa, escríbenos y te ayudaremos.",
+  "@licensing.error.genericHint": {
+    "sourceHash": "9108b68"
+  },
+  "licensing.section.title": "Licencia",
+  "@licensing.section.title": {
+    "sourceHash": "c011d60"
+  },
+  "licensing.section.loading": "Cargando...",
+  "@licensing.section.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "licensing.section.labelType": "Tipo de licencia",
+  "@licensing.section.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.section.labelOrganization": "Organización",
+  "@licensing.section.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.section.labelStatus": "Estado",
+  "@licensing.section.labelStatus": {
+    "sourceHash": "920e413"
+  },
+  "licensing.section.labelKey": "Clave de licencia",
+  "@licensing.section.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.section.manageKey": "Gestionar clave de licencia",
+  "@licensing.section.manageKey": {
+    "sourceHash": "501cc54"
+  },
+  "licensing.section.enterKey": "Introducir clave de licencia",
+  "@licensing.section.enterKey": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.section.getLicense": "Conseguir una licencia",
+  "@licensing.section.getLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.section.typePersonal": "Personal (gratis)",
+  "@licensing.section.typePersonal": {
+    "sourceHash": "4af5ca9"
+  },
+  "licensing.section.typeCommercialPerpetual": "Commercial perpetua",
+  "@licensing.section.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.section.typeCommercialSubscription": "Suscripción Commercial",
+  "@licensing.section.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.section.statusExpiredOn": "Caducó el {date}",
+  "@licensing.section.statusExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.section.statusUpdatesUntil": "Actualizaciones hasta el {date}",
+  "@licensing.section.statusUpdatesUntil": {
+    "sourceHash": "7b84d1c"
+  },
+  "licensing.section.statusValidUntil": "Válida hasta el {date}",
+  "@licensing.section.statusValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.section.statusActive": "Activa",
+  "@licensing.section.statusActive": {
+    "sourceHash": "9234069"
+  }
+}

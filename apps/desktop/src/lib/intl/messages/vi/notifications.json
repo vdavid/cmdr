@@ -1,0 +1,6 @@
+{
+  "notifications.permissionDenied": "Thông báo macOS đang tắt. Mở Cài đặt hệ thống để cho phép.",
+  "@notifications.permissionDenied": {
+    "sourceHash": "4fef9ce"
+  }
+}

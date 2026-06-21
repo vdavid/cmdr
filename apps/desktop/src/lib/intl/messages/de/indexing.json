@@ -1,0 +1,134 @@
+{
+  "indexing.status.ariaLabel": "Status der Laufwerksindizierung",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.scan.label": "Laufwerk wird durchsucht …",
+  "@indexing.scan.label": {
+    "sourceHash": "e7d6d6a"
+  },
+  "indexing.scan.labelFirst": "Laufwerk wird durchsucht (erster Durchlauf) …",
+  "@indexing.scan.labelFirst": {
+    "sourceHash": "2431d85"
+  },
+  "indexing.scan.counters": "{entriesText} Einträge, {dirsText} Ordner",
+  "@indexing.scan.counters": {
+    "sourceHash": "fd4d242"
+  },
+  "indexing.scan.etaRough": "etwa {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.aggregation.savingEntries": "Einträge werden gesichert …",
+  "@indexing.aggregation.savingEntries": {
+    "sourceHash": "16fa321"
+  },
+  "indexing.aggregation.loading": "Ordner werden geladen …",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "37b34d4"
+  },
+  "indexing.aggregation.sorting": "Ordner werden sortiert …",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "9018980"
+  },
+  "indexing.aggregation.computing": "Ordnergrößen werden berechnet …",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "ee6ba9a"
+  },
+  "indexing.aggregation.writing": "Ordnergrößen werden gesichert …",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "ff59fa5"
+  },
+  "indexing.replay.label": "Index wird aktualisiert …",
+  "@indexing.replay.label": {
+    "sourceHash": "2920134"
+  },
+  "indexing.replay.detail": "{eventsText} Ereignisse verarbeitet",
+  "@indexing.replay.detail": {
+    "sourceHash": "e80c077"
+  },
+  "indexing.eta.almostDone": "Fast fertig",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.secondsLeft": "noch {secondsText} s",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "noch {minutesText} Min.",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.rescan.staleIndex": "Dein Laufwerksindex ist veraltet. Die App war anscheinend eine Weile nicht geöffnet. Ein neuer Durchlauf bringt ihn auf den aktuellen Stand.",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "ddac60e"
+  },
+  "indexing.rescan.journalGap": "Das Änderungsprotokoll des Systems reicht nicht weit genug zurück. Ein neuer Durchlauf baut den Index neu auf.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "5f1075b"
+  },
+  "indexing.rescan.replayOverflow": "Seit dem letzten Start haben sich viele Dateien geändert. Statt sie einzeln nachzuvollziehen, läuft ein neuer Durchlauf.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.tooManySubdirRescans": "Seit dem letzten Start haben sich viele Ordner stark geändert. Ein neuer Durchlauf bringt alles auf den aktuellen Stand.",
+  "@indexing.rescan.tooManySubdirRescans": {
+    "sourceHash": "06d04a0"
+  },
+  "indexing.rescan.watcherStartFailed": "Die Überwachung für Dateiänderungen ließ sich nicht starten. Ein neuer Durchlauf bringt den Index auf den aktuellen Stand.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "831e44d"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "Starke Dateisystemaktivität hat den Ereignispuffer überlastet. Ein neuer Durchlauf hält alles genau.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "Der vorige Durchlauf wurde nicht beendet (die App wurde vielleicht geschlossen). Der Durchlauf startet von vorn.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "3ca5217"
+  },
+  "indexing.rescan.watcherChannelOverflow": "Ein Schub an Dateisystemaktivität hat den Kanal der Überwachung überlastet. Ein neuer Durchlauf hält alles genau.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Ein neuer Laufwerksdurchlauf hält den Index genau.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.firstConnect.title": "{name} indizieren?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "Cmdr kann dieses Laufwerk im Hintergrund indizieren, damit Ordnergrößen und Suche hier funktionieren. Das läuft nur, solange das Laufwerk verbunden ist.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Indizierung aktivieren",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "Für dieses Laufwerk nicht mehr fragen",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "99bed41"
+  },
+  "indexing.firstConnect.silenceAll": "Für kein Laufwerk mehr fragen",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "511c970"
+  },
+  "indexing.staleDialog.title": "Der Index dieses Laufwerks ist womöglich nicht mehr aktuell",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "21a78ee"
+  },
+  "indexing.staleDialog.body": "Während {name} getrennt war, haben sich Dateien darauf vielleicht geändert. Ordnergrößen und Suchergebnisse können bis zu einem erneuten Durchlauf etwas abweichen. Der gelbe Status neben dem Laufwerk zeigt das immer an, und ein erneuter Durchlauf bringt alles auf den neuesten Stand.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.neverShowAgain": "Nie mehr anzeigen",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Schließen",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

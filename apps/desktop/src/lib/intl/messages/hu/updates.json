@@ -1,0 +1,42 @@
+{
+  "updates.checkToast.errorPrefix": "Probléma: {message}",
+  "@updates.checkToast.errorPrefix": {
+    "sourceHash": "020abfd"
+  },
+  "updates.checkToast.sendErrorReport": "Hibajelentés küldése",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "updates.toast.available": "Új verzió érhető el. A frissítéshez indítsd újra.",
+  "@updates.toast.available": {
+    "sourceHash": "cb97574"
+  },
+  "updates.toast.later": "Később",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "Újraindítás",
+  "@updates.toast.restart": {
+    "sourceHash": "6b983a8"
+  },
+  "updates.status.noUpdates": "Nincs elérhető frissítés. Jelenlegi verzió: v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "Ellenőrzés…",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "Frissítés található, letöltés: v{next} (jelenlegi: v{prev})…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "Telepítés: v{next} (jelenlegi: v{prev})…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.ready": "A(z) v{next} frissítés kész. Az életbe léptetéshez indítsd újra.",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

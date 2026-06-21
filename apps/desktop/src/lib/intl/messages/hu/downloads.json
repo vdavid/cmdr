@@ -1,0 +1,138 @@
+{
+  "downloads.toast.downloaded": "Letöltve: <file>{fileName}</file>",
+  "@downloads.toast.downloaded": {
+    "sourceHash": "7bc4ace"
+  },
+  "downloads.toast.inSubdir": "itt: {subdir}",
+  "@downloads.toast.inSubdir": {
+    "sourceHash": "eea56f4"
+  },
+  "downloads.toast.learnIntro": "Egy jó kis trükk a letöltésekhez ugráshoz",
+  "@downloads.toast.learnIntro": {
+    "sourceHash": "3a06888"
+  },
+  "downloads.toast.inAppHint": "Az appban: nyomd meg a(z) <chip>{key}</chip> billentyűt az ideugráshoz",
+  "@downloads.toast.inAppHint": {
+    "sourceHash": "5b70d9c"
+  },
+  "downloads.toast.globalHint": "<em>Bármelyik</em> appban (globális parancs): nyomd meg a(z) <chip>{key}</chip> billentyűt",
+  "@downloads.toast.globalHint": {
+    "sourceHash": "785e1f3"
+  },
+  "downloads.toast.summaryBoth": "Ugrás: <inApp>{inAppKey}</inApp> az appban, <global>{globalKey}</global> globálisan.",
+  "@downloads.toast.summaryBoth": {
+    "sourceHash": "59c4131"
+  },
+  "downloads.toast.summaryInApp": "Ugrás: <inApp>{inAppKey}</inApp> az appban.",
+  "@downloads.toast.summaryInApp": {
+    "sourceHash": "2c0fd22"
+  },
+  "downloads.toast.summaryGlobal": "Ugrás: <global>{globalKey}</global> globálisan.",
+  "@downloads.toast.summaryGlobal": {
+    "sourceHash": "1bd00be"
+  },
+  "downloads.toast.expandTip": "Billentyűparancs-tipp megjelenítése",
+  "@downloads.toast.expandTip": {
+    "sourceHash": "9dfbe32"
+  },
+  "downloads.toast.collapseTip": "Tömörebb értesítés",
+  "@downloads.toast.collapseTip": {
+    "sourceHash": "b404794"
+  },
+  "downloads.toast.stopShowing": "Ne jelenjenek meg ezek",
+  "@downloads.toast.stopShowing": {
+    "sourceHash": "36faf9f"
+  },
+  "downloads.toast.jumpToFile": "Ugrás a fájlhoz",
+  "@downloads.toast.jumpToFile": {
+    "sourceHash": "4511f65"
+  },
+  "downloads.notification.title": "Letöltve: {fileName}",
+  "@downloads.notification.title": {
+    "sourceHash": "a2b74bc"
+  },
+  "downloads.empty.message": "A Letöltések mappád üres. Megnyitod azért mégis?",
+  "@downloads.empty.message": {
+    "sourceHash": "83e7e07"
+  },
+  "downloads.empty.dismiss": "Elvetés",
+  "@downloads.empty.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.empty.goToDownloads": "Ugrás a Letöltésekhez",
+  "@downloads.empty.goToDownloads": {
+    "sourceHash": "5c72aeb"
+  },
+  "downloads.fda.message": "A Cmdrnek Teljes lemezhozzáférésre van szüksége a Letöltések mappa figyeléséhez.",
+  "@downloads.fda.message": {
+    "sourceHash": "82c82c6"
+  },
+  "downloads.fda.dismiss": "Elvetés",
+  "@downloads.fda.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.fda.openSystemSettings": "Rendszerbeállítások megnyitása",
+  "@downloads.fda.openSystemSettings": {
+    "sourceHash": "18196b3"
+  },
+  "downloads.warnToast.message": "A(z) {binding} paranccsal bárhonnan a legutóbbi letöltésedhez ugorhatsz. Bekapcsolva hagyod?",
+  "@downloads.warnToast.message": {
+    "sourceHash": "b174604"
+  },
+  "downloads.warnToast.turnOff": "Kikapcsolom",
+  "@downloads.warnToast.turnOff": {
+    "sourceHash": "74039ed"
+  },
+  "downloads.warnToast.keepOn": "Bekapcsolva hagyom",
+  "@downloads.warnToast.keepOn": {
+    "sourceHash": "cbfff78"
+  },
+  "downloads.shortcutRow.scopeTitle": "Globális",
+  "@downloads.shortcutRow.scopeTitle": {
+    "sourceHash": "a258b30"
+  },
+  "downloads.shortcutRow.commandName": "Ugrás a legutóbbi letöltéshez <marker>(globális)</marker>",
+  "@downloads.shortcutRow.commandName": {
+    "sourceHash": "83f6d4b"
+  },
+  "downloads.shortcutRow.modifiedTooltip": "Eltér az alapértelmezettől",
+  "@downloads.shortcutRow.modifiedTooltip": {
+    "sourceHash": "3d86215"
+  },
+  "downloads.shortcutRow.resetTooltip": "Visszaállítás alapértékre",
+  "@downloads.shortcutRow.resetTooltip": {
+    "sourceHash": "bc5b45a"
+  },
+  "downloads.shortcutRow.pressKeys": "Nyomj billentyűket…",
+  "@downloads.shortcutRow.pressKeys": {
+    "sourceHash": "37aa30c"
+  },
+  "downloads.shortcutRow.registered": "Regisztrálva",
+  "@downloads.shortcutRow.registered": {
+    "sourceHash": "2351ee9"
+  },
+  "downloads.shortcutRow.notRegistered": "Nincs regisztrálva",
+  "@downloads.shortcutRow.notRegistered": {
+    "sourceHash": "ca374c2"
+  },
+  "downloads.shortcutRow.invalidCombo": "Nem regisztrálható: érvénytelen kombináció",
+  "@downloads.shortcutRow.invalidCombo": {
+    "sourceHash": "32c3532"
+  },
+  "downloads.shortcutRow.registerFailed": "Nem regisztrálható: {reason}",
+  "@downloads.shortcutRow.registerFailed": {
+    "sourceHash": "2e6fb97"
+  },
+  "downloads.shortcutRow.addModifier": "Adj hozzá egy módosítóbillentyűt (⌘, ⌃, ⌥ vagy ⇧)",
+  "@downloads.shortcutRow.addModifier": {
+    "sourceHash": "28a5ba2"
+  },
+  "downloads.toggleDescription.bound": "Nyomd meg a(z) {binding} kombinációt bármelyik appból a legutóbbi letöltésedhez ugráshoz.",
+  "@downloads.toggleDescription.bound": {
+    "sourceHash": "be43b35"
+  },
+  "downloads.toggleDescription.unbound": "Ugorj a legutóbbi letöltésedhez bármelyik appból.",
+  "@downloads.toggleDescription.unbound": {
+    "sourceHash": "187cdec"
+  }
+}

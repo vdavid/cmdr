@@ -1,0 +1,218 @@
+{
+  "shortcuts.list.noShortcut": "Kein Kurzbefehl",
+  "@shortcuts.list.noShortcut": {
+    "sourceHash": "f22dbb1"
+  },
+  "shortcuts.list.addedTooltip": "Hinzugefügt",
+  "@shortcuts.list.addedTooltip": {
+    "sourceHash": "6b02e0d"
+  },
+  "shortcuts.list.disabledTooltip": "Deaktiviert",
+  "@shortcuts.list.disabledTooltip": {
+    "sourceHash": "75081b5"
+  },
+  "shortcuts.scope.app": "App",
+  "@shortcuts.scope.app": {
+    "sourceHash": "0d04bfe"
+  },
+  "shortcuts.scope.mainWindow": "Hauptfenster",
+  "@shortcuts.scope.mainWindow": {
+    "sourceHash": "89dd3f3"
+  },
+  "shortcuts.scope.fileList": "Dateiliste",
+  "@shortcuts.scope.fileList": {
+    "sourceHash": "0728b8e"
+  },
+  "shortcuts.scope.briefMode": "Kompaktmodus",
+  "@shortcuts.scope.briefMode": {
+    "sourceHash": "b75e4b3"
+  },
+  "shortcuts.scope.fullMode": "Vollmodus",
+  "@shortcuts.scope.fullMode": {
+    "sourceHash": "c284afc"
+  },
+  "shortcuts.scope.volumeChooser": "Volume-Auswahl",
+  "@shortcuts.scope.volumeChooser": {
+    "sourceHash": "250a34f"
+  },
+  "shortcuts.scope.network": "Netzwerk",
+  "@shortcuts.scope.network": {
+    "sourceHash": "1744b96"
+  },
+  "shortcuts.scope.shareBrowser": "Freigabe-Browser",
+  "@shortcuts.scope.shareBrowser": {
+    "sourceHash": "5cec2a6"
+  },
+  "shortcuts.scope.commandPalette": "Befehlspalette",
+  "@shortcuts.scope.commandPalette": {
+    "sourceHash": "0347f79"
+  },
+  "shortcuts.scope.aboutWindow": "Über-Fenster",
+  "@shortcuts.scope.aboutWindow": {
+    "sourceHash": "615b547"
+  },
+  "shortcuts.scope.onboarding": "Einführung",
+  "@shortcuts.scope.onboarding": {
+    "sourceHash": "a2198f4"
+  },
+  "shortcuts.conflict.reservedByMacOs": "{combo} ist für macOS reserviert ({command}) und erreicht Cmdr nicht. Wähle eine andere Kombination.",
+  "@shortcuts.conflict.reservedByMacOs": {
+    "sourceHash": "4aad26f"
+  },
+  "shortcuts.conflict.fixedKey": "{combo} ist eine feste Taste in Cmdr ({command}) und lässt sich nicht neu belegen. Wähle eine andere Kombination.",
+  "@shortcuts.conflict.fixedKey": {
+    "sourceHash": "2c2c76f"
+  },
+  "shortcuts.conflict.systemShortcut": "{combo} wird meist von macOS belegt ({label}) und erreicht Cmdr daher womöglich nie. Du kannst sie in Systemeinstellungen > Tastatur freigeben.",
+  "@shortcuts.conflict.systemShortcut": {
+    "sourceHash": "9ef197f"
+  },
+  "shortcuts.system.spotlight": "Spotlight",
+  "@shortcuts.system.spotlight": {
+    "sourceHash": "fca7aa8"
+  },
+  "shortcuts.system.finderSearch": "Finder-Suchfenster",
+  "@shortcuts.system.finderSearch": {
+    "sourceHash": "8b2f1c8"
+  },
+  "shortcuts.system.characterViewer": "Zeichenübersicht",
+  "@shortcuts.system.characterViewer": {
+    "sourceHash": "1a43164"
+  },
+  "shortcuts.system.inputSourceSwitching": "Wechsel der Eingabequelle",
+  "@shortcuts.system.inputSourceSwitching": {
+    "sourceHash": "11c5d7a"
+  },
+  "shortcuts.system.appSwitcher": "den App-Umschalter",
+  "@shortcuts.system.appSwitcher": {
+    "sourceHash": "5b8be44"
+  },
+  "shortcuts.system.missionControl": "Mission Control",
+  "@shortcuts.system.missionControl": {
+    "sourceHash": "1a9a658"
+  },
+  "shortcuts.system.appWindows": "App-Fenster",
+  "@shortcuts.system.appWindows": {
+    "sourceHash": "a480ccd"
+  },
+  "shortcuts.system.spaces": "Spaces",
+  "@shortcuts.system.spaces": {
+    "sourceHash": "077a293"
+  },
+  "shortcuts.system.screenshots": "Bildschirmfotos",
+  "@shortcuts.system.screenshots": {
+    "sourceHash": "98d875b"
+  },
+  "shortcuts.system.screenRecording": "Bildschirmaufnahme",
+  "@shortcuts.system.screenRecording": {
+    "sourceHash": "fac7b60"
+  },
+  "shortcuts.system.loggingOut": "das Abmelden",
+  "@shortcuts.system.loggingOut": {
+    "sourceHash": "de70b14"
+  },
+  "shortcuts.system.lockingScreen": "das Sperren des Bildschirms",
+  "@shortcuts.system.lockingScreen": {
+    "sourceHash": "b54447c"
+  },
+  "shortcuts.system.forceQuit": "Sofort beenden",
+  "@shortcuts.system.forceQuit": {
+    "sourceHash": "6f38ccf"
+  },
+  "shortcuts.section.title": "Tastaturkurzbefehle",
+  "@shortcuts.section.title": {
+    "sourceHash": "e9bef0b"
+  },
+  "shortcuts.section.searchByNamePlaceholder": "Nach Aktionsname suchen …",
+  "@shortcuts.section.searchByNamePlaceholder": {
+    "sourceHash": "3dae3b6"
+  },
+  "shortcuts.section.filterByKeysPlaceholder": "Nach Tasten filtern …",
+  "@shortcuts.section.filterByKeysPlaceholder": {
+    "sourceHash": "87cd416"
+  },
+  "shortcuts.section.pressEscToClear": "ESC drücken zum Löschen",
+  "@shortcuts.section.pressEscToClear": {
+    "sourceHash": "3d32f9c"
+  },
+  "shortcuts.section.filterAll": "Alle",
+  "@shortcuts.section.filterAll": {
+    "sourceHash": "a52ace4"
+  },
+  "shortcuts.section.filterModified": "Geändert",
+  "@shortcuts.section.filterModified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "shortcuts.section.filterConflicts": "Konflikte",
+  "@shortcuts.section.filterConflicts": {
+    "sourceHash": "9f5ea35"
+  },
+  "shortcuts.section.cancel": "Abbrechen",
+  "@shortcuts.section.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "shortcuts.section.useAnyway": "Trotzdem verwenden",
+  "@shortcuts.section.useAnyway": {
+    "sourceHash": "aa19f9e"
+  },
+  "shortcuts.section.keepBoth": "Beide behalten",
+  "@shortcuts.section.keepBoth": {
+    "sourceHash": "9367221"
+  },
+  "shortcuts.section.removeFromOther": "Vom anderen entfernen",
+  "@shortcuts.section.removeFromOther": {
+    "sourceHash": "f154164"
+  },
+  "shortcuts.section.alreadyBound": "<b>{combo}</b> ist bereits „{command}“ zugewiesen",
+  "@shortcuts.section.alreadyBound": {
+    "sourceHash": "5c29fcb"
+  },
+  "shortcuts.section.modifiedTooltip": "Vom Standard abweichend",
+  "@shortcuts.section.modifiedTooltip": {
+    "sourceHash": "3d86215"
+  },
+  "shortcuts.section.hasConflictsTooltip": "Hat in Konflikt stehende Kurzbefehle",
+  "@shortcuts.section.hasConflictsTooltip": {
+    "sourceHash": "089c74f"
+  },
+  "shortcuts.section.noneShortcut": "(keiner)",
+  "@shortcuts.section.noneShortcut": {
+    "sourceHash": "552e423"
+  },
+  "shortcuts.section.macOsTooltip": "macOS verwaltet diesen Kurzbefehl. Cmdr kann ihn nicht ändern.",
+  "@shortcuts.section.macOsTooltip": {
+    "sourceHash": "262b2cc"
+  },
+  "shortcuts.section.fixedTooltip": "Diese Taste ist fest in Cmdr eingebaut und lässt sich nicht ändern.",
+  "@shortcuts.section.fixedTooltip": {
+    "sourceHash": "f07b460"
+  },
+  "shortcuts.section.macOsBadge": "macOS",
+  "@shortcuts.section.macOsBadge": {
+    "sourceHash": "aed6b7a"
+  },
+  "shortcuts.section.fixedBadge": "Fest",
+  "@shortcuts.section.fixedBadge": {
+    "sourceHash": "1246fc9"
+  },
+  "shortcuts.section.pressKeys": "Tasten drücken …",
+  "@shortcuts.section.pressKeys": {
+    "sourceHash": "37aa30c"
+  },
+  "shortcuts.section.removeShortcutTooltip": "Kurzbefehl entfernen",
+  "@shortcuts.section.removeShortcutTooltip": {
+    "sourceHash": "aea0ad8"
+  },
+  "shortcuts.section.addShortcutTooltip": "Kurzbefehl hinzufügen",
+  "@shortcuts.section.addShortcutTooltip": {
+    "sourceHash": "239314a"
+  },
+  "shortcuts.section.resetToDefaultTooltip": "Auf Standard zurücksetzen",
+  "@shortcuts.section.resetToDefaultTooltip": {
+    "sourceHash": "bc5b45a"
+  },
+  "shortcuts.section.resetAll": "Alle auf Standard zurücksetzen",
+  "@shortcuts.section.resetAll": {
+    "sourceHash": "a04d9be"
+  }
+}

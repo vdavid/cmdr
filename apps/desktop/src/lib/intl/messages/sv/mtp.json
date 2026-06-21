@@ -1,0 +1,90 @@
+{
+  "mtp.connectedToast.title": "Ansluten till {deviceName}",
+  "@mtp.connectedToast.title": {
+    "sourceHash": "562319d"
+  },
+  "mtp.connectedToast.bodyMac": "Cmdr pausade macOS kameradaemon (ptpcamerad) för att komma åt den här enheten. Stäng av MTP-stöd i inställningarna för att använda den i en annan app.",
+  "@mtp.connectedToast.bodyMac": {
+    "sourceHash": "3ace37b"
+  },
+  "mtp.connectedToast.bodyOther": "Stäng av MTP-stöd i inställningarna för att använda den här enheten i en annan app.",
+  "@mtp.connectedToast.bodyOther": {
+    "sourceHash": "6f42620"
+  },
+  "mtp.connectedToast.dontShowAgain": "Visa inte igen",
+  "@mtp.connectedToast.dontShowAgain": {
+    "sourceHash": "d98ab77"
+  },
+  "mtp.connectedToast.disableMtp": "Stäng av MTP...",
+  "@mtp.connectedToast.disableMtp": {
+    "sourceHash": "2057a3d"
+  },
+  "mtp.connectedToast.ok": "OK",
+  "@mtp.connectedToast.ok": {
+    "sourceHash": "565339b"
+  },
+  "mtp.permissionDialog.title": "Det går inte att komma åt USB-enheten",
+  "@mtp.permissionDialog.title": {
+    "sourceHash": "96130bf"
+  },
+  "mtp.permissionDialog.description": "Cmdr har inte behörighet att komma åt den här enheten. Linux behöver udev-regler för att ge åtkomst till MTP-enheter.",
+  "@mtp.permissionDialog.description": {
+    "sourceHash": "c11f0e8"
+  },
+  "mtp.permissionDialog.explanation": "Kör det här kommandot i din terminal för att installera reglerna och läsa in dem på nytt:",
+  "@mtp.permissionDialog.explanation": {
+    "sourceHash": "6bc70dd"
+  },
+  "mtp.permissionDialog.helpText": "När du har kört kommandot kopplar du ur och i enheten igen och försöker sedan på nytt.",
+  "@mtp.permissionDialog.helpText": {
+    "sourceHash": "519f195"
+  },
+  "mtp.permissionDialog.close": "Stäng",
+  "@mtp.permissionDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.permissionDialog.retry": "Försök ansluta igen",
+  "@mtp.permissionDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.ptpcameradDialog.title": "Det går inte att ansluta till MTP-enheten",
+  "@mtp.ptpcameradDialog.title": {
+    "sourceHash": "058de77"
+  },
+  "mtp.ptpcameradDialog.inUseBy": "Enheten används av <process>{process}</process>.",
+  "@mtp.ptpcameradDialog.inUseBy": {
+    "sourceHash": "6ec78a3"
+  },
+  "mtp.ptpcameradDialog.inUseGeneric": "En annan process har exklusiv åtkomst till enheten.",
+  "@mtp.ptpcameradDialog.inUseGeneric": {
+    "sourceHash": "cfba635"
+  },
+  "mtp.ptpcameradDialog.explanation": "På macOS tar systemdaemonen <code>ptpcamerad</code> automatiskt över Android-enheter. För att kringgå det här kör du följande kommando i Terminal (låt det fortsätta köra medan du använder Cmdr):",
+  "@mtp.ptpcameradDialog.explanation": {
+    "sourceHash": "65b6ee3"
+  },
+  "mtp.ptpcameradDialog.helpText": "Det här kommandot stoppar ptpcamerad löpande medan det körs. Tryck på <key>Ctrl+C</key> i Terminal för att stoppa det när du är klar.",
+  "@mtp.ptpcameradDialog.helpText": {
+    "sourceHash": "85b5060"
+  },
+  "mtp.ptpcameradDialog.close": "Stäng",
+  "@mtp.ptpcameradDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.ptpcameradDialog.retry": "Försök ansluta igen",
+  "@mtp.ptpcameradDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.deviceFallbackName": "MTP-enhet",
+  "@mtp.deviceFallbackName": {
+    "sourceHash": "8ba7a69"
+  },
+  "mtp.error.exclusiveAccess": "En annan process har exklusiv åtkomst{blocking, select, none {} other { (blockeras av {blocking})}}",
+  "@mtp.error.exclusiveAccess": {
+    "sourceHash": "a81f306"
+  },
+  "mtp.error.permissionDenied": "USB-åtkomst nekad. Installera udev-regler och anslut igen",
+  "@mtp.error.permissionDenied": {
+    "sourceHash": "3362501"
+  }
+}

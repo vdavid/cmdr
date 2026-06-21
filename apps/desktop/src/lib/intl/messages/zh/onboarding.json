@@ -1,0 +1,502 @@
+{
+  "onboarding.wizard.title": "Cmdr 入门引导",
+  "@onboarding.wizard.title": {
+    "sourceHash": "3b97a1b"
+  },
+  "onboarding.wizard.progressLabel": "入门引导进度",
+  "@onboarding.wizard.progressLabel": {
+    "sourceHash": "ad8a0da"
+  },
+  "onboarding.wizard.stepProgress": "第 {step} 步，共 {total} 步{isOptional, select, true {（可选）} other {}}",
+  "@onboarding.wizard.stepProgress": {
+    "sourceHash": "41705d0"
+  },
+  "onboarding.wizard.back": "上一步",
+  "@onboarding.wizard.back": {
+    "sourceHash": "76900f1"
+  },
+  "onboarding.wizard.backAria": "返回上一步",
+  "@onboarding.wizard.backAria": {
+    "sourceHash": "a729451"
+  },
+  "onboarding.wizard.next": "下一步",
+  "@onboarding.wizard.next": {
+    "sourceHash": "1ff57a2"
+  },
+  "onboarding.wizard.finish": "完成",
+  "@onboarding.wizard.finish": {
+    "sourceHash": "a6c7a84"
+  },
+  "onboarding.wizard.restart": "重启 Cmdr",
+  "@onboarding.wizard.restart": {
+    "sourceHash": "e62c550"
+  },
+  "onboarding.stepFda.granted.title": "你已授予完全磁盘访问权限！",
+  "@onboarding.stepFda.granted.title": {
+    "sourceHash": "6740141"
+  },
+  "onboarding.stepFda.granted.body": "棒，Cmdr 需要的就是这个。现在重启一下，就能开始使用全部功能了。",
+  "@onboarding.stepFda.granted.body": {
+    "sourceHash": "32acf9d"
+  },
+  "onboarding.stepFda.granted.hint": "Cmdr 会在下次启动时识别新的权限。你的入门引导进度已保存，所以会直接回到这里。",
+  "@onboarding.stepFda.granted.hint": {
+    "sourceHash": "e0e33a3"
+  },
+  "onboarding.stepFda.alreadyGranted.title": "Cmdr 当前拥有完全磁盘访问权限",
+  "@onboarding.stepFda.alreadyGranted.title": {
+    "sourceHash": "403273d"
+  },
+  "onboarding.stepFda.alreadyGranted.body": "你随时可以在 {systemSettings} 中撤销它。",
+  "@onboarding.stepFda.alreadyGranted.body": {
+    "sourceHash": "98fb9f4"
+  },
+  "onboarding.stepFda.welcome.title": "欢迎使用 Cmdr！",
+  "@onboarding.stepFda.welcome.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepFda.revoked.intro": "看起来你之前授予过完全磁盘访问权限，后来又撤销了。",
+  "@onboarding.stepFda.revoked.intro": {
+    "sourceHash": "9087914"
+  },
+  "onboarding.stepFda.revoked.noAccess": "这个应用当前没有完全磁盘访问权限。",
+  "@onboarding.stepFda.revoked.noAccess": {
+    "sourceHash": "415a3f3"
+  },
+  "onboarding.stepFda.revoked.ifIntentional": "如果这是有意为之，点按 <deny>拒绝</deny>，应用就不会再来打扰你了。",
+  "@onboarding.stepFda.revoked.ifIntentional": {
+    "sourceHash": "9709b73"
+  },
+  "onboarding.stepFda.revoked.ifNot": "如果<em>不是</em>有意的，可以考虑重新允许完全磁盘访问权限。下面是它的利弊：",
+  "@onboarding.stepFda.revoked.ifNot": {
+    "sourceHash": "24667ee"
+  },
+  "onboarding.stepFda.firstAsk.lede": "<strong>你大概只是想赶紧开始用这个应用。</strong>抱歉先用这个打扰你，但确实需要它。",
+  "@onboarding.stepFda.firstAsk.lede": {
+    "sourceHash": "7f19b2a"
+  },
+  "onboarding.stepFda.firstAsk.explain": "是这样的，Cmdr 是一个文件管理器，它需要访问你的磁盘才能看到你的所有文件。而 macOS 不会自动授予这个权限。",
+  "@onboarding.stepFda.firstAsk.explain": {
+    "sourceHash": "f60c41b"
+  },
+  "onboarding.stepFda.firstAsk.askPermission": "你愿意给这个应用完全磁盘访问权限吗？下面是它的含义：",
+  "@onboarding.stepFda.firstAsk.askPermission": {
+    "sourceHash": "94e5db7"
+  },
+  "onboarding.stepFda.pro": "<strong>好处：</strong>应用可以访问你的整个磁盘，不用每访问一个文件夹（比如下载、文稿、桌面）都来向你索取权限。",
+  "@onboarding.stepFda.pro": {
+    "sourceHash": "e00bada"
+  },
+  "onboarding.stepFda.con": "<strong>代价：</strong>完全磁盘访问权限相当强大，它让应用能读取你 Mac 上的任何文件。只有在你信任 Cmdr 时才授予它。Cmdr 会克制地使用这项权限，如果你心里没底，它的源代码是 <sourceLink>公开可查</sourceLink>的。",
+  "@onboarding.stepFda.con": {
+    "sourceHash": "745753e"
+  },
+  "onboarding.stepFda.ifAllow": "如果你决定允许：",
+  "@onboarding.stepFda.ifAllow": {
+    "sourceHash": "09c5053"
+  },
+  "onboarding.stepFda.openSettings": "打开{systemSettings}",
+  "@onboarding.stepFda.openSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "onboarding.stepFda.step1": "点按下方的 <strong>打开{systemSettings}</strong>",
+  "@onboarding.stepFda.step1": {
+    "sourceHash": "1e462a1"
+  },
+  "onboarding.stepFda.step2.ventura": "在列表中找到 <strong>Cmdr</strong> 并把它打开",
+  "@onboarding.stepFda.step2.ventura": {
+    "sourceHash": "03e71c6"
+  },
+  "onboarding.stepFda.step2.older": "在列表末尾找到 <strong>Cmdr</strong> 并把它打开",
+  "@onboarding.stepFda.step2.older": {
+    "sourceHash": "0dd40f1"
+  },
+  "onboarding.stepFda.step2.tip": "提示：列表里没有 Cmdr？点按底部的“+”按钮，从你的<strong>应用程序</strong>文件夹中选择 <strong>Cmdr</strong>。",
+  "@onboarding.stepFda.step2.tip": {
+    "sourceHash": "1bdc656"
+  },
+  "onboarding.stepFda.step3": "确认并点按 <strong>退出并重新打开</strong>",
+  "@onboarding.stepFda.step3": {
+    "sourceHash": "cf59f30"
+  },
+  "onboarding.stepFda.deny": "拒绝",
+  "@onboarding.stepFda.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "onboarding.stepFda.postAction.intro": "Cmdr 需要重启，新的权限才能生效。",
+  "@onboarding.stepFda.postAction.intro": {
+    "sourceHash": "cac5247"
+  },
+  "onboarding.stepFda.postAction.body": "准备好后，点按下方的 <restart>重启 Cmdr</restart>。如果你改变了主意，就点按上方的 <deny>拒绝</deny>。",
+  "@onboarding.stepFda.postAction.body": {
+    "sourceHash": "f87a5fc"
+  },
+  "onboarding.stepAi.bannerTitle.granted": "已授予完全磁盘访问权限",
+  "@onboarding.stepAi.bannerTitle.granted": {
+    "sourceHash": "f5872be"
+  },
+  "onboarding.stepAi.bannerBody.granted": "谢谢你授予完全磁盘访问权限！现在应用可以访问你的磁盘了。太好了！",
+  "@onboarding.stepAi.bannerBody.granted": {
+    "sourceHash": "236f3f5"
+  },
+  "onboarding.stepAi.bannerTitle.denied": "没有完全磁盘访问权限",
+  "@onboarding.stepAi.bannerTitle.denied": {
+    "sourceHash": "0aa10cf"
+  },
+  "onboarding.stepAi.bannerBody.denied": "你选择了不开启完全磁盘访问权限。我们尊重这个选择。接下来你很快会收到 macOS 发来的几个权限请求，让 Cmdr 访问你的桌面、下载等文件夹。你可以随意接受或拒绝。这一切以后都能在你的 {systemSettings} 中更改。",
+  "@onboarding.stepAi.bannerBody.denied": {
+    "sourceHash": "ccb4ae5"
+  },
+  "onboarding.stepAi.bannerTitle.stuck": "Cmdr 似乎还没拿到完全磁盘访问权限",
+  "@onboarding.stepAi.bannerTitle.stuck": {
+    "sourceHash": "88c9c19"
+  },
+  "onboarding.stepAi.bannerBody.stuck": "你说想开启完全磁盘访问权限，但 Cmdr 似乎还没拿到。你可能需要重启应用（现在就重启吧，我们会从这里继续！），或者前往你的 <settingsLink>{systemSettings} &gt; 隐私与安全性 &gt; 完全磁盘访问权限</settingsLink> 找到 Cmdr，或者用底部那个小小的“+”按钮手动添加它。",
+  "@onboarding.stepAi.bannerBody.stuck": {
+    "sourceHash": "9b83d53"
+  },
+  "onboarding.stepAi.welcomeLinux.title": "欢迎使用 Cmdr！",
+  "@onboarding.stepAi.welcomeLinux.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepAi.welcomeLinux.subtitle": "我们来设置一下 AI。",
+  "@onboarding.stepAi.welcomeLinux.subtitle": {
+    "sourceHash": "a96e109"
+  },
+  "onboarding.stepAi.title": "现在，我们来聊聊 AI",
+  "@onboarding.stepAi.title": {
+    "sourceHash": "a580449"
+  },
+  "onboarding.stepAi.intro": "Cmdr 有一堆 AI 功能，你<em>也许</em>想要，也许不想要。AI 在当下是个有争议的话题。",
+  "@onboarding.stepAi.intro": {
+    "sourceHash": "3b6b6c6"
+  },
+  "onboarding.stepAi.comparisonIntro": "下面是用 AI 和不用 AI 做常见操作的对比：",
+  "@onboarding.stepAi.comparisonIntro": {
+    "sourceHash": "440ea64"
+  },
+  "onboarding.stepAi.table.colFeature": "功能",
+  "@onboarding.stepAi.table.colFeature": {
+    "sourceHash": "3d377ae"
+  },
+  "onboarding.stepAi.table.colWithout": "不用 AI",
+  "@onboarding.stepAi.table.colWithout": {
+    "sourceHash": "aadb0ba"
+  },
+  "onboarding.stepAi.table.colWith": "用 AI",
+  "@onboarding.stepAi.table.colWith": {
+    "sourceHash": "c83835a"
+  },
+  "onboarding.stepAi.table.rowSearch": "搜索",
+  "@onboarding.stepAi.table.rowSearch": {
+    "sourceHash": "49c266b"
+  },
+  "onboarding.stepAi.table.searchWithout": "你输入类似 <code>*fish*.ppt</code> 的内容，并选择“本月 1 日之后”筛选条件。",
+  "@onboarding.stepAi.table.searchWithout": {
+    "sourceHash": "872cb1e"
+  },
+  "onboarding.stepAi.table.searchWith": "你说“我最近和鱼有关的演示文稿”，代理就帮你设好筛选条件。",
+  "@onboarding.stepAi.table.searchWith": {
+    "sourceHash": "b69cd82"
+  },
+  "onboarding.stepAi.table.rowRename": "批量重命名",
+  "@onboarding.stepAi.table.rowRename": {
+    "sourceHash": "9246b56"
+  },
+  "onboarding.stepAi.table.renameWithout": "你用批量重命名界面手动设置重命名规则，检查后应用。",
+  "@onboarding.stepAi.table.renameWithout": {
+    "sourceHash": "b12d997"
+  },
+  "onboarding.stepAi.table.renameWith": "你说“加上 ISO 日期前缀”，代理就帮你设好重命名规则，你检查后随时应用。",
+  "@onboarding.stepAi.table.renameWith": {
+    "sourceHash": "7fba3f5"
+  },
+  "onboarding.stepAi.table.rowSelect": "选择",
+  "@onboarding.stepAi.table.rowSelect": {
+    "sourceHash": "2a78025"
+  },
+  "onboarding.stepAi.table.selectWithoutBound": "你按 <chip></chip> 键，输入类似 <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code> 的内容，检查后应用。",
+  "@onboarding.stepAi.table.selectWithoutBound": {
+    "sourceHash": "83f83b9"
+  },
+  "onboarding.stepAi.table.selectWithoutUnbound": "你打开“选择文件…”，输入类似 <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code> 的内容，检查后应用。",
+  "@onboarding.stepAi.table.selectWithoutUnbound": {
+    "sourceHash": "4cdc972"
+  },
+  "onboarding.stepAi.table.selectWith": "你说“选中所有图像文件”，代理就给出一个选择建议，你检查后随时应用。",
+  "@onboarding.stepAi.table.selectWith": {
+    "sourceHash": "07f1063"
+  },
+  "onboarding.stepAi.resumeCue": "你上次选了这个。请在下面确认或更改。",
+  "@onboarding.stepAi.resumeCue": {
+    "sourceHash": "586e2ae"
+  },
+  "onboarding.stepAi.choiceLegend": "看完这些，你想要 AI 吗？",
+  "@onboarding.stepAi.choiceLegend": {
+    "sourceHash": "0748af8"
+  },
+  "onboarding.stepAi.choiceGroupAria": "AI 选择",
+  "@onboarding.stepAi.choiceGroupAria": {
+    "sourceHash": "9083caa"
+  },
+  "onboarding.stepAi.cloud.label": "要，我想用 AI",
+  "@onboarding.stepAi.cloud.label": {
+    "sourceHash": "ba08450"
+  },
+  "onboarding.stepAi.cloud.recommended": "（推荐）",
+  "@onboarding.stepAi.cloud.recommended": {
+    "sourceHash": "1185133"
+  },
+  "onboarding.stepAi.cloud.help": "用你自己的 API 密钥连接任意云端提供方。模型快速、高质量。请在下面选择一个提供方。",
+  "@onboarding.stepAi.cloud.help": {
+    "sourceHash": "96f3940"
+  },
+  "onboarding.stepAi.cloud.pickerTitle": "选择一个提供方",
+  "@onboarding.stepAi.cloud.pickerTitle": {
+    "sourceHash": "71e2ca7"
+  },
+  "onboarding.stepAi.local.label": "要，我想用 AI，但我想要超级注重隐私",
+  "@onboarding.stepAi.local.label": {
+    "sourceHash": "f371401"
+  },
+  "onboarding.stepAi.local.help": "一个稍微笨一点的模型，占用约 2 GB 空间，每次使用会用一点 CPU。仍然是个不错的方案。没有数据离开你的设备。Cmdr 会尽量为现有最佳的小型本地模型提供更新。",
+  "@onboarding.stepAi.local.help": {
+    "sourceHash": "fd47d34"
+  },
+  "onboarding.stepAi.local.note": "已经开始在后台下载本地模型。你现在就可以完成入门引导；角落里的提示会随时告诉你进展。",
+  "@onboarding.stepAi.local.note": {
+    "sourceHash": "af89d60"
+  },
+  "onboarding.stepAi.localTooltip": "本地 LLM 需要 Apple Silicon。云端在 Intel 上也能用。",
+  "@onboarding.stepAi.localTooltip": {
+    "sourceHash": "dc194e8"
+  },
+  "onboarding.stepAi.off.label": "谢谢，还是算了，我不用 AI",
+  "@onboarding.stepAi.off.label": {
+    "sourceHash": "c2a8322"
+  },
+  "onboarding.stepAi.off.help": "Cmdr 不用 AI 也能完整运行。你以后可以在“设置”中开启它。",
+  "@onboarding.stepAi.off.help": {
+    "sourceHash": "3f261be"
+  },
+  "onboarding.stepBeta.footer.start": "开始使用 Cmdr！",
+  "@onboarding.stepBeta.footer.start": {
+    "sourceHash": "e29bbc7"
+  },
+  "onboarding.stepBeta.footer.continue": "再来一个可选的设置步骤",
+  "@onboarding.stepBeta.footer.continue": {
+    "sourceHash": "4024130"
+  },
+  "onboarding.stepBeta.title": "帮助改进 Cmdr！",
+  "@onboarding.stepBeta.title": {
+    "sourceHash": "6e8be73"
+  },
+  "onboarding.stepBeta.greeting": "嗨，我是 <david>David</david>！Cmdr 是我做的，而你是最早使用它的人之一。谢谢你的信任！❤️",
+  "@onboarding.stepBeta.greeting": {
+    "sourceHash": "f7ade14"
+  },
+  "onboarding.stepBeta.openBeta": "Cmdr 正处于公开测试阶段，这意味着它整体上稳定可用，但有些地方还比较粗糙。留意那些 <alpha></alpha> 徽章，它们标出了最处于开发中的区域。",
+  "@onboarding.stepBeta.openBeta": {
+    "sourceHash": "5b0a107"
+  },
+  "onboarding.stepBeta.feedbackIntro": "你的反馈能帮我发现 bug、确定功能的优先级。下面是你可以参与的方式：",
+  "@onboarding.stepBeta.feedbackIntro": {
+    "sourceHash": "4e238dd"
+  },
+  "onboarding.stepBeta.feedback.inAppBound": "<strong>应用内：</strong>在菜单中找到 <strong>帮助 &gt; 发送反馈…</strong>，或在命令面板中用 <chip></chip> 找到它。",
+  "@onboarding.stepBeta.feedback.inAppBound": {
+    "sourceHash": "88ec070"
+  },
+  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>应用内：</strong>在菜单中找到 <strong>帮助 &gt; 发送反馈…</strong>，或在命令面板中找到它。",
+  "@onboarding.stepBeta.feedback.inAppUnbound": {
+    "sourceHash": "b7f7fb3"
+  },
+  "onboarding.stepBeta.feedback.github": "<github>GitHub</github>：提交 issue，为 issue 投票。",
+  "@onboarding.stepBeta.feedback.github": {
+    "sourceHash": "f4fb26a"
+  },
+  "onboarding.stepBeta.feedback.discord": "<discord>Discord</discord>：点按链接，加入服务器，认识我和其他人。",
+  "@onboarding.stepBeta.feedback.discord": {
+    "sourceHash": "c899232"
+  },
+  "onboarding.stepBeta.feedback.call": "<call>约我聊一次</call>：我不会这样做太久，但在 Cmdr 公开测试期间，我很想和你聊聊你的文件！",
+  "@onboarding.stepBeta.feedback.call": {
+    "sourceHash": "5e198ee"
+  },
+  "onboarding.stepBeta.star": "还有一个非常重要、一分钟就能帮上忙的方式：在 <github>GitHub 上这里</github> 给仓库点 star、watch 和 fork。Homebrew 要求我拿出 225 个 star、50 个 fork 和 50 个 watch，才能启用 <code>brew install cmdr</code>。",
+  "@onboarding.stepBeta.star": {
+    "sourceHash": "6e978a7"
+  },
+  "onboarding.stepBeta.analyticsLede": "为了了解哪些有效、哪些无效，在公开测试期间 Cmdr 会发送匿名使用统计：哪些功能被用到、用得多频繁，绝不包含你文件里的任何内容。它现在是开启的，你随时可以关掉。",
+  "@onboarding.stepBeta.analyticsLede": {
+    "sourceHash": "2f5b897"
+  },
+  "onboarding.stepBeta.analyticsTitle": "发送匿名使用统计",
+  "@onboarding.stepBeta.analyticsTitle": {
+    "sourceHash": "4620960"
+  },
+  "onboarding.stepBeta.analyticsCaption": "请注意，它默认是开启的，以鼓励大家在测试期间给我发送数据。你随时可以在“设置”中更改这一项。",
+  "@onboarding.stepBeta.analyticsCaption": {
+    "sourceHash": "9821e5d"
+  },
+  "onboarding.stepBeta.emailTitle": "保持联系（可选）",
+  "@onboarding.stepBeta.emailTitle": {
+    "sourceHash": "cf691fa"
+  },
+  "onboarding.stepBeta.emailPlaceholder": "you@example.com",
+  "@onboarding.stepBeta.emailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "onboarding.stepBeta.signup.success": "请查看收件箱确认你的邮箱。谢谢你的帮助！",
+  "@onboarding.stepBeta.signup.success": {
+    "sourceHash": "b96010e"
+  },
+  "onboarding.stepBeta.signup.failure": "抱歉，我们现在没能帮你注册。要再试一次吗？",
+  "@onboarding.stepBeta.signup.failure": {
+    "sourceHash": "0aac3a9"
+  },
+  "onboarding.stepBeta.emailNote": "留下你的邮箱，我会偶尔来问个问题或发个更新。你在这里填的邮箱只保存在你的 Mac 上，绝不会和你的使用统计关联，这两者是有意分开的两个子系统。",
+  "@onboarding.stepBeta.emailNote": {
+    "sourceHash": "9d262c8"
+  },
+  "onboarding.stepOptional.footer.start": "开始使用 Cmdr",
+  "@onboarding.stepOptional.footer.start": {
+    "sourceHash": "d11e058"
+  },
+  "onboarding.stepOptional.title": "你就快准备好了",
+  "@onboarding.stepOptional.title": {
+    "sourceHash": "6ad977a"
+  },
+  "onboarding.stepOptional.lede": "你选择了走一遍详细设置，所以这里有几个简单的选项。如果你不太在意，点一下下面的按钮就行。这些全都是可选项，默认值是为你着想而选的。",
+  "@onboarding.stepOptional.lede": {
+    "sourceHash": "b1242c9"
+  },
+  "onboarding.stepOptional.recommendedOn": "推荐：开启。你随时可以在“设置”中更改这一项。",
+  "@onboarding.stepOptional.recommendedOn": {
+    "sourceHash": "05e5598"
+  },
+  "onboarding.stepOptional.networking.title": "网络",
+  "@onboarding.stepOptional.networking.title": {
+    "sourceHash": "204de4b"
+  },
+  "onboarding.stepOptional.networking.desc": "<em>开启</em>这一项，你就能连接到 SMB 服务器，比如公司的网络共享、家里的 NAS 等等。唯一的代价是会弹出一个 macOS 权限对话框，请你允许“本地网络访问”，以及一个请你允许“接受传入连接”的对话框。这两个对话框都无害，但如果你不知道它们是什么，可能会觉得吓人或烦人。",
+  "@onboarding.stepOptional.networking.desc": {
+    "sourceHash": "a27866b"
+  },
+  "onboarding.stepOptional.indexing.title": "驱动器索引",
+  "@onboarding.stepOptional.indexing.title": {
+    "sourceHash": "38d916b"
+  },
+  "onboarding.stepOptional.indexing.descIntro": "驱动器索引特别酷！它主要给你两样东西：",
+  "@onboarding.stepOptional.indexing.descIntro": {
+    "sourceHash": "6b86a1f"
+  },
+  "onboarding.stepOptional.indexing.benefit1": "对整个驱动器即时搜索。可以理解成聚焦，但还要更快。",
+  "@onboarding.stepOptional.indexing.benefit1": {
+    "sourceHash": "5fa0e9f"
+  },
+  "onboarding.stepOptional.indexing.benefit2": "对整个驱动器实时显示文件夹大小。你总能知道每个文件夹里装了多少东西。",
+  "@onboarding.stepOptional.indexing.benefit2": {
+    "sourceHash": "6fe5223"
+  },
+  "onboarding.stepOptional.indexing.descCost": "如果你关掉这一项，文件夹大小就只显示 <code>&lt;DIR&gt;</code>。代价是在驱动器上占用 300 MB 的索引，但除了首次启动应用、或长时间未用后再启动时的头 2&ndash;3 分钟，之后不会额外占用 CPU 或内存。考虑到它带来的好处，这点开销很划算。",
+  "@onboarding.stepOptional.indexing.descCost": {
+    "sourceHash": "197ffd2"
+  },
+  "onboarding.stepOptional.updates.title": "自动更新",
+  "@onboarding.stepOptional.updates.title": {
+    "sourceHash": "147b1b6"
+  },
+  "onboarding.stepOptional.updates.desc": "如果你开启这一项，Cmdr 会在每次应用启动时、以及每 24 小时一次，向一台中心许可证服务器发起一个很小的网络请求，这样你总能拿到最新更新。如果关闭，你会保留当前版本，且零自动网络请求（如果你持有商业许可证，则定期的许可证检查除外）。",
+  "@onboarding.stepOptional.updates.desc": {
+    "sourceHash": "81147a5"
+  },
+  "onboarding.stepOptional.mtp.title": "MTP（Android 手机、Kindle、相机）",
+  "@onboarding.stepOptional.mtp.title": {
+    "sourceHash": "473e8e9"
+  },
+  "onboarding.stepOptional.mtp.desc": "如果你开启这一项，Cmdr 就能<strong>连接到 Android 手机、Kindle、相机</strong>、一些音乐播放器，以及任何支持 MTP 或 PTP 协议的设备。代价是 macOS <em>也</em>想连接这些设备（而且通常会失败，这也是你没法直接用 Finder 从 Android 手机拷贝照片的原因），所以 Cmdr 运行时必须抑制 macOS 的那个进程。当你退出 Cmdr 时，它会被妥善恢复。但这确实是一点开销，所以：",
+  "@onboarding.stepOptional.mtp.desc": {
+    "sourceHash": "ba2265d"
+  },
+  "onboarding.cloudPicker.listAria": "云端 AI 提供方",
+  "@onboarding.cloudPicker.listAria": {
+    "sourceHash": "9494a49"
+  },
+  "onboarding.cloudSetup.title": "设置 {provider}",
+  "@onboarding.cloudSetup.title": {
+    "sourceHash": "c10333a"
+  },
+  "onboarding.cloudSetup.step.signup": "在 <signupLink>{provider}</signupLink> 注册（如果你还没有账户）",
+  "@onboarding.cloudSetup.step.signup": {
+    "sourceHash": "d89f1e1"
+  },
+  "onboarding.cloudSetup.step.createKey": "在<keyLink>这里</keyLink>创建一个 API 密钥",
+  "@onboarding.cloudSetup.step.createKey": {
+    "sourceHash": "5705da6"
+  },
+  "onboarding.cloudSetup.step.endpoint": "端点 URL",
+  "@onboarding.cloudSetup.step.endpoint": {
+    "sourceHash": "2578179"
+  },
+  "onboarding.cloudSetup.step.endpointPlaceholder": "例如：https://api.example.com/v1",
+  "@onboarding.cloudSetup.step.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "onboarding.cloudSetup.step.pasteKey": "粘贴你的 API 密钥",
+  "@onboarding.cloudSetup.step.pasteKey": {
+    "sourceHash": "e35b296"
+  },
+  "onboarding.cloudSetup.apiKeyAria": "API 密钥",
+  "@onboarding.cloudSetup.apiKeyAria": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "例如：sk-abc123...",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
+    "sourceHash": "f9701a2"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "例如：sk-ant-abc123...",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
+    "sourceHash": "5a4d18d"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.generic": "API 密钥",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.status.checking": "正在检查你的密钥…",
+  "@onboarding.cloudSetup.status.checking": {
+    "sourceHash": "e8c3a83"
+  },
+  "onboarding.cloudSetup.status.authError": "那个密钥不管用",
+  "@onboarding.cloudSetup.status.authError": {
+    "sourceHash": "2f23f3b"
+  },
+  "onboarding.cloudSetup.status.connectionError": "现在连不上这个服务",
+  "@onboarding.cloudSetup.status.connectionError": {
+    "sourceHash": "67cb2e5"
+  },
+  "onboarding.cloudSetup.status.genericError": "出了点问题",
+  "@onboarding.cloudSetup.status.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "onboarding.cloudSetup.status.connected": "已连接！",
+  "@onboarding.cloudSetup.status.connected": {
+    "sourceHash": "78ae377"
+  },
+  "onboarding.cloudSetup.step.pickModel": "选择一个模型",
+  "@onboarding.cloudSetup.step.pickModel": {
+    "sourceHash": "f159730"
+  },
+  "onboarding.cloudSetup.modelAria": "模型",
+  "@onboarding.cloudSetup.modelAria": {
+    "sourceHash": "5e2c614"
+  },
+  "onboarding.cloudSetup.modelPlaceholderExample": "例如：{model}",
+  "@onboarding.cloudSetup.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "onboarding.cloudSetup.modelPlaceholder": "模型名称",
+  "@onboarding.cloudSetup.modelPlaceholder": {
+    "sourceHash": "a3c3370"
+  }
+}

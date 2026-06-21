@@ -1,0 +1,58 @@
+{
+  "feedback.dialog.title": "Gửi phản hồi",
+  "@feedback.dialog.title": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.description": "Điều gì đang hiệu quả? Còn thiếu gì? Lời nhắn của bạn đến thẳng người làm ra Cmdr.",
+  "@feedback.dialog.description": {
+    "sourceHash": "fe435e3"
+  },
+  "feedback.dialog.label": "Phản hồi của bạn",
+  "@feedback.dialog.label": {
+    "sourceHash": "cdb1c0a"
+  },
+  "feedback.dialog.placeholder": "Ví dụ: Tôi rất muốn có một phím tắt để nhảy giữa các thẻ.",
+  "@feedback.dialog.placeholder": {
+    "sourceHash": "dd0214b"
+  },
+  "feedback.dialog.counter": "{currentText} / {maxText}",
+  "@feedback.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "feedback.dialog.tooLong": "Xin lỗi, nội dung này quá dài. Tối đa là {maxText} ký tự.",
+  "@feedback.dialog.tooLong": {
+    "sourceHash": "60a59ec"
+  },
+  "feedback.dialog.attachEmail": "Đính kèm email của tôi ({email}) để chúng tôi trả lời",
+  "@feedback.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "feedback.dialog.moreWays": "Bạn cũng có thể <github>xem và bình chọn trên GitHub</github> hoặc <call>đặt một cuộc gọi</call> với David.",
+  "@feedback.dialog.moreWays": {
+    "sourceHash": "5a26a7c"
+  },
+  "feedback.dialog.invalid": "Lời nhắn đó chưa gửi đi được. Hãy rút ngắn lại và thử lại nhé?",
+  "@feedback.dialog.invalid": {
+    "sourceHash": "c379ff8"
+  },
+  "feedback.dialog.softFailure": "Xin lỗi, chúng tôi chưa gửi được phản hồi của bạn lúc này. Thử lại nhé?",
+  "@feedback.dialog.softFailure": {
+    "sourceHash": "21012f3"
+  },
+  "feedback.dialog.cancel": "Hủy",
+  "@feedback.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "feedback.dialog.send": "Gửi phản hồi",
+  "@feedback.dialog.send": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.sending": "Đang gửi…",
+  "@feedback.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "feedback.sentToast": "Cảm ơn bạn đã phản hồi! Chúng tôi đọc mọi lời nhắn.",
+  "@feedback.sentToast": {
+    "sourceHash": "6092c03"
+  }
+}

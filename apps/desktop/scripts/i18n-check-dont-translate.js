@@ -30,15 +30,19 @@
  * point at a fixture (used by the tests).
  */
 
-import { BRAND_WORDS, SYSTEM_TOKENS, hasWholeWord } from './i18n-catalog-lib.js'
+import { BRAND_WORDS, SYSTEM_TOKENS, hasWholeWord, hasBrandPresent } from './i18n-catalog-lib.js'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.js'
 
 export { BRAND_WORDS, SYSTEM_TOKENS }
 
 /**
  * Lists the don't-translate tokens that English carries for a key but the locale's
- * value dropped. Brand words use whole-word matching; system tokens are literal
- * substrings. Exposed for unit tests.
+ * value dropped. For brand words the two sides use DIFFERENT presence tests on
+ * purpose: STRICT whole-word on the English side (does en carry the bare brand?),
+ * but suffix-aware `hasBrandPresent` on the locale side (does the locale still carry
+ * it, possibly inflected — "Cmdrben", "Cmdrs"?). So a genuine omission is still
+ * flagged, but a brand that took a natural inflectional suffix is not a false drop.
+ * System tokens are literal substrings on both sides. Exposed for unit tests.
  * @param {string} englishValue
  * @param {string} localeValue
  * @returns {string[]} dropped tokens (sorted, deduped)
@@ -47,7 +51,7 @@ export function droppedTokens(englishValue, localeValue) {
   /** @type {string[]} */
   const dropped = []
   for (const word of BRAND_WORDS) {
-    if (hasWholeWord(englishValue, word) && !hasWholeWord(localeValue, word)) dropped.push(word)
+    if (hasWholeWord(englishValue, word) && !hasBrandPresent(localeValue, word)) dropped.push(word)
   }
   for (const token of SYSTEM_TOKENS) {
     if (englishValue.includes(token) && !localeValue.includes(token)) dropped.push(token)

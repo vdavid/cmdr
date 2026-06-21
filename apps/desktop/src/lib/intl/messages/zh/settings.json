@@ -1,0 +1,1514 @@
+{
+  "settings.appearance.language.label": "语言",
+  "@settings.appearance.language.label": {
+    "sourceHash": "a4fe652"
+  },
+  "settings.appearance.language.description": "选择 Cmdr 使用的语言。“跟随系统”会采用你 Mac 的语言。",
+  "@settings.appearance.language.description": {
+    "sourceHash": "a290add"
+  },
+  "settings.appearance.language.opt.system": "跟随系统",
+  "@settings.appearance.language.opt.system": {
+    "sourceHash": "b045921"
+  },
+  "settings.theme.mode.label": "主题模式",
+  "@settings.theme.mode.label": {
+    "sourceHash": "0f79f19"
+  },
+  "settings.theme.mode.description": "在浅色、深色或跟随系统的主题之间选择。",
+  "@settings.theme.mode.description": {
+    "sourceHash": "42b18b9"
+  },
+  "settings.theme.mode.opt.light": "☀️ 浅色",
+  "@settings.theme.mode.opt.light": {
+    "sourceHash": "89c7766"
+  },
+  "settings.theme.mode.opt.dark": "🌙 深色",
+  "@settings.theme.mode.opt.dark": {
+    "sourceHash": "93362ff"
+  },
+  "settings.theme.mode.opt.system": "💻 系统",
+  "@settings.theme.mode.opt.system": {
+    "sourceHash": "0c12227"
+  },
+  "settings.appearance.appColor.label": "App 颜色",
+  "@settings.appearance.appColor.label": {
+    "sourceHash": "b1107c8"
+  },
+  "settings.appearance.appColor.description": "要更改系统主题色，请前往“系统设置 > 外观”。",
+  "@settings.appearance.appColor.description": {
+    "sourceHash": "7dc4ab7"
+  },
+  "settings.appearance.appColor.opt.system": "系统主题色",
+  "@settings.appearance.appColor.opt.system": {
+    "sourceHash": "5a7bc86"
+  },
+  "settings.appearance.appColor.opt.cmdrGold": "Cmdr 金",
+  "@settings.appearance.appColor.opt.cmdrGold": {
+    "sourceHash": "3ae5711"
+  },
+  "settings.appearance.sizeColors.label": "大小颜色",
+  "@settings.appearance.sizeColors.label": {
+    "sourceHash": "7598e9a"
+  },
+  "settings.appearance.sizeColors.description": "按等级为文件列表中的文件大小着色。彩虹使用绿/黄/橙/红/紫。App 使用 App 颜色的不同深浅。",
+  "@settings.appearance.sizeColors.description": {
+    "sourceHash": "ecb064a"
+  },
+  "settings.appearance.sizeColors.opt.none": "无",
+  "@settings.appearance.sizeColors.opt.none": {
+    "sourceHash": "dc937b5"
+  },
+  "settings.appearance.sizeColors.opt.app": "App",
+  "@settings.appearance.sizeColors.opt.app": {
+    "sourceHash": "0d04bfe"
+  },
+  "settings.appearance.sizeColors.opt.rainbow": "彩虹",
+  "@settings.appearance.sizeColors.opt.rainbow": {
+    "sourceHash": "b1f7b2e"
+  },
+  "settings.appearance.dateColors.label": "日期颜色",
+  "@settings.appearance.dateColors.label": {
+    "sourceHash": "25e5672"
+  },
+  "settings.appearance.dateColors.description": "按新旧程度为文件列表中的修改日期着色。App 让较旧的日期逐渐淡向默认文本颜色。枯萎让最新的文件显绿、渐旧显黄、最旧显棕。",
+  "@settings.appearance.dateColors.description": {
+    "sourceHash": "382ce25"
+  },
+  "settings.appearance.dateColors.opt.none": "无",
+  "@settings.appearance.dateColors.opt.none": {
+    "sourceHash": "dc937b5"
+  },
+  "settings.appearance.dateColors.opt.app": "App",
+  "@settings.appearance.dateColors.opt.app": {
+    "sourceHash": "0d04bfe"
+  },
+  "settings.appearance.dateColors.opt.wilting": "枯萎",
+  "@settings.appearance.dateColors.opt.wilting": {
+    "sourceHash": "2aa30f1"
+  },
+  "settings.appearance.dateTimeFormat.label": "日期和时间格式",
+  "@settings.appearance.dateTimeFormat.label": {
+    "sourceHash": "fcfc2a6"
+  },
+  "settings.appearance.dateTimeFormat.description": "文件列表中日期和时间的显示方式。",
+  "@settings.appearance.dateTimeFormat.description": {
+    "sourceHash": "628571a"
+  },
+  "settings.appearance.dateTimeFormat.opt.system": "跟随系统",
+  "@settings.appearance.dateTimeFormat.opt.system": {
+    "sourceHash": "b045921"
+  },
+  "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
+  "@settings.appearance.dateTimeFormat.opt.iso": {
+    "sourceHash": "408dd66"
+  },
+  "settings.appearance.dateTimeFormat.optDesc.iso": "例如 2025-01-25 14:30",
+  "@settings.appearance.dateTimeFormat.optDesc.iso": {
+    "sourceHash": "63c1f1d"
+  },
+  "settings.appearance.dateTimeFormat.opt.short": "简短",
+  "@settings.appearance.dateTimeFormat.opt.short": {
+    "sourceHash": "f5d61ea"
+  },
+  "settings.appearance.dateTimeFormat.optDesc.short": "例如 01/25 14:30",
+  "@settings.appearance.dateTimeFormat.optDesc.short": {
+    "sourceHash": "4475197"
+  },
+  "settings.appearance.dateTimeFormat.opt.custom": "自定义…",
+  "@settings.appearance.dateTimeFormat.opt.custom": {
+    "sourceHash": "b497c0b"
+  },
+  "settings.appearance.customDateTimeFormat.label": "自定义日期/时间格式",
+  "@settings.appearance.customDateTimeFormat.label": {
+    "sourceHash": "620b7a0"
+  },
+  "settings.appearance.customDateTimeFormat.description": "用于自定义日期/时间显示的格式字符串。使用 YYYY、MM、DD、HH、mm、ss 等占位符。",
+  "@settings.appearance.customDateTimeFormat.description": {
+    "sourceHash": "577dee6"
+  },
+  "settings.listing.stripedRows.label": "条纹行",
+  "@settings.listing.stripedRows.label": {
+    "sourceHash": "c1537df"
+  },
+  "settings.listing.stripedRows.description": "交替的行底纹，方便逐行查看。完整和简洁视图模式都适用。",
+  "@settings.listing.stripedRows.description": {
+    "sourceHash": "e95776a"
+  },
+  "settings.appearance.tintLocal.label": "为本地宗卷窗格着色",
+  "@settings.appearance.tintLocal.label": {
+    "sourceHash": "d907724"
+  },
+  "settings.appearance.tintLocal.description": "为显示本地驱动器的窗格添加的背景着色。",
+  "@settings.appearance.tintLocal.description": {
+    "sourceHash": "3c86b48"
+  },
+  "settings.appearance.tintSmb.label": "为 SMB/网络窗格着色",
+  "@settings.appearance.tintSmb.label": {
+    "sourceHash": "66fd4a8"
+  },
+  "settings.appearance.tintSmb.description": "为显示 SMB 或网络共享的窗格添加的背景着色。",
+  "@settings.appearance.tintSmb.description": {
+    "sourceHash": "cf3a857"
+  },
+  "settings.appearance.tintMtp.label": "为 MTP 窗格着色",
+  "@settings.appearance.tintMtp.label": {
+    "sourceHash": "2054351"
+  },
+  "settings.appearance.tintMtp.description": "为显示 Android、Kindle 或相机设备的窗格添加的背景着色。",
+  "@settings.appearance.tintMtp.description": {
+    "sourceHash": "a09d99a"
+  },
+  "settings.appearance.textSize.label": "文本大小",
+  "@settings.appearance.textSize.label": {
+    "sourceHash": "d68761c"
+  },
+  "settings.appearance.textSize.description": "缩放整个 App 的文本和界面。与 macOS 辅助功能的文本大小叠加，其中 100% 表示“与系统大小完全一致”。",
+  "@settings.appearance.textSize.description": {
+    "sourceHash": "232df24"
+  },
+  "settings.appearance.uiDensity.label": "界面密度",
+  "@settings.appearance.uiDensity.label": {
+    "sourceHash": "81344d8"
+  },
+  "settings.appearance.uiDensity.description": "控制整个 App 中界面元素的间距和大小。",
+  "@settings.appearance.uiDensity.description": {
+    "sourceHash": "e7ead7a"
+  },
+  "settings.appearance.uiDensity.opt.compact": "紧凑",
+  "@settings.appearance.uiDensity.opt.compact": {
+    "sourceHash": "9945264"
+  },
+  "settings.appearance.uiDensity.opt.comfortable": "舒适",
+  "@settings.appearance.uiDensity.opt.comfortable": {
+    "sourceHash": "459a23a"
+  },
+  "settings.appearance.uiDensity.opt.spacious": "宽松",
+  "@settings.appearance.uiDensity.opt.spacious": {
+    "sourceHash": "57edf23"
+  },
+  "settings.listing.sizeDisplay.label": "大小显示",
+  "@settings.listing.sizeDisplay.label": {
+    "sourceHash": "114b4a5"
+  },
+  "settings.listing.sizeDisplay.description": "智能会显示内容大小和占用空间中较小的一个。这对两者不同的磁盘映像和压缩文件很有帮助。",
+  "@settings.listing.sizeDisplay.description": {
+    "sourceHash": "52567b4"
+  },
+  "settings.listing.sizeDisplay.opt.smart": "智能",
+  "@settings.listing.sizeDisplay.opt.smart": {
+    "sourceHash": "9e6ad6d"
+  },
+  "settings.listing.sizeDisplay.opt.logical": "内容",
+  "@settings.listing.sizeDisplay.opt.logical": {
+    "sourceHash": "47bd290"
+  },
+  "settings.listing.sizeDisplay.opt.physical": "占用空间",
+  "@settings.listing.sizeDisplay.opt.physical": {
+    "sourceHash": "00ca4da"
+  },
+  "settings.listing.sizeUnit.label": "大小单位",
+  "@settings.listing.sizeUnit.label": {
+    "sourceHash": "2a817d3"
+  },
+  "settings.listing.sizeUnit.description": "动态会为每个文件挑选最易读的单位（1.02 MB）。固定单位让整个列表的大小可以直接对比。字节显示精确的数值，方便精准比较。",
+  "@settings.listing.sizeUnit.description": {
+    "sourceHash": "702a201"
+  },
+  "settings.listing.sizeUnit.opt.dynamic": "动态",
+  "@settings.listing.sizeUnit.opt.dynamic": {
+    "sourceHash": "b6ee7b3"
+  },
+  "settings.listing.sizeUnit.opt.bytes": "字节",
+  "@settings.listing.sizeUnit.opt.bytes": {
+    "sourceHash": "4d80003"
+  },
+  "settings.listing.sizeUnit.opt.kB": "kB",
+  "@settings.listing.sizeUnit.opt.kB": {
+    "sourceHash": "591e59c"
+  },
+  "settings.listing.sizeUnit.opt.mB": "MB",
+  "@settings.listing.sizeUnit.opt.mB": {
+    "sourceHash": "1d09f6f"
+  },
+  "settings.listing.sizeUnit.opt.gB": "GB",
+  "@settings.listing.sizeUnit.opt.gB": {
+    "sourceHash": "b4043b0"
+  },
+  "settings.appearance.fileSizeFormat.label": "文件大小格式",
+  "@settings.appearance.fileSizeFormat.label": {
+    "sourceHash": "355c89b"
+  },
+  "settings.appearance.fileSizeFormat.description": "文件列表中文件大小的显示方式。",
+  "@settings.appearance.fileSizeFormat.description": {
+    "sourceHash": "0ffee96"
+  },
+  "settings.appearance.fileSizeFormat.opt.binary": "二进制（KiB、MiB、GiB）",
+  "@settings.appearance.fileSizeFormat.opt.binary": {
+    "sourceHash": "0a4ce4e"
+  },
+  "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 字节",
+  "@settings.appearance.fileSizeFormat.optDesc.binary": {
+    "sourceHash": "ee2d07b"
+  },
+  "settings.appearance.fileSizeFormat.opt.si": "SI 十进制（KB、MB、GB）",
+  "@settings.appearance.fileSizeFormat.opt.si": {
+    "sourceHash": "8984a13"
+  },
+  "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 字节",
+  "@settings.appearance.fileSizeFormat.optDesc.si": {
+    "sourceHash": "04b2c3b"
+  },
+  "settings.listing.sizeMismatchWarning.label": "大小不一致警告",
+  "@settings.listing.sizeMismatchWarning.label": {
+    "sourceHash": "791c344"
+  },
+  "settings.listing.sizeMismatchWarning.description": "当文件夹的内容大小和占用空间相差超过 50% 且超过 200 MB 时，显示一个警告图标。",
+  "@settings.listing.sizeMismatchWarning.description": {
+    "sourceHash": "1b232eb"
+  },
+  "settings.appearance.useAppIconsForDocuments.label": "文稿使用 App 图标",
+  "@settings.appearance.useAppIconsForDocuments.label": {
+    "sourceHash": "71561ae"
+  },
+  "settings.appearance.useAppIconsForDocuments.description": "为文稿显示其所属 App 的图标，而非通用的文件类型图标。更丰富多彩，但会稍慢一些。",
+  "@settings.appearance.useAppIconsForDocuments.description": {
+    "sourceHash": "9ae8a9c"
+  },
+  "settings.appearance.showFunctionKeyBar.label": "显示功能键栏",
+  "@settings.appearance.showFunctionKeyBar.label": {
+    "sourceHash": "e80f18d"
+  },
+  "settings.appearance.showFunctionKeyBar.description": "在窗口底部显示一排 F 键命令按钮（重命名、查看、拷贝等）。",
+  "@settings.appearance.showFunctionKeyBar.description": {
+    "sourceHash": "138b56b"
+  },
+  "settings.listing.showExtensionInName.label": "在名称列中显示文件扩展名",
+  "@settings.listing.showExtensionInName.label": {
+    "sourceHash": "cce9a4d"
+  },
+  "settings.listing.showExtensionInName.description": "在名称列中显示完整文件名（如 launch.json），并隐藏单独的扩展名列。仅影响完整视图。",
+  "@settings.listing.showExtensionInName.description": {
+    "sourceHash": "e7c361c"
+  },
+  "settings.listing.directorySortMode.label": "目录排序",
+  "@settings.listing.directorySortMode.label": {
+    "sourceHash": "7f0a1e4"
+  },
+  "settings.listing.directorySortMode.description": "更改排序列时，目录的排序方式。",
+  "@settings.listing.directorySortMode.description": {
+    "sourceHash": "fe5f12a"
+  },
+  "settings.listing.directorySortMode.opt.likeFiles": "与文件一致",
+  "@settings.listing.directorySortMode.opt.likeFiles": {
+    "sourceHash": "d888403"
+  },
+  "settings.listing.directorySortMode.opt.alwaysByName": "始终按名称",
+  "@settings.listing.directorySortMode.opt.alwaysByName": {
+    "sourceHash": "7687e38"
+  },
+  "settings.listing.briefColumnWidthMode.label": "简洁模式下的最大列宽",
+  "@settings.listing.briefColumnWidthMode.label": {
+    "sourceHash": "bbcab33"
+  },
+  "settings.listing.briefColumnWidthMode.description": "限制简洁模式的列为容纳长文件名最多能拓宽多少。无论如何列都不会超过窗格宽度；所选的限制仅在比窗格更窄时才生效。",
+  "@settings.listing.briefColumnWidthMode.description": {
+    "sourceHash": "d4a47b0"
+  },
+  "settings.listing.briefColumnWidthMode.opt.paneWidth": "窗格宽度（不限制）",
+  "@settings.listing.briefColumnWidthMode.opt.paneWidth": {
+    "sourceHash": "8127854"
+  },
+  "settings.listing.briefColumnWidthMode.opt.limited": "限制为",
+  "@settings.listing.briefColumnWidthMode.opt.limited": {
+    "sourceHash": "01a089f"
+  },
+  "settings.listing.briefColumnWidthMaxPx.label": "简洁列宽限制",
+  "@settings.listing.briefColumnWidthMaxPx.label": {
+    "sourceHash": "9d045cd"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.label": "允许更改文件扩展名",
+  "@settings.fileOperations.allowFileExtensionChanges.label": {
+    "sourceHash": "9bc0b3a"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.description": "当你重命名文件且扩展名发生改变时的处理方式。",
+  "@settings.fileOperations.allowFileExtensionChanges.description": {
+    "sourceHash": "e331325"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.opt.yes": "始终允许",
+  "@settings.fileOperations.allowFileExtensionChanges.opt.yes": {
+    "sourceHash": "977618b"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.opt.no": "从不允许",
+  "@settings.fileOperations.allowFileExtensionChanges.opt.no": {
+    "sourceHash": "bbf0cfa"
+  },
+  "settings.fileOperations.allowFileExtensionChanges.opt.ask": "每次询问",
+  "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
+    "sourceHash": "3c42771"
+  },
+  "settings.indexing.enabled.label": "驱动器索引",
+  "@settings.indexing.enabled.label": {
+    "sourceHash": "38d916b"
+  },
+  "settings.indexing.enabled.description": "在后台为你的驱动器建立索引，从而即时显示目录大小。",
+  "@settings.indexing.enabled.description": {
+    "sourceHash": "559ec69"
+  },
+  "settings.indexing.askForEachDrive.label": "为每个驱动器询问",
+  "@settings.indexing.askForEachDrive.label": {
+    "sourceHash": "774f72c"
+  },
+  "settings.indexing.askForEachDrive.description": "当你首次打开网络共享或设备时，询问是否为其建立索引。",
+  "@settings.indexing.askForEachDrive.description": {
+    "sourceHash": "189552c"
+  },
+  "settings.indexing.staleNotify.label": "当任一外置驱动器的索引过时时通知我",
+  "@settings.indexing.staleNotify.label": {
+    "sourceHash": "690692a"
+  },
+  "settings.indexing.staleNotify.description": "即便你关闭这一项，仍会看到黄色状态。",
+  "@settings.indexing.staleNotify.description": {
+    "sourceHash": "c4216d8"
+  },
+  "settings.indexing.reEnableNotifications.label": "为所有驱动器重新启用通知",
+  "@settings.indexing.reEnableNotifications.label": {
+    "sourceHash": "d1cc5fa"
+  },
+  "settings.indexing.reEnableNotifications.button": "重新启用",
+  "@settings.indexing.reEnableNotifications.button": {
+    "sourceHash": "63de421"
+  },
+  "settings.indexing.reEnableNotifications.description": "对你关闭过提示的每个驱动器，重新询问是否建立索引。",
+  "@settings.indexing.reEnableNotifications.description": {
+    "sourceHash": "a332527"
+  },
+  "settings.indexing.reEnableNotifications.disabledTooltip": "你还没有为任何驱动器关闭提示。",
+  "@settings.indexing.reEnableNotifications.disabledTooltip": {
+    "sourceHash": "3a5a54b"
+  },
+  "settings.indexing.silencedDrives.label": "已静默的驱动器提示",
+  "@settings.indexing.silencedDrives.label": {
+    "sourceHash": "b7b9bc4"
+  },
+  "settings.indexing.silencedDrives.description": "内部：用户已静默索引提示的驱动器。",
+  "@settings.indexing.silencedDrives.description": {
+    "sourceHash": "dc3defb"
+  },
+  "settings.indexing.firstStaleDialogShown.label": "已显示过时对话框",
+  "@settings.indexing.firstStaleDialogShown.label": {
+    "sourceHash": "5734f1a"
+  },
+  "settings.indexing.firstStaleDialogShown.description": "内部：是否已显示过一次性的过时驱动器对话框。",
+  "@settings.indexing.firstStaleDialogShown.description": {
+    "sourceHash": "a879dbb"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.label": "下载时通知",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.label": {
+    "sourceHash": "55efff7"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.description": "如何提示有新文件到达你的“下载”文件夹。",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.description": {
+    "sourceHash": "dd701c5"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": "App 内",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
+    "sourceHash": "a2de156"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS 通知",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
+    "sourceHash": "d2f2b45"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "两者都用",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
+    "sourceHash": "b6c1d86"
+  },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": "都不用",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
+    "sourceHash": "9957d09"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "前往最新的下载",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
+    "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "在任意 App 中按 ⌃⌥⌘J 即可跳转到你最近的下载。需要完全磁盘访问权限。",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
+    "sourceHash": "ed2f65d"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": "全局前往最新下载的快捷键绑定",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": {
+    "sourceHash": "cf811fe"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "触发前往最新下载的系统级组合键。在“键盘快捷键”下编辑。",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": {
+    "sourceHash": "77e5c31"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "已确认全局前往最新下载的警告提示",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
+    "sourceHash": "f45f095"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "内部。抑制首次触发的警告提示。",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
+    "sourceHash": "5f4247c"
+  },
+  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": "下载提示已折叠",
+  "@settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": {
+    "sourceHash": "8294731"
+  },
+  "settings.behavior.fileSystemWatching.downloadsToastCollapsed.description": "内部。记住下载提示上次是否处于折叠状态。",
+  "@settings.behavior.fileSystemWatching.downloadsToastCollapsed.description": {
+    "sourceHash": "aab60b8"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "磁盘空间不足警告",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
+    "sourceHash": "911b74b"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "当你的启动磁盘可用空间不足时，如何向你发出警告。",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
+    "sourceHash": "32b852d"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "App 内",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
+    "sourceHash": "a2de156"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS 通知",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
+    "sourceHash": "d594ece"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "关闭",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "警告阈值",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
+    "sourceHash": "fd1382f"
+  },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "当可用空间低于启动磁盘的此百分比时发出警告。",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
+    "sourceHash": "9ed41b8"
+  },
+  "settings.search.autoApply.label": "自动应用搜索",
+  "@settings.search.autoApply.label": {
+    "sourceHash": "06b0f9f"
+  },
+  "settings.search.autoApply.description": "在你输入时自动运行文件名和正则表达式搜索（停止输入 1 秒后）。AI 搜索因为会产生费用，所以始终等待按 Enter 键。关闭时，按 Enter 键或点击运行按钮来搜索。",
+  "@settings.search.autoApply.description": {
+    "sourceHash": "19fcaf7"
+  },
+  "settings.ai.provider.label": "提供方",
+  "@settings.ai.provider.label": {
+    "sourceHash": "472590a"
+  },
+  "settings.ai.provider.description": "选择 AI 功能的驱动方式。",
+  "@settings.ai.provider.description": {
+    "sourceHash": "f8c0f5d"
+  },
+  "settings.ai.provider.opt.off": "关闭",
+  "@settings.ai.provider.opt.off": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.ai.provider.opt.cloud": "云端 AI",
+  "@settings.ai.provider.opt.cloud": {
+    "sourceHash": "457588a"
+  },
+  "settings.ai.provider.opt.local": "本地 LLM",
+  "@settings.ai.provider.opt.local": {
+    "sourceHash": "6689271"
+  },
+  "settings.ai.cloudProvider.label": "服务",
+  "@settings.ai.cloudProvider.label": {
+    "sourceHash": "d677190"
+  },
+  "settings.ai.cloudProvider.description": "要使用哪个云端 AI 服务。",
+  "@settings.ai.cloudProvider.description": {
+    "sourceHash": "3300ce9"
+  },
+  "settings.ai.cloudProviderConfigs.label": "提供方配置",
+  "@settings.ai.cloudProviderConfigs.label": {
+    "sourceHash": "7b73e56"
+  },
+  "settings.ai.cloudProviderConfigs.description": "各提供方的 API 密钥和模型设置。",
+  "@settings.ai.cloudProviderConfigs.description": {
+    "sourceHash": "21132a2"
+  },
+  "settings.ai.localContextSize.label": "上下文窗口",
+  "@settings.ai.localContextSize.label": {
+    "sourceHash": "7696d08"
+  },
+  "settings.ai.localContextSize.description": "本地模型一次能处理的 token 数。数值越大，占用的内存越多。",
+  "@settings.ai.localContextSize.description": {
+    "sourceHash": "14256da"
+  },
+  "settings.network.enabled.label": "启用网络",
+  "@settings.network.enabled.label": {
+    "sourceHash": "10f5de9"
+  },
+  "settings.network.enabled.description": "发现你本地网络上的 SMB 服务器并连接它们。关闭时，Cmdr 仍可在已装载的共享上读写文件，但不会向 macOS 请求本地网络访问权限。",
+  "@settings.network.enabled.description": {
+    "sourceHash": "3500345"
+  },
+  "settings.network.firstTriggerDone.label": "网络发现已启动",
+  "@settings.network.firstTriggerDone.label": {
+    "sourceHash": "06aa851"
+  },
+  "settings.network.firstTriggerDone.description": "内部：记录是否已至少触发过一次发现。对界面隐藏。",
+  "@settings.network.firstTriggerDone.description": {
+    "sourceHash": "7982e11"
+  },
+  "settings.network.directSmbConnection.label": "直接连接到 SMB 共享",
+  "@settings.network.directSmbConnection.label": {
+    "sourceHash": "407c4f1"
+  },
+  "settings.network.directSmbConnection.description": "启用后，Cmdr 会与 SMB 共享建立直接连接，以加快文件操作。系统装载仍会保留，供 Finder 和其他 App 使用。",
+  "@settings.network.directSmbConnection.description": {
+    "sourceHash": "44a5a6d"
+  },
+  "settings.network.shareCacheDuration.label": "共享缓存时长",
+  "@settings.network.shareCacheDuration.label": {
+    "sourceHash": "ff627cd"
+  },
+  "settings.network.shareCacheDuration.description": "在刷新前，将服务器上可用共享的列表缓存多久。",
+  "@settings.network.shareCacheDuration.description": {
+    "sourceHash": "18190c5"
+  },
+  "settings.network.shareCacheDuration.opt.s30": "30 秒",
+  "@settings.network.shareCacheDuration.opt.s30": {
+    "sourceHash": "f3d1954"
+  },
+  "settings.network.shareCacheDuration.opt.min5": "5 分钟",
+  "@settings.network.shareCacheDuration.opt.min5": {
+    "sourceHash": "3170543"
+  },
+  "settings.network.shareCacheDuration.opt.hour1": "1 小时",
+  "@settings.network.shareCacheDuration.opt.hour1": {
+    "sourceHash": "f8b8883"
+  },
+  "settings.network.shareCacheDuration.opt.day1": "1 天",
+  "@settings.network.shareCacheDuration.opt.day1": {
+    "sourceHash": "fa665d9"
+  },
+  "settings.network.shareCacheDuration.opt.days30": "30 天",
+  "@settings.network.shareCacheDuration.opt.days30": {
+    "sourceHash": "ffd7280"
+  },
+  "settings.network.timeoutMode.label": "网络超时模式",
+  "@settings.network.timeoutMode.label": {
+    "sourceHash": "5d1c989"
+  },
+  "settings.network.timeoutMode.description": "连接网络共享时等待多久。",
+  "@settings.network.timeoutMode.description": {
+    "sourceHash": "9f6de9d"
+  },
+  "settings.network.timeoutMode.opt.normal": "正常",
+  "@settings.network.timeoutMode.opt.normal": {
+    "sourceHash": "a7248ee"
+  },
+  "settings.network.timeoutMode.optDesc.normal": "适用于一般的本地网络（15s 超时）",
+  "@settings.network.timeoutMode.optDesc.normal": {
+    "sourceHash": "e20eca1"
+  },
+  "settings.network.timeoutMode.opt.slow": "慢速网络",
+  "@settings.network.timeoutMode.opt.slow": {
+    "sourceHash": "3f940f4"
+  },
+  "settings.network.timeoutMode.optDesc.slow": "适用于 VPN 或高延迟连接（45s 超时）",
+  "@settings.network.timeoutMode.optDesc.slow": {
+    "sourceHash": "f8ebf3c"
+  },
+  "settings.network.timeoutMode.opt.custom": "自定义",
+  "@settings.network.timeoutMode.opt.custom": {
+    "sourceHash": "494ca78"
+  },
+  "settings.network.customTimeout.label": "自定义超时",
+  "@settings.network.customTimeout.label": {
+    "sourceHash": "ea49e01"
+  },
+  "settings.network.customTimeout.description": "网络操作的自定义超时（以秒为单位）。",
+  "@settings.network.customTimeout.description": {
+    "sourceHash": "28a8d46"
+  },
+  "settings.network.smbConcurrency.label": "每个 SMB 连接的并发操作数",
+  "@settings.network.smbConcurrency.label": {
+    "sourceHash": "339933f"
+  },
+  "settings.network.smbConcurrency.description": "Cmdr 在单个 SMB 连接上并行运行多少个文件传输。数值越高，批量拷贝大量文件（尤其是大量小文件）越快，但会占用更多服务器资源。默认值 10 对大多数家用 NAS 硬件都很稳妥。更改会在下次批量拷贝时生效。",
+  "@settings.network.smbConcurrency.description": {
+    "sourceHash": "49a590b"
+  },
+  "settings.fileOperations.mtpEnabled.label": "Android/Kindle/相机支持（PTP 和 MTP）",
+  "@settings.fileOperations.mtpEnabled.label": {
+    "sourceHash": "6a315a8"
+  },
+  "settings.fileOperations.mtpEnabled.description": "通过 USB 数据线检测并连接 Android 及其他设备，以浏览和传输文件。要在 Android 手机上使用此功能，你需要用一根 USB 数据线，然后在手机上前往类似“设置 > USB 偏好设置”的位置，并将连接设为“文件传输”、“Android Auto”或类似选项。（因设备而异。）",
+  "@settings.fileOperations.mtpEnabled.description": {
+    "sourceHash": "834ea99"
+  },
+  "settings.fileOperations.mtpConnectionWarning.label": "设备连接时警告",
+  "@settings.fileOperations.mtpConnectionWarning.label": {
+    "sourceHash": "070b984"
+  },
+  "settings.fileOperations.mtpConnectionWarning.description": "当 Android 或相机设备通过 USB 连接时显示一条通知。",
+  "@settings.fileOperations.mtpConnectionWarning.description": {
+    "sourceHash": "9c7a648"
+  },
+  "settings.fileExplorer.git.showRepoChip.label": "显示仓库标签",
+  "@settings.fileExplorer.git.showRepoChip.label": {
+    "sourceHash": "7504b23"
+  },
+  "settings.fileExplorer.git.showRepoChip.description": "在 git 仓库中时，于文件列表上方显示当前分支、领先/落后以及有改动的状态。",
+  "@settings.fileExplorer.git.showRepoChip.description": {
+    "sourceHash": "7b8a9ba"
+  },
+  "settings.fileExplorer.git.showStatusColumn.label": "显示 git 状态列",
+  "@settings.fileExplorer.git.showStatusColumn.label": {
+    "sourceHash": "0f6a836"
+  },
+  "settings.fileExplorer.git.showStatusColumn.description": "在完整模式下添加一列，显示每个文件的 git 状态（已修改、未跟踪等）。",
+  "@settings.fileExplorer.git.showStatusColumn.description": {
+    "sourceHash": "7ff07e4"
+  },
+  "settings.fileExplorer.git.showVirtualGitPortal.label": "显示虚拟 git 门户",
+  "@settings.fileExplorer.git.showVirtualGitPortal.label": {
+    "sourceHash": "40d9fa1"
+  },
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "进入 `.git` 时，将分支、标签、提交和工作树显示为可浏览的虚拟文件夹。禁用后则改为查看原始的 `.git` 内容。",
+  "@settings.fileExplorer.git.showVirtualGitPortal.description": {
+    "sourceHash": "70eae72"
+  },
+  "settings.viewer.wordWrap.label": "自动换行",
+  "@settings.viewer.wordWrap.label": {
+    "sourceHash": "9e210f3"
+  },
+  "settings.viewer.wordWrap.description": "在文件查看器中让长行在窗口边缘换行，而不是横向滚动。",
+  "@settings.viewer.wordWrap.description": {
+    "sourceHash": "8a87bd2"
+  },
+  "settings.developer.mcpEnabled.label": "启用 MCP 服务器",
+  "@settings.developer.mcpEnabled.label": {
+    "sourceHash": "32b62ff"
+  },
+  "settings.developer.mcpEnabled.description": "启动一个 Model Context Protocol 服务器，以集成 AI 助手。",
+  "@settings.developer.mcpEnabled.description": {
+    "sourceHash": "10f4102"
+  },
+  "settings.developer.mcpPort.label": "端口",
+  "@settings.developer.mcpPort.label": {
+    "sourceHash": "72e9a59"
+  },
+  "settings.developer.mcpPort.description": "MCP 服务器的首选端口。保持为 0 可让操作系统挑选一个临时端口（推荐；运行时实际端口会显示在下方）。如果外部工具需要，可固定一个特定端口。",
+  "@settings.developer.mcpPort.description": {
+    "sourceHash": "174e807"
+  },
+  "settings.developer.verboseLogging.label": "详细的控制台输出（开发者）",
+  "@settings.developer.verboseLogging.label": {
+    "sourceHash": "036a824"
+  },
+  "settings.developer.verboseLogging.description": "将开发终端和浏览器 devtools 控制台提升到 debug 级别。磁盘上的日志文件无论如何都会记录 debug 细节，因此这个开关不影响错误报告。对终端而言，RUST_LOG 始终优先。",
+  "@settings.developer.verboseLogging.description": {
+    "sourceHash": "5c69c0d"
+  },
+  "settings.updates.autoCheck.label": "自动检查更新",
+  "@settings.updates.autoCheck.label": {
+    "sourceHash": "409e6a1"
+  },
+  "settings.updates.autoCheck.description": "在后台定期检查有无新版本。",
+  "@settings.updates.autoCheck.description": {
+    "sourceHash": "1ff0b1a"
+  },
+  "settings.whatsNew.showOnUpdate.label": "更新后显示新增内容",
+  "@settings.whatsNew.showOnUpdate.label": {
+    "sourceHash": "991a90b"
+  },
+  "settings.whatsNew.showOnUpdate.description": "在 Cmdr 完成自我更新后，显示一份改动的简要摘要。",
+  "@settings.whatsNew.showOnUpdate.description": {
+    "sourceHash": "4d4d7e6"
+  },
+  "settings.whatsNew.lastSeenVersion.label": "上次查看的更新日志版本",
+  "@settings.whatsNew.lastSeenVersion.label": {
+    "sourceHash": "4790ce6"
+  },
+  "settings.whatsNew.lastSeenVersion.description": "内部：我们在“新增内容”弹窗中上次展示的版本。每次启动都会静默推进，因此重新启用弹窗时绝不会回放积压数月的内容。对界面隐藏。",
+  "@settings.whatsNew.lastSeenVersion.description": {
+    "sourceHash": "d4f7a52"
+  },
+  "settings.analytics.enabled.label": "发送匿名使用统计",
+  "@settings.analytics.enabled.label": {
+    "sourceHash": "4620960"
+  },
+  "settings.analytics.enabled.description": "帮助我们在公开测试期间了解哪些功能更重要。绝不包含文件名、路径、搜索词或提示词。关闭它，Cmdr 就会停止发送任何内容。",
+  "@settings.analytics.enabled.description": {
+    "sourceHash": "be45383"
+  },
+  "settings.analytics.email.label": "测试联系邮箱",
+  "@settings.analytics.email.label": {
+    "sourceHash": "71e5c9a"
+  },
+  "settings.analytics.email.description": "示例：you@example.com",
+  "@settings.analytics.email.description": {
+    "sourceHash": "03574f9"
+  },
+  "settings.updates.crashReports.label": "发送崩溃报告",
+  "@settings.updates.crashReports.label": {
+    "sourceHash": "2b8f06d"
+  },
+  "settings.updates.crashReports.description": "当 Cmdr 意外退出时自动发送崩溃报告。包含 App 版本、macOS 版本和崩溃位置。绝不包含文件名或个人数据。",
+  "@settings.updates.crashReports.description": {
+    "sourceHash": "6c74422"
+  },
+  "settings.updates.errorReports.label": "自动发送错误报告",
+  "@settings.updates.errorReports.label": {
+    "sourceHash": "471575d"
+  },
+  "settings.updates.errorReports.description": "出问题时向开发者发送一小段日志摘录。有助于更快修复 bug。默认关闭。你随时可以从“帮助”菜单手动发送报告。",
+  "@settings.updates.errorReports.description": {
+    "sourceHash": "f3e41eb"
+  },
+  "settings.updates.attachEmailToReports.label": "默认在报告中附上我的邮箱",
+  "@settings.updates.attachEmailToReports.label": {
+    "sourceHash": "76c512e"
+  },
+  "settings.updates.attachEmailToReports.description": "当你发送崩溃或错误报告时，附上你的测试联系邮箱，以便我们回复。你可以为每份报告单独更改这一项。",
+  "@settings.updates.attachEmailToReports.description": {
+    "sourceHash": "dd23637"
+  },
+  "settings.advanced.prefetchBufferSize.label": "预取缓冲区大小",
+  "@settings.advanced.prefetchBufferSize.label": {
+    "sourceHash": "4043154"
+  },
+  "settings.advanced.prefetchBufferSize.description": "在可见范围周围预取的项目数量，以获得更流畅的滚动。",
+  "@settings.advanced.prefetchBufferSize.description": {
+    "sourceHash": "39f13c9"
+  },
+  "settings.advanced.virtualizationBufferRows.label": "虚拟化缓冲区（行）",
+  "@settings.advanced.virtualizationBufferRows.label": {
+    "sourceHash": "07b7869"
+  },
+  "settings.advanced.virtualizationBufferRows.description": "在可见区域上方和下方额外渲染的行数。",
+  "@settings.advanced.virtualizationBufferRows.description": {
+    "sourceHash": "82a0e9a"
+  },
+  "settings.advanced.virtualizationBufferColumns.label": "虚拟化缓冲区（列）",
+  "@settings.advanced.virtualizationBufferColumns.label": {
+    "sourceHash": "a9e8dba"
+  },
+  "settings.advanced.virtualizationBufferColumns.description": "在简洁视图中额外渲染的列数。",
+  "@settings.advanced.virtualizationBufferColumns.description": {
+    "sourceHash": "a1cbd98"
+  },
+  "settings.advanced.fileWatcherDebounce.label": "文件监视防抖",
+  "@settings.advanced.fileWatcherDebounce.label": {
+    "sourceHash": "6a3842d"
+  },
+  "settings.advanced.fileWatcherDebounce.description": "文件系统发生改动后到刷新前的延迟。",
+  "@settings.advanced.fileWatcherDebounce.description": {
+    "sourceHash": "084a2a7"
+  },
+  "settings.advanced.diskSpaceChangeThreshold.label": "磁盘空间变化阈值（MB）",
+  "@settings.advanced.diskSpaceChangeThreshold.label": {
+    "sourceHash": "1d95fc6"
+  },
+  "settings.advanced.diskSpaceChangeThreshold.description": "更新状态栏前可用磁盘空间所需的最小变化量。状态栏每隔几秒轮询一次磁盘空间；低于此阈值的细小变化会被忽略，以减少视觉干扰。",
+  "@settings.advanced.diskSpaceChangeThreshold.description": {
+    "sourceHash": "f09c3cb"
+  },
+  "settings.fileViewer.suppressBinaryWarning.label": "对二进制文件不显示原始查看警告",
+  "@settings.fileViewer.suppressBinaryWarning.label": {
+    "sourceHash": "8cdaada"
+  },
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 会打开 Cmdr''s 文件查看器，它显示原始字节（非文本内容采用有损的 UTF-8）。当你打开图像、PDF、归档或其他二进制文件时，查看器会显示一条红色横幅，说明 ⇧Space（快速查看）或 Enter（在关联 App 中打开）很可能才是你想要的。打开此项（或点击横幅中的''不再显示此警告''）即可永久关闭该警告。",
+  "@settings.fileViewer.suppressBinaryWarning.description": {
+    "sourceHash": "b3711da"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.label": "不显示 Space 键的快速查看提示",
+  "@settings.fileExplorer.suppressQuickLookHint.label": {
+    "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切换文件选择，用 ⇧Space 触发快速查看（Finder 用单独的 Space 触发快速查看）。每次你在文件列表中按 Space，Cmdr 都会显示一段简短的提醒说明这一差别。打开此项（或点击提示中的''不再显示''）即可永久关闭该提醒。",
+  "@settings.fileExplorer.suppressQuickLookHint.description": {
+    "sourceHash": "e78809d"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.label": "每个窗格记住的已关闭标签页数量",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
+    "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "为“重新打开已关闭标签页”（⌘⇧T）每个窗格保留多少个最近关闭的标签页。数值越高，可往回重新打开的历史越多；数值越低，越早释放内存。仅适用于在当前会话中关闭的标签页。",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
+    "sourceHash": "fe01a43"
+  },
+  "settings.advanced.dragThreshold.label": "拖移阈值",
+  "@settings.advanced.dragThreshold.label": {
+    "sourceHash": "d624e2a"
+  },
+  "settings.advanced.dragThreshold.description": "开始拖移操作前指针需移动的最小像素距离。",
+  "@settings.advanced.dragThreshold.description": {
+    "sourceHash": "7704bfa"
+  },
+  "settings.fileExplorer.typeToJump.resetDelay.label": "输入跳转重置延迟",
+  "@settings.fileExplorer.typeToJump.resetDelay.label": {
+    "sourceHash": "16ac047"
+  },
+  "settings.fileExplorer.typeToJump.resetDelay.description": "最后一次按键后，输入跳转缓冲区还会保留多久。数值越低，多次搜索之间重置越快；数值越高，对慢速打字者越宽容。",
+  "@settings.fileExplorer.typeToJump.resetDelay.description": {
+    "sourceHash": "ff59a6a"
+  },
+  "settings.fileOperations.maxConflictsToShow.label": "最多显示的冲突数",
+  "@settings.fileOperations.maxConflictsToShow.label": {
+    "sourceHash": "d9cdb0c"
+  },
+  "settings.fileOperations.maxConflictsToShow.description": "操作前预览中最多显示的文件冲突数量。",
+  "@settings.fileOperations.maxConflictsToShow.description": {
+    "sourceHash": "1f6bcb9"
+  },
+  "settings.fileOperations.progressUpdateInterval.label": "进度更新间隔",
+  "@settings.fileOperations.progressUpdateInterval.label": {
+    "sourceHash": "6bcefed"
+  },
+  "settings.fileOperations.progressUpdateInterval.description": "文件操作期间刷新进度的频率。数值越低，感觉越灵敏，但会占用更多 CPU。",
+  "@settings.fileOperations.progressUpdateInterval.description": {
+    "sourceHash": "84e4876"
+  },
+  "settings.advanced.maxLogStorageMb.label": "日志文件的最大磁盘空间（MB）",
+  "@settings.advanced.maxLogStorageMb.label": {
+    "sourceHash": "d6af6b4"
+  },
+  "settings.advanced.maxLogStorageMb.description": "日志文件的最大磁盘空间。设为 0 可禁用日志存储；没有日志就无法发送错误报告。改为非零值后，将在下次启动 App 时生效。",
+  "@settings.advanced.maxLogStorageMb.description": {
+    "sourceHash": "725bb26"
+  },
+  "settings.advanced.mountTimeout.label": "装载超时",
+  "@settings.advanced.mountTimeout.label": {
+    "sourceHash": "b5bce4f"
+  },
+  "settings.advanced.mountTimeout.description": "装载网络共享的超时。",
+  "@settings.advanced.mountTimeout.description": {
+    "sourceHash": "3da30e1"
+  },
+  "settings.advanced.filterSafeSaveArtifacts.label": "在 SMB 上过滤安全保存产生的临时文件",
+  "@settings.advanced.filterSafeSaveArtifacts.label": {
+    "sourceHash": "1763df4"
+  },
+  "settings.advanced.filterSafeSaveArtifacts.description": "在 SMB 文件监视器中隐藏 macOS 安全保存产生的临时文件（如 TextEdit 生成的“.sb-”文件）。这些文件是临时的，通常不可见。",
+  "@settings.advanced.filterSafeSaveArtifacts.description": {
+    "sourceHash": "681b1dc"
+  },
+  "settings.advanced.serviceResolveTimeout.label": "服务解析超时",
+  "@settings.advanced.serviceResolveTimeout.label": {
+    "sourceHash": "a4b4e3e"
+  },
+  "settings.advanced.serviceResolveTimeout.description": "通过 Bonjour 解析网络服务的超时。",
+  "@settings.advanced.serviceResolveTimeout.description": {
+    "sourceHash": "5cf231d"
+  },
+  "settings.search.recentSearches.maxCount.label": "记住的最近搜索数",
+  "@settings.search.recentSearches.maxCount.label": {
+    "sourceHash": "51ad13d"
+  },
+  "settings.search.recentSearches.maxCount.description": "为对话框内的页脚和历史浮窗保留多少条最近搜索。新的产生时，较旧的会被移除。0 会禁用历史（页脚和浮窗隐藏，且不再记录新条目）。",
+  "@settings.search.recentSearches.maxCount.description": {
+    "sourceHash": "d21b038"
+  },
+  "settings.selection.recentSelections.maxCount.label": "记住的最近选择数",
+  "@settings.selection.recentSelections.maxCount.label": {
+    "sourceHash": "e8a5d37"
+  },
+  "settings.selection.recentSelections.maxCount.description": "为“选择 / 取消选择文件”对话框的页脚和历史浮窗保留多少条最近选择。新的产生时，较旧的会被移除。0 会禁用历史（页脚和浮窗隐藏，且不再记录新条目）。",
+  "@settings.selection.recentSelections.maxCount.description": {
+    "sourceHash": "ae04ef0"
+  },
+  "settings.onboarding.upgradeNudgeShown.label": "已显示入门引导升级提醒",
+  "@settings.onboarding.upgradeNudgeShown.label": {
+    "sourceHash": "d34a727"
+  },
+  "settings.onboarding.upgradeNudgeShown.description": "内部：记录向导改版后，是否已为现有用户触发过一次性的“现在有了入门引导菜单项”提示。对界面隐藏。",
+  "@settings.onboarding.upgradeNudgeShown.description": {
+    "sourceHash": "5cfb2b5"
+  },
+  "settings.advanced.updateCheckInterval.label": "更新检查间隔",
+  "@settings.advanced.updateCheckInterval.label": {
+    "sourceHash": "91912bc"
+  },
+  "settings.advanced.updateCheckInterval.description": "在后台检查更新的频率。",
+  "@settings.advanced.updateCheckInterval.description": {
+    "sourceHash": "2bdd38a"
+  },
+  "settings.tint.none": "无着色",
+  "@settings.tint.none": {
+    "sourceHash": "ac86605"
+  },
+  "settings.tint.red": "红色",
+  "@settings.tint.red": {
+    "sourceHash": "ba19e9c"
+  },
+  "settings.tint.orange": "橙色",
+  "@settings.tint.orange": {
+    "sourceHash": "78e7771"
+  },
+  "settings.tint.amber": "琥珀色",
+  "@settings.tint.amber": {
+    "sourceHash": "a5cccbc"
+  },
+  "settings.tint.lime": "青柠色",
+  "@settings.tint.lime": {
+    "sourceHash": "c9665c9"
+  },
+  "settings.tint.green": "绿色",
+  "@settings.tint.green": {
+    "sourceHash": "d486dfb"
+  },
+  "settings.tint.teal": "蓝绿色",
+  "@settings.tint.teal": {
+    "sourceHash": "fa15a5c"
+  },
+  "settings.tint.cyan": "青色",
+  "@settings.tint.cyan": {
+    "sourceHash": "e95bb22"
+  },
+  "settings.tint.blue": "蓝色",
+  "@settings.tint.blue": {
+    "sourceHash": "ec7d56a"
+  },
+  "settings.tint.indigo": "靛蓝色",
+  "@settings.tint.indigo": {
+    "sourceHash": "d81ab14"
+  },
+  "settings.tint.purple": "紫色",
+  "@settings.tint.purple": {
+    "sourceHash": "7d465fb"
+  },
+  "settings.tint.pink": "粉色",
+  "@settings.tint.pink": {
+    "sourceHash": "bd38ed7"
+  },
+  "settings.tint.brown": "棕色",
+  "@settings.tint.brown": {
+    "sourceHash": "18f2855"
+  },
+  "settings.section.appearance": "外观",
+  "@settings.section.appearance": {
+    "sourceHash": "3907fa7"
+  },
+  "settings.section.colorsAndFormats": "颜色和格式",
+  "@settings.section.colorsAndFormats": {
+    "sourceHash": "c5e0ce4"
+  },
+  "settings.section.zoomAndDensity": "缩放和密度",
+  "@settings.section.zoomAndDensity": {
+    "sourceHash": "7af249b"
+  },
+  "settings.section.fileAndFolderSizes": "文件和文件夹大小",
+  "@settings.section.fileAndFolderSizes": {
+    "sourceHash": "37d2ca1"
+  },
+  "settings.section.listing": "列表",
+  "@settings.section.listing": {
+    "sourceHash": "fc7f1aa"
+  },
+  "settings.section.behavior": "行为",
+  "@settings.section.behavior": {
+    "sourceHash": "edf8d3f"
+  },
+  "settings.section.fileOperations": "文件操作",
+  "@settings.section.fileOperations": {
+    "sourceHash": "ed23515"
+  },
+  "settings.section.fileSystemWatching": "文件系统监视",
+  "@settings.section.fileSystemWatching": {
+    "sourceHash": "4fa805f"
+  },
+  "settings.section.search": "搜索",
+  "@settings.section.search": {
+    "sourceHash": "49c266b"
+  },
+  "settings.section.ai": "AI",
+  "@settings.section.ai": {
+    "sourceHash": "11fb682"
+  },
+  "settings.section.fileSystems": "文件系统",
+  "@settings.section.fileSystems": {
+    "sourceHash": "d1fad23"
+  },
+  "settings.section.smbNetworkShares": "SMB/网络共享",
+  "@settings.section.smbNetworkShares": {
+    "sourceHash": "d971dec"
+  },
+  "settings.section.mtp": "MTP（Android/Kindle/相机）",
+  "@settings.section.mtp": {
+    "sourceHash": "a68fa47"
+  },
+  "settings.section.git": "Git",
+  "@settings.section.git": {
+    "sourceHash": "b949c92"
+  },
+  "settings.section.viewer": "查看器",
+  "@settings.section.viewer": {
+    "sourceHash": "678bfa6"
+  },
+  "settings.section.developer": "开发者",
+  "@settings.section.developer": {
+    "sourceHash": "3fb7b39"
+  },
+  "settings.section.mcpServer": "MCP 服务器",
+  "@settings.section.mcpServer": {
+    "sourceHash": "d938c81"
+  },
+  "settings.section.logging": "日志",
+  "@settings.section.logging": {
+    "sourceHash": "d3ef01b"
+  },
+  "settings.section.updatesAndPrivacy": "更新与隐私",
+  "@settings.section.updatesAndPrivacy": {
+    "sourceHash": "74062eb"
+  },
+  "settings.section.advanced": "高级",
+  "@settings.section.advanced": {
+    "sourceHash": "9f088db"
+  },
+  "settings.section.keyboardShortcuts": "键盘快捷键",
+  "@settings.section.keyboardShortcuts": {
+    "sourceHash": "e9bef0b"
+  },
+  "settings.section.license": "许可证",
+  "@settings.section.license": {
+    "sourceHash": "c011d60"
+  },
+  "settings.summary.colorsAndFormats": "主题、App 颜色、日期和大小着色，以及日期/时间格式。",
+  "@settings.summary.colorsAndFormats": {
+    "sourceHash": "ad30daf"
+  },
+  "settings.summary.zoomAndDensity": "整个 App 的文本大小和界面密度。",
+  "@settings.summary.zoomAndDensity": {
+    "sourceHash": "e32bbcf"
+  },
+  "settings.summary.fileAndFolderSizes": "大小在文件列表中的显示方式，以及关于大小不一致的警告。",
+  "@settings.summary.fileAndFolderSizes": {
+    "sourceHash": "cdd8214"
+  },
+  "settings.summary.listing": "文稿图标、目录排序，以及简洁模式的列宽。",
+  "@settings.summary.listing": {
+    "sourceHash": "7756e95"
+  },
+  "settings.summary.fileOperations": "重命名文件时的行为（例如扩展名更改）。",
+  "@settings.summary.fileOperations": {
+    "sourceHash": "a81b164"
+  },
+  "settings.summary.fileSystemWatching": "驱动器索引、“下载”通知，以及全局前往最新下载的快捷键。需要完全磁盘访问权限。",
+  "@settings.summary.fileSystemWatching": {
+    "sourceHash": "00181bd"
+  },
+  "settings.summary.search": "实时应用的文件名和正则表达式搜索，以及最近搜索的上限。",
+  "@settings.summary.search": {
+    "sourceHash": "0e1d70f"
+  },
+  "settings.summary.smbNetworkShares": "启用网络、直接 SMB 连接、共享缓存和超时。",
+  "@settings.summary.smbNetworkShares": {
+    "sourceHash": "10604ac"
+  },
+  "settings.summary.mtp": "通过 USB 检测 Android、Kindle 和相机设备。",
+  "@settings.summary.mtp": {
+    "sourceHash": "f01960a"
+  },
+  "settings.summary.git": "仓库标签、每个文件的状态列，以及虚拟 `.git` 门户。",
+  "@settings.summary.git": {
+    "sourceHash": "fa23394"
+  },
+  "settings.summary.mcpServer": "配置 Model Context Protocol 服务器，以集成 AI。",
+  "@settings.summary.mcpServer": {
+    "sourceHash": "4cde8a6"
+  },
+  "settings.summary.logging": "详细的控制台输出、日志文件访问，以及诊断信息。",
+  "@settings.summary.logging": {
+    "sourceHash": "6fce936"
+  },
+  "settings.summary.noSubsections": "此部分没有子部分。",
+  "@settings.summary.noSubsections": {
+    "sourceHash": "ba4b5b5"
+  },
+  "settings.control.resetToDefault": "重置为默认",
+  "@settings.control.resetToDefault": {
+    "sourceHash": "bc5b45a"
+  },
+  "settings.control.restartRequired": "需要重启",
+  "@settings.control.restartRequired": {
+    "sourceHash": "b468711"
+  },
+  "settings.control.decrease": "减小{label}",
+  "@settings.control.decrease": {
+    "sourceHash": "995a5d6"
+  },
+  "settings.control.increase": "增大{label}",
+  "@settings.control.increase": {
+    "sourceHash": "bbf5fc9"
+  },
+  "settings.control.customValuePlaceholder": "输入自定义值",
+  "@settings.control.customValuePlaceholder": {
+    "sourceHash": "999a63f"
+  },
+  "settings.control.customOption": "自定义…",
+  "@settings.control.customOption": {
+    "sourceHash": "b497c0b"
+  },
+  "settings.control.customPrefix": "自定义：{value}",
+  "@settings.control.customPrefix": {
+    "sourceHash": "58c3782"
+  },
+  "settings.sidebar.searchPlaceholder": "搜索设置…",
+  "@settings.sidebar.searchPlaceholder": {
+    "sourceHash": "6801207"
+  },
+  "settings.sidebar.clearSearch": "清除搜索",
+  "@settings.sidebar.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "settings.sidebar.sections": "设置部分",
+  "@settings.sidebar.sections": {
+    "sourceHash": "e26d51d"
+  },
+  "settings.appearance.themeColorSwatchAria": "打开“系统设置”以更改系统主题色",
+  "@settings.appearance.themeColorSwatchAria": {
+    "sourceHash": "4cad022"
+  },
+  "settings.appearance.appColorHintPrefix": "要更改系统主题色，请前往",
+  "@settings.appearance.appColorHintPrefix": {
+    "sourceHash": "748470a"
+  },
+  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
+  "@settings.appearance.appColorHintLinkMac": {
+    "sourceHash": "5c94206"
+  },
+  "settings.appearance.appColorHintLinkOther": "你的系统外观设置",
+  "@settings.appearance.appColorHintLinkOther": {
+    "sourceHash": "0aad057"
+  },
+  "settings.appearance.datePreviewLabel": "预览：",
+  "@settings.appearance.datePreviewLabel": {
+    "sourceHash": "75954c5"
+  },
+  "settings.appearance.dateInvalidFormat": "格式无效",
+  "@settings.appearance.dateInvalidFormat": {
+    "sourceHash": "b14c1c9"
+  },
+  "settings.appearance.hideFormatHelp": "隐藏格式帮助",
+  "@settings.appearance.hideFormatHelp": {
+    "sourceHash": "391c6b3"
+  },
+  "settings.appearance.showFormatHelp": "显示格式帮助",
+  "@settings.appearance.showFormatHelp": {
+    "sourceHash": "01cb92f"
+  },
+  "settings.appearance.formatPlaceholdersTitle": "格式占位符",
+  "@settings.appearance.formatPlaceholdersTitle": {
+    "sourceHash": "9099bde"
+  },
+  "settings.appearance.formatHelpYear": "4 位年份（2025）",
+  "@settings.appearance.formatHelpYear": {
+    "sourceHash": "467ff57"
+  },
+  "settings.appearance.formatHelpMonth": "2 位月份（01-12）",
+  "@settings.appearance.formatHelpMonth": {
+    "sourceHash": "b11b1a6"
+  },
+  "settings.appearance.formatHelpDay": "2 位日期（01-31）",
+  "@settings.appearance.formatHelpDay": {
+    "sourceHash": "cb5c2d8"
+  },
+  "settings.appearance.formatHelpHour": "2 位小时（00-23）",
+  "@settings.appearance.formatHelpHour": {
+    "sourceHash": "01feb4d"
+  },
+  "settings.appearance.formatHelpMinute": "2 位分钟（00-59）",
+  "@settings.appearance.formatHelpMinute": {
+    "sourceHash": "6dffd33"
+  },
+  "settings.appearance.formatHelpSecond": "2 位秒（00-59）",
+  "@settings.appearance.formatHelpSecond": {
+    "sourceHash": "982834c"
+  },
+  "settings.appearance.tintGroupDescription": "为窗格添加一层淡淡的背景着色，让你一眼就能区分宗卷类型。",
+  "@settings.appearance.tintGroupDescription": {
+    "sourceHash": "fae3040"
+  },
+  "settings.appearance.tintSwatchAria": "为{label}选择一种着色颜色",
+  "@settings.appearance.tintSwatchAria": {
+    "sourceHash": "b9030b5"
+  },
+  "settings.appearance.tintColorsAria": "着色颜色",
+  "@settings.appearance.tintColorsAria": {
+    "sourceHash": "c649cd7"
+  },
+  "settings.appearance.tintTriggerAria": "{label}（当前：{colorName}）",
+  "@settings.appearance.tintTriggerAria": {
+    "sourceHash": "d9a874a"
+  },
+  "settings.ai.providerAria": "AI 提供方",
+  "@settings.ai.providerAria": {
+    "sourceHash": "8791254"
+  },
+  "settings.ai.loading": "正在加载…",
+  "@settings.ai.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "settings.ai.tooltipOff": "AI 功能已关闭。没有 AI，Cmdr 也能完整工作：只是隐藏了建议和智能功能。",
+  "@settings.ai.tooltipOff": {
+    "sourceHash": "2b31468"
+  },
+  "settings.ai.tooltipCloud": "自带 API 密钥，获得快速、高质量的 AI。支持 OpenAI、Anthropic（Claude）、Google（Gemini）、xAI（Grok）、Groq、DeepSeek、OpenRouter，或你正在运行的任何本地服务器（Ollama、LM Studio 等）。需要联网（除非使用本地服务器）。不占用 Cmdr 的磁盘空间或内存。",
+  "@settings.ai.tooltipCloud": {
+    "sourceHash": "1f63e66"
+  },
+  "settings.ai.tooltipLocal": "在你的设备上完整运行一个小型语言模型。隐私最大化：没有任何内容离开你的电脑。可离线工作。占用约 2 GB 磁盘空间和约 400 MB 内存（随上下文大小而变）。需要 Apple 芯片（M1+）。",
+  "@settings.ai.tooltipLocal": {
+    "sourceHash": "bf83043"
+  },
+  "settings.ai.tooltipLocalDisabled": "本地 AI 需要 Apple 芯片（M1 或更新）。请改用云端 AI。",
+  "@settings.ai.tooltipLocalDisabled": {
+    "sourceHash": "147cb2e"
+  },
+  "settings.fileSystemWatching.indexSize": "索引大小",
+  "@settings.fileSystemWatching.indexSize": {
+    "sourceHash": "adbb92c"
+  },
+  "settings.fileSystemWatching.clearing": "正在清除…",
+  "@settings.fileSystemWatching.clearing": {
+    "sourceHash": "07a8243"
+  },
+  "settings.fileSystemWatching.clearIndex": "清除索引",
+  "@settings.fileSystemWatching.clearIndex": {
+    "sourceHash": "14e9925"
+  },
+  "settings.fileSystemWatching.noIndex": "无索引",
+  "@settings.fileSystemWatching.noIndex": {
+    "sourceHash": "14eee3b"
+  },
+  "settings.fileSystemWatching.clearIndexDescription": "删除索引数据库。下次启用索引时会重新扫描。",
+  "@settings.fileSystemWatching.clearIndexDescription": {
+    "sourceHash": "61d9b4e"
+  },
+  "settings.fileSystemWatching.cardDownloads": "下载",
+  "@settings.fileSystemWatching.cardDownloads": {
+    "sourceHash": "d5fdc1a"
+  },
+  "settings.fileSystemWatching.cardLowDiskSpace": "磁盘空间不足",
+  "@settings.fileSystemWatching.cardLowDiskSpace": {
+    "sourceHash": "5b1f5bf"
+  },
+  "settings.appearance.card.language": "语言",
+  "@settings.appearance.card.language": {
+    "sourceHash": "a4fe652"
+  },
+  "settings.appearance.card.theme": "主题",
+  "@settings.appearance.card.theme": {
+    "sourceHash": "efb52e7"
+  },
+  "settings.appearance.card.listColoring": "列表着色",
+  "@settings.appearance.card.listColoring": {
+    "sourceHash": "6e50578"
+  },
+  "settings.appearance.card.dateAndTime": "日期和时间",
+  "@settings.appearance.card.dateAndTime": {
+    "sourceHash": "a079c3b"
+  },
+  "settings.appearance.card.paneTints": "窗格着色",
+  "@settings.appearance.card.paneTints": {
+    "sourceHash": "8bc83d1"
+  },
+  "settings.appearance.card.namesAndIcons": "名称和图标",
+  "@settings.appearance.card.namesAndIcons": {
+    "sourceHash": "8386169"
+  },
+  "settings.appearance.card.briefMode": "简洁模式",
+  "@settings.appearance.card.briefMode": {
+    "sourceHash": "b75e4b3"
+  },
+  "settings.fileOperations.card.renaming": "重命名",
+  "@settings.fileOperations.card.renaming": {
+    "sourceHash": "ba6aeb3"
+  },
+  "settings.network.card.connection": "连接",
+  "@settings.network.card.connection": {
+    "sourceHash": "639a40e"
+  },
+  "settings.network.card.performanceAndTimeouts": "性能和超时",
+  "@settings.network.card.performanceAndTimeouts": {
+    "sourceHash": "51014ee"
+  },
+  "settings.advanced.card.performance": "性能",
+  "@settings.advanced.card.performance": {
+    "sourceHash": "442aded"
+  },
+  "settings.advanced.card.fileWatching": "文件监视",
+  "@settings.advanced.card.fileWatching": {
+    "sourceHash": "c65b844"
+  },
+  "settings.advanced.card.networkAndMounts": "网络和装载",
+  "@settings.advanced.card.networkAndMounts": {
+    "sourceHash": "cdde638"
+  },
+  "settings.advanced.card.hintsAndWarnings": "提示和警告",
+  "@settings.advanced.card.hintsAndWarnings": {
+    "sourceHash": "8754216"
+  },
+  "settings.advanced.card.input": "输入",
+  "@settings.advanced.card.input": {
+    "sourceHash": "36ecb4f"
+  },
+  "settings.advanced.card.fileOperations": "文件操作",
+  "@settings.advanced.card.fileOperations": {
+    "sourceHash": "ed23515"
+  },
+  "settings.advanced.card.historyAndLimits": "历史和上限",
+  "@settings.advanced.card.historyAndLimits": {
+    "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.loggingAndDiagnostics": "日志和诊断",
+  "@settings.advanced.card.loggingAndDiagnostics": {
+    "sourceHash": "5d74805"
+  },
+  "settings.advanced.card.updates": "更新",
+  "@settings.advanced.card.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.updates.card.updates": "更新",
+  "@settings.updates.card.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.updates.card.privacyAndDataSharing": "隐私和数据共享",
+  "@settings.updates.card.privacyAndDataSharing": {
+    "sourceHash": "ae4aabf"
+  },
+  "settings.fileSystemWatching.globalShortcutHint": "在“键盘快捷键 → 前往最新下载（全局）”下更改此快捷键。",
+  "@settings.fileSystemWatching.globalShortcutHint": {
+    "sourceHash": "1af3da4"
+  },
+  "settings.network.localNetworkAccessLabel": "{localNetwork}访问权限",
+  "@settings.network.localNetworkAccessLabel": {
+    "sourceHash": "61ce300"
+  },
+  "settings.network.permissionIntroPrefix": "Cmdr 需要{localNetwork}才能查找 SMB 服务器、列出可用共享，并直接连接以加快文件传输。当你首次打开“网络”或使用 ",
+  "@settings.network.permissionIntroPrefix": {
+    "sourceHash": "4f7f54f"
+  },
+  "settings.network.permissionIntroConnectLink": "连接服务器…",
+  "@settings.network.permissionIntroConnectLink": {
+    "sourceHash": "6188f47"
+  },
+  "settings.network.permissionIntroSuffix": "时，macOS 会询问。请选择允许。",
+  "@settings.network.permissionIntroSuffix": {
+    "sourceHash": "657bee8"
+  },
+  "settings.network.manageAnytimePrefix": "你随时可以在以下位置管理此项：",
+  "@settings.network.manageAnytimePrefix": {
+    "sourceHash": "10b34d4"
+  },
+  "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
+  "@settings.network.permissionPath": {
+    "sourceHash": "b87dc1e"
+  },
+  "settings.network.permissionWithout": "没有它，Cmdr 仍可在已经装载的共享上读写文件，但你无法发现新服务器，也无法使用我们更快的直接连接。",
+  "@settings.network.permissionWithout": {
+    "sourceHash": "4beca45"
+  },
+  "settings.network.customTimeoutUnit": "秒",
+  "@settings.network.customTimeoutUnit": {
+    "sourceHash": "59f006d"
+  },
+  "settings.updates.emailPlaceholder": "you@example.com",
+  "@settings.updates.emailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "settings.updates.checkForUpdates": "检查更新",
+  "@settings.updates.checkForUpdates": {
+    "sourceHash": "f26f327"
+  },
+  "settings.updates.errorPrefix": "错误：",
+  "@settings.updates.errorPrefix": {
+    "sourceHash": "6170629"
+  },
+  "settings.updates.sendErrorReport": "发送错误报告",
+  "@settings.updates.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "settings.updates.emailConfirmHint": "查收你的收件箱来确认邮箱。感谢你的帮助！",
+  "@settings.updates.emailConfirmHint": {
+    "sourceHash": "b96010e"
+  },
+  "settings.updates.emailSignupError": "抱歉，我们现在无法为你完成注册。要再试一次吗？",
+  "@settings.updates.emailSignupError": {
+    "sourceHash": "0aac3a9"
+  },
+  "settings.updates.emailPrivacyNote": "仅存储在你的 Mac 上。我们绝不会把它和你的匿名使用数据一起发送，因此你的统计无法被关联到你本人。它只用于联系你，以及在你发送报告时可选地附上。要停止接收邮件，请使用我们任意一封邮件中的退订链接。",
+  "@settings.updates.emailPrivacyNote": {
+    "sourceHash": "5dd1e94"
+  },
+  "settings.logging.openLogFile": "打开日志文件",
+  "@settings.logging.openLogFile": {
+    "sourceHash": "ec1bc04"
+  },
+  "settings.logging.copied": "已拷贝！",
+  "@settings.logging.copied": {
+    "sourceHash": "ea61bc1"
+  },
+  "settings.logging.copyDiagnostics": "拷贝诊断信息",
+  "@settings.logging.copyDiagnostics": {
+    "sourceHash": "b8e7644"
+  },
+  "settings.mcp.checkPort": "检查端口",
+  "@settings.mcp.checkPort": {
+    "sourceHash": "de685bf"
+  },
+  "settings.mcp.runningOnPort": "服务器正在端口 {runningPort} 上运行",
+  "@settings.mcp.runningOnPort": {
+    "sourceHash": "a9dd980"
+  },
+  "settings.mcp.ephemeral": "（临时）",
+  "@settings.mcp.ephemeral": {
+    "sourceHash": "42fb229"
+  },
+  "settings.mcp.portInUseFallback": "（端口 {port} 被占用）",
+  "@settings.mcp.portInUseFallback": {
+    "sourceHash": "bf23daa"
+  },
+  "settings.mcp.checkingPort": "正在检查端口可用性…",
+  "@settings.mcp.checkingPort": {
+    "sourceHash": "c5432bf"
+  },
+  "settings.mcp.portAvailable": "端口 {port} 可用",
+  "@settings.mcp.portAvailable": {
+    "sourceHash": "4559f69"
+  },
+  "settings.mcp.portInUseStillRunning": "端口 {port} 被占用，仍在端口 {runningPort} 上运行",
+  "@settings.mcp.portInUseStillRunning": {
+    "sourceHash": "e188629"
+  },
+  "settings.mcp.portInUse": "端口 {port} 被占用",
+  "@settings.mcp.portInUse": {
+    "sourceHash": "4f746de"
+  },
+  "settings.mcp.usePortInstead": "改用端口 {suggestedPort}",
+  "@settings.mcp.usePortInstead": {
+    "sourceHash": "a0d7a0d"
+  },
+  "settings.advanced.warningBanner": "这些设置面向高级用户。不正确的值可能导致性能问题或意外行为。",
+  "@settings.advanced.warningBanner": {
+    "sourceHash": "b1dbbf4"
+  },
+  "settings.advanced.resetAll": "全部重置为默认",
+  "@settings.advanced.resetAll": {
+    "sourceHash": "a04d9be"
+  },
+  "settings.advanced.resetAllConfirm": "将所有高级设置重置为默认值？此操作无法撤销。",
+  "@settings.advanced.resetAllConfirm": {
+    "sourceHash": "be08f2a"
+  },
+  "settings.advanced.resetAllConfirmTitle": "重置高级设置",
+  "@settings.advanced.resetAllConfirmTitle": {
+    "sourceHash": "a1d9808"
+  },
+  "settings.advanced.defaultPrefix": "默认：",
+  "@settings.advanced.defaultPrefix": {
+    "sourceHash": "d1f6d9e"
+  },
+  "settings.applier.logStorageRestart": "重启 Cmdr 以应用日志存储的更改。",
+  "@settings.applier.logStorageRestart": {
+    "sourceHash": "b833dee"
+  }
+}

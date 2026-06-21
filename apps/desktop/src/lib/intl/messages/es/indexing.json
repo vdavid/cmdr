@@ -1,0 +1,134 @@
+{
+  "indexing.status.ariaLabel": "Estado de indexación de la unidad",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.scan.label": "Analizando tu unidad...",
+  "@indexing.scan.label": {
+    "sourceHash": "e7d6d6a"
+  },
+  "indexing.scan.labelFirst": "Analizando tu unidad (primer análisis)...",
+  "@indexing.scan.labelFirst": {
+    "sourceHash": "2431d85"
+  },
+  "indexing.scan.counters": "{entriesText} ítems, {dirsText} dirs",
+  "@indexing.scan.counters": {
+    "sourceHash": "fd4d242"
+  },
+  "indexing.scan.etaRough": "aproximadamente {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.aggregation.savingEntries": "Guardando ítems...",
+  "@indexing.aggregation.savingEntries": {
+    "sourceHash": "16fa321"
+  },
+  "indexing.aggregation.loading": "Cargando carpetas...",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "37b34d4"
+  },
+  "indexing.aggregation.sorting": "Ordenando carpetas...",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "9018980"
+  },
+  "indexing.aggregation.computing": "Calculando tamaños de carpetas...",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "ee6ba9a"
+  },
+  "indexing.aggregation.writing": "Guardando tamaños de carpetas...",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "ff59fa5"
+  },
+  "indexing.replay.label": "Actualizando el índice...",
+  "@indexing.replay.label": {
+    "sourceHash": "2920134"
+  },
+  "indexing.replay.detail": "{eventsText} eventos procesados",
+  "@indexing.replay.detail": {
+    "sourceHash": "e80c077"
+  },
+  "indexing.eta.almostDone": "Casi listo",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.secondsLeft": "{secondsText}s restantes",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "{minutesText}min restantes",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.rescan.staleIndex": "El índice de tu unidad está desactualizado. Parece que la app no se ha ejecutado en un tiempo. Estamos haciendo un análisis nuevo para ponerlo al día.",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "ddac60e"
+  },
+  "indexing.rescan.journalGap": "El registro de cambios de archivos del sistema no llega lo bastante atrás. Estamos haciendo un análisis nuevo para reconstruir el índice.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "5f1075b"
+  },
+  "indexing.rescan.replayOverflow": "Han ocurrido muchos cambios de archivos desde la última ejecución. Estamos haciendo un análisis nuevo en lugar de reproducirlos uno a uno.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.tooManySubdirRescans": "Muchas carpetas cambiaron de forma notable desde la última ejecución. Estamos haciendo un análisis nuevo para tenerlo todo al día.",
+  "@indexing.rescan.tooManySubdirRescans": {
+    "sourceHash": "06d04a0"
+  },
+  "indexing.rescan.watcherStartFailed": "No se pudo iniciar el monitor de cambios de archivos. Estamos haciendo un análisis nuevo para poner el índice al día.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "831e44d"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "Una actividad intensa del sistema de archivos desbordó el búfer de eventos. Estamos haciendo un análisis nuevo para mantener la precisión.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "El análisis anterior no terminó (puede que la app se cerrara). Reiniciando el análisis desde cero.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "3ca5217"
+  },
+  "indexing.rescan.watcherChannelOverflow": "Una ráfaga de actividad del sistema de archivos desbordó el canal del monitor. Estamos haciendo un análisis nuevo para mantener la precisión.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Estamos haciendo un análisis nuevo de la unidad para mantener el índice preciso.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.firstConnect.title": "¿Indexar {name}?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "Cmdr puede indexar esta unidad en segundo plano para que aquí funcionen los tamaños de carpetas y la búsqueda. Solo se ejecuta mientras la unidad está conectada.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Activar la indexación",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "No volver a preguntar por esta unidad",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "99bed41"
+  },
+  "indexing.firstConnect.silenceAll": "No volver a preguntar por ninguna unidad",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "511c970"
+  },
+  "indexing.staleDialog.title": "El índice de esta unidad puede estar desactualizado",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "21a78ee"
+  },
+  "indexing.staleDialog.body": "Mientras {name} estuvo desconectada, los archivos que contiene pueden haber cambiado. Los tamaños de carpetas y los resultados de búsqueda podrían no coincidir del todo hasta que vuelvas a analizarla. El estado amarillo junto a la unidad siempre lo indica cuando ocurre, y un nuevo análisis lo actualiza.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.neverShowAgain": "No volver a mostrar",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Cerrar",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

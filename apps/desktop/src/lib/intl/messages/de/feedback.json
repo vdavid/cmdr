@@ -1,0 +1,58 @@
+{
+  "feedback.dialog.title": "Feedback senden",
+  "@feedback.dialog.title": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.description": "Was funktioniert? Was fehlt? Deine Nachricht geht direkt an den Macher von Cmdr.",
+  "@feedback.dialog.description": {
+    "sourceHash": "fe435e3"
+  },
+  "feedback.dialog.label": "Dein Feedback",
+  "@feedback.dialog.label": {
+    "sourceHash": "cdb1c0a"
+  },
+  "feedback.dialog.placeholder": "Beispiel: Ich hätte gern ein Tastenkürzel, um zwischen Tabs zu springen.",
+  "@feedback.dialog.placeholder": {
+    "sourceHash": "dd0214b"
+  },
+  "feedback.dialog.counter": "{currentText} / {maxText}",
+  "@feedback.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "feedback.dialog.tooLong": "Das ist leider zu lang. Maximal sind {maxText} Zeichen erlaubt.",
+  "@feedback.dialog.tooLong": {
+    "sourceHash": "60a59ec"
+  },
+  "feedback.dialog.attachEmail": "Meine E-Mail-Adresse ({email}) anhängen, damit wir antworten können",
+  "@feedback.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "feedback.dialog.moreWays": "Du kannst auch <github>auf GitHub stöbern und abstimmen</github> oder einen <call>Anruf mit David buchen</call>.",
+  "@feedback.dialog.moreWays": {
+    "sourceHash": "5a26a7c"
+  },
+  "feedback.dialog.invalid": "Diese Nachricht ist nicht durchgekommen. Kürze sie und versuche es erneut?",
+  "@feedback.dialog.invalid": {
+    "sourceHash": "c379ff8"
+  },
+  "feedback.dialog.softFailure": "Dein Feedback konnte gerade nicht gesendet werden. Erneut versuchen?",
+  "@feedback.dialog.softFailure": {
+    "sourceHash": "21012f3"
+  },
+  "feedback.dialog.cancel": "Abbrechen",
+  "@feedback.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "feedback.dialog.send": "Feedback senden",
+  "@feedback.dialog.send": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.sending": "Wird gesendet …",
+  "@feedback.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "feedback.sentToast": "Danke für dein Feedback! Wir lesen jede Nachricht.",
+  "@feedback.sentToast": {
+    "sourceHash": "6092c03"
+  }
+}

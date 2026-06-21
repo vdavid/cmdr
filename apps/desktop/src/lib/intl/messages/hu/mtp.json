@@ -1,0 +1,90 @@
+{
+  "mtp.connectedToast.title": "Csatlakozva ehhez: {deviceName}",
+  "@mtp.connectedToast.title": {
+    "sourceHash": "562319d"
+  },
+  "mtp.connectedToast.bodyMac": "A Cmdr szüneteltette a macOS kameradémonját (ptpcamerad), hogy hozzáférjen ehhez az eszközhöz. Ha másik appban szeretnéd használni, kapcsold ki az MTP-támogatást a beállításokban.",
+  "@mtp.connectedToast.bodyMac": {
+    "sourceHash": "3ace37b"
+  },
+  "mtp.connectedToast.bodyOther": "Ha ezt az eszközt másik appban szeretnéd használni, kapcsold ki az MTP-támogatást a beállításokban.",
+  "@mtp.connectedToast.bodyOther": {
+    "sourceHash": "6f42620"
+  },
+  "mtp.connectedToast.dontShowAgain": "Ne jelenjen meg többé",
+  "@mtp.connectedToast.dontShowAgain": {
+    "sourceHash": "d98ab77"
+  },
+  "mtp.connectedToast.disableMtp": "MTP kikapcsolása…",
+  "@mtp.connectedToast.disableMtp": {
+    "sourceHash": "2057a3d"
+  },
+  "mtp.connectedToast.ok": "OK",
+  "@mtp.connectedToast.ok": {
+    "sourceHash": "565339b"
+  },
+  "mtp.permissionDialog.title": "Az USB-eszköz nem érhető el",
+  "@mtp.permissionDialog.title": {
+    "sourceHash": "96130bf"
+  },
+  "mtp.permissionDialog.description": "A Cmdrnek nincs engedélye az eszköz eléréséhez. A Linuxnak udev-szabályokra van szüksége az MTP-eszközök hozzáférésének engedélyezéséhez.",
+  "@mtp.permissionDialog.description": {
+    "sourceHash": "c11f0e8"
+  },
+  "mtp.permissionDialog.explanation": "Futtasd ezt a parancsot a terminálban a szabályok telepítéséhez és újratöltéséhez:",
+  "@mtp.permissionDialog.explanation": {
+    "sourceHash": "6bc70dd"
+  },
+  "mtp.permissionDialog.helpText": "A parancs futtatása után húzd ki és csatlakoztasd újra az eszközt, majd próbáld újra.",
+  "@mtp.permissionDialog.helpText": {
+    "sourceHash": "519f195"
+  },
+  "mtp.permissionDialog.close": "Bezárás",
+  "@mtp.permissionDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.permissionDialog.retry": "Kapcsolódás újra",
+  "@mtp.permissionDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.ptpcameradDialog.title": "Nem sikerül kapcsolódni az MTP-eszközhöz",
+  "@mtp.ptpcameradDialog.title": {
+    "sourceHash": "058de77"
+  },
+  "mtp.ptpcameradDialog.inUseBy": "Az eszközt jelenleg ez használja: <process>{process}</process>.",
+  "@mtp.ptpcameradDialog.inUseBy": {
+    "sourceHash": "6ec78a3"
+  },
+  "mtp.ptpcameradDialog.inUseGeneric": "Egy másik folyamat kizárólagos hozzáféréssel rendelkezik az eszközhöz.",
+  "@mtp.ptpcameradDialog.inUseGeneric": {
+    "sourceHash": "cfba635"
+  },
+  "mtp.ptpcameradDialog.explanation": "macOS-en a rendszerdémon, a <code>ptpcamerad</code> automatikusan lefoglalja az Android-eszközöket. Ennek megkerüléséhez futtasd a következő parancsot a Terminalban (hagyd futni, amíg a Cmdrt használod):",
+  "@mtp.ptpcameradDialog.explanation": {
+    "sourceHash": "65b6ee3"
+  },
+  "mtp.ptpcameradDialog.helpText": "Ez a parancs futás közben folyamatosan leállítja a ptpcameradot. Ha végeztél, nyomd meg a(z) <key>Ctrl+C</key> billentyűkombinációt a Terminalban a leállításához.",
+  "@mtp.ptpcameradDialog.helpText": {
+    "sourceHash": "85b5060"
+  },
+  "mtp.ptpcameradDialog.close": "Bezárás",
+  "@mtp.ptpcameradDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.ptpcameradDialog.retry": "Kapcsolódás újra",
+  "@mtp.ptpcameradDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.deviceFallbackName": "MTP-eszköz",
+  "@mtp.deviceFallbackName": {
+    "sourceHash": "8ba7a69"
+  },
+  "mtp.error.exclusiveAccess": "Egy másik folyamat kizárólagos hozzáféréssel rendelkezik{blocking, select, none {} other { (foglalja: {blocking})}}",
+  "@mtp.error.exclusiveAccess": {
+    "sourceHash": "a81f306"
+  },
+  "mtp.error.permissionDenied": "USB-hozzáférés megtagadva. Telepítsd az udev-szabályokat, és csatlakoztass újra",
+  "@mtp.error.permissionDenied": {
+    "sourceHash": "3362501"
+  }
+}

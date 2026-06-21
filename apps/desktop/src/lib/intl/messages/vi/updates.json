@@ -1,0 +1,42 @@
+{
+  "updates.checkToast.errorPrefix": "Sự cố: {message}",
+  "@updates.checkToast.errorPrefix": {
+    "sourceHash": "020abfd"
+  },
+  "updates.checkToast.sendErrorReport": "Gửi báo cáo sự cố",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "updates.toast.available": "Đã có phiên bản mới. Khởi động lại để cập nhật.",
+  "@updates.toast.available": {
+    "sourceHash": "cb97574"
+  },
+  "updates.toast.later": "Để sau",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "Khởi động lại",
+  "@updates.toast.restart": {
+    "sourceHash": "6b983a8"
+  },
+  "updates.status.noUpdates": "Không tìm thấy cập nhật. Phiên bản hiện tại: v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "Đang kiểm tra…",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "Đã tìm thấy cập nhật, đang tải xuống v{next} (hiện tại: v{prev})…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "Đang cài đặt v{next} (hiện tại: v{prev})…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.ready": "Bản cập nhật v{next} đã sẵn sàng. Khởi động lại để áp dụng.",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

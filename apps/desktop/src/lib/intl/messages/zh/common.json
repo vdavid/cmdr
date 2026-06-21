@@ -1,0 +1,6 @@
+{
+  "common.downloadsFdaHint": "Cmdr 需要完全磁盘访问权限才能监视你的下载文件夹。<settingsLink>打开系统设置</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "sourceHash": "315e1d8"
+  }
+}

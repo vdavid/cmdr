@@ -1,0 +1,78 @@
+{
+  "ui.alertDialog.defaultButton": "OK",
+  "@ui.alertDialog.defaultButton": {
+    "sourceHash": "565339b"
+  },
+  "ui.modalDialog.close": "Stäng",
+  "@ui.modalDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "ui.popover.defaultAriaLabel": "Alternativ",
+  "@ui.popover.defaultAriaLabel": {
+    "sourceHash": "d0db8b5"
+  },
+  "ui.select.placeholder": "Välj...",
+  "@ui.select.placeholder": {
+    "sourceHash": "1339bdd"
+  },
+  "ui.combobox.emptyText": "Inga träffar. Fortsätt skriva för att använda ditt eget värde.",
+  "@ui.combobox.emptyText": {
+    "sourceHash": "d41f776"
+  },
+  "ui.combobox.loadingSuggestions": "Läser in förslag",
+  "@ui.combobox.loadingSuggestions": {
+    "sourceHash": "6fcf509"
+  },
+  "ui.combobox.showSuggestions": "Visa förslag",
+  "@ui.combobox.showSuggestions": {
+    "sourceHash": "a80b6a6"
+  },
+  "ui.commandBox.copyAria": "Kopiera kommandot till urklipp",
+  "@ui.commandBox.copyAria": {
+    "sourceHash": "334c24c"
+  },
+  "ui.commandBox.copy": "Kopiera",
+  "@ui.commandBox.copy": {
+    "sourceHash": "e21f935"
+  },
+  "ui.commandBox.copied": "Kopierat!",
+  "@ui.commandBox.copied": {
+    "sourceHash": "ea61bc1"
+  },
+  "ui.shortcutChip.customizeAria": "Anpassa genvägen för {commandName}",
+  "@ui.shortcutChip.customizeAria": {
+    "sourceHash": "a1d00b2"
+  },
+  "ui.shortcutChip.customizeTooltip": "Anpassa den här genvägen",
+  "@ui.shortcutChip.customizeTooltip": {
+    "sourceHash": "9a7817d"
+  },
+  "ui.toast.sendErrorReport": "Skicka felrapport…",
+  "@ui.toast.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "ui.toast.dismissAria": "Avfärda avisering",
+  "@ui.toast.dismissAria": {
+    "sourceHash": "b7bb3f3"
+  },
+  "ui.loadingIcon.finalizing": "Alla {countText} {count, plural, one {filen} other {filerna}} har lästs in. Sorterar dina filer, förbereder vyn...",
+  "@ui.loadingIcon.finalizing": {
+    "sourceHash": "2aac2cb"
+  },
+  "ui.loadingIcon.loaded": "Läste in {countText} {count, plural, one {fil} other {filer}}...",
+  "@ui.loadingIcon.loaded": {
+    "sourceHash": "93e45fc"
+  },
+  "ui.loadingIcon.openingFolder": "Öppnar mappen...",
+  "@ui.loadingIcon.openingFolder": {
+    "sourceHash": "818cbbb"
+  },
+  "ui.loadingIcon.loading": "Läser in...",
+  "@ui.loadingIcon.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "ui.loadingIcon.cancelHint": "Tryck på <key></key> för att avbryta och gå tillbaka",
+  "@ui.loadingIcon.cancelHint": {
+    "sourceHash": "400dd28"
+  }
+}

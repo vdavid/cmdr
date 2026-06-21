@@ -1,0 +1,6 @@
+{
+  "common.downloadsFdaHint": "Cmdr behöver fullständig åtkomst till skivan för att bevaka mappen Hämtade filer. <settingsLink>Öppna Systeminställningar</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "sourceHash": "315e1d8"
+  }
+}

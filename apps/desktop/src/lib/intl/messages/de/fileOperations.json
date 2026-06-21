@@ -1,0 +1,470 @@
+{
+  "fileOperations.button.cancel": "Abbrechen",
+  "@fileOperations.button.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileOperations.button.ok": "OK",
+  "@fileOperations.button.ok": {
+    "sourceHash": "565339b"
+  },
+  "fileOperations.delete.fromPath": "Aus: {path}",
+  "@fileOperations.delete.fromPath": {
+    "sourceHash": "12851d4"
+  },
+  "fileOperations.delete.noTrashWarningStrong": "Dieses Volume unterstützt keinen Papierkorb.",
+  "@fileOperations.delete.noTrashWarningStrong": {
+    "sourceHash": "ef122e2"
+  },
+  "fileOperations.delete.noTrashWarningRest": "Dateien werden dauerhaft gelöscht.",
+  "@fileOperations.delete.noTrashWarningRest": {
+    "sourceHash": "0d73f99"
+  },
+  "fileOperations.delete.toggleTrash": "Papierkorb",
+  "@fileOperations.delete.toggleTrash": {
+    "sourceHash": "c560122"
+  },
+  "fileOperations.delete.toggleDelete": "Löschen",
+  "@fileOperations.delete.toggleDelete": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileOperations.delete.overflowMore": "… und {countText} {count, plural, one {weiteres Objekt} other {weitere Objekte}}",
+  "@fileOperations.delete.overflowMore": {
+    "sourceHash": "2fb7f0e"
+  },
+  "fileOperations.delete.scanFile": "{count, plural, one {Datei} other {Dateien}}",
+  "@fileOperations.delete.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.delete.scanDir": "{count, plural, one {Ordner} other {Ordner}}",
+  "@fileOperations.delete.scanDir": {
+    "sourceHash": "1c5273d"
+  },
+  "fileOperations.delete.throughputFiles": "{rateText} Dateien/s",
+  "@fileOperations.delete.throughputFiles": {
+    "sourceHash": "c3b28a4"
+  },
+  "fileOperations.delete.confirmDeletePermanently": "Dauerhaft löschen",
+  "@fileOperations.delete.confirmDeletePermanently": {
+    "sourceHash": "280b10c"
+  },
+  "fileOperations.delete.confirmMoveToTrash": "In den Papierkorb bewegen",
+  "@fileOperations.delete.confirmMoveToTrash": {
+    "sourceHash": "b250a45"
+  },
+  "fileOperations.delete.titleCursorFile": "1 Datei unter dem Cursor löschen",
+  "@fileOperations.delete.titleCursorFile": {
+    "sourceHash": "ab3d591"
+  },
+  "fileOperations.delete.titleCursorFolder": "1 Ordner unter dem Cursor löschen",
+  "@fileOperations.delete.titleCursorFolder": {
+    "sourceHash": "91acb54"
+  },
+  "fileOperations.delete.titleFallback": "Löschen",
+  "@fileOperations.delete.titleFallback": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileOperations.delete.titleSelected": "{phrase} löschen",
+  "@fileOperations.delete.titleSelected": {
+    "sourceHash": "66cbe54"
+  },
+  "fileOperations.delete.selectedFilesPart": "{countText} ausgewählte {count, plural, one {Datei} other {Dateien}}",
+  "@fileOperations.delete.selectedFilesPart": {
+    "sourceHash": "c444d06"
+  },
+  "fileOperations.delete.foldersPart": "{countText} {count, plural, one {Ordner} other {Ordner}}",
+  "@fileOperations.delete.foldersPart": {
+    "sourceHash": "9bd56b2"
+  },
+  "fileOperations.delete.symlinkNoticeSingle": "Dieses Objekt ist ein Symlink. Nur die Verknüpfung wird gelöscht, nicht ihr Ziel.",
+  "@fileOperations.delete.symlinkNoticeSingle": {
+    "sourceHash": "c5a4259"
+  },
+  "fileOperations.delete.symlinkNoticeMany": "Deine Auswahl enthält {countText} {count, plural, one {Symlink} other {Symlinks}}. Nur die Verknüpfungen selbst werden gelöscht, nicht ihre Ziele.",
+  "@fileOperations.delete.symlinkNoticeMany": {
+    "sourceHash": "56b3f52"
+  },
+  "fileOperations.mkfile.title": "Neue Datei",
+  "@fileOperations.mkfile.title": {
+    "sourceHash": "44dedd0"
+  },
+  "fileOperations.mkfile.createIn": "Datei in <dir>{name}</dir> erstellen",
+  "@fileOperations.mkfile.createIn": {
+    "sourceHash": "20f4a68"
+  },
+  "fileOperations.mkfile.nameAria": "Dateiname",
+  "@fileOperations.mkfile.nameAria": {
+    "sourceHash": "3efed3d"
+  },
+  "fileOperations.mkfile.placeholder": "Beispiel: notizen.txt",
+  "@fileOperations.mkfile.placeholder": {
+    "sourceHash": "f6b4613"
+  },
+  "fileOperations.mkdir.title": "Neuer Ordner",
+  "@fileOperations.mkdir.title": {
+    "sourceHash": "cf28f49"
+  },
+  "fileOperations.mkdir.createIn": "Ordner in <dir>{name}</dir> erstellen",
+  "@fileOperations.mkdir.createIn": {
+    "sourceHash": "392aa18"
+  },
+  "fileOperations.mkdir.nameAria": "Ordnername",
+  "@fileOperations.mkdir.nameAria": {
+    "sourceHash": "14d34ed"
+  },
+  "fileOperations.mkdir.placeholder": "Beispiel: mein-projekt",
+  "@fileOperations.mkdir.placeholder": {
+    "sourceHash": "7612b56"
+  },
+  "fileOperations.mkdir.timeoutMessage": "Die Erstellung des Ordners ließ sich nicht bestätigen. Das Volume ist vielleicht langsam, der Ordner wurde also womöglich trotzdem erstellt.",
+  "@fileOperations.mkdir.timeoutMessage": {
+    "sourceHash": "751aec6"
+  },
+  "fileOperations.mkdir.timeoutRefresh": "Dateiliste aktualisieren",
+  "@fileOperations.mkdir.timeoutRefresh": {
+    "sourceHash": "b0e5436"
+  },
+  "fileOperations.mkdir.timeoutDismiss": "Schließen",
+  "@fileOperations.mkdir.timeoutDismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileOperations.mkdir.aiSuggestionsAria": "KI-Vorschläge",
+  "@fileOperations.mkdir.aiSuggestionsAria": {
+    "sourceHash": "1a1f5b9"
+  },
+  "fileOperations.mkdir.aiSuggestionsHeader": "KI-Vorschläge:",
+  "@fileOperations.mkdir.aiSuggestionsHeader": {
+    "sourceHash": "5232616"
+  },
+  "fileOperations.shared.conflictExistsFolder": "In diesem Ordner gibt es bereits einen Ordner mit diesem Namen.",
+  "@fileOperations.shared.conflictExistsFolder": {
+    "sourceHash": "32999f3"
+  },
+  "fileOperations.shared.conflictExistsFile": "In diesem Ordner gibt es bereits eine Datei mit diesem Namen.",
+  "@fileOperations.shared.conflictExistsFile": {
+    "sourceHash": "3046c16"
+  },
+  "fileOperations.shared.byteRate": "<size></size>/s",
+  "@fileOperations.shared.byteRate": {
+    "sourceHash": "4a55710"
+  },
+  "fileOperations.shared.andJoin": "{a} und {b}",
+  "@fileOperations.shared.andJoin": {
+    "sourceHash": "04f767b"
+  },
+  "fileOperations.transferDialog.toggleCopy": "Kopieren",
+  "@fileOperations.transferDialog.toggleCopy": {
+    "sourceHash": "e21f935"
+  },
+  "fileOperations.transferDialog.toggleMove": "Bewegen",
+  "@fileOperations.transferDialog.toggleMove": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.destVolumeAria": "Zielvolume",
+  "@fileOperations.transferDialog.destVolumeAria": {
+    "sourceHash": "e13cc1d"
+  },
+  "fileOperations.transferDialog.destPathAria": "Zielpfad",
+  "@fileOperations.transferDialog.destPathAria": {
+    "sourceHash": "b7c2fd2"
+  },
+  "fileOperations.transferDialog.spaceInfo": "{free} von {total} frei",
+  "@fileOperations.transferDialog.spaceInfo": {
+    "sourceHash": "a46cd4e"
+  },
+  "fileOperations.transferDialog.smbNativeNote": "Diese Freigabe nutzt die Systemverbindung. Das Abbrechen kann sich verzögern. Nutze „Direkt verbinden“ im Volume-Auswähler für schnellere Übertragungen und zuverlässiges Abbrechen.",
+  "@fileOperations.transferDialog.smbNativeNote": {
+    "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.scanFile": "{count, plural, one {Datei} other {Dateien}}",
+  "@fileOperations.transferDialog.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.transferDialog.scanDir": "{count, plural, one {Ordner} other {Ordner}}",
+  "@fileOperations.transferDialog.scanDir": {
+    "sourceHash": "1c5273d"
+  },
+  "fileOperations.transferDialog.hardlinkNote": "<written></written> werden geschrieben. Die Quelle ist <ondisk></ondisk> auf dem Datenträger – die Differenz sind Hardlink-Dateien, die über Laufwerke hinweg nicht verknüpft bleiben können.",
+  "@fileOperations.transferDialog.hardlinkNote": {
+    "sourceHash": "af8a4c9"
+  },
+  "fileOperations.transferDialog.checkingConflicts": "Konflikte werden geprüft …",
+  "@fileOperations.transferDialog.checkingConflicts": {
+    "sourceHash": "bc10126"
+  },
+  "fileOperations.transferDialog.mergeInfoSingle": "1 Ordner wird mit einem bestehenden Ordner zusammengeführt",
+  "@fileOperations.transferDialog.mergeInfoSingle": {
+    "sourceHash": "c8cff01"
+  },
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} Ordner werden mit bestehenden Ordnern zusammengeführt",
+  "@fileOperations.transferDialog.mergeInfoMany": {
+    "sourceHash": "6d734ce"
+  },
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {Datei existiert bereits} other {Dateien existieren bereits}}",
+  "@fileOperations.transferDialog.conflictsSummary": {
+    "sourceHash": "e3ae41e"
+  },
+  "fileOperations.transferDialog.policySkip": "{count, plural, one {Überspringen} other {Alle überspringen}}",
+  "@fileOperations.transferDialog.policySkip": {
+    "sourceHash": "af89aba"
+  },
+  "fileOperations.transferDialog.policyOverwrite": "{count, plural, one {Überschreiben} other {Alle überschreiben}}",
+  "@fileOperations.transferDialog.policyOverwrite": {
+    "sourceHash": "e81a8ec"
+  },
+  "fileOperations.transferDialog.policyOverwriteSmaller": "{count, plural, one {Überschreiben, wenn kleiner} other {Alle kleineren überschreiben}}",
+  "@fileOperations.transferDialog.policyOverwriteSmaller": {
+    "sourceHash": "6b53558"
+  },
+  "fileOperations.transferDialog.policyOverwriteOlder": "{count, plural, one {Überschreiben, wenn älter} other {Alle älteren überschreiben}}",
+  "@fileOperations.transferDialog.policyOverwriteOlder": {
+    "sourceHash": "97128f3"
+  },
+  "fileOperations.transferDialog.policyStop": "{count, plural, one {Später fragen} other {Bei jeder fragen}}",
+  "@fileOperations.transferDialog.policyStop": {
+    "sourceHash": "61a6295"
+  },
+  "fileOperations.transferDialog.typeMismatchWarning": "Bei manchen Konflikten treffen eine Datei und ein Ordner mit demselben Namen aufeinander. Überschreiben ersetzt Objekte eines anderen Typs, einschließlich des gesamten Inhalts eines Ordners.",
+  "@fileOperations.transferDialog.typeMismatchWarning": {
+    "sourceHash": "76f1ab1"
+  },
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Kopieren} move {Bewegen} delete {Löschen} other {In den Papierkorb bewegen}}",
+  "@fileOperations.transferDialog.titleVerbOnly": {
+    "sourceHash": "3f4ca13"
+  },
+  "fileOperations.transferDialog.titleWithCounts": "{phrase} {verb, select, copy {kopieren} move {bewegen} delete {löschen} other {in den Papierkorb bewegen}}",
+  "@fileOperations.transferDialog.titleWithCounts": {
+    "sourceHash": "3cf7a5e"
+  },
+  "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {Datei} other {Dateien}}",
+  "@fileOperations.transferDialog.filesPart": {
+    "sourceHash": "76ef0a6"
+  },
+  "fileOperations.transferDialog.foldersPart": "{countText} {count, plural, one {Ordner} other {Ordner}}",
+  "@fileOperations.transferDialog.foldersPart": {
+    "sourceHash": "9bd56b2"
+  },
+  "fileOperations.transferDialog.pathErrorSubfolder": "„{name}“ kann nicht in einen eigenen Unterordner {verb, select, copy {kopiert} other {bewegt}} werden",
+  "@fileOperations.transferDialog.pathErrorSubfolder": {
+    "sourceHash": "4ad1eaf"
+  },
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "„{name}“ ist bereits an diesem Ort",
+  "@fileOperations.transferDialog.pathErrorAlreadyThere": {
+    "sourceHash": "1030a7a"
+  },
+  "fileOperations.transferDialog.confirmCopy": "Kopieren",
+  "@fileOperations.transferDialog.confirmCopy": {
+    "sourceHash": "e21f935"
+  },
+  "fileOperations.transferDialog.confirmMove": "Bewegen",
+  "@fileOperations.transferDialog.confirmMove": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileOperations.scanPhase.fromLabel": "Aus:",
+  "@fileOperations.scanPhase.fromLabel": {
+    "sourceHash": "dc45d36"
+  },
+  "fileOperations.scanPhase.scanFile": "{count, plural, one {Datei} other {Dateien}}",
+  "@fileOperations.scanPhase.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.scanPhase.scanDir": "{count, plural, one {Ordner} other {Ordner}}",
+  "@fileOperations.scanPhase.scanDir": {
+    "sourceHash": "1c5273d"
+  },
+  "fileOperations.scanPhase.throughputFiles": "{rateText} Dateien/s",
+  "@fileOperations.scanPhase.throughputFiles": {
+    "sourceHash": "c3b28a4"
+  },
+  "fileOperations.transferProgress.scanTitleCopy": "Prüfung vor dem Kopieren …",
+  "@fileOperations.transferProgress.scanTitleCopy": {
+    "sourceHash": "fd21ea9"
+  },
+  "fileOperations.transferProgress.scanTitleMove": "Prüfung vor dem Bewegen …",
+  "@fileOperations.transferProgress.scanTitleMove": {
+    "sourceHash": "5e79da2"
+  },
+  "fileOperations.transferProgress.scanTitleDelete": "Zu löschende Objekte werden gezählt …",
+  "@fileOperations.transferProgress.scanTitleDelete": {
+    "sourceHash": "1bb559a"
+  },
+  "fileOperations.transferProgress.scanTitleTrash": "Objekte für den Papierkorb werden gezählt …",
+  "@fileOperations.transferProgress.scanTitleTrash": {
+    "sourceHash": "d11467e"
+  },
+  "fileOperations.transferProgress.rollbackUnavailableTooltip": "Rollback ist bei Bewegungen auf demselben Volume nicht möglich",
+  "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
+    "sourceHash": "da6af1f"
+  },
+  "fileOperations.transferProgress.titleRollingBack": "Rollback läuft …",
+  "@fileOperations.transferProgress.titleRollingBack": {
+    "sourceHash": "c3fed24"
+  },
+  "fileOperations.transferProgress.titleCancelling": "Wird abgebrochen …",
+  "@fileOperations.transferProgress.titleCancelling": {
+    "sourceHash": "7b26131"
+  },
+  "fileOperations.transferProgress.titleCancellingSlow": "Wird abgebrochen … (USB-Übertragungen werden abgeschlossen)",
+  "@fileOperations.transferProgress.titleCancellingSlow": {
+    "sourceHash": "f849d68"
+  },
+  "fileOperations.transferProgress.titleConflict": "Datei existiert bereits",
+  "@fileOperations.transferProgress.titleConflict": {
+    "sourceHash": "ae71a9a"
+  },
+  "fileOperations.transferProgress.titleFlushing": "Letztes Stück wird geschrieben …",
+  "@fileOperations.transferProgress.titleFlushing": {
+    "sourceHash": "e0ba096"
+  },
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Wird kopiert} move {Wird bewegt} delete {Wird gelöscht} other {Wird in den Papierkorb bewegt}} …",
+  "@fileOperations.transferProgress.titleActive": {
+    "sourceHash": "8aed5dc"
+  },
+  "fileOperations.transferProgress.stageScanning": "Wird durchsucht",
+  "@fileOperations.transferProgress.stageScanning": {
+    "sourceHash": "474ad81"
+  },
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Wird kopiert} move {Wird bewegt} delete {Wird gelöscht} other {Wird in den Papierkorb bewegt}}",
+  "@fileOperations.transferProgress.stageActive": {
+    "sourceHash": "4f1aa07"
+  },
+  "fileOperations.transferProgress.warningFileOverFolder": "Das Ziel existiert und ist ein <strong>Ordner</strong>. Du bist dabei, es mit einer <strong>Datei</strong> desselben Namens zu überschreiben. Der gesamte Inhalt des Zielordners würde gelöscht und durch die Datei ersetzt. Was möchtest du tun?",
+  "@fileOperations.transferProgress.warningFileOverFolder": {
+    "sourceHash": "c560c0f"
+  },
+  "fileOperations.transferProgress.existingFolderLabel": "Bestehend (Ordner):",
+  "@fileOperations.transferProgress.existingFolderLabel": {
+    "sourceHash": "44cab6d"
+  },
+  "fileOperations.transferProgress.existingFileLabel": "Bestehend (Datei):",
+  "@fileOperations.transferProgress.existingFileLabel": {
+    "sourceHash": "64142a0"
+  },
+  "fileOperations.transferProgress.existingLabel": "Bestehend:",
+  "@fileOperations.transferProgress.existingLabel": {
+    "sourceHash": "4dda67f"
+  },
+  "fileOperations.transferProgress.newFolderLabel": "Neu (Ordner):",
+  "@fileOperations.transferProgress.newFolderLabel": {
+    "sourceHash": "aa1efc0"
+  },
+  "fileOperations.transferProgress.newFileLabel": "Neu (Datei):",
+  "@fileOperations.transferProgress.newFileLabel": {
+    "sourceHash": "a0c9782"
+  },
+  "fileOperations.transferProgress.newLabel": "Neu:",
+  "@fileOperations.transferProgress.newLabel": {
+    "sourceHash": "46dafc1"
+  },
+  "fileOperations.transferProgress.sizeUnknown": "(unbekannt)",
+  "@fileOperations.transferProgress.sizeUnknown": {
+    "sourceHash": "8fe7794"
+  },
+  "fileOperations.transferProgress.annotationLarger": "(größer)",
+  "@fileOperations.transferProgress.annotationLarger": {
+    "sourceHash": "71a1ffa"
+  },
+  "fileOperations.transferProgress.annotationNewer": "(neuer)",
+  "@fileOperations.transferProgress.annotationNewer": {
+    "sourceHash": "92afdbd"
+  },
+  "fileOperations.transferProgress.smallerDisabledTooltip": "Vergleich nicht möglich: Die Größe des Zielordners ist unbekannt.",
+  "@fileOperations.transferProgress.smallerDisabledTooltip": {
+    "sourceHash": "3bb25be"
+  },
+  "fileOperations.transferProgress.conflictSkip": "Überspringen",
+  "@fileOperations.transferProgress.conflictSkip": {
+    "sourceHash": "28d0359"
+  },
+  "fileOperations.transferProgress.conflictSkipAll": "Alle überspringen",
+  "@fileOperations.transferProgress.conflictSkipAll": {
+    "sourceHash": "5fc4280"
+  },
+  "fileOperations.transferProgress.conflictRename": "Umbenennen",
+  "@fileOperations.transferProgress.conflictRename": {
+    "sourceHash": "3064d79"
+  },
+  "fileOperations.transferProgress.conflictRenameAll": "Alle umbenennen",
+  "@fileOperations.transferProgress.conflictRenameAll": {
+    "sourceHash": "c58387b"
+  },
+  "fileOperations.transferProgress.conflictOverwrite": "Überschreiben",
+  "@fileOperations.transferProgress.conflictOverwrite": {
+    "sourceHash": "b24963e"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAll": "Alle überschreiben",
+  "@fileOperations.transferProgress.conflictOverwriteAll": {
+    "sourceHash": "4662d17"
+  },
+  "fileOperations.transferProgress.conflictOverwriteFolderWithFile": "Ordner mit Datei überschreiben",
+  "@fileOperations.transferProgress.conflictOverwriteFolderWithFile": {
+    "sourceHash": "0589e60"
+  },
+  "fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": "Ordner mit Dateien überschreiben",
+  "@fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": {
+    "sourceHash": "9f4661a"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAllSmaller": "Alle kleineren überschreiben",
+  "@fileOperations.transferProgress.conflictOverwriteAllSmaller": {
+    "sourceHash": "2c9bbed"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAllOlder": "Alle älteren überschreiben",
+  "@fileOperations.transferProgress.conflictOverwriteAllOlder": {
+    "sourceHash": "b07b06a"
+  },
+  "fileOperations.transferProgress.conflictCancel": "Abbrechen",
+  "@fileOperations.transferProgress.conflictCancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileOperations.transferProgress.conflictRollback": "Rollback",
+  "@fileOperations.transferProgress.conflictRollback": {
+    "sourceHash": "c591f55"
+  },
+  "fileOperations.transferProgress.progressSize": "Größe",
+  "@fileOperations.transferProgress.progressSize": {
+    "sourceHash": "1af8519"
+  },
+  "fileOperations.transferProgress.progressItems": "Objekte",
+  "@fileOperations.transferProgress.progressItems": {
+    "sourceHash": "fb8e7a1"
+  },
+  "fileOperations.transferProgress.progressFiles": "Dateien",
+  "@fileOperations.transferProgress.progressFiles": {
+    "sourceHash": "abc7e98"
+  },
+  "fileOperations.transferProgress.sizeProgressAria": "Größenfortschritt",
+  "@fileOperations.transferProgress.sizeProgressAria": {
+    "sourceHash": "60ec57d"
+  },
+  "fileOperations.transferProgress.fileProgressAria": "Dateifortschritt",
+  "@fileOperations.transferProgress.fileProgressAria": {
+    "sourceHash": "07db117"
+  },
+  "fileOperations.transferProgress.etaRemaining": "noch ~{duration}",
+  "@fileOperations.transferProgress.etaRemaining": {
+    "sourceHash": "5bbf895"
+  },
+  "fileOperations.transferProgress.smbNativeNote": "Diese Freigabe nutzt die Systemverbindung. Abbruch und Rollback können sich verzögern.",
+  "@fileOperations.transferProgress.smbNativeNote": {
+    "sourceHash": "5344d07"
+  },
+  "fileOperations.transferProgress.rollbackTooltip": "Abbrechen und alle erstellten unvollständigen Zieldateien löschen",
+  "@fileOperations.transferProgress.rollbackTooltip": {
+    "sourceHash": "df77f8e"
+  },
+  "fileOperations.errorDialog.technicalDetails": "Technische Details",
+  "@fileOperations.errorDialog.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileOperations.errorDialog.technicalDetailsAria": "Technische Fehlerdetails",
+  "@fileOperations.errorDialog.technicalDetailsAria": {
+    "sourceHash": "708186c"
+  },
+  "fileOperations.errorDialog.retry": "Erneut versuchen",
+  "@fileOperations.errorDialog.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.close": "Schließen",
+  "@fileOperations.errorDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

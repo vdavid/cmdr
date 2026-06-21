@@ -1,0 +1,78 @@
+{
+  "ui.alertDialog.defaultButton": "OK",
+  "@ui.alertDialog.defaultButton": {
+    "sourceHash": "565339b"
+  },
+  "ui.modalDialog.close": "Đóng",
+  "@ui.modalDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "ui.popover.defaultAriaLabel": "Tùy chọn",
+  "@ui.popover.defaultAriaLabel": {
+    "sourceHash": "d0db8b5"
+  },
+  "ui.select.placeholder": "Chọn...",
+  "@ui.select.placeholder": {
+    "sourceHash": "1339bdd"
+  },
+  "ui.combobox.emptyText": "Không có kết quả khớp. Cứ tiếp tục gõ để dùng giá trị của riêng bạn.",
+  "@ui.combobox.emptyText": {
+    "sourceHash": "d41f776"
+  },
+  "ui.combobox.loadingSuggestions": "Đang tải gợi ý",
+  "@ui.combobox.loadingSuggestions": {
+    "sourceHash": "6fcf509"
+  },
+  "ui.combobox.showSuggestions": "Hiện gợi ý",
+  "@ui.combobox.showSuggestions": {
+    "sourceHash": "a80b6a6"
+  },
+  "ui.commandBox.copyAria": "Sao chép lệnh vào bảng nhớ tạm",
+  "@ui.commandBox.copyAria": {
+    "sourceHash": "334c24c"
+  },
+  "ui.commandBox.copy": "Sao chép",
+  "@ui.commandBox.copy": {
+    "sourceHash": "e21f935"
+  },
+  "ui.commandBox.copied": "Đã sao chép!",
+  "@ui.commandBox.copied": {
+    "sourceHash": "ea61bc1"
+  },
+  "ui.shortcutChip.customizeAria": "Tùy chỉnh phím tắt {commandName}",
+  "@ui.shortcutChip.customizeAria": {
+    "sourceHash": "a1d00b2"
+  },
+  "ui.shortcutChip.customizeTooltip": "Tùy chỉnh phím tắt này",
+  "@ui.shortcutChip.customizeTooltip": {
+    "sourceHash": "9a7817d"
+  },
+  "ui.toast.sendErrorReport": "Gửi báo cáo sự cố…",
+  "@ui.toast.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "ui.toast.dismissAria": "Bỏ qua thông báo",
+  "@ui.toast.dismissAria": {
+    "sourceHash": "b7bb3f3"
+  },
+  "ui.loadingIcon.finalizing": "Đã tải xong tất cả {countText} {count, plural, other {tệp}}. Đang sắp xếp các tệp của bạn, chuẩn bị hiển thị...",
+  "@ui.loadingIcon.finalizing": {
+    "sourceHash": "2aac2cb"
+  },
+  "ui.loadingIcon.loaded": "Đã tải {countText} {count, plural, other {tệp}}...",
+  "@ui.loadingIcon.loaded": {
+    "sourceHash": "93e45fc"
+  },
+  "ui.loadingIcon.openingFolder": "Đang mở thư mục...",
+  "@ui.loadingIcon.openingFolder": {
+    "sourceHash": "818cbbb"
+  },
+  "ui.loadingIcon.loading": "Đang tải...",
+  "@ui.loadingIcon.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "ui.loadingIcon.cancelHint": "Nhấn <key></key> để hủy và quay lại",
+  "@ui.loadingIcon.cancelHint": {
+    "sourceHash": "400dd28"
+  }
+}

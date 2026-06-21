@@ -12,4 +12,330 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 
 ## Terms
 
-(empty - populate during the first translation pass)
+Core file/UI terms (Trash, copy, move, open, settings, etc.) live in [`style.md`](style.md) § Terminology and glossary;
+this file adds the terms settled while translating the catalogs. All `zh-Hans` (Simplified).
+
+### Settings catalog (first pass, 2026-06-21)
+
+- **Appearance** · `外观` · macOS SystemSettings, universal · `confirmed`
+- **Behavior** · `行为` · standard · `high`
+- **Language** · `语言` · macOS, Microsoft · `confirmed`
+- **theme** · `主题` · standard · `high`
+- **theme mode (Light / Dark / System)** · `浅色` / `深色` / `跟随系统` · macOS appearance modes (浅色/深色 are the
+  Finder/System Settings labels), Microsoft `浅色`/`深色` · `confirmed`
+- **notification** · `通知` · macOS, Microsoft · `confirmed`
+- **tint (faint background color)** · `着色` (action) / tint-name swatches keep color names · macOS `着色`; Microsoft
+  TBX `淡色` is the alt sense · `high`
+- **pane** · `窗格` · macOS, Microsoft · `confirmed`
+- **tab** · `标签页` · macOS, Microsoft · `confirmed`
+- **search** · `搜索` · macOS (Simplified) · `confirmed`
+- **settings** · `设置` · macOS (Simplified) · `confirmed`
+- **preview** · `预览` · macOS · `confirmed`
+- **provider (AI service provider)** · `提供方` · generic Chinese term (Microsoft TBX `提供方` for service-provider
+  sense) · `high`
+- **service** · `服务` · standard · `high`
+- **server** · `服务器` · macOS · `confirmed`
+- **share (network share)** · `共享` · macOS Finder (`共享`) · `confirmed`
+- **connect to server / connection** · `连接服务器` / `连接` · macOS Finder · `confirmed`
+- **network** · `网络` · macOS, Microsoft · `confirmed`
+- **mount (a share)** · `装载` · Microsoft TBX; macOS uses 连接/装载 · `high`
+- **drive** · `驱动器` · Microsoft, macOS · `confirmed`
+- **index / indexing** · `索引` (noun) / `建立索引` (verb) · Microsoft TBX `索引` · `high`
+- **cache** · `缓存` · Microsoft TBX · `confirmed`
+- **timeout** · `超时` · Microsoft TBX · `confirmed`
+- **port** · `端口` · macOS, Microsoft · `confirmed`
+- **buffer** · `缓冲区` · Microsoft TBX · `high`
+- **threshold** · `阈值` · Microsoft TBX · `confirmed`
+- **default** · `默认` · macOS · `confirmed`
+- **reset / reset to default** · `重置` (`恢复默认`) · macOS `还原`/`恢复默认`; `重置` is the common modern term · `high`
+- **advanced** · `高级` · macOS · `confirmed`
+- **custom** · `自定义` · macOS · `confirmed`
+- **updates** · `更新` · macOS, Microsoft · `confirmed`
+- **privacy** · `隐私` · macOS, Microsoft · `confirmed`
+- **license** · `许可证` · Microsoft TBX · `high`
+- **word wrap** · `自动换行` · Microsoft TBX · `confirmed`
+- **logging** · `日志` · Microsoft TBX (`记录`/`日志`) · `high`
+- **verbose** · `详细` · Microsoft TBX `详细的` · `high`
+- **context window** · `上下文窗口` · standard AI term · `high`
+- **token (AI)** · `token` (kept Latin) · no settled Chinese UI term; kept verbatim · `tentative`
+- **regex** · `正则表达式` · standard · `confirmed`
+- **toast (transient notification)** · `提示` · rendered by meaning, not transliterated · `high`
+
+### UI section names (keep consistent across catalogs)
+
+- Appearance `外观`; Behavior `行为`; AI `AI`; File systems `文件系统`; SMB/Network shares `SMB/网络共享`;
+  MTP `MTP`; Git `Git`; Viewer `查看器`; Developer `开发者`; Updates & privacy `更新与隐私`; Advanced `高级`;
+  Keyboard shortcuts `键盘快捷键`; License `许可证`.
+- View modes: Full `完整`; Brief `简洁`. Columns: Name `名称`; Ext `扩展名`.
+
+### Errors catalog (first pass, 2026-06-21)
+
+macOS Finder/AppKit zh-CN as Tier 1, Microsoft zh-Hans cross-check. Reuses settings-pass terms where they overlap.
+
+- **volume (mounted disk)** · `宗卷` · macOS (mounted-disk sense, NOT audio `音量`) · `high`
+- **mount / unmount (a FUSE or network volume, error context)** · `挂载` / `卸载` · general IT + Microsoft. NOTE: the
+  settings pass settled `装载` for "mount a share"; in the error copy (force-unmount, remount, FUSE) `挂载`/`卸载` reads
+  more naturally and is the dominant modern term. Both are understood; pick by context. · `high`
+- **network drive** · `网络驱动器` · Microsoft (consistent with settings `驱动器`) · `high`
+- **disk** · `磁盘` · macOS, Microsoft · `confirmed`
+- **device** · `设备` · macOS, Microsoft · `confirmed`
+- **host** · `主机` · Microsoft TBX · `high`
+- **symbolic link / symlink** · `符号链接` · Microsoft TBX, general · `high`
+- **quota** · `配额` · Microsoft TBX · `high`
+- **credentials** · `凭证` · Microsoft TBX · `high`
+- **handle (open file handle)** · `句柄` · Microsoft TBX · `confirmed`
+- **read-only** · `只读` · macOS, Microsoft · `confirmed`
+- **permission denied / no permission** · `无访问权限` / `没有权限` · macOS-style phrasing · `high`
+- **path** · `路径` · macOS, Microsoft · `confirmed`
+- **Disk Utility / First Aid** · `磁盘工具` / `急救` · macOS · `high`
+- **Activity Monitor** · `活动监视器` · macOS · `high`
+- **Spotlight (the search)** · `聚焦` · macOS · `high`
+- **Get Info** · `显示简介` · macOS Finder · `high`
+- **Sharing & Permissions** · `共享与权限` · macOS Finder Get Info · `high`
+- **Storage (System Settings pane)** · `储存空间` · macOS · `high`
+- **Apple Account** · `Apple 账户` · macOS (Sonoma+) · `high`
+- **Technical details (error-panel section)** · `技术详情` · descriptive, no macOS source · `tentative`
+- **App (application, in cloud-provider copy)** · `App` · Apple zh-CN keeps "App" verbatim · `high`
+- **System Settings panes via tokens** · rendered by `{system_settings}`/`{privacy_and_security}`/`{files_and_folders}`/
+  `{full_disk_access}`, OS-localized at runtime; never hand-translate. The git-suggestion strings use plain literals
+  instead (matching the original git copy): `系统设置` / `隐私与安全性` / `文件和文件夹` (all macOS labels). · `high`
+
+### File explorer catalog (first pass, 2026-06-21)
+
+macOS Finder/AppKit zh-CN Tier 1 (KEY-based en→zh lookup), Double Commander zh-CN for two-pane terms, Microsoft zh-Hans
+cross-check. Aligned to the settled `窗格`/`标签页` above (DC's `面板` was rejected to stay consistent with the
+settings pass).
+
+- **file pane** · `文件窗格` · uses settled `窗格` (NOT DC's `面板`) · `high`
+- **file list** · `文件列表` · DC (`file list` → 文件列表) · `high`
+- **favorites** · `个人收藏` · macOS Finder (FI10 `Favorites` → 个人收藏) · `confirmed`
+- **eject** · `推出` · macOS (TL15/N199 → 推出) · `confirmed`
+- **sign in / log in** · `登录` · macOS (NE104 `Sign In…` → 登录…) · `confirmed`
+- **guest** · `来宾` · Microsoft TBX · `high`
+- **credentials** · `登录信息` · reused from settings pass; the errors pass uses `凭证` (both understood, pick by
+  surface: sign-in copy → 登录信息, low-level error copy → 凭证) · `high`
+- **authentication failed** · `无法通过身份验证` · style guide (no bare 失败/错误); macOS "authentication needed" is
+  `需要认证` (CS203) · `high`
+- **password / username** · `密码` / `用户名` · macOS (N15 密码), Microsoft 用户名 (NOT MS password→`访问代码`) · `confirmed`
+- **Keychain** · `钥匙串` · macOS standard · `confirmed`
+- **host / hostname** · `主机` / `主机名` · Microsoft TBX · `high`
+- **disconnect** · `断开连接` · macOS (N200/MR10.1) · `confirmed`
+- **read-only volume** · `只读宗卷` · macOS FI12 `read-only` → 只读, + 宗卷 · `high`
+- **on disk (vs content size)** · `占用磁盘` · macOS "X on disk" → 占用磁盘空间; shortened to 占用磁盘 for the tight
+  label · `tentative`
+- **Quick Look** -> `快速查看` · macOS Chinese (Simplified) · `high` · the localized Apple FEATURE name (Apple localizes
+  it per-OS, so Cmdr uses the term the user sees in Finder, not the English "Quick Look"). macOS Finder `TL14`/`N169.*`
+  and AppKit `NSQuickLookTemplate` both render `快速查看`; "close Quick Look" → `关闭快速查看`. quick-view/quick-preview
+  sense also `快速查看`/`快速预览`.
+- **MTP device** · `MTP 设备` · keep MTP verbatim · `confirmed`
+- **dir (status-bar abbrev. for directory/folder)** · `目录` · standard · `high`
+- Function-key bar verbs: 拷贝 / 移动 / 重命名 / 删除 / 查看 / 编辑 / 新建文件 / 新建文件夹 / 彻底删除 (彻底 for
+  "permanently") · macOS verbs · `high`
+- Volume-switcher groups: Favorites `个人收藏` · Volumes `宗卷` · Cloud `云` · Mobile `移动设备` · Network `网络`
+
+### File operations + onboarding catalog (first pass, 2026-06-21)
+
+macOS zh-CN Tier 1 (key-based en→zh), Double Commander + GNOME Nautilus zh-CN for conflict-dialog verbs, Microsoft zh-Hans cross-check.
+
+- **overwrite** · `覆盖` · DC (`Confirm overwrites` → 确认覆盖), Nautilus · `high`
+- **replace** · `替换` · macOS AppKit SavePanel (`Replace` → 替换); Cmdr's transfer dialog uses `覆盖` (overwrite sense) · `high`
+- **skip** · `跳过` · DC + Nautilus (`Skip` → 跳过) · `confirmed`
+- **rename** · `重命名` · DC + macOS function-key bar · `confirmed`
+- **merge** · `合并` · Nautilus (`Merge` → 合并) · `confirmed`
+- **retry** · `重试` · Nautilus (`Retry` → 重试) · `confirmed`
+- **rollback (undo partial transfer)** · `回滚` · Microsoft TBX (`roll back` → 回滚) · `high`
+- **conflict** · `冲突` · Microsoft TBX · `high`
+- **hard link / hardlinked** · `硬链接` · Microsoft TBX · `high`
+- **stop / cancel** · `停止` / `取消` · macOS AppKit · `confirmed`
+- **close** · `关闭` · macOS AppKit (`Close` → 关闭) · `confirmed`
+- **OK (affirmative button)** · `好` · macOS convention (Apple uses `好` for OK) · `high`
+- **trash (verb, move to trash)** · `移到废纸篓` · macOS Finder (`Move to Trash`) · `high`. Trash noun stays `废纸篓` (style.md).
+- **under cursor** · `光标所在的` · descriptive, no single macOS source · `tentative`
+- **all (in "Skip all"/"Overwrite all")** · `全部` · Chinese collapses ICU one/other to `other`, so the single-conflict case also renders `全部跳过`/`全部覆盖`; chosen because the policy radios act on the whole conflict set · `high`
+- **technical details** · `技术详情` · reused from errors pass · `high`
+
+### Onboarding catalog terms
+
+- **onboarding** · `入门引导` · macOS-flavored (`引导`/`入门` are the Apple setup-flow words) · `high`
+- **full disk access** · `完全磁盘访问权限` · macOS Ventura+ Privacy pane label (Simplified) · `high`. Pane breadcrumb uses errors-pass `隐私与安全性` + `系统设置` (the `{systemSettings}` token).
+- **Quit & Reopen (macOS relaunch dialog button)** · `退出并重新打开` · macOS (`Quit` → 退出, `Reopen` → 重新打开) · `high`
+- **Applications (folder)** · `应用程序` · macOS Finder (`Applications` → 应用程序) · `confirmed`
+- **deny / allow (permission)** · `拒绝` / `允许` · macOS permission-dialog verbs · `high`
+- **agent (AI assistant)** · `代理` · standard · `high`
+- **API key** · `API 密钥` · macOS/Microsoft (密钥 = key) · `high`
+- **model (AI model)** · `模型` · Microsoft TBX (`model` → 模型) · `high`
+- **endpoint** · `端点` · Microsoft TBX · `high`
+- **command palette** · `命令面板` · standard · `high`
+- **open beta** · `公开测试` · standard · `high`
+- **Local network access / Accepting incoming connections (macOS prompt labels)** · `本地网络访问` / `接受传入连接` · macOS firewall/privacy prompt wording (not in this pile slice; standard macOS labels) · `tentative`
+
+### Search UI + commands catalog (first pass, 2026-06-21)
+
+macOS Finder/AppKit zh-CN Tier 1 (KEY-based en→zh lookup), Microsoft zh-Hans cross-check. Reuses settings/errors/explorer terms where they overlap (`窗格`/`标签页`/`搜索`/`宗卷`/`主机`/`驱动器`/`索引`/`路径`).
+
+- **search query / query (noun)** · `查询` · standard (matches the command-palette/search domain) · `high`
+- **run (a search)** · `运行` · Microsoft TBX (`run` → 运行); reused for "run search"/"execute command" · `high`
+- **results** · `结果` · standard; "previous/next result" → `上一个/下一个结果` · `confirmed`
+- **scanning / scan in progress** · `正在扫描` · macOS Finder (`Searching…` → 正在搜索 pattern; scan = 扫描) · `high`
+- **entry (indexed file count)** · `条目` · standard measure-word noun for index entries (`{count} 个条目`) · `high`
+- **filter (noun/verb)** · `筛选` · macOS/Microsoft (`Filter` → 筛选) · `confirmed`
+- **pattern (match pattern)** · `模式` · standard · `high`
+- **glob** · `Glob` · no settled Chinese UI term; kept verbatim like the brand row label (matches en intent) · `tentative`
+- **comparator (filter operator)** · `比较符` · descriptive; standard math/IT term · `high`
+- **scope (search scope) / "Search in"** · `搜索范围` · descriptive; matches macOS "Search:" scope row intent · `high`
+- **case-sensitive** · `区分大小写` · macOS/Microsoft standard · `confirmed`
+- **wildcard** · `通配符` · macOS/Microsoft standard · `confirmed`
+- **coming soon** · `即将推出` · standard product phrasing · `high`
+- **refine (AI search)** · `优化` · rendered by meaning (improve the query) · `tentative`
+- **agent (AI agent, transparency-strip voice)** · `代理` · reused from onboarding pass (glossary consistency; no special case). NOTE: the en uses a deliberate first-person "agent" voice; `代理` carries it. `智能体` (the modern Chinese "AI agent" term) was considered but rejected to stay consistent with the settled `代理`. · `high`
+- **zoom (UI text size)** · `缩放` (verb in/out → `放大`/`缩小`) · macOS AppKit (`Zoom` → 缩放) · `confirmed`
+- **clipboard** · `剪贴板` · macOS/Microsoft standard · `confirmed`
+- **copy to clipboard / cut / paste** · `拷贝` (Finder copy verb) / `剪切` / `粘贴` · macOS AppKit MenuCommands (`Cut` → 剪切, `Paste` → 粘贴, `Select All` → 全选). NOTE: F5/F6 transfer ops keep the function-key-bar `拷贝`/`移动`; clipboard ops use `拷贝到剪贴板`/`剪切`/`粘贴`. · `confirmed`
+- **select all / deselect all** · `全选` / `取消全选` · macOS (`Select All` → 全选) · `confirmed`
+- **ascending / descending** · `升序` / `降序` · standard sort terms · `confirmed`
+- **sort by / sort order** · `按…排序` / `排序方向` · macOS Finder (`Sort By` → 排序方式) · `high`
+- **swap / switch (panes/tabs)** · `交换` / `切换` · standard · `high`
+- **refresh** · `刷新` · macOS AppKit (`refresh` → 刷新) · `confirmed`
+- **reopen (tab)** · `重新打开` · macOS (`Reopen` → 重新打开) · `confirmed`
+- **parent folder** · `上层文件夹` · macOS Finder (`Enclosing Folder` → 上层文件夹) · `confirmed`
+- **page up / page down** · `向上翻页` / `向下翻页` · standard · `high`
+- **toggle** · `切换` · standard · `confirmed`
+- **make available offline / remove download (cloud)** · `设为离线可用` / `移除下载` · descriptive (cloud-file sense) · `tentative`
+- **onboarding (command label + every reference)** · `入门引导` · unified across the whole locale: the wizard noun, the `Onboarding…` menu-command label (`commands.cmdrOpenOnboarding`), the `main.upgradeNudge` references to it, the `shortcuts.scope.onboarding` scope, and the `settings.onboarding.*` internal copy all use `入门引导`. (The first-pass command label was `新手引导`; reconciled to the dominant wizard noun so the menu item and the wizard title read as one feature.) · `high`
+- **feedback / What''s new / error report (Help menu commands)** · `反馈` / `新增功能` / `错误报告` · macOS/Microsoft standard menu wording · `high`
+- **boring folders (playful)** · `无聊的文件夹` · kept the friendly/playful en tone literally (style.md: preserve deliberate casual voice) · `tentative`
+
+UI section/label names captured (keep consistent): search modes AI `AI` / Filename `文件名` / Content `内容` / Regex `正则`; filter facets Pattern `模式` / Size `大小` / Modified `修改日期` / Search-in `搜索范围`; type toggle Both `两者` / Files `文件` / Folders `文件夹`; result columns Name `名称` / Path `路径` / Size `大小` / Modified `修改日期` / Actions `操作`.
+
+### Notes (errors catalog)
+
+- **`{verb}`/`{Verb}`/`{gerund}` placeholders inject ENGLISH words** ("copy"/"move"/"delete"/"copying"). Chinese
+  sentences are phrased so the insertion sits where a verb goes (`无法{verb}到相同位置`, `{gerund}时出现了意外问题`,
+  `无法{verb}这个文件`). The mixed-language result is unavoidable until the verb map itself is localized (tracked task
+  #5).
+- **`{osMessage}`, `{deviceName}`, `{required}`, `{available}`, `{name}`, `{app}`, `{deletePermanentlyKey}`** are
+  runtime values; kept verbatim with natural Chinese spacing around them.
+- Quotes around macOS UI labels use full-width `“…”` (`“显示简介”`, `“已锁定”`, `“共享与权限”`), per the Simplified
+  convention.
+
+### Licensing / AI / Viewer catalogs (wave 1, 2026-06-21)
+
+macOS zh-CN Tier 1, Microsoft zh-Hans cross-check.
+
+- **Formality in licensing.json: formal `您` throughout** · the whole file is contractual/billing copy (license,
+  payment, terms), so per `style.md` § Formality it uses `您`, not the neutral `你`. ai.json and viewer.json use `你`
+  (the default friendly register). · `high`
+- **license** · `许可证` · Microsoft TBX; macOS · `high`
+- **license key** · `许可证密钥` · `密钥` (key/secret), not `钥匙` · `high`
+- **API key** · `API 密钥` · standard; `密钥` = secret key · `confirmed`
+- **activate / deactivate (a license)** · `激活` / `停用` · standard · `high`
+- **perpetual (license)** · `永久` · standard · `high`
+- **commercial / subscription** · `商业` / `订阅` · standard · `high`
+- **organization** · `组织` · standard · `high`
+- **renew (a subscription)** · `续订` · standard · `high`
+- **expire / expired** · `过期` · macOS-style (no bare 失败/错误) · `high`
+- **valid until / validity** · `有效期至` / `有效期` · standard · `high`
+- **open beta** · `公开测试版` · standard · `high`
+- **provider (AI service)** · `提供方` · reused from settings pass (Microsoft TBX) · `high`
+- **endpoint** · `端点` · Microsoft TBX (`端点`) · `confirmed`
+- **model (AI)** · `模型` · standard · `confirmed`
+- **server (local AI)** · `服务器` · macOS, reused from settings · `confirmed`
+- **clipboard** · `剪贴板` · macOS (AppKit MenuCommands `Clipboard` → 剪贴板) · `confirmed`
+- **copy / paste / select all** · `拷贝` / `粘贴` / `全选` · macOS zh-CN MenuCommands · `confirmed`
+- **encoding (text)** · `编码` · Microsoft TBX (`Encoding` → 编码) · `confirmed`
+- **Western (encoding group)** · `西文` · standard for Latin-script encodings; NOT Microsoft TBX's first hit
+  `西部电影` (Western movies, wrong sense) · `high`
+- **Unicode** · `Unicode` · kept verbatim (standard name) · `confirmed`
+- **streaming (large-file mode)** · `流式` / `流式读取` · Microsoft TBX `流式处理`; shortened to `流式读取` for the
+  viewer badge · `high`
+- **word wrap (viewer)** · `换行` / `自动换行` · reused from settings pass (`自动换行`); the terse badge uses `换行` · `high`
+- **tail (auto-follow file)** · `跟随` · rendered by meaning (follow), not transliterated · `high`
+- **index / indexing (viewer)** · `索引` / `建立索引` · reused from settings pass · `high`
+- **in memory** · `已在内存中` · standard · `high`
+- **viewer (read-only file viewer)** · `查看器` · reused from UI section names · `confirmed`
+- **document (file kind)** · `文稿` · macOS uses 文稿 for document; image kind = `图像` · `high`
+- **App (application, in cloud/AI copy)** · `App` · Apple zh-CN keeps "App" verbatim (reused from errors pass) · `high`
+- **selection (text, in viewer)** · `所选内容` · standard · `high`
+- **retry / reload** · `重试` / `重新加载` · standard · `high`
+- **`viewer.saveAs.defaultName` kept as `selection`** (NOT translated) · it's a filename base; description requires
+  lowercase, no spaces, filename-safe · `confirmed`
+
+### Indexing / downloads / errorReporter / shortcuts / mtp / ui catalogs (wave 1, 2026-06-21)
+
+macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms (`索引`/`建立索引`, `驱动器`, `缓冲区`,
+`快捷键`, `命令面板`, `重置`, `脱敏`).
+
+- **index (build an index for a drive)** · `建立索引` (verb) / `索引` (noun) · reused from settings pass · `high`
+- **scan / rescan (a drive)** · `扫描` / `重新扫描` · macOS Finder (`Searching…` → 正在搜索 pattern) · `high`
+- **entry (indexed file/folder)** · `条目` (measure word `个`) · reused from search pass · `high`
+- **directory (status/aggregation context)** · `目录` · standard; reused dir abbrev from explorer pass · `high`
+- **replay (recorded fs changes)** · `重放` · rendered by meaning (re-apply changes) · `tentative`
+- **drive (external/network drive)** · `驱动器` · reused from settings/errors · `confirmed`
+- **download (noun, the file) / Downloads (folder)** · `下载内容` (the thing) / `“下载”文件夹` (the folder, macOS
+  Finder folder name `下载`) · macOS · `high`
+- **jump to (a file/download)** · `跳转到` · standard · `high`
+- **global shortcut (system-wide hotkey)** · `全局快捷键` · standard (vs `应用内` in-app) · `high`
+- **in-app (scope, vs global)** · `应用内` · standard · `high`
+- **modifier (key)** · `修饰键` · macOS/standard · `high`
+- **register (claim a hotkey)** · `注册` / `已注册` / `未注册` · standard · `high`
+- **key combination / combo** · `按键组合` · standard · `high`
+- **error report (the feature/bundle)** · `错误报告` · reused from search-pass Help-menu command (macOS/Microsoft).
+  NOTE: this is the one place `错误` is used deliberately — it's the established product-feature noun, not a loud
+  failure label; the "Couldn''t …" status strings still render `无法…`. · `high`
+- **redact / redaction (scrub logs)** · `脱敏` · standard privacy/security term (`脱敏` = remove sensitive data) · `high`
+- **reference ID** · `参考编号` · descriptive · `high`
+- **manifest** · `清单` · Microsoft TBX (`manifest` → 清单) · `high`
+- **bundle (report bundle)** · `报告包` · descriptive (a packaged bundle of logs) · `tentative`
+- **note (free-text field)** · `备注` · macOS/standard · `high`
+- **MTP device / USB device** · `MTP 设备` / `USB 设备` · keep MTP, USB verbatim · `confirmed`
+- **ptpcamerad / udev / Terminal** · `ptpcamerad` / `udev` kept verbatim; Terminal → `终端` (macOS zh-CN app name) · `high`
+- **daemon (system daemon)** · `守护进程` · standard · `high`
+- **process** · `进程` · standard · `confirmed`
+- **exclusive access** · `独占访问权限` · standard · `high`
+- **suggestions (combobox)** · `建议` · standard · `high`
+- **dismiss (a toast/notification)** · `忽略` · macOS-style (dismiss a notification) · `high`
+- **finalize / preparing view (loading)** · `准备视图` / `正在准备` · descriptive · `high`
+
+### macOS system-feature names (shortcut-conflict warnings; reuse the localized macOS name)
+
+zh-CN macOS labels: Spotlight `聚焦`; Finder `访达`; Character Viewer `字符检视器`; Mission Control `调度中心`;
+App windows `应用程序窗口`; Spaces `空间`; Force Quit `强制退出`; input source switching `切换输入源`; app switcher
+`应用切换器`; screenshots `截屏`; screen recording `录屏`; logging out `退出登录`; locking the screen `锁定屏幕`.
+`System Settings > Keyboard` → `系统设置 > 键盘` (plain literal, matching the errors-pass `系统设置`). · `high`
+
+### UI section names (this wave; keep consistent across catalogs)
+
+- Shortcut scopes: App `应用`; Main window `主窗口`; File list `文件列表`; Brief mode `简洁模式`; Full mode `完整模式`;
+  Volume chooser `宗卷选择器`; Network `网络`; Share browser `共享浏览器`; Command palette `命令面板`;
+  About window `关于窗口`; Onboarding `入门引导`. (Brief/Full align with the explorer pass's view-mode `简洁`/`完整`.)
+- Shortcut filters: All `全部`; Modified `已修改`; Conflicts `冲突`. Badges: macOS `macOS` (verbatim); Fixed `固定`.
+
+### Wave 1 prep catalogs (search/feedback/crashReporter/goToPath/transfer/updates/lowDiskSpace/commandPalette/whatsNew/main/common/notifications, 2026-06-21)
+
+macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms.
+
+- **feedback** · `反馈` · reused from search/commands pass (Help-menu wording) · `high`
+- **send feedback** · `发送反馈` · standard · `high`
+- **crash report** · `崩溃报告` · macOS/Microsoft standard (`crash` → 崩溃) · `high`
+- **error report** · `错误报告` · reused from search/commands pass · `high`
+- **report ID** · `报告 ID` · keep ID verbatim · `high`
+- **dismiss / close (toast/dialog button)** · `关闭` · reused (`Close` → 关闭) · `confirmed`
+- **copy / copied (clipboard confirmation)** · `拷贝` / `已拷贝` · macOS Finder copy verb (reused) · `confirmed`
+- **restart (the app, to apply update)** · `重新启动` · macOS (`Restart` → 重新启动) · `high`
+- **What''s new** · `新增功能` · reused from search/commands pass (Help-menu wording) · `high`
+- **changelog** · `更新日志` · standard · `high`
+- **update / updates** · `更新` · reused from settings pass · `confirmed`
+- **available (new version available)** · `可用` · standard · `high`
+- **later (dismiss-for-now button)** · `稍后` · standard · `high`
+- **checking / downloading / installing / ready (update status)** · `正在检查` / `正在下载` / `正在安装` / `已就绪` · standard progress wording · `high`
+- **go to path** · `前往路径` · macOS Finder (`Go to Folder` → 前往文件夹; path = 路径) · `high`
+- **recent (recent paths/searches)** · `最近` (`最近的路径` / `最近使用`) · macOS (`Recent` → 最近) · `high`
+- **remove from list** · `从列表中移除` · standard (`Remove` → 移除) · `high`
+- **startup disk (boot volume)** · `启动磁盘` · macOS (`Startup Disk` → 启动磁盘) · `high`
+- **low disk space** · `磁盘空间不足` · macOS/Microsoft standard · `high`
+- **free (space)** · `剩余` · descriptive (rephrased; not literal "free") · `high`
+- **target (destination folder, in transfer copy)** · `目标位置` · descriptive; matches the destination sense · `high`
+- **trash (verb, move to trash)** · `移到废纸篓` · reused from file-ops pass; Trash noun `废纸篓` (style.md) · `high`
+- **sending… (in-progress button)** · `正在发送…` · standard · `high`
+- **`feedback.dialog.counter` kept identical** (`{currentText} / {maxText}`) · pure-placeholder fraction, no translatable text · `confirmed`
+- **Ellipsis: always the single full-width `…` (U+2026), regardless of the en source''s `...` vs `…`.** Chinese typography uses `…`, not ASCII three-dots, so every zh status/label string renders `…` (`正在发送…`, `正在加载…`, `正在取消…`). This is a deliberate, locale-wide normalization (not source-faithful byte-copying): the whole zh catalog is consistent on the single `…`. (The doubled literary `……` is NOT used here, even in prose tooltips, to keep one ellipsis form across the UI.)

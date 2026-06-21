@@ -1,0 +1,134 @@
+{
+  "indexing.status.ariaLabel": "Status van schijfindexering",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.scan.label": "Je schijf wordt doorzocht...",
+  "@indexing.scan.label": {
+    "sourceHash": "e7d6d6a"
+  },
+  "indexing.scan.labelFirst": "Je schijf wordt doorzocht (eerste keer)...",
+  "@indexing.scan.labelFirst": {
+    "sourceHash": "2431d85"
+  },
+  "indexing.scan.counters": "{entriesText} onderdelen, {dirsText} mappen",
+  "@indexing.scan.counters": {
+    "sourceHash": "fd4d242"
+  },
+  "indexing.scan.etaRough": "ongeveer {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.aggregation.savingEntries": "Onderdelen bewaren...",
+  "@indexing.aggregation.savingEntries": {
+    "sourceHash": "16fa321"
+  },
+  "indexing.aggregation.loading": "Mappen laden...",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "37b34d4"
+  },
+  "indexing.aggregation.sorting": "Mappen sorteren...",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "9018980"
+  },
+  "indexing.aggregation.computing": "Mapgroottes berekenen...",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "ee6ba9a"
+  },
+  "indexing.aggregation.writing": "Mapgroottes bewaren...",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "ff59fa5"
+  },
+  "indexing.replay.label": "Index bijwerken...",
+  "@indexing.replay.label": {
+    "sourceHash": "2920134"
+  },
+  "indexing.replay.detail": "{eventsText} wijzigingen verwerkt",
+  "@indexing.replay.detail": {
+    "sourceHash": "e80c077"
+  },
+  "indexing.eta.almostDone": "Bijna klaar",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.secondsLeft": "nog {secondsText}s",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "nog {minutesText}m",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.rescan.staleIndex": "De index van je schijf is verouderd. De app lijkt een tijd niet te zijn gebruikt. Cmdr doorzoekt de schijf opnieuw om bij te werken.",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "ddac60e"
+  },
+  "indexing.rescan.journalGap": "Het wijzigingslogboek van het systeem gaat niet ver genoeg terug. Cmdr doorzoekt de schijf opnieuw om de index opnieuw op te bouwen.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "5f1075b"
+  },
+  "indexing.rescan.replayOverflow": "Er zijn veel bestandswijzigingen geweest sinds de vorige keer. Cmdr doorzoekt de schijf opnieuw in plaats van ze één voor één te verwerken.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.tooManySubdirRescans": "Veel mappen zijn sterk veranderd sinds de vorige keer. Cmdr doorzoekt de schijf opnieuw om alles bij te werken.",
+  "@indexing.rescan.tooManySubdirRescans": {
+    "sourceHash": "06d04a0"
+  },
+  "indexing.rescan.watcherStartFailed": "De bewaker voor bestandswijzigingen kon niet starten. Cmdr doorzoekt de schijf opnieuw om de index bij te werken.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "831e44d"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "Door drukke activiteit op het bestandssysteem raakte de gebeurtenisbuffer vol. Cmdr doorzoekt de schijf opnieuw om nauwkeurig te blijven.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "Het vorige doorzoeken is niet afgerond (de app is mogelijk gesloten). Cmdr begint opnieuw met doorzoeken.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "3ca5217"
+  },
+  "indexing.rescan.watcherChannelOverflow": "Een uitbarsting van activiteit op het bestandssysteem liet het bewakerskanaal overlopen. Cmdr doorzoekt de schijf opnieuw om nauwkeurig te blijven.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Cmdr doorzoekt de schijf opnieuw om de index nauwkeurig te houden.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.firstConnect.title": "{name} indexeren?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "Cmdr kan deze schijf op de achtergrond indexeren, zodat mapgroottes en zoeken hier werken. Dit gebeurt alleen zolang de schijf verbonden is.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Indexeren inschakelen",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "Niet meer vragen voor deze schijf",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "99bed41"
+  },
+  "indexing.firstConnect.silenceAll": "Voor geen enkele schijf meer vragen",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "511c970"
+  },
+  "indexing.staleDialog.title": "De index van deze schijf is mogelijk verouderd",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "21a78ee"
+  },
+  "indexing.staleDialog.body": "Terwijl {name} losgekoppeld was, zijn bestanden erop mogelijk veranderd. Mapgroottes en zoekresultaten kunnen iets afwijken totdat je opnieuw doorzoekt. De gele status naast de schijf toont altijd wanneer dit gebeurt, en opnieuw doorzoeken werkt alles weer bij.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.neverShowAgain": "Nooit meer tonen",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Sluit",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  }
+}

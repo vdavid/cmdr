@@ -1,0 +1,42 @@
+{
+  "transfer.trash": "{countText} {count, plural, one {bestand} other {bestanden}} naar de prullenmand verplaatst",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "Verwijderen voltooid: {countText} {count, plural, one {bestand} other {bestanden}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {bestand} other {bestanden}} en {foldersText} {folders, plural, one {map} other {mappen}}} foldersOnly {{foldersText} {folders, plural, one {map} other {mappen}}} other {{filesText} {files, plural, one {bestand} other {bestanden}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "{verb, select, copy {{phrase} gekopieerd} other {{phrase} verplaatst}}.",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "{verb, select, copy {{phrase} gekopieerd} other {{phrase} verplaatst}}, {skippedText} {skipped, plural, one {bestand} other {bestanden}} overgeslagen (al op de bestemming).",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {Kopiëren} other {Verplaatsen}} voltooid: {transferredText} {transferred, plural, one {bestand} other {bestanden}} {verb, select, copy {gekopieerd} other {verplaatst}}.",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Kopiëren} other {Verplaatsen}} voltooid: bestand stond al op de bestemming, niet {verb, select, copy {gekopieerd} other {verplaatst}}.",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopiëren} other {Verplaatsen}} voltooid: alle {skippedText} bestanden overgeslagen (al op de bestemming), er werd niets {verb, select, copy {gekopieerd} other {verplaatst}}.",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "ae39c4b"
+  },
+  "transfer.fileOnly.mixedCopy": "Kopiëren voltooid: {transferredText} gekopieerd, {skippedText} overgeslagen. Alle {processedText} geselecteerde {processed, plural, one {bestand staat} other {bestanden staan}} nu op de bestemming.",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "Verplaatsen voltooid: {transferredText} verplaatst, {skippedText} overgeslagen. {skippedText} {skipped, plural, one {bestand stond} other {bestanden stonden}} al op de bestemming.",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  }
+}

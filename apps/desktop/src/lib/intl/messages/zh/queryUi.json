@@ -1,0 +1,610 @@
+{
+  "queryUi.bar.placeholder.ai": "描述你要找的东西",
+  "@queryUi.bar.placeholder.ai": {
+    "sourceHash": "fbfb9a8"
+  },
+  "queryUi.bar.placeholder.regex": "正则表达式",
+  "@queryUi.bar.placeholder.regex": {
+    "sourceHash": "342a120"
+  },
+  "queryUi.bar.placeholder.filename": "文件名模式（用 * 和 ? 作通配符）",
+  "@queryUi.bar.placeholder.filename": {
+    "sourceHash": "bafb340"
+  },
+  "queryUi.bar.aria.ai": "自然语言搜索查询",
+  "@queryUi.bar.aria.ai": {
+    "sourceHash": "05ac017"
+  },
+  "queryUi.bar.aria.regex": "正则表达式搜索模式",
+  "@queryUi.bar.aria.regex": {
+    "sourceHash": "9c7754a"
+  },
+  "queryUi.bar.aria.filename": "文件名搜索模式",
+  "@queryUi.bar.aria.filename": {
+    "sourceHash": "de1e4cf"
+  },
+  "queryUi.bar.runTitle.ai": "运行 AI 搜索",
+  "@queryUi.bar.runTitle.ai": {
+    "sourceHash": "8a25dfd"
+  },
+  "queryUi.bar.runTitle.default": "运行搜索",
+  "@queryUi.bar.runTitle.default": {
+    "sourceHash": "63714be"
+  },
+  "queryUi.bar.runHint": "按 Enter 搜索",
+  "@queryUi.bar.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "queryUi.bar.runLabel": "搜索",
+  "@queryUi.bar.runLabel": {
+    "sourceHash": "49c266b"
+  },
+  "queryUi.mode.ai.label": "随便问",
+  "@queryUi.mode.ai.label": {
+    "sourceHash": "4aff15d"
+  },
+  "queryUi.mode.ai.aria": "AI 模式：随便问（Alt+A）",
+  "@queryUi.mode.ai.aria": {
+    "sourceHash": "1708462"
+  },
+  "queryUi.mode.filename.label": "文件名",
+  "@queryUi.mode.filename.label": {
+    "sourceHash": "971b974"
+  },
+  "queryUi.mode.filename.aria": "文件名模式（Alt+F）",
+  "@queryUi.mode.filename.aria": {
+    "sourceHash": "62a5f87"
+  },
+  "queryUi.mode.content.label": "内容",
+  "@queryUi.mode.content.label": {
+    "sourceHash": "47bd290"
+  },
+  "queryUi.mode.content.tooltip": "即将推出：在文件内部全文搜索",
+  "@queryUi.mode.content.tooltip": {
+    "sourceHash": "ff69d7a"
+  },
+  "queryUi.mode.content.aria": "内容模式（即将推出）",
+  "@queryUi.mode.content.aria": {
+    "sourceHash": "5bce643"
+  },
+  "queryUi.mode.regex.label": "正则",
+  "@queryUi.mode.regex.label": {
+    "sourceHash": "0f27125"
+  },
+  "queryUi.mode.regex.aria": "正则模式（Alt+R）",
+  "@queryUi.mode.regex.aria": {
+    "sourceHash": "7c0b401"
+  },
+  "queryUi.mode.groupAria": "搜索模式",
+  "@queryUi.mode.groupAria": {
+    "sourceHash": "75f00aa"
+  },
+  "queryUi.empty.tryLine": "试试…",
+  "@queryUi.empty.tryLine": {
+    "sourceHash": "469fb7f"
+  },
+  "queryUi.empty.tip": "提示：<newKey>⌘N</newKey> 重新开始，<historyKey>⌘H</historyKey> 显示最近的搜索。",
+  "@queryUi.empty.tip": {
+    "sourceHash": "6d00976"
+  },
+  "queryUi.empty.tipAi": "提示：<newKey>⌘N</newKey> 重新开始，<historyKey>⌘H</historyKey> 显示最近的搜索，<aiKey>⌘Enter</aiKey> 运行 AI 搜索。",
+  "@queryUi.empty.tipAi": {
+    "sourceHash": "e83a0d6"
+  },
+  "queryUi.empty.indexReady": "索引就绪 · {countText} {count, plural, other {个条目}}",
+  "@queryUi.empty.indexReady": {
+    "sourceHash": "838fcf8"
+  },
+  "queryUi.ai.lead": "这是代理做的事：",
+  "@queryUi.ai.lead": {
+    "sourceHash": "bf7c5a2"
+  },
+  "queryUi.ai.empty": "目前还没有可筛选的内容。换个说法试试？",
+  "@queryUi.ai.empty": {
+    "sourceHash": "df836a8"
+  },
+  "queryUi.ai.refine": "优化…",
+  "@queryUi.ai.refine": {
+    "sourceHash": "488102b"
+  },
+  "queryUi.ai.refineAria": "优化 AI 搜索（即将推出）",
+  "@queryUi.ai.refineAria": {
+    "sourceHash": "fc95971"
+  },
+  "queryUi.ai.refineTooltip": "即将推出：和代理对话",
+  "@queryUi.ai.refineTooltip": {
+    "sourceHash": "4846194"
+  },
+  "queryUi.ai.stripAria": "代理对你上次 AI 搜索做了什么",
+  "@queryUi.ai.stripAria": {
+    "sourceHash": "53ffa17"
+  },
+  "queryUi.ai.patternLabel.glob": "Glob",
+  "@queryUi.ai.patternLabel.glob": {
+    "sourceHash": "18d00f7"
+  },
+  "queryUi.ai.patternLabel.regex": "正则",
+  "@queryUi.ai.patternLabel.regex": {
+    "sourceHash": "0f27125"
+  },
+  "queryUi.ai.patternLabel.generic": "模式",
+  "@queryUi.ai.patternLabel.generic": {
+    "sourceHash": "4288ade"
+  },
+  "queryUi.ai.filter.size": "大小",
+  "@queryUi.ai.filter.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.ai.filter.modified": "修改日期",
+  "@queryUi.ai.filter.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.ai.filter.type": "类型",
+  "@queryUi.ai.filter.type": {
+    "sourceHash": "baaddf7"
+  },
+  "queryUi.ai.typeSummary.filesOnly": "仅文件",
+  "@queryUi.ai.typeSummary.filesOnly": {
+    "sourceHash": "4bae1c3"
+  },
+  "queryUi.ai.typeSummary.foldersOnly": "仅文件夹",
+  "@queryUi.ai.typeSummary.foldersOnly": {
+    "sourceHash": "ad851fb"
+  },
+  "queryUi.results.col.name": "名称",
+  "@queryUi.results.col.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "queryUi.results.col.path": "路径",
+  "@queryUi.results.col.path": {
+    "sourceHash": "62fa5a5"
+  },
+  "queryUi.results.col.size": "大小",
+  "@queryUi.results.col.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.results.col.modified": "修改日期",
+  "@queryUi.results.col.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.results.col.actions": "操作",
+  "@queryUi.results.col.actions": {
+    "sourceHash": "ff8059d"
+  },
+  "queryUi.results.listboxAria": "搜索结果",
+  "@queryUi.results.listboxAria": {
+    "sourceHash": "e978b00"
+  },
+  "queryUi.results.scanningWithCount": "正在扫描（{countText} 个条目）…",
+  "@queryUi.results.scanningWithCount": {
+    "sourceHash": "0c05667"
+  },
+  "queryUi.results.scanning": "正在扫描…",
+  "@queryUi.results.scanning": {
+    "sourceHash": "091ba9a"
+  },
+  "queryUi.results.indexUnavailable": "驱动器索引不可用",
+  "@queryUi.results.indexUnavailable": {
+    "sourceHash": "80e98d0"
+  },
+  "queryUi.results.indexReadyStatus": "索引就绪（{countText} 个条目）",
+  "@queryUi.results.indexReadyStatus": {
+    "sourceHash": "b8febe6"
+  },
+  "queryUi.results.resultCount": "{totalText} 个结果中显示 {shownText} 个",
+  "@queryUi.results.resultCount": {
+    "sourceHash": "8725496"
+  },
+  "queryUi.results.criteria.query": "查询：{query}",
+  "@queryUi.results.criteria.query": {
+    "sourceHash": "4877824"
+  },
+  "queryUi.results.criteria.size": "大小筛选已启用",
+  "@queryUi.results.criteria.size": {
+    "sourceHash": "24f552d"
+  },
+  "queryUi.results.criteria.modified": "修改日期筛选已启用",
+  "@queryUi.results.criteria.modified": {
+    "sourceHash": "fc2268a"
+  },
+  "queryUi.results.indexNotReady": "驱动器索引尚未就绪。首次扫描完成后即可搜索。",
+  "@queryUi.results.indexNotReady": {
+    "sourceHash": "9efe161"
+  },
+  "queryUi.results.scanProgressWithCount": "正在扫描（{countText} 个条目）…",
+  "@queryUi.results.scanProgressWithCount": {
+    "sourceHash": "3c5b987"
+  },
+  "queryUi.results.scanProgress": "正在扫描…",
+  "@queryUi.results.scanProgress": {
+    "sourceHash": "091ba9a"
+  },
+  "queryUi.results.loadingIndex": "正在加载驱动器索引…",
+  "@queryUi.results.loadingIndex": {
+    "sourceHash": "ab62214"
+  },
+  "queryUi.results.searching": "正在搜索…",
+  "@queryUi.results.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "queryUi.results.noMatchHeading": "没有文件符合以下条件：",
+  "@queryUi.results.noMatchHeading": {
+    "sourceHash": "15383e2"
+  },
+  "queryUi.results.rowMenuAria": "更多操作",
+  "@queryUi.results.rowMenuAria": {
+    "sourceHash": "f8d46c2"
+  },
+  "queryUi.pathPills.hiddenAria": "隐藏的路径片段：{segments}",
+  "@queryUi.pathPills.hiddenAria": {
+    "sourceHash": "f62e273"
+  },
+  "queryUi.recent.leadingLabel": "最近的搜索：",
+  "@queryUi.recent.leadingLabel": {
+    "sourceHash": "dd53364"
+  },
+  "queryUi.recent.trailingLabel": "所有搜索…",
+  "@queryUi.recent.trailingLabel": {
+    "sourceHash": "820b77b"
+  },
+  "queryUi.recent.trailingTooltip": "显示所有最近的搜索",
+  "@queryUi.recent.trailingTooltip": {
+    "sourceHash": "e0de323"
+  },
+  "queryUi.recent.regionAria": "最近的搜索",
+  "@queryUi.recent.regionAria": {
+    "sourceHash": "228c84b"
+  },
+  "queryUi.recent.allButtonAria": "所有最近的搜索",
+  "@queryUi.recent.allButtonAria": {
+    "sourceHash": "c4faef7"
+  },
+  "queryUi.recent.filterPlaceholder": "筛选最近的搜索",
+  "@queryUi.recent.filterPlaceholder": {
+    "sourceHash": "37e55fe"
+  },
+  "queryUi.recent.emptyMessage": "没有最近的搜索符合该筛选。",
+  "@queryUi.recent.emptyMessage": {
+    "sourceHash": "7007fba"
+  },
+  "queryUi.recent.popoverAria": "所有最近的搜索",
+  "@queryUi.recent.popoverAria": {
+    "sourceHash": "c4faef7"
+  },
+  "queryUi.recent.listboxAria": "最近的搜索",
+  "@queryUi.recent.listboxAria": {
+    "sourceHash": "228c84b"
+  },
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> 移动 · <runKey>Enter</runKey> 运行 · 右键点击移除",
+  "@queryUi.recent.popoverHint": {
+    "sourceHash": "11e1b46"
+  },
+  "queryUi.recent.mode.ai": "AI",
+  "@queryUi.recent.mode.ai": {
+    "sourceHash": "11fb682"
+  },
+  "queryUi.recent.mode.regex": "正则",
+  "@queryUi.recent.mode.regex": {
+    "sourceHash": "0f27125"
+  },
+  "queryUi.recent.mode.filename": "文件名",
+  "@queryUi.recent.mode.filename": {
+    "sourceHash": "971b974"
+  },
+  "queryUi.age.justNow": "刚刚",
+  "@queryUi.age.justNow": {
+    "sourceHash": "7ddb44d"
+  },
+  "queryUi.age.minutes": "{count} 分钟前",
+  "@queryUi.age.minutes": {
+    "sourceHash": "0a03167"
+  },
+  "queryUi.age.hours": "{count} 小时前",
+  "@queryUi.age.hours": {
+    "sourceHash": "520c737"
+  },
+  "queryUi.age.days": "{count} 天前",
+  "@queryUi.age.days": {
+    "sourceHash": "a412343"
+  },
+  "queryUi.age.weeks": "{count} 周前",
+  "@queryUi.age.weeks": {
+    "sourceHash": "7c7a56d"
+  },
+  "queryUi.age.months": "{count} 个月前",
+  "@queryUi.age.months": {
+    "sourceHash": "e3ca968"
+  },
+  "queryUi.age.years": "{count} 年前",
+  "@queryUi.age.years": {
+    "sourceHash": "e0d32e9"
+  },
+  "queryUi.recent.scopeSummary": "范围：{scope}",
+  "@queryUi.recent.scopeSummary": {
+    "sourceHash": "e5e6dff"
+  },
+  "queryUi.recent.caseSensitive": "区分大小写",
+  "@queryUi.recent.caseSensitive": {
+    "sourceHash": "3934758"
+  },
+  "queryUi.recent.systemDirsIncluded": "包含系统目录",
+  "@queryUi.recent.systemDirsIncluded": {
+    "sourceHash": "b7996cc"
+  },
+  "queryUi.recent.resultCount": "上次有 {countText} 个结果",
+  "@queryUi.recent.resultCount": {
+    "sourceHash": "d048174"
+  },
+  "queryUi.recent.sizeRange": "大小 {minText}–{maxText}",
+  "@queryUi.recent.sizeRange": {
+    "sourceHash": "96bd04f"
+  },
+  "queryUi.recent.sizeMin": "大小 > {minText}",
+  "@queryUi.recent.sizeMin": {
+    "sourceHash": "0aab700"
+  },
+  "queryUi.recent.sizeMax": "大小 < {maxText}",
+  "@queryUi.recent.sizeMax": {
+    "sourceHash": "7850b6e"
+  },
+  "queryUi.recent.modifiedRange": "修改于 {after}…{before}",
+  "@queryUi.recent.modifiedRange": {
+    "sourceHash": "e99ce85"
+  },
+  "queryUi.recent.modifiedAfter": "{after} 之后",
+  "@queryUi.recent.modifiedAfter": {
+    "sourceHash": "4135ddf"
+  },
+  "queryUi.recent.modifiedBefore": "{before} 之前",
+  "@queryUi.recent.modifiedBefore": {
+    "sourceHash": "f0a5bd6"
+  },
+  "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
+  "@queryUi.recent.chipTooltipHeader": {
+    "sourceHash": "54a225b"
+  },
+  "queryUi.dialog.actionsAria": "对话框操作",
+  "@queryUi.dialog.actionsAria": {
+    "sourceHash": "62d23d5"
+  },
+  "queryUi.dialog.aiTranslateFailedToast": "刚才没能运行 AI 搜索。再试一次？",
+  "@queryUi.dialog.aiTranslateFailedToast": {
+    "sourceHash": "6856c79"
+  },
+  "queryUi.filters.toolbarAria": "搜索筛选",
+  "@queryUi.filters.toolbarAria": {
+    "sourceHash": "f484e72"
+  },
+  "queryUi.filters.type.both": "两者",
+  "@queryUi.filters.type.both": {
+    "sourceHash": "b6c1d86"
+  },
+  "queryUi.filters.type.files": "文件",
+  "@queryUi.filters.type.files": {
+    "sourceHash": "abc7e98"
+  },
+  "queryUi.filters.type.folders": "文件夹",
+  "@queryUi.filters.type.folders": {
+    "sourceHash": "c4d6bb2"
+  },
+  "queryUi.filters.type.aria": "按类型筛选",
+  "@queryUi.filters.type.aria": {
+    "sourceHash": "51035b5"
+  },
+  "queryUi.filters.chip.pattern": "模式",
+  "@queryUi.filters.chip.pattern": {
+    "sourceHash": "4288ade"
+  },
+  "queryUi.filters.chip.size": "大小",
+  "@queryUi.filters.chip.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.filters.chip.modified": "修改日期",
+  "@queryUi.filters.chip.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.filters.chip.scope": "搜索范围",
+  "@queryUi.filters.chip.scope": {
+    "sourceHash": "fa79255"
+  },
+  "queryUi.filters.scope.includesSystemFolders": "包含系统文件夹",
+  "@queryUi.filters.scope.includesSystemFolders": {
+    "sourceHash": "3bb9784"
+  },
+  "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
+  "@queryUi.filters.size.summary.single": {
+    "sourceHash": "bbd5deb"
+  },
+  "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
+  "@queryUi.filters.size.summary.range": {
+    "sourceHash": "ba7eadc"
+  },
+  "queryUi.filters.date.summary.after": "{date} 之后",
+  "@queryUi.filters.date.summary.after": {
+    "sourceHash": "f70f7dc"
+  },
+  "queryUi.filters.date.summary.before": "{date} 之前",
+  "@queryUi.filters.date.summary.before": {
+    "sourceHash": "e503949"
+  },
+  "queryUi.filters.date.summary.range": "{after} – {before}",
+  "@queryUi.filters.date.summary.range": {
+    "sourceHash": "801560e"
+  },
+  "queryUi.size.comparator.any": "不限",
+  "@queryUi.size.comparator.any": {
+    "sourceHash": "d6a7cd2"
+  },
+  "queryUi.size.comparator.between": "介于",
+  "@queryUi.size.comparator.between": {
+    "sourceHash": "fbb27fb"
+  },
+  "queryUi.size.unit.byte": "字节",
+  "@queryUi.size.unit.byte": {
+    "sourceHash": "1c31626"
+  },
+  "queryUi.size.unit.bytes": "字节",
+  "@queryUi.size.unit.bytes": {
+    "sourceHash": "277089d"
+  },
+  "queryUi.size.customCell": "自定义…",
+  "@queryUi.size.customCell": {
+    "sourceHash": "564a4d3"
+  },
+  "queryUi.size.customInputPlaceholder": "自定义",
+  "@queryUi.size.customInputPlaceholder": {
+    "sourceHash": "6cdfd27"
+  },
+  "queryUi.size.popover.label": "大小",
+  "@queryUi.size.popover.label": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.size.popover.aria": "大小筛选选项",
+  "@queryUi.size.popover.aria": {
+    "sourceHash": "087d449"
+  },
+  "queryUi.size.aria.comparator": "比较符",
+  "@queryUi.size.aria.comparator": {
+    "sourceHash": "9a348d5"
+  },
+  "queryUi.size.aria.minValue": "最小大小值",
+  "@queryUi.size.aria.minValue": {
+    "sourceHash": "242e7b0"
+  },
+  "queryUi.size.aria.minUnit": "最小大小单位",
+  "@queryUi.size.aria.minUnit": {
+    "sourceHash": "4803db9"
+  },
+  "queryUi.size.aria.maxValue": "最大大小值",
+  "@queryUi.size.aria.maxValue": {
+    "sourceHash": "a79a52b"
+  },
+  "queryUi.size.aria.maxUnit": "最大大小单位",
+  "@queryUi.size.aria.maxUnit": {
+    "sourceHash": "7ab449b"
+  },
+  "queryUi.size.aria.customMin": "自定义最小大小值",
+  "@queryUi.size.aria.customMin": {
+    "sourceHash": "d841b6a"
+  },
+  "queryUi.size.aria.customMax": "自定义最大大小值",
+  "@queryUi.size.aria.customMax": {
+    "sourceHash": "4761acf"
+  },
+  "queryUi.date.comparator.any": "不限",
+  "@queryUi.date.comparator.any": {
+    "sourceHash": "d6a7cd2"
+  },
+  "queryUi.date.comparator.after": "之后",
+  "@queryUi.date.comparator.after": {
+    "sourceHash": "f395923"
+  },
+  "queryUi.date.comparator.before": "之前",
+  "@queryUi.date.comparator.before": {
+    "sourceHash": "6db7d80"
+  },
+  "queryUi.date.comparator.between": "介于",
+  "@queryUi.date.comparator.between": {
+    "sourceHash": "fbb27fb"
+  },
+  "queryUi.date.customCell": "自定义…",
+  "@queryUi.date.customCell": {
+    "sourceHash": "564a4d3"
+  },
+  "queryUi.date.popover.label": "修改日期",
+  "@queryUi.date.popover.label": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.date.popover.aria": "修改日期筛选选项",
+  "@queryUi.date.popover.aria": {
+    "sourceHash": "e0fd68c"
+  },
+  "queryUi.date.aria.comparator": "比较符",
+  "@queryUi.date.aria.comparator": {
+    "sourceHash": "9a348d5"
+  },
+  "queryUi.date.aria.value": "日期值",
+  "@queryUi.date.aria.value": {
+    "sourceHash": "8696a46"
+  },
+  "queryUi.date.aria.maxValue": "最大日期值",
+  "@queryUi.date.aria.maxValue": {
+    "sourceHash": "733e9f1"
+  },
+  "queryUi.date.aria.custom": "自定义日期值",
+  "@queryUi.date.aria.custom": {
+    "sourceHash": "531707c"
+  },
+  "queryUi.date.aria.customMax": "自定义最大日期值",
+  "@queryUi.date.aria.customMax": {
+    "sourceHash": "fae3317"
+  },
+  "queryUi.date.preset.today": "今天 {time}",
+  "@queryUi.date.preset.today": {
+    "sourceHash": "171a27d"
+  },
+  "queryUi.date.preset.yesterday": "昨天 {time}",
+  "@queryUi.date.preset.yesterday": {
+    "sourceHash": "b40b2e7"
+  },
+  "queryUi.date.preset.thisWeek": "本周{weekday} {time}",
+  "@queryUi.date.preset.thisWeek": {
+    "sourceHash": "9259c67"
+  },
+  "queryUi.date.preset.lastWeek": "上周{weekday} {time}",
+  "@queryUi.date.preset.lastWeek": {
+    "sourceHash": "1e4419c"
+  },
+  "queryUi.date.preset.thisMonth": "{month}1 日 {time}",
+  "@queryUi.date.preset.thisMonth": {
+    "sourceHash": "030ee23"
+  },
+  "queryUi.date.preset.lastMonth": "{year} 年 {month}1 日 {time}",
+  "@queryUi.date.preset.lastMonth": {
+    "sourceHash": "0838509"
+  },
+  "queryUi.date.preset.yearStart": "{year} 年 1 月 1 日 {time}",
+  "@queryUi.date.preset.yearStart": {
+    "sourceHash": "f86a864"
+  },
+  "queryUi.scope.popover.label": "搜索范围",
+  "@queryUi.scope.popover.label": {
+    "sourceHash": "fa79255"
+  },
+  "queryUi.scope.popover.aria": "在文件夹中搜索",
+  "@queryUi.scope.popover.aria": {
+    "sourceHash": "989db5d"
+  },
+  "queryUi.scope.placeholder": "所有文件夹",
+  "@queryUi.scope.placeholder": {
+    "sourceHash": "226fd0e"
+  },
+  "queryUi.scope.hint": "用逗号分隔的路径。前面加 <bang>!</bang> 表示排除。通配符 <star>*</star> 和 <question>?</question> 可用。",
+  "@queryUi.scope.hint": {
+    "sourceHash": "3335512"
+  },
+  "queryUi.scope.textareaAria": "范围文件夹",
+  "@queryUi.scope.textareaAria": {
+    "sourceHash": "0d82c92"
+  },
+  "queryUi.scope.toggle.hideBoring": "隐藏无聊的文件夹",
+  "@queryUi.scope.toggle.hideBoring": {
+    "sourceHash": "972df96"
+  },
+  "queryUi.scope.toggle.caseSensitive": "区分大小写",
+  "@queryUi.scope.toggle.caseSensitive": {
+    "sourceHash": "9d15f82"
+  },
+  "queryUi.scope.toggle.caseSensitiveAria": "区分大小写匹配",
+  "@queryUi.scope.toggle.caseSensitiveAria": {
+    "sourceHash": "2700434"
+  },
+  "queryUi.scope.useCurrentFolder": "使用当前文件夹",
+  "@queryUi.scope.useCurrentFolder": {
+    "sourceHash": "3df292c"
+  },
+  "queryUi.scope.allFolders": "所有文件夹",
+  "@queryUi.scope.allFolders": {
+    "sourceHash": "226fd0e"
+  }
+}

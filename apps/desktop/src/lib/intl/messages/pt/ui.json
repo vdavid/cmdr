@@ -1,0 +1,78 @@
+{
+  "ui.alertDialog.defaultButton": "OK",
+  "@ui.alertDialog.defaultButton": {
+    "sourceHash": "565339b"
+  },
+  "ui.modalDialog.close": "Fechar",
+  "@ui.modalDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "ui.popover.defaultAriaLabel": "Opções",
+  "@ui.popover.defaultAriaLabel": {
+    "sourceHash": "d0db8b5"
+  },
+  "ui.select.placeholder": "Selecionar...",
+  "@ui.select.placeholder": {
+    "sourceHash": "1339bdd"
+  },
+  "ui.combobox.emptyText": "Nenhuma correspondência. Continue digitando para usar seu próprio valor.",
+  "@ui.combobox.emptyText": {
+    "sourceHash": "d41f776"
+  },
+  "ui.combobox.loadingSuggestions": "Carregando sugestões",
+  "@ui.combobox.loadingSuggestions": {
+    "sourceHash": "6fcf509"
+  },
+  "ui.combobox.showSuggestions": "Mostrar sugestões",
+  "@ui.combobox.showSuggestions": {
+    "sourceHash": "a80b6a6"
+  },
+  "ui.commandBox.copyAria": "Copiar comando para a área de transferência",
+  "@ui.commandBox.copyAria": {
+    "sourceHash": "334c24c"
+  },
+  "ui.commandBox.copy": "Copiar",
+  "@ui.commandBox.copy": {
+    "sourceHash": "e21f935"
+  },
+  "ui.commandBox.copied": "Copiado!",
+  "@ui.commandBox.copied": {
+    "sourceHash": "ea61bc1"
+  },
+  "ui.shortcutChip.customizeAria": "Personalizar o atalho de {commandName}",
+  "@ui.shortcutChip.customizeAria": {
+    "sourceHash": "a1d00b2"
+  },
+  "ui.shortcutChip.customizeTooltip": "Personalizar este atalho",
+  "@ui.shortcutChip.customizeTooltip": {
+    "sourceHash": "9a7817d"
+  },
+  "ui.toast.sendErrorReport": "Enviar relatório de problema…",
+  "@ui.toast.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "ui.toast.dismissAria": "Dispensar notificação",
+  "@ui.toast.dismissAria": {
+    "sourceHash": "b7bb3f3"
+  },
+  "ui.loadingIcon.finalizing": "Todos os {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}} carregados. Ordenando seus arquivos, preparando a visualização...",
+  "@ui.loadingIcon.finalizing": {
+    "sourceHash": "2aac2cb"
+  },
+  "ui.loadingIcon.loaded": "{countText} {count, plural, one {arquivo carregado} many {arquivos carregados} other {arquivos carregados}}...",
+  "@ui.loadingIcon.loaded": {
+    "sourceHash": "93e45fc"
+  },
+  "ui.loadingIcon.openingFolder": "Abrindo pasta...",
+  "@ui.loadingIcon.openingFolder": {
+    "sourceHash": "818cbbb"
+  },
+  "ui.loadingIcon.loading": "Carregando...",
+  "@ui.loadingIcon.loading": {
+    "sourceHash": "47d2a51"
+  },
+  "ui.loadingIcon.cancelHint": "Pressione <key></key> para cancelar e voltar",
+  "@ui.loadingIcon.cancelHint": {
+    "sourceHash": "400dd28"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "main.upgradeNudge.mac": "Vi har lagt till nya alternativ för att komma igång. Öppna Cmdr > Onboarding… för att se dem.",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "477f3a5"
+  },
+  "main.upgradeNudge.other": "Vi har lagt till nya alternativ för att komma igång. Öppna kommandopaletten och kör Onboarding… för att se dem.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "4b0b39e"
+  }
+}

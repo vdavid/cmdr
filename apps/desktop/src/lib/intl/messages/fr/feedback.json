@@ -1,0 +1,58 @@
+{
+  "feedback.dialog.title": "Envoyer un retour",
+  "@feedback.dialog.title": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.description": "Qu''est-ce qui fonctionne ? Qu''est-ce qui manque ? Votre message arrive directement au créateur de Cmdr.",
+  "@feedback.dialog.description": {
+    "sourceHash": "fe435e3"
+  },
+  "feedback.dialog.label": "Votre retour",
+  "@feedback.dialog.label": {
+    "sourceHash": "cdb1c0a"
+  },
+  "feedback.dialog.placeholder": "Exemple : j''aimerais un raccourci pour passer d''un onglet à l''autre.",
+  "@feedback.dialog.placeholder": {
+    "sourceHash": "dd0214b"
+  },
+  "feedback.dialog.counter": "{currentText} / {maxText}",
+  "@feedback.dialog.counter": {
+    "sourceHash": "36ca789"
+  },
+  "feedback.dialog.tooLong": "Désolé, c''est trop long. Le maximum est de {maxText} caractères.",
+  "@feedback.dialog.tooLong": {
+    "sourceHash": "60a59ec"
+  },
+  "feedback.dialog.attachEmail": "Joindre mon adresse e-mail ({email}) pour qu''on puisse vous répondre",
+  "@feedback.dialog.attachEmail": {
+    "sourceHash": "5ab834c"
+  },
+  "feedback.dialog.moreWays": "Vous pouvez aussi <github>parcourir et voter sur GitHub</github> ou <call>réserver un appel</call> avec David.",
+  "@feedback.dialog.moreWays": {
+    "sourceHash": "5a26a7c"
+  },
+  "feedback.dialog.invalid": "Ce message n''est pas passé. Raccourcissez-le et réessayez ?",
+  "@feedback.dialog.invalid": {
+    "sourceHash": "c379ff8"
+  },
+  "feedback.dialog.softFailure": "Désolé, nous n''avons pas pu envoyer votre retour pour le moment. Réessayer ?",
+  "@feedback.dialog.softFailure": {
+    "sourceHash": "21012f3"
+  },
+  "feedback.dialog.cancel": "Annuler",
+  "@feedback.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "feedback.dialog.send": "Envoyer le retour",
+  "@feedback.dialog.send": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.sending": "Envoi…",
+  "@feedback.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "feedback.sentToast": "Merci pour votre retour ! Nous lisons chaque message.",
+  "@feedback.sentToast": {
+    "sourceHash": "6092c03"
+  }
+}

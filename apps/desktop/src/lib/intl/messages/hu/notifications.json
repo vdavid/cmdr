@@ -1,0 +1,6 @@
+{
+  "notifications.permissionDenied": "A macOS-értesítések ki vannak kapcsolva. Nyisd meg a Rendszerbeállításokat az engedélyezésükhöz.",
+  "@notifications.permissionDenied": {
+    "sourceHash": "4fef9ce"
+  }
+}

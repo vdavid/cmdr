@@ -1,0 +1,6 @@
+{
+  "notifications.permissionDenied": "macOS-meldingen staan uit. Open Systeeminstellingen om ze toe te staan.",
+  "@notifications.permissionDenied": {
+    "sourceHash": "4fef9ce"
+  }
+}

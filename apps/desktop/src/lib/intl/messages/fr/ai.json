@@ -1,0 +1,378 @@
+{
+  "ai.toast.downloadingTitle": "Téléchargement du modèle d''IA...",
+  "@ai.toast.downloadingTitle": {
+    "sourceHash": "453ec3b"
+  },
+  "ai.toast.startingDownload": "Démarrage du téléchargement...",
+  "@ai.toast.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · {eta} restant}}",
+  "@ai.toast.progress": {
+    "sourceHash": "93d798b"
+  },
+  "ai.toast.cancel": "Annuler",
+  "@ai.toast.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.toast.installingTitle": "Configuration de l''IA...",
+  "@ai.toast.installingTitle": {
+    "sourceHash": "509f6c1"
+  },
+  "ai.toast.installingDescription": "Démarrage du serveur",
+  "@ai.toast.installingDescription": {
+    "sourceHash": "8a0f9d9"
+  },
+  "ai.toast.readyTitle": "IA prête",
+  "@ai.toast.readyTitle": {
+    "sourceHash": "276c384"
+  },
+  "ai.toast.readyDescription": "Essayez de créer un nouveau dossier (F7) pour voir les suggestions de noms par l''IA.",
+  "@ai.toast.readyDescription": {
+    "sourceHash": "b3ae1b2"
+  },
+  "ai.toast.gotIt": "Compris",
+  "@ai.toast.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "ai.toast.startingTitle": "Démarrage de l''IA...",
+  "@ai.toast.startingTitle": {
+    "sourceHash": "29fdbca"
+  },
+  "ai.toast.startingDescription": "Chargement du modèle, cela prend quelques secondes",
+  "@ai.toast.startingDescription": {
+    "sourceHash": "94ecf6d"
+  },
+  "ai.toast.downloadCloseTooltip": "Fermer cette notification ; le téléchargement continuera en arrière-plan",
+  "@ai.toast.downloadCloseTooltip": {
+    "sourceHash": "16db2bd"
+  },
+  "ai.translateError.off.title": "L''IA est désactivée",
+  "@ai.translateError.off.title": {
+    "sourceHash": "99ce709"
+  },
+  "ai.translateError.off.body": "Activez un fournisseur dans Réglages > IA pour utiliser la recherche par IA.",
+  "@ai.translateError.off.body": {
+    "sourceHash": "d8d6368"
+  },
+  "ai.translateError.notConfigured.title": "L''IA a besoin d''un peu plus de configuration",
+  "@ai.translateError.notConfigured.title": {
+    "sourceHash": "bf5688a"
+  },
+  "ai.translateError.notConfigured.body": "Terminez la configuration de votre fournisseur dans Réglages > IA, puis réessayez.",
+  "@ai.translateError.notConfigured.body": {
+    "sourceHash": "65133a8"
+  },
+  "ai.translateError.authFailed.title": "Cette clé d''API a été refusée",
+  "@ai.translateError.authFailed.title": {
+    "sourceHash": "93e6261"
+  },
+  "ai.translateError.authFailed.body": "Vérifiez votre clé dans Réglages > IA - elle est peut-être incorrecte ou révoquée.",
+  "@ai.translateError.authFailed.body": {
+    "sourceHash": "2159d5e"
+  },
+  "ai.translateError.rateLimited.title": "Votre fournisseur d''IA n''a plus de place",
+  "@ai.translateError.rateLimited.title": {
+    "sourceHash": "26e286e"
+  },
+  "ai.translateError.rateLimited.body": "Il limite le débit des requêtes ou votre forfait n''a plus de quota. Vérifiez votre forfait et votre facturation, puis réessayez.",
+  "@ai.translateError.rateLimited.body": {
+    "sourceHash": "9b296d7"
+  },
+  "ai.translateError.timeout.title": "L''IA a mis trop de temps",
+  "@ai.translateError.timeout.title": {
+    "sourceHash": "d684e3f"
+  },
+  "ai.translateError.timeout.body": "Le délai de la requête a été dépassé. Réessayez dans un instant.",
+  "@ai.translateError.timeout.body": {
+    "sourceHash": "249b720"
+  },
+  "ai.translateError.unavailable.title": "Impossible de joindre votre fournisseur d''IA",
+  "@ai.translateError.unavailable.title": {
+    "sourceHash": "e684bc4"
+  },
+  "ai.translateError.unavailable.body": "Vérifiez votre connexion internet ou l''état du fournisseur, puis réessayez.",
+  "@ai.translateError.unavailable.body": {
+    "sourceHash": "ba30402"
+  },
+  "ai.translateError.emptyResponse.title": "L''IA est revenue vide",
+  "@ai.translateError.emptyResponse.title": {
+    "sourceHash": "61afc33"
+  },
+  "ai.translateError.emptyResponse.body": "Votre modèle a peut-être besoin d''un budget plus élevé pour cela. Essayez un modèle plus rapide comme gpt-4.1-mini dans Réglages > IA.",
+  "@ai.translateError.emptyResponse.body": {
+    "sourceHash": "f1704cc"
+  },
+  "ai.translateError.serverError.title": "Votre fournisseur d''IA a rencontré un souci",
+  "@ai.translateError.serverError.title": {
+    "sourceHash": "1b98f6a"
+  },
+  "ai.translateError.serverError.body": "Il a renvoyé quelque chose d''inattendu. Réessayez dans un instant.",
+  "@ai.translateError.serverError.body": {
+    "sourceHash": "3f4af5c"
+  },
+  "ai.translateError.parseError.title": "Lecture de la réponse de l''IA impossible",
+  "@ai.translateError.parseError.title": {
+    "sourceHash": "a509880"
+  },
+  "ai.translateError.parseError.body": "Réessayez, ou choisissez un autre modèle dans Réglages > IA.",
+  "@ai.translateError.parseError.body": {
+    "sourceHash": "c299ec6"
+  },
+  "ai.translateError.unknownProvider.title": "Ce fournisseur d''IA n''est pas reconnu",
+  "@ai.translateError.unknownProvider.title": {
+    "sourceHash": "3b70b46"
+  },
+  "ai.translateError.unknownProvider.body": "Choisissez un fournisseur dans Réglages > IA.",
+  "@ai.translateError.unknownProvider.body": {
+    "sourceHash": "7042a75"
+  },
+  "ai.cloud.serviceAria": "Service d''IA dans le cloud",
+  "@ai.cloud.serviceAria": {
+    "sourceHash": "7dec1e0"
+  },
+  "ai.cloud.endpointLabel": "Point de terminaison",
+  "@ai.cloud.endpointLabel": {
+    "sourceHash": "3df9726"
+  },
+  "ai.cloud.endpointDescription": "URL du point de terminaison de l''API pour le service sélectionné.",
+  "@ai.cloud.endpointDescription": {
+    "sourceHash": "884632b"
+  },
+  "ai.cloud.endpointPlaceholder": "Exemple : https://api.example.com/v1",
+  "@ai.cloud.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "ai.cloud.endpointAria": "URL du point de terminaison",
+  "@ai.cloud.endpointAria": {
+    "sourceHash": "2578179"
+  },
+  "ai.cloud.apiKeyLabel": "Clé d''API",
+  "@ai.cloud.apiKeyLabel": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.apiKeyDescription": "Votre clé d''API pour ce service.",
+  "@ai.cloud.apiKeyDescription": {
+    "sourceHash": "6a95580"
+  },
+  "ai.cloud.apiKeyPlaceholderOpenai": "Exemple : sk-abc123...",
+  "@ai.cloud.apiKeyPlaceholderOpenai": {
+    "sourceHash": "f9701a2"
+  },
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Exemple : sk-ant-abc123...",
+  "@ai.cloud.apiKeyPlaceholderAnthropic": {
+    "sourceHash": "5a4d18d"
+  },
+  "ai.cloud.apiKeyPlaceholderGeneric": "Clé d''API",
+  "@ai.cloud.apiKeyPlaceholderGeneric": {
+    "sourceHash": "16f0ee4"
+  },
+  "ai.cloud.modelLabel": "Modèle",
+  "@ai.cloud.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.cloud.modelDescription": "Le nom du modèle à utiliser pour les complétions.",
+  "@ai.cloud.modelDescription": {
+    "sourceHash": "809fa50"
+  },
+  "ai.cloud.modelPlaceholderExample": "Exemple : {model}",
+  "@ai.cloud.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "ai.cloud.modelPlaceholderGeneric": "Nom du modèle",
+  "@ai.cloud.modelPlaceholderGeneric": {
+    "sourceHash": "a3c3370"
+  },
+  "ai.cloud.checking": "Vérification...",
+  "@ai.cloud.checking": {
+    "sourceHash": "2e5f79b"
+  },
+  "ai.cloud.connected": "Connecté",
+  "@ai.cloud.connected": {
+    "sourceHash": "2296556"
+  },
+  "ai.cloud.connectedNoModels": "Connecté (liste des modèles indisponible)",
+  "@ai.cloud.connectedNoModels": {
+    "sourceHash": "54f2b6f"
+  },
+  "ai.cloud.recheck": "Revérifier",
+  "@ai.cloud.recheck": {
+    "sourceHash": "1f47d83"
+  },
+  "ai.cloud.authError": "La clé d''API n''est pas valable",
+  "@ai.cloud.authError": {
+    "sourceHash": "74a88e4"
+  },
+  "ai.cloud.connectionError": "Serveur injoignable",
+  "@ai.cloud.connectionError": {
+    "sourceHash": "3f378c3"
+  },
+  "ai.cloud.genericError": "Quelque chose s''est mal passé",
+  "@ai.cloud.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "ai.cloud.testConnection": "Tester la connexion",
+  "@ai.cloud.testConnection": {
+    "sourceHash": "5bcf311"
+  },
+  "ai.cloud.unknownError": "Problème inconnu",
+  "@ai.cloud.unknownError": {
+    "sourceHash": "27c2ccd"
+  },
+  "ai.local.memoryWarningAria": "Avertissement de mémoire",
+  "@ai.local.memoryWarningAria": {
+    "sourceHash": "7688d6a"
+  },
+  "ai.local.warningDanger": "Cela dépasse la mémoire disponible. Votre système risque de ralentir nettement.",
+  "@ai.local.warningDanger": {
+    "sourceHash": "dd5c518"
+  },
+  "ai.local.warningCaution": "Cela utilise la majeure partie de votre mémoire disponible. D''autres applications risquent de ralentir.",
+  "@ai.local.warningCaution": {
+    "sourceHash": "f8070e9"
+  },
+  "ai.local.statusRestarting": "Redémarrage...",
+  "@ai.local.statusRestarting": {
+    "sourceHash": "2c5bfcb"
+  },
+  "ai.local.statusStarting": "Démarrage...",
+  "@ai.local.statusStarting": {
+    "sourceHash": "82b9363"
+  },
+  "ai.local.statusRunning": "En cours d''exécution",
+  "@ai.local.statusRunning": {
+    "sourceHash": "f4ccae2"
+  },
+  "ai.local.statusStopped": "Arrêté",
+  "@ai.local.statusStopped": {
+    "sourceHash": "1a4f630"
+  },
+  "ai.local.installStepExtracting": "Étape 1 sur 4 : extraction de l''environnement d''exécution...",
+  "@ai.local.installStepExtracting": {
+    "sourceHash": "941db20"
+  },
+  "ai.local.installStepDownloading": "Étape 2 sur 4 : téléchargement du modèle...",
+  "@ai.local.installStepDownloading": {
+    "sourceHash": "56596cb"
+  },
+  "ai.local.installStepVerifying": "Étape 3 sur 4 : vérification du téléchargement...",
+  "@ai.local.installStepVerifying": {
+    "sourceHash": "4133988"
+  },
+  "ai.local.installStepStarting": "Étape 4 sur 4 : démarrage du serveur...",
+  "@ai.local.installStepStarting": {
+    "sourceHash": "39acba1"
+  },
+  "ai.local.startingDownload": "Démarrage du téléchargement...",
+  "@ai.local.startingDownload": {
+    "sourceHash": "d02eaf4"
+  },
+  "ai.local.etaSeconds": "~{value} s restantes",
+  "@ai.local.etaSeconds": {
+    "sourceHash": "045b712"
+  },
+  "ai.local.etaMinutes": "~{value} min restantes",
+  "@ai.local.etaMinutes": {
+    "sourceHash": "978afd8"
+  },
+  "ai.local.etaHours": "~{value} h restantes",
+  "@ai.local.etaHours": {
+    "sourceHash": "b1944ec"
+  },
+  "ai.local.modelLabel": "Modèle",
+  "@ai.local.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.local.serverLabel": "Serveur",
+  "@ai.local.serverLabel": {
+    "sourceHash": "aef7de2"
+  },
+  "ai.local.modelUnknown": "Inconnu",
+  "@ai.local.modelUnknown": {
+    "sourceHash": "b764cdc"
+  },
+  "ai.local.modelSizeUnknown": "?",
+  "@ai.local.modelSizeUnknown": {
+    "sourceHash": "8a8de82"
+  },
+  "ai.local.notInstalled": "Non installé. Le modèle local ({modelName}, {modelSize}) s''exécute entièrement sur votre appareil pour une confidentialité maximale. Nécessite Apple Silicon.",
+  "@ai.local.notInstalled": {
+    "sourceHash": "163bf42"
+  },
+  "ai.local.applyContextSize": "Appliquer",
+  "@ai.local.applyContextSize": {
+    "sourceHash": "31e392d"
+  },
+  "ai.local.ramGaugeAria": "Jauge d''utilisation de la mémoire",
+  "@ai.local.ramGaugeAria": {
+    "sourceHash": "d6d09e9"
+  },
+  "ai.local.ramLegendSystem": "Système {size}",
+  "@ai.local.ramLegendSystem": {
+    "sourceHash": "1497c04"
+  },
+  "ai.local.ramLegendApps": "Applications {size}",
+  "@ai.local.ramLegendApps": {
+    "sourceHash": "d02b14c"
+  },
+  "ai.local.ramLegendCmdrAi": "IA de Cmdr {size}",
+  "@ai.local.ramLegendCmdrAi": {
+    "sourceHash": "93e2741"
+  },
+  "ai.local.ramLegendProjected": "Projeté",
+  "@ai.local.ramLegendProjected": {
+    "sourceHash": "e394afa"
+  },
+  "ai.local.ramLegendFreed": "Libéré",
+  "@ai.local.ramLegendFreed": {
+    "sourceHash": "c8affca"
+  },
+  "ai.local.ramLegendFree": "Libre {size}",
+  "@ai.local.ramLegendFree": {
+    "sourceHash": "afe9c0d"
+  },
+  "ai.local.cancel": "Annuler",
+  "@ai.local.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.local.stopServer": "Arrêter le serveur",
+  "@ai.local.stopServer": {
+    "sourceHash": "a21bf60"
+  },
+  "ai.local.startServer": "Démarrer le serveur",
+  "@ai.local.startServer": {
+    "sourceHash": "7b7da6f"
+  },
+  "ai.local.deleteModel": "Supprimer le modèle",
+  "@ai.local.deleteModel": {
+    "sourceHash": "b7828ba"
+  },
+  "ai.local.downloadModel": "Télécharger le modèle",
+  "@ai.local.downloadModel": {
+    "sourceHash": "9979bea"
+  },
+  "ai.local.deleteDialogTitleDeleting": "Suppression du modèle...",
+  "@ai.local.deleteDialogTitleDeleting": {
+    "sourceHash": "413e1b9"
+  },
+  "ai.local.deleteDialogTitle": "Supprimer le modèle d''IA ?",
+  "@ai.local.deleteDialogTitle": {
+    "sourceHash": "c486f0c"
+  },
+  "ai.local.deletingStatus": "Arrêt du serveur et suppression des fichiers...",
+  "@ai.local.deletingStatus": {
+    "sourceHash": "6671ac7"
+  },
+  "ai.local.deleteConfirmMessage": "Cela libère {modelSize} d''espace disque. Vous devrez le retélécharger pour réutiliser l''IA locale.",
+  "@ai.local.deleteConfirmMessage": {
+    "sourceHash": "1a6ca0d"
+  },
+  "ai.local.deleteButtonDeleting": "Suppression...",
+  "@ai.local.deleteButtonDeleting": {
+    "sourceHash": "685ecb9"
+  },
+  "ai.local.deleteButton": "Supprimer",
+  "@ai.local.deleteButton": {
+    "sourceHash": "e2d0a54"
+  }
+}

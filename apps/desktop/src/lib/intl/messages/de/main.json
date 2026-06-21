@@ -1,0 +1,10 @@
+{
+  "main.upgradeNudge.mac": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne Cmdr > Einführung…, um sie anzusehen.",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "477f3a5"
+  },
+  "main.upgradeNudge.other": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne die Befehlspalette und führe Einführung… aus, um sie anzusehen.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "4b0b39e"
+  }
+}

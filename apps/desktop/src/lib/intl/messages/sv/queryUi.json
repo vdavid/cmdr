@@ -1,0 +1,610 @@
+{
+  "queryUi.bar.placeholder.ai": "Beskriv vad du letar efter",
+  "@queryUi.bar.placeholder.ai": {
+    "sourceHash": "fbfb9a8"
+  },
+  "queryUi.bar.placeholder.regex": "Reguljärt uttryck",
+  "@queryUi.bar.placeholder.regex": {
+    "sourceHash": "342a120"
+  },
+  "queryUi.bar.placeholder.filename": "Filnamnsmönster (använd * och ? som jokertecken)",
+  "@queryUi.bar.placeholder.filename": {
+    "sourceHash": "bafb340"
+  },
+  "queryUi.bar.aria.ai": "Sökfråga i naturligt språk",
+  "@queryUi.bar.aria.ai": {
+    "sourceHash": "05ac017"
+  },
+  "queryUi.bar.aria.regex": "Sökmönster med regex",
+  "@queryUi.bar.aria.regex": {
+    "sourceHash": "9c7754a"
+  },
+  "queryUi.bar.aria.filename": "Sökmönster för filnamn",
+  "@queryUi.bar.aria.filename": {
+    "sourceHash": "de1e4cf"
+  },
+  "queryUi.bar.runTitle.ai": "Kör AI-sökning",
+  "@queryUi.bar.runTitle.ai": {
+    "sourceHash": "8a25dfd"
+  },
+  "queryUi.bar.runTitle.default": "Kör sökning",
+  "@queryUi.bar.runTitle.default": {
+    "sourceHash": "63714be"
+  },
+  "queryUi.bar.runHint": "Tryck på Retur för att söka",
+  "@queryUi.bar.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "queryUi.bar.runLabel": "Sök",
+  "@queryUi.bar.runLabel": {
+    "sourceHash": "49c266b"
+  },
+  "queryUi.mode.ai.label": "Fråga om vad som helst",
+  "@queryUi.mode.ai.label": {
+    "sourceHash": "4aff15d"
+  },
+  "queryUi.mode.ai.aria": "AI-läge: fråga om vad som helst (Alt+A)",
+  "@queryUi.mode.ai.aria": {
+    "sourceHash": "1708462"
+  },
+  "queryUi.mode.filename.label": "Filnamn",
+  "@queryUi.mode.filename.label": {
+    "sourceHash": "971b974"
+  },
+  "queryUi.mode.filename.aria": "Filnamnsläge (Alt+F)",
+  "@queryUi.mode.filename.aria": {
+    "sourceHash": "62a5f87"
+  },
+  "queryUi.mode.content.label": "Innehåll",
+  "@queryUi.mode.content.label": {
+    "sourceHash": "47bd290"
+  },
+  "queryUi.mode.content.tooltip": "Kommer snart: fulltextsökning inuti filer",
+  "@queryUi.mode.content.tooltip": {
+    "sourceHash": "ff69d7a"
+  },
+  "queryUi.mode.content.aria": "Innehållsläge (kommer snart)",
+  "@queryUi.mode.content.aria": {
+    "sourceHash": "5bce643"
+  },
+  "queryUi.mode.regex.label": "Regex",
+  "@queryUi.mode.regex.label": {
+    "sourceHash": "0f27125"
+  },
+  "queryUi.mode.regex.aria": "Regex-läge (Alt+R)",
+  "@queryUi.mode.regex.aria": {
+    "sourceHash": "7c0b401"
+  },
+  "queryUi.mode.groupAria": "Sökläge",
+  "@queryUi.mode.groupAria": {
+    "sourceHash": "75f00aa"
+  },
+  "queryUi.empty.tryLine": "Prova…",
+  "@queryUi.empty.tryLine": {
+    "sourceHash": "469fb7f"
+  },
+  "queryUi.empty.tip": "Tips: <newKey>⌘N</newKey> börjar om, <historyKey>⌘H</historyKey> visar senaste sökningarna.",
+  "@queryUi.empty.tip": {
+    "sourceHash": "6d00976"
+  },
+  "queryUi.empty.tipAi": "Tips: <newKey>⌘N</newKey> börjar om, <historyKey>⌘H</historyKey> visar senaste sökningarna, <aiKey>⌘Enter</aiKey> kör en AI-sökning.",
+  "@queryUi.empty.tipAi": {
+    "sourceHash": "e83a0d6"
+  },
+  "queryUi.empty.indexReady": "Index klart · {countText} {count, plural, one {post} other {poster}}",
+  "@queryUi.empty.indexReady": {
+    "sourceHash": "838fcf8"
+  },
+  "queryUi.ai.lead": "Det här gjorde agenten:",
+  "@queryUi.ai.lead": {
+    "sourceHash": "bf7c5a2"
+  },
+  "queryUi.ai.empty": "Inget att filtrera på än. Försök att formulera om?",
+  "@queryUi.ai.empty": {
+    "sourceHash": "df836a8"
+  },
+  "queryUi.ai.refine": "Förfina…",
+  "@queryUi.ai.refine": {
+    "sourceHash": "488102b"
+  },
+  "queryUi.ai.refineAria": "Förfina AI-sökningen (kommer snart)",
+  "@queryUi.ai.refineAria": {
+    "sourceHash": "fc95971"
+  },
+  "queryUi.ai.refineTooltip": "Kommer snart: chatta tillbaka till agenten",
+  "@queryUi.ai.refineTooltip": {
+    "sourceHash": "4846194"
+  },
+  "queryUi.ai.stripAria": "Det här gjorde agenten med din senaste AI-sökning",
+  "@queryUi.ai.stripAria": {
+    "sourceHash": "53ffa17"
+  },
+  "queryUi.ai.patternLabel.glob": "Glob",
+  "@queryUi.ai.patternLabel.glob": {
+    "sourceHash": "18d00f7"
+  },
+  "queryUi.ai.patternLabel.regex": "Regex",
+  "@queryUi.ai.patternLabel.regex": {
+    "sourceHash": "0f27125"
+  },
+  "queryUi.ai.patternLabel.generic": "Mönster",
+  "@queryUi.ai.patternLabel.generic": {
+    "sourceHash": "4288ade"
+  },
+  "queryUi.ai.filter.size": "Storlek",
+  "@queryUi.ai.filter.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.ai.filter.modified": "Ändrad",
+  "@queryUi.ai.filter.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.ai.filter.type": "Typ",
+  "@queryUi.ai.filter.type": {
+    "sourceHash": "baaddf7"
+  },
+  "queryUi.ai.typeSummary.filesOnly": "Endast filer",
+  "@queryUi.ai.typeSummary.filesOnly": {
+    "sourceHash": "4bae1c3"
+  },
+  "queryUi.ai.typeSummary.foldersOnly": "Endast mappar",
+  "@queryUi.ai.typeSummary.foldersOnly": {
+    "sourceHash": "ad851fb"
+  },
+  "queryUi.results.col.name": "Namn",
+  "@queryUi.results.col.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "queryUi.results.col.path": "Sökväg",
+  "@queryUi.results.col.path": {
+    "sourceHash": "62fa5a5"
+  },
+  "queryUi.results.col.size": "Storlek",
+  "@queryUi.results.col.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.results.col.modified": "Ändrad",
+  "@queryUi.results.col.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.results.col.actions": "Åtgärder",
+  "@queryUi.results.col.actions": {
+    "sourceHash": "ff8059d"
+  },
+  "queryUi.results.listboxAria": "Sökresultat",
+  "@queryUi.results.listboxAria": {
+    "sourceHash": "e978b00"
+  },
+  "queryUi.results.scanningWithCount": "Genomsökning pågår ({countText} poster)...",
+  "@queryUi.results.scanningWithCount": {
+    "sourceHash": "0c05667"
+  },
+  "queryUi.results.scanning": "Genomsökning pågår...",
+  "@queryUi.results.scanning": {
+    "sourceHash": "091ba9a"
+  },
+  "queryUi.results.indexUnavailable": "Enhetsindex inte tillgängligt",
+  "@queryUi.results.indexUnavailable": {
+    "sourceHash": "80e98d0"
+  },
+  "queryUi.results.indexReadyStatus": "Index klart ({countText} poster)",
+  "@queryUi.results.indexReadyStatus": {
+    "sourceHash": "b8febe6"
+  },
+  "queryUi.results.resultCount": "{shownText} av {totalText} resultat",
+  "@queryUi.results.resultCount": {
+    "sourceHash": "8725496"
+  },
+  "queryUi.results.criteria.query": "Sökfråga: {query}",
+  "@queryUi.results.criteria.query": {
+    "sourceHash": "4877824"
+  },
+  "queryUi.results.criteria.size": "Storleksfilter aktivt",
+  "@queryUi.results.criteria.size": {
+    "sourceHash": "24f552d"
+  },
+  "queryUi.results.criteria.modified": "Ändringsfilter aktivt",
+  "@queryUi.results.criteria.modified": {
+    "sourceHash": "fc2268a"
+  },
+  "queryUi.results.indexNotReady": "Enhetsindexet är inte klart. Sökning blir tillgänglig när den första genomsökningen är klar.",
+  "@queryUi.results.indexNotReady": {
+    "sourceHash": "9efe161"
+  },
+  "queryUi.results.scanProgressWithCount": "Genomsökning pågår ({countText} poster)...",
+  "@queryUi.results.scanProgressWithCount": {
+    "sourceHash": "3c5b987"
+  },
+  "queryUi.results.scanProgress": "Genomsökning pågår...",
+  "@queryUi.results.scanProgress": {
+    "sourceHash": "091ba9a"
+  },
+  "queryUi.results.loadingIndex": "Läser in enhetsindex...",
+  "@queryUi.results.loadingIndex": {
+    "sourceHash": "ab62214"
+  },
+  "queryUi.results.searching": "Söker...",
+  "@queryUi.results.searching": {
+    "sourceHash": "78c9d9f"
+  },
+  "queryUi.results.noMatchHeading": "Inga filer matchar de här kriterierna:",
+  "@queryUi.results.noMatchHeading": {
+    "sourceHash": "15383e2"
+  },
+  "queryUi.results.rowMenuAria": "Fler åtgärder",
+  "@queryUi.results.rowMenuAria": {
+    "sourceHash": "f8d46c2"
+  },
+  "queryUi.pathPills.hiddenAria": "Dolda sökvägssegment: {segments}",
+  "@queryUi.pathPills.hiddenAria": {
+    "sourceHash": "f62e273"
+  },
+  "queryUi.recent.leadingLabel": "Senaste sökningar:",
+  "@queryUi.recent.leadingLabel": {
+    "sourceHash": "dd53364"
+  },
+  "queryUi.recent.trailingLabel": "Alla sökningar…",
+  "@queryUi.recent.trailingLabel": {
+    "sourceHash": "820b77b"
+  },
+  "queryUi.recent.trailingTooltip": "Visa alla senaste sökningar",
+  "@queryUi.recent.trailingTooltip": {
+    "sourceHash": "e0de323"
+  },
+  "queryUi.recent.regionAria": "Senaste sökningar",
+  "@queryUi.recent.regionAria": {
+    "sourceHash": "228c84b"
+  },
+  "queryUi.recent.allButtonAria": "Alla senaste sökningar",
+  "@queryUi.recent.allButtonAria": {
+    "sourceHash": "c4faef7"
+  },
+  "queryUi.recent.filterPlaceholder": "Filtrera senaste sökningar",
+  "@queryUi.recent.filterPlaceholder": {
+    "sourceHash": "37e55fe"
+  },
+  "queryUi.recent.emptyMessage": "Inga senaste sökningar matchar det filtret.",
+  "@queryUi.recent.emptyMessage": {
+    "sourceHash": "7007fba"
+  },
+  "queryUi.recent.popoverAria": "Alla senaste sökningar",
+  "@queryUi.recent.popoverAria": {
+    "sourceHash": "c4faef7"
+  },
+  "queryUi.recent.listboxAria": "Senaste sökningar",
+  "@queryUi.recent.listboxAria": {
+    "sourceHash": "228c84b"
+  },
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> för att flytta · <runKey>Enter</runKey> för att köra · högerklicka för att ta bort",
+  "@queryUi.recent.popoverHint": {
+    "sourceHash": "11e1b46"
+  },
+  "queryUi.recent.mode.ai": "AI",
+  "@queryUi.recent.mode.ai": {
+    "sourceHash": "11fb682"
+  },
+  "queryUi.recent.mode.regex": "Regex",
+  "@queryUi.recent.mode.regex": {
+    "sourceHash": "0f27125"
+  },
+  "queryUi.recent.mode.filename": "Filnamn",
+  "@queryUi.recent.mode.filename": {
+    "sourceHash": "971b974"
+  },
+  "queryUi.age.justNow": "nyss",
+  "@queryUi.age.justNow": {
+    "sourceHash": "7ddb44d"
+  },
+  "queryUi.age.minutes": "för {count} min sedan",
+  "@queryUi.age.minutes": {
+    "sourceHash": "0a03167"
+  },
+  "queryUi.age.hours": "för {count} tim sedan",
+  "@queryUi.age.hours": {
+    "sourceHash": "520c737"
+  },
+  "queryUi.age.days": "för {count} dgr sedan",
+  "@queryUi.age.days": {
+    "sourceHash": "a412343"
+  },
+  "queryUi.age.weeks": "för {count} v sedan",
+  "@queryUi.age.weeks": {
+    "sourceHash": "7c7a56d"
+  },
+  "queryUi.age.months": "för {count} mån sedan",
+  "@queryUi.age.months": {
+    "sourceHash": "e3ca968"
+  },
+  "queryUi.age.years": "för {count} år sedan",
+  "@queryUi.age.years": {
+    "sourceHash": "e0d32e9"
+  },
+  "queryUi.recent.scopeSummary": "omfattning: {scope}",
+  "@queryUi.recent.scopeSummary": {
+    "sourceHash": "e5e6dff"
+  },
+  "queryUi.recent.caseSensitive": "skiftlägeskänslig",
+  "@queryUi.recent.caseSensitive": {
+    "sourceHash": "3934758"
+  },
+  "queryUi.recent.systemDirsIncluded": "systemmappar inkluderade",
+  "@queryUi.recent.systemDirsIncluded": {
+    "sourceHash": "b7996cc"
+  },
+  "queryUi.recent.resultCount": "{countText} resultat förra gången",
+  "@queryUi.recent.resultCount": {
+    "sourceHash": "d048174"
+  },
+  "queryUi.recent.sizeRange": "storlek {minText}–{maxText}",
+  "@queryUi.recent.sizeRange": {
+    "sourceHash": "96bd04f"
+  },
+  "queryUi.recent.sizeMin": "storlek > {minText}",
+  "@queryUi.recent.sizeMin": {
+    "sourceHash": "0aab700"
+  },
+  "queryUi.recent.sizeMax": "storlek < {maxText}",
+  "@queryUi.recent.sizeMax": {
+    "sourceHash": "7850b6e"
+  },
+  "queryUi.recent.modifiedRange": "ändrad {after}…{before}",
+  "@queryUi.recent.modifiedRange": {
+    "sourceHash": "e99ce85"
+  },
+  "queryUi.recent.modifiedAfter": "efter {after}",
+  "@queryUi.recent.modifiedAfter": {
+    "sourceHash": "4135ddf"
+  },
+  "queryUi.recent.modifiedBefore": "före {before}",
+  "@queryUi.recent.modifiedBefore": {
+    "sourceHash": "f0a5bd6"
+  },
+  "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
+  "@queryUi.recent.chipTooltipHeader": {
+    "sourceHash": "54a225b"
+  },
+  "queryUi.dialog.actionsAria": "Dialogåtgärder",
+  "@queryUi.dialog.actionsAria": {
+    "sourceHash": "62d23d5"
+  },
+  "queryUi.dialog.aiTranslateFailedToast": "Det gick inte att köra AI-sökningen just nu. Försök igen?",
+  "@queryUi.dialog.aiTranslateFailedToast": {
+    "sourceHash": "6856c79"
+  },
+  "queryUi.filters.toolbarAria": "Sökfilter",
+  "@queryUi.filters.toolbarAria": {
+    "sourceHash": "f484e72"
+  },
+  "queryUi.filters.type.both": "Båda",
+  "@queryUi.filters.type.both": {
+    "sourceHash": "b6c1d86"
+  },
+  "queryUi.filters.type.files": "Filer",
+  "@queryUi.filters.type.files": {
+    "sourceHash": "abc7e98"
+  },
+  "queryUi.filters.type.folders": "Mappar",
+  "@queryUi.filters.type.folders": {
+    "sourceHash": "c4d6bb2"
+  },
+  "queryUi.filters.type.aria": "Filtrera efter typ",
+  "@queryUi.filters.type.aria": {
+    "sourceHash": "51035b5"
+  },
+  "queryUi.filters.chip.pattern": "Mönster",
+  "@queryUi.filters.chip.pattern": {
+    "sourceHash": "4288ade"
+  },
+  "queryUi.filters.chip.size": "Storlek",
+  "@queryUi.filters.chip.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.filters.chip.modified": "Ändrad",
+  "@queryUi.filters.chip.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.filters.chip.scope": "Sök i",
+  "@queryUi.filters.chip.scope": {
+    "sourceHash": "fa79255"
+  },
+  "queryUi.filters.scope.includesSystemFolders": "inkluderar systemmappar",
+  "@queryUi.filters.scope.includesSystemFolders": {
+    "sourceHash": "3bb9784"
+  },
+  "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
+  "@queryUi.filters.size.summary.single": {
+    "sourceHash": "bbd5deb"
+  },
+  "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
+  "@queryUi.filters.size.summary.range": {
+    "sourceHash": "ba7eadc"
+  },
+  "queryUi.filters.date.summary.after": "efter {date}",
+  "@queryUi.filters.date.summary.after": {
+    "sourceHash": "f70f7dc"
+  },
+  "queryUi.filters.date.summary.before": "före {date}",
+  "@queryUi.filters.date.summary.before": {
+    "sourceHash": "e503949"
+  },
+  "queryUi.filters.date.summary.range": "{after} – {before}",
+  "@queryUi.filters.date.summary.range": {
+    "sourceHash": "801560e"
+  },
+  "queryUi.size.comparator.any": "valfri",
+  "@queryUi.size.comparator.any": {
+    "sourceHash": "d6a7cd2"
+  },
+  "queryUi.size.comparator.between": "mellan",
+  "@queryUi.size.comparator.between": {
+    "sourceHash": "fbb27fb"
+  },
+  "queryUi.size.unit.byte": "byte",
+  "@queryUi.size.unit.byte": {
+    "sourceHash": "1c31626"
+  },
+  "queryUi.size.unit.bytes": "byte",
+  "@queryUi.size.unit.bytes": {
+    "sourceHash": "277089d"
+  },
+  "queryUi.size.customCell": "anpassad…",
+  "@queryUi.size.customCell": {
+    "sourceHash": "564a4d3"
+  },
+  "queryUi.size.customInputPlaceholder": "anpassad",
+  "@queryUi.size.customInputPlaceholder": {
+    "sourceHash": "6cdfd27"
+  },
+  "queryUi.size.popover.label": "Storlek",
+  "@queryUi.size.popover.label": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.size.popover.aria": "Storleksfilterval",
+  "@queryUi.size.popover.aria": {
+    "sourceHash": "087d449"
+  },
+  "queryUi.size.aria.comparator": "Jämförelse",
+  "@queryUi.size.aria.comparator": {
+    "sourceHash": "9a348d5"
+  },
+  "queryUi.size.aria.minValue": "Minsta storleksvärde",
+  "@queryUi.size.aria.minValue": {
+    "sourceHash": "242e7b0"
+  },
+  "queryUi.size.aria.minUnit": "Minsta storleksenhet",
+  "@queryUi.size.aria.minUnit": {
+    "sourceHash": "4803db9"
+  },
+  "queryUi.size.aria.maxValue": "Största storleksvärde",
+  "@queryUi.size.aria.maxValue": {
+    "sourceHash": "a79a52b"
+  },
+  "queryUi.size.aria.maxUnit": "Största storleksenhet",
+  "@queryUi.size.aria.maxUnit": {
+    "sourceHash": "7ab449b"
+  },
+  "queryUi.size.aria.customMin": "Anpassat minsta storleksvärde",
+  "@queryUi.size.aria.customMin": {
+    "sourceHash": "d841b6a"
+  },
+  "queryUi.size.aria.customMax": "Anpassat största storleksvärde",
+  "@queryUi.size.aria.customMax": {
+    "sourceHash": "4761acf"
+  },
+  "queryUi.date.comparator.any": "valfri",
+  "@queryUi.date.comparator.any": {
+    "sourceHash": "d6a7cd2"
+  },
+  "queryUi.date.comparator.after": "efter",
+  "@queryUi.date.comparator.after": {
+    "sourceHash": "f395923"
+  },
+  "queryUi.date.comparator.before": "före",
+  "@queryUi.date.comparator.before": {
+    "sourceHash": "6db7d80"
+  },
+  "queryUi.date.comparator.between": "mellan",
+  "@queryUi.date.comparator.between": {
+    "sourceHash": "fbb27fb"
+  },
+  "queryUi.date.customCell": "anpassad…",
+  "@queryUi.date.customCell": {
+    "sourceHash": "564a4d3"
+  },
+  "queryUi.date.popover.label": "Ändrad",
+  "@queryUi.date.popover.label": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.date.popover.aria": "Ändringsfilterval",
+  "@queryUi.date.popover.aria": {
+    "sourceHash": "e0fd68c"
+  },
+  "queryUi.date.aria.comparator": "Jämförelse",
+  "@queryUi.date.aria.comparator": {
+    "sourceHash": "9a348d5"
+  },
+  "queryUi.date.aria.value": "Datumvärde",
+  "@queryUi.date.aria.value": {
+    "sourceHash": "8696a46"
+  },
+  "queryUi.date.aria.maxValue": "Största datumvärde",
+  "@queryUi.date.aria.maxValue": {
+    "sourceHash": "733e9f1"
+  },
+  "queryUi.date.aria.custom": "Anpassat datumvärde",
+  "@queryUi.date.aria.custom": {
+    "sourceHash": "531707c"
+  },
+  "queryUi.date.aria.customMax": "Anpassat största datumvärde",
+  "@queryUi.date.aria.customMax": {
+    "sourceHash": "fae3317"
+  },
+  "queryUi.date.preset.today": "i dag {time}",
+  "@queryUi.date.preset.today": {
+    "sourceHash": "171a27d"
+  },
+  "queryUi.date.preset.yesterday": "i går {time}",
+  "@queryUi.date.preset.yesterday": {
+    "sourceHash": "b40b2e7"
+  },
+  "queryUi.date.preset.thisWeek": "denna {weekday} {time}",
+  "@queryUi.date.preset.thisWeek": {
+    "sourceHash": "9259c67"
+  },
+  "queryUi.date.preset.lastWeek": "förra {weekday} {time}",
+  "@queryUi.date.preset.lastWeek": {
+    "sourceHash": "1e4419c"
+  },
+  "queryUi.date.preset.thisMonth": "1:a {month} {time}",
+  "@queryUi.date.preset.thisMonth": {
+    "sourceHash": "030ee23"
+  },
+  "queryUi.date.preset.lastMonth": "1:a {month} {year} {time}",
+  "@queryUi.date.preset.lastMonth": {
+    "sourceHash": "0838509"
+  },
+  "queryUi.date.preset.yearStart": "1:a januari {year} {time}",
+  "@queryUi.date.preset.yearStart": {
+    "sourceHash": "f86a864"
+  },
+  "queryUi.scope.popover.label": "Sök i",
+  "@queryUi.scope.popover.label": {
+    "sourceHash": "fa79255"
+  },
+  "queryUi.scope.popover.aria": "Sök i mappar",
+  "@queryUi.scope.popover.aria": {
+    "sourceHash": "989db5d"
+  },
+  "queryUi.scope.placeholder": "Alla mappar",
+  "@queryUi.scope.placeholder": {
+    "sourceHash": "226fd0e"
+  },
+  "queryUi.scope.hint": "Kommaseparerade sökvägar. Inled med <bang>!</bang> för att utesluta. Jokertecknen <star>*</star> och <question>?</question> fungerar.",
+  "@queryUi.scope.hint": {
+    "sourceHash": "3335512"
+  },
+  "queryUi.scope.textareaAria": "Omfattningsmappar",
+  "@queryUi.scope.textareaAria": {
+    "sourceHash": "0d82c92"
+  },
+  "queryUi.scope.toggle.hideBoring": "Dölj tråkiga mappar",
+  "@queryUi.scope.toggle.hideBoring": {
+    "sourceHash": "972df96"
+  },
+  "queryUi.scope.toggle.caseSensitive": "Skiftlägeskänslig",
+  "@queryUi.scope.toggle.caseSensitive": {
+    "sourceHash": "9d15f82"
+  },
+  "queryUi.scope.toggle.caseSensitiveAria": "Skiftlägeskänslig matchning",
+  "@queryUi.scope.toggle.caseSensitiveAria": {
+    "sourceHash": "2700434"
+  },
+  "queryUi.scope.useCurrentFolder": "Använd aktuell mapp",
+  "@queryUi.scope.useCurrentFolder": {
+    "sourceHash": "3df292c"
+  },
+  "queryUi.scope.allFolders": "Alla mappar",
+  "@queryUi.scope.allFolders": {
+    "sourceHash": "226fd0e"
+  }
+}
