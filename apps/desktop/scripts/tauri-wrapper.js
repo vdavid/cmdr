@@ -18,7 +18,7 @@
 // What this wrapper does NOT do yet (P5+):
 //   - Fixture root or clipboard mock plumbing (P5, owned by the E2E checker).
 
-import { spawn } from 'child_process'
+import { spawn, execFileSync } from 'child_process'
 import { mkdtempSync, writeFileSync, rmSync } from 'fs'
 import { tmpdir, homedir } from 'os'
 import { join } from 'path'
@@ -37,9 +37,42 @@ const args = process.argv.slice(2)
 const isDev = args.includes('dev')
 const isBuild = args.includes('build')
 
+// Keep `dev` out of the main clone: a dev launch regenerates bindings.ts and runs
+// against the plain "dev" instance, dirtying/confusing the main checkout. The
+// solo-dev workflow always runs dev from a worktree (`pnpm dev --worktree <slug>`).
+// `build` is exempt (CI release builds run in the main checkout). Override with
+// --allow-main / -m.
+const allowMain = args.includes('--allow-main') || args.includes('-m')
+if (isDev && !allowMain && isMainWorkingTree()) {
+  console.error(
+    'Refusing to run dev in the main clone.\n' +
+      'Dev runs in a worktree — use `pnpm dev --worktree <slug>` from a worktree, ' +
+      'or pass --allow-main (-m) if you really mean it.',
+  )
+  process.exit(1)
+}
+
 // Parse --worktree first so we can strip it from the args we forward to Tauri. Keeps
 // anything after `--` (Tauri / cargo args like `--features virtual-mtp`) intact.
-const { slug: rawWorktreeSlug, rest: forwardedArgs } = extractWorktreeFlag(args)
+const { slug: rawWorktreeSlug, rest: forwardedArgs0 } = extractWorktreeFlag(args)
+// Strip our own --allow-main / -m too, so they never reach Tauri/cargo.
+const forwardedArgs = forwardedArgs0.filter((a) => a !== '--allow-main' && a !== '-m')
+
+// isMainWorkingTree reports whether the cwd is the repo's MAIN clone rather than a
+// linked `git worktree`. In the main clone, --git-dir and --git-common-dir resolve
+// to the same .git; in a linked worktree, --git-dir is .git/worktrees/<slug>.
+// Returns false when git is absent / not a repo, so a non-git context never blocks.
+function isMainWorkingTree() {
+  try {
+    /** @param {string} p */
+    const abs = (p) => (p.startsWith('/') ? p : join(process.cwd(), p))
+    const gitDir = execFileSync('git', ['rev-parse', '--git-dir'], { encoding: 'utf8' }).trim()
+    const commonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], { encoding: 'utf8' }).trim()
+    return abs(gitDir) === abs(commonDir)
+  } catch {
+    return false
+  }
+}
 
 // Dev-only virtual MTP opt-in. `CMDR_VIRTUAL_MTP=1 pnpm dev` (or `=<dir>` for a custom
 // backing dir) registers a fake Android device so MTP flows (drag&drop, transfers,

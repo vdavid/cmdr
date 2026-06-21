@@ -49,6 +49,7 @@ type cliFlags struct {
 	failFast        bool
 	noLog           bool
 	quiet           bool // collapse passing checks into a one-line count; stream only warns, failures, skips, and changes
+	allowMain       bool // permit running in the main clone instead of a worktree (checks mutate the tree)
 	fresh           bool // bypass the input-fingerprint cache: run everything selected, then refresh its entries
 	onlyFreestyle   bool
 	preferFreestyle bool
@@ -117,6 +118,8 @@ func main() {
 		}
 		return
 	}
+
+	enforceMainCloneGuard(flags, rootDir)
 
 	ctx := &checks.CheckContext{
 		CI:      flags.ciMode,
@@ -299,6 +302,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		noLog           = fs.Bool("no-log", false, "Disable CSV stats logging")
 		quiet           = fs.Bool("quiet", false, "Collapse passing checks into a one-line count; stream only warns, failures, skips, and changes")
 		q               = fs.Bool("q", false, "Collapse passing checks into a one-line count; stream only warns, failures, skips, and changes")
+		allowMain       = fs.Bool("allow-main", false, "Allow running in the main clone instead of a worktree")
 		fresh           = fs.Bool("fresh", false, "Bypass the input-fingerprint cache: run everything selected, then refresh the cache")
 		onlyFreestyle   = fs.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
 		preferFreestyle = fs.Bool("prefer-freestyle", false, "Run freestyle-compatible checks on VM + the rest locally in parallel")
@@ -311,6 +315,10 @@ func parseFlags(args []string) (*cliFlags, error) {
 	)
 	fs.Var(&appNames, "app", "Run checks for specific apps (repeatable or comma-separated)")
 	fs.Var(&checkNames, "check", "Run specific checks by ID (same as naming them positionally)")
+	// `-m` is the short alias for --allow-main; bind it to the same target so
+	// either form sets it (avoids an extra `|| ` in the struct, keeping parseFlags
+	// under the cyclomatic-complexity threshold).
+	fs.BoolVar(allowMain, "m", false, "Allow running in the main clone (short for --allow-main)")
 
 	positionals, err := parseInterspersed(fs, args)
 	if err != nil {
@@ -336,6 +344,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		failFast:        *failFast,
 		noLog:           *noLog || *ciMode,
 		quiet:           *quiet || *q,
+		allowMain:       *allowMain,
 		fresh:           *fresh,
 		onlyFreestyle:   *onlyFreestyle,
 		preferFreestyle: *preferFreestyle,
@@ -668,6 +677,7 @@ func showUsage() {
 	fmt.Println("    --go, --go-only          Run only Go checks (scripts)")
 	fmt.Println("    --check ID               Run specific checks by ID (same as naming them positionally)")
 	fmt.Println("    --ci                     Disable auto-fixing (for CI)")
+	fmt.Println("    --allow-main, -m         Allow running in the main clone instead of a worktree")
 	fmt.Println("    --verbose                Show detailed output")
 	fmt.Println("    --include-slow           Include slow checks (excluded by default)")
 	fmt.Println("    --only-slow              Run only slow checks")

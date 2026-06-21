@@ -26,6 +26,10 @@ Wrapper architecture, decisions, and the full instance-isolation reference: [DET
 - **Don't bypass the wrapper.** Raw `cargo tauri dev` or raw `cargo build` skips the env composition AND the
   `beforeBuildCommand` chain (llama-server download + frontend build), so the app launches with the prod identifier or
   no embedded frontend. See the `rust` rule in `.claude/rules/`.
+- **`pnpm dev` refuses to run in the main clone** (a dev launch regenerates `bindings.ts` and runs the wrong instance;
+  the workflow always devs from a worktree). Detection: `--git-dir` == `--git-common-dir` (`isMainWorkingTree`). `build`
+  is exempt (CI release builds run in the main checkout); override with `--allow-main` / `-m`. The check runner carries
+  the same guard.
 - **The generated `tauri.instance.json` lives in `$TMPDIR`, not the repo**, so a crashed wrapper can't pollute tracked
   space; `/tmp` self-prunes. Wrapper exit cleanup (`process.on('exit'/'SIGINT'/'SIGTERM')`) is best-effort and doesn't
   run on `SIGKILL`/OOM/terminal-close, so the `$TMPDIR` location is the load-bearing fallback. Don't move it into the
