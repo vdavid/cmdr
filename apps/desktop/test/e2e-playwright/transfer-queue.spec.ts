@@ -1,5 +1,5 @@
 /**
- * E2E for the transfer-queue window (M3 of the transfer-queue + pause feature).
+ * E2E for the transfer-queue window.
  *
  * Two same-lane local copies serialize behind the operation manager (lane budget
  * 1 per device, and both copies touch the local volume's lane): the first runs,

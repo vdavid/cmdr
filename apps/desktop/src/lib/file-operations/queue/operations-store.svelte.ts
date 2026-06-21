@@ -11,7 +11,7 @@
  *
  * A row is `OperationSnapshot` (the membership/status fact) plus the latest
  * `WriteProgressEvent` for that op (or `null` before the first tick). The window
- * reads `getOperations()`; M4's auto-queue surfacing reads the same store.
+ * reads `getOperations()`; the progress dialog's auto-queue surfacing reads the same store.
  *
  * IMPORTANT: a paused op still reports `is_running: true` from the backend
  * status query (it stays in the write-operation-state map). The bar-is-moving

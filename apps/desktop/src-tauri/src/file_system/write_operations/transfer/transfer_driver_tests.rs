@@ -1625,7 +1625,7 @@ async fn driver_future_is_send_across_spawn() {
 }
 
 // ===========================================================================
-// Pause gate (M2): the driver parks between files while paused
+// Pause gate: the driver parks between files while paused
 // ===========================================================================
 //
 // The gate sits immediately AFTER the loop-top `is_cancelled` check in both

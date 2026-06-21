@@ -1,6 +1,6 @@
 # Transfer queue window — details
 
-Depth for [CLAUDE.md](CLAUDE.md). The window is the M3 frontend of the transfer-queue + pause feature
+Depth for [CLAUDE.md](CLAUDE.md). The window is the frontend of the transfer-queue + pause feature
 ([`docs/specs/2026-06-21-transfer-queue-pause-plan.md`](../../../../../../docs/specs/2026-06-21-transfer-queue-pause-plan.md)).
 
 ## Why a hard window
@@ -35,7 +35,7 @@ A paused Running op stays in `WRITE_OPERATION_STATE`, so `get_operation_status()
 ("running but not progressing"). The bar-is-moving truth is therefore the snapshot `status`: only `'running'` shows the
 spinner and an animated bar; `'paused'` shows a static bar and the Paused label. Rows never read `is_running`.
 
-## Store public API (the M4 reuse contract)
+## Store public API (the progress-dialog reuse contract)
 
 `createOperationsStore()` returns:
 
@@ -52,7 +52,7 @@ spinner and an animated bar; `'paused'` shows a static bar and the Paused label.
 `isTerminalStatus(status)` (module export) is the typed terminal-set test (`done` / `cancelled` / `failed`), used by the
 page to hide settled rows. Typed set, not a string-substring test (`no-string-matching`).
 
-M4 (progress-dialog Queue button + auto-queue surfacing) opens the window via `openQueueWindow()` and reads this same
+The progress-dialog Queue button and the auto-queue surfacing open the window via `openQueueWindow()` and read this same
 store. Don't fork a second opener or store.
 
 ## Vibrancy + reduce-transparency
@@ -83,7 +83,7 @@ the MAIN window, which already holds those perms — nothing to add there (see `
 - Command palette + Help menu: `queue.show` ("Show transfer queue"), handled in
   `routes/(main)/command-handlers/app-dialog-handlers.ts` → `openQueueWindow()`. Wired through the full command path
   (id, registry, handler, Rust menu mappings, both platform menu builders, the drift-test excuse).
-- M4 will also open/raise it automatically when an op lands on a busy lane (auto-queue surfacing).
+- The progress dialog also opens/raises it automatically when an op lands on a busy lane (auto-queue surfacing).
 
 ## Tests
 

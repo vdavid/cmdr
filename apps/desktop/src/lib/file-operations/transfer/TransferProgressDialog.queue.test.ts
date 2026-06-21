@@ -1,5 +1,5 @@
 /**
- * M4 controls on `TransferProgressDialog.svelte`: Pause/Resume, Queue (send to
+ * Queue controls on `TransferProgressDialog.svelte`: Pause/Resume, Queue (send to
  * background), the dialog-scoped F2 → Queue, and auto-queue surfacing.
  *
  * The dialog learns its lifecycle status (running/paused/queued) from the

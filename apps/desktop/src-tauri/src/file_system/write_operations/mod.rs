@@ -72,7 +72,7 @@ pub use state::{
 };
 // Operation manager: the single scheduler + registry every write op flows
 // through. `OperationsChanged` / `OperationSnapshot` are the thin
-// `operations-changed` event payload (M3 consumes them; `LifecycleStatus` rides
+// `operations-changed` event payload (the queue window consumes them; `LifecycleStatus` rides
 // along as a snapshot field and is reached via `manager::LifecycleStatus`).
 // `init_operation_event_emitter` wires the emitter at startup; the command
 // helpers back the new `list_operations` / `cancel_operation(s)` IPC.

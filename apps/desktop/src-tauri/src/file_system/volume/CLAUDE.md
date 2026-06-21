@@ -21,6 +21,9 @@ volume root**.
 - **Optional trait methods default to `Err(NotSupported)` / `false`**, so new backends start with `list_directory` +
   `get_metadata` and opt into capabilities incrementally. Adding a backend? Read [DETAILS.md](DETAILS.md) § "Building a
   new volume" and § "Capability matrix" first; both are referenced from `docs/architecture.md`.
+- **`lane_key()` is the operation manager's serialization key** (default = volume root): write ops sharing a lane run
+  one at a time, disjoint lanes run in parallel. Override it when multiple `Volume` instances share one physical
+  resource (MTP device, SMB server) so they don't thrash; see [DETAILS.md](DETAILS.md) § "Building a new volume".
 - **Register watcher-pre-registered volumes via `VolumeManager::register_if_absent`, not `register`.** The FSEvents
   watcher would otherwise overwrite a pre-registered `SmbVolume` with a `LocalPosixVolume`. `register` (overwrite) is
   only for explicit replacement (SmbVolume replacing itself on reconnect).

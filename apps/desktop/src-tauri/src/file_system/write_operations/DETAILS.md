@@ -193,7 +193,7 @@ A queued op holds only DATA describing how to begin: a boxed `FnOnce() -> Pin<Bo
 
 ### Lifecycle status and `operations-changed`
 
-`LifecycleStatus` (Queued/Running/Paused/Done/Cancelled/Failed) lives on the manager record. M1 wires Queued/Running and removal-on-terminal; M2 wires the `Paused`↔`Running` flip (see [Pause / resume](#pause--resume)). It is distinct from `WriteOperationPhase` (the progress phase) and `OperationIntent` (the cancel/rollback machine). The `operations-changed` typed event carries a THIN snapshot (`Vec<OperationSnapshot>`: id, type, status, source/dest summary), emitted from `spawn_managed` / `on_settled` / `cancel_if_queued` / `set_paused`. It deliberately excludes 200 ms progress — the queue window (M3) reads the per-file `write-progress` stream for live bars. `init_operation_event_emitter(app)` wires the emitter at startup (`lib.rs`), mirroring `init_busy_volume_emitter`.
+`LifecycleStatus` (Queued/Running/Paused/Done/Cancelled/Failed) lives on the manager record. Admission and settle set Queued/Running and removal-on-terminal; the pause/resume path sets the `Paused`↔`Running` flip (see [Pause / resume](#pause--resume)). It is distinct from `WriteOperationPhase` (the progress phase) and `OperationIntent` (the cancel/rollback machine). The `operations-changed` typed event carries a THIN snapshot (`Vec<OperationSnapshot>`: id, type, status, source/dest summary), emitted from `spawn_managed` / `on_settled` / `cancel_if_queued` / `set_paused`. It deliberately excludes 200 ms progress — the queue window reads the per-file `write-progress` stream for live bars. `init_operation_event_emitter(app)` wires the emitter at startup (`lib.rs`), mirroring `init_busy_volume_emitter`.
 
 ### IPC
 

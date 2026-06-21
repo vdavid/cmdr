@@ -17,24 +17,23 @@ contract.
 
 ## Must-knows (invariants and guardrails)
 
-- **Every write op spawns through `manager::spawn_managed`** (all five paths). The manager owns the registry + lane
-  admission: an op holds a slot in each lane it touches (`Volume::lane_key()`, source AND dest), runs only when all are
-  free (budget 1), else Queued. Lanes free + next op admits on the explicit `on_settled`, NEVER in `Drop`
-  (`ManagedTaskGuard` Drop frees lanes/caches, never spawns). Busy set = Running ops' volumes ∪ external seam. Full
-  model, lane derivation, deferred-thunk rationale: DETAILS § "Operation manager".
+- **Every write op spawns through `manager::spawn_managed`** (all five paths). An op holds a slot in each lane it
+  touches (`Volume::lane_key()`, source AND dest), runs only when all are free (budget 1), else Queued. The next op
+  admits on the explicit `on_settled`, NEVER in `Drop` (`ManagedTaskGuard` Drop frees lanes only). Full model, busy-set
+  union, and deferred-start rationale: DETAILS § "Operation manager".
 - **All blocking work runs in `spawn_blocking`** (including validation), never on the async executor. The
   `*_files_start` functions return an `operationId` immediately so the dialog opens and offers cancel even on a stalled
   mount.
 - **`OperationIntent` is a single `AtomicU8` state machine** (`Running → RollingBack/Stopped`, `Stopped` terminal).
-  Drive it through the public interface in tests, never `state.intent.store(...)` (bypasses the validation guard). Cancel
-  keeps copied files (deletes the last partial); Rollback deletes all copied files in reverse with progress.
-- **Pause is a separate `PauseGate`, orthogonal to `OperationIntent`.** Drivers gate between files AFTER the
-  `is_cancelled` check (cancel-before-destructive ordering); cancel wins (`cancel_*` `wake()`s a parked op). Full rules
-  + gotchas: DETAILS § "Pause / resume".
+  Cancel keeps copied files (deletes the last partial); Rollback deletes all copied files in reverse with progress.
+  Never `state.intent.store(...)` directly: DETAILS.
+- **Pause is a separate `PauseGate`, orthogonal to `OperationIntent`.** Drivers gate between files after the
+  `is_cancelled` check (cancel-before-destructive ordering); cancel wins (it `wake()`s a parked op). Full rules:
+  DETAILS § "Pause / resume".
 - **Stop-mode conflict resolution must store the oneshot sender BEFORE emitting `write-conflict`** (both local-FS and
   volume branches). Emit-first races the take and hangs the recv.
 - **The conflict-dispatch mutex serializes the one human across concurrent/nested merges**; NEVER hold across the file
-  write. Sequence (check `is_cancelled`, re-check latch, emit + await, store latch, release): DETAILS.
+  write. Acquire-check-emit-await-store-release sequence: DETAILS.
 - **`write-settled` fires exactly once per op, AFTER the terminal event**, via a `WriteSettledGuard` whose `Drop` runs at
   end of the spawn-task scope (panic-safe). Cache cleanup (via `manager::on_settled` or the `ManagedTaskGuard` Drop)
   runs first. The FE gates the "Cancelling…" dialog close on this.

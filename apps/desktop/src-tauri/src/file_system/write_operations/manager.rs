@@ -65,11 +65,12 @@ use super::state::{
 };
 use super::types::WriteOperationType;
 
-/// Lifecycle status of a managed operation. M1 wires Queued/Running/Done/
-/// Cancelled/Failed; the `Paused` variant exists for M2 (pause/resume) but is
-/// never set here. Distinct from `WriteOperationPhase` (the progress phase:
-/// Scanning/Copying/Flushing) and from `OperationIntent` (the cancel/rollback
-/// machine) — a paused op is still `Running`-intent and may be mid-`Copying`.
+/// Lifecycle status of a managed operation, as shown in the queue window.
+/// `Paused` is set only by the pause/resume path (`set_paused`); the rest flow
+/// from admission and settle. Distinct from `WriteOperationPhase` (the progress
+/// phase: Scanning/Copying/Flushing) and from `OperationIntent` (the
+/// cancel/rollback machine) — a paused op is still `Running`-intent and may be
+/// mid-`Copying`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum LifecycleStatus {
@@ -77,7 +78,8 @@ pub enum LifecycleStatus {
     Queued,
     /// Admitted; its deferred start has spawned the real work.
     Running,
-    /// Running but pause-gated (M2). Holds its lane slots. Never set in M1.
+    /// Running but pause-gated: the op is parked between files and still holds
+    /// its lane slots. Set by the pause/resume path.
     Paused,
     /// Finished successfully.
     Done,
@@ -99,7 +101,7 @@ pub(crate) struct OperationDescriptor {
     /// Volume IDs to mark busy while the op runs (eject guard). Empty for pure
     /// same-`root` local ops. Mirrors the old `register_operation_status` arg.
     pub volume_ids: Vec<String>,
-    /// Short source→dest summary for the queue window (M3). Best-effort.
+    /// Short source→dest summary for the queue window. Best-effort.
     pub summary: OperationSummaryText,
 }
 
