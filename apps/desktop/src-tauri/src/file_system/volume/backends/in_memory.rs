@@ -4,7 +4,7 @@
 //! including create, delete, and list. Useful for unit and integration tests
 //! without touching the real file system.
 
-use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
+use super::{CopyScanResult, LaneKey, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use crate::file_system::listing::FileEntry;
 #[cfg(feature = "playwright-e2e")]
 use crate::ignore_poison::IgnorePoison;
@@ -36,6 +36,12 @@ pub struct InMemoryVolume {
     entries: RwLock<HashMap<PathBuf, InMemoryEntry>>,
     /// Configurable space info for testing. None means get_space_info returns NotSupported.
     space_info: Option<SpaceInfo>,
+    /// Lane key the operation manager uses to (de)serialize this volume against
+    /// others. `None` ⇒ fall back to the root lane (the trait default), so the
+    /// ~169 existing `new(...)` sites are untouched. Manager tests set it via
+    /// `with_lane_key` to force same-lane (serialize) vs different-lane
+    /// (parallel) behavior.
+    lane_key: Option<String>,
     /// Raw errno to inject on the next `list_directory` call. Cleared after use.
     #[cfg(feature = "playwright-e2e")]
     injected_error: std::sync::Mutex<Option<i32>>,
@@ -49,9 +55,19 @@ impl InMemoryVolume {
             root: PathBuf::from("/"),
             entries: RwLock::new(HashMap::new()),
             space_info: None,
+            lane_key: None,
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
         }
+    }
+
+    /// Sets the operation-manager lane key. Two `InMemoryVolume`s with the same
+    /// key serialize (one lane); distinct keys run in parallel (disjoint
+    /// lanes). Used by manager tests to drive the admission logic. Without it,
+    /// volumes fall back to the root lane (the trait default).
+    pub fn with_lane_key(mut self, key: impl Into<String>) -> Self {
+        self.lane_key = Some(key.into());
+        self
     }
 
     /// Sets configurable space info so get_space_info() works in tests.
@@ -179,6 +195,13 @@ impl Volume for InMemoryVolume {
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+
+    fn lane_key(&self) -> LaneKey {
+        match &self.lane_key {
+            Some(key) => LaneKey::new(key.clone()),
+            None => LaneKey::new(self.root.to_string_lossy().into_owned()),
+        }
     }
 
     fn list_directory<'a>(

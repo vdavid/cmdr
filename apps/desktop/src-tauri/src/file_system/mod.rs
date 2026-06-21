@@ -66,6 +66,12 @@ pub use write_operations::{
     busy_volume_ids, cancel_all_write_operations, cancel_write_operation, copy_files_start, delete_files_start,
     get_operation_status, init_busy_volume_emitter, list_active_operations, move_files_start, trash_files_start,
 };
+// Re-export the operation manager surface (queue + lifecycle). `LifecycleStatus`
+// and `OperationsChanged` are reached directly via `write_operations::` (the IPC
+// event registration and snapshot field), so they don't need a re-export here.
+pub use write_operations::{
+    OperationSnapshot, cancel_operation, cancel_operations, init_operation_event_emitter, list_operations,
+};
 // Re-export volume copy types and functions
 pub use write_operations::{
     VolumeCopyConfig, VolumeCopyScanResult, copy_between_volumes, move_between_volumes, scan_for_volume_copy,

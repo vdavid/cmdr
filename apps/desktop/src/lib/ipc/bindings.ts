@@ -474,6 +474,23 @@ export const commands = {
       // Unix timestamp in milliseconds.
       startedAt: number
     } | null>('get_operation_status', { operationId }),
+  /**
+   *  Returns the thin operation registry snapshot (membership + lifecycle
+   *  status) for the queue window. Live per-row progress comes from the separate
+   *  `write-progress` stream; this snapshot stays thin.
+   */
+  listOperations: () => __TAURI_INVOKE<OperationSnapshot[]>('list_operations'),
+  /**
+   *  Cancels one operation, keeping already-copied files. A Queued op is dropped
+   *  without ever spawning; a Running/Paused op routes through the existing
+   *  keep-partials cancel path.
+   */
+  cancelOperation: (operationId: string) => __TAURI_INVOKE<void>('cancel_operation', { operationId }),
+  /**
+   *  Cancels several operations (keep-partials each). Backs the queue window's
+   *  "Cancel selected".
+   */
+  cancelOperations: (operationIds: string[]) => __TAURI_INVOKE<void>('cancel_operations', { operationIds }),
   // Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
   copyBetweenVolumes: (
     sourceVolumeId: string,
@@ -2499,6 +2516,7 @@ export const events = {
   networkHostResolved: makeEvent<NetworkHostResolved>('network-host-resolved'),
   openFileViewer: makeEvent<OpenFileViewer>('open-file-viewer'),
   openSettings: makeEvent<OpenSettings>('open-settings'),
+  operationsChanged: makeEvent<OperationsChanged>('operations-changed'),
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
   quickLookClosed: makeEvent<QuickLookClosed>('quick-look-closed'),
   quickLookKey: makeEvent<QuickLookKeyEvent>('quick-look-key'),
@@ -3746,6 +3764,27 @@ export type LicenseInfo = {
 // Type of license.
 export type LicenseType = 'commercial_subscription' | 'commercial_perpetual'
 
+/**
+ *  Lifecycle status of a managed operation. M1 wires Queued/Running/Done/
+ *  Cancelled/Failed; the `Paused` variant exists for M2 (pause/resume) but is
+ *  never set here. Distinct from `WriteOperationPhase` (the progress phase:
+ *  Scanning/Copying/Flushing) and from `OperationIntent` (the cancel/rollback
+ *  machine) — a paused op is still `Running`-intent and may be mid-`Copying`.
+ */
+export type LifecycleStatus =
+  // Registered, waiting for its lanes to free.
+  | 'queued'
+  // Admitted; its deferred start has spawned the real work.
+  | 'running'
+  // Running but pause-gated (M2). Holds its lane slots. Never set in M1.
+  | 'paused'
+  // Finished successfully.
+  | 'done'
+  // Cancelled by the user (keep-partials).
+  | 'cancelled'
+  // Could not complete.
+  | 'failed'
+
 // A chunk of lines returned by a backend.
 export type LineChunk = {
   lines: string[]
@@ -4382,6 +4421,19 @@ export type OpenSettings = {
   section: string
 }
 
+/**
+ *  One thin registry snapshot row (membership + lifecycle status, NOT 200 ms
+ *  progress). The queue window subscribes to `operations-changed` for the row
+ *  set and to the per-file `write-progress` stream for live bars.
+ */
+export type OperationSnapshot = {
+  operationId: string
+  operationType: WriteOperationType
+  status: LifecycleStatus
+  source: string | null
+  destination: string | null
+}
+
 // Current status of an operation for query APIs.
 export type OperationStatus = {
   operationId: string
@@ -4409,6 +4461,16 @@ export type OperationSummary = {
   percentComplete: number
   // Unix timestamp in milliseconds.
   startedAt: number
+}
+
+/**
+ *  Typed `operations-changed` Tauri event carrying the thin registry snapshot
+ *  (membership + lifecycle status, NOT 200 ms progress). The struct name
+ *  kebab-cases to `operations-changed`. The queue window subscribes to it for
+ *  the row set and to the per-file `write-progress` stream for live bars.
+ */
+export type OperationsChanged = {
+  operations: OperationSnapshot[]
 }
 
 // Represents a file entry in a pane (simplified subset of the main FileEntry).

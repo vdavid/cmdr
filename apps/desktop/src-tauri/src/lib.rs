@@ -482,6 +482,10 @@ pub fn run() {
             // touches a device). Before any write op can run.
             file_system::init_busy_volume_emitter(app.handle());
 
+            // Operation-manager event emitter for `operations-changed` (drives
+            // the queue window's row set). Before any write op can run.
+            file_system::init_operation_event_emitter(app.handle());
+
             // Restricted-paths tracker (TCC-gated paths the user has been
             // denied access to). Installs an NSApplicationDidBecomeActive
             // observer that re-probes the set when the user returns from

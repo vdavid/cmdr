@@ -4,8 +4,8 @@
 //! the standard file listing pipeline (same icons, sorting, view modes as local files).
 
 use super::{
-    BatchScanResult, CopyScanResult, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
-    VolumeReadStream,
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    VolumeError, VolumeReadStream,
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_watched_listing;
@@ -128,6 +128,13 @@ impl Volume for MtpVolume {
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+
+    fn lane_key(&self) -> LaneKey {
+        // One USB pipe per device: every storage on a device shares its lane,
+        // so two transfers to the same phone serialize. Key by `device_id`
+        // (not `volume_id`, which is per-storage) so they collapse to one lane.
+        LaneKey::new(self.device_id.clone())
     }
 
     fn list_directory<'a>(

@@ -6,8 +6,8 @@
 //! performance and fail-fast behavior.
 
 use super::{
-    BatchScanResult, CopyScanResult, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume, VolumeError,
-    VolumeReadStream,
+    BatchScanResult, CopyScanResult, LaneKey, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume,
+    VolumeError, VolumeReadStream,
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_watched_listing;
@@ -1111,6 +1111,13 @@ impl Volume for SmbVolume {
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+
+    fn lane_key(&self) -> LaneKey {
+        // Serialize transfers that hit the same share over one session.
+        // `volume_id` already encodes `server+port+share` (via
+        // `smb_volume_id`), exactly the server+share granularity we want.
+        LaneKey::new(self.volume_id.clone())
     }
 
     fn list_directory<'a>(

@@ -978,3 +978,28 @@ async fn test_write_from_stream_cancel_via_progress() {
     // File should NOT exist at destination (write was cancelled before create_file)
     assert!(!dest.exists(Path::new("/big.bin")).await);
 }
+
+#[test]
+fn lane_key_defaults_to_root_when_unset() {
+    // No `with_lane_key` ⇒ fall back to the root lane (the trait default), so
+    // the ~169 existing `new(...)` sites keep their behavior.
+    let volume = InMemoryVolume::new("Test");
+    assert_eq!(volume.lane_key().as_str(), volume.root().to_string_lossy());
+}
+
+#[test]
+fn with_lane_key_overrides_the_lane() {
+    let volume = InMemoryVolume::new("Test").with_lane_key("device-a");
+    assert_eq!(volume.lane_key().as_str(), "device-a");
+}
+
+#[test]
+fn same_lane_key_means_same_lane_distinct_means_different() {
+    // Drives the manager's serialize-vs-parallel behavior in tests: two volumes
+    // sharing a lane key serialize; distinct keys run in parallel.
+    let a = InMemoryVolume::new("A").with_lane_key("shared");
+    let b = InMemoryVolume::new("B").with_lane_key("shared");
+    let c = InMemoryVolume::new("C").with_lane_key("other");
+    assert_eq!(a.lane_key(), b.lane_key());
+    assert_ne!(a.lane_key(), c.lane_key());
+}

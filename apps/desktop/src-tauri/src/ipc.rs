@@ -54,12 +54,12 @@ use crate::file_system::listing::streaming::{
     ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
     ListingReadCompleteEvent,
 };
-use crate::file_system::write_operations::VolumesBusyChanged;
 use crate::file_system::write_operations::{
     ConflictInfo, DryRunResult, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
+use crate::file_system::write_operations::{OperationsChanged, VolumesBusyChanged};
 use crate::indexing::writer::AggregationProgressEvent;
 use crate::indexing::{
     IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexFreshnessChangedEvent, IndexMemoryWarningEvent,
@@ -149,6 +149,9 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::file_system::resolve_write_conflict,
         crate::commands::file_system::list_active_operations,
         crate::commands::file_system::get_operation_status,
+        crate::commands::file_system::list_operations,
+        crate::commands::file_system::cancel_operation,
+        crate::commands::file_system::cancel_operations,
         crate::commands::file_system::copy_between_volumes,
         crate::commands::file_system::move_between_volumes,
         crate::commands::file_system::scan_volume_for_copy,
@@ -656,6 +659,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             ConflictInfo, // scan-conflict
             DryRunResult, // dry-run-complete
             WriteSettledEvent,
+            // Operation manager registry snapshot (write_operations/manager.rs).
+            OperationsChanged,
             // Listing sink (file_system/listing/streaming.rs `TauriListingEventSink`).
             ListingOpeningEvent,
             ListingProgressEvent,

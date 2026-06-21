@@ -98,7 +98,7 @@ All under `apps/desktop/src-tauri/src/`.
 
 - `file_system/listing/`: Directory reading, streaming, caching, sorting (serves virtual scroll)
 - `file_system/write_operations/`: Copy/move/delete with safety patterns (temp+rename, staging, rollback). Umbrella +
-  shared state machine, `OperationEventSink`, Settle contract
+  shared state machine, the operation manager (queue + lane admission), `OperationEventSink`, Settle contract
 - `file_system/write_operations/transfer/`: Copy + move pipelines: conflict resolution, transfer driver, platform copies
   (`copyfile(3)` / `copy_file_range(2)` / chunked)
 - `file_system/write_operations/delete/`: Delete walker, trash, oracle-aware delete semantics

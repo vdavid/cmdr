@@ -47,6 +47,42 @@ pub enum SmbConnectionState {
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
 
+/// Identifies the shared physical resource a volume contends for, so the
+/// operation manager can serialize transfers that would thrash the same device
+/// or saturate the same single transport.
+///
+/// Two volumes share a lane when they resolve to the same physical resource:
+/// the same local mount, the same MTP device (one USB pipe), or the same SMB
+/// server+share. An operation acquires a slot in EVERY lane it touches (source
+/// and destination), and runs only when all those lanes are free (budget 1 per
+/// lane in v1). A newtype over `String` (not a bare `String`) so it can't be
+/// confused with a `volume_id` or a path at a call site — the two are derived
+/// differently and must never be cross-assigned.
+///
+/// Derived from [`Volume::lane_key`], NOT from parsing a `volume_id` string
+/// (that would violate the `no-string-matching` rule).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LaneKey(String);
+
+impl LaneKey {
+    /// Builds a lane key from any stable per-resource identifier (a mount root,
+    /// a device serial, an SMB `server+port+share` id).
+    pub fn new(key: impl Into<String>) -> Self {
+        Self(key.into())
+    }
+
+    /// The underlying key string (for logging / map keys).
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for LaneKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
 /// Running tally a `Volume`'s directory walk reports through its progress
 /// callback. Replaces the old `Fn(usize)` callback shape so backends can
 /// stream the bytes-and-dirs UI numbers alongside the file count.
@@ -410,6 +446,18 @@ pub trait Volume: Send + Sync {
     /// diagnostics dashboard) that need backend-specific state. Most
     /// implementations are one line: `fn as_any(&self) -> &dyn std::any::Any { self }`.
     fn as_any(&self) -> &dyn std::any::Any;
+
+    /// Identifies the shared physical resource this volume contends for, so the
+    /// operation manager can serialize transfers that would thrash the same
+    /// device or saturate the same single transport. See [`LaneKey`].
+    ///
+    /// Default: the volume root. Backends override with a per-resource id so
+    /// two volumes on the SAME device share a lane: `LocalPosixVolume` →
+    /// mount root, `MtpVolume` → device serial (one USB pipe), `SmbVolume` →
+    /// `server+port+share` id. Never parse a `volume_id` string here.
+    fn lane_key(&self) -> LaneKey {
+        LaneKey::new(self.root().to_string_lossy().into_owned())
+    }
 
     // ========================================
     // Required: All volumes must implement

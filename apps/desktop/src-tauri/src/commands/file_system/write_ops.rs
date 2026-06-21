@@ -6,12 +6,13 @@ use crate::file_system::write_operations::{
     start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
-    OperationStatus, OperationSummary, SortColumn, SortOrder, WriteOperationConfig, WriteOperationError,
-    WriteOperationStartResult, cancel_all_write_operations as ops_cancel_all_write_operations,
+    OperationSnapshot, OperationStatus, OperationSummary, SortColumn, SortOrder, WriteOperationConfig,
+    WriteOperationError, WriteOperationStartResult, cancel_all_write_operations as ops_cancel_all_write_operations,
+    cancel_operation as ops_cancel_operation, cancel_operations as ops_cancel_operations,
     cancel_write_operation as ops_cancel_write_operation, copy_files_start as ops_copy_files_start,
     delete_files_start as ops_delete_files_start, get_operation_status as ops_get_operation_status, get_volume_manager,
-    list_active_operations as ops_list_active_operations, move_files_start as ops_move_files_start,
-    trash_files_start as ops_trash_files_start,
+    list_active_operations as ops_list_active_operations, list_operations as ops_list_operations,
+    move_files_start as ops_move_files_start, trash_files_start as ops_trash_files_start,
 };
 use std::path::{Path, PathBuf};
 use tokio::time::Duration;
@@ -189,7 +190,7 @@ pub async fn copy_files(
     // The unified transfer dialog routes every cross-device copy through
     // `copy_between_volumes`; this plain command is the same-`root` local path,
     // so no ejectable volume is involved (empty busy set).
-    ops_copy_files_start(app, sources, destination, config, vec![]).await
+    ops_copy_files_start(app, sources, destination, config, vec![], None).await
 }
 
 /// Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
@@ -208,7 +209,7 @@ pub async fn move_files(
 
     // Same-`root` local move (the FE uses `move_between_volumes` whenever the
     // source and destination volumes differ), so no ejectable volume here.
-    ops_move_files_start(app, sources, destination, config, vec![]).await
+    ops_move_files_start(app, sources, destination, config, vec![], None).await
 }
 
 /// Recursively deletes files and directories. Same events as `copy_files`.
@@ -342,6 +343,36 @@ pub fn list_active_operations() -> Vec<OperationSummary> {
 #[specta::specta]
 pub fn get_operation_status(operation_id: String) -> Option<OperationStatus> {
     ops_get_operation_status(&operation_id)
+}
+
+// ============================================================================
+// Operation manager (queue + lifecycle)
+// ============================================================================
+
+/// Returns the thin operation registry snapshot (membership + lifecycle
+/// status) for the queue window. Live per-row progress comes from the separate
+/// `write-progress` stream; this snapshot stays thin.
+#[tauri::command]
+#[specta::specta]
+pub fn list_operations() -> Vec<OperationSnapshot> {
+    ops_list_operations()
+}
+
+/// Cancels one operation, keeping already-copied files. A Queued op is dropped
+/// without ever spawning; a Running/Paused op routes through the existing
+/// keep-partials cancel path.
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_operation(operation_id: String) {
+    ops_cancel_operation(&operation_id);
+}
+
+/// Cancels several operations (keep-partials each). Backs the queue window's
+/// "Cancel selected".
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_operations(operation_ids: Vec<String>) {
+    ops_cancel_operations(&operation_ids);
 }
 
 // ============================================================================

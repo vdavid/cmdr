@@ -24,6 +24,7 @@ mod durability;
 mod error_classification;
 mod eta;
 mod event_sinks;
+mod manager;
 mod overwrite;
 mod scan;
 mod scan_preview;
@@ -41,18 +42,19 @@ pub(crate) use transfer::macos_copy;
 // keeps resolving (used by `commands/rename.rs`).
 pub(crate) use delete::trash;
 
+use std::future::Future;
 use std::path::PathBuf;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
 
+use crate::file_system::volume::LaneKey;
 use delete::{delete_files_with_progress, delete_volume_files_with_progress};
+use manager::OperationDescriptor;
 #[cfg(not(test))]
 use state::WriteOperationState;
-use state::{
-    OperationStateGuard, WRITE_OPERATION_STATE, WriteSettledGuard, register_operation_status,
-    unregister_operation_status,
-};
+use state::WriteSettledGuard;
 use transfer::copy::copy_files_with_progress_inner;
 use transfer::move_op::move_files_with_progress;
 use trash::trash_files_with_progress;
@@ -67,6 +69,16 @@ pub use scan_preview::{cancel_scan_preview, get_scan_preview_totals, start_scan_
 pub use state::{
     VolumesBusyChanged, busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,
     init_busy_volume_emitter, list_active_operations, resolve_write_conflict,
+};
+// Operation manager: the single scheduler + registry every write op flows
+// through. `OperationsChanged` / `OperationSnapshot` are the thin
+// `operations-changed` event payload (M3 consumes them; `LifecycleStatus` rides
+// along as a snapshot field and is reached via `manager::LifecycleStatus`).
+// `init_operation_event_emitter` wires the emitter at startup; the command
+// helpers back the new `list_operations` / `cancel_operation(s)` IPC.
+pub use manager::{
+    OperationSnapshot, OperationSummaryText, OperationsChanged, cancel_operation, cancel_operations,
+    init_operation_event_emitter, list_operations,
 };
 // External busy-volume seam for the drag-out fulfillment service (see
 // `state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate
@@ -122,11 +134,17 @@ pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
 /// Creates `WriteOperationState`, registers the operation, spawns `tokio::spawn` +
 /// `spawn_blocking`, and handles cleanup and panic recovery. Callers do validation
 /// and logging before calling this, then pass a closure for the actual work.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the managed-spawn entry point threads lane keys + summary + volume ids alongside the handler; bundling them would just shuffle fields into a struct at every call site"
+)]
 async fn start_write_operation<F>(
     app: tauri::AppHandle,
     operation_type: WriteOperationType,
     progress_interval_ms: u64,
     volume_ids: Vec<String>,
+    lanes: Vec<LaneKey>,
+    summary: OperationSummaryText,
     handler: F,
 ) -> Result<WriteOperationStartResult, WriteOperationError>
 where
@@ -135,66 +153,76 @@ where
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
 
-    if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-        cache.insert(operation_id.clone(), Arc::clone(&state));
-    }
-    register_operation_status(&operation_id, operation_type, volume_ids);
+    let descriptor = OperationDescriptor {
+        operation_id: operation_id.clone(),
+        operation_type,
+        lanes,
+        volume_ids,
+        summary,
+    };
 
-    let operation_id_for_spawn = operation_id.clone();
+    let app_for_op = app.clone();
+    let operation_id_for_op = operation_id.clone();
+    let state_for_op = Arc::clone(&state);
 
-    tokio::spawn(async move {
-        let operation_id_for_cleanup = operation_id_for_spawn.clone();
-        let app_for_error = app.clone();
-        // RAII guard: emits `write-settled` when this task exits, no matter
-        // how (handler success, error, cancel, or panic via JoinError). FE
-        // gates the "Cancelling…" dialog close on this event so the user
-        // can't dispatch a new op against a still-tearing-down volume.
-        let _settled_guard = WriteSettledGuard::new(
-            app_for_error.clone(),
-            operation_id_for_cleanup.clone(),
-            operation_type,
-            None,
-        );
+    // Deferred start: the manager spawns this only once the op's lanes are
+    // free. It owns the op end-to-end — settle guard, the blocking handler,
+    // the terminal-event safety net — and ends by calling `on_settled` (which
+    // frees lanes, cleans caches, and admits the next op). The `ManagedTaskGuard`
+    // is the panic safety net: if the task unwinds before `on_settled`, its Drop
+    // still frees the lanes + caches (but never spawns).
+    let deferred = move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
+        Box::pin(async move {
+            let app = app_for_op;
+            let op_id = operation_id_for_op;
+            let state = state_for_op;
+            let task_guard = manager::ManagedTaskGuard::new(op_id.clone());
+            let app_for_error = app.clone();
+            // RAII guard: emits `write-settled` when this task exits, no matter
+            // how (handler success, error, cancel, or panic via JoinError). FE
+            // gates the "Cancelling…" dialog close on this event so the user
+            // can't dispatch a new op against a still-tearing-down volume.
+            let _settled_guard = WriteSettledGuard::new(app_for_error.clone(), op_id.clone(), operation_type, None);
 
-        let result = tokio::task::spawn_blocking(move || handler(app, operation_id_for_spawn, state)).await;
+            let op_id_for_blocking = op_id.clone();
+            let result = tokio::task::spawn_blocking(move || handler(app, op_id_for_blocking, state)).await;
 
-        use tauri::Emitter;
-        match result {
-            Ok(Ok(())) => {} // Handler already emitted write-complete or write-cancelled
-            Ok(Err(ref e)) if matches!(e, WriteOperationError::Cancelled { .. }) => {
-                // Handler already emitted write-cancelled
+            use tauri::Emitter;
+            match result {
+                Ok(Ok(())) => {} // Handler already emitted write-complete or write-cancelled
+                Ok(Err(ref e)) if matches!(e, WriteOperationError::Cancelled { .. }) => {
+                    // Handler already emitted write-cancelled
+                }
+                Ok(Err(e)) => {
+                    // Handler error (validation, I/O, etc.): emit write-error as safety net
+                    let _ = app_for_error.emit("write-error", WriteErrorEvent::new(op_id.clone(), operation_type, e));
+                }
+                Err(join_error) => {
+                    // Panic/abort in spawn_blocking
+                    let _ = app_for_error.emit(
+                        "write-error",
+                        WriteErrorEvent::new(
+                            op_id.clone(),
+                            operation_type,
+                            WriteOperationError::IoError {
+                                path: String::new(),
+                                message: format!("Task failed: {}", join_error),
+                            },
+                        ),
+                    );
+                }
             }
-            Ok(Err(e)) => {
-                // Handler error (validation, I/O, etc.): emit write-error as safety net
-                let _ = app_for_error.emit(
-                    "write-error",
-                    WriteErrorEvent::new(operation_id_for_cleanup.clone(), operation_type, e),
-                );
-            }
-            Err(join_error) => {
-                // Panic/abort in spawn_blocking
-                let _ = app_for_error.emit(
-                    "write-error",
-                    WriteErrorEvent::new(
-                        operation_id_for_cleanup.clone(),
-                        operation_type,
-                        WriteOperationError::IoError {
-                            path: String::new(),
-                            message: format!("Task failed: {}", join_error),
-                        },
-                    ),
-                );
-            }
-        }
 
-        // Cache cleanup happens AFTER terminal events are emitted, BEFORE the
-        // settle guard drops (the guard is the very last thing in scope).
-        // Order: terminal event → cache removal → `write-settled` via Drop.
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&operation_id_for_cleanup);
-        }
-        unregister_operation_status(&operation_id_for_cleanup);
-    });
+            // Happy-path dequeue: free lanes, clean caches, admit next. Order:
+            // terminal event → `on_settled` (cache removal) → `write-settled`
+            // via the settle guard's Drop at end of scope. Disarm the panic
+            // guard first so its Drop doesn't redo the (now-done) cleanup.
+            task_guard.disarm();
+            manager::manager().on_settled(&op_id);
+        })
+    };
+
+    manager::manager().spawn_managed(descriptor, state, Box::new(deferred));
 
     Ok(WriteOperationStartResult {
         operation_id,
@@ -202,17 +230,57 @@ where
     })
 }
 
+/// Lane keys for a local-FS op when the caller didn't supply explicit ones.
+/// A pure same-`root` op gets the single `root` lane; a local→removable copy
+/// (which carries the ejectable volume's id in `volume_ids`) gets a lane per
+/// distinct id, so two transfers to the same local disk serialize. This is a
+/// proxy for `Volume::lane_key()` on the local-only path where no `Volume`
+/// handle is threaded through; it uses each id as an opaque whole (no
+/// substring parsing, so `no-string-matching` holds).
+fn local_lanes(volume_ids: &[String]) -> Vec<LaneKey> {
+    if volume_ids.is_empty() {
+        vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)]
+    } else {
+        volume_ids.iter().cloned().map(LaneKey::new).collect()
+    }
+}
+
+/// Best-effort `source → destination` summary for the queue window: the source
+/// items' display names joined, and the destination's. Cheap; no I/O.
+fn path_summary(sources: &[PathBuf], destination: Option<&std::path::Path>) -> OperationSummaryText {
+    fn name(p: &std::path::Path) -> String {
+        p.file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| p.to_string_lossy().into_owned())
+    }
+    let source = match sources {
+        [] => None,
+        [one] => Some(name(one)),
+        many => Some(format!("{} ({} items)", name(&many[0]), many.len())),
+    };
+    OperationSummaryText {
+        source,
+        destination: destination.map(name),
+    }
+}
+
 /// Starts a copy operation in the background.
 ///
 /// `volume_ids` lists the volumes this copy touches (source + destination), so
 /// an ejectable USB / DMG / SMB volume is marked busy while the copy runs. Pass
 /// an empty `Vec` for a same-`root` local copy (root is never ejectable).
+///
+/// `lanes` are the operation-manager lanes this op occupies. Pass `None` to
+/// derive them from `volume_ids` (the plain local-copy command path); the
+/// both-local branch of `copy_between_volumes` passes the real
+/// `Volume::lane_key()`s of the two volumes.
 pub async fn copy_files_start(
     app: tauri::AppHandle,
     sources: Vec<PathBuf>,
     destination: PathBuf,
     config: WriteOperationConfig,
     volume_ids: Vec<String>,
+    lanes: Option<Vec<LaneKey>>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!(
         "copy_files_start: sources={:?}, destination={:?}, dry_run={}",
@@ -221,11 +289,15 @@ pub async fn copy_files_start(
         config.dry_run
     );
 
+    let lanes = lanes.unwrap_or_else(|| local_lanes(&volume_ids));
+    let summary = path_summary(&sources, Some(&destination));
     start_write_operation(
         app,
         WriteOperationType::Copy,
         config.progress_interval_ms,
         volume_ids,
+        lanes,
+        summary,
         move |app, op_id, state| {
             validate_sources(&sources)?;
             validate_destination(&destination)?;
@@ -249,6 +321,7 @@ pub async fn move_files_start(
     destination: PathBuf,
     config: WriteOperationConfig,
     volume_ids: Vec<String>,
+    lanes: Option<Vec<LaneKey>>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!(
         "move_files_start: sources={:?}, destination={:?}, dry_run={}",
@@ -257,11 +330,15 @@ pub async fn move_files_start(
         config.dry_run
     );
 
+    let lanes = lanes.unwrap_or_else(|| local_lanes(&volume_ids));
+    let summary = path_summary(&sources, Some(&destination));
     start_write_operation(
         app,
         WriteOperationType::Move,
         config.progress_interval_ms,
         volume_ids,
+        lanes,
+        summary,
         move |app, op_id, state| {
             validate_sources(&sources)?;
             validate_destination(&destination)?;
@@ -295,82 +372,97 @@ pub async fn delete_files_start(
     );
 
     if volume_id_str != "root" {
-        // Volume-aware delete (async): bypass start_write_operation since the handler is async
+        // Volume-aware delete (async handler): route through the manager via a
+        // deferred async start. The lane is the volume's own lane (resolved
+        // from its `Volume::lane_key()`); falls back to the volume id if the
+        // volume isn't registered yet (it'll surface the not-found error on
+        // admission). The manager owns lifecycle, cache cleanup, and the busy
+        // registration; this closure owns the op body + terminal emit + settle.
         let operation_id = Uuid::new_v4().to_string();
         let state = Arc::new(WriteOperationState::new(Duration::from_millis(
             config.progress_interval_ms,
         )));
 
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.insert(operation_id.clone(), Arc::clone(&state));
-        }
-        register_operation_status(&operation_id, WriteOperationType::Delete, vec![volume_id_str.clone()]);
+        let lane = crate::file_system::get_volume_manager()
+            .get(&volume_id_str)
+            .map(|v| v.lane_key())
+            .unwrap_or_else(|| LaneKey::new(volume_id_str.clone()));
 
-        let operation_id_for_spawn = operation_id.clone();
-        tokio::spawn(async move {
-            let operation_id_for_cleanup = operation_id_for_spawn.clone();
-            let app_for_error = app.clone();
-            // RAII settle guard: fires `write-settled` when the task exits.
-            // Drop runs last in scope so the FE sees the terminal event
-            // (write-cancelled / write-error / write-complete) first, then
-            // settle, then is free to clear the dialog.
-            let _settled_guard = WriteSettledGuard::new(
-                app_for_error.clone(),
-                operation_id_for_cleanup.clone(),
-                WriteOperationType::Delete,
-                Some(volume_id_str.clone()),
-            );
-            // RAII guard: removes the op from `WRITE_OPERATION_STATE` and
-            // `OPERATION_STATUS_CACHE` on every exit path, including a panic
-            // inside `delete_volume_files_with_progress` that the runtime
-            // catches (the cleanup lives after the `.await`, so an unwind would
-            // otherwise skip it and leak both map entries). Drops before
-            // `_settled_guard`, so cache removal runs before `write-settled`,
-            // matching the `start_write_operation` ordering.
-            let _state_guard = OperationStateGuard::new(operation_id_for_cleanup.clone());
+        let descriptor = OperationDescriptor {
+            operation_id: operation_id.clone(),
+            operation_type: WriteOperationType::Delete,
+            lanes: vec![lane],
+            volume_ids: vec![volume_id_str.clone()],
+            summary: path_summary(&sources, None),
+        };
 
-            let volume = match crate::file_system::get_volume_manager().get(&volume_id_str) {
-                Some(v) => v,
-                None => {
-                    use tauri::Emitter;
-                    let _ = app_for_error.emit(
-                        "write-error",
-                        WriteErrorEvent::new(
-                            operation_id_for_cleanup.clone(),
-                            WriteOperationType::Delete,
-                            WriteOperationError::IoError {
-                                path: volume_id_str.clone(),
-                                message: format!("Volume '{}' not found", volume_id_str),
-                            },
-                        ),
-                    );
-                    return;
+        let app_for_op = app.clone();
+        let op_id_outer = operation_id.clone();
+        let state_for_op = Arc::clone(&state);
+        let volume_id_for_op = volume_id_str.clone();
+        let deferred = move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
+            Box::pin(async move {
+                let app = app_for_op;
+                let op_id = op_id_outer;
+                let state = state_for_op;
+                let volume_id_str = volume_id_for_op;
+                let task_guard = manager::ManagedTaskGuard::new(op_id.clone());
+                let app_for_error = app.clone();
+                // Settle guard: fires `write-settled` at end of scope, AFTER the
+                // terminal event and AFTER `on_settled`'s cache cleanup (the
+                // settle guard drops last). Matches the FE ordering contract.
+                let _settled_guard = WriteSettledGuard::new(
+                    app_for_error.clone(),
+                    op_id.clone(),
+                    WriteOperationType::Delete,
+                    Some(volume_id_str.clone()),
+                );
+
+                use tauri::Emitter;
+                match crate::file_system::get_volume_manager().get(&volume_id_str) {
+                    None => {
+                        let _ = app_for_error.emit(
+                            "write-error",
+                            WriteErrorEvent::new(
+                                op_id.clone(),
+                                WriteOperationType::Delete,
+                                WriteOperationError::IoError {
+                                    path: volume_id_str.clone(),
+                                    message: format!("Volume '{}' not found", volume_id_str),
+                                },
+                            ),
+                        );
+                    }
+                    Some(volume) => {
+                        let result = delete_volume_files_with_progress(
+                            volume,
+                            &volume_id_str,
+                            &app,
+                            &op_id,
+                            &state,
+                            &sources,
+                            &config,
+                        )
+                        .await;
+                        match result {
+                            Ok(()) => {}
+                            Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {}
+                            Err(e) => {
+                                let _ = app_for_error.emit(
+                                    "write-error",
+                                    WriteErrorEvent::new(op_id.clone(), WriteOperationType::Delete, e),
+                                );
+                            }
+                        }
+                    }
                 }
-            };
 
-            let result = delete_volume_files_with_progress(
-                volume,
-                &volume_id_str,
-                &app,
-                &operation_id_for_spawn,
-                &state,
-                &sources,
-                &config,
-            )
-            .await;
+                task_guard.disarm();
+                manager::manager().on_settled(&op_id);
+            })
+        };
 
-            use tauri::Emitter;
-            match result {
-                Ok(()) => {}
-                Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {}
-                Err(e) => {
-                    let _ = app_for_error.emit(
-                        "write-error",
-                        WriteErrorEvent::new(operation_id_for_cleanup.clone(), WriteOperationType::Delete, e),
-                    );
-                }
-            }
-        });
+        manager::manager().spawn_managed(descriptor, state, Box::new(deferred));
 
         Ok(WriteOperationStartResult {
             operation_id,
@@ -378,11 +470,14 @@ pub async fn delete_files_start(
         })
     } else {
         // Local same-`root` delete: no ejectable volume involved.
+        let summary = path_summary(&sources, None);
         start_write_operation(
             app,
             WriteOperationType::Delete,
             config.progress_interval_ms,
             vec![],
+            vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
+            summary,
             move |app, op_id, state| {
                 validate_sources(&sources)?;
                 delete_files_with_progress(&app, &op_id, &state, &sources, &config)
@@ -406,11 +501,14 @@ pub async fn trash_files_start(
     log::info!("trash_files_start: sources={:?}", sources);
 
     // Trash always targets the local macOS Trash; no ejectable volume involved.
+    let summary = path_summary(&sources, None);
     start_write_operation(
         app,
         WriteOperationType::Trash,
         config.progress_interval_ms,
         vec![],
+        vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
+        summary,
         move |app, op_id, state| {
             validate_sources(&sources)?;
             let events: Arc<dyn types::OperationEventSink> = Arc::new(types::TauriEventSink::new(app));

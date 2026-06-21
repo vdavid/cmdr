@@ -28,10 +28,8 @@ use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
 use super::super::conflict::ApplyToAll;
-use super::super::state::{
-    OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, load_intent, register_operation_status,
-    unregister_operation_status, update_operation_status,
-};
+use super::super::manager;
+use super::super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
 use super::super::types::{
     OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent,
     WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase,
@@ -178,12 +176,16 @@ pub async fn copy_between_volumes(
         // support. Pass both volume IDs so a local→USB / DMG copy still marks
         // the ejectable destination busy (this branch handles every both-local
         // transfer, including ones whose dest is a removable local-FS volume).
+        // Pass the real `Volume::lane_key()`s so the operation manager
+        // serializes against the same mount (two copies to one USB disk wait).
+        let lanes = vec![source_volume.lane_key(), dest_volume.lane_key()];
         return super::super::copy_files_start(
             app,
             absolute_sources,
             absolute_dest,
             write_config,
             vec![source_volume_id, dest_volume_id],
+            Some(lanes),
         )
         .await;
     }
@@ -202,85 +204,83 @@ pub async fn copy_between_volumes(
         config.progress_interval_ms,
     )));
 
-    // Store state for cancellation
-    if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-        cache.insert(operation_id.clone(), Arc::clone(&state));
-    }
-
-    // Register operation status for query APIs. Both volume IDs go in the busy
-    // set so the picker disables Eject for the source and destination devices
-    // (MTP/SMB/USB) while the copy runs.
-    register_operation_status(
-        &operation_id,
-        WriteOperationType::Copy,
-        vec![source_volume_id, dest_volume_id],
-    );
-
-    let operation_id_for_spawn = operation_id.clone();
-
-    // Spawn background task
+    // The op occupies both volumes' lanes (source AND destination); the manager
+    // serializes it against anything else touching either lane. Both volume IDs
+    // go in `volume_ids` so the picker disables Eject for the source and
+    // destination devices (MTP/SMB/USB) while the copy runs.
+    let lanes = vec![source_volume.lane_key(), dest_volume.lane_key()];
     let source_volume_name = source_volume.name().to_string();
-    tokio::spawn(async move {
-        let operation_id_for_cleanup = operation_id_for_spawn.clone();
-        let app_for_error = app.clone();
-        // RAII settle guard: emits `write-settled` after the spawned task
-        // returns (success, error, cancel, or panic). Drop runs last in
-        // scope, so the FE sees the terminal write-* event first, then
-        // settle, and clears the dialog.
-        let _settled_guard = crate::file_system::write_operations::state::WriteSettledGuard::new(
-            app_for_error.clone(),
-            operation_id_for_cleanup.clone(),
-            WriteOperationType::Copy,
-            Some(source_volume_name),
-        );
+    let summary = manager::OperationSummaryText {
+        source: Some(source_volume.name().to_string()),
+        destination: Some(dest_volume.name().to_string()),
+    };
+    let descriptor = manager::OperationDescriptor {
+        operation_id: operation_id.clone(),
+        operation_type: WriteOperationType::Copy,
+        lanes,
+        volume_ids: vec![source_volume_id, dest_volume_id],
+        summary,
+    };
 
-        let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-        let result: Result<(), WriteFailure> = copy_volumes_with_progress(
-            Arc::clone(&events),
-            &operation_id_for_spawn,
-            &state,
-            source_volume,
-            &source_paths,
-            dest_volume,
-            &dest_path,
-            &config,
-        )
-        .await;
+    // Deferred start: the manager spawns this only once both lanes are free.
+    let app_for_op = app.clone();
+    let op_id_outer = operation_id.clone();
+    let state_for_op = Arc::clone(&state);
+    let deferred = move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
+        Box::pin(async move {
+            let app = app_for_op;
+            let op_id = op_id_outer;
+            let state = state_for_op;
+            let task_guard = manager::ManagedTaskGuard::new(op_id.clone());
+            let app_for_error = app.clone();
+            // Settle guard: emits `write-settled` at end of scope, after the
+            // terminal write-* event and after `on_settled`'s cache cleanup.
+            let _settled_guard = crate::file_system::write_operations::state::WriteSettledGuard::new(
+                app_for_error.clone(),
+                op_id.clone(),
+                WriteOperationType::Copy,
+                Some(source_volume_name),
+            );
 
-        // Handle result
-        use tauri::Emitter;
-        match result {
-            Ok(()) => {
-                // Success - write-complete event already emitted by copy_volumes_with_progress
-            }
-            Err(WriteFailure { ref error, .. }) if matches!(error, WriteOperationError::Cancelled { .. }) => {
-                // write-cancelled was already emitted by copy_volumes_with_progress,
-                // so don't also emit write-error: it would make the frontend log
-                // a user-initiated cancel as an error.
-                log::info!("copy_between_volumes: operation {} cancelled", operation_id_for_cleanup,);
-            }
-            Err(failure) => {
-                // Toast-visible failure for cross-volume copy (Local↔SMB↔MTP).
-                // Routed through `log_error!` so opt-in users get an auto report.
-                crate::log_error!(
-                    "copy_between_volumes: operation {} failed: {:?}",
-                    operation_id_for_cleanup,
-                    failure.error,
-                );
-                let _ = app_for_error.emit(
-                    "write-error",
-                    write_error_event_from(operation_id_for_cleanup.clone(), WriteOperationType::Copy, failure),
-                );
-            }
-        }
+            let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+            let result: Result<(), WriteFailure> = copy_volumes_with_progress(
+                Arc::clone(&events),
+                &op_id,
+                &state,
+                source_volume,
+                &source_paths,
+                dest_volume,
+                &dest_path,
+                &config,
+            )
+            .await;
 
-        // Clean up state. Order: terminal event → cache cleanup → settle
-        // (via WriteSettledGuard's Drop at end of scope).
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&operation_id_for_cleanup);
-        }
-        unregister_operation_status(&operation_id_for_cleanup);
-    });
+            use tauri::Emitter;
+            match result {
+                Ok(()) => {
+                    // write-complete already emitted by copy_volumes_with_progress
+                }
+                Err(WriteFailure { ref error, .. }) if matches!(error, WriteOperationError::Cancelled { .. }) => {
+                    // write-cancelled was already emitted; don't also emit
+                    // write-error (the FE would log a user cancel as an error).
+                    log::info!("copy_between_volumes: operation {} cancelled", op_id);
+                }
+                Err(failure) => {
+                    // Toast-visible failure for cross-volume copy (Local↔SMB↔MTP).
+                    crate::log_error!("copy_between_volumes: operation {} failed: {:?}", op_id, failure.error,);
+                    let _ = app_for_error.emit(
+                        "write-error",
+                        write_error_event_from(op_id.clone(), WriteOperationType::Copy, failure),
+                    );
+                }
+            }
+
+            task_guard.disarm();
+            manager::manager().on_settled(&op_id);
+        })
+    };
+
+    manager::manager().spawn_managed(descriptor, state, Box::new(deferred));
 
     Ok(WriteOperationStartResult {
         operation_id,

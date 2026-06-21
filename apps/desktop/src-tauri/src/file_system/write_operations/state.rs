@@ -452,7 +452,7 @@ pub fn busy_volume_ids() -> Vec<String> {
 /// Recomputes the busy set and emits `volumes-busy-changed` only when its
 /// membership changed. Called from register/unregister (the only two points
 /// where membership can change), so it's panic-safe: unregister runs from the
-/// `OperationStateGuard` / spawn-task cleanup that fires even on unwind.
+/// manager's `ManagedTaskGuard` / external-seam cleanup that fires even on unwind.
 fn recompute_and_emit_busy_volumes() {
     let current = compute_busy_volume_ids();
 
@@ -476,36 +476,10 @@ fn recompute_and_emit_busy_volumes() {
     }
 }
 
-/// RAII guard that removes an operation from both `WRITE_OPERATION_STATE` and
-/// `OPERATION_STATUS_CACHE` when dropped.
-///
-/// Constructed at the top of a spawned write-op task whose cleanup would
-/// otherwise live on the lines *after* an `.await`. If that async work panics,
-/// the runtime catches the panic and the post-`await` cleanup is skipped,
-/// leaking both map entries (the op then lingers forever in
-/// `list_active_operations`). Routing the cleanup through `Drop` frees both on
-/// unwind too. Sibling of `WriteSettledGuard`, which guarantees the FE's
-/// `write-settled` event on the same paths.
-pub(crate) struct OperationStateGuard {
-    operation_id: String,
-}
-
-impl OperationStateGuard {
-    pub(crate) fn new(operation_id: impl Into<String>) -> Self {
-        Self {
-            operation_id: operation_id.into(),
-        }
-    }
-}
-
-impl Drop for OperationStateGuard {
-    fn drop(&mut self) {
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&self.operation_id);
-        }
-        unregister_operation_status(&self.operation_id);
-    }
-}
+// Panic-safe cache cleanup for managed write ops now lives in
+// `manager::ManagedTaskGuard` (it also frees the op's lane slots). The old
+// standalone `OperationStateGuard` was retired when every spawn path moved
+// behind the operation manager.
 
 // ============================================================================
 // Public query functions
@@ -1231,56 +1205,8 @@ mod tests {
         uninstall_state(&rb_id);
     }
 
-    // ---- OperationStateGuard (panic-safe cache cleanup) ----
-
-    #[test]
-    fn operation_state_guard_frees_both_caches_on_drop() {
-        let id = unique_id("op-guard-normal");
-        register_operation_status(&id, WriteOperationType::Delete, vec![]);
-        let _state = install_state(&id, OperationIntent::Running);
-        assert!(get_operation_status(&id).is_some(), "op should be registered");
-
-        {
-            let _guard = OperationStateGuard::new(id.clone());
-            // Guard drops at end of scope.
-        }
-
-        assert!(
-            !WRITE_OPERATION_STATE.read().unwrap().contains_key(&id),
-            "WRITE_OPERATION_STATE entry must be removed on guard drop"
-        );
-        assert!(
-            get_operation_status(&id).is_none(),
-            "OPERATION_STATUS_CACHE entry must be removed on guard drop"
-        );
-    }
-
-    #[test]
-    fn operation_state_guard_frees_both_caches_on_panic_unwind() {
-        // The guarded scope panics; the runtime catches it via catch_unwind.
-        // The guard's Drop must still run during unwinding so neither cache
-        // leaks the op (it would otherwise linger forever in
-        // list_active_operations). Mirrors WriteSettledGuard's panic-safety pin.
-        let id = unique_id("op-guard-panic");
-        register_operation_status(&id, WriteOperationType::Delete, vec![]);
-        let _state = install_state(&id, OperationIntent::Running);
-
-        let panic_id = id.clone();
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
-            let _guard = OperationStateGuard::new(panic_id);
-            panic!("simulated volume-delete panic");
-        }));
-
-        assert!(result.is_err(), "the closure must have panicked");
-        assert!(
-            !WRITE_OPERATION_STATE.read().unwrap().contains_key(&id),
-            "WRITE_OPERATION_STATE entry must be freed even when the task panicked"
-        );
-        assert!(
-            get_operation_status(&id).is_none(),
-            "OPERATION_STATUS_CACHE entry must be freed even when the task panicked"
-        );
-    }
+    // Panic-safe cache + lane cleanup is now `manager::ManagedTaskGuard`; its
+    // panic-unwind pin lives in `manager::tests`.
 
     // ---- resolve_write_conflict ----
 
@@ -1621,9 +1547,18 @@ mod tests {
     }
 
     #[test]
-    fn busy_volume_ids_clears_on_panic_unwind_via_guard() {
-        // The Drop guard (OperationStateGuard) calls unregister on unwind, so a
-        // panicking op must not leave its volume stuck "busy" forever.
+    fn busy_volume_ids_clears_on_panic_unwind_via_unregister() {
+        // A panicking op must not leave its volume stuck "busy" forever. In
+        // production `manager::ManagedTaskGuard` calls `unregister_operation_status`
+        // on unwind; this pins that `unregister_operation_status` itself clears
+        // the busy mark when invoked from a `Drop` during a panic.
+        struct UnregisterOnDrop(String);
+        impl Drop for UnregisterOnDrop {
+            fn drop(&mut self) {
+                unregister_operation_status(&self.0);
+            }
+        }
+
         let op = unique_id("panic-op");
         let dev = unique_id("panic-device");
         let op_for_thread = op.clone();
@@ -1631,14 +1566,14 @@ mod tests {
 
         let handle = std::thread::spawn(move || {
             register_operation_status(&op_for_thread, WriteOperationType::Delete, vec![dev_for_thread]);
-            let _guard = OperationStateGuard::new(op_for_thread.clone());
+            let _guard = UnregisterOnDrop(op_for_thread.clone());
             panic!("simulated op panic while the device is busy");
         });
         assert!(handle.join().is_err(), "thread should have panicked");
 
         assert!(
             !busy_volume_ids().contains(&dev),
-            "the guard's Drop must clear the busy mark on unwind"
+            "unregister on unwind must clear the busy mark"
         );
     }
 }
