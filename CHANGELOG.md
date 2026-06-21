@@ -5,6 +5,63 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Four big features: 1. Operations (copy, move, and delete) got pause/resume. 2. Operations can be queued. 3. Drive
+indexing extended to all volume types incl. SMB shares and MTP devices. 4. Cmdr is now localized into nine languages. 
+
+### Added
+
+- Translate Cmdr into nine languages: German, Spanish, French, Hungarian, Dutch, Brazilian Portuguese, Swedish,
+  Vietnamese, and Simplified Chinese ([5af98fea](https://github.com/vdavid/cmdr/commit/5af98fea),
+  [43b7f4c2](https://github.com/vdavid/cmdr/commit/43b7f4c2),
+  [042c7b01](https://github.com/vdavid/cmdr/commit/042c7b01),
+  [a34ef72f](https://github.com/vdavid/cmdr/commit/a34ef72f))
+- Pause/resume any operation ([eeef1e2f](https://github.com/vdavid/cmdr/commit/eeef1e2f))
+- Add a Queue window for ops, with pause/resume/cancel plus multi-select
+  ([c06b485d](https://github.com/vdavid/cmdr/commit/c06b485d),
+  [e279945b](https://github.com/vdavid/cmdr/commit/e279945b),
+  [49c7b126](https://github.com/vdavid/cmdr/commit/49c7b126))
+- Add Pause/Resume and Queue (F2) controls to transfer progress dialog ([07dd837c](https://github.com/vdavid/cmdr/commit/07dd837c))
+- Index SMB shares and MTP devices so folder sizes and search work, with scanning/fresh/stale statuses ([384bffe2](https://github.com/vdavid/cmdr/commit/384bffe2),
+  [7b084cdf](https://github.com/vdavid/cmdr/commit/7b084cdf),
+  [049e9f49](https://github.com/vdavid/cmdr/commit/049e9f49),
+  [e4cdbb8f](https://github.com/vdavid/cmdr/commit/e4cdbb8f),
+  [386e9c13](https://github.com/vdavid/cmdr/commit/386e9c13),
+  [fbacdbd0](https://github.com/vdavid/cmdr/commit/fbacdbd0))
+- Add a per-drive index status badge and menu in the volume switcher ([a36e7033](https://github.com/vdavid/cmdr/commit/a36e7033),
+  [eaa2eea0](https://github.com/vdavid/cmdr/commit/eaa2eea0))
+- Add drive-indexing controls in Settings, a "index this drive?" prompt, and a one-time "drive stale" notice ([bcd433ae](https://github.com/vdavid/cmdr/commit/bcd433ae),
+  [0dddb45c](https://github.com/vdavid/cmdr/commit/0dddb45c))
+- Show a live file count while a drive index scans, instead of a frozen label
+  ([eca50e21](https://github.com/vdavid/cmdr/commit/eca50e21))
+- Add ⌘↓ to open the item under the cursor, ⌘⌫ to move it to the trash, and ⇧- to deselect files
+  ([54e8bdeb](https://github.com/vdavid/cmdr/commit/54e8bdeb))
+
+### Changed
+
+- Keep MTP devices responsive during a background index scan: navigation, copy, and delete no longer stall behind it
+  ([0fa3faf9](https://github.com/vdavid/cmdr/commit/0fa3faf9))
+- Refresh only the affected folder on MTP changes, instead of every open pane on the device
+  ([7a08831a](https://github.com/vdavid/cmdr/commit/7a08831a))
+- Honor macOS Reduce transparency app-wide: every translucent surface goes opaque when the setting is on
+  ([298bdede](https://github.com/vdavid/cmdr/commit/298bdede))
+- Go back to the SMB host list with ⌘↑ in the share list, matching Backspace
+  ([1115440a](https://github.com/vdavid/cmdr/commit/1115440a))
+
+### Fixed
+
+- Fix the error reporter crashing on log lines with accented characters or emoji
+  ([72a800ee](https://github.com/vdavid/cmdr/commit/72a800ee))
+
+### Non-app
+
+- Speed up releases by reusing a persistent cargo build dirs and mise cache across architectures and releases ([bc2b3779](https://github.com/vdavid/cmdr/commit/bc2b3779))
+- Build the translation methodology: per-lang style guides, glossaries, and a reference-pile across 139 languages ([45b6a7dd](https://github.com/vdavid/cmdr/commit/45b6a7dd),
+  [0759d720](https://github.com/vdavid/cmdr/commit/0759d720),
+  [ece168ea](https://github.com/vdavid/cmdr/commit/ece168ea),
+  [fbddd165](https://github.com/vdavid/cmdr/commit/fbddd165))
+
 ## [0.28.0] - 2026-06-19
 
 The file viewer now renders images and PDFs inline, local and custom AI endpoints like Ollama and LM Studio work, and
