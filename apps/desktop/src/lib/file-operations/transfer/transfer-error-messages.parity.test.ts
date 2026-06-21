@@ -1,18 +1,20 @@
 /**
- * Byte-for-byte parity net for the write-error copy (the GAP-1 i18n move).
+ * Byte-for-byte parity net for the write-error copy.
  *
- * `getUserFriendlyMessage` now pulls its title/message/suggestion from the
+ * `getUserFriendlyMessage` pulls its title/message/suggestion from the
  * `errors.write.*` catalog (via `getMessage`, raw lookup, no ICU) instead of
- * inline literals. This test pins the FULL rendered output — every variant ×
- * every operation, plus the platform/op branches — to the exact pre-migration
- * English, so the catalog move stays behavior-preserving. `TransferErrorDialog`
- * / `FallbackErrorContent` render exactly this output, so pinning it here pins
- * the dialog.
+ * inline literals. Verb-dependent fields select a per-operation key variant
+ * (`<field>.copy` / `.move` / `.delete` / `.trash`), so each language phrases
+ * each operation naturally. This test pins the FULL rendered output — every
+ * variant, with each verb-dependent field exercised across its operations, plus
+ * the platform/op branches — to the exact English. `TransferErrorDialog` /
+ * `FallbackErrorContent` render exactly this output, so pinning it here pins the
+ * dialog.
  *
- * The expected strings below are the pre-migration English, written out
- * independently of the catalog; if a catalog edit drifts the rendered copy, this
- * fails. (`transfer-error-messages.test.ts` covers the same factory with
- * partial / structural assertions; this is the exhaustive full-string net.)
+ * The expected strings below are written out independently of the catalog; if a
+ * catalog edit drifts the rendered copy, this fails.
+ * (`transfer-error-messages.test.ts` covers the same factory with partial /
+ * structural assertions; this is the exhaustive full-string net.)
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getUserFriendlyMessage } from './transfer-error-messages'
@@ -302,6 +304,217 @@ const cases: Case[] = [
         'This file is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.',
       suggestion:
         'Wait a moment and try again. Once the last handle closes, the file disappears. If it sticks around, close any other apps that might have it open.',
+    },
+  },
+
+  // Per-operation variant coverage: each verb-dependent field must render the
+  // right copy for every operation it can occur under. The cases above already
+  // pin one operation per field; these fill in the rest so all four
+  // `<field>.${op}` keys are exercised.
+  {
+    name: 'source_not_found (move)',
+    error: { type: 'source_not_found', path: '/p' },
+    op: 'move',
+    expected: {
+      title: "Couldn't find the file",
+      message: 'The file or folder you tried to move no longer exists.',
+      suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
+    },
+  },
+  {
+    name: 'source_not_found (delete)',
+    error: { type: 'source_not_found', path: '/p' },
+    op: 'delete',
+    expected: {
+      title: "Couldn't find the file",
+      message: 'The file or folder you tried to delete no longer exists.',
+      suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
+    },
+  },
+  {
+    name: 'same_location (copy)',
+    error: { type: 'same_location', path: '/p' },
+    op: 'copy',
+    expected: {
+      title: "Can't copy to the same location",
+      message: 'The source and destination are the same.',
+      suggestion: 'Choose a different destination folder.',
+    },
+  },
+  {
+    name: 'destination_inside_source (copy)',
+    error: { type: 'destination_inside_source', source: '/a', destination: '/a/b' },
+    op: 'copy',
+    expected: {
+      title: "Can't copy a folder into itself",
+      message: "You're trying to copy a folder into one of its own subfolders.",
+      suggestion: 'Choose a destination outside of the folder you are copying.',
+    },
+  },
+  {
+    name: 'cancelled (move)',
+    error: { type: 'cancelled', message: 'm' },
+    op: 'move',
+    expected: {
+      title: 'Move cancelled',
+      message: 'The move operation was cancelled.',
+      suggestion: 'You can try again when ready.',
+    },
+  },
+  {
+    name: 'cancelled (delete)',
+    error: { type: 'cancelled', message: 'm' },
+    op: 'delete',
+    expected: {
+      title: 'Delete cancelled',
+      message: 'The delete operation was cancelled.',
+      suggestion: 'You can try again when ready.',
+    },
+  },
+  {
+    name: 'device_disconnected (copy)',
+    error: { type: 'device_disconnected', path: '/p' },
+    op: 'copy',
+    expected: {
+      title: 'Device disconnected',
+      message: 'The device was disconnected during the copy.',
+      suggestion: 'Make sure the device is properly connected and try again.',
+    },
+  },
+  {
+    name: 'device_disconnected (delete)',
+    error: { type: 'device_disconnected', path: '/p' },
+    op: 'delete',
+    expected: {
+      title: 'Device disconnected',
+      message: 'The device was disconnected during the delete.',
+      suggestion: 'Make sure the device is properly connected and try again.',
+    },
+  },
+  {
+    name: 'device_disconnected (trash)',
+    error: { type: 'device_disconnected', path: '/p' },
+    op: 'trash',
+    expected: {
+      title: 'Device disconnected',
+      message: 'The device was disconnected during the move to trash.',
+      suggestion: 'Make sure the device is properly connected and try again.',
+    },
+  },
+  {
+    name: 'read_error (trash)',
+    error: { type: 'read_error', path: '/p', message: 'm' },
+    op: 'trash',
+    expected: {
+      title: 'Move to trash failed',
+      message: "Couldn't read from the source.",
+      suggestion: 'Try again. If the problem persists, check the technical details below.',
+    },
+  },
+  {
+    name: 'write_error (move)',
+    error: { type: 'write_error', path: '/p', message: 'm' },
+    op: 'move',
+    expected: {
+      title: 'Move failed',
+      message: "Couldn't write to the destination.",
+      suggestion: 'Try again. If the problem persists, check the technical details below.',
+    },
+  },
+  {
+    name: 'io_error (copy)',
+    error: { type: 'io_error', path: '/p', message: 'm' },
+    op: 'copy',
+    expected: {
+      title: 'Copy failed',
+      message: "Couldn't copy the file.",
+      suggestion: 'Try again. If the problem persists, check the technical details below.',
+    },
+  },
+  {
+    name: 'io_error (move)',
+    error: { type: 'io_error', path: '/p', message: 'm' },
+    op: 'move',
+    expected: {
+      title: 'Move failed',
+      message: "Couldn't move the file.",
+      suggestion: 'Try again. If the problem persists, check the technical details below.',
+    },
+  },
+  {
+    name: 'io_error (trash)',
+    error: { type: 'io_error', path: '/p', message: 'm' },
+    op: 'trash',
+    expected: {
+      title: 'Move to trash failed',
+      message: "Couldn't move to trash the file.",
+      suggestion: 'Try again. If the problem persists, check the technical details below.',
+    },
+  },
+  {
+    name: 'permission_denied (move → default suggestion)',
+    error: { type: 'permission_denied', path: '/p', message: 'm' },
+    op: 'move',
+    expected: {
+      title: "Couldn't access this location",
+      message: "You don't have permission to move files here.",
+      suggestion:
+        'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
+    },
+  },
+  {
+    name: 'permission_denied (trash, macOS)',
+    error: { type: 'permission_denied', path: '/p', message: 'm' },
+    op: 'trash',
+    mac: true,
+    expected: {
+      title: "Couldn't access this location",
+      message: "You don't have permission to move to trash files here.",
+      suggestion:
+        'Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.',
+    },
+  },
+  // The fallback (catch-all) path: an unrecognized error type. `delete_pending`
+  // and all typed variants above are recognized, so use a fabricated type to
+  // hit the `default` branch and pin its per-operation copy.
+  {
+    name: 'fallback (copy)',
+    error: { type: 'totally_unknown' } as unknown as WriteOperationError,
+    op: 'copy',
+    expected: {
+      title: 'Copy failed',
+      message: 'An unexpected error occurred while copying.',
+      suggestion: 'Try again, or check the technical details below for more information.',
+    },
+  },
+  {
+    name: 'fallback (move)',
+    error: { type: 'totally_unknown' } as unknown as WriteOperationError,
+    op: 'move',
+    expected: {
+      title: 'Move failed',
+      message: 'An unexpected error occurred while moving.',
+      suggestion: 'Try again, or check the technical details below for more information.',
+    },
+  },
+  {
+    name: 'fallback (delete)',
+    error: { type: 'totally_unknown' } as unknown as WriteOperationError,
+    op: 'delete',
+    expected: {
+      title: 'Delete failed',
+      message: 'An unexpected error occurred while deleting.',
+      suggestion: 'Try again, or check the technical details below for more information.',
+    },
+  },
+  {
+    name: 'fallback (trash)',
+    error: { type: 'totally_unknown' } as unknown as WriteOperationError,
+    op: 'trash',
+    expected: {
+      title: 'Move to trash failed',
+      message: 'An unexpected error occurred while moving to trash.',
+      suggestion: 'Try again, or check the technical details below for more information.',
     },
   },
 ]

@@ -963,9 +963,21 @@
   "@errors.write.sourceNotFound.title": {
     "sourceHash": "2003305"
   },
-  "errors.write.sourceNotFound.message": "Le fichier ou dossier sur lequel vous avez tenté l'action {verb} n'existe plus.",
-  "@errors.write.sourceNotFound.message": {
-    "sourceHash": "036df5c"
+  "errors.write.sourceNotFound.message.copy": "Le fichier ou dossier que vous vouliez copier n'existe plus.",
+  "@errors.write.sourceNotFound.message.copy": {
+    "sourceHash": "e572507"
+  },
+  "errors.write.sourceNotFound.message.move": "Le fichier ou dossier que vous vouliez déplacer n'existe plus.",
+  "@errors.write.sourceNotFound.message.move": {
+    "sourceHash": "4c07735"
+  },
+  "errors.write.sourceNotFound.message.delete": "Le fichier ou dossier que vous vouliez supprimer n'existe plus.",
+  "@errors.write.sourceNotFound.message.delete": {
+    "sourceHash": "cb0ab8f"
+  },
+  "errors.write.sourceNotFound.message.trash": "Le fichier ou dossier que vous vouliez placer dans la corbeille n'existe plus.",
+  "@errors.write.sourceNotFound.message.trash": {
+    "sourceHash": "dbc0bbe"
   },
   "errors.write.sourceNotFound.suggestion": "Il a peut-être été déplacé, renommé ou supprimé. Essayez de rafraîchir la liste des fichiers.",
   "@errors.write.sourceNotFound.suggestion": {
@@ -983,9 +995,13 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title": "Action {verb} impossible vers le même emplacement",
-  "@errors.write.sameLocation.title": {
-    "sourceHash": "6491841"
+  "errors.write.sameLocation.title.copy": "Copie vers le même emplacement impossible",
+  "@errors.write.sameLocation.title.copy": {
+    "sourceHash": "7492839"
+  },
+  "errors.write.sameLocation.title.move": "Déplacement vers le même emplacement impossible",
+  "@errors.write.sameLocation.title.move": {
+    "sourceHash": "46b6a41"
   },
   "errors.write.sameLocation.message": "La source et la destination sont identiques.",
   "@errors.write.sameLocation.message": {
@@ -995,17 +1011,29 @@
   "@errors.write.sameLocation.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.destinationInsideSource.title": "Action {verb} d'un dossier dans lui-même impossible",
-  "@errors.write.destinationInsideSource.title": {
-    "sourceHash": "724e37e"
+  "errors.write.destinationInsideSource.title.copy": "Copie d'un dossier dans lui-même impossible",
+  "@errors.write.destinationInsideSource.title.copy": {
+    "sourceHash": "40c58ea"
   },
-  "errors.write.destinationInsideSource.message": "Vous essayez d'effectuer l'action {verb} sur un dossier vers l'un de ses propres sous-dossiers.",
-  "@errors.write.destinationInsideSource.message": {
-    "sourceHash": "e65efd9"
+  "errors.write.destinationInsideSource.title.move": "Déplacement d'un dossier dans lui-même impossible",
+  "@errors.write.destinationInsideSource.title.move": {
+    "sourceHash": "3a9da7b"
   },
-  "errors.write.destinationInsideSource.suggestion": "Choisissez une destination en dehors du dossier sur lequel vous effectuez l'action {gerund}.",
-  "@errors.write.destinationInsideSource.suggestion": {
-    "sourceHash": "e6b34cf"
+  "errors.write.destinationInsideSource.message.copy": "Vous essayez de copier un dossier dans l'un de ses propres sous-dossiers.",
+  "@errors.write.destinationInsideSource.message.copy": {
+    "sourceHash": "46d30ec"
+  },
+  "errors.write.destinationInsideSource.message.move": "Vous essayez de déplacer un dossier dans l'un de ses propres sous-dossiers.",
+  "@errors.write.destinationInsideSource.message.move": {
+    "sourceHash": "e6ecfea"
+  },
+  "errors.write.destinationInsideSource.suggestion.copy": "Choisissez une destination en dehors du dossier que vous copiez.",
+  "@errors.write.destinationInsideSource.suggestion.copy": {
+    "sourceHash": "9c446bf"
+  },
+  "errors.write.destinationInsideSource.suggestion.move": "Choisissez une destination en dehors du dossier que vous déplacez.",
+  "@errors.write.destinationInsideSource.suggestion.move": {
+    "sourceHash": "ab985a6"
   },
   "errors.write.symlinkLoop.title": "Boucle de liens détectée",
   "@errors.write.symlinkLoop.title": {
@@ -1019,13 +1047,37 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.cancelled.title": "{Verb} annulé",
-  "@errors.write.cancelled.title": {
-    "sourceHash": "d1ed9a3"
+  "errors.write.cancelled.title.copy": "Copie annulée",
+  "@errors.write.cancelled.title.copy": {
+    "sourceHash": "0a1cddf"
   },
-  "errors.write.cancelled.message": "L'opération {verb} a été annulée.",
-  "@errors.write.cancelled.message": {
-    "sourceHash": "93434af"
+  "errors.write.cancelled.title.move": "Déplacement annulé",
+  "@errors.write.cancelled.title.move": {
+    "sourceHash": "8c4d24d"
+  },
+  "errors.write.cancelled.title.delete": "Suppression annulée",
+  "@errors.write.cancelled.title.delete": {
+    "sourceHash": "49eaa41"
+  },
+  "errors.write.cancelled.title.trash": "Mise à la corbeille annulée",
+  "@errors.write.cancelled.title.trash": {
+    "sourceHash": "cee684b"
+  },
+  "errors.write.cancelled.message.copy": "La copie a été annulée.",
+  "@errors.write.cancelled.message.copy": {
+    "sourceHash": "a71bf80"
+  },
+  "errors.write.cancelled.message.move": "Le déplacement a été annulé.",
+  "@errors.write.cancelled.message.move": {
+    "sourceHash": "5a7ae6f"
+  },
+  "errors.write.cancelled.message.delete": "La suppression a été annulée.",
+  "@errors.write.cancelled.message.delete": {
+    "sourceHash": "bb97fee"
+  },
+  "errors.write.cancelled.message.trash": "La mise à la corbeille a été annulée.",
+  "@errors.write.cancelled.message.trash": {
+    "sourceHash": "d8c3182"
   },
   "errors.write.cancelled.suggestion": "Vous pouvez réessayer quand vous êtes prêt.",
   "@errors.write.cancelled.suggestion": {
@@ -1035,9 +1087,21 @@
   "@errors.write.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.write.deviceDisconnected.message": "L'appareil a été déconnecté pendant l'action {verb}.",
-  "@errors.write.deviceDisconnected.message": {
-    "sourceHash": "cf868ce"
+  "errors.write.deviceDisconnected.message.copy": "L'appareil a été déconnecté pendant la copie.",
+  "@errors.write.deviceDisconnected.message.copy": {
+    "sourceHash": "828908f"
+  },
+  "errors.write.deviceDisconnected.message.move": "L'appareil a été déconnecté pendant le déplacement.",
+  "@errors.write.deviceDisconnected.message.move": {
+    "sourceHash": "4177ee9"
+  },
+  "errors.write.deviceDisconnected.message.delete": "L'appareil a été déconnecté pendant la suppression.",
+  "@errors.write.deviceDisconnected.message.delete": {
+    "sourceHash": "195562e"
+  },
+  "errors.write.deviceDisconnected.message.trash": "L'appareil a été déconnecté pendant la mise à la corbeille.",
+  "@errors.write.deviceDisconnected.message.trash": {
+    "sourceHash": "9d5a47a"
   },
   "errors.write.deviceDisconnected.suggestion": "Assurez-vous que l'appareil est correctement connecté et réessayez.",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1067,9 +1131,21 @@
   "@errors.write.connectionInterrupted.suggestion": {
     "sourceHash": "d8d3c79"
   },
-  "errors.write.readError.title": "{Verb} a échoué",
-  "@errors.write.readError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.readError.title.copy": "Copie impossible",
+  "@errors.write.readError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.readError.title.move": "Déplacement impossible",
+  "@errors.write.readError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.readError.title.delete": "Suppression impossible",
+  "@errors.write.readError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.readError.title.trash": "Mise à la corbeille impossible",
+  "@errors.write.readError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.readError.message": "Lecture de la source impossible.",
   "@errors.write.readError.message": {
@@ -1079,9 +1155,21 @@
   "@errors.write.readError.suggestion": {
     "sourceHash": "791f737"
   },
-  "errors.write.writeError.title": "{Verb} a échoué",
-  "@errors.write.writeError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.writeError.title.copy": "Copie impossible",
+  "@errors.write.writeError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.writeError.title.move": "Déplacement impossible",
+  "@errors.write.writeError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.writeError.title.delete": "Suppression impossible",
+  "@errors.write.writeError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.writeError.title.trash": "Mise à la corbeille impossible",
+  "@errors.write.writeError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.writeError.message": "Écriture vers la destination impossible.",
   "@errors.write.writeError.message": {
@@ -1115,13 +1203,37 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "bdac1ea"
   },
-  "errors.write.ioError.title": "{Verb} a échoué",
-  "@errors.write.ioError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.ioError.title.copy": "Copie impossible",
+  "@errors.write.ioError.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.ioError.message": "Action {verb} sur le fichier impossible.",
-  "@errors.write.ioError.message": {
-    "sourceHash": "f008917"
+  "errors.write.ioError.title.move": "Déplacement impossible",
+  "@errors.write.ioError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.ioError.title.delete": "Suppression impossible",
+  "@errors.write.ioError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.ioError.title.trash": "Mise à la corbeille impossible",
+  "@errors.write.ioError.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.ioError.message.copy": "Impossible de copier le fichier.",
+  "@errors.write.ioError.message.copy": {
+    "sourceHash": "93d27d8"
+  },
+  "errors.write.ioError.message.move": "Impossible de déplacer le fichier.",
+  "@errors.write.ioError.message.move": {
+    "sourceHash": "d2f8eea"
+  },
+  "errors.write.ioError.message.delete": "Impossible de supprimer le fichier.",
+  "@errors.write.ioError.message.delete": {
+    "sourceHash": "87cc29a"
+  },
+  "errors.write.ioError.message.trash": "Impossible de placer le fichier dans la corbeille.",
+  "@errors.write.ioError.message.trash": {
+    "sourceHash": "e71b09d"
   },
   "errors.write.ioError.suggestion": "Réessayez. Si le problème persiste, consultez les détails techniques ci-dessous.",
   "@errors.write.ioError.suggestion": {
@@ -1131,9 +1243,21 @@
   "@errors.write.permissionDenied.title": {
     "sourceHash": "be62ad2"
   },
-  "errors.write.permissionDenied.message": "Vous n'avez pas l'autorisation d'effectuer l'action {verb} sur des fichiers ici.",
-  "@errors.write.permissionDenied.message": {
-    "sourceHash": "896d3c8"
+  "errors.write.permissionDenied.message.copy": "Vous n'avez pas l'autorisation de copier des fichiers ici.",
+  "@errors.write.permissionDenied.message.copy": {
+    "sourceHash": "d9ebc5a"
+  },
+  "errors.write.permissionDenied.message.move": "Vous n'avez pas l'autorisation de déplacer des fichiers ici.",
+  "@errors.write.permissionDenied.message.move": {
+    "sourceHash": "d5c0358"
+  },
+  "errors.write.permissionDenied.message.delete": "Vous n'avez pas l'autorisation de supprimer des fichiers ici.",
+  "@errors.write.permissionDenied.message.delete": {
+    "sourceHash": "e002a5f"
+  },
+  "errors.write.permissionDenied.message.trash": "Vous n'avez pas l'autorisation de placer des fichiers dans la corbeille ici.",
+  "@errors.write.permissionDenied.message.trash": {
+    "sourceHash": "8381d02"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Vérifiez que vous avez l'accès en écriture au dossier parent. Le fichier est peut-être verrouillé. Déverrouillez-le dans Finder (Lire les informations > décochez Verrouillé) et réessayez.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1203,13 +1327,37 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
-  "errors.write.fallback.title": "{Verb} a échoué",
-  "@errors.write.fallback.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.fallback.title.copy": "Copie impossible",
+  "@errors.write.fallback.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.fallback.message": "Un problème inattendu est survenu pendant l'action {gerund}.",
-  "@errors.write.fallback.message": {
-    "sourceHash": "e487f3d"
+  "errors.write.fallback.title.move": "Déplacement impossible",
+  "@errors.write.fallback.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.fallback.title.delete": "Suppression impossible",
+  "@errors.write.fallback.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.fallback.title.trash": "Mise à la corbeille impossible",
+  "@errors.write.fallback.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.fallback.message.copy": "Un problème inattendu s'est produit pendant la copie.",
+  "@errors.write.fallback.message.copy": {
+    "sourceHash": "bebd7c4"
+  },
+  "errors.write.fallback.message.move": "Un problème inattendu s'est produit pendant le déplacement.",
+  "@errors.write.fallback.message.move": {
+    "sourceHash": "8340947"
+  },
+  "errors.write.fallback.message.delete": "Un problème inattendu s'est produit pendant la suppression.",
+  "@errors.write.fallback.message.delete": {
+    "sourceHash": "91de619"
+  },
+  "errors.write.fallback.message.trash": "Un problème inattendu s'est produit pendant la mise à la corbeille.",
+  "@errors.write.fallback.message.trash": {
+    "sourceHash": "238f82d"
   },
   "errors.write.fallback.suggestion": "Réessayez, ou consultez les détails techniques ci-dessous pour plus d'informations.",
   "@errors.write.fallback.suggestion": {

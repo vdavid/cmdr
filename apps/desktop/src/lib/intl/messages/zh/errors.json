@@ -963,9 +963,21 @@
   "@errors.write.sourceNotFound.title": {
     "sourceHash": "2003305"
   },
-  "errors.write.sourceNotFound.message": "你想{verb}的文件或文件夹已经不存在了。",
-  "@errors.write.sourceNotFound.message": {
-    "sourceHash": "036df5c"
+  "errors.write.sourceNotFound.message.copy": "你想拷贝的文件或文件夹已经不存在了。",
+  "@errors.write.sourceNotFound.message.copy": {
+    "sourceHash": "e572507"
+  },
+  "errors.write.sourceNotFound.message.move": "你想移动的文件或文件夹已经不存在了。",
+  "@errors.write.sourceNotFound.message.move": {
+    "sourceHash": "4c07735"
+  },
+  "errors.write.sourceNotFound.message.delete": "你想删除的文件或文件夹已经不存在了。",
+  "@errors.write.sourceNotFound.message.delete": {
+    "sourceHash": "cb0ab8f"
+  },
+  "errors.write.sourceNotFound.message.trash": "你想移到废纸篓的文件或文件夹已经不存在了。",
+  "@errors.write.sourceNotFound.message.trash": {
+    "sourceHash": "dbc0bbe"
   },
   "errors.write.sourceNotFound.suggestion": "它可能被移动、重命名或删除了。试试刷新文件列表。",
   "@errors.write.sourceNotFound.suggestion": {
@@ -983,9 +995,13 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title": "无法{verb}到相同位置",
-  "@errors.write.sameLocation.title": {
-    "sourceHash": "6491841"
+  "errors.write.sameLocation.title.copy": "无法拷贝到相同位置",
+  "@errors.write.sameLocation.title.copy": {
+    "sourceHash": "7492839"
+  },
+  "errors.write.sameLocation.title.move": "无法移动到相同位置",
+  "@errors.write.sameLocation.title.move": {
+    "sourceHash": "46b6a41"
   },
   "errors.write.sameLocation.message": "来源和目标是同一个。",
   "@errors.write.sameLocation.message": {
@@ -995,17 +1011,29 @@
   "@errors.write.sameLocation.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.destinationInsideSource.title": "无法把文件夹{verb}到它自己里面",
-  "@errors.write.destinationInsideSource.title": {
-    "sourceHash": "724e37e"
+  "errors.write.destinationInsideSource.title.copy": "无法把文件夹拷贝到它自身里",
+  "@errors.write.destinationInsideSource.title.copy": {
+    "sourceHash": "40c58ea"
   },
-  "errors.write.destinationInsideSource.message": "你想把一个文件夹{verb}到它自己的某个子文件夹里。",
-  "@errors.write.destinationInsideSource.message": {
-    "sourceHash": "e65efd9"
+  "errors.write.destinationInsideSource.title.move": "无法把文件夹移动到它自身里",
+  "@errors.write.destinationInsideSource.title.move": {
+    "sourceHash": "3a9da7b"
   },
-  "errors.write.destinationInsideSource.suggestion": "选一个在你正{gerund}的文件夹之外的目标。",
-  "@errors.write.destinationInsideSource.suggestion": {
-    "sourceHash": "e6b34cf"
+  "errors.write.destinationInsideSource.message.copy": "你正想把一个文件夹拷贝到它自己的某个子文件夹里。",
+  "@errors.write.destinationInsideSource.message.copy": {
+    "sourceHash": "46d30ec"
+  },
+  "errors.write.destinationInsideSource.message.move": "你正想把一个文件夹移动到它自己的某个子文件夹里。",
+  "@errors.write.destinationInsideSource.message.move": {
+    "sourceHash": "e6ecfea"
+  },
+  "errors.write.destinationInsideSource.suggestion.copy": "选择一个在你要拷贝的文件夹之外的目标位置。",
+  "@errors.write.destinationInsideSource.suggestion.copy": {
+    "sourceHash": "9c446bf"
+  },
+  "errors.write.destinationInsideSource.suggestion.move": "选择一个在你要移动的文件夹之外的目标位置。",
+  "@errors.write.destinationInsideSource.suggestion.move": {
+    "sourceHash": "ab985a6"
   },
   "errors.write.symlinkLoop.title": "检测到链接死循环",
   "@errors.write.symlinkLoop.title": {
@@ -1019,13 +1047,37 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.cancelled.title": "{Verb}已取消",
-  "@errors.write.cancelled.title": {
-    "sourceHash": "d1ed9a3"
+  "errors.write.cancelled.title.copy": "已取消拷贝",
+  "@errors.write.cancelled.title.copy": {
+    "sourceHash": "0a1cddf"
   },
-  "errors.write.cancelled.message": "{verb}操作已取消。",
-  "@errors.write.cancelled.message": {
-    "sourceHash": "93434af"
+  "errors.write.cancelled.title.move": "已取消移动",
+  "@errors.write.cancelled.title.move": {
+    "sourceHash": "8c4d24d"
+  },
+  "errors.write.cancelled.title.delete": "已取消删除",
+  "@errors.write.cancelled.title.delete": {
+    "sourceHash": "49eaa41"
+  },
+  "errors.write.cancelled.title.trash": "已取消移到废纸篓",
+  "@errors.write.cancelled.title.trash": {
+    "sourceHash": "cee684b"
+  },
+  "errors.write.cancelled.message.copy": "拷贝操作已取消。",
+  "@errors.write.cancelled.message.copy": {
+    "sourceHash": "a71bf80"
+  },
+  "errors.write.cancelled.message.move": "移动操作已取消。",
+  "@errors.write.cancelled.message.move": {
+    "sourceHash": "5a7ae6f"
+  },
+  "errors.write.cancelled.message.delete": "删除操作已取消。",
+  "@errors.write.cancelled.message.delete": {
+    "sourceHash": "bb97fee"
+  },
+  "errors.write.cancelled.message.trash": "移到废纸篓的操作已取消。",
+  "@errors.write.cancelled.message.trash": {
+    "sourceHash": "d8c3182"
   },
   "errors.write.cancelled.suggestion": "准备好后可以再试一次。",
   "@errors.write.cancelled.suggestion": {
@@ -1035,9 +1087,21 @@
   "@errors.write.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.write.deviceDisconnected.message": "在{verb}过程中，设备断开了。",
-  "@errors.write.deviceDisconnected.message": {
-    "sourceHash": "cf868ce"
+  "errors.write.deviceDisconnected.message.copy": "设备在拷贝过程中断开了连接。",
+  "@errors.write.deviceDisconnected.message.copy": {
+    "sourceHash": "828908f"
+  },
+  "errors.write.deviceDisconnected.message.move": "设备在移动过程中断开了连接。",
+  "@errors.write.deviceDisconnected.message.move": {
+    "sourceHash": "4177ee9"
+  },
+  "errors.write.deviceDisconnected.message.delete": "设备在删除过程中断开了连接。",
+  "@errors.write.deviceDisconnected.message.delete": {
+    "sourceHash": "195562e"
+  },
+  "errors.write.deviceDisconnected.message.trash": "设备在移到废纸篓过程中断开了连接。",
+  "@errors.write.deviceDisconnected.message.trash": {
+    "sourceHash": "9d5a47a"
   },
   "errors.write.deviceDisconnected.suggestion": "确认设备已正确连接，然后重试。",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1067,9 +1131,21 @@
   "@errors.write.connectionInterrupted.suggestion": {
     "sourceHash": "d8d3c79"
   },
-  "errors.write.readError.title": "{Verb}未成功",
-  "@errors.write.readError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.readError.title.copy": "无法拷贝",
+  "@errors.write.readError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.readError.title.move": "无法移动",
+  "@errors.write.readError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.readError.title.delete": "无法删除",
+  "@errors.write.readError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.readError.title.trash": "无法移到废纸篓",
+  "@errors.write.readError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.readError.message": "无法从来源读取。",
   "@errors.write.readError.message": {
@@ -1079,9 +1155,21 @@
   "@errors.write.readError.suggestion": {
     "sourceHash": "791f737"
   },
-  "errors.write.writeError.title": "{Verb}未成功",
-  "@errors.write.writeError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.writeError.title.copy": "无法拷贝",
+  "@errors.write.writeError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.writeError.title.move": "无法移动",
+  "@errors.write.writeError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.writeError.title.delete": "无法删除",
+  "@errors.write.writeError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.writeError.title.trash": "无法移到废纸篓",
+  "@errors.write.writeError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.writeError.message": "无法写入目标。",
   "@errors.write.writeError.message": {
@@ -1115,13 +1203,37 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "bdac1ea"
   },
-  "errors.write.ioError.title": "{Verb}未成功",
-  "@errors.write.ioError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.ioError.title.copy": "无法拷贝",
+  "@errors.write.ioError.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.ioError.message": "无法{verb}这个文件。",
-  "@errors.write.ioError.message": {
-    "sourceHash": "f008917"
+  "errors.write.ioError.title.move": "无法移动",
+  "@errors.write.ioError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.ioError.title.delete": "无法删除",
+  "@errors.write.ioError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.ioError.title.trash": "无法移到废纸篓",
+  "@errors.write.ioError.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.ioError.message.copy": "无法拷贝这个文件。",
+  "@errors.write.ioError.message.copy": {
+    "sourceHash": "93d27d8"
+  },
+  "errors.write.ioError.message.move": "无法移动这个文件。",
+  "@errors.write.ioError.message.move": {
+    "sourceHash": "d2f8eea"
+  },
+  "errors.write.ioError.message.delete": "无法删除这个文件。",
+  "@errors.write.ioError.message.delete": {
+    "sourceHash": "87cc29a"
+  },
+  "errors.write.ioError.message.trash": "无法把这个文件移到废纸篓。",
+  "@errors.write.ioError.message.trash": {
+    "sourceHash": "e71b09d"
   },
   "errors.write.ioError.suggestion": "重试。如果问题持续，查看下方的技术详情。",
   "@errors.write.ioError.suggestion": {
@@ -1131,9 +1243,21 @@
   "@errors.write.permissionDenied.title": {
     "sourceHash": "be62ad2"
   },
-  "errors.write.permissionDenied.message": "你没有权限在这里{verb}文件。",
-  "@errors.write.permissionDenied.message": {
-    "sourceHash": "896d3c8"
+  "errors.write.permissionDenied.message.copy": "你没有权限在这里拷贝文件。",
+  "@errors.write.permissionDenied.message.copy": {
+    "sourceHash": "d9ebc5a"
+  },
+  "errors.write.permissionDenied.message.move": "你没有权限在这里移动文件。",
+  "@errors.write.permissionDenied.message.move": {
+    "sourceHash": "d5c0358"
+  },
+  "errors.write.permissionDenied.message.delete": "你没有权限在这里删除文件。",
+  "@errors.write.permissionDenied.message.delete": {
+    "sourceHash": "e002a5f"
+  },
+  "errors.write.permissionDenied.message.trash": "你没有权限在这里把文件移到废纸篓。",
+  "@errors.write.permissionDenied.message.trash": {
+    "sourceHash": "8381d02"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "确认你对上一级文件夹有写入权限。文件可能被锁定了。在 Finder 里解锁它（显示简介 > 取消勾选“已锁定”），然后重试。",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1203,13 +1327,37 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
-  "errors.write.fallback.title": "{Verb}未成功",
-  "@errors.write.fallback.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.fallback.title.copy": "无法拷贝",
+  "@errors.write.fallback.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.fallback.message": "{gerund}时出现了意外问题。",
-  "@errors.write.fallback.message": {
-    "sourceHash": "e487f3d"
+  "errors.write.fallback.title.move": "无法移动",
+  "@errors.write.fallback.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.fallback.title.delete": "无法删除",
+  "@errors.write.fallback.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.fallback.title.trash": "无法移到废纸篓",
+  "@errors.write.fallback.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.fallback.message.copy": "拷贝时发生了意外问题。",
+  "@errors.write.fallback.message.copy": {
+    "sourceHash": "bebd7c4"
+  },
+  "errors.write.fallback.message.move": "移动时发生了意外问题。",
+  "@errors.write.fallback.message.move": {
+    "sourceHash": "8340947"
+  },
+  "errors.write.fallback.message.delete": "删除时发生了意外问题。",
+  "@errors.write.fallback.message.delete": {
+    "sourceHash": "91de619"
+  },
+  "errors.write.fallback.message.trash": "移到废纸篓时发生了意外问题。",
+  "@errors.write.fallback.message.trash": {
+    "sourceHash": "238f82d"
   },
   "errors.write.fallback.suggestion": "重试，或查看下方的技术详情了解更多信息。",
   "@errors.write.fallback.suggestion": {

@@ -963,9 +963,21 @@
   "@errors.write.sourceNotFound.title": {
     "sourceHash": "2003305"
   },
-  "errors.write.sourceNotFound.message": "O arquivo ou pasta que você tentou {verb} não existe mais.",
-  "@errors.write.sourceNotFound.message": {
-    "sourceHash": "036df5c"
+  "errors.write.sourceNotFound.message.copy": "O arquivo ou pasta que você tentou copiar não existe mais.",
+  "@errors.write.sourceNotFound.message.copy": {
+    "sourceHash": "e572507"
+  },
+  "errors.write.sourceNotFound.message.move": "O arquivo ou pasta que você tentou mover não existe mais.",
+  "@errors.write.sourceNotFound.message.move": {
+    "sourceHash": "4c07735"
+  },
+  "errors.write.sourceNotFound.message.delete": "O arquivo ou pasta que você tentou apagar não existe mais.",
+  "@errors.write.sourceNotFound.message.delete": {
+    "sourceHash": "cb0ab8f"
+  },
+  "errors.write.sourceNotFound.message.trash": "O arquivo ou pasta que você tentou mover para o Lixo não existe mais.",
+  "@errors.write.sourceNotFound.message.trash": {
+    "sourceHash": "dbc0bbe"
   },
   "errors.write.sourceNotFound.suggestion": "Ele pode ter sido movido, renomeado, ou excluído. Tente atualizar a lista de arquivos.",
   "@errors.write.sourceNotFound.suggestion": {
@@ -983,9 +995,13 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title": "Não é possível {verb} para o mesmo local",
-  "@errors.write.sameLocation.title": {
-    "sourceHash": "6491841"
+  "errors.write.sameLocation.title.copy": "Não dá para copiar para o mesmo local",
+  "@errors.write.sameLocation.title.copy": {
+    "sourceHash": "7492839"
+  },
+  "errors.write.sameLocation.title.move": "Não dá para mover para o mesmo local",
+  "@errors.write.sameLocation.title.move": {
+    "sourceHash": "46b6a41"
   },
   "errors.write.sameLocation.message": "A origem e o destino são o mesmo.",
   "@errors.write.sameLocation.message": {
@@ -995,17 +1011,29 @@
   "@errors.write.sameLocation.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.destinationInsideSource.title": "Não é possível {verb} uma pasta para dentro de si mesma",
-  "@errors.write.destinationInsideSource.title": {
-    "sourceHash": "724e37e"
+  "errors.write.destinationInsideSource.title.copy": "Não dá para copiar uma pasta para dentro dela mesma",
+  "@errors.write.destinationInsideSource.title.copy": {
+    "sourceHash": "40c58ea"
   },
-  "errors.write.destinationInsideSource.message": "Você está tentando {verb} uma pasta para dentro de uma das suas próprias subpastas.",
-  "@errors.write.destinationInsideSource.message": {
-    "sourceHash": "e65efd9"
+  "errors.write.destinationInsideSource.title.move": "Não dá para mover uma pasta para dentro dela mesma",
+  "@errors.write.destinationInsideSource.title.move": {
+    "sourceHash": "3a9da7b"
   },
-  "errors.write.destinationInsideSource.suggestion": "Escolha um destino fora da pasta que você está {gerund}.",
-  "@errors.write.destinationInsideSource.suggestion": {
-    "sourceHash": "e6b34cf"
+  "errors.write.destinationInsideSource.message.copy": "Você está tentando copiar uma pasta para uma das subpastas dela.",
+  "@errors.write.destinationInsideSource.message.copy": {
+    "sourceHash": "46d30ec"
+  },
+  "errors.write.destinationInsideSource.message.move": "Você está tentando mover uma pasta para uma das subpastas dela.",
+  "@errors.write.destinationInsideSource.message.move": {
+    "sourceHash": "e6ecfea"
+  },
+  "errors.write.destinationInsideSource.suggestion.copy": "Escolha um destino fora da pasta que você está copiando.",
+  "@errors.write.destinationInsideSource.suggestion.copy": {
+    "sourceHash": "9c446bf"
+  },
+  "errors.write.destinationInsideSource.suggestion.move": "Escolha um destino fora da pasta que você está movendo.",
+  "@errors.write.destinationInsideSource.suggestion.move": {
+    "sourceHash": "ab985a6"
   },
   "errors.write.symlinkLoop.title": "Loop de link detectado",
   "@errors.write.symlinkLoop.title": {
@@ -1019,13 +1047,37 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.cancelled.title": "{Verb} cancelado",
-  "@errors.write.cancelled.title": {
-    "sourceHash": "d1ed9a3"
+  "errors.write.cancelled.title.copy": "Cópia cancelada",
+  "@errors.write.cancelled.title.copy": {
+    "sourceHash": "0a1cddf"
   },
-  "errors.write.cancelled.message": "A operação de {verb} foi cancelada.",
-  "@errors.write.cancelled.message": {
-    "sourceHash": "93434af"
+  "errors.write.cancelled.title.move": "Movimentação cancelada",
+  "@errors.write.cancelled.title.move": {
+    "sourceHash": "8c4d24d"
+  },
+  "errors.write.cancelled.title.delete": "Operação de apagar cancelada",
+  "@errors.write.cancelled.title.delete": {
+    "sourceHash": "49eaa41"
+  },
+  "errors.write.cancelled.title.trash": "Mover para o Lixo cancelado",
+  "@errors.write.cancelled.title.trash": {
+    "sourceHash": "cee684b"
+  },
+  "errors.write.cancelled.message.copy": "A operação de cópia foi cancelada.",
+  "@errors.write.cancelled.message.copy": {
+    "sourceHash": "a71bf80"
+  },
+  "errors.write.cancelled.message.move": "A operação de movimentação foi cancelada.",
+  "@errors.write.cancelled.message.move": {
+    "sourceHash": "5a7ae6f"
+  },
+  "errors.write.cancelled.message.delete": "A operação de apagar foi cancelada.",
+  "@errors.write.cancelled.message.delete": {
+    "sourceHash": "bb97fee"
+  },
+  "errors.write.cancelled.message.trash": "A operação de mover para o Lixo foi cancelada.",
+  "@errors.write.cancelled.message.trash": {
+    "sourceHash": "d8c3182"
   },
   "errors.write.cancelled.suggestion": "Você pode tentar de novo quando quiser.",
   "@errors.write.cancelled.suggestion": {
@@ -1035,9 +1087,21 @@
   "@errors.write.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.write.deviceDisconnected.message": "O dispositivo foi desconectado durante a operação de {verb}.",
-  "@errors.write.deviceDisconnected.message": {
-    "sourceHash": "cf868ce"
+  "errors.write.deviceDisconnected.message.copy": "O dispositivo foi desconectado durante a cópia.",
+  "@errors.write.deviceDisconnected.message.copy": {
+    "sourceHash": "828908f"
+  },
+  "errors.write.deviceDisconnected.message.move": "O dispositivo foi desconectado durante a movimentação.",
+  "@errors.write.deviceDisconnected.message.move": {
+    "sourceHash": "4177ee9"
+  },
+  "errors.write.deviceDisconnected.message.delete": "O dispositivo foi desconectado durante a operação de apagar.",
+  "@errors.write.deviceDisconnected.message.delete": {
+    "sourceHash": "195562e"
+  },
+  "errors.write.deviceDisconnected.message.trash": "O dispositivo foi desconectado durante a movimentação para o Lixo.",
+  "@errors.write.deviceDisconnected.message.trash": {
+    "sourceHash": "9d5a47a"
   },
   "errors.write.deviceDisconnected.suggestion": "Confirme que o dispositivo está bem conectado e tente de novo.",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1067,9 +1131,21 @@
   "@errors.write.connectionInterrupted.suggestion": {
     "sourceHash": "d8d3c79"
   },
-  "errors.write.readError.title": "A operação de {Verb} não foi possível",
-  "@errors.write.readError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.readError.title.copy": "Não foi possível copiar",
+  "@errors.write.readError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.readError.title.move": "Não foi possível mover",
+  "@errors.write.readError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.readError.title.delete": "Não foi possível apagar",
+  "@errors.write.readError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.readError.title.trash": "Não foi possível mover para o Lixo",
+  "@errors.write.readError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.readError.message": "Não foi possível ler da origem.",
   "@errors.write.readError.message": {
@@ -1079,9 +1155,21 @@
   "@errors.write.readError.suggestion": {
     "sourceHash": "791f737"
   },
-  "errors.write.writeError.title": "A operação de {Verb} não foi possível",
-  "@errors.write.writeError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.writeError.title.copy": "Não foi possível copiar",
+  "@errors.write.writeError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.writeError.title.move": "Não foi possível mover",
+  "@errors.write.writeError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.writeError.title.delete": "Não foi possível apagar",
+  "@errors.write.writeError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.writeError.title.trash": "Não foi possível mover para o Lixo",
+  "@errors.write.writeError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.writeError.message": "Não foi possível gravar no destino.",
   "@errors.write.writeError.message": {
@@ -1115,13 +1203,37 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "bdac1ea"
   },
-  "errors.write.ioError.title": "A operação de {Verb} não foi possível",
-  "@errors.write.ioError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.ioError.title.copy": "Não foi possível copiar",
+  "@errors.write.ioError.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.ioError.message": "Não foi possível {verb} o arquivo.",
-  "@errors.write.ioError.message": {
-    "sourceHash": "f008917"
+  "errors.write.ioError.title.move": "Não foi possível mover",
+  "@errors.write.ioError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.ioError.title.delete": "Não foi possível apagar",
+  "@errors.write.ioError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.ioError.title.trash": "Não foi possível mover para o Lixo",
+  "@errors.write.ioError.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.ioError.message.copy": "Não foi possível copiar o arquivo.",
+  "@errors.write.ioError.message.copy": {
+    "sourceHash": "93d27d8"
+  },
+  "errors.write.ioError.message.move": "Não foi possível mover o arquivo.",
+  "@errors.write.ioError.message.move": {
+    "sourceHash": "d2f8eea"
+  },
+  "errors.write.ioError.message.delete": "Não foi possível apagar o arquivo.",
+  "@errors.write.ioError.message.delete": {
+    "sourceHash": "87cc29a"
+  },
+  "errors.write.ioError.message.trash": "Não foi possível mover o arquivo para o Lixo.",
+  "@errors.write.ioError.message.trash": {
+    "sourceHash": "e71b09d"
   },
   "errors.write.ioError.suggestion": "Tente de novo. Se o problema continuar, veja os detalhes técnicos abaixo.",
   "@errors.write.ioError.suggestion": {
@@ -1131,9 +1243,21 @@
   "@errors.write.permissionDenied.title": {
     "sourceHash": "be62ad2"
   },
-  "errors.write.permissionDenied.message": "Você não tem permissão para {verb} arquivos aqui.",
-  "@errors.write.permissionDenied.message": {
-    "sourceHash": "896d3c8"
+  "errors.write.permissionDenied.message.copy": "Você não tem permissão para copiar arquivos aqui.",
+  "@errors.write.permissionDenied.message.copy": {
+    "sourceHash": "d9ebc5a"
+  },
+  "errors.write.permissionDenied.message.move": "Você não tem permissão para mover arquivos aqui.",
+  "@errors.write.permissionDenied.message.move": {
+    "sourceHash": "d5c0358"
+  },
+  "errors.write.permissionDenied.message.delete": "Você não tem permissão para apagar arquivos aqui.",
+  "@errors.write.permissionDenied.message.delete": {
+    "sourceHash": "e002a5f"
+  },
+  "errors.write.permissionDenied.message.trash": "Você não tem permissão para mover arquivos para o Lixo aqui.",
+  "@errors.write.permissionDenied.message.trash": {
+    "sourceHash": "8381d02"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Verifique se você tem acesso de gravação à pasta principal. O arquivo pode estar bloqueado. Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1203,13 +1327,37 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
-  "errors.write.fallback.title": "A operação de {Verb} não foi possível",
-  "@errors.write.fallback.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.fallback.title.copy": "Não foi possível copiar",
+  "@errors.write.fallback.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.fallback.message": "Um problema inesperado ocorreu ao {gerund}.",
-  "@errors.write.fallback.message": {
-    "sourceHash": "e487f3d"
+  "errors.write.fallback.title.move": "Não foi possível mover",
+  "@errors.write.fallback.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.fallback.title.delete": "Não foi possível apagar",
+  "@errors.write.fallback.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.fallback.title.trash": "Não foi possível mover para o Lixo",
+  "@errors.write.fallback.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.fallback.message.copy": "Algo inesperado aconteceu ao copiar.",
+  "@errors.write.fallback.message.copy": {
+    "sourceHash": "bebd7c4"
+  },
+  "errors.write.fallback.message.move": "Algo inesperado aconteceu ao mover.",
+  "@errors.write.fallback.message.move": {
+    "sourceHash": "8340947"
+  },
+  "errors.write.fallback.message.delete": "Algo inesperado aconteceu ao apagar.",
+  "@errors.write.fallback.message.delete": {
+    "sourceHash": "91de619"
+  },
+  "errors.write.fallback.message.trash": "Algo inesperado aconteceu ao mover para o Lixo.",
+  "@errors.write.fallback.message.trash": {
+    "sourceHash": "238f82d"
   },
   "errors.write.fallback.suggestion": "Tente de novo, ou veja os detalhes técnicos abaixo para mais informações.",
   "@errors.write.fallback.suggestion": {

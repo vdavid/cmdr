@@ -963,9 +963,21 @@
   "@errors.write.sourceNotFound.title": {
     "sourceHash": "2003305"
   },
-  "errors.write.sourceNotFound.message": "El archivo o la carpeta sobre los que intentaste la acción {verb} ya no existen.",
-  "@errors.write.sourceNotFound.message": {
-    "sourceHash": "036df5c"
+  "errors.write.sourceNotFound.message.copy": "El archivo o la carpeta que intentaste copiar ya no existe.",
+  "@errors.write.sourceNotFound.message.copy": {
+    "sourceHash": "e572507"
+  },
+  "errors.write.sourceNotFound.message.move": "El archivo o la carpeta que intentaste mover ya no existe.",
+  "@errors.write.sourceNotFound.message.move": {
+    "sourceHash": "4c07735"
+  },
+  "errors.write.sourceNotFound.message.delete": "El archivo o la carpeta que intentaste eliminar ya no existe.",
+  "@errors.write.sourceNotFound.message.delete": {
+    "sourceHash": "cb0ab8f"
+  },
+  "errors.write.sourceNotFound.message.trash": "El archivo o la carpeta que intentaste mover a la papelera ya no existe.",
+  "@errors.write.sourceNotFound.message.trash": {
+    "sourceHash": "dbc0bbe"
   },
   "errors.write.sourceNotFound.suggestion": "Puede que se hayan movido, renombrado o eliminado. Prueba a actualizar la lista de archivos.",
   "@errors.write.sourceNotFound.suggestion": {
@@ -983,9 +995,13 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title": "No se puede aplicar la acción {verb} a la misma ubicación",
-  "@errors.write.sameLocation.title": {
-    "sourceHash": "6491841"
+  "errors.write.sameLocation.title.copy": "No se puede copiar a la misma ubicación",
+  "@errors.write.sameLocation.title.copy": {
+    "sourceHash": "7492839"
+  },
+  "errors.write.sameLocation.title.move": "No se puede mover a la misma ubicación",
+  "@errors.write.sameLocation.title.move": {
+    "sourceHash": "46b6a41"
   },
   "errors.write.sameLocation.message": "El origen y el destino son el mismo.",
   "@errors.write.sameLocation.message": {
@@ -995,17 +1011,29 @@
   "@errors.write.sameLocation.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.destinationInsideSource.title": "No se puede aplicar la acción {verb} a una carpeta dentro de sí misma",
-  "@errors.write.destinationInsideSource.title": {
-    "sourceHash": "724e37e"
+  "errors.write.destinationInsideSource.title.copy": "No se puede copiar una carpeta dentro de sí misma",
+  "@errors.write.destinationInsideSource.title.copy": {
+    "sourceHash": "40c58ea"
   },
-  "errors.write.destinationInsideSource.message": "Estás intentando aplicar la acción {verb} a una carpeta dentro de una de sus propias subcarpetas.",
-  "@errors.write.destinationInsideSource.message": {
-    "sourceHash": "e65efd9"
+  "errors.write.destinationInsideSource.title.move": "No se puede mover una carpeta dentro de sí misma",
+  "@errors.write.destinationInsideSource.title.move": {
+    "sourceHash": "3a9da7b"
   },
-  "errors.write.destinationInsideSource.suggestion": "Elige un destino fuera de la carpeta sobre la que estás aplicando la acción {gerund}.",
-  "@errors.write.destinationInsideSource.suggestion": {
-    "sourceHash": "e6b34cf"
+  "errors.write.destinationInsideSource.message.copy": "Estás intentando copiar una carpeta dentro de una de sus propias subcarpetas.",
+  "@errors.write.destinationInsideSource.message.copy": {
+    "sourceHash": "46d30ec"
+  },
+  "errors.write.destinationInsideSource.message.move": "Estás intentando mover una carpeta dentro de una de sus propias subcarpetas.",
+  "@errors.write.destinationInsideSource.message.move": {
+    "sourceHash": "e6ecfea"
+  },
+  "errors.write.destinationInsideSource.suggestion.copy": "Elige un destino fuera de la carpeta que estás copiando.",
+  "@errors.write.destinationInsideSource.suggestion.copy": {
+    "sourceHash": "9c446bf"
+  },
+  "errors.write.destinationInsideSource.suggestion.move": "Elige un destino fuera de la carpeta que estás moviendo.",
+  "@errors.write.destinationInsideSource.suggestion.move": {
+    "sourceHash": "ab985a6"
   },
   "errors.write.symlinkLoop.title": "Se detectó un bucle de enlaces",
   "@errors.write.symlinkLoop.title": {
@@ -1019,13 +1047,37 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.cancelled.title": "Acción {Verb} cancelada",
-  "@errors.write.cancelled.title": {
-    "sourceHash": "d1ed9a3"
+  "errors.write.cancelled.title.copy": "Copia cancelada",
+  "@errors.write.cancelled.title.copy": {
+    "sourceHash": "0a1cddf"
   },
-  "errors.write.cancelled.message": "La operación {verb} se canceló.",
-  "@errors.write.cancelled.message": {
-    "sourceHash": "93434af"
+  "errors.write.cancelled.title.move": "Movimiento cancelado",
+  "@errors.write.cancelled.title.move": {
+    "sourceHash": "8c4d24d"
+  },
+  "errors.write.cancelled.title.delete": "Eliminación cancelada",
+  "@errors.write.cancelled.title.delete": {
+    "sourceHash": "49eaa41"
+  },
+  "errors.write.cancelled.title.trash": "Movimiento a la papelera cancelado",
+  "@errors.write.cancelled.title.trash": {
+    "sourceHash": "cee684b"
+  },
+  "errors.write.cancelled.message.copy": "Se canceló la operación de copia.",
+  "@errors.write.cancelled.message.copy": {
+    "sourceHash": "a71bf80"
+  },
+  "errors.write.cancelled.message.move": "Se canceló la operación de movimiento.",
+  "@errors.write.cancelled.message.move": {
+    "sourceHash": "5a7ae6f"
+  },
+  "errors.write.cancelled.message.delete": "Se canceló la operación de eliminación.",
+  "@errors.write.cancelled.message.delete": {
+    "sourceHash": "bb97fee"
+  },
+  "errors.write.cancelled.message.trash": "Se canceló el movimiento a la papelera.",
+  "@errors.write.cancelled.message.trash": {
+    "sourceHash": "d8c3182"
   },
   "errors.write.cancelled.suggestion": "Puedes volver a intentarlo cuando quieras.",
   "@errors.write.cancelled.suggestion": {
@@ -1035,9 +1087,21 @@
   "@errors.write.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.write.deviceDisconnected.message": "El dispositivo se desconectó durante la acción {verb}.",
-  "@errors.write.deviceDisconnected.message": {
-    "sourceHash": "cf868ce"
+  "errors.write.deviceDisconnected.message.copy": "Se desconectó el dispositivo durante la copia.",
+  "@errors.write.deviceDisconnected.message.copy": {
+    "sourceHash": "828908f"
+  },
+  "errors.write.deviceDisconnected.message.move": "Se desconectó el dispositivo durante el movimiento.",
+  "@errors.write.deviceDisconnected.message.move": {
+    "sourceHash": "4177ee9"
+  },
+  "errors.write.deviceDisconnected.message.delete": "Se desconectó el dispositivo durante la eliminación.",
+  "@errors.write.deviceDisconnected.message.delete": {
+    "sourceHash": "195562e"
+  },
+  "errors.write.deviceDisconnected.message.trash": "Se desconectó el dispositivo durante el movimiento a la papelera.",
+  "@errors.write.deviceDisconnected.message.trash": {
+    "sourceHash": "9d5a47a"
   },
   "errors.write.deviceDisconnected.suggestion": "Asegúrate de que el dispositivo esté bien conectado y vuelve a intentarlo.",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1067,9 +1131,21 @@
   "@errors.write.connectionInterrupted.suggestion": {
     "sourceHash": "d8d3c79"
   },
-  "errors.write.readError.title": "No se pudo completar la acción {Verb}",
-  "@errors.write.readError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.readError.title.copy": "No se pudo copiar",
+  "@errors.write.readError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.readError.title.move": "No se pudo mover",
+  "@errors.write.readError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.readError.title.delete": "No se pudo eliminar",
+  "@errors.write.readError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.readError.title.trash": "No se pudo mover a la papelera",
+  "@errors.write.readError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.readError.message": "No se pudo leer del origen.",
   "@errors.write.readError.message": {
@@ -1079,9 +1155,21 @@
   "@errors.write.readError.suggestion": {
     "sourceHash": "791f737"
   },
-  "errors.write.writeError.title": "No se pudo completar la acción {Verb}",
-  "@errors.write.writeError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.writeError.title.copy": "No se pudo copiar",
+  "@errors.write.writeError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.writeError.title.move": "No se pudo mover",
+  "@errors.write.writeError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.writeError.title.delete": "No se pudo eliminar",
+  "@errors.write.writeError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.writeError.title.trash": "No se pudo mover a la papelera",
+  "@errors.write.writeError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.writeError.message": "No se pudo escribir en el destino.",
   "@errors.write.writeError.message": {
@@ -1115,13 +1203,37 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "bdac1ea"
   },
-  "errors.write.ioError.title": "No se pudo completar la acción {Verb}",
-  "@errors.write.ioError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.ioError.title.copy": "No se pudo copiar",
+  "@errors.write.ioError.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.ioError.message": "No se pudo aplicar la acción {verb} al archivo.",
-  "@errors.write.ioError.message": {
-    "sourceHash": "f008917"
+  "errors.write.ioError.title.move": "No se pudo mover",
+  "@errors.write.ioError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.ioError.title.delete": "No se pudo eliminar",
+  "@errors.write.ioError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.ioError.title.trash": "No se pudo mover a la papelera",
+  "@errors.write.ioError.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.ioError.message.copy": "No se pudo copiar el archivo.",
+  "@errors.write.ioError.message.copy": {
+    "sourceHash": "93d27d8"
+  },
+  "errors.write.ioError.message.move": "No se pudo mover el archivo.",
+  "@errors.write.ioError.message.move": {
+    "sourceHash": "d2f8eea"
+  },
+  "errors.write.ioError.message.delete": "No se pudo eliminar el archivo.",
+  "@errors.write.ioError.message.delete": {
+    "sourceHash": "87cc29a"
+  },
+  "errors.write.ioError.message.trash": "No se pudo mover el archivo a la papelera.",
+  "@errors.write.ioError.message.trash": {
+    "sourceHash": "e71b09d"
   },
   "errors.write.ioError.suggestion": "Vuelve a intentarlo. Si el problema continúa, revisa los detalles técnicos de abajo.",
   "@errors.write.ioError.suggestion": {
@@ -1131,9 +1243,21 @@
   "@errors.write.permissionDenied.title": {
     "sourceHash": "be62ad2"
   },
-  "errors.write.permissionDenied.message": "No tienes permiso para aplicar la acción {verb} a archivos aquí.",
-  "@errors.write.permissionDenied.message": {
-    "sourceHash": "896d3c8"
+  "errors.write.permissionDenied.message.copy": "No tienes permiso para copiar archivos aquí.",
+  "@errors.write.permissionDenied.message.copy": {
+    "sourceHash": "d9ebc5a"
+  },
+  "errors.write.permissionDenied.message.move": "No tienes permiso para mover archivos aquí.",
+  "@errors.write.permissionDenied.message.move": {
+    "sourceHash": "d5c0358"
+  },
+  "errors.write.permissionDenied.message.delete": "No tienes permiso para eliminar archivos aquí.",
+  "@errors.write.permissionDenied.message.delete": {
+    "sourceHash": "e002a5f"
+  },
+  "errors.write.permissionDenied.message.trash": "No tienes permiso para mover archivos a la papelera aquí.",
+  "@errors.write.permissionDenied.message.trash": {
+    "sourceHash": "8381d02"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté bloqueado. Desbloquéalo en Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1203,13 +1327,37 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
-  "errors.write.fallback.title": "No se pudo completar la acción {Verb}",
-  "@errors.write.fallback.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.fallback.title.copy": "No se pudo copiar",
+  "@errors.write.fallback.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.fallback.message": "Ocurrió un problema inesperado durante la acción {gerund}.",
-  "@errors.write.fallback.message": {
-    "sourceHash": "e487f3d"
+  "errors.write.fallback.title.move": "No se pudo mover",
+  "@errors.write.fallback.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.fallback.title.delete": "No se pudo eliminar",
+  "@errors.write.fallback.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.fallback.title.trash": "No se pudo mover a la papelera",
+  "@errors.write.fallback.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.fallback.message.copy": "Ocurrió un error inesperado al copiar.",
+  "@errors.write.fallback.message.copy": {
+    "sourceHash": "bebd7c4"
+  },
+  "errors.write.fallback.message.move": "Ocurrió un error inesperado al mover.",
+  "@errors.write.fallback.message.move": {
+    "sourceHash": "8340947"
+  },
+  "errors.write.fallback.message.delete": "Ocurrió un error inesperado al eliminar.",
+  "@errors.write.fallback.message.delete": {
+    "sourceHash": "91de619"
+  },
+  "errors.write.fallback.message.trash": "Ocurrió un error inesperado al mover a la papelera.",
+  "@errors.write.fallback.message.trash": {
+    "sourceHash": "238f82d"
   },
   "errors.write.fallback.suggestion": "Vuelve a intentarlo, o revisa los detalles técnicos de abajo para más información.",
   "@errors.write.fallback.suggestion": {

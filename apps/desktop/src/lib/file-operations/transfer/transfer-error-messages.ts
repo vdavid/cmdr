@@ -10,9 +10,10 @@
  * via `getMessage()` (a RAW catalog lookup, never ICU `t()`): these strings carry
  * interpolated paths/sizes/HTML escaping and bypass ICU's brace/apostrophe
  * grammar (so the catalog values use normal apostrophes, not doubled). This
- * file keeps the COMPOSITION (verb selection, escaping, size colorizing,
- * platform branches) and substitutes `{verb}`/`{Verb}`/`{gerund}` and the
- * per-variant tokens into the catalog templates. See `$lib/intl`'s docs.
+ * file keeps the COMPOSITION (escaping, size colorizing, platform branches)
+ * and selects per-operation message variants by key suffix
+ * (`<field>.${operationType}`), so each language phrases each operation
+ * naturally. See `$lib/intl`'s docs.
  */
 
 import type { WriteOperationError, TransferOperationType, FriendlyError } from '$lib/file-explorer/types'
@@ -48,26 +49,13 @@ export interface FriendlyErrorMessage {
   suggestion: string
 }
 
-const operationVerbMap: Record<TransferOperationType, { verb: string; gerund: string }> = {
-  copy: { verb: 'copy', gerund: 'copying' },
-  move: { verb: 'move', gerund: 'moving' },
-  delete: { verb: 'delete', gerund: 'deleting' },
-  trash: { verb: 'move to trash', gerund: 'moving to trash' },
-}
-
-interface OperationVerbs {
-  verb: string
-  Verb: string
-  gerund: string
-}
-
-/** Simple error messages that only depend on the operation verbs, not on error-specific fields. */
+/** Simple error messages that only depend on the operation, not on error-specific fields. */
 const simpleMessageFactories: Partial<
-  Record<WriteOperationError['type'], (v: OperationVerbs) => FriendlyErrorMessage>
+  Record<WriteOperationError['type'], (op: TransferOperationType) => FriendlyErrorMessage>
 > = {
-  source_not_found: ({ verb }) => ({
+  source_not_found: (op) => ({
     title: w('sourceNotFound.title'),
-    message: w('sourceNotFound.message', { verb }),
+    message: w(`sourceNotFound.message.${op}`),
     suggestion: w('sourceNotFound.suggestion'),
   }),
   destination_exists: () => ({
@@ -75,29 +63,33 @@ const simpleMessageFactories: Partial<
     message: w('destinationExists.message'),
     suggestion: w('destinationExists.suggestion'),
   }),
-  same_location: ({ verb }) => ({
-    title: w('sameLocation.title', { verb }),
+  // sameLocation can only happen on copy/move (delete/trash have no destination),
+  // so `${op}` only ever resolves to `.copy` or `.move` here.
+  same_location: (op) => ({
+    title: w(`sameLocation.title.${op}`),
     message: w('sameLocation.message'),
     suggestion: w('sameLocation.suggestion'),
   }),
-  destination_inside_source: ({ verb, gerund }) => ({
-    title: w('destinationInsideSource.title', { verb }),
-    message: w('destinationInsideSource.message', { verb }),
-    suggestion: w('destinationInsideSource.suggestion', { gerund }),
+  // destinationInsideSource can only happen on copy/move (delete/trash have no
+  // destination), so `${op}` only ever resolves to `.copy` or `.move` here.
+  destination_inside_source: (op) => ({
+    title: w(`destinationInsideSource.title.${op}`),
+    message: w(`destinationInsideSource.message.${op}`),
+    suggestion: w(`destinationInsideSource.suggestion.${op}`),
   }),
   symlink_loop: () => ({
     title: w('symlinkLoop.title'),
     message: w('symlinkLoop.message'),
     suggestion: w('symlinkLoop.suggestion'),
   }),
-  cancelled: ({ verb, Verb }) => ({
-    title: w('cancelled.title', { Verb }),
-    message: w('cancelled.message', { verb }),
+  cancelled: (op) => ({
+    title: w(`cancelled.title.${op}`),
+    message: w(`cancelled.message.${op}`),
     suggestion: w('cancelled.suggestion'),
   }),
-  device_disconnected: ({ verb }) => ({
+  device_disconnected: (op) => ({
     title: w('deviceDisconnected.title'),
-    message: w('deviceDisconnected.message', { verb }),
+    message: w(`deviceDisconnected.message.${op}`),
     suggestion: w('deviceDisconnected.suggestion'),
   }),
   trash_not_supported: () => {
@@ -116,13 +108,13 @@ const simpleMessageFactories: Partial<
     message: w('connectionInterrupted.message'),
     suggestion: w('connectionInterrupted.suggestion'),
   }),
-  read_error: ({ Verb }) => ({
-    title: w('readError.title', { Verb }),
+  read_error: (op) => ({
+    title: w(`readError.title.${op}`),
     message: w('readError.message'),
     suggestion: w('readError.suggestion'),
   }),
-  write_error: ({ Verb }) => ({
-    title: w('writeError.title', { Verb }),
+  write_error: (op) => ({
+    title: w(`writeError.title.${op}`),
     message: w('writeError.message'),
     suggestion: w('writeError.suggestion'),
   }),
@@ -136,9 +128,9 @@ const simpleMessageFactories: Partial<
     message: w('invalidName.message'),
     suggestion: w('invalidName.suggestion'),
   }),
-  io_error: ({ verb, Verb }) => ({
-    title: w('ioError.title', { Verb }),
-    message: w('ioError.message', { verb }),
+  io_error: (op) => ({
+    title: w(`ioError.title.${op}`),
+    message: w(`ioError.message.${op}`),
     suggestion: w('ioError.suggestion'),
   }),
 }
@@ -194,20 +186,15 @@ export function getUserFriendlyMessage(
   error: WriteOperationError,
   operationType: TransferOperationType = 'copy',
 ): FriendlyErrorMessage {
-  const { verb, gerund } = operationVerbMap[operationType]
-  const Verb = verb.charAt(0).toUpperCase() + verb.slice(1)
-  const verbs: OperationVerbs = { verb, Verb, gerund }
-
   const simpleFactory = simpleMessageFactories[error.type]
-  if (simpleFactory) return simpleFactory(verbs)
+  if (simpleFactory) return simpleFactory(operationType)
 
   switch (error.type) {
     case 'permission_denied': {
       const isDeleteOp = operationType === 'delete' || operationType === 'trash'
       return {
         title: w('permissionDenied.title'),
-        // allowed-pluralize-noun: `verb` is an action name (copy/move/delete), not a count.
-        message: w('permissionDenied.message', { verb }),
+        message: w(`permissionDenied.message.${operationType}`),
         suggestion: isDeleteOp
           ? isMacOS()
             ? w('permissionDenied.suggestion.deleteMac')
@@ -249,8 +236,8 @@ export function getUserFriendlyMessage(
       }
     default:
       return {
-        title: w('fallback.title', { Verb }),
-        message: w('fallback.message', { gerund }),
+        title: w(`fallback.title.${operationType}`),
+        message: w(`fallback.message.${operationType}`),
         suggestion: w('fallback.suggestion'),
       }
   }

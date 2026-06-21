@@ -963,9 +963,21 @@
   "@errors.write.sourceNotFound.title": {
     "sourceHash": "2003305"
   },
-  "errors.write.sourceNotFound.message": "Tệp hoặc thư mục bạn đã thử {verb} không còn tồn tại nữa.",
-  "@errors.write.sourceNotFound.message": {
-    "sourceHash": "036df5c"
+  "errors.write.sourceNotFound.message.copy": "Tệp hoặc thư mục bạn muốn sao chép không còn tồn tại.",
+  "@errors.write.sourceNotFound.message.copy": {
+    "sourceHash": "e572507"
+  },
+  "errors.write.sourceNotFound.message.move": "Tệp hoặc thư mục bạn muốn di chuyển không còn tồn tại.",
+  "@errors.write.sourceNotFound.message.move": {
+    "sourceHash": "4c07735"
+  },
+  "errors.write.sourceNotFound.message.delete": "Tệp hoặc thư mục bạn muốn xóa không còn tồn tại.",
+  "@errors.write.sourceNotFound.message.delete": {
+    "sourceHash": "cb0ab8f"
+  },
+  "errors.write.sourceNotFound.message.trash": "Tệp hoặc thư mục bạn muốn chuyển vào thùng rác không còn tồn tại.",
+  "@errors.write.sourceNotFound.message.trash": {
+    "sourceHash": "dbc0bbe"
   },
   "errors.write.sourceNotFound.suggestion": "Có thể nó đã được di chuyển, đổi tên, hoặc xóa. Thử làm mới danh sách tệp.",
   "@errors.write.sourceNotFound.suggestion": {
@@ -983,9 +995,13 @@
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
-  "errors.write.sameLocation.title": "Không thể {verb} về cùng một vị trí",
-  "@errors.write.sameLocation.title": {
-    "sourceHash": "6491841"
+  "errors.write.sameLocation.title.copy": "Không thể sao chép vào cùng một vị trí",
+  "@errors.write.sameLocation.title.copy": {
+    "sourceHash": "7492839"
+  },
+  "errors.write.sameLocation.title.move": "Không thể di chuyển vào cùng một vị trí",
+  "@errors.write.sameLocation.title.move": {
+    "sourceHash": "46b6a41"
   },
   "errors.write.sameLocation.message": "Nguồn và đích là một.",
   "@errors.write.sameLocation.message": {
@@ -995,17 +1011,29 @@
   "@errors.write.sameLocation.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.destinationInsideSource.title": "Không thể {verb} một thư mục vào chính nó",
-  "@errors.write.destinationInsideSource.title": {
-    "sourceHash": "724e37e"
+  "errors.write.destinationInsideSource.title.copy": "Không thể sao chép một thư mục vào chính nó",
+  "@errors.write.destinationInsideSource.title.copy": {
+    "sourceHash": "40c58ea"
   },
-  "errors.write.destinationInsideSource.message": "Bạn đang cố {verb} một thư mục vào một trong các thư mục con của chính nó.",
-  "@errors.write.destinationInsideSource.message": {
-    "sourceHash": "e65efd9"
+  "errors.write.destinationInsideSource.title.move": "Không thể di chuyển một thư mục vào chính nó",
+  "@errors.write.destinationInsideSource.title.move": {
+    "sourceHash": "3a9da7b"
   },
-  "errors.write.destinationInsideSource.suggestion": "Chọn một đích nằm ngoài thư mục bạn đang {gerund}.",
-  "@errors.write.destinationInsideSource.suggestion": {
-    "sourceHash": "e6b34cf"
+  "errors.write.destinationInsideSource.message.copy": "Bạn đang cố sao chép một thư mục vào một trong các thư mục con của chính nó.",
+  "@errors.write.destinationInsideSource.message.copy": {
+    "sourceHash": "46d30ec"
+  },
+  "errors.write.destinationInsideSource.message.move": "Bạn đang cố di chuyển một thư mục vào một trong các thư mục con của chính nó.",
+  "@errors.write.destinationInsideSource.message.move": {
+    "sourceHash": "e6ecfea"
+  },
+  "errors.write.destinationInsideSource.suggestion.copy": "Chọn một đích nằm ngoài thư mục bạn đang sao chép.",
+  "@errors.write.destinationInsideSource.suggestion.copy": {
+    "sourceHash": "9c446bf"
+  },
+  "errors.write.destinationInsideSource.suggestion.move": "Chọn một đích nằm ngoài thư mục bạn đang di chuyển.",
+  "@errors.write.destinationInsideSource.suggestion.move": {
+    "sourceHash": "ab985a6"
   },
   "errors.write.symlinkLoop.title": "Phát hiện vòng lặp liên kết",
   "@errors.write.symlinkLoop.title": {
@@ -1019,13 +1047,37 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.cancelled.title": "Đã hủy {Verb}",
-  "@errors.write.cancelled.title": {
-    "sourceHash": "d1ed9a3"
+  "errors.write.cancelled.title.copy": "Đã hủy sao chép",
+  "@errors.write.cancelled.title.copy": {
+    "sourceHash": "0a1cddf"
   },
-  "errors.write.cancelled.message": "Thao tác {verb} đã bị hủy.",
-  "@errors.write.cancelled.message": {
-    "sourceHash": "93434af"
+  "errors.write.cancelled.title.move": "Đã hủy di chuyển",
+  "@errors.write.cancelled.title.move": {
+    "sourceHash": "8c4d24d"
+  },
+  "errors.write.cancelled.title.delete": "Đã hủy xóa",
+  "@errors.write.cancelled.title.delete": {
+    "sourceHash": "49eaa41"
+  },
+  "errors.write.cancelled.title.trash": "Đã hủy chuyển vào thùng rác",
+  "@errors.write.cancelled.title.trash": {
+    "sourceHash": "cee684b"
+  },
+  "errors.write.cancelled.message.copy": "Thao tác sao chép đã bị hủy.",
+  "@errors.write.cancelled.message.copy": {
+    "sourceHash": "a71bf80"
+  },
+  "errors.write.cancelled.message.move": "Thao tác di chuyển đã bị hủy.",
+  "@errors.write.cancelled.message.move": {
+    "sourceHash": "5a7ae6f"
+  },
+  "errors.write.cancelled.message.delete": "Thao tác xóa đã bị hủy.",
+  "@errors.write.cancelled.message.delete": {
+    "sourceHash": "bb97fee"
+  },
+  "errors.write.cancelled.message.trash": "Thao tác chuyển vào thùng rác đã bị hủy.",
+  "@errors.write.cancelled.message.trash": {
+    "sourceHash": "d8c3182"
   },
   "errors.write.cancelled.suggestion": "Bạn có thể thử lại khi sẵn sàng.",
   "@errors.write.cancelled.suggestion": {
@@ -1035,9 +1087,21 @@
   "@errors.write.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.write.deviceDisconnected.message": "Thiết bị đã ngắt kết nối trong lúc {verb}.",
-  "@errors.write.deviceDisconnected.message": {
-    "sourceHash": "cf868ce"
+  "errors.write.deviceDisconnected.message.copy": "Thiết bị đã bị ngắt kết nối trong khi sao chép.",
+  "@errors.write.deviceDisconnected.message.copy": {
+    "sourceHash": "828908f"
+  },
+  "errors.write.deviceDisconnected.message.move": "Thiết bị đã bị ngắt kết nối trong khi di chuyển.",
+  "@errors.write.deviceDisconnected.message.move": {
+    "sourceHash": "4177ee9"
+  },
+  "errors.write.deviceDisconnected.message.delete": "Thiết bị đã bị ngắt kết nối trong khi xóa.",
+  "@errors.write.deviceDisconnected.message.delete": {
+    "sourceHash": "195562e"
+  },
+  "errors.write.deviceDisconnected.message.trash": "Thiết bị đã bị ngắt kết nối trong khi chuyển vào thùng rác.",
+  "@errors.write.deviceDisconnected.message.trash": {
+    "sourceHash": "9d5a47a"
   },
   "errors.write.deviceDisconnected.suggestion": "Đảm bảo thiết bị đã kết nối đúng cách rồi thử lại.",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1067,9 +1131,21 @@
   "@errors.write.connectionInterrupted.suggestion": {
     "sourceHash": "d8d3c79"
   },
-  "errors.write.readError.title": "{Verb} không thành công",
-  "@errors.write.readError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.readError.title.copy": "Không thể sao chép",
+  "@errors.write.readError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.readError.title.move": "Không thể di chuyển",
+  "@errors.write.readError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.readError.title.delete": "Không thể xóa",
+  "@errors.write.readError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.readError.title.trash": "Không thể chuyển vào thùng rác",
+  "@errors.write.readError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.readError.message": "Không đọc được từ nguồn.",
   "@errors.write.readError.message": {
@@ -1079,9 +1155,21 @@
   "@errors.write.readError.suggestion": {
     "sourceHash": "791f737"
   },
-  "errors.write.writeError.title": "{Verb} không thành công",
-  "@errors.write.writeError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.writeError.title.copy": "Không thể sao chép",
+  "@errors.write.writeError.title.copy": {
+    "sourceHash": "5b50e7a"
+  },
+  "errors.write.writeError.title.move": "Không thể di chuyển",
+  "@errors.write.writeError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.writeError.title.delete": "Không thể xóa",
+  "@errors.write.writeError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.writeError.title.trash": "Không thể chuyển vào thùng rác",
+  "@errors.write.writeError.title.trash": {
+    "sourceHash": "cb5cbe6"
   },
   "errors.write.writeError.message": "Không ghi được tới đích.",
   "@errors.write.writeError.message": {
@@ -1115,13 +1203,37 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "bdac1ea"
   },
-  "errors.write.ioError.title": "{Verb} không thành công",
-  "@errors.write.ioError.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.ioError.title.copy": "Không thể sao chép",
+  "@errors.write.ioError.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.ioError.message": "Không thể {verb} tệp.",
-  "@errors.write.ioError.message": {
-    "sourceHash": "f008917"
+  "errors.write.ioError.title.move": "Không thể di chuyển",
+  "@errors.write.ioError.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.ioError.title.delete": "Không thể xóa",
+  "@errors.write.ioError.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.ioError.title.trash": "Không thể chuyển vào thùng rác",
+  "@errors.write.ioError.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.ioError.message.copy": "Không thể sao chép tệp.",
+  "@errors.write.ioError.message.copy": {
+    "sourceHash": "93d27d8"
+  },
+  "errors.write.ioError.message.move": "Không thể di chuyển tệp.",
+  "@errors.write.ioError.message.move": {
+    "sourceHash": "d2f8eea"
+  },
+  "errors.write.ioError.message.delete": "Không thể xóa tệp.",
+  "@errors.write.ioError.message.delete": {
+    "sourceHash": "87cc29a"
+  },
+  "errors.write.ioError.message.trash": "Không thể chuyển tệp vào thùng rác.",
+  "@errors.write.ioError.message.trash": {
+    "sourceHash": "e71b09d"
   },
   "errors.write.ioError.suggestion": "Thử lại. Nếu vấn đề vẫn còn, hãy xem chi tiết kỹ thuật bên dưới.",
   "@errors.write.ioError.suggestion": {
@@ -1131,9 +1243,21 @@
   "@errors.write.permissionDenied.title": {
     "sourceHash": "be62ad2"
   },
-  "errors.write.permissionDenied.message": "Bạn không có quyền {verb} tệp ở đây.",
-  "@errors.write.permissionDenied.message": {
-    "sourceHash": "896d3c8"
+  "errors.write.permissionDenied.message.copy": "Bạn không có quyền sao chép tệp vào đây.",
+  "@errors.write.permissionDenied.message.copy": {
+    "sourceHash": "d9ebc5a"
+  },
+  "errors.write.permissionDenied.message.move": "Bạn không có quyền di chuyển tệp vào đây.",
+  "@errors.write.permissionDenied.message.move": {
+    "sourceHash": "d5c0358"
+  },
+  "errors.write.permissionDenied.message.delete": "Bạn không có quyền xóa tệp ở đây.",
+  "@errors.write.permissionDenied.message.delete": {
+    "sourceHash": "e002a5f"
+  },
+  "errors.write.permissionDenied.message.trash": "Bạn không có quyền chuyển tệp vào thùng rác ở đây.",
+  "@errors.write.permissionDenied.message.trash": {
+    "sourceHash": "8381d02"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang bị khóa. Mở khóa nó trong Finder (Get Info > bỏ chọn Locked) rồi thử lại.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1203,13 +1327,37 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
-  "errors.write.fallback.title": "{Verb} không thành công",
-  "@errors.write.fallback.title": {
-    "sourceHash": "d532d2f"
+  "errors.write.fallback.title.copy": "Không thể sao chép",
+  "@errors.write.fallback.title.copy": {
+    "sourceHash": "5b50e7a"
   },
-  "errors.write.fallback.message": "Đã xảy ra một trục trặc bất ngờ khi đang {gerund}.",
-  "@errors.write.fallback.message": {
-    "sourceHash": "e487f3d"
+  "errors.write.fallback.title.move": "Không thể di chuyển",
+  "@errors.write.fallback.title.move": {
+    "sourceHash": "55185d6"
+  },
+  "errors.write.fallback.title.delete": "Không thể xóa",
+  "@errors.write.fallback.title.delete": {
+    "sourceHash": "8727e2b"
+  },
+  "errors.write.fallback.title.trash": "Không thể chuyển vào thùng rác",
+  "@errors.write.fallback.title.trash": {
+    "sourceHash": "cb5cbe6"
+  },
+  "errors.write.fallback.message.copy": "Đã xảy ra sự cố không mong muốn trong khi sao chép.",
+  "@errors.write.fallback.message.copy": {
+    "sourceHash": "bebd7c4"
+  },
+  "errors.write.fallback.message.move": "Đã xảy ra sự cố không mong muốn trong khi di chuyển.",
+  "@errors.write.fallback.message.move": {
+    "sourceHash": "8340947"
+  },
+  "errors.write.fallback.message.delete": "Đã xảy ra sự cố không mong muốn trong khi xóa.",
+  "@errors.write.fallback.message.delete": {
+    "sourceHash": "91de619"
+  },
+  "errors.write.fallback.message.trash": "Đã xảy ra sự cố không mong muốn trong khi chuyển vào thùng rác.",
+  "@errors.write.fallback.message.trash": {
+    "sourceHash": "238f82d"
   },
   "errors.write.fallback.suggestion": "Thử lại, hoặc xem chi tiết kỹ thuật bên dưới để biết thêm thông tin.",
   "@errors.write.fallback.suggestion": {
