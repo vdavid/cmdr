@@ -24,7 +24,9 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   ERROR-MESSAGE prose (`transfer-error-messages.ts`, rendered in `TransferErrorDialog`/`FallbackErrorContent`) belongs
   to the `lib/errors` pipeline, so it resolves from the `errors.write.*` catalog via `getMessage()` (RAW lookup, no ICU
   — write apostrophes normally), NOT through ICU `t()`: the strings carry interpolated paths/sizes (`escapeHtml`,
-  `colorizeSizeString`) the .ts composes around `{verb}`/`{Verb}`/`{gerund}` tokens. en output is parity-pinned
+  `colorizeSizeString`) the .ts composes. Verb-dependent messages use per-operation variant keys
+  (`errors.write.<field>.<copy|move|delete|trash>`) selected by `operationType` (NOT a slotted verb token — that was an
+  i18n anti-pattern), so each locale phrases each operation naturally. en output is parity-pinned
   (`file-operations-i18n-parity.test.ts` + the count-phrase unit tests for dialog copy;
   `transfer/transfer-error-messages.parity.test.ts` for the write-error copy); a copy edit lands in the catalog AND the
   test together. See [`$lib/intl/messages/CLAUDE.md`](../intl/messages/CLAUDE.md).

@@ -92,6 +92,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   for (const tag of tags) {
     const { files, keys } = generateSkeleton(tag, { messagesRoot, force })
-    console.log(`Scaffolded ${tag}/: ${String(keys)} keys across ${String(files)} area files (English values, ready to translate in place).`)
+    console.log(
+      `Scaffolded ${tag}/: ${String(keys)} keys across ${String(files)} area files (English values, ready to translate in place).`,
+    )
   }
 }

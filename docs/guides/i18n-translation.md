@@ -141,7 +141,8 @@ the documented last resort, used only when natural restructuring genuinely isn't
 1. **Pick the BCP-47 tag.** A language base (`xx`) for the universal set, or a region variant (`xx-YY`) when a region
    needs overrides. The tag is a format identifier, not translatable. The base is the fallback for its variants; `en` is
    the final fallback. Convention + resolution order: [`i18n.md`](i18n.md) § Locale-format convention.
-2. **Create the skeleton.** Mirror `en/`'s files and keys under `messages/<tag>/`, and stamp each translated key's
+2. **Create the skeleton.** Run `node apps/desktop/scripts/gen-locale-skeleton.js <tag>`: it mirrors `en/`'s files and
+   keys under `messages/<tag>/` with the English values in place and each
    `@key.sourceHash` = the 7-char hash of the exact English value it was translated from (computed by `sourceHash()` in
    `apps/desktop/scripts/i18n-catalog-lib.js`; the pseudolocale generator does exactly this and is the reference). The
    hash is what `desktop-i18n-stale` uses to know a translation is still current.
@@ -169,8 +170,10 @@ The routine maintenance loop, run for every change that adds or edits user-facin
 1. **Add or edit the `en` key** with a `@key.description` that meets the bar (`messages/DETAILS.md` § `@key` metadata
    schema, noting the fragment-key and pass-through-placeholder requirements). Run `pnpm intl:keys` to regenerate the
    key union.
-2. **For each existing locale**, read its style guide, translate the new or changed keys, and update each touched key's
-   `@key.sourceHash` to the new English value's hash.
+2. **Propagate the keys to every locale**: run `node apps/desktop/scripts/sync-locale-keys.js` (all locales) — it adds
+   each new `en` key as an English skeleton with the correct `@key.sourceHash`, drops keys you removed, and preserves
+   existing translations. Then, for each locale, read its style guide and translate the new/changed keys in place (the
+   coverage check lists exactly what's still English).
 3. **Run the checks** (same set as step 5 above). `desktop-i18n-stale` is the safety net here: editing an `en` value
    changes its hash, so EVERY locale's translation of that key reads as stale until re-translated and re-hashed. You
    can't silently leave a locale behind on a copy edit: the stale warning lists exactly which keys each locale owes.

@@ -78,7 +78,8 @@ export function syncLocale(tag, opts = {}) {
   if (existsSync(localeDir)) {
     const enNames = new Set(Object.keys(enFiles))
     for (const f of readdirSync(localeDir)) {
-      if (f.endsWith('.json') && !enNames.has(f)) console.warn(`  warning: ${tag}/${f} has no matching en/ file (left in place)`)
+      if (f.endsWith('.json') && !enNames.has(f))
+        console.warn(`  warning: ${tag}/${f} has no matching en/ file (left in place)`)
     }
   }
   return { added, kept, dropped, files }
@@ -92,6 +93,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (tags.length === 0) tags = listLocales(messagesRoot).filter((l) => l !== SOURCE_LOCALE)
   for (const tag of tags) {
     const { added, kept, dropped, files } = syncLocale(tag, { messagesRoot })
-    console.log(`Synced ${tag}/: +${String(added)} new (English, to translate), ${String(kept)} kept, -${String(dropped)} dropped, across ${String(files)} files.`)
+    console.log(
+      `Synced ${tag}/: +${String(added)} new (English, to translate), ${String(kept)} kept, -${String(dropped)} dropped, across ${String(files)} files.`,
+    )
   }
 }
