@@ -13,7 +13,6 @@
  * pre-change Rust copy: fix the FE factory, do NOT regenerate the golden.
  */
 
-import os from 'node:os'
 import { describe, expect, it } from 'vitest'
 import golden from './__fixtures__/friendly_error_golden.json'
 import { getListingErrorMessage, type ListingErrorReason } from './listing-error-messages'
@@ -36,7 +35,12 @@ const goldenMap = golden as unknown as Record<string, GoldenEntry>
 const MATRIX_PATH = '/Volumes/share/_todo_*pics/photo.jpg'
 const PLAIN_PATH = '/some/plain/folder/_x_*y'
 const IO_MESSAGE = 'Protocol error: STATUS_DELETE_PENDING during Create'
-const HOME = os.homedir()
+// The home prefix the Rust golden generator captured for the CloudStorage
+// provider arms. It baked in the dev's real home, so this MUST be that exact
+// literal, NOT `os.homedir()`: the runtime home differs per machine (e.g.
+// `/home/runner` on Linux CI), which made the byte-for-byte comparison fail
+// everywhere except the machine that generated the golden.
+const HOME = '/Users/veszelovszki'
 
 // errno number → the FE listing reason it maps to (matching Rust `errno.rs`).
 const ERRNO_REASON: Record<number, ListingErrorReason> = {

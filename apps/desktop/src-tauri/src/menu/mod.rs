@@ -277,7 +277,13 @@ pub struct ViewerMenuItems<R: Runtime> {
     /// Only read on macOS: the viewer app-menu swap is macOS-only, and `lib.rs` captures this ref
     /// under `#[cfg(target_os = "macos")]` for `viewer_set_word_wrap`. On Linux the field is built
     /// but never read, so allow dead_code off macOS to keep the `deny(dead_code)` Linux build green.
-    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(
+            dead_code,
+            reason = "viewer word-wrap menu swap is macOS-only; the field is built but never read on Linux"
+        )
+    )]
     pub word_wrap: CheckMenuItem<R>,
 }
 
