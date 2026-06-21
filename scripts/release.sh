@@ -79,7 +79,9 @@ sed -i '' "s/## \[Unreleased\]/## [$VERSION] - $TODAY/" CHANGELOG.md
 # manual edits + the sed/`npm pkg set` mutations above doesn't fail CI on the release commit.
 # This also reformats any unrelated files that drifted (for example, a `.claude/commands/*.md`
 # touched in the same uncommitted batch the user is releasing).
-pnpm check oxfmt
+# `-m`: the release runs in the main clone by design, so opt past the worktree-only
+# guard (the `--ci` gate below opts past it via --ci instead).
+pnpm check oxfmt -m
 
 # Stage the files the script itself just bumped.
 git add \
@@ -107,7 +109,7 @@ pnpm check oxfmt --ci
 # we escalate it to a build-failing ERROR via CMDR_I18N_STALE_STRICT. With `set -e`, a stale
 # finding aborts the release before we tag, so the fix lands first. (English-only today, so
 # this is a clean no-op until a real locale exists.) See docs/guides/releasing.md.
-CMDR_I18N_STALE_STRICT=1 pnpm check i18n-stale
+CMDR_I18N_STALE_STRICT=1 pnpm check i18n-stale -m
 
 git commit -m "chore(release): v$VERSION"
 git tag "v$VERSION"
