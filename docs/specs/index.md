@@ -59,6 +59,9 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 - [x] 2026-06-20 mtp-device-scheduler-plan.md - Foreground-priority MTP device scheduler: the background index scan
       yields the single USB pipe to user nav/copy/delete per bounded unit, and the live watch→index feed buffers the raw
       handle before any device resolve (fixes the ~30 s scan livelock)
+- [ ] 2026-06-21 transfer-queue-pause-plan.md - Pause/resume + a lane-based queue for copy/move/delete across all volume
+      types, via a central Operation Manager wrapping all five spawn paths; Pause + Queue (F2) on progress dialogs and a
+      standalone macOS queue window (multi-select, cancel selected, pause all); cancel-only (no rollback) for now
 
 ## Later
 
