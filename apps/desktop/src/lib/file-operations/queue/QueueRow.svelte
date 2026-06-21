@@ -255,6 +255,11 @@
         color: var(--color-text-secondary);
     }
 
+    /* Queued reads as "waiting", a notch quieter than running/paused. */
+    .status-cell.queued {
+        color: var(--color-text-tertiary);
+    }
+
     .actions-cell {
         display: flex;
         align-items: center;

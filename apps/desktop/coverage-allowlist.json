@@ -133,6 +133,12 @@
     "file-operations/mkfile/NewFileDialog.svelte": {
       "reason": "UI modal, logic tested in new-file-operations.test.ts and filename-validation.test.ts"
     },
+    "file-operations/queue/operations-store.svelte.ts": {
+      "reason": "Reducers covered in operations-store.svelte.test.ts; the uncovered init/dispose is live Tauri event-subscription wiring (onOperationsChanged + onWriteProgress)"
+    },
+    "file-operations/queue/queue-window.ts": {
+      "reason": "Depends on Tauri WebviewWindow / window-effects APIs; opens or focuses the queue window"
+    },
     "file-operations/transfer/TransferProgressDialog.svelte": {
       "reason": "UI dialog, depends on Tauri events"
     },
@@ -305,6 +311,9 @@
       "reason": "Tauri command wrappers, tested via integration"
     },
     "tauri-commands/storage.ts": {
+      "reason": "Tauri command wrappers, tested via integration"
+    },
+    "tauri-commands/operations.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
     "tauri-commands/tab.ts": {

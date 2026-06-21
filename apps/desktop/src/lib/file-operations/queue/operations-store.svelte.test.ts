@@ -35,7 +35,7 @@ function progress(id: string, over: Partial<WriteProgressEvent> = {}): WriteProg
     bytesDone: 50,
     bytesTotal: 100,
     ...over,
-  } as WriteProgressEvent
+  }
 }
 
 describe('operations store reducers', () => {

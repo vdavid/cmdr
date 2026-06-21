@@ -74,7 +74,9 @@ export function createOperationsStore() {
   function applySnapshot(next: OperationSnapshot[]) {
     snapshots = next
     // Prune progress for ops that left the snapshot so the map can't grow without
-    // bound and a stale bar can't outlive its row.
+    // bound and a stale bar can't outlive its row. A transient local lookup, not
+    // reactive state, so a plain Set is right here (SvelteSet is for $state).
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- transient local, not reactive state
     const liveIds = new Set(next.map((op) => op.operationId))
     const pruned: Record<string, WriteProgressEvent> = {}
     for (const [id, event] of Object.entries(progressById)) {
@@ -103,8 +105,8 @@ export function createOperationsStore() {
       })
       // If we were disposed while awaiting, undo the subscriptions.
       if (disposed) {
-        unlistenSnapshots?.()
-        unlistenProgress?.()
+        unlistenSnapshots()
+        unlistenProgress()
         unlistenSnapshots = null
         unlistenProgress = null
         return
@@ -147,5 +149,3 @@ export function createOperationsStore() {
     _testApplyProgress: applyProgress,
   }
 }
-
-export type OperationsStore = ReturnType<typeof createOperationsStore>

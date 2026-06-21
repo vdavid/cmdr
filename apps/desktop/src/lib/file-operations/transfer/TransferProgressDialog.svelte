@@ -20,6 +20,10 @@
         onScanPreviewComplete,
         onScanPreviewError,
         onScanPreviewCancelled,
+        pauseOperation,
+        resumeOperation,
+        onOperationsChanged,
+        listOperations,
         formatDuration,
         formatFilesPerSecond,
         DEFAULT_VOLUME_ID,
@@ -29,8 +33,11 @@
         type WriteCancelledEvent,
         type WriteSettledEvent,
         type WriteConflictEvent,
+        type OperationSnapshot,
         type UnlistenFn,
     } from '$lib/tauri-commands'
+    import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
+    import { addToast } from '$lib/ui/toast'
     import type {
         TransferOperationType,
         WriteOperationPhase,
@@ -102,6 +109,11 @@
         onComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
         onError: (error: WriteOperationError) => void
+        /** Send this operation to the background: unmount the modal but keep the
+         *  op running, managed in the queue window. Fired by the Queue button, the
+         *  dialog-scoped F2, and the auto-queue path (an op admitted as Queued).
+         *  Optional so existing callers/tests that don't background stay valid. */
+        onQueue?: () => void
     }
 
     const {
@@ -122,6 +134,7 @@
         onComplete,
         onCancelled,
         onError,
+        onQueue,
     }: Props = $props()
 
     // English operation words for LOG lines only (not user-facing copy; user
@@ -253,6 +266,22 @@
      *  no-op since the backend state is already gone. */
     let operationSettled = $state(false)
 
+    // Pause + background (Queue) state. The lifecycle status (running/paused/
+    // queued/...) comes from the manager's `operations-changed` snapshot, NOT
+    // from `write-progress` (a paused op still reports `is_running: true`; the
+    // bar-is-moving truth is the snapshot status). See queue/CLAUDE.md.
+    let opStatus = $state<OperationSnapshot['status'] | null>(null)
+    let opsUnlisten: UnlistenFn | null = null
+    /** True once this op is being managed in the queue window instead of this
+     *  modal (the user hit Queue/F2, or the op was auto-queued behind a busy
+     *  lane). Suppresses the onDestroy safety-net cancel: backgrounding keeps the
+     *  op running, it must NOT stop it. */
+    let backgrounded = $state(false)
+    const isPaused = $derived(opStatus === 'paused')
+    let pauseInFlight = $state(false)
+    // `canPauseOrQueue` is defined below, after `conflictEvent` is declared (it
+    // gates the controls off while a conflict prompt is up).
+
     // Events that arrived before we know our operationId (from the command response).
     // Without buffering, a stale event from a previous operation could claim the ID slot first.
     type BufferedEvent =
@@ -304,6 +333,19 @@
     // Conflict state
     let conflictEvent = $state<WriteConflictEvent | null>(null)
     let isResolvingConflict = $state(false)
+
+    /** A paused op is still mid-transfer (not scanning, not cancelling, not
+     *  settled, no conflict prompt up), so the Pause/Resume + Queue controls show
+     *  during the active copy/move/delete phases only. */
+    const canPauseOrQueue = $derived(
+        !waitingForScan &&
+            !isCancelling &&
+            !cancelEventReceived &&
+            !isRollingBack &&
+            !operationSettled &&
+            !conflictEvent &&
+            operationId !== null,
+    )
 
     // Rates + ETA come from the backend (`EtaEstimator` in
     // `write_operations/eta.rs`). The FE just renders them. Null until the
@@ -608,6 +650,8 @@
             unlisten()
         }
         unlisteners = []
+        opsUnlisten?.()
+        opsUnlisten = null
         clearSlowSettleTimer()
         clearCancelSettleFallbackTimer()
     }
@@ -691,6 +735,12 @@
         unlisteners.push(await onWriteCancelled(handleCancelled))
         unlisteners.push(await onWriteSettled(handleSettled))
         unlisteners.push(await onWriteConflict(handleConflict))
+        // Track this op's lifecycle status (running vs paused, and the queued
+        // case the auto-queue path needs). Held separately so cleanup() can drop
+        // it without churning the write listeners.
+        opsUnlisten = await onOperationsChanged((event) => {
+            handleOperationsChanged(event.operations)
+        })
 
         log.debug('Event subscriptions ready, starting {op}', { op: operationType })
 
@@ -721,6 +771,26 @@
             }
 
             replayBufferedEvents()
+
+            // Seed this op's lifecycle status once. The manager emits
+            // `operations-changed` on registration, which may have fired before we
+            // knew our `operationId` (so our subscriber dropped it). A one-shot
+            // `list_operations` catches the current status — crucially the
+            // "admitted as Queued behind a busy lane" case the auto-queue path
+            // surfaces. After this, live snapshot ticks keep `opStatus` current.
+            try {
+                const snapshot = await listOperations()
+                // `handleOperationsChanged` is idempotent and self-guards on
+                // `backgrounded`, so a live tick that already backgrounded us
+                // between subscribe and seed is a no-op here. The `destroyed`
+                // re-check matters because the component can unmount during this
+                // `await` (eslint can't see that async-gap mutation, hence the
+                // disable).
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- destroyed can flip during the await above
+                if (!destroyed) handleOperationsChanged(snapshot)
+            } catch (err) {
+                log.warn('Failed to seed operation status: {error}', { error: err })
+            }
         } catch (err: unknown) {
             log.error('Failed to start {op} operation: {error}', { op: operationType, error: err })
             cleanup()
@@ -819,6 +889,19 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
+        // Dialog-scoped F2 → "Queue" (send to background). This is Total
+        // Commander's copy-dialog-local F2, NOT the global `file.rename` binding:
+        // it works ONLY while this dialog is open and intercepts here. The
+        // `ModalDialog` overlay `stopPropagation`s every keydown before it can
+        // reach the global key handler, so closing the dialog unmounts this
+        // handler and F2 falls through to `file.rename` again (no leak). We still
+        // `preventDefault` so the key never triggers a default browser action.
+        if (event.key === 'F2' && canPauseOrQueue) {
+            event.preventDefault()
+            handleQueue()
+            return
+        }
+
         if (event.key === 'Tab') {
             // Trap focus within the dialog
             const overlay = event.currentTarget as HTMLElement
@@ -841,6 +924,84 @@
                     firstElement.focus()
                 }
             }
+        }
+    }
+
+    /** Pauses or resumes this operation in place. The button label/icon and the
+     *  dialog title follow `opStatus`, which the `operations-changed` snapshot
+     *  drives — so the UI flips only once the backend actually parked/resumed,
+     *  never optimistically. */
+    async function handlePauseResume() {
+        if (!operationId || pauseInFlight) return
+        pauseInFlight = true
+        try {
+            if (isPaused) {
+                log.info('Resuming operation: {operationId}', { operationId })
+                await resumeOperation(operationId)
+            } else {
+                log.info('Pausing operation: {operationId}', { operationId })
+                await pauseOperation(operationId)
+            }
+        } catch (err) {
+            log.error('Failed to pause/resume operation: {error}', { error: err })
+        } finally {
+            pauseInFlight = false
+        }
+    }
+
+    /** Sends this operation to the background: keep it running, open the queue
+     *  window, and unmount this modal. The op is now managed in the queue window.
+     *  Fired by the Queue button, the dialog-scoped F2, and the auto-queue path.
+     *  Sets `backgrounded` BEFORE handing off so onDestroy's safety-net cancel
+     *  won't stop the op as the modal tears down. */
+    function handleQueue() {
+        if (!operationId || backgrounded) return
+        log.info('Backgrounding operation to the queue window: {operationId}', { operationId })
+        backgrounded = true
+        void openQueueWindow()
+        addToast(tString('fileOperations.transferProgress.backgroundedToast'), {
+            level: 'info',
+            toastGroup: 'transfer-queue',
+        })
+        // Unmount this modal. The op keeps running; `onQueue` clears the dialog
+        // state in the parent (it does NOT call `cancelWriteOperation`).
+        onQueue?.()
+    }
+
+    /** Called once `operations-changed` first reports this op as `queued`: the
+     *  manager admitted it behind a busy lane rather than running it now. Don't
+     *  stack a second modal on top of the foreground op — surface the queue
+     *  window with a quiet toast and unmount, exactly like a manual Queue. */
+    function handleAutoQueued(aheadCount: number) {
+        if (backgrounded || !operationId) return
+        log.info('Operation queued behind {ahead} on a busy lane; surfacing the queue window', {
+            ahead: aheadCount,
+        })
+        backgrounded = true
+        void openQueueWindow()
+        const countText = tString('fileOperations.transferProgress.queuedToastCount', { count: aheadCount })
+        addToast(tString('fileOperations.transferProgress.queuedToast', { countText }), {
+            level: 'info',
+            toastGroup: 'transfer-queue',
+        })
+        onQueue?.()
+    }
+
+    /** Reduces an `operations-changed` snapshot for THIS op: tracks its lifecycle
+     *  status and, the first time it lands as `queued`, auto-backgrounds it. */
+    function handleOperationsChanged(operations: OperationSnapshot[]) {
+        if (!operationId) return
+        const mine = operations.find((op) => op.operationId === operationId)
+        if (!mine) return
+        opStatus = mine.status
+        if (mine.status === 'queued' && !backgrounded) {
+            // Count the ops ahead of this one that are occupying lanes (running or
+            // paused). That's how many transfers it's waiting behind.
+            const ahead = operations.filter(
+                (op) =>
+                    op.operationId !== operationId && (op.status === 'running' || op.status === 'paused'),
+            ).length
+            handleAutoQueued(Math.max(1, ahead))
         }
     }
 
@@ -980,9 +1141,11 @@
             void cancelScanPreview(previewId)
         }
         cleanupScanListeners()
-        if (operationId && !operationSettled) {
+        if (operationId && !operationSettled && !backgrounded) {
             // Unexpected teardown (hot-reload, navigation, window close): stop the operation
             // but don't roll back; never do silent background work without visual feedback.
+            // A `backgrounded` op is the deliberate exception — the user sent it to the queue
+            // window, so it MUST keep running; only its modal unmounts.
             void cancelWriteOperation(operationId, false)
         }
         cleanup()
@@ -1011,6 +1174,8 @@
             {/if}
         {:else if conflictEvent}
             {tString('fileOperations.transferProgress.titleConflict')}
+        {:else if isPaused}
+            {tString('fileOperations.transferProgress.titlePaused')}
         {:else if phase === 'flushing'}
             {tString('fileOperations.transferProgress.titleFlushing')}
         {:else}
@@ -1389,6 +1554,39 @@
              both buttons during the MIN_DISPLAY_MS hold-open window. Without this, the user can
              click Rollback after the copy completed and silently get nothing. -->
         <div class="button-row">
+            <!-- Manage controls (left): Pause/Resume keeps the op alive but parked;
+                 Queue sends it to the background and opens the queue window (also
+                 F2 while this dialog is focused). Both show only during the active
+                 copy/move/delete phases (`canPauseOrQueue`). -->
+            {#if canPauseOrQueue}
+                <Button
+                    variant="secondary"
+                    onclick={handlePauseResume}
+                    disabled={pauseInFlight}
+                    aria-label={isPaused
+                        ? tString('fileOperations.transferProgress.resumeAria')
+                        : tString('fileOperations.transferProgress.pauseAria')}
+                >
+                    <span class="btn-inner">
+                        <Icon name={isPaused ? 'play' : 'pause'} size={14} />
+                        {isPaused
+                            ? tString('fileOperations.transferProgress.resume')
+                            : tString('fileOperations.transferProgress.pause')}
+                    </span>
+                </Button>
+                <span use:tooltip={tString('fileOperations.transferProgress.queueTooltip')}>
+                    <Button
+                        variant="secondary"
+                        onclick={handleQueue}
+                        aria-label={tString('fileOperations.transferProgress.queueAria')}
+                    >
+                        <span class="btn-inner">
+                            <Icon name="list" size={14} />
+                            {tString('fileOperations.transferProgress.queue')}
+                        </span>
+                    </Button>
+                </span>
+            {/if}
             <Button
                 variant="secondary"
                 onclick={() => handleCancel(false)}
@@ -1561,7 +1759,15 @@
         display: flex;
         gap: var(--spacing-md);
         justify-content: center;
+        flex-wrap: wrap;
         padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
+    }
+
+    /* Icon + label inside the Pause/Resume and Queue buttons. */
+    .btn-inner {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
     }
 
     /* Conflict section */

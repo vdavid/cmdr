@@ -37,6 +37,7 @@
         onTransferComplete,
         onTransferCancelled,
         onTransferError,
+        onTransferQueue,
         onTransferErrorClose,
         onNewFolderCreated,
         onNewFolderCancel,
@@ -73,6 +74,7 @@
         onTransferComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
         onTransferCancelled: (filesProcessed: number) => void
         onTransferError: (error: WriteOperationError, friendly?: FriendlyError) => void
+        onTransferQueue: () => void
         onTransferErrorClose: () => void
         onNewFolderCreated: (folderName: string) => void
         onNewFolderCancel: () => void
@@ -126,6 +128,7 @@
         onComplete={onTransferComplete}
         onCancelled={onTransferCancelled}
         onError={onTransferError}
+        onQueue={onTransferQueue}
     />
 {/if}
 

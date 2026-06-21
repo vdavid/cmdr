@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
+    import { SvelteSet } from 'svelte/reactivity'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { initializeSettings, getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -32,9 +33,10 @@
     let unlistenRectTracking: (() => void) | undefined
     let unsubscribeLanguage: (() => void) | undefined
 
-    /** Ids the user has checked for "Cancel selected". A Set so toggling is O(1);
-     *  reassigned (not mutated) so Svelte tracks it. */
-    let selectedIds = $state<Set<string>>(new Set())
+    /** Ids the user has checked for "Cancel selected". A `SvelteSet` so toggling
+     *  is O(1) AND reactive on in-place mutation (add/delete), per the project's
+     *  selection pattern. */
+    const selectedIds = new SvelteSet<string>()
 
     /** Only non-terminal rows are shown/actionable. A terminal op lingers in the
      *  snapshot briefly before the backend prunes it; we hide it so the window
@@ -46,25 +48,16 @@
     // and "Cancel selected" stay honest as ops finish.
     $effect(() => {
         const liveIds = new Set(rows.map((r) => r.snapshot.operationId))
-        let changed = false
         for (const id of selectedIds) {
-            if (!liveIds.has(id)) {
-                changed = true
-                break
-            }
-        }
-        if (changed) {
-            selectedIds = new Set([...selectedIds].filter((id) => liveIds.has(id)))
+            if (!liveIds.has(id)) selectedIds.delete(id)
         }
     })
 
     const selectedCount = $derived(selectedIds.size)
 
     function toggleSelect(operationId: string): void {
-        const next = new Set(selectedIds)
-        if (next.has(operationId)) next.delete(operationId)
-        else next.add(operationId)
-        selectedIds = next
+        if (selectedIds.has(operationId)) selectedIds.delete(operationId)
+        else selectedIds.add(operationId)
     }
 
     async function pauseResumeRow(operationId: string, paused: boolean): Promise<void> {
@@ -89,7 +82,7 @@
         if (ids.length === 0) return
         try {
             await cancelOperations(ids)
-            selectedIds = new Set()
+            selectedIds.clear()
         } catch (error) {
             log.warn('Failed to cancel selected operations: {error}', { error: String(error) })
         }
@@ -123,7 +116,7 @@
         }
         applyLanguage(getSetting('appearance.language'))
         unsubscribeLanguage = onSpecificSettingChange('appearance.language', (_id, value) => {
-            applyLanguage(value as string)
+            applyLanguage(value)
         })
     }
 
@@ -220,7 +213,7 @@
                     <QueueRow
                         {row}
                         selected={selectedIds.has(row.snapshot.operationId)}
-                        onToggleSelect={() => toggleSelect(row.snapshot.operationId)}
+                        onToggleSelect={() => { toggleSelect(row.snapshot.operationId); }}
                         onPauseResume={() =>
                             void pauseResumeRow(row.snapshot.operationId, row.snapshot.status === 'paused')}
                         onCancel={() => void cancelRow(row.snapshot.operationId)}
@@ -310,7 +303,7 @@
         list-style: none;
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: var(--spacing-xxs);
         scrollbar-gutter: stable;
     }
 

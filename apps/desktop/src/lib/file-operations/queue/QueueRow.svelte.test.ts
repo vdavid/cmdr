@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, unmount, flushSync } from 'svelte'
+import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
 import QueueRow from './QueueRow.svelte'
 import type { OperationRow } from './operations-store.svelte'
 import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
@@ -31,10 +31,10 @@ function buildRow(
 let target: HTMLElement
 let instance: ReturnType<typeof mount> | undefined
 
-function render(props: Parameters<typeof QueueRow>[1] extends never ? never : Record<string, unknown>) {
+function render(props: ComponentProps<typeof QueueRow>) {
   target = document.createElement('ul')
   document.body.appendChild(target)
-  instance = mount(QueueRow, { target, props: props as never })
+  instance = mount(QueueRow, { target, props })
   flushSync()
 }
 
@@ -49,7 +49,7 @@ describe('QueueRow', () => {
     render({ row: buildRow('running'), selected: false, onToggleSelect: () => {}, onPauseResume, onCancel: () => {} })
     expect(target.querySelector('[aria-label="Pause this transfer"]')).not.toBeNull()
     expect(target.querySelector('[aria-label="Resume this transfer"]')).toBeNull()
-    void unmount(instance!)
+    if (instance) void unmount(instance)
 
     render({ row: buildRow('paused'), selected: false, onToggleSelect: () => {}, onPauseResume, onCancel: () => {} })
     expect(target.querySelector('[aria-label="Resume this transfer"]')).not.toBeNull()

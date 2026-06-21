@@ -285,3 +285,39 @@ When the directory has a parent entry shown at index 0, frontend indices are off
   flag, so `startOperation()` dispatches exactly once. The scan-error and scan-cancelled listeners also flip
   `started = true` as a terminal signal, so a late `scan-preview-complete` event can't dispatch an operation after we've
   errored or cancelled.
+
+## Pause, Queue, and auto-queue (progress dialog)
+
+`TransferProgressDialog` exposes three operation-manager controls during the active copy/move/delete phases, alongside
+the existing Cancel/Rollback. They show only while `canPauseOrQueue` is true (op started, not scanning/cancelling/
+rolling-back/settled, no conflict prompt up).
+
+- **Lifecycle status comes from `operations-changed`, not `write-progress`.** The dialog subscribes to the manager's thin
+  `operations-changed` snapshot and tracks `opStatus` for its own `operationId`. A paused op still reports
+  `is_running: true` from the write-op-state map, so the bar-is-moving truth is the snapshot status (`running` vs
+  `paused` vs `queued`), never `write-progress`. This mirrors the queue window's rule (see
+  [`../queue/CLAUDE.md`](../queue/CLAUDE.md)). The Pause↔Resume label/icon and the "Paused" title both follow `opStatus`,
+  so the UI flips only once the backend actually parked — never optimistically.
+- **Pause/Resume** calls `pauseOperation` / `resumeOperation` (no rollback semantics; the op keeps its lane slot while
+  paused). `pauseInFlight` guards against a double-click racing the IPC.
+- **Queue (send to background)** is FRONTEND-ONLY state, no backend command. `handleQueue` sets the local `backgrounded`
+  flag, opens the queue window (`openQueueWindow`), shows a quiet `info` toast (group `transfer-queue`), and calls the
+  `onQueue` prop so the parent (`dialog-state.svelte.ts` → `handleTransferQueue`) unmounts the modal **without
+  cancelling** the op. The op runs on, now managed in the queue window.
+- **`backgrounded` suppresses the onDestroy safety-net cancel.** Normally `onDestroy` cancels a non-settled op (hot-
+  reload / window close must not leak silent background work). Backgrounding is the deliberate exception: the user chose
+  to keep it running, so the cancel is gated on `!backgrounded`. This is the one path where the modal unmounts and the op
+  survives.
+- **Dialog-scoped F2 → Queue.** `handleKeydown` (passed to `ModalDialog` as `onkeydown`) intercepts `F2` and triggers
+  `handleQueue`, mirroring Total Commander's copy-dialog-local F2. It is NOT a `command-registry` binding: F2 is globally
+  `file.rename`. The mechanism that scopes it: `ModalDialog`'s overlay `handleOverlayKeydown` `stopPropagation`s every
+  keydown before it can reach the global root key handler, so while the dialog is open F2 never reaches `file.rename`; and
+  when the dialog unmounts, the handler goes with it, so F2 falls through to `file.rename` again. No global binding is
+  ever installed or removed — the leak-free property is structural, not bookkeeping. (Pinned by the negative test in
+  `TransferProgressDialog.queue.test.ts`.) `preventDefault` stops any default browser action on the key.
+- **Auto-queue surfacing.** When a new op starts on a busy lane, the manager admits it as `queued` rather than spawning
+  it. The dialog detects this from the snapshot (a one-shot `list_operations` seed after `operationId` arrives catches
+  the registration tick that may have fired before we knew our id; live ticks keep it current thereafter) and
+  auto-backgrounds: it surfaces the queue window with a quiet "N transfers ahead" toast and unmounts, exactly like a
+  manual Queue. The currently-foregrounded op keeps its modal; we never stack a second modal. "N ahead" counts the ops
+  occupying lanes (running or paused), floored at 1.

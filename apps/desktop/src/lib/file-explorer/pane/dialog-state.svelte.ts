@@ -399,6 +399,24 @@ export function createDialogState(deps: DialogStateDeps) {
       deps.onRefocus()
     },
 
+    /** The operation was sent to the background (Queue button / F2 / auto-queue):
+     *  keep it running, just close its modal. The op is now managed in the queue
+     *  window. We do NOT cancel it and do NOT refresh panes here — the op is still
+     *  in flight; the file watcher and the queue window cover its lifecycle. We DO
+     *  drop the source-pane operation snapshot and selection, since this dialog
+     *  has handed the op off and won't fire `handleTransferComplete` for it. */
+    handleTransferQueue() {
+      const op = transferProgressProps?.operationType ?? 'copy'
+      log.info('{op} sent to the background (managed in the queue window)', { op: transferOpLabel(op) })
+
+      getSourcePaneRef()?.clearOperationSnapshot()
+      clearSourcePaneSelection()
+
+      showTransferProgressDialog = false
+      transferProgressProps = null
+      deps.onRefocus()
+    },
+
     handleTransferCancelled(filesProcessed: number) {
       const op = transferProgressProps?.operationType ?? 'copy'
       const opLabel = transferOpLabel(op)

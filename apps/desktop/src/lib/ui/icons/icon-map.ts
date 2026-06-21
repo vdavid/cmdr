@@ -15,6 +15,7 @@ import IconGitFork from '~icons/lucide/git-fork'
 import IconHourglass from '~icons/lucide/hourglass'
 import IconInfo from '~icons/lucide/info'
 import IconLink from '~icons/lucide/link'
+import IconList from '~icons/lucide/list'
 import IconLock from '~icons/lucide/lock'
 import IconMoreHorizontal from '~icons/lucide/more-horizontal'
 import IconPause from '~icons/lucide/pause'
@@ -59,6 +60,7 @@ export const ICON_COMPONENTS = {
   hourglass: IconHourglass,
   info: IconInfo,
   link: IconLink,
+  list: IconList,
   lock: IconLock,
   'more-horizontal': IconMoreHorizontal,
   pause: IconPause,

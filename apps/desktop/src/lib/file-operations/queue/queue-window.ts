@@ -77,7 +77,7 @@ export async function openQueueWindow(): Promise<void> {
   // `reduce-transparency` class). Read the value from the backend (NSWorkspace),
   // NOT a media query: WKWebView doesn't reflect `prefers-reduced-transparency`.
   // `prefers-color-scheme` IS reflected, so dark detection stays a media query.
-  let reduceTransparency = false
+  let reduceTransparency: boolean
   try {
     reduceTransparency = await commands.getShouldReduceTransparency()
   } catch (error) {

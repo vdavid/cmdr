@@ -1967,6 +1967,9 @@
     onTransferError={(error: WriteOperationError) => {
         dialogs.handleTransferError(error)
     }}
+    onTransferQueue={() => {
+        dialogs.handleTransferQueue()
+    }}
     onTransferErrorClose={() => {
         dialogs.handleTransferErrorClose()
     }}

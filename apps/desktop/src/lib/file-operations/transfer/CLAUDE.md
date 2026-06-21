@@ -51,6 +51,13 @@ ETA/throughput, settle contract).
   signal E2E polls. Don't remove it.
 - **MTP move is interleaved copy + delete per file** (not copy-all-then-delete-all): on partial failure only the current
   file exists in both places. Rollback hidden during the delete phase.
+- **Progress-dialog Pause/Queue (full flow + auto-queue in DETAILS).** Pause/Resume + the "Paused" title follow the
+  `operations-changed` snapshot status, never `write-progress` (a paused op still reports `is_running: true`). Queue + the
+  dialog-scoped F2 are FRONTEND-ONLY (no backend command): they set `backgrounded`, open the queue window, and unmount via
+  `onQueue` WITHOUT cancelling — and `backgrounded` is also why `onDestroy` skips its safety-net cancel (don't break that
+  gate or a backgrounded op dies on unmount). F2 is scoped by `ModalDialog`'s overlay `stopPropagation`, NOT a
+  `command-registry` binding (F2 stays global `file.rename`); closing the dialog removes the handler, so it can't leak.
+  The negative test in `TransferProgressDialog.queue.test.ts` pins this.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

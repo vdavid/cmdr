@@ -739,6 +739,67 @@
     "screenshot": "conflict-dialog.png"
   },
 
+  "fileOperations.transferProgress.titlePaused": "Paused",
+  "@fileOperations.transferProgress.titlePaused": {
+    "description": "Title of the progress dialog while the transfer is paused. The user paused it and can resume it; nothing is being copied right now. Short status word."
+  },
+
+  "fileOperations.transferProgress.pause": "Pause",
+  "@fileOperations.transferProgress.pause": {
+    "description": "Button on the progress dialog that pauses this transfer in place. It can be resumed later. Toggles to \"Resume\". Short control label."
+  },
+
+  "fileOperations.transferProgress.resume": "Resume",
+  "@fileOperations.transferProgress.resume": {
+    "description": "Button on the progress dialog, shown while the transfer is paused, that resumes it. Toggles back from \"Pause\". Short control label."
+  },
+
+  "fileOperations.transferProgress.pauseAria": "Pause this transfer",
+  "@fileOperations.transferProgress.pauseAria": {
+    "description": "Screen-reader label for the Pause button on the progress dialog (the visible button shows only \"Pause\")."
+  },
+
+  "fileOperations.transferProgress.resumeAria": "Resume this transfer",
+  "@fileOperations.transferProgress.resumeAria": {
+    "description": "Screen-reader label for the Resume button on the progress dialog (the visible button shows only \"Resume\")."
+  },
+
+  "fileOperations.transferProgress.queue": "Queue",
+  "@fileOperations.transferProgress.queue": {
+    "description": "Button on the progress dialog that sends this transfer to the background and opens the transfer queue window, so the user can keep working while it runs. It does not pause the transfer. Mirrors Total Commander's copy-dialog F2. Short control label."
+  },
+
+  "fileOperations.transferProgress.queueAria": "Send to the transfer queue",
+  "@fileOperations.transferProgress.queueAria": {
+    "description": "Screen-reader label for the Queue button on the progress dialog (the visible button shows only \"Queue\"). Explains that the transfer moves to the background and is managed in the queue window."
+  },
+
+  "fileOperations.transferProgress.queueTooltip": "Keep this running in the background and manage it in the transfer queue (F2)",
+  "@fileOperations.transferProgress.queueTooltip": {
+    "description": "Tooltip on the Queue button explaining that the transfer keeps running in the background and is managed in the transfer queue window. F2 is the keyboard shortcut for the same action while this dialog is open."
+  },
+
+  "fileOperations.transferProgress.queuedToast": "{countText} ahead of this one, so it''s waiting its turn. Find it in the transfer queue.",
+  "@fileOperations.transferProgress.queuedToast": {
+    "description": "Quiet toast shown when a new copy/move/delete can''t start right away because another transfer is busy on the same drive, so it waits in the queue. The queue window comes forward at the same time.",
+    "placeholders": {
+      "countText": "preformatted count phrase of transfers ahead, for example \"1 transfer\" or \"3 transfers\""
+    }
+  },
+
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# transfer} other {# transfers}}",
+  "@fileOperations.transferProgress.queuedToastCount": {
+    "description": "Count phrase of how many transfers are ahead of a newly-queued one, slotted into the queued toast (for example \"1 transfer\" or \"3 transfers\").",
+    "placeholders": {
+      "count": "how many transfers are ahead in the queue"
+    }
+  },
+
+  "fileOperations.transferProgress.backgroundedToast": "Still running in the background. Find it in the transfer queue.",
+  "@fileOperations.transferProgress.backgroundedToast": {
+    "description": "Quiet toast shown after the user sends a running transfer to the background (via the Queue button or F2). The transfer keeps going; the queue window comes forward to manage it."
+  },
+
   "fileOperations.errorDialog.technicalDetails": "Technical details",
   "@fileOperations.errorDialog.technicalDetails": {
     "description": "Toggle that expands raw, developer-facing details (paths, error codes) below a friendly transfer-error message. Control label."
