@@ -49,7 +49,7 @@ single-digit-to-low-tens of ms over USB, so 32 keeps a unit well under ~1 s whil
 negligible against the round trips. Retune the constant in `directory_ops.rs` if the latency target changes.
 
 **Which ops are foreground.** `list_directory*` (pane nav), `delete_object*`, `create_folder`, `rename_object`,
-`move_object`, `upload_file`, `upload_from_stream`, `download_file_with_progress`, `open_download_stream` (setup), and
+`move_object`, `upload_file`, `upload_from_stream`, `download_file_with_progress`, `open_download_stream_at_offset` (setup), and
 `resolve_handle_to_path` (the visible-pane live update) each take a guard. Nested guards (e.g. recursive `delete`, or
 `upload_from_stream` → `refresh_dir_handle` → `list_directory`) just stack the count — harmless, they keep the scan
 yielded for the whole op. Streaming-download per-chunk reads go through mtp-rs's own `Arc`/operation lock, not Cmdr's

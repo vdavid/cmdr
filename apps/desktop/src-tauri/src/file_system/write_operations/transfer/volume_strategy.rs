@@ -32,44 +32,137 @@ use crate::ignore_poison::IgnorePoison;
 /// yield.
 ///
 /// Before delegating each `next_chunk().await`, the wrapper:
-/// 1. **Parks while paused** (`pause_gate.wait_while_paused_async`) so a paused
-///    op stops advancing mid-file instead of streaming a large single file to
-///    completion. The checkpoint runs at a chunk boundary — the previous chunk
-///    is fully written and the next is not yet read — so a paused op holds only
-///    its in-flight `.cmdr-tmp-<uuid>`, never a torn target. Resume or cancel
-///    unblocks it (`wait_while_paused_async` returns the instant cancel is
-///    observed; cancellation wins over pause).
+///
+/// 1. **Handles pause**, in one of two ways depending on the source backend.
+///    **Release-on-pause** (MTP, `pause_releases_read_stream() == true`): close the
+///    in-flight source stream so its scarce resource is freed — for MTP the
+///    one-per-device PTP session, so the phone can be listed/navigated while
+///    paused — then on resume reopen the source at the byte count already
+///    delivered (`open_read_stream_at_offset`) and continue (the "navigate while
+///    paused" feature). **Park-in-place** (local FS, SMB, in-memory): just block on
+///    `pause_gate.wait_while_paused_async` holding the open stream, since those
+///    streams hold nothing a pause needs to free. Either way the checkpoint runs
+///    at a chunk boundary — the previous chunk is fully written and the next is
+///    not yet read — so a paused op holds only its in-flight `.cmdr-tmp-<uuid>`,
+///    never a torn target. Resume or cancel unblocks it
+///    (`wait_while_paused_async` returns the instant cancel is observed;
+///    cancellation wins over pause).
 /// 2. **Yields cooperatively** (`tokio::task::yield_now`) so a long transfer
 ///    doesn't starve foreground tasks (listings, navigation, progress emits) on
 ///    the runtime.
 ///
+/// **Byte exactness across a release/reopen.** The wrapper counts `bytes_yielded`
+/// and reopens at exactly that offset, so the source delivers `[bytes_yielded,
+/// size)` with no gap or overlap. The destination's `write_from_stream` writes
+/// every yielded chunk sequentially to its temp, so the temp's length always
+/// equals `bytes_yielded`; appending the reopened tail reconstructs the file
+/// exactly. Safe-replace temp+rename on the destination is untouched — the source
+/// reopen is invisible to it (it sees one continuous chunk stream).
+///
 /// Cancellation is NOT enforced here: the backend's existing `on_progress`
 /// `is_cancelled` check after each write owns the cancel-then-cleanup ordering
-/// (drop the handle, remove the partial). The wrapper only gates progress; it
-/// never drops, double-writes, or reorders bytes — it passes each inner chunk
-/// through untouched.
+/// (drop the handle, remove the partial). On the release-on-pause path a cancel
+/// observed while parked reopens the source and lets the next chunk flow through
+/// to that same `on_progress` check, so the cancel/cleanup contract is identical
+/// to the park-in-place path. The wrapper never drops, double-writes, or reorders
+/// bytes — it passes each inner chunk through untouched.
 struct CheckpointStream {
-    inner: Box<dyn VolumeReadStream>,
+    /// The open source stream, or `None` while released during a pause (only the
+    /// release-on-pause path ever sets this to `None`).
+    inner: Option<Box<dyn VolumeReadStream>>,
     state: Arc<WriteOperationState>,
+    /// Bytes this wrapper has yielded so far == the destination temp's length ==
+    /// the offset to reopen at after a release-on-pause.
+    bytes_yielded: u64,
+    /// Reopen context, `Some` only when the source backend releases on pause
+    /// (MTP). `None` ⇒ park-in-place (the original behavior).
+    reopen: Option<CheckpointReopen>,
+}
+
+/// What `CheckpointStream` needs to close the source on pause and reopen it at
+/// the kept offset on resume. Present only for release-on-pause backends.
+struct CheckpointReopen {
+    source_volume: Arc<dyn Volume>,
+    source_path: PathBuf,
+    total_size: u64,
 }
 
 impl VolumeReadStream for CheckpointStream {
     fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
         Box::pin(async move {
-            // Park between chunks while paused (returns immediately on cancel),
-            // then yield so foreground tasks get scheduled during a long copy.
-            self.state.pause_gate.wait_while_paused_async(&self.state.intent).await;
-            tokio::task::yield_now().await;
-            self.inner.next_chunk().await
+            self.checkpoint().await;
+            // After the checkpoint, a release-on-pause stream may need reopening.
+            // If reopen failed (device gone), surface it as a normal transient
+            // error so the copy aborts and the partial is handled like any other
+            // mid-stream failure.
+            let inner = match self.ensure_open().await {
+                Ok(inner) => inner,
+                Err(e) => return Some(Err(e)),
+            };
+            match inner.next_chunk().await {
+                Some(Ok(chunk)) => {
+                    self.bytes_yielded += chunk.len() as u64;
+                    Some(Ok(chunk))
+                }
+                other => other,
+            }
         })
     }
 
     fn total_size(&self) -> u64 {
-        self.inner.total_size()
+        match &self.reopen {
+            // While released, `inner` is None; report the cached full size.
+            Some(r) => r.total_size,
+            None => self.inner.as_ref().map_or(0, |s| s.total_size()),
+        }
     }
 
     fn bytes_read(&self) -> u64 {
-        self.inner.bytes_read()
+        self.bytes_yielded
+    }
+}
+
+impl CheckpointStream {
+    /// Run the between-chunk pause checkpoint, then yield cooperatively.
+    async fn checkpoint(&mut self) {
+        if self.reopen.is_some() {
+            // Release-on-pause path. Only release if we're actually paused AND
+            // there's remaining data worth holding the resource for: at EOF the
+            // next `next_chunk` returns None and the copy completes regardless.
+            let paused = self.state.pause_gate.is_paused();
+            let cancelled = super::super::state::is_cancelled(&self.state.intent);
+            let has_remaining = self.reopen.as_ref().is_some_and(|r| self.bytes_yielded < r.total_size);
+            if paused && !cancelled && has_remaining {
+                // Close the in-flight stream NOW so the scarce resource (MTP
+                // session) is freed for the whole pause, then park. We reopen at
+                // `bytes_yielded` in `ensure_open` after the park returns.
+                if let Some(mut stream) = self.inner.take() {
+                    stream.cancel_and_release().await;
+                    // `stream` (and its session) is dropped here.
+                }
+            }
+        }
+        // Park between chunks while paused (returns immediately on cancel).
+        self.state.pause_gate.wait_while_paused_async(&self.state.intent).await;
+        // Yield so foreground tasks get scheduled during a long copy.
+        tokio::task::yield_now().await;
+    }
+
+    /// Ensure `self.inner` is open, reopening at the kept offset if it was
+    /// released during a pause. Returns the open stream.
+    async fn ensure_open(&mut self) -> Result<&mut Box<dyn VolumeReadStream>, VolumeError> {
+        if self.inner.is_none() {
+            let reopen = self
+                .reopen
+                .as_ref()
+                .expect("inner is only ever None on the release-on-pause path, which sets `reopen`");
+            let stream = reopen
+                .source_volume
+                .open_read_stream_at_offset(&reopen.source_path, self.bytes_yielded)
+                .await?;
+            self.inner = Some(stream);
+        }
+        Ok(self.inner.as_mut().expect("just ensured Some"))
     }
 }
 
@@ -248,6 +341,12 @@ async fn stream_pipe_file(
     // file: the rejection lands at `SendObjectInfo`, before any source byte is
     // read or any destination byte is written, so no progress is double-counted
     // and no partial lingers.
+    // Whether a pause should RELEASE this source's stream (free a scarce
+    // resource, e.g. MTP's PTP session) and reopen at the kept offset on resume,
+    // vs. park the open stream in place. Decided once per file from the source
+    // backend; the source path is stable across the safe-replace retry below.
+    let release_on_pause = source_volume.pause_releases_read_stream();
+
     let mut retried = false;
     loop {
         let stream = source_volume
@@ -257,9 +356,18 @@ async fn stream_pipe_file(
         // Wrap so a paused op parks (and a long copy yields) between chunks.
         // `size` is read off the raw stream first — the wrapper forwards
         // `total_size()` unchanged, so the destination still sees the real size.
+        // For a release-on-pause source, the wrapper also gets the context it
+        // needs to reopen at the kept offset after releasing on pause.
+        let reopen = release_on_pause.then(|| CheckpointReopen {
+            source_volume: Arc::clone(source_volume),
+            source_path: source_path.to_path_buf(),
+            total_size: size,
+        });
         let stream: Box<dyn VolumeReadStream> = Box::new(CheckpointStream {
-            inner: stream,
+            inner: Some(stream),
             state: Arc::clone(state),
+            bytes_yielded: 0,
+            reopen,
         });
         match dest_volume
             .write_from_stream(dest_path, size, stream, on_file_progress)

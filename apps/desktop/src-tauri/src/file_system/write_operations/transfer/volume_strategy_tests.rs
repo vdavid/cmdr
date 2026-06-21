@@ -743,3 +743,358 @@ async fn stream_pipe_file_retries_once_on_stale_destination_handle() {
 
     let _ = fs::remove_dir_all(&src_dir);
 }
+
+// ========================================================================
+// Release-on-pause (MTP "navigate while paused"): a paused MTP→local copy
+// must CLOSE the source stream (freeing the device session), then on resume
+// REOPEN at the kept offset and append the rest, reconstructing the file
+// exactly. These mirror the production wiring with a fake source that records
+// open/close + supports an offset open, so no real device is needed.
+// ========================================================================
+
+use std::sync::Mutex as StdMutex;
+
+const REL_TOTAL: usize = 200 * 1024; // 200 KiB, well over one chunk
+const REL_CHUNK: usize = 16 * 1024;
+const REL_CHUNK_DELAY: Duration = Duration::from_millis(4);
+
+/// Records what a `ReleasingSource` did, so a test can assert the stream was
+/// released on pause and reopened at the right offset.
+#[derive(Default)]
+struct RelLog {
+    /// Offsets at which a stream was opened (0 for the initial open, then the
+    /// kept offset for each resume).
+    opens: Vec<u64>,
+    /// Number of times `cancel_and_release` ran (one per pause that released).
+    releases: usize,
+}
+
+/// A stream over the synthetic `[offset, REL_TOTAL)` byte range. The byte at
+/// absolute position `p` is `(p % 256) as u8`, so the assembled destination can
+/// be checked against that pattern regardless of where reopens happened.
+struct ReleasingStream {
+    log: Arc<StdMutex<RelLog>>,
+    pos: u64, // absolute position of the next byte to emit
+    emitted_here: u64,
+    released: bool,
+}
+
+impl VolumeReadStream for ReleasingStream {
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+        Box::pin(async move {
+            if self.pos >= REL_TOTAL as u64 {
+                return None;
+            }
+            tokio::time::sleep(REL_CHUNK_DELAY).await;
+            let start = self.pos;
+            let end = (start + REL_CHUNK as u64).min(REL_TOTAL as u64);
+            let chunk: Vec<u8> = (start..end).map(|p| (p % 256) as u8).collect();
+            self.pos = end;
+            self.emitted_here += chunk.len() as u64;
+            Some(Ok(chunk))
+        })
+    }
+
+    fn total_size(&self) -> u64 {
+        REL_TOTAL as u64
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.emitted_here
+    }
+
+    fn cancel_and_release(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+        Box::pin(async move {
+            if !self.released {
+                self.released = true;
+                self.log.lock().unwrap().releases += 1;
+            }
+        })
+    }
+}
+
+/// A source volume that opts into release-on-pause and serves an offset-aware
+/// stream — the test-double of `MtpVolume`.
+struct ReleasingSource {
+    log: Arc<StdMutex<RelLog>>,
+}
+
+impl Volume for ReleasingSource {
+    fn name(&self) -> &str {
+        "releasing-source"
+    }
+    fn root(&self) -> &Path {
+        Path::new("/")
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(Vec::new()) })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+    fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { true })
+    }
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(false) })
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn pause_releases_read_stream(&self) -> bool {
+        true
+    }
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.open_read_stream_at_offset(path, 0)
+    }
+    fn open_read_stream_at_offset<'a>(
+        &'a self,
+        _path: &'a Path,
+        offset: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        let log = Arc::clone(&self.log);
+        Box::pin(async move {
+            log.lock().unwrap().opens.push(offset);
+            Ok(Box::new(ReleasingStream {
+                log: Arc::clone(&log),
+                pos: offset,
+                emitted_here: 0,
+                released: false,
+            }) as Box<dyn VolumeReadStream>)
+        })
+    }
+}
+
+/// The reference bytes the destination must end up holding.
+fn rel_expected_bytes() -> Vec<u8> {
+    (0..REL_TOTAL as u64).map(|p| (p % 256) as u8).collect()
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn release_on_pause_copy_releases_source_then_resumes_from_offset() {
+    use std::fs;
+
+    let log = Arc::new(StdMutex::new(RelLog::default()));
+    let source: Arc<dyn Volume> = Arc::new(ReleasingSource { log: Arc::clone(&log) });
+
+    let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_dst_{:?}", std::thread::current().id()));
+    let _ = fs::remove_dir_all(&dst_dir);
+    fs::create_dir_all(&dst_dir).unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+
+    let state = make_state();
+    let bytes_seen = Arc::new(AtomicU64::new(0));
+
+    let source_drv = Arc::clone(&source);
+    let dest_drv = Arc::clone(&dest);
+    let state_drv = Arc::clone(&state);
+    let bytes_seen_drv = Arc::clone(&bytes_seen);
+    let op = tokio::spawn(async move {
+        let bytes_ref = &bytes_seen_drv;
+        copy_single_path(
+            &source_drv,
+            Path::new("/movie.bin"),
+            false,
+            None,
+            &dest_drv,
+            Path::new("movie.bin"),
+            &state_drv,
+            &CreatedPaths::default(),
+            &|bytes_done, _total| {
+                bytes_ref.store(bytes_done, Ordering::SeqCst);
+                ControlFlow::Continue(())
+            },
+            &|| {},
+            None,
+        )
+        .await
+    });
+
+    // Let a few chunks stream, then pause MID-FILE.
+    tokio::time::sleep(Duration::from_millis(30)).await;
+    state.pause_gate.pause();
+
+    // The byte count must freeze AND the source stream must be RELEASED (the
+    // whole point: the device session is freed while paused).
+    tokio::time::sleep(Duration::from_millis(60)).await;
+    let frozen = bytes_seen.load(Ordering::SeqCst);
+    tokio::time::sleep(Duration::from_millis(60)).await;
+    assert_eq!(
+        bytes_seen.load(Ordering::SeqCst),
+        frozen,
+        "a paused copy must stop advancing mid-file"
+    );
+    assert!(
+        frozen > 0 && (frozen as usize) < REL_TOTAL,
+        "must be parked short of completion"
+    );
+    assert!(!op.is_finished(), "the copy task must still be parked while paused");
+    assert_eq!(
+        log.lock().unwrap().releases,
+        1,
+        "pause must have RELEASED the source stream exactly once (freeing the session)"
+    );
+
+    // Resume → reopens at the kept offset and completes.
+    state.pause_gate.resume();
+    let bytes = tokio::time::timeout(Duration::from_secs(10), op)
+        .await
+        .expect("resumed copy must complete")
+        .expect("copy task must not panic")
+        .expect("resumed copy must succeed");
+
+    assert_eq!(bytes, REL_TOTAL as u64, "resumed copy reports the full byte count");
+
+    // The destination must hold EXACTLY the full file (prefix + resumed tail),
+    // byte-for-byte equal to a non-paused copy.
+    let written = fs::read(dst_dir.join("movie.bin")).unwrap();
+    assert_eq!(
+        written,
+        rel_expected_bytes(),
+        "assembled bytes must equal the source exactly"
+    );
+
+    // The reopen happened at the kept offset (the frozen byte count), with no
+    // gap or overlap — proven by the byte-exact assembly above plus the open log.
+    let opens = log.lock().unwrap().opens.clone();
+    assert_eq!(opens.len(), 2, "one initial open + one resume reopen");
+    assert_eq!(opens[0], 0, "initial open is at offset 0");
+    assert_eq!(
+        opens[1], frozen,
+        "resume must reopen at exactly the kept offset (= destination temp length)"
+    );
+
+    let _ = fs::remove_dir_all(&dst_dir);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn release_on_pause_cancel_while_paused_keeps_no_partial() {
+    use std::fs;
+
+    let log = Arc::new(StdMutex::new(RelLog::default()));
+    let source: Arc<dyn Volume> = Arc::new(ReleasingSource { log: Arc::clone(&log) });
+
+    let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_cancel_dst_{:?}", std::thread::current().id()));
+    let _ = fs::remove_dir_all(&dst_dir);
+    fs::create_dir_all(&dst_dir).unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+
+    let op_id = format!("test-relpause-cancel-{:?}", std::thread::current().id());
+    let state = make_state();
+    WRITE_OPERATION_STATE
+        .write()
+        .unwrap()
+        .insert(op_id.clone(), Arc::clone(&state));
+
+    let source_drv = Arc::clone(&source);
+    let dest_drv = Arc::clone(&dest);
+    let state_drv = Arc::clone(&state);
+    let op = tokio::spawn(async move {
+        let state_ref = &state_drv;
+        copy_single_path(
+            &source_drv,
+            Path::new("/movie.bin"),
+            false,
+            None,
+            &dest_drv,
+            Path::new("movie.bin"),
+            state_ref,
+            &CreatedPaths::default(),
+            // Mirror the production per-file callback: break on cancel so the
+            // backend's chunk loop tears down the partial.
+            &|_bytes_done, _total| {
+                if crate::file_system::write_operations::state::is_cancelled(&state_ref.intent) {
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
+                }
+            },
+            &|| {},
+            None,
+        )
+        .await
+    });
+
+    tokio::time::sleep(Duration::from_millis(30)).await;
+    state.pause_gate.pause();
+    tokio::time::sleep(Duration::from_millis(60)).await;
+    assert!(!op.is_finished(), "parked while paused");
+    assert_eq!(log.lock().unwrap().releases, 1, "pause released the source stream");
+
+    // Cancel (keep partials) while paused. The parked stream unblocks, reopens,
+    // and the next chunk flows through to on_progress, which breaks on cancel and
+    // the local sink removes its in-flight temp.
+    cancel_write_operation(&op_id, false);
+
+    let result = tokio::time::timeout(Duration::from_secs(10), op)
+        .await
+        .expect("cancel-while-paused must unblock the parked copy")
+        .expect("copy task must not panic");
+    assert!(
+        matches!(result, Err(VolumeError::Cancelled(_))),
+        "cancel wins over pause: the copy ends Cancelled, got {result:?}"
+    );
+    assert!(
+        !dest.exists(Path::new("movie.bin")).await,
+        "a cancelled mid-file copy leaves no partial dest file"
+    );
+
+    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
+    let _ = fs::remove_dir_all(&dst_dir);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn release_on_pause_unpaused_copy_never_releases() {
+    use std::fs;
+
+    // Sanity: with no pause, a release-on-pause source streams straight through
+    // with a single open and no release — the resume machinery stays dormant.
+    let log = Arc::new(StdMutex::new(RelLog::default()));
+    let source: Arc<dyn Volume> = Arc::new(ReleasingSource { log: Arc::clone(&log) });
+
+    let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_nopause_dst_{:?}", std::thread::current().id()));
+    let _ = fs::remove_dir_all(&dst_dir);
+    fs::create_dir_all(&dst_dir).unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+
+    let state = make_state();
+    let bytes = copy_single_path(
+        &source,
+        Path::new("/movie.bin"),
+        false,
+        None,
+        &dest,
+        Path::new("movie.bin"),
+        &state,
+        &CreatedPaths::default(),
+        &|_, _| ControlFlow::Continue(()),
+        &|| {},
+        None,
+    )
+    .await
+    .expect("unpaused copy must succeed");
+
+    assert_eq!(bytes, REL_TOTAL as u64);
+    assert_eq!(fs::read(dst_dir.join("movie.bin")).unwrap(), rel_expected_bytes());
+    let l = log.lock().unwrap();
+    assert_eq!(l.releases, 0, "no pause ⇒ no release");
+    assert_eq!(l.opens, vec![0], "no pause ⇒ a single open at offset 0");
+
+    let _ = fs::remove_dir_all(&dst_dir);
+}

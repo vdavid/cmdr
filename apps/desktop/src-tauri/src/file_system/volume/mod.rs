@@ -361,6 +361,27 @@ pub trait VolumeReadStream: Send {
 
     /// Bytes read so far (for progress tracking).
     fn bytes_read(&self) -> u64;
+
+    /// Promptly release any scarce backend resource this stream holds, before
+    /// the stream is dropped.
+    ///
+    /// The motivating case is MTP: a `MtpReadStream` holds the one-per-device
+    /// PTP session for the whole download, so the device can't be listed or
+    /// navigated until the stream ends. When a transfer is paused, the
+    /// pause-aware copy wrapper calls this to abort the in-flight download (USB
+    /// SIC cancel + pipe drain) and free the session *now*, instead of leaving
+    /// the device locked while parked. After this call the stream is spent;
+    /// `next_chunk` must not be called again on it.
+    ///
+    /// Default is a no-op: backends whose streams hold nothing scarce (local FS,
+    /// in-memory) need do nothing, and the wrapper parks them in place instead.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn cancel_and_release(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+        Box::pin(async {})
+    }
 }
 
 /// Bulk enumeration for drive indexing. Each volume type implements its optimal strategy.
@@ -1001,6 +1022,54 @@ pub trait Volume: Send + Sync {
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         let _ = size_hint;
         self.open_read_stream(path)
+    }
+
+    /// Opens a streaming reader that starts at a byte offset (resumable read).
+    ///
+    /// Streams `[offset, size)` of `path`. `offset == 0` is equivalent to
+    /// [`open_read_stream`](Self::open_read_stream) (the whole file). The
+    /// returned stream's `total_size()` reports the FULL file size (not the
+    /// remaining tail), so a resumed transfer's progress stays anchored to the
+    /// whole file; `bytes_read()` counts only this segment.
+    ///
+    /// This backs pause/resume for backends where pausing should release a
+    /// scarce resource (see [`pause_releases_read_stream`](Self::pause_releases_read_stream)):
+    /// the copy wrapper closes the in-flight stream on pause, then reopens here
+    /// at the byte count already written to the destination temp, and appends
+    /// the rest. The byte range is exact — `[offset, size)`, no gap or overlap —
+    /// so appending it onto a temp of length `offset` reconstructs the file.
+    ///
+    /// Default is `NotSupported`. Only backends that implement it (MTP) opt into
+    /// release-on-pause; others park the open stream in place.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn open_read_stream_at_offset<'a>(
+        &'a self,
+        path: &'a Path,
+        offset: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        let _ = (path, offset);
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
+    /// Whether pausing a streaming read from this volume should CLOSE the source
+    /// stream (freeing a scarce backend resource) and REOPEN it from the kept
+    /// offset on resume, rather than park the open stream in place.
+    ///
+    /// `true` only for MTP, where an in-flight download holds the one-per-device
+    /// PTP session: parking in place would keep the device locked (no listings,
+    /// no navigation) for the whole pause. Releasing the session is the entire
+    /// point of "navigate the phone while a transfer is paused". Requires
+    /// [`open_read_stream_at_offset`](Self::open_read_stream_at_offset) and
+    /// [`VolumeReadStream::cancel_and_release`].
+    ///
+    /// `false` (default) for local FS, SMB, and in-memory: their streams hold
+    /// nothing a pause needs to free, so parking in place is simpler and avoids
+    /// re-open round-trips.
+    fn pause_releases_read_stream(&self) -> bool {
+        false
     }
 
     /// Writes data from a stream to the given path.

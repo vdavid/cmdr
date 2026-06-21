@@ -59,5 +59,7 @@ Shared `WriteOperationState`, `OperationIntent`, the cancel/rollback contract, E
 - **Cross-volume copy parks/yields between chunks** via `volume_strategy.rs`'s `CheckpointStream` (sync `on_progress`
   can't `.await`). Keep pause/yield in the wrapper, cancel in the backend's `on_progress`. DETAILS § "Pause reaches
   between chunks".
+- **Pausing an MTP source RELEASES its session and reopens at `bytes_yielded` on resume** (`CheckpointStream`, sources
+  with `pause_releases_read_stream()`), via `mtp-rs` `download_stream_from_offset` (≥ 0.21.0). DETAILS § "Release-on-pause".
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

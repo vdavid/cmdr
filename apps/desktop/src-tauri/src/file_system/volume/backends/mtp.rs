@@ -820,20 +820,41 @@ impl Volume for MtpVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.open_read_stream_at_offset(path, 0)
+    }
+
+    fn open_read_stream_at_offset<'a>(
+        &'a self,
+        path: &'a Path,
+        offset: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
 
             let (download, total_size) = connection_manager()
-                .open_download_stream(&self.device_id, self.storage_id, &mtp_path)
+                .open_download_stream_at_offset(&self.device_id, self.storage_id, &mtp_path, offset)
                 .await
                 .map_err(map_mtp_error)?;
 
             Ok(Box::new(MtpReadStream {
                 download: Some(download),
                 total_size,
+                // `bytes_read` counts bytes delivered by THIS stream (the resume
+                // tail when offset > 0), not the full file. `total_size` is the
+                // full object size, so progress stays anchored across a resume.
                 bytes_read: 0,
             }) as Box<dyn VolumeReadStream>)
         })
+    }
+
+    fn pause_releases_read_stream(&self) -> bool {
+        // MTP's in-flight download holds the one-per-device PTP session, so a
+        // pause must release it (close the stream) and reopen from the kept
+        // offset on resume — otherwise the device stays locked (no listings, no
+        // navigation) for the whole pause. This is the "navigate while paused"
+        // feature. Backed by `open_read_stream_at_offset` +
+        // `MtpReadStream::cancel_and_release`.
+        true
     }
 
     fn write_from_stream<'a>(
@@ -968,6 +989,23 @@ impl VolumeReadStream for MtpReadStream {
 
     fn bytes_read(&self) -> u64 {
         self.bytes_read
+    }
+
+    fn cancel_and_release(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+        Box::pin(async move {
+            // Abort the in-flight download synchronously (USB SIC cancel + pipe
+            // drain) and await it, so the one-per-device PTP session is free the
+            // moment this returns. The pause-aware copy wrapper calls this before
+            // parking, so the device can be listed/navigated while paused. Unlike
+            // `Drop` (which fire-and-forgets the cancel on the runtime), this is
+            // deterministic: the next reopen at the kept offset won't race a
+            // still-draining pipe.
+            if let Some(mut download) = self.download.take()
+                && let Err(e) = download.cancel(mtp_rs::DEFAULT_CANCEL_TIMEOUT).await
+            {
+                log::warn!("MTP download cancel_and_release: {e:?}");
+            }
+        })
     }
 }
 

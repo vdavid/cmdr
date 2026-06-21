@@ -416,21 +416,24 @@ impl MtpConnectionManager {
         })
     }
 
-    /// Opens a streaming download for a file.
+    /// Opens a streaming download for a file, starting at a byte offset.
     ///
-    /// Returns the FileDownload stream and the file size.
-    /// The caller must consume the entire stream before releasing it.
+    /// `offset == 0` is the whole file (the plain full streaming download). A
+    /// non-zero offset resumes a previously-paused download: it drives mtp-rs's
+    /// `download_stream_from_offset`, which streams `[offset, size)` via
+    /// `GetPartialObject64`. The returned `FileDownload::size()` reports the FULL
+    /// object size, and `total_size` (the second tuple element) is likewise the
+    /// full size — so resume progress stays anchored to the whole file.
     ///
-    /// # Arguments
-    ///
-    /// * `device_id` - The connected device ID
-    /// * `storage_id` - The storage ID within the device
-    /// * `path` - Virtual path on the device (like "DCIM/photo.jpg")
-    pub async fn open_download_stream(
+    /// This is what lets the streaming copy loop release the MTP session on pause
+    /// (drop the stream) and reopen here at the kept byte count on resume. See
+    /// `MtpVolume::pause_releases_read_stream`.
+    pub async fn open_download_stream_at_offset(
         &self,
         device_id: &str,
         storage_id: u32,
         path: &str,
+        offset: u64,
     ) -> Result<(mtp_rs::FileDownload, u64), MtpConnectionError> {
         // Foreground priority for the stream SETUP (handle resolve + open). The
         // returned `FileDownload` reads chunks via mtp-rs's own `Arc`/operation
@@ -440,8 +443,8 @@ impl MtpConnectionManager {
         let _fg = self.foreground_guard(device_id).await;
 
         debug!(
-            "MTP open_download_stream: device={}, storage={}, path={}",
-            device_id, storage_id, path
+            "MTP open_download_stream: device={}, storage={}, path={}, offset={}",
+            device_id, storage_id, path, offset
         );
 
         // Get the device and resolve path to handle
@@ -481,16 +484,22 @@ impl MtpConnectionManager {
 
         let total_size = object_info.size;
 
-        // Open the download stream
-        let download = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS * 10),
-            storage.download_stream(object_handle),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        // Open the download stream. offset 0 uses the plain full streaming
+        // download (identical wire behavior to before); a non-zero offset routes
+        // through the resumable GetPartialObject64 path.
+        let open_fut = async {
+            if offset == 0 {
+                storage.download_stream(object_handle).await
+            } else {
+                storage.download_stream_from_offset(object_handle, offset).await
+            }
+        };
+        let download = tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS * 10), open_fut)
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         // Note: We intentionally don't drop 'storage' and 'device' here.
         // The FileDownload holds a reference to the storage session internally.
@@ -499,7 +508,10 @@ impl MtpConnectionManager {
         // In practice, the Volume trait methods run in spawn_blocking, so
         // the device lock is released when the blocking task completes.
 
-        debug!("MTP open_download_stream: stream opened for {} bytes", total_size);
+        debug!(
+            "MTP open_download_stream: stream opened for {} bytes (offset {})",
+            total_size, offset
+        );
 
         Ok((download, total_size))
     }
