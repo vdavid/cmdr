@@ -448,6 +448,20 @@
         return e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')
     }
 
+    /**
+     * Escape, Backspace, and `⌘↑` all return to the host list. `⌘↑` mirrors the
+     * file list's `⌘↑` = parent, and must be handled before the arrow handler,
+     * which would otherwise treat it as a cursor move.
+     */
+    function handleBackToHostKey(e: KeyboardEvent): boolean {
+        if (e.key === 'Escape' || e.key === 'Backspace' || (e.key === 'ArrowUp' && e.metaKey)) {
+            e.preventDefault()
+            onBack?.()
+            return true
+        }
+        return false
+    }
+
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (showLoginForm) {
             // Login form handles its own keyboard events
@@ -459,6 +473,9 @@
         }
 
         if (sortedShares.length === 0) return false
+
+        // Escape / Backspace / ⌘↑ → back to the host list (before the arrow handler).
+        if (handleBackToHostKey(e)) return true
 
         // Try centralized navigation shortcuts first (PageUp, PageDown, Home, End, Option+arrows)
         const visibleItems = Math.max(1, Math.floor(containerHeight / SHARE_ROW_HEIGHT))
@@ -486,12 +503,6 @@
             if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
                 void activateShare(sortedShares[cursorIndex])
             }
-            return true
-        }
-
-        if (e.key === 'Escape' || e.key === 'Backspace') {
-            e.preventDefault()
-            onBack?.()
             return true
         }
 

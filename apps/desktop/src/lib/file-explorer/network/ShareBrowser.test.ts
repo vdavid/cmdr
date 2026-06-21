@@ -64,6 +64,7 @@ const naspi: ShareInfo = { name: 'naspi', isDisk: true, comment: null }
 /** The exported ShareBrowser API surface the tests drive. */
 interface ShareBrowserApi {
   openCursorItem: () => void
+  handleKeyDown: (e: KeyboardEvent) => boolean
 }
 
 function mountBrowser(
@@ -142,6 +143,31 @@ describe('ShareBrowser credential gate', () => {
     await tick()
 
     expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'naspi' }), null)
+
+    await unmount(component)
+  })
+})
+
+describe('ShareBrowser back-navigation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    document.body.innerHTML = ''
+    h.getSmbCredentials.mockRejectedValue(new Error('not found'))
+  })
+
+  it('⌘↑ goes back to the host list (like Escape / Backspace), not a cursor move', async () => {
+    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    const onShareSelect = vi.fn()
+    const onBack = vi.fn()
+    const { target, component, api } = mountBrowser(onShareSelect, onBack)
+    await waitForShareList(target)
+
+    const handled = api.handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowUp', metaKey: true }))
+
+    expect(handled).toBe(true)
+    expect(onBack).toHaveBeenCalledOnce()
+    // The cursor-move path must NOT have fired (no share got activated).
+    expect(onShareSelect).not.toHaveBeenCalled()
 
     await unmount(component)
   })

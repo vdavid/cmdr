@@ -844,7 +844,9 @@ const commandSources: CommandSource[] = [
     nameKey: 'commands.shareBack.label',
     scope: 'Main window/Share browser',
     showInPalette: true,
-    shortcuts: ['Backspace', 'Escape'],
+    // `⌘↑` mirrors the file list's `⌘↑` = parent; ShareBrowser handles all three
+    // keys (`handleBackToHostKey`). Display-only — `fixedKey` handling is in-component.
+    shortcuts: ['Backspace', 'Escape', '⌘↑'],
     fixedKey: true,
   },
   {
