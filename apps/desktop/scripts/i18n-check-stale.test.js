@@ -75,13 +75,21 @@ describe('staleReason: pure classifier', () => {
   })
 
   it('calls out a stale key whose sameAsSourceJustification no longer applies', () => {
-    const r = staleReason('a.b', { 'a.b': 'New text' }, { sourceHash: sourceHash('Old text'), sameAsSourceJustification: 'brand name' })
+    const r = staleReason(
+      'a.b',
+      { 'a.b': 'New text' },
+      { sourceHash: sourceHash('Old text'), sameAsSourceJustification: 'brand name' },
+    )
     expect(r).toMatch(/sameAsSourceJustification no longer applies/)
   })
 
   it('a justified key that is still fresh is NOT flagged', () => {
     expect(
-      staleReason('a.b', { 'a.b': 'Dropbox' }, { sourceHash: sourceHash('Dropbox'), sameAsSourceJustification: 'brand name' }),
+      staleReason(
+        'a.b',
+        { 'a.b': 'Dropbox' },
+        { sourceHash: sourceHash('Dropbox'), sameAsSourceJustification: 'brand name' },
+      ),
     ).toBeNull()
   })
 })

@@ -73,7 +73,9 @@ export function staleReason(key, enMessages, keyMetadata) {
     const notes = []
     if (reviewed) notes.push('the reviewed flag no longer applies; reset it and re-review')
     if (justified) notes.push('the sameAsSourceJustification no longer applies; re-confirm it or translate')
-    return notes.length > 0 ? `source changed since translation (${notes.join('; ')})` : 'source changed since translation'
+    return notes.length > 0
+      ? `source changed since translation (${notes.join('; ')})`
+      : 'source changed since translation'
   }
   return null
 }

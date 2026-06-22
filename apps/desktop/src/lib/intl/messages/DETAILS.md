@@ -131,17 +131,18 @@ codegen ever sees it:
   lightly used; it exists so the review state has a home if David wants it.
 
 - `sameAsSourceJustification` (non-`en` locales only): an OPTIONAL non-empty string recording WHY a value that is
-  byte-identical to English is deliberately identical in this locale, not a missed translation — a brand name (`Dropbox`),
-  a unit symbol (`GB`), a placeholder-only string (`{width} × {height}`), or a word the locale genuinely shares with
-  English (German `Server`, Swedish `Smart`). Present and non-empty → the `desktop-i18n-coverage` check stops flagging
-  that key as "possibly untranslated" (see `i18n-check-coverage.js`). It is a per-LOCALE judgment (German keeps `Server`;
-  Spanish translates it to `Servidor`), so it lives in the locale catalog, never in `en`, and is repeated per locale even
-  for universal brands (the repetition is accepted: each translator vouches for each identical key in their language). It
-  only suppresses the IDENTICAL signal — a MISSING key still reports. Tie it to the source like `reviewed`: the stale
-  check flags a stale key that still carries it, because a justification vouched for the OLD English value must be
-  re-confirmed once the source changes. Write it as the translator's reason, sourced where the term came from (e.g.
-  "brand name; do not translate" or "macOS Swedish Finder uses 'Smart'"). Full translator workflow:
-  [`/docs/guides/i18n-translation.md`](../../../../../../docs/guides/i18n-translation.md) § Deliberately-identical strings.
+  byte-identical to English is deliberately identical in this locale, not a missed translation — a brand name
+  (`Dropbox`), a unit symbol (`GB`), a placeholder-only string (`{width} × {height}`), or a word the locale genuinely
+  shares with English (German `Server`, Swedish `Smart`). Present and non-empty → the `desktop-i18n-coverage` check
+  stops flagging that key as "possibly untranslated" (see `i18n-check-coverage.js`). It is a per-LOCALE judgment (German
+  keeps `Server`; Spanish translates it to `Servidor`), so it lives in the locale catalog, never in `en`, and is
+  repeated per locale even for universal brands (the repetition is accepted: each translator vouches for each identical
+  key in their language). It only suppresses the IDENTICAL signal — a MISSING key still reports. Tie it to the source
+  like `reviewed`: the stale check flags a stale key that still carries it, because a justification vouched for the OLD
+  English value must be re-confirmed once the source changes. Write it as the translator's reason, sourced where the
+  term came from (e.g. "brand name; do not translate" or "macOS Swedish Finder uses 'Smart'"). Full translator workflow:
+  [`/docs/guides/i18n-translation.md`](../../../../../../docs/guides/i18n-translation.md) § Deliberately-identical
+  strings.
 
 `sourceHash`, `reviewed`, and `sameAsSourceJustification` are ordinary `@`-metadata fields: the whole `@`-entry is
 stripped before the runtime and codegen see it (same as `description`/`screenshot`), so adding them needs NO codegen or

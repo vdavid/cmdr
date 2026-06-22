@@ -153,8 +153,8 @@ deliberately identical, sourced like any other term decision. Example, in `messa
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
     "sourceHash": "1a2b3c4",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
-  }
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list).",
+  },
 }
 ```
 
@@ -172,8 +172,9 @@ Rules:
   "I couldn't be bothered" is not a justification. If a key actually needs translating, translate it — the field is for
   genuinely-identical strings only, and the goal is a clean coverage warn output WITHOUT lowering the quality bar.
 
-Mechanism + schema: [`/apps/desktop/src/lib/intl/messages/DETAILS.md`](../../apps/desktop/src/lib/intl/messages/DETAILS.md)
-§ `@key` metadata schema.
+Mechanism + schema:
+[`/apps/desktop/src/lib/intl/messages/DETAILS.md`](../../apps/desktop/src/lib/intl/messages/DETAILS.md) § `@key`
+metadata schema.
 
 ## Add a new language
 

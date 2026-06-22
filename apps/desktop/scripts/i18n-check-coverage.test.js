@@ -38,9 +38,9 @@ describe('coverageStatus: pure classifier', () => {
     ).toBeNull()
   })
   it('still identical when the justification is present but empty', () => {
-    expect(
-      coverageStatus('a.b', 'Cancel', { 'a.b': 'Cancel' }, { 'a.b': { sameAsSourceJustification: '' } }),
-    ).toBe('identical')
+    expect(coverageStatus('a.b', 'Cancel', { 'a.b': 'Cancel' }, { 'a.b': { sameAsSourceJustification: '' } })).toBe(
+      'identical',
+    )
   })
   it('a justification never excuses a MISSING key', () => {
     expect(coverageStatus('a.b', 'Cancel', {}, { 'a.b': { sameAsSourceJustification: 'brand name' } })).toBe('missing')
@@ -99,7 +99,10 @@ describe('runCoverageCheck negative cases (temp catalog copies)', () => {
   it('does NOT flag an identical value that carries a sameAsSourceJustification', () => {
     const xa = read()
     xa['fixture.plainLabel'] = 'Cancel' // verbatim English, but deliberately so
-    xa['@fixture.plainLabel'] = { ...xa['@fixture.plainLabel'], sameAsSourceJustification: 'brand name; do not translate' }
+    xa['@fixture.plainLabel'] = {
+      ...xa['@fixture.plainLabel'],
+      sameAsSourceJustification: 'brand name; do not translate',
+    }
     writeXa(xa)
     const { code, text } = run()
     expect(code).toBe(EXIT_CLEAN)
