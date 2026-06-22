@@ -5,7 +5,8 @@
   },
   "downloads.toast.inSubdir": "in {subdir}",
   "@downloads.toast.inSubdir": {
-    "sourceHash": "eea56f4"
+    "sourceHash": "eea56f4",
+    "sameAsSourceJustification": "German preposition 'in' is identical to English here; only the {subdir} path placeholder follows. Restructuring would be unnatural."
   },
   "downloads.toast.learnIntro": "Etwas Cooles zum Springen zu Downloads",
   "@downloads.toast.learnIntro": {
@@ -89,7 +90,8 @@
   },
   "downloads.shortcutRow.scopeTitle": "Global",
   "@downloads.shortcutRow.scopeTitle": {
-    "sourceHash": "a258b30"
+    "sourceHash": "a258b30",
+    "sameAsSourceJustification": "German uses 'global' for system-wide scope throughout the catalog ('globaler Kurzbefehl', '(global)' markers); the noun-style card title is identical to English."
   },
   "downloads.shortcutRow.commandName": "Zum neuesten Download springen <marker>(global)</marker>",
   "@downloads.shortcutRow.commandName": {

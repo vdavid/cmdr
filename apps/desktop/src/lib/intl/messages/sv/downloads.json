@@ -89,7 +89,8 @@
   },
   "downloads.shortcutRow.scopeTitle": "Global",
   "@downloads.shortcutRow.scopeTitle": {
-    "sourceHash": "a258b30"
+    "sourceHash": "a258b30",
+    "sameAsSourceJustification": "global is 'global'/'globalt' in Swedish; the bare scope label 'Global' stays the cognate (glossary global entry, MS terminology, high)."
   },
   "downloads.shortcutRow.commandName": "Gå till senaste hämtning <marker>(global)</marker>",
   "@downloads.shortcutRow.commandName": {

@@ -17,7 +17,8 @@
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "\"{currentText} / {maxText}\": a pure character-counter fraction — two preformatted-number placeholders joined by \" / \". No translatable text. glossary.md records \"feedback.dialog.counter kept identical\" (confirmed)."
   },
   "feedback.dialog.tooLong": "抱歉，内容太长了。最多 {maxText} 个字符。",
   "@feedback.dialog.tooLong": {

@@ -25,7 +25,8 @@
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only value: '{currentText} / {maxText}', two preformatted numbers joined by a slash. No translatable text."
   },
   "errorReporter.dialog.notePlaceholder": "Vad försökte du göra? Vad förväntade du dig skulle hända?",
   "@errorReporter.dialog.notePlaceholder": {
@@ -45,7 +46,8 @@
   },
   "errorReporter.dialog.manifestHeading": "Manifest",
   "@errorReporter.dialog.manifestHeading": {
-    "sourceHash": "3c99f1f"
+    "sourceHash": "3c99f1f",
+    "sameAsSourceJustification": "manifest is 'manifest' in Swedish (MS terminology, neuter noun; glossary manifest entry, high). The standard Swedish IT term is identical to English."
   },
   "errorReporter.dialog.sampleFirstHeading": "Exempel på {count, plural, one {första raden} other {första # raderna}}",
   "@errorReporter.dialog.sampleFirstHeading": {

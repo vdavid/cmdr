@@ -745,123 +745,153 @@
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
-    "sourceHash": "4750d0a"
+    "sourceHash": "4750d0a",
+    "sameAsSourceJustification": "Brand name 'Dropbox'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.dropbox.appName": "Dropbox",
   "@errors.provider.dropbox.appName": {
-    "sourceHash": "4750d0a"
+    "sourceHash": "4750d0a",
+    "sameAsSourceJustification": "Brand name 'Dropbox'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.googleDrive.displayName": "Google Drive",
   "@errors.provider.googleDrive.displayName": {
-    "sourceHash": "915ef4b"
+    "sourceHash": "915ef4b",
+    "sameAsSourceJustification": "Brand name 'Google Drive'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.googleDrive.appName": "Google Drive",
   "@errors.provider.googleDrive.appName": {
-    "sourceHash": "915ef4b"
+    "sourceHash": "915ef4b",
+    "sameAsSourceJustification": "Brand name 'Google Drive'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.oneDrive.displayName": "OneDrive",
   "@errors.provider.oneDrive.displayName": {
-    "sourceHash": "8a7a54d"
+    "sourceHash": "8a7a54d",
+    "sameAsSourceJustification": "Brand name 'OneDrive'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.oneDrive.appName": "OneDrive",
   "@errors.provider.oneDrive.appName": {
-    "sourceHash": "8a7a54d"
+    "sourceHash": "8a7a54d",
+    "sameAsSourceJustification": "Brand name 'OneDrive'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.box.displayName": "Box",
   "@errors.provider.box.displayName": {
-    "sourceHash": "512fd3c"
+    "sourceHash": "512fd3c",
+    "sameAsSourceJustification": "Brand name 'Box'. Cloud-provider brand; kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.box.appName": "Box Drive",
   "@errors.provider.box.appName": {
-    "sourceHash": "93fe945"
+    "sourceHash": "93fe945",
+    "sameAsSourceJustification": "Brand name 'Box Drive' (the Box desktop client). errors.provider.* are brand names; do NOT translate (en @key + style.md do-not-translate)."
   },
   "errors.provider.pCloud.displayName": "pCloud",
   "@errors.provider.pCloud.displayName": {
-    "sourceHash": "8cfc474"
+    "sourceHash": "8cfc474",
+    "sameAsSourceJustification": "Brand name 'pCloud'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.pCloud.appName": "pCloud Drive",
   "@errors.provider.pCloud.appName": {
-    "sourceHash": "bfaba70"
+    "sourceHash": "bfaba70",
+    "sameAsSourceJustification": "Brand name 'pCloud Drive' (the pCloud desktop client). Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.nextcloud.displayName": "Nextcloud",
   "@errors.provider.nextcloud.displayName": {
-    "sourceHash": "337128a"
+    "sourceHash": "337128a",
+    "sameAsSourceJustification": "Brand name 'Nextcloud'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.nextcloud.appName": "Nextcloud",
   "@errors.provider.nextcloud.appName": {
-    "sourceHash": "337128a"
+    "sourceHash": "337128a",
+    "sameAsSourceJustification": "Brand name 'Nextcloud'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.synologyDrive.displayName": "Synology Drive",
   "@errors.provider.synologyDrive.displayName": {
-    "sourceHash": "118537c"
+    "sourceHash": "118537c",
+    "sameAsSourceJustification": "Brand name 'Synology Drive'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.synologyDrive.appName": "Synology Drive",
   "@errors.provider.synologyDrive.appName": {
-    "sourceHash": "118537c"
+    "sourceHash": "118537c",
+    "sameAsSourceJustification": "Brand name 'Synology Drive'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.tresorit.displayName": "Tresorit",
   "@errors.provider.tresorit.displayName": {
-    "sourceHash": "9189473"
+    "sourceHash": "9189473",
+    "sameAsSourceJustification": "Brand name 'Tresorit'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.tresorit.appName": "Tresorit",
   "@errors.provider.tresorit.appName": {
-    "sourceHash": "9189473"
+    "sourceHash": "9189473",
+    "sameAsSourceJustification": "Brand name 'Tresorit'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.protonDrive.displayName": "Proton Drive",
   "@errors.provider.protonDrive.displayName": {
-    "sourceHash": "ae94a23"
+    "sourceHash": "ae94a23",
+    "sameAsSourceJustification": "Brand name 'Proton Drive'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.protonDrive.appName": "Proton Drive",
   "@errors.provider.protonDrive.appName": {
-    "sourceHash": "ae94a23"
+    "sourceHash": "ae94a23",
+    "sameAsSourceJustification": "Brand name 'Proton Drive'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.sync.displayName": "Sync.com",
   "@errors.provider.sync.displayName": {
-    "sourceHash": "31eb68b"
+    "sourceHash": "31eb68b",
+    "sameAsSourceJustification": "Brand name 'Sync.com'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.sync.appName": "Sync.com",
   "@errors.provider.sync.appName": {
-    "sourceHash": "31eb68b"
+    "sourceHash": "31eb68b",
+    "sameAsSourceJustification": "Brand name 'Sync.com'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.egnyte.displayName": "Egnyte",
   "@errors.provider.egnyte.displayName": {
-    "sourceHash": "daa69d3"
+    "sourceHash": "daa69d3",
+    "sameAsSourceJustification": "Brand name 'Egnyte'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.egnyte.appName": "Egnyte Connect",
   "@errors.provider.egnyte.appName": {
-    "sourceHash": "6beb18f"
+    "sourceHash": "6beb18f",
+    "sameAsSourceJustification": "Brand name 'Egnyte Connect' (the Egnyte desktop client). Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.macDroid.displayName": "MacDroid",
   "@errors.provider.macDroid.displayName": {
-    "sourceHash": "99388b1"
+    "sourceHash": "99388b1",
+    "sameAsSourceJustification": "Brand name 'MacDroid'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.macDroid.appName": "MacDroid",
   "@errors.provider.macDroid.appName": {
-    "sourceHash": "99388b1"
+    "sourceHash": "99388b1",
+    "sameAsSourceJustification": "Brand name 'MacDroid'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.iCloud.displayName": "iCloud Drive",
   "@errors.provider.iCloud.displayName": {
-    "sourceHash": "416264f"
+    "sourceHash": "416264f",
+    "sameAsSourceJustification": "Brand name 'iCloud Drive'. Apple product name kept English in Hungarian macOS too; do NOT translate (errors.provider.* rule)."
   },
   "errors.provider.pCloudFuse.displayName": "pCloud",
   "@errors.provider.pCloudFuse.displayName": {
-    "sourceHash": "8cfc474"
+    "sourceHash": "8cfc474",
+    "sameAsSourceJustification": "Brand name 'pCloud'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.pCloudFuse.appName": "pCloud Drive",
   "@errors.provider.pCloudFuse.appName": {
-    "sourceHash": "bfaba70"
+    "sourceHash": "bfaba70",
+    "sameAsSourceJustification": "Brand name 'pCloud Drive' (pCloud's FUSE virtual drive client). Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.macFuse.displayName": "macFUSE",
   "@errors.provider.macFuse.displayName": {
-    "sourceHash": "229fed1"
+    "sourceHash": "229fed1",
+    "sameAsSourceJustification": "Brand name 'macFUSE'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.veraCrypt.displayName": "VeraCrypt",
   "@errors.provider.veraCrypt.displayName": {
-    "sourceHash": "46eeb7a"
+    "sourceHash": "46eeb7a",
+    "sameAsSourceJustification": "Brand name 'VeraCrypt'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.veraCrypt.appName": "VeraCrypt",
   "@errors.provider.veraCrypt.appName": {
-    "sourceHash": "46eeb7a"
+    "sourceHash": "46eeb7a",
+    "sameAsSourceJustification": "Brand name 'VeraCrypt'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
   "errors.provider.cmVolumes.displayName": "Felhőcsatolás",
   "@errors.provider.cmVolumes.displayName": {

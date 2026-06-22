@@ -5,7 +5,8 @@
   },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the universal affirmative, identical in Swedish (macOS uses 'OK'). Deliberately identical."
   },
   "fileOperations.delete.fromPath": "Från: {path}",
   "@fileOperations.delete.fromPath": {
@@ -145,7 +146,8 @@
   },
   "fileOperations.shared.byteRate": "<size></size>/s",
   "@fileOperations.shared.byteRate": {
-    "sourceHash": "4a55710"
+    "sourceHash": "4a55710",
+    "sameAsSourceJustification": "Structure-only value: '<size></size>/s' - a widget tag with no inner text plus the identical unit suffix '/s' (per second). No translatable text."
   },
   "fileOperations.shared.andJoin": "{a} och {b}",
   "@fileOperations.shared.andJoin": {

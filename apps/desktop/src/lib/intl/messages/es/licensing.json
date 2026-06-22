@@ -5,7 +5,8 @@
   },
   "licensing.about.appName": "Cmdr",
   "@licensing.about.appName": {
-    "sourceHash": "40c6a1b"
+    "sourceHash": "40c6a1b",
+    "sameAsSourceJustification": "Brand name 'Cmdr'; do-not-translate."
   },
   "licensing.about.tagline": "Gestor de archivos controlado por teclado",
   "@licensing.about.tagline": {
@@ -53,15 +54,18 @@
   },
   "licensing.about.linkGithub": "GitHub",
   "@licensing.about.linkGithub": {
-    "sourceHash": "f911e41"
+    "sourceHash": "f911e41",
+    "sameAsSourceJustification": "Brand name 'GitHub'; do-not-translate."
   },
   "licensing.about.linkDiscord": "Discord",
   "@licensing.about.linkDiscord": {
-    "sourceHash": "053bc65"
+    "sourceHash": "053bc65",
+    "sameAsSourceJustification": "Brand name 'Discord'; do-not-translate."
   },
   "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
   "@licensing.about.copyright": {
-    "sourceHash": "e6ab7e3"
+    "sourceHash": "e6ab7e3",
+    "sameAsSourceJustification": "Copyright line '© 2024-2026 David Veszelovszki': a personal name plus a literal year range; nothing translatable."
   },
   "licensing.commercialReminder.title": "¡Gracias por usar Cmdr!",
   "@licensing.commercialReminder.title": {

@@ -21,7 +21,8 @@
   },
   "mtp.connectedToast.ok": "OK",
   "@mtp.connectedToast.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the standard confirm/dismiss label in French macOS; kept verbatim."
   },
   "mtp.permissionDialog.title": "Accès à l''appareil USB impossible",
   "@mtp.permissionDialog.title": {

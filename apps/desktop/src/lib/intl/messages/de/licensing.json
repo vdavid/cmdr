@@ -5,7 +5,8 @@
   },
   "licensing.about.appName": "Cmdr",
   "@licensing.about.appName": {
-    "sourceHash": "40c6a1b"
+    "sourceHash": "40c6a1b",
+    "sameAsSourceJustification": "'Cmdr' is the product/brand name; kept verbatim (do-not-translate list)."
   },
   "licensing.about.tagline": "Tastaturgesteuerter Dateimanager",
   "@licensing.about.tagline": {
@@ -45,7 +46,8 @@
   },
   "licensing.about.linkWebsite": "Website",
   "@licensing.about.linkWebsite": {
-    "sourceHash": "b5a229a"
+    "sourceHash": "b5a229a",
+    "sameAsSourceJustification": "German uses the loanword 'Website' (matches commands.aboutOpenWebsite.label 'Website oeffnen'); spelled identically to English."
   },
   "licensing.about.linkGetLicense": "Lizenz erwerben",
   "@licensing.about.linkGetLicense": {
@@ -53,15 +55,18 @@
   },
   "licensing.about.linkGithub": "GitHub",
   "@licensing.about.linkGithub": {
-    "sourceHash": "f911e41"
+    "sourceHash": "f911e41",
+    "sameAsSourceJustification": "'GitHub' is a brand name; kept verbatim (do-not-translate list)."
   },
   "licensing.about.linkDiscord": "Discord",
   "@licensing.about.linkDiscord": {
-    "sourceHash": "053bc65"
+    "sourceHash": "053bc65",
+    "sameAsSourceJustification": "'Discord' is a brand name; kept verbatim (do-not-translate list)."
   },
   "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
   "@licensing.about.copyright": {
-    "sourceHash": "e6ab7e3"
+    "sourceHash": "e6ab7e3",
+    "sameAsSourceJustification": "Copyright line: the copyright glyph, the literal year range, and the personal name 'David Veszelovszki' are all kept verbatim. No translatable text."
   },
   "licensing.commercialReminder.title": "Danke, dass du Cmdr nutzt!",
   "@licensing.commercialReminder.title": {
@@ -341,7 +346,8 @@
   },
   "licensing.section.labelStatus": "Status",
   "@licensing.section.labelStatus": {
-    "sourceHash": "920e413"
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "German keeps 'Status' (style guide glossary; macOS/MS DE both use 'Status'); spelled identically."
   },
   "licensing.section.labelKey": "Lizenzschlüssel",
   "@licensing.section.labelKey": {

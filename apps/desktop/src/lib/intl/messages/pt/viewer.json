@@ -73,7 +73,8 @@
   },
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "Glossary-locked: 'Regex' kept verbatim, the standard short form in pt-BR (glossary 'regex . Regex . confirmed')."
   },
   "viewer.search.matchPosition": "{current} de {total}{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
@@ -141,7 +142,8 @@
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "'PDF' is a file-format name kept verbatim worldwide, including pt-BR."
   },
   "viewer.kind.text": "Texto",
   "@viewer.kind.text": {
@@ -153,7 +155,8 @@
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "'Unicode' is a standard name kept verbatim in pt-BR (the encoding-standard name is not localized)."
   },
   "viewer.toolbar.encoding.group.western": "Ocidental",
   "@viewer.toolbar.encoding.group.western": {
@@ -237,7 +240,8 @@
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Placeholder-only value '{width} x {height}': two preformatted pixel numbers joined by the multiplication sign; no translatable text."
   },
   "viewer.image.loading": "Carregando imagem",
   "@viewer.image.loading": {

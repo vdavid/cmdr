@@ -5,7 +5,8 @@
   },
   "licensing.about.appName": "Cmdr",
   "@licensing.about.appName": {
-    "sourceHash": "40c6a1b"
+    "sourceHash": "40c6a1b",
+    "sameAsSourceJustification": "Brand name 'Cmdr', the product name. Kept verbatim (BRAND_WORDS)."
   },
   "licensing.about.tagline": "Billentyűvezérelt fájlkezelő",
   "@licensing.about.tagline": {
@@ -53,15 +54,18 @@
   },
   "licensing.about.linkGithub": "GitHub",
   "@licensing.about.linkGithub": {
-    "sourceHash": "f911e41"
+    "sourceHash": "f911e41",
+    "sameAsSourceJustification": "Brand name 'GitHub'. Kept verbatim (BRAND_WORDS)."
   },
   "licensing.about.linkDiscord": "Discord",
   "@licensing.about.linkDiscord": {
-    "sourceHash": "053bc65"
+    "sourceHash": "053bc65",
+    "sameAsSourceJustification": "Brand name 'Discord'. Kept verbatim (en @key 'must NOT be translated')."
   },
   "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
   "@licensing.about.copyright": {
-    "sourceHash": "e6ab7e3"
+    "sourceHash": "e6ab7e3",
+    "sameAsSourceJustification": "'© 2024-2026 David Veszelovszki': copyright glyph, literal year range, and a personal name. Nothing translatable. Listed as kept-verbatim in glossary (licensing pass)."
   },
   "licensing.commercialReminder.title": "Köszönöm, hogy a Cmdr-t használod!",
   "@licensing.commercialReminder.title": {

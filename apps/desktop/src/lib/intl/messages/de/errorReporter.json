@@ -25,7 +25,8 @@
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only fraction ('{currentText} / {maxText}'); both values are preformatted numbers, no translatable text."
   },
   "errorReporter.dialog.notePlaceholder": "Was wolltest du tun? Was hast du erwartet?",
   "@errorReporter.dialog.notePlaceholder": {
@@ -45,7 +46,8 @@
   },
   "errorReporter.dialog.manifestHeading": "Manifest",
   "@errorReporter.dialog.manifestHeading": {
-    "sourceHash": "3c99f1f"
+    "sourceHash": "3c99f1f",
+    "sameAsSourceJustification": "German keeps 'Manifest' for report metadata (MS terminology 'Manifest', AUT/DEU/CHE); spelled identically."
   },
   "errorReporter.dialog.sampleFirstHeading": "Auszug der ersten {count, plural, one {# Zeile} other {# Zeilen}}",
   "@errorReporter.dialog.sampleFirstHeading": {

@@ -29,7 +29,8 @@
   },
   "queue.row.pause": "Pause",
   "@queue.row.pause": {
-    "sourceHash": "858e4ba"
+    "sourceHash": "858e4ba",
+    "sameAsSourceJustification": "'Pause' is a genuine French word; macOS keeps 'Pause'. Per the glossary, the standalone Pause button label is legitimately identical."
   },
   "queue.row.resume": "Reprendre",
   "@queue.row.resume": {

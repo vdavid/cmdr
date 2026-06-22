@@ -13,7 +13,8 @@
   },
   "shortcuts.scope.app": "App",
   "@shortcuts.scope.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is a genuine Dutch word (MS NL: app -> app); the group heading for app-wide commands. Sibling scope 'onboarding' is the kept loanword; 'App' coincides."
   },
   "shortcuts.scope.mainWindow": "Hoofdvenster",
   "@shortcuts.scope.mainWindow": {
@@ -53,7 +54,8 @@
   },
   "shortcuts.scope.onboarding": "Onboarding",
   "@shortcuts.scope.onboarding": {
-    "sourceHash": "a2198f4"
+    "sourceHash": "a2198f4",
+    "sameAsSourceJustification": "'Onboarding' is kept verbatim as a loanword across the Dutch catalog (glossary: onboarding kept); the group heading for onboarding commands."
   },
   "shortcuts.conflict.reservedByMacOs": "{combo} is gereserveerd door macOS ({command}) en bereikt Cmdr niet. Kies een andere combinatie.",
   "@shortcuts.conflict.reservedByMacOs": {
@@ -69,7 +71,8 @@
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "sourceHash": "fca7aa8"
+    "sourceHash": "fca7aa8",
+    "sameAsSourceJustification": "'Spotlight' is an Apple feature name that Dutch macOS keeps in English (glossary: Spotlight kept verbatim; on Apple's keep-English list). Matches the user's Dutch macOS."
   },
   "shortcuts.system.finderSearch": "Finder-zoekvenster",
   "@shortcuts.system.finderSearch": {
@@ -89,7 +92,8 @@
   },
   "shortcuts.system.missionControl": "Mission Control",
   "@shortcuts.system.missionControl": {
-    "sourceHash": "1a9a658"
+    "sourceHash": "1a9a658",
+    "sameAsSourceJustification": "'Mission Control' is an Apple feature name that Dutch macOS keeps in English (glossary: Mission Control kept verbatim; Apple does not localize it). Matches the user's Dutch macOS."
   },
   "shortcuts.system.appWindows": "App-vensters",
   "@shortcuts.system.appWindows": {
@@ -97,7 +101,8 @@
   },
   "shortcuts.system.spaces": "Spaces",
   "@shortcuts.system.spaces": {
-    "sourceHash": "077a293"
+    "sourceHash": "077a293",
+    "sameAsSourceJustification": "'Spaces' is an Apple feature name that Dutch macOS keeps in English (glossary: Spaces kept verbatim). Matches the user's Dutch macOS."
   },
   "shortcuts.system.screenshots": "schermafbeeldingen",
   "@shortcuts.system.screenshots": {
@@ -189,7 +194,8 @@
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "'macOS' is Apple's OS name; kept verbatim (do-not-translate list)."
   },
   "shortcuts.section.fixedBadge": "Vast",
   "@shortcuts.section.fixedBadge": {

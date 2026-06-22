@@ -21,7 +21,8 @@
   },
   "mtp.connectedToast.ok": "OK",
   "@mtp.connectedToast.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "macOS Vietnamese uses 'OK' verbatim for the acknowledge button (AppKit vi shows 'OK'); kept as-is."
   },
   "mtp.permissionDialog.title": "Không thể truy cập thiết bị USB",
   "@mtp.permissionDialog.title": {

@@ -69,7 +69,8 @@
   },
   "queryUi.mode.regex.label": "Regex",
   "@queryUi.mode.regex.label": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is the short form of 'regular expression', a tight mode chip kept verbatim in Dutch (tech term, no common Dutch equivalent)."
   },
   "queryUi.mode.regex.aria": "Regex-modus (Alt+R)",
   "@queryUi.mode.regex.aria": {
@@ -121,11 +122,13 @@
   },
   "queryUi.ai.patternLabel.glob": "Glob",
   "@queryUi.ai.patternLabel.glob": {
-    "sourceHash": "18d00f7"
+    "sourceHash": "18d00f7",
+    "sameAsSourceJustification": "'Glob' is a technical term for a filename wildcard pattern with no common Dutch equivalent; kept verbatim (glossary: glob -> Glob)."
   },
   "queryUi.ai.patternLabel.regex": "Regex",
   "@queryUi.ai.patternLabel.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is the short form of 'regular expression', kept verbatim in Dutch (no common Dutch equivalent; tech term)."
   },
   "queryUi.ai.patternLabel.generic": "Patroon",
   "@queryUi.ai.patternLabel.generic": {
@@ -141,7 +144,8 @@
   },
   "queryUi.ai.filter.type": "Type",
   "@queryUi.ai.filter.type": {
-    "sourceHash": "baaddf7"
+    "sourceHash": "baaddf7",
+    "sameAsSourceJustification": "'Type' is a genuine Dutch word (MS NL: Type -> type/Type); the file-type filter label, with shipped siblings 'Alleen bestanden'/'Alleen mappen'. Coincides with English."
   },
   "queryUi.ai.typeSummary.filesOnly": "Alleen bestanden",
   "@queryUi.ai.typeSummary.filesOnly": {
@@ -281,11 +285,13 @@
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' is a brand-like term kept as-is in Dutch (glossary: AI kept as-is)."
   },
   "queryUi.recent.mode.regex": "Regex",
   "@queryUi.recent.mode.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is the short form of 'regular expression', kept verbatim in Dutch (tech term)."
   },
   "queryUi.recent.mode.filename": "Bestandsnaam",
   "@queryUi.recent.mode.filename": {
@@ -361,7 +367,8 @@
   },
   "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
   "@queryUi.recent.chipTooltipHeader": {
-    "sourceHash": "54a225b"
+    "sourceHash": "54a225b",
+    "sameAsSourceJustification": "Placeholder-only structure '{mode} . {age}': both parts are already-translated values joined by a middle dot. No translatable text."
   },
   "queryUi.dialog.actionsAria": "Dialoogacties",
   "@queryUi.dialog.actionsAria": {
@@ -413,11 +420,13 @@
   },
   "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
   "@queryUi.filters.size.summary.single": {
-    "sourceHash": "bbd5deb"
+    "sourceHash": "bbd5deb",
+    "sameAsSourceJustification": "Placeholder-only value '{prefix} {valueText} {unit}': a comparison glyph, a number, and a preformatted unit symbol. No translatable text."
   },
   "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
   "@queryUi.filters.size.summary.range": {
-    "sourceHash": "ba7eadc"
+    "sourceHash": "ba7eadc",
+    "sameAsSourceJustification": "Placeholder-only value '{minText} {minUnit} -- {maxText} {maxUnit}' (en dash): numbers, preformatted unit symbols, and an en dash. No translatable text."
   },
   "queryUi.filters.date.summary.after": "na {date}",
   "@queryUi.filters.date.summary.after": {
@@ -429,7 +438,8 @@
   },
   "queryUi.filters.date.summary.range": "{after} – {before}",
   "@queryUi.filters.date.summary.range": {
-    "sourceHash": "801560e"
+    "sourceHash": "801560e",
+    "sameAsSourceJustification": "Placeholder-only value '{after} -- {before}' (en dash): two ISO dates joined by an en dash. No translatable text."
   },
   "queryUi.size.comparator.any": "alle",
   "@queryUi.size.comparator.any": {
@@ -441,11 +451,13 @@
   },
   "queryUi.size.unit.byte": "byte",
   "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626"
+    "sourceHash": "1c31626",
+    "sameAsSourceJustification": "'byte' is the singular byte unit, used verbatim in Dutch (Total Commander NL uses 'byte'/'bytes' unchanged). The full-word unit coincides with English."
   },
   "queryUi.size.unit.bytes": "bytes",
   "@queryUi.size.unit.bytes": {
-    "sourceHash": "277089d"
+    "sourceHash": "277089d",
+    "sameAsSourceJustification": "'bytes' is the plural byte unit, used verbatim in Dutch (Total Commander NL: '%s bytes'). Coincides with English."
   },
   "queryUi.size.customCell": "aangepast…",
   "@queryUi.size.customCell": {

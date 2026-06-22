@@ -89,7 +89,8 @@
   },
   "downloads.shortcutRow.scopeTitle": "Global",
   "@downloads.shortcutRow.scopeTitle": {
-    "sourceHash": "a258b30"
+    "sourceHash": "a258b30",
+    "sameAsSourceJustification": "'Global' is a real Spanish word and the term Spanish uses for system-wide scope (glossary: global -> global, MS standard; matches the catalog's 'atajo global' usage). Identical to English by coincidence of cognate."
   },
   "downloads.shortcutRow.commandName": "Ir a la última descarga <marker>(global)</marker>",
   "@downloads.shortcutRow.commandName": {

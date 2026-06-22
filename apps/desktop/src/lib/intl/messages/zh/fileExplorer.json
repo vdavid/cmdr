@@ -741,7 +741,8 @@
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "\"Git\" is the version-control tools proper name, kept verbatim. glossary.md § UI section names lists \"Git\" → \"Git\"; macOS/Microsoft zh keep the tool name in Latin form. (file-list column header.)"
   },
   "fileExplorer.columns.gitTitle": "每个文件的 Git 状态",
   "@fileExplorer.columns.gitTitle": {

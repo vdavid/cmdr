@@ -13,7 +13,8 @@
   },
   "shortcuts.scope.app": "App",
   "@shortcuts.scope.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the scope-group heading for app-wide commands; macOS es keeps 'App' as-is (27 'App' hits in es/macOS), so the heading stays 'App' alongside its translated siblings ('Ventana principal', 'Lista de archivos')."
   },
   "shortcuts.scope.mainWindow": "Ventana principal",
   "@shortcuts.scope.mainWindow": {
@@ -69,7 +70,8 @@
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "sourceHash": "fca7aa8"
+    "sourceHash": "fca7aa8",
+    "sameAsSourceJustification": "macOS feature name 'Spotlight'; Apple keeps it untranslated in Spanish (glossary: Spotlight kept verbatim)."
   },
   "shortcuts.system.finderSearch": "ventana de búsqueda del Finder",
   "@shortcuts.system.finderSearch": {
@@ -89,7 +91,8 @@
   },
   "shortcuts.system.missionControl": "Mission Control",
   "@shortcuts.system.missionControl": {
-    "sourceHash": "1a9a658"
+    "sourceHash": "1a9a658",
+    "sameAsSourceJustification": "macOS feature name 'Mission Control'; Apple keeps it untranslated in Spanish (glossary: Mission Control kept verbatim)."
   },
   "shortcuts.system.appWindows": "Ventanas de la app",
   "@shortcuts.system.appWindows": {
@@ -97,7 +100,8 @@
   },
   "shortcuts.system.spaces": "Spaces",
   "@shortcuts.system.spaces": {
-    "sourceHash": "077a293"
+    "sourceHash": "077a293",
+    "sameAsSourceJustification": "macOS feature name 'Spaces'; Apple keeps it untranslated in Spanish (glossary: Spaces kept verbatim)."
   },
   "shortcuts.system.screenshots": "capturas de pantalla",
   "@shortcuts.system.screenshots": {
@@ -189,7 +193,8 @@
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "'macOS' is a system name; do-not-translate."
   },
   "shortcuts.section.fixedBadge": "Fija",
   "@shortcuts.section.fixedBadge": {

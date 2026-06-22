@@ -73,7 +73,8 @@
   },
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "Style guide glossary: regex -> 'Regex' (kept short, do-not-translate). Identical to English; matches queryUi.mode.regex.label."
   },
   "viewer.search.matchPosition": "{current} von {total}{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
@@ -121,7 +122,8 @@
   },
   "viewer.toolbar.viewMode.text": "Text",
   "@viewer.toolbar.viewMode.text": {
-    "sourceHash": "71988c4"
+    "sourceHash": "71988c4",
+    "sameAsSourceJustification": "'Text' is a real German word, same spelling (MS/macOS DE use 'Text'); the plain-text view mode is identical to English. Matches viewer.kind.text in the de catalog."
   },
   "viewer.toolbar.viewMode.viewAsText": "Als Text anzeigen",
   "@viewer.toolbar.viewMode.viewAsText": {
@@ -141,11 +143,13 @@
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "'PDF' is a format name; kept verbatim (per @key)."
   },
   "viewer.kind.text": "Text",
   "@viewer.kind.text": {
-    "sourceHash": "71988c4"
+    "sourceHash": "71988c4",
+    "sameAsSourceJustification": "'Text' is a real German word, same spelling (macOS/MS DE use 'Text' for plain text). Matches viewer.toolbar.viewMode.text."
   },
   "viewer.toolbar.encoding.placeholder": "Codierung",
   "@viewer.toolbar.encoding.placeholder": {
@@ -153,7 +157,8 @@
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "'Unicode' is a standard name; kept as-is in every locale (per @key). Matches the encoding-group handling in the de catalog."
   },
   "viewer.toolbar.encoding.group.western": "Westlich",
   "@viewer.toolbar.encoding.group.western": {
@@ -213,7 +218,8 @@
   },
   "viewer.statusBar.badge.streaming": "streaming",
   "@viewer.statusBar.badge.streaming": {
-    "sourceHash": "b304adc"
+    "sourceHash": "b304adc",
+    "sameAsSourceJustification": "Style guide glossary: streaming -> 'Streaming' (MS terminology, kept); the terse lowercase badge stays 'streaming', identical to English. Matches the streaming badge family in the de catalog."
   },
   "viewer.statusBar.badge.streamingTooltip": "Das ist eine große Datei im Streaming-Modus. Die Indizierung hätte länger als {seconds} Sek. gedauert, daher haben wir darauf verzichtet. Die Zeilennummern sind Schätzungen.",
   "@viewer.statusBar.badge.streamingTooltip": {
@@ -237,7 +243,8 @@
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Placeholder-only template '{width} x {height}'; both values are preformatted numbers and the multiplication sign is kept. No translatable text."
   },
   "viewer.image.loading": "Bild wird geladen",
   "@viewer.image.loading": {

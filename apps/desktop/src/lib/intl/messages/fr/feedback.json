@@ -17,7 +17,8 @@
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only string ('{currentText} / {maxText}'), no translatable text; same as the errorReporter counter."
   },
   "feedback.dialog.tooLong": "Désolé, c''est trop long. Le maximum est de {maxText} caractères.",
   "@feedback.dialog.tooLong": {

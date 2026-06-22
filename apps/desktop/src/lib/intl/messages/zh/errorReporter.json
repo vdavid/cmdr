@@ -25,7 +25,8 @@
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "\"{currentText} / {maxText}\": a pure character-counter fraction — two preformatted-number placeholders joined by \" / \". No translatable text. glossary.md records the parallel feedback counter kept identical (confirmed)."
   },
   "errorReporter.dialog.notePlaceholder": "你当时想做什么？你期望发生什么？",
   "@errorReporter.dialog.notePlaceholder": {

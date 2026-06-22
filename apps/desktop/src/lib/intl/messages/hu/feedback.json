@@ -17,7 +17,8 @@
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Pure placeholder fraction '{currentText} / {maxText}'. Both preformatted numbers, slash is neutral. Explicitly listed as kept-verbatim in glossary (transfer/feedback wave)."
   },
   "feedback.dialog.tooLong": "Bocs, ez túl hosszú. A maximum {maxText} karakter.",
   "@feedback.dialog.tooLong": {

@@ -1,7 +1,8 @@
 {
   "ui.alertDialog.defaultButton": "OK",
   "@ui.alertDialog.defaultButton": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the standard DE default-dismiss-button label, identical to English (macOS DE uses 'OK')."
   },
   "ui.modalDialog.close": "Schließen",
   "@ui.modalDialog.close": {

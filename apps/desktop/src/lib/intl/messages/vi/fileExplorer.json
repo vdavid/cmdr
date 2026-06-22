@@ -77,7 +77,8 @@
   },
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
   "@fileExplorer.functionKeyBar.actionWithShortcut": {
-    "sourceHash": "49e258f"
+    "sourceHash": "49e258f",
+    "sameAsSourceJustification": "Placeholder-only pattern '{action} ({shortcut})': {action} is already-translated text and {shortcut} is key glyphs (do-not-translate). The parentheses are locale-neutral; nothing to translate."
   },
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (không có tác vụ shift)",
   "@fileExplorer.functionKeyBar.noShiftAction": {
@@ -741,7 +742,8 @@
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "Tool name 'Git'; kept verbatim. Vietnamese UI keeps Git as-is."
   },
   "fileExplorer.columns.gitTitle": "Trạng thái Git của từng tệp",
   "@fileExplorer.columns.gitTitle": {

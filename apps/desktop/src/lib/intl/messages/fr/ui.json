@@ -1,7 +1,8 @@
 {
   "ui.alertDialog.defaultButton": "OK",
   "@ui.alertDialog.defaultButton": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the standard confirm-button label in French macOS; kept verbatim."
   },
   "ui.modalDialog.close": "Fermer",
   "@ui.modalDialog.close": {
@@ -9,7 +10,8 @@
   },
   "ui.popover.defaultAriaLabel": "Options",
   "@ui.popover.defaultAriaLabel": {
-    "sourceHash": "d0db8b5"
+    "sourceHash": "d0db8b5",
+    "sameAsSourceJustification": "'Options' is the same word in French (macOS and Microsoft both use 'Options'); kept identical."
   },
   "ui.select.placeholder": "Sélectionner...",
   "@ui.select.placeholder": {

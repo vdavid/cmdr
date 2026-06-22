@@ -145,7 +145,8 @@
   },
   "fileOperations.shared.byteRate": "<size></size>/s",
   "@fileOperations.shared.byteRate": {
-    "sourceHash": "4a55710"
+    "sourceHash": "4a55710",
+    "sameAsSourceJustification": "Structural value '<size></size>/s': a size widget plus the per-second marker '/s', identical in Spanish (MB/s convention). No translatable text."
   },
   "fileOperations.shared.andJoin": "{a} y {b}",
   "@fileOperations.shared.andJoin": {

@@ -17,7 +17,8 @@
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only ICU value '{currentText} / {maxText}' rendering a numeric fraction; both inserts are preformatted numbers and there is no translatable text."
   },
   "feedback.dialog.tooLong": "Desculpe, isso é longo demais. O máximo é {maxText} caracteres.",
   "@feedback.dialog.tooLong": {

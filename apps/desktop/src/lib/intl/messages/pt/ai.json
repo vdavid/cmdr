@@ -133,7 +133,8 @@
   },
   "ai.cloud.endpointLabel": "Endpoint",
   "@ai.cloud.endpointLabel": {
-    "sourceHash": "3df9726"
+    "sourceHash": "3df9726",
+    "sameAsSourceJustification": "Glossary-locked: Endpoint is kept verbatim in pt-BR, matching Apple pt-BR usage (glossary 'endpoint . Endpoint (kept verbatim)'). Confirmed in the catalog's other ai.cloud strings."
   },
   "ai.cloud.endpointDescription": "URL do endpoint da API para o serviço selecionado.",
   "@ai.cloud.endpointDescription": {
@@ -293,7 +294,8 @@
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "A single literal punctuation glyph (question mark) used as a missing-value placeholder; carries no translatable text."
   },
   "ai.local.notInstalled": "Não instalado. O modelo local ({modelName}, {modelSize}) roda inteiramente no seu dispositivo para máxima privacidade. Requer Apple Silicon.",
   "@ai.local.notInstalled": {

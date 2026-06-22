@@ -73,7 +73,8 @@
   },
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' search-toggle label, kept verbatim (short form; full = 'reguláris kifejezés'). Glossary keeps Regex verbatim (viewer pass)."
   },
   "viewer.search.matchPosition": "{current} / {total}{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
@@ -141,7 +142,8 @@
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "'PDF' is a file-format name kept verbatim (en @key 'don't translate it'). Glossary lists PDF as kept (viewer pass)."
   },
   "viewer.kind.text": "Szöveg",
   "@viewer.kind.text": {
@@ -153,7 +155,8 @@
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "'Unicode' is a standard name kept verbatim (en @key 'don't translate'). Glossary lists Unicode as a kept encoding-group heading (viewer pass)."
   },
   "viewer.toolbar.encoding.group.western": "Nyugati",
   "@viewer.toolbar.encoding.group.western": {
@@ -237,7 +240,8 @@
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Placeholder-only frame '{width} × {height}': both are preformatted pixel counts, '×' is the language-neutral multiplication sign. Listed as kept-verbatim in glossary (viewer pass)."
   },
   "viewer.image.loading": "Kép betöltése",
   "@viewer.image.loading": {

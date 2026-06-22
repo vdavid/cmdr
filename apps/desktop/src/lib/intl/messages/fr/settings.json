@@ -61,7 +61,8 @@
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the common French short form for application (used throughout the catalog); this toggle label refers to the app's accent color, kept short and identical."
   },
   "settings.appearance.sizeColors.opt.rainbow": "Arc-en-ciel",
   "@settings.appearance.sizeColors.opt.rainbow": {
@@ -81,7 +82,8 @@
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the common French short form for application (the catalog uses 'app' throughout, e.g. 'dans toute l''app'); this toggle label refers to the app's accent color, kept short and identical."
   },
   "settings.appearance.dateColors.opt.wilting": "Flétrissement",
   "@settings.appearance.dateColors.opt.wilting": {
@@ -101,7 +103,8 @@
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "Standard name ('ISO 8601'); kept verbatim, identical in every locale."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "ex. : 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
@@ -177,7 +180,8 @@
   },
   "settings.appearance.uiDensity.opt.compact": "Compact",
   "@settings.appearance.uiDensity.opt.compact": {
-    "sourceHash": "9945264"
+    "sourceHash": "9945264",
+    "sameAsSourceJustification": "'Compact' is a genuine French word (Microsoft terminology FRA: 'compact'); kept as the density label, alongside the translated siblings 'Confortable' and 'Spacieux'."
   },
   "settings.appearance.uiDensity.opt.comfortable": "Confortable",
   "@settings.appearance.uiDensity.opt.comfortable": {
@@ -225,15 +229,18 @@
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "Unit symbol ('kB'); kept verbatim, identical in French."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "Unit symbol ('MB'); kept verbatim, identical in French."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "Unit symbol ('GB'); kept verbatim, identical in French."
   },
   "settings.appearance.fileSizeFormat.label": "Format de taille de fichier",
   "@settings.appearance.fileSizeFormat.label": {
@@ -517,7 +524,8 @@
   },
   "settings.ai.cloudProvider.label": "Service",
   "@settings.ai.cloudProvider.label": {
-    "sourceHash": "d677190"
+    "sourceHash": "d677190",
+    "sameAsSourceJustification": "'Service' is the same word in French (macOS and Microsoft terminology FRA both use 'Service'); kept as the short picker label, matching the description 'Quel service d''IA…' in the catalog."
   },
   "settings.ai.cloudProvider.description": "Quel service d''IA dans le cloud utiliser.",
   "@settings.ai.cloudProvider.description": {
@@ -577,7 +585,8 @@
   },
   "settings.network.shareCacheDuration.opt.min5": "5 minutes",
   "@settings.network.shareCacheDuration.opt.min5": {
-    "sourceHash": "3170543"
+    "sourceHash": "3170543",
+    "sameAsSourceJustification": "'5 minutes' is identical in French ('minute' is the same word); the number comes through unchanged."
   },
   "settings.network.shareCacheDuration.opt.hour1": "1 heure",
   "@settings.network.shareCacheDuration.opt.hour1": {
@@ -601,7 +610,8 @@
   },
   "settings.network.timeoutMode.opt.normal": "Normal",
   "@settings.network.timeoutMode.opt.normal": {
-    "sourceHash": "a7248ee"
+    "sourceHash": "a7248ee",
+    "sameAsSourceJustification": "'Normal' is the same word in French (macOS and Microsoft terminology FRA both use 'Normal'); kept as the radio label, alongside the translated siblings 'Réseau lent' and 'Personnalisé'."
   },
   "settings.network.timeoutMode.optDesc.normal": "Pour les réseaux locaux typiques (délai de 15 s)",
   "@settings.network.timeoutMode.optDesc.normal": {
@@ -693,7 +703,8 @@
   },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
-    "sourceHash": "72e9a59"
+    "sourceHash": "72e9a59",
+    "sameAsSourceJustification": "'Port' is the same word in French (network port); standard technical term, kept identical."
   },
   "settings.developer.mcpPort.description": "Port préféré pour le serveur MCP. Laissez à 0 pour laisser le système choisir un port éphémère (recommandé ; le port réel est affiché ci-dessous une fois en cours d''exécution). Fixez un port précis si un outil externe le nécessite.",
   "@settings.developer.mcpPort.description": {
@@ -941,7 +952,8 @@
   },
   "settings.tint.orange": "Orange",
   "@settings.tint.orange": {
-    "sourceHash": "78e7771"
+    "sourceHash": "78e7771",
+    "sameAsSourceJustification": "Color name 'Orange' is identical in French (standard French color term); kept as the swatch label."
   },
   "settings.tint.amber": "Ambre",
   "@settings.tint.amber": {
@@ -961,7 +973,8 @@
   },
   "settings.tint.cyan": "Cyan",
   "@settings.tint.cyan": {
-    "sourceHash": "e95bb22"
+    "sourceHash": "e95bb22",
+    "sameAsSourceJustification": "Color name 'Cyan' is identical in French (macOS French: 'Cyan' -> 'Cyan'); kept as the swatch label, alongside translated siblings like 'Bleu' and 'Violet'."
   },
   "settings.tint.blue": "Bleu",
   "@settings.tint.blue": {
@@ -969,7 +982,8 @@
   },
   "settings.tint.indigo": "Indigo",
   "@settings.tint.indigo": {
-    "sourceHash": "d81ab14"
+    "sourceHash": "d81ab14",
+    "sameAsSourceJustification": "Color name 'Indigo' is identical in French (standard French color term); kept as the swatch label."
   },
   "settings.tint.purple": "Violet",
   "@settings.tint.purple": {
@@ -1037,7 +1051,8 @@
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name (a brand); kept verbatim per the do-not-translate list."
   },
   "settings.section.viewer": "Visionneuse",
   "@settings.section.viewer": {
@@ -1173,7 +1188,8 @@
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "Placeholder-only string ('{systemSettings} > {appearance}'); both parts are OS-localized at runtime, no literal text."
   },
   "settings.appearance.appColorHintLinkOther": "les réglages d''apparence de votre système",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1333,7 +1349,8 @@
   },
   "settings.advanced.card.performance": "Performance",
   "@settings.advanced.card.performance": {
-    "sourceHash": "442aded"
+    "sourceHash": "442aded",
+    "sameAsSourceJustification": "'Performance' is a genuine French word (Microsoft terminology FRA uses 'performance'/'performances'); kept as the card heading, matching the sibling 'Performance et délais d''attente' already in the catalog."
   },
   "settings.advanced.card.fileWatching": "Surveillance des fichiers",
   "@settings.advanced.card.fileWatching": {
@@ -1401,7 +1418,8 @@
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "Placeholder-only breadcrumb ('{systemSettings} > {privacyAndSecurity} > {localNetwork}'); all parts are OS-localized at runtime, no literal text."
   },
   "settings.network.permissionWithout": "Sans cela, Cmdr peut toujours lire et écrire des fichiers sur les partages déjà montés, mais vous ne pouvez pas découvrir de nouveaux serveurs ni utiliser notre connexion directe plus rapide.",
   "@settings.network.permissionWithout": {
@@ -1413,7 +1431,8 @@
   },
   "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "Placeholder example address ('you@example.com'); 'example.com' is the reserved example domain, kept verbatim as a sample value."
   },
   "settings.updates.checkForUpdates": "Vérifier les mises à jour",
   "@settings.updates.checkForUpdates": {

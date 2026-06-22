@@ -189,7 +189,8 @@
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "\"macOS\" is the OSs proper name, in BRAND_WORDS / do-not-translate. Apple zh-CN keeps \"macOS\" verbatim everywhere. (style.md § Brand and do-not-translate.)"
   },
   "shortcuts.section.fixedBadge": "固定",
   "@shortcuts.section.fixedBadge": {

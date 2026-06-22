@@ -13,7 +13,8 @@
   },
   "updates.toast.later": "Later",
   "@updates.toast.later": {
-    "sourceHash": "73b6e48"
+    "sourceHash": "73b6e48",
+    "sameAsSourceJustification": "'Later' is the same word in Dutch (a genuine Dutch adverb), the natural dismiss-for-now button label (glossary: later -> Later)."
   },
   "updates.toast.restart": "Herstart",
   "@updates.toast.restart": {

@@ -745,123 +745,153 @@
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
-    "sourceHash": "4750d0a"
+    "sourceHash": "4750d0a",
+    "sameAsSourceJustification": "Brand/product name \"Dropbox\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Dropbox\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.dropbox.appName": "Dropbox",
   "@errors.provider.dropbox.appName": {
-    "sourceHash": "4750d0a"
+    "sourceHash": "4750d0a",
+    "sameAsSourceJustification": "Brand/product name \"Dropbox\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Dropbox\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.googleDrive.displayName": "Google Drive",
   "@errors.provider.googleDrive.displayName": {
-    "sourceHash": "915ef4b"
+    "sourceHash": "915ef4b",
+    "sameAsSourceJustification": "Brand/product name \"Google Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Google Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.googleDrive.appName": "Google Drive",
   "@errors.provider.googleDrive.appName": {
-    "sourceHash": "915ef4b"
+    "sourceHash": "915ef4b",
+    "sameAsSourceJustification": "Brand/product name \"Google Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Google Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.oneDrive.displayName": "OneDrive",
   "@errors.provider.oneDrive.displayName": {
-    "sourceHash": "8a7a54d"
+    "sourceHash": "8a7a54d",
+    "sameAsSourceJustification": "Brand/product name \"OneDrive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"OneDrive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.oneDrive.appName": "OneDrive",
   "@errors.provider.oneDrive.appName": {
-    "sourceHash": "8a7a54d"
+    "sourceHash": "8a7a54d",
+    "sameAsSourceJustification": "Brand/product name \"OneDrive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"OneDrive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.box.displayName": "Box",
   "@errors.provider.box.displayName": {
-    "sourceHash": "512fd3c"
+    "sourceHash": "512fd3c",
+    "sameAsSourceJustification": "Brand/product name \"Box\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Box\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.box.appName": "Box Drive",
   "@errors.provider.box.appName": {
-    "sourceHash": "93fe945"
+    "sourceHash": "93fe945",
+    "sameAsSourceJustification": "Brand/product name \"Box Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Box Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.pCloud.displayName": "pCloud",
   "@errors.provider.pCloud.displayName": {
-    "sourceHash": "8cfc474"
+    "sourceHash": "8cfc474",
+    "sameAsSourceJustification": "Brand/product name \"pCloud\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"pCloud\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.pCloud.appName": "pCloud Drive",
   "@errors.provider.pCloud.appName": {
-    "sourceHash": "bfaba70"
+    "sourceHash": "bfaba70",
+    "sameAsSourceJustification": "Brand/product name \"pCloud Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"pCloud Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.nextcloud.displayName": "Nextcloud",
   "@errors.provider.nextcloud.displayName": {
-    "sourceHash": "337128a"
+    "sourceHash": "337128a",
+    "sameAsSourceJustification": "Brand/product name \"Nextcloud\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Nextcloud\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.nextcloud.appName": "Nextcloud",
   "@errors.provider.nextcloud.appName": {
-    "sourceHash": "337128a"
+    "sourceHash": "337128a",
+    "sameAsSourceJustification": "Brand/product name \"Nextcloud\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Nextcloud\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.synologyDrive.displayName": "Synology Drive",
   "@errors.provider.synologyDrive.displayName": {
-    "sourceHash": "118537c"
+    "sourceHash": "118537c",
+    "sameAsSourceJustification": "Brand/product name \"Synology Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Synology Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.synologyDrive.appName": "Synology Drive",
   "@errors.provider.synologyDrive.appName": {
-    "sourceHash": "118537c"
+    "sourceHash": "118537c",
+    "sameAsSourceJustification": "Brand/product name \"Synology Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Synology Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.tresorit.displayName": "Tresorit",
   "@errors.provider.tresorit.displayName": {
-    "sourceHash": "9189473"
+    "sourceHash": "9189473",
+    "sameAsSourceJustification": "Brand/product name \"Tresorit\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Tresorit\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.tresorit.appName": "Tresorit",
   "@errors.provider.tresorit.appName": {
-    "sourceHash": "9189473"
+    "sourceHash": "9189473",
+    "sameAsSourceJustification": "Brand/product name \"Tresorit\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Tresorit\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.protonDrive.displayName": "Proton Drive",
   "@errors.provider.protonDrive.displayName": {
-    "sourceHash": "ae94a23"
+    "sourceHash": "ae94a23",
+    "sameAsSourceJustification": "Brand/product name \"Proton Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Proton Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.protonDrive.appName": "Proton Drive",
   "@errors.provider.protonDrive.appName": {
-    "sourceHash": "ae94a23"
+    "sourceHash": "ae94a23",
+    "sameAsSourceJustification": "Brand/product name \"Proton Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Proton Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.sync.displayName": "Sync.com",
   "@errors.provider.sync.displayName": {
-    "sourceHash": "31eb68b"
+    "sourceHash": "31eb68b",
+    "sameAsSourceJustification": "Brand/product name \"Sync.com\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Sync.com\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.sync.appName": "Sync.com",
   "@errors.provider.sync.appName": {
-    "sourceHash": "31eb68b"
+    "sourceHash": "31eb68b",
+    "sameAsSourceJustification": "Brand/product name \"Sync.com\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Sync.com\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.egnyte.displayName": "Egnyte",
   "@errors.provider.egnyte.displayName": {
-    "sourceHash": "daa69d3"
+    "sourceHash": "daa69d3",
+    "sameAsSourceJustification": "Brand/product name \"Egnyte\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Egnyte\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.egnyte.appName": "Egnyte Connect",
   "@errors.provider.egnyte.appName": {
-    "sourceHash": "6beb18f"
+    "sourceHash": "6beb18f",
+    "sameAsSourceJustification": "Brand/product name \"Egnyte Connect\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"Egnyte Connect\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.macDroid.displayName": "MacDroid",
   "@errors.provider.macDroid.displayName": {
-    "sourceHash": "99388b1"
+    "sourceHash": "99388b1",
+    "sameAsSourceJustification": "Brand/product name \"MacDroid\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"MacDroid\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.macDroid.appName": "MacDroid",
   "@errors.provider.macDroid.appName": {
-    "sourceHash": "99388b1"
+    "sourceHash": "99388b1",
+    "sameAsSourceJustification": "Brand/product name \"MacDroid\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"MacDroid\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.iCloud.displayName": "iCloud Drive",
   "@errors.provider.iCloud.displayName": {
-    "sourceHash": "416264f"
+    "sourceHash": "416264f",
+    "sameAsSourceJustification": "Brand/product name \"iCloud Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"iCloud Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.pCloudFuse.displayName": "pCloud",
   "@errors.provider.pCloudFuse.displayName": {
-    "sourceHash": "8cfc474"
+    "sourceHash": "8cfc474",
+    "sameAsSourceJustification": "Brand/product name \"pCloud\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"pCloud\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.pCloudFuse.appName": "pCloud Drive",
   "@errors.provider.pCloudFuse.appName": {
-    "sourceHash": "bfaba70"
+    "sourceHash": "bfaba70",
+    "sameAsSourceJustification": "Brand/product name \"pCloud Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"pCloud Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.macFuse.displayName": "macFUSE",
   "@errors.provider.macFuse.displayName": {
-    "sourceHash": "229fed1"
+    "sourceHash": "229fed1",
+    "sameAsSourceJustification": "Brand/product name \"macFUSE\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"macFUSE\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.veraCrypt.displayName": "VeraCrypt",
   "@errors.provider.veraCrypt.displayName": {
-    "sourceHash": "46eeb7a"
+    "sourceHash": "46eeb7a",
+    "sameAsSourceJustification": "Brand/product name \"VeraCrypt\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"VeraCrypt\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.veraCrypt.appName": "VeraCrypt",
   "@errors.provider.veraCrypt.appName": {
-    "sourceHash": "46eeb7a"
+    "sourceHash": "46eeb7a",
+    "sameAsSourceJustification": "Brand/product name \"VeraCrypt\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"VeraCrypt\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
   "errors.provider.cmVolumes.displayName": "云挂载",
   "@errors.provider.cmVolumes.displayName": {

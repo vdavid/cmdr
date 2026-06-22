@@ -25,7 +25,8 @@
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Pure placeholder fraction '{currentText} / {maxText}' (typed-so-far / max). Both are preformatted numbers; the slash is a language-neutral fraction separator. Matches feedback.dialog.counter, kept verbatim per glossary."
   },
   "errorReporter.dialog.notePlaceholder": "Mit próbáltál csinálni? Mire számítottál?",
   "@errorReporter.dialog.notePlaceholder": {

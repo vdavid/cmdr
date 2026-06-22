@@ -73,7 +73,8 @@
   },
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' (regular expression) is kept verbatim in Swedish (matches queryUi.mode.regex.label, queryUi.ai.patternLabel.regex)."
   },
   "viewer.search.matchPosition": "{current} av {total}{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
@@ -121,7 +122,8 @@
   },
   "viewer.toolbar.viewMode.text": "Text",
   "@viewer.toolbar.viewMode.text": {
-    "sourceHash": "71988c4"
+    "sourceHash": "71988c4",
+    "sameAsSourceJustification": "text is 'Text' in Swedish (Swedish cognate). Identical to English, matching viewer.kind.text."
   },
   "viewer.toolbar.viewMode.viewAsText": "Visa som text",
   "@viewer.toolbar.viewMode.viewAsText": {
@@ -141,11 +143,13 @@
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "'PDF' is a file-format name; kept verbatim in every locale."
   },
   "viewer.kind.text": "Text",
   "@viewer.kind.text": {
-    "sourceHash": "71988c4"
+    "sourceHash": "71988c4",
+    "sameAsSourceJustification": "text is 'Text' in Swedish (Swedish cognate; glossary notes 'Text' is the shared form). The content-kind label is identical, matching viewer.toolbar.viewMode.text."
   },
   "viewer.toolbar.encoding.placeholder": "Teckenkodning",
   "@viewer.toolbar.encoding.placeholder": {
@@ -153,7 +157,8 @@
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "'Unicode' is a standard name; kept verbatim in every locale."
   },
   "viewer.toolbar.encoding.group.western": "Västerländsk",
   "@viewer.toolbar.encoding.group.western": {
@@ -165,7 +170,8 @@
   },
   "viewer.toolbar.tail.label": "Tail",
   "@viewer.toolbar.tail.label": {
-    "sourceHash": "ae9c3bd"
+    "sourceHash": "ae9c3bd",
+    "sameAsSourceJustification": "'Tail' kept verbatim as the Unix tail -f term (glossary tail entry: no natural Swedish equivalent stays recognizable; loanword kept by design)."
   },
   "viewer.toolbar.tail.ariaLabel": "Tail-läge: följ filändringar",
   "@viewer.toolbar.tail.ariaLabel": {
@@ -237,7 +243,8 @@
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Structure-only value: '{width} x {height}', two preformatted pixel counts joined by the multiplication sign. No translatable text."
   },
   "viewer.image.loading": "Läser in bild",
   "@viewer.image.loading": {

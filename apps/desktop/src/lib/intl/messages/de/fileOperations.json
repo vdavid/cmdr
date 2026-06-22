@@ -5,7 +5,8 @@
   },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the standard DE confirm-button label, identical to English (macOS DE uses 'OK')."
   },
   "fileOperations.delete.fromPath": "Aus: {path}",
   "@fileOperations.delete.fromPath": {
@@ -145,7 +146,8 @@
   },
   "fileOperations.shared.byteRate": "<size></size>/s",
   "@fileOperations.shared.byteRate": {
-    "sourceHash": "4a55710"
+    "sourceHash": "4a55710",
+    "sameAsSourceJustification": "Widget-only template '<size></size>/s': the <size> tag renders a formatted value and '/s' (per second) is identical in German. No translatable text."
   },
   "fileOperations.shared.andJoin": "{a} und {b}",
   "@fileOperations.shared.andJoin": {
@@ -417,7 +419,8 @@
   },
   "fileOperations.transferProgress.conflictRollback": "Rollback",
   "@fileOperations.transferProgress.conflictRollback": {
-    "sourceHash": "c591f55"
+    "sourceHash": "c591f55",
+    "sameAsSourceJustification": "Style guide glossary: rollback -> Rollback (kept loanword; MS terminology keeps 'Rollback', standard DE dev/file-op term). Matches the existing rollback strings in the de catalog."
   },
   "fileOperations.transferProgress.progressSize": "Größe",
   "@fileOperations.transferProgress.progressSize": {
@@ -457,7 +460,8 @@
   },
   "fileOperations.transferProgress.pause": "Pause",
   "@fileOperations.transferProgress.pause": {
-    "sourceHash": "858e4ba"
+    "sourceHash": "858e4ba",
+    "sameAsSourceJustification": "Style guide glossary: pause -> button 'Pause' (noun, macOS NSPauseTemplate 'Pause'); the visible button stays 'Pause', identical to English. Matches the existing de pause strings."
   },
   "fileOperations.transferProgress.resume": "Fortsetzen",
   "@fileOperations.transferProgress.resume": {

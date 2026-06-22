@@ -25,7 +25,8 @@
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only string ('{currentText} / {maxText}'), no translatable text; same as the feedback counter."
   },
   "errorReporter.dialog.notePlaceholder": "Qu''essayiez-vous de faire ? À quoi vous attendiez-vous ?",
   "@errorReporter.dialog.notePlaceholder": {

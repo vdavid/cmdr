@@ -133,7 +133,8 @@
   },
   "ai.cloud.endpointLabel": "Endpoint",
   "@ai.cloud.endpointLabel": {
-    "sourceHash": "3df9726"
+    "sourceHash": "3df9726",
+    "sameAsSourceJustification": "Dutch keeps 'Endpoint' for an API endpoint URL field; the shipped sibling ai.cloud.endpointAria uses 'Endpoint-URL' and endpointDescription 'API-endpoint-URL', so 'Endpoint' is the chosen Dutch term (glossary: Endpoint kept, MS literal 'eindpunt' not used for an API URL field)."
   },
   "ai.cloud.endpointDescription": "API-endpoint-URL voor de geselecteerde service.",
   "@ai.cloud.endpointDescription": {
@@ -169,7 +170,8 @@
   },
   "ai.cloud.modelLabel": "Model",
   "@ai.cloud.modelLabel": {
-    "sourceHash": "5e2c614"
+    "sourceHash": "5e2c614",
+    "sameAsSourceJustification": "'Model' is a genuine Dutch word for an AI model (MS NL terminology: model -> model). Kept across the AI surface in Dutch."
   },
   "ai.cloud.modelDescription": "De modelnaam die voor completions wordt gebruikt.",
   "@ai.cloud.modelDescription": {
@@ -281,11 +283,13 @@
   },
   "ai.local.modelLabel": "Model",
   "@ai.local.modelLabel": {
-    "sourceHash": "5e2c614"
+    "sourceHash": "5e2c614",
+    "sameAsSourceJustification": "'Model' is a genuine Dutch word for an AI model (MS NL: model -> model)."
   },
   "ai.local.serverLabel": "Server",
   "@ai.local.serverLabel": {
-    "sourceHash": "aef7de2"
+    "sourceHash": "aef7de2",
+    "sameAsSourceJustification": "'Server' is a genuine Dutch word (MS NL: server -> server; macOS Finder 'Servers' -> 'Servers')."
   },
   "ai.local.modelUnknown": "Onbekend",
   "@ai.local.modelUnknown": {
@@ -293,7 +297,8 @@
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "Placeholder-only value: a single '?' punctuation glyph carrying no translatable text."
   },
   "ai.local.notInstalled": "Niet geïnstalleerd. Het lokale model ({modelName}, {modelSize}) draait volledig op je apparaat voor maximale privacy. Vereist Apple Silicon.",
   "@ai.local.notInstalled": {
@@ -313,11 +318,13 @@
   },
   "ai.local.ramLegendApps": "Apps {size}",
   "@ai.local.ramLegendApps": {
-    "sourceHash": "d02b14c"
+    "sourceHash": "d02b14c",
+    "sameAsSourceJustification": "'Apps' is a genuine Dutch word (MS NL: app -> app, plural 'apps'); the '{size}' placeholder carries the OS-formatted memory amount. No translatable Dutch difference."
   },
   "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
   "@ai.local.ramLegendCmdrAi": {
-    "sourceHash": "93e2741"
+    "sourceHash": "93e2741",
+    "sameAsSourceJustification": "'Cmdr' is the brand name (do-not-translate) and 'AI' is kept in Dutch (glossary: AI kept as-is); '{size}' is a placeholder. Nothing to translate."
   },
   "ai.local.ramLegendProjected": "Verwacht",
   "@ai.local.ramLegendProjected": {
@@ -337,11 +344,13 @@
   },
   "ai.local.stopServer": "Stop server",
   "@ai.local.stopServer": {
-    "sourceHash": "a21bf60"
+    "sourceHash": "a21bf60",
+    "sameAsSourceJustification": "Bare-stem imperative 'Stop' + object 'server', exactly matching macOS Dutch 'Stop dicteerfunctie' and standalone 'Stop' -> 'Stop'. 'server' is Dutch. Native Dutch button label, identical to English by coincidence."
   },
   "ai.local.startServer": "Start server",
   "@ai.local.startServer": {
-    "sourceHash": "7b7da6f"
+    "sourceHash": "7b7da6f",
+    "sameAsSourceJustification": "Bare-stem imperative 'Start' + object 'server', exactly matching macOS Dutch 'Start dicteerfunctie' (Start + object). 'server' is Dutch (MS: server -> server). Native Dutch button label, identical to English by coincidence."
   },
   "ai.local.deleteModel": "Verwijder model",
   "@ai.local.deleteModel": {
@@ -349,7 +358,8 @@
   },
   "ai.local.downloadModel": "Download model",
   "@ai.local.downloadModel": {
-    "sourceHash": "9979bea"
+    "sourceHash": "9979bea",
+    "sameAsSourceJustification": "Bare-stem imperative 'Download' + object 'model', matching macOS Dutch's 'Start dicteerfunctie'/'Stop dicteerfunctie' Verb+object button pattern; 'download' is the established Dutch imperative loanword (glossary: download/downloaden) and 'model' is Dutch (model -> model). Reads as native Dutch, identical to English by coincidence."
   },
   "ai.local.deleteDialogTitleDeleting": "Model verwijderen...",
   "@ai.local.deleteDialogTitleDeleting": {

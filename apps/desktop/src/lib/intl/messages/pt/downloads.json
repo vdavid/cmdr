@@ -89,7 +89,8 @@
   },
   "downloads.shortcutRow.scopeTitle": "Global",
   "@downloads.shortcutRow.scopeTitle": {
-    "sourceHash": "a258b30"
+    "sourceHash": "a258b30",
+    "sameAsSourceJustification": "'Global' is identical in pt-BR. Microsoft pt-BR terminology maps en-US 'Global' to pt-BR 'Global' (TBX, ids 2469979/475227/495130). The shipped sibling commandName already uses '(global)' in pt-BR."
   },
   "downloads.shortcutRow.commandName": "Ir para o download mais recente <marker>(global)</marker>",
   "@downloads.shortcutRow.commandName": {

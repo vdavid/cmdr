@@ -17,7 +17,8 @@
   },
   "commandPalette.groupRecent": "Recent",
   "@commandPalette.groupRecent": {
-    "sourceHash": "690dbe9"
+    "sourceHash": "690dbe9",
+    "sameAsSourceJustification": "'Recent' is a genuine Dutch word (MS NL: recent -> recent; macOS 'Recents' -> 'Recent'), the natural section heading for recently-used items."
   },
   "commandPalette.groupAll": "Alle opdrachten",
   "@commandPalette.groupAll": {

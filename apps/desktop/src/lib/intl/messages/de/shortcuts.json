@@ -13,7 +13,8 @@
   },
   "shortcuts.scope.app": "App",
   "@shortcuts.scope.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the kept loanword (standard DE UI term); spelled identically to English."
   },
   "shortcuts.scope.mainWindow": "Hauptfenster",
   "@shortcuts.scope.mainWindow": {
@@ -69,7 +70,8 @@
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "sourceHash": "fca7aa8"
+    "sourceHash": "fca7aa8",
+    "sameAsSourceJustification": "macOS DE keeps 'Spotlight' untranslated (glossary: Mission Control/Spaces/Spotlight kept verbatim, verified in macOS pile 2026-06-21). Reuse the localized macOS name."
   },
   "shortcuts.system.finderSearch": "Finder-Suchfenster",
   "@shortcuts.system.finderSearch": {
@@ -89,7 +91,8 @@
   },
   "shortcuts.system.missionControl": "Mission Control",
   "@shortcuts.system.missionControl": {
-    "sourceHash": "1a9a658"
+    "sourceHash": "1a9a658",
+    "sameAsSourceJustification": "macOS DE keeps 'Mission Control' untranslated (glossary entry, verified in macOS pile 2026-06-21). Reuse the localized macOS name."
   },
   "shortcuts.system.appWindows": "App-Fenster",
   "@shortcuts.system.appWindows": {
@@ -97,7 +100,8 @@
   },
   "shortcuts.system.spaces": "Spaces",
   "@shortcuts.system.spaces": {
-    "sourceHash": "077a293"
+    "sourceHash": "077a293",
+    "sameAsSourceJustification": "macOS DE keeps 'Spaces' untranslated (glossary entry, verified in macOS pile 2026-06-21). Reuse the localized macOS name."
   },
   "shortcuts.system.screenshots": "Bildschirmfotos",
   "@shortcuts.system.screenshots": {
@@ -189,7 +193,8 @@
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "'macOS' is a system name; kept verbatim (do-not-translate list)."
   },
   "shortcuts.section.fixedBadge": "Fest",
   "@shortcuts.section.fixedBadge": {

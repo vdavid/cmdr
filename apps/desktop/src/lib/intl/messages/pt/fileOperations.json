@@ -5,7 +5,8 @@
   },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is identical in pt-BR. macOS Finder pt-BR keeps 'OK' to 'OK' (confirmed macOS/Finder Localizable.json). The standard affirmative button label is unchanged."
   },
   "fileOperations.delete.fromPath": "De: {path}",
   "@fileOperations.delete.fromPath": {
@@ -145,7 +146,8 @@
   },
   "fileOperations.shared.byteRate": "<size></size>/s",
   "@fileOperations.shared.byteRate": {
-    "sourceHash": "4a55710"
+    "sourceHash": "4a55710",
+    "sameAsSourceJustification": "Identical-in-pt-BR rate format '<size></size>/s': a size widget plus the per-second marker '/s', whose 's' is the unchanged pt-BR second symbol. No translatable text."
   },
   "fileOperations.shared.andJoin": "{a} e {b}",
   "@fileOperations.shared.andJoin": {

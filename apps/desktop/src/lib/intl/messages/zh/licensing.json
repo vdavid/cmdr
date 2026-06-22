@@ -5,7 +5,8 @@
   },
   "licensing.about.appName": "Cmdr",
   "@licensing.about.appName": {
-    "sourceHash": "40c6a1b"
+    "sourceHash": "40c6a1b",
+    "sameAsSourceJustification": "\"Cmdr\" is the product name (BRAND_WORDS); kept verbatim everywhere in the zh catalog (e.g. \"关于 Cmdr\"). The About-dialog heading shows the brand as-is."
   },
   "licensing.about.tagline": "键盘驱动的文件管理器",
   "@licensing.about.tagline": {
@@ -53,15 +54,18 @@
   },
   "licensing.about.linkGithub": "GitHub",
   "@licensing.about.linkGithub": {
-    "sourceHash": "f911e41"
+    "sourceHash": "f911e41",
+    "sameAsSourceJustification": "\"GitHub\" is a brand name (BRAND_WORDS), kept verbatim; Apple/Microsoft zh keep \"GitHub\" in Latin form. The sibling footer links ARE translated (Website→网站, Get a license→获取许可证)."
   },
   "licensing.about.linkDiscord": "Discord",
   "@licensing.about.linkDiscord": {
-    "sourceHash": "053bc65"
+    "sourceHash": "053bc65",
+    "sameAsSourceJustification": "\"Discord\" is a brand name, kept verbatim; Chinese users see the platform as \"Discord\". The sibling footer links ARE translated (Website→网站, Get a license→获取许可证)."
   },
   "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
   "@licensing.about.copyright": {
-    "sourceHash": "e6ab7e3"
+    "sourceHash": "e6ab7e3",
+    "sameAsSourceJustification": "Copyright line \"© 2024-2026 David Veszelovszki\": the © symbol, the literal year range, and a personal name — none are translatable. The personal name stays as written; the years stay literal."
   },
   "licensing.commercialReminder.title": "感谢您使用 Cmdr！",
   "@licensing.commercialReminder.title": {

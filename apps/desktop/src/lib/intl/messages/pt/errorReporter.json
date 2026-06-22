@@ -25,7 +25,8 @@
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only ICU value '{currentText} / {maxText}' rendering a numeric fraction; both inserts are preformatted numbers and there is no translatable text."
   },
   "errorReporter.dialog.notePlaceholder": "O que você estava tentando fazer? O que esperava que acontecesse?",
   "@errorReporter.dialog.notePlaceholder": {

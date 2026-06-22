@@ -77,7 +77,8 @@
   },
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
   "@fileExplorer.functionKeyBar.actionWithShortcut": {
-    "sourceHash": "49e258f"
+    "sourceHash": "49e258f",
+    "sameAsSourceJustification": "Placeholder-only layout string ('{action} ({shortcut})'); the parts are translated at their own keys, no literal text here."
   },
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (aucune action avec Maj)",
   "@fileExplorer.functionKeyBar.noShiftAction": {
@@ -585,7 +586,8 @@
   },
   "fileExplorer.smbReconnect.totalMinutes": "{minutes} minutes",
   "@fileExplorer.smbReconnect.totalMinutes": {
-    "sourceHash": "fc339ba"
+    "sourceHash": "fc339ba",
+    "sameAsSourceJustification": "Placeholder + 'minutes', which is the same word in French ('{minutes} minutes'); no other translatable text."
   },
   "fileExplorer.smbReconnect.title": "Reconnexion au serveur…",
   "@fileExplorer.smbReconnect.title": {
@@ -725,7 +727,8 @@
   },
   "fileExplorer.columns.ext": "Ext",
   "@fileExplorer.columns.ext": {
-    "sourceHash": "8c92eec"
+    "sourceHash": "8c92eec",
+    "sameAsSourceJustification": "Abbreviation of 'extension' (same root in French, 'extension'); 'Ext' is the standard tight-column abbreviation and is measured to size the column, so kept identical and short."
   },
   "fileExplorer.columns.size": "Taille",
   "@fileExplorer.columns.size": {
@@ -741,7 +744,8 @@
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name (a brand); kept verbatim per the do-not-translate list."
   },
   "fileExplorer.columns.gitTitle": "État Git de chaque fichier",
   "@fileExplorer.columns.gitTitle": {
@@ -1017,15 +1021,18 @@
   },
   "fileExplorer.navigation.groupVolumes": "Volumes",
   "@fileExplorer.navigation.groupVolumes": {
-    "sourceHash": "53a480e"
+    "sourceHash": "53a480e",
+    "sameAsSourceJustification": "'Volumes' is the macOS French term for mounted disk volumes (macOS Finder 'Volumes', 'Volumes serveur'); identical to English, per the glossary 'volume -> volume' choice."
   },
   "fileExplorer.navigation.groupCloud": "Cloud",
   "@fileExplorer.navigation.groupCloud": {
-    "sourceHash": "b977b95"
+    "sourceHash": "b977b95",
+    "sameAsSourceJustification": "'Cloud' is the established French loanword for cloud storage (Microsoft terminology FRA keeps 'cloud'; macOS uses 'iCloud'/'cloud'); kept as the volume-switcher section heading."
   },
   "fileExplorer.navigation.groupMobile": "Mobile",
   "@fileExplorer.navigation.groupMobile": {
-    "sourceHash": "cbaad3c"
+    "sourceHash": "cbaad3c",
+    "sameAsSourceJustification": "'Mobile' is the same word in French (Microsoft terminology FRA: 'appareils mobiles' / 'mobile'); kept as the short section heading for connected phones and cameras."
   },
   "fileExplorer.navigation.groupNetwork": "Réseau",
   "@fileExplorer.navigation.groupNetwork": {
@@ -1045,7 +1052,8 @@
   },
   "fileExplorer.navigation.volumeFallback": "Volume",
   "@fileExplorer.navigation.volumeFallback": {
-    "sourceHash": "b10fb96"
+    "sourceHash": "b10fb96",
+    "sameAsSourceJustification": "'Volume' is the macOS French term for a mounted disk volume (per the glossary 'volume -> volume'); identical to English."
   },
   "fileExplorer.navigation.favoritesEmpty": "(Vos favoris s''afficheront ici)",
   "@fileExplorer.navigation.favoritesEmpty": {
@@ -1221,11 +1229,13 @@
   },
   "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
   "@fileExplorer.navigation.driveIndex.durationMinSec": {
-    "sourceHash": "57a57d1"
+    "sourceHash": "57a57d1",
+    "sameAsSourceJustification": "Placeholder + unit symbols ('{minutes} min, {seconds} s'); 'min' and 's' are the SI/CLDR unit abbreviations, identical in French."
   },
   "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
   "@fileExplorer.navigation.driveIndex.durationSec": {
-    "sourceHash": "fde82d3"
+    "sourceHash": "fde82d3",
+    "sameAsSourceJustification": "Placeholder + unit symbol ('{seconds} s'); 's' is the SI abbreviation for seconds, identical in French."
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr n''a pas pu se connecter directement à {name}, ce qui est nécessaire pour indexer ce partage. Vérifiez que le partage est accessible et réessayez.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {

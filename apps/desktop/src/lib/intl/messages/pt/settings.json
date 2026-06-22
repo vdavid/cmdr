@@ -61,7 +61,8 @@
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is identical in pt-BR (Apple pt-BR keeps 'App'/'Apps' verbatim; naturalized). Shipped siblings (Nenhuma, Arco-iris) are translated, so this is a genuine cognate."
   },
   "settings.appearance.sizeColors.opt.rainbow": "Arco-íris",
   "@settings.appearance.sizeColors.opt.rainbow": {
@@ -81,7 +82,8 @@
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is identical in pt-BR. Apple pt-BR keeps 'App'/'Apps' verbatim (confirmed macOS/Finder: 'Apps' to 'Apps'); 'App' is naturalized in pt-BR tech UI. Shipped siblings (Nenhuma, Arco-iris, Murchar) are translated, so this is a genuine cognate, not an untranslated default."
   },
   "settings.appearance.dateColors.opt.wilting": "Murchar",
   "@settings.appearance.dateColors.opt.wilting": {
@@ -101,7 +103,8 @@
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "'ISO 8601' is a standard-format name kept verbatim worldwide, including pt-BR."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "ex.: 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
@@ -221,19 +224,23 @@
   },
   "settings.listing.sizeUnit.opt.bytes": "Bytes",
   "@settings.listing.sizeUnit.opt.bytes": {
-    "sourceHash": "4d80003"
+    "sourceHash": "4d80003",
+    "sameAsSourceJustification": "'Bytes' is identical in pt-BR. The unit word is unchanged in pt-BR (Microsoft pt-BR 'byte' to 'byte'; double-commander/total-commander pt-BR keep 'Bytes')."
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "'kB' is a unit symbol (kilobyte), kept as-is in pt-BR."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "'MB' is a unit symbol (megabyte), kept as-is in pt-BR."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "'GB' is a unit symbol (gigabyte), kept as-is in pt-BR."
   },
   "settings.appearance.fileSizeFormat.label": "Formato de tamanho de arquivo",
   "@settings.appearance.fileSizeFormat.label": {
@@ -249,7 +256,8 @@
   },
   "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 bytes",
   "@settings.appearance.fileSizeFormat.optDesc.binary": {
-    "sourceHash": "ee2d07b"
+    "sourceHash": "ee2d07b",
+    "sameAsSourceJustification": "Identical-in-pt-BR: '1 KiB = 1024 bytes'. 'KiB' is a unit symbol, the numbers are literal, and 'bytes' is the unchanged pt-BR unit word (Microsoft pt-BR 'byte' to 'byte'), so the whole string matches English."
   },
   "settings.appearance.fileSizeFormat.opt.si": "Decimal SI (KB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
@@ -257,7 +265,8 @@
   },
   "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 bytes",
   "@settings.appearance.fileSizeFormat.optDesc.si": {
-    "sourceHash": "04b2c3b"
+    "sourceHash": "04b2c3b",
+    "sameAsSourceJustification": "Identical-in-pt-BR: '1 KB = 1000 bytes'. 'KB' is a unit symbol, the numbers are literal, and 'bytes' is the unchanged pt-BR unit word, so the whole string matches English."
   },
   "settings.listing.sizeMismatchWarning.label": "Aviso de divergência de tamanho",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -601,7 +610,8 @@
   },
   "settings.network.timeoutMode.opt.normal": "Normal",
   "@settings.network.timeoutMode.opt.normal": {
-    "sourceHash": "a7248ee"
+    "sourceHash": "a7248ee",
+    "sameAsSourceJustification": "'Normal' is identical in pt-BR. Microsoft pt-BR terminology maps en-US 'normal' to pt-BR 'normal' (TBX, ids 1984523/1987496). The shipped siblings 'Rede lenta' and 'Personalizado' are translated, so this is a genuine cognate; the surrounding optDesc is already translated."
   },
   "settings.network.timeoutMode.optDesc.normal": "Para redes locais comuns (tempo limite de 15s)",
   "@settings.network.timeoutMode.optDesc.normal": {
@@ -1037,7 +1047,8 @@
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name, kept verbatim (do-not-translate). pt-BR keeps 'Git'."
   },
   "settings.section.viewer": "Visualizador",
   "@settings.section.viewer": {
@@ -1173,7 +1184,8 @@
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "Placeholder-only value '{systemSettings} > {appearance}': two OS-localized macOS labels injected at runtime, joined by the '> ' path arrow; no translatable text of our own."
   },
   "settings.appearance.appColorHintLinkOther": "os ajustes de aparência do seu sistema",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1285,7 +1297,8 @@
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
-    "sourceHash": "d5fdc1a"
+    "sourceHash": "d5fdc1a",
+    "sameAsSourceJustification": "'Downloads' is the macOS folder name; macOS pt-BR keeps the Downloads folder name verbatim (confirmed macOS/Finder: 'Downloads' to 'Downloads'). Glossary: 'the Downloads folder name stays Downloads'."
   },
   "settings.fileSystemWatching.cardLowDiskSpace": "Pouco espaço em disco",
   "@settings.fileSystemWatching.cardLowDiskSpace": {
@@ -1401,7 +1414,8 @@
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "Placeholder-only value '{systemSettings} > {privacyAndSecurity} > {localNetwork}': three OS-localized macOS labels injected at runtime, joined by '> ' path arrows; no translatable text of our own."
   },
   "settings.network.permissionWithout": "Sem isso, o Cmdr ainda consegue ler e escrever arquivos em compartilhamentos já montados, mas você não pode descobrir novos servidores nem usar nossa conexão direta mais rápida.",
   "@settings.network.permissionWithout": {

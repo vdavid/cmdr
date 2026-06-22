@@ -5,7 +5,8 @@
   },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the universal affirmative confirm label, kept verbatim in Dutch (macOS NL: 'OK' -> 'OK')."
   },
   "fileOperations.delete.fromPath": "Vanuit: {path}",
   "@fileOperations.delete.fromPath": {
@@ -145,7 +146,8 @@
   },
   "fileOperations.shared.byteRate": "<size></size>/s",
   "@fileOperations.shared.byteRate": {
-    "sourceHash": "4a55710"
+    "sourceHash": "4a55710",
+    "sameAsSourceJustification": "'<size></size>/s': the <size> tag renders the formatted size widget and '/s' is the per-second unit marker, identical in Dutch. No translatable text."
   },
   "fileOperations.shared.andJoin": "{a} en {b}",
   "@fileOperations.shared.andJoin": {

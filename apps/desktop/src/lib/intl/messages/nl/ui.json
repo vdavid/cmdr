@@ -1,7 +1,8 @@
 {
   "ui.alertDialog.defaultButton": "OK",
   "@ui.alertDialog.defaultButton": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the universal acknowledgement label, kept verbatim in Dutch (macOS NL: 'OK' -> 'OK')."
   },
   "ui.modalDialog.close": "Sluit",
   "@ui.modalDialog.close": {

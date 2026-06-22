@@ -1,7 +1,8 @@
 {
   "onboarding.wizard.title": "Cmdr onboarding",
   "@onboarding.wizard.title": {
-    "sourceHash": "3b97a1b"
+    "sourceHash": "3b97a1b",
+    "sameAsSourceJustification": "'Cmdr onboarding': 'Cmdr' is the brand name (do-not-translate) and 'onboarding' is kept verbatim as a loanword across the Dutch catalog (glossary: onboarding kept; matches the screen-reader title pattern)."
   },
   "onboarding.wizard.progressLabel": "Voortgang van onboarding",
   "@onboarding.wizard.progressLabel": {
@@ -97,7 +98,8 @@
   },
   "onboarding.stepFda.openSettings": "Open {systemSettings}",
   "@onboarding.stepFda.openSettings": {
-    "sourceHash": "f735c5c"
+    "sourceHash": "f735c5c",
+    "sameAsSourceJustification": "'Open' is the Dutch bare-stem imperative (macOS 'Open ${target}'); '{systemSettings}' is an OS-localized placeholder kept literal. Native Dutch, identical by coincidence."
   },
   "onboarding.stepFda.step1": "Klik hieronder op <strong>Open {systemSettings}</strong>",
   "@onboarding.stepFda.step1": {
@@ -489,7 +491,8 @@
   },
   "onboarding.cloudSetup.modelAria": "Model",
   "@onboarding.cloudSetup.modelAria": {
-    "sourceHash": "5e2c614"
+    "sourceHash": "5e2c614",
+    "sameAsSourceJustification": "'Model' is a genuine Dutch word for an AI model (MS NL: model -> model). Accessible label coincides with English."
   },
   "onboarding.cloudSetup.modelPlaceholderExample": "Voorbeeld: {model}",
   "@onboarding.cloudSetup.modelPlaceholderExample": {

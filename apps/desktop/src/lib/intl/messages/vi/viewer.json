@@ -73,7 +73,8 @@
   },
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "Technical loanword 'Regex'; kept verbatim in vi (glossary: regex -> Regex). Accessibility label/tooltip for the regex toggle."
   },
   "viewer.search.matchPosition": "{current} / {total}{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
@@ -141,7 +142,8 @@
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "Format name 'PDF'; kept verbatim (a file-format identifier, not translated)."
   },
   "viewer.kind.text": "Văn bản",
   "@viewer.kind.text": {
@@ -153,7 +155,8 @@
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "Standard name 'Unicode'; kept verbatim (a character-encoding-standard name, not translated)."
   },
   "viewer.toolbar.encoding.group.western": "Tây Âu",
   "@viewer.toolbar.encoding.group.western": {
@@ -237,7 +240,8 @@
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Placeholder-only pattern '{width} x {height}': both values are preformatted pixel numbers joined by the multiplication sign. Nothing to translate."
   },
   "viewer.image.loading": "Đang tải hình ảnh",
   "@viewer.image.loading": {

@@ -345,7 +345,8 @@
   },
   "onboarding.stepBeta.emailPlaceholder": "you@example.com",
   "@onboarding.stepBeta.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "Example email address \"you@example.com\": a recognizable placeholder format, kept literal so the @-pattern still reads as an email hint. Apple/Microsoft zh keep example addresses in this Latin form."
   },
   "onboarding.stepBeta.signup.success": "请查看收件箱确认你的邮箱。谢谢你的帮助！",
   "@onboarding.stepBeta.signup.success": {

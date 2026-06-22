@@ -17,7 +17,8 @@
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only fraction '{currentText} / {maxText}'; both values are preformatted numbers and the ' / ' separator is locale-neutral. Nothing to translate."
   },
   "feedback.dialog.tooLong": "Xin lỗi, nội dung này quá dài. Tối đa là {maxText} ký tự.",
   "@feedback.dialog.tooLong": {

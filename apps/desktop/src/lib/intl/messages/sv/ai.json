@@ -285,7 +285,8 @@
   },
   "ai.local.serverLabel": "Server",
   "@ai.local.serverLabel": {
-    "sourceHash": "aef7de2"
+    "sourceHash": "aef7de2",
+    "sameAsSourceJustification": "server is 'server' in Swedish; macOS Finder uses 'Server'/'Serveradress'/'Servernamn' (style.md server entry, high). Deliberately identical."
   },
   "ai.local.modelUnknown": "Okänd",
   "@ai.local.modelUnknown": {
@@ -293,7 +294,8 @@
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "Placeholder-only value: a literal '?' for an unknown model size. No translatable text."
   },
   "ai.local.notInstalled": "Inte installerad. Den lokala modellen ({modelName}, {modelSize}) körs helt på din enhet för maximal integritet. Kräver Apple Silicon.",
   "@ai.local.notInstalled": {
@@ -309,7 +311,8 @@
   },
   "ai.local.ramLegendSystem": "System {size}",
   "@ai.local.ramLegendSystem": {
-    "sourceHash": "1497c04"
+    "sourceHash": "1497c04",
+    "sameAsSourceJustification": "'System' is the same word in Swedish - Apple Swedish uses 'System' standalone (verified in pile macOS), and the catalog keeps it (settings.theme.mode.opt.system). '{size}' is a preformatted placeholder."
   },
   "ai.local.ramLegendApps": "Appar {size}",
   "@ai.local.ramLegendApps": {
@@ -317,7 +320,8 @@
   },
   "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
   "@ai.local.ramLegendCmdrAi": {
-    "sourceHash": "93e2741"
+    "sourceHash": "93e2741",
+    "sameAsSourceJustification": "'Cmdr' is the app brand (do-not-translate) and '{size}' is a preformatted placeholder; 'AI' stays verbatim per the catalog (settings.section.ai = 'AI'). No translatable text remains."
   },
   "ai.local.ramLegendProjected": "Beräknat",
   "@ai.local.ramLegendProjected": {

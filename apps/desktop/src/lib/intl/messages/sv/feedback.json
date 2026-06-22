@@ -17,7 +17,8 @@
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only value: '{currentText} / {maxText}', two preformatted numbers joined by a slash. No translatable text."
   },
   "feedback.dialog.tooLong": "Tyvärr, det är för långt. Högst {maxText} tecken.",
   "@feedback.dialog.tooLong": {

@@ -69,13 +69,14 @@
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "sourceHash": "fca7aa8"
+    "sourceHash": "fca7aa8",
+    "sameAsSourceJustification": "macOS feature name; vi macOS keeps 'Spotlight' in English (pile shows 'Spotlight' as the vi value), kept verbatim to match the user's macOS (Apple keeps Spotlight English everywhere)."
   },
   "shortcuts.system.finderSearch": "Cửa sổ tìm kiếm Finder",
   "@shortcuts.system.finderSearch": {
     "sourceHash": "8b2f1c8"
   },
-  "shortcuts.system.characterViewer": "Character Viewer",
+  "shortcuts.system.characterViewer": "Biểu tượng & Ký hiệu",
   "@shortcuts.system.characterViewer": {
     "sourceHash": "1a43164"
   },
@@ -89,15 +90,17 @@
   },
   "shortcuts.system.missionControl": "Mission Control",
   "@shortcuts.system.missionControl": {
-    "sourceHash": "1a9a658"
+    "sourceHash": "1a9a658",
+    "sameAsSourceJustification": "macOS feature name; vi macOS keeps 'Mission Control' in English (pile shows the vi value as 'Mission Control'), kept verbatim to match the user's macOS."
   },
-  "shortcuts.system.appWindows": "App windows",
+  "shortcuts.system.appWindows": "Cửa sổ ứng dụng",
   "@shortcuts.system.appWindows": {
     "sourceHash": "a480ccd"
   },
   "shortcuts.system.spaces": "Spaces",
   "@shortcuts.system.spaces": {
-    "sourceHash": "077a293"
+    "sourceHash": "077a293",
+    "sameAsSourceJustification": "macOS feature name; vi macOS keeps 'Spaces' in English, kept verbatim to match the user's macOS (glossary documents these conflict-warning feature names as kept-English)."
   },
   "shortcuts.system.screenshots": "chụp màn hình",
   "@shortcuts.system.screenshots": {
@@ -115,7 +118,7 @@
   "@shortcuts.system.lockingScreen": {
     "sourceHash": "b54447c"
   },
-  "shortcuts.system.forceQuit": "Force Quit",
+  "shortcuts.system.forceQuit": "Bắt buộc Thoát",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
   },
@@ -189,7 +192,8 @@
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name 'macOS'; kept verbatim per the do-not-translate rule (in BRAND_WORDS)."
   },
   "shortcuts.section.fixedBadge": "Cố định",
   "@shortcuts.section.fixedBadge": {

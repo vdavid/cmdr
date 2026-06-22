@@ -29,7 +29,8 @@
   },
   "settings.theme.mode.opt.system": "💻 System",
   "@settings.theme.mode.opt.system": {
-    "sourceHash": "0c12227"
+    "sourceHash": "0c12227",
+    "sameAsSourceJustification": "'System' is a real German word, same spelling; the leading laptop emoji is decorative and kept. macOS DE uses 'System'."
   },
   "settings.appearance.appColor.label": "App-Farbe",
   "@settings.appearance.appColor.label": {
@@ -61,7 +62,8 @@
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the kept loanword (standard DE UI term, as in 'aus jeder App'); spelled identically to English."
   },
   "settings.appearance.sizeColors.opt.rainbow": "Regenbogen",
   "@settings.appearance.sizeColors.opt.rainbow": {
@@ -81,7 +83,8 @@
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the kept loanword (standard DE UI term); spelled identically to English."
   },
   "settings.appearance.dateColors.opt.wilting": "Welken",
   "@settings.appearance.dateColors.opt.wilting": {
@@ -101,7 +104,8 @@
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "'ISO 8601' is a standard name; kept as-is in every locale (per @key)."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "z. B. 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
@@ -195,7 +199,7 @@
   "@settings.listing.sizeDisplay.description": {
     "sourceHash": "52567b4"
   },
-  "settings.listing.sizeDisplay.opt.smart": "Smart",
+  "settings.listing.sizeDisplay.opt.smart": "Intelligent",
   "@settings.listing.sizeDisplay.opt.smart": {
     "sourceHash": "9e6ad6d"
   },
@@ -221,19 +225,23 @@
   },
   "settings.listing.sizeUnit.opt.bytes": "Bytes",
   "@settings.listing.sizeUnit.opt.bytes": {
-    "sourceHash": "4d80003"
+    "sourceHash": "4d80003",
+    "sameAsSourceJustification": "'Bytes' is the standard DE plural of the kept unit 'Byte'; spelled identically to English."
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "'kB' is a unit symbol (kilobyte); kept as-is in every locale (per @key)."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "'MB' is a unit symbol (megabyte); kept as-is in every locale (per @key)."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "'GB' is a unit symbol (gigabyte); kept as-is in every locale (per @key)."
   },
   "settings.appearance.fileSizeFormat.label": "Dateigrößenformat",
   "@settings.appearance.fileSizeFormat.label": {
@@ -601,7 +609,8 @@
   },
   "settings.network.timeoutMode.opt.normal": "Normal",
   "@settings.network.timeoutMode.opt.normal": {
-    "sourceHash": "a7248ee"
+    "sourceHash": "a7248ee",
+    "sameAsSourceJustification": "'Normal' is a real German word, same spelling; the sibling optDesc.normal is fully translated to German."
   },
   "settings.network.timeoutMode.optDesc.normal": "Für typische lokale Netzwerke (15 s Zeitüberschreitung)",
   "@settings.network.timeoutMode.optDesc.normal": {
@@ -693,7 +702,8 @@
   },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
-    "sourceHash": "72e9a59"
+    "sourceHash": "72e9a59",
+    "sameAsSourceJustification": "Style guide glossary: port -> Port (MS terminology 'Port', masc.); spelled identically to English."
   },
   "settings.developer.mcpPort.description": "Bevorzugter Port für den MCP-Server. Lass ihn auf 0, damit das Betriebssystem einen kurzlebigen Port wählt (empfohlen; der tatsächliche Port wird unten angezeigt, wenn der Server läuft). Lege einen bestimmten Port fest, wenn externe Tools ihn brauchen.",
   "@settings.developer.mcpPort.description": {
@@ -941,7 +951,8 @@
   },
   "settings.tint.orange": "Orange",
   "@settings.tint.orange": {
-    "sourceHash": "78e7771"
+    "sourceHash": "78e7771",
+    "sameAsSourceJustification": "Style guide glossary: color names - Orange stays identical in DE (standard DE color vocabulary). Matches the existing settings.tint.* color rows."
   },
   "settings.tint.amber": "Bernstein",
   "@settings.tint.amber": {
@@ -961,7 +972,8 @@
   },
   "settings.tint.cyan": "Cyan",
   "@settings.tint.cyan": {
-    "sourceHash": "e95bb22"
+    "sourceHash": "e95bb22",
+    "sameAsSourceJustification": "Style guide glossary: color names - Cyan stays identical in DE (standard DE color vocabulary). Matches the existing settings.tint.* color rows."
   },
   "settings.tint.blue": "Blau",
   "@settings.tint.blue": {
@@ -969,7 +981,8 @@
   },
   "settings.tint.indigo": "Indigo",
   "@settings.tint.indigo": {
-    "sourceHash": "d81ab14"
+    "sourceHash": "d81ab14",
+    "sameAsSourceJustification": "Style guide glossary: color names - Indigo stays identical in DE (standard DE color vocabulary). Matches the existing settings.tint.* color rows."
   },
   "settings.tint.purple": "Violett",
   "@settings.tint.purple": {
@@ -1037,7 +1050,8 @@
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name; kept verbatim (do-not-translate per @key). Matches settings.section.git in the de catalog."
   },
   "settings.section.viewer": "Vorschau",
   "@settings.section.viewer": {
@@ -1173,7 +1187,8 @@
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "Placeholder-only path '{systemSettings} > {appearance}'; both placeholders are OS-localized macOS labels injected at runtime, and the '>' arrow is kept. No translatable text."
   },
   "settings.appearance.appColorHintLinkOther": "deine System-Einstellungen für das Erscheinungsbild",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1285,7 +1300,8 @@
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
-    "sourceHash": "d5fdc1a"
+    "sourceHash": "d5fdc1a",
+    "sameAsSourceJustification": "'Downloads' is the macOS folder name shown via the OS's localized name (DE macOS keeps 'Downloads'; glossary: Downloads->Downloads). Identical to English."
   },
   "settings.fileSystemWatching.cardLowDiskSpace": "Wenig Speicherplatz",
   "@settings.fileSystemWatching.cardLowDiskSpace": {
@@ -1365,11 +1381,13 @@
   },
   "settings.advanced.card.updates": "Updates",
   "@settings.advanced.card.updates": {
-    "sourceHash": "22e2bad"
+    "sourceHash": "22e2bad",
+    "sameAsSourceJustification": "'Updates' is the kept loanword (standard DE UI, as in settings.section.updatesAndPrivacy 'Updates & Datenschutz'); spelled identically."
   },
   "settings.updates.card.updates": "Updates",
   "@settings.updates.card.updates": {
-    "sourceHash": "22e2bad"
+    "sourceHash": "22e2bad",
+    "sameAsSourceJustification": "'Updates' is the kept loanword (standard DE UI, as in 'Updates & Datenschutz'); spelled identically to English."
   },
   "settings.updates.card.privacyAndDataSharing": "Datenschutz und Datenfreigabe",
   "@settings.updates.card.privacyAndDataSharing": {
@@ -1401,7 +1419,8 @@
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "Placeholder-only path '{systemSettings} > {privacyAndSecurity} > {localNetwork}'; all three placeholders are OS-localized macOS labels injected at runtime, and the '>' arrows are kept. No translatable text."
   },
   "settings.network.permissionWithout": "Ohne diesen Zugriff kann Cmdr weiterhin Dateien auf bereits eingebundenen Freigaben lesen und schreiben, du kannst aber keine neuen Server finden und unsere schnellere Direktverbindung nicht nutzen.",
   "@settings.network.permissionWithout": {

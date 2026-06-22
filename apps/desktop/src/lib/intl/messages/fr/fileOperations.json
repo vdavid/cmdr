@@ -5,7 +5,8 @@
   },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the standard confirm-button label in French macOS (kept verbatim, as in the rest of the catalog)."
   },
   "fileOperations.delete.fromPath": "Depuis : {path}",
   "@fileOperations.delete.fromPath": {
@@ -145,7 +146,8 @@
   },
   "fileOperations.shared.byteRate": "<size></size>/s",
   "@fileOperations.shared.byteRate": {
-    "sourceHash": "4a55710"
+    "sourceHash": "4a55710",
+    "sameAsSourceJustification": "Placeholder/tag-only string ('<size></size>/s'); '/s' is the per-second rate notation, identical in French."
   },
   "fileOperations.shared.andJoin": "{a} et {b}",
   "@fileOperations.shared.andJoin": {
@@ -457,7 +459,8 @@
   },
   "fileOperations.transferProgress.pause": "Pause",
   "@fileOperations.transferProgress.pause": {
-    "sourceHash": "858e4ba"
+    "sourceHash": "858e4ba",
+    "sameAsSourceJustification": "'Pause' is a genuine French word; macOS keeps 'Pause' ('NSPauseTemplate' -> 'pause', 'Pause' -> 'Pause'). Per the glossary, the standalone Pause button label is legitimately identical."
   },
   "fileOperations.transferProgress.resume": "Reprendre",
   "@fileOperations.transferProgress.resume": {

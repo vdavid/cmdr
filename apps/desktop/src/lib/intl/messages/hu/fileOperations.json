@@ -5,7 +5,8 @@
   },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the universal affirmative control label, kept verbatim in Hungarian UI (macOS, MS). Listed as legitimately identical-to-English in glossary (fileOperations pass)."
   },
   "fileOperations.delete.fromPath": "Innen: {path}",
   "@fileOperations.delete.fromPath": {
@@ -145,7 +146,8 @@
   },
   "fileOperations.shared.byteRate": "<size></size>/s",
   "@fileOperations.shared.byteRate": {
-    "sourceHash": "4a55710"
+    "sourceHash": "4a55710",
+    "sameAsSourceJustification": "Pure tag + unit marker '<size></size>/s': <size> is a widget with no inner text, '/s' is the per-second unit suffix (language-neutral). Listed as legitimately identical-to-English in glossary (fileOperations pass)."
   },
   "fileOperations.shared.andJoin": "{a} és {b}",
   "@fileOperations.shared.andJoin": {

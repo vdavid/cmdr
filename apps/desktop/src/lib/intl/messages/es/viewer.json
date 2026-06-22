@@ -73,7 +73,8 @@
   },
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' kept verbatim (glossary: regex -> Regex), the short form of regular expression; the tight toggle keeps it short."
   },
   "viewer.search.matchPosition": "{current} de {total}{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
@@ -141,7 +142,8 @@
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "'PDF' is a format name; do-not-translate (macOS es keeps 'PDF' verbatim)."
   },
   "viewer.kind.text": "Texto",
   "@viewer.kind.text": {
@@ -153,7 +155,8 @@
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "'Unicode' is a standard name; do-not-translate (kept verbatim across es/macOS, 80 hits in the pile)."
   },
   "viewer.toolbar.encoding.group.western": "Occidental",
   "@viewer.toolbar.encoding.group.western": {
@@ -237,7 +240,8 @@
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Structural value '{width} × {height}': two preformatted pixel-count placeholders joined by the multiplication sign '×'; no translatable text."
   },
   "viewer.image.loading": "Cargando imagen",
   "@viewer.image.loading": {

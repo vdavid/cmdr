@@ -89,7 +89,8 @@
   },
   "downloads.shortcutRow.scopeTitle": "Global",
   "@downloads.shortcutRow.scopeTitle": {
-    "sourceHash": "a258b30"
+    "sourceHash": "a258b30",
+    "sameAsSourceJustification": "'Global' is a genuine French word (Microsoft terminology FRA uses 'global'/'globalement' for system-wide scope); kept as the section title, matching the catalog-wide 'raccourci global' choice in the glossary."
   },
   "downloads.shortcutRow.commandName": "Aller au dernier téléchargement <marker>(global)</marker>",
   "@downloads.shortcutRow.commandName": {

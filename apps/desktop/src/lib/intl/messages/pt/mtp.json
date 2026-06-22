@@ -21,7 +21,8 @@
   },
   "mtp.connectedToast.ok": "OK",
   "@mtp.connectedToast.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is identical in pt-BR. macOS Finder pt-BR keeps 'OK' to 'OK' (confirmed macOS/Finder)."
   },
   "mtp.permissionDialog.title": "Não foi possível acessar o dispositivo USB",
   "@mtp.permissionDialog.title": {

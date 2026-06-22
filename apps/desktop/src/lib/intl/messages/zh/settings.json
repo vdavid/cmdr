@@ -61,7 +61,8 @@
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "Short option label \"App\" (meaning \"use the app accent color\"). \"App\" is a fully naturalized loanword in Chinese UI — Apple zh-CN keeps \"App\" verbatim (glossary.md records \"App\" → \"App\", Apple zh-CN keeps it). The catalog already renders the sibling \"Apps {size}\" legend as \"App {size}\", so \"App\" stays consistent here; the other options in this group ARE translated (None→无, Rainbow→彩虹, Wilting→枯萎)."
   },
   "settings.appearance.sizeColors.opt.rainbow": "彩虹",
   "@settings.appearance.sizeColors.opt.rainbow": {
@@ -81,7 +82,8 @@
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "Short option label \"App\" (meaning \"use the app accent color\"). \"App\" is a fully naturalized loanword in Chinese UI — Apple zh-CN keeps \"App\" verbatim (glossary.md records \"App\" → \"App\", Apple zh-CN keeps it). The catalog already renders the sibling \"Apps {size}\" legend as \"App {size}\", so \"App\" stays consistent here; the other options in this group ARE translated (None→无, Rainbow→彩虹, Wilting→枯萎)."
   },
   "settings.appearance.dateColors.opt.wilting": "枯萎",
   "@settings.appearance.dateColors.opt.wilting": {
@@ -101,7 +103,8 @@
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "\"ISO 8601\" is the proper name of the date-format standard, kept verbatim in Chinese UI (Apple/Microsoft zh keep \"ISO 8601\"). Its sibling options ARE translated (System default→跟随系统, Short→简短, Custom→自定义)."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "例如 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
@@ -225,15 +228,18 @@
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "\"kB\" is an international unit symbol, kept verbatim. Chinese UI (Apple/Microsoft zh) shows storage units as \"kB\". Sibling size-unit options ARE translated (Dynamic→动态, Bytes→字节)."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "\"MB\" is an international unit symbol, kept verbatim. Chinese UI (Apple/Microsoft zh) shows storage units as \"MB\". Sibling size-unit options ARE translated (Dynamic→动态, Bytes→字节)."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "\"GB\" is an international unit symbol, kept verbatim. Chinese UI (Apple/Microsoft zh) shows storage units as \"GB\". Sibling size-unit options ARE translated (Dynamic→动态, Bytes→字节)."
   },
   "settings.appearance.fileSizeFormat.label": "文件大小格式",
   "@settings.appearance.fileSizeFormat.label": {
@@ -1021,7 +1027,8 @@
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "\"AI\" is kept verbatim throughout Cmdrs zh catalog (e.g. \"AI 模型\", \"AI 已就绪\", \"设置 > AI\"), matching Apple zh-CN and Microsoft zh-Hans UI, which keep \"AI\" in Latin form. glossary.md records the AI section as \"AI\" (verbatim)."
   },
   "settings.section.fileSystems": "文件系统",
   "@settings.section.fileSystems": {
@@ -1037,7 +1044,8 @@
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "\"Git\" is the version-control tools proper name, kept verbatim. glossary.md § UI section names lists \"Git\" → \"Git\"; macOS/Microsoft zh keep the tool name in Latin form."
   },
   "settings.section.viewer": "查看器",
   "@settings.section.viewer": {
@@ -1173,7 +1181,8 @@
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "\"{systemSettings} > {appearance}\": a System Settings navigation path built from two OS-localized macOS-label tokens joined by \" > \". The tokens are injected at runtime (never hand-translated) and the \"> \" arrow is kept; no translatable text remains."
   },
   "settings.appearance.appColorHintLinkOther": "你的系统外观设置",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1401,7 +1410,8 @@
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "\"{systemSettings} > {privacyAndSecurity} > {localNetwork}\": a System Settings navigation path built from three OS-localized macOS-label tokens joined by \" > \". The tokens are injected at runtime (never hand-translated) and the arrows are kept; no translatable text remains."
   },
   "settings.network.permissionWithout": "没有它，Cmdr 仍可在已经装载的共享上读写文件，但你无法发现新服务器，也无法使用我们更快的直接连接。",
   "@settings.network.permissionWithout": {
@@ -1413,7 +1423,8 @@
   },
   "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "Example email address \"you@example.com\": a recognizable placeholder format, kept literal so the @-pattern still reads as an email hint. Apple/Microsoft zh keep example addresses in this Latin form."
   },
   "settings.updates.checkForUpdates": "检查更新",
   "@settings.updates.checkForUpdates": {

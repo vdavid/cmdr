@@ -69,7 +69,8 @@
   },
   "queryUi.mode.regex.label": "Regex",
   "@queryUi.mode.regex.label": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is the short UI form of 'expression régulière'; per the glossary, kept verbatim as the short label."
   },
   "queryUi.mode.regex.aria": "Mode regex (Alt+R)",
   "@queryUi.mode.regex.aria": {
@@ -121,11 +122,13 @@
   },
   "queryUi.ai.patternLabel.glob": "Glob",
   "@queryUi.ai.patternLabel.glob": {
-    "sourceHash": "18d00f7"
+    "sourceHash": "18d00f7",
+    "sameAsSourceJustification": "'Glob' is the technical name of the glob match syntax (a do-not-translate technical token); kept verbatim, no French equivalent."
   },
   "queryUi.ai.patternLabel.regex": "Regex",
   "@queryUi.ai.patternLabel.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is the short UI form of 'expression régulière'; per the glossary, 'regex' is kept verbatim as the short chip/label form."
   },
   "queryUi.ai.patternLabel.generic": "Motif",
   "@queryUi.ai.patternLabel.generic": {
@@ -141,7 +144,8 @@
   },
   "queryUi.ai.filter.type": "Type",
   "@queryUi.ai.filter.type": {
-    "sourceHash": "baaddf7"
+    "sourceHash": "baaddf7",
+    "sameAsSourceJustification": "'Type' is the same word in French (macOS Finder and Microsoft terminology FRA both use 'Type'); kept as the filter label."
   },
   "queryUi.ai.typeSummary.filesOnly": "Fichiers uniquement",
   "@queryUi.ai.typeSummary.filesOnly": {
@@ -169,7 +173,8 @@
   },
   "queryUi.results.col.actions": "Actions",
   "@queryUi.results.col.actions": {
-    "sourceHash": "ff8059d"
+    "sourceHash": "ff8059d",
+    "sameAsSourceJustification": "'Actions' is the same word in French (Microsoft terminology FRA: 'Actions' -> 'Actions'); kept as the column header."
   },
   "queryUi.results.listboxAria": "Résultats de recherche",
   "@queryUi.results.listboxAria": {
@@ -285,7 +290,8 @@
   },
   "queryUi.recent.mode.regex": "Regex",
   "@queryUi.recent.mode.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is the short UI form of 'expression régulière'; per the glossary, kept verbatim as the short mode label."
   },
   "queryUi.recent.mode.filename": "Nom de fichier",
   "@queryUi.recent.mode.filename": {
@@ -361,7 +367,8 @@
   },
   "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
   "@queryUi.recent.chipTooltipHeader": {
-    "sourceHash": "54a225b"
+    "sourceHash": "54a225b",
+    "sameAsSourceJustification": "Placeholder-only string ('{mode} · {age}'); the middot separator is identical in French."
   },
   "queryUi.dialog.actionsAria": "Actions de la boîte de dialogue",
   "@queryUi.dialog.actionsAria": {
@@ -413,11 +420,13 @@
   },
   "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
   "@queryUi.filters.size.summary.single": {
-    "sourceHash": "bbd5deb"
+    "sourceHash": "bbd5deb",
+    "sameAsSourceJustification": "Placeholder + unit symbols ('{prefix} {valueText} {unit}'); no literal translatable text."
   },
   "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
   "@queryUi.filters.size.summary.range": {
-    "sourceHash": "ba7eadc"
+    "sourceHash": "ba7eadc",
+    "sameAsSourceJustification": "Placeholder + unit-symbol range ('{minText} {minUnit} – {maxText} {maxUnit}'); units come from the formatter, no literal text to translate."
   },
   "queryUi.filters.date.summary.after": "après {date}",
   "@queryUi.filters.date.summary.after": {
@@ -429,7 +438,8 @@
   },
   "queryUi.filters.date.summary.range": "{after} – {before}",
   "@queryUi.filters.date.summary.range": {
-    "sourceHash": "801560e"
+    "sourceHash": "801560e",
+    "sameAsSourceJustification": "Placeholder-only range string ('{after} – {before}'); the en-dash separator is identical in French."
   },
   "queryUi.size.comparator.any": "tout",
   "@queryUi.size.comparator.any": {

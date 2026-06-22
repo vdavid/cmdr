@@ -69,7 +69,8 @@
   },
   "queryUi.mode.regex.label": "Regex",
   "@queryUi.mode.regex.label": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' mode chip label, kept verbatim (short form; full = 'reguláris kifejezés'). Glossary keeps Regex verbatim (queryUi pass)."
   },
   "queryUi.mode.regex.aria": "Regex mód (Alt+R)",
   "@queryUi.mode.regex.aria": {
@@ -121,11 +122,13 @@
   },
   "queryUi.ai.patternLabel.glob": "Glob",
   "@queryUi.ai.patternLabel.glob": {
-    "sourceHash": "18d00f7"
+    "sourceHash": "18d00f7",
+    "sameAsSourceJustification": "'Glob' is a technical pattern-type term kept verbatim (no common Hungarian equivalent, per en @key). Glossary keeps glob/Glob verbatim (queryUi pass)."
   },
   "queryUi.ai.patternLabel.regex": "Regex",
   "@queryUi.ai.patternLabel.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is short for regular expression, kept verbatim as the short label (full form = 'reguláris kifejezés', but the chip stays 'Regex'). Glossary keeps Regex verbatim (queryUi/viewer passes)."
   },
   "queryUi.ai.patternLabel.generic": "Minta",
   "@queryUi.ai.patternLabel.generic": {
@@ -281,11 +284,13 @@
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' search-mode name, kept verbatim per glossary (AI kept as the standard term, ai.json/queryUi passes)."
   },
   "queryUi.recent.mode.regex": "Regex",
   "@queryUi.recent.mode.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' search-mode name, kept verbatim. Glossary keeps Regex verbatim (queryUi pass)."
   },
   "queryUi.recent.mode.filename": "Fájlnév",
   "@queryUi.recent.mode.filename": {
@@ -361,7 +366,8 @@
   },
   "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
   "@queryUi.recent.chipTooltipHeader": {
-    "sourceHash": "54a225b"
+    "sourceHash": "54a225b",
+    "sameAsSourceJustification": "Placeholder-only frame '{mode} · {age}': both parts are already-localized inserts, the middle-dot is a neutral separator. Nothing to translate."
   },
   "queryUi.dialog.actionsAria": "Párbeszédműveletek",
   "@queryUi.dialog.actionsAria": {
@@ -413,11 +419,13 @@
   },
   "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
   "@queryUi.filters.size.summary.single": {
-    "sourceHash": "bbd5deb"
+    "sourceHash": "bbd5deb",
+    "sameAsSourceJustification": "Placeholder + glyph only '{prefix} {valueText} {unit}': prefix is a comparison glyph (>, <, =), value is a preformatted number, unit comes from the formatter. No translatable text."
   },
   "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
   "@queryUi.filters.size.summary.range": {
-    "sourceHash": "ba7eadc"
+    "sourceHash": "ba7eadc",
+    "sameAsSourceJustification": "Placeholder + en-dash only '{minText} {minUnit} – {maxText} {maxUnit}': all four parts are preformatted numbers/units, the en dash is the neutral range separator. No translatable text."
   },
   "queryUi.filters.date.summary.after": "{date} után",
   "@queryUi.filters.date.summary.after": {
@@ -429,7 +437,8 @@
   },
   "queryUi.filters.date.summary.range": "{after} – {before}",
   "@queryUi.filters.date.summary.range": {
-    "sourceHash": "801560e"
+    "sourceHash": "801560e",
+    "sameAsSourceJustification": "Placeholder + en-dash only '{after} – {before}': both are preformatted dates, the en dash is the neutral range separator. No translatable text."
   },
   "queryUi.size.comparator.any": "bármi",
   "@queryUi.size.comparator.any": {

@@ -1,7 +1,8 @@
 {
   "ui.alertDialog.defaultButton": "OK",
   "@ui.alertDialog.defaultButton": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the universal affirmative, identical in Swedish (macOS uses 'OK'). Deliberately identical."
   },
   "ui.modalDialog.close": "Stäng",
   "@ui.modalDialog.close": {

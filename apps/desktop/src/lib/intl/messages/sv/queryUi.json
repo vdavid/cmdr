@@ -69,7 +69,8 @@
   },
   "queryUi.mode.regex.label": "Regex",
   "@queryUi.mode.regex.label": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' (regular expression) is kept verbatim in Swedish; standard technical loanword (matches viewer.search.regex, queryUi.ai.patternLabel.regex)."
   },
   "queryUi.mode.regex.aria": "Regex-läge (Alt+R)",
   "@queryUi.mode.regex.aria": {
@@ -121,11 +122,13 @@
   },
   "queryUi.ai.patternLabel.glob": "Glob",
   "@queryUi.ai.patternLabel.glob": {
-    "sourceHash": "18d00f7"
+    "sourceHash": "18d00f7",
+    "sameAsSourceJustification": "'Glob' is the technical term for a filename wildcard pattern, kept verbatim in Swedish IT usage (glossary brand/technical kept-verbatim list)."
   },
   "queryUi.ai.patternLabel.regex": "Regex",
   "@queryUi.ai.patternLabel.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' (regular expression) is kept verbatim in Swedish, as in the catalog (queryUi.mode.regex.label, viewer.search.regex)."
   },
   "queryUi.ai.patternLabel.generic": "Mönster",
   "@queryUi.ai.patternLabel.generic": {
@@ -281,11 +284,13 @@
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' is kept verbatim in Swedish (matches settings.section.ai). Standard brand-like term."
   },
   "queryUi.recent.mode.regex": "Regex",
   "@queryUi.recent.mode.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' (regular expression) is kept verbatim in Swedish (matches queryUi.mode.regex.label, viewer.search.regex)."
   },
   "queryUi.recent.mode.filename": "Filnamn",
   "@queryUi.recent.mode.filename": {
@@ -361,7 +366,8 @@
   },
   "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
   "@queryUi.recent.chipTooltipHeader": {
-    "sourceHash": "54a225b"
+    "sourceHash": "54a225b",
+    "sameAsSourceJustification": "Structure-only value: '{mode} . {age}', two already-translated parts joined by a middle dot. No translatable text."
   },
   "queryUi.dialog.actionsAria": "Dialogåtgärder",
   "@queryUi.dialog.actionsAria": {
@@ -413,11 +419,13 @@
   },
   "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
   "@queryUi.filters.size.summary.single": {
-    "sourceHash": "bbd5deb"
+    "sourceHash": "bbd5deb",
+    "sameAsSourceJustification": "Structure-only value: '{prefix} {valueText} {unit}', a preformatted comparison prefix, number, and unit. No translatable text."
   },
   "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
   "@queryUi.filters.size.summary.range": {
-    "sourceHash": "ba7eadc"
+    "sourceHash": "ba7eadc",
+    "sameAsSourceJustification": "Structure-only value: preformatted numbers/units joined by an en dash. No translatable text."
   },
   "queryUi.filters.date.summary.after": "efter {date}",
   "@queryUi.filters.date.summary.after": {
@@ -429,7 +437,8 @@
   },
   "queryUi.filters.date.summary.range": "{after} – {before}",
   "@queryUi.filters.date.summary.range": {
-    "sourceHash": "801560e"
+    "sourceHash": "801560e",
+    "sameAsSourceJustification": "Structure-only value: '{after} - {before}', two preformatted dates joined by an en dash. No translatable text."
   },
   "queryUi.size.comparator.any": "valfri",
   "@queryUi.size.comparator.any": {
@@ -441,7 +450,8 @@
   },
   "queryUi.size.unit.byte": "byte",
   "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626"
+    "sourceHash": "1c31626",
+    "sameAsSourceJustification": "byte is 'byte' in Swedish, invariant (glossary byte entry: '1 byte / 2 byte', high). The singular unit word is identical to English."
   },
   "queryUi.size.unit.bytes": "byte",
   "@queryUi.size.unit.bytes": {

@@ -77,7 +77,8 @@
   },
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
   "@fileExplorer.functionKeyBar.actionWithShortcut": {
-    "sourceHash": "49e258f"
+    "sourceHash": "49e258f",
+    "sameAsSourceJustification": "Structure-only value: '{action} ({shortcut})', two already-translated placeholders in parentheses. No translatable text."
   },
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (ingen skift-åtgärd)",
   "@fileExplorer.functionKeyBar.noShiftAction": {
@@ -233,7 +234,8 @@
   },
   "fileExplorer.network.browser.colStatus": "Status",
   "@fileExplorer.network.browser.colStatus": {
-    "sourceHash": "920e413"
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "status is 'status' in Swedish; Apple uses 'Status' standalone (verified in pile macOS). Tight column header, deliberately identical (style.md keeps Status verbatim)."
   },
   "fileExplorer.network.browser.fetching": "hämtar...",
   "@fileExplorer.network.browser.fetching": {
@@ -741,7 +743,8 @@
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name; kept verbatim (matches catalog settings.section.git)."
   },
   "fileExplorer.columns.gitTitle": "Git-status för varje fil",
   "@fileExplorer.columns.gitTitle": {
@@ -1125,7 +1128,8 @@
   },
   "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
   "@fileExplorer.navigation.usbSpeed": {
-    "sourceHash": "07cb80b"
+    "sourceHash": "07cb80b",
+    "sameAsSourceJustification": "'{label}' is preformatted (USB-standard name), 'MB/s' is an identical unit symbol, and 'Max.' is the same abbreviation in Swedish. No translatable text remains."
   },
   "fileExplorer.navigation.usbSpeedNegotiated": "Förhandlad för den här kabeln, porten och enheten",
   "@fileExplorer.navigation.usbSpeedNegotiated": {
@@ -1221,11 +1225,13 @@
   },
   "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
   "@fileExplorer.navigation.driveIndex.durationMinSec": {
-    "sourceHash": "57a57d1"
+    "sourceHash": "57a57d1",
+    "sameAsSourceJustification": "Unit symbols 'min' and 's' are identical in Swedish (SI/macOS abbreviations); placeholders are preformatted. No translatable text."
   },
   "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
   "@fileExplorer.navigation.driveIndex.durationSec": {
-    "sourceHash": "fde82d3"
+    "sourceHash": "fde82d3",
+    "sameAsSourceJustification": "Unit symbol 's' (seconds) is identical in Swedish; '{seconds}' is a preformatted placeholder. No translatable text."
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr kunde inte ansluta direkt till {name}, vilket krävs för att indexera den här delningen. Kontrollera att delningen går att nå och försök igen.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {

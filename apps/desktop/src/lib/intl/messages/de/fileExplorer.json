@@ -77,7 +77,8 @@
   },
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
   "@fileExplorer.functionKeyBar.actionWithShortcut": {
-    "sourceHash": "49e258f"
+    "sourceHash": "49e258f",
+    "sameAsSourceJustification": "Placeholder-only template '{action} ({shortcut})'; action is injected pre-translated, shortcut glyphs are kept verbatim. No translatable text."
   },
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (keine Umschalt-Aktion)",
   "@fileExplorer.functionKeyBar.noShiftAction": {
@@ -217,7 +218,8 @@
   },
   "fileExplorer.network.browser.colName": "Name",
   "@fileExplorer.network.browser.colName": {
-    "sourceHash": "dcd1d52"
+    "sourceHash": "dcd1d52",
+    "sameAsSourceJustification": "German column header is 'Name', identical to English; matches fileExplorer.columns.name and the other col headers in the de catalog."
   },
   "fileExplorer.network.browser.colIp": "IP-Adresse",
   "@fileExplorer.network.browser.colIp": {
@@ -225,7 +227,8 @@
   },
   "fileExplorer.network.browser.colHostname": "Hostname",
   "@fileExplorer.network.browser.colHostname": {
-    "sourceHash": "2db5335"
+    "sourceHash": "2db5335",
+    "sameAsSourceJustification": "German keeps 'Hostname' (MS renders host as 'Host'; 'Hostname' is the standard DE compound, spelled identically). Matches the existing de network col header."
   },
   "fileExplorer.network.browser.colShares": "Freigaben",
   "@fileExplorer.network.browser.colShares": {
@@ -233,7 +236,8 @@
   },
   "fileExplorer.network.browser.colStatus": "Status",
   "@fileExplorer.network.browser.colStatus": {
-    "sourceHash": "920e413"
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "German keeps 'Status' (style guide glossary; macOS/MS DE both use 'Status'); spelled identically."
   },
   "fileExplorer.network.browser.fetching": "wird abgerufen …",
   "@fileExplorer.network.browser.fetching": {
@@ -721,7 +725,8 @@
   },
   "fileExplorer.columns.name": "Name",
   "@fileExplorer.columns.name": {
-    "sourceHash": "dcd1d52"
+    "sourceHash": "dcd1d52",
+    "sameAsSourceJustification": "German column header is 'Name', identical to English; standard DE word, kept short for the measured column."
   },
   "fileExplorer.columns.ext": "Erw.",
   "@fileExplorer.columns.ext": {
@@ -741,7 +746,8 @@
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name; kept verbatim (do-not-translate per @key)."
   },
   "fileExplorer.columns.gitTitle": "Git-Status jeder Datei",
   "@fileExplorer.columns.gitTitle": {
@@ -1017,11 +1023,13 @@
   },
   "fileExplorer.navigation.groupVolumes": "Volumes",
   "@fileExplorer.navigation.groupVolumes": {
-    "sourceHash": "53a480e"
+    "sourceHash": "53a480e",
+    "sameAsSourceJustification": "Style guide glossary: volume -> Volume (kept verbatim, macOS keeps 'Volume'); the plural 'Volumes' is identical to English."
   },
   "fileExplorer.navigation.groupCloud": "Cloud",
   "@fileExplorer.navigation.groupCloud": {
-    "sourceHash": "b977b95"
+    "sourceHash": "b977b95",
+    "sameAsSourceJustification": "Style guide glossary: cloud -> 'Cloud' (loanword kept, as in macOS 'iCloud'); spelled identically to English."
   },
   "fileExplorer.navigation.groupMobile": "Mobil",
   "@fileExplorer.navigation.groupMobile": {
@@ -1045,7 +1053,8 @@
   },
   "fileExplorer.navigation.volumeFallback": "Volume",
   "@fileExplorer.navigation.volumeFallback": {
-    "sourceHash": "b10fb96"
+    "sourceHash": "b10fb96",
+    "sameAsSourceJustification": "Style guide glossary: volume -> Volume (kept verbatim); the generic breadcrumb fallback is identical to English."
   },
   "fileExplorer.navigation.favoritesEmpty": "(Deine Favoriten erscheinen hier)",
   "@fileExplorer.navigation.favoritesEmpty": {
@@ -1125,7 +1134,8 @@
   },
   "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
   "@fileExplorer.navigation.usbSpeed": {
-    "sourceHash": "07cb80b"
+    "sourceHash": "07cb80b",
+    "sameAsSourceJustification": "Template '{label} (Max. {mbps} MB/s)': 'Max.' is the standard DE abbreviation of Maximum (spelled identically), 'MB/s' is a kept unit symbol, {label} is an injected spec name. No translatable text."
   },
   "fileExplorer.navigation.usbSpeedNegotiated": "Ausgehandelt für dieses Kabel, diesen Port und dieses Gerät",
   "@fileExplorer.navigation.usbSpeedNegotiated": {
@@ -1219,13 +1229,14 @@
   "@fileExplorer.navigation.driveIndex.footer": {
     "sourceHash": "9877397"
   },
-  "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
+  "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} Min., {seconds} s",
   "@fileExplorer.navigation.driveIndex.durationMinSec": {
     "sourceHash": "57a57d1"
   },
   "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
   "@fileExplorer.navigation.driveIndex.durationSec": {
-    "sourceHash": "fde82d3"
+    "sourceHash": "fde82d3",
+    "sameAsSourceJustification": "Template '{seconds} s': 's' is the SI abbreviation for seconds, identical in German (matches indexing.eta.secondsLeft 'noch {secondsText} s'). No translatable text."
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr konnte sich nicht direkt mit {name} verbinden, was zum Indizieren dieser Freigabe nötig ist. Prüfe, ob die Freigabe erreichbar ist, und versuche es erneut.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {

@@ -49,7 +49,8 @@
   },
   "viewer.binaryWarning.kind.document": "document",
   "@viewer.binaryWarning.kind.document": {
-    "sourceHash": "43cc23f"
+    "sourceHash": "43cc23f",
+    "sameAsSourceJustification": "'document' is a genuine Dutch word (MS NL: document -> document; macOS 'Document' -> 'Document'), lowercased to read inside the sentence. Coincides with English."
   },
   "viewer.binaryWarning.dismiss": "Sluit",
   "@viewer.binaryWarning.dismiss": {
@@ -73,7 +74,8 @@
   },
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is the short form of 'regular expression', kept verbatim in Dutch (tech term; the button's visible glyph is '.*', this is the aria/tooltip)."
   },
   "viewer.search.matchPosition": "{current} van {total}{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
@@ -141,7 +143,8 @@
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "'PDF' is a file-format name; kept verbatim in Dutch (MS NL: PDF -> PDF). Do-not-translate format name."
   },
   "viewer.kind.text": "Tekst",
   "@viewer.kind.text": {
@@ -153,7 +156,8 @@
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "'Unicode' is a standard name; kept verbatim in Dutch (MS NL: Unicode -> Unicode). Do-not-translate standard name."
   },
   "viewer.toolbar.encoding.group.western": "Westers",
   "@viewer.toolbar.encoding.group.western": {
@@ -165,7 +169,8 @@
   },
   "viewer.toolbar.tail.label": "Tail",
   "@viewer.toolbar.tail.label": {
-    "sourceHash": "ae9c3bd"
+    "sourceHash": "ae9c3bd",
+    "sameAsSourceJustification": "'Tail' is a technical term (Unix tail -f follow mode) with no Dutch equivalent; kept verbatim (glossary: tail -> Tail, with the tooltip explaining it)."
   },
   "viewer.toolbar.tail.ariaLabel": "Tail-modus: volg bestandswijzigingen",
   "@viewer.toolbar.tail.ariaLabel": {
@@ -237,7 +242,8 @@
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Placeholder-only value '{width} x {height}' (multiplication sign): two preformatted numbers and the multiplication sign. No translatable text."
   },
   "viewer.image.loading": "Afbeelding laden",
   "@viewer.image.loading": {

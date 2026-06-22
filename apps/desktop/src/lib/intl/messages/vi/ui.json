@@ -1,7 +1,8 @@
 {
   "ui.alertDialog.defaultButton": "OK",
   "@ui.alertDialog.defaultButton": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "macOS Vietnamese uses 'OK' verbatim for the default dismiss button (AppKit vi shows 'OK', no 'Dong y'); kept as-is."
   },
   "ui.modalDialog.close": "Đóng",
   "@ui.modalDialog.close": {

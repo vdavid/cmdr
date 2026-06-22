@@ -21,7 +21,8 @@
   },
   "mtp.connectedToast.ok": "OK",
   "@mtp.connectedToast.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the standard DE acknowledge-button label, identical to English."
   },
   "mtp.permissionDialog.title": "Kein Zugriff auf USB-Gerät möglich",
   "@mtp.permissionDialog.title": {

@@ -13,7 +13,8 @@
   },
   "shortcuts.scope.app": "App",
   "@shortcuts.scope.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the same word in Swedish (Apple uses 'App'/'app' throughout, verified in pile). Short scope heading, deliberately identical."
   },
   "shortcuts.scope.mainWindow": "Huvudfönster",
   "@shortcuts.scope.mainWindow": {
@@ -69,7 +70,8 @@
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "sourceHash": "fca7aa8"
+    "sourceHash": "fca7aa8",
+    "sameAsSourceJustification": "macOS feature name Apple keeps English in Swedish ('Spotlight'); reused verbatim so it matches the user's Mac (style.md brand list)."
   },
   "shortcuts.system.finderSearch": "Finders sökfönster",
   "@shortcuts.system.finderSearch": {
@@ -89,7 +91,8 @@
   },
   "shortcuts.system.missionControl": "Mission Control",
   "@shortcuts.system.missionControl": {
-    "sourceHash": "1a9a658"
+    "sourceHash": "1a9a658",
+    "sameAsSourceJustification": "macOS feature name Apple keeps English in Swedish ('Mission Control', not localized); reused verbatim so it matches the user's Mac (style.md brand list)."
   },
   "shortcuts.system.appWindows": "Appfönster",
   "@shortcuts.system.appWindows": {
@@ -97,7 +100,8 @@
   },
   "shortcuts.system.spaces": "Spaces",
   "@shortcuts.system.spaces": {
-    "sourceHash": "077a293"
+    "sourceHash": "077a293",
+    "sameAsSourceJustification": "macOS feature name Apple keeps English in Swedish ('Spaces', virtual desktops); reused verbatim so it matches the user's Mac (style.md brand list)."
   },
   "shortcuts.system.screenshots": "skärmbilder",
   "@shortcuts.system.screenshots": {
@@ -189,7 +193,8 @@
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "'macOS' is Apple's OS name; kept verbatim in every locale (do-not-translate list)."
   },
   "shortcuts.section.fixedBadge": "Fast",
   "@shortcuts.section.fixedBadge": {

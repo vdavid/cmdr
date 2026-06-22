@@ -5,7 +5,8 @@
   },
   "licensing.about.appName": "Cmdr",
   "@licensing.about.appName": {
-    "sourceHash": "40c6a1b"
+    "sourceHash": "40c6a1b",
+    "sameAsSourceJustification": "'Cmdr' is the product name; kept verbatim per the do-not-translate list."
   },
   "licensing.about.tagline": "Gestionnaire de fichiers au clavier",
   "@licensing.about.tagline": {
@@ -53,15 +54,18 @@
   },
   "licensing.about.linkGithub": "GitHub",
   "@licensing.about.linkGithub": {
-    "sourceHash": "f911e41"
+    "sourceHash": "f911e41",
+    "sameAsSourceJustification": "Brand name; kept verbatim per the do-not-translate list."
   },
   "licensing.about.linkDiscord": "Discord",
   "@licensing.about.linkDiscord": {
-    "sourceHash": "053bc65"
+    "sourceHash": "053bc65",
+    "sameAsSourceJustification": "Brand name; kept verbatim per the do-not-translate list."
   },
   "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
   "@licensing.about.copyright": {
-    "sourceHash": "e6ab7e3"
+    "sourceHash": "e6ab7e3",
+    "sameAsSourceJustification": "Copyright line with a name and years ('© 2024-2026 David Veszelovszki'); no translatable text."
   },
   "licensing.commercialReminder.title": "Merci d''utiliser Cmdr !",
   "@licensing.commercialReminder.title": {
@@ -169,7 +173,8 @@
   },
   "licensing.dialog.validityActive": "Active",
   "@licensing.dialog.validityActive": {
-    "sourceHash": "9234069"
+    "sourceHash": "9234069",
+    "sameAsSourceJustification": "'Active' is identical in French (feminine of 'actif', agreeing with the implied feminine 'licence'); per the glossary, license validity stays 'Active'."
   },
   "licensing.dialog.validityExpiredOn": "Expirée le {date}",
   "@licensing.dialog.validityExpiredOn": {
@@ -385,6 +390,7 @@
   },
   "licensing.section.statusActive": "Active",
   "@licensing.section.statusActive": {
-    "sourceHash": "9234069"
+    "sourceHash": "9234069",
+    "sameAsSourceJustification": "'Active' is identical in French (feminine of 'actif', agreeing with 'licence'); per the glossary, license status stays 'Active'."
   }
 }

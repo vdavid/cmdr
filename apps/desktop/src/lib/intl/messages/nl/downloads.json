@@ -5,7 +5,8 @@
   },
   "downloads.toast.inSubdir": "in {subdir}",
   "@downloads.toast.inSubdir": {
-    "sourceHash": "eea56f4"
+    "sourceHash": "eea56f4",
+    "sameAsSourceJustification": "'in {subdir}' uses the Dutch preposition 'in' (identical word) plus the path placeholder; 'in' is the natural Dutch preposition for 'in <folder>'. Nothing else to translate."
   },
   "downloads.toast.learnIntro": "Iets leuks om te leren over snel naar je downloads springen",
   "@downloads.toast.learnIntro": {

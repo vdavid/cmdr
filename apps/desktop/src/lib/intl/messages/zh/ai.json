@@ -293,7 +293,8 @@
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "A single \"?\" placeholder glyph shown when the model size is unknown. There is no translatable text; \"?\" is the universal unknown-value marker."
   },
   "ai.local.notInstalled": "未安装。本地模型（{modelName}，{modelSize}）完全在你的设备上运行，最大限度保护隐私。需要 Apple Silicon。",
   "@ai.local.notInstalled": {
@@ -317,7 +318,8 @@
   },
   "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
   "@ai.local.ramLegendCmdrAi": {
-    "sourceHash": "93e2741"
+    "sourceHash": "93e2741",
+    "sameAsSourceJustification": "\"Cmdr AI {size}\": \"Cmdr\" is the brand (BRAND_WORDS) and \"AI\" is kept verbatim across the zh catalog; the rest is the {size} placeholder. No translatable text remains."
   },
   "ai.local.ramLegendProjected": "预计",
   "@ai.local.ramLegendProjected": {

@@ -1,7 +1,8 @@
 {
   "ui.alertDialog.defaultButton": "OK",
   "@ui.alertDialog.defaultButton": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the universal affirmative/dismiss control label, kept verbatim in Hungarian UI. Matches fileOperations.button.ok / mtp.connectedToast.ok."
   },
   "ui.modalDialog.close": "Bezárás",
   "@ui.modalDialog.close": {

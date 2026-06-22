@@ -345,7 +345,8 @@
   },
   "onboarding.stepBeta.emailPlaceholder": "you@example.com",
   "@onboarding.stepBeta.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "'you@example.com' is a literal example-email placeholder, kept verbatim everywhere per the cross-file reconciliation (style.md) — 'te@pelda.hu' broke parity and was reverted."
   },
   "onboarding.stepBeta.signup.success": "Nézd meg a postaládádat, és erősítsd meg az e-mail-címedet. Köszönjük a segítséget!",
   "@onboarding.stepBeta.signup.success": {

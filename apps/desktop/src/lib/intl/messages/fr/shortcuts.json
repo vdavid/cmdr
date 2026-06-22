@@ -69,7 +69,8 @@
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "sourceHash": "fca7aa8"
+    "sourceHash": "fca7aa8",
+    "sameAsSourceJustification": "Apple feature name Apple keeps English in every locale (macOS French keeps 'Spotlight'); kept verbatim per the term-choice principle."
   },
   "shortcuts.system.finderSearch": "Fenêtre de recherche du Finder",
   "@shortcuts.system.finderSearch": {
@@ -89,7 +90,8 @@
   },
   "shortcuts.system.missionControl": "Mission Control",
   "@shortcuts.system.missionControl": {
-    "sourceHash": "1a9a658"
+    "sourceHash": "1a9a658",
+    "sameAsSourceJustification": "Apple feature name Apple keeps English in every locale (macOS French keeps 'Mission Control'); kept verbatim per the term-choice principle."
   },
   "shortcuts.system.appWindows": "Fenêtres de l''application",
   "@shortcuts.system.appWindows": {
@@ -97,7 +99,8 @@
   },
   "shortcuts.system.spaces": "Spaces",
   "@shortcuts.system.spaces": {
-    "sourceHash": "077a293"
+    "sourceHash": "077a293",
+    "sameAsSourceJustification": "Apple feature name Apple keeps English in every locale (macOS French keeps 'Spaces'); kept verbatim per the term-choice principle."
   },
   "shortcuts.system.screenshots": "les captures d''écran",
   "@shortcuts.system.screenshots": {
@@ -189,7 +192,8 @@
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "'macOS' is a brand name; kept verbatim per the do-not-translate list."
   },
   "shortcuts.section.fixedBadge": "Fixe",
   "@shortcuts.section.fixedBadge": {

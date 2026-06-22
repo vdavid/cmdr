@@ -25,7 +25,8 @@
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only value '{currentText} / {maxText}': two preformatted numbers joined by a slash, no translatable text."
   },
   "errorReporter.dialog.notePlaceholder": "Wat probeerde je te doen? Wat verwachtte je dat er zou gebeuren?",
   "@errorReporter.dialog.notePlaceholder": {
@@ -45,7 +46,8 @@
   },
   "errorReporter.dialog.manifestHeading": "Manifest",
   "@errorReporter.dialog.manifestHeading": {
-    "sourceHash": "3c99f1f"
+    "sourceHash": "3c99f1f",
+    "sameAsSourceJustification": "'Manifest' is a genuine Dutch technical term (MS NL: manifest -> manifest). Kept as the heading."
   },
   "errorReporter.dialog.sampleFirstHeading": "Voorbeeld van de eerste {count, plural, one {# regel} other {# regels}}",
   "@errorReporter.dialog.sampleFirstHeading": {

@@ -5,7 +5,8 @@
   },
   "licensing.about.appName": "Cmdr",
   "@licensing.about.appName": {
-    "sourceHash": "40c6a1b"
+    "sourceHash": "40c6a1b",
+    "sameAsSourceJustification": "'Cmdr' is the app brand name; kept verbatim in every locale (do-not-translate list)."
   },
   "licensing.about.tagline": "Tangentbordsdriven filhanterare",
   "@licensing.about.tagline": {
@@ -53,15 +54,18 @@
   },
   "licensing.about.linkGithub": "GitHub",
   "@licensing.about.linkGithub": {
-    "sourceHash": "f911e41"
+    "sourceHash": "f911e41",
+    "sameAsSourceJustification": "Brand name (GitHub); kept verbatim in every locale (do-not-translate list)."
   },
   "licensing.about.linkDiscord": "Discord",
   "@licensing.about.linkDiscord": {
-    "sourceHash": "053bc65"
+    "sourceHash": "053bc65",
+    "sameAsSourceJustification": "Brand name (Discord); kept verbatim in every locale (do-not-translate list)."
   },
   "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
   "@licensing.about.copyright": {
-    "sourceHash": "e6ab7e3"
+    "sourceHash": "e6ab7e3",
+    "sameAsSourceJustification": "Copyright symbol, literal year range, and a personal name (David Veszelovszki); nothing translatable."
   },
   "licensing.commercialReminder.title": "Tack för att du använder Cmdr!",
   "@licensing.commercialReminder.title": {
@@ -341,7 +345,8 @@
   },
   "licensing.section.labelStatus": "Status",
   "@licensing.section.labelStatus": {
-    "sourceHash": "920e413"
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "status is 'status' in Swedish; Apple uses 'Status' standalone (verified in pile macOS). Deliberately identical (style.md keeps Status verbatim)."
   },
   "licensing.section.labelKey": "Licensnyckel",
   "@licensing.section.labelKey": {

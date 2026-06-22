@@ -61,7 +61,8 @@
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is a genuine Dutch word (MS NL: app -> app); the short toggle label meaning the app color. Sibling 'rainbow' is translated to 'Regenboog'; 'App' coincides."
   },
   "settings.appearance.sizeColors.opt.rainbow": "Regenboog",
   "@settings.appearance.sizeColors.opt.rainbow": {
@@ -81,7 +82,8 @@
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is a genuine Dutch word (MS NL: app -> app); the short toggle label meaning the app color. Sibling options with a distinct Dutch word are translated (none -> Geen, wilting -> Verwelken); 'App' coincides."
   },
   "settings.appearance.dateColors.opt.wilting": "Verwelken",
   "@settings.appearance.dateColors.opt.wilting": {
@@ -101,7 +103,8 @@
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "'ISO 8601' is the international standard name; kept verbatim in Dutch (standard name)."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "bijv. 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
@@ -177,7 +180,8 @@
   },
   "settings.appearance.uiDensity.opt.compact": "Compact",
   "@settings.appearance.uiDensity.opt.compact": {
-    "sourceHash": "9945264"
+    "sourceHash": "9945264",
+    "sameAsSourceJustification": "'Compact' is a genuine Dutch adjective (DC/TC NL use 'Compact'/'Compacte'); the UI-density label. Sibling options with a distinct Dutch word are translated (comfortable -> Comfortabel, spacious -> Ruim); 'Compact' coincides."
   },
   "settings.appearance.uiDensity.opt.comfortable": "Comfortabel",
   "@settings.appearance.uiDensity.opt.comfortable": {
@@ -221,19 +225,23 @@
   },
   "settings.listing.sizeUnit.opt.bytes": "Bytes",
   "@settings.listing.sizeUnit.opt.bytes": {
-    "sourceHash": "4d80003"
+    "sourceHash": "4d80003",
+    "sameAsSourceJustification": "'Bytes' is the byte unit used verbatim in Dutch (TC NL); the size-unit toggle. Sibling 'dynamic' is translated to 'Dynamisch'; the unit symbols (kB/MB/GB/Bytes) coincide."
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "'kB' is a unit symbol; kept verbatim in Dutch (do-not-translate unit)."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "'MB' is a unit symbol; kept verbatim in Dutch (do-not-translate unit)."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "'GB' is a unit symbol; kept verbatim in Dutch (do-not-translate unit)."
   },
   "settings.appearance.fileSizeFormat.label": "Notatie van bestandsgrootte",
   "@settings.appearance.fileSizeFormat.label": {
@@ -249,7 +257,8 @@
   },
   "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 bytes",
   "@settings.appearance.fileSizeFormat.optDesc.binary": {
-    "sourceHash": "ee2d07b"
+    "sourceHash": "ee2d07b",
+    "sameAsSourceJustification": "'1 KiB = 1024 bytes': '1 KiB = 1024' is a literal unit equation kept exact; only 'bytes' is translatable, and Dutch uses 'bytes' verbatim (TC NL). So the whole value coincides with English."
   },
   "settings.appearance.fileSizeFormat.opt.si": "SI-decimaal (KB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
@@ -257,7 +266,8 @@
   },
   "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 bytes",
   "@settings.appearance.fileSizeFormat.optDesc.si": {
-    "sourceHash": "04b2c3b"
+    "sourceHash": "04b2c3b",
+    "sameAsSourceJustification": "'1 KB = 1000 bytes': '1 KB = 1000' is a literal unit equation kept exact; only 'bytes' is translatable, and Dutch uses 'bytes' verbatim. Coincides with English."
   },
   "settings.listing.sizeMismatchWarning.label": "Waarschuwing bij grootteverschil",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -517,7 +527,8 @@
   },
   "settings.ai.cloudProvider.label": "Service",
   "@settings.ai.cloudProvider.label": {
-    "sourceHash": "d677190"
+    "sourceHash": "d677190",
+    "sameAsSourceJustification": "'Service' is a genuine Dutch word (MS NL: service -> service; glossary: service -> service), the short label for the cloud-AI service picker."
   },
   "settings.ai.cloudProvider.description": "Welke cloud-AI-service moet worden gebruikt.",
   "@settings.ai.cloudProvider.description": {
@@ -945,7 +956,8 @@
   },
   "settings.tint.amber": "Amber",
   "@settings.tint.amber": {
-    "sourceHash": "a5cccbc"
+    "sourceHash": "a5cccbc",
+    "sameAsSourceJustification": "'Amber' is a genuine Dutch color word (used as-is for the amber tone). Sibling tint colors with a distinct Dutch word are translated (cyan -> Cyaan, purple -> Paars, teal -> Blauwgroen, lime -> Limoen); 'amber' genuinely coincides."
   },
   "settings.tint.lime": "Limoen",
   "@settings.tint.lime": {
@@ -969,7 +981,8 @@
   },
   "settings.tint.indigo": "Indigo",
   "@settings.tint.indigo": {
-    "sourceHash": "d81ab14"
+    "sourceHash": "d81ab14",
+    "sameAsSourceJustification": "'Indigo' is a genuine Dutch color word (used as-is for indigo). Sibling tint colors with a distinct Dutch word are translated (purple -> Paars, pink -> Roze); 'indigo' genuinely coincides."
   },
   "settings.tint.purple": "Paars",
   "@settings.tint.purple": {
@@ -1021,7 +1034,8 @@
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' is a brand-like term kept as-is in Dutch (glossary: AI kept as-is); the Settings section title."
   },
   "settings.section.fileSystems": "Bestandssystemen",
   "@settings.section.fileSystems": {
@@ -1037,7 +1051,8 @@
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name; kept verbatim (do-not-translate)."
   },
   "settings.section.viewer": "Weergavevenster",
   "@settings.section.viewer": {
@@ -1173,7 +1188,8 @@
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "Placeholder-only value '{systemSettings} > {appearance}': two OS-localized labels joined by a '>' path arrow. No translatable text."
   },
   "settings.appearance.appColorHintLinkOther": "je instellingen voor systeemweergave",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1285,7 +1301,8 @@
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
-    "sourceHash": "d5fdc1a"
+    "sourceHash": "d5fdc1a",
+    "sameAsSourceJustification": "'Downloads' is the macOS folder name kept verbatim in Dutch (macOS NL: Downloads -> Downloads); the card heading uses the OS-localized folder name, which is identical to English in Dutch."
   },
   "settings.fileSystemWatching.cardLowDiskSpace": "Weinig schijfruimte",
   "@settings.fileSystemWatching.cardLowDiskSpace": {
@@ -1365,11 +1382,13 @@
   },
   "settings.advanced.card.updates": "Updates",
   "@settings.advanced.card.updates": {
-    "sourceHash": "22e2bad"
+    "sourceHash": "22e2bad",
+    "sameAsSourceJustification": "'Updates' is kept in Dutch as a Settings-section/card name (MS NL: Updates -> Updates, ProperNoun; glossary: updates -> Updates)."
   },
   "settings.updates.card.updates": "Updates",
   "@settings.updates.card.updates": {
-    "sourceHash": "22e2bad"
+    "sourceHash": "22e2bad",
+    "sameAsSourceJustification": "'Updates' is kept in Dutch as a Settings card name (MS NL: Updates -> Updates, ProperNoun; glossary: updates -> Updates)."
   },
   "settings.updates.card.privacyAndDataSharing": "Privacy en gegevensdeling",
   "@settings.updates.card.privacyAndDataSharing": {
@@ -1401,7 +1420,8 @@
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "Placeholder-only value '{systemSettings} > {privacyAndSecurity} > {localNetwork}': three OS-localized labels joined by '>' path arrows. No translatable text."
   },
   "settings.network.permissionWithout": "Zonder dit kan Cmdr nog steeds bestanden lezen en schrijven op shares die al aangekoppeld zijn, maar kun je geen nieuwe servers ontdekken of onze snellere rechtstreekse verbinding gebruiken.",
   "@settings.network.permissionWithout": {

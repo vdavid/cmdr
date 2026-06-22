@@ -141,7 +141,8 @@
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "\"PDF\" is an internationally standard file-format name, kept verbatim in Chinese UI (Apple/Microsoft zh keep \"PDF\" in Latin form). Its sibling kinds ARE translated (Image→图像, Text→文本)."
   },
   "viewer.kind.text": "文本",
   "@viewer.kind.text": {
@@ -153,7 +154,8 @@
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "\"Unicode\" is the standard name of the character-encoding standard, kept verbatim. glossary.md records \"Unicode\" → \"Unicode\" (kept verbatim, the standard name). Its sibling group \"Western\" IS translated (→西文)."
   },
   "viewer.toolbar.encoding.group.western": "西文",
   "@viewer.toolbar.encoding.group.western": {
@@ -237,7 +239,8 @@
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "\"{width} × {height}\": image pixel dimensions — two preformatted-number placeholders joined by the multiplication sign \"×\". The \"×\" is preserved per the description; no translatable text."
   },
   "viewer.image.loading": "正在加载图像",
   "@viewer.image.loading": {
@@ -333,7 +336,8 @@
   },
   "viewer.saveAs.defaultName": "selection",
   "@viewer.saveAs.defaultName": {
-    "sourceHash": "6504513"
+    "sourceHash": "6504513",
+    "sameAsSourceJustification": "Fallback base file NAME \"selection\" — the description requires lowercase, no spaces, and filename-safe. glossary.md records this kept as \"selection\" (NOT translated) because it becomes part of a saved file name, not display copy."
   },
   "viewer.saveAs.panelFailed": "无法打开存储面板。要重试吗？",
   "@viewer.saveAs.panelFailed": {

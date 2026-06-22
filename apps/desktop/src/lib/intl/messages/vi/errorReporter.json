@@ -25,7 +25,8 @@
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only fraction '{currentText} / {maxText}'; both values are preformatted numbers and the ' / ' separator is locale-neutral. Nothing to translate."
   },
   "errorReporter.dialog.notePlaceholder": "Bạn đang cố làm gì? Bạn mong đợi điều gì sẽ xảy ra?",
   "@errorReporter.dialog.notePlaceholder": {

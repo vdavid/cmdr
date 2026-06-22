@@ -69,7 +69,8 @@
   },
   "queryUi.mode.regex.label": "Regex",
   "@queryUi.mode.regex.label": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "Glossary-locked: 'Regex' kept verbatim (glossary 'regex . Regex . confirmed')."
   },
   "queryUi.mode.regex.aria": "Modo regex (Alt+R)",
   "@queryUi.mode.regex.aria": {
@@ -121,11 +122,13 @@
   },
   "queryUi.ai.patternLabel.glob": "Glob",
   "@queryUi.ai.patternLabel.glob": {
-    "sourceHash": "18d00f7"
+    "sourceHash": "18d00f7",
+    "sameAsSourceJustification": "Glossary-locked: 'Glob' kept verbatim, a technical wildcard-pattern term with no common pt equivalent (glossary 'glob . Glob (kept verbatim)')."
   },
   "queryUi.ai.patternLabel.regex": "Regex",
   "@queryUi.ai.patternLabel.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "Glossary-locked: 'Regex' kept verbatim, the standard short form of 'regular expression' in pt-BR (glossary 'regex . Regex (kept verbatim) . confirmed')."
   },
   "queryUi.ai.patternLabel.generic": "Padrão",
   "@queryUi.ai.patternLabel.generic": {
@@ -285,7 +288,8 @@
   },
   "queryUi.recent.mode.regex": "Regex",
   "@queryUi.recent.mode.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "Glossary-locked: 'Regex' kept verbatim (glossary 'regex . Regex . confirmed')."
   },
   "queryUi.recent.mode.filename": "Nome de arquivo",
   "@queryUi.recent.mode.filename": {
@@ -361,7 +365,8 @@
   },
   "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
   "@queryUi.recent.chipTooltipHeader": {
-    "sourceHash": "54a225b"
+    "sourceHash": "54a225b",
+    "sameAsSourceJustification": "Placeholder-only value '{mode} . {age}': two already-translated inserts joined by a middle dot; no translatable text."
   },
   "queryUi.dialog.actionsAria": "Ações da janela",
   "@queryUi.dialog.actionsAria": {
@@ -413,11 +418,13 @@
   },
   "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
   "@queryUi.filters.size.summary.single": {
-    "sourceHash": "bbd5deb"
+    "sourceHash": "bbd5deb",
+    "sameAsSourceJustification": "Placeholder-only value '{prefix} {valueText} {unit}': a comparison glyph, a number, and a preformatted unit symbol; no translatable text."
   },
   "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
   "@queryUi.filters.size.summary.range": {
-    "sourceHash": "ba7eadc"
+    "sourceHash": "ba7eadc",
+    "sameAsSourceJustification": "Placeholder-only value '{minText} {minUnit} - {maxText} {maxUnit}': size numbers and preformatted unit symbols joined by an en dash; no translatable text."
   },
   "queryUi.filters.date.summary.after": "depois de {date}",
   "@queryUi.filters.date.summary.after": {
@@ -429,7 +436,8 @@
   },
   "queryUi.filters.date.summary.range": "{after} – {before}",
   "@queryUi.filters.date.summary.range": {
-    "sourceHash": "801560e"
+    "sourceHash": "801560e",
+    "sameAsSourceJustification": "Placeholder-only value '{after} - {before}': two ISO-date inserts joined by an en dash; no translatable text."
   },
   "queryUi.size.comparator.any": "qualquer",
   "@queryUi.size.comparator.any": {
@@ -441,11 +449,13 @@
   },
   "queryUi.size.unit.byte": "byte",
   "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626"
+    "sourceHash": "1c31626",
+    "sameAsSourceJustification": "'byte' is identical in pt-BR. Microsoft pt-BR terminology maps en-US 'byte' to pt-BR 'byte' (TBX); the unit word is unchanged in pt-BR file managers (gnome-nautilus, total-commander)."
   },
   "queryUi.size.unit.bytes": "bytes",
   "@queryUi.size.unit.bytes": {
-    "sourceHash": "277089d"
+    "sourceHash": "277089d",
+    "sameAsSourceJustification": "'bytes' is identical in pt-BR. The plural unit word is unchanged in pt-BR (Microsoft pt-BR terminology 'byte' to 'byte'; double-commander/total-commander pt-BR keep 'bytes'/'Bytes')."
   },
   "queryUi.size.customCell": "personalizado…",
   "@queryUi.size.customCell": {

@@ -61,7 +61,8 @@
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' (use the app's accent color) is kept verbatim, consistent with the established shortcuts.scope.app = 'App' decision (glossary lists App as kept). A tight toggle-button label; 'App' is an accepted Hungarian-UI loanword for the app's own color here."
   },
   "settings.appearance.sizeColors.opt.rainbow": "Szivárvány",
   "@settings.appearance.sizeColors.opt.rainbow": {
@@ -81,7 +82,8 @@
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' (fade toward the app's default text color) is kept verbatim, consistent with shortcuts.scope.app = 'App' and the sibling sizeColors.opt.app. Glossary lists App as kept."
   },
   "settings.appearance.dateColors.opt.wilting": "Hervadás",
   "@settings.appearance.dateColors.opt.wilting": {
@@ -101,7 +103,8 @@
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "'ISO 8601' is a standard-format name kept verbatim (en @key 'keep it as-is'). Glossary lists ISO 8601 as kept (settings pass)."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "pl. 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
@@ -225,15 +228,18 @@
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "'kB' is a unit symbol, kept verbatim (en @key). Glossary lists kB/MB/GB as kept units (settings pass)."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "'MB' is a unit symbol, kept verbatim. Glossary lists kB/MB/GB as kept units (settings pass)."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "'GB' is a unit symbol, kept verbatim. Glossary lists kB/MB/GB as kept units (settings pass)."
   },
   "settings.appearance.fileSizeFormat.label": "Fájlméret formátuma",
   "@settings.appearance.fileSizeFormat.label": {
@@ -693,7 +699,8 @@
   },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
-    "sourceHash": "72e9a59"
+    "sourceHash": "72e9a59",
+    "sameAsSourceJustification": "'Port' (networking term) is kept verbatim, matching the glossary's kept 'Port (label)' entry (settings pass). Hungarian dev/networking UI uses 'Port' unchanged (MS keeps 'port')."
   },
   "settings.developer.mcpPort.description": "Az MCP-szerver kívánt portja. Hagyd 0-n, hogy az OS válasszon ideiglenes portot (ajánlott; a tényleges port lent jelenik meg futás közben). Rögzíts egy adott portot, ha külső eszközöknek szükségük van rá.",
   "@settings.developer.mcpPort.description": {
@@ -947,7 +954,7 @@
   "@settings.tint.amber": {
     "sourceHash": "a5cccbc"
   },
-  "settings.tint.lime": "Lime",
+  "settings.tint.lime": "Limezöld",
   "@settings.tint.lime": {
     "sourceHash": "c9665c9"
   },
@@ -1021,7 +1028,8 @@
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' top-level Settings section title, kept verbatim per glossary (AI kept as the standard term across settings/ai/queryUi passes; matches the 'Beállítások > AI' navigation path)."
   },
   "settings.section.fileSystems": "Fájlrendszerek",
   "@settings.section.fileSystems": {
@@ -1037,7 +1045,8 @@
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' Settings subsection title, the version-control tool name kept verbatim (en @key). Glossary keeps Git verbatim."
   },
   "settings.section.viewer": "Megjelenítő",
   "@settings.section.viewer": {
@@ -1173,7 +1182,8 @@
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "Placeholder-only path '{systemSettings} > {appearance}': both parts are already-localized inserts (Rendszerbeállítások / Megjelenés), the '> ' arrow is the neutral path separator. No literal text to translate. Listed as kept-verbatim in glossary (settings pass)."
   },
   "settings.appearance.appColorHintLinkOther": "a rendszer megjelenési beállításait",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1401,7 +1411,8 @@
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "Placeholder-only path '{systemSettings} > {privacyAndSecurity} > {localNetwork}': all three are already-localized inserts, the '> ' arrows are neutral path separators. No literal text to translate. Listed as kept-verbatim in glossary (settings pass)."
   },
   "settings.network.permissionWithout": "Enélkül a Cmdr a már csatolt megosztásokon továbbra is tud fájlokat olvasni és írni, de nem fedezhetsz fel új szervereket, és nem használhatod a gyorsabb közvetlen kapcsolatunkat.",
   "@settings.network.permissionWithout": {
@@ -1413,7 +1424,8 @@
   },
   "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "'you@example.com' is a literal example-email placeholder, kept verbatim everywhere per the cross-file reconciliation (style.md)."
   },
   "settings.updates.checkForUpdates": "Frissítések keresése",
   "@settings.updates.checkForUpdates": {

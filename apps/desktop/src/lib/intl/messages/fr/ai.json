@@ -293,7 +293,8 @@
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "Placeholder-only string: a single '?' inside parentheses, no translatable text."
   },
   "ai.local.notInstalled": "Non installé. Le modèle local ({modelName}, {modelSize}) s''exécute entièrement sur votre appareil pour une confidentialité maximale. Nécessite Apple Silicon.",
   "@ai.local.notInstalled": {

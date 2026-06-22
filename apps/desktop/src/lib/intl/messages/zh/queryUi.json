@@ -121,7 +121,8 @@
   },
   "queryUi.ai.patternLabel.glob": "Glob",
   "@queryUi.ai.patternLabel.glob": {
-    "sourceHash": "18d00f7"
+    "sourceHash": "18d00f7",
+    "sameAsSourceJustification": "\"Glob\" (filename-wildcard pattern) has no settled Chinese UI term; glossary.md records it kept verbatim (\"Glob\", tentative), matching the en intent. Its sibling labels ARE translated (Regex→正则, Pattern→模式)."
   },
   "queryUi.ai.patternLabel.regex": "正则",
   "@queryUi.ai.patternLabel.regex": {
@@ -281,7 +282,8 @@
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "AI search-mode name. \"AI\" is kept verbatim throughout Cmdrs zh catalog (e.g. \"AI 模型\", \"AI 已就绪\", \"设置 > AI\"), matching Apple zh-CN and Microsoft zh-Hans UI, which keep \"AI\" in Latin form. glossary.md records the AI section as \"AI\" (verbatim). Its sibling mode names ARE translated (Regex→正则, Filename→文件名), but \"AI\" stays verbatim per the catalog-wide convention."
   },
   "queryUi.recent.mode.regex": "正则",
   "@queryUi.recent.mode.regex": {
@@ -361,7 +363,8 @@
   },
   "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
   "@queryUi.recent.chipTooltipHeader": {
-    "sourceHash": "54a225b"
+    "sourceHash": "54a225b",
+    "sameAsSourceJustification": "\"{mode} · {age}\": both parts are already-translated placeholders joined by a middle dot \"·\". No translatable text of its own; the dot separator is locale-neutral."
   },
   "queryUi.dialog.actionsAria": "对话框操作",
   "@queryUi.dialog.actionsAria": {
@@ -413,11 +416,13 @@
   },
   "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
   "@queryUi.filters.size.summary.single": {
-    "sourceHash": "bbd5deb"
+    "sourceHash": "bbd5deb",
+    "sameAsSourceJustification": "\"{prefix} {valueText} {unit}\": comparison glyph (>, <, =) + a size number + an already-formatted unit, all placeholders. No translatable text."
   },
   "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
   "@queryUi.filters.size.summary.range": {
-    "sourceHash": "ba7eadc"
+    "sourceHash": "ba7eadc",
+    "sameAsSourceJustification": "\"{minText} {minUnit} – {maxText} {maxUnit}\": two size+unit pairs joined by an en dash for the range. All parts are placeholders; no translatable text."
   },
   "queryUi.filters.date.summary.after": "{date} 之后",
   "@queryUi.filters.date.summary.after": {
@@ -429,7 +434,8 @@
   },
   "queryUi.filters.date.summary.range": "{after} – {before}",
   "@queryUi.filters.date.summary.range": {
-    "sourceHash": "801560e"
+    "sourceHash": "801560e",
+    "sameAsSourceJustification": "\"{after} – {before}\": two ISO-date placeholders joined by an en dash for the range. No translatable text."
   },
   "queryUi.size.comparator.any": "不限",
   "@queryUi.size.comparator.any": {

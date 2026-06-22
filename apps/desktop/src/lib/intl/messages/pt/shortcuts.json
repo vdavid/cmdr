@@ -13,7 +13,8 @@
   },
   "shortcuts.scope.app": "App",
   "@shortcuts.scope.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is identical in pt-BR. Apple pt-BR keeps 'App'/'Apps' verbatim (confirmed macOS/Finder: 'Apps' to 'Apps'); naturalized as the app-wide scope label. The shipped sibling scopes (Janela principal, Lista de arquivos, Paleta de comandos) are all translated, so this is a genuine cognate."
   },
   "shortcuts.scope.mainWindow": "Janela principal",
   "@shortcuts.scope.mainWindow": {
@@ -69,7 +70,8 @@
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "sourceHash": "fca7aa8"
+    "sourceHash": "fca7aa8",
+    "sameAsSourceJustification": "Apple keeps 'Spotlight' English in pt-BR macOS (confirmed: macOS pt-BR SystemSettings strings reference 'Spotlight' untranslated). Explicitly listed as a kept-English Apple name in the i18n guide. The description says to reuse the localized macOS name."
   },
   "shortcuts.system.finderSearch": "Janela de busca do Finder",
   "@shortcuts.system.finderSearch": {
@@ -89,7 +91,8 @@
   },
   "shortcuts.system.missionControl": "Mission Control",
   "@shortcuts.system.missionControl": {
-    "sourceHash": "1a9a658"
+    "sourceHash": "1a9a658",
+    "sameAsSourceJustification": "Apple keeps the 'Mission Control' feature name English in pt-BR macOS (one of the kept-English Apple names per the i18n guide's Apple-feature-names principle, alongside Spotlight/AirDrop/Siri). The description says to reuse the localized macOS name, which is the English form here."
   },
   "shortcuts.system.appWindows": "Janelas do app",
   "@shortcuts.system.appWindows": {
@@ -97,7 +100,8 @@
   },
   "shortcuts.system.spaces": "Spaces",
   "@shortcuts.system.spaces": {
-    "sourceHash": "077a293"
+    "sourceHash": "077a293",
+    "sameAsSourceJustification": "Apple keeps the 'Spaces' feature name (Mission Control virtual desktops) English in pt-BR macOS, same kept-English family as Mission Control. The description says to reuse the localized macOS name, which is English here."
   },
   "shortcuts.system.screenshots": "capturas de tela",
   "@shortcuts.system.screenshots": {
@@ -189,7 +193,8 @@
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name 'macOS', kept verbatim (BRAND_WORDS)."
   },
   "shortcuts.section.fixedBadge": "Fixa",
   "@shortcuts.section.fixedBadge": {

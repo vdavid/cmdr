@@ -41,7 +41,8 @@
   },
   "fileExplorer.errorPane.openSystemSettings": "Open {systemSettings}",
   "@fileExplorer.errorPane.openSystemSettings": {
-    "sourceHash": "f735c5c"
+    "sourceHash": "f735c5c",
+    "sameAsSourceJustification": "'Open' is the Dutch bare-stem imperative (macOS 'Open ${target}'); '{systemSettings}' is an OS-localized placeholder kept literal. Native Dutch, identical by coincidence."
   },
   "fileExplorer.errorPane.technicalDetails": "Technische details",
   "@fileExplorer.errorPane.technicalDetails": {
@@ -77,7 +78,8 @@
   },
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
   "@fileExplorer.functionKeyBar.actionWithShortcut": {
-    "sourceHash": "49e258f"
+    "sourceHash": "49e258f",
+    "sameAsSourceJustification": "Placeholder-only structure '{action} ({shortcut})': both inserts are already-translated/literal values; the parentheses are punctuation. Nothing to translate."
   },
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (geen Shift-actie)",
   "@fileExplorer.functionKeyBar.noShiftAction": {
@@ -233,7 +235,8 @@
   },
   "fileExplorer.network.browser.colStatus": "Status",
   "@fileExplorer.network.browser.colStatus": {
-    "sourceHash": "920e413"
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "'Status' is a genuine Dutch word (MS NL: status -> status), the natural column header. Sibling columns with a distinct Dutch word are translated (colName -> Naam, colHostname -> Hostnaam); 'Status' coincides."
   },
   "fileExplorer.network.browser.fetching": "ophalen...",
   "@fileExplorer.network.browser.fetching": {
@@ -273,7 +276,8 @@
   },
   "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} host} other {{countText} hosts}}",
   "@fileExplorer.network.browser.hostCount": {
-    "sourceHash": "41843ee"
+    "sourceHash": "41843ee",
+    "sameAsSourceJustification": "Plural-select structure '{count, plural, one {{countText} host} other {{countText} hosts}}': 'host' is kept as the technical term in Dutch (glossary: host -> host, 'hostnaam'), and Dutch CLDR categories one/other match English's here, so the singular 'host' and plural 'hosts' coincide. Placeholders preserved."
   },
   "fileExplorer.network.browser.status.resolving": "Omzetten...",
   "@fileExplorer.network.browser.status.resolving": {
@@ -725,7 +729,8 @@
   },
   "fileExplorer.columns.ext": "Ext",
   "@fileExplorer.columns.ext": {
-    "sourceHash": "8c92eec"
+    "sourceHash": "8c92eec",
+    "sameAsSourceJustification": "Short column header for the file extension. Dutch 'extensie' (glossary: extension -> extensie) abbreviates to 'Ext' (same first three letters); Total Commander's Dutch UI uses 'Ext' as its extension column. The tight abbreviation coincides with English."
   },
   "fileExplorer.columns.size": "Grootte",
   "@fileExplorer.columns.size": {
@@ -741,7 +746,8 @@
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name; kept verbatim (do-not-translate)."
   },
   "fileExplorer.columns.gitTitle": "Git-status van elk bestand",
   "@fileExplorer.columns.gitTitle": {
@@ -1017,11 +1023,13 @@
   },
   "fileExplorer.navigation.groupVolumes": "Volumes",
   "@fileExplorer.navigation.groupVolumes": {
-    "sourceHash": "53a480e"
+    "sourceHash": "53a480e",
+    "sameAsSourceJustification": "'Volumes' is the Dutch plural of 'volume', a genuine Dutch word (macOS Finder 'Volume' -> 'Volume'). Section heading for disk volumes; coincides with English."
   },
   "fileExplorer.navigation.groupCloud": "Cloud",
   "@fileExplorer.navigation.groupCloud": {
-    "sourceHash": "b977b95"
+    "sourceHash": "b977b95",
+    "sameAsSourceJustification": "'Cloud' is a genuine Dutch word (MS NL: cloud -> cloud), the section heading for cloud-storage drives. Sibling group headings that have a distinct Dutch word ARE translated (groupNetwork -> Netwerk, groupMobile -> Mobiel); 'Cloud' genuinely coincides."
   },
   "fileExplorer.navigation.groupMobile": "Mobiel",
   "@fileExplorer.navigation.groupMobile": {
@@ -1045,7 +1053,8 @@
   },
   "fileExplorer.navigation.volumeFallback": "Volume",
   "@fileExplorer.navigation.volumeFallback": {
-    "sourceHash": "b10fb96"
+    "sourceHash": "b10fb96",
+    "sameAsSourceJustification": "'Volume' is a genuine Dutch word (macOS Finder 'Volume' -> 'Volume'); the generic breadcrumb fallback. Coincides with English."
   },
   "fileExplorer.navigation.favoritesEmpty": "(Je favorieten verschijnen hier)",
   "@fileExplorer.navigation.favoritesEmpty": {
@@ -1125,7 +1134,8 @@
   },
   "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
   "@fileExplorer.navigation.usbSpeed": {
-    "sourceHash": "07cb80b"
+    "sourceHash": "07cb80b",
+    "sameAsSourceJustification": "'{label} (Max. {mbps} MB/s)': '{label}' and '{mbps}' are placeholders, 'Max.' is the Dutch abbreviation for maximum (TC NL: 'max. 999', 'max. 15 tekens'), and 'MB/s' is a unit symbol (TC msgid 'Speed (MB/s)'). No translatable text."
   },
   "fileExplorer.navigation.usbSpeedNegotiated": "Onderhandeld voor deze kabel, poort en dit apparaat",
   "@fileExplorer.navigation.usbSpeedNegotiated": {
@@ -1221,11 +1231,13 @@
   },
   "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
   "@fileExplorer.navigation.driveIndex.durationMinSec": {
-    "sourceHash": "57a57d1"
+    "sourceHash": "57a57d1",
+    "sameAsSourceJustification": "'{minutes} min, {seconds} s' uses the unit abbreviations 'min' and 's', which are identical in Dutch (TC NL uses 'min.'/'s' the same way); the rest is placeholders. No translatable difference."
   },
   "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
   "@fileExplorer.navigation.driveIndex.durationSec": {
-    "sourceHash": "fde82d3"
+    "sourceHash": "fde82d3",
+    "sameAsSourceJustification": "'{seconds} s' is a placeholder plus the seconds unit symbol 's', identical in Dutch."
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr kon niet direct met {name} verbinden, wat nodig is om deze gedeelde map te indexeren. Controleer of de gedeelde map bereikbaar is en probeer opnieuw.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {

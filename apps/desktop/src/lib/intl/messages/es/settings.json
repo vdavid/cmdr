@@ -61,7 +61,8 @@
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the short toggle label for the app-color size option; macOS es keeps 'App' as-is, matching the catalog's sibling label. Spanish keeps the same label."
   },
   "settings.appearance.sizeColors.opt.rainbow": "Arcoíris",
   "@settings.appearance.sizeColors.opt.rainbow": {
@@ -81,7 +82,8 @@
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the short toggle label naming the app-color option; macOS es keeps 'App' as-is and the catalog's longer dateColors.description already refers to this option as 'App'. Spanish keeps the same label."
   },
   "settings.appearance.dateColors.opt.wilting": "Marchitamiento",
   "@settings.appearance.dateColors.opt.wilting": {
@@ -101,7 +103,8 @@
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "'ISO 8601' is the standard format name; kept verbatim (standard names are not translated)."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "p. ej., 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
@@ -221,19 +224,23 @@
   },
   "settings.listing.sizeUnit.opt.bytes": "Bytes",
   "@settings.listing.sizeUnit.opt.bytes": {
-    "sourceHash": "4d80003"
+    "sourceHash": "4d80003",
+    "sameAsSourceJustification": "'Bytes' stays 'Bytes' in Spanish: 'byte'/'bytes' are kept verbatim in macOS es (glossary), and the capitalized toggle label mirrors the unit name unchanged."
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "'kB' is a unit symbol; kept as-is."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "'MB' is a unit symbol; kept as-is."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "'GB' is a unit symbol; kept as-is (unit symbols are not translated)."
   },
   "settings.appearance.fileSizeFormat.label": "Formato del tamaño de archivo",
   "@settings.appearance.fileSizeFormat.label": {
@@ -249,7 +256,8 @@
   },
   "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 bytes",
   "@settings.appearance.fileSizeFormat.optDesc.binary": {
-    "sourceHash": "ee2d07b"
+    "sourceHash": "ee2d07b",
+    "sameAsSourceJustification": "'1 KiB = 1024 bytes': the unit symbol 'KiB', the literal numbers, and 'bytes' (kept verbatim in Spanish, macOS es) are all identical; nothing renders differently."
   },
   "settings.appearance.fileSizeFormat.opt.si": "Decimal SI (KB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
@@ -257,7 +265,8 @@
   },
   "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 bytes",
   "@settings.appearance.fileSizeFormat.optDesc.si": {
-    "sourceHash": "04b2c3b"
+    "sourceHash": "04b2c3b",
+    "sameAsSourceJustification": "'1 KB = 1000 bytes': the unit symbol 'KB', the literal numbers, and 'bytes' (kept verbatim in Spanish) are all identical."
   },
   "settings.listing.sizeMismatchWarning.label": "Aviso de discrepancia de tamaño",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -601,7 +610,8 @@
   },
   "settings.network.timeoutMode.opt.normal": "Normal",
   "@settings.network.timeoutMode.opt.normal": {
-    "sourceHash": "a7248ee"
+    "sourceHash": "a7248ee",
+    "sameAsSourceJustification": "'Normal' is a real Spanish word and the right label here; macOS es uses 'Normal'/'normal', and the catalog's sibling optDesc.normal already reads naturally with it. Identical by cognate."
   },
   "settings.network.timeoutMode.optDesc.normal": "Para redes locales típicas (15s de espera)",
   "@settings.network.timeoutMode.optDesc.normal": {
@@ -1037,7 +1047,8 @@
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name; do-not-translate (git terms kept verbatim)."
   },
   "settings.section.viewer": "Visor",
   "@settings.section.viewer": {
@@ -1173,7 +1184,8 @@
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "Structural value '{systemSettings} > {appearance}': both placeholders are OS-localized macOS labels injected at runtime; the '>' path arrow is identical in Spanish. No translatable text."
   },
   "settings.appearance.appColorHintLinkOther": "los ajustes de apariencia de tu sistema",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1401,7 +1413,8 @@
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "Structural value: three OS-localized macOS label placeholders joined by '>' path arrows; the arrows are identical in Spanish and there is no standalone text."
   },
   "settings.network.permissionWithout": "Sin él, Cmdr puede seguir leyendo y escribiendo archivos en recursos compartidos que ya estén montados, pero no podrás descubrir servidores nuevos ni usar nuestra conexión directa más rápida.",
   "@settings.network.permissionWithout": {
@@ -1413,7 +1426,8 @@
   },
   "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "'you@example.com' is a literal example email address; kept exactly per the @key description."
   },
   "settings.updates.checkForUpdates": "Buscar actualizaciones",
   "@settings.updates.checkForUpdates": {
@@ -1421,7 +1435,8 @@
   },
   "settings.updates.errorPrefix": "Error:",
   "@settings.updates.errorPrefix": {
-    "sourceHash": "6170629"
+    "sourceHash": "6170629",
+    "sameAsSourceJustification": "'Error:' is a developer/diagnostic label where the @key description explicitly permits the word 'Error'; Spanish 'Error:' is identical (cognate) and keeps the trailing colon."
   },
   "settings.updates.sendErrorReport": "Enviar informe de error",
   "@settings.updates.sendErrorReport": {

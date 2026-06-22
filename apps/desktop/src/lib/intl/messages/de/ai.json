@@ -285,7 +285,8 @@
   },
   "ai.local.serverLabel": "Server",
   "@ai.local.serverLabel": {
-    "sourceHash": "aef7de2"
+    "sourceHash": "aef7de2",
+    "sameAsSourceJustification": "German keeps 'Server' (style guide glossary: server -> Server; macOS 'Mit Server verbinden', MS terminology; high)."
   },
   "ai.local.modelUnknown": "Unbekannt",
   "@ai.local.modelUnknown": {
@@ -293,7 +294,8 @@
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "Punctuation-only placeholder ('?'); identical across locales."
   },
   "ai.local.notInstalled": "Nicht installiert. Das lokale Modell ({modelName}, {modelSize}) läuft für maximalen Datenschutz vollständig auf deinem Gerät. Erfordert Apple Silicon.",
   "@ai.local.notInstalled": {
@@ -309,11 +311,13 @@
   },
   "ai.local.ramLegendSystem": "System {size}",
   "@ai.local.ramLegendSystem": {
-    "sourceHash": "1497c04"
+    "sourceHash": "1497c04",
+    "sameAsSourceJustification": "'System' is a real German word, same spelling; macOS DE uses 'System'. Only the {size} placeholder varies (already formatted)."
   },
   "ai.local.ramLegendApps": "Apps {size}",
   "@ai.local.ramLegendApps": {
-    "sourceHash": "d02b14c"
+    "sourceHash": "d02b14c",
+    "sameAsSourceJustification": "'Apps' is the standard DE plural of the kept loanword 'App' (style guide uses 'aus jeder App'); spelled identically. Only the {size} placeholder varies."
   },
   "ai.local.ramLegendCmdrAi": "Cmdr-KI {size}",
   "@ai.local.ramLegendCmdrAi": {

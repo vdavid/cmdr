@@ -101,7 +101,8 @@
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "Standard name 'ISO 8601'; kept verbatim (a format-standard identifier, not translated)."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "ví dụ: 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
@@ -225,15 +226,18 @@
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "Unit symbol 'kB'; kept verbatim (locale-neutral unit symbol)."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "Unit symbol 'MB'; kept verbatim (locale-neutral unit symbol)."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "Unit symbol 'GB'; kept verbatim (locale-neutral unit symbol)."
   },
   "settings.appearance.fileSizeFormat.label": "Định dạng kích thước tệp",
   "@settings.appearance.fileSizeFormat.label": {
@@ -1021,7 +1025,8 @@
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' kept verbatim in Vietnamese tech UI (glossary: AI -> AI, high). Section title."
   },
   "settings.section.fileSystems": "Hệ thống tệp",
   "@settings.section.fileSystems": {
@@ -1037,7 +1042,8 @@
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "Tool name 'Git'; kept verbatim. Vietnamese UI keeps Git as-is."
   },
   "settings.section.viewer": "Trình xem",
   "@settings.section.viewer": {
@@ -1173,7 +1179,8 @@
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "Placeholder-only navigation path '{systemSettings} > {appearance}': both placeholders are OS-localized macOS labels injected at runtime (do-not-translate), and '> ' is the literal path separator. Nothing to translate."
   },
   "settings.appearance.appColorHintLinkOther": "cài đặt giao diện hệ thống của bạn",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1401,7 +1408,8 @@
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "Placeholder-only navigation path: all three placeholders are OS-localized macOS labels injected at runtime (do-not-translate), joined by the literal '> ' separator. Nothing to translate."
   },
   "settings.network.permissionWithout": "Không có nó, Cmdr vẫn đọc và ghi tệp được trên các bản chia sẻ đã gắn kết, nhưng bạn không thể tìm máy chủ mới hay dùng kết nối trực tiếp nhanh hơn của chúng tôi.",
   "@settings.network.permissionWithout": {
@@ -1413,7 +1421,8 @@
   },
   "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "Literal example email address 'you@example.com'; kept exactly as a placeholder (locale-neutral)."
   },
   "settings.updates.checkForUpdates": "Kiểm tra cập nhật",
   "@settings.updates.checkForUpdates": {

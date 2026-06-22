@@ -21,7 +21,8 @@
   },
   "mtp.connectedToast.ok": "OK",
   "@mtp.connectedToast.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is the universal acknowledgement label, kept verbatim in Dutch (macOS NL: 'OK' -> 'OK')."
   },
   "mtp.permissionDialog.title": "Geen toegang tot USB-apparaat",
   "@mtp.permissionDialog.title": {

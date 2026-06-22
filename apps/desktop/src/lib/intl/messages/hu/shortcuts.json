@@ -13,7 +13,8 @@
   },
   "shortcuts.scope.app": "App",
   "@shortcuts.scope.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' app-wide scope heading, kept verbatim per glossary (App listed as legitimately identical-to-English, shortcuts pass). The catalog's established short label for app-wide."
   },
   "shortcuts.scope.mainWindow": "Főablak",
   "@shortcuts.scope.mainWindow": {
@@ -69,7 +70,8 @@
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
-    "sourceHash": "fca7aa8"
+    "sourceHash": "fca7aa8",
+    "sameAsSourceJustification": "'Spotlight' is an Apple feature name Apple keeps English in Hungarian macOS (verified: Hungarian macOS pile shows 'Spotlight' verbatim, inflecting as 'Spotlight-elemek'). Reuse the localized macOS name = English here."
   },
   "shortcuts.system.finderSearch": "Finder keresőablak",
   "@shortcuts.system.finderSearch": {
@@ -89,7 +91,8 @@
   },
   "shortcuts.system.missionControl": "Mission Control",
   "@shortcuts.system.missionControl": {
-    "sourceHash": "1a9a658"
+    "sourceHash": "1a9a658",
+    "sameAsSourceJustification": "'Mission Control' is an Apple feature name kept English in Hungarian macOS (verified verbatim in the Hungarian macOS pile). Reuse the localized macOS name = English here. Glossary lists Mission Control as kept (shortcuts pass)."
   },
   "shortcuts.system.appWindows": "Appablakok",
   "@shortcuts.system.appWindows": {
@@ -97,7 +100,8 @@
   },
   "shortcuts.system.spaces": "Spaces",
   "@shortcuts.system.spaces": {
-    "sourceHash": "077a293"
+    "sourceHash": "077a293",
+    "sameAsSourceJustification": "'Spaces' is an Apple feature name (virtual desktops) kept English in Hungarian macOS (verified verbatim in the Hungarian macOS pile). Reuse the localized macOS name = English here. Glossary lists Spaces as kept (shortcuts pass)."
   },
   "shortcuts.system.screenshots": "képernyőképek",
   "@shortcuts.system.screenshots": {
@@ -189,7 +193,8 @@
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "sourceHash": "aed6b7a"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "'macOS' is the OS name, a kept brand/system token (BRAND_WORDS). Do not translate."
   },
   "shortcuts.section.fixedBadge": "Rögzített",
   "@shortcuts.section.fixedBadge": {

@@ -77,7 +77,8 @@
   },
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
   "@fileExplorer.functionKeyBar.actionWithShortcut": {
-    "sourceHash": "49e258f"
+    "sourceHash": "49e258f",
+    "sameAsSourceJustification": "Structural value '{action} ({shortcut})': both parts are already-translated/literal placeholders (action name + key glyphs); no standalone text, and Spanish keeps the same name(shortcut) order."
   },
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (sin acción con Mayúsculas)",
   "@fileExplorer.functionKeyBar.noShiftAction": {
@@ -725,7 +726,8 @@
   },
   "fileExplorer.columns.ext": "Ext",
   "@fileExplorer.columns.ext": {
-    "sourceHash": "8c92eec"
+    "sourceHash": "8c92eec",
+    "sameAsSourceJustification": "'Ext' is the universal short form of 'extension', and the Spanish word 'extensión' also abbreviates to 'Ext'. Kept as the tight, column-sizing-stable header."
   },
   "fileExplorer.columns.size": "Tamaño",
   "@fileExplorer.columns.size": {
@@ -741,7 +743,8 @@
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name; do-not-translate (git terms kept verbatim per glossary)."
   },
   "fileExplorer.columns.gitTitle": "Estado de Git de cada archivo",
   "@fileExplorer.columns.gitTitle": {
@@ -853,7 +856,8 @@
   },
   "fileExplorer.selectionInfo.dir": "DIR",
   "@fileExplorer.selectionInfo.dir": {
-    "sourceHash": "d313ad9"
+    "sourceHash": "d313ad9",
+    "sameAsSourceJustification": "'DIR' is the established short folder marker (glossary: DIR -> DIR, kept short); Spanish 'directorio' also abbreviates to 'DIR'. Kept as the capitalized size-column marker."
   },
   "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "El tamaño aún no está listo",
   "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
@@ -1221,11 +1225,13 @@
   },
   "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
   "@fileExplorer.navigation.driveIndex.durationMinSec": {
-    "sourceHash": "57a57d1"
+    "sourceHash": "57a57d1",
+    "sameAsSourceJustification": "Structural value '{minutes} min, {seconds} s': 'min'/'s' are the same unit abbreviations in Spanish (glossary: s/min time abbrevs); only placeholders and unit symbols."
   },
   "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
   "@fileExplorer.navigation.driveIndex.durationSec": {
-    "sourceHash": "fde82d3"
+    "sourceHash": "fde82d3",
+    "sameAsSourceJustification": "Structural value '{seconds} s': 's' is the universal seconds abbreviation, identical in Spanish; placeholder plus unit symbol only."
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr no pudo conectarse directamente a {name}, algo necesario para indexar este recurso compartido. Comprueba que el recurso compartido esté accesible e inténtalo de nuevo.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {

@@ -293,7 +293,8 @@
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "Punctuation-only placeholder value: a single question mark shown when the backend reports no model size. No translatable text; '?' is locale-neutral."
   },
   "ai.local.notInstalled": "Chưa cài đặt. Mô hình cục bộ ({modelName}, {modelSize}) chạy hoàn toàn trên thiết bị của bạn để bảo mật tối đa. Yêu cầu Apple Silicon.",
   "@ai.local.notInstalled": {
@@ -317,7 +318,8 @@
   },
   "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
   "@ai.local.ramLegendCmdrAi": {
-    "sourceHash": "93e2741"
+    "sourceHash": "93e2741",
+    "sameAsSourceJustification": "Brand + loanword + placeholder only: 'Cmdr' is the kept app name and 'AI' is kept verbatim in vi (glossary: AI -> AI, high), with the runtime {size} doing the rest. No translatable word remains."
   },
   "ai.local.ramLegendProjected": "Dự kiến",
   "@ai.local.ramLegendProjected": {

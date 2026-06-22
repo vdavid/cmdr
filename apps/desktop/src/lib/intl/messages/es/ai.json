@@ -293,7 +293,8 @@
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "Placeholder-only value: a single literal '?' fallback glyph for an unreported model size. No translatable text."
   },
   "ai.local.notInstalled": "No instalado. El modelo local ({modelName}, {modelSize}) se ejecuta por completo en tu dispositivo para una privacidad máxima. Requiere Apple Silicon.",
   "@ai.local.notInstalled": {
@@ -313,7 +314,8 @@
   },
   "ai.local.ramLegendApps": "Apps {size}",
   "@ai.local.ramLegendApps": {
-    "sourceHash": "d02b14c"
+    "sourceHash": "d02b14c",
+    "sameAsSourceJustification": "'Apps' stays 'Apps' in Spanish: macOS es uses 'App'/'Apps' as-is (27 'App', 3 'Apps' in es/macOS), and the catalog's RAM-legend siblings keep it ('IA de Cmdr {size}', 'Sistema {size}', 'Libre {size}'). The {size} placeholder carries the already-formatted value."
   },
   "ai.local.ramLegendCmdrAi": "IA de Cmdr {size}",
   "@ai.local.ramLegendCmdrAi": {

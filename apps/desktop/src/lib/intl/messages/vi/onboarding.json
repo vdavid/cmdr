@@ -345,7 +345,8 @@
   },
   "onboarding.stepBeta.emailPlaceholder": "you@example.com",
   "@onboarding.stepBeta.emailPlaceholder": {
-    "sourceHash": "53e6cdc"
+    "sourceHash": "53e6cdc",
+    "sameAsSourceJustification": "Literal example email address 'you@example.com'; kept exactly as a recognizable placeholder address (locale-neutral)."
   },
   "onboarding.stepBeta.signup.success": "Kiểm tra hộp thư đến để xác nhận email của bạn. Cảm ơn bạn đã chung tay!",
   "@onboarding.stepBeta.signup.success": {

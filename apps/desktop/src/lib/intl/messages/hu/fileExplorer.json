@@ -77,7 +77,8 @@
   },
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
   "@fileExplorer.functionKeyBar.actionWithShortcut": {
-    "sourceHash": "49e258f"
+    "sourceHash": "49e258f",
+    "sameAsSourceJustification": "Placeholder-only frame '{action} ({shortcut})': both parts are already-localized inserts (the action name and the shortcut glyph), the parentheses are language-neutral. Nothing to translate."
   },
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (nincs Shift-művelet)",
   "@fileExplorer.functionKeyBar.noShiftAction": {
@@ -741,7 +742,8 @@
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name, a kept brand/system token (en @key 'keep it as-is'). Glossary keeps 'Git' verbatim (settings/errors passes)."
   },
   "fileExplorer.columns.gitTitle": "Az egyes fájlok Git-állapota",
   "@fileExplorer.columns.gitTitle": {

@@ -77,7 +77,8 @@
   },
   "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
   "@fileExplorer.functionKeyBar.actionWithShortcut": {
-    "sourceHash": "49e258f"
+    "sourceHash": "49e258f",
+    "sameAsSourceJustification": "Placeholder-only ICU value '{action} ({shortcut})' assembling two already-translated/literal inserts; no translatable surface text."
   },
   "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (sem ação com Shift)",
   "@fileExplorer.functionKeyBar.noShiftAction": {
@@ -233,7 +234,8 @@
   },
   "fileExplorer.network.browser.colStatus": "Status",
   "@fileExplorer.network.browser.colStatus": {
-    "sourceHash": "920e413"
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "Glossary-locked: 'Status' kept verbatim, naturalized in pt-BR tech UI and used consistently across the catalog (glossary 'status . Status (kept verbatim)', incl. licensing.section.labelStatus and ai.local.status*)."
   },
   "fileExplorer.network.browser.fetching": "obtendo...",
   "@fileExplorer.network.browser.fetching": {
@@ -725,7 +727,8 @@
   },
   "fileExplorer.columns.ext": "Ext",
   "@fileExplorer.columns.ext": {
-    "sourceHash": "8c92eec"
+    "sourceHash": "8c92eec",
+    "sameAsSourceJustification": "Glossary-locked: 'Ext' kept verbatim as a terse column-header abbreviation in pt-BR (glossary 'Ext / DIR (column tags) . Ext / DIR (kept verbatim)', matching es). The column is width-measured, so the abbreviation must stay constant."
   },
   "fileExplorer.columns.size": "Tamanho",
   "@fileExplorer.columns.size": {
@@ -741,7 +744,8 @@
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name, kept verbatim (BRAND_WORDS / do-not-translate). pt-BR keeps 'Git' as-is."
   },
   "fileExplorer.columns.gitTitle": "Status do Git de cada arquivo",
   "@fileExplorer.columns.gitTitle": {
@@ -853,7 +857,8 @@
   },
   "fileExplorer.selectionInfo.dir": "DIR",
   "@fileExplorer.selectionInfo.dir": {
-    "sourceHash": "d313ad9"
+    "sourceHash": "d313ad9",
+    "sameAsSourceJustification": "Glossary-locked: 'DIR' kept verbatim as a terse capitalized status-bar marker (glossary 'Ext / DIR (column tags) . Ext / DIR (kept verbatim)', matching es)."
   },
   "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "O tamanho ainda não está pronto",
   "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
@@ -1017,7 +1022,8 @@
   },
   "fileExplorer.navigation.groupVolumes": "Volumes",
   "@fileExplorer.navigation.groupVolumes": {
-    "sourceHash": "53a480e"
+    "sourceHash": "53a480e",
+    "sameAsSourceJustification": "'Volumes' is identical in pt-BR. macOS Finder pt-BR keeps 'Volume' to 'Volume' (confirmed macOS/Finder), and the plural 'Volumes' is the same word; glossary 'Volumes . Volumes . high'. Shipped sibling groups around it (Favoritos, Nuvem) are translated, so this is a genuine cognate match."
   },
   "fileExplorer.navigation.groupCloud": "Nuvem",
   "@fileExplorer.navigation.groupCloud": {
@@ -1045,7 +1051,8 @@
   },
   "fileExplorer.navigation.volumeFallback": "Volume",
   "@fileExplorer.navigation.volumeFallback": {
-    "sourceHash": "b10fb96"
+    "sourceHash": "b10fb96",
+    "sameAsSourceJustification": "'Volume' is identical in pt-BR. Confirmed in macOS Finder pt-BR ('Volume' to 'Volume'); glossary-aligned with 'Volumes . Volumes'."
   },
   "fileExplorer.navigation.favoritesEmpty": "(Seus favoritos vão aparecer aqui)",
   "@fileExplorer.navigation.favoritesEmpty": {
@@ -1221,11 +1228,13 @@
   },
   "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
   "@fileExplorer.navigation.driveIndex.durationMinSec": {
-    "sourceHash": "57a57d1"
+    "sourceHash": "57a57d1",
+    "sameAsSourceJustification": "Identical-in-pt-BR unit abbreviations: '{minutes} min, {seconds} s'. 'min' and 's' are the SI-style minute/second symbols used unchanged in pt-BR (gnome-nautilus/xfce-thunar pt-BR keep 'min'/'s'); only placeholders and unit symbols remain."
   },
   "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
   "@fileExplorer.navigation.driveIndex.durationSec": {
-    "sourceHash": "fde82d3"
+    "sourceHash": "fde82d3",
+    "sameAsSourceJustification": "Identical-in-pt-BR unit abbreviation '{seconds} s'. 's' is the second symbol used unchanged in pt-BR; the rest is a placeholder."
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "O Cmdr não conseguiu conectar a {name} diretamente, o que é necessário para indexar este compartilhamento. Verifique se o compartilhamento está acessível e tente novamente.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {

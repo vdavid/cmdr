@@ -293,7 +293,8 @@
   },
   "ai.local.modelSizeUnknown": "?",
   "@ai.local.modelSizeUnknown": {
-    "sourceHash": "8a8de82"
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "Placeholder-only glyph: a bare question mark ('?') meaning the size is unknown. No translatable text; matches the '?' size-unknown glyph kept verbatim across the catalog (glossary, viewer/licensing pass)."
   },
   "ai.local.notInstalled": "Nincs telepítve. A helyi modell ({modelName}, {modelSize}) teljes egészében az eszközödön fut a maximális adatvédelemért. Apple Silicon szükséges hozzá.",
   "@ai.local.notInstalled": {
@@ -317,7 +318,8 @@
   },
   "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
   "@ai.local.ramLegendCmdrAi": {
-    "sourceHash": "93e2741"
+    "sourceHash": "93e2741",
+    "sameAsSourceJustification": "Brand + placeholder only: 'Cmdr AI {size}'. 'Cmdr' is the kept brand, 'AI' is kept verbatim per glossary, '{size}' is a preformatted amount. No surrounding words to translate. Listed as legitimately identical-to-English in glossary (ai.json pass)."
   },
   "ai.local.ramLegendProjected": "Várható",
   "@ai.local.ramLegendProjected": {

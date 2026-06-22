@@ -1,7 +1,8 @@
 {
   "ui.alertDialog.defaultButton": "OK",
   "@ui.alertDialog.defaultButton": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "'OK' is identical in pt-BR. macOS Finder pt-BR keeps 'OK' to 'OK' (confirmed macOS/Finder); the standard acknowledgement button label is unchanged."
   },
   "ui.modalDialog.close": "Fechar",
   "@ui.modalDialog.close": {

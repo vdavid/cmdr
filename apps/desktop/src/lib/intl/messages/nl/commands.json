@@ -45,7 +45,8 @@
   },
   "commands.cmdrOpenOnboarding.label": "Onboarding…",
   "@commands.cmdrOpenOnboarding.label": {
-    "sourceHash": "c4cc4aa"
+    "sourceHash": "c4cc4aa",
+    "sameAsSourceJustification": "'Onboarding' is kept verbatim as a loanword throughout the Dutch catalog (glossary: onboarding kept; matches the shipped 'Cmdr onboarding' title and onboardingwizard); the trailing ellipsis is preserved."
   },
   "commands.cmdrOpenOnboarding.description": "Open de onboardingwizard opnieuw om de instellingen van de eerste start te bekijken of te wijzigen",
   "@commands.cmdrOpenOnboarding.description": {
@@ -153,7 +154,8 @@
   },
   "commands.viewZoomIn.label": "Zoom in",
   "@commands.viewZoomIn.label": {
-    "sourceHash": "0e47f09"
+    "sourceHash": "0e47f09",
+    "sameAsSourceJustification": "'Zoom in' is native Dutch: macOS uses 'in- of uitzoomen' and the button form 'Zoom in' coincides with English (glossary: zoom in -> Zoom in). No Dutch difference."
   },
   "commands.viewZoomOut.label": "Zoom uit",
   "@commands.viewZoomOut.label": {
@@ -537,7 +539,8 @@
   },
   "commands.aboutOpenWebsite.label": "Open website",
   "@commands.aboutOpenWebsite.label": {
-    "sourceHash": "3451735"
+    "sourceHash": "3451735",
+    "sameAsSourceJustification": "'Open' is the Dutch bare-stem imperative (macOS Finder 'Open link', 'Open met', 'Open ${target}') and 'website' is a standard Dutch loanword (MS NL UI). The phrase reads as native Dutch, identical to English by coincidence."
   },
   "commands.aboutOpenUpgrade.label": "Open upgradepagina",
   "@commands.aboutOpenUpgrade.label": {

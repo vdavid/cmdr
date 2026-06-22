@@ -5,7 +5,8 @@
   },
   "licensing.about.appName": "Cmdr",
   "@licensing.about.appName": {
-    "sourceHash": "40c6a1b"
+    "sourceHash": "40c6a1b",
+    "sameAsSourceJustification": "Brand name 'Cmdr'; kept verbatim per the do-not-translate rule."
   },
   "licensing.about.tagline": "Trình quản lý tệp điều khiển bằng bàn phím",
   "@licensing.about.tagline": {
@@ -53,15 +54,18 @@
   },
   "licensing.about.linkGithub": "GitHub",
   "@licensing.about.linkGithub": {
-    "sourceHash": "f911e41"
+    "sourceHash": "f911e41",
+    "sameAsSourceJustification": "Brand name 'GitHub'; kept verbatim per the do-not-translate rule."
   },
   "licensing.about.linkDiscord": "Discord",
   "@licensing.about.linkDiscord": {
-    "sourceHash": "053bc65"
+    "sourceHash": "053bc65",
+    "sameAsSourceJustification": "Brand name 'Discord'; kept verbatim per the do-not-translate rule."
   },
   "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
   "@licensing.about.copyright": {
-    "sourceHash": "e6ab7e3"
+    "sourceHash": "e6ab7e3",
+    "sameAsSourceJustification": "Literal copyright line: copyright symbol, year range 2024-2026, and personal name 'David Veszelovszki' are language-neutral; nothing to translate."
   },
   "licensing.commercialReminder.title": "Cảm ơn bạn đã dùng Cmdr!",
   "@licensing.commercialReminder.title": {

@@ -25,7 +25,8 @@
   },
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
-    "sourceHash": "36ca789"
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Placeholder-only value '{currentText} / {maxText}': a numeric fraction with no translatable text; both numbers are preformatted."
   },
   "errorReporter.dialog.notePlaceholder": "¿Qué intentabas hacer? ¿Qué esperabas que pasara?",
   "@errorReporter.dialog.notePlaceholder": {

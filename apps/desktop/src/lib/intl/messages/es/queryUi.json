@@ -69,7 +69,8 @@
   },
   "queryUi.mode.regex.label": "Regex",
   "@queryUi.mode.regex.label": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' kept verbatim (glossary: regex -> Regex); the tight mode chip keeps the short technical term."
   },
   "queryUi.mode.regex.aria": "Modo Regex (Alt+R)",
   "@queryUi.mode.regex.aria": {
@@ -121,11 +122,13 @@
   },
   "queryUi.ai.patternLabel.glob": "Glob",
   "@queryUi.ai.patternLabel.glob": {
-    "sourceHash": "18d00f7"
+    "sourceHash": "18d00f7",
+    "sameAsSourceJustification": "'Glob' is the technical wildcard-pattern term, kept verbatim (glossary: glob -> Glob); Spanish has no common equivalent."
   },
   "queryUi.ai.patternLabel.regex": "Regex",
   "@queryUi.ai.patternLabel.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is the short technical term for regular expression, kept verbatim (glossary: regex -> Regex)."
   },
   "queryUi.ai.patternLabel.generic": "Patrón",
   "@queryUi.ai.patternLabel.generic": {
@@ -285,7 +288,8 @@
   },
   "queryUi.recent.mode.regex": "Regex",
   "@queryUi.recent.mode.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' kept verbatim (glossary: regex -> Regex), the short form of regular expression."
   },
   "queryUi.recent.mode.filename": "Nombre de archivo",
   "@queryUi.recent.mode.filename": {
@@ -361,7 +365,8 @@
   },
   "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
   "@queryUi.recent.chipTooltipHeader": {
-    "sourceHash": "54a225b"
+    "sourceHash": "54a225b",
+    "sameAsSourceJustification": "Structural value '{mode} · {age}': two already-translated placeholders joined by a middle dot; no standalone text."
   },
   "queryUi.dialog.actionsAria": "Acciones del diálogo",
   "@queryUi.dialog.actionsAria": {
@@ -413,11 +418,13 @@
   },
   "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
   "@queryUi.filters.size.summary.single": {
-    "sourceHash": "bbd5deb"
+    "sourceHash": "bbd5deb",
+    "sameAsSourceJustification": "Structural value '{prefix} {valueText} {unit}': a comparison glyph, a verbatim number, and a formatted unit; no translatable text."
   },
   "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
   "@queryUi.filters.size.summary.range": {
-    "sourceHash": "ba7eadc"
+    "sourceHash": "ba7eadc",
+    "sameAsSourceJustification": "Structural value: size numbers and already-formatted unit placeholders joined by an en dash; no translatable text."
   },
   "queryUi.filters.date.summary.after": "después de {date}",
   "@queryUi.filters.date.summary.after": {
@@ -429,7 +436,8 @@
   },
   "queryUi.filters.date.summary.range": "{after} – {before}",
   "@queryUi.filters.date.summary.range": {
-    "sourceHash": "801560e"
+    "sourceHash": "801560e",
+    "sameAsSourceJustification": "Structural value '{after} - {before}': two ISO-date placeholders joined by an en dash; no translatable text."
   },
   "queryUi.size.comparator.any": "cualquiera",
   "@queryUi.size.comparator.any": {
@@ -441,11 +449,13 @@
   },
   "queryUi.size.unit.byte": "byte",
   "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626"
+    "sourceHash": "1c31626",
+    "sameAsSourceJustification": "'byte' stays 'byte' in Spanish: macOS es uses 'byte'/'bytes' verbatim (glossary: byte/bytes -> byte/bytes, macOS/MS keep these untranslated)."
   },
   "queryUi.size.unit.bytes": "bytes",
   "@queryUi.size.unit.bytes": {
-    "sourceHash": "277089d"
+    "sourceHash": "277089d",
+    "sameAsSourceJustification": "'bytes' stays 'bytes' in Spanish: macOS es uses 'byte'/'bytes' verbatim (glossary: byte/bytes -> byte/bytes, macOS/MS keep these untranslated)."
   },
   "queryUi.size.customCell": "personalizado…",
   "@queryUi.size.customCell": {

@@ -45,11 +45,13 @@
   },
   "viewer.binaryWarning.kind.image": "image",
   "@viewer.binaryWarning.kind.image": {
-    "sourceHash": "6105d6c"
+    "sourceHash": "6105d6c",
+    "sameAsSourceJustification": "'image' is the same word in French (macOS uses 'image'); kept lowercase to read naturally inside the warning sentence."
   },
   "viewer.binaryWarning.kind.document": "document",
   "@viewer.binaryWarning.kind.document": {
-    "sourceHash": "43cc23f"
+    "sourceHash": "43cc23f",
+    "sameAsSourceJustification": "'document' is the same word in French (macOS Finder: 'Document…'); kept lowercase to read naturally inside the warning sentence."
   },
   "viewer.binaryWarning.dismiss": "Fermer",
   "@viewer.binaryWarning.dismiss": {
@@ -73,7 +75,8 @@
   },
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
-    "sourceHash": "0f27125"
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "'Regex' is the short UI form of 'expression régulière'; per the glossary, kept verbatim as the short search label."
   },
   "viewer.search.matchPosition": "{current} sur {total}{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
@@ -137,11 +140,13 @@
   },
   "viewer.kind.image": "Image",
   "@viewer.kind.image": {
-    "sourceHash": "1aa4cb0"
+    "sourceHash": "1aa4cb0",
+    "sameAsSourceJustification": "'Image' is the same word in French (macOS uses 'Image'); kept as the content-kind label."
   },
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "Standard format name ('PDF'); kept verbatim, identical in every locale."
   },
   "viewer.kind.text": "Texte",
   "@viewer.kind.text": {
@@ -153,7 +158,8 @@
   },
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
-    "sourceHash": "f922e0d"
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "Standard name ('Unicode'); kept verbatim, identical in every locale."
   },
   "viewer.toolbar.encoding.group.western": "Occidental",
   "@viewer.toolbar.encoding.group.western": {
@@ -213,7 +219,8 @@
   },
   "viewer.statusBar.badge.streaming": "streaming",
   "@viewer.statusBar.badge.streaming": {
-    "sourceHash": "b304adc"
+    "sourceHash": "b304adc",
+    "sameAsSourceJustification": "'streaming' kept verbatim: no concise French equivalent in the reference pile, per the glossary (matches the de sibling)."
   },
   "viewer.statusBar.badge.streamingTooltip": "Ceci est un gros fichier en mode streaming. L''indexation aurait pris plus de {seconds} s, nous ne l''avons donc pas faite. Les numéros de ligne sont des estimations.",
   "@viewer.statusBar.badge.streamingTooltip": {
@@ -237,7 +244,8 @@
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
-    "sourceHash": "ece2cad"
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Placeholder-only string ('{width} × {height}'); the × multiplication sign is identical in French."
   },
   "viewer.image.loading": "Chargement de l''image",
   "@viewer.image.loading": {
@@ -333,7 +341,8 @@
   },
   "viewer.saveAs.defaultName": "selection",
   "@viewer.saveAs.defaultName": {
-    "sourceHash": "6504513"
+    "sourceHash": "6504513",
+    "sameAsSourceJustification": "File-name-safe literal ('selection': lowercase, no spaces, safe as a file name per the @key note); kept as-is, not translated, per the glossary."
   },
   "viewer.saveAs.panelFailed": "Ouverture de la fenêtre d''enregistrement impossible. Réessayer ?",
   "@viewer.saveAs.panelFailed": {

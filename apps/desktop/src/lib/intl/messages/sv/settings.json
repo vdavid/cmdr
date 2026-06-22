@@ -29,7 +29,8 @@
   },
   "settings.theme.mode.opt.system": "💻 System",
   "@settings.theme.mode.opt.system": {
-    "sourceHash": "0c12227"
+    "sourceHash": "0c12227",
+    "sameAsSourceJustification": "'System' is the same word in Swedish - Apple Swedish uses 'System' standalone for the follow-system appearance (verified in pile macOS). Leading emoji is decorative. Deliberately identical."
   },
   "settings.appearance.appColor.label": "Appfärg",
   "@settings.appearance.appColor.label": {
@@ -61,7 +62,8 @@
   },
   "settings.appearance.sizeColors.opt.app": "App",
   "@settings.appearance.sizeColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the same word in Swedish (Apple uses 'App'/'app' throughout, verified in pile). Deliberately identical, consistent with dateColors.opt.app."
   },
   "settings.appearance.sizeColors.opt.rainbow": "Regnbåge",
   "@settings.appearance.sizeColors.opt.rainbow": {
@@ -81,7 +83,8 @@
   },
   "settings.appearance.dateColors.opt.app": "App",
   "@settings.appearance.dateColors.opt.app": {
-    "sourceHash": "0d04bfe"
+    "sourceHash": "0d04bfe",
+    "sameAsSourceJustification": "'App' is the same word in Swedish (Apple uses 'App'/'app' throughout, verified in pile); the catalog keeps it for the sibling sizeColors.opt.app too. Deliberately identical."
   },
   "settings.appearance.dateColors.opt.wilting": "Vissnande",
   "@settings.appearance.dateColors.opt.wilting": {
@@ -101,7 +104,8 @@
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "sourceHash": "408dd66"
+    "sourceHash": "408dd66",
+    "sameAsSourceJustification": "'ISO 8601' is an international standard name; kept verbatim in every locale."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "t.ex. 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
@@ -197,7 +201,8 @@
   },
   "settings.listing.sizeDisplay.opt.smart": "Smart",
   "@settings.listing.sizeDisplay.opt.smart": {
-    "sourceHash": "9e6ad6d"
+    "sourceHash": "9e6ad6d",
+    "sameAsSourceJustification": "'Smart' is the same word in Swedish - Apple Swedish uses the bare adjective 'Smart' ('Smart mapp', 'Smart kopiering', verified in pile macOS). Deliberately identical."
   },
   "settings.listing.sizeDisplay.opt.logical": "Innehåll",
   "@settings.listing.sizeDisplay.opt.logical": {
@@ -225,15 +230,18 @@
   },
   "settings.listing.sizeUnit.opt.kB": "kB",
   "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c"
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "'kB' is a unit symbol; kept verbatim in every locale."
   },
   "settings.listing.sizeUnit.opt.mB": "MB",
   "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f"
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "'MB' is a unit symbol; kept verbatim in every locale."
   },
   "settings.listing.sizeUnit.opt.gB": "GB",
   "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0"
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "'GB' is a unit symbol; kept verbatim in every locale."
   },
   "settings.appearance.fileSizeFormat.label": "Filstorleksformat",
   "@settings.appearance.fileSizeFormat.label": {
@@ -693,7 +701,8 @@
   },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
-    "sourceHash": "72e9a59"
+    "sourceHash": "72e9a59",
+    "sameAsSourceJustification": "port is 'port' in Swedish (glossary port entry, MS terminology, high). The networking term is identical to English."
   },
   "settings.developer.mcpPort.description": "Önskad port för MCP-servern. Lämna på 0 för att låta operativsystemet välja en tillfällig port (rekommenderas; den faktiska porten visas nedan när servern körs). Lås en specifik port om externa verktyg behöver det.",
   "@settings.developer.mcpPort.description": {
@@ -941,7 +950,8 @@
   },
   "settings.tint.orange": "Orange",
   "@settings.tint.orange": {
-    "sourceHash": "78e7771"
+    "sourceHash": "78e7771",
+    "sameAsSourceJustification": "orange is 'Orange' in Swedish; Apple uses 'Orange' standalone as a color label (verified in pile). The catalog translates only the colors that differ (red->Rod, brown->Brun); orange is genuinely shared."
   },
   "settings.tint.amber": "Bärnsten",
   "@settings.tint.amber": {
@@ -949,7 +959,8 @@
   },
   "settings.tint.lime": "Lime",
   "@settings.tint.lime": {
-    "sourceHash": "c9665c9"
+    "sourceHash": "c9665c9",
+    "sameAsSourceJustification": "lime is 'Lime' in Swedish; used as-is (pile confirms 'Lime' alongside the variant 'Limegron'). The catalog translates only the colors that differ; lime is kept like the parallel English form."
   },
   "settings.tint.green": "Grön",
   "@settings.tint.green": {
@@ -961,7 +972,8 @@
   },
   "settings.tint.cyan": "Cyan",
   "@settings.tint.cyan": {
-    "sourceHash": "e95bb22"
+    "sourceHash": "e95bb22",
+    "sameAsSourceJustification": "cyan is 'Cyan' in Swedish; Apple uses 'Cyan' standalone as a color label (verified in pile). The catalog translates only the colors that differ (red->Rod, teal->Blagron); cyan is genuinely shared."
   },
   "settings.tint.blue": "Blå",
   "@settings.tint.blue": {
@@ -969,7 +981,8 @@
   },
   "settings.tint.indigo": "Indigo",
   "@settings.tint.indigo": {
-    "sourceHash": "d81ab14"
+    "sourceHash": "d81ab14",
+    "sameAsSourceJustification": "indigo is 'Indigo' in Swedish; the color name is identical. The catalog translates only the colors that differ (purple->Lila); indigo is genuinely shared."
   },
   "settings.tint.purple": "Lila",
   "@settings.tint.purple": {
@@ -1021,7 +1034,8 @@
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
-    "sourceHash": "11fb682"
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' (artificial intelligence) is kept verbatim in Swedish; the abbreviation is identical (matches queryUi.recent.mode.ai)."
   },
   "settings.section.fileSystems": "Filsystem",
   "@settings.section.fileSystems": {
@@ -1037,7 +1051,8 @@
   },
   "settings.section.git": "Git",
   "@settings.section.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "'Git' is the version-control tool name; kept verbatim (matches fileExplorer.columns.git)."
   },
   "settings.section.viewer": "Förhandsvisning",
   "@settings.section.viewer": {
@@ -1173,7 +1188,8 @@
   },
   "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
   "@settings.appearance.appColorHintLinkMac": {
-    "sourceHash": "5c94206"
+    "sourceHash": "5c94206",
+    "sameAsSourceJustification": "Placeholder-only value: '{systemSettings} > {appearance}', two OS-localized navigation tokens joined by the '> ' arrow. No translatable text."
   },
   "settings.appearance.appColorHintLinkOther": "dina inställningar för systemets utseende",
   "@settings.appearance.appColorHintLinkOther": {
@@ -1401,7 +1417,8 @@
   },
   "settings.network.permissionPath": "{systemSettings} > {privacyAndSecurity} > {localNetwork}",
   "@settings.network.permissionPath": {
-    "sourceHash": "b87dc1e"
+    "sourceHash": "b87dc1e",
+    "sameAsSourceJustification": "Placeholder-only value: three OS-localized navigation tokens joined by '> ' arrows. No translatable text."
   },
   "settings.network.permissionWithout": "Utan det kan Cmdr fortfarande läsa och skriva filer på resurser som redan är monterade, men du kan inte upptäcka nya servrar eller använda vår snabbare direkta anslutning.",
   "@settings.network.permissionWithout": {

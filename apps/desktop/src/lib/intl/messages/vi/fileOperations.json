@@ -5,7 +5,8 @@
   },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
-    "sourceHash": "565339b"
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "macOS Vietnamese uses 'OK' verbatim for the affirmative button (AppKit vi shows 'OK', no 'Dong y'); kept as-is to match the user's Finder."
   },
   "fileOperations.delete.fromPath": "Từ: {path}",
   "@fileOperations.delete.fromPath": {
