@@ -17,6 +17,11 @@
  *  - stale AND `reviewed: true`         → ALSO flagged (the human sign-off no longer
  *    applies; a re-translation needs a fresh review). The check never edits files;
  *    it reports that the `reviewed` flag is now meaningless so a human resets it.
+ *  - stale AND `sameAsSourceJustification` set → ALSO flagged the same way: a
+ *    "deliberately identical to English" reason was vouched for the OLD English
+ *    value, so once the source changes the justification must be re-confirmed (or
+ *    the key now needs a real translation). This keeps the coverage exemption
+ *    (see `i18n-check-coverage.js`) from silently outliving the text it vouched for.
  *
  * Two strictness modes, selected by the `CMDR_I18N_STALE_STRICT` env var:
  *  - NORMAL (unset): a stale finding exits 1, which the Go wrapper maps to a
@@ -62,10 +67,13 @@ export function staleReason(key, enMessages, keyMetadata) {
   }
 
   if (stored !== sourceHash(englishValue)) {
-    const reviewed = keyMetadata && typeof keyMetadata === 'object' ? keyMetadata['reviewed'] === true : false
-    return reviewed
-      ? 'source changed since translation (the reviewed flag no longer applies; reset it and re-review)'
-      : 'source changed since translation'
+    const meta = keyMetadata && typeof keyMetadata === 'object' ? keyMetadata : {}
+    const reviewed = meta['reviewed'] === true
+    const justified = typeof meta['sameAsSourceJustification'] === 'string' && meta['sameAsSourceJustification'] !== ''
+    const notes = []
+    if (reviewed) notes.push('the reviewed flag no longer applies; reset it and re-review')
+    if (justified) notes.push('the sameAsSourceJustification no longer applies; re-confirm it or translate')
+    return notes.length > 0 ? `source changed since translation (${notes.join('; ')})` : 'source changed since translation'
   }
   return null
 }

@@ -12,6 +12,18 @@
  *    brand token, a symbol). Reported as a softer "possibly untranslated" note so
  *    a human can confirm; it never fails anything.
  *
+ * A key that legitimately stays identical (a brand name, a unit symbol, a
+ * placeholder-only string, or a word the locale genuinely shares with English) is
+ * EXEMPTED from the IDENTICAL signal by recording a non-empty
+ * `@key.sameAsSourceJustification` on it in the locale catalog — the translator's
+ * one-line reason it's deliberately identical. Present + non-empty → not a
+ * finding. The exemption only suppresses IDENTICAL, never MISSING (a justification
+ * can't excuse an absent key). See `messages/DETAILS.md` § `@key` schema and
+ * `docs/guides/i18n-translation.md` § Deliberately-identical strings. The stale
+ * check invalidates the justification once the English source changes (its
+ * `sourceHash` stops matching), so it can't silently outlive the text it vouched
+ * for.
+ *
  * Warn-only by design: coverage is a maintenance/visibility metric, not a build
  * breaker (the spec lists it in the WARN class with a `NotInCI` reason like the
  * stale check). English-only today → a clean no-op.
@@ -24,15 +36,27 @@ import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.js'
 
 /**
  * Classifies one English key against a locale's catalog: `missing`,
- * `identical`, or `null` (translated). Exposed for unit tests.
+ * `identical`, or `null` (translated, or deliberately-identical-and-justified).
+ * Exposed for unit tests.
+ *
+ * An identical value is EXEMPT (returns `null`) when the locale's `@key` metadata
+ * carries a non-empty `sameAsSourceJustification` string — the translator's reason
+ * it's correctly identical (a brand, a unit, a placeholder-only string, a shared
+ * word). The exemption applies ONLY to the identical case: a missing key is still
+ * `missing` even with a justification recorded.
  * @param {string} key the English message key
  * @param {string} englishValue the English value
  * @param {Record<string, string>} localeMessages the locale's messages
+ * @param {Record<string, Record<string, unknown>>} [localeMetadata] the locale's `@key` metadata
  * @returns {'missing' | 'identical' | null}
  */
-export function coverageStatus(key, englishValue, localeMessages) {
+export function coverageStatus(key, englishValue, localeMessages, localeMetadata = {}) {
   if (!(key in localeMessages)) return 'missing'
-  if (localeMessages[key] === englishValue) return 'identical'
+  if (localeMessages[key] === englishValue) {
+    const justification = localeMetadata[key]?.['sameAsSourceJustification']
+    if (typeof justification === 'string' && justification !== '') return null
+    return 'identical'
+  }
   return null
 }
 
@@ -52,7 +76,7 @@ export function runCoverageCheck(opts = {}) {
       `${String(count)} key(s) not translated (missing → English fallback, or identical to English):`,
     inspectLocale: ({ base, locale_catalog: localeCatalog, findings }) => {
       for (const [key, englishValue] of Object.entries(base.messages)) {
-        const status = coverageStatus(key, englishValue, localeCatalog.messages)
+        const status = coverageStatus(key, englishValue, localeCatalog.messages, localeCatalog.metadata)
         if (status === 'missing') findings.add(key, 'missing; renders the English fallback')
         else if (status === 'identical') findings.add(key, 'identical to English; possibly untranslated')
       }

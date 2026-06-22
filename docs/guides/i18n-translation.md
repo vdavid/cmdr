@@ -136,6 +136,45 @@ is mostly commands and status, so this is almost free.
 awkward version: flag it as a "Decisions to confirm with David" item instead. The generic (usually masculine) form is
 the documented last resort, used only when natural restructuring genuinely isn't available.
 
+## Deliberately-identical strings (the `sameAsSourceJustification` field)
+
+Some keys are CORRECTLY identical to English in your language and must never be force-translated: a brand name
+(`Dropbox`, `OneDrive`), a unit symbol (`GB`, `kB`), a standard name (`ISO 8601`, `PDF`, `Unicode`), a placeholder-only
+string (`{width} × {height}`, `{systemSettings} > {appearance}`), or a real word the language genuinely shares with
+English (German `Server`, French `Type`, Swedish `Smart`). Translating these would be a regression, not an improvement.
+
+The `desktop-i18n-coverage` check flags every identical-to-English value as "possibly untranslated". To keep an honest,
+clean coverage signal — every warning is a real gap, every deliberate identical is silenced WITH a recorded reason —
+record a `@key.sameAsSourceJustification` on that key in YOUR locale catalog: a short, non-empty string saying why it's
+deliberately identical, sourced like any other term decision. Example, in `messages/de/errors.json`:
+
+```jsonc
+{
+  "errors.provider.dropbox.displayName": "Dropbox",
+  "@errors.provider.dropbox.displayName": {
+    "sourceHash": "1a2b3c4",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
+  }
+}
+```
+
+Rules:
+
+- It is a per-LOCALE judgment, so it lives in the locale catalog, never in `en`. German keeps `Server`; Spanish
+  translates it to `Servidor` and gets a real value, NOT a justification. Decide per language, evidence-first.
+- Repeat it per locale even for universal brands. Each translator vouches for each identical key in their own language;
+  the repetition (the 30 `errors.provider.*` names justified in all 9 locales) is accepted, not deduplicated.
+- It only silences the IDENTICAL signal, never MISSING. A key absent from the locale still reports.
+- It is tied to the source like `reviewed`: if the English value later changes, the stale check flags the key so you
+  re-confirm the justification (or translate it). Don't write a justification that would be false if English changed
+  trivially.
+- The bar is the SAME as a translation: only record a justification you can defend from the reference pile / glossary.
+  "I couldn't be bothered" is not a justification. If a key actually needs translating, translate it — the field is for
+  genuinely-identical strings only, and the goal is a clean coverage warn output WITHOUT lowering the quality bar.
+
+Mechanism + schema: [`/apps/desktop/src/lib/intl/messages/DETAILS.md`](../../apps/desktop/src/lib/intl/messages/DETAILS.md)
+§ `@key` metadata schema.
+
 ## Add a new language
 
 1. **Pick the BCP-47 tag.** A language base (`xx`) for the universal set, or a region variant (`xx-YY`) when a region
@@ -240,6 +279,15 @@ REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine _ignored/i18n/
 DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, and the {system_settings}-style
 tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in apps/desktop/scripts/i18n-catalog-lib.js, and the
 desktop-i18n-dont-translate check enforces it.
+
+DELIBERATELY-IDENTICAL: When a value is CORRECTLY identical to English in your language (a brand, a unit symbol, a
+placeholder-only string, or a word your language genuinely shares with English), DON'T force a different value — instead
+record a @key.sameAsSourceJustification in YOUR locale catalog: a short, sourced, non-empty reason it's deliberately
+identical. This silences the desktop-i18n-coverage "possibly untranslated" warning for that key while keeping it honest.
+The bar is the same as a translation: only justify what you can defend from the reference pile / glossary. If a key
+actually needs translating, translate it. It's per-locale (German keeps "Server"; Spanish writes "Servidor"), repeated
+per locale even for universal brands, and silences only the IDENTICAL signal (never a MISSING key). Full rules:
+docs/guides/i18n-translation.md § Deliberately-identical strings.
 
 TERM CHOICE (three principles):
 1. APPLE FEATURE NAMES — localize what Apple localizes. Some Apple feature names are translated per-OS (Quick Look ->

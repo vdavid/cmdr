@@ -32,6 +32,19 @@ describe('coverageStatus: pure classifier', () => {
   it('identical when the locale value equals English byte-for-byte', () => {
     expect(coverageStatus('a.b', 'Cancel', { 'a.b': 'Cancel' })).toBe('identical')
   })
+  it('null (exempt) when an identical value carries a non-empty sameAsSourceJustification', () => {
+    expect(
+      coverageStatus('a.b', 'Dropbox', { 'a.b': 'Dropbox' }, { 'a.b': { sameAsSourceJustification: 'brand name' } }),
+    ).toBeNull()
+  })
+  it('still identical when the justification is present but empty', () => {
+    expect(
+      coverageStatus('a.b', 'Cancel', { 'a.b': 'Cancel' }, { 'a.b': { sameAsSourceJustification: '' } }),
+    ).toBe('identical')
+  })
+  it('a justification never excuses a MISSING key', () => {
+    expect(coverageStatus('a.b', 'Cancel', {}, { 'a.b': { sameAsSourceJustification: 'brand name' } })).toBe('missing')
+  })
 })
 
 describe('runCoverageCheck against the committed fixture', () => {
@@ -81,6 +94,16 @@ describe('runCoverageCheck negative cases (temp catalog copies)', () => {
     expect(code).toBe(EXIT_ISSUES)
     expect(text).toMatch(/fixture\.plainLabel → identical to English; possibly untranslated/)
     expect(text.match(/^ {2}- /gm)?.length).toBe(1)
+  })
+
+  it('does NOT flag an identical value that carries a sameAsSourceJustification', () => {
+    const xa = read()
+    xa['fixture.plainLabel'] = 'Cancel' // verbatim English, but deliberately so
+    xa['@fixture.plainLabel'] = { ...xa['@fixture.plainLabel'], sameAsSourceJustification: 'brand name; do not translate' }
+    writeXa(xa)
+    const { code, text } = run()
+    expect(code).toBe(EXIT_CLEAN)
+    expect(text).toMatch(/en-XA: clean\./)
   })
 })
 
