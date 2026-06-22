@@ -1072,6 +1072,48 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// Whether a running transfer reading from this volume should AUTO-YIELD its
+    /// scarce backend resource to foreground device work mid-copy (release the
+    /// stream, wait for foreground to drain, reopen at the kept offset), without
+    /// the user pausing.
+    ///
+    /// `true` only for MTP, where an in-flight download holds the one-per-device
+    /// PTP session: a long copy would otherwise lock the phone (no listings, no
+    /// navigation) until the file finishes. With this on, the copy's per-chunk
+    /// checkpoint behaves like the index scan's `background_yield_point` — it
+    /// briefly releases the session so a foreground listing/nav gets the device,
+    /// then resumes. Requires the same primitives as release-on-pause
+    /// ([`open_read_stream_at_offset`](Self::open_read_stream_at_offset) +
+    /// [`VolumeReadStream::cancel_and_release`]).
+    ///
+    /// `false` (default): the auto-yield arm in `CheckpointStream` is a no-op, so
+    /// local FS, SMB, and in-memory transfers behave exactly as before.
+    fn supports_foreground_yield(&self) -> bool {
+        false
+    }
+
+    /// Whether a foreground op is currently pending on this volume's device.
+    ///
+    /// Polled once per chunk by `CheckpointStream` (cheap — an atomic load behind
+    /// the device's priority gate). `MtpVolume` delegates to the connection
+    /// manager's per-device gate; every other backend uses the default `false`,
+    /// so they never trigger an auto-yield. See [`supports_foreground_yield`](Self::supports_foreground_yield).
+    fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { false })
+    }
+
+    /// Park until this volume's device is clear of foreground work.
+    ///
+    /// Called by `CheckpointStream` after it releases the source stream for an
+    /// auto-yield: it waits here so the foreground listing/nav owns the device,
+    /// then the checkpoint reopens at the kept offset and resumes. `MtpVolume`
+    /// delegates to the per-device gate's `background_yield_point` (returns the
+    /// instant the last foreground guard drops); every other backend uses the
+    /// default no-op. See [`supports_foreground_yield`](Self::supports_foreground_yield).
+    fn wait_until_foreground_idle<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async {})
+    }
+
     /// Writes data from a stream to the given path.
     ///
     /// `on_progress(bytes_written, total_size)` is called after each chunk is

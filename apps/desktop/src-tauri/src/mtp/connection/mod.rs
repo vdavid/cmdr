@@ -580,6 +580,21 @@ impl MtpConnectionManager {
         }
     }
 
+    /// `true` when any foreground op is currently pending on this device.
+    ///
+    /// The cheap "should I yield?" probe a running transfer's per-chunk
+    /// checkpoint polls (see `CheckpointStream`): when it returns `true` the
+    /// transfer releases the PTP session and `background_yield_point`s, exactly
+    /// like the scan does between units. `false` when the device isn't connected
+    /// (no gate ⇒ nothing to yield to), so a transfer over a vanished device
+    /// never wedges on a missing gate.
+    pub(crate) async fn foreground_pending(&self, device_id: &str) -> bool {
+        match self.priority_gate(device_id).await {
+            Some(gate) => gate.foreground_pending(),
+            None => false,
+        }
+    }
+
     /// Gets information about all connected devices.
     pub async fn get_all_connected_devices(&self) -> Vec<ConnectedDeviceInfo> {
         let devices = self.devices.lock().await;

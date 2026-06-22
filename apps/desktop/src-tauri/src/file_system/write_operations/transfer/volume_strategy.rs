@@ -13,6 +13,7 @@ use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use std::future::Future;
 use std::pin::Pin;
@@ -47,7 +48,21 @@ use crate::ignore_poison::IgnorePoison;
 ///    never a torn target. Resume or cancel unblocks it
 ///    (`wait_while_paused_async` returns the instant cancel is observed;
 ///    cancellation wins over pause).
-/// 2. **Yields cooperatively** (`tokio::task::yield_now`) so a long transfer
+/// 2. **Auto-yields the device to foreground work** (release-on-pause backends
+///    that opt in via `Volume::supports_foreground_yield()`, i.e. MTP). When a
+///    foreground op (a listing / nav on the phone) is pending on the source
+///    device, the checkpoint behaves like the index scan's
+///    `background_yield_point`: it RELEASES the in-flight download (freeing the
+///    PTP session so the listing's device ops get the lock), parks until
+///    foreground drains plus a short debounce window, then reopens at
+///    `bytes_yielded` and resumes — all WITHOUT a user pause, and the op stays
+///    `Running` (this is a transient device yield, not user intent). A
+///    minimum-progress floor (`min_progress_floor`) gates the arm so continuous
+///    foreground nav can't starve the copy to zero throughput: after a resume the
+///    transfer must move at least `min_progress_floor` bytes before honoring the
+///    next yield. The debounce (`foreground_debounce`) collapses a burst of
+///    listings into ONE release/reopen instead of one per chunk.
+/// 3. **Yields cooperatively** (`tokio::task::yield_now`) so a long transfer
 ///    doesn't starve foreground tasks (listings, navigation, progress emits) on
 ///    the runtime.
 ///
@@ -66,17 +81,67 @@ use crate::ignore_poison::IgnorePoison;
 /// to that same `on_progress` check, so the cancel/cleanup contract is identical
 /// to the park-in-place path. The wrapper never drops, double-writes, or reorders
 /// bytes — it passes each inner chunk through untouched.
+/// Debounce window for the foreground auto-yield: after foreground work drains,
+/// the checkpoint stays parked until the device has been quiet for this long
+/// before reopening, so a BURST of listings (e.g. arrow-keying down a folder
+/// tree) is served as ONE release/reopen instead of one per chunk. Each reopen
+/// pays a real `GetPartialObject64` re-setup, so collapsing the burst matters.
+/// ~400 ms balances nav responsiveness (the copy is suspended the whole window)
+/// against reopen thrash; tuned on real hardware in M2.
+const FOREGROUND_YIELD_DEBOUNCE: Duration = Duration::from_millis(400);
+
+/// Minimum-progress floor for the foreground auto-yield: after a resume, the
+/// transfer must move at least this many bytes before it will honor the next
+/// foreground yield. Without it, a continuous stream of foreground ops would
+/// release the session every single chunk and starve the copy to zero
+/// throughput. 4 MiB ≈ a handful of `GetPartialObject64` chunks — small enough
+/// that nav still feels responsive (the copy yields again within a few chunks),
+/// large enough that the copy always makes visible forward progress between
+/// yields. Tuned on real hardware in M2.
+const MIN_PROGRESS_FLOOR_BYTES: u64 = 4 * 1024 * 1024;
+
+/// The (debounce, min-progress-floor) pair a freshly-built `CheckpointStream`
+/// uses. Production always returns the named constants. Tests override both
+/// (debounce ≈ 0, a tiny floor) via [`set_auto_yield_tuning_for_test`] so the
+/// auto-yield arm is deterministic without real device latency or megabytes of
+/// synthetic data. The stream construction lives behind `copy_single_path`, so a
+/// thread-local override is how a test reaches it without widening the public
+/// copy API.
+fn auto_yield_tuning() -> (Duration, u64) {
+    #[cfg(test)]
+    {
+        if let Some(t) = tests::auto_yield_tuning_override() {
+            return t;
+        }
+    }
+    (FOREGROUND_YIELD_DEBOUNCE, MIN_PROGRESS_FLOOR_BYTES)
+}
+
 struct CheckpointStream {
-    /// The open source stream, or `None` while released during a pause (only the
-    /// release-on-pause path ever sets this to `None`).
+    /// The open source stream, or `None` while released during a pause OR a
+    /// foreground auto-yield (both the release-on-pause and auto-yield paths set
+    /// this to `None`; reopened at `bytes_yielded` by `ensure_open`).
     inner: Option<Box<dyn VolumeReadStream>>,
     state: Arc<WriteOperationState>,
     /// Bytes this wrapper has yielded so far == the destination temp's length ==
-    /// the offset to reopen at after a release-on-pause.
+    /// the offset to reopen at after a release.
     bytes_yielded: u64,
     /// Reopen context, `Some` only when the source backend releases on pause
     /// (MTP). `None` ⇒ park-in-place (the original behavior).
     reopen: Option<CheckpointReopen>,
+    /// `bytes_yielded` at the last resume (initial open = 0, then each reopen).
+    /// The min-progress floor is measured from here: the auto-yield arm only
+    /// fires once `bytes_yielded - last_resume_offset >= min_progress_floor`, so
+    /// continuous foreground nav can't starve the copy to zero throughput.
+    last_resume_offset: u64,
+    /// Quiet window the auto-yield waits for before reopening. Field (not a bare
+    /// constant) so tests can set it ≈ 0 for determinism; defaults to
+    /// [`FOREGROUND_YIELD_DEBOUNCE`].
+    foreground_debounce: Duration,
+    /// Bytes the transfer must advance after a resume before honoring the next
+    /// foreground yield. Field (not a bare constant) so tests can set a small
+    /// floor for determinism; defaults to [`MIN_PROGRESS_FLOOR_BYTES`].
+    min_progress_floor: u64,
 }
 
 /// What `CheckpointStream` needs to close the source on pause and reopen it at
@@ -123,7 +188,8 @@ impl VolumeReadStream for CheckpointStream {
 }
 
 impl CheckpointStream {
-    /// Run the between-chunk pause checkpoint, then yield cooperatively.
+    /// Run the between-chunk pause checkpoint and the foreground auto-yield, then
+    /// yield cooperatively.
     async fn checkpoint(&mut self) {
         if self.reopen.is_some() {
             // Release-on-pause path. Only release if we're actually paused AND
@@ -144,8 +210,91 @@ impl CheckpointStream {
         }
         // Park between chunks while paused (returns immediately on cancel).
         self.state.pause_gate.wait_while_paused_async(&self.state.intent).await;
+
+        // Foreground auto-yield: when a foreground op (listing / nav on the
+        // phone) is pending on the source device, briefly release the session so
+        // it gets the device, then reopen and resume — WITHOUT a user pause, op
+        // stays Running. This is a transfer becoming a yielding background user of
+        // the device gate, exactly like the index scan, except a transfer holds an
+        // open download transaction, so "yield" means release + reopen.
+        self.auto_yield_to_foreground().await;
+
         // Yield so foreground tasks get scheduled during a long copy.
         tokio::task::yield_now().await;
+    }
+
+    /// The foreground auto-yield arm (step 2 in the wrapper's doc). No-op unless
+    /// the source opts in (`supports_foreground_yield()`, MTP only) and a
+    /// foreground op is actually pending on its device.
+    async fn auto_yield_to_foreground(&mut self) {
+        // Clone the source handle + cache the total up front so the `self.reopen`
+        // borrow ends before the later `self.inner.take()` (mutable) borrow.
+        let (source_volume, total_size) = match self.reopen.as_ref() {
+            Some(r) => (Arc::clone(&r.source_volume), r.total_size),
+            None => return, // park-in-place backends never auto-yield
+        };
+        if !source_volume.supports_foreground_yield() {
+            return;
+        }
+        if super::super::state::is_cancelled(&self.state.intent) {
+            return; // cancel owns teardown; never start a yield while cancelled
+        }
+        // At EOF there's nothing left to hold the session for; let the copy finish.
+        if self.bytes_yielded >= total_size {
+            return;
+        }
+        // Min-progress floor: after a resume, transfer at least `min_progress_floor`
+        // bytes before honoring the next yield, so continuous foreground nav can't
+        // starve the copy to zero throughput.
+        if self.bytes_yielded.saturating_sub(self.last_resume_offset) < self.min_progress_floor {
+            return;
+        }
+        // Cheap probe (an atomic load behind the device gate); skip the release
+        // entirely when nothing foreground is waiting.
+        if !source_volume.foreground_pending().await {
+            return;
+        }
+
+        // Release the in-flight stream NOW so the foreground listing's device ops
+        // get the PTP session. `ensure_open` reopens at `bytes_yielded` after we
+        // return — byte-exact, same as the release-on-pause path.
+        if let Some(mut stream) = self.inner.take() {
+            stream.cancel_and_release().await;
+            // `stream` (and its session) is dropped here.
+        }
+
+        // Debounce: wait for foreground to drain, then a quiet window; if a new
+        // foreground op arrives during the window, re-park. This collapses a
+        // BURST of listings into ONE suspension instead of one release/reopen per
+        // chunk. The whole loop is cancel-aware (a cancel breaks out promptly and
+        // lets `ensure_open` + the backend's `on_progress` own cleanup).
+        loop {
+            if super::super::state::is_cancelled(&self.state.intent) {
+                break;
+            }
+            // Park until the device is clear of foreground work, but RACE it
+            // against cancellation: `wait_until_foreground_idle` only returns once
+            // foreground drains, and a cancel doesn't clear the foreground signal,
+            // so without this race a cancel-while-yielding would hang until the
+            // (unrelated) foreground op happens to finish.
+            tokio::select! {
+                () = source_volume.wait_until_foreground_idle() => {}
+                () = poll_until_cancelled(&self.state.intent) => break,
+            }
+            if super::super::state::is_cancelled(&self.state.intent) {
+                break;
+            }
+            // Stay parked for the quiet window. If foreground becomes pending
+            // again before it elapses (a burst), loop and re-drain.
+            if sleep_cancel_aware(&self.state.intent, self.foreground_debounce).await {
+                break; // cancelled during the wait
+            }
+            if !source_volume.foreground_pending().await {
+                break; // quiet for the full window ⇒ resume
+            }
+        }
+        // `ensure_open` reopens at `bytes_yielded` next and resets the floor
+        // baseline (`last_resume_offset`), so the min-progress floor restarts.
     }
 
     /// Ensure `self.inner` is open, reopening at the kept offset if it was
@@ -161,8 +310,53 @@ impl CheckpointStream {
                 .open_read_stream_at_offset(&reopen.source_path, self.bytes_yielded)
                 .await?;
             self.inner = Some(stream);
+            // Reopening (after a pause-resume or a foreground auto-yield) restarts
+            // the min-progress floor from the offset we resumed at, so the next
+            // auto-yield can only fire after another `min_progress_floor` bytes.
+            self.last_resume_offset = self.bytes_yielded;
         }
         Ok(self.inner.as_mut().expect("just ensured Some"))
+    }
+}
+
+/// Sleep for `dur`, returning early if the operation is cancelled. Returns
+/// `true` if it bailed on a cancel, `false` if the full window elapsed.
+///
+/// Cancel-awareness matters: a cancel during the auto-yield debounce wait must
+/// not be slept through. We slice the sleep and re-check `is_cancelled` between
+/// slices, so a cancel is observed within at most one slice. (A zero/near-zero
+/// debounce — what tests inject — returns at the first check, before any sleep.)
+///
+/// Free function (not a method) so it borrows only the cancel atomic, not
+/// `&CheckpointStream`: a `&self` held across an `.await` would force the
+/// wrapper's `next_chunk` future to require `CheckpointStream: Sync`, which it
+/// isn't (it holds a non-`Sync` `dyn VolumeReadStream`).
+async fn sleep_cancel_aware(intent: &std::sync::atomic::AtomicU8, dur: Duration) -> bool {
+    const SLICE: Duration = Duration::from_millis(20);
+    let mut remaining = dur;
+    loop {
+        if super::super::state::is_cancelled(intent) {
+            return true;
+        }
+        if remaining.is_zero() {
+            return false;
+        }
+        let step = remaining.min(SLICE);
+        tokio::time::sleep(step).await;
+        remaining = remaining.saturating_sub(step);
+    }
+}
+
+/// Resolves once the operation is cancelled; otherwise never. Used to RACE the
+/// auto-yield's `wait_until_foreground_idle` against a cancel via `select!`: the
+/// device gate only releases when foreground drains, and a cancel doesn't clear
+/// the foreground signal, so a cancel-while-parked needs a separate waker. We
+/// poll the intent (a cheap relaxed atomic load) on a short tick rather than
+/// reach into the gate's internals; the latency is bounded by the tick.
+async fn poll_until_cancelled(intent: &std::sync::atomic::AtomicU8) {
+    const TICK: Duration = Duration::from_millis(20);
+    while !super::super::state::is_cancelled(intent) {
+        tokio::time::sleep(TICK).await;
     }
 }
 
@@ -363,11 +557,15 @@ async fn stream_pipe_file(
             source_path: source_path.to_path_buf(),
             total_size: size,
         });
+        let (foreground_debounce, min_progress_floor) = auto_yield_tuning();
         let stream: Box<dyn VolumeReadStream> = Box::new(CheckpointStream {
             inner: Some(stream),
             state: Arc::clone(state),
             bytes_yielded: 0,
             reopen,
+            last_resume_offset: 0,
+            foreground_debounce,
+            min_progress_floor,
         });
         match dest_volume
             .write_from_stream(dest_path, size, stream, on_file_progress)

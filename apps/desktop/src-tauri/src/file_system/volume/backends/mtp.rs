@@ -857,6 +857,22 @@ impl Volume for MtpVolume {
         true
     }
 
+    fn supports_foreground_yield(&self) -> bool {
+        // A running MTP copy holds the PTP session across the whole download, so
+        // it must yield it to a foreground listing/nav mid-copy — same machinery
+        // as release-on-pause, triggered by `foreground_pending` instead of a
+        // user pause. See `CheckpointStream`'s auto-yield arm.
+        true
+    }
+
+    fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move { connection_manager().foreground_pending(&self.device_id).await })
+    }
+
+    fn wait_until_foreground_idle<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move { connection_manager().background_yield_point(&self.device_id).await })
+    }
+
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,

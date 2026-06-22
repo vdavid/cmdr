@@ -71,10 +71,14 @@ impl DevicePriorityGate {
         }
     }
 
-    /// `true` when at least one foreground op is currently pending. The same
-    /// predicate `background_yield_point` checks at a unit boundary, exposed for
-    /// assertions; the production yield path reads the counter directly.
-    #[cfg(test)]
+    /// `true` when at least one foreground op is currently pending.
+    ///
+    /// Two production consumers read this same predicate at a yield boundary:
+    /// the index scan (via `background_yield_point`, which reads the counter
+    /// inline) and a running transfer's per-chunk checkpoint (via the manager's
+    /// `foreground_pending(device_id)`), which uses it to decide whether to
+    /// release the PTP session and yield mid-copy. Cheap (an atomic load), so
+    /// it's safe to poll once per chunk.
     pub(super) fn foreground_pending(&self) -> bool {
         self.inner.foreground_pending.load(Ordering::SeqCst) > 0
     }
