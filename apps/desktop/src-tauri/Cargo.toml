@@ -43,7 +43,7 @@ tauri-plugin-notification = "2.3.3"
 # macOS, the plugin uses Carbon's `RegisterEventHotKey` so it needs no extra TCC grant
 # (Accessibility/Input Monitoring not required). Pinned at 2.3.1 (published 2025-10-27,
 # ~7 months old; the 2.3.2 release from 2026-05-28 is still within the 14-day age policy).
-tauri-plugin-global-shortcut = "=2.3.1"
+tauri-plugin-global-shortcut = "=2.3.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 notify = "8"
@@ -100,12 +100,12 @@ arc-swap = "1.9.1"
 walkdir = "2"
 # Drive indexing: parallel directory walker, SQLite store, and macOS FSEvents watcher
 jwalk = "0.8"
-rusqlite = { version = "0.39", features = ["bundled", "collation", "fallible_uint"] }
+rusqlite = { version = "0.40", features = ["bundled", "collation", "fallible_uint"] }
 # For chunked copy metadata preservation (network filesystems)
 xattr = "1"
 filetime = "0.2"
-exacl = "0.12"
-sysinfo = { version = "0.38.4", default-features = false, features = ["system"] }
+exacl = "0.13"
+sysinfo = { version = "0.39.0", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # Playwright E2E testing plugin: socket bridge for direct webview injection (optional, feature-gated).
 # Pinned to the `feat/per-window-native-screenshot` branch of the vdavid fork at
@@ -129,7 +129,7 @@ rand = "0.10"
 # loaded machine; one fixture chain used to spawn ~31 of them and time
 # out the 8 s nextest cap under check.sh contention). Pure API addition,
 # no extra runtime cost on the prod read paths.
-gix = { version = "0.81", features = ["tree-editor"] }
+gix = { version = "0.84", features = ["tree-editor"] }
 # Multi-provider LLM client. Normalizes OpenAI / OpenAI Responses / Anthropic / Gemini /
 # xAI / Groq / DeepSeek / Ollama / OpenRouter / etc. Auto-routes `gpt-5*` / `*-codex` /
 # `*-pro` to the Responses API; uses native protocols for Anthropic + Gemini. Replaces
@@ -143,14 +143,14 @@ gix = { version = "0.81", features = ["tree-editor"] }
 # only routed `*-pro` and `*-codex`. Stable 0.6.0 isn't out yet; bumping to a future
 # `0.6.0-beta.20` should be a no-op for us, but pin exact to avoid surprise breakage on
 # `cargo update`. Solo maintainer; MIT/Apache-2.0; ~25k LOC if we ever need to fork.
-genai = "=0.6.0-beta.19"
+genai = "=0.6.5"
 # Type-safe IPC: typed Rust↔TS bindings for tauri commands and events.
 # Generated `bindings.ts` lands in `apps/desktop/src/lib/ipc/`; the frontend
 # imports `commands.commandName(args)` instead of `invoke('command_name', ...)`.
 # Pinned at 2.0.0-rc.24 (published 2026-03-30, ~5 weeks old at landing); the
 # v1 line is for Tauri 1, v2 RC line is the active branch for Tauri 2.
-tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
-specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
+tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
+specta = { version = "=2.0.0-rc.25", features = ["derive", "serde_json"] }
 # Fuzzy matcher for the in-directory "type to jump" feature. Helix's matcher, also used
 # by Zellij and several TUI projects; fast (microseconds per match), smart-case, good
 # scoring. Pinned at 0.3.1 (published 2024-02-20, well over a month old). MPL-2.0;
@@ -188,7 +188,7 @@ mtp-rs = "0.20.0"
 nusb = "0.2.3"
 bytes = "1"
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
-mdns-sd = { version = "0.19", features = ["logging"] }
+mdns-sd = { version = "0.20", features = ["logging"] }
 # SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md
@@ -248,14 +248,14 @@ blake3 = "1.8.3"
 # Used only by the `#[ignore]`'d `ipc::tests::export_bindings_test`, invoked
 # via `pnpm bindings:regen` to write `apps/desktop/src/lib/ipc/bindings.ts`.
 # Not needed by release builds.
-specta-typescript = "=0.0.11"
+specta-typescript = "=0.0.12"
 criterion = { version = "0.8.1", features = ["html_reports"] }
 # Dev-only env-driven logger. Tests don't use `tauri-plugin-log` (it requires
 # a Tauri runtime), so this gives us `RUST_LOG`-controlled logs for wire
 # traces in integration benches.
 env_logger = "0.11.10"
 # For test-only cryptographic key generation (compatible with ed25519-dalek's rand_core 0.6)
-rand_core = { version = "0.6", features = ["getrandom"] }
+rand_core = { version = "0.10", features = ["getrandom"] }
 tempfile = "3"
 # Property-based testing. Used for algorithmic functions where the input space
 # is too large for example tests to cover meaningfully (parser, glob→regex,
