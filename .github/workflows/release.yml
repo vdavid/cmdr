@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Use a persistent cargo target dir
         # The biggest release-time cost is recompiling the ~1000-crate Tauri tree from scratch,
@@ -44,7 +44,7 @@ jobs:
         run: echo "CARGO_TARGET_DIR=$HOME/.cache/cmdr-release-target" >> "$GITHUB_ENV"
 
       - name: Install mise
-        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4
         with:
           # Self-hosted runner: mise tools persist locally in ~/.local/share/mise across runs,
           # so `mise install` is already a no-op. The action's default GitHub-Actions cache
@@ -123,7 +123,7 @@ jobs:
           done < <(mount | awk -F' on ' '/\/Volumes\/Cmdr/ { sub(/ \(.*$/, "", $2); print $2 }')
 
       - name: Build, sign, and notarize
-        uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -170,7 +170,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Download signatures from release
         env:
