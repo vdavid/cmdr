@@ -42,7 +42,7 @@
     "apps/desktop/src-tauri/src/indexing/stress_tests_concurrency.rs": 994,
     "apps/desktop/src-tauri/src/indexing/verifier.rs": 873,
     "apps/desktop/src-tauri/src/indexing/writer/entries.rs": 2568,
-    "apps/desktop/src-tauri/src/indexing/writer/mod.rs": 1430,
+    "apps/desktop/src-tauri/src/indexing/writer/mod.rs": 1059,
     "apps/desktop/src-tauri/src/ipc.rs": 801,
     "apps/desktop/src-tauri/src/lib.rs": 865,
     "apps/desktop/src-tauri/src/mcp/server.rs": 1008,
