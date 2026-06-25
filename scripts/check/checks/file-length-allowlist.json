@@ -41,7 +41,6 @@
     "apps/desktop/src-tauri/src/indexing/reconciler.rs": 2139,
     "apps/desktop/src-tauri/src/indexing/scanner.rs": 1272,
     "apps/desktop/src-tauri/src/indexing/state.rs": 1096,
-    "apps/desktop/src-tauri/src/indexing/store.rs": 2352,
     "apps/desktop/src-tauri/src/indexing/stress_tests_concurrency.rs": 994,
     "apps/desktop/src-tauri/src/indexing/verifier.rs": 873,
     "apps/desktop/src-tauri/src/indexing/writer/entries.rs": 2568,
