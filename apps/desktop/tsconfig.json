@@ -6,6 +6,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    // Node 25 runs the `scripts/*.ts` dev/build scripts directly via native type
+    // stripping, which requires relative imports to carry the real `.ts` extension.
+    // `noEmit` (from the SvelteKit base) makes this safe.
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,

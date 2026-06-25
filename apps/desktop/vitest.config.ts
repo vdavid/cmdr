@@ -18,7 +18,7 @@ export default defineConfig({
   test: {
     include: [
       'src/**/*.test.ts',
-      'scripts/**/*.test.js',
+      'scripts/**/*.test.{js,ts}',
       'eslint-plugins/**/*.test.js',
       'test/e2e-shared/**/*.test.ts',
     ],

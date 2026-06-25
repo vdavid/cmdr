@@ -279,7 +279,7 @@ async function main() {
     run(
       'node',
       [
-        'scripts/tauri-wrapper.js',
+        'scripts/tauri-wrapper.ts',
         'build',
         '--no-bundle',
         '--target',

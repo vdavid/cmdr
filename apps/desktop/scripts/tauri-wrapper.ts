@@ -6,7 +6,7 @@
 //   - Parse --worktree <slug> (or --worktree=<slug>) BEFORE the `--` separator.
 //   - Resolve CMDR_INSTANCE_ID (existing env wins, then --worktree-derived, then "dev",
 //     then unset for prod). Sanitization (lowercase ASCII, max 32 chars, etc.) lives in
-//     instance-id.js so it's unit-testable.
+//     instance-id.ts so it's unit-testable.
 //   - Compose CMDR_DATA_DIR to mirror the Tauri-side app_data_dir() for the same
 //     identifier (so both routes agree without round-tripping through Tauri's API).
 //   - Write a fresh tauri.instance.json under $TMPDIR/cmdr-tauri-instance-<rand>/ and pass
@@ -30,7 +30,7 @@ import {
   pickEphemeralPort,
   writePortFile,
   removePortFile,
-} from './instance-id.js'
+} from './instance-id.ts'
 
 const TAURI_MCP_PORT_FILE = 'tauri-mcp.port'
 
@@ -66,8 +66,7 @@ const forwardedArgs = forwardedArgs0.filter((a) => a !== '--allow-main' && a !==
 // Returns false when git is absent / not a repo, so a non-git context never blocks.
 function isMainWorkingTree() {
   try {
-    /** @param {string} p */
-    const abs = (p) => (p.startsWith('/') ? p : join(process.cwd(), p))
+    const abs = (p: string) => (p.startsWith('/') ? p : join(process.cwd(), p))
     const gitDir = execFileSync('git', ['rev-parse', '--git-dir'], { encoding: 'utf8' }).trim()
     const commonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], { encoding: 'utf8' }).trim()
     return abs(gitDir) === abs(commonDir)
@@ -129,11 +128,9 @@ if (isDev && env.CMDR_E2E_MODE !== '1' && !env.CMDR_WORKTREE_LABEL) {
   if (label) env.CMDR_WORKTREE_LABEL = label
 }
 
-/** @type {string | null} */
-let instanceTmpDir = null
+let instanceTmpDir: string | null = null
 /** Path to the per-instance data dir we wrote the tauri-mcp port file into. */
-/** @type {string | null} */
-let tauriMcpPortFileDir = null
+let tauriMcpPortFileDir: string | null = null
 
 try {
   const instanceId = resolveInstanceId({
@@ -178,8 +175,7 @@ try {
     // into a loud `EADDRINUSE` instead of a silent migration to a different port. See
     // docs/specs/instance-isolation-plan.md § "Wrapper-allocated ephemeral ports: race
     // and mitigation".
-    /** @type {number|undefined} */
-    let vitePort
+    let vitePort: number | undefined
     if (isDev) {
       if (env.CMDR_VITE_PORT) {
         vitePort = Number(env.CMDR_VITE_PORT)

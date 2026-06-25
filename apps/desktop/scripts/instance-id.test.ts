@@ -15,7 +15,7 @@ import {
   pickEphemeralPort,
   writePortFile,
   removePortFile,
-} from './instance-id.js'
+} from './instance-id.ts'
 
 describe('sanitizeWorktreeSlug', () => {
   it('lowercases ASCII as-is', () => {
@@ -365,9 +365,15 @@ describe('writePortFile + removePortFile', () => {
 
   it('rejects out-of-range port values', () => {
     const dir = mkdtempSync(join(tmpdir(), 'cmdr-port-file-test-'))
-    expect(() => writePortFile(dir, 'tauri-mcp.port', -1)).toThrow(/u16/)
-    expect(() => writePortFile(dir, 'tauri-mcp.port', 70000)).toThrow(/u16/)
-    expect(() => writePortFile(dir, 'tauri-mcp.port', 1.5)).toThrow(/u16/)
+    expect(() => {
+      writePortFile(dir, 'tauri-mcp.port', -1)
+    }).toThrow(/u16/)
+    expect(() => {
+      writePortFile(dir, 'tauri-mcp.port', 70000)
+    }).toThrow(/u16/)
+    expect(() => {
+      writePortFile(dir, 'tauri-mcp.port', 1.5)
+    }).toThrow(/u16/)
   })
 
   it('removePortFile is a no-op when the file is missing', () => {

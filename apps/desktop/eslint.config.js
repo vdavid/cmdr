@@ -172,8 +172,9 @@ export default tseslint.config(
     rules: buildTsRules(),
   },
   {
-    // Node.js scripts (like tauri-wrapper.js), fixture generators, and config
-    // files need Node globals.
+    // Node.js scripts (like vite.config.js), fixture generators, and config files
+    // need Node globals. The `scripts/*.ts` dev/build scripts already get Node globals
+    // and type-aware rules from the TypeScript block above.
     files: ['scripts/*.js', 'test/fixtures/**/*.js', 'vite.config.js', 'vitest.config.ts', 'playwright.config.ts'],
     languageOptions: {
       ecmaVersion: 'latest',
@@ -181,6 +182,14 @@ export default tseslint.config(
       globals: {
         ...globals.node,
       },
+    },
+  },
+  {
+    // The `scripts/` dev/build CLI tools print progress and diagnostics to the terminal,
+    // so `console` is their normal output channel, not a stray debug leftover.
+    files: ['scripts/**/*.ts'],
+    rules: {
+      'no-console': 'off',
     },
   },
   {
