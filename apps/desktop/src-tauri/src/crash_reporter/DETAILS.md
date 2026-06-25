@@ -30,9 +30,15 @@ lifecycle and the exact payload catalog.
   time, not in the signal handler.
 - `email` (optional): a beta tester's contact email, populated only by the dialog at send time when the user ticks the
   attach-email box. The dialog threads it into `send_crash_report(report)`.
+- `systemSnapshot` (optional): the stable machine snapshot from [`crate::diagnostics_snapshot`] — Mac model, CPU counts,
+  OS build, total RAM, the data-dir volume's free/total bytes, and drive-index sizes (total plus an unlabeled
+  per-database list). Attached at next-launch assembly in `process_pending_crash`, never in the panic hook or signal
+  handler; `live` is always `None` for crashes (see the `CLAUDE.md` invariant). PII-free: no hostname, paths, or volume
+  names.
 
 ## What we never send
 
 - File paths, volume names, environment variables, window titles.
+- Hostname, or any per-volume *names* in the index-size breakdown (sizes only, unlabeled).
 - License key, transaction id, device id.
 - Register dump, heap contents.

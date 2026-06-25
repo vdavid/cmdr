@@ -100,6 +100,12 @@ pub fn build_bundle<R: tauri::Runtime>(
         // Email rides ONLY Flow A (User). `email_for_kind` strips it for Flow B (Auto) so an
         // auto-send can never ship an address the user didn't consent to per report.
         email: email_for_kind(kind, email),
+        // Full machine snapshot incl. live state: error reports run in a healthy context. The data
+        // dir is where the drive-index DBs live; the snapshot reads only their sizes, never contents.
+        system: match crate::config::resolved_app_data_dir(app) {
+            Ok(dir) => crate::diagnostics_snapshot::SystemSnapshot::collect_full(&dir),
+            Err(_) => crate::diagnostics_snapshot::SystemSnapshot::collect_full(Path::new("")),
+        },
         generated_at: now_utc.to_rfc3339(),
     };
 

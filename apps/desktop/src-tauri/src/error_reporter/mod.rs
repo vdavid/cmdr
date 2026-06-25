@@ -294,6 +294,11 @@ pub struct BundleManifest {
     /// this `None`: a user who enabled auto-send hasn't consented to shipping their address
     /// on every report. Enforced structurally by [`bundle_builder::email_for_kind`].
     pub email: Option<String>,
+    /// Machine snapshot (model, CPU, RAM, disk headroom, drive-index sizes, Cmdr's own RSS) for
+    /// triage. Always the full [`collect_full`](crate::diagnostics_snapshot::SystemSnapshot::collect_full)
+    /// form here (error reports run in a healthy context). Carries no paths, hostnames, or volume
+    /// names; see `diagnostics_snapshot.rs`.
+    pub system: crate::diagnostics_snapshot::SystemSnapshot,
     pub generated_at: String,
 }
 

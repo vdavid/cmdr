@@ -274,6 +274,18 @@ fn candidate_lang_codes(preferred: &[String]) -> Vec<String> {
     out
 }
 
+/// The user's most-preferred UI language as a BCP-47 code (for example `en-US`), for diagnostics.
+/// `None` off macOS or when the OS reports no languages. Coarse locale only; carries no PII.
+#[cfg(target_os = "macos")]
+pub(crate) fn preferred_language() -> Option<String> {
+    apple_languages().into_iter().find(|s| !s.is_empty())
+}
+
+#[cfg(not(target_os = "macos"))]
+pub(crate) fn preferred_language() -> Option<String> {
+    None
+}
+
 #[cfg(target_os = "macos")]
 fn apple_languages() -> Vec<String> {
     use objc2_foundation::{NSString, NSUserDefaults};

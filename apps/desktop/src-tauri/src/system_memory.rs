@@ -5,7 +5,7 @@
 
 /// System memory breakdown returned to frontend for the RAM gauge.
 /// Categories are non-overlapping and sum to `total_bytes`.
-#[derive(Debug, Clone, serde::Serialize, PartialEq, Eq, specta::Type)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemMemoryInfo {
     pub total_bytes: u64,

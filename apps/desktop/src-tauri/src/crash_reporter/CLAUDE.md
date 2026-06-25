@@ -24,6 +24,10 @@ bytes to a pre-opened fd; symbolicated on next launch).
 - **No PII, ever.** Panic messages are sanitized via the shared [`crate::redact`](../redact/CLAUDE.md) module before
   writing (`sanitize_panic_message` in `mod.rs` is a thin wrapper around `redact::redact_panic_message`). Don't add file
   paths, usernames, device ids, license keys, env vars, window titles, or register/heap contents to the payload.
+- **`system_snapshot` is attached at next-launch assembly in `process_pending_crash`, NEVER in the panic hook or signal
+  handler** (compromised context — no sysctl/sysinfo/shell-outs). It's the stable form (`live: None`): live values
+  gathered after relaunch would describe the fresh process, not the crash. PII-free by construction; see
+  [`diagnostics_snapshot.rs`](../diagnostics_snapshot.rs).
 - **Attach the diagnostics id (`diag_`), NEVER the analytics id (`anal_`).** The two-id split (see `analytics/CLAUDE.md`
   § "Two ids that never meet") keeps a voluntarily-attached email unjoinable to the analytics stream; if `anal_` ever
   rode a report, an attached email could be joined to usage history. The `diag_id` is attached at report-assembly time,

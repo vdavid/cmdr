@@ -1121,6 +1121,14 @@ export const commands = {
        *  for every report the user didn't opt to attach an email to.
        */
       email?: string | null
+      /**
+       *  Machine snapshot (model, CPU, RAM, disk headroom, drive-index sizes) attached at next-launch
+       *  assembly in [`process_pending_crash`], NEVER in the panic hook or signal handler (compromised
+       *  context). Always the stable form (`live: None`): a crash report is assembled after relaunch,
+       *  where live values describe the fresh process, not the crash. `None` only for reports written
+       *  before this field existed, or when the data dir can't be resolved.
+       */
+      systemSnapshot?: SystemSnapshot | null
     } | null>('check_pending_crash_report'),
   // Deletes the crash report file without sending it.
   dismissCrashReport: () => __TAURI_INVOKE<void>('dismiss_crash_report'),
@@ -2993,6 +3001,14 @@ export type CrashReport = {
    *  for every report the user didn't opt to attach an email to.
    */
   email?: string | null
+  /**
+   *  Machine snapshot (model, CPU, RAM, disk headroom, drive-index sizes) attached at next-launch
+   *  assembly in [`process_pending_crash`], NEVER in the panic hook or signal handler (compromised
+   *  context). Always the stable form (`live: None`): a crash report is assembled after relaunch,
+   *  where live values describe the fresh process, not the crash. `None` only for reports written
+   *  before this field existed, or when the data dir can't be resolved.
+   */
+  systemSnapshot?: SystemSnapshot | null
 }
 
 export type CreditInfoDto = {
@@ -4063,6 +4079,30 @@ export type ListingStatus =
   | { status: 'ready' }
   | { status: 'cancelled' }
   | { status: 'error'; message: string }
+
+/**
+ *  Live, per-moment machine state. Only meaningful when collected in a healthy running context, so
+ *  it rides error reports but not crash reports.
+ */
+export type LiveSystemState = {
+  /**
+   *  macOS thermal pressure: `nominal` / `fair` / `serious` / `critical` (`unknown` for an
+   *  unrecognized raw value). `None` off macOS.
+   */
+  thermalState: string | null
+  /**
+   *  Whole-machine memory breakdown (same data as the AI RAM gauge). Its `totalBytes` equals
+   *  [`SystemSnapshot::total_memory_bytes`].
+   */
+  memory: SystemMemoryInfo
+  /**
+   *  Cmdr's own resident set size in bytes (0 if unavailable). The "is Cmdr the problem" signal a
+   *  system-wide gauge can't give.
+   */
+  processRssBytes: number
+  // Seconds since the process started. Distinguishes "died on launch" from "leaked over days".
+  uptimeSecs: number
+}
 
 /**
  *  Snapshot of the system pane labels we surface in user-facing copy.
@@ -5454,6 +5494,43 @@ export type SystemMemoryInfo = {
   appBytes: number
   // Free: free + purgeable + speculative (available for new allocations).
   freeBytes: number
+}
+
+/**
+ *  Stable machine identity and capacity, plus an optional live snapshot. See the module docs for
+ *  why `live` is absent on crash reports.
+ */
+export type SystemSnapshot = {
+  /**
+   *  macOS build number, for example `25F80` (pins the exact OS more tightly than the product
+   *  version). `None` off macOS or if `sw_vers` is unavailable.
+   */
+  osBuild: string | null
+  // Hardware model identifier, for example `Mac15,9`. `None` off macOS or on read failure.
+  macModel: string | null
+  // Physical CPU core count (0 if unavailable).
+  cpuPhysical: number
+  // Logical CPU core count incl. SMT (0 if unavailable).
+  cpuLogical: number
+  // Most-preferred UI language as a BCP-47 code, for example `en-US`. Coarse locale, no PII.
+  preferredLanguage: string | null
+  // Total physical RAM in bytes (stable across the crash → relaunch boundary).
+  totalMemoryBytes: number
+  /**
+   *  Free / total bytes of the volume holding the app data dir (where the index lives). `None`
+   *  when `statfs` fails. A small `free` is the signal behind "indexing filled my disk" reports.
+   */
+  dataVolumeFreeBytes: number | null
+  dataVolumeTotalBytes: number | null
+  // Total on-disk size of all drive-index databases (each `index-*.db` plus its `-wal`/`-shm`).
+  indexTotalBytes: number
+  /**
+   *  Per-index-database sizes in bytes, sorted largest first. Unlabeled by design: it shows index
+   *  skew without naming the user's drives.
+   */
+  indexDbSizes: number[]
+  // Per-moment state, present only for error reports (see module docs).
+  live: LiveSystemState | null
 }
 
 /**

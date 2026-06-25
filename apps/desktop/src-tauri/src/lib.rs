@@ -91,6 +91,7 @@ mod clipboard;
 mod commands;
 pub mod config;
 mod crash_reporter;
+mod diagnostics_snapshot;
 mod downloads;
 #[cfg(target_os = "macos")]
 mod drag_image_detection;

@@ -27,7 +27,10 @@ Builds a privacy-redacted zip bundle of recent log files plus a JSON manifest, t
   that scrubs log lines also scrubs the auto note. Every log line is redacted via `crate::redact::redact_line` before it
   hits the zip.
 - **Never widen what we send.** No license keys, transaction/device IDs, raw paths, volume names, SMB creds, settings
-  beyond the resolved feature flags, or anything outside the log dir (no app data files, no `settings.json`).
+  beyond the resolved feature flags, or anything outside the log dir (no app data files, no `settings.json`). The
+  `manifest.system` snapshot ([`crate::diagnostics_snapshot`]) is a deliberate, PII-reviewed exception: coarse machine
+  identity, aggregate RAM/disk/index *sizes* (never index contents), and an UNLABELED per-volume index-size list (never
+  volume names). Keep new fields within that bar; add nothing that names a drive, path, or person.
 - **Don't gate `upload()` on `cfg!(debug_assertions)`.** Debug builds DO upload (that's "Send error report" working in
   dev); the manifest's `buildMode: "debug"` makes the api server prefix the Discord title with `[DEV]`. `upload`
   short-circuits only on `CI` env and the `playwright-e2e` feature (compile-time, so E2E reports can't flood the live

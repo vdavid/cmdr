@@ -31,10 +31,16 @@ fn crash_report_roundtrip() {
         short_id: Some("CRASH-A2345".to_string()),
         diag_id: "diag_12345678-1234-1234-1234-1234567890ab".to_string(),
         email: Some("tester@example.com".to_string()),
+        system_snapshot: Some(crate::diagnostics_snapshot::SystemSnapshot::collect_stable(dir.path())),
     };
 
     write_crash_report(&path, &report).unwrap();
     let loaded = read_crash_report(&path).unwrap();
+    let snapshot = loaded
+        .system_snapshot
+        .as_ref()
+        .expect("snapshot roundtrips inside the crash report");
+    assert!(snapshot.live.is_none(), "crash-report snapshots are stable-only");
 
     assert_eq!(loaded.version, CRASH_FILE_VERSION);
     assert_eq!(loaded.timestamp, "2026-03-22T10:00:00+00:00");
@@ -356,5 +362,6 @@ fn make_test_report() -> CrashReport {
         short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
         diag_id: "diag_00000000-0000-4000-8000-000000000000".to_string(),
         email: None,
+        system_snapshot: None,
     }
 }

@@ -210,7 +210,7 @@ objc2 = { version = "0.6", features = ["std", "exception"] }
 objc2-foundation = { version = "0.3", features = [
     "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError",
     "NSData", "NSFileManager", "NSNotification", "NSBundle", "NSDistributedNotificationCenter", "NSUserDefaults",
-    "NSOperation",
+    "NSOperation", "NSProcessInfo",
 ] }
 objc2-app-kit = { version = "0.3", features = [
     "NSDragging", "NSDraggingItem", "NSImage", "NSColor", "NSColorSpace",

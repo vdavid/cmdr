@@ -2,7 +2,7 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { commands, events, type ErrorReportAutoSent } from '$lib/ipc/bindings'
+import { commands, events, type ErrorReportAutoSent, type SystemSnapshot } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 export interface ActiveSettingsSnapshot {
@@ -24,6 +24,8 @@ export interface BundleManifest {
   diagId: string
   /** Contact email, set only when the user ticks the attach-email box (Flow A). */
   email?: string
+  /** Machine snapshot (model, CPU, RAM, disk, drive-index sizes, Cmdr's RSS) for triage. PII-free. */
+  system: SystemSnapshot
   generatedAt: string
 }
 

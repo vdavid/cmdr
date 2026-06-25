@@ -40,6 +40,7 @@ fn sample_manifest() -> BundleManifest {
         user_note: Some("This thing failed".to_string()),
         diag_id: "diag_00000000-0000-4000-8000-000000000000".to_string(),
         email: None,
+        system: crate::diagnostics_snapshot::SystemSnapshot::collect_full(Path::new("")),
         generated_at: "2026-04-23T10:00:00+00:00".to_string(),
     }
 }

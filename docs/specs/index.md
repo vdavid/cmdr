@@ -69,6 +69,9 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 - [ ] 2026-06-25 honest-index-sizes-plan.md - Honest directory sizes: exact / ≥lower-bound / unknown plus fresh-vs-stale
       via a per-dir `listed_epoch` + rolled-up `min_subtree_epoch` and a per-volume epoch counter; fixes the mid-scan
       disconnect "0 bytes" lie and lays groundwork for lazy fill and offline browse
+- [x] 2026-06-25 2026-06-25-error-report-system-snapshot-plan.md - Attach a richer system snapshot (Mac model, RAM
+      breakdown, CPU counts, thermal state, Cmdr's RSS, drive-index size, disk headroom) to error/crash bundles;
+      PII-free
 
 ## Later
 

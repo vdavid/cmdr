@@ -90,6 +90,13 @@ pub struct CrashReport {
     /// for every report the user didn't opt to attach an email to.
     #[serde(default)]
     pub email: Option<String>,
+    /// Machine snapshot (model, CPU, RAM, disk headroom, drive-index sizes) attached at next-launch
+    /// assembly in [`process_pending_crash`], NEVER in the panic hook or signal handler (compromised
+    /// context). Always the stable form (`live: None`): a crash report is assembled after relaunch,
+    /// where live values describe the fresh process, not the crash. `None` only for reports written
+    /// before this field existed, or when the data dir can't be resolved.
+    #[serde(default)]
+    pub system_snapshot: Option<crate::diagnostics_snapshot::SystemSnapshot>,
 }
 
 /// Initializes the crash reporter: panic hook, signal handlers, and settings cache.
@@ -179,6 +186,9 @@ fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
         // field; the dialog populates it later, never the build path.
         diag_id: crate::install_id::diagnostics_id_snapshot().unwrap_or_default(),
         email: None,
+        // Filled at next-launch assembly in `process_pending_crash`: the panic hook must stay light
+        // (no sysctl/sysinfo/shell-outs in a compromised context).
+        system_snapshot: None,
     }
 }
 
@@ -459,9 +469,21 @@ fn read_crash_report(path: &Path) -> Option<CrashReport> {
 fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
     // Check for a JSON crash report with crash loop detection
     if let Some(mut report) = read_crash_report(crash_json_path) {
+        let mut dirty = false;
         if is_crash_loop(&report.timestamp) {
             report.possible_crash_loop = true;
-            // Re-write with the flag set
+            dirty = true;
+        }
+        // The panic hook couldn't gather the snapshot (compromised context), so attach the stable
+        // form now, at next launch where the full stdlib is safe. Only when missing, so we don't
+        // rewrite on every launch the report lingers.
+        if report.system_snapshot.is_none()
+            && let Some(dir) = crash_json_path.parent()
+        {
+            report.system_snapshot = Some(crate::diagnostics_snapshot::SystemSnapshot::collect_stable(dir));
+            dirty = true;
+        }
+        if dirty {
             let _ = write_crash_report(crash_json_path, &report);
         }
         // JSON report exists, leave it for the frontend to handle
@@ -508,6 +530,11 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
                 // available. `email` stays `None` (send-time field, set by the dialog).
                 diag_id: crate::install_id::diagnostics_id(),
                 email: None,
+                // Stable snapshot, assembled here at next launch (full stdlib available). The data
+                // dir is the crash file's parent; the snapshot reads only index sizes and capacity.
+                system_snapshot: crash_json_path
+                    .parent()
+                    .map(crate::diagnostics_snapshot::SystemSnapshot::collect_stable),
             };
 
             if let Err(e) = write_crash_report(crash_json_path, &report) {
@@ -542,7 +569,9 @@ fn now_iso8601() -> String {
     chrono::Utc::now().to_rfc3339()
 }
 
-fn uptime_secs() -> f64 {
+/// Seconds since the process started, or 0.0 before [`init`] runs. Shared with the diagnostics
+/// snapshot so error reports can carry the same uptime the crash reporter records.
+pub(crate) fn uptime_secs() -> f64 {
     APP_START_TIME.get().map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0)
 }
 

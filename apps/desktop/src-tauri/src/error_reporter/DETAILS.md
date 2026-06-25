@@ -73,6 +73,12 @@ Manifest fields (`BundleManifest`):
   voluntarily-attached email unjoinable to the analytics stream. It rides both flows (that's its purpose).
 - `email` (optional): a beta tester's contact email so we can reply about the bug. Set **only by Flow A** (the dialog
   with the attach-email checkbox), never by Flow B. See the Flow-B-never-email rule below.
+- `system`: the machine snapshot from [`crate::diagnostics_snapshot`], always the full `collect_full` form (error
+  reports run in a healthy context, so `live` is `Some`): Mac model, CPU counts, OS build, preferred language, the
+  whole-machine RAM breakdown (`SystemMemoryInfo`) plus Cmdr's own RSS, app uptime, thermal state, the data-dir volume's
+  free/total bytes, and drive-index sizes (total plus an unlabeled per-database list). Lives inside `manifest.json` in
+  the zip, so the api server needs no change to store it. PII-free: no hostname, paths, or volume names — the index
+  breakdown is sizes only. See the "never widen" note in `CLAUDE.md`.
 - `generatedAt`: ISO 8601 UTC timestamp.
 
 ### Flow-B-never-email (load-bearing privacy rule)
@@ -99,7 +105,9 @@ SMB URIs, and UNC paths. See the redact module for the full pattern table.
 - License keys, transaction IDs, device IDs.
 - Raw file paths, volume names, SMB credentials.
 - Settings registry content beyond the four feature flags above.
-- Anything outside the log dir: no app data files, no settings.json.
+- Anything outside the log dir: no app data files, no settings.json. (The `system` snapshot reads index-DB and volume
+  *sizes* via `statfs`/file metadata — numbers only, never index contents or paths.)
+- Hostname, or any per-volume *names* in the index-size breakdown (sizes only, unlabeled).
 
 ## Files
 
