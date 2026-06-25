@@ -32,8 +32,11 @@ func RunDesktopI18nParity(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {
-		// Exit 0: no non-en locales today, or every translation matches English.
-		return Success("placeholder/tag parity holds (no non-en locales to check today)"), nil
+		// Exit 0: every translation's placeholders/tags match English (or there are no non-en locales yet).
+		if n := nonEnLocaleCount(ctx.RootDir); n > 0 {
+			return Success(fmt.Sprintf("placeholder/tag parity holds across %d %s", n, Pluralize(n, "locale", "locales"))), nil
+		}
+		return Success("placeholder/tag parity holds (English-only: no locales to check yet)"), nil
 	}
 
 	var exitErr *exec.ExitError

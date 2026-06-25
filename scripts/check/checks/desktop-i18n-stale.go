@@ -34,9 +34,10 @@ const staleStrictEnv = "CMDR_I18N_STALE_STRICT"
 // Review is NEVER a gate in either mode: a stale key's prior `reviewed` flag is
 // reported as no-longer-applicable, but the absence of review never fails a check.
 //
-// In today's English-only repo there are no non-`en` locales, so the script is a
-// clean no-op (exit 0, "no non-en locales to check") in both modes. It becomes a
-// live warn (or, at release, a live error) the moment a real locale lands.
+// Nine locales ship today; the script hashes each translation's English source
+// and is currently clean (exit 0) in both modes. A stale finding becomes a live
+// warn (or, at release, a live error) the moment an English value drifts from a
+// translation that was made against the old wording.
 //
 // Exit-code contract (mirrored by `i18n-locale-check-lib.js`): 0 = clean / no
 // locales, 1 = at least one stale finding (→ WARN), 2 = either a genuine script
@@ -53,8 +54,11 @@ func RunDesktopI18nStale(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {
-		// Exit 0: no non-en locales today, or every translation is fresh.
-		return Success("no stale translations (no non-en locales to check today)"), nil
+		// Exit 0: every translation is fresh (or there are no non-en locales yet).
+		if n := nonEnLocaleCount(ctx.RootDir); n > 0 {
+			return Success(fmt.Sprintf("no stale translations across %d %s", n, Pluralize(n, "locale", "locales"))), nil
+		}
+		return Success("no stale translations (English-only: no locales to check yet)"), nil
 	}
 
 	var exitErr *exec.ExitError

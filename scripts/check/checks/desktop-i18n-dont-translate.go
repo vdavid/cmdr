@@ -24,7 +24,10 @@ func RunDesktopI18nDontTranslate(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {
-		return Success("brand/system tokens preserved (no non-en locales to check today)"), nil
+		if n := nonEnLocaleCount(ctx.RootDir); n > 0 {
+			return Success(fmt.Sprintf("brand/system tokens preserved across %d %s", n, Pluralize(n, "locale", "locales"))), nil
+		}
+		return Success("brand/system tokens preserved (English-only: no locales to check yet)"), nil
 	}
 
 	var exitErr *exec.ExitError
