@@ -297,8 +297,8 @@ async function main() {
   }
 
   // Fresh fixtures so the panes have predictable content for the screenshot.
-  // This imports a `.ts` module, so the script runs under `tsx` (see the
-  // `i18n:capture` package script), matching `check:type-drift`'s convention.
+  // This dynamically imports a sibling `.ts` module; Node 25 strips its types
+  // on load, same as for this script itself.
   const { createFixtures } = await import('../test/e2e-shared/fixtures.ts')
   const startPath = createFixtures()
   console.log(`[i18n-capture] fixtures at ${startPath}`)

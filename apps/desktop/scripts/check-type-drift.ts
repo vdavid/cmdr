@@ -4,7 +4,7 @@
  * Parses shared types from Rust source files and compares them against
  * TypeScript definitions. Reports any mismatches to catch drift early.
  *
- * Run: pnpm tsx scripts/check-type-drift.ts
+ * Run: node scripts/check-type-drift.ts (or `pnpm check:type-drift`)
  */
 
 import * as fs from 'fs'
