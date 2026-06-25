@@ -356,7 +356,7 @@ export const UNKNOWN_SIZE_GLYPH = '—'
 
 /**
  * Content state for a directory's size column. The "honest sizes" model splits
- * one displayed value into distinct truths (plan §1I):
+ * one displayed value into distinct truths:
  * - `'dir'`: not enriched yet (no recursive size) → `<dir>` placeholder.
  * - `'scanning'`: same, but a scan is active → `<dir>` placeholder (hourglass on top).
  * - `'unknown'`: subtree incomplete with nothing known below → `—` (NOT `0 bytes`).
@@ -471,7 +471,7 @@ export function buildDirSizeTooltip(
           })
     lines.push(`${filesStr}, ${foldersStr}`)
 
-    // One-line honest-size state label (plan §1I). Lower-bound and stale are
+    // One-line honest-size state label. Lower-bound and stale are
     // mutually exclusive content states; either can also be mid-update.
     if (complete === false) {
       lines.push(tString('fileExplorer.dirSize.lowerBoundLine'))

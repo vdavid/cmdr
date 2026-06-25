@@ -258,7 +258,7 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
 ///   computed at an older epoch than the current one).
 ///
 /// The FE never sees raw epochs; it renders from `{recursive_size, complete,
-/// stale}` alone. See plan §1F and the "Honest sizes" model in DETAILS.
+/// stale}` alone. See the "Honest sizes" model in DETAILS.
 fn apply_dir_stats(entry: &mut FileEntry, stats: &DirStatsById, current_epoch: u64) {
     entry.recursive_size = Some(stats.recursive_logical_size);
     entry.recursive_physical_size = Some(stats.recursive_physical_size);
@@ -423,7 +423,7 @@ mod tests {
 
     /// `apply_dir_stats` derives the FE-facing honest-size booleans from
     /// `min_subtree_epoch` vs `current_epoch`. This is the read-side contract
-    /// (plan §1F): the FE never sees raw epochs.
+    /// The FE never sees raw epochs.
     #[test]
     fn apply_dir_stats_derives_complete_and_stale() {
         let current_epoch = 5;

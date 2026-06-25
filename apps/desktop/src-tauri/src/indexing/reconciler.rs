@@ -1910,7 +1910,7 @@ mod tests {
     /// A reconcile-discovered subtree must be stamped `listed_epoch = current`
     /// for every dir it lists (including empty ones), and ancestor coverage must
     /// lift. Without the mark, the subtree stays `listed_epoch = 0` forever and
-    /// drags ancestors to incomplete — the exact local-live-path regression M1
+    /// drags ancestors to incomplete — the exact local-live-path regression the coverage model
     /// guards against.
     #[test]
     fn reconcile_subtree_marks_listed_dirs_at_current_epoch() {

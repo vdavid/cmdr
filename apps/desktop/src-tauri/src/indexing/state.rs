@@ -987,7 +987,7 @@ mod tests {
         clear_registry_and_pools();
     }
 
-    /// The M2 disconnect-vs-cancel completion split, at the registry level (the
+    /// The disconnect-vs-cancel completion split, at the registry level (the
     /// full `start_volume_scan` completion handler needs an `AppHandle`, so it
     /// stays under integration; this pins the two state actions it dispatches):
     ///

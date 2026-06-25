@@ -366,7 +366,7 @@ fn run_scan(
     for entry_result in walker {
         if cancelled.load(Ordering::Relaxed) {
             // Flush remaining batch before returning. A cancelled scan emits no
-            // marks (the caller discards/heals the partial); M2 handles keeping
+            // marks (the caller discards/heals the partial); the disconnect path handles keeping
             // an interrupted partial honest.
             flush_batch(&mut batch, writer)?;
             return Ok((

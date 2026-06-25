@@ -1433,7 +1433,7 @@
     /* Freshness-stale: an exact size computed at an older epoch (drive not
        re-scanned since reconnecting). Muted to match the yellow=stale
        freshness language of the per-drive badge; the tooltip explains why.
-       Tunable (flagged for David, plan §1I open decision #1). */
+       Tunable (the stale treatment is a deliberate, easily-changed choice). */
     .size-text.size-freshness-stale {
         opacity: 0.6;
     }

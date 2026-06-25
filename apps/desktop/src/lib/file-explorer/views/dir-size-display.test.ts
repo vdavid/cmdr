@@ -213,7 +213,7 @@ describe('buildDirSizeTooltip', () => {
     expect(html).toContain('class="size-')
   })
 
-  // Honest-size state lines (plan §1I): the tooltip gains a one-line label per state.
+  // Honest-size state lines: the tooltip gains a one-line label per state.
   it('returns the unknown tooltip when incomplete and size is 0 (the — state)', () => {
     // No size breakdown — there's nothing known. complete=false, size=0.
     const result = buildDirSizeTooltip(0, undefined, 0, 0, false, formatSize, formatNum, false, false)

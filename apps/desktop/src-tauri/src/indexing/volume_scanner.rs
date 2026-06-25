@@ -393,8 +393,7 @@ fn is_typed_disconnect(e: &crate::file_system::volume::VolumeError) -> bool {
     matches!(e, VolumeError::DeviceDisconnected(_))
 }
 
-/// The partial-preserving write sequence, in ONE place (plan M2 §1, round-3
-/// SF-1). Run on BOTH a clean finish and a terminal abort (disconnect /
+/// The partial-preserving write sequence, in ONE place. Run on BOTH a clean finish and a terminal abort (disconnect /
 /// consecutive-failure backstop):
 ///
 /// (a) `flush_batch` the last in-flight `InsertEntriesV2` batch (else up to
@@ -406,7 +405,7 @@ fn is_typed_disconnect(e: &crate::file_system::volume::VolumeError) -> bool {
 ///
 /// It deliberately does NOT write `scan_completed_at` — that's the completion
 /// handler's job, gated on a clean finish, so an interrupted partial heals to a
-/// rescan on relaunch (the accepted M2 limitation) while staying honest and
+/// rescan on relaunch (the accepted session-scoped limitation) while staying honest and
 /// browsable this session.
 fn finish_partial_scan(
     batch: &mut Vec<EntryRow>,

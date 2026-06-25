@@ -78,7 +78,7 @@ fn compare_names_natural(a: &str, b: &str) -> std::cmp::Ordering {
 /// known below it (`recursive_size_complete == Some(false)` and size `0`, the
 /// `—` render). A genuinely-empty dir (`complete == Some(true)`, size `0`) and a
 /// lower-bound (`complete == Some(false)`, size `> 0`, the `≥N` render) are both
-/// KNOWN and sort by their numeric value. See plan §1I.
+/// KNOWN and sort by their numeric value.
 fn known_dir_size(e: &FileEntry) -> Option<u64> {
     match (e.recursive_size, e.recursive_size_complete) {
         (None, _) => None,
@@ -119,7 +119,7 @@ pub fn entry_comparator(
         // last (and stably by name), regardless of ascending/descending order,
         // so they don't masquerade as exact-0 dirs at the top of an ascending sort.
         //
-        // Honest-size semantics (plan §1I): a dir's size is "unknown" when either
+        // Honest-size semantics: a dir's size is "unknown" when either
         // it isn't enriched yet (`recursive_size == None`) OR its subtree is
         // incomplete with nothing known below it (`recursive_size_complete ==
         // Some(false)` and size `0`, rendered as `—`). A genuinely-empty dir

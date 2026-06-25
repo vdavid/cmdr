@@ -62,7 +62,7 @@ fn per_source_contribution(conn: &Connection, source: &Path) -> Option<ExpectedT
         // A source whose subtree is incomplete (`min_subtree_epoch == 0`) only
         // has a lower-bound size, not a real total. Treat it like an unindexed
         // source and return `None`, so write-op progress denominators never use
-        // a lower bound and overshoot 100%. (Plan §1H.)
+        // a lower bound and overshoot 100%.
         if stats.min_subtree_epoch == 0 {
             return None;
         }
@@ -192,7 +192,7 @@ mod tests {
         // scanned: `recursive_logical_size` is only a lower bound, not a real
         // total. It must behave exactly like an unindexed source (return `None`)
         // so a write-op progress denominator never uses the lower bound and
-        // overshoots 100%. (Plan §1H, review N1.)
+        // overshoots 100%.
         let (conn, _dir) = open_test_conn();
         let users_id = insert_dir(&conn, ROOT_ID, "Users");
         let alice_id = insert_dir(&conn, users_id, "alice");

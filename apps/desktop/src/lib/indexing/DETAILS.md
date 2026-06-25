@@ -117,7 +117,7 @@ pure function and the single source of truth:
   genuinely-empty `0 bytes`.
 - `complete === false && size > 0` → `'lower-bound'` → `≥` (`LOWER_BOUND_GLYPH`) prefix + the formatted size.
 - `complete === true && stale === true` → `'size-stale'` → the formatted size, muted (reduced opacity, matching the
-  yellow=stale freshness badge; tunable, plan §1I open decision #1).
+  yellow=stale freshness badge; tunable).
 - otherwise → `'size'` → the plain formatted size (incl. a genuinely-empty `0 bytes`).
 - Absent `complete`/`stale` (a dir enriched before the flags, or a fixture) ⇒ treated as exact + fresh.
 

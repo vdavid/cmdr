@@ -406,7 +406,7 @@
     }
 
     /* Freshness-stale: an exact size from an older epoch, muted to match the
-       yellow=stale freshness badge (plan §1I). Mirrors FullList's treatment so
+       yellow=stale freshness badge. Mirrors FullList's treatment so
        Brief's status bar matches Full's size column. */
     .size-freshness-stale {
         opacity: 0.6;

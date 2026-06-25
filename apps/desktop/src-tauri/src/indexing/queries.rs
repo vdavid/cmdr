@@ -268,7 +268,7 @@ pub fn get_dir_stats_batch_on_volume(volume_id: &str, paths: &[String]) -> Resul
 /// the FE-facing honest-size booleans (`recursive_size_complete` /
 /// `recursive_size_stale`) from `min_subtree_epoch` vs `current_epoch`. Raw
 /// epochs never cross IPC. Mirrors `enrichment::apply_dir_stats` for the
-/// `FileEntry` read surface. See plan §1F.
+/// `FileEntry` read surface. See the "Honest sizes" model in DETAILS.
 fn dir_stats_from(path: String, s: &store::DirStatsById, current_epoch: u64, pending: bool) -> DirStats {
     let complete = s.min_subtree_epoch > 0;
     DirStats {

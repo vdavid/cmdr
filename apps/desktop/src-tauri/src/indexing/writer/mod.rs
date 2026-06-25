@@ -1228,7 +1228,7 @@ pub(super) mod tests {
         writer.shutdown();
     }
 
-    /// M2 §5 consistency: the per-volume `Freshness` badge stays consistent with
+    /// Freshness-layer consistency: the per-volume `Freshness` badge stays consistent with
     /// `root.min_subtree_epoch == current_epoch ⇒ Fresh` (modulo Scanning). This
     /// pins the data-layer half of that invariant — that a clean scan leaves the
     /// root's coverage epoch EQUAL to `current_epoch` (Fresh-consistent), and a
