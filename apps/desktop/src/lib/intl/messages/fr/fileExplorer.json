@@ -815,7 +815,7 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
-  "fileExplorer.dirSize.lowerBoundLine": "Au moins ceci : certains sous-dossiers n''ont pas encore été analysés, le total réel est donc plus grand.",
+  "fileExplorer.dirSize.lowerBoundLine": "Au moins ceci : certains sous-dossiers n''ont pas encore été analysés, le total réel peut donc être plus grand.",
   "@fileExplorer.dirSize.lowerBoundLine": {
     "sourceHash": "6d92a68"
   },

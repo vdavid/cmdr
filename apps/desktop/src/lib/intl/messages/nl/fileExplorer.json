@@ -817,7 +817,7 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
-  "fileExplorer.dirSize.lowerBoundLine": "Minstens dit: sommige submappen zijn nog niet gescand, dus het echte totaal is groter.",
+  "fileExplorer.dirSize.lowerBoundLine": "Minstens dit: sommige submappen zijn nog niet gescand, dus het echte totaal kan groter zijn.",
   "@fileExplorer.dirSize.lowerBoundLine": {
     "sourceHash": "6d92a68"
   },

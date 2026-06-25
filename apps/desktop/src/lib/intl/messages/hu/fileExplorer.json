@@ -813,7 +813,7 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
-  "fileExplorer.dirSize.lowerBoundLine": "Legalább ennyi: néhány almappát még nem vizsgáltunk át, így a valódi összeg ennél nagyobb.",
+  "fileExplorer.dirSize.lowerBoundLine": "Legalább ennyi: néhány almappát még nem vizsgáltunk át, így a valódi összeg ennél nagyobb is lehet.",
   "@fileExplorer.dirSize.lowerBoundLine": {
     "sourceHash": "6d92a68"
   },

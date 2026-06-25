@@ -813,7 +813,7 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
-  "fileExplorer.dirSize.lowerBoundLine": "Ít nhất là chừng này: một số thư mục con chưa được quét, nên tổng thực tế còn lớn hơn.",
+  "fileExplorer.dirSize.lowerBoundLine": "Ít nhất là chừng này: một số thư mục con chưa được quét, nên tổng thực tế có thể lớn hơn.",
   "@fileExplorer.dirSize.lowerBoundLine": {
     "sourceHash": "6d92a68"
   },

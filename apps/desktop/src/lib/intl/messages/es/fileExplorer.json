@@ -814,7 +814,7 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
-  "fileExplorer.dirSize.lowerBoundLine": "Al menos esto: algunas subcarpetas aún no se han analizado, así que el total real es mayor.",
+  "fileExplorer.dirSize.lowerBoundLine": "Al menos esto: algunas subcarpetas aún no se han analizado, así que el total real puede ser mayor.",
   "@fileExplorer.dirSize.lowerBoundLine": {
     "sourceHash": "6d92a68"
   },

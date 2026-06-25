@@ -814,7 +814,7 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
-  "fileExplorer.dirSize.lowerBoundLine": "Minst så här mycket: vissa undermappar har inte genomsökts än, så den verkliga summan är större.",
+  "fileExplorer.dirSize.lowerBoundLine": "Minst så här mycket: vissa undermappar har inte genomsökts än, så den verkliga summan kan vara större.",
   "@fileExplorer.dirSize.lowerBoundLine": {
     "sourceHash": "6d92a68"
   },

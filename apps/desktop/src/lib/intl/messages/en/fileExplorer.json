@@ -1252,9 +1252,9 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "description": "First line of the warning tooltip shown when a folder''s logical (content) and physical (on-disk) sizes differ a lot; the detailed size breakdown follows below it."
   },
-  "fileExplorer.dirSize.lowerBoundLine": "At least this much: some subfolders weren''t scanned yet, so the real total is larger.",
+  "fileExplorer.dirSize.lowerBoundLine": "At least this much: some subfolders weren''t scanned yet, so the real total may be larger.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "description": "Line in a folder''s size tooltip when the shown size is a lower bound (displayed with a ≥ prefix) because part of the subtree hasn''t been scanned. Explains the number is a floor, not the full total."
+    "description": "Line in a folder''s size tooltip when the shown size is a lower bound (displayed with a ≥ prefix) because part of the subtree hasn''t been scanned. Explains the number is a floor: the real total is at least this much and may be larger (not necessarily larger — the unscanned parts could be empty)."
   },
   "fileExplorer.dirSize.unknownTooltip": "Size unknown: this folder hasn''t been scanned yet.",
   "@fileExplorer.dirSize.unknownTooltip": {
