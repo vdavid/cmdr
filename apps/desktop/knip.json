@@ -1,16 +1,10 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "treatConfigHintsAsErrors": true,
-  "ignoreBinaries": ["only-allow", "rustc", "oxfmt"],
-  "ignore": ["src/lib/tauri-commands/**", "src/lib/ipc/bindings.ts", "src/lib/debug/debug-window.ts"],
+  "ignoreBinaries": ["only-allow", "rustc", "oxfmt", "pgrep"],
+  "ignore": ["src/lib/tauri-commands/**", "src/lib/ipc/bindings.ts"],
   "ignoreUnresolved": ["~icons/.+"],
-  "ignoreDependencies": [
-    "oxlint",
-    "@tauri-apps/cli",
-    "@testing-library/svelte",
-    "prettier-plugin-svelte",
-    "@iconify-json/lucide"
-  ],
+  "ignoreDependencies": ["oxlint", "@testing-library/svelte", "prettier-plugin-svelte", "@iconify-json/lucide"],
   "ignoreExportsUsedInFile": true,
   "project": ["src/**/*.{ts,svelte}"],
   "svelte": {

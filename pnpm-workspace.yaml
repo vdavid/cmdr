@@ -21,42 +21,44 @@ minimumReleaseAge: 20160
 # Refuse to install a package whose trust level has dropped since the last
 # successful resolve (publisher loses verified status, package transferred to
 # an unknown owner). Default is `off`. The win is mitigation against the
-# publisher-takeover class; the cost is a manual approval whenever a `pnpm add`
-# or update re-resolves the tree and hits a transitive dep that lost provenance.
+# publisher-takeover class.
 #
-# How to approve a downgrade you've vetted (this WILL fire on `pnpm add` — e.g.
-# we've hit chokidar@4.0.3 and semver@5.7.2, both mainstream deps whose old
-# versions simply predate npm's provenance rollout, not takeovers):
-#   1. Vet it. Open the package on npmjs.com; confirm same maintainer + repo and
-#      that the flagged version merely lacks a provenance attestation (uneven
-#      rollout), rather than a real ownership transfer.
-#   2. One-off, for a single `pnpm add`: re-run with `--trust-policy-exclude <pkg>`
-#      (repeatable, scoped to that command, nothing persists), e.g.
-#        pnpm add -D <new-dep> --trust-policy-exclude chokidar --trust-policy-exclude semver
-#   3. Persistent, for a transitive dep that trips on EVERY add: add a selector
-#      to `trustPolicyExclude` (e.g. `chokidar@4.0.3`), or set
-#      `trustPolicyIgnoreAfter: <minutes>` to auto-trust downgrades on versions
-#      published longer ago than that (still flags fresh-takeover downgrades).
-#      We set neither today — approvals stay explicit per-add on purpose.
+# pnpm 11 re-verifies the WHOLE lockfile against this policy on every install
+# (so `pnpm check` and CI hit it too, not just `pnpm add`). A `--trust-policy-exclude`
+# CLI flag is scoped to one command and never persists, so it can't keep `pnpm
+# check` green for a flagged transitive dep — the exclusion has to live here.
+# `trustPolicyExclude` (below) is therefore the home for vetted, version-pinned
+# approvals; we keep them explicit per version rather than blanket-trusting old
+# publish dates via `trustPolicyIgnoreAfter`, so a genuine takeover of an
+# untouched version still trips.
+#
+# To approve a new downgrade: vet it on npmjs.com (same maintainer + repo, the
+# flagged version merely lacks a provenance attestation from npm's uneven
+# rollout rather than showing a real ownership transfer), then add the exact
+# `name@version` to `trustPolicyExclude`.
 trustPolicy: no-downgrade
 
+# Vetted trust downgrades: mainstream deps whose old versions predate npm's
+# provenance rollout (canonical maintainer + repo confirmed), not takeovers.
+# Pinned to exact versions so a future republish of the same string re-trips.
+#   chokidar@4.0.3  → paulmillr/chokidar (via svelte-check)
+#   semver@5.7.2, semver@6.3.1 → npm/node-semver (old major lines, transitive)
+trustPolicyExclude:
+  - chokidar@4.0.3
+  - semver@5.7.2
+  - semver@6.3.1
+
 # Explicit even though pnpm 11 defaults to true: only direct dependencies may
-# use exotic sources (git repos, tarball URLs). The `@srsholmes/tauri-playwright`
-# entry in `overrides` below is a top-level direct dep, which is allowed.
-# A compromised tree can't pull anything unaudited via a nested git+https://…
+# use exotic sources (git repos, tarball URLs). A compromised tree can't pull
+# anything unaudited via a nested git+https://…
 blockExoticSubdeps: true
 
 # Pin transitive deps to fix CVEs in older indirect ranges.
-# TEMPORARY override: @srsholmes/tauri-playwright is pinned to the vdavid/multi-window
-# preview release while upstream PR https://github.com/srsholmes/tauri-playwright/pull/6
-# is in review. Drop this entry and bump the @cmdr/desktop dep to ^0.3.0 once upstream
-# publishes 0.3.0 to npm.
 overrides:
   serialize-javascript: '>=7.0.3'
   lodash: '>=4.17.23'
   cookie: '>=0.7.0'
   tmp: '>=0.2.4'
-  '@srsholmes/tauri-playwright': 'https://github.com/vdavid/tauri-playwright/releases/download/v0.3.0-pre.1/srsholmes-tauri-playwright-0.3.0.tgz'
 
 # pnpm 11 requires explicit per-package build-script approval. The legacy
 # `pnpm.onlyBuiltDependencies` field in package.json is ignored.
