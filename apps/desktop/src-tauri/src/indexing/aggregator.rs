@@ -104,7 +104,16 @@ pub fn compute_all_aggregates_reported(
         start.elapsed().as_secs_f64()
     );
 
-    compute_and_write(conn, &dir_entries, &direct_stats, &child_dirs_map, on_progress)
+    let listed_epochs = bulk_get_listed_epochs(conn)?;
+
+    compute_and_write(
+        conn,
+        &dir_entries,
+        &direct_stats,
+        &child_dirs_map,
+        &listed_epochs,
+        on_progress,
+    )
 }
 
 /// Compute `dir_stats` for ALL directories using pre-built in-memory maps.
@@ -134,7 +143,20 @@ pub fn compute_all_aggregates_with_maps(
         child_dirs.len(),
     );
 
-    compute_and_write(conn, &dir_entries, direct_stats, child_dirs, on_progress)
+    // `listed_epoch` is NOT in the accumulator maps (those are keyed by `parent_id`
+    // and never see a dir's own epoch — the mark arrives via a separate
+    // `MarkDirsListed` message). Read it from `entries` here, in the same scan that
+    // loaded the dir list above.
+    let listed_epochs = bulk_get_listed_epochs(conn)?;
+
+    compute_and_write(
+        conn,
+        &dir_entries,
+        direct_stats,
+        child_dirs,
+        &listed_epochs,
+        on_progress,
+    )
 }
 
 /// Shared core: topological sort, bottom-up computation, batch write.
@@ -145,6 +167,7 @@ fn compute_and_write(
     dir_entries: &[(i64, i64)],
     direct_stats: &ChildrenStatsMap,
     child_dirs_map: &HashMap<i64, Vec<i64>>,
+    listed_epochs: &HashMap<i64, u64>,
     on_progress: &mut dyn FnMut(AggregationProgress),
 ) -> Result<u64, IndexStoreError> {
     let start = std::time::Instant::now();
@@ -157,7 +180,7 @@ fn compute_and_write(
     let compute_report_interval = (dir_count / 100).max(1000).min(dir_count.max(1)) as usize;
 
     on_progress(AggregationProgress::new(AggregationPhase::Computing, 0, dir_count));
-    let computed = compute_bottom_up(&sorted, direct_stats, child_dirs_map, None, |i| {
+    let computed = compute_bottom_up(&sorted, direct_stats, child_dirs_map, listed_epochs, None, |i| {
         if (i + 1) % compute_report_interval == 0 {
             on_progress(AggregationProgress::new(
                 AggregationPhase::Computing,
@@ -199,6 +222,14 @@ fn compute_and_write(
     Ok(count)
 }
 
+/// 0-absorbing minimum of two epochs: `0` (an unlisted dir) ABSORBS, so any `0`
+/// in the rolled-up set drags the result to `0`. For two non-zero epochs it's the
+/// ordinary `min`. This is what makes a single unlisted descendant anywhere in a
+/// subtree pull the whole subtree's `min_subtree_epoch` to `0` (incomplete).
+fn absorbing_min_epoch(a: u64, b: u64) -> u64 {
+    if a == 0 || b == 0 { 0 } else { a.min(b) }
+}
+
 /// Bottom-up aggregation over a topologically sorted list of directory IDs.
 ///
 /// For each directory (leaves first), sums direct children stats from `direct_stats`,
@@ -206,10 +237,17 @@ fn compute_and_write(
 /// `existing_stats` is provided, falls back to it for children not yet in the
 /// computed map (used by `backfill_missing_dir_stats` where some children already
 /// have DB rows). Calls `on_iter(index)` after each directory for progress reporting.
+///
+/// `listed_epochs` maps each dir id to its own `entries.listed_epoch` (`0` = never
+/// listed). Each dir's `min_subtree_epoch` is the 0-absorbing `min` of its own
+/// `listed_epoch` and every child dir's computed `min_subtree_epoch`, so an
+/// unlisted dir anywhere in the subtree drags the whole subtree to `0`
+/// (incomplete). A dir absent from `listed_epochs` is treated as unlisted (`0`).
 fn compute_bottom_up(
     sorted_ids: &[i64],
     direct_stats: &ChildrenStatsMap,
     child_dirs: &HashMap<i64, Vec<i64>>,
+    listed_epochs: &HashMap<i64, u64>,
     existing_stats: Option<&HashMap<i64, DirStatsById>>,
     mut on_iter: impl FnMut(usize),
 ) -> HashMap<i64, DirStatsById> {
@@ -224,6 +262,9 @@ fn compute_bottom_up(
         let mut recursive_file_count = file_count;
         let mut recursive_dir_count = child_dir_count;
         let mut recursive_has_symlinks = has_symlinks_direct;
+        // Coverage rollup: start from the dir's own listed_epoch, then 0-absorbing-
+        // min in each child dir's subtree epoch.
+        let mut min_subtree_epoch = listed_epochs.get(&dir_id).copied().unwrap_or(0);
 
         if let Some(children) = child_dirs.get(&dir_id) {
             for &child_id in children {
@@ -236,6 +277,11 @@ fn compute_bottom_up(
                     recursive_file_count += cs.recursive_file_count;
                     recursive_dir_count += cs.recursive_dir_count;
                     recursive_has_symlinks = recursive_has_symlinks || cs.recursive_has_symlinks;
+                    min_subtree_epoch = absorbing_min_epoch(min_subtree_epoch, cs.min_subtree_epoch);
+                } else {
+                    // A child dir we know exists but have no stats for is unknown ⇒
+                    // its subtree epoch is `0`, which absorbs the parent's to `0`.
+                    min_subtree_epoch = 0;
                 }
             }
         }
@@ -249,10 +295,7 @@ fn compute_bottom_up(
                 recursive_file_count,
                 recursive_dir_count,
                 recursive_has_symlinks,
-                // The bottom-up `min_subtree_epoch` rollup is a later milestone
-                // (the aggregator computes it from per-dir `listed_epoch`); until
-                // then it stays at its honest `0` default.
-                min_subtree_epoch: 0,
+                min_subtree_epoch,
             },
         );
 
@@ -324,12 +367,21 @@ pub fn compute_partial_aggregates(
         depth_of(id, &parent_of, &mut depths);
     }
 
+    // Read each known dir's `listed_epoch` in ONE batched `WHERE id IN (...)` over
+    // exactly the ids the borrowed maps describe — never a full-table scan and
+    // never per-dir N+1 (this runs every ~5 s mid-scan). Mid-scan the marks land
+    // only at scan end, so these all read `0` and the partial sizes are honest
+    // lower bounds (`min_subtree_epoch = 0`); the final aggregate stamps them
+    // exact. No SQL fallback: the dir list still comes from the borrowed maps.
+    let dir_ids: Vec<i64> = dir_entries.iter().map(|&(id, _)| id).collect();
+    let listed_epochs = get_listed_epochs_for_ids(conn, &dir_ids)?;
+
     // Topological sort + bottom-up compute over ALL dirs (borrowed maps; the
     // cheap part — pure in-memory iteration). Every dir gets a correct subtree
     // total regardless of its depth-to-root, so hot-path writes are always safe.
     let sorted = topological_sort_bottom_up(&dir_entries);
     let dirs_computed = sorted.len() as u64;
-    let computed = compute_bottom_up(&sorted, direct_stats, child_dirs, None, |_| {});
+    let computed = compute_bottom_up(&sorted, direct_stats, child_dirs, &listed_epochs, None, |_| {});
 
     // Write set: dirs at depth ≤ max_depth, plus each hot-path dir and its direct
     // children (independent of the depth cap).
@@ -457,9 +509,11 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
         start.elapsed().as_secs_f64() * 1000.0,
     );
 
+    let listed_epochs = scoped_get_listed_epochs(conn, root_id)?;
+
     // Topological sort: leaves first
     let sorted = topological_sort_bottom_up(&dir_entries);
-    let computed = compute_bottom_up(&sorted, &direct_stats, &child_dirs_map, None, |_| {});
+    let computed = compute_bottom_up(&sorted, &direct_stats, &child_dirs_map, &listed_epochs, None, |_| {});
 
     // Batch-write all computed stats
     log::debug!(
@@ -516,6 +570,8 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
     // fallback for children that already have stats (avoids N+1 queries).
     let existing_stats = bulk_get_all_dir_stats(conn)?;
 
+    let listed_epochs = bulk_get_listed_epochs(conn)?;
+
     // Topological sort all dirs (we need correct ordering)
     let sorted = topological_sort_bottom_up(&all_dir_entries);
 
@@ -526,7 +582,14 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
     // We need to compute all because a missing dir's stats depend on its
     // children (which might have existing stats in the DB or might also be
     // missing).
-    let computed = compute_bottom_up(&sorted, &direct_stats, &child_dirs_map, Some(&existing_stats), |_| {});
+    let computed = compute_bottom_up(
+        &sorted,
+        &direct_stats,
+        &child_dirs_map,
+        &listed_epochs,
+        Some(&existing_stats),
+        |_| {},
+    );
     let to_write: Vec<DirStatsById> = computed
         .into_values()
         .filter(|s| missing_set.contains(&s.entry_id))
@@ -564,6 +627,74 @@ fn load_all_directory_ids(conn: &Connection) -> Result<Vec<(i64, i64)>, IndexSto
     let mut stmt = conn.prepare("SELECT id, parent_id FROM entries WHERE is_directory = 1")?;
     let rows = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)))?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+}
+
+/// Load `dir_id -> listed_epoch` for ALL directories in a single SQL query.
+///
+/// Feeds the `min_subtree_epoch` rollup in `compute_bottom_up`. Read in the same
+/// pass that loads the dir list (no extra full scan beyond this one query). A dir
+/// absent from the map (impossible here — every dir row has a `NOT NULL DEFAULT 0`
+/// `listed_epoch`) would be treated as unlisted.
+fn bulk_get_listed_epochs(conn: &Connection) -> Result<HashMap<i64, u64>, IndexStoreError> {
+    let mut stmt = conn.prepare("SELECT id, listed_epoch FROM entries WHERE is_directory = 1")?;
+    let rows = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, u64>(1)?)))?;
+    let mut map = HashMap::new();
+    for row in rows {
+        let (id, epoch) = row?;
+        map.insert(id, epoch);
+    }
+    Ok(map)
+}
+
+/// Load `dir_id -> listed_epoch` for directories within the subtree rooted at
+/// `root_id` (mirrors the scoped CTE child queries).
+fn scoped_get_listed_epochs(conn: &Connection, root_id: i64) -> Result<HashMap<i64, u64>, IndexStoreError> {
+    let mut stmt = conn.prepare(
+        "WITH RECURSIVE subtree(id) AS (
+            SELECT id FROM entries WHERE id = ?1
+            UNION ALL
+            SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
+        )
+        SELECT e.id, e.listed_epoch FROM entries e
+        WHERE e.id IN (SELECT id FROM subtree) AND e.is_directory = 1",
+    )?;
+    let rows = stmt.query_map(params![root_id], |row| {
+        Ok((row.get::<_, i64>(0)?, row.get::<_, u64>(1)?))
+    })?;
+    let mut map = HashMap::new();
+    for row in rows {
+        let (id, epoch) = row?;
+        map.insert(id, epoch);
+    }
+    Ok(map)
+}
+
+/// Load `dir_id -> listed_epoch` for a specific set of ids via batched
+/// `WHERE id IN (...)` queries (chunked to stay under SQLite's parameter ceiling).
+///
+/// Used by the mid-scan partial path: it already knows the dir ids from the
+/// borrowed accumulator maps, so this is a targeted batched read, never a
+/// full-table scan and never per-dir N+1.
+fn get_listed_epochs_for_ids(conn: &Connection, ids: &[i64]) -> Result<HashMap<i64, u64>, IndexStoreError> {
+    // Stay well under SQLite's default 999-parameter ceiling.
+    const CHUNK: usize = 900;
+    let mut map = HashMap::with_capacity(ids.len());
+    for chunk in ids.chunks(CHUNK) {
+        let placeholders: String = (0..chunk.len())
+            .map(|i| format!("?{}", i + 1))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let sql = format!("SELECT id, listed_epoch FROM entries WHERE id IN ({placeholders})");
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let params: Vec<&dyn rusqlite::types::ToSql> =
+            chunk.iter().map(|id| id as &dyn rusqlite::types::ToSql).collect();
+        let rows = stmt.query_map(&*params, |row| Ok((row.get::<_, i64>(0)?, row.get::<_, u64>(1)?)))?;
+        for row in rows {
+            let (id, epoch) = row?;
+            map.insert(id, epoch);
+        }
+    }
+    Ok(map)
 }
 
 /// Load directory `(id, parent_id)` pairs for a subtree rooted at `root_id`.
@@ -955,6 +1086,82 @@ mod tests {
         assert_eq!(stats.recursive_dir_count, 0);
     }
 
+    // ── min_subtree_epoch rollup tests ───────────────────────────────
+
+    /// The core honest-coverage rollup: a listed parent with a listed-EMPTY child
+    /// and an UNlisted child. After aggregation:
+    /// - the unlisted child rolls to `min_subtree_epoch == 0` (unknown),
+    /// - the listed-empty child rolls to its own epoch `> 0` with size 0 (genuinely
+    ///   empty, not unknown),
+    /// - the parent absorbs the unlisted child to `min_subtree_epoch == 0`
+    ///   (incomplete — its subtree has an unknown corner).
+    #[test]
+    fn aggregate_min_subtree_epoch_absorbs_unlisted() {
+        let (conn, _dir) = open_temp_conn();
+
+        // /parent (id=2): listed at epoch 5
+        //   /parent/empty (id=3): listed at epoch 5, no children → genuinely empty
+        //   /parent/unlisted (id=4): never listed (listed_epoch stays 0)
+        insert_entries(
+            &conn,
+            &[
+                make_dir(2, ROOT_ID, "parent"),
+                make_dir(3, 2, "empty"),
+                make_dir(4, 2, "unlisted"),
+            ],
+        );
+        // Stamp the parent and the empty child as listed at epoch 5; leave the
+        // unlisted child (and root sentinel) at 0.
+        IndexStore::mark_dirs_listed(&conn, &[2, 3], 5).unwrap();
+
+        compute_all_aggregates(&conn).unwrap();
+
+        let empty = get_stats(&conn, 3).unwrap();
+        assert_eq!(
+            empty.min_subtree_epoch, 5,
+            "a listed-empty dir keeps its own epoch (>0)"
+        );
+        assert_eq!(empty.recursive_logical_size, 0, "and reports genuine 0 bytes");
+
+        let unlisted = get_stats(&conn, 4).unwrap();
+        assert_eq!(unlisted.min_subtree_epoch, 0, "an unlisted dir is unknown (0)");
+
+        let parent = get_stats(&conn, 2).unwrap();
+        assert_eq!(
+            parent.min_subtree_epoch, 0,
+            "a parent with any unlisted descendant is incomplete (0)"
+        );
+    }
+
+    /// A fully-listed subtree (every dir marked at the same epoch) rolls every
+    /// ancestor's `min_subtree_epoch` up to that epoch (`> 0`, exact).
+    #[test]
+    fn aggregate_min_subtree_epoch_all_listed_is_exact() {
+        let (conn, _dir) = open_temp_conn();
+
+        // /a/b/c with a file under c; all dirs listed at epoch 3.
+        insert_entries(
+            &conn,
+            &[
+                make_dir(2, ROOT_ID, "a"),
+                make_dir(3, 2, "b"),
+                make_dir(4, 3, "c"),
+                make_file(5, 4, "f.txt", 100),
+            ],
+        );
+        IndexStore::mark_dirs_listed(&conn, &[ROOT_ID, 2, 3, 4], 3).unwrap();
+
+        compute_all_aggregates(&conn).unwrap();
+
+        for &dir_id in &[ROOT_ID, 2, 3, 4] {
+            assert_eq!(
+                get_stats(&conn, dir_id).unwrap().min_subtree_epoch,
+                3,
+                "fully-listed dir id={dir_id} should be exact at epoch 3"
+            );
+        }
+    }
+
     // ── compute_subtree_aggregates tests ─────────────────────────────
 
     #[test]
@@ -991,6 +1198,46 @@ mod tests {
 
         // /a should NOT have stats (not in subtree)
         assert!(get_stats(&conn, 2).is_none());
+    }
+
+    /// A subtree aggregate sets `min_subtree_epoch` from the scoped `listed_epoch`
+    /// read (not left at the `0` default): a fully-listed subtree is exact, and an
+    /// unlisted dir inside it drags its ancestors within the subtree to `0`.
+    #[test]
+    fn subtree_aggregation_sets_min_subtree_epoch() {
+        let (conn, _dir) = open_temp_conn();
+
+        // /b (id=2): listed at epoch 4
+        //   /b/listed (id=3): listed at epoch 4 → exact
+        //   /b/unlisted (id=4): never listed → unknown, drags /b to 0
+        insert_entries(
+            &conn,
+            &[
+                make_dir(2, ROOT_ID, "b"),
+                make_dir(3, 2, "listed"),
+                make_dir(4, 2, "unlisted"),
+            ],
+        );
+        IndexStore::mark_dirs_listed(&conn, &[2, 3], 4).unwrap();
+
+        let count = compute_subtree_aggregates(&conn, "/b").unwrap();
+        assert_eq!(count, 3); // /b, /b/listed, /b/unlisted
+
+        assert_eq!(
+            get_stats(&conn, 3).unwrap().min_subtree_epoch,
+            4,
+            "listed leaf is exact"
+        );
+        assert_eq!(
+            get_stats(&conn, 4).unwrap().min_subtree_epoch,
+            0,
+            "unlisted leaf is unknown"
+        );
+        assert_eq!(
+            get_stats(&conn, 2).unwrap().min_subtree_epoch,
+            0,
+            "subtree root absorbs the unlisted child"
+        );
     }
 
     #[test]
@@ -1045,6 +1292,50 @@ mod tests {
         // Root sentinel should also be correct
         let root_stats = get_stats(&conn, ROOT_ID).unwrap();
         assert_eq!(root_stats.recursive_logical_size, 300);
+    }
+
+    /// Backfill sets `min_subtree_epoch` on the dirs it fills (not left at the `0`
+    /// default): a fully-listed subtree backfills to its epoch, exact.
+    #[test]
+    fn backfill_sets_min_subtree_epoch() {
+        let (conn, _dir) = open_temp_conn();
+
+        // /a (id=2) with /a/f.txt (id=3) and /a/sub (id=4) with /a/sub/g.txt (id=5).
+        insert_entries(
+            &conn,
+            &[
+                make_dir(2, ROOT_ID, "a"),
+                make_file(3, 2, "f.txt", 100),
+                make_dir(4, 2, "sub"),
+                make_file(5, 4, "g.txt", 200),
+            ],
+        );
+        IndexStore::mark_dirs_listed(&conn, &[ROOT_ID, 2, 4], 6).unwrap();
+
+        // Seed only /a/sub's stats (with its honest epoch); leave root + /a missing.
+        IndexStore::upsert_dir_stats_by_id(
+            &conn,
+            &[DirStatsById {
+                entry_id: 4,
+                recursive_logical_size: 200,
+                recursive_physical_size: 200,
+                recursive_file_count: 1,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+                min_subtree_epoch: 6,
+            }],
+        )
+        .unwrap();
+
+        let count = backfill_missing_dir_stats(&conn).unwrap();
+        assert_eq!(count, 2); // root sentinel + /a
+
+        assert_eq!(
+            get_stats(&conn, 2).unwrap().min_subtree_epoch,
+            6,
+            "/a backfills to its fully-listed epoch (exact)"
+        );
+        assert_eq!(get_stats(&conn, ROOT_ID).unwrap().min_subtree_epoch, 6);
     }
 
     #[test]

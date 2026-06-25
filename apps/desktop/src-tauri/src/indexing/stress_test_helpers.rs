@@ -289,32 +289,39 @@ pub fn check_db_consistency(conn: &Connection) {
 
     // 3 & 4. dir_stats values match actual descendant counts.
     // Build in-memory tree, then compute expected stats bottom-up.
-    let all_entries: Vec<EntryRow> = {
+    // `(EntryRow, listed_epoch)`: `EntryRow` has no `listed_epoch` field, so the
+    // per-dir epoch is carried alongside for the `min_subtree_epoch` oracle.
+    let all_entries: Vec<(EntryRow, u64)> = {
         let mut stmt = conn
-            .prepare("SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode FROM entries")
+            .prepare("SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode, listed_epoch FROM entries")
             .unwrap();
         stmt.query_map([], |row| {
-            Ok(EntryRow {
-                id: row.get(0)?,
-                parent_id: row.get(1)?,
-                name: row.get(2)?,
-                is_directory: row.get::<_, i32>(3)? != 0,
-                is_symlink: row.get::<_, i32>(4)? != 0,
-                logical_size: row.get(5)?,
-                physical_size: row.get(6)?,
-                modified_at: row.get(7)?,
-                inode: row.get(8)?,
-            })
+            Ok((
+                EntryRow {
+                    id: row.get(0)?,
+                    parent_id: row.get(1)?,
+                    name: row.get(2)?,
+                    is_directory: row.get::<_, i32>(3)? != 0,
+                    is_symlink: row.get::<_, i32>(4)? != 0,
+                    logical_size: row.get(5)?,
+                    physical_size: row.get(6)?,
+                    modified_at: row.get(7)?,
+                    inode: row.get(8)?,
+                },
+                row.get::<_, u64>(9)?,
+            ))
         })
         .unwrap()
         .map(|r| r.unwrap())
         .collect()
     };
 
-    // Build parent -> children map
+    // Build parent -> children map and a dir_id -> listed_epoch map.
     let mut children_map: HashMap<i64, Vec<&EntryRow>> = HashMap::new();
-    for entry in &all_entries {
+    let mut listed_epoch_map: HashMap<i64, u64> = HashMap::new();
+    for (entry, listed_epoch) in &all_entries {
         children_map.entry(entry.parent_id).or_default().push(entry);
+        listed_epoch_map.insert(entry.id, *listed_epoch);
     }
 
     // Recursive function to compute expected stats
@@ -345,8 +352,31 @@ pub fn check_db_consistency(conn: &Connection) {
         (logical_size, file_count, dir_count)
     }
 
+    /// Ground-truth `min_subtree_epoch`: 0-absorbing min of this dir's own
+    /// `listed_epoch` and every child dir's expected `min_subtree_epoch`.
+    fn compute_expected_min_epoch(
+        entry_id: i64,
+        children_map: &HashMap<i64, Vec<&EntryRow>>,
+        listed_epoch_map: &HashMap<i64, u64>,
+    ) -> u64 {
+        let mut min_epoch = listed_epoch_map.get(&entry_id).copied().unwrap_or(0);
+        if let Some(children) = children_map.get(&entry_id) {
+            for child in children {
+                if child.is_directory {
+                    let child_epoch = compute_expected_min_epoch(child.id, children_map, listed_epoch_map);
+                    min_epoch = if min_epoch == 0 || child_epoch == 0 {
+                        0
+                    } else {
+                        min_epoch.min(child_epoch)
+                    };
+                }
+            }
+        }
+        min_epoch
+    }
+
     // Check each directory's dir_stats
-    for entry in &all_entries {
+    for (entry, _) in &all_entries {
         if !entry.is_directory {
             continue;
         }
@@ -370,6 +400,13 @@ pub fn check_db_consistency(conn: &Connection) {
             stats.recursive_dir_count, expected_dirs,
             "dir_stats.recursive_dir_count mismatch for id={}, name='{}': got {}, expected {}",
             entry.id, entry.name, stats.recursive_dir_count, expected_dirs
+        );
+
+        let expected_min_epoch = compute_expected_min_epoch(entry.id, &children_map, &listed_epoch_map);
+        assert_eq!(
+            stats.min_subtree_epoch, expected_min_epoch,
+            "dir_stats.min_subtree_epoch mismatch for id={}, name='{}': got {}, expected {}",
+            entry.id, entry.name, stats.min_subtree_epoch, expected_min_epoch
         );
     }
 

@@ -73,7 +73,21 @@ fn assert_dir_stats_equal(a: &HashMap<i64, DirStatsById>, b: &HashMap<i64, DirSt
             sa.recursive_has_symlinks, sb.recursive_has_symlinks,
             "recursive_has_symlinks differs for id={id}"
         );
+        assert_eq!(
+            sa.min_subtree_epoch, sb.min_subtree_epoch,
+            "min_subtree_epoch differs for id={id}"
+        );
     }
+}
+
+/// The directory ids of an entry list, for stamping `listed_epoch` before the
+/// final aggregate (mirroring the scanner's mark-before-aggregate sequence).
+fn dir_ids(entries: &[EntryRow]) -> Vec<i64> {
+    let mut ids: Vec<i64> = entries.iter().filter(|e| e.is_directory).map(|e| e.id).collect();
+    // The synthetic root sentinel (ROOT_ID) isn't in the entry list; the scanner
+    // marks it too, so include it.
+    ids.push(crate::indexing::store::ROOT_ID);
+    ids
 }
 
 /// Split a flat entry list into deterministic batches for streaming inserts.
@@ -109,12 +123,25 @@ fn partial_passes_never_change_final_state() {
         "/dir_L0_D1/dir_L1_D1/dir_L2_D1/dir_L3_D1".to_string(),
     ];
 
-    // Arm (a): inserts then final aggregation only.
+    // Every directory is "successfully listed" at this epoch, stamped after the
+    // final insert and before the final aggregate — exactly the scanner's
+    // mark-before-aggregate sequence. So the final state has non-zero
+    // `min_subtree_epoch` everywhere, making the equality + oracle meaningful.
+    let listed_epoch: u64 = 7;
+    let marks = dir_ids(&entries);
+
+    // Arm (a): inserts, mark all listed, then final aggregation only.
     let stats_a = {
         let (writer, read_conn, _dir) = setup_writer();
         for batch in &batches {
             writer.send(WriteMessage::InsertEntriesV2(batch.clone())).unwrap();
         }
+        writer
+            .send(WriteMessage::MarkDirsListed {
+                ids: marks.clone(),
+                epoch: listed_epoch,
+            })
+            .unwrap();
         writer.send(WriteMessage::ComputeAllAggregates).unwrap();
         writer.flush_blocking().unwrap();
         let snap = snapshot_dir_stats(&read_conn);
@@ -122,7 +149,9 @@ fn partial_passes_never_change_final_state() {
         snap
     };
 
-    // Arm (b): inserts with a partial pass after each batch, then final aggregation.
+    // Arm (b): inserts with a partial pass after each batch, then mark + final
+    // aggregation. Mid-run the partial passes legitimately differ (marks land only
+    // at the end), so the equality below is on the END state only.
     let (writer, read_conn, _dir) = setup_writer();
     for batch in &batches {
         writer.send(WriteMessage::InsertEntriesV2(batch.clone())).unwrap();
@@ -132,6 +161,12 @@ fn partial_passes_never_change_final_state() {
             })
             .unwrap();
     }
+    writer
+        .send(WriteMessage::MarkDirsListed {
+            ids: marks.clone(),
+            epoch: listed_epoch,
+        })
+        .unwrap();
     writer.send(WriteMessage::ComputeAllAggregates).unwrap();
     writer.flush_blocking().unwrap();
 
