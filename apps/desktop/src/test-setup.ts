@@ -47,19 +47,19 @@ vi.mock('@tauri-apps/api/webview', () => ({
   })),
 }))
 
-// Stub HTMLCanvasElement.getContext('2d') for jsdom. Production code uses
-// canvas in four spots: font width measurement (`font-metrics/`,
-// `full-list-utils.ts`), drag preview rendering (`drag-image-renderer.ts`),
-// and viewer line-height calc (`viewer-line-heights.svelte.ts`). jsdom
-// doesn't implement the Canvas API; without this stub it prints
-// "Not implemented: HTMLCanvasElement's getContext()" once per call,
-// drowning real warnings in the noise. Pixel-accurate output isn't
-// meaningful in jsdom (WebKit vs Cairo render differently) — visual
-// regression belongs in Playwright. So `measureText` returns a synthetic
-// width (7 px per character) and every draw method is a no-op. The faked
-// width is good enough for wrapper logic to thread non-zero numbers
-// through; tests that need real font metrics don't exist and would have
-// to use Playwright anyway.
+// Stub canvas 2D contexts for jsdom. Production code uses canvas in five
+// spots: font width measurement (`font-metrics/`, `full-list-utils.ts`),
+// text layout (`@chenglou/pretext` via `shorten-middle.ts`), drag preview
+// rendering (`drag-image-renderer.ts`), and viewer line-height calc
+// (`viewer-line-heights.svelte.ts`). jsdom doesn't implement the Canvas API;
+// without this stub it prints "Not implemented: HTMLCanvasElement's
+// getContext()" once per call, drowning real warnings in the noise.
+// Pixel-accurate output isn't meaningful in jsdom (WebKit vs Cairo render
+// differently) — visual regression belongs in Playwright. So `measureText`
+// returns a synthetic width (7 px per character) and every draw method is a
+// no-op. The faked width is good enough for wrapper logic to thread non-zero
+// numbers through; tests that need real font metrics don't exist and would
+// have to use Playwright anyway.
 function createMockCanvas2DContext(): CanvasRenderingContext2D {
   const handler: ProxyHandler<CanvasRenderingContext2D> = {
     get(_target, prop) {
@@ -90,3 +90,21 @@ function createMockCanvas2DContext(): CanvasRenderingContext2D {
 HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
   return contextId === '2d' ? createMockCanvas2DContext() : null
 }) as typeof HTMLCanvasElement.prototype.getContext
+
+// jsdom 29.1+ defines `OffscreenCanvas` as a global, but its 2D context is
+// null (no rendering backend). Text-measurement code prefers OffscreenCanvas
+// when present (`@chenglou/pretext`'s `getMeasureContext`), so without this it
+// hits a null context and throws on `ctx.font = …`. Route it to the same
+// synthetic 2D context as the DOM canvas above.
+class OffscreenCanvasMock {
+  constructor(
+    public width: number,
+    public height: number,
+  ) {}
+
+  getContext(contextId: string): CanvasRenderingContext2D | null {
+    return contextId === '2d' ? createMockCanvas2DContext() : null
+  }
+}
+
+vi.stubGlobal('OffscreenCanvas', OffscreenCanvasMock)
