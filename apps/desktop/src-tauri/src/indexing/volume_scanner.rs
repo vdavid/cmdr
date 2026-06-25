@@ -343,6 +343,231 @@ pub(crate) async fn scan_volume_via_trait(
     Ok(summary(total_entries, total_dirs, total_physical_bytes, start, false))
 }
 
+/// Non-destructively RECONCILE a network volume against an already-populated
+/// index, instead of truncating and rebuilding.
+///
+/// Walks the same BFS over `Volume::list_directory` as [`scan_volume_via_trait`],
+/// with the same round-trip disciplines (cancel, timeout, autoreleasepool,
+/// terminal-disconnect + consecutive-failure backstop). But per listed dir it
+/// DIFFS the live listing against the DB rows ([`reconciler::diff_dir_against_db`],
+/// shared with the local reconcile walk) and writes only the changes — so the
+/// last-good index stays visible (stale) throughout and a mid-rescan disconnect
+/// leaves the prior data intact. No `TruncateData` precedes it (the manager skips
+/// the truncate for the reconcile path).
+///
+/// Coverage: stamps every successfully-listed dir, then runs ONE
+/// `ComputeAllAggregates` (NOT per-dir propagation — the M3.0 gate measured that
+/// ~2× slower at full scale; `docs/notes/m3-reconcile-rescan-gate.md`). After a
+/// reconcile the writer's accumulator maps are empty (no `InsertEntriesV2`), so
+/// `ComputeAllAggregates` takes the O(dirs) bulk-SQL bottom-up path.
+///
+/// A no-op reconcile (nothing changed on disk) writes ZERO entry rows — unchanged
+/// rows are diffed and skipped, never re-UPSERTed — so it never touches the
+/// catastrophic `INSERT OR REPLACE`/`platform_case` path.
+pub(crate) async fn reconcile_volume_via_trait(
+    volume: Arc<dyn Volume>,
+    root: PathBuf,
+    writer: IndexWriter,
+    progress: Arc<ScanProgress>,
+    cancelled: Arc<AtomicBool>,
+) -> Result<ScanSummary, VolumeScanError> {
+    use crate::indexing::reconciler::{self, LiveChild};
+    use crate::indexing::store::{ROOT_ID, resolve_path};
+
+    let start = Instant::now();
+    let db_path = writer.db_path();
+
+    // A READ connection for path/child resolution (the reconcile path holds a read
+    // connection, never a write one — write-mode pragmas can `SQLITE_BUSY` and
+    // silently kill live indexing; see `indexing/CLAUDE.md`). The caller has
+    // already bumped + flushed `current_epoch` before spawning this walk; read it
+    // back here and stamp listed dirs with it.
+    let conn = IndexStore::open_read_connection(&db_path).map_err(|e| VolumeScanError::Context(e.to_string()))?;
+    let epoch = IndexStore::read_current_epoch(&conn).map_err(|e| VolumeScanError::Context(e.to_string()))?;
+
+    // Ids of every directory whose listing SUCCEEDED (including empty results),
+    // stamped after the walk and before the single aggregate.
+    let mut listed_ids: Vec<i64> = Vec::new();
+    let mut total_entries: u64 = 0;
+    let mut total_dirs: u64 = 0;
+    let mut total_physical_bytes: u64 = 0;
+    let mut consecutive_failures: usize = 0;
+    let mut added: u64 = 0;
+    let mut removed: u64 = 0;
+    let mut updated: u64 = 0;
+
+    // BFS by (absolute dir path, its DB id). The scan root maps to ROOT_ID in this
+    // index (same as the fresh scan). New dirs discovered this pass are resolved to
+    // ids after a writer flush before we recurse into them.
+    let mut queue: VecDeque<(PathBuf, i64)> = VecDeque::new();
+    queue.push_back((root.clone(), ROOT_ID));
+    // Names of new child dirs per parent path, drained after a level's flush.
+    let mut new_dirs: Vec<(PathBuf, String)> = Vec::new();
+
+    while let Some((dir_path, dir_id)) = queue.pop_front() {
+        if cancelled.load(Ordering::Relaxed) {
+            // User cancel: stop, but leave the prior index intact (no truncate ran).
+            // Mirror the fresh-scan cancel contract (no marks/aggregate on cancel).
+            return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
+        }
+
+        let entries = match list_one_directory(volume.as_ref(), &dir_path, &cancelled).await {
+            Ok(e) => {
+                consecutive_failures = 0;
+                e
+            }
+            // TERMINAL disconnect: stop immediately and keep the prior index
+            // intact. There's no partial to roll up (we never truncated), but we
+            // still stamp the dirs we DID re-list this pass and run the aggregate,
+            // so reconciled subtrees flip fresh and the rest stays as it was
+            // (stale). Then surface the typed error.
+            Err(VolumeScanError::Volume(e)) if is_typed_disconnect(&e) => {
+                log::warn!(
+                    "volume_scanner: device disconnected reconciling {}: {e}; \
+                     keeping prior index ({} re-listed, {} queued unreached)",
+                    dir_path.display(),
+                    crate::pluralize::pluralize(total_dirs, "dir"),
+                    crate::pluralize::pluralize(queue.len() as u64, "dir"),
+                );
+                finish_reconcile(&listed_ids, epoch, &writer)?;
+                return Err(VolumeScanError::Volume(e));
+            }
+            Err(VolumeScanError::Volume(ref e)) if dir_path == root => {
+                // Failing to list the root with a non-disconnect error: nothing to
+                // reconcile from. Surface it; the prior index is untouched.
+                return Err(VolumeScanError::Volume(e.clone()));
+            }
+            Err(err) => {
+                consecutive_failures += 1;
+                log::debug!(
+                    "volume_scanner: skipping unlistable dir {} during reconcile (consecutive_failures={consecutive_failures}): {err}",
+                    dir_path.display(),
+                );
+                if consecutive_failures >= CONSECUTIVE_FAILURE_ABORT {
+                    log::warn!(
+                        "volume_scanner: {consecutive_failures} consecutive listing failures during reconcile \
+                         (looks like a disconnect); aborting and keeping prior index \
+                         ({} re-listed, {} queued unreached)",
+                        crate::pluralize::pluralize(total_dirs, "dir"),
+                        crate::pluralize::pluralize(queue.len() as u64, "dir"),
+                    );
+                    finish_reconcile(&listed_ids, epoch, &writer)?;
+                    return Err(VolumeScanError::ConsecutiveFailures {
+                        count: consecutive_failures,
+                        last: err.to_string(),
+                    });
+                }
+                continue;
+            }
+        };
+
+        // This dir's listing succeeded — stamp it (incl. empty).
+        listed_ids.push(dir_id);
+
+        // Normalize the live listing into source-agnostic `LiveChild`s.
+        let mut live_children: Vec<LiveChild> = Vec::with_capacity(entries.len());
+        for entry in &entries {
+            let is_dir = entry.is_directory;
+            let is_symlink = entry.is_symlink;
+            // SMB/MTP: no inode, no separate physical size; mirror logical into
+            // physical, symlinks contribute none (matching the fresh-scan path).
+            let (logical_size, physical_size) = if is_symlink {
+                (None, None)
+            } else {
+                (entry.size, entry.physical_size.or(entry.size))
+            };
+            let entry_physical = physical_size.unwrap_or(0);
+            total_physical_bytes += entry_physical;
+            progress.bytes_scanned.fetch_add(entry_physical, Ordering::Relaxed);
+            total_entries += 1;
+            progress.entries_scanned.fetch_add(1, Ordering::Relaxed);
+            if is_dir {
+                total_dirs += 1;
+                progress.dirs_found.fetch_add(1, Ordering::Relaxed);
+            }
+            live_children.push(LiveChild {
+                name: entry.name.clone(),
+                is_directory: is_dir,
+                is_symlink,
+                snap: crate::indexing::metadata::MetadataSnapshot {
+                    logical_size,
+                    physical_size,
+                    modified_at: entry.modified_at,
+                    inode: None,
+                    nlink: None,
+                },
+            });
+        }
+
+        let db_children =
+            IndexStore::list_children_on(dir_id, &conn).map_err(|e| VolumeScanError::Context(e.to_string()))?;
+
+        let diff = reconciler::diff_dir_against_db(dir_id, &live_children, &db_children, &writer);
+        added += diff.added;
+        removed += diff.removed;
+        updated += diff.updated;
+        for (child_id, child_name) in diff.matched_child_dirs {
+            queue.push_back((dir_path.join(child_name), child_id));
+        }
+        for child_name in diff.new_child_dir_names {
+            new_dirs.push((dir_path.clone(), child_name));
+        }
+
+        // When the current BFS level is drained and new dirs were created, flush so
+        // the read connection can resolve their freshly-assigned ids, then queue
+        // them for recursion.
+        if !new_dirs.is_empty() && queue.is_empty() {
+            writer
+                .flush()
+                .await
+                .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+            for (parent_path, child_name) in new_dirs.drain(..) {
+                let child_path = parent_path.join(&child_name);
+                // Network index paths are stored verbatim (no firmlink
+                // normalization — that's local-only), so resolve by the same
+                // absolute path the scan walks.
+                match resolve_path(&conn, &child_path.to_string_lossy()) {
+                    Ok(Some(id)) => queue.push_back((child_path, id)),
+                    Ok(None) => log::debug!(
+                        "volume_scanner: reconcile couldn't resolve new dir after flush: {}",
+                        child_path.display()
+                    ),
+                    Err(e) => log::warn!(
+                        "volume_scanner: reconcile resolve_path failed for {}: {e}",
+                        child_path.display()
+                    ),
+                }
+            }
+        }
+    }
+
+    // Clean finish: stamp listed dirs, run ONE aggregate, trim the WAL.
+    finish_reconcile(&listed_ids, epoch, &writer)?;
+    writer
+        .send(WriteMessage::WalCheckpoint)
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+
+    log::info!(
+        "volume_scanner: reconcile complete for {}: +{added} -{removed} ~{updated} ({total_dirs} dirs re-listed) in {}ms",
+        root.display(),
+        start.elapsed().as_millis()
+    );
+
+    Ok(summary(total_entries, total_dirs, total_physical_bytes, start, false))
+}
+
+/// Stamp the reconciled dirs' `listed_epoch`, then run ONE `ComputeAllAggregates`.
+/// The single-aggregate coverage refresh the M3.1 full-rescan path mandates: NOT
+/// per-dir propagation. A no-op reconcile still runs the aggregate (cheap O(dirs)
+/// bulk SQL) so coverage re-stamps to the new epoch; it writes no entry rows.
+fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), VolumeScanError> {
+    send_marks(listed_ids, epoch, writer)?;
+    writer
+        .send(WriteMessage::ComputeAllAggregates)
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+    Ok(())
+}
+
 /// List one directory over the `Volume` trait, wrapped in a timeout and (macOS)
 /// an autoreleasepool. The pool is drained per round trip so autoreleased ObjC
 /// objects from the SMB listing path don't accumulate across a long walk.
@@ -919,6 +1144,289 @@ mod tests {
             .expect("cancelled scan still returns Ok");
         assert!(summary.was_cancelled);
         assert_eq!(summary.total_entries, 0, "nothing scanned after immediate cancel");
+
+        writer.shutdown();
+    }
+
+    // ── M3.1: non-destructive reconcile rescan (network path) ────────
+
+    use crate::indexing::writer::IndexWriter;
+    use rusqlite::Connection;
+
+    fn entry_count(conn: &Connection) -> i64 {
+        conn.query_row("SELECT COUNT(*) FROM entries", [], |r| r.get(0))
+            .expect("count entries")
+    }
+
+    /// Recursive logical size of a dir by absolute path, from `dir_stats`.
+    fn dir_size(conn: &Connection, path: &str) -> u64 {
+        let id = resolve_path(conn, path).expect("resolve").expect("present");
+        IndexStore::get_dir_stats_by_id(conn, id)
+            .expect("stats")
+            .map(|s| s.recursive_logical_size)
+            .unwrap_or(0)
+    }
+
+    fn min_epoch(conn: &Connection, path: &str) -> u64 {
+        let id = resolve_path(conn, path).expect("resolve").expect("present");
+        IndexStore::get_dir_stats_by_id(conn, id)
+            .expect("stats")
+            .map(|s| s.min_subtree_epoch)
+            .unwrap_or(0)
+    }
+
+    /// Build a writer + DB pre-populated to an "already fully scanned" state by
+    /// running a fresh `scan_volume_via_trait` over `vol`. Returns (writer, db_path,
+    /// tempdir). Epoch is seeded to 1 by the fresh scan.
+    async fn fresh_scan(vol: Arc<dyn Volume>) -> (IndexWriter, PathBuf, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("reconcile.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+        let cancelled = Arc::new(AtomicBool::new(false));
+        scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
+            .await
+            .expect("fresh scan");
+        writer.flush().await.expect("flush");
+        (writer, db_path, dir)
+    }
+
+    /// A small known tree:
+    ///   /sub/         (dir)
+    ///   /sub/keep.txt (4 bytes)
+    ///   /sub/mod.txt  (4 bytes)
+    ///   /top.txt      (5 bytes)
+    fn base_tree() -> Vec<FileEntry> {
+        vec![
+            entry("sub", "/sub", true, None),
+            entry("keep.txt", "/sub/keep.txt", false, Some(4)),
+            entry("mod.txt", "/sub/mod.txt", false, Some(4)),
+            entry("top.txt", "/top.txt", false, Some(5)),
+        ]
+    }
+
+    /// A reconcile rescan over an UNCHANGED tree writes ZERO entry rows (the
+    /// no-op-cheap property the M3.0 gate relied on): unchanged rows are diffed and
+    /// skipped, never re-UPSERTed, so the catastrophic INSERT OR REPLACE path is
+    /// never touched. Coverage still re-stamps to the new epoch.
+    #[tokio::test]
+    async fn reconcile_noop_writes_zero_entry_rows() {
+        let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", base_tree()));
+        let (writer, db_path, _dir) = fresh_scan(Arc::clone(&vol)).await;
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        let rows_before = entry_count(&conn);
+        let max_id_before: i64 = conn
+            .query_row("SELECT COALESCE(MAX(id), 0) FROM entries", [], |r| r.get(0))
+            .unwrap();
+
+        // A continuity break would bump the epoch before a rescan; mirror that.
+        let new_epoch = {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::bump_current_epoch(&wconn).unwrap()
+        };
+
+        // Reconcile the SAME tree (nothing changed on disk).
+        let cancelled = Arc::new(AtomicBool::new(false));
+        reconcile_volume_via_trait(
+            Arc::clone(&vol),
+            PathBuf::from("/"),
+            writer.clone(),
+            progress(),
+            cancelled,
+        )
+        .await
+        .expect("reconcile");
+        writer.flush().await.expect("flush");
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        assert_eq!(
+            entry_count(&conn),
+            rows_before,
+            "no-op reconcile must not change the entry row count"
+        );
+        let max_id_after: i64 = conn
+            .query_row("SELECT COALESCE(MAX(id), 0) FROM entries", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(
+            max_id_after, max_id_before,
+            "no-op reconcile must not allocate any new ids (zero rows written)"
+        );
+        // Coverage re-stamped to the new epoch (the single aggregate ran).
+        assert_eq!(
+            min_epoch(&conn, "/sub"),
+            new_epoch,
+            "no-op reconcile re-stamps coverage to the new epoch"
+        );
+
+        writer.shutdown();
+    }
+
+    /// A reconcile rescan with changes (add / remove / modify) refreshes sizes
+    /// correctly AND ends byte-identical (entry set + dir sizes) to a
+    /// fresh-from-scratch scan of the SAME final tree. The 1.83 TB-ghost guard.
+    #[tokio::test]
+    async fn reconcile_with_changes_matches_fresh_from_scratch() {
+        let vol_before: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", base_tree()));
+        let (writer, db_path, _dir) = fresh_scan(Arc::clone(&vol_before)).await;
+
+        // Final tree: remove keep.txt, modify mod.txt (4→20 bytes), add new.txt,
+        // add a new subdir with a file.
+        let final_tree = vec![
+            entry("sub", "/sub", true, None),
+            entry("mod.txt", "/sub/mod.txt", false, Some(20)),
+            entry("new.txt", "/sub/new.txt", false, Some(7)),
+            entry("deep", "/sub/deep", true, None),
+            entry("d.txt", "/sub/deep/d.txt", false, Some(3)),
+            entry("top.txt", "/top.txt", false, Some(5)),
+        ];
+        let vol_after: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", final_tree.clone()));
+
+        // Bump epoch (continuity break) then reconcile to the final tree.
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::bump_current_epoch(&wconn).unwrap();
+        }
+        let cancelled = Arc::new(AtomicBool::new(false));
+        reconcile_volume_via_trait(
+            Arc::clone(&vol_after),
+            PathBuf::from("/"),
+            writer.clone(),
+            progress(),
+            cancelled,
+        )
+        .await
+        .expect("reconcile");
+        writer.flush().await.expect("flush");
+
+        // Fresh-from-scratch oracle: scan the final tree into a clean DB.
+        let vol_oracle: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", final_tree));
+        let (oracle_writer, oracle_db, _odir) = fresh_scan(vol_oracle).await;
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        let oconn = IndexStore::open_read_connection(&oracle_db).expect("oracle read conn");
+
+        // keep.txt gone; new.txt + deep/ present.
+        assert!(
+            resolve_path(&conn, "/sub/keep.txt").unwrap().is_none(),
+            "removed file gone"
+        );
+        assert!(
+            resolve_path(&conn, "/sub/new.txt").unwrap().is_some(),
+            "added file present"
+        );
+        assert!(
+            resolve_path(&conn, "/sub/deep/d.txt").unwrap().is_some(),
+            "new subtree present"
+        );
+
+        // Same recursive sizes as a fresh build (no ghosts).
+        assert_eq!(
+            dir_size(&conn, "/sub"),
+            dir_size(&oconn, "/sub"),
+            "/sub size matches fresh"
+        );
+        assert_eq!(dir_size(&conn, "/"), dir_size(&oconn, "/"), "root size matches fresh");
+        // mod.txt's new size is reflected: /sub = mod(20) + new(7) + deep/d(3) = 30.
+        assert_eq!(dir_size(&conn, "/sub"), 30, "reconciled /sub reflects modify + adds");
+
+        writer.shutdown();
+        oracle_writer.shutdown();
+    }
+
+    /// A mid-rescan DISCONNECT leaves the PRIOR complete index intact (now possible
+    /// — no truncate ran) and surfaces the typed terminal error. The re-listed dirs
+    /// are stamped at the rescan epoch; unreached dirs keep their prior data. The
+    /// completion handler (manager) then bumps past the epoch so everything reads
+    /// stale — here we assert the prior data SURVIVES (the headline M3.1 property).
+    #[tokio::test]
+    async fn mid_reconcile_disconnect_keeps_prior_index() {
+        // Wide tree so the disconnect leaves real dirs unreached.
+        let mut before = vec![entry("top.txt", "/top.txt", false, Some(5))];
+        for i in 0..20 {
+            before.push(entry(&format!("d{i}"), &format!("/d{i}"), true, None));
+            before.push(entry("f.txt", &format!("/d{i}/f.txt"), false, Some(10)));
+        }
+        let vol_before: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", before));
+        let (writer, db_path, _dir) = fresh_scan(Arc::clone(&vol_before)).await;
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        let rows_before = entry_count(&conn);
+        assert!(rows_before > 20, "prior complete index has all dirs");
+        let root_size_before = dir_size(&conn, "/");
+
+        // A disconnecting volume: lists the root + a couple dirs, then drops.
+        let calls = Arc::new(AtomicU64::new(0));
+        let mut after = vec![entry("top.txt", "/top.txt", false, Some(5))];
+        for i in 0..20 {
+            after.push(entry(&format!("d{i}"), &format!("/d{i}"), true, None));
+            after.push(entry("f.txt", &format!("/d{i}/f.txt"), false, Some(10)));
+        }
+        let vol_disc: Arc<dyn Volume> = Arc::new(CountingDisconnectVolume {
+            inner: InMemoryVolume::with_entries("Test", after),
+            fail_after_calls: 4, // root + a few dirs, then disconnect
+            calls: Arc::clone(&calls),
+            untyped_failure: false,
+        });
+
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::bump_current_epoch(&wconn).unwrap();
+        }
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let result =
+            reconcile_volume_via_trait(vol_disc, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+
+        match result {
+            Err(VolumeScanError::Volume(VolumeError::DeviceDisconnected(_))) => {}
+            other => panic!("expected typed terminal disconnect, got {other:?}"),
+        }
+        writer.flush().await.expect("flush");
+
+        // The prior index is INTACT: no truncate ran, all rows still present, sizes
+        // unchanged (the unreached dirs were never re-listed, so their data stands).
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        assert_eq!(
+            entry_count(&conn),
+            rows_before,
+            "mid-rescan disconnect must not lose any prior rows (no truncate)"
+        );
+        assert_eq!(
+            dir_size(&conn, "/"),
+            root_size_before,
+            "prior root size survives a mid-rescan disconnect"
+        );
+
+        writer.shutdown();
+    }
+
+    /// First scan (empty DB) is a fresh truncate+build, NOT a reconcile: the manager
+    /// chooses by entry-count, but at this layer we confirm `scan_volume_via_trait`
+    /// builds correctly from empty (the precondition the reconcile path relies on:
+    /// a populated DB). This pins that the two entry points produce the same index.
+    #[tokio::test]
+    async fn first_scan_builds_then_reconcile_is_a_no_op() {
+        let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", base_tree()));
+        let (writer, db_path, _dir) = fresh_scan(Arc::clone(&vol)).await;
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        let built = entry_count(&conn);
+        // 4 tree entries (sub, keep.txt, mod.txt, top.txt) + the ROOT_ID sentinel.
+        assert_eq!(built, 5, "first scan built all 4 entries plus the root sentinel");
+
+        // Immediately reconciling the same tree is a no-op (zero new rows).
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::bump_current_epoch(&wconn).unwrap();
+        }
+        let cancelled = Arc::new(AtomicBool::new(false));
+        reconcile_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
+            .await
+            .expect("reconcile");
+        writer.flush().await.expect("flush");
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        assert_eq!(entry_count(&conn), built, "reconcile after first scan adds no rows");
 
         writer.shutdown();
     }

@@ -386,12 +386,171 @@ pub(super) struct ReconcileSummary {
     pub duration: std::time::Duration,
 }
 
+/// A live directory child, normalized to the fields the per-dir diff needs.
+/// The two walk sources build this identically: the local `read_dir` path from a
+/// `std::fs::Metadata`, the network path from a `Volume` listing's `FileEntry`.
+/// The diff is then source-agnostic — the same add/remove/modify/type-change
+/// logic for both.
+pub(super) struct LiveChild {
+    pub name: String,
+    pub is_directory: bool,
+    pub is_symlink: bool,
+    pub snap: crate::indexing::metadata::MetadataSnapshot,
+}
+
+/// Outcome of diffing ONE directory's live children against its DB rows.
+pub(super) struct DirDiff {
+    pub added: u64,
+    pub removed: u64,
+    pub updated: u64,
+    /// `(child_dir_id, child_name)` for every EXISTING child dir that matched a
+    /// live dir — the caller recurses into these (their id is already known).
+    pub matched_child_dirs: Vec<(i64, String)>,
+    /// Names of NEW child dirs created this pass — the caller flushes the writer,
+    /// resolves their ids, then recurses (the id isn't known until the insert
+    /// commits).
+    pub new_child_dir_names: Vec<String>,
+}
+
+/// Diff one directory's live listing against its DB children and emit only the
+/// differences (`UpsertEntryV2` for adds + changes, `DeleteEntryById` /
+/// `DeleteSubtreeById` for vanished rows). Shared by the local `read_dir` walk
+/// and the network `Volume`-trait walk so the diff logic lives in ONE place.
+///
+/// Writes NOTHING for an unchanged row (the no-op-cheap property the M3.0 gate
+/// relied on): a matched row is re-UPSERTed only when its size/mtime (file) or
+/// mtime (dir/symlink) actually differs, so a rescan over an unchanged tree
+/// issues zero entry-row writes and never touches the catastrophic
+/// `INSERT OR REPLACE`/`platform_case` path.
+pub(super) fn diff_dir_against_db(
+    dir_id: i64,
+    live_children: &[LiveChild],
+    db_children: &[store::EntryRow],
+    writer: &IndexWriter,
+) -> DirDiff {
+    let mut added: u64 = 0;
+    let mut removed: u64 = 0;
+    let mut updated: u64 = 0;
+    let mut matched_child_dirs: Vec<(i64, String)> = Vec::new();
+    let mut new_child_dir_names: Vec<String> = Vec::new();
+
+    let mut db_by_name: std::collections::HashMap<String, &store::EntryRow> =
+        std::collections::HashMap::with_capacity(db_children.len());
+    for row in db_children {
+        db_by_name.insert(store::normalize_for_comparison(&row.name), row);
+    }
+
+    let mut matched_db_keys: HashSet<String> = HashSet::with_capacity(live_children.len());
+
+    for child in live_children {
+        let norm_name = store::normalize_for_comparison(&child.name);
+        let is_dir = child.is_directory;
+        let is_symlink = child.is_symlink;
+        let snap = &child.snap;
+
+        if let Some(db_row) = db_by_name.get(&norm_name) {
+            matched_db_keys.insert(norm_name);
+
+            let changed = if is_dir || is_symlink {
+                snap.modified_at != db_row.modified_at
+            } else {
+                snap.logical_size != db_row.logical_size || snap.modified_at != db_row.modified_at
+            };
+
+            if changed {
+                // Type change (file↔dir): delete first so counts propagate correctly.
+                // Dir→file: DeleteSubtreeById removes children + propagates negative deltas.
+                // File→dir: DeleteEntryById propagates negative file_count delta.
+                // Then UpsertEntryV2 inserts fresh with the correct type and positive deltas.
+                if db_row.is_directory != is_dir {
+                    if db_row.is_directory {
+                        let _ = writer.send(WriteMessage::DeleteSubtreeById(db_row.id));
+                    } else {
+                        let _ = writer.send(WriteMessage::DeleteEntryById(db_row.id));
+                    }
+                }
+
+                let _ = writer.send(WriteMessage::UpsertEntryV2 {
+                    parent_id: dir_id,
+                    name: child.name.clone(),
+                    is_directory: is_dir,
+                    is_symlink,
+                    logical_size: snap.logical_size,
+                    physical_size: snap.physical_size,
+                    modified_at: snap.modified_at,
+                    inode: snap.inode,
+                    nlink: snap.nlink,
+                });
+                updated += 1;
+            }
+
+            // Recurse into this child if it's a (non-symlink) dir on disk:
+            // - was already a dir in the DB → recurse the existing id;
+            // - was a file, now a dir (type change) → the old row was deleted and
+            //   a fresh dir inserted above, so treat it like a new dir: resolve the
+            //   new id after a flush, then recurse (its children must be walked).
+            if is_dir && !is_symlink {
+                if db_row.is_directory {
+                    matched_child_dirs.push((db_row.id, child.name.clone()));
+                } else {
+                    new_child_dir_names.push(child.name.clone());
+                }
+            }
+        } else {
+            let _ = writer.send(WriteMessage::UpsertEntryV2 {
+                parent_id: dir_id,
+                name: child.name.clone(),
+                is_directory: is_dir,
+                is_symlink,
+                logical_size: snap.logical_size,
+                physical_size: snap.physical_size,
+                modified_at: snap.modified_at,
+                inode: snap.inode,
+                nlink: snap.nlink,
+            });
+            // UpsertEntryV2 auto-propagates deltas in the writer.
+            added += 1;
+
+            if is_dir && !is_symlink {
+                new_child_dir_names.push(child.name.clone());
+            }
+        }
+    }
+
+    for row in db_children {
+        let norm_name = store::normalize_for_comparison(&row.name);
+        if !matched_db_keys.contains(&norm_name) {
+            if row.is_directory {
+                let _ = writer.send(WriteMessage::DeleteSubtreeById(row.id));
+            } else {
+                let _ = writer.send(WriteMessage::DeleteEntryById(row.id));
+            }
+            removed += 1;
+        }
+    }
+
+    DirDiff {
+        added,
+        removed,
+        updated,
+        matched_child_dirs,
+        new_child_dir_names,
+    }
+}
+
 /// Reconcile a subtree by diffing the filesystem against the DB directory-by-directory.
 ///
 /// Unlike `scanner::scan_subtree` which deletes all descendants then re-inserts,
 /// this function walks each directory, compares children by name, and only writes
 /// the differences. Safe to interrupt at any point: the DB is never in a
 /// partially-deleted state.
+///
+/// This is the LIVE small-scope fill path (per-navigation verifier,
+/// `MustScanSubDirs`, SMB-overflow `FullRefresh`): it propagates coverage per
+/// listed dir. The full-rescan path does NOT use this — the network rescan walks
+/// via `volume_scanner::reconcile_volume_via_trait`, which reuses the shared
+/// [`diff_dir_against_db`] but stamps + runs ONE `ComputeAllAggregates` (the
+/// single-aggregate constraint the M3.0 gate mandates), never per-dir propagation.
 pub(super) fn reconcile_subtree(
     root: &Path,
     conn: &Connection,
@@ -512,90 +671,30 @@ pub(super) fn reconcile_subtree(
         let db_children =
             IndexStore::list_children_on(dir_id, conn).map_err(|e| format!("list_children_on({dir_id}): {e}"))?;
 
-        let mut db_by_name: std::collections::HashMap<String, &store::EntryRow> =
-            std::collections::HashMap::with_capacity(db_children.len());
-        for row in &db_children {
-            db_by_name.insert(store::normalize_for_comparison(&row.name), row);
-        }
-
-        let mut matched_db_keys: HashSet<String> = HashSet::with_capacity(fs_children.len());
-
-        for (name, meta, is_symlink) in &fs_children {
-            let norm_name = store::normalize_for_comparison(name);
-            let is_dir = meta.is_dir();
-            let snap = extract_metadata(meta, is_dir, *is_symlink);
-
-            if let Some(db_row) = db_by_name.get(&norm_name) {
-                matched_db_keys.insert(norm_name);
-
-                let changed = if is_dir || *is_symlink {
-                    snap.modified_at != db_row.modified_at
-                } else {
-                    snap.logical_size != db_row.logical_size || snap.modified_at != db_row.modified_at
-                };
-
-                if changed {
-                    // Type change (file↔dir): delete first so counts propagate correctly.
-                    // Dir→file: DeleteSubtreeById removes children + propagates negative deltas.
-                    // File→dir: DeleteEntryById propagates negative file_count delta.
-                    // Then UpsertEntryV2 inserts fresh with the correct type and positive deltas.
-                    if db_row.is_directory != is_dir {
-                        if db_row.is_directory {
-                            let _ = writer.send(WriteMessage::DeleteSubtreeById(db_row.id));
-                        } else {
-                            let _ = writer.send(WriteMessage::DeleteEntryById(db_row.id));
-                        }
-                    }
-
-                    let _ = writer.send(WriteMessage::UpsertEntryV2 {
-                        parent_id: dir_id,
-                        name: name.clone(),
-                        is_directory: is_dir,
-                        is_symlink: *is_symlink,
-                        logical_size: snap.logical_size,
-                        physical_size: snap.physical_size,
-                        modified_at: snap.modified_at,
-                        inode: snap.inode,
-                        nlink: snap.nlink,
-                    });
-                    updated += 1;
-                }
-
-                if is_dir && !is_symlink {
-                    queue.push_back((dir_path.join(name), db_row.id));
-                }
-            } else {
-                let _ = writer.send(WriteMessage::UpsertEntryV2 {
-                    parent_id: dir_id,
+        // Normalize the local listing into source-agnostic `LiveChild`s and run
+        // the shared per-dir diff (same logic the network walk uses).
+        let live_children: Vec<LiveChild> = fs_children
+            .iter()
+            .map(|(name, meta, is_symlink)| {
+                let is_dir = meta.is_dir();
+                LiveChild {
                     name: name.clone(),
                     is_directory: is_dir,
                     is_symlink: *is_symlink,
-                    logical_size: snap.logical_size,
-                    physical_size: snap.physical_size,
-                    modified_at: snap.modified_at,
-                    inode: snap.inode,
-                    nlink: snap.nlink,
-                });
-
-                // UpsertEntryV2 auto-propagates deltas in the writer.
-                added += 1;
-
-                if is_dir && !is_symlink {
-                    new_dir_paths.push(dir_path.join(name));
+                    snap: extract_metadata(meta, is_dir, *is_symlink),
                 }
-            }
+            })
+            .collect();
+
+        let diff = diff_dir_against_db(dir_id, &live_children, &db_children, writer);
+        added += diff.added;
+        removed += diff.removed;
+        updated += diff.updated;
+        for (child_id, child_name) in diff.matched_child_dirs {
+            queue.push_back((dir_path.join(child_name), child_id));
         }
-
-        for row in &db_children {
-            let norm_name = store::normalize_for_comparison(&row.name);
-            if !matched_db_keys.contains(&norm_name) {
-                if row.is_directory {
-                    let _ = writer.send(WriteMessage::DeleteSubtreeById(row.id));
-                } else {
-                    let _ = writer.send(WriteMessage::DeleteEntryById(row.id));
-                }
-                removed += 1;
-            }
+        for child_name in diff.new_child_dir_names {
+            new_dir_paths.push(dir_path.join(child_name));
         }
 
         // If we found new directories and the queue is empty (current level done),
@@ -618,6 +717,8 @@ pub(super) fn reconcile_subtree(
     // deepest-first: a parent's `min_subtree_epoch` reads its children's stored
     // values, which must already reflect this pass. `propagate_min_subtree_epoch`
     // short-circuits once a value stabilizes, so the repeated up-walks are cheap.
+    // (This is the SMALL-SCOPE live path; a full rescan uses the single-aggregate
+    // path in `volume_scanner`, not per-dir propagation — see the fn doc.)
     if !listed_dir_ids.is_empty() {
         // Chunk under SQLite's bound-parameter ceiling (+1 for the epoch param).
         const MARK_CHUNK: usize = 900;

@@ -301,11 +301,16 @@ impl IndexManager {
             return Ok(());
         }
 
+        // No completion marker. Either a never-scanned volume (empty DB → first
+        // scan truncates + builds) or a persisted PARTIAL from a prior mid-scan
+        // disconnect (non-empty DB → `start_volume_scan` reconciles in place, so
+        // the partial stays visible stale rather than being blanked). The mode is
+        // chosen inside `start_volume_scan` by whether the DB already has rows.
         log::info!(
-            "Startup: {kind} volume '{}' fresh scan (no completed index)",
+            "Startup: {kind} volume '{}' scan (no completion marker; reconcile if a partial persists)",
             self.volume_id
         );
-        self.start_volume_scan("fresh network scan")
+        self.start_volume_scan("startup scan (no completion marker)")
     }
 
     /// A short label for this volume kind, for diagnostics. Only `Smb`/`Mtp`
@@ -318,11 +323,15 @@ impl IndexManager {
         }
     }
 
-    /// Start a `Volume`-trait scan for a network volume (SMB today).
+    /// Start a `Volume`-trait scan/rescan for a network volume (SMB or MTP).
     ///
-    /// Mirrors `start_scan`'s shape (truncate → scan → aggregate → meta on clean
-    /// completion) but walks via `volume_scanner::scan_volume_via_trait` instead
-    /// of jwalk, and starts NO `DriveWatcher` (the live-watch layer owns that).
+    /// Mirrors `start_scan`'s shape (bump epoch → walk → aggregate → meta on clean
+    /// completion) but walks via `volume_scanner` instead of jwalk, and starts NO
+    /// `DriveWatcher` (the live-watch layer owns that). Picks the WALK by whether
+    /// the index already has data: an empty DB does a fresh `scan_volume_via_trait`
+    /// (truncate + bulk build); a populated DB does a non-destructive
+    /// `reconcile_volume_via_trait` (diff each dir, write only changes, never blank
+    /// the index). See `indexing/DETAILS.md` § "Non-destructive rescan".
     /// Freshness transitions: `ScanStarted` ⇒ Scanning now; on clean completion the
     /// completion task fires `ScanCompleted` ⇒ Fresh and writes the meta marker;
     /// on cancel/error the partial is discarded by RESETTING the volume to gray
@@ -364,23 +373,48 @@ impl IndexManager {
         // watcher feeds the same buffer while this flag stays set.
         self.scanning.store(true, Ordering::Relaxed);
 
-        // Clear the prior completion marker, then truncate — identical to the
-        // local scan so an interrupted SMB rescan heals (no stale `scan_completed_at`
-        // over a gutted table). Freshness is reset to Scanning below.
+        // Reconcile vs truncate: an already-populated index is RESCANNED in place
+        // (diff each dir, write only changes) so the last-good data stays visible
+        // (stale) throughout and a mid-rescan disconnect leaves it intact. A first
+        // scan (empty DB) truncates and bulk-builds (faster on empty). The
+        // predicate is "the entries table already has data" — which is true for
+        // both a prior COMPLETED index and a persisted PARTIAL (the M2 disconnect
+        // case), so a persisted partial now survives relaunch shown stale instead
+        // of being truncated. See `indexing/DETAILS.md` § "Non-destructive rescan".
+        let reconcile = IndexStore::get_entry_count(self.store.read_conn())
+            .map(|n| n > 0)
+            .unwrap_or(false);
+
+        // Clear the prior completion marker (so an interrupted rescan heals — no
+        // stale `scan_completed_at` over a now-stale/partly-rewritten table) and
+        // bump `current_epoch` at the scan-start funnel (a continuity break:
+        // reconnect/journal-gap/stale/overflow/force rescans all funnel here, so
+        // bumping once covers them without enumerating the trigger). The first-ever
+        // scan also bumps (1→2 with nothing yet at epoch 1) — benign. For a FIRST
+        // scan we also truncate so the bulk insert lands in an empty DB; a RECONCILE
+        // rescan does NOT truncate — the whole point is to never blank the index.
+        // The flush below commits all of this BEFORE the walk thread reads
+        // `current_epoch` on its own connection (else it would stamp the stale
+        // epoch). Freshness is reset to Scanning below.
         let _ = self
             .writer
             .send(WriteMessage::DeleteMeta("scan_completed_at".to_string()));
-        // Bump `current_epoch` at the scan-start funnel (a continuity break:
-        // reconnect/journal-gap/stale/overflow/force rescans all funnel here, so
-        // bumping once covers them without enumerating the trigger). The first-ever
-        // scan also bumps (1→2 with nothing yet at epoch 1) — benign. The flush
-        // below commits it BEFORE the scan thread reads `current_epoch` on its own
-        // connection (else it would stamp the stale epoch).
         let _ = self.writer.send(WriteMessage::BumpCurrentEpoch);
-        let _ = self.writer.send(WriteMessage::TruncateData);
-        if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
-            log::warn!("network scan: flush after TruncateData failed: {e}");
+        if !reconcile {
+            let _ = self.writer.send(WriteMessage::TruncateData);
         }
+        if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
+            log::warn!("network scan: flush after scan-start meta/truncate failed: {e}");
+        }
+        log::info!(
+            "network scan: {} for '{}' ({scan_trigger})",
+            if reconcile {
+                "reconcile rescan"
+            } else {
+                "fresh scan (truncate)"
+            },
+            self.volume_id,
+        );
 
         // Freshness ⇒ Scanning (blue), via the state machine.
         super::state::apply_freshness_event(&self.volume_id, super::freshness::FreshnessEvent::ScanStarted);
@@ -431,8 +465,12 @@ impl IndexManager {
         let root = self.volume_root.clone();
         let kind = self.kind;
         tauri::async_runtime::spawn(async move {
-            let result =
-                super::volume_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled).await;
+            let result = if reconcile {
+                super::volume_scanner::reconcile_volume_via_trait(volume, root, writer.clone(), progress, cancelled)
+                    .await
+            } else {
+                super::volume_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled).await
+            };
 
             scan_done.store(true, Ordering::Relaxed);
             scanning.store(false, Ordering::Relaxed);
