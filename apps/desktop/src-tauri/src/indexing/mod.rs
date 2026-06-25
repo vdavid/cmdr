@@ -54,6 +54,11 @@ mod stress_tests_concurrency;
 mod stress_tests_lifecycle;
 #[cfg(test)]
 mod stress_tests_partial_aggregation;
+// M3.0 gate (throwaway): perf bench + correctness for the non-destructive reconcile rescan.
+#[cfg(test)]
+mod reconcile_bench;
+#[cfg(test)]
+mod reconcile_correctness;
 
 pub(crate) use enrichment::{ReadPool, get_read_pool};
 pub use enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
