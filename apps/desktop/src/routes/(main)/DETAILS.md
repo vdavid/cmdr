@@ -31,6 +31,8 @@ Depth and rationale for the app orchestrator. `CLAUDE.md` holds the must-knows; 
   the core drops the same command arriving from the OTHER source within 300 ms (the macOS menu-accelerator +
   webview-keydown double fire). Same-source repeats and untagged dispatches (palette, MCP) always pass. Unit-tested with
   injectable time.
+- **`mouse-nav.ts`**: `navCommandForMouseButton(button)`, the pure map from a pointer's X1/X2 side buttons to `nav.back`
+  / `nav.forward`. Unit-tested; see § Mouse back / forward buttons for the wiring.
 - **`explorer-api.ts`**: `ExplorerAPI`, the contract `DualPaneExplorer` exposes upward; shared by `+page.svelte`,
   `command-dispatch.ts`, and `mcp-listeners.ts` so none import the component directly.
 - **`mcp-listeners.ts`**: `setupMcpListeners(ctx)`, the transport adapter onto the command bus.
@@ -92,6 +94,21 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (skip `pushViewMenuState`)
 A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`), whose handlers call
 `explorerRef.navigate({ pane, to: { history: 'back' | 'forward' }, source: 'user' })`, same shape as `nav.parent`
 (`to: { history: 'parent' }`). Every other key stays a `sendKeyToFocusedPane` passthrough (invariant P2).
+
+## Mouse back / forward buttons
+
+A pointer's dedicated X1/X2 side buttons drive the same `nav.back` / `nav.forward` bus commands as `⌘[` / `⌘]` (issue
+#31), so history walks the same way regardless of input device. `+page.svelte` registers two document listeners that
+both consult `navCommandForMouseButton` (`mouse-nav.ts`, mapping `button === 3 → nav.back`, `4 → nav.forward`):
+
+- **`mouseup`** dispatches the command (gated by the same `isModalDialogOpen()` guard as the keyboard path, so the
+  buttons stay inert while a dialog or overlay is up). The dispatch is left untagged for the cross-source dedup: a mouse
+  button has no native-menu twin to double-fire, so it should always pass.
+- **`mousedown`** only `preventDefault`s the side buttons (no dispatch). This is what cancels WKWebView's built-in page
+  back / forward, which would otherwise pop the SvelteKit SPA history (e.g. unwinding a `/settings` visit) underneath
+  us. The suppression can't move to `mouseup` — the webview commits its default nav on the press — so the two halves
+  stay split across the two events. Suppression runs even while a modal is open (we never want the webview navigating
+  itself); only the dispatch is gated.
 
 ## Native-menu and input-focus interactions
 

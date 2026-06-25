@@ -24,6 +24,7 @@
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
     import { markDispatchSource } from './dispatch-dedup'
+    import { navCommandForMouseButton } from './mouse-nav'
     import { formatKeyCombo, isMacOS, isTypingKeyCombo } from '$lib/shortcuts/key-capture'
     import {
         showMainWindow,
@@ -106,6 +107,8 @@
     // Event handlers stored for cleanup
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined
     let handleContextMenu: ((e: MouseEvent) => void) | undefined
+    let handleMouseDown: ((e: MouseEvent) => void) | undefined
+    let handleMouseUp: ((e: MouseEvent) => void) | undefined
 
     /** Opens the debug window (dev mode only) */
     async function openDebugWindow() {
@@ -227,6 +230,35 @@
         } else if (shouldSuppressKey(e)) {
             e.preventDefault()
         }
+    }
+
+    /**
+     * Suppresses WKWebView's built-in page back / forward on a mouse's X1/X2 side
+     * buttons. We drive pane history from `mouseup` instead (`handleGlobalMouseUp`);
+     * without this, the webview would also walk the SPA's own history. Suppressing on
+     * `mousedown` is what cancels the default nav, so it can't move alongside the
+     * `mouseup` dispatch.
+     */
+    function handleGlobalMouseDown(e: MouseEvent): void {
+        if (navCommandForMouseButton(e.button)) {
+            e.preventDefault()
+        }
+    }
+
+    /**
+     * Global handler for a mouse's dedicated back / forward side buttons (issue #31):
+     * dispatch `nav.back` / `nav.forward` through the same command bus as the `⌘[` /
+     * `⌘]` shortcuts. Left untagged for the cross-source dedup (a mouse button has no
+     * native-menu twin to double-fire), and gated by the same modal-open guard as the
+     * keyboard path so the buttons stay inert while a dialog or overlay is up.
+     */
+    function handleGlobalMouseUp(e: MouseEvent): void {
+        if (isModalDialogOpen()) return
+        const commandId = navCommandForMouseButton(e.button)
+        if (!commandId) return
+        e.preventDefault()
+        e.stopPropagation()
+        void handleCommandExecute(commandId)
     }
 
     /**
@@ -424,8 +456,12 @@
         handleContextMenu = (e: MouseEvent) => {
             e.preventDefault()
         }
+        handleMouseDown = handleGlobalMouseDown
+        handleMouseUp = handleGlobalMouseUp
         document.addEventListener('keydown', handleKeyDown)
         document.addEventListener('contextmenu', handleContextMenu)
+        document.addEventListener('mousedown', handleMouseDown)
+        document.addEventListener('mouseup', handleMouseUp)
 
         // Set up Tauri event listeners (extracted to reduce complexity)
         await setupTauriEventListeners()
@@ -505,6 +541,12 @@
         }
         if (handleContextMenu) {
             document.removeEventListener('contextmenu', handleContextMenu)
+        }
+        if (handleMouseDown) {
+            document.removeEventListener('mousedown', handleMouseDown)
+        }
+        if (handleMouseUp) {
+            document.removeEventListener('mouseup', handleMouseUp)
         }
         // Clean up every menu / MCP / dialog / window-focus listener (prevents
         // duplicate listeners after HMR). All of them register into this one array.
