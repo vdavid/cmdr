@@ -65,7 +65,13 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 - [ ] 2026-06-22 navigate-during-transfers-plan.md - Make the phone responsive DURING an MTP transfer: the per-chunk
       `CheckpointStream` checkpoint auto-yields the PTP session to foreground nav/list ops (release +
       `background_yield_point` + reopen at offset), with debounce + a min-progress floor; reuses the release-on-pause
-      primitive and the device priority gate (op stays Running, not Paused)
+      primitive and the device priority gate (op stays Running, not Paused). MECHANISM SUPERSEDED by
+      2026-06-25-bounded-window-mtp-reads-plan.md (the abort-to-yield drained a multi-GB read for ~35s → listing
+      timeout; bounded-window reads replace it)
+- [ ] 2026-06-25 bounded-window-mtp-reads-plan.md - Fix navigate-during-MTP-transfer for real: read MTP files as bounded
+      ~8 MiB `GetPartialObject64` windows (session free between windows, ~80ms each, real-device-spike-validated) so
+      "yield" = "don't start the next window" instead of aborting a giant read; needs no mtp-rs change (loops the
+      existing `download_partial_64`)
 - [ ] 2026-06-25 honest-index-sizes-plan.md - Honest directory sizes: exact / ≥lower-bound / unknown plus fresh-vs-stale
       via a per-dir `listed_epoch` + rolled-up `min_subtree_epoch` and a per-volume epoch counter; fixes the mid-scan
       disconnect "0 bytes" lie and lays groundwork for lazy fill and offline browse
